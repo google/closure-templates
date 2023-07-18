@@ -633,12 +633,6 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
               Expressions.THIS.dotAccess("syncStateFromData"),
               id(soyElementClassName + "SyncInternal")));
     }
-    if (node.shouldAllowBrokenElementCollisions()) {
-      stateVarInitializations.add(
-          Statements.assign(
-              Expressions.THIS.dotAccess("allowBrokenElementCollisions"),
-              Expressions.LITERAL_TRUE));
-    }
     // Build constructor method.
     Statement ctorBody =
         Statements.of(

@@ -33,9 +33,6 @@ import javax.annotation.Nullable;
  */
 public final class TemplateElementNode extends TemplateNode implements ExprHolderNode {
 
-  /** The "allowbrokenelementcollisions" attribute */
-  private final boolean allowBrokenElementCollisions;
-
   /**
    * Main constructor. This is package-private because TemplateElementNode instances should be built
    * using TemplateElementNodeBuilder.
@@ -49,8 +46,6 @@ public final class TemplateElementNode extends TemplateNode implements ExprHolde
       SoyFileHeaderInfo soyFileHeaderInfo,
       @Nullable ImmutableList<TemplateHeaderVarDefn> params) {
     super(nodeBuilder, "element", soyFileHeaderInfo, Visibility.PUBLIC, params);
-    // TODO(b/282947052): Add documentation explaining what this attribute is/how to get rid of it.
-    this.allowBrokenElementCollisions = nodeBuilder.shouldAllowBrokenElementCollisions();
   }
 
   /**
@@ -60,7 +55,6 @@ public final class TemplateElementNode extends TemplateNode implements ExprHolde
    */
   private TemplateElementNode(TemplateElementNode orig, CopyState copyState) {
     super(orig, copyState);
-    this.allowBrokenElementCollisions = orig.shouldAllowBrokenElementCollisions();
   }
 
   /** Returns the state variables from template header. */
@@ -73,11 +67,7 @@ public final class TemplateElementNode extends TemplateNode implements ExprHolde
     }
     return builder.build();
   }
-
-  public boolean shouldAllowBrokenElementCollisions() {
-    return allowBrokenElementCollisions;
-  }
-
+  
   @Override
   public String getTemplateNameForUserMsgs() {
     return getTemplateName();

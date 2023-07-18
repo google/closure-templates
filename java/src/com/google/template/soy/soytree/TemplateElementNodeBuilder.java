@@ -46,9 +46,6 @@ public final class TemplateElementNodeBuilder
 
   private List<CommandTagAttribute> attrs = ImmutableList.of();
 
-  /** The "allowbrokenelementcollisions" attribute */
-  private boolean allowBrokenElementCollisions = false;
-
   /** @param soyFileHeaderInfo Info from the containing Soy file's header declarations. */
   public TemplateElementNodeBuilder(
       SoyFileHeaderInfo soyFileHeaderInfo, ErrorReporter errorReporter) {
@@ -66,9 +63,6 @@ public final class TemplateElementNodeBuilder
     for (CommandTagAttribute attribute : attrs) {
       Identifier name = attribute.getName();
       switch (name.identifier()) {
-        case "allowbrokenelementcollisions":
-          allowBrokenElementCollisions = attribute.valueAsEnabled(errorReporter);
-          break;
         case "kind":
           if (!getContentKind().getSanitizedContentKind().isHtml()) {
             errorReporter.report(attribute.getValueLocation(), INVALID_ELEMENT_KIND);
@@ -86,7 +80,6 @@ public final class TemplateElementNodeBuilder
                 name.identifier(),
                 "element",
                 ImmutableList.builder()
-                    .add("allowbrokenelementcollisions")
                     .addAll(
                         COMMON_ATTRIBUTE_NAMES.stream()
                             .filter(n -> !BANNED_ATTRIBUTE_NAMES.contains(n))
@@ -98,10 +91,6 @@ public final class TemplateElementNodeBuilder
 
     setTemplateNames(templateName, soyFileHeaderInfo.getNamespace());
     return this;
-  }
-
-  boolean shouldAllowBrokenElementCollisions() {
-    return allowBrokenElementCollisions;
   }
 
   @Override
