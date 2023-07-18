@@ -47,12 +47,12 @@
  */
 {template helloNames}
   {@param names: list<string>}  /** List of names of the people to say hello to. */
-  {if $names.length() != 0}
+  {if $names.length != 0}
     {for $name, $nameIndex in $names}
       {call helloName}
         {param name: $name /}
       {/call}
-      {if $nameIndex != $names.length() - 1}
+      {if $nameIndex != $names.length - 1}
         <br>
       {/if}
     {/for}
