@@ -6,7 +6,7 @@
   <name>Closure Templates</name>
   <groupId>com.google.template</groupId>
   <artifactId>soy</artifactId>
-  <version>2022-10-26</version>
+  <version>2023-07-19</version>
   <description>
     Closure Templates are a client-side and server-side templating system.
   </description>
