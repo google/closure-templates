@@ -207,6 +207,8 @@ public final class JavaTypeUtils {
    */
   public static boolean isJavaIncompatible(SoyType type) {
     switch (type.getKind()) {
+      case UNION:
+        return ((UnionType) type).getMembers().stream().anyMatch(JavaTypeUtils::isJavaIncompatible);
       case VE:
       case VE_DATA:
         return true;
