@@ -137,6 +137,7 @@ public class EscapingConventionsTest {
 
     String[] shouldAccept =
         new String[] {
+          "drop-shadow(1px 2px 3px #000)",
           "linear-gradient(180deg, rgba(0, 0, 0, 0) 55%, rgba(0, 0, 0, 0.5) 80%,rgba(0, 0, 0,"
               + " 0.75) 100%)",
           "invert(1) hue-rotate(180deg)",

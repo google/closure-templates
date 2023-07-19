@@ -816,6 +816,7 @@ public final class EscapingConventions {
             // go/keep-sorted started
             "calc",
             "cubic-bezier",
+            "drop-shadow",
             "hsl",
             "hsla",
             "hue-rotate",
