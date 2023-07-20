@@ -299,6 +299,11 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
       SoyErrorKind.of(
           "Proto field ''{0}'' for proto type {1} can only be accessed via ''{2}()''.",
           StyleAllowance.NO_PUNCTUATION);
+  private static final SoyErrorKind PROTO_FIELD_WARNING =
+      SoyErrorKind.of(
+          "Accessing the proto field with .''{0}'' is deprecated. Access using the getter method "
+              + "''{1}()''. See http://go/soy/dev/protos.md#accessing-proto-fields.",
+          StyleAllowance.NO_PUNCTUATION);
   private static final SoyErrorKind PROTO_MISSING_REQUIRED_FIELD =
       SoyErrorKind.of("Missing required proto field ''{0}''.");
   private static final SoyErrorKind PROTO_NULL_ARG_TYPE =
@@ -2574,6 +2579,12 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
             GETTER_ONLY_FIELD_FOR_PROTO_TYPE,
             fieldName,
             baseType,
+            BuiltinMethod.protoFieldToGetMethodName(fieldName));
+      } else {
+        errorReporter.warn(
+            sourceLocation,
+            PROTO_FIELD_WARNING,
+            fieldName,
             BuiltinMethod.protoFieldToGetMethodName(fieldName));
       }
     }
