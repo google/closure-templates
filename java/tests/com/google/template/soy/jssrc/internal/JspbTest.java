@@ -76,7 +76,7 @@ public final class JspbTest {
 
   @Test
   public void testSimpleProto() {
-    assertThatSoyExpr(expr("$proto.key").withParam("{@param proto: KvPair}"))
+    assertThatSoyExpr(expr("$proto.getKeyOrUndefined()").withParam("{@param proto: KvPair}"))
         .withProtoImports(DESCRIPTORS)
         .generatesCode("opt_data.proto.getKeyOrUndefined();");
   }
@@ -84,14 +84,16 @@ public final class JspbTest {
   @Test
   public void testInnerMessage() {
     assertThatSoyExpr(
-            expr("$proto.field").withParam("{@param proto : ExampleExtendable.InnerMessage}"))
+            expr("$proto.getFieldOrUndefined()")
+                .withParam("{@param proto : ExampleExtendable.InnerMessage}"))
         .withProtoImports(DESCRIPTORS)
         .generatesCode("opt_data.proto.getFieldOrUndefined();");
   }
 
   @Test
   public void testMath() {
-    assertThatSoyExpr(expr("$pair.anotherValue * 5").withParam("{@param pair : KvPair}"))
+    assertThatSoyExpr(
+            expr("$pair.getAnotherValueOrUndefined() * 5").withParam("{@param pair : KvPair}"))
         .withProtoImports(DESCRIPTORS)
         .generatesCode("opt_data.pair.getAnotherValueOrUndefined() * 5;")
         .withPrecedence(TIMES);
@@ -108,7 +110,7 @@ public final class JspbTest {
   @Test
   public void testProto3Fields_oneof() {
     assertThatSoyExpr(
-            expr("$msg.anotherMessageField.getField() * 5")
+            expr("$msg.getAnotherMessageField()!.getField() * 5")
                 .withParam("{@param msg: Proto3Message}"))
         .withProtoImports(DESCRIPTORS)
         .generatesCode("opt_data.msg.getAnotherMessageField().getField() * 5;")

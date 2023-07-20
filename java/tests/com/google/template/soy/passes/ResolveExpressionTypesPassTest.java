@@ -263,8 +263,8 @@ public final class ResolveExpressionTypesPassTest {
                 constructTemplateSource(
                     "{@param proto: ExampleExtendable}",
                     "{assertType('bool', $proto.getExtension(someBoolExtension))}",
-                    "{assertType('int', $proto.getExtension("
-                        + "SomeExtension.someExtensionField).someExtensionNum)}"),
+                    "{assertType('int|null', $proto.getExtension("
+                        + "SomeExtension.someExtensionField).getSomeExtensionNumOrUndefined())}"),
                 ExampleExtendable.getDescriptor(),
                 SomeExtension.getDescriptor(),
                 Example.someBoolExtension.getDescriptor())
@@ -765,20 +765,14 @@ public final class ResolveExpressionTypesPassTest {
                 constructTemplateSource(
                     "{let $proto: ExampleExtendable() /}",
                     "{assertType('example.ExampleExtendable', $proto)}",
-                    "{assertType('string', $proto.someString)}",
                     "{assertType('string', $proto.getSomeString())}",
                     "{assertType('null|string', $proto.getSomeStringOrUndefined())}",
-                    "{assertType('int', $proto.someNumNoDefault)}",
-                    // getSomeNumNoDefault() doesn't exist because the proto has "incorrect"
-                    // semantics.
                     "{assertType('int|null', $proto.getSomeNumNoDefaultOrUndefined())}",
-                    "{assertType('example.SomeEmbeddedMessage', $proto.someEmbeddedMessage)}",
                     "{assertType('example.SomeEmbeddedMessage|null',"
                         + " $proto.getSomeEmbeddedMessage())}",
                     "{assertType('list<int>', $proto.getRepeatedLongWithInt52JsTypeList())}",
                     "",
                     "{let $protoCorrect: Proto2ImplicitDefaults() /}",
-                    "{assertType('string', $protoCorrect.string)}",
                     "{assertType('string', $protoCorrect.getString())}",
                     "{assertType('null|string', $protoCorrect.getStringOrUndefined())}"),
                 ExampleExtendable.getDescriptor(),
