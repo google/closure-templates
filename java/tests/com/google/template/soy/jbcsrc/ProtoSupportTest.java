@@ -79,9 +79,9 @@ public final class ProtoSupportTest {
   public void testSimpleProto() {
     assertThatTemplateBody(
             "{@param proto : KvPair}",
-            "{$proto.key}{\\n}",
-            "{$proto.value}{\\n}",
-            "{$proto.anotherValue}")
+            "{$proto.getKeyOrUndefined()}{\\n}",
+            "{$proto.getValueOrUndefined()}{\\n}",
+            "{$proto.getAnotherValueOrUndefined()}")
         .rendersAs(
             "key\nvalue\n3",
             ImmutableMap.of(
@@ -91,12 +91,13 @@ public final class ProtoSupportTest {
 
   @Test
   public void testSimpleProto_nullCoalescing() {
-    assertThatTemplateBody("{@param? proto : KvPair}", "{$proto?.value ?: 'bar'}").rendersAs("bar");
+    assertThatTemplateBody("{@param? proto : KvPair}", "{$proto?.getValueOrUndefined() ?: 'bar'}")
+        .rendersAs("bar");
 
     CompiledTemplateSubject tester =
         assertThatTemplateBody(
             "{@param proto : ProtoMap}",
-            "{$proto.getMapMessageFieldMap()?.get(2390)?.field ?: 'bar'}");
+            "{$proto.getMapMessageFieldMap()?.get(2390)?.getFieldOrUndefined() ?: 'bar'}");
     tester.rendersAs(
         "4837",
         ImmutableMap.of(
@@ -113,7 +114,7 @@ public final class ProtoSupportTest {
     assertThatTemplateBody(
             "{@param? proto : KvPair}",
             "{@param? proto2 : KvPair}",
-            "{$proto?.value ?: $proto2?.value}")
+            "{$proto?.getValueOrUndefined() ?: $proto2?.getValueOrUndefined()}")
         .rendersAs("null");
   }
 
@@ -122,9 +123,13 @@ public final class ProtoSupportTest {
   // values
   @Test
   public void testSimpleProto_nullSafePrimitive() {
-    assertThatTemplateBody("{@param? proto : KvPair}", "{$proto?.anotherValue}").rendersAs("null");
+    assertThatTemplateBody("{@param? proto : KvPair}", "{$proto?.getAnotherValueOrUndefined()}")
+        .rendersAs("null");
     assertThatTemplateBody(
-            "{@param? proto : ExampleExtendable}", "{if not $proto?.boolField}", "  foo", "{/if}")
+            "{@param? proto : ExampleExtendable}",
+            "{if not $proto?.getBoolFieldOrUndefined()}",
+            "  foo",
+            "{/if}")
         .rendersAs("foo");
   }
 
@@ -133,7 +138,7 @@ public final class ProtoSupportTest {
     CompiledTemplateSubject tester =
         assertThatTemplateBody(
             "{@param? proto : ExampleExtendable}",
-            "{if $proto?.someEmbeddedMessage}",
+            "{if $proto?.getSomeEmbeddedMessage()}",
             "  foo",
             "{/if}");
     tester.rendersAs("");
@@ -151,7 +156,7 @@ public final class ProtoSupportTest {
     CompiledTemplateSubject tester =
         assertThatTemplateBody(
             "{@param? proto : ExampleExtendable}",
-            "{let $foo : $proto?.someEmbeddedMessage /}",
+            "{let $foo : $proto?.getSomeEmbeddedMessage() /}",
             "{$foo ? 'true' : 'false'}");
     tester.rendersAs("false", ImmutableMap.of());
     tester.rendersAs("false", ImmutableMap.of("proto", ExampleExtendable.getDefaultInstance()));
@@ -168,7 +173,7 @@ public final class ProtoSupportTest {
     CompiledTemplateSubject tester =
         assertThatTemplateBody(
             "{@param? proto : ExampleExtendable}",
-            "{let $foo : $proto?.someEmbeddedMessage?.someEmbeddedString /}",
+            "{let $foo : $proto?.getSomeEmbeddedMessage()?.getSomeEmbeddedStringOrUndefined() /}",
             "{$foo}");
     tester.rendersAs("null", ImmutableMap.of());
     tester.rendersAs("null", ImmutableMap.of("proto", ExampleExtendable.getDefaultInstance()));
@@ -186,7 +191,7 @@ public final class ProtoSupportTest {
     CompiledTemplateSubject tester =
         assertThatTemplateBody(
             "{@param? proto : ExampleExtendable}",
-            "{let $foo : $proto?.someEmbeddedMessage?.someEmbeddedString /}",
+            "{let $foo : $proto?.getSomeEmbeddedMessage()?.getSomeEmbeddedStringOrUndefined() /}",
             "{$foo}");
     tester.rendersAs("null", ImmutableMap.of());
     tester.rendersAs("null", ImmutableMap.of("proto", ExampleExtendable.getDefaultInstance()));
@@ -201,7 +206,8 @@ public final class ProtoSupportTest {
 
   @Test
   public void testInnerMessageProto() {
-    assertThatTemplateBody("{@param proto : ExampleExtendable.InnerMessage}", "{$proto.field}")
+    assertThatTemplateBody(
+            "{@param proto : ExampleExtendable.InnerMessage}", "{$proto.getFieldOrUndefined()}")
         .rendersAs(
             "12",
             ImmutableMap.of(
@@ -213,7 +219,7 @@ public final class ProtoSupportTest {
     assertThatTemplateBody(
             "{@param e : ExampleExtendable}",
             "{for $m in $e.getRepeatedEmbeddedMessageList()}",
-            "  {$m.someEmbeddedString}",
+            "  {$m.getSomeEmbeddedStringOrUndefined()}",
             "{/for}")
         .rendersAs(
             "k1k2",
@@ -230,7 +236,7 @@ public final class ProtoSupportTest {
   public void testRepeatedFields_ofNullable() {
     assertThatTemplateBody(
             "{@param e : ExampleExtendable}",
-            "{for $str in $e.someEmbeddedMessage.getSomeEmbeddedRepeatedStringList()}",
+            "{for $str in $e.getSomeEmbeddedMessage()!.getSomeEmbeddedRepeatedStringList()}",
             "  {$str}",
             "{/for}")
         .rendersAs(
@@ -250,7 +256,7 @@ public final class ProtoSupportTest {
 
   @Test
   public void testMathOnProtoFields() {
-    assertThatTemplateBody("{@param pair : KvPair}", "{$pair.anotherValue * 5}")
+    assertThatTemplateBody("{@param pair : KvPair}", "{$pair.getAnotherValueOrUndefined() * 5}")
         .rendersAs("10", ImmutableMap.of("pair", KvPair.newBuilder().setAnotherValue(2)));
   }
 
@@ -261,7 +267,7 @@ public final class ProtoSupportTest {
         JOINER.join(
             "{template caller}",
             "  {@param pair : KvPair}",
-            "  {let $closeUrl : $pair.value /}",
+            "  {let $closeUrl : $pair.getValueOrUndefined() /}",
             "  {call callee}{param str : $closeUrl ? $closeUrl : '' /}{/call}",
             "{/template}",
             "",
@@ -308,7 +314,7 @@ public final class ProtoSupportTest {
   @Test
   public void testProto3Fields_oneof() {
     assertThatTemplateBody(
-            "{@param msg: Proto3Message}", "{$msg.anotherMessageField.getField() * 5}")
+            "{@param msg: Proto3Message}", "{$msg.getAnotherMessageField()!.getField() * 5}")
         .rendersAs(
             "10",
             ImmutableMap.of(
@@ -319,7 +325,8 @@ public final class ProtoSupportTest {
         .rendersAs("10", ImmutableMap.of("msg", Proto3Message.newBuilder().setAnotherIntField(2)))
         // missing int from a oneof returns 0
         .rendersAs("0", ImmutableMap.of("msg", Proto3Message.getDefaultInstance()));
-    assertThatTemplateBody("{@param msg: Proto3Message}", "{$msg.anotherMessageField.getField()}")
+    assertThatTemplateBody(
+            "{@param msg: Proto3Message}", "{$msg.getAnotherMessageField()!.getField()}")
         .failsToRenderWith(
             NullPointerException.class, ImmutableMap.of("msg", Proto3Message.getDefaultInstance()));
   }
@@ -355,8 +362,8 @@ public final class ProtoSupportTest {
     assertThatTemplateBody(
             "{@param bs: ExampleExtendable}",
             "{let $p: ExampleExtendable(",
-            "  byteField: $bs.byteField) /}",
-            "{$p.byteField}")
+            "  byteField: $bs.getByteFieldOrUndefined()) /}",
+            "{$p.getByteFieldOrUndefined()}")
         .rendersAs("AH+A", ImmutableMap.of("bs", proto));
   }
 

@@ -61,8 +61,8 @@ public final class ExprEquivalenceTest {
     runTest("{@param rec: [a: string, b: [a: string]]}", "{assertReflexive($rec.b)}");
     runTest("{@param rec: [a: string, b: [a: string]]}", "{assertReflexive($rec.b.a)}");
     runTest("{@param proto: KvPair}", "{assertReflexive($proto)}");
-    runTest("{@param proto: KvPair}", "{assertReflexive($proto.key)}");
-    runTest("{@param proto: KvPair}", "{assertReflexive($proto.value)}");
+    runTest("{@param proto: KvPair}", "{assertReflexive($proto.getKeyOrUndefined())}");
+    runTest("{@param proto: KvPair}", "{assertReflexive($proto.getValueOrUndefined())}");
   }
 
   @Test
