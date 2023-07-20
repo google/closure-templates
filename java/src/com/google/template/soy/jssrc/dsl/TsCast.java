@@ -23,9 +23,9 @@ import java.util.stream.Stream;
 /** Represents a TypeScript type cast. */
 @AutoValue
 @Immutable
-abstract class TsCast extends Expression {
+public abstract class TsCast extends Expression {
 
-  static TsCast create(Expression expr, Expression type) {
+  public static TsCast create(Expression expr, Expression type) {
     return new AutoValue_TsCast(expr, type);
   }
 

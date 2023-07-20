@@ -37,6 +37,7 @@ import javax.annotation.Nullable;
 /** Static functions related to Expressions. */
 public final class Expressions {
 
+  public static final Expression LITERAL_ANY = id("any");
   public static final Expression LITERAL_TRUE = id("true");
   public static final Expression LITERAL_FALSE = id("false");
   public static final Expression LITERAL_NULL = id("null");
