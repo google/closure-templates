@@ -1354,8 +1354,6 @@ final class ExpressionCompiler {
               detacher.resolveSoyValueProvider(
                   MethodRef.RUNTIME_GET_LIST_ITEM_PROVIDER.invoke(list, index));
         }
-      } else if (baseExpr.soyRuntimeType().isKnownMapOrUnionOfMaps()) {
-        soyValueProvider = getMapGetExpression(baseExpr, node, keyExpr);
       } else {
         Expression map = baseExpr.box().checkedCast(SoyLegacyObjectMap.class);
         SoyExpression index = keyExpr.box();

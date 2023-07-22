@@ -210,8 +210,8 @@ throws a NullPointerException in Java.
 
 ### Indexed access operators `[]` `?[]` {#indexing-operators}
 
-Indexed access operators, used for accessing elements of `lists`. Using indexed
-access for `maps` is deprecated.
+Indexed access operators, used for accessing elements of `list` and
+`legacy_object_map`.
 
 The question-bracket operator is for null safe access. If the value of the
 preceding operand is `null` then the access will return `null` rather than
@@ -219,7 +219,7 @@ failing.
 
 For example,
 
-*   `$foo[$bar]` accesses the `$bar` index of the map `$foo`
+*   `$foo[$bar]` accesses the `$bar` index of the `legacy_object_map` `$foo`
 *   `$foo?[$bar]` accesses the `$bar` field of `$foo` only if `$foo` is
     non-`null`
 
@@ -456,7 +456,7 @@ comprehension and evaluates to `map('a': 1, 'b': 2, 'c': 3)`.
 {let $result1: map([record(key: $c, value: $i + 1) for $c, $i in ['a', 'b', 'c']]) /}
 
 {let $oldMap: map('a': 10, 'b': 20, 'c': 30, 'd': 40, 'e': 50) /}
-{let $result2: map([record(key : $x, value : $oldMap[$x] / 10) for $x in $oldMap.keys() if $oldMap[$x] < 35]) /}
+{let $result2: map([record(key : $x, value : $oldMap.get($x) / 10) for $x in $oldMap.keys() if $oldMap.get($x) < 35]) /}
 
 // 'Person' is a proto with the following signature:
 //

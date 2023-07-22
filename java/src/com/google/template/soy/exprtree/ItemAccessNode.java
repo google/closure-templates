@@ -21,8 +21,8 @@ import com.google.template.soy.basetree.CopyState;
 
 /**
  * Represents the bracket [] operation, which can either be used to access an array element by
- * index, or a map value by key. Following the naming convention of Python, both array elements and
- * map values are here referred to as "items".
+ * index, or a map value (legacy_object_map or ?) by key. Following the naming convention of Python,
+ * both array elements and map values are here referred to as "items".
  *
  * <p>The source location of this node is the location of the {@code [<expr>]} and doesn't include
  * the base expression.

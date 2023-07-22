@@ -21,6 +21,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
@@ -80,6 +81,7 @@ import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
+import com.google.template.soy.types.SoyTypes;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -376,24 +378,17 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
       return genCodeForMethodCall(methodCall, base);
     } else {
       ItemAccessNode itemAccess = (ItemAccessNode) dataAccess;
-      Kind baseKind = itemAccess.getBaseExprChild().getType().getKind();
+      SoyType baseType = SoyTypes.tryRemoveNull(itemAccess.getBaseExprChild().getType());
       PyExpr keyPyExpr = visit(itemAccess.getKeyExprChild());
-      switch (baseKind) {
-        case LIST:
-          return genCodeForKeyAccess(base, keyPyExpr, NotFoundBehavior.returnNone());
-        case UNKNOWN:
-          errorReporter.report(
-              itemAccess.getKeyExprChild().getSourceLocation(),
-              UNTYPED_BRACKET_ACCESS_NOT_SUPPORTED);
-          // fall through
-        case MAP:
-        case UNION:
-          return genCodeForKeyAccess(base, keyPyExpr, NotFoundBehavior.returnNone());
-        case LEGACY_OBJECT_MAP:
-        case RECORD:
-          return genCodeForKeyAccess(base, keyPyExpr, NotFoundBehavior.throwException());
-        default:
-          throw new AssertionError("illegal item access on " + baseKind);
+      if (SoyTypes.isKindOrUnionOfKind(baseType, Kind.LIST)) {
+        return genCodeForKeyAccess(base, keyPyExpr, NotFoundBehavior.returnNone());
+      } else if (SoyTypes.isKindOrUnionOfKinds(
+          baseType, ImmutableSet.of(Kind.LEGACY_OBJECT_MAP, Kind.RECORD))) {
+        return genCodeForKeyAccess(base, keyPyExpr, NotFoundBehavior.throwException());
+      } else {
+        errorReporter.report(
+            itemAccess.getKeyExprChild().getSourceLocation(), UNTYPED_BRACKET_ACCESS_NOT_SUPPORTED);
+        return NONE.getText();
       }
     }
   }

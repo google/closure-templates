@@ -249,23 +249,6 @@ final class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
         // out of range
         return new NullNode(node.getSourceLocation());
       }
-    } else if (baseExpr instanceof MapLiteralNode) {
-      MapLiteralNode mapLiteral = (MapLiteralNode) baseExpr;
-      boolean areAllKeysConstants = true;
-      ExprEquivalence exprEquivalence = new ExprEquivalence();
-      for (int i = 0; i < mapLiteral.numChildren(); i += 2) {
-        ExprNode key = mapLiteral.getChild(i);
-        ExprNode value = mapLiteral.getChild(i + 1);
-        if (exprEquivalence.equivalent(keyExpr, key)) {
-          return value;
-        }
-        areAllKeysConstants = areAllKeysConstants && isConstant(key);
-      }
-      if (isConstant(keyExpr) && areAllKeysConstants) {
-        // no matching key, and since everything was a bunch of constants, it should have matched.
-        // in this case we can evaluate at compile time.
-        return new NullNode(node.getSourceLocation());
-      }
     }
     return null;
   }

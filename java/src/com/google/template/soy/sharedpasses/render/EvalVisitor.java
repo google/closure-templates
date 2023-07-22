@@ -140,10 +140,8 @@ import com.google.template.soy.soytree.ExternNode;
 import com.google.template.soy.soytree.JavaImplNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.TemplateParam;
-import com.google.template.soy.types.MapType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
-import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.UnionType;
 import com.ibm.icu.util.ULocale;
 import java.util.ArrayList;
@@ -553,7 +551,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     // All null safe accesses should've already been converted to NullSafeAccessNodes.
     checkArgument(!itemAccess.isNullSafe());
     // attempting item access on non-SoyMap
-    if (!(base instanceof SoyLegacyObjectMap || base instanceof SoyMap)) {
+    if (!(base instanceof SoyLegacyObjectMap)) {
       if (nullSafe) {
         if (!isNullOrUndefinedBase(base)) {
           throw RenderException.create(
@@ -579,19 +577,11 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
               itemAccess.toSourceString(), itemAccess.getSourceStringSuffix()));
     }
 
-    // base is a valid SoyMap or SoyLegacyObjectMap: get value
+    // base is a valid SoyLegacyObjectMap: get value
     maybeMarkBadProtoAccess(itemAccess, base);
     SoyValue key = visit(itemAccess.getKeyExprChild());
 
-    SoyType baseType = SoyTypes.removeNull(itemAccess.getBaseExprChild().getType());
-
-    // We need to know whether to invoke the SoyMap or SoyLegacyObjectMap method.
-    // An instanceof check on the runtime value of base is insufficient, since
-    // DictImpl implements both interfaces. Instead, look at the declared type of the base
-    // expression.
-    boolean shouldUseNewMap = MapType.ANY_MAP.isAssignableFromStrict(baseType);
-    SoyValue value =
-        shouldUseNewMap ? ((SoyMap) base).get(key) : ((SoyLegacyObjectMap) base).getItem(key);
+    SoyValue value = ((SoyLegacyObjectMap) base).getItem(key);
 
     if (value != null
         && !TofuTypeChecks.isInstance(
@@ -604,7 +594,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
 
     if (value != null) {
       return value;
-    } else if (shouldUseNewMap || undefinedDataHandlingMode != UndefinedDataHandlingMode.BUGGED) {
+    } else if (undefinedDataHandlingMode != UndefinedDataHandlingMode.BUGGED) {
       // UndefinedData is a misfeature. The new map type should return null for failed lookups.
       return NullData.INSTANCE;
     } else {

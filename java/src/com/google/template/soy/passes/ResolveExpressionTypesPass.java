@@ -1492,7 +1492,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
     private void finishItemAccessNode(ItemAccessNode node, boolean nullSafe) {
       visit(node.getKeyExprChild());
       SoyType itemType =
-          getItemType(
+          getItemTypeForAccessNode(
               node.getBaseExprChild().getType(),
               node.getKeyExprChild().getType(),
               nullSafe,
@@ -2590,7 +2590,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
     }
 
     /** Given a base type and an item key type, compute the item value type. */
-    private SoyType getItemType(
+    private SoyType getItemTypeForAccessNode(
         SoyType baseType,
         SoyType keyType,
         boolean isNullSafe,
@@ -2620,7 +2620,6 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
           return listType.getElementType();
 
         case LEGACY_OBJECT_MAP:
-        case MAP:
           {
             AbstractMapType mapType = (AbstractMapType) baseType;
             if (mapType.equals(LegacyObjectMapType.EMPTY_MAP)
@@ -2650,7 +2649,8 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
                 continue;
               }
               SoyType itemType =
-                  getItemType(unionMember, keyType, isNullSafe, baseLocation, keyLocation);
+                  getItemTypeForAccessNode(
+                      unionMember, keyType, isNullSafe, baseLocation, keyLocation);
               // If this member's item type resolved to an error, bail out to avoid spamming
               // the user with multiple error messages for the same line.
               if (errorReporter.errorsSince(cp)) {
@@ -2672,6 +2672,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
         case INT:
         case FLOAT:
         case STRING:
+        case MAP:
         case ELEMENT:
         case HTML:
         case ATTRIBUTES:

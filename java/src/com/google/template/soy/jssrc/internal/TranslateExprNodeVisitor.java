@@ -579,13 +579,10 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
       case ITEM_ACCESS_NODE:
         ItemAccessNode itemAccess = (ItemAccessNode) dataAccessNode;
         ExprNode keyNode = itemAccess.getKeyExprChild();
-        SoyType baseType = itemAccess.getBaseExprChild().getType();
-        return SoyTypes.isKindOrUnionOfKind(SoyTypes.removeNull(baseType), Kind.MAP) // soy.Map
-            ? accumulator.mapGetAccess(visit(keyNode), nullSafe)
-            : accumulator.bracketAccess(
-                // The key type may not match JsCompiler's type system (passing number as enum, or
-                // nullable proto field).  I could instead cast this to the map's key type.
-                visit(keyNode).castAsUnknown(), nullSafe); // vanilla bracket access
+        return accumulator.bracketAccess(
+            // The key type may not match JsCompiler's type system (passing number as enum, or
+            // nullable proto field).  I could instead cast this to the map's key type.
+            visit(keyNode).castAsUnknown(), nullSafe); // vanilla bracket access
       case METHOD_CALL_NODE:
         MethodCallNode methodCall = (MethodCallNode) dataAccessNode;
         return genCodeForMethodCall(accumulator, methodCall, nullSafe);

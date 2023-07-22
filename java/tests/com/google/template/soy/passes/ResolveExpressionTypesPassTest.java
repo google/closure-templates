@@ -195,8 +195,8 @@ public final class ResolveExpressionTypesPassTest {
                     "{assertType('list<int>', $pb)}",
                     "{assertType('int', $pb[0])}",
                     "{assertType('map<int,map<int,string>>', $pe)}",
-                    "{assertType('map<int,string>', $pe[0])}",
-                    "{assertType('string', $pe[1 + 1][2])}"))
+                    "{assertType('map<int,string>', $pe.get(0)!)}",
+                    "{assertType('string', $pe.get(1 + 1)!.get(2)!)}"))
             .addSoyFunction(ASSERT_TYPE_FUNCTION)
             .parse()
             .fileSet();
@@ -229,8 +229,8 @@ public final class ResolveExpressionTypesPassTest {
                     "{assertType('?', $pa[0])}",
                     "{assertType('?', $pa.xxx)}",
                     "{assertType('?', $pa.xxx.yyy)}",
-                    "{assertType('float', $pb[$pa])}",
-                    "{assertType('string', $pc[$pa])}"))
+                    "{assertType('float', $pb.get($pa)!)}",
+                    "{assertType('string', $pc.get($pa)!)}"))
             .addSoyFunction(ASSERT_TYPE_FUNCTION)
             .typeRegistry(TYPE_REGISTRY)
             .parse()
@@ -241,12 +241,8 @@ public final class ResolveExpressionTypesPassTest {
   @Test
   public void testDataRefTypesError() {
     assertResolveExpressionTypesFails(
-        "Bad key type int for map<string,float>.",
-        constructFileSource("{@param pa: map<string, float>}", "{$pa[0]}"));
-
-    assertResolveExpressionTypesFails(
-        "Bad key type bool for map<int,float>.",
-        constructFileSource("{@param pa: map<int, float>}", "{@param pb: bool}", "{$pa[$pb]}"));
+        "Method 'get' called with parameter types (int) but expected (string).",
+        constructFileSource("{@param pa: map<string, float>}", "{$pa.get(0)}"));
   }
 
   @Test
@@ -604,8 +600,8 @@ public final class ResolveExpressionTypesPassTest {
                     "{@param map: map<string, int|null>}",
                     "{@param record: "
                         + "[a : [nullableInt : int|null, nullableBool : bool|null]|null]}",
-                    "{if $map['a']}",
-                    "  {assertType('int', $map['a'])}",
+                    "{if $map.get('a')}",
+                    "  {assertType('int', $map.get('a'))}",
                     "{/if}",
                     "{if $record.a?.nullableInt}",
                     "  {assertType('int', $record.a?.nullableInt)}",
@@ -645,8 +641,8 @@ public final class ResolveExpressionTypesPassTest {
                 constructFileSource(
                     "{@param? record: [active : bool|null]}",
                     "{@param? selected: map<string,bool>}",
-                    "{assertType('bool', $selected and $selected['a'])}",
-                    "{assertType('bool', $selected == null or $selected['a'])}",
+                    "{assertType('bool', $selected and $selected.get('a'))}",
+                    "{assertType('bool', $selected == null or $selected.get('a'))}",
                     "{if ($record.active != null) and (not $record.active)}",
                     "  {assertType('bool', $record.active)}",
                     "{/if}",

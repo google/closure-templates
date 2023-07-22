@@ -168,7 +168,6 @@ public enum BuiltinMethod implements SoyMethod {
       return BoolType.getInstance();
     }
 
-
     @Override
     ImmutableCollection<String> expandMethodNames(SoyType baseType, List<SoyType> argTypes) {
       return expandMethodNamesForProto(
@@ -323,7 +322,9 @@ public enum BuiltinMethod implements SoyMethod {
       SoyType keyType = SoyTypes.getMapKeysType(baseType);
 
       ExprNode arg = params.get(0);
-      if (!keyType.isAssignableFromLoose(arg.getType())) {
+      if (baseType.equals(MapType.EMPTY_MAP)) {
+        errorReporter.report(arg.getParent().getSourceLocation(), EMPTY_MAP_ACCESS);
+      } else if (!keyType.isAssignableFromLoose(arg.getType())) {
         // TypeScript allows get with 'any' typed key.
         errorReporter.report(
             arg.getSourceLocation(), METHOD_INVALID_PARAM_TYPES, "get", arg.getType(), keyType);
@@ -385,6 +386,8 @@ public enum BuiltinMethod implements SoyMethod {
       SoyErrorKind.of("Parameter to bind() must be a record literal.");
   public static final SoyErrorKind METHOD_INVALID_PARAM_TYPES =
       SoyErrorKind.of("Method ''{0}'' called with parameter types ({1}) but expected ({2}).");
+  private static final SoyErrorKind EMPTY_MAP_ACCESS =
+      SoyErrorKind.of("Accessing item in empty map.");
 
   public static final SoyMethod.Registry REGISTRY =
       new Registry() {
