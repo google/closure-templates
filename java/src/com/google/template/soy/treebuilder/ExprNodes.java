@@ -156,6 +156,10 @@ public final class ExprNodes {
         isNullSafe);
   }
 
+  public static OperatorNode nonNullAssertion(ExprNode operand) {
+    return operator(Operator.ASSERT_NON_NULL, operand);
+  }
+
   public static OperatorNode notEqual(ExprNode left, ExprNode right) {
     return operator(Operator.NOT_EQUAL, left, right);
   }
