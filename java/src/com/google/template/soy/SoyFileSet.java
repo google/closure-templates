@@ -285,7 +285,7 @@ public final class SoyFileSet {
     private Builder addSourceFunctionInternal(
         @Nullable String pluginTarget, SoySourceFunction function) {
       boolean method = false;
-      if (function.getClass().isAnnotationPresent(SoyMethodSignature.class)) {
+      if (SoyMethodSignature.IS_SOY_METHOD.test(function)) {
         sourceMethods.add(function);
         method = true;
       }
@@ -309,8 +309,7 @@ public final class SoyFileSet {
 
     @CanIgnoreReturnValue
     public Builder addSourceMethod(SoySourceFunction function) {
-      Preconditions.checkArgument(
-          function.getClass().isAnnotationPresent(SoyMethodSignature.class));
+      Preconditions.checkArgument(SoyMethodSignature.IS_SOY_METHOD.test(function));
       sourceMethods.add(function);
       return this;
     }

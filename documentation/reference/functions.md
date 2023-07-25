@@ -226,11 +226,9 @@ not found, please check the type of your list.
 
 ## Map Fields
 
-### `map.size` {#map-any,any_length}
+### `map.size` {#map-any,any_size}
 
 Returns the number of keys in the map.
-
-Also callable as deprecated method `length()`.
 
 ## Map Methods
 

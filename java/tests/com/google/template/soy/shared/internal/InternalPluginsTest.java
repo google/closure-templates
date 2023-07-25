@@ -77,7 +77,7 @@ public final class InternalPluginsTest {
   @Test
   public void testMethodsSupportAllBackends() {
     for (SoySourceFunction function : InternalPlugins.internalMethods()) {
-      assertThat(function.getClass().isAnnotationPresent(SoyMethodSignature.class)).isTrue();
+      assertThat(SoyMethodSignature.IS_SOY_METHOD.test(function)).isTrue();
       assertThat(function).isInstanceOf(SoyJavaScriptSourceFunction.class);
       assertThat(function).isInstanceOf(SoyJavaSourceFunction.class);
       if (!function.getClass().getName().contains("Proto")

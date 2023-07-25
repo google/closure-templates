@@ -97,7 +97,7 @@ public final class InternalPlugins {
             BasicFunctions.functions().stream(),
             BidiFunctions.functions().stream(),
             I18nFunctions.functions().stream())
-        .filter(f -> f.getClass().isAnnotationPresent(SoyMethodSignature.class))
+        .filter(SoyMethodSignature.IS_SOY_METHOD)
         .collect(toImmutableList());
   }
 

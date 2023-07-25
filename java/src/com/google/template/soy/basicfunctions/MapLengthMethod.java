@@ -29,18 +29,12 @@ import com.google.template.soy.plugin.python.restricted.PythonPluginContext;
 import com.google.template.soy.plugin.python.restricted.PythonValue;
 import com.google.template.soy.plugin.python.restricted.PythonValueFactory;
 import com.google.template.soy.plugin.python.restricted.SoyPythonSourceFunction;
-import com.google.template.soy.shared.restricted.Signature;
 import com.google.template.soy.shared.restricted.SoyFieldSignature;
-import com.google.template.soy.shared.restricted.SoyMethodSignature;
 import com.google.template.soy.shared.restricted.SoyPureFunction;
 import java.lang.reflect.Method;
 import java.util.List;
 
 /** Soy function that gets the number of keys in a map. */
-@SoyMethodSignature(
-    name = "length",
-    baseType = "map<any, any>",
-    value = @Signature(returnType = "int"))
 @SoyFieldSignature(name = "size", baseType = "map<any, any>", returnType = "int")
 @SoyPureFunction
 public final class MapLengthMethod

@@ -213,7 +213,7 @@ public final class SoyFileSetParserBuilder {
   @CanIgnoreReturnValue
   public SoyFileSetParserBuilder addSoySourceFunction(SoySourceFunction function) {
     boolean method = false;
-    if (function.getClass().isAnnotationPresent(SoyMethodSignature.class)) {
+    if (SoyMethodSignature.IS_SOY_METHOD.test(function)) {
       soyMethods.add(function);
       method = true;
     }

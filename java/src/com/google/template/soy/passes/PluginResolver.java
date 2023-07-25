@@ -256,21 +256,21 @@ public final class PluginResolver {
     }
     this.printDirectives = ImmutableMap.copyOf(indexedDirectives);
 
+    soyMethods.stream()
+        .filter(SoyMethodSignature.IS_SOY_METHOD.negate())
+        .forEach(
+            method ->
+                reporter.report(
+                    SourceLocation.UNKNOWN, MISSING_METHOD_SIGNATURE, method.getClass().getName()));
+
     Map<String, SoySourceFunction> uniqueMethods = new HashMap<>();
     this.methodsByName =
         soyMethods.stream()
+            .filter(method -> method.getClass().isAnnotationPresent(SoyMethodSignature.class))
             .filter(
                 method -> {
                   SoyMethodSignature sig =
                       method.getClass().getAnnotation(SoyMethodSignature.class);
-                  if (sig == null) {
-                    reporter.report(
-                        SourceLocation.UNKNOWN,
-                        MISSING_METHOD_SIGNATURE,
-                        method.getClass().getName());
-                    return false;
-                  }
-
                   String key = sig.name() + "/" + sig.baseType();
                   SoySourceFunction old = uniqueMethods.put(key, method);
                   if (old != null) {
@@ -293,12 +293,10 @@ public final class PluginResolver {
     Map<String, SoySourceFunction> uniqueFields = new HashMap<>();
     this.fieldsByName =
         soyMethods.stream()
+            .filter(method -> method.getClass().isAnnotationPresent(SoyFieldSignature.class))
             .filter(
                 method -> {
                   SoyFieldSignature sig = method.getClass().getAnnotation(SoyFieldSignature.class);
-                  if (sig == null) {
-                    return false;
-                  }
 
                   String key = sig.name() + "/" + sig.baseType();
                   SoySourceFunction old = uniqueFields.put(key, method);

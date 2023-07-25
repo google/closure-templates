@@ -25,6 +25,7 @@ ANNOTATION_SRCS = [
 ]
 
 METHOD_ANNOTATION_SRCS = [
+    "SoyFieldSignature.java",
     "SoyMethodSignature.java",
 ]
 
@@ -76,5 +77,6 @@ java_library(
     srcs = METHOD_ANNOTATION_SRCS,
     deps = [
         ":annotations_private",
+        "//java/src/com/google/template/soy/plugin/restricted",
     ],
 )

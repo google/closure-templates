@@ -16,10 +16,12 @@
 
 package com.google.template.soy.shared.restricted;
 
+import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import java.util.function.Predicate;
 
 /** Annotation for a method in Soy. */
 @Retention(RetentionPolicy.RUNTIME)
@@ -36,4 +38,9 @@ public @interface SoyMethodSignature {
 
   /** Alternate to annotating the method implementation with @SoyDeprecated. */
   String deprecatedWarning() default "";
+
+  Predicate<SoySourceFunction> IS_SOY_METHOD =
+      f ->
+          f.getClass().isAnnotationPresent(SoyMethodSignature.class)
+              || f.getClass().isAnnotationPresent(SoyFieldSignature.class);
 }
