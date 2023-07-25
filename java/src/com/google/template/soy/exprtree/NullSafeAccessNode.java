@@ -208,7 +208,6 @@ public final class NullSafeAccessNode extends AbstractParentExprNode {
             .map(DataAccessNode.class::cast)
             .filter(n -> NullSafeAccessNode.isPlaceholder(n.getBaseExprChild()))
             .collect(toImmutableList());
-    Preconditions.checkState(!bfNodes.isEmpty());
 
     for (DataAccessNode node : bfNodes) {
       // Fix the base expression and set to null safe node. Safe since we've cloned the tree.
