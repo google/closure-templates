@@ -121,9 +121,9 @@ final class ProtoUtils {
   private static final Type[] ONE_INT_ARG = {Type.INT_TYPE};
 
   private static final MethodRef BASE64_ENCODE =
-      MethodRef.create(JbcSrcRuntime.class, "base64Encode", ByteString.class).asNonNullable();
+      MethodRef.create(JbcSrcRuntime.class, "base64Encode", ByteString.class);
   private static final MethodRef BASE64_DECODE =
-      MethodRef.create(JbcSrcRuntime.class, "base64Decode", String.class).asNonNullable();
+      MethodRef.create(JbcSrcRuntime.class, "base64Decode", String.class);
 
   private static final MethodRef EXTENDABLE_BUILDER_ADD_EXTENSION =
       MethodRef.create(ExtendableBuilder.class, "addExtension", ExtensionLite.class, Object.class)

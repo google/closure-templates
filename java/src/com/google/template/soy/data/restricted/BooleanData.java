@@ -18,6 +18,7 @@ package com.google.template.soy.data.restricted;
 
 import com.google.common.primitives.Booleans;
 import com.google.errorprone.annotations.Immutable;
+import javax.annotation.Nonnull;
 
 /**
  * Boolean data.
@@ -47,6 +48,7 @@ public final class BooleanData extends PrimitiveData {
    * @param value The desired value.
    * @return A BooleanData instance with the given value.
    */
+  @Nonnull
   public static BooleanData forValue(boolean value) {
     return value ? TRUE : FALSE;
   }

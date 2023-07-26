@@ -19,6 +19,7 @@ package com.google.template.soy.data.restricted;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import java.io.IOException;
+import javax.annotation.Nonnull;
 
 /**
  * String data.
@@ -43,6 +44,7 @@ public final class StringData extends PrimitiveData {
    * @param value The desired value.
    * @return A StringData instance with the given value.
    */
+  @Nonnull
   public static StringData forValue(String value) {
     return (value.length() == 0) ? EMPTY_STRING : new StringData(value);
   }

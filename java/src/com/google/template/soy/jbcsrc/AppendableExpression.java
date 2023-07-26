@@ -43,39 +43,34 @@ import org.objectweb.asm.Type;
  */
 final class AppendableExpression extends Expression {
   private static final MethodRef APPEND =
-      MethodRef.create(LoggingAdvisingAppendable.class, "append", CharSequence.class)
-          .asNonNullable();
+      MethodRef.create(LoggingAdvisingAppendable.class, "append", CharSequence.class);
 
   private static final MethodRef APPEND_CHAR =
-      MethodRef.create(LoggingAdvisingAppendable.class, "append", char.class).asNonNullable();
+      MethodRef.create(LoggingAdvisingAppendable.class, "append", char.class);
 
   private static final MethodRef SOFT_LIMITED =
       MethodRef.create(LoggingAdvisingAppendable.class, "softLimitReached").asCheap();
 
   static final MethodRef ENTER_LOGGABLE_STATEMENT =
-      MethodRef.create(LoggingAdvisingAppendable.class, "enterLoggableElement", LogStatement.class)
-          .asNonNullable();
+      MethodRef.create(LoggingAdvisingAppendable.class, "enterLoggableElement", LogStatement.class);
 
   private static final MethodRef EXIT_LOGGABLE_STATEMENT =
-      MethodRef.create(LoggingAdvisingAppendable.class, "exitLoggableElement").asNonNullable();
+      MethodRef.create(LoggingAdvisingAppendable.class, "exitLoggableElement");
 
   private static final MethodRef APPEND_LOGGING_FUNCTION_INVOCATION =
       MethodRef.create(
-              LoggingAdvisingAppendable.class,
-              "appendLoggingFunctionInvocation",
-              LoggingFunctionInvocation.class,
-              ImmutableList.class)
-          .asNonNullable();
+          LoggingAdvisingAppendable.class,
+          "appendLoggingFunctionInvocation",
+          LoggingFunctionInvocation.class,
+          ImmutableList.class);
 
   private static final MethodRef LOGGING_FUNCTION_INVOCATION_CREATE =
       MethodRef.create(
-              LoggingFunctionInvocation.class, "create", String.class, String.class, List.class)
-          .asNonNullable();
+          LoggingFunctionInvocation.class, "create", String.class, String.class, List.class);
 
   private static final MethodRef SET_SANITIZED_CONTENT_KIND_AND_DIRECTIONALITY =
       MethodRef.create(
               LoggingAdvisingAppendable.class, "setKindAndDirectionality", ContentKind.class)
-          .asNonNullable()
           .asCheap();
 
   private static final MethodRef FLUSH_BUFFERS =

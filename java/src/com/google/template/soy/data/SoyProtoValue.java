@@ -42,6 +42,7 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.annotation.Nonnull;
 
 /**
  * Soy value that wraps a protocol buffer message object.
@@ -124,6 +125,7 @@ public final class SoyProtoValue extends SoyAbstractValue implements SoyLegacyOb
     return (Message) messageClass.getMethod("getDefaultInstance").invoke(null);
   }
 
+  @Nonnull
   public static SoyProtoValue create(Message proto) {
     return new SoyProtoValue(proto);
   }
@@ -155,6 +157,7 @@ public final class SoyProtoValue extends SoyAbstractValue implements SoyLegacyOb
   }
 
   /** Returns the underlying message. */
+  @Nonnull
   public Message getProto() {
     return proto;
   }

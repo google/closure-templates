@@ -22,6 +22,7 @@ import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import java.io.IOException;
+import javax.annotation.Nonnull;
 
 /**
  * A SoyValueProvider that wraps a BufferingAppendable. Useful for evaluting a block inline but
@@ -29,6 +30,7 @@ import java.io.IOException;
  */
 public final class BufferedSoyValueProvider implements SoyValueProvider {
 
+  @Nonnull
   public static BufferedSoyValueProvider create(BufferingAppendable bufferingAppendable) {
     return new BufferedSoyValueProvider(bufferingAppendable);
   }

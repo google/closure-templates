@@ -84,15 +84,13 @@ final class BidiSpanWrapDirective
   private static final class JbcSrcMethods {
     static final MethodRef BIDI_SPAN_WRAP =
         MethodRef.create(
-                BidiDirectivesRuntime.class, "bidiSpanWrap", BidiGlobalDir.class, SoyValue.class)
-            .asNonNullable();
+            BidiDirectivesRuntime.class, "bidiSpanWrap", BidiGlobalDir.class, SoyValue.class);
     static final MethodRef BIDI_SPAN_WRAP_STREAMING =
         MethodRef.create(
-                BidiDirectivesRuntime.class,
-                "bidiSpanWrapStreaming",
-                LoggingAdvisingAppendable.class,
-                BidiGlobalDir.class)
-            .asNonNullable();
+            BidiDirectivesRuntime.class,
+            "bidiSpanWrapStreaming",
+            LoggingAdvisingAppendable.class,
+            BidiGlobalDir.class);
   }
 
   @Override

@@ -37,9 +37,7 @@ import com.google.template.soy.types.SanitizedType;
 import java.util.List;
 import java.util.Set;
 
-/**
- * A directive that HTML-escapes the output.
- */
+/** A directive that HTML-escapes the output. */
 @SoyPurePrintDirective
 public class EscapeHtmlDirective
     implements SoyJavaPrintDirective,
@@ -72,13 +70,12 @@ public class EscapeHtmlDirective
 
   private static final class JbcSrcMethods {
     static final MethodRef ESCAPE_HTML =
-        MethodRef.create(CoreDirectivesRuntime.class, "escapeHtml", SoyValue.class).asNonNullable();
+        MethodRef.create(CoreDirectivesRuntime.class, "escapeHtml", SoyValue.class);
     static final MethodRef ESCAPE_HTML_STRING =
-        MethodRef.create(CoreDirectivesRuntime.class, "escapeHtml", String.class).asNonNullable();
+        MethodRef.create(CoreDirectivesRuntime.class, "escapeHtml", String.class);
     static final MethodRef STREAMING_ESCAPE_HTML =
         MethodRef.create(
-                CoreDirectivesRuntime.class, "streamingEscapeHtml", LoggingAdvisingAppendable.class)
-            .asNonNullable();
+            CoreDirectivesRuntime.class, "streamingEscapeHtml", LoggingAdvisingAppendable.class);
   }
 
   @Override

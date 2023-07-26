@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.OptionalInt;
+import javax.annotation.Nonnull;
 
 /**
  * Runtime implementation of common expression operators to be shared between the {@code jbcsrc} and
@@ -78,6 +79,7 @@ public final class SharedRuntime {
   }
 
   /** Performs the {@code +} operator on the two values. */
+  @Nonnull
   public static SoyValue plus(SoyValue operand0, SoyValue operand1) {
     if (operand0 instanceof IntegerData && operand1 instanceof IntegerData) {
       return IntegerData.forValue(operand0.longValue() + operand1.longValue());
@@ -91,6 +93,7 @@ public final class SharedRuntime {
   }
 
   /** Performs the {@code -} operator on the two values. */
+  @Nonnull
   public static SoyValue minus(SoyValue operand0, SoyValue operand1) {
     if (operand0 instanceof IntegerData && operand1 instanceof IntegerData) {
       return IntegerData.forValue(operand0.longValue() - operand1.longValue());
@@ -100,6 +103,7 @@ public final class SharedRuntime {
   }
 
   /** Performs the {@code *} operator on the two values. */
+  @Nonnull
   public static NumberData times(SoyValue operand0, SoyValue operand1) {
     if (operand0 instanceof IntegerData && operand1 instanceof IntegerData) {
       return IntegerData.forValue(operand0.longValue() * operand1.longValue());
@@ -114,7 +118,9 @@ public final class SharedRuntime {
     // Note that this *will* lose precision for longs.
     return operand0.numberValue() / operand1.numberValue();
   }
+
   /** Performs the {@code %} operator on the two values. */
+  @Nonnull
   public static NumberData mod(SoyValue operand0, SoyValue operand1) {
     if (operand0 instanceof IntegerData && operand1 instanceof IntegerData) {
       return IntegerData.forValue(operand0.longValue() % operand1.longValue());
@@ -123,22 +129,27 @@ public final class SharedRuntime {
     }
   }
 
+  @Nonnull
   public static NumberData shiftRight(SoyValue operand0, SoyValue operand1) {
     return IntegerData.forValue(operand0.longValue() >> (int) operand1.longValue());
   }
 
+  @Nonnull
   public static NumberData shiftLeft(SoyValue operand0, SoyValue operand1) {
     return IntegerData.forValue(operand0.longValue() << (int) operand1.longValue());
   }
 
+  @Nonnull
   public static NumberData bitwiseOr(SoyValue operand0, SoyValue operand1) {
     return IntegerData.forValue(operand0.longValue() | operand1.longValue());
   }
 
+  @Nonnull
   public static NumberData bitwiseXor(SoyValue operand0, SoyValue operand1) {
     return IntegerData.forValue(operand0.longValue() ^ operand1.longValue());
   }
 
+  @Nonnull
   public static NumberData bitwiseAnd(SoyValue operand0, SoyValue operand1) {
     return IntegerData.forValue(operand0.longValue() & operand1.longValue());
   }
@@ -166,6 +177,7 @@ public final class SharedRuntime {
   }
 
   /** Performs the unary negation {@code -} operator on the value. */
+  @Nonnull
   public static NumberData negative(SoyValue node) {
     if (node instanceof IntegerData) {
       return IntegerData.forValue(-node.longValue());
@@ -194,6 +206,7 @@ public final class SharedRuntime {
   }
 
   /** calculates a $soyServerKey value. This should be compatible with the JS implementation in */
+  @Nonnull
   public static String soyServerKey(SoyValue key) {
     if (key instanceof NumberData) {
       return serialize(key.coerceToString(), "#");
@@ -204,6 +217,7 @@ public final class SharedRuntime {
     return serialize(key.coerceToString(), ":");
   }
 
+  @Nonnull
   public static SoyMap constructMapFromList(List<? extends SoyValueProvider> list) {
     Map<SoyValue, SoyValueProvider> map = new HashMap<>();
     for (int i = 0; i < list.size(); i++) {

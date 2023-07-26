@@ -56,6 +56,7 @@ public final class LazyProtoToSoyValueMap<K, V> extends AbstractSoyMap {
   private final ProtoFieldInterpreter valueFieldInterpreter;
   private final Class<K> keyClass;
 
+  @Nonnull
   public static <K, V> LazyProtoToSoyValueMap<K, V> forMap(
       Map<K, V> map,
       ProtoFieldInterpreter keyFieldInterpreter,

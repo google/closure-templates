@@ -22,8 +22,6 @@ import static com.google.common.base.Preconditions.checkState;
 import com.google.auto.value.AutoValue;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.data.internal.ParamStore;
-import com.google.template.soy.data.internal.SoyMapImpl;
-import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.jbcsrc.restricted.Expression.Feature;
 import com.google.template.soy.jbcsrc.restricted.Expression.Features;
@@ -38,17 +36,11 @@ import org.objectweb.asm.Type;
 /** Representation of a field in a java class. */
 @AutoValue
 public abstract class FieldRef {
-  public static final FieldRef BOOLEAN_DATA_FALSE =
-      staticFieldReference(BooleanData.class, "FALSE").asNonNull();
-  public static final FieldRef BOOLEAN_DATA_TRUE =
-      staticFieldReference(BooleanData.class, "TRUE").asNonNull();
+
   public static final FieldRef NULL_PROVIDER =
       staticFieldReference(JbcSrcRuntime.class, "NULL_PROVIDER").asNonNull();
-  public static final FieldRef EMPTY_MAP =
-      staticFieldReference(SoyMapImpl.class, "EMPTY").asNonNull();
   public static final FieldRef EMPTY_STRING_DATA =
       staticFieldReference(StringData.class, "EMPTY_STRING").asNonNull();
-
   public static final FieldRef EMPTY_PARAMS =
       staticFieldReference(ParamStore.class, "EMPTY_INSTANCE").asNonNull();
 

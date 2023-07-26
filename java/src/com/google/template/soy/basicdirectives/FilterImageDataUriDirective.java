@@ -66,7 +66,7 @@ final class FilterImageDataUriDirective
 
   private static final class JbcSrcMethods {
     static final MethodRef FILTER_IMAGE_DATA =
-        MethodRef.create(Sanitizers.class, "filterImageDataUri", SoyValue.class).asNonNullable();
+        MethodRef.create(Sanitizers.class, "filterImageDataUri", SoyValue.class);
   }
 
   @Override

@@ -66,8 +66,7 @@ final class FilterLegacyUriBehaviorDirective
 
   private static final class JbcSrcMethods {
     static final MethodRef FILTER_LEGACY_URI_BEHAVIOR =
-        MethodRef.create(Sanitizers.class, "filterLegacyUriBehavior", SoyValue.class)
-            .asNonNullable();
+        MethodRef.create(Sanitizers.class, "filterLegacyUriBehavior", SoyValue.class);
   }
 
   @Override

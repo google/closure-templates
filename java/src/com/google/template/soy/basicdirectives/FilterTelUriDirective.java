@@ -65,7 +65,7 @@ final class FilterTelUriDirective
 
   private static final class JbcSrcMethods {
     static final MethodRef FILTER_TEL_URI =
-        MethodRef.create(Sanitizers.class, "filterTelUri", SoyValue.class).asNonNullable();
+        MethodRef.create(Sanitizers.class, "filterTelUri", SoyValue.class);
   }
 
   @Override

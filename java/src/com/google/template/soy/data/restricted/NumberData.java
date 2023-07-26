@@ -17,6 +17,7 @@
 package com.google.template.soy.data.restricted;
 
 import com.google.common.primitives.Longs;
+import javax.annotation.Nonnull;
 
 /**
  * Abstract superclass for number data (integers and floats).
@@ -40,6 +41,7 @@ public abstract class NumberData extends PrimitiveData {
     return toFloat();
   }
 
+  @Nonnull
   public abstract Number javaNumberValue();
 
   @Override

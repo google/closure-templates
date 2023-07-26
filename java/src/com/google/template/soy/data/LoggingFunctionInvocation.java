@@ -17,10 +17,12 @@ package com.google.template.soy.data;
 
 import com.google.auto.value.AutoValue;
 import java.util.List;
+import javax.annotation.Nonnull;
 
 /** The result of executing the logging function. */
 @AutoValue
 public abstract class LoggingFunctionInvocation {
+  @Nonnull
   public static LoggingFunctionInvocation create(
       String functionName, String placeholderValue, List<SoyValue> args) {
     return new AutoValue_LoggingFunctionInvocation(functionName, placeholderValue, args);

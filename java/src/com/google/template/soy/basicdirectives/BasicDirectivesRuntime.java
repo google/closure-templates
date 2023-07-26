@@ -32,6 +32,7 @@ import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 /** Static methods implementing the basic directives in this package. */
@@ -41,6 +42,7 @@ public final class BasicDirectivesRuntime {
 
   private static final Pattern NEWLINE_PATTERN = Pattern.compile("\\r\\n|\\r|\\n");
 
+  @Nonnull
   public static String truncate(String str, int maxLen, boolean doAddEllipsis) {
     if (str.length() <= maxLen) {
       return str; // no need to truncate
@@ -158,6 +160,7 @@ public final class BasicDirectivesRuntime {
     }
   }
 
+  @Nonnull
   public static SoyValue changeNewlineToBr(SoyValue value) {
     String result = NEWLINE_PATTERN.matcher(coerceToString(value)).replaceAll("<br>");
 
@@ -176,6 +179,7 @@ public final class BasicDirectivesRuntime {
     return StringData.forValue(result);
   }
 
+  @Nonnull
   public static LoggingAdvisingAppendable changeNewlineToBrStreaming(
       LoggingAdvisingAppendable appendable) {
     return new ForwardingLoggingAdvisingAppendable(appendable) {
@@ -248,6 +252,7 @@ public final class BasicDirectivesRuntime {
     };
   }
 
+  @Nonnull
   public static SoyValue insertWordBreaks(SoyValue value, int maxCharsBetweenWordBreaks) {
     String result =
         new InsertWordBreaks(maxCharsBetweenWordBreaks).processString(coerceToString(value));

@@ -19,31 +19,37 @@ import com.google.auto.value.AutoValue;
 import com.google.template.soy.data.internal.SoyRecordImpl;
 import java.util.Map;
 import java.util.Optional;
+import javax.annotation.Nonnull;
 
 /** Runtime type for templates. */
 @AutoValue
 public abstract class TemplateValue extends SoyAbstractValue {
+  @Nonnull
   public static TemplateValue create(String templateName) {
     return new AutoValue_TemplateValue(templateName, Optional.empty(), Optional.empty());
   }
 
+  @Nonnull
   public static TemplateValue create(String templateName, Object compiledTemplate) {
     return new AutoValue_TemplateValue(
         templateName, Optional.empty(), Optional.of(compiledTemplate));
   }
 
+  @Nonnull
   public static TemplateValue createWithBoundParameters(
       String templateName, SoyRecord boundParameters) {
     return new AutoValue_TemplateValue(
         templateName, Optional.of(boundParameters), Optional.empty());
   }
 
+  @Nonnull
   public static TemplateValue createWithBoundParameters(
       String templateName, SoyRecord boundParameters, Object compiledTemplate) {
     return new AutoValue_TemplateValue(
         templateName, Optional.of(boundParameters), Optional.of(compiledTemplate));
   }
 
+  @Nonnull
   public static TemplateValue createFromTemplate(
       TemplateInterface template, Object compiledTemplate) {
     @SuppressWarnings("unchecked")
@@ -61,6 +67,7 @@ public abstract class TemplateValue extends SoyAbstractValue {
   // circular build dependencies.
   public abstract Optional<Object> compiledTemplate();
 
+  @Nonnull
   public Object getCompiledTemplate() {
     return compiledTemplate().get();
   }

@@ -67,10 +67,10 @@ final class RenderContextExpression extends Expression implements JbcSrcPluginCo
           long.class);
 
   private static final MethodRef RENAME_CSS_SELECTOR =
-      MethodRef.create(RenderContext.class, "renameCssSelector", String.class).asNonNullable();
+      MethodRef.create(RenderContext.class, "renameCssSelector", String.class);
 
   private static final MethodRef RENAME_XID =
-      MethodRef.create(RenderContext.class, "renameXid", String.class).asNonNullable();
+      MethodRef.create(RenderContext.class, "renameXid", String.class);
 
   private static final MethodRef USE_PRIMARY_MSG_IF_FALLBACK =
       MethodRef.create(RenderContext.class, "usePrimaryMsgIfFallback", long.class, long.class);

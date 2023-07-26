@@ -49,6 +49,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 /**
@@ -138,11 +139,13 @@ public final class RenderContext {
     return getBidiGlobalDir().toDir();
   }
 
+  @Nonnull
   public String renameCssSelector(String selector) {
     String string = cssRenamingMap.get(selector);
-    return string == null ? selector : string;
+    return string == null ? Preconditions.checkNotNull(selector) : string;
   }
 
+  @Nonnull
   public String renameXid(String id) {
     String string = xidRenamingMap.get(id);
     return string == null ? id + "_" : string;

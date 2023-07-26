@@ -29,6 +29,7 @@ import java.util.Collection;
 import java.util.EnumSet;
 import java.util.Set;
 import java.util.regex.Pattern;
+import javax.annotation.Nonnull;
 
 /** Contains lower-case names of innocuous HTML elements. */
 public final class TagWhitelist {
@@ -51,6 +52,7 @@ public final class TagWhitelist {
       return tagName;
     }
 
+    @Nonnull
     public static OptionalSafeTag fromTagName(String tagName) {
       OptionalSafeTag tag = OPTIONAL_SAFE_TAGS_BY_TAG_NAME.get(tagName);
       if (tag == null) {

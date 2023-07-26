@@ -17,6 +17,7 @@
 package com.google.template.soy.data;
 
 import com.google.template.soy.data.SanitizedContent.ContentKind;
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 
@@ -56,6 +57,7 @@ public final class UnsafeSanitizedContentOrdainer {
    * <p>This doesn't do a lot of strict checking, but makes it easier to differentiate safe
    * constants in your code.
    */
+  @Nonnull
   public static SanitizedContent ordainAsSafe(String value, ContentKind kind) {
     return ordainAsSafe(value, kind, kind.getDefaultDir());
   }
@@ -71,6 +73,7 @@ public final class UnsafeSanitizedContentOrdainer {
    * <p>This doesn't do a lot of strict checking, but makes it easier to differentiate safe
    * constants in your code.
    */
+  @Nonnull
   public static SanitizedContent ordainAsSafe(String value, ContentKind kind, @Nullable Dir dir) {
     return SanitizedContent.create(value, kind, dir);
   }

@@ -20,6 +20,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.util.Objects;
 import java.util.concurrent.Future;
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 /** The result of an asynchronous rendering operation. */
@@ -31,6 +32,7 @@ public final class RenderResult {
    * Returns a {@link RenderResult} with {@linkplain RenderResult#type type} set to {@linkplain
    * Type#DONE done}.
    */
+  @Nonnull
   public static RenderResult done() {
     return DONE_RESULT;
   }
@@ -39,6 +41,7 @@ public final class RenderResult {
    * Returns a {@link RenderResult} with {@linkplain RenderResult#type type} set to {@linkplain
    * Type#LIMITED limited}.
    */
+  @Nonnull
   public static RenderResult limited() {
     return LIMITED_RESULT;
   }
@@ -47,6 +50,7 @@ public final class RenderResult {
    * Returns a {@link RenderResult} with {@linkplain RenderResult#type type} set to {@linkplain
    * Type#DETACH detach}.
    */
+  @Nonnull
   public static RenderResult continueAfter(Future<?> future) {
     return new RenderResult(future);
   }

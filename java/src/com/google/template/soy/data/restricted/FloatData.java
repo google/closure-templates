@@ -17,6 +17,7 @@
 package com.google.template.soy.data.restricted;
 
 import com.google.errorprone.annotations.Immutable;
+import javax.annotation.Nonnull;
 
 /**
  * Float data.
@@ -39,6 +40,7 @@ public final class FloatData extends NumberData {
    * @param value The desired value.
    * @return A FloatData instance with the given value.
    */
+  @Nonnull
   public static FloatData forValue(double value) {
     return new FloatData(value);
   }
@@ -54,6 +56,7 @@ public final class FloatData extends NumberData {
   }
 
   @Override
+  @Nonnull
   public String toString() {
     return toString(value);
   }

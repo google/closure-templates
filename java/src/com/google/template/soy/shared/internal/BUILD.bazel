@@ -97,6 +97,7 @@ java_library(
     deps = [
         "//java/src/com/google/template/soy/data",
         "//java/src/com/google/template/soy/exprtree",
+        "@maven//:com_google_code_findbugs_jsr305",
     ],
 )
 

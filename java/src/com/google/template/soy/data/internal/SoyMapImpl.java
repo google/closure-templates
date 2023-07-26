@@ -38,6 +38,7 @@ public final class SoyMapImpl extends AbstractSoyMap {
   public static final SoyMapImpl EMPTY = new SoyMapImpl(ImmutableMap.of());
 
   /** Creates a SoyDict implementation for a particular underlying provider map. */
+  @Nonnull
   public static SoyMapImpl forProviderMap(
       Map<? extends SoyValue, ? extends SoyValueProvider> providerMap) {
     return new SoyMapImpl(providerMap);

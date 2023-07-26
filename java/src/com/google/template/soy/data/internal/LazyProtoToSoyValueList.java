@@ -21,6 +21,7 @@ import com.google.template.soy.data.ProtoFieldInterpreter;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
 import java.util.List;
+import javax.annotation.Nonnull;
 
 /**
  * A SoyList interface to a native Java List (from a proto) that lazily converts values to {@link
@@ -38,6 +39,7 @@ public final class LazyProtoToSoyValueList<E> extends AbstractSoyList {
   private final SoyValue[] wrappedValues;
 
   /** Uses {@code valueInterpreter} to lazily convert the native values to {@link SoyValue}s. */
+  @Nonnull
   public static <E> LazyProtoToSoyValueList<E> forList(
       List<E> list, ProtoFieldInterpreter valueInterpreter) {
     return new LazyProtoToSoyValueList<>(list, valueInterpreter);

@@ -44,6 +44,7 @@ import com.google.errorprone.annotations.CompileTimeConstant;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import java.io.IOException;
 import java.nio.charset.Charset;
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 
@@ -160,6 +161,7 @@ public final class SanitizedContents {
    * <p>This only accepts compile-time constants, based on the assumption that URLs that are
    * controlled by the application (and not user input) are considered safe.
    */
+  @Nonnull
   public static SanitizedContent constantUri(@CompileTimeConstant final String constant) {
     return fromConstant(constant, ContentKind.URI, Dir.LTR);
   }
@@ -170,6 +172,7 @@ public final class SanitizedContents {
    * <p>This only accepts compile-time constants, based on the assumption that HTML snippets that
    * are controlled by the application (and not user input) are considered safe.
    */
+  @Nonnull
   public static SanitizedContent constantHtml(@CompileTimeConstant final String constant) {
     return fromConstant(constant, ContentKind.HTML, null);
   }
@@ -180,6 +183,7 @@ public final class SanitizedContents {
    * <p>This only accepts compile-time constants, based on the assumption that attributes that are
    * controlled by the application (and not user input) are considered safe.
    */
+  @Nonnull
   public static SanitizedContent constantAttributes(@CompileTimeConstant final String constant) {
     return fromConstant(constant, ContentKind.ATTRIBUTES, Dir.LTR);
   }
@@ -190,6 +194,7 @@ public final class SanitizedContents {
    * <p>This only accepts compile-time constants, based on the assumption that CSSes that are
    * controlled by the application (and not user input) are considered safe.
    */
+  @Nonnull
   public static SanitizedContent constantCss(@CompileTimeConstant final String constant) {
     return fromConstant(constant, ContentKind.CSS, Dir.LTR);
   }
@@ -200,6 +205,7 @@ public final class SanitizedContents {
    * <p>This only accepts compile-time constants, based on the assumption that scripts that are
    * controlled by the application (and not user input) are considered safe.
    */
+  @Nonnull
   public static SanitizedContent constantJs(@CompileTimeConstant final String constant) {
     return fromConstant(constant, ContentKind.JS, Dir.LTR);
   }
@@ -210,6 +216,7 @@ public final class SanitizedContents {
    * <p>This only accepts compile-time constants, based on the assumption that trusted resource URIs
    * that are controlled by the application (and not user input) are considered safe.
    */
+  @Nonnull
   public static SanitizedContent constantTrustedResourceUri(
       @CompileTimeConstant final String constant) {
     return fromConstant(constant, ContentKind.TRUSTED_RESOURCE_URI, Dir.LTR);
@@ -222,6 +229,7 @@ public final class SanitizedContents {
    * code is presented to the user, e.g. in {@code <textarea>}. This function allows converting the
    * number to JS which is then printed as is.
    */
+  @Nonnull
   public static SanitizedContent numberJs(final long number) {
     return SanitizedContent.create(String.valueOf(number), ContentKind.JS);
   }
@@ -231,12 +239,14 @@ public final class SanitizedContents {
    *
    * @see #numberJs(long)
    */
+  @Nonnull
   public static SanitizedContent numberJs(final double number) {
     return SanitizedContent.create(String.valueOf(number), ContentKind.JS);
   }
 
   /** Wraps an assumed-safe constant string. */
   @SuppressWarnings("ReferenceEquality") // need to use a reference check to ensure it is a constant
+  @Nonnull
   private static SanitizedContent fromConstant(
       @CompileTimeConstant final String constant, ContentKind kind, @Nullable Dir dir) {
     // Extra runtime check in case the compile-time check doesn't work.
@@ -247,6 +257,7 @@ public final class SanitizedContents {
   }
 
   /** Converts a {@link CssParam} into a Soy {@link SanitizedContent} of kind HTML. */
+  @Nonnull
   public static SanitizedContent fromCss(CssParam css) {
     switch (css.type()) {
       case SAFE_STYLE:
@@ -258,54 +269,64 @@ public final class SanitizedContents {
   }
 
   /** Converts a {@link SafeHtml} into a Soy {@link SanitizedContent} of kind HTML. */
+  @Nonnull
   public static SanitizedContent fromSafeHtml(SafeHtml html) {
     return SanitizedContent.create(html.getSafeHtmlString(), ContentKind.HTML);
   }
 
   /** Converts a {@link SafeHtmlProto} into a Soy {@link SanitizedContent} of kind HTML. */
+  @Nonnull
   public static SanitizedContent fromSafeHtmlProto(SafeHtmlProto html) {
     return SanitizedContent.create(SafeHtmls.fromProto(html).getSafeHtmlString(), ContentKind.HTML);
   }
 
   /** Converts a {@link SafeScript} into a Soy {@link SanitizedContent} of kind JS. */
+  @Nonnull
   public static SanitizedContent fromSafeScript(SafeScript script) {
     return SanitizedContent.create(script.getSafeScriptString(), ContentKind.JS);
   }
 
   /** Converts a {@link SafeScriptProto} into a Soy {@link SanitizedContent} of kind JS. */
+  @Nonnull
   public static SanitizedContent fromSafeScriptProto(SafeScriptProto script) {
     return SanitizedContent.create(
         SafeScripts.fromProto(script).getSafeScriptString(), ContentKind.JS);
   }
 
   /** Converts a {@link SafeStyle} into a Soy {@link SanitizedContent} of kind CSS. */
+  @Nonnull
   public static SanitizedContent fromSafeStyle(SafeStyle style) {
     return SanitizedContent.create(style.getSafeStyleString(), ContentKind.CSS);
   }
 
   /** Converts a {@link SafeStyleProto} into a Soy {@link SanitizedContent} of kind CSS. */
+  @Nonnull
   public static SanitizedContent fromSafeStyleProto(SafeStyleProto style) {
     return SanitizedContent.create(
         SafeStyles.fromProto(style).getSafeStyleString(), ContentKind.CSS);
   }
 
   /** Converts a {@link SafeStyleSheet} into a Soy {@link SanitizedContent} of kind CSS. */
+  @Nonnull
   public static SanitizedContent fromSafeStyleSheet(SafeStyleSheet styleSheet) {
     return SanitizedContent.create(styleSheet.getSafeStyleSheetString(), ContentKind.CSS);
   }
 
   /** Converts a {@link SafeStyleSheetProto} into a Soy {@link SanitizedContent} of kind CSS. */
+  @Nonnull
   public static SanitizedContent fromSafeStyleSheetProto(SafeStyleSheetProto styleSheet) {
     return SanitizedContent.create(
         SafeStyleSheets.fromProto(styleSheet).getSafeStyleSheetString(), ContentKind.CSS);
   }
 
   /** Converts a {@link SafeUrl} into a Soy {@link SanitizedContent} of kind URI. */
+  @Nonnull
   public static SanitizedContent fromSafeUrl(SafeUrl url) {
     return SanitizedContent.create(url.getSafeUrlString(), ContentKind.URI);
   }
 
   /** Converts a {@link SafeUrlProto} into a Soy {@link SanitizedContent} of kind URI. */
+  @Nonnull
   public static SanitizedContent fromSafeUrlProto(SafeUrlProto url) {
     return SanitizedContent.create(SafeUrls.fromProto(url).getSafeUrlString(), ContentKind.URI);
   }
@@ -314,6 +335,7 @@ public final class SanitizedContents {
    * Converts a {@link TrustedResourceUrl} into a Soy {@link SanitizedContent} of kind
    * TRUSTED_RESOURCE_URI.
    */
+  @Nonnull
   public static SanitizedContent fromTrustedResourceUrl(TrustedResourceUrl url) {
     return SanitizedContent.create(
         url.getTrustedResourceUrlString(), ContentKind.TRUSTED_RESOURCE_URI);
@@ -323,6 +345,7 @@ public final class SanitizedContents {
    * Converts a {@link TrustedResourceUrlProto} into a Soy {@link SanitizedContent} of kind
    * TRUSTED_RESOURCE_URI.
    */
+  @Nonnull
   public static SanitizedContent fromTrustedResourceUrlProto(TrustedResourceUrlProto url) {
     return SanitizedContent.create(
         TrustedResourceUrls.fromProto(url).getTrustedResourceUrlString(),

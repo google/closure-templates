@@ -23,13 +23,15 @@ import com.google.template.soy.data.TemplateValue;
 import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import java.io.IOException;
+import javax.annotation.Nonnull;
 
 /** A compiled Soy template. Each instance is suitable for being rendered exactly once. */
 @Immutable
 public interface CompiledTemplate {
 
   @SuppressWarnings("Immutable")
-  public static CompiledTemplate createFromTemplateValue(TemplateValue templateValue) {
+  @Nonnull
+  static CompiledTemplate createFromTemplateValue(TemplateValue templateValue) {
     return (params, ij, appendable, context) ->
         context
             .getTemplate(templateValue.getTemplateName())
@@ -55,6 +57,7 @@ public interface CompiledTemplate {
    * @throws IOException If the output stream throws an exception. This is a fatal error and
    *     rendering cannot be continued.
    */
+  @Nonnull
   RenderResult render(
       SoyRecord params, SoyRecord ij, LoggingAdvisingAppendable appendable, RenderContext context)
       throws IOException;

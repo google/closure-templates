@@ -26,6 +26,7 @@ import com.google.template.soy.data.SoyValueProvider;
 import java.io.IOException;
 import java.util.Map;
 import java.util.function.BiConsumer;
+import javax.annotation.Nonnull;
 
 /**
  * A record implementation.
@@ -40,6 +41,7 @@ public final class SoyRecordImpl extends SoyAbstractValue implements SoyRecord {
     this.map = checkNotNull(map);
   }
 
+  @Nonnull
   public static SoyRecordImpl forProviderMap(Map<String, SoyValueProvider> map) {
     return new SoyRecordImpl(ImmutableMap.copyOf(map));
   }

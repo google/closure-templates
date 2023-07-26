@@ -83,6 +83,7 @@ public final class DictImpl extends SoyAbstractValue implements SoyDict, SoyMap 
    *
    * <p>The map may be mutable, but will not be mutated by the DictImpl.
    */
+  @Nonnull
   public static DictImpl forProviderMap(
       Map<String, ? extends SoyValueProvider> providerMap, RuntimeMapTypeTracker.Type mapType) {
     return new DictImpl(providerMap, mapType);

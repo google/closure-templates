@@ -50,6 +50,7 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 /**
@@ -86,6 +87,7 @@ public final class Sanitizers {
    * @return the normalized input, in the form of {@link SanitizedContent} of {@link
    *     ContentKind#HTML}
    */
+  @Nonnull
   public static SanitizedContent cleanHtml(SoyValue value) {
     return cleanHtml(value, ImmutableSet.of());
   }
@@ -97,6 +99,7 @@ public final class Sanitizers {
    * @return the normalized input, in the form of {@link SanitizedContent} of {@link
    *     ContentKind#HTML}
    */
+  @Nonnull
   public static SanitizedContent cleanHtml(
       SoyValue value, Collection<? extends OptionalSafeTag> optionalSafeTags) {
     value = normalizeNull(value);
@@ -117,6 +120,7 @@ public final class Sanitizers {
    * @return the normalized input, in the form of {@link SanitizedContent} of {@link
    *     ContentKind#HTML}
    */
+  @Nonnull
   public static SanitizedContent cleanHtml(String value) {
     return cleanHtml(value, ImmutableSet.of());
   }
@@ -128,6 +132,7 @@ public final class Sanitizers {
    * @return the normalized input, in the form of {@link SanitizedContent} of {@link
    *     ContentKind#HTML}
    */
+  @Nonnull
   public static SanitizedContent cleanHtml(
       String value, Collection<? extends OptionalSafeTag> optionalSafeTags) {
     return cleanHtml(value, null, optionalSafeTags);
@@ -140,6 +145,7 @@ public final class Sanitizers {
    * @return the normalized input, in the form of {@link SanitizedContent} of {@link
    *     ContentKind#HTML}
    */
+  @Nonnull
   public static SanitizedContent cleanHtml(
       String value, Dir contentDir, Collection<? extends OptionalSafeTag> optionalSafeTags) {
     return UnsafeSanitizedContentOrdainer.ordainAsSafe(
@@ -149,6 +155,7 @@ public final class Sanitizers {
   }
 
   /** Streaming version of {@code |cleanHtml}. */
+  @Nonnull
   public static LoggingAdvisingAppendable cleanHtmlStreaming(
       LoggingAdvisingAppendable delegate, Collection<? extends OptionalSafeTag> optionalSafeTags) {
     return new CleanHtmlAppendable(delegate, optionalSafeTags);
@@ -223,6 +230,7 @@ public final class Sanitizers {
   }
 
   /** Converts the input to HTML suitable for use inside {@code <textarea>} by entity escaping. */
+  @Nonnull
   public static String escapeHtmlRcdata(SoyValue value) {
     value = normalizeNull(value);
 
@@ -236,11 +244,13 @@ public final class Sanitizers {
     return escapeHtmlRcdata(value.coerceToString());
   }
 
+  @Nonnull
   public static String escapeHtmlRcdata(String value) {
     return escapeHtml(value);
   }
 
   /** Streaming version of {@code |escapeHtmlRcData}. */
+  @Nonnull
   public static LoggingAdvisingAppendable escapeHtmlRcdataStreaming(
       LoggingAdvisingAppendable delegate) {
     return new StreamingHtmlRcDataEscaper(delegate);
@@ -281,16 +291,19 @@ public final class Sanitizers {
   }
 
   /** Normalizes HTML to HTML making sure quotes and other specials are entity encoded. */
+  @Nonnull
   public static String normalizeHtml(SoyValue value) {
     value = normalizeNull(value);
     return normalizeHtml(value.coerceToString());
   }
 
   /** Normalizes HTML to HTML making sure quotes and other specials are entity encoded. */
+  @Nonnull
   public static String normalizeHtml(String value) {
     return EscapingConventions.NormalizeHtml.INSTANCE.escape(value);
   }
 
+  @Nonnull
   public static LoggingAdvisingAppendable normalizeHtmlStreaming(
       LoggingAdvisingAppendable appendable) {
     return StreamingEscaper.create(appendable, EscapingConventions.NormalizeHtml.INSTANCE);
@@ -300,6 +313,7 @@ public final class Sanitizers {
    * Normalizes HTML to HTML making sure quotes, spaces and other specials are entity encoded so
    * that the result can be safely embedded in a valueless attribute.
    */
+  @Nonnull
   public static String normalizeHtmlNospace(SoyValue value) {
     value = normalizeNull(value);
     return normalizeHtmlNospace(value.coerceToString());
@@ -309,6 +323,7 @@ public final class Sanitizers {
    * Normalizes HTML to HTML making sure quotes, spaces and other specials are entity encoded so
    * that the result can be safely embedded in a valueless attribute.
    */
+  @Nonnull
   public static String normalizeHtmlNospace(String value) {
     return EscapingConventions.NormalizeHtmlNospace.INSTANCE.escape(value);
   }
@@ -317,6 +332,7 @@ public final class Sanitizers {
    * Converts the input to HTML by entity escaping, stripping tags in sanitized content so the
    * result can safely be embedded in an HTML attribute value.
    */
+  @Nonnull
   public static String escapeHtmlAttribute(SoyValue value) {
     value = normalizeNull(value);
     if (isSanitizedContentOfKind(value, SanitizedContent.ContentKind.HTML)) {
@@ -330,10 +346,12 @@ public final class Sanitizers {
    * Converts plain text to HTML by entity escaping so the result can safely be embedded in an HTML
    * attribute value.
    */
+  @Nonnull
   public static String escapeHtmlAttribute(String value) {
     return EscapingConventions.EscapeHtml.INSTANCE.escape(value);
   }
 
+  @Nonnull
   public static LoggingAdvisingAppendable escapeHtmlAttributeStreaming(
       LoggingAdvisingAppendable appendable) {
     return StreamingAttributeEscaper.create(appendable, EscapingConventions.EscapeHtml.INSTANCE);
@@ -343,6 +361,7 @@ public final class Sanitizers {
    * Escapes HTML special characters in an HTML attribute value containing HTML code, such as {@code
    * <iframe srcdoc>}.
    */
+  @Nonnull
   public static String escapeHtmlHtmlAttribute(SoyValue value) {
     return escapeHtml(value);
   }
@@ -351,6 +370,7 @@ public final class Sanitizers {
    * Escapes HTML special characters in an HTML attribute value containing HTML code, such as {@code
    * <iframe srcdoc>}.
    */
+  @Nonnull
   public static String escapeHtmlHtmlAttribute(String value) {
     return escapeHtml(value);
   }
@@ -359,6 +379,7 @@ public final class Sanitizers {
    * Converts plain text to HTML by entity escaping, stripping tags in sanitized content so the
    * result can safely be embedded in an unquoted HTML attribute value.
    */
+  @Nonnull
   public static String escapeHtmlAttributeNospace(SoyValue value) {
     value = normalizeNull(value);
     if (isSanitizedContentOfKind(value, SanitizedContent.ContentKind.HTML)) {
@@ -372,10 +393,12 @@ public final class Sanitizers {
    * Converts plain text to HTML by entity escaping so the result can safely be embedded in an
    * unquoted HTML attribute value.
    */
+  @Nonnull
   public static String escapeHtmlAttributeNospace(String value) {
     return EscapingConventions.EscapeHtmlNospace.INSTANCE.escape(value);
   }
 
+  @Nonnull
   public static LoggingAdvisingAppendable escapeHtmlAttributeNospaceStreaming(
       LoggingAdvisingAppendable appendable) {
     return StreamingAttributeEscaper.create(
@@ -383,11 +406,13 @@ public final class Sanitizers {
   }
 
   /** Filters decimal and floating-point numbers. */
+  @Nonnull
   public static String filterNumber(SoyValue value) {
     return filterNumber(value.coerceToString());
   }
 
   /** Filters decimal and floating-point numbers. */
+  @Nonnull
   public static String filterNumber(String value) {
     if (!value.matches("\\d*\\.?\\d+")) {
       return EscapingConventions.INNOCUOUS_OUTPUT;
@@ -396,16 +421,19 @@ public final class Sanitizers {
   }
 
   /** Converts the input to the body of a JavaScript string by using {@code \n} style escapes. */
+  @Nonnull
   public static String escapeJsString(SoyValue value) {
     value = normalizeNull(value);
     return escapeJsString(value.coerceToString());
   }
 
   /** Converts plain text to the body of a JavaScript string by using {@code \n} style escapes. */
+  @Nonnull
   public static String escapeJsString(String value) {
     return EscapingConventions.EscapeJsString.INSTANCE.escape(value);
   }
 
+  @Nonnull
   public static LoggingAdvisingAppendable escapeJsStringStreaming(
       LoggingAdvisingAppendable appendable) {
     return StreamingEscaper.create(appendable, EscapingConventions.EscapeJsString.INSTANCE);
@@ -415,6 +443,7 @@ public final class Sanitizers {
    * Converts the input to a JavaScript expression. The resulting expression can be a boolean,
    * number, string literal, or {@code null}.
    */
+  @Nonnull
   public static String escapeJsValue(SoyValue value) {
     // We surround values with spaces so that they can't be interpolated into identifiers
     // by accident.  We could use parentheses but those might be interpreted as a function call.
@@ -442,49 +471,58 @@ public final class Sanitizers {
   }
 
   /** Converts plain text to a quoted javaScript string value. */
+  @Nonnull
   public static String escapeJsValue(double value) {
     return " " + value + " ";
   }
 
   /** Converts plain text to a quoted javaScript string value. */
+  @Nonnull
   public static String escapeJsValue(boolean value) {
     return " " + value + " ";
   }
 
   /** Converts plain text to a quoted javaScript string value. */
+  @Nonnull
   public static String escapeJsValue(String value) {
     return "'" + escapeJsString(value) + "'";
   }
 
   /** Converts the input to the body of a JavaScript regular expression literal. */
+  @Nonnull
   public static String escapeJsRegex(SoyValue value) {
     value = normalizeNull(value);
     return escapeJsRegex(value.coerceToString());
   }
 
   /** Converts plain text to the body of a JavaScript regular expression literal. */
+  @Nonnull
   public static String escapeJsRegex(String value) {
     return EscapingConventions.EscapeJsRegex.INSTANCE.escape(value);
   }
 
   /** Converts the input to the body of a JavaScript regular expression literal. */
+  @Nonnull
   public static LoggingAdvisingAppendable escapeJsRegexStreaming(
       LoggingAdvisingAppendable delegate) {
     return StreamingEscaper.create(delegate, EscapingConventions.EscapeJsRegex.INSTANCE);
   }
 
   /** Converts the input to the body of a CSS string literal. */
+  @Nonnull
   public static String escapeCssString(SoyValue value) {
     value = normalizeNull(value);
     return escapeCssString(value.coerceToString());
   }
 
   /** Converts plain text to the body of a CSS string literal. */
+  @Nonnull
   public static String escapeCssString(String value) {
     return EscapingConventions.EscapeCssString.INSTANCE.escape(value);
   }
 
   /** Converts the input to the body of a CSS string literal. */
+  @Nonnull
   public static LoggingAdvisingAppendable escapeCssStringStreaming(
       LoggingAdvisingAppendable delegate) {
     return StreamingEscaper.create(delegate, EscapingConventions.EscapeCssString.INSTANCE);
@@ -494,6 +532,7 @@ public final class Sanitizers {
    * Makes sure that the input is a valid CSS identifier part, CLASS or ID part, quantity, or CSS
    * keyword part.
    */
+  @Nonnull
   public static String filterCssValue(SoyValue value) {
     value = normalizeNull(value);
     if (isSanitizedContentOfKind(value, SanitizedContent.ContentKind.CSS)) {
@@ -512,6 +551,7 @@ public final class Sanitizers {
    * Makes sure that the input is a valid CSS identifier part, CLASS or ID part, quantity, or CSS
    * keyword part.
    */
+  @Nonnull
   public static String filterCssValue(String value) {
     if (EscapingConventions.FilterCssValue.INSTANCE.getValueFilter().matcher(value).find()) {
       return value;
@@ -521,12 +561,14 @@ public final class Sanitizers {
   }
 
   /** Converts the input to a piece of a URI by percent encoding the value as UTF-8 bytes. */
+  @Nonnull
   public static String escapeUri(SoyValue value) {
     value = normalizeNull(value);
     return escapeUri(value.coerceToString());
   }
 
   /** Converts plain text to a piece of a URI by percent encoding the string as UTF-8 bytes. */
+  @Nonnull
   public static String escapeUri(String value) {
     return uriEscaper().escape(value);
   }
@@ -535,6 +577,7 @@ public final class Sanitizers {
    * Converts a piece of URI content to a piece of URI content that can be safely embedded in an
    * HTML attribute by percent encoding.
    */
+  @Nonnull
   public static String normalizeUri(SoyValue value) {
     value = normalizeNull(value);
     return normalizeUri(value.coerceToString());
@@ -544,6 +587,7 @@ public final class Sanitizers {
    * Converts a piece of URI content to a piece of URI content that can be safely embedded in an
    * HTML attribute by percent encoding.
    */
+  @Nonnull
   public static String normalizeUri(String value) {
     return EscapingConventions.NormalizeUri.INSTANCE.escape(value);
   }
@@ -552,6 +596,7 @@ public final class Sanitizers {
    * Converts a piece of URI content to a piece of URI content that can be safely embedded in an
    * HTML attribute by percent encoding.
    */
+  @Nonnull
   public static LoggingAdvisingAppendable normalizeUriStreaming(LoggingAdvisingAppendable value) {
     return StreamingEscaper.create(value, EscapingConventions.NormalizeUri.INSTANCE);
   }
@@ -560,6 +605,7 @@ public final class Sanitizers {
    * Makes sure that the given input doesn't specify a dangerous protocol and also {@link
    * #normalizeUri normalizes} it.
    */
+  @Nonnull
   public static String filterNormalizeUri(SoyValue value) {
     value = normalizeNull(value);
     if (isSanitizedContentOfKind(value, SanitizedContent.ContentKind.URI)
@@ -573,6 +619,7 @@ public final class Sanitizers {
    * Makes sure that the given input doesn't specify a dangerous protocol and also {@link
    * #normalizeUri normalizes} it.
    */
+  @Nonnull
   public static String filterNormalizeUri(String value) {
     if (EscapingConventions.FilterNormalizeUri.INSTANCE.getValueFilter().matcher(value).find()) {
       return EscapingConventions.FilterNormalizeUri.INSTANCE.escape(value);
@@ -587,6 +634,7 @@ public final class Sanitizers {
    *
    * <p>Does not return SanitizedContent as there isn't an appropriate type for this.
    */
+  @Nonnull
   public static String filterNormalizeMediaUri(SoyValue value) {
     value = normalizeNull(value);
     if (isSanitizedContentOfKind(value, SanitizedContent.ContentKind.URI)
@@ -601,6 +649,7 @@ public final class Sanitizers {
    *
    * <p>Does not return SanitizedContent as there isn't an appropriate type for this.
    */
+  @Nonnull
   public static String filterNormalizeMediaUri(String value) {
     if (EscapingConventions.FilterNormalizeMediaUri.INSTANCE
         .getValueFilter()
@@ -617,16 +666,19 @@ public final class Sanitizers {
    * Like {@link #filterNormalizeUri} but also escapes ';'. It is a special character in content of
    * {@code <meta http-equiv="Refresh">}.
    */
+  @Nonnull
   public static String filterNormalizeRefreshUri(SoyValue value) {
     return filterNormalizeUri(value).replace(";", "%3B");
   }
 
   /** Like {@link #filterNormalizeUri} but also escapes ';'. */
+  @Nonnull
   public static String filterNormalizeRefreshUri(String value) {
     return filterNormalizeUri(value).replace(";", "%3B");
   }
 
   /** Makes sure the given input is an instance of either trustedResourceUrl or trustedString. */
+  @Nonnull
   public static String filterTrustedResourceUri(SoyValue value) {
     value = normalizeNull(value);
     if (isSanitizedContentOfKind(value, SanitizedContent.ContentKind.TRUSTED_RESOURCE_URI)) {
@@ -636,6 +688,7 @@ public final class Sanitizers {
   }
 
   /** For string inputs this function just returns the input string itself. */
+  @Nonnull
   public static String filterTrustedResourceUri(String value) {
     logger.atWarning().withStackTrace(MEDIUM).log(
         "|filterTrustedResourceUri received bad value '%s'", value);
@@ -643,6 +696,7 @@ public final class Sanitizers {
   }
 
   /** Filters out strings that cannot be a substring of a valid <script> tag. */
+  @Nonnull
   public static String filterHtmlScriptPhrasingData(SoyValue value) {
     value = normalizeNull(value);
     // no content types are safe for this context
@@ -655,6 +709,7 @@ public final class Sanitizers {
    * <p>In particular, {@code <!--} and {@code </script} or prefixes of those strings that occur at
    * the end of the value.
    */
+  @Nonnull
   public static String filterHtmlScriptPhrasingData(String value) {
     // we need to ban sequences that look like
     // <!--
@@ -695,12 +750,14 @@ public final class Sanitizers {
    * <p>SanitizedContent kind does not apply -- the directive is also used to ensure no foreign
    * resources are loaded.
    */
+  @Nonnull
   public static SanitizedContent filterImageDataUri(SoyValue value) {
     value = normalizeNull(value);
     return filterImageDataUri(value.coerceToString());
   }
 
   /** Makes sure that the given input is a data URI corresponding to an image. */
+  @Nonnull
   public static SanitizedContent filterImageDataUri(String value) {
     if (EscapingConventions.FilterImageDataUri.INSTANCE.getValueFilter().matcher(value).find()) {
       // NOTE: No need to escape.
@@ -714,12 +771,14 @@ public final class Sanitizers {
   }
 
   /** Makes sure that the given input is a sip URI. */
+  @Nonnull
   public static SanitizedContent filterSipUri(SoyValue value) {
     value = normalizeNull(value);
     return filterSipUri(value.coerceToString());
   }
 
   /** Makes sure that the given input is a sip URI. */
+  @Nonnull
   public static SanitizedContent filterSipUri(String value) {
     if (EscapingConventions.FilterSipUri.INSTANCE.getValueFilter().matcher(value).find()) {
       // NOTE: No need to escape. Escaping for other contexts (e.g. HTML) happen after this.
@@ -732,12 +791,14 @@ public final class Sanitizers {
   }
 
   /** Makes sure that the given input is a sms URI. */
+  @Nonnull
   public static SanitizedContent filterSmsUri(SoyValue value) {
     value = normalizeNull(value);
     return filterSmsUri(value.coerceToString());
   }
 
   /** Makes sure that the given input is a sms URI. */
+  @Nonnull
   public static SanitizedContent filterSmsUri(String value) {
     if (EscapingConventions.FilterSmsUri.INSTANCE.getValueFilter().matcher(value).find()) {
       // NOTE: No need to escape. Escaping for other contexts (e.g. HTML) happen after this.
@@ -750,12 +811,14 @@ public final class Sanitizers {
   }
 
   /** Makes sure that the given input is a tel URI. */
+  @Nonnull
   public static SanitizedContent filterTelUri(SoyValue value) {
     value = normalizeNull(value);
     return filterTelUri(value.coerceToString());
   }
 
   /** Makes sure that the given input is a tel URI. */
+  @Nonnull
   public static SanitizedContent filterTelUri(String value) {
     if (EscapingConventions.FilterTelUri.INSTANCE.getValueFilter().matcher(value).find()) {
       // NOTE: No need to escape. Escaping for other contexts (e.g. HTML) happen after this.
@@ -768,12 +831,14 @@ public final class Sanitizers {
   }
 
   /** Legacy URI filtering from Soy. */
+  @Nonnull
   public static SanitizedContent filterLegacyUriBehavior(SoyValue value) {
     value = normalizeNull(value);
     return filterLegacyUriBehavior(value.coerceToString());
   }
 
   /** Makes sure that the given input is a tel URI. */
+  @Nonnull
   public static SanitizedContent filterLegacyUriBehavior(String value) {
     if (EscapingConventions.FilterLegacyUriBehavior.INSTANCE
         .getValueFilter()
@@ -793,6 +858,7 @@ public final class Sanitizers {
    * Checks that the input is a valid HTML attribute name with normal keyword or textual content or
    * known safe attribute content.
    */
+  @Nonnull
   public static String filterHtmlAttributes(SoyValue value) {
     String str = normalizeNull(value).coerceToString();
     if (isSanitizedContentOfKind(value, SanitizedContent.ContentKind.ATTRIBUTES)) {
@@ -804,6 +870,7 @@ public final class Sanitizers {
   /**
    * Checks that the input is a valid HTML attribute name with normal keyword or textual content.
    */
+  @Nonnull
   public static String filterHtmlAttributes(String value) {
     if (EscapingConventions.FilterHtmlAttributes.INSTANCE.getValueFilter().matcher(value).find()) {
       return value;
@@ -813,6 +880,7 @@ public final class Sanitizers {
     return EscapingConventions.FilterHtmlAttributes.INSTANCE.getInnocuousOutput();
   }
 
+  @Nonnull
   public static LoggingAdvisingAppendable filterHtmlAttributesStreaming(
       LoggingAdvisingAppendable appendable) {
     return new FilterHtmlAttributesAppendable(appendable);
@@ -910,12 +978,14 @@ public final class Sanitizers {
   }
 
   /** Checks that the input is part of the name of an innocuous element. */
+  @Nonnull
   public static String filterHtmlElementName(SoyValue value) {
     value = normalizeNull(value);
     return filterHtmlElementName(value.coerceToString());
   }
 
   /** Checks that the input is part of the name of an innocuous element. */
+  @Nonnull
   public static String filterHtmlElementName(String value) {
     if (EscapingConventions.FilterHtmlElementName.INSTANCE.getValueFilter().matcher(value).find()) {
       return value;
@@ -926,11 +996,13 @@ public final class Sanitizers {
   }
 
   /** Filters bad csp values. */
+  @Nonnull
   public static String filterCspNonceValue(SoyValue value) {
     value = normalizeNull(value);
     return filterCspNonceValue(value.coerceToString());
   }
 
+  @Nonnull
   public static String filterCspNonceValue(String value) {
     if (EscapingConventions.FilterCspNonceValue.INSTANCE.getValueFilter().matcher(value).find()) {
       return value;
@@ -940,14 +1012,17 @@ public final class Sanitizers {
     return EscapingConventions.FilterCspNonceValue.INSTANCE.getInnocuousOutput();
   }
 
+  @Nonnull
   public static String whitespaceHtmlAttributes(SoyValue value) {
     return whitespaceHtmlAttributes(normalizeNull(value).coerceToString());
   }
 
+  @Nonnull
   public static String whitespaceHtmlAttributes(String value) {
     return ((!value.isEmpty() && !value.startsWith(" ")) ? " " : "") + value;
   }
 
+  @Nonnull
   public static LoggingAdvisingAppendable whitespaceHtmlAttributesStreaming(
       LoggingAdvisingAppendable appendable) {
     return new WhitespaceHtmlAttributesAppendable(appendable);
@@ -1080,6 +1155,7 @@ public final class Sanitizers {
    * @param rawSpacesAllowed true if spaces are allowed in the output unescaped as is the case when
    *     the output is embedded in a regular text node, or in a quoted attribute.
    */
+  @Nonnull
   public static String stripHtmlTags(
       String value, TagWhitelist safeTags, boolean rawSpacesAllowed) {
     EscapingConventions.CrossLanguageStringXform normalizer =

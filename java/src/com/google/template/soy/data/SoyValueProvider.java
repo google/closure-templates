@@ -75,6 +75,7 @@ public interface SoyValueProvider {
    *     must call this method again.
    * @throws IOException If the appendable throws an IOException
    */
+  @Nonnull
   RenderResult renderAndResolve(LoggingAdvisingAppendable appendable, boolean isLast)
       throws IOException;
 }

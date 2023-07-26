@@ -16,11 +16,13 @@
 
 package com.google.template.soy.msgs.restricted;
 
+import com.google.common.base.Preconditions;
+
 /** Represents a raw text string within a message (the stuff that translators change). */
 public final class SoyMsgRawTextPart extends SoyMsgPart {
   /** Returns a SoyMsgRawTextPart representing the specified raw text string. */
   public static SoyMsgRawTextPart of(String rawText) {
-    return new SoyMsgRawTextPart(rawText);
+    return new SoyMsgRawTextPart(Preconditions.checkNotNull(rawText));
   }
 
   private final String rawText;

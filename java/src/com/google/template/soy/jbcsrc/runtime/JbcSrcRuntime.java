@@ -106,6 +106,7 @@ import java.util.concurrent.Future;
 import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 /**
@@ -152,10 +153,12 @@ public final class JbcSrcRuntime {
   /** Represents a provider for the value {@code null} in jbcsrc. */
   public static final SoyValueProvider NULL_PROVIDER = new NullProvider("NULL_PROVIDER");
 
+  @Nonnull
   public static AssertionError unexpectedStateError(StackFrame frame) {
     return new AssertionError("Unexpected state requested: " + frame.stateNumber);
   }
 
+  @Nonnull
   public static NoSuchMethodException noExternJavaImpl() {
     return new NoSuchMethodException("No Java implementation for extern.");
   }
@@ -185,10 +188,12 @@ public final class JbcSrcRuntime {
     }
   }
 
+  @Nonnull
   public static SoyValueProvider convertObjectToSoyValueProvider(Object o) {
     return SoyValueConverter.INSTANCE.convert(o);
   }
 
+  @Nonnull
   public static SoyValueProvider convertFutureToSoyValueProvider(Future<?> future) {
     return SoyValueConverter.INSTANCE.convert(future);
   }
@@ -225,6 +230,7 @@ public final class JbcSrcRuntime {
     return record.hasField(field);
   }
 
+  @Nonnull
   public static ParamStore setField(ParamStore store, String field, SoyValueProvider provider) {
     return store.setField(field, provider == null ? NullData.INSTANCE : provider);
   }
@@ -233,12 +239,14 @@ public final class JbcSrcRuntime {
    * Helper function to make SoyRecord.getFieldProvider a non-nullable function by returning {@link
    * #NULL_PROVIDER} for missing fields.
    */
+  @Nonnull
   public static SoyValueProvider getFieldProvider(
       SoyRecord record, String field, @Nullable SoyValue defaultValue) {
     checkNotNull(record, "Attempted to access field '%s' of null", field);
     return paramOrDefault(record.getFieldProvider(field), defaultValue);
   }
 
+  @Nonnull
   public static SoyValueProvider getFieldProvider(SoyRecord record, String field) {
     return getFieldProvider(record, field, /* defaultValue= */ null);
   }
@@ -246,6 +254,7 @@ public final class JbcSrcRuntime {
   /**
    * Interprets a passed parameter. Handling tofu null and reinterpreting null as MISSING_PARAMETER
    */
+  @Nonnull
   public static SoyValueProvider param(SoyValueProvider provider) {
     return paramOrDefault(provider, null);
   }
@@ -254,6 +263,7 @@ public final class JbcSrcRuntime {
    * Interprets a passed parameter with an optional default. Handling tofu null and reinterpreting
    * null as MISSING_PARAMETER
    */
+  @Nonnull
   public static SoyValueProvider paramOrDefault(
       SoyValueProvider provider, @Nullable SoyValue defaultValue) {
     // TODO(lukes): ideally this would be the behavior of getFieldProvider, but Tofu relies on it
@@ -345,6 +355,7 @@ public final class JbcSrcRuntime {
    * Helper function to translate null -> NullData when calling SoyJavaPrintDirectives that may
    * expect it.
    */
+  @Nonnull
   public static SoyValue applyPrintDirective(
       SoyJavaPrintDirective directive, SoyValue value, List<SoyValue> args) {
     value = value == null ? NullData.INSTANCE : value;
@@ -353,7 +364,7 @@ public final class JbcSrcRuntime {
         args.set(i, NullData.INSTANCE);
       }
     }
-    return directive.applyForJava(value, args);
+    return Preconditions.checkNotNull(directive.applyForJava(value, args));
   }
 
   public static int longToInt(long value) {
@@ -585,6 +596,7 @@ public final class JbcSrcRuntime {
     return soyMap.get(key);
   }
 
+  @Nonnull
   public static SoyValueProvider getSoyMapItemProvider(SoyMap soyMap, SoyValue key) {
     Preconditions.checkNotNull(soyMap, "Attempted to access map item '%s' of null", key);
     if (key == null) {
@@ -609,10 +621,12 @@ public final class JbcSrcRuntime {
     return soyValueProvider == null ? NULL_PROVIDER : soyValueProvider;
   }
 
+  @Nonnull
   public static String handleBasicTranslation(List<SoyMsgPart> parts) {
     return ((SoyMsgRawTextPart) parts.get(0)).getRawText();
   }
 
+  @Nonnull
   public static String handleBasicTranslationAndEscapeHtml(List<SoyMsgPart> parts) {
     return MsgRenderer.escapeHtml(handleBasicTranslation(parts));
   }
@@ -659,6 +673,7 @@ public final class JbcSrcRuntime {
      * @param placeholderValue The placeholder value.
      */
     @CanIgnoreReturnValue
+    @Nonnull
     public MsgRenderer setPlaceholder(String placeholderName, SoyValueProvider placeholderValue) {
       Object prev = placeholders.put(placeholderName, placeholderValue);
       if (prev != null) {
@@ -689,6 +704,7 @@ public final class JbcSrcRuntime {
      * @param endPlaceholder The name of another placeholder that _must_ come _after_ this one.
      */
     @CanIgnoreReturnValue
+    @Nonnull
     public MsgRenderer setPlaceholderAndOrdering(
         String placeholderName, SoyValueProvider placeholderValue, String endPlaceholder) {
       if (endPlaceholderToStartPlaceholder == null) {
@@ -970,6 +986,7 @@ public final class JbcSrcRuntime {
     return false;
   }
 
+  @Nonnull
   public static LoggingAdvisingAppendable logger() {
     return LOGGER;
   }
@@ -996,6 +1013,7 @@ public final class JbcSrcRuntime {
     return v != null && !v.isEmpty();
   }
 
+  @Nonnull
   public static String coerceToString(@Nullable SoyValue v) {
     return v == null ? "null" : v.coerceToString();
   }
@@ -1080,6 +1098,7 @@ public final class JbcSrcRuntime {
   }
 
   /** Asserts that all members of the list are resolved. */
+  @Nonnull
   public static <T extends SoyValueProvider> List<T> checkResolved(List<T> providerList) {
     for (int i = 0; i < providerList.size(); i++) {
       T provider = providerList.get(i);
@@ -1092,6 +1111,7 @@ public final class JbcSrcRuntime {
   }
 
   /** Asserts that all members of the map are resolved. */
+  @Nonnull
   public static <K, V extends SoyValueProvider> Map<K, V> checkResolved(Map<K, V> providerMap) {
     for (Map.Entry<K, V> entry : providerMap.entrySet()) {
       V provider = entry.getValue();
@@ -1133,6 +1153,7 @@ public final class JbcSrcRuntime {
   }
 
   /** For repeated extensions, returns all of the extensions values as a list. */
+  @Nonnull
   public static <MessageT extends ExtendableMessage<MessageT>, T>
       LazyProtoToSoyValueList<T> getExtensionList(
           MessageT message,
@@ -1145,6 +1166,7 @@ public final class JbcSrcRuntime {
     return LazyProtoToSoyValueList.forList(list.build(), protoFieldInterpreter);
   }
 
+  @Nonnull
   public static TemplateValue bindTemplateParams(TemplateValue template, SoyRecord boundParams) {
     var newTemplate =
         new PartiallyBoundTemplate(boundParams, (CompiledTemplate) template.getCompiledTemplate());
@@ -1220,6 +1242,7 @@ public final class JbcSrcRuntime {
     }
   }
 
+  @Nonnull
   public static <T> T checkExpressionNotNull(T value, String expression) {
     if (value == null) {
       throw new NullPointerException("'" + expression + "' evaluates to null");
@@ -1227,10 +1250,12 @@ public final class JbcSrcRuntime {
     return value;
   }
 
+  @Nonnull
   public static String base64Encode(ByteString byteString) {
     return BaseEncoding.base64().encode(byteString.toByteArray());
   }
 
+  @Nonnull
   public static ByteString base64Decode(String base64) {
     return ByteString.copyFrom(BaseEncoding.base64().decode(base64));
   }

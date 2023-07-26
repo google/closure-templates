@@ -18,6 +18,7 @@ package com.google.template.soy.data.restricted;
 
 import com.google.common.base.Preconditions;
 import com.google.errorprone.annotations.Immutable;
+import javax.annotation.Nonnull;
 
 /**
  * Integer data.
@@ -78,6 +79,7 @@ public final class IntegerData extends NumberData {
    * @param value The desired value.
    * @return A IntegerData instance with the given value.
    */
+  @Nonnull
   public static IntegerData forValue(long value) {
     if (value > 10 || value < -1) {
       return new IntegerData(value);
@@ -132,6 +134,7 @@ public final class IntegerData extends NumberData {
   }
 
   @Override
+  @Nonnull
   public String toString() {
     return String.valueOf(value);
   }

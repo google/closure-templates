@@ -137,7 +137,7 @@ public abstract class BasicEscapeDirective
   }
 
   private MethodRef findMethodRefForType(Class<?> paramType) {
-    return MethodRef.create(Sanitizers.class, name.substring(1), paramType).asNonNullable();
+    return MethodRef.create(Sanitizers.class, name.substring(1), paramType);
   }
 
   /**
@@ -153,10 +153,7 @@ public abstract class BasicEscapeDirective
       // lazily allocated
       sanitizerMethod =
           MethodRef.create(
-                  Sanitizers.class,
-                  name.substring(1) + "Streaming",
-                  LoggingAdvisingAppendable.class)
-              .asNonNullable();
+              Sanitizers.class, name.substring(1) + "Streaming", LoggingAdvisingAppendable.class);
       javaStreamingSanitizer = sanitizerMethod;
     }
     Expression streamingSanitizersExpr = sanitizerMethod.invoke(delegateAppendable);

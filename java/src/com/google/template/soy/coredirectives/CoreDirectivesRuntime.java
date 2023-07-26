@@ -30,10 +30,13 @@ import com.google.template.soy.shared.internal.AbstractStreamingHtmlEscaper;
 import com.google.template.soy.shared.internal.EscapingConventions;
 import java.io.IOException;
 import java.util.function.Function;
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 /** Runtime functions for implementing the directives in this package. */
 public final class CoreDirectivesRuntime {
+
+  @Nonnull
   public static SanitizedContent escapeHtml(SoyValue value) {
     if (value == null) {
       // jbcsrc uses null as null.
@@ -53,11 +56,13 @@ public final class CoreDirectivesRuntime {
         valueDir);
   }
 
+  @Nonnull
   public static SanitizedContent escapeHtml(String value) {
     return UnsafeSanitizedContentOrdainer.ordainAsSafe(
         EscapingConventions.EscapeHtml.INSTANCE.escape(value), SanitizedContent.ContentKind.HTML);
   }
 
+  @Nonnull
   public static LoggingAdvisingAppendable streamingEscapeHtml(
       final LoggingAdvisingAppendable delegate) {
     return new StreamingHtmlEscaper(delegate);

@@ -34,6 +34,7 @@ import com.google.template.soy.internal.i18n.BidiFormatter.BidiWrappingText;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import java.io.IOException;
 import java.util.function.Function;
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 /** Java implementations of the bididirectives. */
@@ -41,6 +42,7 @@ public final class BidiDirectivesRuntime {
 
   private BidiDirectivesRuntime() {}
 
+  @Nonnull
   public static SoyValue bidiUnicodeWrap(BidiGlobalDir dir, SoyValue value) {
     // normalize null between tofu and jbcsrc
     value = value == null ? NullData.INSTANCE : value;
@@ -74,11 +76,13 @@ public final class BidiDirectivesRuntime {
     return StringData.forValue(wrappedValue);
   }
 
+  @Nonnull
   public static LoggingAdvisingAppendable bidiUnicodeWrapStreaming(
       LoggingAdvisingAppendable delegateAppendable, BidiGlobalDir dir) {
     return new BidiWrapAppendable(delegateAppendable, dir, WrapType.UNICODE);
   }
 
+  @Nonnull
   public static String bidiSpanWrap(BidiGlobalDir dir, SoyValue value) {
     Dir valueDir = null;
     if (value instanceof SanitizedContent) {
@@ -98,6 +102,7 @@ public final class BidiDirectivesRuntime {
     return bidiFormatter.spanWrap(valueDir, value.coerceToString(), /* isHtml= */ true);
   }
 
+  @Nonnull
   public static LoggingAdvisingAppendable bidiSpanWrapStreaming(
       LoggingAdvisingAppendable delegateAppendable, BidiGlobalDir dir) {
     return new BidiWrapAppendable(delegateAppendable, dir, WrapType.SPAN);

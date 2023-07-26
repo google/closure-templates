@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 /**
@@ -52,6 +53,7 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
    * Returns a {@link BufferingAppendable} that renders everything to a buffer that can be accessed
    * via {@link BufferingAppendable#toString()} or {@link BufferingAppendable#getAndClearBuffer()}
    */
+  @Nonnull
   public static BufferingAppendable buffering() {
     return new BufferingAppendable();
   }
@@ -65,6 +67,7 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
    * An implementation that only delegates {@link #append} calls. This has the effect of coercing
    * the content to a string by dropping all the strict content directives.
    */
+  @Nonnull
   public static LoggingAdvisingAppendable stringCoercing(LoggingAdvisingAppendable delegate) {
     return new StringCoercingAppendable(delegate);
   }
@@ -95,19 +98,24 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
   // covariant overrides
 
   @Override
+  @Nonnull
   public abstract LoggingAdvisingAppendable append(CharSequence csq) throws IOException;
 
   @Override
+  @Nonnull
   public abstract LoggingAdvisingAppendable append(CharSequence csq, int start, int end)
       throws IOException;
 
   @Override
+  @Nonnull
   public abstract LoggingAdvisingAppendable append(char c) throws IOException;
 
   /** Called whenever a loggable element is entered. */
+  @Nonnull
   public abstract LoggingAdvisingAppendable enterLoggableElement(LogStatement statement);
 
   /** Called whenever a loggable element is exited. */
+  @Nonnull
   public abstract LoggingAdvisingAppendable exitLoggableElement();
 
   /**
@@ -126,6 +134,7 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
    * changing, we trust that the autoescaper has inserted the correct escape directives, so we do
    * not need to track this in the appendable.
    */
+  @Nonnull
   public final LoggingAdvisingAppendable setKindAndDirectionality(ContentKind kind)
       throws IOException {
     return setKindAndDirectionality(kind, kind.getDefaultDir());
@@ -140,6 +149,7 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
    * not need to track this in the appendable.
    */
   @CanIgnoreReturnValue
+  @Nonnull
   public final LoggingAdvisingAppendable setKindAndDirectionality(
       ContentKind kind, @Nullable Dir direction) throws IOException {
     checkNotNull(kind);
@@ -190,6 +200,7 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
    *     or similar but that would cause cycles between soy.data and soy.shared.restricted
    * @return this
    */
+  @Nonnull
   public abstract LoggingAdvisingAppendable appendLoggingFunctionInvocation(
       LoggingFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers)
       throws IOException;

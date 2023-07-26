@@ -17,6 +17,7 @@
 package com.google.template.soy.data;
 
 import java.io.IOException;
+import javax.annotation.Nonnull;
 import javax.annotation.ParametersAreNonnullByDefault;
 
 /**
@@ -128,5 +129,6 @@ public interface SoyValue extends SoyValueProvider {
    * @return The string value of this string object.
    * @throws SoyDataException If this object is not actually a string.
    */
+  @Nonnull
   String stringValue();
 }
