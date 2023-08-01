@@ -189,11 +189,11 @@ import * as simple from 'examples/simple.soy';
                                                             * 'name' and 'numWaffles'.
                                                             */
 
-  {if $persons.length() != 0}
+  {if $persons.length != 0}
     {for $person, $personIndex in $persons}
       {if $personIndex == 0}
         First,
-      {elseif $personIndex == $persons.length() - 1}
+      {elseif $personIndex == $persons.length - 1}
         Finally,
       {else}
         Then
@@ -404,7 +404,7 @@ import * as simple from 'examples/simple.soy';
 
     {if $studentIndex == 0}
       {sp}First.
-    {elseif $studentIndex == $students.length() - 1}
+    {elseif $studentIndex == $students.length - 1}
       {sp}Last.
     // Note: must use floor() in next check since division is floating-point.
     {elseif $studentIndex == ceiling(length($students) / 2) - 1}
