@@ -44,7 +44,6 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Table;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
-import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
@@ -297,12 +296,8 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
           "Proto field ''{0}'' does not exist in {1}.{2}", StyleAllowance.NO_PUNCTUATION);
   private static final SoyErrorKind GETTER_ONLY_FIELD_FOR_PROTO_TYPE =
       SoyErrorKind.of(
-          "Proto field ''{0}'' for proto type {1} can only be accessed via ''{2}()''.",
-          StyleAllowance.NO_PUNCTUATION);
-  private static final SoyErrorKind PROTO_FIELD_WARNING =
-      SoyErrorKind.of(
-          "Accessing the proto field with .''{0}'' is deprecated. Access using the getter method "
-              + "''{1}()''. See http://go/soy/dev/protos.md#accessing-proto-fields.",
+          "Proto field ''{0}'' for proto type {1} can only be accessed via ''{2}()''. "
+              + "See http://go/soy/dev/protos.md#accessing-proto-fields for more info.",
           StyleAllowance.NO_PUNCTUATION);
   private static final SoyErrorKind PROTO_MISSING_REQUIRED_FIELD =
       SoyErrorKind.of("Missing required proto field ''{0}''.");
@@ -2496,14 +2491,13 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
             }
           }
 
+          // TODO(b/291166619): Delete the PROTO block sometime around EOY 2023.
         case PROTO:
           {
             SoyProtoType protoType = (SoyProtoType) baseType;
             SoyType fieldType = protoType.getFieldType(fieldName);
             if (fieldType != null) {
-              checkProtoFieldAccess(protoType, fieldName, sourceLocation);
-              // With field access, message fields are incorrectly marked as non-nullable. Getter
-              // method access will fix this: http://b/230787876
+              emitProtoFieldError(protoType, fieldName, sourceLocation);
               return SoyTypes.removeNull(fieldType);
             } else {
               String extraErrorMessage =
@@ -2566,27 +2560,14 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
       }
     }
 
-    private void checkProtoFieldAccess(
+    private void emitProtoFieldError(
         SoyProtoType baseType, String fieldName, SourceLocation sourceLocation) {
-      FieldDescriptor fd = baseType.getFieldDescriptor(fieldName);
-      if (fd.isRepeated() || !fd.hasPresence()) {
-        // Repeated fields and scalar fields without presence are not allowed to be read using the
-        // field access syntax (only readable via getter method call). The field access syntax means
-        // nullish return for scalar fields, which cannot be supported if there's no
-        // presence semantics.
-        errorReporter.report(
-            sourceLocation,
-            GETTER_ONLY_FIELD_FOR_PROTO_TYPE,
-            fieldName,
-            baseType,
-            BuiltinMethod.protoFieldToGetMethodName(fieldName));
-      } else {
-        errorReporter.warn(
-            sourceLocation,
-            PROTO_FIELD_WARNING,
-            fieldName,
-            BuiltinMethod.protoFieldToGetMethodName(fieldName));
-      }
+      errorReporter.report(
+          sourceLocation,
+          GETTER_ONLY_FIELD_FOR_PROTO_TYPE,
+          fieldName,
+          baseType,
+          BuiltinMethod.protoFieldToGetMethodName(fieldName));
     }
 
     /** Given a base type and an item key type, compute the item value type. */
