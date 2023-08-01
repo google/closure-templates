@@ -74,7 +74,7 @@ public interface SoySauce {
    * Additionally, this treats all references to template literals as though they may be called.
    */
   ImmutableSet<String> getTransitiveIjParamsForTemplateRender(
-      String templateInfo, Map<String, Object> data);
+      String templateInfo, Map<String, ?> data);
 
   /**
    * Returns the transitive set of {@code $ij} params that might be needed to render this template.

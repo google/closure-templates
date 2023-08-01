@@ -103,7 +103,7 @@ public final class SoySauceImpl implements SoySauce {
 
   @Override
   public ImmutableSortedSet<String> getTransitiveIjParamsForTemplateRender(
-      String templateName, Map<String, Object> data) {
+      String templateName, Map<String, ?> data) {
     ImmutableSortedSet.Builder<String> output = ImmutableSortedSet.naturalOrder();
     output.addAll(templates.getTransitiveIjParamsForTemplate(templateName));
     addIjForTemplateParams(output, data.values());
