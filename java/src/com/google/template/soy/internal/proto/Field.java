@@ -18,6 +18,7 @@ package com.google.template.soy.internal.proto;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import com.google.common.base.Ascii;
 import com.google.common.base.CaseFormat;
 import com.google.common.collect.ImmutableMap;
 import com.google.protobuf.Descriptors.Descriptor;
@@ -84,8 +85,11 @@ public abstract class Field {
 
   /** Converts snake case to lower camel case and appends 'List' or 'Map' if necessary. */
   public static String computeSoyName(FieldDescriptor field) {
-    return CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, field.getName())
-        + fieldSuffix(field);
+    String result = CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, field.getName());
+    String lowerCamelCaseGuarantee =
+        Ascii.toLowerCase(result.substring(0, Math.min(1, result.length())))
+            + result.substring(Math.min(1, result.length()));
+    return lowerCamelCaseGuarantee + fieldSuffix(field);
   }
 
   public static String computeSoyFullyQualifiedName(FieldDescriptor field) {
