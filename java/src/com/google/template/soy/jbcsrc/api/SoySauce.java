@@ -22,6 +22,7 @@ import static com.google.common.base.Preconditions.checkState;
 import static com.google.template.soy.jbcsrc.api.AppendableAsAdvisingAppendable.asAdvisingAppendable;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.errorprone.annotations.CheckReturnValue;
@@ -65,13 +66,25 @@ public interface SoySauce {
   }
 
   /**
-   * Returns the transitive set of {@code $ij} params that might be needed to render this template.
+   * Returns the transitive set of {@code $ij} params are needed to render this template with a
+   * specific set of parameters.
    *
    * <p>NOTE: this will return a superset of the parameters that will actually be used at runtime;
    * this is because it doesn't take mods or conditional logic inside templates into account.
    * Additionally, this treats all references to template literals as though they may be called.
    */
-  ImmutableSet<String> getTransitiveIjParamsForTemplate(String templateInfo);
+  ImmutableSet<String> getTransitiveIjParamsForTemplateRender(
+      String templateInfo, Map<String, Object> data);
+
+  /**
+   * Returns the transitive set of {@code $ij} params that might be needed to render this template.
+   * NOTE: That this does not take any bound templates that might be passed in. Use {@code
+   * getTransitiveIjParamsForTemplateRender} for that, or just call this method multiple times with
+   * the names of the bound templates that are used.
+   */
+  default ImmutableSet<String> getTransitiveIjParamsForTemplate(String templateInfo) {
+    return getTransitiveIjParamsForTemplateRender(templateInfo, ImmutableMap.of());
+  }
 
   /**
    * Returns all css module namespaces that might be needed to render this template. This follows

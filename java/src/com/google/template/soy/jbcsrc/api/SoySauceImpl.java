@@ -37,6 +37,7 @@ import com.google.template.soy.data.SoyTemplate;
 import com.google.template.soy.data.SoyTemplateData;
 import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.SoyValueProvider;
+import com.google.template.soy.data.TemplateValue;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
@@ -55,6 +56,7 @@ import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -100,8 +102,27 @@ public final class SoySauceImpl implements SoySauce {
   }
 
   @Override
-  public ImmutableSortedSet<String> getTransitiveIjParamsForTemplate(String templateName) {
-    return templates.getTransitiveIjParamsForTemplate(templateName);
+  public ImmutableSortedSet<String> getTransitiveIjParamsForTemplateRender(
+      String templateName, Map<String, Object> data) {
+    ImmutableSortedSet.Builder<String> output = ImmutableSortedSet.naturalOrder();
+    output.addAll(templates.getTransitiveIjParamsForTemplate(templateName));
+    addIjForTemplateParams(output, data.values());
+    return output.build();
+  }
+
+  private void addIjForTemplateParams(
+      ImmutableSortedSet.Builder<String> output, Collection<?> data) {
+    for (Object dataValue : data) {
+      if (dataValue instanceof TemplateValue) {
+        TemplateValue tmpl = (TemplateValue) dataValue;
+        output.addAll(templates.getTransitiveIjParamsForTemplate(tmpl.getTemplateName()));
+        if (tmpl.getBoundParameters().isPresent()) {
+          addIjForTemplateParams(
+              output,
+              ((TemplateValue) dataValue).getBoundParameters().get().recordAsMap().values());
+        }
+      }
+    }
   }
 
   @Override
