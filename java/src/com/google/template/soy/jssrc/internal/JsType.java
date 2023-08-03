@@ -614,20 +614,20 @@ public final class JsType {
                   ? "null"
                   : "{" + Joiner.on(", ").withKeyValueSeparator(": ").join(parameters) + ",}";
           String returnType = forReturnType.typeExpr();
-          switch (kind) {
-            case IDOMSRC:
-              builder.addRequire(
-                  GoogRequire.createWithAlias(
-                      "google3.javascript.template.soy.api_idom", "incrementaldomlib"));
-              builder.addType(
-                  String.format(
-                      "function(!incrementaldomlib.IncrementalDomRenderer, %s, %s):(%s)",
-                      parametersType, "?(goog.soy.IjData)=", returnType));
-              break;
-            default:
-              builder.addType(
-                  String.format(
-                      "function(%s, %s):(%s)", parametersType, "?(goog.soy.IjData)=", returnType));
+          if (kind == JsTypeKind.IDOMSRC
+              && templateType.getContentKind().getSanitizedContentKind()
+                  != SanitizedContentKind.TEXT) {
+            builder.addRequire(
+                GoogRequire.createWithAlias(
+                    "google3.javascript.template.soy.api_idom", "incrementaldomlib"));
+            builder.addType(
+                String.format(
+                    "function(!incrementaldomlib.IncrementalDomRenderer, %s, %s):(%s)",
+                    parametersType, "?(goog.soy.IjData)=", returnType));
+          } else {
+            builder.addType(
+                String.format(
+                    "function(%s, %s):(%s)", parametersType, "?(goog.soy.IjData)=", returnType));
           }
           builder.setPredicate(GOOG_IS_FUNCTION);
           return builder.build();
