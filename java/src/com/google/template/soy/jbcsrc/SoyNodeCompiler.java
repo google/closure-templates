@@ -480,9 +480,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
               : scope.create(
                   nonEmptyNode.getIndexVarName(),
                   SoyExpression.forInt(
-                          BytecodeUtils.numericConversion(indexVar.local(), Type.LONG_TYPE))
-                      .boxAsSoyValueProvider()
-                      .checkedCast(SOY_VALUE_PROVIDER_TYPE),
+                      BytecodeUtils.numericConversion(indexVar.local(), Type.LONG_TYPE)),
                   DERIVED);
       itemVar =
           scope.create(
@@ -521,10 +519,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
               ? null
               : scope.create(
                   nonEmptyNode.getIndexVarName(),
-                  SoyExpression.forInt(
-                          BytecodeUtils.numericConversion(indexVar.local(), Type.LONG_TYPE))
-                      .boxAsSoyValueProvider()
-                      .checkedCast(SOY_VALUE_PROVIDER_TYPE),
+                  BytecodeUtils.numericConversion(indexVar.local(), Type.LONG_TYPE),
                   DERIVED);
       itemVar =
           scope.create(

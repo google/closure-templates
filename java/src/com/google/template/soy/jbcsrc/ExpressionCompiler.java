@@ -505,15 +505,12 @@ final class ExpressionCompiler {
       LocalVariable userIndexVar =
           node.getIndexVar() == null
               ? null
-              : scope.createNamedLocal(node.getIndexVar().name(), SOY_VALUE_PROVIDER_TYPE);
+              : scope.createNamedLocal(node.getIndexVar().name(), Type.LONG_TYPE);
       Statement userIndexVarInitializer =
           userIndexVar == null
               ? null
               : userIndexVar.store(
-                  SoyExpression.forInt(numericConversion(indexVar, Type.LONG_TYPE))
-                      .boxAsSoyValueProvider()
-                      .checkedCast(SOY_VALUE_PROVIDER_TYPE),
-                  userIndexVar.start());
+                  numericConversion(indexVar, Type.LONG_TYPE), userIndexVar.start());
 
       // TODO: Consider compiling to a SoyValueProvider instead of boxing.
       Expression visitedMap = visit(mapExpr).boxAsSoyValueProvider();
@@ -1188,6 +1185,10 @@ final class ExpressionCompiler {
 
     @Override
     SoyExpression visitListComprehensionVar(VarRefNode varRef, ComprehensionVarDefn var) {
+      // Index vars are always simple ints
+      if (var.declaringNode().getIndexVar() == var) {
+        return SoyExpression.forInt(parameters.getLocal(var));
+      }
       return SoyExpression.forSoyValue(
           varRef.getType(),
           resolveVarRefNode(varRef, parameters.getLocal(var))
