@@ -31,7 +31,6 @@ import com.google.template.soy.plugin.python.restricted.SoyPythonSourceFunction;
 import com.google.template.soy.shared.restricted.Signature;
 import com.google.template.soy.shared.restricted.SoyFieldSignature;
 import com.google.template.soy.shared.restricted.SoyFunctionSignature;
-import com.google.template.soy.shared.restricted.SoyMethodSignature;
 import com.google.template.soy.shared.restricted.SoyPureFunction;
 import com.google.template.soy.shared.restricted.TypedSoyFunction;
 import java.lang.reflect.Method;
@@ -45,7 +44,6 @@ import java.util.List;
         @Signature(
             parameterTypes = {"list<any>"},
             returnType = "int"))
-@SoyMethodSignature(name = "length", baseType = "list<any>", value = @Signature(returnType = "int"))
 @SoyFieldSignature(name = "length", baseType = "list<any>", returnType = "int")
 public final class LengthFunction extends TypedSoyFunction
     implements SoyJavaSourceFunction, SoyJavaScriptSourceFunction, SoyPythonSourceFunction {

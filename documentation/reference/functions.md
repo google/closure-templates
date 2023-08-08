@@ -118,8 +118,7 @@ Returns whether the number is finite (i.e., not `NaN` or `Infinity`).
 
 Returns the length of a list.
 
-Also callable as deprecated method `length()` and deprecated global function
-`length(list)`.
+Also callable as deprecated global function `length(list)`.
 
 ## List Methods
 
@@ -263,8 +262,6 @@ from the method parameter wins.
 ### `str.length` {#strLen}
 
 Returns the length of a string in characters.
-
-Also callable as deprecated method `length()`.
 
 WARNING: The length is based on characters (aka java `char` or utf-16
 characters), not Unicode codepoints or more useful concepts like graphemes. It
