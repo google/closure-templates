@@ -29,8 +29,7 @@ import com.google.template.soy.soytree.SoyTreeUtils;
  */
 @RunAfter({
   InsertMsgPlaceholderNodesPass.class,
-  RewriteGenderMsgsPass.class,
-  RewriteRemaindersPass.class
+  ResolveTemplateNamesPass.class,
 })
 final class CalculateMsgSubstitutionInfoPass implements CompilerFilePass {
   private final ErrorReporter errorReporter;

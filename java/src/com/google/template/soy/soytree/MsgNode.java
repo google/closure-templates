@@ -19,6 +19,7 @@ package com.google.template.soy.soytree;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.ImmutableMap.toImmutableMap;
+import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static com.google.template.soy.soytree.CommandTagAttribute.MISSING_ATTRIBUTE;
 import static com.google.template.soy.soytree.CommandTagAttribute.UNSUPPORTED_ATTRIBUTE_KEY;
 
@@ -28,6 +29,7 @@ import com.google.common.base.Functions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Maps;
@@ -36,13 +38,25 @@ import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprEquivalence;
+import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.exprtree.FieldAccessNode;
+import com.google.template.soy.exprtree.FunctionNode;
+import com.google.template.soy.exprtree.GlobalNode;
+import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.soytree.CommandTagAttribute.CommandTagAttributesHolder;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.MsgBlockNode;
+import com.google.template.soy.soytree.SoyNode.MsgSubstUnitNode;
+import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
+import com.google.template.soy.soytree.SoyNode.StandaloneNode;
+import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.TemplateImportType;
+import com.google.template.soy.types.TemplateType;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -51,6 +65,7 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalLong;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import javax.annotation.Nullable;
@@ -120,11 +135,15 @@ public final class MsgNode extends AbstractBlockCommandNode
      */
     public final ImmutableMap<MsgSubstUnitNode, MessagePlaceholder.Summary> nodeToVarNameMap;
 
+    public final ImmutableSet<MsgSubstUnitNode> tsxNeedsExplicitPhnameNodes;
+
     public SubstUnitInfo(
         Map<String, MsgSubstUnitNode> varNameToRepNodeMap,
-        Map<MsgSubstUnitNode, MessagePlaceholder.Summary> nodeToVarNameMap) {
+        Map<MsgSubstUnitNode, MessagePlaceholder.Summary> nodeToVarNameMap,
+        ImmutableSet<MsgSubstUnitNode> tsxNeedsExplicitPhnameNodes) {
       this.varNameToRepNodeMap = ImmutableMap.copyOf(varNameToRepNodeMap);
       this.nodeToVarNameMap = ImmutableMap.copyOf(nodeToVarNameMap);
+      this.tsxNeedsExplicitPhnameNodes = tsxNeedsExplicitPhnameNodes;
     }
 
     public SubstUnitInfo copy(Map<MsgSubstUnitNode, MsgSubstUnitNode> oldToNew) {
@@ -138,7 +157,8 @@ public final class MsgNode extends AbstractBlockCommandNode
       return new SubstUnitInfo(
           varNameToRepNodeMap.entrySet().stream()
               .collect(toImmutableMap(Entry::getKey, e -> oldToNewFunction.apply(e.getValue()))),
-          builder.buildOrThrow());
+          builder.buildOrThrow(),
+          tsxNeedsExplicitPhnameNodes.stream().map(oldToNewFunction).collect(toImmutableSet()));
     }
   }
 
@@ -422,6 +442,11 @@ public final class MsgNode extends AbstractBlockCommandNode
     return getSubstUnitInfo().nodeToVarNameMap.get(placeholderNode);
   }
 
+  /** Whether the placeholder needs an explicit phname in Tsx. */
+  public boolean tsxNeedsExplicitPhname(MsgPlaceholderNode placeholderNode) {
+    return getSubstUnitInfo().tsxNeedsExplicitPhnameNodes.contains(placeholderNode);
+  }
+
   /**
    * Gets the representative plural node for a given plural variable name.
    *
@@ -669,6 +694,7 @@ public final class MsgNode extends AbstractBlockCommandNode
     // that is the same as an existing base name.
 
     Map<String, MsgSubstUnitNode> substUnitVarNameToRepNodeMap = new LinkedHashMap<>();
+    Set<MsgSubstUnitNode> explicitPhNameNodes = new HashSet<>();
 
     for (String baseName : representativeNodes.baseNameToRepNodesMap().keySet()) {
       List<MsgSubstUnitNode> nodesWithSameBaseName =
@@ -677,12 +703,22 @@ public final class MsgNode extends AbstractBlockCommandNode
           !nodesWithSameBaseName.isEmpty(), "%s not found in `baseNameToRepNodesMap`.", baseName);
       if (nodesWithSameBaseName.size() == 1) {
         // Expected success case, one node per base name.
-        substUnitVarNameToRepNodeMap.put(baseName, nodesWithSameBaseName.get(0));
+        MsgSubstUnitNode node = nodesWithSameBaseName.get(0);
+        substUnitVarNameToRepNodeMap.put(baseName, node);
+        if (tsxNeedsExplicitPhnameInternal(node, representativeNodes)) {
+          explicitPhNameNodes.add(node);
+        }
       } else {
         // Case 2: Multiple nodes generate this base name. Need number suffixes.
         int nextSuffix = 1;
+        boolean tsxExplicitPhname =
+            nodesWithSameBaseName.stream()
+                .anyMatch(n -> MsgNode.tsxNeedsExplicitPhnameInternal(n, representativeNodes));
         for (int i = 0; i < nodesWithSameBaseName.size(); ++i) {
           MsgSubstUnitNode repNode = nodesWithSameBaseName.get(i);
+          if (tsxExplicitPhname) {
+            explicitPhNameNodes.add(repNode);
+          }
           String newName;
           do {
             newName = baseName + "_" + nextSuffix;
@@ -732,11 +768,43 @@ public final class MsgNode extends AbstractBlockCommandNode
       MsgSubstUnitNode repNode = entry.getKey();
       MsgSubstUnitNode nonRepNode = entry.getValue();
       substUnitNodeToVarNameMap.put(nonRepNode, substUnitNodeToVarNameMap.get(repNode));
+      if (explicitPhNameNodes.contains(repNode)) {
+        explicitPhNameNodes.add(nonRepNode);
+      }
     }
 
     return new SubstUnitInfo(
         ImmutableMap.copyOf(substUnitVarNameToRepNodeMap),
-        ImmutableMap.copyOf(substUnitNodeToVarNameMap));
+        ImmutableMap.copyOf(substUnitNodeToVarNameMap),
+        ImmutableSet.copyOf(explicitPhNameNodes));
+  }
+
+  private static boolean isShortFormCall(MsgSubstUnitNode node) {
+    if (!(node instanceof MsgPlaceholderNode)) {
+      return false;
+    }
+    MsgPlaceholderNode ph = (MsgPlaceholderNode) node;
+    if (!(ph.getChild(0) instanceof PrintNode)) {
+      return false;
+    }
+    PrintNode printNode = (PrintNode) ph.getChild(0);
+    if (!(printNode.getExpr().getRoot() instanceof FunctionNode)) {
+      return false;
+    }
+    FunctionNode fnNode = (FunctionNode) printNode.getExpr().getRoot();
+    if (fnNode.hasStaticName()) {
+      return false;
+    }
+    ExprNode nameExpr = fnNode.getNameExpr();
+    SoyType type = null;
+    if (nameExpr instanceof VarRefNode) {
+      if (((VarRefNode) nameExpr).hasType()) {
+        type = nameExpr.getType();
+      }
+    } else {
+      type = nameExpr.getType();
+    }
+    return (type instanceof TemplateType) || (type instanceof TemplateImportType);
   }
 
   private static Optional<String> getPhExample(MsgSubstUnitNode node) {
@@ -744,5 +812,40 @@ public final class MsgNode extends AbstractBlockCommandNode
       return node.getPlaceholder().example();
     }
     return Optional.empty();
+  }
+
+  /** Whether this node definitely needs an explicit phname in tsx. */
+  private static boolean tsxNeedsExplicitPhnameInternal(
+      MsgSubstUnitNode node, RepresentativeNodes representativeNodes) {
+    if (!(node instanceof MsgPlaceholderNode)) {
+      return false;
+    }
+    MsgPlaceholderNode placeholderNode = (MsgPlaceholderNode) node;
+    if (placeholderNode.getPlaceholder().userSuppliedName().isPresent()) {
+      return true;
+    }
+    // Short form call with duplicates. They won't be representative nodes of each other after
+    // round-tripping to a long form call, so they'll be assigned different placeholders, unless
+    // we specify the original phname.
+    if (isShortFormCall(node) && representativeNodes.repNodeToNonRepNodesMap().containsKey(node)) {
+      return true;
+    }
+    if (placeholderNode.getChild(0) instanceof PrintNode) {
+      PrintNode printNode = (PrintNode) placeholderNode.getChild(0);
+      // These nodes usually get turned into the var/field/global name. But adding a print directive
+      // turns them into a function call, which would result in the fallback "XXX" placeholder.
+      if ((printNode.getExpr().getRoot() instanceof VarRefNode)
+          || (printNode.getExpr().getRoot() instanceof FieldAccessNode)
+          || (printNode.getExpr().getRoot() instanceof GlobalNode)) {
+        return printNode.numChildren() != 0;
+      }
+    }
+    return false;
+  }
+
+  @SuppressWarnings("unchecked")
+  @Override
+  public ParentSoyNode<StandaloneNode> getParent() {
+    return (ParentSoyNode<StandaloneNode>) super.getParent();
   }
 }
