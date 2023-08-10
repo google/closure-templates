@@ -177,7 +177,7 @@ public abstract class FieldRef {
   }
 
   /** Returns an accessor that accesses this field on the given owner. */
-  public Expression accessor(final Expression owner) {
+  public Expression accessor(Expression owner) {
     checkState(!isStatic());
     checkArgument(
         owner.resultType().equals(this.owner().type()),
@@ -228,7 +228,7 @@ public abstract class FieldRef {
    *
    * @throws IllegalStateException if this is a static field
    */
-  public Statement putInstanceField(final Expression instance, final Expression value) {
+  public Statement putInstanceField(Expression instance, Expression value) {
     checkState(!isStatic(), "This field is static!");
     instance.checkAssignableTo(owner().type());
     value.checkAssignableTo(type());
@@ -248,7 +248,7 @@ public abstract class FieldRef {
    *
    * @throws IllegalStateException if this is a static field
    */
-  public Statement putStaticField(final Expression value) {
+  public Statement putStaticField(Expression value) {
     checkState(isStatic(), "This field is not static!");
     value.checkAssignableTo(type());
     return new Statement() {

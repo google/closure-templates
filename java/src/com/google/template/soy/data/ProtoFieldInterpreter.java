@@ -166,7 +166,7 @@ public abstract class ProtoFieldInterpreter {
     return FieldVisitor.visitField(fieldDescriptor, VISITOR);
   }
 
-  private static ProtoFieldInterpreter getListType(final ProtoFieldInterpreter local) {
+  private static ProtoFieldInterpreter getListType(ProtoFieldInterpreter local) {
     return new ProtoFieldInterpreter() {
       @Override
       public SoyValue soyFromProto(Object field) {
@@ -191,12 +191,10 @@ public abstract class ProtoFieldInterpreter {
   }
 
   private static ProtoFieldInterpreter getMapType(
-      final FieldDescriptor mapField,
-      final ProtoFieldInterpreter keyField,
-      final ProtoFieldInterpreter valueField) {
-    final Descriptor messageDescriptor = mapField.getMessageType();
-    final FieldDescriptor keyDescriptor = messageDescriptor.getFields().get(0);
-    final FieldDescriptor valueDescriptor = messageDescriptor.getFields().get(1);
+      FieldDescriptor mapField, ProtoFieldInterpreter keyField, ProtoFieldInterpreter valueField) {
+    Descriptor messageDescriptor = mapField.getMessageType();
+    FieldDescriptor keyDescriptor = messageDescriptor.getFields().get(0);
+    FieldDescriptor valueDescriptor = messageDescriptor.getFields().get(1);
     return new ProtoFieldInterpreter() {
 
       @Override
@@ -479,7 +477,7 @@ public abstract class ProtoFieldInterpreter {
    * Returns a {@link ProtoFieldInterpreter} that has the given type and delegates to the
    * SoyValueConverter for interpretation.
    */
-  private static ProtoFieldInterpreter enumTypeField(final EnumDescriptor enumDescriptor) {
+  private static ProtoFieldInterpreter enumTypeField(EnumDescriptor enumDescriptor) {
     return new ProtoFieldInterpreter() {
 
       @Override

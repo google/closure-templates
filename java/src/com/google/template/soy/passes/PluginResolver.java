@@ -522,8 +522,8 @@ public final class PluginResolver {
     return true;
   }
 
-  private static SoyPrintDirective createPlaceholderPrintDirective(final String name, int arity) {
-    final ImmutableSet<Integer> validArgSizes = ImmutableSet.of(arity);
+  private static SoyPrintDirective createPlaceholderPrintDirective(String name, int arity) {
+    ImmutableSet<Integer> validArgSizes = ImmutableSet.of(arity);
     return new SoyPrintDirective() {
       @Override
       public String getName() {

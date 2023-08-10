@@ -90,19 +90,21 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
   private final FileSetMetadata fileSetMetadata;
 
-  @VisibleForTesting protected PyCodeBuilder pyCodeBuilder;
+  @VisibleForTesting PyCodeBuilder pyCodeBuilder;
 
   private final IsComputableAsPyExprVisitor isComputableAsPyExprVisitor;
 
   @VisibleForTesting final GenPyExprsVisitorFactory genPyExprsVisitorFactory;
 
-  @VisibleForTesting protected GenPyExprsVisitor genPyExprsVisitor;
+  @VisibleForTesting GenPyExprsVisitor genPyExprsVisitor;
 
   private final GenPyCallExprVisitor genPyCallExprVisitor;
   private final PythonValueFactoryImpl pluginValueFactory;
 
-  /** @see LocalVariableStack */
-  @VisibleForTesting protected LocalVariableStack localVarExprs;
+  /**
+   * @see LocalVariableStack
+   */
+  @VisibleForTesting LocalVariableStack localVarExprs;
 
   private static final SoyErrorKind DELEGATE_TEMPLATES_UNSUPPORTED =
       SoyErrorKind.of("Deltemplates are not supported in python.");
@@ -128,7 +130,7 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
         new ImmutableMap.Builder<String, String>()
             .putAll(pySrcOptions.getNamespaceManifest())
             .putAll(currentManifest)
-            .build();
+            .buildOrThrow();
   }
 
   public List<String> gen(SoyFileSetNode node, ErrorReporter errorReporter) {

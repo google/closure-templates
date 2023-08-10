@@ -74,7 +74,7 @@ final class JbcSrcValueFactory extends JavaValueFactory {
 
   JbcSrcValueFactory(
       JavaPluginExecContext fnNode,
-      final JbcSrcPluginContext jbcPluginContext,
+      JbcSrcPluginContext jbcPluginContext,
       PluginInstanceLookup pluginInstanceLookup,
       ErrorReporter errorReporter,
       SoyTypeRegistry registry,

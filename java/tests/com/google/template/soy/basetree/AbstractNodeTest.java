@@ -62,7 +62,7 @@ public final class AbstractNodeTest {
     assertNull(leaf.getNearestAncestor(DopeyNode.class));
   }
 
-  private static interface DummyNode extends SoyNode {}
+  private interface DummyNode extends SoyNode {}
 
   private abstract static class BaseNode extends AbstractParentSoyNode<SoyNode> {
     protected BaseNode() {

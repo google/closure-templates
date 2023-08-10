@@ -110,7 +110,7 @@ public abstract class ConstructorRef {
    * Returns an expression that constructs a new instance of {@link #instanceClass()} by calling
    * this constructor.
    */
-  public Expression construct(final Expression... args) {
+  public Expression construct(Expression... args) {
     return construct(Arrays.asList(args));
   }
 
@@ -118,7 +118,7 @@ public abstract class ConstructorRef {
    * Returns an expression that constructs a new instance of {@link #instanceClass()} by calling
    * this constructor.
    */
-  public Expression construct(final Iterable<? extends Expression> args) {
+  public Expression construct(Iterable<? extends Expression> args) {
     Expression.checkTypes(argTypes(), args);
     return new Expression(instanceClass().type(), Feature.NON_NULLABLE) {
       @Override

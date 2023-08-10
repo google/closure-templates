@@ -837,7 +837,7 @@ public final class CodeChunkTest {
                     .asStatement())
             .setElse(id("foo", ImmutableList.of(GoogRequire.create("foo.quux"))).asStatement())
             .build();
-    final List<String> namespaces = new ArrayList<>();
+    List<String> namespaces = new ArrayList<>();
     chunk.collectRequires(r -> namespaces.add(r.symbol()));
     assertThat(namespaces).containsExactly("foo.bar", "foo.baz", "foo.quux");
   }

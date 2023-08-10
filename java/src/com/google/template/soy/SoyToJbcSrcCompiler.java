@@ -73,7 +73,7 @@ public final class SoyToJbcSrcCompiler extends AbstractSoyCompiler {
     sfs.compileToJar(jarTarget, srcJarTarget);
   }
 
-  public static void main(final String[] args) {
+  public static void main(String[] args) {
     new SoyToJbcSrcCompiler().runMain(args);
   }
 }

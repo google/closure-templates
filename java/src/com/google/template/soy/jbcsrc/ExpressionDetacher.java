@@ -168,7 +168,7 @@ interface ExpressionDetacher {
     }
 
     @Override
-    public Expression resolveSoyValueProvider(final Expression soyValueProvider) {
+    public Expression resolveSoyValueProvider(Expression soyValueProvider) {
       soyValueProvider.checkAssignableTo(SOY_VALUE_PROVIDER_TYPE);
       // if this expression is already assignable to a SoyValue, we don't need to do
       // anything.
@@ -179,7 +179,7 @@ interface ExpressionDetacher {
     }
 
     @Override
-    public Expression resolveSoyValueProviderList(final Expression soyValueProviderList) {
+    public Expression resolveSoyValueProviderList(Expression soyValueProviderList) {
       soyValueProviderList.checkAssignableTo(BytecodeUtils.LIST_TYPE);
       Statement saveOperation = saveOperationSupplier.get();
       return new Expression(soyValueProviderList.resultType()) {
@@ -207,7 +207,7 @@ interface ExpressionDetacher {
     }
 
     @Override
-    public Expression resolveSoyValueProviderMap(final Expression soyValueProviderMap) {
+    public Expression resolveSoyValueProviderMap(Expression soyValueProviderMap) {
       soyValueProviderMap.checkAssignableTo(BytecodeUtils.MAP_TYPE);
       Statement saveOperation = saveOperationSupplier.get();
       return new Expression(soyValueProviderMap.resultType()) {

@@ -435,8 +435,8 @@ final class TemplateCompiler {
                 template.typeInfo().type(), BytecodeUtils.CLASS_INIT, /* isStatic=*/ true),
             javaSourceFunctionCompiler,
             fileSetMetadata);
-    final Label start = new Label();
-    final Label end = new Label();
+    Label start = new Label();
+    Label end = new Label();
     ImmutableList.Builder<String> paramNames = ImmutableList.builder();
     if (template.hasPositionalSignature()) {
       paramNames.addAll(
@@ -450,9 +450,14 @@ final class TemplateCompiler {
     paramNames.add(StandardNames.APPENDABLE);
     paramNames.add(StandardNames.RENDER_CONTEXT);
     Method method = template.positionalRenderMethod().orElse(template.renderMethod()).method();
-    final TemplateVariableManager variableSet =
+    TemplateVariableManager variableSet =
         new TemplateVariableManager(
-            template.typeInfo().type(), method, paramNames.build(), start, end, /*isStatic=*/ true);
+            template.typeInfo().type(),
+            method,
+            paramNames.build(),
+            start,
+            end,
+            /* isStatic= */ true);
     Optional<Expression> paramsVar =
         template.hasPositionalSignature()
             ? Optional.empty()
@@ -513,7 +518,7 @@ final class TemplateCompiler {
                         localVariable, defaultValue.box())));
       }
     }
-    final CompiledMethodBody methodBody =
+    CompiledMethodBody methodBody =
         SoyNodeCompiler.create(
                 templateNode,
                 analysis,
@@ -529,8 +534,8 @@ final class TemplateCompiler {
                 templateNode,
                 /* prefix= */ ExtraCodeCompiler.NO_OP,
                 /* suffix= */ ExtraCodeCompiler.NO_OP);
-    final Statement exitTemplateScope = templateScope.exitScope();
-    final Statement returnDone = Statement.returnExpression(MethodRef.RENDER_RESULT_DONE.invoke());
+    Statement exitTemplateScope = templateScope.exitScope();
+    Statement returnDone = Statement.returnExpression(MethodRef.RENDER_RESULT_DONE.invoke());
     new Statement() {
       @Override
       protected void doGen(CodeBuilder adapter) {
@@ -619,8 +624,8 @@ final class TemplateCompiler {
       return;
     }
     Method method = template.renderMethod().method();
-    final Label start = new Label();
-    final Label end = new Label();
+    Label start = new Label();
+    Label end = new Label();
 
     ImmutableList.Builder<String> paramNames = ImmutableList.builder();
     paramNames.add(StandardNames.PARAMS);
@@ -628,9 +633,14 @@ final class TemplateCompiler {
     paramNames.add(StandardNames.APPENDABLE);
     paramNames.add(StandardNames.RENDER_CONTEXT);
 
-    final TemplateVariableManager variableSet =
+    TemplateVariableManager variableSet =
         new TemplateVariableManager(
-            template.typeInfo().type(), method, paramNames.build(), start, end, /*isStatic=*/ true);
+            template.typeInfo().type(),
+            method,
+            paramNames.build(),
+            start,
+            end,
+            /* isStatic= */ true);
     Expression paramsVar = variableSet.getVariable(StandardNames.PARAMS);
     Expression ijVar = variableSet.getVariable(StandardNames.IJ);
     Expression appendableVar = variableSet.getVariable(StandardNames.APPENDABLE);

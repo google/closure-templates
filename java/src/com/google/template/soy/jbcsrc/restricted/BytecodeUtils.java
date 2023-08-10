@@ -301,7 +301,7 @@ public final class BytecodeUtils {
   }
 
   /** Returns an {@link Expression} that can load the given int constant. */
-  public static Expression constant(final int value) {
+  public static Expression constant(int value) {
     return new Expression(Type.INT_TYPE, Feature.CHEAP) {
       @Override
       protected void doGen(CodeBuilder mv) {
@@ -311,7 +311,7 @@ public final class BytecodeUtils {
   }
 
   /** Returns an {@link Expression} that can load the given char constant. */
-  public static Expression constant(final char value) {
+  public static Expression constant(char value) {
     return new Expression(Type.CHAR_TYPE, Feature.CHEAP) {
       @Override
       protected void doGen(CodeBuilder mv) {
@@ -321,7 +321,7 @@ public final class BytecodeUtils {
   }
 
   /** Returns an {@link Expression} that can load the given long constant. */
-  public static Expression constant(final long value) {
+  public static Expression constant(long value) {
     return new Expression(Type.LONG_TYPE, Feature.CHEAP) {
       @Override
       protected void doGen(CodeBuilder mv) {
@@ -331,7 +331,7 @@ public final class BytecodeUtils {
   }
 
   /** Returns an {@link Expression} that can load the given double constant. */
-  public static Expression constant(final double value) {
+  public static Expression constant(double value) {
     return new Expression(Type.DOUBLE_TYPE, Feature.CHEAP) {
       @Override
       protected void doGen(CodeBuilder mv) {
@@ -341,7 +341,7 @@ public final class BytecodeUtils {
   }
 
   /** Returns an {@link Expression} that can load the given double constant. */
-  public static Expression constant(final float value) {
+  public static Expression constant(float value) {
     return new Expression(Type.FLOAT_TYPE, Feature.CHEAP) {
       @Override
       protected void doGen(CodeBuilder mv) {
@@ -550,7 +550,7 @@ public final class BytecodeUtils {
     mg.endMethod();
   }
 
-  public static Expression compareSoyEquals(final SoyExpression left, final SoyExpression right) {
+  public static Expression compareSoyEquals(SoyExpression left, SoyExpression right) {
     // We can special case when we know the types.
     // If either is a string, we run special logic so test for that first
     // otherwise we special case primitives and eventually fall back to our runtime.
@@ -580,8 +580,7 @@ public final class BytecodeUtils {
   }
 
   /** Compares two {@link SoyExpression}s for equality using soy === semantics. */
-  public static Expression compareSoyTripleEquals(
-      final SoyExpression left, final SoyExpression right) {
+  public static Expression compareSoyTripleEquals(SoyExpression left, SoyExpression right) {
     SoyRuntimeType leftRuntimeType = left.soyRuntimeType();
     SoyRuntimeType rightRuntimeType = right.soyRuntimeType();
     if (leftRuntimeType.isKnownInt()
@@ -631,7 +630,7 @@ public final class BytecodeUtils {
    * Returns an expression that evaluates to {@code left} if left is non null, and evaluates to
    * {@code right} otherwise.
    */
-  public static Expression firstNonNull(final Expression left, final Expression right) {
+  public static Expression firstNonNull(Expression left, Expression right) {
     checkArgument(
         left.resultType().getSort() == Type.OBJECT,
         "Expected left to be an object, got: %s",
@@ -696,10 +695,7 @@ public final class BytecodeUtils {
    * result type if they know more about the types of the branches.
    */
   public static Expression ternary(
-      final Expression condition,
-      final Expression trueBranch,
-      final Expression falseBranch,
-      Type resultType) {
+      Expression condition, Expression trueBranch, Expression falseBranch, Type resultType) {
     checkArgument(
         condition.resultType().equals(Type.BOOLEAN_TYPE),
         "The condition must be a boolean, got %s",
@@ -754,9 +750,8 @@ public final class BytecodeUtils {
         Iterables.concat(explicit, ImmutableList.of(remainder)));
   }
 
-  private static Expression asArray(
-      final Type arrayType, final ImmutableList<? extends Expression> elements) {
-    final Type elementType = arrayType.getElementType();
+  private static Expression asArray(Type arrayType, ImmutableList<? extends Expression> elements) {
+    Type elementType = arrayType.getElementType();
     return new Expression(arrayType, Feature.NON_NULLABLE) {
       @Override
       protected void doGen(CodeBuilder adapter) {
@@ -774,13 +769,13 @@ public final class BytecodeUtils {
 
   /** Returns an expression that returns a new {@link ArrayList} containing all the given items. */
   public static Expression asList(Iterable<? extends Expression> items) {
-    final ImmutableList<Expression> copy = ImmutableList.copyOf(items);
+    ImmutableList<Expression> copy = ImmutableList.copyOf(items);
     if (copy.isEmpty()) {
       return MethodRef.IMMUTABLE_LIST_OF.get(0).invoke();
     }
     // Note, we cannot necessarily use ImmutableList for anything besides the empty list because
     // we may need to put a null in it.
-    final Expression construct = ConstructorRef.ARRAY_LIST_SIZE.construct(constant(copy.size()));
+    Expression construct = ConstructorRef.ARRAY_LIST_SIZE.construct(constant(copy.size()));
     return new Expression(LIST_TYPE, Feature.NON_NULLABLE) {
       @Override
       protected void doGen(CodeBuilder mv) {
@@ -896,15 +891,14 @@ public final class BytecodeUtils {
       Iterable<? extends Expression> values,
       ConstructorRef constructorRef,
       Type mapType) {
-    final ImmutableList<Expression> keysCopy = ImmutableList.copyOf(keys);
-    final ImmutableList<Expression> valuesCopy = ImmutableList.copyOf(values);
+    ImmutableList<Expression> keysCopy = ImmutableList.copyOf(keys);
+    ImmutableList<Expression> valuesCopy = ImmutableList.copyOf(values);
     checkArgument(keysCopy.size() == valuesCopy.size());
     for (int i = 0; i < keysCopy.size(); i++) {
       checkArgument(keysCopy.get(i).resultType().getSort() == Type.OBJECT);
       checkArgument(valuesCopy.get(i).resultType().getSort() == Type.OBJECT);
     }
-    final Expression construct =
-        constructorRef.construct(constant(hashMapCapacity(keysCopy.size())));
+    Expression construct = constructorRef.construct(constant(hashMapCapacity(keysCopy.size())));
     return new Expression(mapType, Feature.NON_NULLABLE) {
       @Override
       protected void doGen(CodeBuilder mv) {
@@ -939,7 +933,7 @@ public final class BytecodeUtils {
    * Returns a {@link SoyExpression} that evaluates to true if the expression evaluated to a
    * non-null value.
    */
-  public static SoyExpression isNonNull(final Expression expr) {
+  public static SoyExpression isNonNull(Expression expr) {
     if (BytecodeUtils.isPrimitive(expr.resultType())) {
       // Reference the statement so that the SoyValueProvider detaches for resolve, and
       // TemplateAnalysis will correctly cause subsequent accesses to resolve immediately.
@@ -950,7 +944,7 @@ public final class BytecodeUtils {
   }
 
   /** Returns a {@link SoyExpression} that evaluates to true if the expression evaluated to null. */
-  public static SoyExpression isNull(final Expression expr) {
+  public static SoyExpression isNull(Expression expr) {
     if (BytecodeUtils.isPrimitive(expr.resultType())) {
       // Reference the statement so that the SoyValueProvider detaches for resolve, and
       // TemplateAnalysis will correctly cause subsequent accesses to resolve immediately.

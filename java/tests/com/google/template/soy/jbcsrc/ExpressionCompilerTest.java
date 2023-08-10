@@ -658,7 +658,7 @@ public class ExpressionCompilerTest {
    * This helper can take a SoyExpression and essentially strip type information from it, this is
    * useful for testing fallback implementations in the compiler.
    */
-  private SoyExpression untypedBoxedSoyExpression(final SoyExpression expr) {
+  private SoyExpression untypedBoxedSoyExpression(SoyExpression expr) {
     return SoyExpression.forSoyValue(UnknownType.getInstance(), expr.box());
   }
 }

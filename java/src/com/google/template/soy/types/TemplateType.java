@@ -206,7 +206,7 @@ public abstract class TemplateType extends SoyType {
      * though we might only lazily calculate the type.
      */
     abstract static class LazyTypeWrapper {
-      static LazyTypeWrapper constant(final SoyType type) {
+      static LazyTypeWrapper constant(SoyType type) {
         return new LazyTypeWrapper() {
           @Override
           SoyType getType() {
@@ -215,7 +215,7 @@ public abstract class TemplateType extends SoyType {
         };
       }
 
-      static LazyTypeWrapper fromSupplier(final Supplier<SoyType> typeSupplier) {
+      static LazyTypeWrapper fromSupplier(Supplier<SoyType> typeSupplier) {
         return new LazyTypeWrapper() {
           @LazyInit SoyType type;
 
@@ -293,11 +293,11 @@ public abstract class TemplateType extends SoyType {
     public abstract static class Builder {
       public abstract Builder setName(String name);
 
-      public Builder setTypeLazily(final Supplier<SoyType> typeSupplier) {
+      public Builder setTypeLazily(Supplier<SoyType> typeSupplier) {
         return setTypeWrapper(LazyTypeWrapper.fromSupplier(typeSupplier));
       }
 
-      public Builder setType(final SoyType type) {
+      public Builder setType(SoyType type) {
         return setTypeWrapper(LazyTypeWrapper.constant(type));
       }
 

@@ -183,10 +183,10 @@ public final class PySrcMain {
       ErrorReporter errorReporter,
       ImmutableMap<String, String> currentManifest,
       FileSetMetadata fileSetMetadata) {
-    final IsComputableAsPyExprVisitor isComputableAsPyExprs = new IsComputableAsPyExprVisitor();
+    IsComputableAsPyExprVisitor isComputableAsPyExprs = new IsComputableAsPyExprVisitor();
     // There is a circular dependency between the GenPyExprsVisitorFactory and GenPyCallExprVisitor
     // here we resolve it with a mutable field in a custom provider
-    final PythonValueFactoryImpl pluginValueFactory =
+    PythonValueFactoryImpl pluginValueFactory =
         new PythonValueFactoryImpl(errorReporter, bidiGlobalDir);
     class PyCallExprVisitorSupplier implements Supplier<GenPyCallExprVisitor> {
       GenPyExprsVisitorFactory factory;

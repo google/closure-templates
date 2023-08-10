@@ -137,7 +137,7 @@ final class SimpleLocalVariableManager implements LocalVariableManager {
   @Override
   public Scope enterScope() {
     checkState(!generated);
-    final List<LocalVariable> frame = new ArrayList<>();
+    List<LocalVariable> frame = new ArrayList<>();
     return new Scope() {
       final Label scopeExit = new Label();
       boolean exited;

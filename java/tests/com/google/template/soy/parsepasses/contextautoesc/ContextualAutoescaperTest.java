@@ -1667,7 +1667,7 @@ public final class ContextualAutoescaperTest {
 
     TemplateNode mainTemplate = (TemplateNode) rewrite(source).getChild(0);
     assertWithMessage("Sanity check").that(mainTemplate.getTemplateName()).isEqualTo("ns.main");
-    final List<CallNode> callNodes = SoyTreeUtils.getAllNodesOfType(mainTemplate, CallNode.class);
+    List<CallNode> callNodes = SoyTreeUtils.getAllNodesOfType(mainTemplate, CallNode.class);
     assertThat(callNodes).hasSize(2);
     assertWithMessage("HTML->HTML escaping should be pruned")
         .that(callNodes.get(0).getEscapingDirectives())

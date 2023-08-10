@@ -26,10 +26,11 @@ public final class SoyToIncrementalDomInteropSrcCompiler extends AbstractSoyComp
 
   private final PerInputOutputFiles outputFiles =
       new PerInputOutputFiles("useidom.js", PerInputOutputFiles.JS_JOINER);
+
   /**
    * @param args Should contain command-line flags and the list of paths to the Soy files.
    */
-  public static void main(final String[] args) {
+  public static void main(String[] args) {
     new SoyToIncrementalDomInteropSrcCompiler().runMain(args);
   }
 

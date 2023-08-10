@@ -135,7 +135,7 @@ public final class AnnotationRef<T extends Annotation> {
 
   /** Writes an annotation valued field to the writer. */
   private static <T extends Annotation> FieldWriter annotationFieldWriter(
-      final String name, final AnnotationRef<T> ref) {
+      String name, AnnotationRef<T> ref) {
     return (visitor, value, defaultValue) -> {
       if (!Objects.equals(value, defaultValue)) {
         ref.doWrite(ref.annType.cast(value), visitor.visitAnnotation(name, ref.typeDescriptor));
@@ -148,7 +148,7 @@ public final class AnnotationRef<T extends Annotation> {
    *
    * <p>See {@link AnnotationVisitor#visit(String, Object)} for the valid types.
    */
-  private static FieldWriter simpleFieldWriter(final String name) {
+  private static FieldWriter simpleFieldWriter(String name) {
     return (visitor, value, defaultValue) -> {
       if (!Objects.equals(value, defaultValue)) {
         visitor.visit(name, value);
@@ -161,8 +161,8 @@ public final class AnnotationRef<T extends Annotation> {
    *
    * <p>See {@link AnnotationVisitor#visitEnum(String, String, String)} for the valid types.
    */
-  private static FieldWriter simpleEumFieldWriter(final String name, Class<?> enumType) {
-    final String descriptor = Type.getDescriptor(enumType);
+  private static FieldWriter simpleEumFieldWriter(String name, Class<?> enumType) {
+    String descriptor = Type.getDescriptor(enumType);
     return (visitor, value, defaultValue) -> {
       if (!Objects.equals(value, defaultValue)) {
         visitor.visitEnum(name, descriptor, ((Enum) value).name());
@@ -185,7 +185,7 @@ public final class AnnotationRef<T extends Annotation> {
   }
 
   /** Writes an simple array valued field to the annotation visitor. */
-  private static FieldWriter simpleArrayFieldWriter(final String name) {
+  private static FieldWriter simpleArrayFieldWriter(String name) {
     return (visitor, value, defaultValue) -> {
       if (!areEqualGenericArrays(value, defaultValue)) {
         int len = Array.getLength(value);
@@ -200,7 +200,7 @@ public final class AnnotationRef<T extends Annotation> {
 
   /** Writes an annotation array valued field to the annotation visitor. */
   private static <T extends Annotation> FieldWriter annotationArrayFieldWriter(
-      final String name, final AnnotationRef<T> ref) {
+      String name, AnnotationRef<T> ref) {
     return (visitor, value, defaultValue) -> {
       if (!areEqualGenericArrays(value, defaultValue)) {
         int len = Array.getLength(value);

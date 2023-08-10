@@ -82,8 +82,7 @@ public final class InternalPlugins {
                 Function.identity()));
   }
 
-  public static ImmutableList<SoyPrintDirective> internalDirectives(
-      final SoyScopedData soyScopedData) {
+  public static ImmutableList<SoyPrintDirective> internalDirectives(SoyScopedData soyScopedData) {
     Supplier<BidiGlobalDir> bidiProvider = soyScopedData::getBidiGlobalDir;
     return ImmutableList.copyOf(
         Iterables.concat(

@@ -95,14 +95,14 @@ public class IncrementalDomSrcMain {
   }
 
   static GenIncrementalDomCodeVisitor createVisitor(
-      final SoyJsSrcOptions options,
+      SoyJsSrcOptions options,
       SoyTypeRegistry typeRegistry,
       BidiGlobalDir dir,
       ErrorReporter errorReporter) {
-    final IncrementalDomDelTemplateNamer delTemplateNamer = new IncrementalDomDelTemplateNamer();
-    final IsComputableAsIncrementalDomExprsVisitor isComputableAsJsExprsVisitor =
+    IncrementalDomDelTemplateNamer delTemplateNamer = new IncrementalDomDelTemplateNamer();
+    IsComputableAsIncrementalDomExprsVisitor isComputableAsJsExprsVisitor =
         new IsComputableAsIncrementalDomExprsVisitor();
-    final JavaScriptValueFactoryImpl javaScriptValueFactory =
+    JavaScriptValueFactoryImpl javaScriptValueFactory =
         new JavaScriptValueFactoryImpl(dir, errorReporter);
     CanInitOutputVarVisitor canInitOutputVarVisitor =
         new CanInitOutputVarVisitor(isComputableAsJsExprsVisitor);

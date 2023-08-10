@@ -51,7 +51,7 @@ final class ControlFlow {
    * Returns a statement that encodes the given sequence of {@link IfBlock if blocks} as an
    * if-elseif-else chain.
    */
-  static Statement ifElseChain(final List<IfBlock> ifs, final Optional<Statement> elseBlock) {
+  static Statement ifElseChain(List<IfBlock> ifs, Optional<Statement> elseBlock) {
     checkArgument(!ifs.isEmpty());
     return new Statement() {
       @Override

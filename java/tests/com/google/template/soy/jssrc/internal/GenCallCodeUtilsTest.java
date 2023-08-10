@@ -97,7 +97,7 @@ public final class GenCallCodeUtilsTest {
                 + "{goo: soy.VERY_UNSAFE.$$ordainSanitizedHtmlForInternalBlocks('Blah')}, "
                 + "boo), $ijData);");
 
-    final String callExprText =
+    String callExprText =
         getCallExprTextHelper(
             "{call someFunc}\n"
                 + "  {param goo kind=\"html\"}\n"

@@ -1136,7 +1136,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
     return construct(SOY_VISUAL_ELEMENT, visit(node.getChild(1)), metadataExpr, debugNameExpr);
   }
 
-  private static SoyJsSrcFunction getUnknownFunction(final String name, final int argSize) {
+  private static SoyJsSrcFunction getUnknownFunction(String name, int argSize) {
     return new SoyJsSrcFunction() {
       @Override
       public JsExpr computeForJsSrc(List<JsExpr> args) {

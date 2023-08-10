@@ -126,7 +126,7 @@ public final class LocalVariable extends Expression {
   /**
    * Return a {@link Statement} that stores the value of the given expression into this variable.
    */
-  public Statement store(final Expression expr) {
+  public Statement store(Expression expr) {
     return store(expr, Optional.empty());
   }
 
@@ -136,12 +136,12 @@ public final class LocalVariable extends Expression {
    * @param expr The expression to store
    * @param firstVarInstruction A label to use to mark the store instruction
    */
-  public Statement store(final Expression expr, Label firstVarInstruction) {
+  public Statement store(Expression expr, Label firstVarInstruction) {
     return store(expr, Optional.of(firstVarInstruction));
   }
 
   /** Writes the value at the top of the stack to the local variable. */
-  private Statement store(final Expression expr, final Optional<Label> firstVarInstruction) {
+  private Statement store(Expression expr, Optional<Label> firstVarInstruction) {
     expr.checkAssignableTo(resultType());
     return new Statement() {
       @Override

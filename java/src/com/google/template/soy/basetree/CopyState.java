@@ -74,7 +74,7 @@ public final class CopyState {
    *
    * <p>Note: the listener may be executed inline or not at all.
    */
-  public <T> void registerRefListener(T oldObject, final Listener<T> listener) {
+  public <T> void registerRefListener(T oldObject, Listener<T> listener) {
     checkNotNull(oldObject);
     checkNotNull(listener);
     Object oldMapping = mappings.get(oldObject);
@@ -84,7 +84,7 @@ public final class CopyState {
     } else if (oldMapping instanceof Listener) {
       // chain the listeners
       @SuppressWarnings("unchecked") // Listener<T> can only be registered with a T
-      final Listener<T> oldListener = (Listener) oldMapping;
+      Listener<T> oldListener = (Listener) oldMapping;
       mappings.put(oldObject, chainListeners(listener, oldListener));
     } else {
       // if there was a value mapped to the old object it must have been a T
@@ -121,8 +121,7 @@ public final class CopyState {
     }
   }
 
-  private static <T> Listener<T> chainListeners(
-      final Listener<T> listener, final Listener<T> oldListener) {
+  private static <T> Listener<T> chainListeners(Listener<T> listener, Listener<T> oldListener) {
     return newObject -> {
       listener.newVersion(newObject);
       oldListener.newVersion(newObject);

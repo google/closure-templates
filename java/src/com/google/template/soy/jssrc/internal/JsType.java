@@ -499,8 +499,8 @@ public final class JsType {
       case MESSAGE:
         return MESSAGE_TYPE;
       case PROTO:
-        final SoyProtoType protoType = (SoyProtoType) soyType;
-        final String protoTypeName =
+        SoyProtoType protoType = (SoyProtoType) soyType;
+        String protoTypeName =
             protoType.getJsName(
                 /* mutabilityMode= */ messageTypeMode == MessageTypeMode.READONLY
                     ? ProtoUtils.MutabilityMode.READONLY
@@ -542,8 +542,8 @@ public final class JsType {
         {
           UnionType unionType = (UnionType) soyType;
           Builder builder = builder();
-          final Set<JsType> types = new LinkedHashSet<>();
-          final boolean isNullable = unionType.isNullable();
+          Set<JsType> types = new LinkedHashSet<>();
+          boolean isNullable = unionType.isNullable();
           // handle null first so that if other type tests dereference the param they won't fail
           if (isNullable) {
             builder.addTypes(NULL_OR_UNDEFINED_TYPE.typeExpressions);
@@ -787,7 +787,7 @@ public final class JsType {
             stringLiteral(typeExpr())));
   }
 
-  private static JsType createSanitized(final SanitizedContentKind kind, boolean isStrict) {
+  private static JsType createSanitized(SanitizedContentKind kind, boolean isStrict) {
     if (kind == SanitizedContentKind.TEXT) {
       return STRING_TYPE;
     }
@@ -848,7 +848,7 @@ public final class JsType {
 
     // TODO(lukes): consider eliminating the isCompatibleWith method and just inlining the
     // assertions, or as mentioned above we could just coerce to SanitizedContent consistently
-    final String compatibleWithString = isStrict ? "isCompatibleWithStrict" : "isCompatibleWith";
+    String compatibleWithString = isStrict ? "isCompatibleWithStrict" : "isCompatibleWith";
     return builder
         .setPredicate(
             (value, codeGenerator) ->
@@ -898,7 +898,7 @@ public final class JsType {
     }
 
     /** Sets a predicate which simply invokes the given function. */
-    Builder setPredicate(final Expression predicateFunction) {
+    Builder setPredicate(Expression predicateFunction) {
       return setPredicate(
           (value, codeGenerator) -> Optional.of(checkNotNull(predicateFunction).call(value)));
     }

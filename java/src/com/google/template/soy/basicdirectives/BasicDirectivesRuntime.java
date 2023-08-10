@@ -274,7 +274,7 @@ public final class BasicDirectivesRuntime {
   }
 
   public static LoggingAdvisingAppendable insertWordBreaksStreaming(
-      LoggingAdvisingAppendable appendable, final int maxCharsBetweenWordBreaks) {
+      LoggingAdvisingAppendable appendable, int maxCharsBetweenWordBreaks) {
     return new ForwardingLoggingAdvisingAppendable(appendable) {
       private final InsertWordBreaks insertWordBreaks =
           new InsertWordBreaks(maxCharsBetweenWordBreaks);

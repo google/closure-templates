@@ -332,7 +332,7 @@ public final class SoyExpression extends Expression {
     }
     // If null is expected and it is a reference type we want to propagate null through the boxing
     // operation
-    final boolean isNonNullable = delegate.isNonNullable();
+    boolean isNonNullable = delegate.isNonNullable();
     return asBoxed(
         new Expression(soyRuntimeType.box().runtimeType(), features()) {
           @Override

@@ -444,8 +444,8 @@ final class LazyClosureCompiler {
     }
 
     Expression compileExpression(ExprNode exprNode) {
-      final Label start = new Label();
-      final Label end = new Label();
+      Label start = new Label();
+      Label end = new Label();
       TemplateVariableManager variableSet =
           new TemplateVariableManager(
               type.type(),
@@ -454,7 +454,7 @@ final class LazyClosureCompiler {
               start,
               end,
               /* isStatic=*/ false);
-      final Expression thisVar = variableSet.getVariable("this");
+      Expression thisVar = variableSet.getVariable("this");
       LazyClosureParameterLookup lookup =
           new LazyClosureParameterLookup(this, parent.parameterLookup, variableSet, thisVar);
       SoyExpression compile =
@@ -467,8 +467,8 @@ final class LazyClosureCompiler {
                   parent.fileSetMetadata)
               .compile(exprNode);
       SoyExpression expression = compile.box();
-      final Statement storeExpr = RESOLVED_VALUE.putInstanceField(thisVar, expression);
-      final Statement returnDone = Statement.returnExpression(RENDER_RESULT_DONE.invoke());
+      Statement storeExpr = RESOLVED_VALUE.putInstanceField(thisVar, expression);
+      Statement returnDone = Statement.returnExpression(RENDER_RESULT_DONE.invoke());
       Statement doResolveImpl =
           new Statement() {
             @Override
@@ -490,8 +490,8 @@ final class LazyClosureCompiler {
     }
 
     Optional<Expression> compileExpressionToSoyValueProviderIfUseful(ExprNode exprNode) {
-      final Label start = new Label();
-      final Label end = new Label();
+      Label start = new Label();
+      Label end = new Label();
       TemplateVariableManager variableSet =
           new TemplateVariableManager(
               type.type(),
@@ -500,7 +500,7 @@ final class LazyClosureCompiler {
               start,
               end,
               /*isStatic=*/ false);
-      final Expression thisVar = variableSet.getVariable("this");
+      Expression thisVar = variableSet.getVariable("this");
 
       LazyClosureParameterLookup lookup =
           new LazyClosureParameterLookup(this, parent.parameterLookup, variableSet, thisVar);
@@ -521,8 +521,8 @@ final class LazyClosureCompiler {
         return Optional.empty();
       }
 
-      final Statement storeExpr = RESOLVED_VALUE_PROVIDER.putInstanceField(thisVar, expr.get());
-      final Statement returnDone = Statement.returnExpression(RENDER_RESULT_DONE.invoke());
+      Statement storeExpr = RESOLVED_VALUE_PROVIDER.putInstanceField(thisVar, expr.get());
+      Statement returnDone = Statement.returnExpression(RENDER_RESULT_DONE.invoke());
       Statement doResolveImpl =
           new Statement() {
             @Override
@@ -546,8 +546,8 @@ final class LazyClosureCompiler {
     Expression compileRenderable(
         RenderUnitNode renderUnit, ExtraCodeCompiler prefix, ExtraCodeCompiler suffix) {
 
-      final Label start = new Label();
-      final Label end = new Label();
+      Label start = new Label();
+      Label end = new Label();
       BasicExpressionCompiler constantCompiler =
           ExpressionCompiler.createConstantCompiler(
               node,
@@ -556,14 +556,14 @@ final class LazyClosureCompiler {
                   type.type(), BytecodeUtils.CLASS_INIT, /* isStatic=*/ true),
               parent.javaSourceFunctionCompiler,
               parent.fileSetMetadata);
-      final TemplateVariableManager variableSet =
+      TemplateVariableManager variableSet =
           new TemplateVariableManager(
               type.type(),
               DO_RENDER,
               ImmutableList.of(StandardNames.APPENDABLE),
               start,
               end,
-              /* isStatic=*/ false);
+              /* isStatic= */ false);
 
       LazyClosureParameterLookup lookup =
           new LazyClosureParameterLookup(
@@ -583,8 +583,8 @@ final class LazyClosureCompiler {
               parent.fileSetMetadata);
       CompiledMethodBody compileChildren = soyNodeCompiler.compile(renderUnit, prefix, suffix);
       writer.setNumDetachStates(compileChildren.numberOfDetachStates());
-      final Statement nodeBody = compileChildren.body();
-      final Statement returnDone = returnExpression(MethodRef.RENDER_RESULT_DONE.invoke());
+      Statement nodeBody = compileChildren.body();
+      Statement returnDone = returnExpression(MethodRef.RENDER_RESULT_DONE.invoke());
       Statement fullMethodBody =
           new Statement() {
             @Override
@@ -612,13 +612,13 @@ final class LazyClosureCompiler {
      * <p>This constructor is called by the generate factory classes.
      */
     Expression generateConstructor(Iterable<ParentCapture> captures) {
-      final Label start = new Label();
-      final Label end = new Label();
-      final LocalVariable thisVar = createThisVar(type, start, end);
-      final List<LocalVariable> params = new ArrayList<>();
+      Label start = new Label();
+      Label end = new Label();
+      LocalVariable thisVar = createThisVar(type, start, end);
+      List<LocalVariable> params = new ArrayList<>();
       List<Type> paramTypes = new ArrayList<>();
-      final List<Statement> assignments = new ArrayList<>();
-      final List<Expression> argExpressions = new ArrayList<>();
+      List<Statement> assignments = new ArrayList<>();
+      List<Expression> argExpressions = new ArrayList<>();
       int index = 1; // start at 1 since 'this' occupied slot 0
       for (ParentCapture capture : captures) {
         FieldRef field = capture.field();

@@ -455,13 +455,13 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     ForNonemptyNode nonEmptyNode = (ForNonemptyNode) node.getChild(0);
     Optional<RangeArgs> exprAsRangeArgs = RangeArgs.createFromNode(node);
     Scope scope = variables.enterScope();
-    final Variable indexVar;
-    final List<Statement> initializers = new ArrayList<>();
-    final Variable sizeVar;
-    final Variable itemVar;
-    final Variable userIndexVar;
+    Variable indexVar;
+    List<Statement> initializers = new ArrayList<>();
+    Variable sizeVar;
+    Variable itemVar;
+    Variable userIndexVar;
     if (exprAsRangeArgs.isPresent()) {
-      final CompiledForeachRangeArgs compiledArgs = calculateRangeArgs(node, scope);
+      CompiledForeachRangeArgs compiledArgs = calculateRangeArgs(node, scope);
       initializers.addAll(compiledArgs.initStatements());
       // The size is just the number of items in the range.  The logic is a little tricky so we
       // implement it in a runtime function: JbcsrcRuntime.rangeLoopLength
@@ -530,8 +530,8 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
               DERIVED);
     }
     initializers.add(sizeVar.initializer());
-    final Statement loopBody = visitChildrenInNewScope(nonEmptyNode);
-    final Statement exitScope = scope.exitScope();
+    Statement loopBody = visitChildrenInNewScope(nonEmptyNode);
+    Statement exitScope = scope.exitScope();
 
     return new Statement() {
       @Override
@@ -625,7 +625,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       Optional<ExprNode> expression,
       int defaultValue,
       Scope scope,
-      final ImmutableList.Builder<Statement> initStatements) {
+      ImmutableList.Builder<Statement> initStatements) {
     if (!expression.isPresent()) {
       return constant(defaultValue);
     } else if (expression.get() instanceof IntegerNode
@@ -940,25 +940,25 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   }
 
   @Override
-  protected Statement visitVeLogNode(final VeLogNode node) {
-    final Label restartPoint = new Label();
-    final Expression veData =
+  protected Statement visitVeLogNode(VeLogNode node) {
+    Label restartPoint = new Label();
+    Expression veData =
         exprCompiler.compileSubExpression(
             node.getVeDataExpression(), detachState.createExpressionDetacher(restartPoint));
-    final Expression hasLogger = parameterLookup.getRenderContext().hasLogger();
-    final Statement exitStatement =
+    Expression hasLogger = parameterLookup.getRenderContext().hasLogger();
+    Statement exitStatement =
         ControlFlow.IfBlock.create(
                 Branch.ifTrue(hasLogger), appendableExpression.exitLoggableElement().toStatement())
             .asStatement();
     if (node.getLogonlyExpression() != null) {
-      final Expression logonlyExpression =
+      Expression logonlyExpression =
           exprCompiler
               .compileSubExpression(
                   node.getLogonlyExpression(), detachState.createExpressionDetacher(restartPoint))
               .unboxAsBoolean();
       // needs to be called after evaluating the logonly expression so variables defined in the
       // block aren't part of the save restore state for the logonly expression.
-      final Statement body = Statement.concat(visitChildrenInNewScope(node));
+      Statement body = Statement.concat(visitChildrenInNewScope(node));
       return new Statement() {
         @Override
         protected void doGen(CodeBuilder cb) {
@@ -1000,7 +1000,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
         }
       };
     } else {
-      final Statement enterStatement =
+      Statement enterStatement =
           ControlFlow.IfBlock.create(
                   Branch.ifTrue(hasLogger),
                   appendableExpression
@@ -1276,8 +1276,8 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     Statement flushAppendable = Statement.NULL_STATEMENT;
     AppendableExpression appendable = appendableExpression;
 
-    final BoundCallGenerator boundCall;
-    final Statement initParams;
+    BoundCallGenerator boundCall;
+    Statement initParams;
 
     TemplateVariableManager.Scope renderScope = variables.enterScope();
     RecordOrPositional paramsExpression = prepareParamsHelper(node);

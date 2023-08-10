@@ -59,7 +59,7 @@ public abstract class Statement extends BytecodeProducer {
    * <p>This does not validate that the return type is appropriate. It is our callers responsibility
    * to do that.
    */
-  public static Statement returnExpression(final Expression expression) {
+  public static Statement returnExpression(Expression expression) {
     // TODO(lukes): it would be nice to do a checkType operation here to make sure that expression
     // is compatible with the return type of the method, but i don't know how to get that
     // information here (reasonably).  So it is the caller's responsibility.
@@ -77,7 +77,7 @@ public abstract class Statement extends BytecodeProducer {
    *
    * <p>This does not validate that the throwable is compatible with the methods throws clause.
    */
-  public static Statement throwExpression(final Expression expression) {
+  public static Statement throwExpression(Expression expression) {
     expression.checkAssignableTo(THROWABLE_TYPE);
     return new Statement() {
       @Override
@@ -94,7 +94,7 @@ public abstract class Statement extends BytecodeProducer {
   }
 
   /** Returns a statement that concatenates all the provided statements. */
-  public static Statement concat(final Iterable<? extends Statement> statements) {
+  public static Statement concat(Iterable<? extends Statement> statements) {
     checkNotNull(statements);
     return new Statement() {
       @Override
@@ -155,11 +155,12 @@ public abstract class Statement extends BytecodeProducer {
       }
     }
   }
+
   /**
    * Returns a new statement identical to this one but with the given label applied at the start of
    * the statement.
    */
-  public final Statement labelStart(final Label label) {
+  public final Statement labelStart(Label label) {
     return new Statement() {
       @Override
       protected void doGen(CodeBuilder adapter) {
@@ -173,7 +174,7 @@ public abstract class Statement extends BytecodeProducer {
    * Returns a new statement identical to this one but with the given label applied at the start of
    * the statement.
    */
-  public final Statement labelEnd(final Label label) {
+  public final Statement labelEnd(Label label) {
     return new Statement() {
       @Override
       protected void doGen(CodeBuilder adapter) {
@@ -198,7 +199,7 @@ public abstract class Statement extends BytecodeProducer {
   }
 
   /** Returns an Expression that evaluates this statement followed by the given expression. */
-  public final Expression then(final Expression expression) {
+  public final Expression then(Expression expression) {
     return new Expression(expression.resultType(), expression.features()) {
       @Override
       protected void doGen(CodeBuilder adapter) {

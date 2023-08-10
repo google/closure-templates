@@ -68,7 +68,7 @@ public class SoyAbstractCachingValueProviderTest {
 
   @Test
   public void testValueAssertions() {
-    final AtomicInteger counter = new AtomicInteger();
+    AtomicInteger counter = new AtomicInteger();
     ValueAssertion assertion =
         new ValueAssertion() {
           @Override

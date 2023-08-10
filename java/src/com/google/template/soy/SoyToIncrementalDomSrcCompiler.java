@@ -61,12 +61,13 @@ public final class SoyToIncrementalDomSrcCompiler extends AbstractSoyCompiler {
 
   private final PerInputOutputFiles outputFiles =
       new PerInputOutputFiles("idom.soy.js", PerInputOutputFiles.JS_JOINER);
+
   /**
    * Compiles a set of Soy files into corresponding Incremental DOM source files.
    *
    * @param args Should contain command-line flags and the list of paths to the Soy files.
    */
-  public static void main(final String[] args) {
+  public static void main(String[] args) {
     new SoyToIncrementalDomSrcCompiler().runMain(args);
   }
 

@@ -740,11 +740,11 @@ public abstract class MethodRef {
   // TODO(lukes): consider different names.  'invocation'? invoke() makes it sounds like we are
   // actually calling the method rather than generating an expression that will output code that
   // will invoke the method.
-  public Statement invokeVoid(final Expression... args) {
+  public Statement invokeVoid(Expression... args) {
     return invokeVoid(Arrays.asList(args));
   }
 
-  public Statement invokeVoid(final Iterable<? extends Expression> args) {
+  public Statement invokeVoid(Iterable<? extends Expression> args) {
     checkState(Type.VOID_TYPE.equals(returnType()), "Method return type is not void.");
     Expression.checkTypes(argTypes(), args);
     return new Statement() {
@@ -755,11 +755,11 @@ public abstract class MethodRef {
     };
   }
 
-  public Expression invoke(final Expression... args) {
+  public Expression invoke(Expression... args) {
     return invoke(Arrays.asList(args));
   }
 
-  public Expression invoke(final Iterable<? extends Expression> args) {
+  public Expression invoke(Iterable<? extends Expression> args) {
     // void methods violate the expression contract of pushing a result onto the runtime stack.
     checkState(
         !Type.VOID_TYPE.equals(returnType()), "Cannot produce an expression from a void method.");

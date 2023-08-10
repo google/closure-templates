@@ -56,7 +56,7 @@ public final class GenIncrementalDomInteropVisitor extends GenJsCodeVisitor {
   private GoogRequire soyJsGoogRequire;
   private final Expression shouldStub = GOOG_SOY_ALIAS.dotAccess("shouldStub");
 
-  protected GenIncrementalDomInteropVisitor(
+  GenIncrementalDomInteropVisitor(
       SoyJsSrcOptions jsSrcOptions,
       JavaScriptValueFactoryImpl javaScriptValueFactory,
       DelTemplateNamer delTemplateNamer,

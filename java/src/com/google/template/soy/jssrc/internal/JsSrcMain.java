@@ -96,14 +96,13 @@ public class JsSrcMain {
   }
 
   static GenJsCodeVisitor createVisitor(
-      final SoyJsSrcOptions options,
+      SoyJsSrcOptions options,
       SoyTypeRegistry typeRegistry,
       BidiGlobalDir dir,
       ErrorReporter errorReporter) {
-    final DelTemplateNamer delTemplateNamer = new DelTemplateNamer();
-    final IsComputableAsJsExprsVisitor isComputableAsJsExprsVisitor =
-        new IsComputableAsJsExprsVisitor();
-    final JavaScriptValueFactoryImpl javaScriptValueFactory =
+    DelTemplateNamer delTemplateNamer = new DelTemplateNamer();
+    IsComputableAsJsExprsVisitor isComputableAsJsExprsVisitor = new IsComputableAsJsExprsVisitor();
+    JavaScriptValueFactoryImpl javaScriptValueFactory =
         new JavaScriptValueFactoryImpl(dir, errorReporter);
     CanInitOutputVarVisitor canInitOutputVarVisitor =
         new CanInitOutputVarVisitor(isComputableAsJsExprsVisitor);

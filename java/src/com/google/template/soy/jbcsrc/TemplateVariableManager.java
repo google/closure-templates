@@ -220,7 +220,7 @@ final class TemplateVariableManager implements LocalVariableManager {
   /** Enters a new scope. Variables may only be defined within a scope. */
   @Override
   public Scope enterScope() {
-    final LocalVariableManager.Scope delegateScope = delegate.enterScope();
+    LocalVariableManager.Scope delegateScope = delegate.enterScope();
     return new Scope() {
       final List<VarKey> activeVariables = new ArrayList<>();
 

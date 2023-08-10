@@ -123,10 +123,10 @@ public final class SharedTestUtils {
 
   /** Returns a template body for the given soy expression. With type specializations. */
   public static String createTemplateBodyForExpression(
-      String soyExpr, final Map<String, SoyType> typeMap) {
+      String soyExpr, Map<String, SoyType> typeMap) {
     ExprNode expr = SoyFileParser.parseExpression(soyExpr, ErrorReporter.exploding());
-    final Set<String> loopVarNames = new HashSet<>();
-    final Set<String> names = new HashSet<>();
+    Set<String> loopVarNames = new HashSet<>();
+    Set<String> names = new HashSet<>();
     new AbstractExprNodeVisitor<Void>() {
 
       @Override
@@ -148,7 +148,7 @@ public final class SharedTestUtils {
         }
       }
     }.exec(expr);
-    final StringBuilder templateBody = new StringBuilder();
+    StringBuilder templateBody = new StringBuilder();
     for (String varName : Sets.difference(names, loopVarNames)) {
       SoyType type = typeMap.get(varName);
       if (type == null) {

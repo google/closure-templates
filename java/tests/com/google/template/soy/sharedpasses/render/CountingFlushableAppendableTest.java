@@ -29,7 +29,7 @@ public class CountingFlushableAppendableTest {
 
   @Test
   public void testAppendAndFlush() throws Exception {
-    final StringBuilder progress = new StringBuilder();
+    StringBuilder progress = new StringBuilder();
     Flushable flushable = () -> progress.append("F");
 
     CountingFlushableAppendable c = new CountingFlushableAppendable(progress, flushable);

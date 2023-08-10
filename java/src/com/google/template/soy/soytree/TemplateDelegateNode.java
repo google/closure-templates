@@ -202,8 +202,7 @@ public final class TemplateDelegateNode extends TemplateNode {
             a -> validateVariantExpression(a.valueAsExpr(errorReporter).getRoot(), errorReporter));
   }
 
-  private static void validateVariantExpression(
-      ExprNode primitiveNode, final ErrorReporter reporter) {
+  private static void validateVariantExpression(ExprNode primitiveNode, ErrorReporter reporter) {
     switch (primitiveNode.getKind()) {
       case STRING_NODE:
         StringNode sn = (StringNode) primitiveNode;

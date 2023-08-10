@@ -92,7 +92,7 @@ public abstract class AbstractMemoryClassLoader extends ClassLoader {
   }
 
   @Override
-  protected final URL findResource(final String name) {
+  protected final URL findResource(String name) {
     if (!name.endsWith(".class")) {
       return null;
     }

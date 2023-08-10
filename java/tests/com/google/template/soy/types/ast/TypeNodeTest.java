@@ -192,7 +192,7 @@ public final class TypeNodeTest {
     }
   }
 
-  static void assertEquals(TypeNode left, final TypeNode right) {
+  static void assertEquals(TypeNode left, TypeNode right) {
     left.accept(
         new TypeNodeVisitor<Void>() {
 

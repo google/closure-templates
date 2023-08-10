@@ -256,7 +256,7 @@ public final class EscapingConventions {
      * <p>This is guaranteed to not do any buffering, each {@link Appendable#append} operation will
      * directly pass through into a series of {@code append} operations on the delegate.
      */
-    public final Appendable escape(final Appendable out) {
+    public final Appendable escape(Appendable out) {
       return new Appendable() {
         @CanIgnoreReturnValue
         @Override

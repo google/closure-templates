@@ -63,8 +63,7 @@ public final class CoreDirectivesRuntime {
   }
 
   @Nonnull
-  public static LoggingAdvisingAppendable streamingEscapeHtml(
-      final LoggingAdvisingAppendable delegate) {
+  public static LoggingAdvisingAppendable streamingEscapeHtml(LoggingAdvisingAppendable delegate) {
     return new StreamingHtmlEscaper(delegate);
   }
 

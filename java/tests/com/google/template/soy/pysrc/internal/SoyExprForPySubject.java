@@ -109,8 +109,8 @@ public final class SoyExprForPySubject extends Subject {
             .fileSet();
     SoyNode node = SharedTestUtils.getNode(soyTree, 0);
 
-    final IsComputableAsPyExprVisitor isComputableAsPyExprs = new IsComputableAsPyExprVisitor();
-    final PythonValueFactoryImpl pluginValueFactory =
+    IsComputableAsPyExprVisitor isComputableAsPyExprs = new IsComputableAsPyExprVisitor();
+    PythonValueFactoryImpl pluginValueFactory =
         new PythonValueFactoryImpl(ErrorReporter.exploding(), BidiGlobalDir.LTR);
     // There is a circular dependency between the GenPyExprsVisitorFactory and GenPyCallExprVisitor
     // here we resolve it with a mutable field in a custom provider

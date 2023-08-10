@@ -33,7 +33,7 @@ public final class PerInputOutputFilesTest {
   private SoyCmdLineParser cmdLineParser;
 
   @Before
-  public final void constructParser() {
+  public void constructParser() {
     cmdLineParser = new SoyCmdLineParser(/*loader=*/ null);
     cmdLineParser.registerFlagsObject(outputFiles);
   }

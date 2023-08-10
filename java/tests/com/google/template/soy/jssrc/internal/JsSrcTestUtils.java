@@ -37,10 +37,9 @@ final class JsSrcTestUtils {
   }
 
   private static Objects createObjects() {
-    final DelTemplateNamer delTemplateNamer = new DelTemplateNamer();
-    final IsComputableAsJsExprsVisitor isComputableAsJsExprsVisitor =
-        new IsComputableAsJsExprsVisitor();
-    final JavaScriptValueFactoryImpl javaScriptValueFactory =
+    DelTemplateNamer delTemplateNamer = new DelTemplateNamer();
+    IsComputableAsJsExprsVisitor isComputableAsJsExprsVisitor = new IsComputableAsJsExprsVisitor();
+    JavaScriptValueFactoryImpl javaScriptValueFactory =
         new JavaScriptValueFactoryImpl(BidiGlobalDir.LTR, ErrorReporter.exploding());
     class GenCallCodeUtilsSupplier implements Supplier<GenCallCodeUtils> {
       GenJsExprsVisitorFactory factory;

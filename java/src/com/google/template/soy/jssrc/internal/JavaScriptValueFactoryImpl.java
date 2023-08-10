@@ -74,7 +74,7 @@ public final class JavaScriptValueFactoryImpl extends JavaScriptValueFactory {
   private final ErrorReporter reporter;
   private final BidiGlobalDir dir;
 
-  private JavaScriptPluginContext createContext(final CodeChunk.Generator codeGenerator) {
+  private JavaScriptPluginContext createContext(CodeChunk.Generator codeGenerator) {
     return () -> {
       if (dir.isStaticValue()) {
         return new JavaScriptValueImpl(Expressions.number(dir.getStaticValue()));

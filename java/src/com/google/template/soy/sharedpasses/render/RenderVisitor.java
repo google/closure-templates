@@ -826,7 +826,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
     popOutputBuf();
   }
 
-  private SoyValueProvider renderRenderUnitNode(final RenderUnitNode renderUnitNode) {
+  private SoyValueProvider renderRenderUnitNode(RenderUnitNode renderUnitNode) {
     return new RenderableThunk(fromSanitizedContentKind(renderUnitNode.getContentKind())) {
       @Override
       protected void doRender(Appendable appendable) {
@@ -883,7 +883,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
    * <p>Useful for {@code {let ...}} and {@code {param ...}} commands where the expression may be
    * defined before being used.
    */
-  private SoyValueProvider lazyEval(final ExprNode expr, final SoyNode node) {
+  private SoyValueProvider lazyEval(ExprNode expr, SoyNode node) {
     return new SoyAbstractCachingValueProvider() {
       @Override
       protected SoyValue compute() {
@@ -983,7 +983,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
 
   /** Check that the given {@code paramValue} matches the static type of {@code param}. */
   private void checkStrictParamType(
-      final TemplateNode node, final TemplateParam param, @Nullable SoyValueProvider paramValue) {
+      TemplateNode node, TemplateParam param, @Nullable SoyValueProvider paramValue) {
     Kind kind = param.type().getKind();
     if (kind == Kind.ANY || kind == Kind.UNKNOWN) {
       // Nothing to check.  ANY and UNKNOWN match all types.

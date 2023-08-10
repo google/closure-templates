@@ -313,7 +313,7 @@ final class ElementAttributePass implements CompilerFileSetPass {
               unseenParams.remove(attr);
               VarRefNode attrExpr = new VarRefNode("$" + attr.name(), unknown, attr);
 
-              final StandaloneNode replacementNode;
+              StandaloneNode replacementNode;
               if (attrNode.hasValue() && attr.isRequired()) {
                 errorReporter.report(
                     attrNode.getSourceLocation(), ATTRIBUTE_NOT_REQUIRED, attr.getAttrName());
@@ -351,7 +351,7 @@ final class ElementAttributePass implements CompilerFileSetPass {
               } else {
                 // In these cases, we need to conditionally suppress the entire attribute. Either
                 // a concatenating attribute, or an attribute without a default.
-                final VarRefNode outputValueExpr;
+                VarRefNode outputValueExpr;
                 if (concatValues && attrNode.hasValue()) {
                   // Concatenating attribute, with a default. Concatenate the default and incoming
                   // values together.

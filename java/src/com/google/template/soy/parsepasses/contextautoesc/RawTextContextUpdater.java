@@ -116,7 +116,7 @@ final class RawTextContextUpdater {
    * @param text Non empty.
    * @return the number of characters consumed
    */
-  private int processNextToken(RawTextNode node, final int offset, String text) {
+  private int processNextToken(RawTextNode node, int offset, String text) {
     // Find the transition whose pattern matches earliest in the raw text (and is applicable)
     Processor processor = TRANSITIONS.get(context.state());
     if (processor == null) {
@@ -327,7 +327,7 @@ final class RawTextContextUpdater {
   }
 
   /** A transition to the given state. */
-  private static Transition makeTransitionToStateLiteral(String literal, final HtmlContext state) {
+  private static Transition makeTransitionToStateLiteral(String literal, HtmlContext state) {
     return new Transition(literal) {
       @Override
       Context computeNextContext(Context prior, Matcher matcher) {
@@ -336,7 +336,7 @@ final class RawTextContextUpdater {
     };
   }
 
-  private static Transition makeTransitionToState(Pattern regex, final HtmlContext state) {
+  private static Transition makeTransitionToState(Pattern regex, HtmlContext state) {
     return new Transition(regex) {
       @Override
       Context computeNextContext(Context prior, Matcher matcher) {
@@ -346,7 +346,7 @@ final class RawTextContextUpdater {
   }
 
   /** A transition to an state. */
-  private static Transition makeTransitionToError(Pattern regex, final String message) {
+  private static Transition makeTransitionToError(Pattern regex, String message) {
     return new Transition(regex) {
       @Override
       Context computeNextContext(RawTextNode node, int offset, Context prior, Matcher matcher) {
@@ -616,7 +616,7 @@ final class RawTextContextUpdater {
   }
 
   /** Matches the beginning of a CSS URI with the delimiter, if any, in group 1. */
-  private static Transition makeCssUriTransition(Pattern regex, final UriType uriType) {
+  private static Transition makeCssUriTransition(Pattern regex, UriType uriType) {
     return new Transition(regex) {
       @Override
       Context computeNextContext(Context prior, Matcher matcher) {

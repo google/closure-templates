@@ -443,7 +443,7 @@ public final class TemplateTester {
 
   private interface SystemOutRestorer extends AutoCloseable {
     @Override
-    public void close();
+    void close();
   }
 
   private static final class LogCapturer {
@@ -460,7 +460,7 @@ public final class TemplateTester {
     }
 
     SystemOutRestorer enter() {
-      final PrintStream prevStream = System.out;
+      PrintStream prevStream = System.out;
       System.setOut(stream);
       return () -> System.setOut(prevStream);
     }

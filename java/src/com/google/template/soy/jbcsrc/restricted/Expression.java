@@ -346,7 +346,7 @@ public abstract class Expression extends BytecodeProducer {
    *
    * @throws IllegalArgumentException if either type is not a reference type.
    */
-  public Expression checkedCast(final Type target) {
+  public Expression checkedCast(Type target) {
     checkArgument(
         target.getSort() == Type.OBJECT,
         "cast targets must be reference types. (%s)",
@@ -396,7 +396,7 @@ public abstract class Expression extends BytecodeProducer {
    * Returns a new expression identical to this one but with the given label applied at the start of
    * the expression.
    */
-  public Expression labelStart(final Label label) {
+  public Expression labelStart(Label label) {
     return new Expression(resultType(), features) {
       @Override
       protected void doGen(CodeBuilder adapter) {
@@ -410,7 +410,7 @@ public abstract class Expression extends BytecodeProducer {
    * Returns a new expression identical to this one but with the given label applied at the end of
    * the expression.
    */
-  public Expression labelEnd(final Label label) {
+  public Expression labelEnd(Label label) {
     return new Expression(resultType(), features) {
       @Override
       protected void doGen(CodeBuilder adapter) {

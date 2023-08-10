@@ -248,7 +248,7 @@ public final class SoyValueConverter {
    * Returns a SoyValueProvider corresponding to a Java object, but doesn't perform any work until
    * resolve() is called.
    */
-  private SoyValueProvider convertLazy(@Nullable final Object obj) {
+  private SoyValueProvider convertLazy(@Nullable Object obj) {
     SoyValueProvider convertedPrimitive = convertCheap(obj);
     if (convertedPrimitive != null) {
       return convertedPrimitive;

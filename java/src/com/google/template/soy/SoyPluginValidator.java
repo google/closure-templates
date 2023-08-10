@@ -66,7 +66,7 @@ public final class SoyPluginValidator extends AbstractSoyCompiler {
 
   SoyPluginValidator() {}
 
-  public static void main(final String[] args) {
+  public static void main(String[] args) {
     new SoyPluginValidator().runMain(args);
   }
 

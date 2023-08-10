@@ -529,13 +529,13 @@ public final class TemplateMetadataSerializer {
   }
 
   private static <T1 extends Enum<T1>, T2 extends Enum<T2>> Converter<T1, T2> createEnumConverter(
-      final Class<T1> t1, final Class<T2> t2) {
+      Class<T1> t1, Class<T2> t2) {
     Map<String, T1> t1NameMap = new HashMap<>();
     for (T1 instance : t1.getEnumConstants()) {
       t1NameMap.put(instance.name(), instance);
     }
-    final EnumMap<T1, T2> forwardMap = new EnumMap<>(t1);
-    final EnumMap<T2, T1> backwardMap = new EnumMap<>(t2);
+    EnumMap<T1, T2> forwardMap = new EnumMap<>(t1);
+    EnumMap<T2, T1> backwardMap = new EnumMap<>(t2);
     for (T2 t2Instance : t2.getEnumConstants()) {
       T1 t1Instance = t1NameMap.remove(t2Instance.name());
       if (t1Instance != null) {

@@ -356,9 +356,9 @@ final class ProtoUtils {
       }
     }
 
-    private SoyExpression handleNormalField(final Expression typedBaseExpr) {
+    private SoyExpression handleNormalField(Expression typedBaseExpr) {
       // TODO(lukes): consider adding a cache for the method lookups.
-      final MethodRef getMethodRef = getGetterMethod(descriptor);
+      MethodRef getMethodRef = getGetterMethod(descriptor);
 
       if (descriptor.isMapField()) {
         return handleMapField(typedBaseExpr, getMethodRef);
@@ -378,14 +378,14 @@ final class ProtoUtils {
         // Simple case, just call .get and interpret the result
         return interpretField(typedBaseExpr.invoke(getMethodRef));
       } else {
-        final Label hasFieldLabel = new Label();
-        final BytecodeProducer hasCheck;
+        Label hasFieldLabel = new Label();
+        BytecodeProducer hasCheck;
 
         // if oneof, check the value of getFooCase() enum
         OneofDescriptor containingOneof = getContainingOneof(descriptor);
         if (containingOneof != null) {
-          final MethodRef getCaseRef = getOneOfCaseMethod(containingOneof);
-          final Expression fieldNumber = constant(descriptor.getNumber());
+          MethodRef getCaseRef = getOneOfCaseMethod(containingOneof);
+          Expression fieldNumber = constant(descriptor.getNumber());
           // this basically just calls getFooCase().getNumber() == field_number
           hasCheck =
               new BytecodeProducer() {
@@ -404,7 +404,7 @@ final class ProtoUtils {
               };
         } else {
           // otherwise just call the has* method
-          final MethodRef hasMethodRef = getHasserMethod(descriptor);
+          MethodRef hasMethodRef = getHasserMethod(descriptor);
           hasCheck =
               new BytecodeProducer() {
                 @Override
@@ -417,7 +417,7 @@ final class ProtoUtils {
 
         // TODO(lukes): this violates the expression contract since we jump to a label outside the
         // scope of the expression
-        final Label endLabel = new Label();
+        Label endLabel = new Label();
         // If the field doesn't have an explicit default then we need to call .has<Field> and return
         // null if it isn't present.
         SoyExpression interpretedField =
@@ -530,13 +530,13 @@ final class ProtoUtils {
       throw new AssertionError("unsupported field type: " + descriptor);
     }
 
-    private SoyExpression handleExtension(final Expression typedBaseExpr) {
+    private SoyExpression handleExtension(Expression typedBaseExpr) {
       // extensions are a little weird since we need to look up the extension object and then call
       // message.getExtension(Extension) and then cast and (maybe) unbox the result.
       // The reason we need to cast is because .getExtension is a generic api and that is just how
       // stupid java generics work.
       FieldRef extensionField = getExtensionField(descriptor);
-      final Expression extensionFieldAccessor = extensionField.accessor();
+      Expression extensionFieldAccessor = extensionField.accessor();
 
       if (descriptor.isRepeated()) {
         return SoyExpression.forBoxedList(
@@ -548,7 +548,7 @@ final class ProtoUtils {
       }
 
       if (!descriptor.hasDefaultValue() && reinterpretAbsenceAsNullable) {
-        final Label endLabel = new Label();
+        Label endLabel = new Label();
         SoyExpression interpretedField =
             interpretExtensionField(
                 new Expression(
@@ -809,7 +809,7 @@ final class ProtoUtils {
     private SoyExpression handleNormalField(Expression typedBaseExpr) {
       if (descriptor.isExtension()) {
         FieldRef extensionField = getExtensionField(descriptor);
-        final Expression extensionFieldAccessor = extensionField.accessor();
+        Expression extensionFieldAccessor = extensionField.accessor();
         return SoyExpression.forBool(
             typedBaseExpr.invoke(EXTENDABLE_MESSAGE_HAS_EXTENSION, extensionFieldAccessor));
       } else {
@@ -861,13 +861,13 @@ final class ProtoUtils {
     }
 
     SoyExpression generate() {
-      final ImmutableList<Statement> setters = getFieldSetters();
+      ImmutableList<Statement> setters = getFieldSetters();
       Expression builtProto;
       if (setters.isEmpty()) {
         builtProto = getDefaultInstanceMethod(descriptor).invoke();
       } else {
-        final Expression newBuilderCall = getBuilderMethod(descriptor).invoke();
-      final MethodRef buildCall = getBuildMethod(descriptor);
+        Expression newBuilderCall = getBuilderMethod(descriptor).invoke();
+        MethodRef buildCall = getBuildMethod(descriptor);
         builtProto =
             new Expression(messageRuntimeType(descriptor).type()) {
               @Override
@@ -922,11 +922,11 @@ final class ProtoUtils {
     }
 
     private Statement handleMapSetter(
-        final SoyExpression keyArg, final SoyExpression valueArg, final FieldDescriptor field) {
-      final MethodRef putMethod = getPutMethod(field);
+        SoyExpression keyArg, SoyExpression valueArg, FieldDescriptor field) {
+      MethodRef putMethod = getPutMethod(field);
       List<FieldDescriptor> descriptors = field.getMessageType().getFields();
-      final FieldDescriptor keyDescriptor = descriptors.get(0);
-      final FieldDescriptor valueDescriptor = descriptors.get(1);
+      FieldDescriptor keyDescriptor = descriptors.get(0);
+      FieldDescriptor valueDescriptor = descriptors.get(1);
       return new Statement() {
         @Override
         protected void doGen(CodeBuilder cb) {
@@ -947,8 +947,8 @@ final class ProtoUtils {
      * the top of the stack, without changing stack heights.
      */
     private Statement handleNormalSetter(
-        final ExprNode arg, final FieldDescriptor field, boolean markNonNullable) {
-      final MethodRef setterMethod = getSetOrAddMethod(field);
+        ExprNode arg, FieldDescriptor field, boolean markNonNullable) {
+      MethodRef setterMethod = getSetOrAddMethod(field);
       if (field.getJavaType() == JavaType.ENUM
           && arg.getKind() == ExprNode.Kind.PROTO_ENUM_VALUE_NODE) {
         // we compile proto enums to Soy ints, aka java longs which implies for enum literals we
@@ -998,9 +998,9 @@ final class ProtoUtils {
       return handleNormalSetter(baseArg, field);
     }
 
-    private Statement handleNormalSetter(final SoyExpression baseArg, final FieldDescriptor field) {
-      final MethodRef setterMethod = getSetOrAddMethod(field);
-      final boolean isNullable = !baseArg.isNonNullable();
+    private Statement handleNormalSetter(SoyExpression baseArg, FieldDescriptor field) {
+      MethodRef setterMethod = getSetOrAddMethod(field);
+      boolean isNullable = !baseArg.isNonNullable();
       return new Statement() {
         @Override
         protected void doGen(CodeBuilder cb) {
@@ -1033,7 +1033,7 @@ final class ProtoUtils {
       };
     }
 
-    private Statement handleMapSetterNotNull(final SoyExpression mapArg, FieldDescriptor field) {
+    private Statement handleMapSetterNotNull(SoyExpression mapArg, FieldDescriptor field) {
       checkArgument(mapArg.isNonNullable());
       // Wait until all map values can be resolved. Since we don't box/unbox maps, directly call
       // mapArg.asJavaMap() that converts SoyMapImpl to a Map<String, SoyValueProvider>.
@@ -1046,16 +1046,16 @@ final class ProtoUtils {
       // map.entrySet().iterator()
       Expression getMapIterator =
           resolved.invoke(MethodRef.MAP_ENTRY_SET).invoke(MethodRef.GET_ITERATOR);
-      final LocalVariable iter =
+      LocalVariable iter =
           scope.createTemporary(field.getName() + "__iter", getMapIterator.resultType());
       Statement loopInitialization = iter.store(getMapIterator, iter.start());
       // (Map.Entry) iter.next()
       Expression iterNext = iter.invoke(MethodRef.ITERATOR_NEXT).checkedCast(MAP_ENTRY_TYPE);
-      final LocalVariable mapEntry =
+      LocalVariable mapEntry =
           scope.createTemporary(field.getName() + "__mapEntry", iterNext.resultType());
       Statement initMapEntry = mapEntry.store(iterNext, mapEntry.start());
       // exitScope must be called after creating all the variables
-      final Statement scopeExit = scope.exitScope();
+      Statement scopeExit = scope.exitScope();
 
       // Get type info of the map key/value
       MapType mapType = (MapType) mapArg.soyType();
@@ -1093,10 +1093,10 @@ final class ProtoUtils {
               .asNonNullable();
 
       // iter.hasNext()
-      final Expression iterHasNext = iter.invoke(MethodRef.ITERATOR_HAS_NEXT);
+      Expression iterHasNext = iter.invoke(MethodRef.ITERATOR_HAS_NEXT);
 
       // Invokes the putFooFieldMap method in proto message builder
-      final Statement putOne = handleMapSetter(mapKey, mapValue, field);
+      Statement putOne = handleMapSetter(mapKey, mapValue, field);
 
       // Put all expressions together into the while loop
       return new Statement() {
@@ -1152,7 +1152,7 @@ final class ProtoUtils {
         return Statement.concat(puts);
       }
 
-      final SoyExpression baseArg = compile(argNode);
+      SoyExpression baseArg = compile(argNode);
       // If the list arg is definitely an empty list/map, do nothing
       if (baseArg.soyType().equals(ListType.EMPTY_LIST)
           || baseArg.soyType().equals(MapType.EMPTY_MAP)) {
@@ -1164,8 +1164,8 @@ final class ProtoUtils {
             : handleRepeatedNotNull(baseArg, field);
       }
 
-      final Label isNonNull = new Label();
-      final Label end = new Label();
+      Label isNonNull = new Label();
+      Label end = new Label();
 
       // perform null check
       SoyExpression nonNull =
@@ -1188,7 +1188,7 @@ final class ProtoUtils {
                   })
               .asNonNullable();
 
-      final Statement handle =
+      Statement handle =
           field.isMapField()
               ? handleMapSetterNotNull(nonNull, field)
               : handleRepeatedNotNull(nonNull, field);
@@ -1201,7 +1201,7 @@ final class ProtoUtils {
       };
     }
 
-    private Statement handleRepeatedNotNull(final SoyExpression listArg, FieldDescriptor field) {
+    private Statement handleRepeatedNotNull(SoyExpression listArg, FieldDescriptor field) {
       // TODO(lukes): instead of inlining a loop we could
       // 1. use invoke dyanamic and built the loop with method handles? might be simpler than the
       //    stack management
@@ -1218,12 +1218,10 @@ final class ProtoUtils {
       LocalVariableManager.Scope scope = varManager.enterScope();
 
       // Create local variables: list, loop index, list size
-      final LocalVariable list =
-          scope.createTemporary(field.getName() + "__list", resolved.resultType());
+      LocalVariable list = scope.createTemporary(field.getName() + "__list", resolved.resultType());
 
-      final LocalVariable listSize =
-          scope.createTemporary(field.getName() + "__size", Type.INT_TYPE);
-      final LocalVariable index = scope.createTemporary(field.getName() + "__index", Type.INT_TYPE);
+      LocalVariable listSize = scope.createTemporary(field.getName() + "__size", Type.INT_TYPE);
+      LocalVariable index = scope.createTemporary(field.getName() + "__index", Type.INT_TYPE);
       Statement indexInitialization = index.store(constant(0), index.start());
       Statement loopInitialization =
           Statement.concat(
@@ -1231,7 +1229,7 @@ final class ProtoUtils {
               listSize.store(list.invoke(MethodRef.LIST_SIZE), listSize.start()));
 
       // exitScope must be called after creating all the variables
-      final Statement scopeExit = scope.exitScope();
+      Statement scopeExit = scope.exitScope();
       // Expected type info of the list element
       SoyType elementSoyType = ((ListType) unboxed.soyType()).getElementType();
       SoyRuntimeType elementType = SoyRuntimeType.getBoxedType(elementSoyType);
@@ -1253,7 +1251,7 @@ final class ProtoUtils {
               .asNonNullable();
 
       // Call into .handleNormalSetter() or .handleExtension(), which will call add<Field>()
-      final Statement getAndAddOne =
+      Statement getAndAddOne =
           field.isExtension()
               ? handleExtension(soyValue, field)
               : handleNormalSetter(soyValue, field);
@@ -1293,14 +1291,14 @@ final class ProtoUtils {
     }
 
     private Statement handleExtension(
-        final ExprNode arg, final FieldDescriptor field, boolean markNonNullable) {
-      final Expression extensionIdentifier = getExtensionField(field).accessor();
+        ExprNode arg, FieldDescriptor field, boolean markNonNullable) {
+      Expression extensionIdentifier = getExtensionField(field).accessor();
 
       // Call .setExtension() for regular extensions, .addExtension() for repeated extensions
-      final MethodRef setterMethod =
+      MethodRef setterMethod =
           field.isRepeated() ? EXTENDABLE_BUILDER_ADD_EXTENSION : EXTENDABLE_BUILDER_SET_EXTENSION;
 
-      final Type builderType = builderRuntimeType(descriptor).type();
+      Type builderType = builderRuntimeType(descriptor).type();
       // Handle some special cases
       if (field.getJavaType() == JavaType.ENUM
           && arg.getKind() == ExprNode.Kind.PROTO_ENUM_VALUE_NODE) {
@@ -1355,13 +1353,13 @@ final class ProtoUtils {
 
     private Statement handleExtension(SoyExpression baseArg, FieldDescriptor field) {
       // .setExtension() requires an extension identifier object
-      final Expression extensionIdentifier = getExtensionField(field).accessor();
+      Expression extensionIdentifier = getExtensionField(field).accessor();
 
       // Call .setExtension() for regular extensions, .addExtension() for repeated extensions
-      final MethodRef setterMethod =
+      MethodRef setterMethod =
           field.isRepeated() ? EXTENDABLE_BUILDER_ADD_EXTENSION : EXTENDABLE_BUILDER_SET_EXTENSION;
 
-      final boolean isNullable = !baseArg.isNonNullable();
+      boolean isNullable = !baseArg.isNonNullable();
       return new Statement() {
         @Override
         protected void doGen(CodeBuilder cb) {

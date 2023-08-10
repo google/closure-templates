@@ -168,7 +168,7 @@ final class SoyHeaderCompiler extends AbstractSoyCompiler {
    *
    * @param args Should contain command-line flags and the list of paths to the Soy files.
    */
-  public static void main(final String[] args) {
+  public static void main(String[] args) {
     new SoyHeaderCompiler().runMain(args);
   }
 }

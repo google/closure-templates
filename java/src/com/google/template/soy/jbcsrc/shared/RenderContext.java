@@ -172,7 +172,7 @@ public final class RenderContext {
   }
 
   public Function<String, String> getEscapingDirectiveAsFunction(String name) {
-    final SoyJavaPrintDirective printDirective = soyJavaDirectivesMap.get(name);
+    SoyJavaPrintDirective printDirective = soyJavaDirectivesMap.get(name);
     if (printDirective == null) {
       throw new IllegalStateException(
           "Failed to find Soy print directive with name '" + name + "'");

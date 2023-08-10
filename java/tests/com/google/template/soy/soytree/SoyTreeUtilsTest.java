@@ -202,7 +202,7 @@ public final class SoyTreeUtilsTest {
               "{/template}");
 
   @Test
-  public final void testClone() throws Exception {
+  public void testClone() throws Exception {
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(SOY_SOURCE_FOR_TESTING_CLONING).parse().fileSet();
 
@@ -236,7 +236,7 @@ public final class SoyTreeUtilsTest {
   }
 
   @Test
-  public final void testCloneWithNewIds() throws Exception {
+  public void testCloneWithNewIds() throws Exception {
 
     IdGenerator nodeIdGen = new IncrementingIdGenerator();
     SoyFileSetNode soyTree = new SoyFileSetNode(nodeIdGen);
@@ -256,7 +256,7 @@ public final class SoyTreeUtilsTest {
   }
 
   @Test
-  public final void testCloneListWithNewIds() throws Exception {
+  public void testCloneListWithNewIds() throws Exception {
 
     SoyFileNode soyFile =
         SoyFileSetParserBuilder.forFileContents(SOY_SOURCE_FOR_TESTING_CLONING)
@@ -281,7 +281,7 @@ public final class SoyTreeUtilsTest {
   }
 
   @Test
-  public final void testMsgHtmlTagNode() throws Exception {
+  public void testMsgHtmlTagNode() throws Exception {
 
     SoyFileNode soyFile =
         SoyFileSetParserBuilder.forFileContents(SOY_SOURCE_FOR_TESTING_CLONING)
@@ -302,7 +302,7 @@ public final class SoyTreeUtilsTest {
   }
 
   @Test
-  public final void testBuildAstString() throws Exception {
+  public void testBuildAstString() throws Exception {
     String testFileContent =
         "{namespace ns}\n"
             + "\n"
@@ -381,7 +381,7 @@ public final class SoyTreeUtilsTest {
       };
 
   @Test
-  public final void testIsConstantExpr() throws Exception {
+  public void testIsConstantExpr() throws Exception {
     String testFileContent =
         "{namespace boo}\n"
             + "\n"
@@ -400,7 +400,7 @@ public final class SoyTreeUtilsTest {
   }
 
   @Test
-  public final void testIsNonConstantExpr() throws Exception {
+  public void testIsNonConstantExpr() throws Exception {
     String testFileContent =
         "{namespace boo}\n"
             + "\n"

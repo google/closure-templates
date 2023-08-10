@@ -65,8 +65,8 @@ public final class BytecodeCompiler {
    *     have been reported to the error reporter.
    */
   public static Optional<CompiledTemplates> compile(
-      final FileSetMetadata registry,
-      final SoyFileSetNode fileSet,
+      FileSetMetadata registry,
+      SoyFileSetNode fileSet,
       ErrorReporter reporter,
       ImmutableMap<SourceFilePath, SoyFileSupplier> filePathsToSuppliers,
       SoyTypeRegistry typeRegistry) {
@@ -123,8 +123,8 @@ public final class BytecodeCompiler {
       ByteSink sink,
       PartialFileSetMetadata fileSetMetadata)
       throws IOException {
-    try (final SoyJarFileWriter writer = new SoyJarFileWriter(sink.openStream())) {
-      final Set<String> modTemplates = new TreeSet<>();
+    try (SoyJarFileWriter writer = new SoyJarFileWriter(sink.openStream())) {
+      Set<String> modTemplates = new TreeSet<>();
 
       // A map of plugin names -> info about the required instance class (only for plugins that
       // require a runtime class).

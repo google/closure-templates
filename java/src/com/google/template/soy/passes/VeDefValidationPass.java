@@ -120,7 +120,7 @@ final class VeDefValidationPass implements CompilerFileSetPass {
     }
     long id = ((IntegerNode) func.getChild(1)).getValue();
 
-    final Optional<String> dataProtoType;
+    Optional<String> dataProtoType;
     if (func.getChildren().size() < 3 || func.getChild(2) instanceof NullNode) {
       dataProtoType = Optional.empty();
     } else {
@@ -131,7 +131,7 @@ final class VeDefValidationPass implements CompilerFileSetPass {
       dataProtoType = Optional.of(func.getChild(2).getType().toString());
     }
 
-    final Optional<Object> staticMetadata;
+    Optional<Object> staticMetadata;
     if (func.getChildren().size() < 4) {
       staticMetadata = Optional.empty();
     } else {

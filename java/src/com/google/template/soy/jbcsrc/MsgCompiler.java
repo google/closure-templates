@@ -370,10 +370,10 @@ final class MsgCompiler {
     ExtraCodeCompiler prefix = ExtraCodeCompiler.NO_OP;
     ExtraCodeCompiler suffix = ExtraCodeCompiler.NO_OP;
     Optional<String> closeTagPlaceholderNameToMatch = Optional.empty();
-    final StandaloneNode initialNode = placeholder.getChild(0);
+    StandaloneNode initialNode = placeholder.getChild(0);
     if (initialNode instanceof MsgHtmlTagNode
         && placeholder.getParent().getKind() == Kind.VE_LOG_NODE) {
-      final VeLogNode veLogNode = (VeLogNode) placeholder.getParent();
+      VeLogNode veLogNode = (VeLogNode) placeholder.getParent();
       // NOTE: we can't call getOpenTagNode or getCloseTagNode since they have been desugared by
       // now and don't exist.  Instead we rely on the fact that earlier compile passes have
       // validated the log structure and know that if this is the first or last element in velog
@@ -411,7 +411,7 @@ final class MsgCompiler {
               }
             };
         // we need to get the name of the placeholder that closes this velog node.
-        final String closeTagPlaceholderName =
+        String closeTagPlaceholderName =
             originalMsg
                 .getPlaceholder(
                     (MsgPlaceholderNode) veLogNode.getChild(veLogNode.numChildren() - 1))

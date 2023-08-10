@@ -130,7 +130,7 @@ final class ErrorReporterImpl extends ErrorReporter {
     }
 
     SoyError asSoyError(ImmutableMap<SourceFilePath, SoyFileSupplier> filePathsToSuppliers) {
-      final Optional<String> snippet =
+      Optional<String> snippet =
           Optional
               // Sometimes we report errors against things like plugins, in which case we won't have
               // a file.

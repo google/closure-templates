@@ -61,7 +61,7 @@ final class PythonValueFactoryImpl extends PythonValueFactory {
   private final PythonPluginContext context;
   private final ErrorReporter reporter;
 
-  PythonValueFactoryImpl(ErrorReporter reporter, final BidiGlobalDir bidiDir) {
+  PythonValueFactoryImpl(ErrorReporter reporter, BidiGlobalDir bidiDir) {
     this.reporter = checkNotNull(reporter);
     checkNotNull(bidiDir);
     this.context =

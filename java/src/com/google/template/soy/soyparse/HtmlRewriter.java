@@ -1502,7 +1502,7 @@ final class HtmlRewriter {
     }
 
     @Override
-    protected void visitMsgFallbackGroupNode(final MsgFallbackGroupNode node) {
+    protected void visitMsgFallbackGroupNode(MsgFallbackGroupNode node) {
       // messages act a lot like a nested sequence of switch statements.
       // at the top level it is a msg or a fallback
       // below that it is a select or a plural (optional)
@@ -1552,7 +1552,7 @@ final class HtmlRewriter {
     }
 
     @Override
-    protected void visitIfNode(final IfNode node) {
+    protected void visitIfNode(IfNode node) {
       boolean hasElse = node.hasElse();
       visitControlFlowStructure(
           node,

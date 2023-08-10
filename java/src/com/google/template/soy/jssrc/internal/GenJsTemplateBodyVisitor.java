@@ -519,15 +519,14 @@ public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<St
     if (args.isPresent()) {
       RangeArgs range = args.get();
       // if any of the expressions are too expensive, allocate local variables for them
-      final Expression start =
+      Expression start =
           maybeStashInLocal(
               range.start().isPresent()
                   ? translateExpr(range.start().get())
                   : Expressions.number(0),
               varPrefix + "_RangeStart");
-      final Expression end =
-          maybeStashInLocal(translateExpr(range.limit()), varPrefix + "_RangeEnd");
-      final Expression step =
+      Expression end = maybeStashInLocal(translateExpr(range.limit()), varPrefix + "_RangeEnd");
+      Expression step =
           maybeStashInLocal(
               range.increment().isPresent()
                   ? translateExpr(range.increment().get())
@@ -547,7 +546,7 @@ public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<St
     } else {
       // Define list var and list-len var.
       Expression dataRef = translateExpr(node.getExpr());
-      final String listVarName = varPrefix + "List";
+      String listVarName = varPrefix + "List";
       Expression listVar =
           VariableDeclaration.builder(listVarName)
               .setRhs(

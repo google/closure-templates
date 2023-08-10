@@ -154,8 +154,8 @@ final class DetachState implements ExpressionDetacher.Factory {
     if (!appendable.supportsSoftLimiting()) {
       return appendable.toStatement();
     }
-    final Expression isSoftLimited = appendable.softLimitReached();
-    final Statement returnLimited = returnExpression(MethodRef.RENDER_RESULT_LIMITED.invoke());
+    Expression isSoftLimited = appendable.softLimitReached();
+    Statement returnLimited = returnExpression(MethodRef.RENDER_RESULT_LIMITED.invoke());
     return new Statement() {
       @Override
       protected void doGen(CodeBuilder adapter) {
@@ -175,7 +175,7 @@ final class DetachState implements ExpressionDetacher.Factory {
    * generate this code in debug mode and the rest of the time emit a single {@code pop}
    * instruction.
    */
-  Statement assertFullyRenderered(final Expression render) {
+  Statement assertFullyRenderered(Expression render) {
     return render.invokeVoid(MethodRef.RENDER_RESULT_ASSERT_DONE);
   }
 
@@ -197,10 +197,10 @@ final class DetachState implements ExpressionDetacher.Factory {
    * @param render an Expression that can generate code to call a render method that returns a
    *     RenderResult
    */
-  Statement detachForRender(final Expression render) {
+  Statement detachForRender(Expression render) {
     checkDetachesAllowed();
     checkArgument(render.resultType().equals(RENDER_RESULT_TYPE));
-    final Label reattachPoint = new Label();
+    Label reattachPoint = new Label();
     Statement saveState = addState(reattachPoint);
     return new Statement() {
       @Override
@@ -276,7 +276,7 @@ final class DetachState implements ExpressionDetacher.Factory {
             initStackFrame,
             new Statement() {
               @Override
-              protected void doGen(final CodeBuilder adapter) {
+              protected void doGen(CodeBuilder adapter) {
                 readStateNumber.gen(adapter);
                 // we need to mark the end of the stackFrameVar somewhere, this isn't exactly
                 // accurate since it does extend into the beginning of some of the cases, but there
@@ -285,9 +285,9 @@ final class DetachState implements ExpressionDetacher.Factory {
                 // it technically is.
                 adapter.mark(stackFrameVar.end());
                 adapter.visitTableSwitchInsn(
-                    /* min=*/ 0,
-                    /* max=*/ reattaches.size(),
-                    /*dflt=*/ unexpectedState,
+                    /* min= */ 0,
+                    /* max= */ reattaches.size(),
+                    /* dflt= */ unexpectedState,
                     caseLabels.toArray(new Label[0]));
               }
             },

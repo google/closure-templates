@@ -46,9 +46,9 @@ public final class SoyConformance {
   }
 
   /** Performs the overall check. */
-  public void check(SoyFileNode file, final ErrorReporter errorReporter) {
+  public void check(SoyFileNode file, ErrorReporter errorReporter) {
     // first filter to only the rules that need to be checked for this file.
-    final List<Rule<?>> rulesForFile = new ArrayList<>(rules.size());
+    List<Rule<?>> rulesForFile = new ArrayList<>(rules.size());
     SourceFilePath filePath = file.getFilePath();
     for (RuleWithExemptions rule : rules) {
       if (rule.shouldCheckConformanceFor(filePath.path())) {

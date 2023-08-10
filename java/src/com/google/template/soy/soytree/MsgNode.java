@@ -263,10 +263,10 @@ public final class MsgNode extends AbstractBlockCommandNode
     this.desc = orig.desc;
     if (orig.substUnitInfo != null) {
       // we need to fix references in the substUnitInfo
-      final IdentityHashMap<MsgSubstUnitNode, MsgSubstUnitNode> oldToNew = new IdentityHashMap<>();
+      IdentityHashMap<MsgSubstUnitNode, MsgSubstUnitNode> oldToNew = new IdentityHashMap<>();
       // NOTE: because we only hold references to our children, and all our children will have been
       // copied by the time 'super' returns, we can count on these listeners firing synchronously.
-      for (final MsgSubstUnitNode old : orig.substUnitInfo.nodeToVarNameMap.keySet()) {
+      for (MsgSubstUnitNode old : orig.substUnitInfo.nodeToVarNameMap.keySet()) {
         copyState.registerRefListener(old, newObject -> oldToNew.put(old, newObject));
       }
       this.substUnitInfo = orig.substUnitInfo.copy(oldToNew);

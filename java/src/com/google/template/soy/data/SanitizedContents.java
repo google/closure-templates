@@ -162,7 +162,7 @@ public final class SanitizedContents {
    * controlled by the application (and not user input) are considered safe.
    */
   @Nonnull
-  public static SanitizedContent constantUri(@CompileTimeConstant final String constant) {
+  public static SanitizedContent constantUri(@CompileTimeConstant String constant) {
     return fromConstant(constant, ContentKind.URI, Dir.LTR);
   }
 
@@ -173,7 +173,7 @@ public final class SanitizedContents {
    * are controlled by the application (and not user input) are considered safe.
    */
   @Nonnull
-  public static SanitizedContent constantHtml(@CompileTimeConstant final String constant) {
+  public static SanitizedContent constantHtml(@CompileTimeConstant String constant) {
     return fromConstant(constant, ContentKind.HTML, null);
   }
 
@@ -184,7 +184,7 @@ public final class SanitizedContents {
    * controlled by the application (and not user input) are considered safe.
    */
   @Nonnull
-  public static SanitizedContent constantAttributes(@CompileTimeConstant final String constant) {
+  public static SanitizedContent constantAttributes(@CompileTimeConstant String constant) {
     return fromConstant(constant, ContentKind.ATTRIBUTES, Dir.LTR);
   }
 
@@ -195,7 +195,7 @@ public final class SanitizedContents {
    * controlled by the application (and not user input) are considered safe.
    */
   @Nonnull
-  public static SanitizedContent constantCss(@CompileTimeConstant final String constant) {
+  public static SanitizedContent constantCss(@CompileTimeConstant String constant) {
     return fromConstant(constant, ContentKind.CSS, Dir.LTR);
   }
 
@@ -206,7 +206,7 @@ public final class SanitizedContents {
    * controlled by the application (and not user input) are considered safe.
    */
   @Nonnull
-  public static SanitizedContent constantJs(@CompileTimeConstant final String constant) {
+  public static SanitizedContent constantJs(@CompileTimeConstant String constant) {
     return fromConstant(constant, ContentKind.JS, Dir.LTR);
   }
 
@@ -217,8 +217,7 @@ public final class SanitizedContents {
    * that are controlled by the application (and not user input) are considered safe.
    */
   @Nonnull
-  public static SanitizedContent constantTrustedResourceUri(
-      @CompileTimeConstant final String constant) {
+  public static SanitizedContent constantTrustedResourceUri(@CompileTimeConstant String constant) {
     return fromConstant(constant, ContentKind.TRUSTED_RESOURCE_URI, Dir.LTR);
   }
 
@@ -230,7 +229,7 @@ public final class SanitizedContents {
    * number to JS which is then printed as is.
    */
   @Nonnull
-  public static SanitizedContent numberJs(final long number) {
+  public static SanitizedContent numberJs(long number) {
     return SanitizedContent.create(String.valueOf(number), ContentKind.JS);
   }
 
@@ -240,7 +239,7 @@ public final class SanitizedContents {
    * @see #numberJs(long)
    */
   @Nonnull
-  public static SanitizedContent numberJs(final double number) {
+  public static SanitizedContent numberJs(double number) {
     return SanitizedContent.create(String.valueOf(number), ContentKind.JS);
   }
 
@@ -248,7 +247,7 @@ public final class SanitizedContents {
   @SuppressWarnings("ReferenceEquality") // need to use a reference check to ensure it is a constant
   @Nonnull
   private static SanitizedContent fromConstant(
-      @CompileTimeConstant final String constant, ContentKind kind, @Nullable Dir dir) {
+      @CompileTimeConstant String constant, ContentKind kind, @Nullable Dir dir) {
     // Extra runtime check in case the compile-time check doesn't work.
     Preconditions.checkArgument(
         constant.intern() == constant,

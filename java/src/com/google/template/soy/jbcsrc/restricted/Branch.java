@@ -435,8 +435,7 @@ public final class Branch {
     return Branch.compare(Opcodes.IFEQ, left, right);
   }
 
-  public static Branch compare(
-      final int comparisonOpcode, final Expression left, final Expression right) {
+  public static Branch compare(int comparisonOpcode, Expression left, Expression right) {
     checkState(left.resultType().equals(right.resultType()));
     checkState(BytecodeUtils.isPrimitive(left.resultType()));
     checkIntComparisonOpcode(left.resultType(), comparisonOpcode);

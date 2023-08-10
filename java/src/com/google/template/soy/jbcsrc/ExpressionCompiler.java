@@ -343,7 +343,7 @@ final class ExpressionCompiler {
    */
   SoyExpression compileRootExpression(ExprNode node, ExpressionDetacher.Factory detacherFactory) {
     Label reattachPoint = new Label();
-    final SoyExpression exec =
+    SoyExpression exec =
         compileSubExpression(node, detacherFactory.createExpressionDetacher(reattachPoint));
     return exec.labelStart(reattachPoint);
   }
@@ -592,7 +592,7 @@ final class ExpressionCompiler {
 
     @Override
     protected SoyExpression visitRecordLiteralNode(RecordLiteralNode node) {
-      final int numItems = node.numChildren();
+      int numItems = node.numChildren();
       List<Expression> keys = new ArrayList<>(numItems);
       List<Expression> values = new ArrayList<>(numItems);
       for (int i = 0; i < numItems; i++) {
@@ -608,7 +608,7 @@ final class ExpressionCompiler {
 
     @Override
     protected SoyExpression visitMapLiteralNode(MapLiteralNode node) {
-      final int numItems = node.numChildren() / 2;
+      int numItems = node.numChildren() / 2;
       List<Expression> keys = new ArrayList<>(numItems);
       List<Expression> values = new ArrayList<>(numItems);
       for (int i = 0; i < numItems; i++) {
@@ -817,8 +817,8 @@ final class ExpressionCompiler {
 
     private SoyExpression visitBinaryOperator(
         AbstractOperatorNode node, int longOpcode, int doubleOpcode, MethodRef runtimeMethod) {
-      final SoyExpression left = visit(node.getChild(0));
-      final SoyExpression right = visit(node.getChild(1));
+      SoyExpression left = visit(node.getChild(0));
+      SoyExpression right = visit(node.getChild(1));
       // They are both definitely numbers
       if (left.assignableToNullableNumber() && right.assignableToNullableNumber()) {
         if (left.assignableToNullableInt() && right.assignableToNullableInt()) {
@@ -912,9 +912,9 @@ final class ExpressionCompiler {
     }
 
     private static SoyExpression applyBinaryIntOperator(
-        final int operator, SoyExpression left, SoyExpression right) {
-      final SoyExpression leftInt = left.unboxAsLong();
-      final SoyExpression rightInt = right.unboxAsLong();
+        int operator, SoyExpression left, SoyExpression right) {
+      SoyExpression leftInt = left.unboxAsLong();
+      SoyExpression rightInt = right.unboxAsLong();
       return SoyExpression.forInt(
           new Expression(Type.LONG_TYPE) {
             @Override
@@ -927,9 +927,9 @@ final class ExpressionCompiler {
     }
 
     private static SoyExpression applyBinaryFloatOperator(
-        final int operator, SoyExpression left, SoyExpression right) {
-      final SoyExpression leftFloat = left.coerceToDouble();
-      final SoyExpression rightFloat = right.coerceToDouble();
+        int operator, SoyExpression left, SoyExpression right) {
+      SoyExpression leftFloat = left.coerceToDouble();
+      SoyExpression rightFloat = right.coerceToDouble();
       return SoyExpression.forFloat(
           new Expression(Type.DOUBLE_TYPE) {
             @Override
@@ -945,9 +945,9 @@ final class ExpressionCompiler {
 
     @Override
     protected SoyExpression visitNegativeOpNode(NegativeOpNode node) {
-      final SoyExpression child = visit(node.getChild(0));
+      SoyExpression child = visit(node.getChild(0));
       if (child.assignableToNullableInt()) {
-        final SoyExpression intExpr = child.unboxAsLong();
+        SoyExpression intExpr = child.unboxAsLong();
         return SoyExpression.forInt(
             new Expression(Type.LONG_TYPE, child.features()) {
               @Override
@@ -958,7 +958,7 @@ final class ExpressionCompiler {
             });
       }
       if (child.assignableToNullableFloat()) {
-        final SoyExpression floatExpr = child.unboxAsDouble();
+        SoyExpression floatExpr = child.unboxAsDouble();
         return SoyExpression.forFloat(
             new Expression(Type.DOUBLE_TYPE, child.features()) {
               @Override
@@ -1000,7 +1000,7 @@ final class ExpressionCompiler {
 
     @Override
     protected SoyExpression visitNullCoalescingOpNode(NullCoalescingOpNode node) {
-      final SoyExpression left = visit(node.getLeftChild());
+      SoyExpression left = visit(node.getLeftChild());
       if (left.isNonNullable()) {
         // This would be for when someone writes '1 ?: 2', we just compile that to '1'
         // This case is insane and should potentially be a compiler error, for now we just assume
@@ -1009,7 +1009,7 @@ final class ExpressionCompiler {
       }
       // It is extremely common for a user to write '<complex-expression> ?: <primitive-expression>
       // so try to generate code that doesn't involve unconditionally boxing the right hand side.
-      final SoyExpression right = visit(node.getRightChild());
+      SoyExpression right = visit(node.getRightChild());
       if (SoyTypes.removeNull(left.soyType()).equals(right.soyType())) {
         SoyExpression result;
         if (left.isBoxed() == right.isBoxed()) {
@@ -1036,7 +1036,7 @@ final class ExpressionCompiler {
 
     @Override
     protected SoyExpression visitConditionalOpNode(ConditionalOpNode node) {
-      final Branch condition = visit(node.getChild(0)).compileToBranch();
+      Branch condition = visit(node.getChild(0)).compileToBranch();
       SoyExpression trueBranch = visit(node.getChild(1));
       SoyExpression falseBranch = visit(node.getChild(2));
       // If types are == and they are both boxed (or both not boxed) then we can just use them
@@ -1482,8 +1482,7 @@ final class ExpressionCompiler {
       return accumulator.asNullable().labelEnd(nullSafeExit);
     }
 
-    private static SoyExpression addNullSafetyCheck(
-        final SoyExpression baseExpr, Label nullSafeExit) {
+    private static SoyExpression addNullSafetyCheck(SoyExpression baseExpr, Label nullSafeExit) {
       // need to check if baseExpr == null
       return baseExpr
           .withSource(
@@ -1736,7 +1735,7 @@ final class ExpressionCompiler {
     protected SoyExpression visitVeDefNode(FunctionNode node) {
       Expression id = constant(((IntegerNode) node.getChild(1)).getValue());
       Expression name = constant(((StringNode) node.getChild(0)).getValue());
-      final Expression visualElement;
+      Expression visualElement;
       if (node.numChildren() == 4) {
         Expression metadata = visitProtoInitFunction((FunctionNode) node.getChild(3));
         visualElement =

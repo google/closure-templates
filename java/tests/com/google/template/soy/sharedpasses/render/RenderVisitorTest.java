@@ -939,7 +939,7 @@ public class RenderVisitorTest {
 
   @Test
   public void testRenderFuture() throws Exception {
-    final StringBuilder progress = new StringBuilder();
+    StringBuilder progress = new StringBuilder();
 
     Flushable flushable = () -> progress.append("flush;");
     String soyFileContent =
@@ -1081,7 +1081,7 @@ public class RenderVisitorTest {
             + "  {$boo} {$ijStr}\n"
             + "{/template}\n";
 
-    final ParseResult parseResult =
+    ParseResult parseResult =
         SoyFileSetParserBuilder.forSuppliers(
                 SoyFileSupplier.Factory.create(soyFileContent1, SourceFilePath.create("ns1.soy")),
                 SoyFileSupplier.Factory.create(soyFileContent2, SourceFilePath.create("ns2.soy")),
@@ -1089,7 +1089,7 @@ public class RenderVisitorTest {
                 SoyFileSupplier.Factory.create(soyFileContent4, SourceFilePath.create("ns4.soy")))
             .errorReporter(FAIL)
             .parse();
-    final SoyRecord data = SoyValueConverterUtility.newDict();
+    SoyRecord data = SoyValueConverterUtility.newDict();
 
     Predicate<String> activeModNames = arg -> false;
     assertThat(
@@ -1401,8 +1401,8 @@ public class RenderVisitorTest {
             + "  {@param foo: int}\n"
             + "  Before: {$foo}\n"
             + "{/template}\n";
-    final StringBuilder outputSb = new StringBuilder();
-    final AtomicReference<String> outputAtFutureGetTime = new AtomicReference<>();
+    StringBuilder outputSb = new StringBuilder();
+    AtomicReference<String> outputAtFutureGetTime = new AtomicReference<>();
     AbstractFuture<Integer> fooFuture =
         new AbstractFuture<>() {
           {
@@ -1437,7 +1437,7 @@ public class RenderVisitorTest {
             + "  {@param foo: int}\n"
             + "  Before: {$foo}\n"
             + "{/template}\n";
-    final StringBuilder outputSb = new StringBuilder();
+    StringBuilder outputSb = new StringBuilder();
     try {
       renderTemplateInFile(
           SoyFileSetParserBuilder.forFileContents(soyFileContent).errorReporter(FAIL).parse(),
@@ -1481,8 +1481,8 @@ public class RenderVisitorTest {
                 "    {/param}",
                 "  {/call}",
                 "{/template}");
-    final StringBuilder outputSb = new StringBuilder();
-    final AtomicReference<String> outputAtFutureGetTime = new AtomicReference<>();
+    StringBuilder outputSb = new StringBuilder();
+    AtomicReference<String> outputAtFutureGetTime = new AtomicReference<>();
     AbstractFuture<String> future =
         new AbstractFuture<>() {
           {

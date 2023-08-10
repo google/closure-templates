@@ -213,18 +213,18 @@ public class SanitizedContentsTest {
   @Test
   public void testCssTypeConversions() {
     final String testStyleSheetContent = "div { display: none; }";
-    final SafeStyleSheet safeStyleSheet = SafeStyleSheets.fromConstant(testStyleSheetContent);
-    final CssParam styleSheetParam = CssParam.of(safeStyleSheet);
-    final SanitizedContent sanitizedStyleSheet = SanitizedContents.fromCss(styleSheetParam);
+    SafeStyleSheet safeStyleSheet = SafeStyleSheets.fromConstant(testStyleSheetContent);
+    CssParam styleSheetParam = CssParam.of(safeStyleSheet);
+    SanitizedContent sanitizedStyleSheet = SanitizedContents.fromCss(styleSheetParam);
 
     assertThat(sanitizedStyleSheet.getContentKind()).isEqualTo(ContentKind.CSS);
     assertThat(sanitizedStyleSheet.getContent()).isEqualTo(testStyleSheetContent);
     assertThat(sanitizedStyleSheet.toSafeStyleSheet()).isEqualTo(safeStyleSheet);
 
     final String testStyleContent = "display: none;";
-    final SafeStyle safeStyle = SafeStyles.fromConstant(testStyleContent);
-    final CssParam styleParam = CssParam.of(safeStyle);
-    final SanitizedContent sanitizedStyle = SanitizedContents.fromCss(styleParam);
+    SafeStyle safeStyle = SafeStyles.fromConstant(testStyleContent);
+    CssParam styleParam = CssParam.of(safeStyle);
+    SanitizedContent sanitizedStyle = SanitizedContents.fromCss(styleParam);
 
     assertThat(sanitizedStyle.getContentKind()).isEqualTo(ContentKind.CSS);
     assertThat(sanitizedStyle.getContent()).isEqualTo(testStyleContent);
@@ -234,17 +234,17 @@ public class SanitizedContentsTest {
   @Test
   public void testCommonSafeHtmlTypeConversions() {
     final String helloWorldHtml = "Hello <em>World</em>";
-    final SafeHtml safeHtml =
+    SafeHtml safeHtml =
         SafeHtmls.concat(
             SafeHtmls.htmlEscape("Hello "),
             new SafeHtmlBuilder("em").escapeAndAppendContent("World").build());
-    final SanitizedContent sanitizedHtml = SanitizedContents.fromSafeHtml(safeHtml);
+    SanitizedContent sanitizedHtml = SanitizedContents.fromSafeHtml(safeHtml);
     assertThat(sanitizedHtml.getContentKind()).isEqualTo(ContentKind.HTML);
     assertThat(sanitizedHtml.getContent()).isEqualTo(helloWorldHtml);
     assertThat(sanitizedHtml.toSafeHtml()).isEqualTo(safeHtml);
 
     // Proto conversions.
-    final SafeHtmlProto safeHtmlProto = sanitizedHtml.toSafeHtmlProto();
+    SafeHtmlProto safeHtmlProto = sanitizedHtml.toSafeHtmlProto();
     assertThat(SafeHtmls.fromProto(safeHtmlProto)).isEqualTo(safeHtml);
     assertThat(SanitizedContents.fromSafeHtmlProto(safeHtmlProto).getContent())
         .isEqualTo(helloWorldHtml);
@@ -253,14 +253,14 @@ public class SanitizedContentsTest {
   @Test
   public void testCommonSafeScriptTypeConversions() {
     final String testScript = "window.alert('hello');";
-    final SafeScript safeScript = SafeScripts.fromConstant(testScript);
-    final SanitizedContent sanitizedScript = SanitizedContents.fromSafeScript(safeScript);
+    SafeScript safeScript = SafeScripts.fromConstant(testScript);
+    SanitizedContent sanitizedScript = SanitizedContents.fromSafeScript(safeScript);
     assertThat(sanitizedScript.getContentKind()).isEqualTo(ContentKind.JS);
     assertThat(sanitizedScript.getContent()).isEqualTo(testScript);
     assertThat(sanitizedScript.getContent()).isEqualTo(safeScript.getSafeScriptString());
 
     // Proto conversions.
-    final SafeScriptProto safeScriptProto = SafeScripts.toProto(safeScript);
+    SafeScriptProto safeScriptProto = SafeScripts.toProto(safeScript);
     assertThat(SafeScripts.fromProto(safeScriptProto)).isEqualTo(safeScript);
     assertThat(SanitizedContents.fromSafeScriptProto(safeScriptProto).getContent())
         .isEqualTo(testScript);
@@ -269,14 +269,14 @@ public class SanitizedContentsTest {
   @Test
   public void testCommonSafeStyleSheetTypeConversions() {
     final String testCss = "div { display: none; }";
-    final SafeStyleSheet safeCss = SafeStyleSheets.fromConstant(testCss);
-    final SanitizedContent sanitizedCss = SanitizedContents.fromSafeStyleSheet(safeCss);
+    SafeStyleSheet safeCss = SafeStyleSheets.fromConstant(testCss);
+    SanitizedContent sanitizedCss = SanitizedContents.fromSafeStyleSheet(safeCss);
     assertThat(sanitizedCss.getContentKind()).isEqualTo(ContentKind.CSS);
     assertThat(sanitizedCss.getContent()).isEqualTo(testCss);
     assertThat(sanitizedCss.toSafeStyleSheet()).isEqualTo(safeCss);
 
     // Proto conversions.
-    final SafeStyleSheetProto safeCssProto = sanitizedCss.toSafeStyleSheetProto();
+    SafeStyleSheetProto safeCssProto = sanitizedCss.toSafeStyleSheetProto();
     assertThat(SafeStyleSheets.fromProto(safeCssProto)).isEqualTo(safeCss);
     assertThat(SanitizedContents.fromSafeStyleSheetProto(safeCssProto).getContent())
         .isEqualTo(testCss);
@@ -285,24 +285,24 @@ public class SanitizedContentsTest {
   @Test
   public void testCommonSafeUrlTypeConversions() {
     final String testUrl = "http://blahblah";
-    final SanitizedContent sanitizedConstantUri = SanitizedContents.constantUri(testUrl);
-    final SafeUrl safeUrl = SafeUrls.fromConstant(testUrl);
+    SanitizedContent sanitizedConstantUri = SanitizedContents.constantUri(testUrl);
+    SafeUrl safeUrl = SafeUrls.fromConstant(testUrl);
 
-    final SanitizedContent sanitizedUrl = SanitizedContents.fromSafeUrl(safeUrl);
+    SanitizedContent sanitizedUrl = SanitizedContents.fromSafeUrl(safeUrl);
     assertThat(sanitizedUrl.getContentKind()).isEqualTo(ContentKind.URI);
     assertThat(sanitizedUrl.getContent()).isEqualTo(testUrl);
     assertThat(sanitizedUrl).isEqualTo(sanitizedConstantUri);
 
     // Proto conversions.
-    final SafeUrlProto safeUrlProto = SafeUrls.toProto(safeUrl);
-    final SanitizedContent sanitizedUrlProto = SanitizedContents.fromSafeUrlProto(safeUrlProto);
+    SafeUrlProto safeUrlProto = SafeUrls.toProto(safeUrl);
+    SanitizedContent sanitizedUrlProto = SanitizedContents.fromSafeUrlProto(safeUrlProto);
     assertThat(sanitizedUrlProto.getContent()).isEqualTo(testUrl);
     assertThat(sanitizedUrlProto).isEqualTo(sanitizedConstantUri);
   }
 
   @Test
   public void testWrongContentKindThrows_html() {
-    final SanitizedContent notHtml =
+    SanitizedContent notHtml =
         UnsafeSanitizedContentOrdainer.ordainAsSafe("not HTML", ContentKind.CSS);
     try {
       notHtml.toSafeHtml();
@@ -318,8 +318,7 @@ public class SanitizedContentsTest {
 
   @Test
   public void testWrongContentKindThrows_script() {
-    final SanitizedContent notJs =
-        UnsafeSanitizedContentOrdainer.ordainAsSafe("not JS", ContentKind.URI);
+    SanitizedContent notJs = UnsafeSanitizedContentOrdainer.ordainAsSafe("not JS", ContentKind.URI);
     try {
       notJs.toSafeScriptProto();
       fail("Should have thrown on SanitizedContent of kind other than JS");
@@ -329,7 +328,7 @@ public class SanitizedContentsTest {
 
   @Test
   public void testWrongContentKindThrows_css() {
-    final SanitizedContent notCss =
+    SanitizedContent notCss =
         UnsafeSanitizedContentOrdainer.ordainAsSafe("not CSS", ContentKind.HTML);
     try {
       notCss.toSafeStyleProto();
@@ -350,7 +349,7 @@ public class SanitizedContentsTest {
 
   @Test
   public void testWrongContentKindThrows_uri() {
-    final SanitizedContent notUri =
+    SanitizedContent notUri =
         UnsafeSanitizedContentOrdainer.ordainAsSafe("not URI", ContentKind.HTML);
     try {
       notUri.toSafeUrlProto();
@@ -370,8 +369,7 @@ public class SanitizedContentsTest {
         new String[] {
           "display: none;", "{ display: none; }", "/* a comment */", "@import url('test.css');"
         }) {
-      final SanitizedContent cssStyle =
-          UnsafeSanitizedContentOrdainer.ordainAsSafe(css, ContentKind.CSS);
+      SanitizedContent cssStyle = UnsafeSanitizedContentOrdainer.ordainAsSafe(css, ContentKind.CSS);
       try {
         cssStyle.toSafeStyleSheet();
         fail("Should have thrown on CSS SanitizedContent with invalid stylesheet:" + css);

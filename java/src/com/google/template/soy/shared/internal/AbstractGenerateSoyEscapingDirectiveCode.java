@@ -135,7 +135,7 @@ public abstract class AbstractGenerateSoyEscapingDirectiveCode extends Task {
 
   /** Called reflectively when Ant sees {@code <libdefined>}. */
   public void addConfiguredLibdefined(FunctionNamePredicate p) {
-    final Pattern namePattern = p.namePattern;
+    Pattern namePattern = p.namePattern;
     if (namePattern == null) {
       throw new IllegalStateException("Please specify a pattern attribute for <libdefined>");
     }

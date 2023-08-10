@@ -77,7 +77,7 @@ public final class RemoveUnnecessaryEscapingDirectivesTest {
     void andHasUnnecessaryDirectivesRemovedTo(String removedDirectivesTemplate);
   }
 
-  private EscaperAssertion template(final String template) {
+  private EscaperAssertion template(String template) {
     return new EscaperAssertion() {
       private String compose(String template) {
         return String.format("{namespace ns}\n\n{template foo}\n%s\n{/template}", template);
@@ -85,7 +85,7 @@ public final class RemoveUnnecessaryEscapingDirectivesTest {
 
       @Override
       public RewrittenAsssertion escapesTo(String escapedTemplate) {
-        final SoyFileSetNode file =
+        SoyFileSetNode file =
             SoyFileSetParserBuilder.forFileContents(compose(template))
                 .runAutoescaper(true)
                 .parse()

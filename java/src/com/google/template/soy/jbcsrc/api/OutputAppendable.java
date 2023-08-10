@@ -40,7 +40,7 @@ public final class OutputAppendable extends AbstractLoggingAdvisingAppendable {
     return new OutputAppendable(outputAppendable, logger);
   }
 
-  public static OutputAppendable create(final StringBuilder sb, SoyLogger logger) {
+  public static OutputAppendable create(StringBuilder sb, SoyLogger logger) {
     return new OutputAppendable(asAdvisingAppendable(sb), logger);
   }
 

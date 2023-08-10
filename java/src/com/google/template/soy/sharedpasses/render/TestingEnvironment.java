@@ -32,8 +32,7 @@ public final class TestingEnvironment extends Environment {
    * resolved against a predefined set but doesn't allow binding new variable definitions.
    */
   @VisibleForTesting
-  public static Environment createForTest(
-      final SoyRecord params, final Map<String, SoyValueProvider> locals) {
+  public static Environment createForTest(SoyRecord params, Map<String, SoyValueProvider> locals) {
     return new TestingEnvironment(params, locals);
   }
 

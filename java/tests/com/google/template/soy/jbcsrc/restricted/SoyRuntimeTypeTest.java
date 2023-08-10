@@ -124,7 +124,7 @@ public class SoyRuntimeTypeTest {
   private static final class SoyRuntimeTypeSubject extends Subject {
     private final SoyType actual;
 
-    protected SoyRuntimeTypeSubject(FailureMetadata metadata, SoyType actual) {
+    SoyRuntimeTypeSubject(FailureMetadata metadata, SoyType actual) {
       super(metadata, actual);
       this.actual = actual;
     }

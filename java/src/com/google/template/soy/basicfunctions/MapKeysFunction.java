@@ -67,7 +67,7 @@ public final class MapKeysFunction
       PythonValueFactory factory, List<PythonValue> args, PythonPluginContext context) {
     // dict.keys() returns a view object, which is not iterable in the way we expect. So, we must
     // convert it to an iterable data structure first.
-    final PythonValue innerValue = args.get(0).getProp("keys").call();
+    PythonValue innerValue = args.get(0).getProp("keys").call();
     return factory.global("list").call(innerValue);
   }
 

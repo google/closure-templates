@@ -198,7 +198,7 @@ public final class SoyTreeUtils {
    * @return The nodes in the order they appear.
    */
   public static <T extends Node> ImmutableList<T> getAllNodesOfType(
-      Node rootSoyNode, final Class<T> classObject) {
+      Node rootSoyNode, Class<T> classObject) {
     return allNodesOfType(rootSoyNode, classObject).collect(toImmutableList());
   }
 
@@ -302,7 +302,7 @@ public final class SoyTreeUtils {
    * @param exprNodeVisitor The visitor to execute on all expressions.
    */
   public static <R> void execOnAllV2Exprs(
-      SoyNode node, final AbstractNodeVisitor<ExprNode, R> exprNodeVisitor) {
+      SoyNode node, AbstractNodeVisitor<ExprNode, R> exprNodeVisitor) {
     allNodes(node, SoyTreeUtils::visitNonExpr)
         .filter(n -> n instanceof ExprHolderNode)
         .map(ExprHolderNode.class::cast)

@@ -235,7 +235,7 @@ public abstract class AbstractSoyCompiler {
   }
 
   @CheckReturnValue
-  public int run(final String[] args, PrintStream err) {
+  public int run(String[] args, PrintStream err) {
     try {
       doMain(args, err);
       return 0;
