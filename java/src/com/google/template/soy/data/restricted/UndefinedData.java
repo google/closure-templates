@@ -53,6 +53,16 @@ public final class UndefinedData extends PrimitiveData {
   }
 
   @Override
+  public boolean isUndefined() {
+    return true;
+  }
+
+  @Override
+  public boolean isNullish() {
+    return true;
+  }
+
+  @Override
   public boolean equals(Object other) {
     if (other instanceof PrimitiveData) {
       return other == UndefinedData.INSTANCE || other == NullData.INSTANCE;

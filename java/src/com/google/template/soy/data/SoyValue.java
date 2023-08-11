@@ -16,6 +16,7 @@
 
 package com.google.template.soy.data;
 
+import com.google.protobuf.Message;
 import java.io.IOException;
 import javax.annotation.Nonnull;
 import javax.annotation.ParametersAreNonnullByDefault;
@@ -131,4 +132,24 @@ public interface SoyValue extends SoyValueProvider {
    */
   @Nonnull
   String stringValue();
+
+  /** If this is Soy null (NullData). */
+  default boolean isNull() {
+    return false;
+  }
+
+  /** If this is Soy undefined (UndefinedData). */
+  default boolean isUndefined() {
+    return false;
+  }
+
+  /** If this is Soy null or Soy undefined. */
+  default boolean isNullish() {
+    return isNull() || isUndefined();
+  }
+
+  default Message getProto() {
+    throw new SoyDataException(
+        "Expecting proto value but instead encountered type " + getClass().getSimpleName());
+  }
 }

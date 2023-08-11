@@ -158,6 +158,7 @@ public final class SoyProtoValue extends SoyAbstractValue implements SoyLegacyOb
 
   /** Returns the underlying message. */
   @Nonnull
+  @Override
   public Message getProto() {
     return proto;
   }
