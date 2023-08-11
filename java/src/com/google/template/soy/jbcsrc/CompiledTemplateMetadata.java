@@ -143,32 +143,32 @@ abstract class CompiledTemplateMetadata {
                     createRenderMethod(
                         methodName
                             + (templateType.isModifiable() ? DEFAULT_IMPL_JBC_CLASS_SUFFIX : "")))
-                .asNonNullable())
+                .asNonJavaNullable())
         .setPositionalRenderMethod(
             Optional.ofNullable(
                 hasPositionalSignature
                     ? MethodRef.createStaticMethod(
                             type, createPositionalRenderMethod(methodName, templateType))
-                        .asNonNullable()
+                        .asNonJavaNullable()
                     : null))
         .setModifiableSelectMethod(
             Optional.ofNullable(
                 templateType.isModifiable()
                     ? MethodRef.createStaticMethod(type, createRenderMethod(methodName))
                         .asCheap()
-                        .asNonNullable()
+                        .asNonJavaNullable()
                     : null))
         .setTemplateMethod(
             MethodRef.createStaticMethod(type, createTemplateMethod(methodName))
                 .asCheap()
-                .asNonNullable())
+                .asNonJavaNullable())
         .setDefaultModTemplateMethod(
             Optional.ofNullable(
                 templateType.isModifiable()
                     ? MethodRef.createStaticMethod(
                             type, createTemplateMethod(methodName + DEFAULT_IMPL_JBC_CLASS_SUFFIX))
                         .asCheap()
-                        .asNonNullable()
+                        .asNonJavaNullable()
                     : null))
         .setTemplateType(templateType)
         .setTypeInfo(type)

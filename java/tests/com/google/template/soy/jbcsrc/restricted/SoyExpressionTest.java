@@ -163,7 +163,7 @@ public class SoyExpressionTest {
   @Test
   public void testBoxNullable() {
     MethodRef stringDataGetValue = MethodRef.create(StringData.class, "stringValue");
-    SoyExpression nullableString = SoyExpression.forString(constant("hello").asNullable());
+    SoyExpression nullableString = SoyExpression.forString(constant("hello").asJavaNullable());
     assertThatExpression(nullableString).evaluatesTo("hello");
     assertThatExpression(nullableString.box().invoke(stringDataGetValue)).evaluatesTo("hello");
   }
@@ -191,7 +191,7 @@ public class SoyExpressionTest {
     SoyExpression nullableString =
         SoyExpression.forSoyValue(
             StringType.getInstance(),
-            MethodRef.STRING_DATA_FOR_VALUE.invoke(constant("hello")).asNullable());
+            MethodRef.STRING_DATA_FOR_VALUE.invoke(constant("hello")).asJavaNullable());
     assertThatExpression(nullableString).evaluatesTo(StringData.forValue("hello"));
     assertThatExpression(
             nullableString.unboxAsStringPreservingNullishness().invoke(MethodRef.STRING_IS_EMPTY))
@@ -203,7 +203,7 @@ public class SoyExpressionTest {
     SoyExpression secretNullString =
         SoyExpression.forSoyValue(
             StringType.getInstance(),
-            new Expression(BytecodeUtils.SOY_STRING_TYPE, Feature.NON_NULLABLE) {
+            new Expression(BytecodeUtils.SOY_STRING_TYPE, Feature.NON_JAVA_NULLABLE) {
               @Override
               protected void doGen(CodeBuilder cb) {
                 cb.pushNull();
@@ -215,7 +215,7 @@ public class SoyExpressionTest {
     SoyExpression secretNullList =
         SoyExpression.forSoyValue(
             ListType.ANY_LIST,
-            new Expression(BytecodeUtils.SOY_LIST_TYPE, Feature.NON_NULLABLE) {
+            new Expression(BytecodeUtils.SOY_LIST_TYPE, Feature.NON_JAVA_NULLABLE) {
               @Override
               protected void doGen(CodeBuilder cb) {
                 cb.pushNull();
@@ -227,7 +227,7 @@ public class SoyExpressionTest {
     SoyExpression secretNullProto =
         SoyExpression.forSoyValue(
             SoyProtoType.newForTest(Proto3Message.getDescriptor()),
-            new Expression(BytecodeUtils.SOY_PROTO_VALUE_TYPE, Feature.NON_NULLABLE) {
+            new Expression(BytecodeUtils.SOY_PROTO_VALUE_TYPE, Feature.NON_JAVA_NULLABLE) {
               @Override
               protected void doGen(CodeBuilder cb) {
                 cb.pushNull();
@@ -248,9 +248,10 @@ public class SoyExpressionTest {
 
   @Test
   public void testCoerceToBoolean_nullableStrings() {
-    assertThatExpression(SoyExpression.forString(constant("foo")).asNullable().coerceToBoolean())
+    assertThatExpression(
+            SoyExpression.forString(constant("foo")).asJavaNullable().coerceToBoolean())
         .evaluatesTo(true);
-    assertThatExpression(SoyExpression.forString(constant("")).asNullable().coerceToBoolean())
+    assertThatExpression(SoyExpression.forString(constant("")).asJavaNullable().coerceToBoolean())
         .evaluatesTo(false);
     assertThatExpression(SoyExpression.forString(constantNull(STRING_TYPE)).coerceToBoolean())
         .evaluatesTo(false);
@@ -267,9 +268,10 @@ public class SoyExpressionTest {
   @Test
   public void testCoerceToBoolean_nullableBoxed() {
     assertThatExpression(
-            SoyExpression.forString(constant("foo")).box().asNullable().coerceToBoolean())
+            SoyExpression.forString(constant("foo")).box().asJavaNullable().coerceToBoolean())
         .evaluatesTo(true);
-    assertThatExpression(SoyExpression.forString(constant("")).box().asNullable().coerceToBoolean())
+    assertThatExpression(
+            SoyExpression.forString(constant("")).box().asJavaNullable().coerceToBoolean())
         .evaluatesTo(false);
     assertThatExpression(SoyExpression.forString(constantNull(STRING_TYPE)).box().coerceToBoolean())
         .evaluatesTo(false);

@@ -120,7 +120,7 @@ public abstract class ConstructorRef {
    */
   public Expression construct(Iterable<? extends Expression> args) {
     Expression.checkTypes(argTypes(), args);
-    return new Expression(instanceClass().type(), Feature.NON_NULLABLE) {
+    return new Expression(instanceClass().type(), Feature.NON_JAVA_NULLABLE) {
       @Override
       protected void doGen(CodeBuilder mv) {
         mv.newInstance(instanceClass().type());

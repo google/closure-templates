@@ -148,7 +148,7 @@ final class PrintDirectives {
     // mark the appendable as non-nullable.  If any of the wrappers are ever null it is a logical
     // error and we should fail with an NPE.
     return AppendableAndFlushBuffersDepth.create(
-        AppendableExpression.forExpression(currAppendable.asNonNullable()), flushBuffersDepth);
+        AppendableExpression.forExpression(currAppendable.asNonJavaNullable()), flushBuffersDepth);
   }
 
   @AutoValue

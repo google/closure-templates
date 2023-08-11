@@ -50,7 +50,7 @@ public final class LocalVariable extends Expression {
   // parameters to tableEntry?
 
   public static LocalVariable createThisVar(TypeInfo owner, Label start, Label end) {
-    return new LocalVariable("this", owner.type(), 0, start, end, Feature.NON_NULLABLE);
+    return new LocalVariable("this", owner.type(), 0, start, end, Feature.NON_JAVA_NULLABLE);
   }
 
   public static LocalVariable createLocal(
@@ -97,11 +97,12 @@ public final class LocalVariable extends Expression {
   }
 
   @Override
-  public LocalVariable asNonNullable() {
-    if (isNonNullable()) {
+  public LocalVariable asNonJavaNullable() {
+    if (isNonJavaNullable()) {
       return this;
     }
-    return new LocalVariable(variableName, resultType(), index, start, end, Feature.NON_NULLABLE);
+    return new LocalVariable(
+        variableName, resultType(), index, start, end, Feature.NON_JAVA_NULLABLE);
   }
 
   /**

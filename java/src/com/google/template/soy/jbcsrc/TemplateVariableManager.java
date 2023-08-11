@@ -173,8 +173,8 @@ final class TemplateVariableManager implements LocalVariableManager {
 
     private Variable(Expression initExpression, LocalVariable local, SaveStrategy strategy) {
       this.initExpression = initExpression;
-      if (initExpression.isNonNullable()) {
-        local = local.asNonNullable();
+      if (initExpression.isNonJavaNullable()) {
+        local = local.asNonJavaNullable();
       }
       this.local = local;
       this.initializer = local.store(initExpression, local.start());

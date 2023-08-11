@@ -541,7 +541,7 @@ final class ExpressionCompiler {
       */
       return SoyExpression.forList(
           (ListType) node.getType(),
-          new Expression(BytecodeUtils.LIST_TYPE, Feature.NON_NULLABLE) {
+          new Expression(BytecodeUtils.LIST_TYPE, Feature.NON_JAVA_NULLABLE) {
             @Override
             protected void doGen(CodeBuilder adapter) {
               listVarInitializer.gen(adapter); //   List<?> a_list = ...;
@@ -1001,7 +1001,7 @@ final class ExpressionCompiler {
     @Override
     protected SoyExpression visitNullCoalescingOpNode(NullCoalescingOpNode node) {
       SoyExpression left = visit(node.getLeftChild());
-      if (left.isNonNullable()) {
+      if (left.isNonJavaNullable()) {
         // This would be for when someone writes '1 ?: 2', we just compile that to '1'
         // This case is insane and should potentially be a compiler error, for now we just assume
         // it is dead code.
@@ -1229,7 +1229,7 @@ final class ExpressionCompiler {
           // if we are going to hit an NPE while dereferencing this expression, it makes no
           // difference if it is due to the unboxing or the actual dereference.
           if (baseExpr.soyType() != NullType.getInstance()) {
-            baseExpr = baseExpr.asNonNullable();
+            baseExpr = baseExpr.asNonJavaNullable();
           } else {
             // Unless, the type actually is 'null'.  In this case the code is bugged, but this
             // can happen due to inlining+@state desugaring.  The code we generate will always
@@ -1479,7 +1479,7 @@ final class ExpressionCompiler {
         // a nullable expression we need to box.
         accumulator = accumulator.box();
       }
-      return accumulator.asNullable().labelEnd(nullSafeExit);
+      return accumulator.asJavaNullable().labelEnd(nullSafeExit);
     }
 
     private static SoyExpression addNullSafetyCheck(SoyExpression baseExpr, Label nullSafeExit) {
@@ -1493,7 +1493,7 @@ final class ExpressionCompiler {
                   BytecodeUtils.nullCoalesce(adapter, nullSafeExit);
                 }
               })
-          .asNonNullable();
+          .asNonJavaNullable();
     }
 
     private SoyExpression accumulateNullSafeDataAccessTail(
@@ -1522,7 +1522,7 @@ final class ExpressionCompiler {
                 // In otherwords, if we are going to hit an NPE while dereferencing this
                 // expression, it makes no difference if it is due to the unboxing or the actual
                 // dereference.
-                .asNonNullable();
+                .asNonJavaNullable();
       }
       return visitDataAccess(dataAccessNode, baseExpr);
     }
@@ -1539,14 +1539,14 @@ final class ExpressionCompiler {
       // there is only ever a single child
       ExprNode childNode = Iterables.getOnlyElement(node.getChildren());
       SoyExpression expr = visit(childNode);
-      if (expr.isNonNullable()) {
+      if (expr.isNonJavaNullable()) {
         return expr;
       }
       return expr.withSource(
               MethodRef.CHECK_NOT_NULL
                   .invoke(expr, constant(childNode.toSourceString()))
                   .checkedCast(expr.resultType()))
-          .asNonNullable();
+          .asNonJavaNullable();
     }
 
     // TODO(lukes):  The RenderVisitor optimizes css/xid renaming by stashing a one element cache in
@@ -1770,7 +1770,7 @@ final class ExpressionCompiler {
                     CompiledTemplateMetadata.createTemplateMethod(
                         Names.renderMethodNameFromSoyTemplateName(node.getResolvedName())))
                 .asCheap()
-                .asNonNullable()
+                .asNonJavaNullable()
                 .invoke();
         return SoyExpression.forSoyValue(
             node.getType(),
@@ -1780,7 +1780,7 @@ final class ExpressionCompiler {
       Expression renderContext = parameters.getRenderContext();
       return SoyExpression.forSoyValue(
           node.getType(),
-          new Expression(BytecodeUtils.TEMPLATE_VALUE_TYPE, Feature.NON_NULLABLE) {
+          new Expression(BytecodeUtils.TEMPLATE_VALUE_TYPE, Feature.NON_JAVA_NULLABLE) {
             @Override
             protected void doGen(CodeBuilder adapter) {
               renderContext.gen(adapter);

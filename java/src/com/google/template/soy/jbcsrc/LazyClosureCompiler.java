@@ -366,7 +366,7 @@ final class LazyClosureCompiler {
     LocalVariable variable =
         scope
             .createTemporary("buffer", MethodRef.LOGGING_ADVISING_APPENDABLE_BUFFERING.returnType())
-            .asNonNullable();
+            .asNonJavaNullable();
     Statement initBuffer = variable.store(MethodRef.LOGGING_ADVISING_APPENDABLE_BUFFERING.invoke());
     Statement populateBuffer =
         parent
@@ -574,7 +574,7 @@ final class LazyClosureCompiler {
               analysis,
               parent.innerClasses,
               AppendableExpression.forExpression(
-                  variableSet.getVariable(StandardNames.APPENDABLE).asNonNullable()),
+                  variableSet.getVariable(StandardNames.APPENDABLE).asNonJavaNullable()),
               variableSet,
               lookup,
               fields,
@@ -667,8 +667,8 @@ final class LazyClosureCompiler {
   @AutoValue
   abstract static class ParentCapture {
     static ParentCapture create(FieldRef captureField, Expression parentExpression) {
-      if (parentExpression.isNonNullable()) {
-        captureField = captureField.asNonNull();
+      if (parentExpression.isNonJavaNullable()) {
+        captureField = captureField.asNonJavaNullable();
       }
       return new AutoValue_LazyClosureCompiler_ParentCapture(captureField, parentExpression);
     }

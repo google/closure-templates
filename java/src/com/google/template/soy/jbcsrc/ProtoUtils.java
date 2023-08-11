@@ -127,19 +127,19 @@ final class ProtoUtils {
 
   private static final MethodRef EXTENDABLE_BUILDER_ADD_EXTENSION =
       MethodRef.create(ExtendableBuilder.class, "addExtension", ExtensionLite.class, Object.class)
-          .asNonNullable();
+          .asNonJavaNullable();
 
   private static final MethodRef EXTENDABLE_BUILDER_SET_EXTENSION =
       MethodRef.create(ExtendableBuilder.class, "setExtension", ExtensionLite.class, Object.class)
-          .asNonNullable();
+          .asNonJavaNullable();
 
   private static final MethodRef EXTENDABLE_MESSAGE_GET_EXTENSION =
       MethodRef.create(ExtendableMessage.class, "getExtension", ExtensionLite.class)
-          .asNonNullable()
+          .asNonJavaNullable()
           .asCheap();
   private static final MethodRef EXTENDABLE_MESSAGE_HAS_EXTENSION =
       MethodRef.create(ExtendableMessage.class, "hasExtension", ExtensionLite.class)
-          .asNonNullable()
+          .asNonJavaNullable()
           .asCheap();
 
   // We use the full name as the key instead of the descriptor, since descriptors use identity
@@ -169,7 +169,7 @@ final class ProtoUtils {
 
   private static MethodRef createSafeProtoToSanitizedContentFactoryMethod(Class<?> clazz) {
     return MethodRef.create(SanitizedContents.class, "from" + clazz.getSimpleName(), clazz)
-        .asNonNullable();
+        .asNonJavaNullable();
   }
 
   private static final ImmutableMap<String, MethodRef> SANITIZED_CONTENT_TO_PROTO =
@@ -424,7 +424,7 @@ final class ProtoUtils {
             interpretField(
                 new Expression(
                     getMethodRef.returnType(),
-                    getMethodRef.features().minus(Feature.NON_NULLABLE)) {
+                    getMethodRef.features().minus(Feature.NON_JAVA_NULLABLE)) {
                   @Override
                   protected void doGen(CodeBuilder adapter) {
                     typedBaseExpr.gen(adapter);
@@ -449,7 +449,7 @@ final class ProtoUtils {
 
         // TODO(b/22389927): This is another place where the soy type system lies to us, so make
         // sure to mark the type as nullable.
-        return interpretedField.labelEnd(endLabel).asNullable();
+        return interpretedField.labelEnd(endLabel).asJavaNullable();
       }
     }
 
@@ -553,7 +553,7 @@ final class ProtoUtils {
             interpretExtensionField(
                 new Expression(
                     EXTENDABLE_MESSAGE_GET_EXTENSION.returnType(),
-                    EXTENDABLE_MESSAGE_GET_EXTENSION.features().minus(Feature.NON_NULLABLE)) {
+                    EXTENDABLE_MESSAGE_GET_EXTENSION.features().minus(Feature.NON_JAVA_NULLABLE)) {
                   @Override
                   protected void doGen(CodeBuilder adapter) {
                     typedBaseExpr.gen(adapter);
@@ -584,7 +584,7 @@ final class ProtoUtils {
         // sure to mark the type as nullable.
         // TODO(lukes): this violates the expression contract since we jump to a label outside the
         // scope of the expression
-        return interpretedField.labelEnd(endLabel).asNullable();
+        return interpretedField.labelEnd(endLabel).asJavaNullable();
       } else {
         // This branch handles extension with a default value, which are pretty rare, and non-
         // broken semantics, where we can delegate to the Java API without checking presence.
@@ -881,7 +881,7 @@ final class ProtoUtils {
                 // builder is already on the stack from newBuilder() / set<Field>()
                 buildCall.invokeUnchecked(cb);
               }
-            }.asNonNullable();
+            }.asNonJavaNullable();
       }
       return SoyExpression.forProto(SoyRuntimeType.getUnboxedType(protoType).get(), builtProto);
     }
@@ -994,13 +994,13 @@ final class ProtoUtils {
         };
       }
 
-      SoyExpression baseArg = markNonNullable ? compile(arg).asNonNullable() : compile(arg);
+      SoyExpression baseArg = markNonNullable ? compile(arg).asNonJavaNullable() : compile(arg);
       return handleNormalSetter(baseArg, field);
     }
 
     private Statement handleNormalSetter(SoyExpression baseArg, FieldDescriptor field) {
       MethodRef setterMethod = getSetOrAddMethod(field);
-      boolean isNullable = !baseArg.isNonNullable();
+      boolean isNullable = !baseArg.isNonJavaNullable();
       return new Statement() {
         @Override
         protected void doGen(CodeBuilder cb) {
@@ -1034,7 +1034,7 @@ final class ProtoUtils {
     }
 
     private Statement handleMapSetterNotNull(SoyExpression mapArg, FieldDescriptor field) {
-      checkArgument(mapArg.isNonNullable());
+      checkArgument(mapArg.isNonJavaNullable());
       // Wait until all map values can be resolved. Since we don't box/unbox maps, directly call
       // mapArg.asJavaMap() that converts SoyMapImpl to a Map<String, SoyValueProvider>.
       Expression resolved =
@@ -1073,7 +1073,7 @@ final class ProtoUtils {
                   // In ResolveExpressionTypesPass we already enforce that key is not nullable.  By
                   // asserting that it isn't we just get an NPE when we are wrong, which is what we
                   // want.
-                  .asNonNullable());
+                  .asNonJavaNullable());
 
       // Convert the soy value to java type
 
@@ -1090,7 +1090,7 @@ final class ProtoUtils {
                       // (SomeType) ((SoyValueProvider) mapEntry.getValue()).resolve()
                       .invoke(MethodRef.SOY_VALUE_PROVIDER_RESOLVE)
                       .checkedCast(valueRuntimeType.runtimeType()))
-              .asNonNullable();
+              .asNonJavaNullable();
 
       // iter.hasNext()
       Expression iterHasNext = iter.invoke(MethodRef.ITERATOR_HAS_NEXT);
@@ -1158,7 +1158,7 @@ final class ProtoUtils {
           || baseArg.soyType().equals(MapType.EMPTY_MAP)) {
         return Statement.NULL_STATEMENT;
       }
-      if (baseArg.isNonNullable()) {
+      if (baseArg.isNonJavaNullable()) {
         return field.isMapField()
             ? handleMapSetterNotNull(baseArg, field)
             : handleRepeatedNotNull(baseArg, field);
@@ -1186,7 +1186,7 @@ final class ProtoUtils {
                       cb.mark(isNonNull);
                     }
                   })
-              .asNonNullable();
+              .asNonJavaNullable();
 
       Statement handle =
           field.isMapField()
@@ -1208,7 +1208,7 @@ final class ProtoUtils {
       // 2. generate code like `JbcsrcRuntime.addToBuilder(builder, Foo::addBar, $listExpr,
       // SoyValue::intValue)`This would be simpler and generate smaller code.
 
-      checkArgument(listArg.isNonNullable());
+      checkArgument(listArg.isNonJavaNullable());
 
       // Unbox listArg as List<SoyValueProvider> and wait until all items are done
       SoyExpression unboxed = listArg.unboxAsListIgnoringNullishness();
@@ -1248,7 +1248,7 @@ final class ProtoUtils {
               // lists with null elements. Lists with null elements will simply result in a
               // NullPointerException thrown in .handleNormalSetter() / .handleExtension().
               // This is aligned with JSPB runtime behavior.
-              .asNonNullable();
+              .asNonJavaNullable();
 
       // Call into .handleNormalSetter() or .handleExtension(), which will call add<Field>()
       Statement getAndAddOne =
@@ -1347,7 +1347,7 @@ final class ProtoUtils {
         };
       }
 
-      SoyExpression baseArg = markNonNullable ? compile(arg).asNonNullable() : compile(arg);
+      SoyExpression baseArg = markNonNullable ? compile(arg).asNonJavaNullable() : compile(arg);
       return handleExtension(baseArg, field);
     }
 
@@ -1359,7 +1359,7 @@ final class ProtoUtils {
       MethodRef setterMethod =
           field.isRepeated() ? EXTENDABLE_BUILDER_ADD_EXTENSION : EXTENDABLE_BUILDER_SET_EXTENSION;
 
-      boolean isNullable = !baseArg.isNonNullable();
+      boolean isNullable = !baseArg.isNonJavaNullable();
       return new Statement() {
         @Override
         protected void doGen(CodeBuilder cb) {
@@ -1611,7 +1611,7 @@ final class ProtoUtils {
                 runtimeType,
                 MethodRef.NO_METHOD_ARGS))
         // All protos are guaranteed to never return null
-        .asNonNullable()
+        .asNonJavaNullable()
         .asCheap();
   }
 
@@ -1664,7 +1664,7 @@ final class ProtoUtils {
     TypeInfo builder = builderRuntimeType(descriptor);
     return MethodRef.createStaticMethod(
             message, new Method("newBuilder", builder.type(), MethodRef.NO_METHOD_ARGS))
-        .asNonNullable();
+        .asNonJavaNullable();
   }
 
   /** Returns the {@link MethodRef} for the generated getDefaultInstance method. */
@@ -1672,7 +1672,7 @@ final class ProtoUtils {
     TypeInfo message = messageRuntimeType(descriptor);
     return MethodRef.createStaticMethod(
             message, new Method("getDefaultInstance", message.type(), MethodRef.NO_METHOD_ARGS))
-        .asNonNullable()
+        .asNonJavaNullable()
         .asCheap();
   }
   /** Returns the {@link MethodRef} for the generated put method for proto map. */
@@ -1700,7 +1700,7 @@ final class ProtoUtils {
                 prefix + getFieldName(descriptor, true) + suffix,
                 builder.type(),
                 new Type[] {isOpenEnumField ? Type.INT_TYPE : getRuntimeType(descriptor)}))
-        .asNonNullable();
+        .asNonJavaNullable();
   }
 
   /** Returns the {@link MethodRef} for the generated build method. */
@@ -1709,14 +1709,14 @@ final class ProtoUtils {
     TypeInfo builder = builderRuntimeType(descriptor);
     return MethodRef.createInstanceMethod(
             builder, new Method("build", message.type(), MethodRef.NO_METHOD_ARGS))
-        .asNonNullable();
+        .asNonJavaNullable();
   }
 
   /** Returns the {@link MethodRef} for the generated newBuilder method. */
   private static FieldRef getEnum(EnumValueDescriptor descriptor) {
     TypeInfo enumType = enumRuntimeType(descriptor.getType());
     return FieldRef.createPublicStaticField(enumType, descriptor.getName(), enumType.type())
-        .asNonNull();
+        .asNonJavaNullable();
   }
 
   /** Returns the {@link MethodRef} for the generated forNumber method. */
@@ -1726,7 +1726,7 @@ final class ProtoUtils {
             enumType, new Method("forNumber", enumType.type(), ONE_INT_ARG))
         // Note: Enum.forNumber() returns null if there is no corresponding enum. If a bad value is
         // passed in (via unknown types), the generated bytecode will NPE.
-        .asNonNullable()
+        .asNonJavaNullable()
         .asCheap();
   }
 

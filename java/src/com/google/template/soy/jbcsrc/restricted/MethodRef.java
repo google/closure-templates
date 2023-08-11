@@ -108,7 +108,7 @@ public abstract class MethodRef {
   public static final MethodRef BOOLEAN_VALUE = create(Boolean.class, "booleanValue").asCheap();
 
   public static final MethodRef BOOLEAN_TO_STRING =
-      create(Boolean.class, "toString", boolean.class).asCheap().asNonNullable();
+      create(Boolean.class, "toString", boolean.class).asCheap().asNonJavaNullable();
 
   public static final MethodRef COMPILED_TEMPLATE_RENDER =
       create(
@@ -152,7 +152,7 @@ public abstract class MethodRef {
     for (java.lang.reflect.Method m : ImmutableList.class.getMethods()) {
       if (m.getName().equals("of")) {
         Class<?>[] params = m.getParameterTypes();
-        MethodRef ref = MethodRef.create(m).asNonNullable();
+        MethodRef ref = MethodRef.create(m).asNonJavaNullable();
         if (params.length > 0 && params[params.length - 1].isArray()) {
           // skip the one that takes an array in the final position
           immutableListOfArray = ref;
@@ -182,9 +182,10 @@ public abstract class MethodRef {
 
   public static final MethodRef LIST_SIZE = create(List.class, "size").asCheap();
 
-  public static final MethodRef MAP_ENTRY_SET = create(Map.class, "entrySet").asNonNullable();
+  public static final MethodRef MAP_ENTRY_SET = create(Map.class, "entrySet").asNonJavaNullable();
 
-  public static final MethodRef GET_ITERATOR = create(Iterable.class, "iterator").asNonNullable();
+  public static final MethodRef GET_ITERATOR =
+      create(Iterable.class, "iterator").asNonJavaNullable();
 
   public static final MethodRef ITERATOR_NEXT = create(Iterator.class, "next");
 
@@ -198,25 +199,26 @@ public abstract class MethodRef {
       create(ListImpl.class, "forProviderList", List.class);
 
   public static final MethodRef LONG_PARSE_LONG =
-      create(Long.class, "parseLong", String.class).asCheap().asNonNullable();
+      create(Long.class, "parseLong", String.class).asCheap().asNonJavaNullable();
   public static final MethodRef UNSIGNED_LONGS_PARSE_UNSIGNED_LONG =
       create(UnsignedLongs.class, "parseUnsignedLong", String.class).asCheap();
   public static final MethodRef UNSIGNED_LONGS_TO_STRING =
-      create(UnsignedLongs.class, "toString", long.class).asCheap().asNonNullable();
+      create(UnsignedLongs.class, "toString", long.class).asCheap().asNonJavaNullable();
   public static final MethodRef UNSIGNED_INTS_SATURATED_CAST =
       create(UnsignedInts.class, "saturatedCast", long.class).asCheap();
   public static final MethodRef UNSIGNED_INTS_TO_LONG =
       create(UnsignedInts.class, "toLong", int.class).asCheap();
 
   public static final MethodRef LONG_TO_STRING =
-      create(Long.class, "toString", long.class).asNonNullable();
+      create(Long.class, "toString", long.class).asNonJavaNullable();
 
   public static final MethodRef NUMBER_DOUBLE_VALUE = create(Number.class, "doubleValue").asCheap();
   public static final MethodRef NUMBER_LONG_VALUE = create(Number.class, "longValue").asCheap();
   public static final MethodRef NUMBER_INT_VALUE = create(Number.class, "intValue").asCheap();
   public static final MethodRef NUMBER_FLOAT_VALUE = create(Number.class, "floatValue").asCheap();
 
-  public static final MethodRef OBJECT_TO_STRING = create(Object.class, "toString").asNonNullable();
+  public static final MethodRef OBJECT_TO_STRING =
+      create(Object.class, "toString").asNonJavaNullable();
 
   public static final MethodRef OBJECTS_EQUALS =
       create(Objects.class, "equals", Object.class, Object.class);
@@ -520,23 +522,23 @@ public abstract class MethodRef {
       create(SoyValueProvider.class, "status");
 
   public static final MethodRef STRING_CONCAT =
-      create(String.class, "concat", String.class).asNonNullable();
+      create(String.class, "concat", String.class).asNonJavaNullable();
 
   public static final MethodRef STRING_IS_EMPTY = create(String.class, "isEmpty");
 
   public static final MethodRef STRING_VALUE_OF =
-      create(String.class, "valueOf", Object.class).asNonNullable();
+      create(String.class, "valueOf", Object.class).asNonJavaNullable();
 
   public static final MethodRef BOX_INTEGER =
-      create(Integer.class, "valueOf", int.class).asNonNullable();
+      create(Integer.class, "valueOf", int.class).asNonJavaNullable();
   public static final MethodRef BOX_LONG =
-      create(Long.class, "valueOf", long.class).asNonNullable();
+      create(Long.class, "valueOf", long.class).asNonJavaNullable();
   public static final MethodRef BOX_DOUBLE =
-      create(Double.class, "valueOf", double.class).asNonNullable();
+      create(Double.class, "valueOf", double.class).asNonJavaNullable();
   public static final MethodRef BOX_FLOAT =
-      create(Float.class, "valueOf", float.class).asNonNullable();
+      create(Float.class, "valueOf", float.class).asNonJavaNullable();
   public static final MethodRef BOX_BOOLEAN =
-      create(Boolean.class, "valueOf", boolean.class).asNonNullable();
+      create(Boolean.class, "valueOf", boolean.class).asNonJavaNullable();
   public static final MethodRef UNBOX_INTEGER = create(Integer.class, "longValue");
   public static final MethodRef UNBOX_LONG = create(Long.class, "longValue");
   public static final MethodRef UNBOX_DOUBLE = create(Double.class, "doubleValue");
@@ -702,7 +704,7 @@ public abstract class MethodRef {
 
   private static Features featuresForMethod(java.lang.reflect.Method method) {
     boolean nonnull = method.isAnnotationPresent(Nonnull.class);
-    return nonnull ? Features.of(Feature.NON_NULLABLE) : Features.of();
+    return nonnull ? Features.of(Feature.NON_JAVA_NULLABLE) : Features.of();
   }
 
   /**
@@ -788,8 +790,8 @@ public abstract class MethodRef {
     return withFeature(Feature.CHEAP);
   }
 
-  public MethodRef asNonNullable() {
-    return withFeature(Feature.NON_NULLABLE);
+  public MethodRef asNonJavaNullable() {
+    return withFeature(Feature.NON_JAVA_NULLABLE);
   }
 
   private MethodRef withFeature(Feature feature) {

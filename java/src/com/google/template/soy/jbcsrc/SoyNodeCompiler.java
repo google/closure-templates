@@ -1292,7 +1292,8 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
                 return metadata.templateMethod().invoke();
               }
               Expression renderContext = parameterLookup.getRenderContext();
-              return new Expression(BytecodeUtils.COMPILED_TEMPLATE_TYPE, Feature.NON_NULLABLE) {
+              return new Expression(
+                  BytecodeUtils.COMPILED_TEMPLATE_TYPE, Feature.NON_JAVA_NULLABLE) {
                 @Override
                 protected void doGen(CodeBuilder adapter) {
                   renderContext.gen(adapter);

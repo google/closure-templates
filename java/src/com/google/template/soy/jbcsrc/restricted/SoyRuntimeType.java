@@ -374,14 +374,14 @@ public abstract class SoyRuntimeType {
     return SoyTypes.NUMBER_TYPE.isAssignableFromStrict(soyType);
   }
 
-  public final SoyRuntimeType asNonNullable() {
+  public final SoyRuntimeType asNonJavaNullable() {
     // Use tryRemoveNull instead of removeNull because there are times where the jbcsrc backend
     // infers stronger types than Soy proper (e.g. for `@state` params initialized to `null` but
     // declared with a different type)
     return withNewSoyType(SoyTypes.tryRemoveNull(soyType));
   }
 
-  public final SoyRuntimeType asNullable() {
+  public final SoyRuntimeType asJavaNullable() {
     return withNewSoyType(SoyTypes.makeNullable(soyType));
   }
 

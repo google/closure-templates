@@ -386,7 +386,7 @@ public final class BytecodeUtils {
     }
     stringConstants.add(value.substring(previousStart));
     return stringConstants.size() == 1
-        ? new Expression(STRING_TYPE, Feature.CHEAP, Feature.NON_NULLABLE) {
+        ? new Expression(STRING_TYPE, Feature.CHEAP, Feature.NON_JAVA_NULLABLE) {
           @Override
           protected void doGen(CodeBuilder mv) {
             mv.visitLdcInsn(stringConstants.get(0));
@@ -399,7 +399,7 @@ public final class BytecodeUtils {
                     STRING_TYPE.getDescriptor(),
                     LARGE_STRING_CONSTANT_HANDLE,
                     stringConstants.toArray()))
-            .asNonNullable();
+            .asNonJavaNullable();
   }
 
   /** Returns an {@link Expression} that evaluates to the given ContentKind, or null. */
@@ -417,7 +417,7 @@ public final class BytecodeUtils {
   }
 
   public static Expression constant(Type type) {
-    return new Expression(CLASS_TYPE, Feature.CHEAP, Feature.NON_NULLABLE) {
+    return new Expression(CLASS_TYPE, Feature.CHEAP, Feature.NON_JAVA_NULLABLE) {
       @Override
       protected void doGen(CodeBuilder mv) {
         mv.pushType(type);
@@ -565,14 +565,14 @@ public final class BytecodeUtils {
     }
     if (leftRuntimeType.isKnownInt()
         && rightRuntimeType.isKnownInt()
-        && left.isNonNullable()
-        && right.isNonNullable()) {
+        && left.isNonJavaNullable()
+        && right.isNonJavaNullable()) {
       return Branch.ifEqual(left.unboxAsLong(), right.unboxAsLong()).asBoolean();
     }
     if (leftRuntimeType.isKnownNumber()
         && rightRuntimeType.isKnownNumber()
-        && left.isNonNullable()
-        && right.isNonNullable()
+        && left.isNonJavaNullable()
+        && right.isNonJavaNullable()
         && (leftRuntimeType.isKnownFloat() || rightRuntimeType.isKnownFloat())) {
       return Branch.ifEqual(left.coerceToDouble(), right.coerceToDouble()).asBoolean();
     }
@@ -585,14 +585,14 @@ public final class BytecodeUtils {
     SoyRuntimeType rightRuntimeType = right.soyRuntimeType();
     if (leftRuntimeType.isKnownInt()
         && rightRuntimeType.isKnownInt()
-        && left.isNonNullable()
-        && right.isNonNullable()) {
+        && left.isNonJavaNullable()
+        && right.isNonJavaNullable()) {
       return Branch.ifEqual(left.unboxAsLong(), right.unboxAsLong()).asBoolean();
     }
     if (leftRuntimeType.isKnownNumber()
         && rightRuntimeType.isKnownNumber()
-        && left.isNonNullable()
-        && right.isNonNullable()
+        && left.isNonJavaNullable()
+        && right.isNonJavaNullable()
         && (leftRuntimeType.isKnownFloat() || rightRuntimeType.isKnownFloat())) {
       return Branch.ifEqual(left.coerceToDouble(), right.coerceToDouble()).asBoolean();
     }
@@ -610,14 +610,14 @@ public final class BytecodeUtils {
     // transitivity.  See b/21461181
     SoyRuntimeType otherRuntimeType = other.soyRuntimeType();
     if (otherRuntimeType.isKnownStringOrSanitizedContent()) {
-      if (stringExpr.isNonNullable()) {
+      if (stringExpr.isNonJavaNullable()) {
         return stringExpr.invoke(MethodRef.EQUALS, other.unboxAsStringPreservingNullishness());
       } else {
         return MethodRef.OBJECTS_EQUALS.invoke(
             stringExpr, other.unboxAsStringPreservingNullishness());
       }
     }
-    if (otherRuntimeType.isKnownNumber() && other.isNonNullable()) {
+    if (otherRuntimeType.isKnownNumber() && other.isNonJavaNullable()) {
       // in this case, we actually try to convert stringExpr to a number
       return MethodRef.RUNTIME_STRING_EQUALS_AS_NUMBER.invoke(stringExpr, other.coerceToDouble());
     }
@@ -643,8 +643,8 @@ public final class BytecodeUtils {
     if (Expression.areAllCheap(left, right)) {
       features = features.plus(Feature.CHEAP);
     }
-    if (right.isNonNullable()) {
-      features = features.plus(Feature.NON_NULLABLE);
+    if (right.isNonJavaNullable()) {
+      features = features.plus(Feature.NON_JAVA_NULLABLE);
     }
     return new Expression(left.resultType(), features) {
       @Override
@@ -714,8 +714,8 @@ public final class BytecodeUtils {
     if (Expression.areAllCheap(condition, trueBranch, falseBranch)) {
       features = features.plus(Feature.CHEAP);
     }
-    if (trueBranch.isNonNullable() && falseBranch.isNonNullable()) {
-      features = features.plus(Feature.NON_NULLABLE);
+    if (trueBranch.isNonJavaNullable() && falseBranch.isNonJavaNullable()) {
+      features = features.plus(Feature.NON_JAVA_NULLABLE);
     }
     return new Expression(resultType, features) {
       @Override
@@ -752,7 +752,7 @@ public final class BytecodeUtils {
 
   private static Expression asArray(Type arrayType, ImmutableList<? extends Expression> elements) {
     Type elementType = arrayType.getElementType();
-    return new Expression(arrayType, Feature.NON_NULLABLE) {
+    return new Expression(arrayType, Feature.NON_JAVA_NULLABLE) {
       @Override
       protected void doGen(CodeBuilder adapter) {
         adapter.pushInt(elements.size());
@@ -776,7 +776,7 @@ public final class BytecodeUtils {
     // Note, we cannot necessarily use ImmutableList for anything besides the empty list because
     // we may need to put a null in it.
     Expression construct = ConstructorRef.ARRAY_LIST_SIZE.construct(constant(copy.size()));
-    return new Expression(LIST_TYPE, Feature.NON_NULLABLE) {
+    return new Expression(LIST_TYPE, Feature.NON_JAVA_NULLABLE) {
       @Override
       protected void doGen(CodeBuilder mv) {
         construct.gen(mv);
@@ -899,7 +899,7 @@ public final class BytecodeUtils {
       checkArgument(valuesCopy.get(i).resultType().getSort() == Type.OBJECT);
     }
     Expression construct = constructorRef.construct(constant(hashMapCapacity(keysCopy.size())));
-    return new Expression(mapType, Feature.NON_NULLABLE) {
+    return new Expression(mapType, Feature.NON_JAVA_NULLABLE) {
       @Override
       protected void doGen(CodeBuilder mv) {
         construct.gen(mv);

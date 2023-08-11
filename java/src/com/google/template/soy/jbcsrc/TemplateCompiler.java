@@ -471,7 +471,7 @@ final class TemplateCompiler {
             new RenderContextExpression(variableSet.getVariable(StandardNames.RENDER_CONTEXT)));
     AppendableExpression appendable =
         AppendableExpression.forExpression(
-            variableSet.getVariable(StandardNames.APPENDABLE).asNonNullable());
+            variableSet.getVariable(StandardNames.APPENDABLE).asNonJavaNullable());
     SoyNodeCompiler nodeCompiler =
         SoyNodeCompiler.create(
             templateNode,

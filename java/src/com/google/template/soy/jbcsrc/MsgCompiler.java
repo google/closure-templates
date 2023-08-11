@@ -189,7 +189,7 @@ final class MsgCompiler {
                 IMMUTABLE_LIST_TYPE.getDescriptor(),
                 MESSAGE_FACTORY_HANDLE,
                 constantParts.toArray()))
-        .asNonNullable();
+        .asNonJavaNullable();
   }
 
   /** Handles a translation consisting of a single raw text node. */

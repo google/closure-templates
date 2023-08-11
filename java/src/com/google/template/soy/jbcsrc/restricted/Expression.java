@@ -62,8 +62,8 @@ public abstract class Expression extends BytecodeProducer {
    * efficient code, not incorrect code.
    */
   public enum Feature {
-    /** The expression is guaranteed to not return null. */
-    NON_NULLABLE,
+    /** The expression is guaranteed to not return Java null. */
+    NON_JAVA_NULLABLE,
     /**
      * The expression is 'cheap'. As a rule of thumb, if it involves allocation, it is not cheap. If
      * you need to allocate a local variable to calculate the expression, it is not cheap.
@@ -104,7 +104,7 @@ public abstract class Expression extends BytecodeProducer {
         case Type.LONG:
         case Type.FLOAT:
           // primitives are never null
-          return features.plus(Feature.NON_NULLABLE);
+          return features.plus(Feature.NON_JAVA_NULLABLE);
         case Type.VOID:
         case Type.METHOD:
           throw new IllegalArgumentException("Invalid type: " + expressionType);
@@ -243,14 +243,14 @@ public abstract class Expression extends BytecodeProducer {
     return features.has(Feature.CHEAP);
   }
 
-  /** Whether or not this expression is {@link Feature#NON_NULLABLE non nullable}. */
-  public boolean isNonNullable() {
-    return features.has(Feature.NON_NULLABLE);
+  /** Whether or not this expression is {@link Feature#NON_JAVA_NULLABLE non nullable}. */
+  public boolean isNonJavaNullable() {
+    return features.has(Feature.NON_JAVA_NULLABLE);
   }
 
   /**
    * Returns all the feature bits. Typically, users will want to invoke one of the convenience
-   * accessors {@link #isCheap()} or {@link #isNonNullable()}.
+   * accessors {@link #isCheap()} or {@link #isNonJavaNullable()}.
    */
   public Features features() {
     return features;
@@ -316,12 +316,12 @@ public abstract class Expression extends BytecodeProducer {
     };
   }
 
-  /** Returns an equivalent expression where {@link #isNonNullable()} returns {@code true}. */
-  public Expression asNonNullable() {
-    if (isNonNullable()) {
+  /** Returns an equivalent expression where {@link #isNonJavaNullable()} returns {@code true}. */
+  public Expression asNonJavaNullable() {
+    if (isNonJavaNullable()) {
       return this;
     }
-    return new Expression(resultType, features.plus(Feature.NON_NULLABLE)) {
+    return new Expression(resultType, features.plus(Feature.NON_JAVA_NULLABLE)) {
       @Override
       protected void doGen(CodeBuilder adapter) {
         Expression.this.gen(adapter);
@@ -329,11 +329,11 @@ public abstract class Expression extends BytecodeProducer {
     };
   }
 
-  public Expression asNullable() {
-    if (!isNonNullable()) {
+  public Expression asJavaNullable() {
+    if (!isNonJavaNullable()) {
       return this;
     }
-    return new Expression(resultType, features.minus(Feature.NON_NULLABLE)) {
+    return new Expression(resultType, features.minus(Feature.NON_JAVA_NULLABLE)) {
       @Override
       protected void doGen(CodeBuilder adapter) {
         Expression.this.gen(adapter);
@@ -437,7 +437,7 @@ public abstract class Expression extends BytecodeProducer {
     helper.add("cheap", features.has(Feature.CHEAP) ? "true" : null);
     helper.add(
         "non-null",
-        features.has(Feature.NON_NULLABLE) && !BytecodeUtils.isPrimitive(resultType)
+        features.has(Feature.NON_JAVA_NULLABLE) && !BytecodeUtils.isPrimitive(resultType)
             ? "true"
             : null);
     return helper + ":\n" + trace();

@@ -100,19 +100,19 @@ public final class Branch {
     }
 
     @Override
-    public BranchToBoolean asNonNullable() {
-      if (isNonNullable()) {
+    public BranchToBoolean asNonJavaNullable() {
+      if (isNonJavaNullable()) {
         return this;
       }
-      return new BranchToBoolean(features().plus(Feature.NON_NULLABLE), branch, location);
+      return new BranchToBoolean(features().plus(Feature.NON_JAVA_NULLABLE), branch, location);
     }
 
     @Override
-    public BranchToBoolean asNullable() {
-      if (!isNonNullable()) {
+    public BranchToBoolean asJavaNullable() {
+      if (!isNonJavaNullable()) {
         return this;
       }
-      return new BranchToBoolean(features().minus(Feature.NON_NULLABLE), branch, location);
+      return new BranchToBoolean(features().minus(Feature.NON_JAVA_NULLABLE), branch, location);
     }
 
     @Override
@@ -255,8 +255,8 @@ public final class Branch {
     if (features.has(Feature.CHEAP) && ifTrue.isCheap() && ifFalse.isCheap()) {
       features = features.plus(Feature.CHEAP);
     }
-    if (ifTrue.isNonNullable() && ifFalse.isNonNullable()) {
-      features = features.plus(Feature.NON_NULLABLE);
+    if (ifTrue.isNonJavaNullable() && ifFalse.isNonJavaNullable()) {
+      features = features.plus(Feature.NON_JAVA_NULLABLE);
     }
     if (resultType.equals(Type.BOOLEAN_TYPE)) {
       Branch ifTrueBranch = Branch.ifTrue(ifTrue);

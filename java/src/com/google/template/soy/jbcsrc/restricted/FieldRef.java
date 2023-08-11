@@ -38,11 +38,11 @@ import org.objectweb.asm.Type;
 public abstract class FieldRef {
 
   public static final FieldRef NULL_PROVIDER =
-      staticFieldReference(JbcSrcRuntime.class, "NULL_PROVIDER").asNonNull();
+      staticFieldReference(JbcSrcRuntime.class, "NULL_PROVIDER").asNonJavaNullable();
   public static final FieldRef EMPTY_STRING_DATA =
-      staticFieldReference(StringData.class, "EMPTY_STRING").asNonNull();
+      staticFieldReference(StringData.class, "EMPTY_STRING").asNonJavaNullable();
   public static final FieldRef EMPTY_PARAMS =
-      staticFieldReference(ParamStore.class, "EMPTY_INSTANCE").asNonNull();
+      staticFieldReference(ParamStore.class, "EMPTY_INSTANCE").asNonJavaNullable();
 
   public static final FieldRef STACK_FRAME_STATE_NUMBER =
       instanceFieldReference(StackFrame.class, "stateNumber");
@@ -171,7 +171,7 @@ public abstract class FieldRef {
   }
 
   @CanIgnoreReturnValue
-  public FieldRef asNonNull() {
+  public FieldRef asNonJavaNullable() {
     isNullable = false;
     return this;
   }
@@ -190,7 +190,7 @@ public abstract class FieldRef {
       features = features.plus(Feature.CHEAP);
     }
     if (!isNullable) {
-      features = features.plus(Feature.NON_NULLABLE);
+      features = features.plus(Feature.NON_JAVA_NULLABLE);
     }
     return new Expression(type(), features) {
       @Override
@@ -206,7 +206,7 @@ public abstract class FieldRef {
     checkState(isStatic());
     Features features = Features.of(Feature.CHEAP);
     if (!isNullable) {
-      features = features.plus(Feature.NON_NULLABLE);
+      features = features.plus(Feature.NON_JAVA_NULLABLE);
     }
     return new Expression(type(), features) {
       @Override

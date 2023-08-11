@@ -398,7 +398,7 @@ public class ExpressionCompilerTest {
     variables.put(
         "p1",
         SoyExpression.forSoyValue(htmlType, constantNull(Type.getType(SanitizedContent.class)))
-            .asNullable());
+            .asJavaNullable());
     assertExpression("$p1 ?: $p2").evaluatesTo(StringData.forValue(""));
   }
 

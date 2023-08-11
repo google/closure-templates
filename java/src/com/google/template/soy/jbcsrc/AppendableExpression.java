@@ -113,7 +113,7 @@ final class AppendableExpression extends Expression {
     super(resultType, delegate.features());
     delegate.checkAssignableTo(LOGGING_ADVISING_APPENDABLE_TYPE);
     checkArgument(
-        delegate.isNonNullable(),
+        delegate.isNonJavaNullable(),
         "advising appendable expressions should always be non nullable: %s",
         delegate);
     this.delegate = delegate;

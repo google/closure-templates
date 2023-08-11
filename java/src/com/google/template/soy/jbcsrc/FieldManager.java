@@ -69,8 +69,8 @@ final class FieldManager {
   private FieldRef addStaticField(String proposedName, Expression initializer, int accessFlags) {
     String name = fieldNames.generate(proposedName);
     FieldRef ref = doAddField(name, initializer.resultType(), accessFlags);
-    if (initializer.isNonNullable()) {
-      ref = ref.asNonNull();
+    if (initializer.isNonJavaNullable()) {
+      ref = ref.asNonJavaNullable();
     }
     staticFields.add(new AutoValue_FieldManager_StaticFieldVariable(ref, initializer));
     return ref;
