@@ -402,11 +402,9 @@ public final class BytecodeUtils {
             .asNonJavaNullable();
   }
 
-  /** Returns an {@link Expression} that evaluates to the given ContentKind, or null. */
-  public static Expression constant(@Nullable ContentKind kind) {
-    return (kind == null)
-        ? BytecodeUtils.constantNull(CONTENT_KIND_TYPE)
-        : FieldRef.enumReference(kind).accessor();
+  /** Returns an {@link Expression} that evaluates to the given ContentKind. */
+  public static Expression constant(ContentKind kind) {
+    return FieldRef.enumReference(kind).accessor();
   }
 
   /** Returns an {@link Expression} that evaluates to the given Dir, or null. */

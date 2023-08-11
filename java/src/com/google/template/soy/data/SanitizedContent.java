@@ -163,7 +163,7 @@ public class SanitizedContent extends SoyAbstractValue {
         contentKind != ContentKind.TEXT,
         "Use plain strings instead SanitizedContent with kind of TEXT");
     this.content = content;
-    this.contentKind = contentKind;
+    this.contentKind = Preconditions.checkNotNull(contentKind);
     this.contentDir = contentDir;
   }
 
