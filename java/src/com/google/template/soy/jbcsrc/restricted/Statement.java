@@ -149,7 +149,7 @@ public abstract class Statement extends BytecodeProducer {
       try {
         serialized = String.valueOf(this);
         throw new RuntimeException("Failed to generate method:\n" + serialized, t);
-      } catch (Exception e) {
+      } catch (Throwable e) {
         throw new RuntimeException(
             "Failed to generate method (and error during serialization = " + e + ")", t);
       }

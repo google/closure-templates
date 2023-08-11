@@ -622,6 +622,14 @@ public abstract class MethodRef {
   public static final MethodRef MARK_AS_SOY_MAP =
       MethodRef.create(SoyValueConverter.class, "markAsSoyMap", Map.class);
 
+  public static final MethodRef AS_SWITCHABLE_VALUE_LONG =
+      MethodRef.create(JbcSrcRuntime.class, "asSwitchableValue", long.class, int.class);
+  public static final MethodRef AS_SWITCHABLE_VALUE_DOUBLE =
+      MethodRef.create(JbcSrcRuntime.class, "asSwitchableValue", double.class, int.class);
+
+  public static final MethodRef AS_SWITCHABLE_VALUE_SOY_VALUE =
+      MethodRef.create(JbcSrcRuntime.class, "asSwitchableValue", SoyValue.class, int.class);
+
   public static MethodRef create(Class<?> clazz, String methodName, Class<?>... params) {
     java.lang.reflect.Method m;
     try {
