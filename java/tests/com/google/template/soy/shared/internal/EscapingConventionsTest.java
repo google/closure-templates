@@ -133,7 +133,10 @@ public class EscapingConventionsTest {
 
   @Test
   public void testFilterCss() {
-    String[] shouldReject = new String[] {"linear-gradient(rgba(calc())"};
+    String[] shouldReject =
+        new String[] {
+          "linear-gradient(rgba(calc())", "Arial,'Roboto Medium'", "Arial,\"Roboto Medium\""
+        };
 
     String[] shouldAccept =
         new String[] {
