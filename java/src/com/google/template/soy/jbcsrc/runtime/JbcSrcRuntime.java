@@ -1260,5 +1260,31 @@ public final class JbcSrcRuntime {
     return ByteString.copyFrom(BaseEncoding.base64().decode(base64));
   }
 
+  public static int asSwitchableValue(long value, int unusedKey) {
+    int asInt = (int) value;
+    // If when coerced to an int, it is equal to value, then we can losslessly use it as a switch
+    // expression, otherwise we map to an unused key
+    if (asInt == value) {
+      return asInt;
+    }
+    return unusedKey;
+  }
+
+  public static int asSwitchableValue(double value, int unusedKey) {
+    int asInt = (int) value;
+    // If when coerced to an int, it is equal to value, then we have an integer encoded as a double
+    if (asInt == value) {
+      return asInt;
+    }
+    return unusedKey;
+  }
+
+  public static int asSwitchableValue(SoyValue value, int unusedKey) {
+    if (value instanceof NumberData) {
+      return asSwitchableValue(value.numberValue(), unusedKey);
+    }
+    return unusedKey;
+  }
+
   private JbcSrcRuntime() {}
 }
