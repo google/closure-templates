@@ -61,10 +61,6 @@ public final class ProtoEnumValueNode extends AbstractPrimitiveNode {
     return enumNumber;
   }
 
-  public int getValueAsInt() {
-    return enumNumber;
-  }
-
   public EnumValueDescriptor getEnumValueDescriptor() {
     return type.getDescriptor().findValueByNumber(enumNumber);
   }

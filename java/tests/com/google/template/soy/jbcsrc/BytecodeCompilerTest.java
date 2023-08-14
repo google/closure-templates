@@ -527,8 +527,6 @@ public class BytecodeCompilerTest {
             "    one",
             "  {case 2}",
             "    two",
-            "  {case 2}",
-            "    dead",
             "  {default}",
             "    default",
             "{/switch}")
