@@ -23,12 +23,6 @@ import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
 import com.google.common.base.VerifyException;
 import com.google.common.collect.ImmutableList;
-import com.google.common.html.types.SafeHtml;
-import com.google.common.html.types.SafeHtmlProto;
-import com.google.common.html.types.SafeUrl;
-import com.google.common.html.types.SafeUrlProto;
-import com.google.common.html.types.TrustedResourceUrl;
-import com.google.common.html.types.TrustedResourceUrlProto;
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.UnsignedInts;
 import com.google.common.primitives.UnsignedLongs;
@@ -41,16 +35,13 @@ import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.LoggingAdvisingAppendable.BufferingAppendable;
 import com.google.template.soy.data.ProtoFieldInterpreter;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
-import com.google.template.soy.data.SanitizedContents;
 import com.google.template.soy.data.SoyLegacyObjectMap;
 import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyProtoValue;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.SoyValueProvider;
-import com.google.template.soy.data.SoyValueUnconverter;
 import com.google.template.soy.data.SoyVisualElement;
 import com.google.template.soy.data.SoyVisualElementData;
 import com.google.template.soy.data.TemplateValue;
@@ -234,39 +225,6 @@ public abstract class MethodRef {
           ContentKind.class,
           Dir.class);
 
-  public static final MethodRef LIST_UNBOX_INTS =
-      create(JbcSrcRuntime.class, "listUnboxInts", List.class);
-  public static final MethodRef LIST_UNBOX_FLOATS =
-      create(JbcSrcRuntime.class, "listUnboxFloats", List.class);
-  public static final MethodRef LIST_UNBOX_NUMBERS =
-      create(JbcSrcRuntime.class, "listUnboxNumbers", List.class);
-  public static final MethodRef LIST_UNBOX_BOOLS =
-      create(JbcSrcRuntime.class, "listUnboxBools", List.class);
-  public static final MethodRef LIST_UNBOX_STRINGS =
-      create(JbcSrcRuntime.class, "listUnboxStrings", List.class);
-  public static final MethodRef LIST_UNBOX_PROTOS =
-      create(JbcSrcRuntime.class, "listUnboxProtos", List.class);
-  public static final MethodRef LIST_UNBOX_ENUMS =
-      create(JbcSrcRuntime.class, "listUnboxEnums", List.class, Class.class);
-  public static final MethodRef LIST_BOX_VALUES =
-      create(JbcSrcRuntime.class, "listBoxValues", List.class);
-  public static final MethodRef UNBOX_MAP =
-      create(JbcSrcRuntime.class, "unboxMap", SoyMap.class, Class.class, Class.class);
-  public static final MethodRef UNBOX_RECORD =
-      create(JbcSrcRuntime.class, "unboxRecord", SoyRecord.class);
-  public static final MethodRef SOY_VALUE_TO_BOXED_INTEGER =
-      create(JbcSrcRuntime.class, "toBoxedInteger", SoyValue.class);
-  public static final MethodRef SOY_VALUE_TO_BOXED_DOUBLE =
-      create(JbcSrcRuntime.class, "toBoxedDouble", SoyValue.class);
-  public static final MethodRef SOY_VALUE_TO_BOXED_FLOAT =
-      create(JbcSrcRuntime.class, "toBoxedFloat", SoyValue.class);
-  public static final MethodRef SOY_VALUE_TO_ENUM =
-      create(JbcSrcRuntime.class, "toEnum", SoyValue.class, Class.class);
-  public static final MethodRef SOY_VALUE_TO_BOXED_BOOLEAN =
-      create(JbcSrcRuntime.class, "toBoxedBoolean", SoyValue.class);
-  public static final MethodRef SOY_VALUE_TO_BOXED_LONG =
-      create(JbcSrcRuntime.class, "toBoxedLong", SoyValue.class);
-
   public static final MethodRef PARAM_STORE_SET_FIELD =
       create(
           JbcSrcRuntime.class, "setField", ParamStore.class, String.class, SoyValueProvider.class);
@@ -447,9 +405,6 @@ public abstract class MethodRef {
   public static final MethodRef RUNTIME_UNEXPECTED_STATE_ERROR =
       create(JbcSrcRuntime.class, "unexpectedStateError", StackFrame.class);
 
-  public static final MethodRef NO_EXTERN_JAVA_IMPL =
-      create(JbcSrcRuntime.class, "noExternJavaImpl");
-
   public static final MethodRef SOY_LIST_AS_JAVA_LIST = create(SoyList.class, "asJavaList");
 
   public static final MethodRef SOY_MAP_IMPL_AS_JAVA_MAP = create(SoyMap.class, "asJavaMap");
@@ -495,28 +450,12 @@ public abstract class MethodRef {
 
   public static final MethodRef CONVERT_FUTURE_TO_SOY_VALUE_PROVIDER =
       create(JbcSrcRuntime.class, "convertFutureToSoyValueProvider", Future.class);
-  public static final MethodRef CONVERT_OBJECT_TO_SOY_VALUE_PROVIDER =
-      create(JbcSrcRuntime.class, "convertObjectToSoyValueProvider", Object.class);
-  public static final MethodRef CONVERT_SAFE_URL_TO_SOY_VALUE_PROVIDER =
-      create(SanitizedContents.class, "fromSafeUrl", SafeUrl.class);
-  public static final MethodRef CONVERT_SAFE_URL_PROTO_TO_SOY_VALUE_PROVIDER =
-      create(SanitizedContents.class, "fromSafeUrlProto", SafeUrlProto.class);
-  public static final MethodRef CONVERT_TRUSTED_RESOURCE_URL_PROTO_TO_SOY_VALUE_PROVIDER =
-      create(SanitizedContents.class, "fromTrustedResourceUrlProto", TrustedResourceUrlProto.class);
-  public static final MethodRef CONVERT_SAFE_HTML_PROTO_TO_SOY_VALUE_PROVIDER =
-      create(SanitizedContents.class, "fromSafeHtmlProto", SafeHtmlProto.class);
-  public static final MethodRef CONVERT_SAFE_HTML_TO_SOY_VALUE_PROVIDER =
-      create(SanitizedContents.class, "fromSafeHtml", SafeHtml.class);
-  public static final MethodRef CONVERT_TRUSTED_RESOURCE_URL_TO_SOY_VALUE_PROVIDER =
-      create(SanitizedContents.class, "fromTrustedResourceUrl", TrustedResourceUrl.class);
 
   public static final MethodRef SOY_VALUE_PROVIDER_RESOLVE =
       create(JbcSrcRuntime.class, "resolveSoyValueProvider", SoyValueProvider.class);
 
   public static final MethodRef SOY_VALUE_PROVIDER_OR_NULL =
       create(JbcSrcRuntime.class, "soyValueProviderOrNull", SoyValueProvider.class);
-
-  public static final MethodRef LONG_TO_INT = create(JbcSrcRuntime.class, "longToInt", long.class);
 
   public static final MethodRef SOY_VALUE_PROVIDER_STATUS =
       create(SoyValueProvider.class, "status");
@@ -539,25 +478,6 @@ public abstract class MethodRef {
       create(Float.class, "valueOf", float.class).asNonJavaNullable();
   public static final MethodRef BOX_BOOLEAN =
       create(Boolean.class, "valueOf", boolean.class).asNonJavaNullable();
-  public static final MethodRef UNBOX_INTEGER = create(Integer.class, "longValue");
-  public static final MethodRef UNBOX_LONG = create(Long.class, "longValue");
-  public static final MethodRef UNBOX_DOUBLE = create(Double.class, "doubleValue");
-  public static final MethodRef UNBOX_FLOAT = create(Float.class, "doubleValue");
-  public static final MethodRef UNBOX_BOOLEAN = create(Boolean.class, "booleanValue");
-  public static final MethodRef UNBOX_OBJECT =
-      create(SoyValueUnconverter.class, "unconvert", SoyValueProvider.class);
-  public static final MethodRef UNBOX_SAFE_URL =
-      create(JbcSrcRuntime.class, "unboxSafeUrl", SoyValueProvider.class);
-  public static final MethodRef UNBOX_SAFE_HTML_PROTO =
-      create(JbcSrcRuntime.class, "unboxSafeHtmlProto", SoyValueProvider.class);
-  public static final MethodRef UNBOX_SAFE_URL_PROTO =
-      create(JbcSrcRuntime.class, "unboxSafeUrlProto", SoyValueProvider.class);
-  public static final MethodRef UNBOX_TRUSTED_RESOURCE_URL_PROTO =
-      create(JbcSrcRuntime.class, "unboxTrustedResourceUrlProto", SoyValueProvider.class);
-  public static final MethodRef UNBOX_SAFE_HTML =
-      create(JbcSrcRuntime.class, "unboxSafeHtml", SoyValueProvider.class);
-  public static final MethodRef UNBOX_TRUSTED_RESOURCE_URL =
-      create(JbcSrcRuntime.class, "unboxTrustedResourceUrl", SoyValueProvider.class);
   public static final MethodRef CHECK_NOT_NULL =
       create(JbcSrcRuntime.class, "checkExpressionNotNull", Object.class, String.class);
 
@@ -620,9 +540,6 @@ public abstract class MethodRef {
           ExtendableMessage.class,
           ExtensionLite.class,
           ProtoFieldInterpreter.class);
-
-  public static final MethodRef MARK_AS_SOY_MAP =
-      MethodRef.create(SoyValueConverter.class, "markAsSoyMap", Map.class);
 
   public static MethodRef create(Class<?> clazz, String methodName, Class<?>... params) {
     java.lang.reflect.Method m;

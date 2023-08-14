@@ -18,10 +18,8 @@ package com.google.template.soy.jbcsrc.runtime;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
-import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.ImmutableMap.toImmutableMap;
 import static java.lang.invoke.MethodType.methodType;
-import static java.util.stream.Collectors.toList;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.HashMultimap;
@@ -31,23 +29,13 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multiset;
 import com.google.common.collect.SetMultimap;
-import com.google.common.html.types.SafeHtml;
-import com.google.common.html.types.SafeHtmlProto;
-import com.google.common.html.types.SafeHtmls;
-import com.google.common.html.types.SafeUrl;
-import com.google.common.html.types.SafeUrlProto;
-import com.google.common.html.types.SafeUrls;
-import com.google.common.html.types.TrustedResourceUrl;
-import com.google.common.html.types.TrustedResourceUrlProto;
-import com.google.common.html.types.TrustedResourceUrls;
 import com.google.common.io.BaseEncoding;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.errorprone.annotations.Immutable;
+import com.google.errorprone.annotations.Keep;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.ExtensionLite;
 import com.google.protobuf.GeneratedMessage.ExtendableMessage;
-import com.google.protobuf.Message;
-import com.google.protobuf.ProtocolMessageEnum;
 import com.google.template.soy.data.AbstractLoggingAdvisingAppendable;
 import com.google.template.soy.data.LogStatement;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
@@ -57,13 +45,11 @@ import com.google.template.soy.data.ProtoFieldInterpreter;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SoyLegacyObjectMap;
 import com.google.template.soy.data.SoyMap;
-import com.google.template.soy.data.SoyProtoValue;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyRecords;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.SoyValueProvider;
-import com.google.template.soy.data.SoyValueUnconverter;
 import com.google.template.soy.data.SoyVisualElementData;
 import com.google.template.soy.data.TemplateValue;
 import com.google.template.soy.data.internal.LazyProtoToSoyValueList;
@@ -93,11 +79,9 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
-import java.lang.reflect.Method;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CancellationException;
@@ -158,11 +142,6 @@ public final class JbcSrcRuntime {
     return new AssertionError("Unexpected state requested: " + frame.stateNumber);
   }
 
-  @Nonnull
-  public static NoSuchMethodException noExternJavaImpl() {
-    return new NoSuchMethodException("No Java implementation for extern.");
-  }
-
   /**
    * Every {@code debugger} statement will call this method. You can use conditional breakpoints
    * here to easily stop execution at the right location.
@@ -176,6 +155,7 @@ public final class JbcSrcRuntime {
         new Exception());
   }
 
+  @Keep
   public static boolean stringEqualsAsNumber(String expr, double number) {
     if (expr == null) {
       return false;
@@ -188,22 +168,20 @@ public final class JbcSrcRuntime {
     }
   }
 
-  @Nonnull
-  public static SoyValueProvider convertObjectToSoyValueProvider(Object o) {
-    return SoyValueConverter.INSTANCE.convert(o);
-  }
-
+  @Keep
   @Nonnull
   public static SoyValueProvider convertFutureToSoyValueProvider(Future<?> future) {
     return SoyValueConverter.INSTANCE.convert(future);
   }
 
   /** Helper function to translate NullData -> null when resolving a SoyValueProvider. */
+  @Keep
   public static SoyValue resolveSoyValueProvider(SoyValueProvider provider) {
     SoyValue value = provider.resolve();
     return handleTofuNull(value);
   }
 
+  @Keep
   @Nullable
   public static SoyValueProvider soyValueProviderOrNull(SoyValueProvider provider) {
     if (resolveSoyValueProvider(provider) == null) {
@@ -220,16 +198,18 @@ public final class JbcSrcRuntime {
     return value;
   }
 
+  @Keep
   public static SoyValue getField(SoyRecord record, String field) {
     Preconditions.checkNotNull(record, "Attempted to access field '%s' of null", field);
     return handleTofuNull(record.getField(field));
   }
 
-  public static boolean hasField(SoyRecord record, String field) {
+  private static boolean hasField(SoyRecord record, String field) {
     Preconditions.checkNotNull(record, "Attempted to access field '%s' of null", field);
     return record.hasField(field);
   }
 
+  @Keep
   @Nonnull
   public static ParamStore setField(ParamStore store, String field, SoyValueProvider provider) {
     return store.setField(field, provider == null ? NullData.INSTANCE : provider);
@@ -239,6 +219,7 @@ public final class JbcSrcRuntime {
    * Helper function to make SoyRecord.getFieldProvider a non-nullable function by returning {@link
    * #NULL_PROVIDER} for missing fields.
    */
+  @Keep
   @Nonnull
   public static SoyValueProvider getFieldProvider(
       SoyRecord record, String field, @Nullable SoyValue defaultValue) {
@@ -246,6 +227,7 @@ public final class JbcSrcRuntime {
     return paramOrDefault(record.getFieldProvider(field), defaultValue);
   }
 
+  @Keep
   @Nonnull
   public static SoyValueProvider getFieldProvider(SoyRecord record, String field) {
     return getFieldProvider(record, field, /* defaultValue= */ null);
@@ -254,6 +236,7 @@ public final class JbcSrcRuntime {
   /**
    * Interprets a passed parameter. Handling tofu null and reinterpreting null as MISSING_PARAMETER
    */
+  @Keep
   @Nonnull
   public static SoyValueProvider param(SoyValueProvider provider) {
     return paramOrDefault(provider, null);
@@ -263,6 +246,7 @@ public final class JbcSrcRuntime {
    * Interprets a passed parameter with an optional default. Handling tofu null and reinterpreting
    * null as MISSING_PARAMETER
    */
+  @Keep
   @Nonnull
   public static SoyValueProvider paramOrDefault(
       SoyValueProvider provider, @Nullable SoyValue defaultValue) {
@@ -279,61 +263,6 @@ public final class JbcSrcRuntime {
     return provider;
   }
 
-  /** Returns true if the value is derived from a missing parameter */
-  @Nullable
-  public static SafeUrl unboxSafeUrl(SoyValueProvider provider) {
-    if (provider == null) {
-      return null;
-    }
-    SoyValue soyValue = provider.resolve();
-    return ((SanitizedContent) soyValue).toSafeUrl();
-  }
-
-  @Nullable
-  public static SafeUrlProto unboxSafeUrlProto(SoyValueProvider provider) {
-    if (provider == null) {
-      return null;
-    }
-    SoyValue soyValue = provider.resolve();
-    return SafeUrls.toProto(((SanitizedContent) soyValue).toSafeUrl());
-  }
-
-  @Nullable
-  public static SafeHtml unboxSafeHtml(SoyValueProvider provider) {
-    if (provider == null) {
-      return null;
-    }
-    SoyValue soyValue = provider.resolve();
-    return ((SanitizedContent) soyValue).toSafeHtml();
-  }
-
-  @Nullable
-  public static SafeHtmlProto unboxSafeHtmlProto(SoyValueProvider provider) {
-    if (provider == null) {
-      return null;
-    }
-    SoyValue soyValue = provider.resolve();
-    return SafeHtmls.toProto(((SanitizedContent) soyValue).toSafeHtml());
-  }
-
-  @Nullable
-  public static TrustedResourceUrl unboxTrustedResourceUrl(SoyValueProvider provider) {
-    if (provider == null) {
-      return null;
-    }
-    SoyValue soyValue = provider.resolve();
-    return ((SanitizedContent) soyValue).toTrustedResourceUrl();
-  }
-
-  @Nullable
-  public static TrustedResourceUrlProto unboxTrustedResourceUrlProto(SoyValueProvider provider) {
-    if (provider == null) {
-      return null;
-    }
-    SoyValue soyValue = provider.resolve();
-    return TrustedResourceUrls.toProto(((SanitizedContent) soyValue).toTrustedResourceUrl());
-  }
-
   /**
    * Helper function to translate null -> NullData when calling LegacyFunctionAdapters that may
    * expect it.
@@ -341,6 +270,7 @@ public final class JbcSrcRuntime {
    * <p>In the long run we should either fix ToFu (and all SoyJavaFunctions) to not use NullData or
    * we should introduce custom SoyFunction implementations for have come from SoyValueProvider.
    */
+  @Keep
   public static SoyValue callLegacySoyFunction(
       LegacyFunctionAdapter fnAdapter, List<SoyValue> args) {
     for (int i = 0; i < args.size(); i++) {
@@ -355,6 +285,7 @@ public final class JbcSrcRuntime {
    * Helper function to translate null -> NullData when calling SoyJavaPrintDirectives that may
    * expect it.
    */
+  @Keep
   @Nonnull
   public static SoyValue applyPrintDirective(
       SoyJavaPrintDirective directive, SoyValue value, List<SoyValue> args) {
@@ -367,195 +298,25 @@ public final class JbcSrcRuntime {
     return Preconditions.checkNotNull(directive.applyForJava(value, args));
   }
 
-  public static int longToInt(long value) {
-    Preconditions.checkState(
-        value >= Integer.MIN_VALUE && value <= Integer.MAX_VALUE,
-        "Casting long to integer results in overflow: %s",
-        value);
-    return (int) value;
-  }
-
-  @Nullable
-  public static ImmutableList<String> listUnboxStrings(List<SoyValue> values) {
-    if (values == null) {
-      return null;
-    }
-    return values.stream().map(SoyValue::coerceToString).collect(toImmutableList());
-  }
-
-  @Nullable
-  public static ImmutableList<Long> listUnboxInts(List<SoyValue> values) {
-    if (values == null) {
-      return null;
-    }
-    return values.stream().map(SoyValue::longValue).collect(toImmutableList());
-  }
-
-  @Nullable
-  public static ImmutableList<Double> listUnboxFloats(List<SoyValue> values) {
-    if (values == null) {
-      return null;
-    }
-    return values.stream().map(SoyValue::floatValue).collect(toImmutableList());
-  }
-
-  @Nullable
-  public static ImmutableList<Double> listUnboxNumbers(List<SoyValue> values) {
-    if (values == null) {
-      return null;
-    }
-    return values.stream().map(SoyValue::numberValue).collect(toImmutableList());
-  }
-
-  @Nullable
-  public static ImmutableList<Boolean> listUnboxBools(List<SoyValue> values) {
-    if (values == null) {
-      return null;
-    }
-    return values.stream().map(SoyValue::coerceToBoolean).collect(toImmutableList());
-  }
-
-  @Nullable
-  public static ImmutableList<Message> listUnboxProtos(List<SoyValue> values) {
-    if (values == null) {
-      return null;
-    }
-    return values.stream().map(v -> ((SoyProtoValue) v).getProto()).collect(toImmutableList());
-  }
-
-  @Nullable
-  public static <T extends ProtocolMessageEnum> ImmutableList<T> listUnboxEnums(
-      List<SoyValue> values, Class<T> type) {
-    if (values == null) {
-      return null;
-    }
-    return values.stream()
-        .map(v -> getEnumValue(type, (int) v.longValue()))
-        .collect(toImmutableList());
-  }
-
-  public static Integer toBoxedInteger(SoyValue value) {
-    if (value == null) {
-      return null;
-    }
-    return value.integerValue();
-  }
-
-  public static Long toBoxedLong(SoyValue value) {
-    if (value == null) {
-      return null;
-    }
-    return value.longValue();
-  }
-
-  public static Double toBoxedDouble(SoyValue value) {
-    if (value == null) {
-      return null;
-    } else if (value instanceof NumberData) {
-      return value.numberValue();
-    }
-    // This is probably an error, in which case this call with throw an appropriate exception.
-    return value.floatValue();
-  }
-
-  public static Float toBoxedFloat(SoyValue value) {
-    if (value == null) {
-      return null;
-    } else if (value instanceof NumberData) {
-      return (float) value.numberValue();
-    }
-    // This is probably an error, in which case this call with throw an appropriate exception.
-    return (float) value.floatValue();
-  }
-
-  public static Boolean toBoxedBoolean(SoyValue value) {
-    if (value == null) {
-      return null;
-    }
-    return value.coerceToBoolean();
-  }
-
-  public static <T> T toEnum(SoyValue value, Class<T> clazz) {
-    if (value == null) {
-      return null;
-    }
-    return getEnumValue(clazz, value.integerValue());
-  }
-
-  static <T> T getEnumValue(Class<T> clazz, int enumValue) {
-    try {
-      Method forNumber = clazz.getMethod("forNumber", int.class);
-      return clazz.cast(forNumber.invoke(null, enumValue));
-    } catch (ReflectiveOperationException e) {
-      throw new RuntimeException(e);
-    }
-  }
-
-  @Nullable
-  public static ImmutableMap<?, ?> unboxMap(SoyMap map, Class<?> keyType, Class<?> valueType) {
-    if (map == null) {
-      return null;
-    }
-    return map.entrySet().stream()
-        .collect(
-            toImmutableMap(
-                e -> unboxMapItem(e.getKey(), keyType),
-                e -> unboxMapItem(e.getValue().resolve(), valueType)));
-  }
-
-  public static Object unboxMapItem(SoyValue value, Class<?> type) {
-    if (value == null) {
-      return null;
-    } else if (type == Long.class) {
-      return value.longValue();
-    } else if (type == String.class) {
-      return value.coerceToString();
-    } else if (type == Boolean.class) {
-      return value.coerceToBoolean();
-    } else if (type == Double.class) {
-      return value.floatValue();
-    } else if (Message.class.isAssignableFrom(type)) {
-      return ((SoyProtoValue) value).getProto();
-    } else if (ProtocolMessageEnum.class.isAssignableFrom(type)) {
-      return getEnumValue(type, value.integerValue());
-    } else {
-      throw new IllegalArgumentException("unsupported type: " + type);
-    }
-  }
-
-  @Nullable
-  public static ImmutableMap<?, ?> unboxRecord(SoyRecord map) {
-    if (map == null) {
-      return null;
-    }
-    return map.recordAsMap().entrySet().stream()
-        .collect(toImmutableMap(Entry::getKey, e -> SoyValueUnconverter.unconvert(e.getValue())));
-  }
-
-  @Nullable
-  public static List<SoyValueProvider> listBoxValues(List<?> javaValues) {
-    if (javaValues == null) {
-      return null;
-    }
-    return javaValues.stream().map(SoyValueConverter.INSTANCE::convert).collect(toList());
-  }
-
   /**
    * Wraps a given template with a collection of escapers to apply.
    *
    * @param delegate The delegate template to render
    * @param directives The set of directives to apply
    */
+  @Keep
   public static CompiledTemplate applyEscapers(
       CompiledTemplate delegate, ImmutableList<SoyJavaPrintDirective> directives) {
     checkState(!directives.isEmpty());
     return new EscapedCompiledTemplate(delegate, directives);
   }
 
+  @Keep
   public static SoyValue getSoyListItem(List<SoyValueProvider> list, long index) {
     return resolveSoyValueProvider(getSoyListItemProvider(list, index));
   }
 
+  @Keep
   public static SoyValueProvider getSoyListItemProvider(List<SoyValueProvider> list, long index) {
     if (list == null) {
       throw new NullPointerException("Attempted to access list item '" + index + "' of null");
@@ -569,6 +330,7 @@ public final class JbcSrcRuntime {
     return NULL_PROVIDER;
   }
 
+  @Keep
   public static RenderResult getListStatus(List<? extends SoyValueProvider> soyValueProviders) {
     // avoid allocating an iterator
     for (SoyValueProvider soyValueProvider : soyValueProviders) {
@@ -580,6 +342,7 @@ public final class JbcSrcRuntime {
     return RenderResult.done();
   }
 
+  @Keep
   public static RenderResult getMapStatus(
       Map<String, ? extends SoyValueProvider> soyValueProviders) {
     for (SoyValueProvider value : soyValueProviders.values()) {
@@ -591,11 +354,13 @@ public final class JbcSrcRuntime {
     return RenderResult.done();
   }
 
+  @Keep
   public static SoyValue getSoyMapItem(SoyMap soyMap, SoyValue key) {
     Preconditions.checkNotNull(soyMap, "Attempted to access map item '%s' of null", key);
     return soyMap.get(key);
   }
 
+  @Keep
   @Nonnull
   public static SoyValueProvider getSoyMapItemProvider(SoyMap soyMap, SoyValue key) {
     Preconditions.checkNotNull(soyMap, "Attempted to access map item '%s' of null", key);
@@ -606,12 +371,14 @@ public final class JbcSrcRuntime {
     return soyValueProvider == null ? NULL_PROVIDER : soyValueProvider;
   }
 
+  @Keep
   public static SoyValue getSoyLegacyObjectMapItem(
       SoyLegacyObjectMap legacyObjectMap, SoyValue key) {
     Preconditions.checkNotNull(legacyObjectMap, "Attempted to access map item '%s' of null", key);
     return legacyObjectMap.getItem(key);
   }
 
+  @Keep
   public static SoyValueProvider getSoyLegacyObjectMapItemProvider(
       SoyLegacyObjectMap legacyObjectMap, SoyValue key) {
     if (legacyObjectMap == null) {
@@ -621,11 +388,13 @@ public final class JbcSrcRuntime {
     return soyValueProvider == null ? NULL_PROVIDER : soyValueProvider;
   }
 
+  @Keep
   @Nonnull
   public static String handleBasicTranslation(List<SoyMsgPart> parts) {
     return ((SoyMsgRawTextPart) parts.get(0)).getRawText();
   }
 
+  @Keep
   @Nonnull
   public static String handleBasicTranslationAndEscapeHtml(List<SoyMsgPart> parts) {
     return MsgRenderer.escapeHtml(handleBasicTranslation(parts));
@@ -960,6 +729,7 @@ public final class JbcSrcRuntime {
       };
 
   /** Determines if the operand's string form can be equality-compared with a string. */
+  @Keep
   public static boolean compareNullableString(@Nullable String string, @Nullable SoyValue other) {
     // This is a parallel version of SharedRuntime.compareString except it can handle a null LHS.
     if (string == null && other == null) {
@@ -987,10 +757,12 @@ public final class JbcSrcRuntime {
   }
 
   @Nonnull
+  @Keep
   public static LoggingAdvisingAppendable logger() {
     return LOGGER;
   }
 
+  @Keep
   public static int rangeLoopLength(int start, int end, int step) {
     int length = end - start;
     if ((length ^ step) < 0) {
@@ -999,20 +771,24 @@ public final class JbcSrcRuntime {
     return length / step + (length % step == 0 ? 0 : 1);
   }
 
+  @Keep
   public static boolean coerceToBoolean(double v) {
     // NaN and 0 should both be falsy, all other numbers are truthy
     // use & instead of && to avoid a branch
     return v != 0.0 & !Double.isNaN(v);
   }
 
+  @Keep
   public static boolean coerceToBoolean(@Nullable SoyValue v) {
     return v != null && v.coerceToBoolean();
   }
 
+  @Keep
   public static boolean coerceToBoolean(@Nullable String v) {
     return v != null && !v.isEmpty();
   }
 
+  @Keep
   @Nonnull
   public static String coerceToString(@Nullable SoyValue v) {
     return v == null ? "null" : v.coerceToString();
@@ -1093,11 +869,13 @@ public final class JbcSrcRuntime {
     }
   }
 
+  @Keep
   public static LogStatement createLogStatement(boolean logOnly, SoyVisualElementData veData) {
     return LogStatement.create(veData.ve().id(), veData.data(), logOnly);
   }
 
   /** Asserts that all members of the list are resolved. */
+  @Keep
   @Nonnull
   public static <T extends SoyValueProvider> List<T> checkResolved(List<T> providerList) {
     for (int i = 0; i < providerList.size(); i++) {
@@ -1111,6 +889,7 @@ public final class JbcSrcRuntime {
   }
 
   /** Asserts that all members of the map are resolved. */
+  @Keep
   @Nonnull
   public static <K, V extends SoyValueProvider> Map<K, V> checkResolved(Map<K, V> providerMap) {
     for (Map.Entry<K, V> entry : providerMap.entrySet()) {
@@ -1126,6 +905,7 @@ public final class JbcSrcRuntime {
     return providerMap;
   }
 
+  @Keep
   public static SoyMap boxJavaMapAsSoyMap(Map<?, ?> javaMap) {
     Map<SoyValue, SoyValueProvider> map = Maps.newHashMapWithExpectedSize(javaMap.size());
     for (Map.Entry<?, ?> entry : javaMap.entrySet()) {
@@ -1136,10 +916,12 @@ public final class JbcSrcRuntime {
     return SoyMapImpl.forProviderMap(map);
   }
 
+  @Keep
   public static SoyRecord boxJavaMapAsSoyRecord(Map<String, ?> javaMap) {
     return new SoyRecordImpl(javaMapAsProviderMap(javaMap));
   }
 
+  @Keep
   public static SoyLegacyObjectMap boxJavaMapAsSoyLegacyObjectMap(Map<String, ?> javaMap) {
     return new SoyLegacyObjectMapImpl(javaMapAsProviderMap(javaMap));
   }
@@ -1153,6 +935,7 @@ public final class JbcSrcRuntime {
   }
 
   /** For repeated extensions, returns all of the extensions values as a list. */
+  @Keep
   @Nonnull
   public static <MessageT extends ExtendableMessage<MessageT>, T>
       LazyProtoToSoyValueList<T> getExtensionList(
@@ -1167,6 +950,7 @@ public final class JbcSrcRuntime {
   }
 
   @Nonnull
+  @Keep
   public static TemplateValue bindTemplateParams(TemplateValue template, SoyRecord boundParams) {
     var newTemplate =
         new PartiallyBoundTemplate(boundParams, (CompiledTemplate) template.getCompiledTemplate());
@@ -1242,6 +1026,7 @@ public final class JbcSrcRuntime {
     }
   }
 
+  @Keep
   @Nonnull
   public static <T> T checkExpressionNotNull(T value, String expression) {
     if (value == null) {
@@ -1251,11 +1036,13 @@ public final class JbcSrcRuntime {
   }
 
   @Nonnull
+  @Keep
   public static String base64Encode(ByteString byteString) {
     return BaseEncoding.base64().encode(byteString.toByteArray());
   }
 
   @Nonnull
+  @Keep
   public static ByteString base64Decode(String base64) {
     return ByteString.copyFrom(BaseEncoding.base64().decode(base64));
   }
