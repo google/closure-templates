@@ -87,10 +87,7 @@ public final class NullData extends PrimitiveData {
 
   @Override
   public boolean equals(Object other) {
-    if (other instanceof PrimitiveData) {
-      return other == UndefinedData.INSTANCE || other == NullData.INSTANCE;
-    }
-    return false;
+    return other == INSTANCE;
   }
 
   @Override

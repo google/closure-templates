@@ -25,7 +25,6 @@ import com.google.template.soy.data.internal.SoyMapImpl;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
-import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.exprtree.MapLiteralFromListNode;
@@ -56,6 +55,9 @@ public final class SharedRuntime {
     if (operand1 instanceof StringData) {
       return compareString(operand1.stringValue(), operand0);
     }
+    if ((operand0 == null || operand0.isNullish()) && (operand1 == null || operand1.isNullish())) {
+      return true;
+    }
     return Objects.equals(operand0, operand1);
   }
 
@@ -71,9 +73,6 @@ public final class SharedRuntime {
     }
     if (operand0 instanceof StringData && operand1 instanceof StringData) {
       return operand0.stringValue().equals(operand1.stringValue());
-    }
-    if (operand0 instanceof NullData && operand1 instanceof NullData) {
-      return true;
     }
     return operand0 == operand1;
   }
