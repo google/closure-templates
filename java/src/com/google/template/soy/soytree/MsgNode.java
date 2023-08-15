@@ -745,4 +745,10 @@ public final class MsgNode extends AbstractBlockCommandNode
     }
     return Optional.empty();
   }
+
+  @SuppressWarnings("unchecked")
+  @Override
+  public ParentSoyNode<StandaloneNode> getParent() {
+    return (ParentSoyNode<StandaloneNode>) super.getParent();
+  }
 }

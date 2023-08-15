@@ -526,9 +526,11 @@ public final class PassManager {
         passes
             .add(new RewriteDirectivesCallableAsFunctionsPass(errorReporter))
             .add(new RewriteRemaindersPass(errorReporter))
-            .add(new RewriteGenderMsgsPass(errorReporter))
-            // Needs to come after any pass that manipulates msg placeholders.
-            .add(new CalculateMsgSubstitutionInfoPass(errorReporter));
+            .add(new RewriteGenderMsgsPass(errorReporter));
+      }
+      if (astRewrites.isAll() || astRewrites == AstRewrites.TSX) {
+        // Needs to come after any pass that manipulates msg placeholders.
+        passes.add(new CalculateMsgSubstitutionInfoPass(errorReporter));
       }
       passes.add(new CheckNonEmptyMsgNodesPass(errorReporter));
 
@@ -548,7 +550,6 @@ public final class PassManager {
         passes.add(new RewriteElementCompositionFunctionsPass(errorReporter));
       }
       passes.add(new ResolveTemplateNamesPass(errorReporter));
-
       if (!disableAllTypeChecking) {
         // Without type checking proto enums in variant expressions are not resolved.
         passes.add(new ValidateVariantExpressionsPass(errorReporter));

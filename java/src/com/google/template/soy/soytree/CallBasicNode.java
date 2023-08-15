@@ -46,6 +46,8 @@ public final class CallBasicNode extends CallNode {
    */
   private ExprRootNode calleeExpr;
 
+  private ExprRootNode originalShortFormExpr = null;
+
   public CallBasicNode(
       int id,
       SourceLocation location,
@@ -81,6 +83,19 @@ public final class CallBasicNode extends CallNode {
               ImmutableList.of("data", "key", PHNAME_ATTR, PHEX_ATTR, "variant"));
       }
     }
+  }
+
+  public CallBasicNode(
+      int id,
+      SourceLocation location,
+      SourceLocation openTagLocation,
+      ExprNode calleeExpr,
+      List<CommandTagAttribute> attributes,
+      boolean selfClosing,
+      ErrorReporter errorReporter,
+      ExprRootNode originalShortFormExpr) {
+    this(id, location, openTagLocation, calleeExpr, attributes, selfClosing, errorReporter);
+    this.originalShortFormExpr = originalShortFormExpr;
   }
 
   /**
@@ -129,6 +144,11 @@ public final class CallBasicNode extends CallNode {
 
   public void setCalleeExpr(ExprRootNode calleeExpr) {
     this.calleeExpr = calleeExpr;
+  }
+
+  @Nullable
+  public ExprRootNode getOriginalShortFormExpr() {
+    return originalShortFormExpr;
   }
 
   @Override
