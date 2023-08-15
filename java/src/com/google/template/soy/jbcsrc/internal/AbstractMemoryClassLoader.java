@@ -18,6 +18,7 @@ package com.google.template.soy.jbcsrc.internal;
 
 import com.google.common.base.Throwables;
 import com.google.errorprone.annotations.ForOverride;
+import com.google.template.soy.jbcsrc.shared.CompiledTemplates.DebuggingClassLoader;
 import com.google.template.soy.jbcsrc.shared.Names;
 import java.net.URL;
 import java.security.AccessController;
@@ -26,7 +27,8 @@ import java.security.ProtectionDomain;
 import javax.annotation.Nullable;
 
 /** Base class to share code between our custom memory based classloader implementations. */
-public abstract class AbstractMemoryClassLoader extends ClassLoader {
+public abstract class AbstractMemoryClassLoader extends ClassLoader
+    implements DebuggingClassLoader {
   private static final ProtectionDomain DEFAULT_PROTECTION_DOMAIN;
 
   static {
@@ -49,6 +51,12 @@ public abstract class AbstractMemoryClassLoader extends ClassLoader {
   @Nullable
   @ForOverride
   protected abstract ClassData getClassData(String name);
+
+  @Override
+  public String getDebugInfoForClass(String className) {
+    ClassData data = getClassData(className);
+    return data != null ? "Class Data:\n" + data : null;
+  }
 
   @Override
   public final Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {

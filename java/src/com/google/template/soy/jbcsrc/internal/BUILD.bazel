@@ -26,6 +26,7 @@ java_library(
     deps = [
         "//java/src/com/google/template/soy/base/internal",
         "//java/src/com/google/template/soy/jbcsrc/restricted",
+        "//java/src/com/google/template/soy/jbcsrc/shared",
         "//java/src/com/google/template/soy/jbcsrc/shared:names",
         "@com_google_protobuf//:protobuf_java",
         "@maven//:com_google_code_findbugs_jsr305",

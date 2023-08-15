@@ -53,6 +53,12 @@ import javax.annotation.concurrent.GuardedBy;
 
 /** The result of template compilation. */
 public class CompiledTemplates {
+  /** Interface for classloaders that can provide additional per-class debugging information. */
+  public interface DebuggingClassLoader {
+    @Nullable
+    String getDebugInfoForClass(String className);
+  }
+
   private static final AtomicInteger idGenerator = new AtomicInteger(0);
 
   private static final MethodType RENDER_TYPE =
@@ -276,12 +282,20 @@ public class CompiledTemplates {
 
   private static TemplateData loadTemplate(String name, ClassLoader loader) {
     Class<?> templateClass;
+    String templateName = Names.javaClassNameFromSoyTemplateName(name);
     try {
-      String templateName = Names.javaClassNameFromSoyTemplateName(name);
       templateClass = Class.forName(templateName, /* initialize= */ true, loader);
     } catch (ClassNotFoundException e) {
       String format = "No class was compiled for template: %s.";
       throw new IllegalArgumentException(String.format(format, name), e);
+    } catch (LinkageError e) {
+      if (loader instanceof DebuggingClassLoader) {
+        String debugInfo = ((DebuggingClassLoader) loader).getDebugInfoForClass(templateName);
+        if (debugInfo != null) {
+          throw new LinkageError(debugInfo, e);
+        }
+      }
+      throw e;
     }
     return new TemplateData(templateClass, name);
   }
@@ -352,6 +366,7 @@ public class CompiledTemplates {
   /** This is mostly a copy of the {@link TemplateMetadata} annotation. */
   public static final class TemplateData {
     final Method templateMethod;
+
     // These lazy caches are necessary for optimization and correctness.  The hard references stored
     // here are only weakly referenced by the callsites.  Thus they live or die with this object.
     // For that reason it is important to ensure that at most one of these is ever returned from
