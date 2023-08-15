@@ -204,11 +204,6 @@ public final class JbcSrcRuntime {
     return handleTofuNull(record.getField(field));
   }
 
-  private static boolean hasField(SoyRecord record, String field) {
-    Preconditions.checkNotNull(record, "Attempted to access field '%s' of null", field);
-    return record.hasField(field);
-  }
-
   @Keep
   @Nonnull
   public static ParamStore setField(ParamStore store, String field, SoyValueProvider provider) {
@@ -1045,6 +1040,46 @@ public final class JbcSrcRuntime {
   @Keep
   public static ByteString base64Decode(String base64) {
     return ByteString.copyFrom(BaseEncoding.base64().decode(base64));
+  }
+
+  public static int asSwitchableValue(long value, int unusedKey) {
+    int asInt = (int) value;
+    // If when coerced to an int, it is equal to value, then we can losslessly use it as a switch
+    // expression, otherwise we map to an unused key
+    if (asInt == value) {
+      return asInt;
+    }
+    return unusedKey;
+  }
+
+  public static int asSwitchableValue(double value, int unusedKey) {
+    int asInt = (int) value;
+    // If when coerced to an int, it is equal to value, then we have an integer encoded as a double
+    if (asInt == value) {
+      return asInt;
+    }
+    return unusedKey;
+  }
+
+  public static int asSwitchableValue(SoyValue value, int unusedKey) {
+    if (value instanceof NumberData) {
+      return asSwitchableValue(value.numberValue(), unusedKey);
+    }
+    if (value instanceof StringData) {
+      // TODO(b/295895863): Backcompat for a bug. Server soy implementations call
+      // SharedRuntime.equal to match switch cases.  Instead they should call
+      // SharedRuntime.tripleEqual to match the JavaScript implementation.
+      try {
+        // Parse the string as a number.
+        // N.B. this will throw on out of range values and non-integer values.
+        return Integer.parseInt(value.stringValue(), 10);
+      } catch (NumberFormatException nfe) {
+        // Didn't parse as a number.
+        // fall through and return unused
+      }
+    }
+
+    return unusedKey;
   }
 
   private JbcSrcRuntime() {}
