@@ -16,11 +16,9 @@
 
 package com.google.template.soy.shared.internal;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import java.util.Set;
-import javax.annotation.Nullable;
 
 /**
  * Enum of built-in functions supported in Soy expressions.
@@ -49,31 +47,6 @@ public enum BuiltinFunction implements SoyFunction {
   PROTO_INIT("$$protoInit"),
   VE_DEF("ve_def"),
   ;
-
-  public static ImmutableSet<String> names() {
-    return NONPLUGIN_FUNCTIONS_BY_NAME.keySet();
-  }
-
-  /** Map of NonpluginFunctions by function name. */
-  private static final ImmutableMap<String, BuiltinFunction> NONPLUGIN_FUNCTIONS_BY_NAME;
-
-  static {
-    ImmutableMap.Builder<String, BuiltinFunction> mapBuilder = ImmutableMap.builder();
-    for (BuiltinFunction nonpluginFn : values()) {
-      mapBuilder.put(nonpluginFn.functionName, nonpluginFn);
-    }
-    NONPLUGIN_FUNCTIONS_BY_NAME = mapBuilder.build();
-  }
-
-  /**
-   * Returns the NonpluginFunction for the given function name, or null if not found.
-   *
-   * @param functionName The function name to retrieve.
-   */
-  @Nullable
-  public static BuiltinFunction forFunctionName(String functionName) {
-    return NONPLUGIN_FUNCTIONS_BY_NAME.get(functionName);
-  }
 
   /** The function name. */
   private final String functionName;
