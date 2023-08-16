@@ -49,6 +49,7 @@ import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.ProtoEnumValueNode;
+import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.jbcsrc.ControlFlow.IfBlock;
 import com.google.template.soy.jbcsrc.ExpressionCompiler.BasicExpressionCompiler;
 import com.google.template.soy.jbcsrc.LazyClosureCompiler.LazyClosure;
@@ -71,6 +72,7 @@ import com.google.template.soy.jbcsrc.runtime.JbcSrcRuntime;
 import com.google.template.soy.jbcsrc.shared.ClassLoaderFallbackCallFactory;
 import com.google.template.soy.jbcsrc.shared.Names;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
+import com.google.template.soy.jbcsrc.shared.StringSwitchFactory;
 import com.google.template.soy.logging.LoggingFunction;
 import com.google.template.soy.msgs.internal.MsgUtils;
 import com.google.template.soy.msgs.internal.MsgUtils.MsgPartsAndIds;
@@ -123,6 +125,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -435,19 +438,69 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   }
 
   /**
-   * Special case int switches to use the java tableswitch instruction.
+   * Maps the SoyExpression to an `int` Expression that can be used to evaluate a switch for the
+   * given keys.
+   */
+  private static Expression asSwitchableInt(SoyExpression switchExpr, String[] switchKeys) {
+    // We need to coerce the switchExpr to an int value. Use an invokedynamic bootstrap to manage a
+    // hash of string to case
+    Expression stringKey =
+        switchExpr.soyRuntimeType().assignableToNullableString()
+            ? switchExpr.unboxAsStringPreservingNullishness()
+            : switchExpr.box();
+
+    return new Expression(Type.INT_TYPE) {
+      @Override
+      protected void doGen(CodeBuilder adapter) {
+        stringKey.gen(adapter);
+        adapter.visitInvokeDynamicInsn(
+            "stringSwitch",
+            (stringKey.resultType().equals(BytecodeUtils.STRING_TYPE)
+                    ? STRING_SWITCH_DESCRIPTOR_STRING
+                    : STRING_SWITCH_DESCRIPTOR_SOY_VALUE)
+                .getDescriptor(),
+            STRING_SWITCH_FACTORY_HANDLE,
+            (Object[]) switchKeys);
+      }
+    };
+  }
+
+  private static final Handle STRING_SWITCH_FACTORY_HANDLE =
+      MethodRef.create(
+              StringSwitchFactory.class,
+              "bootstrapStringSwitch",
+              MethodHandles.Lookup.class,
+              String.class,
+              MethodType.class,
+              String[].class)
+          .asHandle();
+  private static final Type STRING_SWITCH_DESCRIPTOR_STRING =
+      Type.getMethodType(Type.INT_TYPE, BytecodeUtils.STRING_TYPE);
+
+  private static final Type STRING_SWITCH_DESCRIPTOR_SOY_VALUE =
+      Type.getMethodType(Type.INT_TYPE, BytecodeUtils.SOY_VALUE_TYPE);
+
+  /**
+   * Special case int and string switches to use the java tableswitch instruction.
    *
-   * <p>This is likely faster but helps by allowing us to evaluate the switch expression only once
+   * <p>This is both faster and smaller than the default cascading if-statement.
    *
-   * <p>A similar optimization should be possible for string switches if needed, these are somewhat
-   * less common but could benefit similarly. A complexity will be avoiding the need to evaluate the
-   * switch expression multiple times, this could be managed with extra push/pop operations.
+   * <p>For now we only support switches where all the keys are ints or all the keys are strings. We
+   * could support an arbitrary set of literals using the same strategy as strings. Basically we
+   * would pass all the literals to an invokedynamic boostrap which would use a hash data structure
+   * to map literal -> case number. Then we could dynamically resolve all switch exprs against the
+   * hash.
+   *
+   * <p>TODO(lukes): Supporting switches with non-constant case expressions or expressions of mixed
+   * types is probably not very important. See if the compiler could reject these structures to
+   * eliminate the fallback for switches.
    */
   private Optional<Statement> trySwitchCompilableToSwitchInstruction(
       SoyExpression switchExpr, SwitchNode node) {
-    // First make sure all cases are representable as java integers
+    // First make sure all cases are representable as java integers or as strings
     // bail out if this isn't true.
     Map<Integer, SwitchCaseNode> cases = new LinkedHashMap<>();
+    LinkedHashSet<String> stringKeys = null;
     SwitchDefaultNode dfltNode = null;
     for (SoyNode child : node.getChildren()) {
       if (child instanceof SwitchCaseNode) {
@@ -455,6 +508,10 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
         for (ExprRootNode caseExpr : caseNode.getExprList()) {
           var root = caseExpr.getRoot();
           if (root instanceof IntegerNode) {
+            if (stringKeys != null) {
+              // if we have any stringKeys then we have a mixed switch which we can't support.
+              return Optional.empty();
+            }
             var intNode = (IntegerNode) root;
             if (intNode.isInt()) {
               // If a case expression is used multiple times, only use the first occurrence
@@ -463,7 +520,22 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
               return Optional.empty();
             }
           } else if (root instanceof ProtoEnumValueNode) {
+            if (stringKeys != null) {
+              return Optional.empty();
+            }
             cases.putIfAbsent(((ProtoEnumValueNode) root).getValueAsInt(), caseNode);
+          } else if (root instanceof StringNode) {
+            if (stringKeys == null) {
+              if (!cases.isEmpty()) {
+                // there is a mix of string and int cases
+                return Optional.empty();
+              }
+              stringKeys = new LinkedHashSet<>();
+            }
+            // Every string key'd case is linked to the index of the string key in the list
+            if (stringKeys.add(((StringNode) root).getValue())) {
+              cases.put(stringKeys.size() - 1, caseNode);
+            }
           } else {
             return Optional.empty();
           }
@@ -485,7 +557,10 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
 
     int[] sortedKeys = cases.keySet().stream().mapToInt(Integer::intValue).sorted().toArray();
     // We need to coerce the switchExpr to an int value.
-    Expression switchExprCoerced = asSwitchableInt(switchExpr, sortedKeys);
+    Expression switchExprCoerced =
+        stringKeys != null
+            ? asSwitchableInt(switchExpr, stringKeys.toArray(new String[0]))
+            : asSwitchableInt(switchExpr, sortedKeys);
     // If more than 50% of the slots between min and max or full, use a tableswitch otherwise a
     // lookup switch
     int min = sortedKeys[0];
