@@ -2649,6 +2649,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
 
         case ANY:
         case NULL:
+        case UNDEFINED:
         case BOOL:
         case INT:
         case FLOAT:

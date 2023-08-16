@@ -137,6 +137,7 @@ final class KeyCommandPass implements CompilerFilePass {
     for (SoyType type : unwrapped) {
       switch (type.getKind()) {
         case NULL:
+        case UNDEFINED:
         case INT:
         case FLOAT:
         case STRING:

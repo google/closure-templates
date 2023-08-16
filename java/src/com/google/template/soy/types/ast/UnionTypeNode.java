@@ -16,18 +16,29 @@
 
 package com.google.template.soy.types.ast;
 
+import static com.google.common.collect.ImmutableList.toImmutableList;
+
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Streams;
+import java.util.stream.Stream;
 
 /** A union type (eg, a|b). */
 @AutoValue
 public abstract class UnionTypeNode extends TypeNode {
 
   public static UnionTypeNode create(Iterable<TypeNode> candidates) {
-    ImmutableList<TypeNode> candidateList = ImmutableList.copyOf(candidates);
+    ImmutableList<TypeNode> candidateList =
+        Streams.stream(candidates)
+            .flatMap(
+                tn ->
+                    tn instanceof UnionTypeNode
+                        ? ((UnionTypeNode) tn).candidates().stream()
+                        : Stream.of(tn))
+            .collect(toImmutableList());
     Preconditions.checkArgument(candidateList.size() > 1);
     return new AutoValue_UnionTypeNode(
         candidateList

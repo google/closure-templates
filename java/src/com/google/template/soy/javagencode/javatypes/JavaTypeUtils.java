@@ -169,6 +169,7 @@ public final class JavaTypeUtils {
       case FUNCTION:
         throw new UnsupportedOperationException();
       case NULL:
+      case UNDEFINED:
         break;
     }
 

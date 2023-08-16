@@ -35,6 +35,7 @@ import com.google.template.soy.exprtree.FloatNode;
 import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.exprtree.StringNode;
+import com.google.template.soy.exprtree.UndefinedNode;
 import java.util.Map;
 import javax.annotation.Nullable;
 
@@ -99,6 +100,8 @@ public class InternalValueUtils {
       return FloatData.forValue(((FloatNode) primitiveNode).getValue());
     } else if (primitiveNode instanceof NullNode) {
       return NullData.INSTANCE;
+    } else if (primitiveNode instanceof UndefinedNode) {
+      return UndefinedData.INSTANCE;
     } else {
       throw new IllegalArgumentException();
     }

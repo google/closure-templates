@@ -46,6 +46,7 @@ public interface ExprNode extends Node {
     EXPR_ROOT_NODE,
 
     NULL_NODE,
+    UNDEFINED_NODE,
     BOOLEAN_NODE,
     INTEGER_NODE,
     FLOAT_NODE,

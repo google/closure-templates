@@ -31,9 +31,7 @@ import com.google.template.soy.data.TemplateValue;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
-import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.StringData;
-import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.UnionType;
@@ -140,7 +138,10 @@ public final class TofuTypeChecks {
       case LEGACY_OBJECT_MAP:
         return CheckResult.fromBool(value instanceof SoyLegacyObjectMap);
       case NULL:
-        return CheckResult.fromBool(value == NullData.INSTANCE || value == UndefinedData.INSTANCE);
+        // TODO(b/291132644): Make exclusively null.
+        return CheckResult.fromBool(value.isNullish());
+      case UNDEFINED:
+        return CheckResult.fromBool(value.isUndefined());
       case MESSAGE:
         return CheckResult.fromBool(value instanceof SoyProtoValue);
       case PROTO:

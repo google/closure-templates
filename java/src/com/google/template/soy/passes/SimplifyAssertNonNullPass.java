@@ -55,7 +55,7 @@ final class SimplifyAssertNonNullPass implements CompilerFilePass {
           ((AbstractParentExprNode) firstChild).setType(node.getType());
         } else if (firstChild instanceof VarRefNode) {
           ((VarRefNode) firstChild).setSubstituteType(node.getType());
-        } else if (SoyTypes.isNullable(firstChild.getType())) {
+        } else if (SoyTypes.isNullish(firstChild.getType())) {
           continue;
         }
         node.getParent().replaceChild(node, firstChild);

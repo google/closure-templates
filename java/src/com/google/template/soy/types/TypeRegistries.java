@@ -188,6 +188,7 @@ public final class TypeRegistries {
             .put("UnknownTypeForDeltemplateMigration", UnknownType.getInstance())
             .put("any", AnyType.getInstance())
             .put("null", NullType.getInstance())
+            .put("undefined", UndefinedType.getInstance())
             .put("bool", BoolType.getInstance())
             .put("int", IntType.getInstance())
             .put("float", FloatType.getInstance())

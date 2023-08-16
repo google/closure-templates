@@ -202,6 +202,11 @@ public final class ExprEquivalence {
         }
 
         @Override
+        protected Integer visitUndefinedNode(UndefinedNode node) {
+          return -1;
+        }
+
+        @Override
         protected Integer visitExprNode(ExprNode node) {
           throw new UnsupportedOperationException(node.toSourceString());
         }

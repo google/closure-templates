@@ -54,6 +54,7 @@ import com.google.template.soy.types.TemplateType;
 import com.google.template.soy.types.TemplateType.DataAllCallSituation;
 import com.google.template.soy.types.TemplateType.Parameter;
 import com.google.template.soy.types.TemplateType.ParameterKind;
+import com.google.template.soy.types.UndefinedType;
 import com.google.template.soy.types.UnknownType;
 import com.google.template.soy.types.VeDataType;
 import java.util.ArrayList;
@@ -325,6 +326,8 @@ public final class TemplateMetadataSerializer {
             return IntType.getInstance();
           case NULL:
             return NullType.getInstance();
+          case UNDEFINED:
+            return UndefinedType.getInstance();
           case BOOL:
             return BoolType.getInstance();
           case FLOAT:

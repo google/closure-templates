@@ -25,6 +25,7 @@ import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.PrimitiveData;
 import com.google.template.soy.data.restricted.StringData;
+import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
@@ -114,7 +115,6 @@ final class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
 
   @Override
   protected void visitAndOpNode(AndOpNode node) {
-
     // Recurse.
     visitChildren(node);
 
@@ -128,7 +128,6 @@ final class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
 
   @Override
   protected void visitOrOpNode(OrOpNode node) {
-
     // Recurse.
     visitChildren(node);
 
@@ -142,7 +141,6 @@ final class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
 
   @Override
   protected void visitConditionalOpNode(ConditionalOpNode node) {
-
     // Recurse.
     visitChildren(node);
 
@@ -160,14 +158,13 @@ final class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
   // let variable inlining
   @Override
   protected void visitNullCoalescingOpNode(NullCoalescingOpNode node) {
-
     // Recurse.
     visitChildren(node);
 
     // Can simplify if operand0 is constant. We assume no side-effects.
     SoyValue operand0 = getConstantOrNull(node.getChild(0));
     if (operand0 != null) {
-      if (operand0 instanceof NullData) {
+      if (operand0 instanceof NullData || operand0 instanceof UndefinedData) {
         node.getParent().replaceChild(node, node.getChild(1));
       } else {
         // all other constants are non=null, so use that
@@ -485,10 +482,11 @@ final class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
 
   /** Returns the value of the given expression if it's constant, else returns null. */
   static SoyValue getConstantOrNull(ExprNode expr) {
-
     switch (expr.getKind()) {
       case NULL_NODE:
         return NullData.INSTANCE;
+      case UNDEFINED_NODE:
+        return UndefinedData.INSTANCE;
       case BOOLEAN_NODE:
         return BooleanData.forValue(((BooleanNode) expr).getValue());
       case INTEGER_NODE:
@@ -499,8 +497,6 @@ final class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
         return StringData.forValue(((StringNode) expr).getValue());
       case PROTO_ENUM_VALUE_NODE:
         return IntegerData.forValue(((ProtoEnumValueNode) expr).getValue());
-      case GLOBAL_NODE:
-        return null;
       default:
         return null;
     }

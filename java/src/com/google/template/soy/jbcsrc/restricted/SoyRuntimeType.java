@@ -129,6 +129,7 @@ public abstract class SoyRuntimeType {
   private static PrimitiveSoyType unboxedTypeImpl(SoyType soyType) {
     switch (soyType.getKind()) {
       case NULL:
+      case UNDEFINED:
         return new PrimitiveSoyType(
             NullType.getInstance(), BytecodeUtils.NULL_PSEUDO_TYPE, SOY_VALUE_TYPE);
       case BOOL:

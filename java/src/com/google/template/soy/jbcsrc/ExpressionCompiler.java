@@ -89,6 +89,7 @@ import com.google.template.soy.exprtree.ProtoEnumValueNode;
 import com.google.template.soy.exprtree.RecordLiteralNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
+import com.google.template.soy.exprtree.UndefinedNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.jbcsrc.ExpressionDetacher.BasicDetacher;
 import com.google.template.soy.jbcsrc.restricted.Branch;
@@ -435,6 +436,12 @@ final class ExpressionCompiler {
 
     @Override
     protected SoyExpression visitNullNode(NullNode node) {
+      return SoyExpression.NULL;
+    }
+
+    @Override
+    protected SoyExpression visitUndefinedNode(UndefinedNode node) {
+      // TODO(b/291132644): Make undefined.
       return SoyExpression.NULL;
     }
 

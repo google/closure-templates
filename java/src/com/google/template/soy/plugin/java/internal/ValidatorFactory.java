@@ -384,6 +384,7 @@ final class ValidatorFactory extends JavaValueFactory {
         expectedClasses = STRING_TYPES;
         break;
       case NULL:
+      case UNDEFINED:
         expectedClasses = NULL_TYPES;
         break;
       case MESSAGE:

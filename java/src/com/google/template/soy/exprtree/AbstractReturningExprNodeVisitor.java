@@ -86,6 +86,8 @@ public abstract class AbstractReturningExprNodeVisitor<R>
 
       case NULL_NODE:
         return visitNullNode((NullNode) node);
+      case UNDEFINED_NODE:
+        return visitUndefinedNode((UndefinedNode) node);
       case BOOLEAN_NODE:
         return visitBooleanNode((BooleanNode) node);
       case INTEGER_NODE:
@@ -209,6 +211,10 @@ public abstract class AbstractReturningExprNodeVisitor<R>
   // Implementations for primitive nodes.
 
   protected R visitNullNode(NullNode node) {
+    return visitPrimitiveNode(node);
+  }
+
+  protected R visitUndefinedNode(UndefinedNode node) {
     return visitPrimitiveNode(node);
   }
 

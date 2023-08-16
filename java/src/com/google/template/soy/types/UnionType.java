@@ -30,9 +30,7 @@ import java.util.Comparator;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-/**
- * Type representing a set of possible alternative types.
- */
+/** Type representing a set of possible alternative types. */
 public final class UnionType extends SoyType {
 
   /** Comparator that defines the ordering of types. */
@@ -74,8 +72,7 @@ public final class UnionType extends SoyType {
     ImmutableSortedSet.Builder<SoyType> builder = ImmutableSortedSet.orderedBy(MEMBER_ORDER);
     for (SoyType type : members) {
       // simplify unions containing these types
-      if (type.getKind() == Kind.UNKNOWN
-          || type.getKind() == Kind.ANY) {
+      if (type.getKind() == Kind.UNKNOWN || type.getKind() == Kind.ANY) {
         return type;
       }
       if (type.getKind() == Kind.UNION) {
@@ -115,7 +112,7 @@ public final class UnionType extends SoyType {
 
   /** Returns true if the union includes the null type. */
   public boolean isNullable() {
-    return members.stream().anyMatch(t -> t.getKind() == SoyType.Kind.NULL);
+    return members.contains(NullType.getInstance());
   }
 
   /** Returns a Soy type that is equivalent to this one but with 'null' removed. */

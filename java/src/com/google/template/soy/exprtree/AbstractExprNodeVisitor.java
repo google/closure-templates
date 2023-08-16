@@ -86,6 +86,9 @@ public abstract class AbstractExprNodeVisitor<R> extends AbstractNodeVisitor<Exp
       case NULL_NODE:
         visitNullNode((NullNode) node);
         break;
+      case UNDEFINED_NODE:
+        visitUndefinedNode((UndefinedNode) node);
+        break;
       case BOOLEAN_NODE:
         visitBooleanNode((BooleanNode) node);
         break;
@@ -268,6 +271,10 @@ public abstract class AbstractExprNodeVisitor<R> extends AbstractNodeVisitor<Exp
   // Implementations for primitive nodes.
 
   protected void visitNullNode(NullNode node) {
+    visitPrimitiveNode(node);
+  }
+
+  protected void visitUndefinedNode(UndefinedNode node) {
     visitPrimitiveNode(node);
   }
 

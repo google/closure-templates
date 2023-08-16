@@ -48,6 +48,7 @@ message SoyTypeP {
     ANY = 1;
     UNKNOWN = 2;
     NULL = 3;
+    UNDEFINED = 15;
     BOOL = 4;
     INT = 5;
     FLOAT = 6;

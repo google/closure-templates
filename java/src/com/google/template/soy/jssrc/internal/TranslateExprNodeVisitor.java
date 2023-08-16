@@ -98,6 +98,7 @@ import com.google.template.soy.exprtree.ProtoEnumValueNode;
 import com.google.template.soy.exprtree.RecordLiteralNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
+import com.google.template.soy.exprtree.UndefinedNode;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.internal.proto.ProtoUtils;
@@ -300,6 +301,11 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
 
   @Override
   protected Expression visitNullNode(NullNode node) {
+    return LITERAL_NULL;
+  }
+
+  @Override
+  protected Expression visitUndefinedNode(UndefinedNode node) {
     return LITERAL_NULL;
   }
 

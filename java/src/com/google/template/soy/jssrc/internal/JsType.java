@@ -351,6 +351,7 @@ public final class JsType {
       boolean includeNullForMessages) {
     switch (soyType.getKind()) {
       case NULL:
+      case UNDEFINED:
         return NULL_OR_UNDEFINED_TYPE;
 
       case ANY:

@@ -51,6 +51,7 @@ public abstract class SoyType {
    *   <li>Primitive types:
    *       <ul>
    *         <li>NULL: The type of the "null" value
+   *         <li>UNDEFINED: The type of the "undefined" value
    *         <li>BOOL
    *         <li>INT
    *         <li>FLOAT
@@ -86,6 +87,7 @@ public abstract class SoyType {
     UNKNOWN,
     // Primitive types
     NULL,
+    UNDEFINED,
     BOOL,
     INT,
     FLOAT,
