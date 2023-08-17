@@ -133,6 +133,17 @@ attributes['value'] = (el: Element, name: string, value: unknown) => {
   }
 };
 
+attributes['muted'] = (el: Element, name: string, value: unknown) => {
+  if (value == null) {
+    el.removeAttribute('muted');
+    (el as HTMLMediaElement).muted = false;
+  } else {
+    el.setAttribute('muted', String(value));
+    // This is a boolean attribute, so any value is true.
+    (el as HTMLMediaElement).muted = true;
+  }
+};
+
 // Soy uses the {key} command syntax, rather than HTML attributes, to
 // indicate element keys.
 incrementaldom.setKeyAttributeName('ssk');
