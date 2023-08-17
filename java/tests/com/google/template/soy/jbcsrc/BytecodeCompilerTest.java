@@ -54,6 +54,7 @@ import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.StringData;
+import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.jbcsrc.TemplateTester.CompiledTemplateSubject;
 import com.google.template.soy.jbcsrc.api.RenderResult;
@@ -758,6 +759,12 @@ public class BytecodeCompilerTest {
         .rendersAs("2", ImmutableMap.of(), ImmutableMap.of("foo", 1))
         .rendersAs("3", ImmutableMap.of(), ImmutableMap.of("foo", 2))
         .rendersAs("4", ImmutableMap.of(), ImmutableMap.of("foo", 3));
+
+    assertThatTemplateBody("{@inject foo: ?}", "{let $bar: $foo ?: 'abc' /}", "{$bar}")
+        .rendersAs("abc", ImmutableMap.of(), ImmutableMap.of())
+        .rendersAs("abc", ImmutableMap.of(), ImmutableMap.of("foo", NullData.INSTANCE))
+        .rendersAs("abc", ImmutableMap.of(), ImmutableMap.of("foo", UndefinedData.INSTANCE))
+        .rendersAs("xyz", ImmutableMap.of(), ImmutableMap.of("foo", "xyz"));
   }
 
   @Test

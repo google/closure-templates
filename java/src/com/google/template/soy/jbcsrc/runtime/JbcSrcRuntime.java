@@ -18,14 +18,12 @@ package com.google.template.soy.jbcsrc.runtime;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
-import static com.google.common.collect.ImmutableMap.toImmutableMap;
 import static java.lang.invoke.MethodType.methodType;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multiset;
 import com.google.common.collect.SetMultimap;
@@ -48,15 +46,11 @@ import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyRecords;
 import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.SoyVisualElementData;
 import com.google.template.soy.data.TemplateValue;
 import com.google.template.soy.data.internal.LazyProtoToSoyValueList;
 import com.google.template.soy.data.internal.ParamStore;
-import com.google.template.soy.data.internal.SoyLegacyObjectMapImpl;
-import com.google.template.soy.data.internal.SoyMapImpl;
-import com.google.template.soy.data.internal.SoyRecordImpl;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.data.restricted.StringData;
@@ -166,12 +160,6 @@ public final class JbcSrcRuntime {
     } catch (NumberFormatException nfe) {
       return false;
     }
-  }
-
-  @Keep
-  @Nonnull
-  public static SoyValueProvider convertFutureToSoyValueProvider(Future<?> future) {
-    return SoyValueConverter.INSTANCE.convert(future);
   }
 
   /** Helper function to translate NullData -> null when resolving a SoyValueProvider. */
@@ -898,35 +886,6 @@ public final class JbcSrcRuntime {
       }
     }
     return providerMap;
-  }
-
-  @Keep
-  public static SoyMap boxJavaMapAsSoyMap(Map<?, ?> javaMap) {
-    Map<SoyValue, SoyValueProvider> map = Maps.newHashMapWithExpectedSize(javaMap.size());
-    for (Map.Entry<?, ?> entry : javaMap.entrySet()) {
-      map.put(
-          SoyValueConverter.INSTANCE.convert(entry.getKey()).resolve(),
-          SoyValueConverter.INSTANCE.convert(entry.getValue()));
-    }
-    return SoyMapImpl.forProviderMap(map);
-  }
-
-  @Keep
-  public static SoyRecord boxJavaMapAsSoyRecord(Map<String, ?> javaMap) {
-    return new SoyRecordImpl(javaMapAsProviderMap(javaMap));
-  }
-
-  @Keep
-  public static SoyLegacyObjectMap boxJavaMapAsSoyLegacyObjectMap(Map<String, ?> javaMap) {
-    return new SoyLegacyObjectMapImpl(javaMapAsProviderMap(javaMap));
-  }
-
-  private static ImmutableMap<String, SoyValueProvider> javaMapAsProviderMap(
-      Map<String, ?> javaMap) {
-    return javaMap.entrySet().stream()
-        .collect(
-            toImmutableMap(
-                Map.Entry::getKey, e -> SoyValueConverter.INSTANCE.convert(e.getValue())));
   }
 
   /** For repeated extensions, returns all of the extensions values as a list. */

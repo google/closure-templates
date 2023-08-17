@@ -19,8 +19,8 @@ package com.google.template.soy.jbcsrc;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.template.soy.jbcsrc.PrintDirectives.applyStreamingEscapingDirectives;
 import static com.google.template.soy.jbcsrc.PrintDirectives.areAllPrintDirectivesStreamable;
-import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_STRING_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_VALUE_PROVIDER_TYPE;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.STRING_DATA_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
 
 import com.google.auto.value.AutoValue;
@@ -302,13 +302,13 @@ final class MsgCompiler {
                           .createExpressionDetacher(start)
                           .resolveSoyValueProvider(msgRendererVar.accessor())
                       : msgRendererVar.accessor().invoke(MethodRef.SOY_VALUE_PROVIDER_RESOLVE))
-                  .checkedCast(SOY_STRING_TYPE));
+                  .checkedCast(STRING_DATA_TYPE));
       for (SoyPrintDirective directive : escapingDirectives) {
         value = parameterLookup.getRenderContext().applyPrintDirective(directive, value);
       }
       render =
           appendableExpression
-              .appendString(value.unboxAsStringIgnoringNullishness())
+              .appendString(value.unboxAsStringUnchecked())
               .toStatement()
               .labelStart(start);
     }

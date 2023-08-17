@@ -108,7 +108,7 @@ public final class ExternCompiler {
             paramNames,
             start,
             end,
-            /*isStatic=*/ true);
+            /* isStatic= */ true);
     Expression renderContext = paramSet.getVariable(StandardNames.RENDER_CONTEXT);
     ConstantVariables vars =
         new ConstantVariables(paramSet, new RenderContextExpression(renderContext));
@@ -166,6 +166,17 @@ public final class ExternCompiler {
     return (extern.isExported() ? Opcodes.ACC_PUBLIC : 0) | Opcodes.ACC_STATIC;
   }
 
+  /**
+   * The type representation of the return type and parameters of the generated static extern
+   * method. These are the declared types of this method and therefore the types that Soy template
+   * callers of this extern need to adapt to. These are not the types of the user-provided Java
+   * implementation of the extern.
+   *
+   * <p>Extern implementations generally want unboxed and nullable values. The templates may have
+   * unboxed or boxed values. So we make the boundary here unboxed and nullable to avoid boxing
+   * between the template and generated method since we would then just unbox before passing to the
+   * implementation.
+   */
   static SoyRuntimeType getRuntimeType(SoyType type) {
     return SoyRuntimeType.getUnboxedType(type).orElseGet(() -> SoyRuntimeType.getBoxedType(type));
   }
@@ -293,12 +304,12 @@ public final class ExternCompiler {
       }
       return MethodRef.BOX_LONG.invoke(actualParam.unboxAsLong());
     } else if (javaType.equals(BytecodeUtils.STRING_TYPE)) {
-      return actualParam.unboxAsStringPreservingNullishness();
+      return actualParam.unboxAsStringOrJavaNull();
     } else if (javaType.equals(BytecodeUtils.LIST_TYPE)
         || javaType.equals(BytecodeUtils.IMMUTIBLE_LIST_TYPE)) {
       SoyType elmType = ((ListType) soyType).getElementType();
       SoyExpression unboxedList =
-          actualParam.isBoxed() ? actualParam.unboxAsListPreservingNullishness() : actualParam;
+          actualParam.isBoxed() ? actualParam.unboxAsListOrJavaNull() : actualParam;
       switch (elmType.getKind()) {
         case INT:
           return JbcSrcExternRuntime.LIST_UNBOX_INTS.invoke(unboxedList);

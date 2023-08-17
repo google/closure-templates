@@ -155,13 +155,12 @@ final class RenderContextExpression extends Expression implements JbcSrcPluginCo
 
   @Override
   public Expression getAllRequiredCssNamespaces(SoyExpression template) {
-    return delegate.invoke(
-        GET_ALL_REQUIRED_CSS_NAMESPACES, template.unboxAsStringIgnoringNullishness());
+    return delegate.invoke(GET_ALL_REQUIRED_CSS_NAMESPACES, template.unboxAsStringUnchecked());
   }
 
   @Override
   public Expression getAllRequiredCssPaths(SoyExpression template) {
-    return delegate.invoke(GET_ALL_REQUIRED_CSS_PATHS, template.unboxAsStringIgnoringNullishness());
+    return delegate.invoke(GET_ALL_REQUIRED_CSS_PATHS, template.unboxAsStringUnchecked());
   }
 
   Expression getRenderCssHelper() {
@@ -239,7 +238,7 @@ final class RenderContextExpression extends Expression implements JbcSrcPluginCo
               MethodRef.RUNTIME_APPLY_PRINT_DIRECTIVE.invoke(
                   getPrintDirective(directive.getName()),
                   value.box(),
-                  SoyExpression.asBoxedList(args)));
+                  SoyExpression.asBoxedListWithJavaNullItems(args)));
     }
     return value;
   }

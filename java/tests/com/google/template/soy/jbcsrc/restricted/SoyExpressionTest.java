@@ -99,17 +99,12 @@ public class SoyExpressionTest {
   public void testNullExpression() {
     assertThatExpression(SoyExpression.NULL).evaluatesTo(null);
     assertThatExpression(SoyExpression.NULL.box()).evaluatesTo(null);
-    assertThatExpression(SoyExpression.NULL.box().unboxAsListPreservingNullishness())
-        .evaluatesTo(null);
-    assertThatExpression(SoyExpression.NULL.box().unboxAsStringPreservingNullishness())
-        .evaluatesTo(null);
+    assertThatExpression(SoyExpression.NULL.box().unboxAsListOrJavaNull()).evaluatesTo(null);
+    assertThatExpression(SoyExpression.NULL.box().unboxAsStringOrJavaNull()).evaluatesTo(null);
     assertThatExpression(
-            SoyExpression.NULL
-                .box()
-                .unboxAsMessagePreservingNullishness(BytecodeUtils.MESSAGE_TYPE))
+            SoyExpression.NULL.box().unboxAsMessageOrJavaNull(BytecodeUtils.MESSAGE_TYPE))
         .evaluatesTo(null);
-    assertThatExpression(
-            SoyExpression.NULL.unboxAsMessagePreservingNullishness(BytecodeUtils.MESSAGE_TYPE))
+    assertThatExpression(SoyExpression.NULL.unboxAsMessageOrJavaNull(BytecodeUtils.MESSAGE_TYPE))
         .evaluatesTo(null);
     assertThatExpression(SoyExpression.NULL.coerceToBoolean()).evaluatesTo(false);
     assertThatExpression(SoyExpression.NULL.coerceToString()).evaluatesTo("null");
@@ -193,8 +188,7 @@ public class SoyExpressionTest {
             StringType.getInstance(),
             MethodRef.STRING_DATA_FOR_VALUE.invoke(constant("hello")).asJavaNullable());
     assertThatExpression(nullableString).evaluatesTo(StringData.forValue("hello"));
-    assertThatExpression(
-            nullableString.unboxAsStringPreservingNullishness().invoke(MethodRef.STRING_IS_EMPTY))
+    assertThatExpression(nullableString.unboxAsStringOrJavaNull().invoke(MethodRef.STRING_IS_EMPTY))
         .evaluatesTo(false);
   }
 
@@ -203,13 +197,13 @@ public class SoyExpressionTest {
     SoyExpression secretNullString =
         SoyExpression.forSoyValue(
             StringType.getInstance(),
-            new Expression(BytecodeUtils.SOY_STRING_TYPE, Feature.NON_JAVA_NULLABLE) {
+            new Expression(BytecodeUtils.STRING_DATA_TYPE, Feature.NON_JAVA_NULLABLE) {
               @Override
               protected void doGen(CodeBuilder cb) {
                 cb.pushNull();
               }
             });
-    assertThatExpression(secretNullString.unboxAsStringPreservingNullishness())
+    assertThatExpression(secretNullString.unboxAsStringOrJavaNull())
         .throwsException(NullPointerException.class);
 
     SoyExpression secretNullList =
@@ -221,7 +215,7 @@ public class SoyExpressionTest {
                 cb.pushNull();
               }
             });
-    assertThatExpression(secretNullList.unboxAsListPreservingNullishness())
+    assertThatExpression(secretNullList.unboxAsListOrJavaNull())
         .throwsException(NullPointerException.class);
 
     SoyExpression secretNullProto =
@@ -233,8 +227,7 @@ public class SoyExpressionTest {
                 cb.pushNull();
               }
             });
-    assertThatExpression(
-            secretNullProto.unboxAsMessageIgnoringNullishness(BytecodeUtils.MESSAGE_TYPE))
+    assertThatExpression(secretNullProto.unboxAsMessageUnchecked(BytecodeUtils.MESSAGE_TYPE))
         .throwsException(NullPointerException.class);
   }
 

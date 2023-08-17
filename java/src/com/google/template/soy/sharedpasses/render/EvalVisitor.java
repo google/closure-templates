@@ -675,7 +675,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
 
   // Returns true if the base SoyValue of a data access chain is null or undefined.
   private static boolean isNullOrUndefinedBase(SoyValue base) {
-    return base == null || base instanceof NullData || base instanceof UndefinedData;
+    return base.isNullish();
   }
 
   // -----------------------------------------------------------------------------------------------
@@ -830,7 +830,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
   protected SoyValue visitNullCoalescingOpNode(NullCoalescingOpNode node) {
     SoyValue operand0 = visit(node.getChild(0));
     // identical to the implementation of != null
-    if (operand0 instanceof NullData || operand0 instanceof UndefinedData) {
+    if (operand0.isNullish()) {
       return visit(node.getChild(1));
     }
     return operand0;
@@ -985,7 +985,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     for (int i = 0; i < node.numChildren(); i++) {
       SoyValue visit = visit(node.getChild(i));
       // null means don't assign
-      if (visit instanceof NullData || visit instanceof UndefinedData) {
+      if (visit.isNullish()) {
         continue;
       }
       builder.setField(paramNames.get(i).identifier(), visit);
@@ -998,7 +998,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
   }
 
   private static SoyValue assertNotNull(SoyValue value, ExprNode node) {
-    if (value instanceof NullData || value instanceof UndefinedData) {
+    if (value.isNullish()) {
       throw new SoyDataException(node.toSourceString() + " is null");
     }
     return value;
@@ -1067,8 +1067,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
   private SoyValue visitSoyServerKeyFunction(FunctionNode node) {
     SoyValue value = visit(node.getChild(0));
     // map tofu null to soysauce null since that is what this function expects.
-    return StringData.forValue(
-        soyServerKey(value instanceof NullData || value instanceof UndefinedData ? null : value));
+    return StringData.forValue(soyServerKey(value.isNullish() ? null : value));
   }
 
   private SoyValue visitIsPrimaryMsgInUseFunction(FunctionNode node) {

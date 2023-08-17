@@ -397,11 +397,11 @@ final class ExpressionCompiler {
   private static final class CompilerVisitor
       extends EnhancedAbstractExprNodeVisitor<SoyExpression> {
     // is null when we are generating code with no detaches.
-    @Nullable final ExpressionDetacher detacher;
+    @Nullable private final ExpressionDetacher detacher;
     private final SoyNode context;
-    final TemplateAnalysis analysis;
-    final TemplateParameterLookup parameters;
-    final LocalVariableManager varManager;
+    private final TemplateAnalysis analysis;
+    private final TemplateParameterLookup parameters;
+    private final LocalVariableManager varManager;
     private final JavaSourceFunctionCompiler sourceFunctionCompiler;
     private final PartialFileSetMetadata fileSetMetadata;
 
@@ -487,7 +487,7 @@ final class ExpressionCompiler {
       ExprNode listExpr = node.getListExpr();
       SoyExpression soyList = visit(listExpr);
       // Don't care about nullishness since we always dereference the list
-      SoyExpression javaList = soyList.unboxAsListIgnoringNullishness();
+      SoyExpression javaList = soyList.unboxAsListUnchecked();
       ExprNode mapExpr = node.getListItemTransformExpr();
       ExprNode filterExpr = node.getFilterExpr();
 
@@ -634,7 +634,7 @@ final class ExpressionCompiler {
           node.getType(),
           MethodRef.CONSTRUCT_MAP_FROM_LIST.invoke(
               // constructMapFromList doesn't support null list params
-              visit(node.getListExpr()).unboxAsListIgnoringNullishness()));
+              visit(node.getListExpr()).unboxAsListUnchecked()));
     }
 
     // Comparison operators
@@ -1353,7 +1353,7 @@ final class ExpressionCompiler {
       // Special case index lookups on lists to avoid boxing the int key.  Maps cannot be
       // optimized the same way because there is no real way to 'unbox' a SoyMap.
       if (baseExpr.soyRuntimeType().isKnownListOrUnionOfLists()) {
-        SoyExpression list = baseExpr.unboxAsListIgnoringNullishness();
+        SoyExpression list = baseExpr.unboxAsListUnchecked();
         SoyExpression index = keyExpr.unboxAsLong();
         if (analysis.isResolved(node)) {
           soyValueProvider = MethodRef.RUNTIME_GET_LIST_ITEM.invoke(list, index);
@@ -1619,7 +1619,7 @@ final class ExpressionCompiler {
     SoyExpression visitVeDataFunction(FunctionNode node) {
       SoyExpression ve = visit(node.getChild(0));
       Expression data =
-          visit(node.getChild(1)).unboxAsMessagePreservingNullishness(BytecodeUtils.MESSAGE_TYPE);
+          visit(node.getChild(1)).unboxAsMessageOrJavaNull(BytecodeUtils.MESSAGE_TYPE);
       return SoyExpression.forSoyValue(
           node.getType(), MethodRef.SOY_VISUAL_ELEMENT_DATA_CREATE.invoke(ve, data));
     }
@@ -1644,7 +1644,7 @@ final class ExpressionCompiler {
               .getRenderContext()
               .getPluginInstance(node.getStaticFunctionName())
               .checkedCast(LegacyFunctionAdapter.class);
-      Expression list = SoyExpression.asBoxedList(args);
+      Expression list = SoyExpression.asBoxedListWithJavaNullItems(args);
       // Most soy functions don't have return types, but if they do we should enforce it
       return SoyExpression.forSoyValue(
           node.getType(),
@@ -1705,7 +1705,7 @@ final class ExpressionCompiler {
       } else if (javaType.equals(Type.LONG_TYPE)) {
         return soyExpression.unboxAsLong();
       } else if (javaType.equals(BytecodeUtils.STRING_TYPE)) {
-        return soyExpression.unboxAsStringPreservingNullishness();
+        return soyExpression.unboxAsStringOrJavaNull();
       } else if (javaType.equals(Type.DOUBLE_TYPE)) {
         return soyExpression.coerceToDouble().unboxAsDouble();
       } else if (javaType.getSort() == Type.OBJECT) {
@@ -1713,16 +1713,16 @@ final class ExpressionCompiler {
         if (nonNullableType.getKind() == Kind.ANY || nonNullableType.getKind() == Kind.UNKNOWN) {
           return soyExpression.box().checkedCast(BytecodeUtils.SOY_VALUE_TYPE);
         } else if (nonNullableType.getKind() == Kind.PROTO) {
-          return soyExpression.unboxAsMessagePreservingNullishness(
+          return soyExpression.unboxAsMessageOrJavaNull(
               ProtoUtils.messageRuntimeType(((SoyProtoType) nonNullableType).getDescriptor())
                   .type());
         } else if (nonNullableType.getKind() == Kind.MESSAGE) {
-          return soyExpression.unboxAsMessagePreservingNullishness(BytecodeUtils.MESSAGE_TYPE);
+          return soyExpression.unboxAsMessageOrJavaNull(BytecodeUtils.MESSAGE_TYPE);
         } else if (type.getKind() == Kind.PROTO_ENUM) {
           // TODO(b/217186858): support nullable proto enum parameters.
           return soyExpression.unboxAsLong();
         } else if (nonNullableType.getKind() == Kind.LIST) {
-          return soyExpression.unboxAsListPreservingNullishness();
+          return soyExpression.unboxAsListOrJavaNull();
         } else {
           return soyExpression.box().checkedCast(javaType);
         }
@@ -1991,7 +1991,7 @@ final class ExpressionCompiler {
    */
   private static final class RequiresDetachVisitor
       extends EnhancedAbstractExprNodeVisitor<Boolean> {
-    final TemplateAnalysis analysis;
+    private final TemplateAnalysis analysis;
 
     RequiresDetachVisitor(TemplateAnalysis analysis) {
       this.analysis = analysis;

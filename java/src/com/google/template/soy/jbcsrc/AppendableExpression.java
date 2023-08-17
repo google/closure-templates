@@ -172,7 +172,7 @@ final class AppendableExpression extends Expression {
             LOGGING_FUNCTION_INVOCATION_CREATE.invoke(
                 constant(functionName),
                 constant(placeholderValue),
-                SoyExpression.asBoxedList(args)),
+                SoyExpression.asBoxedListWithJavaNullItems(args)),
             BytecodeUtils.asImmutableList(escapingDirectives)),
         true);
   }
@@ -198,7 +198,7 @@ final class AppendableExpression extends Expression {
   @Override
   public Statement toStatement() {
     // .toStatement() by default just generates the expression and adds a 'POP' instruction
-    // to clear the stack. However, this is only neccesary when the expression in question has a
+    // to clear the stack. However, this is only necessary when the expression in question has a
     // side effect worth preserving.  If we know that it does not we can just return the empty
     // statement
     if (hasSideEffects) {

@@ -18,6 +18,11 @@ package com.google.template.soy.jbcsrc;
 
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.ImmutableList.toImmutableList;
+import static com.google.template.soy.jbcsrc.runtime.JbcSrcPluginRuntime.BOX_JAVA_MAP_AS_SOY_LEGACY_OBJECT_MAP;
+import static com.google.template.soy.jbcsrc.runtime.JbcSrcPluginRuntime.BOX_JAVA_MAP_AS_SOY_MAP;
+import static com.google.template.soy.jbcsrc.runtime.JbcSrcPluginRuntime.BOX_JAVA_MAP_AS_SOY_RECORD;
+import static com.google.template.soy.jbcsrc.runtime.JbcSrcPluginRuntime.CONVERT_FUTURE_TO_SOY_VALUE_PROVIDER;
+import static com.google.template.soy.jbcsrc.runtime.JbcSrcPluginRuntime.SOY_VALUE_INTEGER_VALUE;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -216,7 +221,7 @@ final class JbcSrcValueFactory extends JavaValueFactory {
   public JbcSrcJavaValue listOf(List<JavaValue> args) {
     List<SoyExpression> soyExprs =
         Lists.transform(args, value -> (SoyExpression) ((JbcSrcJavaValue) value).expr());
-    return JbcSrcJavaValue.of(SoyExpression.asBoxedList(soyExprs));
+    return JbcSrcJavaValue.of(SoyExpression.asBoxedListWithJavaNullItems(soyExprs));
   }
 
   @Override
@@ -286,7 +291,7 @@ final class JbcSrcValueFactory extends JavaValueFactory {
     if (expectedParamType == int.class) {
       // We box + invoke rather than unboxAsLong() + numericConversion so that we get overflow
       // checking (built into integerValue()).
-      return actualParam.box().invoke(MethodRef.SOY_VALUE_INTEGER_VALUE);
+      return actualParam.box().invoke(SOY_VALUE_INTEGER_VALUE);
     }
     // double needs special casing since we allow soy int -> double conversions (since double
     // has enough precision to hold soy int data).  We can't unbox longs as double, so we coerce.
@@ -296,9 +301,9 @@ final class JbcSrcValueFactory extends JavaValueFactory {
     // For protos, we need to unbox as Message & then cast.
     if (Message.class.isAssignableFrom(expectedParamType)) {
       if (expectedParamType.equals(Message.class)) {
-        return actualParam.unboxAsMessagePreservingNullishness(BytecodeUtils.MESSAGE_TYPE);
+        return actualParam.unboxAsMessageOrJavaNull(BytecodeUtils.MESSAGE_TYPE);
       }
-      return actualParam.unboxAsMessagePreservingNullishness(Type.getType(expectedParamType));
+      return actualParam.unboxAsMessageOrJavaNull(Type.getType(expectedParamType));
     }
     // For protocol enums, we need to call forNumber on the type w/ the param (as casted to an int).
     // This is because Soy internally stores enums as ints. We know this is safe because we
@@ -357,9 +362,9 @@ final class JbcSrcValueFactory extends JavaValueFactory {
     } else if (expectedParamType.equals(long.class)) {
       return actualParam.unboxAsLong();
     } else if (expectedParamType.equals(String.class)) {
-      return actualParam.unboxAsStringPreservingNullishness();
+      return actualParam.unboxAsStringOrJavaNull();
     } else if (expectedParamType.equals(List.class)) {
-      return actualParam.unboxAsListPreservingNullishness();
+      return actualParam.unboxAsListOrJavaNull();
     }
 
     throw new AssertionError("Unable to convert parameter to " + expectedParamType);
@@ -439,17 +444,14 @@ final class JbcSrcValueFactory extends JavaValueFactory {
         // TODO(lukes): it would be especially nice to reuse the logic in GenInvocationBuilders, but
         // that seems fairly hard.
         if (expectedType instanceof MapType) {
-          soyExpr =
-              SoyExpression.forSoyValue(
-                  expectedType, MethodRef.BOX_JAVA_MAP_AS_SOY_MAP.invoke(expr));
+          soyExpr = SoyExpression.forSoyValue(expectedType, BOX_JAVA_MAP_AS_SOY_MAP.invoke(expr));
         } else if (expectedType instanceof LegacyObjectMapType) {
           soyExpr =
               SoyExpression.forSoyValue(
-                  expectedType, MethodRef.BOX_JAVA_MAP_AS_SOY_LEGACY_OBJECT_MAP.invoke(expr));
+                  expectedType, BOX_JAVA_MAP_AS_SOY_LEGACY_OBJECT_MAP.invoke(expr));
         } else if (expectedType instanceof RecordType) {
           soyExpr =
-              SoyExpression.forSoyValue(
-                  expectedType, MethodRef.BOX_JAVA_MAP_AS_SOY_RECORD.invoke(expr));
+              SoyExpression.forSoyValue(expectedType, BOX_JAVA_MAP_AS_SOY_RECORD.invoke(expr));
         } else {
           throw new IllegalStateException("java map cannot be converted to: " + expectedType);
         }
@@ -463,8 +465,7 @@ final class JbcSrcValueFactory extends JavaValueFactory {
             SoyExpression.forSoyValue(
                 expectedType,
                 detacher
-                    .resolveSoyValueProvider(
-                        expr.invoke(MethodRef.CONVERT_FUTURE_TO_SOY_VALUE_PROVIDER))
+                    .resolveSoyValueProvider(expr.invoke(CONVERT_FUTURE_TO_SOY_VALUE_PROVIDER))
                     .checkedCast(SoyRuntimeType.getBoxedType(expectedType).runtimeType()));
       } else if (Message.class.isAssignableFrom(type)) {
         soyExpr =

@@ -78,7 +78,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.Future;
 import javax.annotation.Nonnull;
 import org.objectweb.asm.Handle;
 import org.objectweb.asm.Opcodes;
@@ -424,9 +423,6 @@ public abstract class MethodRef {
   public static final MethodRef SOY_VALUE_LONG_VALUE =
       create(SoyValue.class, "longValue").asCheap();
 
-  public static final MethodRef SOY_VALUE_INTEGER_VALUE =
-      create(SoyValue.class, "integerValue").asCheap();
-
   public static final MethodRef SOY_VALUE_NUMBER_VALUE = create(SoyValue.class, "numberValue");
 
   public static final MethodRef SOY_VALUE_JAVA_NUMBER_VALUE =
@@ -447,9 +443,6 @@ public abstract class MethodRef {
           "renderAndResolve",
           LoggingAdvisingAppendable.class,
           boolean.class);
-
-  public static final MethodRef CONVERT_FUTURE_TO_SOY_VALUE_PROVIDER =
-      create(JbcSrcRuntime.class, "convertFutureToSoyValueProvider", Future.class);
 
   public static final MethodRef SOY_VALUE_PROVIDER_RESOLVE =
       create(JbcSrcRuntime.class, "resolveSoyValueProvider", SoyValueProvider.class);
@@ -510,15 +503,6 @@ public abstract class MethodRef {
 
   public static final MethodRef SOY_VISUAL_ELEMENT_DATA_CREATE =
       MethodRef.create(SoyVisualElementData.class, "create", SoyVisualElement.class, Message.class);
-
-  public static final MethodRef BOX_JAVA_MAP_AS_SOY_MAP =
-      MethodRef.create(JbcSrcRuntime.class, "boxJavaMapAsSoyMap", Map.class);
-
-  public static final MethodRef BOX_JAVA_MAP_AS_SOY_RECORD =
-      MethodRef.create(JbcSrcRuntime.class, "boxJavaMapAsSoyRecord", Map.class);
-
-  public static final MethodRef BOX_JAVA_MAP_AS_SOY_LEGACY_OBJECT_MAP =
-      MethodRef.create(JbcSrcRuntime.class, "boxJavaMapAsSoyLegacyObjectMap", Map.class);
 
   public static final MethodRef LAZY_PROTO_TO_SOY_VALUE_LIST_FOR_LIST =
       MethodRef.create(

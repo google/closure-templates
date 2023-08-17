@@ -310,7 +310,7 @@ final class ProtoUtils {
     }
 
     Expression getTypedBaseExpression() {
-      return baseExpr.unboxAsMessageIgnoringNullishness(unboxedRuntimeType.runtimeType());
+      return baseExpr.unboxAsMessageUnchecked(unboxedRuntimeType.runtimeType());
     }
   }
 
@@ -1211,7 +1211,7 @@ final class ProtoUtils {
       checkArgument(listArg.isNonJavaNullable());
 
       // Unbox listArg as List<SoyValueProvider> and wait until all items are done
-      SoyExpression unboxed = listArg.unboxAsListIgnoringNullishness();
+      SoyExpression unboxed = listArg.unboxAsListUnchecked();
       Expression resolved = detacher.resolveSoyValueProviderList(unboxed);
 
       // Enter new scope
@@ -1675,6 +1675,7 @@ final class ProtoUtils {
         .asNonJavaNullable()
         .asCheap();
   }
+
   /** Returns the {@link MethodRef} for the generated put method for proto map. */
   private static MethodRef getPutMethod(FieldDescriptor descriptor) {
     checkState(descriptor.isMapField());

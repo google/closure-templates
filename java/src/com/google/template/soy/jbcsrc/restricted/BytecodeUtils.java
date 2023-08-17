@@ -133,7 +133,6 @@ public final class BytecodeUtils {
   public static final Type SOY_RECORD_TYPE = Type.getType(SoyRecord.class);
   public static final Type SOY_VALUE_TYPE = Type.getType(SoyValue.class);
   public static final Type SOY_VALUE_PROVIDER_TYPE = Type.getType(SoyValueProvider.class);
-  public static final Type SOY_STRING_TYPE = Type.getType(StringData.class);
   public static final Type STRING_TYPE = Type.getType(String.class);
   public static final Type THROWABLE_TYPE = Type.getType(Throwable.class);
   public static final Type ILLEGAL_STATE_EXCEPTION_TYPE = Type.getType(IllegalStateException.class);
@@ -295,6 +294,7 @@ public final class BytecodeUtils {
       }
     };
   }
+
   /** Returns an {@link Expression} that can load the given boolean constant. */
   public static Expression constant(boolean value) {
     return value ? TRUE : FALSE;
@@ -409,9 +409,7 @@ public final class BytecodeUtils {
 
   /** Returns an {@link Expression} that evaluates to the given Dir, or null. */
   public static Expression constant(@Nullable Dir dir) {
-    return (dir == null)
-        ? BytecodeUtils.constantNull(DIR_TYPE)
-        : FieldRef.enumReference(dir).accessor();
+    return (dir == null) ? constantNull(DIR_TYPE) : FieldRef.enumReference(dir).accessor();
   }
 
   public static Expression constant(Type type) {
@@ -555,11 +553,11 @@ public final class BytecodeUtils {
     SoyRuntimeType leftRuntimeType = left.soyRuntimeType();
     SoyRuntimeType rightRuntimeType = right.soyRuntimeType();
     if (leftRuntimeType.isKnownString()) {
-      return doEqualsString(left.unboxAsStringPreservingNullishness(), right);
+      return doEqualsString(left.unboxAsStringOrJavaNull(), right);
     }
     if (rightRuntimeType.isKnownString()) {
       // TODO(lukes): we are changing the order of evaluation here.
-      return doEqualsString(right.unboxAsStringPreservingNullishness(), left);
+      return doEqualsString(right.unboxAsStringOrJavaNull(), left);
     }
     if (leftRuntimeType.isKnownInt()
         && rightRuntimeType.isKnownInt()
@@ -609,10 +607,9 @@ public final class BytecodeUtils {
     SoyRuntimeType otherRuntimeType = other.soyRuntimeType();
     if (otherRuntimeType.isKnownStringOrSanitizedContent()) {
       if (stringExpr.isNonJavaNullable()) {
-        return stringExpr.invoke(MethodRef.EQUALS, other.unboxAsStringPreservingNullishness());
+        return stringExpr.invoke(MethodRef.EQUALS, other.unboxAsStringOrJavaNull());
       } else {
-        return MethodRef.OBJECTS_EQUALS.invoke(
-            stringExpr, other.unboxAsStringPreservingNullishness());
+        return MethodRef.OBJECTS_EQUALS.invoke(stringExpr, other.unboxAsStringOrJavaNull());
       }
     }
     if (otherRuntimeType.isKnownNumber() && other.isNonJavaNullable()) {
@@ -932,10 +929,10 @@ public final class BytecodeUtils {
    * non-null value.
    */
   public static SoyExpression isNonNull(Expression expr) {
-    if (BytecodeUtils.isPrimitive(expr.resultType())) {
+    if (isPrimitive(expr.resultType())) {
       // Reference the statement so that the SoyValueProvider detaches for resolve, and
       // TemplateAnalysis will correctly cause subsequent accesses to resolve immediately.
-      return SoyExpression.forBool(expr.toStatement().then(BytecodeUtils.constant(true)));
+      return SoyExpression.forBool(expr.toStatement().then(constant(true)));
     }
 
     return SoyExpression.forBool(Branch.ifNotNull(expr).asBoolean());
@@ -943,10 +940,10 @@ public final class BytecodeUtils {
 
   /** Returns a {@link SoyExpression} that evaluates to true if the expression evaluated to null. */
   public static SoyExpression isNull(Expression expr) {
-    if (BytecodeUtils.isPrimitive(expr.resultType())) {
+    if (isPrimitive(expr.resultType())) {
       // Reference the statement so that the SoyValueProvider detaches for resolve, and
       // TemplateAnalysis will correctly cause subsequent accesses to resolve immediately.
-      return SoyExpression.forBool(expr.toStatement().then(BytecodeUtils.constant(false)));
+      return SoyExpression.forBool(expr.toStatement().then(constant(false)));
     }
     return SoyExpression.forBool(Branch.ifNotNull(expr).negate().asBoolean());
   }
@@ -1001,15 +998,15 @@ public final class BytecodeUtils {
   public static Expression unboxJavaPrimitive(Type type, Expression expr) {
     switch (type.getSort()) {
       case Type.INT:
-        return MethodRef.NUMBER_INT_VALUE.invoke(expr.checkedCast(BytecodeUtils.NUMBER_TYPE));
+        return MethodRef.NUMBER_INT_VALUE.invoke(expr.checkedCast(NUMBER_TYPE));
       case Type.LONG:
-        return MethodRef.NUMBER_LONG_VALUE.invoke(expr.checkedCast(BytecodeUtils.NUMBER_TYPE));
+        return MethodRef.NUMBER_LONG_VALUE.invoke(expr.checkedCast(NUMBER_TYPE));
       case Type.BOOLEAN:
-        return MethodRef.BOOLEAN_VALUE.invoke(expr.checkedCast(BytecodeUtils.BOXED_BOOLEAN_TYPE));
+        return MethodRef.BOOLEAN_VALUE.invoke(expr.checkedCast(BOXED_BOOLEAN_TYPE));
       case Type.FLOAT:
-        return MethodRef.NUMBER_FLOAT_VALUE.invoke(expr.checkedCast(BytecodeUtils.NUMBER_TYPE));
+        return MethodRef.NUMBER_FLOAT_VALUE.invoke(expr.checkedCast(NUMBER_TYPE));
       case Type.DOUBLE:
-        return MethodRef.NUMBER_DOUBLE_VALUE.invoke(expr.checkedCast(BytecodeUtils.NUMBER_TYPE));
+        return MethodRef.NUMBER_DOUBLE_VALUE.invoke(expr.checkedCast(NUMBER_TYPE));
       default:
         throw new IllegalArgumentException(type.getClassName());
     }

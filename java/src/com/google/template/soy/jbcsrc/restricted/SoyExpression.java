@@ -57,7 +57,7 @@ import org.objectweb.asm.Type;
  * but depending on the type they may also support additional unboxing conversions.
  */
 public final class SoyExpression extends Expression {
-  
+
   public static SoyExpression forSoyValue(SoyType type, Expression delegate) {
     if (delegate instanceof SoyExpression) {
       return forSoyValue(type, ((SoyExpression) delegate).delegate);
@@ -158,9 +158,10 @@ public final class SoyExpression extends Expression {
   }
 
   /**
-   * Returns an Expression that evaluates to a list containing all the items as boxed soy values.
+   * Returns an Expression that evaluates to a list containing all the items as boxed soy values,
+   * with Soy nullish values converted to Java null.
    */
-  public static Expression asBoxedList(List<SoyExpression> items) {
+  public static Expression asBoxedListWithJavaNullItems(List<SoyExpression> items) {
     List<Expression> childExprs = new ArrayList<>(items.size());
     for (SoyExpression child : items) {
       childExprs.add(child.box());
@@ -546,19 +547,17 @@ public final class SoyExpression extends Expression {
     return forFloat(delegate.invoke(MethodRef.SOY_VALUE_FLOAT_VALUE));
   }
 
-  public SoyExpression unboxAsStringIgnoringNullishness() {
-    return this.asNonJavaNullable().unboxAsStringPreservingNullishness();
+  /** Unboxes a string. Throws an exception if the boxed value is nullish. */
+  public SoyExpression unboxAsStringUnchecked() {
+    return this.asNonJavaNullable().unboxAsStringOrJavaNull();
   }
 
   /**
-   * Unboxes this to a {@link SoyExpression} with a String runtime type.
-   *
-   * <p>This method is appropriate when you know (likely via inspection of the {@link #soyType()},
-   * or other means) that the value does have the appropriate type but you prefer to interact with
-   * it as its unboxed representation. If you simply want to 'coerce' the given value to a new type
-   * consider {@link #coerceToString()} which is designed for that use case.
+   * Unboxes a value, converting Soy nullish to Java null. Appropriate when preparing a parameter
+   * for an extern or plugin implementation, which both expect Java null rather than NullData or
+   * UndefinedData.
    */
-  public SoyExpression unboxAsStringPreservingNullishness() {
+  public SoyExpression unboxAsStringOrJavaNull() {
     if (alreadyUnboxed(String.class)) {
       return this;
     }
@@ -583,18 +582,17 @@ public final class SoyExpression extends Expression {
     return forString(unboxedString);
   }
 
-  public SoyExpression unboxAsListIgnoringNullishness() {
-    return this.asNonJavaNullable().unboxAsListPreservingNullishness();
+  /** Unboxes a list and its items. Throws an exception if the boxed list value is nullish. */
+  public SoyExpression unboxAsListUnchecked() {
+    return this.asNonJavaNullable().unboxAsListOrJavaNull();
   }
 
   /**
-   * Unboxes this to a {@link SoyExpression} with a List runtime type.
-   *
-   * <p>This method is appropriate when you know (likely via inspection of the {@link #soyType()},
-   * or other means) that the value does have the appropriate type but you prefer to interact with
-   * it as its unboxed representation.
+   * Unboxes a list. Any Soy nullish value is returned as Java null. Items within the list are also
+   * coalesced from Soy nullish to Java null. Appropriate when preparing a parameter for an extern
+   * or plugin implementation, which both expect Java null rather than NullData or UndefinedData.
    */
-  public SoyExpression unboxAsListPreservingNullishness() {
+  public SoyExpression unboxAsListOrJavaNull() {
     if (alreadyUnboxed(List.class)) {
       return this;
     }
@@ -634,18 +632,17 @@ public final class SoyExpression extends Expression {
     return forList(asListType, unboxedList);
   }
 
-  public Expression unboxAsMessageIgnoringNullishness(Type runtimeType) {
-    return this.asNonJavaNullable().unboxAsMessagePreservingNullishness(runtimeType);
+  /** Unboxes a proto message. Throws an exception if the boxed value is nullish. */
+  public Expression unboxAsMessageUnchecked(Type runtimeType) {
+    return this.asNonJavaNullable().unboxAsMessageOrJavaNull(runtimeType);
   }
 
   /**
-   * Unboxes this to a {@link SoyExpression} with a Message runtime type.
-   *
-   * <p>This method is appropriate when you know (likely via inspection of the {@link #soyType()},
-   * or other means) that the value does have the appropriate type but you prefer to interact with
-   * it as its unboxed representation.
+   * Unboxes a proto message, converting Soy nullish to Java null. Appropriate when preparing a
+   * parameter for an extern or plugin implementation, which both expect Java null rather than
+   * NullData or UndefinedData.
    */
-  public Expression unboxAsMessagePreservingNullishness(Type runtimeType) {
+  public Expression unboxAsMessageOrJavaNull(Type runtimeType) {
     if (soyType().getKind() == Kind.NULL) {
       // If this is a null literal, return a Messaged-typed null literal.
       return BytecodeUtils.constantNull(runtimeType);

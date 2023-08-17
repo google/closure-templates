@@ -446,7 +446,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     // hash of string to case
     Expression stringKey =
         switchExpr.soyRuntimeType().assignableToNullableString()
-            ? switchExpr.unboxAsStringPreservingNullishness()
+            ? switchExpr.unboxAsStringOrJavaNull()
             : switchExpr.box();
 
     return new Expression(Type.INT_TYPE) {
@@ -738,9 +738,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
               DERIVED);
     } else {
       SoyExpression expr =
-          exprCompiler
-              .compileRootExpression(node.getExpr(), detachState)
-              .unboxAsListIgnoringNullishness();
+          exprCompiler.compileRootExpression(node.getExpr(), detachState).unboxAsListUnchecked();
       Variable listVar =
           scope.createSynthetic(SyntheticVarName.foreachLoopList(nonEmptyNode), expr, STORE);
       initializers.add(listVar.initializer());

@@ -50,12 +50,13 @@ public final class LocalVariable extends Expression {
   // parameters to tableEntry?
 
   public static LocalVariable createThisVar(TypeInfo owner, Label start, Label end) {
-    return new LocalVariable("this", owner.type(), 0, start, end, Feature.NON_JAVA_NULLABLE);
+    return new LocalVariable(
+        "this", owner.type(), 0, start, end, Features.of(Feature.NON_JAVA_NULLABLE));
   }
 
   public static LocalVariable createLocal(
       String name, int index, Type type, Label start, Label end) {
-    return new LocalVariable(name, type, index, start, end);
+    return new LocalVariable(name, type, index, start, end, Features.of());
   }
 
   private final String variableName;
@@ -64,8 +65,8 @@ public final class LocalVariable extends Expression {
   private final Label end;
 
   private LocalVariable(
-      String variableName, Type type, int index, Label start, Label end, Feature... features) {
-    super(type, Feature.CHEAP /* locals are always cheap */, features);
+      String variableName, Type type, int index, Label start, Label end, Features features) {
+    super(type, /* locals are always cheap */ features.plus(Feature.CHEAP));
     this.variableName = checkNotNull(variableName);
     this.index = index;
     this.start = checkNotNull(start);
@@ -102,7 +103,7 @@ public final class LocalVariable extends Expression {
       return this;
     }
     return new LocalVariable(
-        variableName, resultType(), index, start, end, Feature.NON_JAVA_NULLABLE);
+        variableName, resultType(), index, start, end, features().plus(Feature.NON_JAVA_NULLABLE));
   }
 
   /**
