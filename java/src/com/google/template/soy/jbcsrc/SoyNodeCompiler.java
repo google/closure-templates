@@ -28,7 +28,6 @@ import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.RENDER_RES
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_VALUE_PROVIDER_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.compareSoyEquals;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
-import static java.util.Arrays.stream;
 import static org.objectweb.asm.commons.GeneratorAdapter.EQ;
 
 import com.google.auto.value.AutoValue;
@@ -44,12 +43,16 @@ import com.google.template.soy.basetree.Node;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.internal.ParamStore;
+import com.google.template.soy.exprtree.BooleanNode;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.exprtree.FloatNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.IntegerNode;
+import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.exprtree.ProtoEnumValueNode;
 import com.google.template.soy.exprtree.StringNode;
+import com.google.template.soy.exprtree.UndefinedNode;
 import com.google.template.soy.jbcsrc.ControlFlow.IfBlock;
 import com.google.template.soy.jbcsrc.ExpressionCompiler.BasicExpressionCompiler;
 import com.google.template.soy.jbcsrc.LazyClosureCompiler.LazyClosure;
@@ -70,9 +73,10 @@ import com.google.template.soy.jbcsrc.restricted.SoyRuntimeType;
 import com.google.template.soy.jbcsrc.restricted.Statement;
 import com.google.template.soy.jbcsrc.runtime.JbcSrcRuntime;
 import com.google.template.soy.jbcsrc.shared.ClassLoaderFallbackCallFactory;
+import com.google.template.soy.jbcsrc.shared.ExtraConstantBootstraps;
 import com.google.template.soy.jbcsrc.shared.Names;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
-import com.google.template.soy.jbcsrc.shared.StringSwitchFactory;
+import com.google.template.soy.jbcsrc.shared.SwitchFactory;
 import com.google.template.soy.logging.LoggingFunction;
 import com.google.template.soy.msgs.internal.MsgUtils;
 import com.google.template.soy.msgs.internal.MsgUtils.MsgPartsAndIds;
@@ -119,6 +123,7 @@ import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.VeLogNode;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.TemplateType;
+import java.lang.invoke.ConstantBootstraps;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.util.ArrayList;
@@ -128,8 +133,11 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableSet;
 import java.util.Optional;
+import java.util.TreeMap;
 import java.util.function.Supplier;
+import org.objectweb.asm.ConstantDynamic;
 import org.objectweb.asm.Handle;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
@@ -380,32 +388,33 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   }
 
   /** Returns an integer that is not in the set of sorted integers. */
-  private static int getUnusedKey(int[] sortedKeys) {
-    if (sortedKeys[0] > Integer.MIN_VALUE) {
-      return sortedKeys[0] - 1;
-    } else if (sortedKeys[sortedKeys.length - 1] < Integer.MAX_VALUE) {
-      return sortedKeys[sortedKeys.length - 1] + 1;
-    } else {
-      // unusual, but there must be some gap between the keys since there are twice as many integers
-      // as valid array indexes, so by the pigeon hole principle, there must be an unused slot.
-      int candidate = sortedKeys[0] + 1;
-      for (int i = 1; i < sortedKeys.length; i++) {
-        // candidate is always > sortedKeys[i-1], so if it is also < sortedKeys[i] then it doesn't
-        // exist in sortedKeys.
-        if (candidate < sortedKeys[i]) {
-          break;
-        }
-        candidate = sortedKeys[i] + 1;
-      }
-      return candidate;
+  private static int getUnusedKey(NavigableSet<Integer> sortedKeys) {
+    Integer min = sortedKeys.higher(Integer.MIN_VALUE);
+    if (min != null) {
+      return min - 1;
     }
+    Integer max = sortedKeys.lower(Integer.MAX_VALUE);
+    if (max != null) {
+      return max + 1;
+    }
+    // unusual, but there must be some gap between the keys since there are twice as many integers
+    // as valid array indexes, so by the pigeon hole principle, there must be an unused slot.
+    int candidate = min + 1;
+    for (var i : sortedKeys) {
+      if (candidate < i) {
+        break;
+      }
+      candidate = i + 1;
+    }
+    return candidate;
   }
 
   /**
    * Maps the SoyExpression to an `int` Expression that can be used to evaluate a switch for the
    * given keys.
    */
-  private static Expression asSwitchableInt(SoyExpression switchExpr, int[] switchKeys) {
+  private static Expression asSwitchableInt(
+      SoyExpression switchExpr, NavigableSet<Integer> switchKeys) {
     int unusedKey = getUnusedKey(switchKeys);
     // We need to coerce the switchExpr to an int value. Use some runtime helpers to map non-int
     // values to some value that is out of range of this switch.
@@ -428,23 +437,22 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
    * Maps the SoyExpression to an `int` Expression that can be used to evaluate a switch for the
    * given keys.
    */
-  private static Expression asSwitchableInt(SoyExpression switchExpr, String[] switchKeys) {
+  private static Expression asSwitchableInt(SoyExpression switchExpr, Object[] switchKeys) {
     // We need to coerce the switchExpr to an int value. Use an invokedynamic bootstrap to manage a
     // hash of string to case
-    Expression stringKey =
+    SoyExpression stringKey =
         switchExpr.soyRuntimeType().assignableToNullableString()
             ? switchExpr.unboxAsStringOrJavaNull()
             : switchExpr.box();
-
     return new Expression(Type.INT_TYPE) {
       @Override
       protected void doGen(CodeBuilder adapter) {
         stringKey.gen(adapter);
         adapter.visitInvokeDynamicInsn(
-            "stringSwitch",
-            (stringKey.resultType().equals(BytecodeUtils.STRING_TYPE)
-                    ? STRING_SWITCH_DESCRIPTOR_STRING
-                    : STRING_SWITCH_DESCRIPTOR_SOY_VALUE)
+            "switchCase",
+            (stringKey.isBoxed()
+                    ? STRING_SWITCH_DESCRIPTOR_SOY_VALUE
+                    : STRING_SWITCH_DESCRIPTOR_OBJECT)
                 .getDescriptor(),
             STRING_SWITCH_FACTORY_HANDLE,
             (Object[]) switchKeys);
@@ -452,42 +460,93 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     };
   }
 
+  private static final Handle BOOLEAN_CONSTANT_HANDLE =
+      MethodRef.create(
+              ExtraConstantBootstraps.class,
+              "constantBoolean",
+              MethodHandles.Lookup.class,
+              String.class,
+              Class.class,
+              int.class)
+          .asHandle();
+
+  private static final ConstantDynamic BOOLEAN_CONSTANT_TRUE =
+      new ConstantDynamic("true", Type.BOOLEAN_TYPE.getDescriptor(), BOOLEAN_CONSTANT_HANDLE, 1);
+
+  private static final ConstantDynamic BOOLEAN_CONSTANT_FALSE =
+      new ConstantDynamic("false", Type.BOOLEAN_TYPE.getDescriptor(), BOOLEAN_CONSTANT_HANDLE, 0);
+
+  private static final Handle GET_STATIC_FINAL_HANDLE =
+      MethodRef.create(
+              ConstantBootstraps.class,
+              "getStaticFinal",
+              MethodHandles.Lookup.class,
+              String.class,
+              Class.class,
+              Class.class)
+          .asHandle();
+
+  private static final ConstantDynamic NULL_DATA_CONSTANT =
+      new ConstantDynamic(
+          "INSTANCE",
+          BytecodeUtils.NULL_DATA_TYPE.getDescriptor(),
+          GET_STATIC_FINAL_HANDLE,
+          BytecodeUtils.NULL_DATA_TYPE);
+  private static final ConstantDynamic UNDEFINED_DATA_CONSTANT =
+      new ConstantDynamic(
+          "INSTANCE",
+          BytecodeUtils.UNDEFINED_DATA_TYPE.getDescriptor(),
+          GET_STATIC_FINAL_HANDLE,
+          BytecodeUtils.UNDEFINED_DATA_TYPE);
+
   private static final Handle STRING_SWITCH_FACTORY_HANDLE =
       MethodRef.create(
-              StringSwitchFactory.class,
-              "bootstrapStringSwitch",
+              SwitchFactory.class,
+              "bootstrapSwitch",
               MethodHandles.Lookup.class,
               String.class,
               MethodType.class,
-              String[].class)
+              Object[].class)
           .asHandle();
-  private static final Type STRING_SWITCH_DESCRIPTOR_STRING =
-      Type.getMethodType(Type.INT_TYPE, BytecodeUtils.STRING_TYPE);
-
+  private static final Type STRING_SWITCH_DESCRIPTOR_OBJECT =
+      Type.getMethodType(Type.INT_TYPE, BytecodeUtils.OBJECT.type());
   private static final Type STRING_SWITCH_DESCRIPTOR_SOY_VALUE =
       Type.getMethodType(Type.INT_TYPE, BytecodeUtils.SOY_VALUE_TYPE);
 
+  class StatementAndStartLabel {
+    final Statement statement;
+    final Label startLabel;
+
+    StatementAndStartLabel(SwitchCaseNode caseNode) {
+      startLabel = new Label();
+      this.statement = visitChildrenInNewScope(caseNode).labelStart(startLabel);
+    }
+  }
+
   /**
-   * Special case int and string switches to use the java tableswitch instruction.
+   * Special case switches against literal primitives to use java switch instructions.
    *
    * <p>This is both faster and smaller than the default cascading if-statement.
    *
-   * <p>For now we only support switches where all the keys are ints or all the keys are strings. We
-   * could support an arbitrary set of literals using the same strategy as strings. Basically we
-   * would pass all the literals to an invokedynamic bootstrap which would use a hash data structure
-   * to map literal -> case number. Then we could dynamically resolve all switch exprs against the
-   * hash.
+   * <p>We support 2 distinct cases
    *
-   * <p>TODO(lukes): Supporting switches with non-constant case expressions or expressions of mixed
-   * types is probably not very important. See if the compiler could reject these structures to
-   * eliminate the fallback for switches.
+   * <ul>
+   *   <li>All cases are expressible as java `int` constants. This is relatively common since many
+   *       switches are dispatching on proto enums which meet this criteria. In this scenario we can
+   *       directly target a java switch instruction.
+   *   <li>All cases are soy primitive literals (boolean, int, float, string, null, proto enum). In
+   *       this case we use the `SwitchFactory` to manage the mapping from value to case label. This
+   *       saves use from generating complex conditional logic in side the cases.
+   * </ul>
+   *
+   * Otherwise we bail out.
    */
-  private Optional<Statement> trySwitchCompilableToSwitchInstruction(
+  private Optional<Statement> tryCompileSwitchToSwitchInstruction(
       SoyExpression switchExpr, SwitchNode node) {
-    // First make sure all cases are representable as java integers or as strings
-    // bail out if this isn't true.
-    Map<Integer, SwitchCaseNode> cases = new LinkedHashMap<>();
-    LinkedHashSet<String> stringKeys = null;
+    // First make sure all cases are representable as constants bail out if this isn't true.
+    // Key is one of Integer|Double|Long|String|ConstantDynamic where the ConstantDynamic values are
+    // for bool|null|undefined
+    Map<Object, SwitchCaseNode> cases = new LinkedHashMap<>();
     SwitchDefaultNode dfltNode = null;
     for (SoyNode child : node.getChildren()) {
       if (child instanceof SwitchCaseNode) {
@@ -495,34 +554,34 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
         for (ExprRootNode caseExpr : caseNode.getExprList()) {
           var root = caseExpr.getRoot();
           if (root instanceof IntegerNode) {
-            if (stringKeys != null) {
-              // if we have any stringKeys then we have a mixed switch which we can't support.
-              return Optional.empty();
-            }
-            var intNode = (IntegerNode) root;
-            if (intNode.isInt()) {
-              // If a case expression is used multiple times, only use the first occurrence
-              cases.putIfAbsent((int) intNode.getValue(), caseNode);
+            long intValue = ((IntegerNode) root).getValue();
+            // If a case expression is used multiple times, only use the first occurrence
+            if (intValue == (int) intValue) {
+              cases.putIfAbsent((int) intValue, caseNode);
             } else {
-              return Optional.empty();
+              cases.putIfAbsent(intValue, caseNode);
             }
           } else if (root instanceof ProtoEnumValueNode) {
-            if (stringKeys != null) {
-              return Optional.empty();
-            }
             cases.putIfAbsent(((ProtoEnumValueNode) root).getValueAsInt(), caseNode);
+          } else if (root instanceof BooleanNode) {
+            cases.putIfAbsent(
+                ((BooleanNode) root).getValue() ? BOOLEAN_CONSTANT_TRUE : BOOLEAN_CONSTANT_FALSE,
+                caseNode);
+          } else if (root instanceof FloatNode) {
+            double floatValue = ((FloatNode) root).getValue();
+            if (floatValue == (int) floatValue) {
+              cases.putIfAbsent((int) floatValue, caseNode);
+            } else if (floatValue == (long) floatValue) {
+              cases.putIfAbsent((long) floatValue, caseNode);
+            } else {
+              cases.putIfAbsent(floatValue, caseNode);
+            }
           } else if (root instanceof StringNode) {
-            if (stringKeys == null) {
-              if (!cases.isEmpty()) {
-                // there is a mix of string and int cases
-                return Optional.empty();
-              }
-              stringKeys = new LinkedHashSet<>();
-            }
-            // Every string key'd case is linked to the index of the string key in the list
-            if (stringKeys.add(((StringNode) root).getValue())) {
-              cases.put(stringKeys.size() - 1, caseNode);
-            }
+            cases.putIfAbsent(((StringNode) root).getValue(), caseNode);
+          } else if (root instanceof NullNode) {
+            cases.putIfAbsent(NULL_DATA_CONSTANT, caseNode);
+          } else if (root instanceof UndefinedNode) {
+            cases.putIfAbsent(UNDEFINED_DATA_CONSTANT, caseNode);
           } else {
             return Optional.empty();
           }
@@ -531,84 +590,98 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
         dfltNode = (SwitchDefaultNode) child;
       }
     }
+
     // If we get here we can generate a switch instruction
     // So generate code for each of the children.
-    Map<SwitchCaseNode, Statement> caseToStatement = new LinkedHashMap<>();
-    // Iterate over the calculated cases instead of children since we might have skipped some
-    // children due to duplicates.
-    for (SwitchCaseNode child : cases.values()) {
-      // Only generate each case exactly once.
-      caseToStatement.computeIfAbsent(child, this::visitChildrenInNewScope);
-    }
+    // Use this to ensure we generate each case exactly once
+    Map<SwitchCaseNode, StatementAndStartLabel> caseToStatement = new LinkedHashMap<>();
     Statement defaultBlock = dfltNode == null ? null : visitChildrenInNewScope(dfltNode);
+    TreeMap<Integer, StatementAndStartLabel> casesByKey = new TreeMap<>();
+    // If all cases are an int we can directly generate a switch with the actual values
+    if (cases.keySet().stream().allMatch(key -> key instanceof Integer)) {
+      for (var entry : cases.entrySet()) {
+        casesByKey.put(
+            ((Integer) entry.getKey()).intValue(),
+            caseToStatement.computeIfAbsent(entry.getValue(), StatementAndStartLabel::new));
+      }
+      // We need to coerce the switchExpr to an int value.
+      return Optional.of(
+          asNativeSwitch(
+              asSwitchableInt(switchExpr, casesByKey.navigableKeySet()), casesByKey, defaultBlock));
 
-    int[] sortedKeys = cases.keySet().stream().mapToInt(Integer::intValue).sorted().toArray();
-    // We need to coerce the switchExpr to an int value.
-    Expression switchExprCoerced =
-        stringKeys != null
-            ? asSwitchableInt(switchExpr, stringKeys.toArray(new String[0]))
-            : asSwitchableInt(switchExpr, sortedKeys);
+    } else {
+      // Otherwise we need more complex matching logic that we outsource to an invoke dyanmic
+      // bootstrap.  Create a fake key for each case and then rely on the bootstrap to figure it
+      // out.
+      // update the map with the pseudo keys, so that the loops below can find them
+
+      var keys = cases.keySet().toArray();
+      int i = 0;
+      for (SwitchCaseNode caseNode : cases.values()) {
+        casesByKey.put(i, caseToStatement.computeIfAbsent(caseNode, StatementAndStartLabel::new));
+        i++;
+      }
+      return Optional.of(
+          asNativeSwitch(asSwitchableInt(switchExpr, keys), casesByKey, defaultBlock));
+    }
+  }
+
+  private static Statement asNativeSwitch(
+      Expression switchExpr,
+      TreeMap<Integer, StatementAndStartLabel> casesByKey,
+      Statement defaultBlock) {
+    int min = casesByKey.firstKey();
+    int max = casesByKey.lastKey();
+    int range = max - min + 1;
     // If more than 50% of the slots between min and max or full, use a tableswitch otherwise a
     // lookup switch
-    int min = sortedKeys[0];
-    int max = sortedKeys[sortedKeys.length - 1];
-    int range = max - min + 1;
-    boolean isDense = ((float) sortedKeys.length / range) >= 0.5f;
-    return Optional.of(
-        new Statement() {
-          @Override
-          protected void doGen(CodeBuilder adapter) {
-            Label end = new Label();
-            Label dflt = defaultBlock == null ? end : new Label();
-            switchExprCoerced.gen(adapter); // stack: J
-            Map<SwitchCaseNode, Label> caseToGeneratedCase = new LinkedHashMap<>();
-            if (isDense) {
-              // For dense table switches we need a label for everything in the range
-              // for things in the range that don't map to a known case we just jump to dflt
-              Label[] labels = new Label[range];
-              Arrays.fill(labels, dflt);
-              for (int i = 0; i < sortedKeys.length; i++) {
-                int key = sortedKeys[i];
-                int labelIndex = key - min;
-                labels[labelIndex] =
-                    caseToGeneratedCase.computeIfAbsent(cases.get(key), k -> new Label());
-              }
-              adapter.visitTableSwitchInsn(
-                  /* min= */ sortedKeys[0],
-                  /* max= */ sortedKeys[sortedKeys.length - 1],
-                  /* dflt= */ dflt,
-                  /* labels...= */ labels);
-            } else {
-              // for lookup switches we need a label for each key
-              adapter.visitLookupSwitchInsn(
-                  /* dflt= */ dflt,
-                  /* keys= */ sortedKeys,
-                  /* labels= */ stream(sortedKeys)
-                      .mapToObj(
-                          k ->
-                              caseToGeneratedCase.computeIfAbsent(cases.get(k), key -> new Label()))
-                      .toArray(Label[]::new));
-            }
-            boolean isFirst = true;
-            for (Map.Entry<SwitchCaseNode, Label> entry : caseToGeneratedCase.entrySet()) {
-              if (!isFirst) {
-                // have the previous case jump over the next
-                // by not unconditionally doing this at the end of this loop we can avoid
-                // an extra goto in switches with no defaults.
-                adapter.goTo(end);
-              }
-              adapter.mark(entry.getValue());
-              caseToStatement.get(entry.getKey()).gen(adapter);
-              isFirst = false;
-            }
-            if (defaultBlock != null) {
-              adapter.goTo(end); // jump from the last case past default
-              adapter.mark(dflt);
-              defaultBlock.gen(adapter);
-            }
-            adapter.mark(end);
+    boolean isDense = ((float) casesByKey.size() / range) >= 0.5f;
+    return new Statement() {
+      @Override
+      protected void doGen(CodeBuilder adapter) {
+        Label end = new Label();
+        Label dflt = defaultBlock == null ? end : new Label();
+        switchExpr.gen(adapter); // stack: I
+        if (isDense) {
+          // For dense table switches we need a label for everything in the range
+          // for things in the range that don't map to a known case we just jump to dflt
+          Label[] labels = new Label[range];
+          Arrays.fill(labels, dflt);
+          for (var key : casesByKey.keySet()) {
+            int labelIndex = key - min;
+            labels[labelIndex] = casesByKey.get(key).startLabel;
           }
-        });
+          adapter.visitTableSwitchInsn(
+              /* min= */ min, /* max= */ max, /* dflt= */ dflt, /* labels...= */ labels);
+        } else {
+          // for lookup switches we need a label for each key
+          adapter.visitLookupSwitchInsn(
+              /* dflt= */ dflt,
+              /* keys= */ casesByKey.keySet().stream().mapToInt(Integer::intValue).toArray(),
+              /* labels= */ casesByKey.values().stream()
+                  .map(s -> s.startLabel)
+                  .toArray(Label[]::new));
+        }
+        boolean isFirst = true;
+        // we need to dedupe since multiple keys may point at the same case
+        for (StatementAndStartLabel caseStatement : new LinkedHashSet<>(casesByKey.values())) {
+          if (!isFirst) {
+            // have the previous case jump over the next
+            // by not unconditionally doing this at the end of this loop we can avoid
+            // an extra goto in switches with no defaults.
+            adapter.goTo(end);
+          }
+          caseStatement.statement.gen(adapter);
+          isFirst = false;
+        }
+        if (defaultBlock != null) {
+          adapter.goTo(end); // jump from the last case past default
+          adapter.mark(dflt);
+          defaultBlock.gen(adapter);
+        }
+        adapter.mark(end);
+      }
+    };
   }
 
   @Override
@@ -629,11 +702,16 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     // otherwise we need to evaluate the switch variable and generate dispatching logic.
     SoyExpression switchVar = exprCompiler.compileRootExpression(node.getExpr(), detachState);
 
-    // if all switch cases are numeric literals we can use a switch instruction.
-    var maybeNativeSwitch = trySwitchCompilableToSwitchInstruction(switchVar, node);
+    // if all switch cases are literals we can use a switch instruction.
+    var maybeNativeSwitch = tryCompileSwitchToSwitchInstruction(switchVar, node);
     if (maybeNativeSwitch.isPresent()) {
       return maybeNativeSwitch.get();
     }
+    // Otherwise the case expressions are complex and we need to compile them to full expressions
+    // and use a cascading if.  Per
+    // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/switch an
+    // iterative execution of cases is the spec on switch so this is compliant with JavaScript.
+    // Case expressions are only evaluated if no prior case has matched.
     Scope scope = variables.enterScope();
     Variable variable = scope.createSynthetic(SyntheticVarName.forSwitch(node), switchVar, STORE);
     Statement initializer = variable.initializer();
@@ -653,6 +731,8 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
           if (isFirst) {
             reattachPoint = new Label();
           }
+          // TODO(b/295895863): Backcompat for a bug. This should call compareSoyTriple to
+          // match the JavaScript implementation.
           Expression compiledCase =
               compareSoyEquals(
                   switchVar,
