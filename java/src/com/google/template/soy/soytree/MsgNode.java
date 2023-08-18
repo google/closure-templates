@@ -40,6 +40,8 @@ import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.CommandTagAttribute.CommandTagAttributesHolder;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.MsgBlockNode;
+import com.google.template.soy.soytree.SoyNode.MsgSubstUnitNode;
+import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.HashMap;
@@ -649,6 +651,63 @@ public final class MsgNode extends AbstractBlockCommandNode
     return node.getPlaceholder().userSuppliedNameLocation().orElse(node.getSourceLocation());
   }
 
+  private static boolean equivalentCalls(SoyNode a, SoyNode b) {
+    if (!(a instanceof CallBasicNode) || !(b instanceof CallBasicNode)) {
+      return false;
+    }
+    CallBasicNode callA = (CallBasicNode) a;
+    CallBasicNode callB = (CallBasicNode) b;
+    ExprEquivalence eq = new ExprEquivalence();
+    if (!eq.equivalent(callA.getCalleeExpr(), callB.getCalleeExpr())) {
+      return false;
+    }
+    if (!eq.equivalent(callA.getVariantExpr(), callB.getVariantExpr())) {
+      return false;
+    }
+    if (SoyTreeUtils.allNodesOfType(a, CallParamContentNode.class).findAny().isPresent()
+        || SoyTreeUtils.allNodesOfType(b, CallParamContentNode.class).findAny().isPresent()) {
+      return false;
+    }
+    ImmutableMap<String, CallParamValueNode> paramsA = paramsByName(callA);
+    ImmutableMap<String, CallParamValueNode> paramsB = paramsByName(callB);
+    if (paramsA.size() != paramsB.size()) {
+      return false;
+    }
+    for (Map.Entry<String, CallParamValueNode> entry : paramsA.entrySet()) {
+      CallParamValueNode valueB = paramsB.get(entry.getKey());
+      if (valueB == null || !eq.equivalent(entry.getValue().getExpr(), valueB.getExpr())) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  private static ImmutableMap<String, CallParamValueNode> paramsByName(CallBasicNode call) {
+    return SoyTreeUtils.allNodesOfType(call, CallParamValueNode.class)
+        .collect(toImmutableMap(p -> p.getKey().identifier(), p -> p));
+  }
+
+  private static boolean allEquivalentCallsWithExplicitPhname(List<MsgSubstUnitNode> nodes) {
+    MsgPlaceholderNode last = null;
+    for (MsgSubstUnitNode node : nodes) {
+      if (!(node instanceof MsgPlaceholderNode)) {
+        return false;
+      }
+      MsgPlaceholderNode placeholder = (MsgPlaceholderNode) node;
+      if (!placeholder.getPlaceholder().userSuppliedName().isPresent()) {
+        return false;
+      }
+      if (last != null) {
+        if (!equivalentCalls(last.getChild(0), placeholder.getChild(0))
+            || !last.getPlaceholder().example().equals(placeholder.getPlaceholder().example())) {
+          return false;
+        }
+      }
+      last = placeholder;
+    }
+    return true;
+  }
+
   /**
    * Private helper for genSubstUnitInfo(). Generates the final SubstUnitInfo given preliminary
    * maps.
@@ -670,6 +729,9 @@ public final class MsgNode extends AbstractBlockCommandNode
 
     Map<String, MsgSubstUnitNode> substUnitVarNameToRepNodeMap = new LinkedHashMap<>();
 
+    Map<MsgSubstUnitNode, MessagePlaceholder.Summary> substUnitNodeToVarNameMap =
+        new LinkedHashMap<>();
+
     for (String baseName : representativeNodes.baseNameToRepNodesMap().keySet()) {
       List<MsgSubstUnitNode> nodesWithSameBaseName =
           representativeNodes.baseNameToRepNodesMap().get(baseName);
@@ -679,6 +741,17 @@ public final class MsgNode extends AbstractBlockCommandNode
         // Expected success case, one node per base name.
         substUnitVarNameToRepNodeMap.put(baseName, nodesWithSameBaseName.get(0));
       } else {
+        if (allEquivalentCallsWithExplicitPhname(nodesWithSameBaseName)) {
+          // Allow multiple calls to share the same phname if the phname is explicit and all calls
+          // including params are the same.
+          substUnitVarNameToRepNodeMap.put(baseName, nodesWithSameBaseName.get(0));
+          MessagePlaceholder.Summary varName =
+              MessagePlaceholder.Summary.create(
+                  baseName,
+                  ((MsgPlaceholderNode) nodesWithSameBaseName.get(0)).getPlaceholder().example());
+          nodesWithSameBaseName.forEach(node -> substUnitNodeToVarNameMap.put(node, varName));
+          continue;
+        }
         // Case 2: Multiple nodes generate this base name. Need number suffixes.
         int nextSuffix = 1;
         for (int i = 0; i < nodesWithSameBaseName.size(); ++i) {
@@ -713,9 +786,6 @@ public final class MsgNode extends AbstractBlockCommandNode
     }
 
     // ------ Step 2: Create map of every node to its var name. ------
-
-    Map<MsgSubstUnitNode, MessagePlaceholder.Summary> substUnitNodeToVarNameMap =
-        new LinkedHashMap<>();
 
     // Reverse the map of names to representative nodes.
     for (Map.Entry<String, MsgSubstUnitNode> entry : substUnitVarNameToRepNodeMap.entrySet()) {
