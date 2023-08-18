@@ -16,6 +16,7 @@
 
 package com.google.template.soy.jssrc.internal;
 
+import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static com.google.template.soy.jssrc.dsl.Expressions.dottedIdNoRequire;
 import static com.google.template.soy.jssrc.dsl.Expressions.id;
 import static com.google.template.soy.jssrc.dsl.Expressions.number;
@@ -40,6 +41,7 @@ import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.ConditionalBuilder;
 import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.jssrc.dsl.Expressions;
+import com.google.template.soy.jssrc.dsl.GoogRequire;
 import com.google.template.soy.jssrc.dsl.Statement;
 import com.google.template.soy.jssrc.dsl.Statements;
 import com.google.template.soy.jssrc.dsl.SwitchBuilder;
@@ -247,8 +249,13 @@ public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<St
     // Generate code to define the local var.
     Expression value = translateExpr(node.getExpr());
     if (value.equals(Expressions.LITERAL_NULL)) {
-      // TODO(b/255978614): add requires
-      value = value.castAsNoRequire(JsType.forJsSrc(node.getVar().type()).typeExpr());
+      JsType type = JsType.forJsSrc(node.getVar().type());
+      value =
+          value.castAs(
+              type.typeExpr(),
+              type.getGoogRequires().stream()
+                  .map(GoogRequire::toRequireType)
+                  .collect(toImmutableSet()));
     }
 
     // Add a mapping for generating future references to this local var.

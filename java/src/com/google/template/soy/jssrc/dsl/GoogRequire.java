@@ -101,6 +101,13 @@ public abstract class GoogRequire implements Comparable<GoogRequire> {
 
   abstract boolean isTypeRequire();
 
+  public GoogRequire toRequireType() {
+    if (isTypeRequire()) {
+      return this;
+    }
+    return new AutoValue_GoogRequire(symbol(), alias(), chunk(), /* isTypeRequire= */ true);
+  }
+
   /** Returns a code chunk that can act as a reference to the required symbol. */
   public Expression reference() {
     if (chunk() instanceof VariableDeclaration) {
