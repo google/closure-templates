@@ -28,7 +28,7 @@ import com.google.template.soy.data.SoyDataException;
  * Tofu would switch to using {@code null} also, but that may be infeasible.
  */
 @Immutable
-public final class NullData extends PrimitiveData {
+public final class NullData extends NullishData {
 
   /** Static singleton instance of NullData. */
   public static final NullData INSTANCE = new NullData();
@@ -38,21 +38,6 @@ public final class NullData extends PrimitiveData {
   @Override
   public String toString() {
     return "null";
-  }
-
-  /**
-   * {@inheritDoc}
-   *
-   * <p>Null is falsy.
-   */
-  @Override
-  public boolean coerceToBoolean() {
-    return false;
-  }
-
-  @Override
-  public String coerceToString() {
-    return toString();
   }
 
   @Override
@@ -73,16 +58,6 @@ public final class NullData extends PrimitiveData {
   @Override
   public double numberValue() {
     throw new SoyDataException("'null' cannot be coerced to number");
-  }
-
-  @Override
-  public boolean isNull() {
-    return true;
-  }
-
-  @Override
-  public boolean isNullish() {
-    return true;
   }
 
   @Override

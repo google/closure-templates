@@ -24,7 +24,6 @@ import static java.util.Comparator.comparing;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.template.soy.jbcsrc.TemplateVariableManager.VarKey.Kind;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
 import com.google.template.soy.jbcsrc.restricted.Expression;
@@ -160,8 +159,8 @@ final class TemplateVariableManager implements LocalVariableManager {
    * <p>Each variable has:
    *
    * <ul>
-   *   <li>A {@link Expresion} that can be used to save the field.
-   *   <li>A {@link Expresion} that can be used to restore the field.
+   *   <li>A {@link Expression} that can be used to save the field.
+   *   <li>A {@link Expression} that can be used to restore the field.
    *   <li>A {@link LocalVariable} that can be used to read the value.
    * </ul>
    */
@@ -175,6 +174,9 @@ final class TemplateVariableManager implements LocalVariableManager {
       this.initExpression = initExpression;
       if (initExpression.isNonJavaNullable()) {
         local = local.asNonJavaNullable();
+      }
+      if (initExpression.isNonSoyNullish()) {
+        local = local.asNonSoyNullish();
       }
       this.local = local;
       this.initializer = local.store(initExpression, local.start());

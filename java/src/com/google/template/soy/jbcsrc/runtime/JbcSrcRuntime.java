@@ -97,40 +97,6 @@ import javax.annotation.Nullable;
 public final class JbcSrcRuntime {
   private static final Logger logger = Logger.getLogger(JbcSrcRuntime.class.getName());
 
-  private static final class NullProvider implements SoyValueProvider {
-    private final String nameForDebugging;
-
-    NullProvider(String nameForDebugging) {
-      this.nameForDebugging = nameForDebugging;
-    }
-
-    @Override
-    public RenderResult status() {
-      return RenderResult.done();
-    }
-
-    @Nullable
-    @Override
-    public SoyValue resolve() {
-      return null;
-    }
-
-    @Override
-    public RenderResult renderAndResolve(LoggingAdvisingAppendable appendable, boolean isLast)
-        throws IOException {
-      appendable.append("null");
-      return RenderResult.done();
-    }
-
-    @Override
-    public String toString() {
-      return nameForDebugging;
-    }
-  }
-
-  /** Represents a provider for the value {@code null} in jbcsrc. */
-  public static final SoyValueProvider NULL_PROVIDER = new NullProvider("NULL_PROVIDER");
-
   @Nonnull
   public static AssertionError unexpectedStateError(StackFrame frame) {
     return new AssertionError("Unexpected state requested: " + frame.stateNumber);
@@ -162,58 +128,44 @@ public final class JbcSrcRuntime {
     }
   }
 
-  /** Helper function to translate NullData -> null when resolving a SoyValueProvider. */
   @Keep
-  public static SoyValue resolveSoyValueProvider(SoyValueProvider provider) {
+  @Nonnull
+  public static SoyValueProvider soyValueProviderOrNullish(SoyValueProvider provider) {
     SoyValue value = provider.resolve();
-    return handleTofuNull(value);
-  }
-
-  @Keep
-  @Nullable
-  public static SoyValueProvider soyValueProviderOrNull(SoyValueProvider provider) {
-    if (resolveSoyValueProvider(provider) == null) {
-      return null;
-    }
-    return provider;
-  }
-
-  @Nullable
-  private static SoyValue handleTofuNull(SoyValue value) {
-    if (value instanceof NullData | value instanceof UndefinedData) {
-      return null;
-    }
-    return value;
-  }
-
-  @Keep
-  public static SoyValue getField(SoyRecord record, String field) {
-    Preconditions.checkNotNull(record, "Attempted to access field '%s' of null", field);
-    return handleTofuNull(record.getField(field));
+    // Nastiness needed for b/161534927
+    return value.isNullish() ? value : provider;
   }
 
   @Keep
   @Nonnull
-  public static ParamStore setField(ParamStore store, String field, SoyValueProvider provider) {
-    return store.setField(field, provider == null ? NullData.INSTANCE : provider);
+  public static SoyValue getField(SoyValue record, String field) {
+    if (record.isNullish()) {
+      throw new NullPointerException("Attempted to access field '" + field + "' of null");
+    }
+    SoyValue value = ((SoyRecord) record).getField(field);
+    return value != null ? value : NullData.INSTANCE;
   }
 
-  /**
-   * Helper function to make SoyRecord.getFieldProvider a non-nullable function by returning {@link
-   * #NULL_PROVIDER} for missing fields.
-   */
+  @Keep
+  @Nonnull
+  public static SoyValueProvider getFieldProvider(SoyValue record, String field) {
+    if (record.isNullish()) {
+      throw new NullPointerException("Attempted to access field '" + field + "' of null");
+    }
+    return getFieldProvider((SoyRecord) record, field);
+  }
+
   @Keep
   @Nonnull
   public static SoyValueProvider getFieldProvider(
       SoyRecord record, String field, @Nullable SoyValue defaultValue) {
-    checkNotNull(record, "Attempted to access field '%s' of null", field);
     return paramOrDefault(record.getFieldProvider(field), defaultValue);
   }
 
   @Keep
   @Nonnull
   public static SoyValueProvider getFieldProvider(SoyRecord record, String field) {
-    return getFieldProvider(record, field, /* defaultValue= */ null);
+    return paramOrDefault(record.getFieldProvider(field), /* defaultValue= */ null);
   }
 
   /**
@@ -226,24 +178,24 @@ public final class JbcSrcRuntime {
   }
 
   /**
-   * Interprets a passed parameter with an optional default. Handling tofu null and reinterpreting
-   * null as MISSING_PARAMETER
+   * Returns a passed parameter or its default value if no such parameter exists. Pass {@link
+   * UndefinedData} for {@code provider} to indicate no such parameter exists and the default should
+   * be applied. This behavior is coupled to {@link SoyRecord#getPositionalParam(String)}.
    */
   @Keep
   @Nonnull
   public static SoyValueProvider paramOrDefault(
-      SoyValueProvider provider, @Nullable SoyValue defaultValue) {
-    // TODO(lukes): ideally this would be the behavior of getFieldProvider, but Tofu relies on it
-    // returning null to interpret it as 'undefined'. http://b/20537225 describes the issues in Tofu
-    if (provider == null) {
-      if (defaultValue == null) {
-        return NULL_PROVIDER;
-      }
-      return defaultValue;
-    } else if (provider instanceof NullData) {
-      return NULL_PROVIDER;
+      @Nullable SoyValueProvider provider, @Nullable SoyValue defaultValue) {
+    if (provider == UndefinedData.INSTANCE) {
+      provider = null;
     }
-    return provider;
+    return provider != null ? provider : (defaultValue != null ? defaultValue : NullData.INSTANCE);
+  }
+
+  @Keep
+  @Nonnull
+  public static ParamStore setField(ParamStore store, String field, SoyValueProvider provider) {
+    return store.setField(field, Preconditions.checkNotNull(provider));
   }
 
   /**
@@ -261,7 +213,7 @@ public final class JbcSrcRuntime {
         args.set(i, NullData.INSTANCE);
       }
     }
-    return handleTofuNull(fnAdapter.computeForJava(args));
+    return fnAdapter.computeForJava(args);
   }
 
   /**
@@ -296,7 +248,7 @@ public final class JbcSrcRuntime {
 
   @Keep
   public static SoyValue getSoyListItem(List<SoyValueProvider> list, long index) {
-    return resolveSoyValueProvider(getSoyListItemProvider(list, index));
+    return getSoyListItemProvider(list, index).resolve();
   }
 
   @Keep
@@ -308,12 +260,11 @@ public final class JbcSrcRuntime {
     // use & instead of && to avoid a branch
     if (index < size & index >= 0) {
       SoyValueProvider soyValueProvider = list.get((int) index);
-      return soyValueProvider == null ? NULL_PROVIDER : soyValueProvider;
+      return soyValueProvider == null ? NullData.INSTANCE : soyValueProvider;
     }
-    return NULL_PROVIDER;
+    return NullData.INSTANCE;
   }
 
-  @Keep
   public static RenderResult getListStatus(List<? extends SoyValueProvider> soyValueProviders) {
     // avoid allocating an iterator
     for (SoyValueProvider soyValueProvider : soyValueProviders) {
@@ -325,7 +276,6 @@ public final class JbcSrcRuntime {
     return RenderResult.done();
   }
 
-  @Keep
   public static RenderResult getMapStatus(
       Map<String, ? extends SoyValueProvider> soyValueProviders) {
     for (SoyValueProvider value : soyValueProviders.values()) {
@@ -338,37 +288,38 @@ public final class JbcSrcRuntime {
   }
 
   @Keep
-  public static SoyValue getSoyMapItem(SoyMap soyMap, SoyValue key) {
-    Preconditions.checkNotNull(soyMap, "Attempted to access map item '%s' of null", key);
-    return soyMap.get(key);
+  @Nonnull
+  public static SoyValue getSoyMapItem(SoyValue soyMap, SoyValue key) {
+    return getSoyMapItemProvider(soyMap, key).resolve();
   }
 
   @Keep
   @Nonnull
-  public static SoyValueProvider getSoyMapItemProvider(SoyMap soyMap, SoyValue key) {
-    Preconditions.checkNotNull(soyMap, "Attempted to access map item '%s' of null", key);
+  public static SoyValueProvider getSoyMapItemProvider(SoyValue soyMap, SoyValue key) {
+    if (soyMap == null || soyMap.isNullish()) {
+      throw new NullPointerException("Attempted to access map item '" + key + "' of null");
+    }
     if (key == null) {
       key = NullData.INSTANCE;
     }
-    SoyValueProvider soyValueProvider = soyMap.getProvider(key);
-    return soyValueProvider == null ? NULL_PROVIDER : soyValueProvider;
+    SoyValueProvider soyValueProvider = ((SoyMap) soyMap).getProvider(key);
+    return soyValueProvider == null ? NullData.INSTANCE : soyValueProvider;
   }
 
   @Keep
-  public static SoyValue getSoyLegacyObjectMapItem(
-      SoyLegacyObjectMap legacyObjectMap, SoyValue key) {
-    Preconditions.checkNotNull(legacyObjectMap, "Attempted to access map item '%s' of null", key);
-    return legacyObjectMap.getItem(key);
+  public static SoyValue getSoyLegacyObjectMapItem(SoyValue legacyObjectMap, SoyValue key) {
+    return getSoyLegacyObjectMapItemProvider(legacyObjectMap, key).resolve();
   }
 
   @Keep
+  @Nonnull
   public static SoyValueProvider getSoyLegacyObjectMapItemProvider(
-      SoyLegacyObjectMap legacyObjectMap, SoyValue key) {
-    if (legacyObjectMap == null) {
+      SoyValue legacyObjectMap, SoyValue key) {
+    if (legacyObjectMap == null || legacyObjectMap.isNullish()) {
       throw new NullPointerException("Attempted to access map item '" + key + "' of null");
     }
-    SoyValueProvider soyValueProvider = legacyObjectMap.getItemProvider(key);
-    return soyValueProvider == null ? NULL_PROVIDER : soyValueProvider;
+    SoyValueProvider soyValueProvider = ((SoyLegacyObjectMap) legacyObjectMap).getItemProvider(key);
+    return soyValueProvider == null ? NullData.INSTANCE : soyValueProvider;
   }
 
   @Keep
@@ -471,7 +422,7 @@ public final class JbcSrcRuntime {
       if (endPlaceholderToStartPlaceholder.containsKey(placeholderName)) {
         throw new IllegalArgumentException(
             String.format(
-                "%s is supposed to come after %s but before %s. Order contraints should not be "
+                "%s is supposed to come after %s but before %s. Order constraints should not be "
                     + "transitive.",
                 placeholderName,
                 // just use one of them, there is normally only one
@@ -489,7 +440,7 @@ public final class JbcSrcRuntime {
         }
         throw new IllegalArgumentException(
             String.format(
-                "%s is supposed to come after %s but before %s. Order contraints should not be "
+                "%s is supposed to come after %s but before %s. Order constraints should not be "
                     + "transitive.",
                 endPlaceholder, placeholderName, beforePlaceholder));
       }
@@ -713,24 +664,26 @@ public final class JbcSrcRuntime {
 
   /** Determines if the operand's string form can be equality-compared with a string. */
   @Keep
-  public static boolean compareNullableString(@Nullable String string, @Nullable SoyValue other) {
-    // This is a parallel version of SharedRuntime.compareString except it can handle a null LHS.
-    if (string == null && other == null) {
+  public static boolean compareBoxedStringToBoxed(SoyValue string, SoyValue other) {
+    if (string.isNullish() != other.isNullish()) {
+      return false;
+    } else if (string.isNullish()) {
       return true;
     }
+    return compareUnboxedStringToBoxed(string.stringValue(), other);
+  }
+
+  @Keep
+  public static boolean compareUnboxedStringToBoxed(String stringValue, SoyValue other) {
     // This follows similarly to the Javascript specification, to ensure similar operation
     // over Javascript and Java: http://www.ecma-international.org/ecma-262/5.1/#sec-11.9.3
     if (other instanceof StringData || other instanceof SanitizedContent) {
-      return Objects.equals(string, other.toString());
+      return Objects.equals(stringValue, other.toString());
     }
     if (other instanceof NumberData) {
-      if (string == null) {
-        return false;
-      }
-
       try {
         // Parse the string as a number.
-        return Double.parseDouble(string) == other.numberValue();
+        return Double.parseDouble(stringValue) == other.numberValue();
       } catch (NumberFormatException nfe) {
         // Didn't parse as a number.
         return false;
@@ -762,8 +715,8 @@ public final class JbcSrcRuntime {
   }
 
   @Keep
-  public static boolean coerceToBoolean(@Nullable SoyValue v) {
-    return v != null && v.coerceToBoolean();
+  public static boolean coerceToBoolean(SoyValue v) {
+    return v.coerceToBoolean();
   }
 
   @Keep
@@ -781,23 +734,24 @@ public final class JbcSrcRuntime {
   @Immutable
   private static final class EscapedCompiledTemplate implements CompiledTemplate {
     private final CompiledTemplate delegate;
+
     // these directives are builtin escaping directives which are all pure
     // functions but not annotated.
     @SuppressWarnings("Immutable")
     private final ImmutableList<SoyJavaPrintDirective> directives;
 
     static class SaveRestoreState {
-      static final MethodHandle saveStateMethodHandle;
-      static final MethodHandle restoreAppendableHandle;
+      static final MethodHandle SAVE_STATE_METHOD_HANDLE;
+      static final MethodHandle RESTORE_APPENDABLE_HANDLE;
 
       static {
         MethodHandles.Lookup lookup = MethodHandles.lookup();
         MethodType saveMethodType =
             methodType(void.class, RenderContext.class, BufferingAppendable.class);
-        saveStateMethodHandle =
+        SAVE_STATE_METHOD_HANDLE =
             SaveStateMetaFactory.bootstrapSaveState(lookup, "saveState", saveMethodType, 1)
                 .getTarget();
-        restoreAppendableHandle =
+        RESTORE_APPENDABLE_HANDLE =
             SaveStateMetaFactory.bootstrapRestoreState(
                     lookup,
                     "restoreLocal",
@@ -826,7 +780,7 @@ public final class JbcSrcRuntime {
         case 1:
           try {
             buffer =
-                (BufferingAppendable) SaveRestoreState.restoreAppendableHandle.invokeExact(frame);
+                (BufferingAppendable) SaveRestoreState.RESTORE_APPENDABLE_HANDLE.invokeExact(frame);
           } catch (Throwable t) {
             throw new AssertionError(t);
           }
@@ -843,7 +797,7 @@ public final class JbcSrcRuntime {
         appendable.append(resultData.coerceToString());
       } else {
         try {
-          SaveRestoreState.saveStateMethodHandle.invokeExact(context, buffer);
+          SaveRestoreState.SAVE_STATE_METHOD_HANDLE.invokeExact(context, buffer);
         } catch (Throwable t) {
           throw new AssertionError(t);
         }
@@ -853,7 +807,11 @@ public final class JbcSrcRuntime {
   }
 
   @Keep
-  public static LogStatement createLogStatement(boolean logOnly, SoyVisualElementData veData) {
+  public static LogStatement createLogStatement(boolean logOnly, SoyValue value) {
+    if (value == null || value.isNullish()) {
+      throw new NullPointerException();
+    }
+    SoyVisualElementData veData = (SoyVisualElementData) value;
     return LogStatement.create(veData.ve().id(), veData.data(), logOnly);
   }
 
@@ -981,9 +939,20 @@ public final class JbcSrcRuntime {
   }
 
   @Keep
+  public static boolean isNonSoyNullish(SoyValueProvider value) {
+    return !value.resolve().isNullish();
+  }
+
+  @Keep
+  @Nullable
+  public static SoyValue coalesceToJavaNull(SoyValue value) {
+    return value == null || value.isNullish() ? null : value;
+  }
+
+  @Keep
   @Nonnull
   public static <T> T checkExpressionNotNull(T value, String expression) {
-    if (value == null) {
+    if (value == null || (value instanceof SoyValue && ((SoyValue) value).isNullish())) {
       throw new NullPointerException("'" + expression + "' evaluates to null");
     }
     return value;

@@ -234,7 +234,7 @@ public final class SharedRuntime {
       SoyValueProvider valueProvider =
           ((SoyRecord) recordEntry).getFieldProvider(MapLiteralFromListNode.VALUE_STRING);
       checkMapFromListConstructorCondition(
-          key != null && SoyMap.isAllowedKeyType(key), recordEntry, OptionalInt.of(i));
+          SoyMap.isAllowedKeyType(key), recordEntry, OptionalInt.of(i));
 
       map.put(key, valueProvider);
     }

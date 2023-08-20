@@ -119,7 +119,9 @@ public final class SoyProtoValue extends SoyAbstractValue implements SoyLegacyOb
               });
 
   private static Message getDefaultInstance(Descriptor key)
-      throws ClassNotFoundException, IllegalAccessException, InvocationTargetException,
+      throws ClassNotFoundException,
+          IllegalAccessException,
+          InvocationTargetException,
           NoSuchMethodException {
     Class<?> messageClass = Class.forName(JavaQualifiedNames.getClassName(key));
     return (Message) messageClass.getMethod("getDefaultInstance").invoke(null);
@@ -189,6 +191,7 @@ public final class SoyProtoValue extends SoyAbstractValue implements SoyLegacyOb
     }
     return field.interpretField(proto);
   }
+
   /**
    * Returns the value of the field, or null only if the field has presence semantics and is unset.
    * For fields with no presence semantics (i.e., there's no hasser method), the value is never
@@ -373,6 +376,12 @@ public final class SoyProtoValue extends SoyAbstractValue implements SoyLegacyOb
   @Override
   public void render(LoggingAdvisingAppendable appendable) throws IOException {
     TextFormat.printer().print(proto, appendable);
+  }
+
+  @Override
+  public SoyValue checkNullishProto(Class<? extends Message> messageType) {
+    messageType.cast(proto);
+    return this;
   }
 
   // -----------------------------------------------------------------------------------------------

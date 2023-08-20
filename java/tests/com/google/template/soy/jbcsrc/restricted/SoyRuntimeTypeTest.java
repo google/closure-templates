@@ -23,14 +23,7 @@ import com.google.common.truth.Subject;
 import com.google.common.truth.Truth;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.base.internal.SanitizedContentKind;
-import com.google.template.soy.data.SanitizedContent;
-import com.google.template.soy.data.SoyList;
-import com.google.template.soy.data.SoyProtoValue;
 import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.data.restricted.BooleanData;
-import com.google.template.soy.data.restricted.FloatData;
-import com.google.template.soy.data.restricted.IntegerData;
-import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.testing3.Foo3;
 import com.google.template.soy.testing3.Proto3Message;
 import com.google.template.soy.types.AnyType;
@@ -58,27 +51,36 @@ import org.objectweb.asm.Type;
 public class SoyRuntimeTypeTest {
   @Test
   public void testPrimitiveTypes() {
-    assertThat(NullType.getInstance())
-        .isBoxedAs(SoyValue.class)
-        .isUnboxedAs(BytecodeUtils.classFromAsmType(BytecodeUtils.NULL_PSEUDO_TYPE));
+    assertThat(NullType.getInstance()).isBoxedAs(SoyValue.class).isNotUnboxable();
 
-    assertThat(IntType.getInstance()).isBoxedAs(IntegerData.class).isUnboxedAs(long.class);
+    assertThat(IntType.getInstance()).isBoxedAs(SoyValue.class).isUnboxedAs(long.class);
+    Truth.assertThat(SoyRuntimeType.getUnboxedType(IntType.getInstance()).get().box().runtimeType())
+        .isEqualTo(BytecodeUtils.SOY_VALUE_TYPE);
 
-    assertThat(BoolType.getInstance()).isBoxedAs(BooleanData.class).isUnboxedAs(boolean.class);
+    assertThat(BoolType.getInstance()).isBoxedAs(SoyValue.class).isUnboxedAs(boolean.class);
+    Truth.assertThat(
+            SoyRuntimeType.getUnboxedType(BoolType.getInstance()).get().box().runtimeType())
+        .isEqualTo(BytecodeUtils.SOY_VALUE_TYPE);
 
-    assertThat(StringType.getInstance()).isBoxedAs(StringData.class).isUnboxedAs(String.class);
+    assertThat(StringType.getInstance()).isBoxedAs(SoyValue.class).isUnboxedAs(String.class);
+    Truth.assertThat(
+            SoyRuntimeType.getUnboxedType(StringType.getInstance()).get().box().runtimeType())
+        .isEqualTo(BytecodeUtils.SOY_VALUE_TYPE);
 
-    assertThat(FloatType.getInstance()).isBoxedAs(FloatData.class).isUnboxedAs(double.class);
+    assertThat(FloatType.getInstance()).isBoxedAs(SoyValue.class).isUnboxedAs(double.class);
+    Truth.assertThat(
+            SoyRuntimeType.getUnboxedType(FloatType.getInstance()).get().box().runtimeType())
+        .isEqualTo(BytecodeUtils.SOY_VALUE_TYPE);
 
     assertThat(new SoyProtoEnumType(Proto3Message.AnEnum.getDescriptor()))
-        .isBoxedAs(IntegerData.class)
+        .isBoxedAs(SoyValue.class)
         .isUnboxedAs(long.class);
 
     assertThat(
             UnionType.of(
                 new SoyProtoEnumType(Proto3Message.AnEnum.getDescriptor()),
                 new SoyProtoEnumType(Foo3.AnotherEnum.getDescriptor())))
-        .isBoxedAs(IntegerData.class)
+        .isBoxedAs(SoyValue.class)
         .isUnboxedAs(long.class);
 
     for (SanitizedContentKind kind : SanitizedContentKind.values()) {
@@ -86,13 +88,15 @@ public class SoyRuntimeTypeTest {
         continue;
       }
       assertThat(SanitizedType.getTypeForContentKind(kind))
-          .isBoxedAs(SanitizedContent.class)
+          .isBoxedAs(SoyValue.class)
           .isNotUnboxable();
     }
     assertThat(SoyProtoType.newForTest(Proto3Message.getDescriptor()))
-        .isBoxedAs(SoyProtoValue.class)
+        .isBoxedAs(SoyValue.class)
         .isUnboxedAs(Proto3Message.class);
-    assertThat(ListType.of(IntType.getInstance())).isBoxedAs(SoyList.class).isUnboxedAs(List.class);
+    assertThat(ListType.of(IntType.getInstance()))
+        .isBoxedAs(SoyValue.class)
+        .isUnboxedAs(List.class);
 
     assertThat(UnknownType.getInstance()).isBoxedAs(SoyValue.class).isNotUnboxable();
     assertThat(AnyType.getInstance()).isBoxedAs(SoyValue.class).isNotUnboxable();
@@ -108,12 +112,12 @@ public class SoyRuntimeTypeTest {
     // But unions of lists do work
     assertThat(
             UnionType.of(ListType.of(IntType.getInstance()), ListType.of(StringType.getInstance())))
-        .isBoxedAs(SoyList.class)
+        .isBoxedAs(SoyValue.class)
         .isUnboxedAs(List.class);
     // as do union of sanitized
     assertThat(
             UnionType.of(SanitizedType.HtmlType.getInstance(), SanitizedType.JsType.getInstance()))
-        .isBoxedAs(SanitizedContent.class)
+        .isBoxedAs(SoyValue.class)
         .isNotUnboxable();
   }
 

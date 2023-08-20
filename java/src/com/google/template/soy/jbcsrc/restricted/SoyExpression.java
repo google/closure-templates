@@ -18,16 +18,16 @@ package com.google.template.soy.jbcsrc.restricted;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
-import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_LIST_TYPE;
-import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_VALUE_TYPE;
+import static com.google.common.collect.ImmutableList.toImmutableList;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_VALUE_PROVIDER_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.STRING_TYPE;
 
+import com.google.common.base.MoreObjects;
+import com.google.common.base.Preconditions;
 import com.google.errorprone.annotations.DoNotCall;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
-import com.google.template.soy.data.SoyProtoValue;
 import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.internal.Converters;
 import com.google.template.soy.data.internal.RuntimeMapTypeTracker;
 import com.google.template.soy.types.BoolType;
@@ -40,9 +40,9 @@ import com.google.template.soy.types.NullType;
 import com.google.template.soy.types.SanitizedType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
+import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.StringType;
 import com.google.template.soy.types.UnknownType;
-import java.util.ArrayList;
 import java.util.List;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Type;
@@ -110,7 +110,8 @@ public final class SoyExpression extends Expression {
     throw new UnsupportedOperationException();
   }
 
-  public static SoyExpression forBoxedList(ListType listType, Expression delegate) {
+  public static SoyExpression forBoxedList(SoyType listType, Expression delegate) {
+    Preconditions.checkArgument(SoyTypes.isKindOrUnionOfKind(listType, Kind.LIST));
     return new SoyExpression(SoyRuntimeType.getBoxedType(listType), delegate);
   }
 
@@ -162,40 +163,17 @@ public final class SoyExpression extends Expression {
    * with Soy nullish values converted to Java null.
    */
   public static Expression asBoxedListWithJavaNullItems(List<SoyExpression> items) {
-    List<Expression> childExprs = new ArrayList<>(items.size());
-    for (SoyExpression child : items) {
-      childExprs.add(child.box());
-    }
-    return BytecodeUtils.asList(childExprs);
+    return BytecodeUtils.asList(
+        items.stream().map(SoyExpression::boxOrJavaNull).collect(toImmutableList()));
   }
 
   public static Expression asBoxedValueProviderList(List<SoyExpression> items) {
-    List<Expression> childExprs = new ArrayList<>(items.size());
-    for (SoyExpression child : items) {
-      childExprs.add(child.boxAsSoyValueProvider());
-    }
-    return BytecodeUtils.asList(childExprs);
+    return BytecodeUtils.asList(items.stream().map(SoyExpression::box).collect(toImmutableList()));
   }
 
-  public static final SoyExpression NULL =
+  public static final SoyExpression SOY_NULL =
       new SoyExpression(
-          getUnboxedType(NullType.getInstance()),
-          new Expression(BytecodeUtils.NULL_PSEUDO_TYPE, Feature.CHEAP) {
-            @Override
-            protected void doGen(CodeBuilder cb) {
-              cb.pushNull();
-            }
-          });
-
-  public static final SoyExpression NULL_BOXED =
-      new SoyExpression(
-          SoyRuntimeType.getBoxedType(NullType.getInstance()),
-          new Expression(SOY_VALUE_TYPE, Feature.CHEAP) {
-            @Override
-            protected void doGen(CodeBuilder cb) {
-              cb.pushNull();
-            }
-          });
+          SoyRuntimeType.getBoxedType(NullType.getInstance()), BytecodeUtils.soyNull());
 
   public static final SoyExpression TRUE = forBool(BytecodeUtils.constant(true));
 
@@ -217,6 +195,12 @@ public final class SoyExpression extends Expression {
         soyRuntimeType.runtimeType(),
         soyRuntimeType.soyType(),
         delegate.resultType());
+    if (soyRuntimeType.isBoxed()
+        != BytecodeUtils.isDefinitelyAssignableFrom(
+            SOY_VALUE_PROVIDER_TYPE, delegate.resultType())) {
+      throw new IllegalArgumentException(
+          "boxed=" + soyRuntimeType.isBoxed() + " for type " + delegate.resultType());
+    }
     this.soyRuntimeType = soyRuntimeType;
     this.delegate = delegate;
   }
@@ -261,66 +245,10 @@ public final class SoyExpression extends Expression {
     return soyRuntimeType.isBoxed();
   }
 
-  /** Returns an Expression of a non-null {@link SoyValueProvider} providing this value. */
-  public Expression boxAsSoyValueProvider() {
-    if (soyType().equals(NullType.getInstance())) {
-      if (this == NULL || this == NULL_BOXED) {
-        return FieldRef.NULL_PROVIDER.accessor();
-      }
-      // otherwise this expression might have side effects,  evaluate it as a statement then return
-      // the NULL_PROVIDER
-      return toStatement().then(FieldRef.NULL_PROVIDER.accessor());
-    }
-    if (delegate.isNonJavaNullable()) {
-      // Every SoyValue is-a SoyValueProvider, so if it is non-null
-      return box();
-    }
-    if (isBoxed()) {
-      return new Expression(
-          BytecodeUtils.SOY_VALUE_PROVIDER_TYPE,
-          delegate.features().plus(Feature.NON_JAVA_NULLABLE)) {
-        @Override
-        protected void doGen(CodeBuilder adapter) {
-          Label end = new Label();
-          delegate.gen(adapter);
-          adapter.dup();
-          adapter.ifNonNull(end);
-          adapter.pop();
-          FieldRef.NULL_PROVIDER.accessStaticUnchecked(adapter);
-          adapter.mark(end);
-        }
-      };
-    }
-    return new Expression(
-        BytecodeUtils.SOY_VALUE_PROVIDER_TYPE,
-        delegate.features().plus(Feature.NON_JAVA_NULLABLE)) {
-      @Override
-      protected void doGen(CodeBuilder adapter) {
-        Label end = new Label();
-        delegate.gen(adapter);
-        adapter.dup();
-        Label nonNull = new Label();
-        adapter.ifNonNull(nonNull);
-        adapter.pop(); // pop the null value and replace with the nullprovider
-        FieldRef.NULL_PROVIDER.accessStaticUnchecked(adapter);
-        adapter.goTo(end);
-        adapter.mark(nonNull);
-        doBox(adapter, soyRuntimeType.asNonJavaNullable());
-        adapter.mark(end);
-      }
-    };
-  }
-
   /** Returns a SoyExpression that evaluates to a subtype of {@link SoyValue}. */
   public SoyExpression box() {
     if (isBoxed()) {
       return this;
-    }
-    if (soyType().equals(NullType.getInstance())) {
-      if (delegate == NULL) {
-        return NULL_BOXED;
-      }
-      return asBoxed(toStatement().then(NULL_BOXED));
     }
     // since we aren't boxed and these must be primitives so we don't need to worry about
     // nullability
@@ -335,18 +263,22 @@ public final class SoyExpression extends Expression {
     }
     // If null is expected and it is a reference type we want to propagate null through the boxing
     // operation
-    boolean isNonJavaNullable = delegate.isNonJavaNullable();
+    boolean nonNullable = delegate.isNonJavaNullable();
+    Features features = features().plus(Feature.NON_JAVA_NULLABLE);
+    if (nonNullable) {
+      features = features.plus(Feature.NON_SOY_NULLISH);
+    }
     return asBoxed(
-        new Expression(soyRuntimeType.box().runtimeType(), features()) {
+        new Expression(soyRuntimeType.box().runtimeType(), features) {
           @Override
           protected void doGen(CodeBuilder adapter) {
             Label end = null;
             delegate.gen(adapter);
-            if (!isNonJavaNullable) {
+            if (!nonNullable) {
               end = new Label();
-              BytecodeUtils.nullCoalesce(adapter, end);
+              BytecodeUtils.soyNullCoalesce(adapter, delegate.resultType(), end);
             }
-            doBox(adapter, soyRuntimeType.asNonJavaNullable());
+            doBox(adapter, soyRuntimeType.asNonSoyNullish());
             if (end != null) {
               adapter.mark(end);
             }
@@ -355,10 +287,35 @@ public final class SoyExpression extends Expression {
   }
 
   /**
+   * Boxes a value, converting Soy nullish to Java null. Appropriate when preparing a parameter for
+   * an extern or plugin implementation, which both expect Java null rather than NullData or
+   * UndefinedData.
+   */
+  public SoyExpression boxOrJavaNull() {
+    if (isNonSoyNullish()) {
+      return this.box();
+    }
+    if (this.isBoxed()) {
+      return withSource(MethodRef.COALESCE_TO_JAVA_NULL.invoke(delegate));
+    }
+    return asBoxed(
+        new Expression(soyRuntimeType.box().runtimeType()) {
+          @Override
+          protected void doGen(CodeBuilder adapter) {
+            Label end = new Label();
+            delegate.gen(adapter);
+            BytecodeUtils.soyNullToNullCoalesce(adapter, delegate.resultType(), end);
+            doBox(adapter, soyRuntimeType.asNonSoyNullish());
+            adapter.mark(end);
+          }
+        });
+  }
+
+  /**
    * Generates code to box the expression assuming that it is non-nullable and on the top of the
    * stack.
    */
-  private static void doBox(CodeBuilder adapter, SoyRuntimeType type) {
+  public static void doBox(CodeBuilder adapter, SoyRuntimeType type) {
     if (type.isKnownSanitizedContent()) {
       ContentKind kind =
           Converters.toContentKind(((SanitizedType) type.soyType()).getContentKind());
@@ -419,7 +376,7 @@ public final class SoyExpression extends Expression {
           : Branch.ifTrue(MethodRef.RUNTIME_COERCE_STRING_TO_BOOLEAN.invoke(delegate));
     }
     // All other types are always truthy unless null
-    return Branch.ifNotNull(delegate);
+    return Branch.ifNonSoyNullish(delegate);
   }
 
   /** Coerce this expression to a boolean value. */
@@ -453,6 +410,9 @@ public final class SoyExpression extends Expression {
       // implicitly
       return forString(MethodRef.STRING_VALUE_OF.invoke(delegate));
     }
+    if (isNonJavaNullable()) {
+      return forString(MethodRef.SOY_VALUE_COERCE_TO_STRING.invoke(delegate));
+    }
     return forString(MethodRef.RUNTIME_COERCE_TO_STRING.invoke(delegate));
   }
 
@@ -473,7 +433,12 @@ public final class SoyExpression extends Expression {
     return forFloat(delegate.invoke(MethodRef.SOY_VALUE_NUMBER_VALUE));
   }
 
-  public Expression coerceToNumber() {
+  /**
+   * Returns an expression of type {@link Number}. Appropriate when preparing a parameter for an
+   * extern or plugin implementation, which both expect Java null rather than NullData or
+   * UndefinedData.
+   */
+  public Expression unboxAsNumberOrJavaNull() {
     if (!isBoxed()) {
       if (soyRuntimeType.isKnownFloat()) {
         return MethodRef.BOX_DOUBLE.invoke(this);
@@ -483,12 +448,16 @@ public final class SoyExpression extends Expression {
       }
       throw new UnsupportedOperationException("Can't convert " + resultType() + " to a Number");
     }
-    return new Expression(BytecodeUtils.NUMBER_TYPE, features()) {
+    if (isNonSoyNullish()) {
+      return MethodRef.SOY_VALUE_JAVA_NUMBER_VALUE.invoke(
+          this.checkedCast(BytecodeUtils.NUMBER_DATA_TYPE));
+    }
+    return new Expression(BytecodeUtils.NUMBER_TYPE, featuresAfterUnboxing()) {
       @Override
       protected void doGen(CodeBuilder adapter) {
         Label end = new Label();
         delegate.gen(adapter);
-        BytecodeUtils.nullCoalesce(adapter, end);
+        BytecodeUtils.soyNullToNullCoalesce(adapter, delegate.resultType(), end);
         adapter.checkCast(BytecodeUtils.NUMBER_DATA_TYPE);
         MethodRef.SOY_VALUE_JAVA_NUMBER_VALUE.invokeUnchecked(adapter);
         adapter.mark(end);
@@ -547,9 +516,17 @@ public final class SoyExpression extends Expression {
     return forFloat(delegate.invoke(MethodRef.SOY_VALUE_FLOAT_VALUE));
   }
 
+  private Features featuresAfterUnboxing() {
+    Features features = features();
+    if (!features.has(Feature.NON_SOY_NULLISH)) {
+      features = features.minus(Feature.NON_JAVA_NULLABLE);
+    }
+    return features;
+  }
+
   /** Unboxes a string. Throws an exception if the boxed value is nullish. */
   public SoyExpression unboxAsStringUnchecked() {
-    return this.asNonJavaNullable().unboxAsStringOrJavaNull();
+    return this.asNonSoyNullish().unboxAsStringOrJavaNull();
   }
 
   /**
@@ -563,34 +540,22 @@ public final class SoyExpression extends Expression {
     }
     assertBoxed(String.class);
 
-    Expression unboxedString;
-    if (delegate.isNonJavaNullable()) {
-      unboxedString = delegate.invoke(MethodRef.SOY_VALUE_STRING_VALUE);
-    } else {
-      unboxedString =
-          new Expression(BytecodeUtils.STRING_TYPE, features()) {
-            @Override
-            protected void doGen(CodeBuilder adapter) {
-              Label end = new Label();
-              delegate.gen(adapter);
-              BytecodeUtils.nullCoalesce(adapter, end);
-              MethodRef.SOY_VALUE_STRING_VALUE.invokeUnchecked(adapter);
-              adapter.mark(end);
-            }
-          };
-    }
-    return forString(unboxedString);
+    return forString(
+        delegate.invoke(
+            delegate.isNonSoyNullish()
+                ? MethodRef.SOY_VALUE_STRING_VALUE
+                : MethodRef.SOY_VALUE_STRING_VALUE_OR_NULL));
   }
 
   /** Unboxes a list and its items. Throws an exception if the boxed list value is nullish. */
   public SoyExpression unboxAsListUnchecked() {
-    return this.asNonJavaNullable().unboxAsListOrJavaNull();
+    return this.asNonSoyNullish().unboxAsListOrJavaNull();
   }
 
   /**
-   * Unboxes a list. Any Soy nullish value is returned as Java null. Items within the list are also
-   * coalesced from Soy nullish to Java null. Appropriate when preparing a parameter for an extern
-   * or plugin implementation, which both expect Java null rather than NullData or UndefinedData.
+   * Unboxes a list; a Soy nullish value is returned as Java null. Appropriate when preparing a
+   * parameter for an extern or plugin implementation, which both expect Java null rather than
+   * NullData or UndefinedData.
    */
   public SoyExpression unboxAsListOrJavaNull() {
     if (alreadyUnboxed(List.class)) {
@@ -598,28 +563,17 @@ public final class SoyExpression extends Expression {
     }
     assertBoxed(List.class);
 
-    Expression unboxedList;
-    if (delegate.isNonJavaNullable()) {
-      unboxedList = delegate.checkedCast(SOY_LIST_TYPE).invoke(MethodRef.SOY_LIST_AS_JAVA_LIST);
-    } else {
-      unboxedList =
-          new Expression(BytecodeUtils.LIST_TYPE, features()) {
-            @Override
-            protected void doGen(CodeBuilder adapter) {
-              Label end = new Label();
-              delegate.gen(adapter);
-              BytecodeUtils.nullCoalesce(adapter, end);
-              adapter.checkCast(SOY_LIST_TYPE);
-              MethodRef.SOY_LIST_AS_JAVA_LIST.invokeUnchecked(adapter);
-              adapter.mark(end);
-            }
-          };
-    }
+    Expression unboxedList =
+        delegate.invoke(
+            delegate.isNonSoyNullish()
+                ? MethodRef.SOY_VALUE_AS_JAVA_LIST
+                : MethodRef.SOY_VALUE_AS_JAVA_LIST_OR_NULL);
 
     ListType asListType;
-    if (soyType().getKind() != Kind.NULL
-        && soyRuntimeType.asNonJavaNullable().isKnownListOrUnionOfLists()) {
-      asListType = soyRuntimeType.asNonJavaNullable().asListType();
+    SoyRuntimeType nonNullRuntimeType =
+        SoyRuntimeType.getBoxedType(SoyTypes.tryRemoveNull(soyType()));
+    if (soyType().getKind() != Kind.NULL && nonNullRuntimeType.isKnownListOrUnionOfLists()) {
+      asListType = nonNullRuntimeType.asListType();
     } else {
       Kind kind = soyType().getKind();
       if (kind == Kind.UNKNOWN || kind == Kind.NULL) {
@@ -634,7 +588,7 @@ public final class SoyExpression extends Expression {
 
   /** Unboxes a proto message. Throws an exception if the boxed value is nullish. */
   public Expression unboxAsMessageUnchecked(Type runtimeType) {
-    return this.asNonJavaNullable().unboxAsMessageOrJavaNull(runtimeType);
+    return this.asNonSoyNullish().unboxAsMessageOrJavaNull(runtimeType);
   }
 
   /**
@@ -650,7 +604,7 @@ public final class SoyExpression extends Expression {
     // Attempting to unbox an unboxed proto
     // (We compare the non-nullable type because being null doesn't impact unboxability,
     //  and if we didn't remove null then isKnownProtoOrUnionOfProtos would fail.)
-    if (soyRuntimeType.asNonJavaNullable().isKnownProtoOrUnionOfProtos() && !isBoxed()) {
+    if (soyRuntimeType.asNonSoyNullish().isKnownProtoOrUnionOfProtos() && !isBoxed()) {
       // Any unboxed proto must be either a concrete proto or a message.
       // if we are unboxing to Message then there is no need to cast.
       if (delegate.resultType().equals(runtimeType)
@@ -660,22 +614,12 @@ public final class SoyExpression extends Expression {
         return this.delegate.checkedCast(runtimeType);
       }
     }
-    Expression protoDelegate = delegate.checkedCast(SoyProtoValue.class);
-    if (delegate.isNonJavaNullable()) {
-      return protoDelegate.invoke(MethodRef.SOY_PROTO_VALUE_GET_PROTO).checkedCast(runtimeType);
-    }
-
-    return new Expression(runtimeType, features()) {
-      @Override
-      protected void doGen(CodeBuilder adapter) {
-        Label end = new Label();
-        protoDelegate.gen(adapter);
-        BytecodeUtils.nullCoalesce(adapter, end);
-        MethodRef.SOY_PROTO_VALUE_GET_PROTO.invokeUnchecked(adapter);
-        adapter.mark(end);
-        adapter.checkCast(runtimeType);
-      }
-    };
+    return delegate
+        .invoke(
+            delegate.isNonSoyNullish()
+                ? MethodRef.SOY_VALUE_GET_PROTO
+                : MethodRef.SOY_VALUE_GET_PROTO_OR_NULL)
+        .checkedCast(runtimeType);
   }
 
   private boolean alreadyUnboxed(Class<?> asType) {
@@ -709,12 +653,22 @@ public final class SoyExpression extends Expression {
 
   @Override
   public SoyExpression asNonJavaNullable() {
-    return new SoyExpression(soyRuntimeType.asNonJavaNullable(), delegate.asNonJavaNullable());
+    return new SoyExpression(soyRuntimeType, delegate.asNonJavaNullable());
   }
 
   @Override
   public SoyExpression asJavaNullable() {
-    return new SoyExpression(soyRuntimeType.asJavaNullable(), delegate.asJavaNullable());
+    return new SoyExpression(soyRuntimeType, delegate.asJavaNullable());
+  }
+
+  @Override
+  public SoyExpression asNonSoyNullish() {
+    return new SoyExpression(soyRuntimeType.asNonSoyNullish(), delegate.asNonSoyNullish());
+  }
+
+  @Override
+  public SoyExpression asSoyNullish() {
+    return new SoyExpression(soyRuntimeType.asSoyNullish(), delegate.asSoyNullish());
   }
 
   @Override
@@ -725,5 +679,10 @@ public final class SoyExpression extends Expression {
   @Override
   public SoyExpression labelEnd(Label label) {
     return withSource(delegate.labelEnd(label));
+  }
+
+  @Override
+  protected void extraToStringProperties(MoreObjects.ToStringHelper helper) {
+    helper.add("soyType", soyType());
   }
 }

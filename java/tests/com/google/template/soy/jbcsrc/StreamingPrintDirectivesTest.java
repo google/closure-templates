@@ -191,12 +191,8 @@ public final class StreamingPrintDirectivesTest {
                 templates
                     .getTemplate("ns.nonstreamable")
                     .render(badParam, ParamStore.EMPTY_INSTANCE, output, context));
-    assertThat(cce)
-        .hasMessageThat()
-        .contains("com.google.template.soy.data.restricted.StringData cannot be cast to");
-    assertThat(cce)
-        .hasMessageThat()
-        .contains("com.google.template.soy.data.restricted.IntegerData");
+    assertThat(cce).hasMessageThat().contains("StringData cannot be cast to");
+    assertThat(cce).hasMessageThat().contains("IntegerData");
   }
 
   @Test

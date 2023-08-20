@@ -19,19 +19,14 @@ package com.google.template.soy.jbcsrc.restricted;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_VALUE_TYPE;
-import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.STRING_DATA_TYPE;
 
 import com.google.common.base.Objects;
 import com.google.protobuf.Descriptors.Descriptor;
-import com.google.template.soy.data.restricted.BooleanData;
-import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.internal.proto.JavaQualifiedNames;
 import com.google.template.soy.types.BoolType;
 import com.google.template.soy.types.FloatType;
 import com.google.template.soy.types.IntType;
 import com.google.template.soy.types.ListType;
-import com.google.template.soy.types.NullType;
-import com.google.template.soy.types.SoyProtoEnumType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
@@ -64,114 +59,29 @@ public abstract class SoyRuntimeType {
 
   /** Returns the boxed representation of the given type. */
   public static SoyRuntimeType getBoxedType(SoyType soyType) {
-    PrimitiveSoyType primitive = unboxedTypeImpl(soyType);
-    if (primitive != null) {
-      return primitive.box();
-    }
-    switch (soyType.getKind()) {
-      case ATTRIBUTES:
-      case CSS:
-      case URI:
-      case ELEMENT:
-      case HTML:
-      case JS:
-      case TRUSTED_RESOURCE_URI:
-        return new BoxedSoyType(soyType, BytecodeUtils.SANITIZED_CONTENT_TYPE);
-      case LIST:
-        return new BoxedSoyType(soyType, BytecodeUtils.SOY_LIST_TYPE);
-      case LEGACY_OBJECT_MAP:
-        return new BoxedSoyType(soyType, BytecodeUtils.SOY_LEGACY_OBJECT_MAP_TYPE);
-      case MAP:
-        return new BoxedSoyType(soyType, BytecodeUtils.SOY_MAP_TYPE);
-      case RECORD:
-        return new BoxedSoyType(soyType, BytecodeUtils.SOY_RECORD_TYPE);
-      case VE:
-        return new BoxedSoyType(soyType, BytecodeUtils.SOY_VISUAL_ELEMENT_TYPE);
-      case VE_DATA:
-        return new BoxedSoyType(soyType, BytecodeUtils.SOY_VISUAL_ELEMENT_DATA_TYPE);
-      case TEMPLATE:
-        return new BoxedSoyType(soyType, BytecodeUtils.TEMPLATE_VALUE_TYPE);
-      case UNION:
-        {
-          // unions generally don't have a runtime type except in 2 special cases
-          // 1. nullable types can use the normal reference type.
-          // 2. if all members of the union have the same runtimeType then we can use that
-          SoyType nonNullType = SoyTypes.removeNull(soyType);
-          if (!nonNullType.equals(soyType)) {
-            BoxedSoyType boxedType = (BoxedSoyType) getBoxedType(nonNullType);
-            return new BoxedSoyType(soyType, boxedType.runtimeType());
-          }
-          BoxedSoyType memberType = null;
-          for (SoyType member : ((UnionType) soyType).getMembers()) {
-            BoxedSoyType boxed = (BoxedSoyType) getBoxedType(member);
-            if (memberType == null) {
-              memberType = boxed;
-            } else if (!memberType.runtimeType().equals(boxed.runtimeType())) {
-              memberType = null;
-              break;
-            }
-          }
-          if (memberType != null) {
-            return new BoxedSoyType(soyType, memberType.runtimeType());
-          }
-        }
-        // fall-through
-      case UNKNOWN:
-      case ANY:
-        // SoyValue
-        return new BoxedSoyType(soyType, BytecodeUtils.SOY_VALUE_TYPE);
-      default:
-        throw new AssertionError("can't map " + soyType + " to a boxed soy runtime type");
-    }
+    return new BoxedSoyType(soyType, SOY_VALUE_TYPE);
   }
 
   @Nullable
   private static PrimitiveSoyType unboxedTypeImpl(SoyType soyType) {
     switch (soyType.getKind()) {
-      case NULL:
-      case UNDEFINED:
-        return new PrimitiveSoyType(
-            NullType.getInstance(), BytecodeUtils.NULL_PSEUDO_TYPE, SOY_VALUE_TYPE);
       case BOOL:
-        return new PrimitiveSoyType(
-            BoolType.getInstance(), Type.BOOLEAN_TYPE, Type.getType(BooleanData.class));
+        return new PrimitiveSoyType(BoolType.getInstance(), Type.BOOLEAN_TYPE);
       case STRING:
-        return new PrimitiveSoyType(
-            StringType.getInstance(), BytecodeUtils.STRING_TYPE, STRING_DATA_TYPE);
+        return new PrimitiveSoyType(StringType.getInstance(), BytecodeUtils.STRING_TYPE);
       case INT:
-        return new PrimitiveSoyType(
-            IntType.getInstance(), Type.LONG_TYPE, BytecodeUtils.INTEGER_DATA_TYPE);
+        return new PrimitiveSoyType(IntType.getInstance(), Type.LONG_TYPE);
       case FLOAT:
-        return new PrimitiveSoyType(
-            FloatType.getInstance(), Type.DOUBLE_TYPE, Type.getType(FloatData.class));
+        return new PrimitiveSoyType(FloatType.getInstance(), Type.DOUBLE_TYPE);
       case PROTO_ENUM:
-        return enumType((SoyProtoEnumType) soyType);
-      case ATTRIBUTES:
-      case CSS:
-      case URI:
-      case ELEMENT:
-      case HTML:
-      case JS:
-      case TRUSTED_RESOURCE_URI:
-        // sanitized strings cannot be unboxed
-        return null;
+        return new PrimitiveSoyType(soyType, Type.LONG_TYPE);
       case MESSAGE:
-        return new PrimitiveSoyType(
-            soyType, BytecodeUtils.MESSAGE_TYPE, BytecodeUtils.SOY_PROTO_VALUE_TYPE);
+        return new PrimitiveSoyType(soyType, BytecodeUtils.MESSAGE_TYPE);
       case PROTO:
-        return soyTypeFromProto((SoyProtoType) soyType);
+        return new PrimitiveSoyType(soyType, protoType(((SoyProtoType) soyType).getDescriptor()));
       case LIST:
         // We have some minor support for unboxed lists
-        return new PrimitiveSoyType(soyType, BytecodeUtils.LIST_TYPE, BytecodeUtils.SOY_LIST_TYPE);
-      case LEGACY_OBJECT_MAP:
-      case MAP:
-      case RECORD:
-      case TEMPLATE:
-      case VE:
-      case VE_DATA:
-        // no unboxed representation at all.  We could add something for these, but there is
-        // currently not much point.
-        return null;
+        return new PrimitiveSoyType(soyType, BytecodeUtils.LIST_TYPE);
       case UNION:
         {
           // unions generally don't have a unique unboxed runtime type except in 2 special cases
@@ -179,12 +89,7 @@ public abstract class SoyRuntimeType {
           // 2. if all members of the union have the same runtimeType then we can use that
           SoyType nonNullType = SoyTypes.removeNull(soyType);
           if (!nonNullType.equals(soyType)) {
-            PrimitiveSoyType primitive =
-                (PrimitiveSoyType) getUnboxedType(nonNullType).orElse(null);
-            if (primitive != null && !BytecodeUtils.isPrimitive(primitive.runtimeType())) {
-              return new PrimitiveSoyType(
-                  soyType, primitive.runtimeType(), primitive.box().runtimeType());
-            }
+            return null;
           }
           PrimitiveSoyType memberType = null;
           for (SoyType member : ((UnionType) soyType).getMembers()) {
@@ -196,16 +101,29 @@ public abstract class SoyRuntimeType {
               memberType = primitive;
             } else if (!memberType.runtimeType().equals(primitive.runtimeType())
                 || !memberType.box().runtimeType().equals(primitive.box().runtimeType())) {
-              memberType = null;
-              break;
+              return null;
             }
           }
           if (memberType != null) {
-            return new PrimitiveSoyType(
-                soyType, memberType.runtimeType(), memberType.box().runtimeType());
+            return new PrimitiveSoyType(soyType, memberType.runtimeType());
           }
         }
         // fall-through
+      case NULL:
+      case UNDEFINED:
+      case ATTRIBUTES:
+      case CSS:
+      case URI:
+      case ELEMENT:
+      case HTML:
+      case JS:
+      case TRUSTED_RESOURCE_URI:
+      case LEGACY_OBJECT_MAP:
+      case MAP:
+      case RECORD:
+      case TEMPLATE:
+      case VE:
+      case VE_DATA:
       case UNKNOWN:
       case ANY:
         // no unique unboxed representation
@@ -223,18 +141,9 @@ public abstract class SoyRuntimeType {
     throw new AssertionError("can't map " + soyType + " to an unboxed soy runtime type");
   }
 
-  private static PrimitiveSoyType soyTypeFromProto(SoyProtoType soyType) {
-    return new PrimitiveSoyType(
-        soyType, protoType(soyType.getDescriptor()), BytecodeUtils.SOY_PROTO_VALUE_TYPE);
-  }
-
   /** Returns the runtime type for the message correspdoning to the given descriptor.. */
   public static Type protoType(Descriptor descriptor) {
     return BytecodeUtils.getTypeForClassName(JavaQualifiedNames.getClassName(descriptor));
-  }
-
-  public static PrimitiveSoyType enumType(SoyProtoEnumType enumType) {
-    return new PrimitiveSoyType(enumType, Type.LONG_TYPE, BytecodeUtils.INTEGER_DATA_TYPE);
   }
 
   private final SoyType soyType;
@@ -375,14 +284,17 @@ public abstract class SoyRuntimeType {
     return SoyTypes.NUMBER_TYPE.isAssignableFromStrict(soyType);
   }
 
-  public final SoyRuntimeType asNonJavaNullable() {
+  public final SoyRuntimeType asNonSoyNullish() {
     // Use tryRemoveNull instead of removeNull because there are times where the jbcsrc backend
     // infers stronger types than Soy proper (e.g. for `@state` params initialized to `null` but
     // declared with a different type)
     return withNewSoyType(SoyTypes.tryRemoveNull(soyType));
   }
 
-  public final SoyRuntimeType asJavaNullable() {
+  public final SoyRuntimeType asSoyNullish() {
+    // Use tryRemoveNull instead of removeNull because there are times where the jbcsrc backend
+    // infers stronger types than Soy proper (e.g. for `@state` params initialized to `null` but
+    // declared with a different type)
     return withNewSoyType(SoyTypes.makeNullable(soyType));
   }
 
@@ -402,7 +314,13 @@ public abstract class SoyRuntimeType {
 
   public abstract boolean isBoxed();
 
-  public abstract SoyRuntimeType box();
+  public SoyRuntimeType box() {
+    if (isBoxed()) {
+      return this;
+    } else {
+      return getBoxedType(soyType());
+    }
+  }
 
   @Override
   public boolean equals(Object o) {
@@ -429,21 +347,14 @@ public abstract class SoyRuntimeType {
   }
 
   private static final class PrimitiveSoyType extends SoyRuntimeType {
-    private final BoxedSoyType boxedType;
 
-    PrimitiveSoyType(SoyType soyType, Type runtimeType, Type boxedType) {
+    PrimitiveSoyType(SoyType soyType, Type runtimeType) {
       super(soyType, runtimeType);
-      this.boxedType = new BoxedSoyType(soyType, boxedType);
     }
 
     @Override
     public boolean isBoxed() {
       return false;
-    }
-
-    @Override
-    public BoxedSoyType box() {
-      return boxedType;
     }
   }
 
@@ -455,11 +366,6 @@ public abstract class SoyRuntimeType {
     @Override
     public boolean isBoxed() {
       return true;
-    }
-
-    @Override
-    public SoyRuntimeType box() {
-      return this;
     }
   }
 }

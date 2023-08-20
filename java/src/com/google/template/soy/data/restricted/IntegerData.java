@@ -18,6 +18,7 @@ package com.google.template.soy.data.restricted;
 
 import com.google.common.base.Preconditions;
 import com.google.errorprone.annotations.Immutable;
+import com.google.template.soy.data.SoyValue;
 import javax.annotation.Nonnull;
 
 /**
@@ -174,5 +175,10 @@ public final class IntegerData extends NumberData {
     } else {
       return super.equals(other);
     }
+  }
+
+  @Override
+  public SoyValue checkNullishInt() {
+    return this;
   }
 }

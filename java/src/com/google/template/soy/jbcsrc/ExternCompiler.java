@@ -178,7 +178,15 @@ public final class ExternCompiler {
    * implementation.
    */
   static SoyRuntimeType getRuntimeType(SoyType type) {
-    return SoyRuntimeType.getUnboxedType(type).orElseGet(() -> SoyRuntimeType.getBoxedType(type));
+    SoyType nonNullable = SoyTypes.tryRemoveNull(type);
+    SoyRuntimeType runtimeType =
+        SoyRuntimeType.getUnboxedType(nonNullable)
+            .orElseGet(() -> SoyRuntimeType.getBoxedType(nonNullable));
+    if (!nonNullable.equals(type) && BytecodeUtils.isPrimitive(runtimeType.runtimeType())) {
+      // int|null -> SoyValue
+      runtimeType = SoyRuntimeType.getBoxedType(type);
+    }
+    return runtimeType;
   }
 
   static Method buildMemberMethod(String symbol, FunctionType type) {
@@ -214,12 +222,12 @@ public final class ExternCompiler {
 
     // If expecting a bland 'SoyValue', just box the expr.
     if (javaType.equals(BytecodeUtils.SOY_VALUE_TYPE)) {
-      return actualParam.box().checkedCast(javaType);
+      return actualParam.boxOrJavaNull().checkedCast(javaType);
     }
     // If we expect a specific SoyValue subclass, then box + cast.
     if (javaTypeInfo.classOptional().isPresent()
         && SoyValue.class.isAssignableFrom(javaTypeInfo.classOptional().get())) {
-      return actualParam.box().checkedCast(javaType);
+      return actualParam.boxOrJavaNull().checkedCast(javaType);
     }
 
     // Otherwise, we're an unboxed type (non-SoyValue).
@@ -248,7 +256,7 @@ public final class ExternCompiler {
       return MethodRef.BOX_FLOAT.invoke(
           BytecodeUtils.numericConversion(actualParam.coerceToDouble(), Type.FLOAT_TYPE));
     } else if (javaType.equals(BytecodeUtils.NUMBER_TYPE)) {
-      return actualParam.coerceToNumber();
+      return actualParam.unboxAsNumberOrJavaNull();
     }
 
     SoyType nonNullableSoyType = SoyTypes.removeNull(soyType);

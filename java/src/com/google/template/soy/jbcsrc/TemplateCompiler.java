@@ -217,7 +217,7 @@ final class TemplateCompiler {
               }
             });
     CodeBuilder methodWriter =
-        new CodeBuilder(methodAccess(), templateMethod.method(), /* exceptions=*/ null, writer);
+        new CodeBuilder(methodAccess(), templateMethod.method(), /* exceptions= */ null, writer);
     generateTemplateMetadata(methodWriter);
     methodBody.writeMethodTo(methodWriter);
   }
@@ -432,7 +432,7 @@ final class TemplateCompiler {
             templateNode,
             analysis,
             new SimpleLocalVariableManager(
-                template.typeInfo().type(), BytecodeUtils.CLASS_INIT, /* isStatic=*/ true),
+                template.typeInfo().type(), BytecodeUtils.CLASS_INIT, /* isStatic= */ true),
             javaSourceFunctionCompiler,
             fileSetMetadata);
     Label start = new Label();
@@ -595,9 +595,10 @@ final class TemplateCompiler {
     // NOTE: for compatibility with Tofu and jssrc we do not check for missing required parameters
     // here instead they will just turn into null.  Existing templates depend on this.
     if (defaultValue == null) {
-      return MethodRef.RUNTIME_GET_FIELD_PROVIDER.invoke(record, BytecodeUtils.constant(name));
+      return MethodRef.RUNTIME_GET_RECORD_FIELD_PROVIDER.invoke(
+          record, BytecodeUtils.constant(name));
     } else {
-      return MethodRef.RUNTIME_GET_FIELD_PROVIDER_DEFAULT.invoke(
+      return MethodRef.RUNTIME_GET_RECORD_FIELD_PROVIDER_DEFAULT.invoke(
           record, BytecodeUtils.constant(name), defaultValue.box());
     }
   }

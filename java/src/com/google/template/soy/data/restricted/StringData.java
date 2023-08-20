@@ -18,6 +18,7 @@ package com.google.template.soy.data.restricted;
 
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
+import com.google.template.soy.data.SoyValue;
 import java.io.IOException;
 import javax.annotation.Nonnull;
 
@@ -96,5 +97,10 @@ public final class StringData extends PrimitiveData {
     // Keep this in sync with UnsanitizedString#hashCode so that StringData and UnsanitizedString
     // can be used interchangeably.
     return stringValue().hashCode();
+  }
+
+  @Override
+  public SoyValue checkNullishString() {
+    return this;
   }
 }

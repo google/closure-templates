@@ -17,9 +17,11 @@
 package com.google.template.soy.jbcsrc.api;
 
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth.assertWithMessage;
 import static com.google.template.soy.data.UnsafeSanitizedContentOrdainer.ordainAsSafe;
 import static org.junit.Assert.fail;
 
+import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.SettableFuture;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
@@ -350,12 +352,17 @@ public class SoySauceTest {
       tmpl.setData(ImmutableMap.of("depth", 10, "p", intProvider)).renderHtml();
       fail();
     } catch (ClassCastException cce) {
-      // we get an CCE because we passed an int but it expected a string
+      // we get a CCE because we passed an int but it expected a string
       StackTraceElement[] stackTrace = cce.getStackTrace();
-      assertThat(stackTrace[0].toString()).isEqualTo("strict_test.callsItself(strict.soy:69)");
+      String fullStack = "Full stack:\n" + Joiner.on('\n').join(stackTrace) + "\n";
+      assertWithMessage(fullStack)
+          .that(stackTrace[1].toString())
+          .isEqualTo("strict_test.callsItself(strict.soy:69)");
 
-      for (int i = 1; i < 11; i++) {
-        assertThat(stackTrace[i].toString()).isEqualTo("strict_test.callsItself(strict.soy:71)");
+      for (int i = 2; i < 12; i++) {
+        assertWithMessage(fullStack)
+            .that(stackTrace[i].toString())
+            .isEqualTo("strict_test.callsItself(strict.soy:71)");
       }
     }
   }

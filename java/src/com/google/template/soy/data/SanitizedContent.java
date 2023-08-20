@@ -64,7 +64,7 @@ public class SanitizedContent extends SoyAbstractValue {
    * @param dir The content's direction; null if unknown and thus to be estimated when necessary.
    */
   static SanitizedContent create(String content, ContentKind kind, @Nullable Dir dir) {
-      return new SanitizedContent(content, kind, dir);
+    return new SanitizedContent(content, kind, dir);
   }
 
   /** Creates a SanitizedContent object with default direction. */
@@ -409,4 +409,22 @@ public class SanitizedContent extends SoyAbstractValue {
     return TrustedResourceUrls.toProto(toTrustedResourceUrl());
   }
 
+  @Override
+  public SoyValue checkNullishSanitizedContent(ContentKind contentKind) {
+    if (this.contentKind == ContentKind.TRUSTED_RESOURCE_URI && contentKind == ContentKind.URI) {
+      // This should be allowed.
+      return this;
+    }
+
+    if (contentKind == ContentKind.TRUSTED_RESOURCE_URI && this.contentKind == ContentKind.URI) {
+      // This probably shouldn't be allowed but there are templates in the wild that depend on this.
+      return this;
+    }
+
+    if (contentKind != this.contentKind) {
+      throw new ClassCastException(this.contentKind + " cannot be cast to " + contentKind);
+    }
+
+    return this;
+  }
 }

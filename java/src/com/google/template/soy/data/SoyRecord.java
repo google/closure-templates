@@ -17,6 +17,7 @@
 package com.google.template.soy.data;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.template.soy.data.restricted.UndefinedData;
 import java.util.function.BiConsumer;
 import javax.annotation.ParametersAreNonnullByDefault;
 
@@ -53,6 +54,17 @@ public interface SoyRecord extends SoyValue {
    * @return A provider of the field value for the given field name, or null if no such field name.
    */
   SoyValueProvider getFieldProvider(String name);
+
+  /**
+   * Returns the value of a positional parameter when invoking the positional template method from
+   * the record template method. Returns UndefinedData if no such named parameter exists in this
+   * record, indicating that the parameter default should be applied in the positional template
+   * method.
+   */
+  default SoyValueProvider getPositionalParam(String name) {
+    SoyValueProvider provider = getFieldProvider(name);
+    return provider != null ? provider : UndefinedData.INSTANCE;
+  }
 
   /** Returns a view of this object as a java map. */
   ImmutableMap<String, SoyValueProvider> recordAsMap();

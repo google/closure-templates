@@ -225,16 +225,17 @@ final class LazyClosureCompiler {
   LazyClosure compileLazyExpression(
       String namePrefix, SoyNode declaringNode, String varName, ExprRootNode exprNode) {
     if (ExpressionCompiler.canCompileToConstant(declaringNode, exprNode)) {
-      SoyExpression expression = parent.constantCompiler.compile(exprNode);
+      SoyExpression expression = parent.constantCompiler.compile(exprNode).box();
+      Expression value =
+          BytecodeUtils.getSoleValue(expression.resultType())
+              .orElseGet(
+                  () ->
+                      parent
+                          .fields
+                          .addStaticField(getProposedName(namePrefix, varName), expression.box())
+                          .accessor());
       return LazyClosure.create(
-          varName,
-          parent
-              .fields
-              .addStaticField(
-                  getProposedName(namePrefix, varName), expression.boxAsSoyValueProvider())
-              .accessor(),
-          /* isTrivial=*/ true,
-          /* requiresDetachLogicToResolve=*/ false);
+          varName, value, /* isTrivial= */ true, /* requiresDetachLogicToResolve= */ false);
     }
     Optional<Expression> asSoyValueProvider =
         parent.expressionToSoyValueProviderCompiler.compileAvoidingDetaches(exprNode);
@@ -243,10 +244,10 @@ final class LazyClosureCompiler {
       return LazyClosure.create(
           varName,
           svp,
-          /* isTrivial=*/ exprNode.getRoot().getKind() == ExprNode.Kind.VAR_REF_NODE,
+          /* isTrivial= */ exprNode.getRoot().getKind() == ExprNode.Kind.VAR_REF_NODE,
           // It is possible that even if we could compile to a SoyValueProvider while avoiding
           // detaches, that it might still require a detach operation to resolve the expression.
-          /* requiresDetachLogicToResolve=*/ ExpressionCompiler.requiresDetach(
+          /* requiresDetachLogicToResolve= */ ExpressionCompiler.requiresDetach(
               parent.analysis, exprNode));
     }
 
@@ -276,9 +277,9 @@ final class LazyClosureCompiler {
       return LazyClosure.create(
           varName,
           asSoyValueProviderProvider.get(),
-          /* isTrivial=*/ false,
+          /* isTrivial= */ false,
           // this must be true because we already failed when trying to compileAvoidingDetaches.
-          /* requiresDetachLogicToResolve=*/ true);
+          /* requiresDetachLogicToResolve= */ true);
     }
 
     writer =
@@ -298,9 +299,9 @@ final class LazyClosureCompiler {
     return LazyClosure.create(
         varName,
         expr,
-        /* isTrivial=*/ false,
+        /* isTrivial= */ false,
         // this must be true, otherwise one of our earlier cases would have triggered.
-        /* requiresDetachLogicToResolve=*/ true);
+        /* requiresDetachLogicToResolve= */ true);
   }
 
   LazyClosure compileLazyContent(String namePrefix, RenderUnitNode renderUnit, String varName) {
@@ -315,7 +316,7 @@ final class LazyClosureCompiler {
       ExtraCodeCompiler prefix,
       ExtraCodeCompiler suffix) {
     String proposedName = getProposedName(namePrefix, varName);
-    // Attempt to compile the whole thing to a string if possible.  The presense of a non-trivial
+    // Attempt to compile the whole thing to a string if possible.  The presence of a non-trivial
     // ExtraCodeCompiler means that it isn't just textual.
     Optional<Expression> asRawText =
         prefix == ExtraCodeCompiler.NO_OP && suffix == ExtraCodeCompiler.NO_OP
@@ -323,7 +324,10 @@ final class LazyClosureCompiler {
             : Optional.empty();
     if (asRawText.isPresent()) {
       return LazyClosure.create(
-          varName, asRawText.get(), /*isTrivial=*/ true, /* requiresDetachLogicToResolve=*/ false);
+          varName,
+          asRawText.get(),
+          /* isTrivial= */ true,
+          /* requiresDetachLogicToResolve= */ false);
     }
     if (!prefix.requiresDetachLogic(parent.analysis)
         && !suffix.requiresDetachLogic(parent.analysis)
@@ -333,8 +337,8 @@ final class LazyClosureCompiler {
       return LazyClosure.create(
           varName,
           renderIntoBuffer(renderUnit, prefix, suffix),
-          /*isTrivial=*/ false,
-          /* requiresDetachLogicToResolve=*/ false);
+          /* isTrivial= */ false,
+          /* requiresDetachLogicToResolve= */ false);
     }
     TypeInfo type =
         parent.innerClasses.registerInnerClassWithGeneratedName(proposedName, LAZY_CLOSURE_ACCESS);
@@ -355,9 +359,9 @@ final class LazyClosureCompiler {
     return LazyClosure.create(
         varName,
         expr,
-        /* isTrivial=*/ false,
+        /* isTrivial= */ false,
         // because our check above failed, this must be true
-        /* requiresDetachLogicToResolve=*/ true);
+        /* requiresDetachLogicToResolve= */ true);
   }
 
   private Expression renderIntoBuffer(
@@ -450,10 +454,10 @@ final class LazyClosureCompiler {
           new TemplateVariableManager(
               type.type(),
               DO_RESOLVE,
-              /*parameterNames=*/ ImmutableList.of(),
+              /* parameterNames= */ ImmutableList.of(),
               start,
               end,
-              /* isStatic=*/ false);
+              /* isStatic= */ false);
       Expression thisVar = variableSet.getVariable("this");
       LazyClosureParameterLookup lookup =
           new LazyClosureParameterLookup(this, parent.parameterLookup, variableSet, thisVar);
@@ -499,7 +503,7 @@ final class LazyClosureCompiler {
               ImmutableList.of(),
               start,
               end,
-              /*isStatic=*/ false);
+              /* isStatic= */ false);
       Expression thisVar = variableSet.getVariable("this");
 
       LazyClosureParameterLookup lookup =
@@ -553,7 +557,7 @@ final class LazyClosureCompiler {
               node,
               analysis,
               new SimpleLocalVariableManager(
-                  type.type(), BytecodeUtils.CLASS_INIT, /* isStatic=*/ true),
+                  type.type(), BytecodeUtils.CLASS_INIT, /* isStatic= */ true),
               parent.javaSourceFunctionCompiler,
               parent.fileSetMetadata);
       TemplateVariableManager variableSet =

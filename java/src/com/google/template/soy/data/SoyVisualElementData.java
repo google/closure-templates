@@ -25,8 +25,11 @@ import javax.annotation.Nullable;
 @AutoValue
 public abstract class SoyVisualElementData extends SoyAbstractValue {
 
-  public static SoyVisualElementData create(SoyVisualElement ve, Message data) {
-    return new AutoValue_SoyVisualElementData(ve, data);
+  public static SoyVisualElementData create(SoyValue ve, Message data) {
+    if (ve.isNullish()) {
+      throw new NullPointerException();
+    }
+    return new AutoValue_SoyVisualElementData((SoyVisualElement) ve, data);
   }
 
   public abstract SoyVisualElement ve();

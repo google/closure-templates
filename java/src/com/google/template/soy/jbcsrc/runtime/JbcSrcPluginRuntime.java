@@ -34,6 +34,7 @@ import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import java.util.Map;
 import java.util.concurrent.Future;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 /** Runtime methods exclusive to Soy plugin compilation. */
 public final class JbcSrcPluginRuntime {
@@ -55,6 +56,15 @@ public final class JbcSrcPluginRuntime {
 
   public static final MethodRef SOY_VALUE_INTEGER_VALUE =
       MethodRef.create(SoyValue.class, "integerValue").asCheap();
+
+  public static final MethodRef COALESCE_TO_JAVA_NULL =
+      create("coalesceToJavaNull", SoyValue.class);
+
+  @Keep
+  @Nullable
+  public static SoyValue coalesceToJavaNull(@Nonnull SoyValue value) {
+    return value.isNullish() ? null : value;
+  }
 
   public static final MethodRef BOX_JAVA_MAP_AS_SOY_MAP = create("boxJavaMapAsSoyMap", Map.class);
 

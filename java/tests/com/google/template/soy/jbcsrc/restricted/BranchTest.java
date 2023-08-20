@@ -17,12 +17,13 @@ package com.google.template.soy.jbcsrc.restricted;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
-import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constantNull;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.soyNull;
 import static com.google.template.soy.jbcsrc.restricted.testing.ExpressionSubject.assertThatExpression;
 import static org.junit.Assert.assertThrows;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.jbcsrc.restricted.testing.ExpressionSubject;
+import com.google.template.soy.types.StringType;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -222,8 +223,12 @@ public final class BranchTest {
 
   @Test
   public void testIfNotNull() {
-    assertThatBranch(Branch.ifNotNull(constantNull(BytecodeUtils.STRING_TYPE))).evaluatesTo(false);
-    assertThatBranch(Branch.ifNotNull(constantNull(BytecodeUtils.STRING_TYPE)).negate())
+    assertThatBranch(
+            Branch.ifNonSoyNullish(SoyExpression.forSoyValue(StringType.getInstance(), soyNull())))
+        .evaluatesTo(false);
+    assertThatBranch(
+            Branch.ifNonSoyNullish(SoyExpression.forSoyValue(StringType.getInstance(), soyNull()))
+                .negate())
         .evaluatesTo(true);
   }
 

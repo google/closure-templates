@@ -17,6 +17,7 @@
 package com.google.template.soy.data.restricted;
 
 import com.google.errorprone.annotations.Immutable;
+import com.google.template.soy.data.SoyValue;
 import javax.annotation.Nonnull;
 
 /**
@@ -103,5 +104,10 @@ public final class FloatData extends NumberData {
   @Override
   public Number javaNumberValue() {
     return value;
+  }
+
+  @Override
+  public SoyValue checkNullishFloat() {
+    return this;
   }
 }

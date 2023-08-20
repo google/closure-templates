@@ -364,7 +364,7 @@ final class ProtoUtils {
         return handleMapField(typedBaseExpr, getMethodRef);
       } else if (descriptor.isRepeated()) {
         return SoyExpression.forBoxedList(
-            (ListType) fieldType,
+            fieldType,
             MethodRef.LAZY_PROTO_TO_SOY_VALUE_LIST_FOR_LIST.invoke(
                 typedBaseExpr.invoke(getMethodRef),
                 FieldVisitor.visitField(descriptor, REPEATED_FIELD_INTERPRETER)));
@@ -415,41 +415,57 @@ final class ProtoUtils {
               };
         }
 
-        // TODO(lukes): this violates the expression contract since we jump to a label outside the
-        // scope of the expression
-        Label endLabel = new Label();
-        // If the field doesn't have an explicit default then we need to call .has<Field> and return
-        // null if it isn't present.
-        SoyExpression interpretedField =
+        // Violation of expression contract. Will append bytecode of interpretField without pushing
+        // anything on the stack. For this to work every possible operation in interpretField()
+        // needs to begin by pushing the field.
+        SoyExpression interpreted =
             interpretField(
-                new Expression(
-                    getMethodRef.returnType(),
-                    getMethodRef.features().minus(Feature.NON_JAVA_NULLABLE)) {
+                new Expression(getMethodRef.returnType()) {
                   @Override
                   protected void doGen(CodeBuilder adapter) {
-                    typedBaseExpr.gen(adapter);
-
-                    // Call .has<Field>().
-                    adapter.dup();
-                    hasCheck.gen(adapter);
-
-                    // The field is missing, substitute null.
-                    adapter.pop();
-                    adapter.visitInsn(Opcodes.ACONST_NULL);
-                    adapter.goTo(endLabel);
-
-                    // The field exists, call .get<Field>().
-                    adapter.mark(hasFieldLabel);
-                    getMethodRef.invokeUnchecked(adapter);
+                    // adapter.dup();
                   }
                 });
-        if (isPrimitive(interpretedField.resultType())) {
-          interpretedField = interpretedField.box();
-        }
 
-        // TODO(b/22389927): This is another place where the soy type system lies to us, so make
-        // sure to mark the type as nullable.
-        return interpretedField.labelEnd(endLabel).asJavaNullable();
+        Label endLabel = new Label();
+        return SoyExpression.forSoyValue(
+            interpreted.soyType(),
+            new Expression(BytecodeUtils.SOY_VALUE_TYPE, Feature.NON_JAVA_NULLABLE) {
+              @Override
+              protected void doGen(CodeBuilder adapter) {
+                typedBaseExpr.gen(adapter);
+
+                // Call .has<Field>().
+                adapter.dup();
+                hasCheck.gen(adapter);
+
+                // The field is missing, substitute null.
+                adapter.pop();
+                BytecodeUtils.soyNull().gen(adapter);
+                adapter.goTo(endLabel);
+
+                // The field exists, call .get<Field>().
+                adapter.mark(hasFieldLabel);
+                getMethodRef.invokeUnchecked(adapter);
+                interpreted.gen(adapter);
+                if (!interpreted.isBoxed()) {
+                  doBox(adapter, interpreted.soyRuntimeType());
+                }
+                adapter.mark(endLabel);
+              }
+            });
+      }
+    }
+
+    private static void doBox(CodeBuilder adapter, SoyRuntimeType soyRuntimeType) {
+      if (soyRuntimeType.isKnownBool()) {
+        MethodRef.BOOLEAN_DATA_FOR_VALUE.invokeUnchecked(adapter);
+      } else if (soyRuntimeType.isKnownInt()) {
+        MethodRef.INTEGER_DATA_FOR_VALUE.invokeUnchecked(adapter);
+      } else if (soyRuntimeType.isKnownFloat()) {
+        MethodRef.FLOAT_DATA_FOR_VALUE.invokeUnchecked(adapter);
+      } else {
+        SoyExpression.doBox(adapter, soyRuntimeType);
       }
     }
 
@@ -540,7 +556,7 @@ final class ProtoUtils {
 
       if (descriptor.isRepeated()) {
         return SoyExpression.forBoxedList(
-            (ListType) fieldType,
+            fieldType,
             MethodRef.GET_EXTENSION_LIST.invoke(
                 typedBaseExpr,
                 extensionFieldAccessor,
@@ -548,43 +564,42 @@ final class ProtoUtils {
       }
 
       if (!descriptor.hasDefaultValue() && reinterpretAbsenceAsNullable) {
-        Label endLabel = new Label();
-        SoyExpression interpretedField =
+        SoyExpression interpreted =
             interpretExtensionField(
-                new Expression(
-                    EXTENDABLE_MESSAGE_GET_EXTENSION.returnType(),
-                    EXTENDABLE_MESSAGE_GET_EXTENSION.features().minus(Feature.NON_JAVA_NULLABLE)) {
-                  @Override
-                  protected void doGen(CodeBuilder adapter) {
-                    typedBaseExpr.gen(adapter);
+                    new Expression(EXTENDABLE_MESSAGE_GET_EXTENSION.returnType()) {
+                      @Override
+                      protected void doGen(CodeBuilder adapter) {}
+                    })
+                .box();
 
-                    // call hasExtension()
-                    adapter.dup();
-                    extensionFieldAccessor.gen(adapter);
-                    EXTENDABLE_MESSAGE_HAS_EXTENSION.invokeUnchecked(adapter);
-                    Label hasFieldLabel = new Label();
-                    adapter.ifZCmp(Opcodes.IFNE, hasFieldLabel);
+        Label endLabel = new Label();
+        return SoyExpression.forSoyValue(
+            interpreted.soyType(),
+            new Expression(BytecodeUtils.SOY_VALUE_TYPE, Feature.NON_JAVA_NULLABLE) {
+              @Override
+              protected void doGen(CodeBuilder adapter) {
+                typedBaseExpr.gen(adapter);
 
-                    // The field is missing, substitute null.
-                    adapter.pop();
-                    adapter.visitInsn(Opcodes.ACONST_NULL);
-                    adapter.goTo(endLabel);
+                // call hasExtension()
+                adapter.dup();
+                extensionFieldAccessor.gen(adapter);
+                EXTENDABLE_MESSAGE_HAS_EXTENSION.invokeUnchecked(adapter);
+                Label hasFieldLabel = new Label();
+                adapter.ifZCmp(Opcodes.IFNE, hasFieldLabel);
 
-                    // The field exists, call getExtension()
-                    adapter.mark(hasFieldLabel);
-                    extensionFieldAccessor.gen(adapter);
-                    EXTENDABLE_MESSAGE_GET_EXTENSION.invokeUnchecked(adapter);
-                  }
-                });
-        // Box primitives to allow it to be compatible with null.
-        if (isPrimitive(interpretedField.resultType())) {
-          interpretedField = interpretedField.box();
-        }
-        // TODO(b/22389927): This is another place where the soy type system lies to us, so make
-        // sure to mark the type as nullable.
-        // TODO(lukes): this violates the expression contract since we jump to a label outside the
-        // scope of the expression
-        return interpretedField.labelEnd(endLabel).asJavaNullable();
+                // The field is missing, substitute null.
+                adapter.pop();
+                BytecodeUtils.soyNull().gen(adapter);
+                adapter.goTo(endLabel);
+
+                // The field exists, call getExtension()
+                adapter.mark(hasFieldLabel);
+                extensionFieldAccessor.gen(adapter);
+                EXTENDABLE_MESSAGE_GET_EXTENSION.invokeUnchecked(adapter);
+                interpreted.gen(adapter);
+                adapter.mark(endLabel);
+              }
+            });
       } else {
         // This branch handles extension with a default value, which are pretty rare, and non-
         // broken semantics, where we can delegate to the Java API without checking presence.
@@ -655,10 +670,10 @@ final class ProtoUtils {
         SoyRuntimeType protoRuntimeType = SoyRuntimeType.getUnboxedType(fieldProtoType).get();
         return SoyExpression.forProto(protoRuntimeType, field);
       } else {
-        // All other are special sanitized types
+        // All other are special sanitized types. Result is non-nullable.
         Descriptor messageType = descriptor.getMessageType();
         MethodRef fromProtoMethod = SAFE_PROTO_TO_SANITIZED_CONTENT.get(messageType.getFullName());
-        return SoyExpression.forSoyValue(fieldType, fromProtoMethod.invoke(field));
+        return SoyExpression.forSoyValue(nonNullableFieldType, fromProtoMethod.invoke(field));
       }
     }
   }
@@ -678,6 +693,7 @@ final class ProtoUtils {
         LocalVariableManager varManager,
         Function<SoyExpression, SoyExpression> memberGenerator) {
       checkArgument(baseExpr.soyType().getKind() == SoyType.Kind.UNION, baseExpr.soyType());
+      checkArgument(!SoyTypes.isNullable(baseExpr.soyType()), baseExpr.soyType());
       this.baseExpr = baseExpr;
       this.fieldName = fieldName;
       this.fieldType = fieldType;
@@ -688,7 +704,7 @@ final class ProtoUtils {
     private Expression getUnboxedBaseExpression() {
       // This is a proto union type so must be boxed.
       checkState(baseExpr.isBoxed());
-      return baseExpr.invoke(MethodRef.SOY_PROTO_VALUE_GET_PROTO);
+      return baseExpr.invoke(MethodRef.SOY_VALUE_GET_PROTO);
     }
 
     SoyExpression generate() {
@@ -881,7 +897,7 @@ final class ProtoUtils {
                 // builder is already on the stack from newBuilder() / set<Field>()
                 buildCall.invokeUnchecked(cb);
               }
-            }.asNonJavaNullable();
+            }.asNonJavaNullable().asNonSoyNullish();
       }
       return SoyExpression.forProto(SoyRuntimeType.getUnboxedType(protoType).get(), builtProto);
     }
@@ -1000,7 +1016,7 @@ final class ProtoUtils {
 
     private Statement handleNormalSetter(SoyExpression baseArg, FieldDescriptor field) {
       MethodRef setterMethod = getSetOrAddMethod(field);
-      boolean isNullable = !baseArg.isNonJavaNullable();
+      boolean isNullable = !baseArg.isNonSoyNullish();
       return new Statement() {
         @Override
         protected void doGen(CodeBuilder cb) {
@@ -1013,7 +1029,7 @@ final class ProtoUtils {
             end = new Label();
             // perform null check
             cb.dup();
-            cb.ifNull(argIsNull);
+            BytecodeUtils.ifNullish(cb, baseArg.resultType(), argIsNull);
           }
 
           // arg is not null; unbox, coerce, set<Field>().
@@ -1034,11 +1050,14 @@ final class ProtoUtils {
     }
 
     private Statement handleMapSetterNotNull(SoyExpression mapArg, FieldDescriptor field) {
-      checkArgument(mapArg.isNonJavaNullable());
+      checkArgument(mapArg.isNonSoyNullish());
       // Wait until all map values can be resolved. Since we don't box/unbox maps, directly call
       // mapArg.asJavaMap() that converts SoyMapImpl to a Map<String, SoyValueProvider>.
       Expression resolved =
-          detacher.resolveSoyValueProviderMap(mapArg.invoke(MethodRef.SOY_MAP_IMPL_AS_JAVA_MAP));
+          detacher.resolveSoyValueProviderMap(
+              mapArg
+                  .checkedCast(BytecodeUtils.SOY_MAP_TYPE)
+                  .invoke(MethodRef.SOY_VALUE_AS_JAVA_MAP));
 
       // Enter new scope
       LocalVariableManager.Scope scope = varManager.enterScope();
@@ -1158,7 +1177,7 @@ final class ProtoUtils {
           || baseArg.soyType().equals(MapType.EMPTY_MAP)) {
         return Statement.NULL_STATEMENT;
       }
-      if (baseArg.isNonJavaNullable()) {
+      if (baseArg.isNonSoyNullish()) {
         return field.isMapField()
             ? handleMapSetterNotNull(baseArg, field)
             : handleRepeatedNotNull(baseArg, field);
@@ -1177,7 +1196,11 @@ final class ProtoUtils {
                       baseArg.gen(cb);
 
                       cb.dup();
-                      cb.ifNonNull(isNonNull);
+                      if (baseArg.isBoxed()) {
+                        BytecodeUtils.ifNonNullish(cb, baseArg.resultType(), isNonNull);
+                      } else {
+                        cb.ifNonNull(isNonNull);
+                      }
 
                       cb.pop(); // pop null off list, skip to end
                       // TODO(user): This violates Expression contract, as it jumps out of itself
@@ -1186,7 +1209,7 @@ final class ProtoUtils {
                       cb.mark(isNonNull);
                     }
                   })
-              .asNonJavaNullable();
+              .asNonSoyNullish();
 
       Statement handle =
           field.isMapField()
@@ -1208,7 +1231,7 @@ final class ProtoUtils {
       // 2. generate code like `JbcsrcRuntime.addToBuilder(builder, Foo::addBar, $listExpr,
       // SoyValue::intValue)`This would be simpler and generate smaller code.
 
-      checkArgument(listArg.isNonJavaNullable());
+      checkArgument(listArg.isNonSoyNullish());
 
       // Unbox listArg as List<SoyValueProvider> and wait until all items are done
       SoyExpression unboxed = listArg.unboxAsListUnchecked();
@@ -1359,7 +1382,7 @@ final class ProtoUtils {
       MethodRef setterMethod =
           field.isRepeated() ? EXTENDABLE_BUILDER_ADD_EXTENSION : EXTENDABLE_BUILDER_SET_EXTENSION;
 
-      boolean isNullable = !baseArg.isNonJavaNullable();
+      boolean isNullable = !baseArg.isNonSoyNullish();
       return new Statement() {
         @Override
         protected void doGen(CodeBuilder cb) {
@@ -1373,7 +1396,7 @@ final class ProtoUtils {
             end = new Label();
             // Null check
             cb.dup();
-            cb.ifNull(argIsNull);
+            BytecodeUtils.ifNullish(cb, baseArg.resultType(), argIsNull);
           }
 
           // Arg is not null; unbox, coerce, run .valueOf(), add extension id, call .setExtension()

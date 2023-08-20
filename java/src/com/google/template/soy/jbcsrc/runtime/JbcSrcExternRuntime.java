@@ -38,7 +38,6 @@ import com.google.protobuf.ProtocolMessageEnum;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContents;
 import com.google.template.soy.data.SoyMap;
-import com.google.template.soy.data.SoyProtoValue;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueConverter;
@@ -163,7 +162,7 @@ public final class JbcSrcExternRuntime {
     if (values == null) {
       return null;
     }
-    return values.stream().map(v -> ((SoyProtoValue) v).getProto()).collect(toImmutableList());
+    return values.stream().map(SoyValue::getProto).collect(toImmutableList());
   }
 
   public static final MethodRef LIST_UNBOX_STRINGS = create("listUnboxStrings", List.class);
@@ -204,7 +203,7 @@ public final class JbcSrcExternRuntime {
   @Keep
   @Nullable
   public static Boolean toBoxedBoolean(SoyValue value) {
-    if (value == null) {
+    if (value.isNullish()) {
       return null;
     }
     return value.coerceToBoolean();
@@ -215,7 +214,7 @@ public final class JbcSrcExternRuntime {
   @Keep
   @Nullable
   public static Double toBoxedDouble(SoyValue value) {
-    if (value == null) {
+    if (value.isNullish()) {
       return null;
     } else if (value instanceof NumberData) {
       return value.numberValue();
@@ -229,7 +228,7 @@ public final class JbcSrcExternRuntime {
   @Keep
   @Nullable
   public static Float toBoxedFloat(SoyValue value) {
-    if (value == null) {
+    if (value.isNullish()) {
       return null;
     } else if (value instanceof NumberData) {
       return (float) value.numberValue();
@@ -244,7 +243,7 @@ public final class JbcSrcExternRuntime {
   @Keep
   @Nullable
   public static Integer toBoxedInteger(SoyValue value) {
-    if (value == null) {
+    if (value.isNullish()) {
       return null;
     }
     return value.integerValue();
@@ -255,7 +254,7 @@ public final class JbcSrcExternRuntime {
   @Keep
   @Nullable
   public static Long toBoxedLong(SoyValue value) {
-    if (value == null) {
+    if (value.isNullish()) {
       return null;
     }
     return value.longValue();
@@ -266,7 +265,7 @@ public final class JbcSrcExternRuntime {
   @Keep
   @Nullable
   public static <T> T toEnum(SoyValue value, Class<T> clazz) {
-    if (value == null) {
+    if (value.isNullish()) {
       return null;
     }
     return getEnumValue(clazz, value.integerValue());
@@ -279,14 +278,15 @@ public final class JbcSrcExternRuntime {
   public static final MethodRef UNBOX_LONG = MethodRef.create(Long.class, "longValue");
 
   public static final MethodRef UNBOX_MAP =
-      create("unboxMap", SoyMap.class, Class.class, Class.class);
+      create("unboxMap", SoyValue.class, Class.class, Class.class);
 
   @Keep
   @Nullable
-  public static ImmutableMap<?, ?> unboxMap(SoyMap map, Class<?> keyType, Class<?> valueType) {
-    if (map == null) {
+  public static ImmutableMap<?, ?> unboxMap(SoyValue value, Class<?> keyType, Class<?> valueType) {
+    if (value.isNullish()) {
       return null;
     }
+    SoyMap map = (SoyMap) value;
     return map.entrySet().stream()
         .collect(
             toImmutableMap(
@@ -297,96 +297,90 @@ public final class JbcSrcExternRuntime {
   public static final MethodRef UNBOX_OBJECT =
       MethodRef.create(SoyValueUnconverter.class, "unconvert", SoyValueProvider.class);
 
-  public static final MethodRef UNBOX_RECORD = create("unboxRecord", SoyRecord.class);
+  public static final MethodRef UNBOX_RECORD = create("unboxRecord", SoyValue.class);
 
   @Keep
   @Nullable
-  public static ImmutableMap<?, ?> unboxRecord(SoyRecord map) {
-    if (map == null) {
+  public static ImmutableMap<?, ?> unboxRecord(SoyValue value) {
+    if (value.isNullish()) {
       return null;
     }
+    SoyRecord map = (SoyRecord) value;
     return map.recordAsMap().entrySet().stream()
         .collect(toImmutableMap(Entry::getKey, e -> SoyValueUnconverter.unconvert(e.getValue())));
   }
 
-  public static final MethodRef UNBOX_SAFE_HTML = create("unboxSafeHtml", SoyValueProvider.class);
+  public static final MethodRef UNBOX_SAFE_HTML = create("unboxSafeHtml", SoyValue.class);
 
   @Keep
   @Nullable
-  public static SafeHtml unboxSafeHtml(SoyValueProvider provider) {
-    if (provider == null) {
+  public static SafeHtml unboxSafeHtml(SoyValue value) {
+    if (value.isNullish()) {
       return null;
     }
-    SoyValue soyValue = provider.resolve();
-    return ((SanitizedContent) soyValue).toSafeHtml();
+    return ((SanitizedContent) value).toSafeHtml();
   }
 
   public static final MethodRef UNBOX_SAFE_HTML_PROTO =
-      create("unboxSafeHtmlProto", SoyValueProvider.class);
+      create("unboxSafeHtmlProto", SoyValue.class);
 
   @Keep
   @Nullable
-  public static SafeHtmlProto unboxSafeHtmlProto(SoyValueProvider provider) {
-    if (provider == null) {
+  public static SafeHtmlProto unboxSafeHtmlProto(SoyValue value) {
+    if (value.isNullish()) {
       return null;
     }
-    SoyValue soyValue = provider.resolve();
-    return SafeHtmls.toProto(((SanitizedContent) soyValue).toSafeHtml());
+    return SafeHtmls.toProto(((SanitizedContent) value).toSafeHtml());
   }
 
-  public static final MethodRef UNBOX_SAFE_URL = create("unboxSafeUrl", SoyValueProvider.class);
+  public static final MethodRef UNBOX_SAFE_URL = create("unboxSafeUrl", SoyValue.class);
 
   @Keep
   @Nullable
-  public static SafeUrl unboxSafeUrl(SoyValueProvider provider) {
-    if (provider == null) {
+  public static SafeUrl unboxSafeUrl(SoyValue value) {
+    if (value.isNullish()) {
       return null;
     }
-    SoyValue soyValue = provider.resolve();
-    return ((SanitizedContent) soyValue).toSafeUrl();
+    return ((SanitizedContent) value).toSafeUrl();
   }
 
-  public static final MethodRef UNBOX_SAFE_URL_PROTO =
-      create("unboxSafeUrlProto", SoyValueProvider.class);
+  public static final MethodRef UNBOX_SAFE_URL_PROTO = create("unboxSafeUrlProto", SoyValue.class);
 
   @Keep
   @Nullable
-  public static SafeUrlProto unboxSafeUrlProto(SoyValueProvider provider) {
-    if (provider == null) {
+  public static SafeUrlProto unboxSafeUrlProto(SoyValue value) {
+    if (value.isNullish()) {
       return null;
     }
-    SoyValue soyValue = provider.resolve();
-    return SafeUrls.toProto(((SanitizedContent) soyValue).toSafeUrl());
+    return SafeUrls.toProto(((SanitizedContent) value).toSafeUrl());
   }
 
   public static final MethodRef UNBOX_TRUSTED_RESOURCE_URL =
-      create("unboxTrustedResourceUrl", SoyValueProvider.class);
+      create("unboxTrustedResourceUrl", SoyValue.class);
 
   @Keep
   @Nullable
-  public static TrustedResourceUrl unboxTrustedResourceUrl(SoyValueProvider provider) {
-    if (provider == null) {
+  public static TrustedResourceUrl unboxTrustedResourceUrl(SoyValue value) {
+    if (value.isNullish()) {
       return null;
     }
-    SoyValue soyValue = provider.resolve();
-    return ((SanitizedContent) soyValue).toTrustedResourceUrl();
+    return ((SanitizedContent) value).toTrustedResourceUrl();
   }
 
   public static final MethodRef UNBOX_TRUSTED_RESOURCE_URL_PROTO =
-      create("unboxTrustedResourceUrlProto", SoyValueProvider.class);
+      create("unboxTrustedResourceUrlProto", SoyValue.class);
 
   @Keep
   @Nullable
-  public static TrustedResourceUrlProto unboxTrustedResourceUrlProto(SoyValueProvider provider) {
-    if (provider == null) {
+  public static TrustedResourceUrlProto unboxTrustedResourceUrlProto(SoyValue value) {
+    if (value.isNullish()) {
       return null;
     }
-    SoyValue soyValue = provider.resolve();
-    return TrustedResourceUrls.toProto(((SanitizedContent) soyValue).toTrustedResourceUrl());
+    return TrustedResourceUrls.toProto(((SanitizedContent) value).toTrustedResourceUrl());
   }
 
   private static Object unboxMapItem(SoyValue value, Class<?> type) {
-    if (value == null) {
+    if (value == null || value.isNullish()) {
       return null;
     } else if (type == Long.class) {
       return value.longValue();
@@ -397,7 +391,7 @@ public final class JbcSrcExternRuntime {
     } else if (type == Double.class) {
       return value.floatValue();
     } else if (Message.class.isAssignableFrom(type)) {
-      return ((SoyProtoValue) value).getProto();
+      return value.getProto();
     } else if (ProtocolMessageEnum.class.isAssignableFrom(type)) {
       return getEnumValue(type, value.integerValue());
     } else {

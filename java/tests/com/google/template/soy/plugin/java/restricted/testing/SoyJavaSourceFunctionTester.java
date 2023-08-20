@@ -63,6 +63,7 @@ import com.google.template.soy.shared.restricted.SoyMethodSignature;
 import com.google.template.soy.shared.restricted.SoySourceFunctionMethod;
 import com.google.template.soy.soyparse.SoyFileParser;
 import com.google.template.soy.types.ListType;
+import com.google.template.soy.types.NullType;
 import com.google.template.soy.types.SanitizedType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypeRegistryBuilder;
@@ -226,7 +227,8 @@ public class SoyJavaSourceFunctionTester {
    */
   private SoyExpression transform(Object value) {
     if (value == null || value instanceof UndefinedData || value instanceof NullData) {
-      return SoyExpression.NULL;
+      return SoyExpression.forSoyValue(
+          NullType.getInstance(), BytecodeUtils.constantNull(BytecodeUtils.NULL_DATA_TYPE));
     } else if (value instanceof Integer) {
       return SoyExpression.forInt(BytecodeUtils.constant(((Integer) value).longValue()));
     } else if (value instanceof Long) {

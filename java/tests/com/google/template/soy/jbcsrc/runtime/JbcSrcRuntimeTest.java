@@ -51,7 +51,7 @@ public final class JbcSrcRuntimeTest {
         .hasMessageThat()
         .isEqualTo(
             "B is supposed to come after A but before C. "
-                + "Order contraints should not be transitive.");
+                + "Order constraints should not be transitive.");
 
     // can't extend a chain from Foo to A
     iae =
@@ -62,7 +62,7 @@ public final class JbcSrcRuntimeTest {
         .hasMessageThat()
         .isEqualTo(
             "A is supposed to come after Foo but before B. "
-                + "Order contraints should not be transitive.");
+                + "Order constraints should not be transitive.");
   }
 
   @Test

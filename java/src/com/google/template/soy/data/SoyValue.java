@@ -17,8 +17,14 @@
 package com.google.template.soy.data;
 
 import com.google.protobuf.Message;
+import com.google.template.soy.data.SanitizedContent.ContentKind;
+import com.google.template.soy.data.restricted.NullData;
+import com.google.template.soy.data.restricted.UndefinedData;
 import java.io.IOException;
+import java.util.List;
+import java.util.Map;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 
 /**
@@ -133,14 +139,20 @@ public interface SoyValue extends SoyValueProvider {
   @Nonnull
   String stringValue();
 
+  /** Returns null is this value is nullish, otherwise {@link #stringValue()}. */
+  @Nullable
+  default String stringValueOrNull() {
+    return isNullish() ? null : stringValue();
+  }
+
   /** If this is Soy null (NullData). */
   default boolean isNull() {
-    return false;
+    return this == NullData.INSTANCE;
   }
 
   /** If this is Soy undefined (UndefinedData). */
   default boolean isUndefined() {
-    return false;
+    return this == UndefinedData.INSTANCE;
   }
 
   /** If this is Soy null or Soy undefined. */
@@ -148,8 +160,88 @@ public interface SoyValue extends SoyValueProvider {
     return isNull() || isUndefined();
   }
 
+  @Nonnull
   default Message getProto() {
     throw new SoyDataException(
         "Expecting proto value but instead encountered type " + getClass().getSimpleName());
+  }
+
+  /** Returns null is this value is nullish, otherwise {@link #getProto()}. */
+  @Nullable
+  default Message getProtoOrNull() {
+    return isNullish() ? null : getProto();
+  }
+
+  @Nonnull
+  default List<? extends SoyValueProvider> asJavaList() {
+    throw new SoyDataException(
+        "Expecting list value but instead encountered type " + getClass().getSimpleName());
+  }
+
+  @Nullable
+  default List<? extends SoyValueProvider> asJavaListOrNull() {
+    return isNullish() ? null : asJavaList();
+  }
+
+  @Nonnull
+  default Map<? extends SoyValue, ? extends SoyValueProvider> asJavaMap() {
+    throw new SoyDataException(
+        "Expecting map value but instead encountered type " + getClass().getSimpleName());
+  }
+
+  /**
+   * A runtime type check for this boxed Soy value.
+   *
+   * @throws ClassCastException if this value is not null, undefined, or an instance of {@code
+   *     type}.
+   */
+  default SoyValue checkNullishType(Class<? extends SoyValue> type) {
+    return type.cast(this);
+  }
+
+  /** A runtime type check for this boxed Soy value. */
+  default SoyValue checkNullishInt() {
+    throw new ClassCastException(getClass().getSimpleName() + " cannot be cast to IntegerData");
+  }
+
+  /** A runtime type check for this boxed Soy value. */
+  default SoyValue checkNullishFloat() {
+    throw new ClassCastException(getClass().getSimpleName() + " cannot be cast to FloatData");
+  }
+
+  /** A runtime type check for this boxed Soy value. */
+  default SoyValue checkNullishNumber() {
+    throw new ClassCastException(getClass().getSimpleName() + " cannot be cast to NumberData");
+  }
+
+  /** A runtime type check for this boxed Soy value. */
+  default SoyValue checkNullishBoolean() {
+    throw new ClassCastException(getClass().getSimpleName() + " cannot be cast to BooleanData");
+  }
+
+  /** A runtime type check for this boxed Soy value. */
+  default SoyValue checkNullishString() {
+    throw new ClassCastException(getClass().getSimpleName() + " cannot be cast to StringData");
+  }
+
+  /**
+   * A runtime type check for this boxed Soy value.
+   *
+   * @throws ClassCastException if this value is not null, undefined, or an instance of {@link
+   *     SanitizedContent} whose content kind is equal to {@code contentKind}.
+   */
+  default SoyValue checkNullishSanitizedContent(ContentKind contentKind) {
+    throw new ClassCastException(getClass().getSimpleName() + " cannot be cast to " + contentKind);
+  }
+
+  /**
+   * A runtime type check for this boxed Soy value.
+   *
+   * @throws ClassCastException if this value is not null, undefined, or an instance of {@link
+   *     SoyProtoValue} whose unboxed proto is an instance of {@code messageType}.
+   */
+  default SoyValue checkNullishProto(Class<? extends Message> messageType) {
+    throw new ClassCastException(
+        getClass().getSimpleName() + " cannot be cast to " + messageType.getName());
   }
 }

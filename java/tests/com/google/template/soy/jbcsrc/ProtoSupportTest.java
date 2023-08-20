@@ -29,6 +29,7 @@ import com.google.template.soy.SoyFileSetParser;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.LoggingAdvisingAppendable.BufferingAppendable;
+import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.internal.ParamStore;
@@ -250,8 +251,7 @@ public final class ProtoSupportTest {
                             .addSomeEmbeddedRepeatedString("b")
                             .addSomeEmbeddedRepeatedString("c"))))
         .failsToRenderWith(
-            NullPointerException.class,
-            ImmutableMap.of("e", ExampleExtendable.getDefaultInstance()));
+            SoyDataException.class, ImmutableMap.of("e", ExampleExtendable.getDefaultInstance()));
   }
 
   @Test
@@ -328,7 +328,7 @@ public final class ProtoSupportTest {
     assertThatTemplateBody(
             "{@param msg: Proto3Message}", "{$msg.getAnotherMessageField()!.getField()}")
         .failsToRenderWith(
-            NullPointerException.class, ImmutableMap.of("msg", Proto3Message.getDefaultInstance()));
+            SoyDataException.class, ImmutableMap.of("msg", Proto3Message.getDefaultInstance()));
   }
 
   @Test

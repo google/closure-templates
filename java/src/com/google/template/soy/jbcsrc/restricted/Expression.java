@@ -18,6 +18,7 @@ package com.google.template.soy.jbcsrc.restricted;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableList;
@@ -25,6 +26,20 @@ import com.google.common.collect.Iterables;
 import com.google.errorprone.annotations.ForOverride;
 import com.google.errorprone.annotations.FormatMethod;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.data.SanitizedContent.ContentKind;
+import com.google.template.soy.data.SoyLegacyObjectMap;
+import com.google.template.soy.data.SoyList;
+import com.google.template.soy.data.SoyMap;
+import com.google.template.soy.data.SoyProtoValue;
+import com.google.template.soy.data.SoyRecord;
+import com.google.template.soy.data.SoyValue;
+import com.google.template.soy.data.TemplateValue;
+import com.google.template.soy.data.restricted.IntegerData;
+import com.google.template.soy.internal.proto.JavaQualifiedNames;
+import com.google.template.soy.jbcsrc.shared.Names;
+import com.google.template.soy.types.SoyProtoType;
+import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.SoyTypes;
 import java.util.Collections;
 import java.util.EnumSet;
 import org.objectweb.asm.Label;
@@ -54,6 +69,7 @@ import org.objectweb.asm.Type;
  * </ul>
  */
 public abstract class Expression extends BytecodeProducer {
+
   /**
    * Expression features track additional metadata for expressions.
    *
@@ -62,8 +78,13 @@ public abstract class Expression extends BytecodeProducer {
    * efficient code, not incorrect code.
    */
   public enum Feature {
-    /** The expression is guaranteed to not return Java null. */
+    /**
+     * The expression is guaranteed to not return Java null. This is not necessarily the same as
+     * Soy's null and undefined values.
+     */
     NON_JAVA_NULLABLE,
+    /** The expression is guaranteed to not return NullData or UndefinedData. */
+    NON_SOY_NULLISH,
     /**
      * The expression is 'cheap'. As a rule of thumb, if it involves allocation, it is not cheap. If
      * you need to allocate a local variable to calculate the expression, it is not cheap.
@@ -94,7 +115,7 @@ public abstract class Expression extends BytecodeProducer {
       switch (expressionType.getSort()) {
         case Type.OBJECT:
         case Type.ARRAY:
-          return features;
+          break;
         case Type.BOOLEAN:
         case Type.BYTE:
         case Type.CHAR:
@@ -104,13 +125,37 @@ public abstract class Expression extends BytecodeProducer {
         case Type.LONG:
         case Type.FLOAT:
           // primitives are never null
-          return features.plus(Feature.NON_JAVA_NULLABLE);
+          features = features.plus(Feature.NON_JAVA_NULLABLE);
+          break;
         case Type.VOID:
         case Type.METHOD:
           throw new IllegalArgumentException("Invalid type: " + expressionType);
         default:
           throw new AssertionError("unexpected type " + expressionType);
       }
+
+      // Save some calculations.
+      if (features.has(Feature.NON_SOY_NULLISH) || !features.has(Feature.NON_JAVA_NULLABLE)) {
+        return features;
+      }
+
+      if (expressionType.equals(BytecodeUtils.NULL_DATA_TYPE)
+          || expressionType.equals(BytecodeUtils.UNDEFINED_DATA_TYPE)
+          || expressionType.equals(BytecodeUtils.SOY_VALUE_TYPE)
+          || expressionType.equals(BytecodeUtils.SOY_VALUE_PROVIDER_TYPE)) {
+        return features;
+      }
+
+      boolean isGenerated = expressionType.getClassName().startsWith(Names.CLASS_PREFIX);
+      if ((BytecodeUtils.isDefinitelyAssignableFrom(BytecodeUtils.SOY_VALUE_TYPE, expressionType)
+          || !isGenerated)) {
+        // Boxed types like StringData are rare but are NON_SOY_NULLISH.
+        // Unboxed types like String, List, etc NON_SOY_NULLISH, since they are
+        // NON_JAVA_NULLABLE.
+        features = features.plus(Feature.NON_SOY_NULLISH);
+      }
+
+      return features;
     }
 
     private final EnumSet<Feature> set;
@@ -225,12 +270,7 @@ public abstract class Expression extends BytecodeProducer {
     if (location.equals(this.location)) {
       return this;
     }
-    return new Expression(resultType, features, location) {
-      @Override
-      protected void doGen(CodeBuilder adapter) {
-        Expression.this.gen(adapter);
-      }
-    };
+    return new DelegatingExpression(this, location);
   }
 
   /** The type of the expression. */
@@ -246,6 +286,10 @@ public abstract class Expression extends BytecodeProducer {
   /** Whether or not this expression is {@link Feature#NON_JAVA_NULLABLE non nullable}. */
   public boolean isNonJavaNullable() {
     return features.has(Feature.NON_JAVA_NULLABLE);
+  }
+
+  public boolean isNonSoyNullish() {
+    return features.has(Feature.NON_SOY_NULLISH);
   }
 
   /**
@@ -267,8 +311,8 @@ public abstract class Expression extends BytecodeProducer {
     if (Flags.DEBUG && !BytecodeUtils.isPossiblyAssignableFrom(expected, resultType())) {
       String message =
           String.format(
-              "Type mismatch. %s not assignable to %s.",
-              resultType().getClassName(), expected.getClassName());
+              "Type mismatch. Got %s but expected %s. %b",
+              resultType().getClassName(), expected.getClassName(), this instanceof SoyExpression);
       if (!fmt.isEmpty()) {
         message = String.format(fmt, args) + ". " + message;
       }
@@ -308,12 +352,7 @@ public abstract class Expression extends BytecodeProducer {
     if (isCheap()) {
       return this;
     }
-    return new Expression(resultType, features.plus(Feature.CHEAP)) {
-      @Override
-      protected void doGen(CodeBuilder adapter) {
-        Expression.this.gen(adapter);
-      }
-    };
+    return new DelegatingExpression(this, features.plus(Feature.CHEAP));
   }
 
   /** Returns an equivalent expression where {@link #isNonJavaNullable()} returns {@code true}. */
@@ -321,24 +360,29 @@ public abstract class Expression extends BytecodeProducer {
     if (isNonJavaNullable()) {
       return this;
     }
-    return new Expression(resultType, features.plus(Feature.NON_JAVA_NULLABLE)) {
-      @Override
-      protected void doGen(CodeBuilder adapter) {
-        Expression.this.gen(adapter);
-      }
-    };
+    return new DelegatingExpression(this, features.plus(Feature.NON_JAVA_NULLABLE));
   }
 
   public Expression asJavaNullable() {
     if (!isNonJavaNullable()) {
       return this;
     }
-    return new Expression(resultType, features.minus(Feature.NON_JAVA_NULLABLE)) {
-      @Override
-      protected void doGen(CodeBuilder adapter) {
-        Expression.this.gen(adapter);
-      }
-    };
+    return new DelegatingExpression(this, features.minus(Feature.NON_JAVA_NULLABLE));
+  }
+
+  public Expression asNonSoyNullish() {
+    if (isNonSoyNullish()) {
+      return this;
+    }
+    return new DelegatingExpression(this, features.plus(Feature.NON_SOY_NULLISH));
+  }
+
+  public Expression asSoyNullish() {
+    if (!isNonSoyNullish()) {
+      return this;
+    }
+    return new DelegatingExpression(
+        this, BytecodeUtils.SOY_VALUE_TYPE, features.minus(Feature.NON_SOY_NULLISH));
   }
 
   /**
@@ -420,6 +464,116 @@ public abstract class Expression extends BytecodeProducer {
     };
   }
 
+  /**
+   * Inserts a runtime type check that this expression matches {@code type}. These checks are
+   * typically inserted to validate user-supplied values are the expected type and fail early. The
+   * resulting checks typically must call a method rather than a simple bytecode instruction since
+   * NULL and UNDEFINED values must pass any type check but are represented as subclasses of {@link
+   * SoyValue}.
+   */
+  public Expression checkedSoyCast(SoyType type) {
+    type = SoyTypes.tryRemoveNull(type);
+    if (BytecodeUtils.isDefinitelyAssignableFrom(BytecodeUtils.SOY_VALUE_TYPE, resultType)) {
+      Class<? extends SoyValue> expectedClass = null;
+
+      switch (type.getKind()) {
+        case ANY:
+        case UNKNOWN:
+        case VE:
+        case VE_DATA:
+          return this;
+        case UNION:
+          if (type.equals(SoyTypes.NUMBER_TYPE)) {
+            return MethodRef.CHECK_NUMBER.invoke(this);
+          }
+          return this;
+        case NULL:
+          return this.checkedCast(BytecodeUtils.NULL_DATA_TYPE);
+        case UNDEFINED:
+          return this.checkedCast(BytecodeUtils.UNDEFINED_DATA_TYPE);
+        case ATTRIBUTES:
+          return MethodRef.CHECK_CONTENT_KIND.invoke(this, constant(ContentKind.ATTRIBUTES));
+        case CSS:
+          return MethodRef.CHECK_CONTENT_KIND.invoke(this, constant(ContentKind.CSS));
+        case BOOL:
+          return MethodRef.CHECK_BOOLEAN.invoke(this);
+        case FLOAT:
+          return MethodRef.CHECK_FLOAT.invoke(this);
+        case HTML:
+        case ELEMENT:
+          return MethodRef.CHECK_CONTENT_KIND.invoke(this, constant(ContentKind.HTML));
+        case INT:
+          return MethodRef.CHECK_INT.invoke(this);
+        case JS:
+          return MethodRef.CHECK_CONTENT_KIND.invoke(this, constant(ContentKind.JS));
+        case LIST:
+          expectedClass = SoyList.class;
+          break;
+        case MAP:
+          expectedClass = SoyMap.class;
+          break;
+        case LEGACY_OBJECT_MAP:
+          expectedClass = SoyLegacyObjectMap.class;
+          break;
+        case MESSAGE:
+          expectedClass = SoyProtoValue.class;
+          break;
+        case PROTO:
+          Type protoType =
+              TypeInfo.create(
+                      JavaQualifiedNames.getClassName(((SoyProtoType) type).getDescriptor()), false)
+                  .type();
+          return MethodRef.CHECK_PROTO.invoke(this, constant(protoType));
+        case PROTO_ENUM:
+          expectedClass = IntegerData.class;
+          break;
+        case RECORD:
+          expectedClass = SoyRecord.class;
+          break;
+        case STRING:
+          return MethodRef.CHECK_STRING.invoke(this);
+        case TEMPLATE:
+          expectedClass = TemplateValue.class;
+          break;
+        case TRUSTED_RESOURCE_URI:
+          return MethodRef.CHECK_CONTENT_KIND.invoke(
+              this, constant(ContentKind.TRUSTED_RESOURCE_URI));
+        case URI:
+          return MethodRef.CHECK_CONTENT_KIND.invoke(this, constant(ContentKind.URI));
+        case CSS_TYPE:
+        case CSS_MODULE:
+        case PROTO_TYPE:
+        case PROTO_ENUM_TYPE:
+        case PROTO_EXTENSION:
+        case PROTO_MODULE:
+        case TEMPLATE_TYPE:
+        case TEMPLATE_MODULE:
+        case FUNCTION:
+          throw new UnsupportedOperationException();
+      }
+
+      Type expectedType = Type.getType(expectedClass);
+      if (resultType.equals(expectedType)
+          || resultType.equals(BytecodeUtils.NULL_DATA_TYPE)
+          || resultType.equals(BytecodeUtils.UNDEFINED_DATA_TYPE)) {
+        return this;
+      }
+      return MethodRef.CHECK_TYPE.invoke(this, constant(expectedType));
+    }
+
+    SoyRuntimeType unboxedType = SoyRuntimeType.getUnboxedType(type).orElse(null);
+    if (unboxedType != null) {
+      Type runtimeType = unboxedType.runtimeType();
+      if (BytecodeUtils.isPrimitive(runtimeType)) {
+        checkArgument(resultType.equals(runtimeType), "%s != %s", resultType, runtimeType);
+      } else {
+        return this.checkedCast(runtimeType);
+      }
+    }
+    // Expression is not boxed but the soy type can only be a boxed value. Throw.
+    return this.checkedCast(BytecodeUtils.SOY_VALUE_TYPE);
+  }
+
   /** Subclasses can override this to supply extra properties for the toString method. */
   @ForOverride
   protected void extraToStringProperties(MoreObjects.ToStringHelper helper) {}
@@ -440,6 +594,31 @@ public abstract class Expression extends BytecodeProducer {
         features.has(Feature.NON_JAVA_NULLABLE) && !BytecodeUtils.isPrimitive(resultType)
             ? "true"
             : null);
+    helper.add("non-soynullish", isNonSoyNullish());
     return helper + ":\n" + trace();
+  }
+
+  private static final class DelegatingExpression extends Expression {
+    private final Expression delegate;
+
+    public DelegatingExpression(Expression delegate, Type resultType, Features features) {
+      super(resultType, features, delegate.location);
+      this.delegate = delegate;
+    }
+
+    public DelegatingExpression(Expression delegate, Features features) {
+      super(delegate.resultType, features, delegate.location);
+      this.delegate = delegate;
+    }
+
+    public DelegatingExpression(Expression delegate, SourceLocation location) {
+      super(delegate.resultType, delegate.features, location);
+      this.delegate = delegate;
+    }
+
+    @Override
+    protected void doGen(CodeBuilder adapter) {
+      delegate.gen(adapter);
+    }
   }
 }

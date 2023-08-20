@@ -19,7 +19,10 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.ImmutableList.toImmutableList;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_VALUE_PROVIDER_TYPE;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_VALUE_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.isDefinitelyAssignableFrom;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
@@ -258,6 +261,9 @@ public final class Branch {
     if (ifTrue.isNonJavaNullable() && ifFalse.isNonJavaNullable()) {
       features = features.plus(Feature.NON_JAVA_NULLABLE);
     }
+    if (ifTrue.isNonSoyNullish() && ifFalse.isNonSoyNullish()) {
+      features = features.plus(Feature.NON_SOY_NULLISH);
+    }
     if (resultType.equals(Type.BOOLEAN_TYPE)) {
       Branch ifTrueBranch = Branch.ifTrue(ifTrue);
       Branch ifFalseBranch = Branch.ifTrue(ifFalse);
@@ -309,7 +315,33 @@ public final class Branch {
         () -> "ifTrue (" + expression + ")");
   }
 
-  public static Branch ifNotNull(Expression expression) {
+  public static Branch ifNonSoyNullish(Expression expression) {
+    if (isDefinitelyAssignableFrom(SOY_VALUE_PROVIDER_TYPE, expression.resultType())) {
+      if (expression.isNonSoyNullish()) {
+        return always();
+      }
+      if (isDefinitelyAssignableFrom(SOY_VALUE_TYPE, expression.resultType())) {
+        return new Branch(
+                expression.features(),
+                new BooleanBrancher(MethodRef.SOY_VALUE_IS_NULLISH.invoke(expression)),
+                () -> "ifNonSoyNull{" + expression + "}")
+            .negate();
+      } else {
+        return new Branch(
+            expression.features(),
+            new BooleanBrancher(MethodRef.IS_SOY_NON_NULLISH.invoke(expression)),
+            () -> "ifNonSoyNull{" + expression + "}");
+      }
+    } else {
+      if (expression.isNonJavaNullable()) {
+        return always();
+      }
+
+      return ifNonJavaNull(expression);
+    }
+  }
+
+  public static Branch ifNonJavaNull(Expression expression) {
     checkState(!BytecodeUtils.isPrimitive(expression.resultType()));
     return new Branch(
         expression.features(),

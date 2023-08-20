@@ -109,7 +109,7 @@ final class ExpressionToSoyValueProviderCompiler {
       ExprNode node, ExpressionDetacher detacher) {
     checkNotNull(node);
     checkNotNull(detacher);
-    return createVisitor(/*exprCompiler=*/ null, detacher).exec(node);
+    return createVisitor(/* exprCompiler= */ null, detacher).exec(node);
   }
 
   /**
@@ -122,7 +122,7 @@ final class ExpressionToSoyValueProviderCompiler {
    */
   Optional<Expression> compileAvoidingDetaches(ExprNode node) {
     checkNotNull(node);
-    return createVisitor(exprCompiler, /*detacher=*/ null).exec(node);
+    return createVisitor(exprCompiler, /* detacher= */ null).exec(node);
   }
 
   private CompilerVisitor createVisitor(
@@ -209,18 +209,16 @@ final class ExpressionToSoyValueProviderCompiler {
             // into a SoyValueProvider.
             left = compileToSoyValueProviderWithDetaching(node.getLeftChild());
           }
-          // Convert left to null if it's a SoyValueProvider wrapping null, for the null check
-          // below.
-          left = MethodRef.SOY_VALUE_PROVIDER_OR_NULL.invoke(left);
 
-          return Optional.of(BytecodeUtils.firstNonNull(left, right));
+          left = MethodRef.SOY_VALUE_PROVIDER_OR_NULLISH.invoke(left);
+          return Optional.of(BytecodeUtils.firstSoyNonNullish(left, right));
         }
       }
       return visitExprNode(node);
     }
 
     private Expression compileToSoyValueProviderWithDetaching(ExprNode expr) {
-      return detachingExprCompiler.compile(expr).boxAsSoyValueProvider();
+      return detachingExprCompiler.compile(expr).box();
     }
 
     @Override
@@ -293,7 +291,7 @@ final class ExpressionToSoyValueProviderCompiler {
       if (allowsBoxing()) {
         Optional<SoyExpression> compileWithNoDetaches = exprCompiler.compileWithNoDetaches(node);
         if (compileWithNoDetaches.isPresent()) {
-          return Optional.of(compileWithNoDetaches.get().boxAsSoyValueProvider());
+          return Optional.of(compileWithNoDetaches.get().box());
         }
         if (allowsDetaches()) {
           return Optional.of(compileToSoyValueProviderWithDetaching(node));

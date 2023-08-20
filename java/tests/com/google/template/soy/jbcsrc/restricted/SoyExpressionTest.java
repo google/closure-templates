@@ -16,33 +16,30 @@
 
 package com.google.template.soy.jbcsrc.restricted;
 
-import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.STRING_TYPE;
+import static com.google.common.truth.Truth.assertThat;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
-import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constantNull;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.soyNull;
 import static com.google.template.soy.jbcsrc.restricted.SoyExpression.forList;
+import static com.google.template.soy.jbcsrc.restricted.SoyExpression.forSoyValue;
 import static com.google.template.soy.jbcsrc.restricted.SoyExpression.forString;
 import static com.google.template.soy.jbcsrc.restricted.testing.ExpressionSubject.assertThatExpression;
 
+import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.internal.ListImpl;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
+import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.StringData;
-import com.google.template.soy.jbcsrc.restricted.Expression.Feature;
-import com.google.template.soy.jbcsrc.runtime.JbcSrcRuntime;
-import com.google.template.soy.testing3.Proto3Message;
 import com.google.template.soy.types.AnyType;
 import com.google.template.soy.types.FloatType;
 import com.google.template.soy.types.IntType;
 import com.google.template.soy.types.ListType;
-import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.StringType;
 import com.google.template.soy.types.UnknownType;
-import java.util.List;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
-import org.objectweb.asm.Type;
 
 /** Tests for {@link com.google.template.soy.jbcsrc.restricted.SoyExpression} */
 @RunWith(JUnit4.class)
@@ -51,6 +48,11 @@ public class SoyExpressionTest {
   @Test
   public void testIntExpressions() {
     SoyExpression expr = SoyExpression.forInt(constant(12L));
+    assertThat(expr.isNonJavaNullable()).isTrue();
+    assertThat(expr.isNonSoyNullish()).isTrue();
+    assertThat(expr.box().isNonJavaNullable()).isTrue();
+    assertThat(expr.box().isNonSoyNullish()).isTrue();
+
     assertThatExpression(expr).evaluatesTo(12L);
     assertThatExpression(expr.box()).evaluatesTo(IntegerData.forValue(12));
     assertThatExpression(expr.box().unboxAsLong()).evaluatesTo(12L);
@@ -97,24 +99,26 @@ public class SoyExpressionTest {
 
   @Test
   public void testNullExpression() {
-    assertThatExpression(SoyExpression.NULL).evaluatesTo(null);
-    assertThatExpression(SoyExpression.NULL.box()).evaluatesTo(null);
-    assertThatExpression(SoyExpression.NULL.box().unboxAsListOrJavaNull()).evaluatesTo(null);
-    assertThatExpression(SoyExpression.NULL.box().unboxAsStringOrJavaNull()).evaluatesTo(null);
+    assertThatExpression(SoyExpression.SOY_NULL).evaluatesTo(NullData.INSTANCE);
+    assertThatExpression(SoyExpression.SOY_NULL.box()).evaluatesTo(NullData.INSTANCE);
+    assertThatExpression(SoyExpression.SOY_NULL.box().unboxAsListOrJavaNull()).evaluatesTo(null);
+    assertThatExpression(SoyExpression.SOY_NULL.box().unboxAsStringOrJavaNull()).evaluatesTo(null);
     assertThatExpression(
-            SoyExpression.NULL.box().unboxAsMessageOrJavaNull(BytecodeUtils.MESSAGE_TYPE))
+            SoyExpression.SOY_NULL.box().unboxAsMessageOrJavaNull(BytecodeUtils.MESSAGE_TYPE))
         .evaluatesTo(null);
-    assertThatExpression(SoyExpression.NULL.unboxAsMessageOrJavaNull(BytecodeUtils.MESSAGE_TYPE))
+    assertThatExpression(
+            SoyExpression.SOY_NULL.unboxAsMessageOrJavaNull(BytecodeUtils.MESSAGE_TYPE))
         .evaluatesTo(null);
-    assertThatExpression(SoyExpression.NULL.coerceToBoolean()).evaluatesTo(false);
-    assertThatExpression(SoyExpression.NULL.coerceToString()).evaluatesTo("null");
+    assertThatExpression(SoyExpression.SOY_NULL.coerceToBoolean()).evaluatesTo(false);
+    assertThatExpression(SoyExpression.SOY_NULL.coerceToString()).evaluatesTo("null");
   }
-
 
   @Test
   public void testStringExpression() {
-    assertThatExpression(forString(constantNull(STRING_TYPE)).coerceToBoolean()).evaluatesTo(false);
-    assertThatExpression(forString(constantNull(STRING_TYPE)).box()).evaluatesTo(null);
+    assertThatExpression(forSoyValue(StringType.getInstance(), soyNull()).coerceToBoolean())
+        .evaluatesTo(false);
+    assertThatExpression(forSoyValue(StringType.getInstance(), soyNull()))
+        .evaluatesTo(NullData.INSTANCE);
     assertThatExpression(forString(constant("")).coerceToBoolean()).evaluatesTo(false);
     assertThatExpression(forString(constant("")).box()).evaluatesTo(StringData.EMPTY_STRING);
     assertThatExpression(forString(constant("truthy")).coerceToBoolean()).evaluatesTo(true);
@@ -123,10 +127,8 @@ public class SoyExpressionTest {
   @Test
   public void testListExpression() {
     ListType list = ListType.of(IntType.getInstance());
-    assertThatExpression(forList(list, constantNull(Type.getType(List.class))).coerceToBoolean())
-        .evaluatesTo(false);
-    assertThatExpression(forList(list, constantNull(Type.getType(List.class))).box())
-        .evaluatesTo(null);
+    assertThatExpression(forSoyValue(list, soyNull()).coerceToBoolean()).evaluatesTo(false);
+    assertThatExpression(forSoyValue(list, soyNull())).evaluatesTo(NullData.INSTANCE);
     assertThatExpression(
             forList(list, MethodRef.IMMUTABLE_LIST_OF.get(0).invoke()).coerceToBoolean())
         .evaluatesTo(true);
@@ -157,8 +159,8 @@ public class SoyExpressionTest {
   // invoke a StringData method next we will get a verification error.
   @Test
   public void testBoxNullable() {
-    MethodRef stringDataGetValue = MethodRef.create(StringData.class, "stringValue");
-    SoyExpression nullableString = SoyExpression.forString(constant("hello").asJavaNullable());
+    MethodRef stringDataGetValue = MethodRef.create(SoyValue.class, "stringValue");
+    SoyExpression nullableString = forString(constant("hello").asJavaNullable());
     assertThatExpression(nullableString).evaluatesTo("hello");
     assertThatExpression(nullableString.box().invoke(stringDataGetValue)).evaluatesTo("hello");
   }
@@ -166,18 +168,14 @@ public class SoyExpressionTest {
   @Test
   public void testBoxAsSoyValueProvider() {
     // primitives get boxed
-    assertThatExpression(
-            SoyExpression.forBool(BytecodeUtils.constant(false)).boxAsSoyValueProvider())
+    assertThatExpression(SoyExpression.forBool(BytecodeUtils.constant(false)).box())
         .evaluatesTo(BooleanData.FALSE);
     // null boxed types get converted to NULL_PROVIDER
-    assertThatExpression(
-            SoyExpression.forSoyValue(
-                    UnknownType.getInstance(), constantNull(BytecodeUtils.SOY_VALUE_TYPE))
-                .boxAsSoyValueProvider())
-        .evaluatesTo(JbcSrcRuntime.NULL_PROVIDER);
+    assertThatExpression(SoyExpression.forSoyValue(UnknownType.getInstance(), soyNull()).box())
+        .evaluatesTo(NullData.INSTANCE);
     // null unboxed values get converted to NULL_PROVIDER
-    assertThatExpression(SoyExpression.forString(constantNull(STRING_TYPE)).boxAsSoyValueProvider())
-        .evaluatesTo(JbcSrcRuntime.NULL_PROVIDER);
+    assertThatExpression(forSoyValue(StringType.getInstance(), soyNull()).box())
+        .evaluatesTo(NullData.INSTANCE);
   }
 
   // similar to the above, but in the unboxing codepath
@@ -193,80 +191,34 @@ public class SoyExpressionTest {
   }
 
   @Test
-  public void testUnboxNullMarkedNonNullable() {
-    SoyExpression secretNullString =
-        SoyExpression.forSoyValue(
-            StringType.getInstance(),
-            new Expression(BytecodeUtils.STRING_DATA_TYPE, Feature.NON_JAVA_NULLABLE) {
-              @Override
-              protected void doGen(CodeBuilder cb) {
-                cb.pushNull();
-              }
-            });
-    assertThatExpression(secretNullString.unboxAsStringOrJavaNull())
-        .throwsException(NullPointerException.class);
-
-    SoyExpression secretNullList =
-        SoyExpression.forSoyValue(
-            ListType.ANY_LIST,
-            new Expression(BytecodeUtils.SOY_LIST_TYPE, Feature.NON_JAVA_NULLABLE) {
-              @Override
-              protected void doGen(CodeBuilder cb) {
-                cb.pushNull();
-              }
-            });
-    assertThatExpression(secretNullList.unboxAsListOrJavaNull())
-        .throwsException(NullPointerException.class);
-
-    SoyExpression secretNullProto =
-        SoyExpression.forSoyValue(
-            SoyProtoType.newForTest(Proto3Message.getDescriptor()),
-            new Expression(BytecodeUtils.SOY_PROTO_VALUE_TYPE, Feature.NON_JAVA_NULLABLE) {
-              @Override
-              protected void doGen(CodeBuilder cb) {
-                cb.pushNull();
-              }
-            });
-    assertThatExpression(secretNullProto.unboxAsMessageUnchecked(BytecodeUtils.MESSAGE_TYPE))
-        .throwsException(NullPointerException.class);
-  }
-
-  @Test
   public void testCoerceToBoolean_strings() {
-    assertThatExpression(SoyExpression.forString(constant("foo")).coerceToBoolean())
-        .evaluatesTo(true);
-    assertThatExpression(SoyExpression.forString(constant("")).coerceToBoolean())
-        .evaluatesTo(false);
+    assertThatExpression(forString(constant("foo")).coerceToBoolean()).evaluatesTo(true);
+    assertThatExpression(forString(constant("")).coerceToBoolean()).evaluatesTo(false);
   }
 
   @Test
   public void testCoerceToBoolean_nullableStrings() {
-    assertThatExpression(
-            SoyExpression.forString(constant("foo")).asJavaNullable().coerceToBoolean())
+    assertThatExpression(forString(constant("foo")).asJavaNullable().coerceToBoolean())
         .evaluatesTo(true);
-    assertThatExpression(SoyExpression.forString(constant("")).asJavaNullable().coerceToBoolean())
+    assertThatExpression(forString(constant("")).asJavaNullable().coerceToBoolean())
         .evaluatesTo(false);
-    assertThatExpression(SoyExpression.forString(constantNull(STRING_TYPE)).coerceToBoolean())
+    assertThatExpression(forSoyValue(StringType.getInstance(), soyNull()).coerceToBoolean())
         .evaluatesTo(false);
   }
 
   @Test
   public void testCoerceToBoolean_boxed() {
-    assertThatExpression(SoyExpression.forString(constant("foo")).box().coerceToBoolean())
-        .evaluatesTo(true);
-    assertThatExpression(SoyExpression.forString(constant("")).box().coerceToBoolean())
-        .evaluatesTo(false);
+    assertThatExpression(forString(constant("foo")).box().coerceToBoolean()).evaluatesTo(true);
+    assertThatExpression(forString(constant("")).box().coerceToBoolean()).evaluatesTo(false);
   }
 
   @Test
   public void testCoerceToBoolean_nullableBoxed() {
-    assertThatExpression(
-            SoyExpression.forString(constant("foo")).box().asJavaNullable().coerceToBoolean())
+    assertThatExpression(forString(constant("foo")).box().asJavaNullable().coerceToBoolean())
         .evaluatesTo(true);
-    assertThatExpression(
-            SoyExpression.forString(constant("")).box().asJavaNullable().coerceToBoolean())
+    assertThatExpression(forString(constant("")).box().asJavaNullable().coerceToBoolean())
         .evaluatesTo(false);
-    assertThatExpression(SoyExpression.forString(constantNull(STRING_TYPE)).box().coerceToBoolean())
+    assertThatExpression(forSoyValue(StringType.getInstance(), soyNull()).box().coerceToBoolean())
         .evaluatesTo(false);
   }
 

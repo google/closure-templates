@@ -36,7 +36,6 @@ import com.google.template.soy.data.LoggingAdvisingAppendable.BufferingAppendabl
 import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.internal.ParamStore;
-import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.jbcsrc.TemplateTester.CompiledTemplateSubject;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
@@ -188,7 +187,7 @@ public class LazyClosureCompilerTest {
     Class<?> fileClass = templates.getTemplateData("ns.foo").templateClass();
     Field fancyListField = fileClass.getDeclaredField("let_fancyList");
     assertThat(Modifier.toString(fancyListField.getModifiers())).isEqualTo("private static final");
-    assertThat(fancyListField.getType()).isAssignableTo(SoyList.class);
+    assertThat(fancyListField.getType()).isAssignableTo(SoyValue.class);
     fancyListField.setAccessible(true);
     ImmutableList<Long> list =
         ((SoyList) fancyListField.get(null))
@@ -312,7 +311,7 @@ public class LazyClosureCompilerTest {
     // we only store bar in a private static field
     Field barField = fileClass.getDeclaredField("let_bar");
     assertThat(asList(fileClass.getDeclaredFields())).containsExactly(barField);
-    assertThat(barField.getType()).isEqualTo(StringData.class);
+    assertThat(barField.getType()).isEqualTo(SoyValue.class);
     assertThat(barField.getModifiers())
         .isEqualTo(Modifier.PRIVATE | Modifier.STATIC | Modifier.FINAL);
   }

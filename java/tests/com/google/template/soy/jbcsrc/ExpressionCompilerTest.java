@@ -17,28 +17,24 @@
 package com.google.template.soy.jbcsrc;
 
 import static com.google.template.soy.jbcsrc.TemplateTester.assertThatTemplateBody;
-import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.STRING_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
-import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constantNull;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.soyNull;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.base.internal.SanitizedContentKind;
-import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SanitizedContents;
 import com.google.template.soy.data.SoyDataException;
-import com.google.template.soy.data.SoyDict;
-import com.google.template.soy.data.SoyLegacyObjectMap;
-import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.internal.DictImpl;
 import com.google.template.soy.data.internal.RuntimeMapTypeTracker;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
+import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.AbstractLocalVarDefn;
@@ -74,7 +70,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
-import org.objectweb.asm.Type;
 
 /** Tests for {@link ExpressionCompiler} */
 @RunWith(JUnit4.class)
@@ -383,7 +378,8 @@ public class ExpressionCompilerTest {
     assertExpression("(false ? null : 'a') ?: 'b'").evaluatesTo(StringData.forValue("a"));
 
     variables.put(
-        "p1", untypedBoxedSoyExpression(SoyExpression.forString(constantNull(STRING_TYPE))));
+        "p1",
+        untypedBoxedSoyExpression(SoyExpression.forSoyValue(StringType.getInstance(), soyNull())));
     variables.put("p2", SoyExpression.forString(constant("a")).box());
     assertExpression("$p1 ?: $p2").evaluatesTo(StringData.forValue("a"));
 
@@ -395,10 +391,7 @@ public class ExpressionCompilerTest {
             MethodRef.ORDAIN_AS_SAFE.invoke(constant("<b>hello</b>"), constant(ContentKind.HTML))));
     variables.put("p2", SoyExpression.forString(constant("")).box());
     assertExpression("$p1 ?: $p2").evaluatesTo(SanitizedContents.constantHtml("<b>hello</b>"));
-    variables.put(
-        "p1",
-        SoyExpression.forSoyValue(htmlType, constantNull(Type.getType(SanitizedContent.class)))
-            .asJavaNullable());
+    variables.put("p1", SoyExpression.forSoyValue(htmlType, soyNull()).asJavaNullable());
     assertExpression("$p1 ?: $p2").evaluatesTo(StringData.forValue(""));
   }
 
@@ -432,8 +425,8 @@ public class ExpressionCompilerTest {
     assertExpression("$list[0] + 1").evaluatesTo(1L);
 
     // null, not IndexOutOfBoundsException
-    assertExpression("$list[3]").evaluatesTo(null);
-    assertExpression("$list[3] + 1").throwsException(NullPointerException.class);
+    assertExpression("$list[3]").evaluatesTo(NullData.INSTANCE);
+    assertExpression("$list[3] + 1").throwsException(SoyDataException.class);
 
     // even if the index type is not known, it still works
     variables.put("anInt", untypedBoxedSoyExpression(SoyExpression.forInt(constant(1L))));
@@ -441,7 +434,7 @@ public class ExpressionCompilerTest {
     // And we can still unbox the return value
     assertExpression("$list[$anInt] + 1").evaluatesTo(2L);
     variables.put("anInt", untypedBoxedSoyExpression(SoyExpression.forInt(constant(3L))));
-    assertExpression("$list[$anInt]").evaluatesTo(null);
+    assertExpression("$list[$anInt]").evaluatesTo(NullData.INSTANCE);
   }
 
   @Test
@@ -452,7 +445,7 @@ public class ExpressionCompilerTest {
     assertExpression("$map['a']").evaluatesTo(IntegerData.forValue(0));
     assertExpression("$map['b']").evaluatesTo(IntegerData.forValue(1));
     assertExpression("$map['c']").evaluatesTo(IntegerData.forValue(2));
-    assertExpression("$map['not valid']").evaluatesTo(null);
+    assertExpression("$map['not valid']").evaluatesTo(NullData.INSTANCE);
   }
 
   @Test
@@ -462,24 +455,20 @@ public class ExpressionCompilerTest {
     variables.put(
         "nullMap",
         SoyExpression.forSoyValue(
-            LegacyObjectMapType.of(StringType.getInstance(), IntType.getInstance()),
-            BytecodeUtils.constantNull(Type.getType(SoyLegacyObjectMap.class))));
+            LegacyObjectMapType.of(StringType.getInstance(), IntType.getInstance()), soyNull()));
     assertExpression("$nullMap['a']").throwsException(NullPointerException.class);
-    assertExpression("$nullMap?['a']").evaluatesTo(null);
+    assertExpression("$nullMap?['a']").evaluatesTo(NullData.INSTANCE);
   }
 
   @Test
   public void testNullSafeItemAccess_list() {
     variables.put(
-        "nullList",
-        SoyExpression.forSoyValue(
-            ListType.of(StringType.getInstance()),
-            BytecodeUtils.constantNull(Type.getType(SoyList.class))));
+        "nullList", SoyExpression.forBoxedList(ListType.of(StringType.getInstance()), soyNull()));
     assertExpression("$nullList[1]")
         .doesNotContainCode("IFNULL")
         .doesNotContainCode("IFNNONULL") // no null checks
-        .throwsException(NullPointerException.class);
-    assertExpression("$nullList?[1]").evaluatesTo(null);
+        .throwsException(SoyDataException.class);
+    assertExpression("$nullList?[1]").evaluatesTo(NullData.INSTANCE);
   }
 
   @Test
@@ -500,19 +489,16 @@ public class ExpressionCompilerTest {
         "nullRecord",
         SoyExpression.forSoyValue(
             SoyTypes.makeNullable(RecordType.of(ImmutableMap.of("a", StringType.getInstance()))),
-            BytecodeUtils.constantNull(Type.getType(SoyDict.class))));
+            soyNull()));
     assertExpression("$nullRecord.a").throwsException(NullPointerException.class);
-    assertExpression("$nullRecord?.a").evaluatesTo(null);
+    assertExpression("$nullRecord?.a").evaluatesTo(NullData.INSTANCE);
   }
 
   @Test
   public void testBuiltinFunctions() {
     variables.put("x", compileExpression("record(a: 1)").box());
     variables.put(
-        "y",
-        SoyExpression.forSoyValue(
-            SoyTypes.makeNullable(FloatType.getInstance()),
-            BytecodeUtils.constantNull(Type.getType(FloatData.class))));
+        "y", SoyExpression.forSoyValue(SoyTypes.makeNullable(FloatType.getInstance()), soyNull()));
     assertExpression("checkNotNull($x.a)").evaluatesTo(IntegerData.forValue(1));
     assertExpression("checkNotNull($y)").throwsException(NullPointerException.class);
   }
@@ -616,7 +602,7 @@ public class ExpressionCompilerTest {
                 ImmutableList.of(),
                 null,
                 null,
-                /*isStatic=*/ true),
+                /* isStatic= */ true),
             new JavaSourceFunctionCompiler(
                 SoyTypeRegistryBuilder.create(), ErrorReporter.exploding()),
             result.registry());

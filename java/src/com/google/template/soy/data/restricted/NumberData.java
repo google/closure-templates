@@ -17,6 +17,7 @@
 package com.google.template.soy.data.restricted;
 
 import com.google.common.primitives.Longs;
+import com.google.template.soy.data.SoyValue;
 import javax.annotation.Nonnull;
 
 /**
@@ -52,5 +53,10 @@ public abstract class NumberData extends PrimitiveData {
   @Override
   public int hashCode() {
     return Longs.hashCode(Double.doubleToLongBits(toFloat()));
+  }
+
+  @Override
+  public final SoyValue checkNullishNumber() {
+    return this;
   }
 }

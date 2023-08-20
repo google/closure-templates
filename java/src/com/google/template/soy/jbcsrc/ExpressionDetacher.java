@@ -96,11 +96,7 @@ interface ExpressionDetacher {
     @Override
     public Expression resolveSoyValueProvider(Expression soyValueProvider) {
       soyValueProvider.checkAssignableTo(BytecodeUtils.SOY_VALUE_PROVIDER_TYPE);
-      // can't do a checkedCast directly to SoyValue bc null literal will fail (it's represented as
-      // SoyValueProvider<null>)
-      return soyValueProvider
-          .checkedCast(BytecodeUtils.SOY_VALUE_PROVIDER_TYPE)
-          .invoke(MethodRef.SOY_VALUE_PROVIDER_RESOLVE);
+      return soyValueProvider.invoke(MethodRef.SOY_VALUE_PROVIDER_RESOLVE);
     }
 
     @Override

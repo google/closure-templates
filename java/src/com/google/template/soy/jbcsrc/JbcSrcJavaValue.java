@@ -65,12 +65,12 @@ final class JbcSrcJavaValue implements JavaValue {
 
   @Override
   public JbcSrcJavaValue isNonNull() {
-    return of(BytecodeUtils.isNonNull(expr));
+    return of(BytecodeUtils.isNonSoyNullish(expr));
   }
 
   @Override
   public JbcSrcJavaValue isNull() {
-    return of(BytecodeUtils.isNull(expr));
+    return of(BytecodeUtils.isSoyNullish(expr));
   }
 
   @Override

@@ -105,7 +105,7 @@ public final class RecordToPositionalCallFactory {
 
   private static MethodHandle getFieldProviderHandle(MethodHandles.Lookup lookup) {
     try {
-      return lookup.findVirtual(SoyRecord.class, "getFieldProvider", GET_FIELD_PROVIDER_TYPE);
+      return lookup.findVirtual(SoyRecord.class, "getPositionalParam", GET_FIELD_PROVIDER_TYPE);
     } catch (ReflectiveOperationException roe) {
       throw new AssertionError(roe);
     }

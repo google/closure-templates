@@ -97,11 +97,12 @@ public interface SoyMap extends SoyValue {
    * @return A Java map of all items, where mappings are value to value provider.
    */
   @Nonnull
+  @Override
   Map<? extends SoyValue, ? extends SoyValueProvider> asJavaMap();
 
   // LINT.IfChange(allowed_soy_map_key_types)
   static boolean isAllowedKeyType(SoyValue key) {
-    return key instanceof PrimitiveData;
+    return key instanceof PrimitiveData && !key.isNullish();
   }
   // LINT.ThenChange(../types/MapType.java:allowed_soy_map_key_types)
 }

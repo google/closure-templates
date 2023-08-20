@@ -25,7 +25,7 @@ import com.google.template.soy.data.SoyDataException;
  * <p>Important: This class may only be used in implementing plugins (e.g. functions, directives).
  */
 @Immutable
-public final class UndefinedData extends PrimitiveData {
+public final class UndefinedData extends NullishData {
 
   /** Static singleton instance of UndefinedData. */
   public static final UndefinedData INSTANCE = new UndefinedData();
@@ -35,31 +35,6 @@ public final class UndefinedData extends PrimitiveData {
   @Override
   public String toString() {
     throw new SoyDataException("Attempted to coerce undefined value into a string.");
-  }
-
-  /**
-   * {@inheritDoc}
-   *
-   * <p>Undefined is falsy.
-   */
-  @Override
-  public boolean coerceToBoolean() {
-    return false;
-  }
-
-  @Override
-  public String coerceToString() {
-    return toString();
-  }
-
-  @Override
-  public boolean isUndefined() {
-    return true;
-  }
-
-  @Override
-  public boolean isNullish() {
-    return true;
   }
 
   @Override

@@ -826,9 +826,6 @@ public class BytecodeCompilerTest {
             "{/template}");
     subject.rendersAs("full", ImmutableMap.of("content", "full"));
     subject.failsToRenderWith(NullPointerException.class);
-    subject.failsToRenderWith(
-        ClassCastException.class,
-        ImmutableMap.of("content", SanitizedContents.constantHtml("<b>hello</b>")));
   }
 
   @Test
@@ -901,7 +898,7 @@ public class BytecodeCompilerTest {
 
   @Test
   public void testBasicFunctionality_privateTemplate() {
-    // make sure you can't access factories for priate tempaltes
+    // make sure you can't access factories for priate templates
     CompiledTemplates templates =
         TemplateTester.compileFile(
             "{namespace ns}{template foo visibility=\"private\"}hello world{/template}");
@@ -1396,9 +1393,7 @@ public class BytecodeCompilerTest {
                 e ->
                     SoyFileSupplier.Factory.create(e.getValue(), SourceFilePath.create(e.getKey())))
             .collect(Collectors.toList());
-    return SoyFileSetParserBuilder.forSuppliers(files)
-        .addCompilationUnits(dependencies)
-        .build();
+    return SoyFileSetParserBuilder.forSuppliers(files).addCompilationUnits(dependencies).build();
   }
 
   private static CompilingClassLoader createCompilingClassLoader(

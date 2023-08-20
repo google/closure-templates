@@ -51,8 +51,11 @@ import com.google.template.soy.data.internal.Converters;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
+import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.NumberData;
+import com.google.template.soy.data.restricted.PrimitiveData;
 import com.google.template.soy.data.restricted.StringData;
+import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.internal.proto.JavaQualifiedNames;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.restricted.Expression.Feature;
@@ -89,14 +92,6 @@ public final class BytecodeUtils {
   // https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-4.html#jvms-4.11
   private static final int MAX_CONSTANT_STRING_LENGTH = 65535;
 
-  private static final class NullPseudoTypeClass {}
-
-  /**
-   * Not a real type, but used to mark the type of a null value, so it can be appropriately special
-   * cased to be assignable to any (reference) type.
-   */
-  public static final Type NULL_PSEUDO_TYPE = Type.getType(NullPseudoTypeClass.class);
-
   public static final TypeInfo OBJECT = TypeInfo.create(Object.class);
   private static final Type OBJECT_ARRAY_TYPE = Type.getType(Object[].class);
 
@@ -110,11 +105,24 @@ public final class BytecodeUtils {
   public static final Type CLOSEABLE_TYPE = Type.getType(Closeable.class);
   public static final Type DIR_TYPE = Type.getType(Dir.class);
   public static final Type HASH_MAP_TYPE = Type.getType(HashMap.class);
+
+  public static final Type NULL_DATA_TYPE = Type.getType(NullData.class);
+  public static final Type UNDEFINED_DATA_TYPE = Type.getType(UndefinedData.class);
+  public static final Type PRIMITIVE_DATA_TYPE = Type.getType(PrimitiveData.class);
   public static final Type NUMBER_DATA_TYPE = Type.getType(NumberData.class);
   public static final Type INTEGER_DATA_TYPE = Type.getType(IntegerData.class);
   public static final Type FLOAT_DATA_TYPE = Type.getType(FloatData.class);
   public static final Type BOOLEAN_DATA_TYPE = Type.getType(BooleanData.class);
   public static final Type STRING_DATA_TYPE = Type.getType(StringData.class);
+  public static final Type SANITIZED_CONTENT_TYPE = Type.getType(SanitizedContent.class);
+  public static final Type SOY_LIST_TYPE = Type.getType(SoyList.class);
+  public static final Type SOY_LEGACY_OBJECT_MAP_TYPE = Type.getType(SoyLegacyObjectMap.class);
+  public static final Type SOY_MAP_TYPE = Type.getType(SoyMap.class);
+  public static final Type SOY_PROTO_VALUE_TYPE = Type.getType(SoyProtoValue.class);
+  public static final Type SOY_RECORD_TYPE = Type.getType(SoyRecord.class);
+  public static final Type SOY_VALUE_TYPE = Type.getType(SoyValue.class);
+  public static final Type SOY_VALUE_PROVIDER_TYPE = Type.getType(SoyValueProvider.class);
+
   public static final Type LINKED_HASH_MAP_TYPE = Type.getType(LinkedHashMap.class);
   public static final Type LIST_TYPE = Type.getType(List.class);
   public static final Type IMMUTIBLE_LIST_TYPE = Type.getType(ImmutableList.class);
@@ -125,14 +133,6 @@ public final class BytecodeUtils {
   public static final Type NULL_POINTER_EXCEPTION_TYPE = Type.getType(NullPointerException.class);
   public static final Type RENDER_CONTEXT_TYPE = Type.getType(RenderContext.class);
   public static final Type RENDER_RESULT_TYPE = Type.getType(RenderResult.class);
-  public static final Type SANITIZED_CONTENT_TYPE = Type.getType(SanitizedContent.class);
-  public static final Type SOY_LIST_TYPE = Type.getType(SoyList.class);
-  public static final Type SOY_LEGACY_OBJECT_MAP_TYPE = Type.getType(SoyLegacyObjectMap.class);
-  public static final Type SOY_MAP_TYPE = Type.getType(SoyMap.class);
-  public static final Type SOY_PROTO_VALUE_TYPE = Type.getType(SoyProtoValue.class);
-  public static final Type SOY_RECORD_TYPE = Type.getType(SoyRecord.class);
-  public static final Type SOY_VALUE_TYPE = Type.getType(SoyValue.class);
-  public static final Type SOY_VALUE_PROVIDER_TYPE = Type.getType(SoyValueProvider.class);
   public static final Type STRING_TYPE = Type.getType(String.class);
   public static final Type THROWABLE_TYPE = Type.getType(Throwable.class);
   public static final Type ILLEGAL_STATE_EXCEPTION_TYPE = Type.getType(IllegalStateException.class);
@@ -245,10 +245,6 @@ public final class BytecodeUtils {
     }
     if (left.getSort() != right.getSort()) {
       return false;
-    }
-    if (right.equals(NULL_PSEUDO_TYPE)) {
-      // null is assignable to any (reference) type
-      return left.getSort() == Type.OBJECT || left.getSort() == Type.ARRAY;
     }
     if (left.getSort() != Type.OBJECT) {
       return false; // all other sorts require exact equality (even arrays)
@@ -402,7 +398,7 @@ public final class BytecodeUtils {
             .asNonJavaNullable();
   }
 
-  /** Returns an {@link Expression} that evaluates to the given ContentKind. */
+  /** Returns an {@link Expression} that evaluates to the given ContentKind, or null. */
   public static Expression constant(ContentKind kind) {
     return FieldRef.enumReference(kind).accessor();
   }
@@ -439,6 +435,23 @@ public final class BytecodeUtils {
     return FieldRef.enumReference(Converters.toContentKind(kind)).accessor();
   }
 
+  /**
+   * If a type has a sole instance associated with it, e.g. private constructor and INSTANCE field,
+   * return an expression of the instance.
+   */
+  public static Optional<Expression> getSoleValue(Type type) {
+    if (type.equals(BytecodeUtils.NULL_DATA_TYPE)) {
+      return Optional.of(soyNull());
+    }
+    return Optional.empty();
+  }
+
+  private static final Expression SOY_NULL = FieldRef.NULL_PROVIDER.accessor();
+
+  public static Expression soyNull() {
+    return SOY_NULL;
+  }
+
   /** Returns an {@link Expression} with the given type that always returns null. */
   public static Expression constantNull(Type type) {
     checkArgument(
@@ -448,7 +461,7 @@ public final class BytecodeUtils {
     return new Expression(type, Feature.CHEAP) {
       @Override
       protected void doGen(CodeBuilder mv) {
-        mv.visitInsn(Opcodes.ACONST_NULL);
+        mv.pushNull();
       }
     };
   }
@@ -552,23 +565,19 @@ public final class BytecodeUtils {
     // otherwise we special case primitives and eventually fall back to our runtime.
     SoyRuntimeType leftRuntimeType = left.soyRuntimeType();
     SoyRuntimeType rightRuntimeType = right.soyRuntimeType();
-    if (leftRuntimeType.isKnownString()) {
-      return doEqualsString(left.unboxAsStringOrJavaNull(), right);
-    }
-    if (rightRuntimeType.isKnownString()) {
-      // TODO(lukes): we are changing the order of evaluation here.
-      return doEqualsString(right.unboxAsStringOrJavaNull(), left);
+    if (leftRuntimeType.isKnownString() || rightRuntimeType.isKnownString()) {
+      return doEqualsString(left, right);
     }
     if (leftRuntimeType.isKnownInt()
         && rightRuntimeType.isKnownInt()
-        && left.isNonJavaNullable()
-        && right.isNonJavaNullable()) {
+        && left.isNonSoyNullish()
+        && right.isNonSoyNullish()) {
       return Branch.ifEqual(left.unboxAsLong(), right.unboxAsLong()).asBoolean();
     }
     if (leftRuntimeType.isKnownNumber()
         && rightRuntimeType.isKnownNumber()
-        && left.isNonJavaNullable()
-        && right.isNonJavaNullable()
+        && left.isNonSoyNullish()
+        && right.isNonSoyNullish()
         && (leftRuntimeType.isKnownFloat() || rightRuntimeType.isKnownFloat())) {
       return Branch.ifEqual(left.coerceToDouble(), right.coerceToDouble()).asBoolean();
     }
@@ -581,14 +590,14 @@ public final class BytecodeUtils {
     SoyRuntimeType rightRuntimeType = right.soyRuntimeType();
     if (leftRuntimeType.isKnownInt()
         && rightRuntimeType.isKnownInt()
-        && left.isNonJavaNullable()
-        && right.isNonJavaNullable()) {
+        && left.isNonSoyNullish()
+        && right.isNonSoyNullish()) {
       return Branch.ifEqual(left.unboxAsLong(), right.unboxAsLong()).asBoolean();
     }
     if (leftRuntimeType.isKnownNumber()
         && rightRuntimeType.isKnownNumber()
-        && left.isNonJavaNullable()
-        && right.isNonJavaNullable()
+        && left.isNonSoyNullish()
+        && right.isNonSoyNullish()
         && (leftRuntimeType.isKnownFloat() || rightRuntimeType.isKnownFloat())) {
       return Branch.ifEqual(left.coerceToDouble(), right.coerceToDouble()).asBoolean();
     }
@@ -598,34 +607,65 @@ public final class BytecodeUtils {
   /**
    * Compare a string valued expression to another expression using soy == semantics.
    *
-   * @param stringExpr An expression that is known to be an unboxed string
-   * @param other An expression to compare it to.
+   * @param left An expression that is known to be an unboxed string
+   * @param right An expression to compare it to.
    */
-  private static Expression doEqualsString(SoyExpression stringExpr, SoyExpression other) {
-    // This is compatible with SharedRuntime.compareString, which interestingly makes == break
-    // transitivity.  See b/21461181
-    SoyRuntimeType otherRuntimeType = other.soyRuntimeType();
-    if (otherRuntimeType.isKnownStringOrSanitizedContent()) {
-      if (stringExpr.isNonJavaNullable()) {
-        return stringExpr.invoke(MethodRef.EQUALS, other.unboxAsStringOrJavaNull());
+  private static Expression doEqualsString(SoyExpression left, SoyExpression right) {
+    if (left.resultType().equals(STRING_TYPE)) {
+      if (right.resultType().equals(STRING_TYPE)) {
+        return doJavaEquals(left, right);
       } else {
-        return MethodRef.OBJECTS_EQUALS.invoke(stringExpr, other.unboxAsStringOrJavaNull());
+        return doUnboxedStringEquals(left, right);
       }
+    } else if (right.resultType().equals(STRING_TYPE)) {
+      return doUnboxedStringEquals(right, left);
     }
-    if (otherRuntimeType.isKnownNumber() && other.isNonJavaNullable()) {
+
+    // neither is an unboxed string
+    if (left.soyRuntimeType().isKnownString()) {
+      return doBoxedStringEquals(left, right);
+    } else {
+      return doBoxedStringEquals(right, left);
+    }
+  }
+
+  private static Expression doUnboxedStringEquals(
+      SoyExpression unboxedString, SoyExpression other) {
+    if (other.soyRuntimeType().isKnownNumber() && other.isNonSoyNullish()) {
       // in this case, we actually try to convert stringExpr to a number
-      return MethodRef.RUNTIME_STRING_EQUALS_AS_NUMBER.invoke(stringExpr, other.coerceToDouble());
+      return MethodRef.RUNTIME_STRING_EQUALS_AS_NUMBER.invoke(
+          unboxedString, other.coerceToDouble());
     }
-    // We don't know what other is, assume the worst and call out to our boxed implementation for
-    // string comparisons.
-    return MethodRef.RUNTIME_COMPARE_NULLABLE_STRING.invoke(stringExpr, other.box());
+    if (!other.isBoxed()) {
+      return constant(false);
+    }
+    return MethodRef.RUNTIME_COMPARE_UNBOXED_STRING.invoke(unboxedString, other);
+  }
+
+  private static Expression doBoxedStringEquals(SoyExpression boxedString, SoyExpression other) {
+    if (other.soyRuntimeType().isKnownNumber()) {
+      other = other.box();
+    } else if (!other.isBoxed()) {
+      return constant(false);
+    }
+    return MethodRef.RUNTIME_COMPARE_BOXED_STRING.invoke(boxedString, other);
+  }
+
+  private static Expression doJavaEquals(SoyExpression left, SoyExpression right) {
+    if (left.isNonJavaNullable()) {
+      return left.invoke(MethodRef.EQUALS, right);
+    } else if (right.isNonJavaNullable()) {
+      return right.invoke(MethodRef.EQUALS, left);
+    } else {
+      return MethodRef.OBJECTS_EQUALS.invoke(left, right);
+    }
   }
 
   /**
    * Returns an expression that evaluates to {@code left} if left is non null, and evaluates to
    * {@code right} otherwise.
    */
-  public static Expression firstNonNull(Expression left, Expression right) {
+  public static Expression firstSoyNonNullish(Expression left, Expression right) {
     checkArgument(
         left.resultType().getSort() == Type.OBJECT,
         "Expected left to be an object, got: %s",
@@ -638,8 +678,8 @@ public final class BytecodeUtils {
     if (Expression.areAllCheap(left, right)) {
       features = features.plus(Feature.CHEAP);
     }
-    if (right.isNonJavaNullable()) {
-      features = features.plus(Feature.NON_JAVA_NULLABLE);
+    if (right.isNonSoyNullish()) {
+      features = features.plus(Feature.NON_SOY_NULLISH);
     }
     return new Expression(left.resultType(), features) {
       @Override
@@ -647,83 +687,11 @@ public final class BytecodeUtils {
         Label leftIsNonNull = new Label();
         left.gen(cb); // Stack: L
         cb.dup(); // Stack: L, L
-        cb.ifNonNull(leftIsNonNull); // Stack: L
+        ifNonNullish(cb, left.resultType(), leftIsNonNull); // Stack: L
         // pop the extra copy of left
         cb.pop(); // Stack:
         right.gen(cb); // Stack: R
         cb.mark(leftIsNonNull); // At this point the stack has an instance of L or R
-      }
-    };
-  }
-
-  /**
-   * Returns an expression that evaluates equivalently to a java ternary expression: {@code
-   * condition ? left : right}
-   */
-  public static Expression ternary(
-      Expression condition, Expression trueBranch, Expression falseBranch) {
-    // Choose the type of the ternary as the least specific of the two options.
-    // In theory we should really choose the least common superclass which would cover more cases,
-    // but this should be fine for now.  Mostly this is just turning (ImmutableList,List)->List.  If
-    // this isn't possible, an error will be thrown and we can re-evaluate this approach.
-    Type ternaryType;
-    Type trueType = trueBranch.resultType();
-    Type falseType = falseBranch.resultType();
-    if (isDefinitelyAssignableFrom(trueType, falseType)) {
-      ternaryType = trueType;
-    } else if (isDefinitelyAssignableFrom(falseType, trueType)) {
-      ternaryType = falseType;
-    } else {
-      throw new IllegalArgumentException(
-          String.format(
-              "true (%s) and false (%s) branches must be compatible", trueType, falseType));
-    }
-    return ternary(condition, trueBranch, falseBranch, ternaryType);
-  }
-
-  /**
-   * Returns an expression that evaluates equivalently to a java ternary expression: {@code
-   * condition ? left : right}.
-   *
-   * <p>This allows the caller to specify the result type of the ternary expression. By default the
-   * ternary expression is typed with the type of the true branch, but the caller can specify the
-   * result type if they know more about the types of the branches.
-   */
-  public static Expression ternary(
-      Expression condition, Expression trueBranch, Expression falseBranch, Type resultType) {
-    checkArgument(
-        condition.resultType().equals(Type.BOOLEAN_TYPE),
-        "The condition must be a boolean, got %s",
-        condition.resultType());
-    checkArgument(
-        isPossiblyAssignableFrom(resultType, trueBranch.resultType()),
-        "expected %s to be assignable to %s",
-        trueBranch.resultType(),
-        resultType);
-    checkArgument(
-        isPossiblyAssignableFrom(resultType, falseBranch.resultType()),
-        "expected %s to be assignable to %s",
-        falseBranch.resultType(),
-        resultType);
-    Features features = Features.of();
-    if (Expression.areAllCheap(condition, trueBranch, falseBranch)) {
-      features = features.plus(Feature.CHEAP);
-    }
-    if (trueBranch.isNonJavaNullable() && falseBranch.isNonJavaNullable()) {
-      features = features.plus(Feature.NON_JAVA_NULLABLE);
-    }
-    return new Expression(resultType, features) {
-      @Override
-      protected void doGen(CodeBuilder mv) {
-        condition.gen(mv);
-        Label ifFalse = new Label();
-        Label end = new Label();
-        mv.visitJumpInsn(Opcodes.IFEQ, ifFalse); // if 0 goto ifFalse
-        trueBranch.gen(mv); // eval true branch
-        mv.visitJumpInsn(Opcodes.GOTO, end); // jump to the end
-        mv.visitLabel(ifFalse);
-        falseBranch.gen(mv); // eval false branch
-        mv.visitLabel(end);
       }
     };
   }
@@ -786,21 +754,73 @@ public final class BytecodeUtils {
   }
 
   /**
-   * Outputs bytecode that will test the item at the top of the stack for null, and branch to {@code
-   * nullExit} if it is {@code null}. At {@code nullSafeExit} there will be a null value at the top
+   * Tests the top of the stack for soy nullishness, exiting to nullExit with a nullish value at the
+   * top of the stack.
+   */
+  public static void soyNullCoalesce(CodeBuilder builder, Type argType, Label nullExit) {
+    if (argType.equals(SOY_VALUE_TYPE)) {
+      builder.dup();
+      MethodRef.SOY_VALUE_IS_NULLISH.invokeUnchecked(builder);
+      builder.ifZCmp(Opcodes.IFNE, nullExit);
+    } else {
+      nullCoalesce(builder, nullExit, argType, /* pushSoyNull= */ true);
+    }
+  }
+
+  /**
+   * Tests the top of the stack for soy nullishness, exiting to nullExit with a Java null at the top
    * of the stack.
    */
-  public static void nullCoalesce(CodeBuilder builder, Label nullExit) {
-    builder.dup();
+  public static void soyNullToNullCoalesce(CodeBuilder builder, Type argType, Label nullExit) {
+    nullCoalesce(builder, nullExit, argType, /* pushSoyNull= */ false);
+  }
+
+  private static void nullCoalesce(
+      CodeBuilder builder, Label nullExit, Type argType, boolean pushSoyNull) {
     Label nonNull = new Label();
-    builder.ifNonNull(nonNull);
+    builder.dup();
+    ifNonNullish(builder, argType, nonNull);
     // See http://mail.ow2.org/wws/arc/asm/2016-02/msg00001.html for a discussion of this pattern
     // but even though the value at the top of the stack here is null, its type isn't.  So we need
     // to pop and push.  This is the idiomatic pattern.
     builder.pop();
-    builder.pushNull();
+    if (pushSoyNull) {
+      soyNull().gen(builder);
+    } else {
+      builder.pushNull();
+    }
     builder.goTo(nullExit);
     builder.mark(nonNull);
+  }
+
+  /**
+   * Exits to ifNonNullish if the top of the stack is nullish. This works for SoyValue,
+   * SoyValueProvider, and Object. Object assumes this is an unboxed value and compares with Java
+   * null.
+   */
+  public static void ifNonNullish(CodeBuilder cb, Type argType, Label ifNonNullish) {
+    if (isDefinitelyAssignableFrom(SOY_VALUE_TYPE, argType)) {
+      MethodRef.SOY_VALUE_IS_NULLISH.invokeUnchecked(cb);
+      cb.ifZCmp(Opcodes.IFEQ, ifNonNullish);
+    } else if (isDefinitelyAssignableFrom(SOY_VALUE_PROVIDER_TYPE, argType)) {
+      MethodRef.IS_SOY_NON_NULLISH.invokeUnchecked(cb);
+      cb.ifZCmp(Opcodes.IFNE, ifNonNullish);
+    } else {
+      cb.ifNonNull(ifNonNullish);
+    }
+  }
+
+  /** The inverse of {@link #ifNonNullish}. */
+  public static void ifNullish(CodeBuilder cb, Type argType, Label ifNullish) {
+    if (isDefinitelyAssignableFrom(SOY_VALUE_TYPE, argType)) {
+      MethodRef.SOY_VALUE_IS_NULLISH.invokeUnchecked(cb);
+      cb.ifZCmp(Opcodes.IFNE, ifNullish);
+    } else if (isDefinitelyAssignableFrom(SOY_VALUE_PROVIDER_TYPE, argType)) {
+      MethodRef.IS_SOY_NON_NULLISH.invokeUnchecked(cb);
+      cb.ifZCmp(Opcodes.IFEQ, ifNullish);
+    } else {
+      cb.ifNull(ifNullish);
+    }
   }
 
   /**
@@ -850,15 +870,12 @@ public final class BytecodeUtils {
 
     if (asType.equals(List.class)) {
       cb.checkCast(SOY_LIST_TYPE);
-      MethodRef.SOY_LIST_AS_JAVA_LIST.invokeUnchecked(cb);
+      MethodRef.SOY_VALUE_AS_JAVA_LIST.invokeUnchecked(cb);
       return LIST_TYPE;
     }
 
     if (asType.equals(Message.class)) {
-      if (!isDefinitelyAssignableFrom(SOY_PROTO_VALUE_TYPE, fromType)) {
-        cb.checkCast(SOY_PROTO_VALUE_TYPE);
-      }
-      MethodRef.SOY_PROTO_VALUE_GET_PROTO.invokeUnchecked(cb);
+      MethodRef.SOY_VALUE_GET_PROTO.invokeUnchecked(cb);
       return MESSAGE_TYPE;
     }
 
@@ -928,24 +945,13 @@ public final class BytecodeUtils {
    * Returns a {@link SoyExpression} that evaluates to true if the expression evaluated to a
    * non-null value.
    */
-  public static SoyExpression isNonNull(Expression expr) {
-    if (isPrimitive(expr.resultType())) {
-      // Reference the statement so that the SoyValueProvider detaches for resolve, and
-      // TemplateAnalysis will correctly cause subsequent accesses to resolve immediately.
-      return SoyExpression.forBool(expr.toStatement().then(constant(true)));
-    }
-
-    return SoyExpression.forBool(Branch.ifNotNull(expr).asBoolean());
+  public static SoyExpression isNonSoyNullish(Expression expr) {
+    return SoyExpression.forBool(Branch.ifNonSoyNullish(expr).asBoolean());
   }
 
   /** Returns a {@link SoyExpression} that evaluates to true if the expression evaluated to null. */
-  public static SoyExpression isNull(Expression expr) {
-    if (isPrimitive(expr.resultType())) {
-      // Reference the statement so that the SoyValueProvider detaches for resolve, and
-      // TemplateAnalysis will correctly cause subsequent accesses to resolve immediately.
-      return SoyExpression.forBool(expr.toStatement().then(constant(false)));
-    }
-    return SoyExpression.forBool(Branch.ifNotNull(expr).negate().asBoolean());
+  public static SoyExpression isSoyNullish(Expression expr) {
+    return SoyExpression.forBool(Branch.ifNonSoyNullish(expr).negate().asBoolean());
   }
 
   public static Type getTypeForClassName(String name) {

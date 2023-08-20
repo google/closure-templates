@@ -46,6 +46,7 @@ public interface SoyList extends SoyLegacyObjectMap {
    * @return A Java list of all value providers.
    */
   @Nonnull
+  @Override
   List<? extends SoyValueProvider> asJavaList();
 
   /**

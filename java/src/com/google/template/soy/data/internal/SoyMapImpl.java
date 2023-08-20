@@ -44,11 +44,23 @@ public final class SoyMapImpl extends AbstractSoyMap {
     return new SoyMapImpl(providerMap);
   }
 
+  @Nonnull
+  public static SoyMapImpl forProviderMapNoNullKeys(
+      Map<? extends SoyValue, ? extends SoyValueProvider> providerMap) {
+    for (SoyValue key : providerMap.keySet()) {
+      if (key == null || key.isNullish()) {
+        throw new IllegalArgumentException(
+            String.format("null key in entry: null=%s", providerMap.get(key)));
+      }
+    }
+    return new SoyMapImpl(providerMap);
+  }
+
   private SoyMapImpl(Map<? extends SoyValue, ? extends SoyValueProvider> providerMap) {
     checkNotNull(providerMap);
     if (providerMap.containsKey(null)) {
-      throw new IllegalArgumentException(
-          String.format("null key in entry: null=%s", providerMap.get(null)));
+      // This shouldn't happen.
+      throw new AssertionError();
     }
     this.providerMap = providerMap;
   }

@@ -21,9 +21,11 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.template.soy.jbcsrc.runtime.JbcSrcPluginRuntime.BOX_JAVA_MAP_AS_SOY_LEGACY_OBJECT_MAP;
 import static com.google.template.soy.jbcsrc.runtime.JbcSrcPluginRuntime.BOX_JAVA_MAP_AS_SOY_MAP;
 import static com.google.template.soy.jbcsrc.runtime.JbcSrcPluginRuntime.BOX_JAVA_MAP_AS_SOY_RECORD;
+import static com.google.template.soy.jbcsrc.runtime.JbcSrcPluginRuntime.COALESCE_TO_JAVA_NULL;
 import static com.google.template.soy.jbcsrc.runtime.JbcSrcPluginRuntime.CONVERT_FUTURE_TO_SOY_VALUE_PROVIDER;
 import static com.google.template.soy.jbcsrc.runtime.JbcSrcPluginRuntime.SOY_VALUE_INTEGER_VALUE;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.protobuf.Descriptors.GenericDescriptor;
@@ -58,6 +60,7 @@ import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Future;
+import org.objectweb.asm.Label;
 import org.objectweb.asm.Type;
 
 /** Adapts JavaValueFactory to working with Expressions for jbc src. */
@@ -134,7 +137,7 @@ final class JbcSrcValueFactory extends JavaValueFactory {
         fnNode.getSourceLocation(),
         /* includeTriggeredInTemplateMsg= */ true);
     if (errorReporter.errorsSince(checkpoint)) {
-      return SoyExpression.NULL_BOXED;
+      return SoyExpression.SOY_NULL;
     }
     SoyJavaSourceFunction javaSrcFn = fnNode.getSourceFunction();
     return toSoyExpression(
@@ -171,7 +174,7 @@ final class JbcSrcValueFactory extends JavaValueFactory {
       boolean instance, MethodSignature methodSignature, JavaValue... params) {
     // Attempt to eagerly convert the result to a SoyExpression to make life easier for ourselves.
     // (We can take various shortcuts if things are SoyExpressions.)
-    // This lets us more easily support users who want to compose multiple callXMethod calls, e.g:
+    // This lets us more easily support users who want to compose multiple callXMethod calls, e.g.:
     //   callXMethod(METHOD1, callXMethod(METHOD2, arg1), callXMethod(METHOD3, arg2));
     // ... which would call METHOD1 with the results of METHOD2 & METHOD3.
     Expression[] adapted = adaptParams(methodSignature, params);
@@ -246,7 +249,7 @@ final class JbcSrcValueFactory extends JavaValueFactory {
 
   @Override
   public JbcSrcJavaValue constantNull() {
-    return JbcSrcJavaValue.of(SoyExpression.NULL);
+    return JbcSrcJavaValue.of(SoyExpression.SOY_NULL);
   }
 
   private static Expression[] adaptParams(MethodSignature method, JavaValue[] userParams) {
@@ -258,6 +261,9 @@ final class JbcSrcValueFactory extends JavaValueFactory {
       Expression expr = jbcJv.expr();
       if (expr instanceof SoyExpression) {
         params[i] = adaptParameter(methodParam, jbcJv);
+      } else if (BytecodeUtils.isDefinitelyAssignableFrom(
+          BytecodeUtils.SOY_VALUE_TYPE, expr.resultType())) {
+        params[i] = COALESCE_TO_JAVA_NULL.invoke(expr);
       } else {
         params[i] = expr;
       }
@@ -273,16 +279,16 @@ final class JbcSrcValueFactory extends JavaValueFactory {
     // For explicit null types, we can just cast w/o doing any other work.
     // We already validated that it isn't primitive types.
     if (actualParam.soyRuntimeType().soyType().equals(NullType.getInstance())) {
-      return actualParam.checkedCast(expectedParamType);
+      return BytecodeUtils.constantNull(Type.getType(expectedParamType));
     }
 
     // If expecting a bland 'SoyValue', just box the expr.
     if (expectedParamType == SoyValue.class) {
-      return actualParam.box();
+      return COALESCE_TO_JAVA_NULL.invoke(actualParam.box());
     }
     // If we expect a specific SoyValue subclass, then box + cast.
     if (SoyValue.class.isAssignableFrom(expectedParamType)) {
-      return actualParam.box().checkedCast(expectedParamType);
+      return COALESCE_TO_JAVA_NULL.invoke(actualParam.box()).checkedCast(expectedParamType);
     }
 
     // Otherwise, we're an unboxed type (non-SoyValue).
@@ -312,47 +318,21 @@ final class JbcSrcValueFactory extends JavaValueFactory {
         && ProtocolMessageEnum.class.isAssignableFrom(expectedParamType)) {
 
       // Don't check for null for a primitive, since it can't be null.
-      if (BytecodeUtils.isPrimitive(actualParam.resultType())) {
+      if (actualParam.isNonSoyNullish()) {
         return convertToEnum(expectedParamType, actualParam);
       }
 
-      // Otherwise, always handle null, even if the Soy type isn't nullable. Soy should handle this
-      // gracefully, plugin code can crash if it gets an unexpected null.
-      Type expectedType = Type.getType(expectedParamType);
-      Expression actualParamPlaceholder =
-          new Expression(actualParam.resultType(), actualParam.features()) {
-            @Override
-            protected void doGen(CodeBuilder mv) {}
-          };
-
-      // Add an empty expression here to read the value already on the stack.
-      Expression isNull = BytecodeUtils.isNull(actualParamPlaceholder);
-      Expression constantNull = BytecodeUtils.constantNull(expectedType);
-      Expression nullExpr =
-          new Expression(expectedType) {
-            @Override
-            protected void doGen(CodeBuilder mv) {
-              // Pop the extra param value, it's here for use in the false branch.
-              mv.pop();
-              constantNull.gen(mv);
-            }
-          };
-      Expression ternary =
-          BytecodeUtils.ternary(
-              isNull,
-              nullExpr,
-              // Use an empty expression here because the value is already on top of the stack.
-              convertToEnum(expectedParamType, actualParam.withSource(actualParamPlaceholder)));
-
-      return new Expression(expectedType) {
+      MethodRef forNumber = getForNumberMethod(expectedParamType);
+      return new Expression(forNumber.returnType()) {
         @Override
         protected void doGen(CodeBuilder mv) {
-          // Manually generate the expression so we can use it from the stack in the tenary
-          // condition and false branch without having to generate it twice.
+          Label end = new Label();
           actualParam.gen(mv);
-          // Dup the param value so we can use it in the ternary's false condition.
-          mv.dup();
-          ternary.gen(mv);
+          BytecodeUtils.soyNullToNullCoalesce(mv, actualParam.resultType(), end);
+          MethodRef.SOY_VALUE_LONG_VALUE.invokeUnchecked(mv);
+          mv.cast(Type.LONG_TYPE, Type.INT_TYPE);
+          forNumber.invokeUnchecked(mv);
+          mv.mark(end);
         }
       };
     }
@@ -371,8 +351,12 @@ final class JbcSrcValueFactory extends JavaValueFactory {
   }
 
   private static Expression convertToEnum(Class<?> enumType, SoyExpression e) {
-    return MethodRef.create(enumType, "forNumber", int.class)
+    return getForNumberMethod(enumType)
         .invoke(BytecodeUtils.numericConversion(e.unboxAsLong(), Type.INT_TYPE));
+  }
+
+  private static MethodRef getForNumberMethod(Class<?> enumType) {
+    return MethodRef.create(enumType, "forNumber", int.class);
   }
 
   private static String nameFromDescriptor(Class<?> protoType) {
@@ -456,17 +440,13 @@ final class JbcSrcValueFactory extends JavaValueFactory {
           throw new IllegalStateException("java map cannot be converted to: " + expectedType);
         }
       } else if (SoyValue.class.isAssignableFrom(type)) {
-        soyExpr =
-            SoyExpression.forSoyValue(
-                expectedType,
-                expr.checkedCast(SoyRuntimeType.getBoxedType(expectedType).runtimeType()));
+        soyExpr = SoyExpression.forSoyValue(expectedType, nullGuard(expr));
       } else if (Future.class.isAssignableFrom(type)) {
         soyExpr =
             SoyExpression.forSoyValue(
                 expectedType,
-                detacher
-                    .resolveSoyValueProvider(expr.invoke(CONVERT_FUTURE_TO_SOY_VALUE_PROVIDER))
-                    .checkedCast(SoyRuntimeType.getBoxedType(expectedType).runtimeType()));
+                detacher.resolveSoyValueProvider(
+                    expr.invoke(CONVERT_FUTURE_TO_SOY_VALUE_PROVIDER)));
       } else if (Message.class.isAssignableFrom(type)) {
         soyExpr =
             SoyExpression.forProto(
@@ -490,5 +470,26 @@ final class JbcSrcValueFactory extends JavaValueFactory {
   /** Returns the SoyType for a proto or proto enum. */
   private SoyType soyTypeForProtoOrEnum(Class<?> type) {
     return registry.getProtoRegistry().getProtoType(nameFromDescriptor(type));
+  }
+
+  /**
+   * Plugins may return null rather than NullData from methods of types assignable from SoyValue.
+   */
+  private Expression nullGuard(Expression delegate) {
+    Preconditions.checkArgument(
+        BytecodeUtils.isDefinitelyAssignableFrom(
+            BytecodeUtils.SOY_VALUE_TYPE, delegate.resultType()));
+    return new Expression(BytecodeUtils.SOY_VALUE_TYPE) {
+      @Override
+      protected void doGen(CodeBuilder adapter) {
+        Label end = new Label();
+        delegate.gen(adapter);
+        adapter.dup();
+        adapter.ifNonNull(end);
+        adapter.pop();
+        BytecodeUtils.soyNull().gen(adapter);
+        adapter.mark(end);
+      }
+    };
   }
 }

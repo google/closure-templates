@@ -487,7 +487,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
    *
    * <p>For now we only support switches where all the keys are ints or all the keys are strings. We
    * could support an arbitrary set of literals using the same strategy as strings. Basically we
-   * would pass all the literals to an invokedynamic boostrap which would use a hash data structure
+   * would pass all the literals to an invokedynamic bootstrap which would use a hash data structure
    * to map literal -> case number. Then we could dynamically resolve all switch exprs against the
    * hash.
    *

@@ -106,6 +106,15 @@ public final class LocalVariable extends Expression {
         variableName, resultType(), index, start, end, features().plus(Feature.NON_JAVA_NULLABLE));
   }
 
+  @Override
+  public LocalVariable asNonSoyNullish() {
+    if (isNonSoyNullish()) {
+      return this;
+    }
+    return new LocalVariable(
+        variableName, resultType(), index, start, end, features().plus(Feature.NON_SOY_NULLISH));
+  }
+
   /**
    * Write a local variable table entry for this variable. This informs debuggers about variable
    * names, types and lifetime.
