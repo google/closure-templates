@@ -28,6 +28,7 @@ import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
+import com.google.template.soy.exprtree.ExprEquivalence;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.CallableExpr.ParamsStyle;
 import com.google.template.soy.exprtree.ExprRootNode;
@@ -64,9 +65,11 @@ final class RewriteShortFormCallsPass implements CompilerFileSetPass {
       SoyErrorKind.of("Expected named parameters.");
 
   private final ErrorReporter errorReporter;
+  private final ExprEquivalence exprEquivalence;
 
   public RewriteShortFormCallsPass(ErrorReporter errorReporter) {
     this.errorReporter = errorReporter;
+    this.exprEquivalence = new ExprEquivalence();
   }
 
   @Override
@@ -216,6 +219,7 @@ final class RewriteShortFormCallsPass implements CompilerFileSetPass {
             ImmutableList.of(),
             false,
             ErrorReporter.exploding());
+    call.setOriginalShortFormExprEquivalence(exprEquivalence.wrap(expr.copy(new CopyState())));
     call.getCalleeExpr().setType(type);
     for (int i = 0; i < fnNode.getParamNames().size(); i++) {
       Identifier id = fnNode.getParamNames().get(i);

@@ -26,6 +26,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.exprtree.ExprEquivalence;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
@@ -45,6 +46,8 @@ public final class CallBasicNode extends CallNode {
    * be called.
    */
   private ExprRootNode calleeExpr;
+
+  private ExprEquivalence.Wrapper originalShortFormExprEquivalence = null;
 
   public CallBasicNode(
       int id,
@@ -129,6 +132,17 @@ public final class CallBasicNode extends CallNode {
 
   public void setCalleeExpr(ExprRootNode calleeExpr) {
     this.calleeExpr = calleeExpr;
+  }
+
+  @Nullable
+  public void setOriginalShortFormExprEquivalence(
+      ExprEquivalence.Wrapper originalShortFormExprEquivalence) {
+    this.originalShortFormExprEquivalence = originalShortFormExprEquivalence;
+  }
+
+  @Nullable
+  public ExprEquivalence.Wrapper getOriginalShortFormExprEquivalence() {
+    return originalShortFormExprEquivalence;
   }
 
   @Override
