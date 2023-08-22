@@ -171,7 +171,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
   static final SoyVisualElementData UNDEFINED_VE_DATA =
       SoyVisualElementData.create(UNDEFINED_VE, /* data= */ null);
 
-  /** Defines how we deal with and produce UndefinedData instanes. */
+  /** Defines how we deal with and produce UndefinedData instances. */
   public enum UndefinedDataHandlingMode {
     /**
      * In 'bugged' mode we will produce instances of undefined data when dereferencing null instead
@@ -488,7 +488,8 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
 
       // This behavior is not ideal, but needed for compatibility with existing code.
       // TODO: If feasible, find and fix existing instances, then throw RenderException here.
-      if (undefinedDataHandlingMode == UndefinedDataHandlingMode.BUGGED) {
+      if (isNullOrUndefinedBase(base)
+          && undefinedDataHandlingMode == UndefinedDataHandlingMode.BUGGED) {
         return UndefinedData.INSTANCE;
       }
       if (isNullOrUndefinedBase(base)) {
@@ -769,7 +770,6 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
 
   @Override
   protected SoyValue visitEqualOpNode(EqualOpNode node) {
-
     return convertResult(equal(visit(node.getChild(0)), visit(node.getChild(1))));
   }
 
