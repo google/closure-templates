@@ -215,7 +215,8 @@ final class RewriteShortFormCallsPass implements CompilerFileSetPass {
             callee,
             ImmutableList.of(),
             false,
-            ErrorReporter.exploding());
+            ErrorReporter.exploding(),
+            expr.copy(new CopyState()));
     call.getCalleeExpr().setType(type);
     for (int i = 0; i < fnNode.getParamNames().size(); i++) {
       Identifier id = fnNode.getParamNames().get(i);
