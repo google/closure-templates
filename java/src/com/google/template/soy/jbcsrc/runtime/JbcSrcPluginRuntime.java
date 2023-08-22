@@ -57,13 +57,20 @@ public final class JbcSrcPluginRuntime {
   public static final MethodRef SOY_VALUE_INTEGER_VALUE =
       MethodRef.create(SoyValue.class, "integerValue").asCheap();
 
-  public static final MethodRef COALESCE_TO_JAVA_NULL =
-      create("coalesceToJavaNull", SoyValue.class);
+  public static final MethodRef NULLISH_TO_JAVA_NULL = create("nullishToJavaNull", SoyValue.class);
 
   @Keep
   @Nullable
-  public static SoyValue coalesceToJavaNull(@Nonnull SoyValue value) {
+  public static SoyValue nullishToJavaNull(@Nonnull SoyValue value) {
     return value.isNullish() ? null : value;
+  }
+
+  public static final MethodRef NULL_TO_JAVA_NULL = create("soyNullToJavaNull", SoyValue.class);
+
+  @Keep
+  @Nullable
+  public static SoyValue soyNullToJavaNull(@Nonnull SoyValue value) {
+    return value.isNull() ? null : value;
   }
 
   public static final MethodRef BOX_JAVA_MAP_AS_SOY_MAP = create("boxJavaMapAsSoyMap", Map.class);

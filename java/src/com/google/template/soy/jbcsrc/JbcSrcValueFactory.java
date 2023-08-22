@@ -21,8 +21,8 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.template.soy.jbcsrc.runtime.JbcSrcPluginRuntime.BOX_JAVA_MAP_AS_SOY_LEGACY_OBJECT_MAP;
 import static com.google.template.soy.jbcsrc.runtime.JbcSrcPluginRuntime.BOX_JAVA_MAP_AS_SOY_MAP;
 import static com.google.template.soy.jbcsrc.runtime.JbcSrcPluginRuntime.BOX_JAVA_MAP_AS_SOY_RECORD;
-import static com.google.template.soy.jbcsrc.runtime.JbcSrcPluginRuntime.COALESCE_TO_JAVA_NULL;
 import static com.google.template.soy.jbcsrc.runtime.JbcSrcPluginRuntime.CONVERT_FUTURE_TO_SOY_VALUE_PROVIDER;
+import static com.google.template.soy.jbcsrc.runtime.JbcSrcPluginRuntime.NULLISH_TO_JAVA_NULL;
 import static com.google.template.soy.jbcsrc.runtime.JbcSrcPluginRuntime.SOY_VALUE_INTEGER_VALUE;
 
 import com.google.common.base.Preconditions;
@@ -263,7 +263,7 @@ final class JbcSrcValueFactory extends JavaValueFactory {
         params[i] = adaptParameter(methodParam, jbcJv);
       } else if (BytecodeUtils.isDefinitelyAssignableFrom(
           BytecodeUtils.SOY_VALUE_TYPE, expr.resultType())) {
-        params[i] = COALESCE_TO_JAVA_NULL.invoke(expr);
+        params[i] = NULLISH_TO_JAVA_NULL.invoke(expr);
       } else {
         params[i] = expr;
       }
@@ -284,11 +284,11 @@ final class JbcSrcValueFactory extends JavaValueFactory {
 
     // If expecting a bland 'SoyValue', just box the expr.
     if (expectedParamType == SoyValue.class) {
-      return COALESCE_TO_JAVA_NULL.invoke(actualParam.box());
+      return NULLISH_TO_JAVA_NULL.invoke(actualParam.box());
     }
     // If we expect a specific SoyValue subclass, then box + cast.
     if (SoyValue.class.isAssignableFrom(expectedParamType)) {
-      return COALESCE_TO_JAVA_NULL.invoke(actualParam.box()).checkedCast(expectedParamType);
+      return NULLISH_TO_JAVA_NULL.invoke(actualParam.box()).checkedCast(expectedParamType);
     }
 
     // Otherwise, we're an unboxed type (non-SoyValue).
