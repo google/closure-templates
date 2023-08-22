@@ -16,6 +16,7 @@
 
 package com.google.template.soy.types;
 
+import static com.google.common.collect.ImmutableSortedSet.toImmutableSortedSet;
 import static java.util.Comparator.comparing;
 
 import com.google.common.base.Joiner;
@@ -28,7 +29,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.Objects;
-import java.util.stream.Collectors;
+import java.util.function.Predicate;
 
 /** Type representing a set of possible alternative types. */
 public final class UnionType extends SoyType {
@@ -116,12 +117,11 @@ public final class UnionType extends SoyType {
   }
 
   /** Returns a Soy type that is equivalent to this one but with 'null' removed. */
-  public SoyType removeNullability() {
-    if (isNullable()) {
-      return of(
-          members.stream()
-              .filter(t -> t.getKind() != SoyType.Kind.NULL)
-              .collect(Collectors.toList()));
+  public SoyType filter(Predicate<SoyType> filter) {
+    ImmutableSortedSet<SoyType> filtered =
+        members.stream().filter(filter).collect(toImmutableSortedSet(MEMBER_ORDER));
+    if (filtered.size() != members.size()) {
+      return of(filtered);
     }
     return this;
   }

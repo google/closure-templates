@@ -55,6 +55,7 @@ public class SoyTypesTest {
   private static final AnyType ANY_TYPE = AnyType.getInstance();
   private static final UnknownType UNKNOWN_TYPE = UnknownType.getInstance();
   private static final UriType URI_TYPE = UriType.getInstance();
+  private static final UndefinedType UNDEFINED_TYPE = UndefinedType.getInstance();
 
   @Test
   public void testAnyType() {
@@ -416,6 +417,8 @@ public class SoyTypesTest {
         .isEqualTo(NUMBER_TYPE);
     assertThat(SoyTypes.computeLowestCommonType(typeRegistry, FLOAT_TYPE, INT_TYPE))
         .isEqualTo(NUMBER_TYPE);
+    assertThat(SoyTypes.computeLowestCommonType(typeRegistry, INT_TYPE, UNDEFINED_TYPE))
+        .isEqualTo(UnionType.of(INT_TYPE, UNDEFINED_TYPE));
   }
 
   @Test

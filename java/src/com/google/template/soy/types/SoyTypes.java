@@ -52,6 +52,9 @@ public final class SoyTypes {
   public static final SoyType NUMBER_TYPE =
       UnionType.of(IntType.getInstance(), FloatType.getInstance());
 
+  public static final SoyType NULL_OR_UNDEFINED =
+      UnionType.of(NullType.getInstance(), UndefinedType.getInstance());
+
   public static final ImmutableMap<String, SanitizedType> SAFE_PROTO_TO_SANITIZED_TYPE =
       ImmutableMap.<String, SanitizedType>builder()
           .put(SafeHtmlProto.getDescriptor().getFullName(), SanitizedType.HtmlType.getInstance())
@@ -126,7 +129,28 @@ public final class SoyTypes {
   public static SoyType removeNull(SoyType type) {
     checkArgument(!NullType.getInstance().equals(type), "Can't remove null from null");
     if (type.getKind() == Kind.UNION) {
-      return ((UnionType) type).removeNullability();
+      return ((UnionType) type).filter(t -> t != NullType.getInstance());
+    }
+    return type;
+  }
+
+  private static SoyType removeUndefined(SoyType type) {
+    if (type.getKind() == Kind.UNION) {
+      return ((UnionType) type).filter(t -> t != UndefinedType.getInstance());
+    }
+    return type;
+  }
+
+  private static SoyType removeNullish(SoyType type) {
+    if (type.getKind() == Kind.UNION) {
+      return ((UnionType) type).filter(t -> !NULLISH_KINDS.contains(t.getKind()));
+    }
+    return type;
+  }
+
+  private static SoyType keepNullish(SoyType type) {
+    if (type.getKind() == Kind.UNION) {
+      return ((UnionType) type).filter(t -> NULLISH_KINDS.contains(t.getKind()));
     }
     return type;
   }
@@ -138,9 +162,30 @@ public final class SoyTypes {
    */
   public static SoyType tryRemoveNull(SoyType soyType) {
     if (soyType == NullType.getInstance()) {
-      return NullType.getInstance();
+      return soyType;
     }
     return removeNull(soyType);
+  }
+
+  public static SoyType tryRemoveUndefined(SoyType soyType) {
+    if (soyType == UndefinedType.getInstance()) {
+      return soyType;
+    }
+    return removeUndefined(soyType);
+  }
+
+  public static SoyType tryRemoveNullish(SoyType soyType) {
+    if (isNullOrUndefined(soyType)) {
+      return soyType;
+    }
+    return removeNullish(soyType);
+  }
+
+  public static SoyType tryKeepNullish(SoyType soyType) {
+    if (isNullOrUndefined(soyType)) {
+      return soyType;
+    }
+    return keepNullish(soyType);
   }
 
   public static SoyType makeNullable(SoyType type) {
@@ -158,8 +203,14 @@ public final class SoyTypes {
     return containsKind(type, Kind.UNDEFINED);
   }
 
+  /** Returns true if the type is null, undefined, or a union containing one of those kinds. */
   public static boolean isNullish(SoyType type) {
     return containsKinds(type, NULLISH_KINDS);
+  }
+
+  /** Returns true if the type is null, undefined, or null|undefined. */
+  public static boolean isNullOrUndefined(SoyType type) {
+    return isKindOrUnionOfKinds(type, NULLISH_KINDS);
   }
 
   public static boolean isNumericOrUnknown(SoyType type) {
