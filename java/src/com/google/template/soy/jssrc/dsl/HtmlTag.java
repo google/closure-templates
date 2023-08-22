@@ -68,6 +68,11 @@ public abstract class HtmlTag extends Expression implements CodeChunk.HasRequire
     return create(tagName, type, Streams.stream(attributes));
   }
 
+  public HtmlTag withExtraAttributes(Iterable<? extends CodeChunk> attributes) {
+    return create(
+        tagName(), type(), Streams.concat(attributes().stream(), Streams.stream(attributes)));
+  }
+
   private static HtmlTag create(
       Expression tagName, Type type, Stream<? extends CodeChunk> attributes) {
     return new AutoValue_HtmlTag(

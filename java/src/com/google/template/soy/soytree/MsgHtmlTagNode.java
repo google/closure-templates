@@ -362,4 +362,12 @@ public final class MsgHtmlTagNode extends AbstractBlockNode implements MsgPlaceh
   public MsgHtmlTagNode copy(CopyState copyState) {
     return new MsgHtmlTagNode(this, copyState);
   }
+
+  public boolean isDefinitelyVoid() {
+    return TagName.isDefinitelyVoid(getLcTagName());
+  }
+
+  public boolean isSelfClosing() {
+    return isSelfClosing;
+  }
 }

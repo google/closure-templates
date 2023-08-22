@@ -282,7 +282,11 @@ public final class TagName {
   }
 
   public boolean isDefinitelyVoid() {
-    return VOID_TAG_NAMES.contains(nameAsLowerCase);
+    return isDefinitelyVoid(nameAsLowerCase);
+  }
+
+  public static boolean isDefinitelyVoid(String tagName) {
+    return VOID_TAG_NAMES.contains(tagName);
   }
 
   public boolean isDefinitelyInline() {
