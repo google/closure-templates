@@ -19,6 +19,7 @@ package com.google.template.soy.jbcsrc.restricted;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.asImmutableList;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.soyNull;
 import static com.google.template.soy.jbcsrc.restricted.testing.ExpressionSubject.assertThatExpression;
 
 import com.google.common.base.Utf8;
@@ -91,5 +92,11 @@ public class BytecodeUtilsTest {
     assertThatExpression(constant("aa" + large)).evaluatesTo("aa" + large);
     assertThatExpression(constant("aaa" + large)).evaluatesTo("aaa" + large);
     assertThatExpression(constant("aaaa" + large)).evaluatesTo("aaaa" + large);
+  }
+
+  @Test
+  public void testNullish() {
+    assertThat(soyNull().isNonJavaNullable()).isTrue();
+    assertThat(soyNull().isNonSoyNullish()).isFalse();
   }
 }

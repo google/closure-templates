@@ -111,6 +111,10 @@ public class SoyExpressionTest {
         .evaluatesTo(null);
     assertThatExpression(SoyExpression.SOY_NULL.coerceToBoolean()).evaluatesTo(false);
     assertThatExpression(SoyExpression.SOY_NULL.coerceToString()).evaluatesTo("null");
+
+    assertThat(SoyExpression.SOY_NULL.isBoxed()).isTrue();
+    assertThat(SoyExpression.SOY_NULL.isNonJavaNullable()).isTrue();
+    assertThat(SoyExpression.SOY_NULL.isNonSoyNullish()).isFalse();
   }
 
   @Test

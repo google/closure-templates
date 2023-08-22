@@ -31,7 +31,6 @@ import com.google.template.soy.jbcsrc.ExpressionCompiler.BasicExpressionCompiler
 import com.google.template.soy.jbcsrc.restricted.Branch;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.Expression;
-import com.google.template.soy.jbcsrc.restricted.FieldRef;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.soytree.defn.LocalVar;
@@ -179,7 +178,7 @@ final class ExpressionToSoyValueProviderCompiler {
     protected Optional<Expression> visitNullNode(NullNode node) {
       // unlike other primitives, this doesn't really count as boxing, just a read of a static
       // constant field. so we always do it
-      return Optional.of(FieldRef.NULL_PROVIDER.accessor());
+      return Optional.of(BytecodeUtils.soyNull());
     }
 
     @Override

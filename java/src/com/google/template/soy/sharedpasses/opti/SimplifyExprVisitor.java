@@ -16,6 +16,8 @@
 
 package com.google.template.soy.sharedpasses.opti;
 
+import static com.google.template.soy.exprtree.ExprNodes.isNullishLiteral;
+
 import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.internalutils.InternalValueUtils;
@@ -164,7 +166,7 @@ final class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
     // Can simplify if operand0 is constant. We assume no side-effects.
     SoyValue operand0 = getConstantOrNull(node.getChild(0));
     if (operand0 != null) {
-      if (operand0 instanceof NullData || operand0 instanceof UndefinedData) {
+      if (operand0.isNullish()) {
         node.getParent().replaceChild(node, node.getChild(1));
       } else {
         // all other constants are non=null, so use that
@@ -286,7 +288,7 @@ final class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
     while (true) {
       visit(node.getBase());
       ExprNode base = node.getBase();
-      if (base.getKind() == Kind.NULL_NODE) {
+      if (isNullishLiteral(base)) {
         // This is a null safe access on null, which evaluates to null. So replace the whole
         // expression with null and exit.
         node.getParent().replaceChild(node, base);
