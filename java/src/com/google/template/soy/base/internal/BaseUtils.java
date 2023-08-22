@@ -179,6 +179,22 @@ public final class BaseUtils {
    * @param quoteStyle What kind of quotes to wrap the string with.
    * @return A Soy string literal for this string value (including the surrounding quotes).
    */
+  public static String escapeToWrappedSoyStringDoubleQuote(
+      String value, boolean shouldEscapeToAscii, QuoteStyle quoteStyle) {
+    return '\"' + escapeToSoyString(value, shouldEscapeToAscii, quoteStyle) + '\"';
+  }
+
+  /**
+   * Builds a Soy string literal for this string value, including the surrounding quotes. Note that
+   * Soy string syntax is a subset of JS string syntax, so the result should also be a valid JS
+   * string.
+   *
+   * @param value The string value to escape.
+   * @param shouldEscapeToAscii Whether to escape non-ASCII characters as Unicode hex escapes
+   *     (backslash + 'u' + 4 hex digits).
+   * @param quoteStyle What kind of quotes to wrap the string with.
+   * @return A Soy string literal for this string value (including the surrounding quotes).
+   */
   public static String escapeToWrappedSoyString(
       String value, boolean shouldEscapeToAscii, QuoteStyle quoteStyle) {
     return quoteStyle.getQuoteChar()

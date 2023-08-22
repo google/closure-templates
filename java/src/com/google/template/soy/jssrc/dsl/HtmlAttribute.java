@@ -19,6 +19,7 @@ import static com.google.template.soy.jssrc.dsl.Expressions.stringLiteral;
 
 import com.google.auto.value.AutoValue;
 import com.google.errorprone.annotations.Immutable;
+import com.google.template.soy.base.internal.QuoteStyle;
 import com.google.template.soy.jssrc.dsl.FormattingContext.LexicalState;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
@@ -44,11 +45,20 @@ public abstract class HtmlAttribute extends Expression {
     return create(name, value != null ? stringLiteral(value) : null);
   }
 
+  public static HtmlAttribute create(String name, @Nullable String value, QuoteStyle style) {
+    return create(name, value != null ? stringLiteral(value, style) : null);
+  }
+
   @Override
   void doFormatOutputExpr(FormattingContext ctx) {
     ctx.append(name());
     if (value() != null) {
-      ctx.pushLexicalState(LexicalState.TSX_ATTR);
+      if (name().equals("meaning")
+          && value().toString().contains("'")) { // also need to consider if it has single quotes
+        ctx.pushLexicalState(LexicalState.TSX_ATTR_UNESCAPED);
+      } else {
+        ctx.pushLexicalState(LexicalState.TSX_ATTR);
+      }
       ctx.append("=");
       ctx.appendOutputExpression(value());
       ctx.popLexicalState();

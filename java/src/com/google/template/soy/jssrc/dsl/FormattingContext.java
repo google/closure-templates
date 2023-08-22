@@ -47,6 +47,7 @@ class FormattingContext implements AutoCloseable {
     JS,
     TSX,
     TSX_ATTR,
+    TSX_ATTR_UNESCAPED,
     TTL,
     RANGE_COMMENT
   }
@@ -105,6 +106,11 @@ class FormattingContext implements AutoCloseable {
   @CanIgnoreReturnValue
   public FormattingContext appendQuotedString(String s, QuoteStyle style) {
     switch (getCurrentLexicalState()) {
+      case TSX_ATTR_UNESCAPED:
+        return append(
+            escapeCloseScript(
+                BaseUtils.escapeToWrappedSoyStringDoubleQuote(
+                    s, formatOptions.htmlEscapeStrings(), style)));
       case TSX_ATTR:
         style = style.escaped(); // fall-through
       case JS:
@@ -139,6 +145,7 @@ class FormattingContext implements AutoCloseable {
         return "";
       case TSX:
       case TSX_ATTR:
+      case TSX_ATTR_UNESCAPED:
         return "{";
       case TTL:
         return "${";
@@ -154,6 +161,7 @@ class FormattingContext implements AutoCloseable {
         return "";
       case TSX:
       case TSX_ATTR:
+      case TSX_ATTR_UNESCAPED:
       case TTL:
         return "}";
       case RANGE_COMMENT:
@@ -168,6 +176,7 @@ class FormattingContext implements AutoCloseable {
         return " + ";
       case TSX:
       case TSX_ATTR:
+      case TSX_ATTR_UNESCAPED:
       case TTL:
         return "";
       case RANGE_COMMENT:
