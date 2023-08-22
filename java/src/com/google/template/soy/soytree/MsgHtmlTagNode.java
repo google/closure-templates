@@ -68,13 +68,13 @@ public final class MsgHtmlTagNode extends AbstractBlockNode implements MsgPlaceh
     // part of the samenesskey
     String fullTagText = getFullTagText(tagNode);
     String lcTagName = getLcTagName(errorReporter, tagNode.getTagName());
-    boolean isSelfEnding = false;
+    boolean isSelfClosing = false;
     if (tagNode instanceof HtmlCloseTagNode) {
       // TODO(lukes): the lcTagName logic below requires this leading '/' for close tags.  Just make
       // it understand the node type instead.
       lcTagName = "/" + lcTagName;
     } else if (tagNode instanceof HtmlOpenTagNode) {
-      isSelfEnding = ((HtmlOpenTagNode) tagNode).isSelfClosing();
+      isSelfClosing = ((HtmlOpenTagNode) tagNode).isSelfClosing();
     }
 
     // Include the velog node sameness key if we are the open or close tag node of the velog.
@@ -93,14 +93,14 @@ public final class MsgHtmlTagNode extends AbstractBlockNode implements MsgPlaceh
       }
     }
     if (placeholder == null) {
-      placeholder = MessagePlaceholder.create(genBasePhName(lcTagName, isSelfEnding), phExample);
+      placeholder = MessagePlaceholder.create(genBasePhName(lcTagName, isSelfClosing), phExample);
     }
     return new MsgHtmlTagNode(
         id,
         tagNode.getSourceLocation(),
         placeholder,
         lcTagName,
-        isSelfEnding,
+        isSelfClosing,
         fullTagText != null ? SamenessKeyImpl.create(placeholder.name(), fullTagText, key) : null,
         tagNode);
   }
@@ -211,7 +211,7 @@ public final class MsgHtmlTagNode extends AbstractBlockNode implements MsgPlaceh
   private final String lcTagName;
 
   /** Whether this HTML tag is self-ending (i.e. ends with "/>") */
-  private final boolean isSelfEnding;
+  private final boolean isSelfClosing;
 
   @Nullable private final SamenessKey samenessKey;
 
@@ -222,13 +222,13 @@ public final class MsgHtmlTagNode extends AbstractBlockNode implements MsgPlaceh
       SourceLocation sourceLocation,
       MessagePlaceholder placeholder,
       String lcTagName,
-      boolean isSelfEnding,
+      boolean isSelfClosing,
       @Nullable SamenessKey samenessKey,
       HtmlTagNode child) {
     super(id, sourceLocation);
     this.placeholder = placeholder;
     this.lcTagName = lcTagName;
-    this.isSelfEnding = isSelfEnding;
+    this.isSelfClosing = isSelfClosing;
     this.samenessKey = samenessKey;
     addChild(child);
   }
@@ -241,7 +241,7 @@ public final class MsgHtmlTagNode extends AbstractBlockNode implements MsgPlaceh
   private MsgHtmlTagNode(MsgHtmlTagNode orig, CopyState copyState) {
     super(orig, copyState);
     this.lcTagName = orig.lcTagName;
-    this.isSelfEnding = orig.isSelfEnding;
+    this.isSelfClosing = orig.isSelfClosing;
     this.samenessKey = orig.samenessKey != null ? orig.samenessKey.copy(copyState) : null;
     this.placeholder = orig.placeholder;
     // we may have handed out a copy to ourselves via genSamenessKey()
@@ -266,7 +266,7 @@ public final class MsgHtmlTagNode extends AbstractBlockNode implements MsgPlaceh
           .negate()
           .precomputed();
 
-  private static String genBasePhName(String lcTagName, boolean isSelfEnding) {
+  private static String genBasePhName(String lcTagName, boolean isSelfClosing) {
     boolean isEndTag;
     String baseLcTagName;
     if (lcTagName.startsWith("/")) {
@@ -280,7 +280,7 @@ public final class MsgHtmlTagNode extends AbstractBlockNode implements MsgPlaceh
         LC_TAG_NAME_TO_PLACEHOLDER_NAME_MAP.getOrDefault(baseLcTagName, baseLcTagName);
     if (isEndTag) {
       basePlaceholderName = "end_" + basePlaceholderName;
-    } else if (!isSelfEnding) {
+    } else if (!isSelfClosing) {
       basePlaceholderName = "start_" + basePlaceholderName;
     }
     // placeholders should be limited to just ascii numeric chars (and underscore).  Anything else
@@ -333,7 +333,7 @@ public final class MsgHtmlTagNode extends AbstractBlockNode implements MsgPlaceh
 
     appendSourceStringForChildren(sb);
     int indexBeforeClose;
-    if (isSelfEnding) {
+    if (isSelfClosing) {
       indexBeforeClose = sb.length() - 2;
       if (!sb.substring(indexBeforeClose).equals("/>")) {
         throw new AssertionError();
