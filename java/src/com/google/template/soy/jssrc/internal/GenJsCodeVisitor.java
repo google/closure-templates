@@ -91,7 +91,6 @@ import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.Visibility;
 import com.google.template.soy.soytree.defn.ConstVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
-import com.google.template.soy.soytree.defn.TemplateStateVar;
 import com.google.template.soy.types.NullType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
@@ -297,7 +296,9 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     String fileOverviewDescription = "Templates in namespace " + node.getNamespace() + ".";
     JsDoc.Builder jsDocBuilder = JsDoc.builder();
     jsDocBuilder.addAnnotation("fileoverview", fileOverviewDescription);
-    jsDocBuilder.addAnnotation("suppress", "{missingRequire} TODO(b/152440355)");
+    if (isIncrementalDom()) {
+      jsDocBuilder.addAnnotation("suppress", "{missingRequire} TODO(b/152440355)");
+    }
     jsDocBuilder.addAnnotation("suppress", "{suspiciousCode}");
     if (!jsSrcOptions.shouldGenerateGoogModules()) {
       jsDocBuilder.addAnnotation("suppress", "{uselessCode}");
@@ -349,19 +350,24 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       jsCodeBuilder.appendLine();
       for (Map.Entry<String, SoyType> entry : ijData.entrySet()) {
         jsCodeBuilder.appendLine();
-        jsCodeBuilder.appendLine(
-            JsDoc.builder()
-                // Because every declaration can declare a type, we can get errors if they don't
-                // declare identical types.  There isn't a good way to force identical declarations
-                // so we just suppress the duplicate error warning.
-                .addParameterizedAnnotation("suppress", "duplicate")
-                // declare every field as optional.  This is because if a template is unused and
-                // declares an ij param we don't want to force people to supply a value.
-                .addParameterizedAnnotation(
-                    "type",
-                    getJsTypeForParamForDeclaration(entry.getValue()).typeExpr() + "|undefined")
-                .build()
-                .toString());
+        JsType type = getJsTypeForParamForDeclaration(entry.getValue());
+        jsCodeBuilder
+            .appendLine(
+                JsDoc.builder()
+                    // Because every declaration can declare a type, we can get errors if they don't
+                    // declare identical types.  There isn't a good way to force identical
+                    // declarations
+                    // so we just suppress the duplicate error warning.
+                    .addParameterizedAnnotation("suppress", "duplicate")
+                    // declare every field as optional.  This is because if a template is unused and
+                    // declares an ij param we don't want to force people to supply a value.
+                    .addParameterizedAnnotation("type", type.typeExpr() + "|undefined")
+                    .build()
+                    .toString())
+            .addGoogRequires(
+                type.getGoogRequires().stream()
+                    .map(GoogRequire::toRequireType)
+                    .collect(toImmutableList()));
         jsCodeBuilder.append(
             require
                 .reference()
@@ -1297,20 +1303,11 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     // Type check parameters.
     bodyStatements.add(genParamTypeChecks(node, alias, isPositionalStyle));
 
-    if (node instanceof TemplateElementNode) {
-      TemplateElementNode elementNode = (TemplateElementNode) node;
-      for (TemplateStateVar stateVar : elementNode.getStateVars()) {
-        Expression expr = getExprTranslator().exec(stateVar.defaultValue());
-        // A  state variable can be something like ns.foo.FooProto|null. Without
-        // this cast, access to this variable can trigger JS conformance errors
-        // due to unknown type.
-        if (!stateVar.type().equals(stateVar.defaultValue().getType())) {
-          // TODO(b/255978614): add requires
-          expr = expr.castAsNoRequire(JsType.forJsSrc(stateVar.type()).typeExpr());
-        }
-        bodyStatements.add(VariableDeclaration.builder(stateVar.name()).setRhs(expr).build());
-      }
-    }
+    checkState(
+        !(node instanceof TemplateElementNode)
+            || ((TemplateElementNode) node).getStateVars().isEmpty(),
+        "state vars in %s should've been removed by DesugarStateNodesPass",
+        node.getTemplateName());
 
     SanitizedContentKind kind = node.getContentKind();
     if (isComputableAsJsExprsVisitor.exec(node)) {
@@ -1477,9 +1474,10 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       SoyType indirectParamType =
           typeRegistry.getOrCreateUnionType(combinedType, NullType.getInstance());
       JsType jsType = getJsTypeForParamForDeclaration(indirectParamType);
-      // NOTE: we do not add goog.requires for indirect types.  This is because it might introduce
-      // strict deps errors.  This should be fine though since the transitive soy template that
-      // actually has the param will add them.
+      jsCodeBuilder.addGoogRequires(
+          jsType.getGoogRequires().stream()
+              .map(GoogRequire::toRequireType)
+              .collect(toImmutableList()));
       record.put(indirectParamName, jsType.typeExprForRecordMember(/* isOptional= */ true));
     }
     return JsType.toRecord(record);

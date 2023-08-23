@@ -127,6 +127,10 @@ public final class JsCodeBuilder {
     }
   }
 
+  public void addGoogRequires(Iterable<GoogRequire> googRequires) {
+    googRequires.forEach(this::addGoogRequire);
+  }
+
   /** Should only be used by {@link GenJsCodeVisitor#visitSoyFileNode}. */
   public void appendGoogRequiresTo(StringBuilder sb) {
     for (GoogRequire require : googRequires.values()) {

@@ -629,6 +629,7 @@ public final class JsType {
             builder.addType(
                 String.format(
                     "function(%s, %s):(%s)", parametersType, "?(goog.soy.IjData)=", returnType));
+            builder.addRequire(JsRuntime.GOOG_SOY.toRequireType());
           }
           builder.setPredicate(GOOG_IS_FUNCTION);
           return builder.build();
