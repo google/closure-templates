@@ -18,8 +18,12 @@ package com.google.template.soy.jbcsrc.shared;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
+import com.google.common.base.Joiner;
+import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.internal.exemptions.NamespaceExemptions;
+import java.util.regex.Pattern;
+import org.objectweb.asm.Type;
 
 /**
  * Utilities for translating soy symbols to and from strings that are suitable for use in java class
@@ -41,6 +45,20 @@ public final class Names {
   public static final String VARIANT_VAR_NAME = "__modifiable_variant__";
 
   private Names() {}
+
+  public static boolean isGenerated(Type type) {
+    return type.getClassName().startsWith(CLASS_PREFIX);
+  }
+
+  public static final ImmutableSet<String> ALLOWED_SVP_PREFIXES =
+      ImmutableSet.of("param", "let", "ph");
+
+  private static final Pattern SVP_PATTERN =
+      Pattern.compile("\\$(" + Joiner.on('|').join(ALLOWED_SVP_PREFIXES) + ")_[_\\w]+(#\\d+)?$");
+
+  public static boolean isGeneratedSoyValueProvider(Type type) {
+    return isGenerated(type) && SVP_PATTERN.matcher(type.getClassName()).find();
+  }
 
   /**
    * Translate a user controlled Soy name to a form that is safe to encode in a java class, method

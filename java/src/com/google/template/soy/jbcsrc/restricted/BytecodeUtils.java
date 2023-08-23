@@ -52,6 +52,7 @@ import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NullData;
+import com.google.template.soy.data.restricted.NullishData;
 import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.data.restricted.PrimitiveData;
 import com.google.template.soy.data.restricted.StringData;
@@ -106,6 +107,7 @@ public final class BytecodeUtils {
   public static final Type DIR_TYPE = Type.getType(Dir.class);
   public static final Type HASH_MAP_TYPE = Type.getType(HashMap.class);
 
+  public static final Type NULLISH_DATA_TYPE = Type.getType(NullishData.class);
   public static final Type NULL_DATA_TYPE = Type.getType(NullData.class);
   public static final Type UNDEFINED_DATA_TYPE = Type.getType(UndefinedData.class);
   public static final Type PRIMITIVE_DATA_TYPE = Type.getType(PrimitiveData.class);
@@ -194,8 +196,7 @@ public final class BytecodeUtils {
                       return Optional.of(float.class);
                     case Type.OBJECT:
                       try {
-                        String className = key.getClassName();
-                        if (className.startsWith(Names.CLASS_PREFIX)) {
+                        if (Names.isGenerated(key)) {
                           // if the class is generated, don't try to look it up.
                           // It might actually succeed in a case where we have the class on our
                           // classpath already!
@@ -203,7 +204,7 @@ public final class BytecodeUtils {
                         }
                         return Optional.of(
                             Class.forName(
-                                className,
+                                key.getClassName(),
                                 /* initialize= */ false,
                                 BytecodeUtils.class.getClassLoader()));
                       } catch (ClassNotFoundException e) {
@@ -216,6 +217,27 @@ public final class BytecodeUtils {
               });
 
   private BytecodeUtils() {}
+
+  private static final ImmutableList<Type> SUPERTYPES_TO_CHECK =
+      ImmutableList.of(NULLISH_DATA_TYPE, PRIMITIVE_DATA_TYPE, SOY_VALUE_TYPE);
+
+  public static Type getCommonSuperType(Type left, Type right) {
+    if (left.equals(right)) {
+      return left;
+    }
+    for (Type type : SUPERTYPES_TO_CHECK) {
+      if (isDefinitelyAssignableFrom(type, left) && isDefinitelyAssignableFrom(type, right)) {
+        return type;
+      }
+    }
+    if ((isDefinitelyAssignableFrom(SOY_VALUE_PROVIDER_TYPE, left)
+            || Names.isGeneratedSoyValueProvider(left))
+        && (isDefinitelyAssignableFrom(SOY_VALUE_PROVIDER_TYPE, right)
+            || Names.isGeneratedSoyValueProvider(right))) {
+      return SOY_VALUE_PROVIDER_TYPE;
+    }
+    throw new IllegalArgumentException(String.format("%s != %s", left, right));
+  }
 
   /**
    * Returns {@code true} if {@code left} is possibly assignable from {@code right}.
@@ -681,7 +703,7 @@ public final class BytecodeUtils {
     if (right.isNonSoyNullish()) {
       features = features.plus(Feature.NON_SOY_NULLISH);
     }
-    return new Expression(left.resultType(), features) {
+    return new Expression(getCommonSuperType(left.resultType(), right.resultType()), features) {
       @Override
       protected void doGen(CodeBuilder cb) {
         Label leftIsNonNull = new Label();

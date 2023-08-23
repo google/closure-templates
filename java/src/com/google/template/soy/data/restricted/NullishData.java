@@ -21,8 +21,9 @@ import com.google.protobuf.Message;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyValue;
 
+/** Abstract superclass of null and undefined. */
 @Immutable
-abstract class NullishData extends PrimitiveData {
+public abstract class NullishData extends PrimitiveData {
 
   @Override
   public final boolean coerceToBoolean() {

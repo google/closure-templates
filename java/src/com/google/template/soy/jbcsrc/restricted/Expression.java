@@ -19,6 +19,7 @@ package com.google.template.soy.jbcsrc.restricted;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.isDefinitelyAssignableFrom;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableList;
@@ -139,14 +140,13 @@ public abstract class Expression extends BytecodeProducer {
         return features;
       }
 
-      if (expressionType.equals(BytecodeUtils.NULL_DATA_TYPE)
-          || expressionType.equals(BytecodeUtils.UNDEFINED_DATA_TYPE)
+      if (isDefinitelyAssignableFrom(BytecodeUtils.NULLISH_DATA_TYPE, expressionType)
           || expressionType.equals(BytecodeUtils.SOY_VALUE_TYPE)
           || expressionType.equals(BytecodeUtils.SOY_VALUE_PROVIDER_TYPE)) {
         return features;
       }
 
-      boolean isGenerated = expressionType.getClassName().startsWith(Names.CLASS_PREFIX);
+      boolean isGenerated = Names.isGenerated(expressionType);
       if ((BytecodeUtils.isDefinitelyAssignableFrom(BytecodeUtils.SOY_VALUE_TYPE, expressionType)
           || !isGenerated)) {
         // Boxed types like StringData are rare but are NON_SOY_NULLISH.
@@ -554,8 +554,7 @@ public abstract class Expression extends BytecodeProducer {
 
       Type expectedType = Type.getType(expectedClass);
       if (resultType.equals(expectedType)
-          || resultType.equals(BytecodeUtils.NULL_DATA_TYPE)
-          || resultType.equals(BytecodeUtils.UNDEFINED_DATA_TYPE)) {
+          || isDefinitelyAssignableFrom(BytecodeUtils.NULLISH_DATA_TYPE, resultType)) {
         return this;
       }
       return MethodRef.CHECK_TYPE.invoke(this, constant(expectedType));

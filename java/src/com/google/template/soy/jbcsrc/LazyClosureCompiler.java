@@ -29,6 +29,7 @@ import static com.google.template.soy.soytree.SoyTreeUtils.isDescendantOf;
 import static java.util.Arrays.asList;
 
 import com.google.auto.value.AutoValue;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.base.internal.SanitizedContentKind;
@@ -56,6 +57,7 @@ import com.google.template.soy.jbcsrc.restricted.TypeInfo;
 import com.google.template.soy.jbcsrc.runtime.DetachableContentProvider;
 import com.google.template.soy.jbcsrc.runtime.DetachableSoyValueProvider;
 import com.google.template.soy.jbcsrc.runtime.DetachableSoyValueProviderProvider;
+import com.google.template.soy.jbcsrc.shared.Names;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
@@ -421,6 +423,7 @@ final class LazyClosureCompiler {
   }
 
   private String getProposedName(String prefix, String varName) {
+    Preconditions.checkArgument(Names.ALLOWED_SVP_PREFIXES.contains(prefix));
     return prefix + "_" + varName;
   }
 

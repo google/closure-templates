@@ -65,5 +65,6 @@ java_library(
         "//java/src/com/google/template/soy/base/internal",
         "//java/src/com/google/template/soy/internal/exemptions",
         "@maven//:com_google_guava_guava",
+        "@maven//:org_ow2_asm_asm",
     ],
 )
