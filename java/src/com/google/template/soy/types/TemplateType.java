@@ -278,9 +278,8 @@ public abstract class TemplateType extends SoyType {
       SoyType type = getType();
       if (!isRequired()) {
         // Not totally true because you could have had a redundant declaration:
-        //   {@param? f: null|string}
-        // TODO(b/291132644): Switch to "tryRemoveUndefined".
-        type = SoyTypes.tryRemoveNull(type);
+        //   {@param? f: undefined|string}
+        type = SoyTypes.tryRemoveUndefined(type);
       }
       return type;
     }

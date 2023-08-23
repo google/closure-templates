@@ -156,9 +156,10 @@ public final class SoyTypes {
   }
 
   /**
-   * If the type is nullable, makes it non-nullable.
+   * You probably want to use {@link #tryRemoveNullish}.
    *
-   * <p>If the type is the null type, then it returns the null type.
+   * <p>If the type is nullable, makes it non-nullable. If the type is the null type, then it
+   * returns the null type.
    */
   public static SoyType tryRemoveNull(SoyType soyType) {
     if (soyType == NullType.getInstance()) {

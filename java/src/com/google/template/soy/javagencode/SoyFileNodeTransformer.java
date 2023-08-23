@@ -282,7 +282,8 @@ public class SoyFileNodeTransformer {
     }
 
     public boolean required() {
-      return param().isRequired();
+      // Required in the Java API means non-nullish.
+      return param().isRequired() && !SoyTypes.isNullish(type());
     }
 
     public boolean requiredAndNotIndirect() {

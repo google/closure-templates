@@ -93,9 +93,6 @@ public final class TypeNodeConverter
           StyleAllowance.NO_CAPS,
           StyleAllowance.NO_PUNCTUATION);
 
-  public static final SoyErrorKind OPTIONAL_RECORD_PROPERTY_MUST_BE_NULLABLE =
-      SoyErrorKind.of("Optional record property should be typed as ''|null''.");
-
   private static final ImmutableSet<Kind> ALLOWED_TEMPLATE_RETURN_TYPES =
       Sets.immutableEnumSet(
           Kind.ELEMENT,
@@ -402,11 +399,6 @@ public final class TypeNodeConverter
         errorReporter.report(property.nameLocation(), DUPLICATE_RECORD_FIELD, property.name());
         // restore old mapping and keep going
         map.put(property.name(), duplicatePropertyNameMember);
-      }
-      // TODO(b/291132644): Remove this restriction.
-      if (property.optional() && !propertyType.isAssignableFromStrict(NullType.getInstance())) {
-        errorReporter.warn(
-            property.type().sourceLocation(), OPTIONAL_RECORD_PROPERTY_MUST_BE_NULLABLE);
       }
     }
     SoyType type = interner.getOrCreateRecordType(map.values());

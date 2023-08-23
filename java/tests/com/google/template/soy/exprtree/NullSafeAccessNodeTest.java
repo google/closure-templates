@@ -147,15 +147,15 @@ public class NullSafeAccessNodeTest {
     assertThat(buildAstStringWithPreview(expr))
         .isEqualTo(
             NEWLINE.join(
-                "NULL_SAFE_ACCESS_NODE: null|*.MessageField:"
+                "NULL_SAFE_ACCESS_NODE: null|*.MessageField|undefined:"
                     + " $foo?.getMessageField()?.getFoo()?.getMessageField()",
                 "  VAR_REF_NODE: *.Foo: $foo",
-                "  NULL_SAFE_ACCESS_NODE: null|*.MessageField:"
+                "  NULL_SAFE_ACCESS_NODE: null|*.MessageField|undefined:"
                     + " (null).getMessageField()?.getFoo()?.getMessageField()",
                 "    METHOD_CALL_NODE: null|*.MessageField: (null).getMessageField()",
                 "      GROUP_NODE: *.Foo: (null)",
                 "        NULL_NODE: null: null",
-                "    NULL_SAFE_ACCESS_NODE: null|*.MessageField:"
+                "    NULL_SAFE_ACCESS_NODE: null|*.MessageField|undefined:"
                     + " (null).getFoo()?.getMessageField()",
                 "      METHOD_CALL_NODE: null|*.Foo: (null).getFoo()",
                 "        GROUP_NODE: null|*.MessageField: (null)",
@@ -201,7 +201,7 @@ public class NullSafeAccessNodeTest {
     assertThat(buildAstStringWithPreview(expr))
         .isEqualTo(
             NEWLINE.join(
-                "NULL_SAFE_ACCESS_NODE: null|*.MessageField:"
+                "NULL_SAFE_ACCESS_NODE: null|*.MessageField|undefined:"
                     + " $foo.getMessageField()?.getReadonlyFoo().getMessageField()",
                 "  METHOD_CALL_NODE: null|*.MessageField: $foo.getMessageField()",
                 "    VAR_REF_NODE: *.Foo: $foo",
@@ -248,7 +248,7 @@ public class NullSafeAccessNodeTest {
     assertThat(buildAstStringWithPreview(expr))
         .isEqualTo(
             NEWLINE.join(
-                "NULL_SAFE_ACCESS_NODE: null|*.Foo: $foo.getMessageField()?.getFoo()",
+                "NULL_SAFE_ACCESS_NODE: null|*.Foo|undefined: $foo.getMessageField()?.getFoo()",
                 "  METHOD_CALL_NODE: null|*.MessageField: $foo.getMessageField()",
                 "    VAR_REF_NODE: *.Foo: $foo",
                 "  METHOD_CALL_NODE: null|*.Foo: (null).getFoo()",

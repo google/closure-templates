@@ -58,6 +58,7 @@ import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.Visibility;
 import com.google.template.soy.soytree.defn.TemplateParam;
+import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.TemplateType;
 import com.google.template.soy.types.TemplateType.Parameter;
 import java.util.Collection;
@@ -147,6 +148,7 @@ public final class GenerateParseInfoVisitor
   private Map<SoyFileNode, String> soyFileToJavaClassNameMap;
 
   private final String kytheCorpus;
+
   /** Registry of all templates in the Soy tree. */
   private final FileSetMetadata fileSetMetadata;
 
@@ -344,7 +346,7 @@ public final class GenerateParseInfoVisitor
       List<String> defaultInstances = Lists.newArrayList();
       defaultInstances.addAll(protoTypes);
       ilb.appendLineStart("return ");
-      appendImmutableListInline(ilb, /*typeParamSnippet=*/ "", defaultInstances);
+      appendImmutableListInline(ilb, /* typeParamSnippet= */ "", defaultInstances);
       ilb.appendLineEnd(";");
       ilb.decreaseIndent();
       ilb.appendLine("}");
@@ -621,7 +623,7 @@ public final class GenerateParseInfoVisitor
         if (seenParams.add(param.getName())) {
           entrySnippetPairs.put(
               convertToUpperUnderscore(param.getName()),
-              param.isRequired() ? "ParamRequisiteness.REQUIRED" : "ParamRequisiteness.OPTIONAL");
+              isRequired(param) ? "ParamRequisiteness.REQUIRED" : "ParamRequisiteness.OPTIONAL");
         }
       }
       appendImmutableMap(ilb, "<String, ParamRequisiteness>", entrySnippetPairs.build());
@@ -660,6 +662,11 @@ public final class GenerateParseInfoVisitor
     ilb.increaseIndent(2);
     ilb.appendLine(templateInfoClassName, ".getInstance();");
     ilb.decreaseIndent(2);
+  }
+
+  private static boolean isRequired(Parameter param) {
+    // TODO(b/291132644): If possible stop treating |null as optional.
+    return param.isRequired() && !SoyTypes.isNullable(param.getType());
   }
 
   private static void deprecatedAnnotation(IndentedLinesBuilder ilb, boolean deprecated) {

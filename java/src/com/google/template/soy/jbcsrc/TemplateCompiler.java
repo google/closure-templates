@@ -467,7 +467,7 @@ final class TemplateCompiler {
       SoyExpression defaultValue =
           param.hasDefault()
               ? getDefaultValue(param, nodeCompiler.exprCompiler, constantCompiler)
-              : null;
+              : SoyExpression.forSoyValue(param.type(), BytecodeUtils.soyUndefined());
       Expression initialValue;
       LocalVariable localVariable;
       if (param.isInjected()) {

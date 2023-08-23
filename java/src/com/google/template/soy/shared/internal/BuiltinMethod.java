@@ -250,7 +250,7 @@ public enum BuiltinMethod implements SoyMethod {
         List<ExprNode> params,
         SoyTypeRegistry soyTypeRegistry,
         ErrorReporter errorReporter) {
-      return SoyTypes.makeNullable(
+      return SoyTypes.makeUndefinable(
           computeTypeForProtoFieldName(
               baseType, getGetOrUndefinedFieldName(methodName).get(), soyTypeRegistry));
     }
@@ -333,7 +333,7 @@ public enum BuiltinMethod implements SoyMethod {
       if (baseType.equals(MapType.EMPTY_MAP)) {
         return NullType.getInstance();
       }
-      return SoyTypes.makeNullable(SoyTypes.getMapValuesType(baseType));
+      return SoyTypes.makeUndefinable(SoyTypes.getMapValuesType(baseType));
     }
   },
 

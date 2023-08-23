@@ -443,7 +443,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
       dataAccess = node.getDataAccess();
     }
     if (isNullOrUndefinedBase(value)) {
-      return NullData.INSTANCE;
+      return UndefinedData.INSTANCE;
     }
     return accumulateDataAccessTail((AccessChainComponentNode) dataAccess, value);
   }
@@ -527,11 +527,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
               fieldAccess.getType(), value.getClass().getSimpleName()));
     }
 
-    return (value != null)
-        ? value
-        : (undefinedDataHandlingMode == UndefinedDataHandlingMode.BUGGED
-            ? UndefinedData.INSTANCE
-            : NullData.INSTANCE);
+    return value != null ? value : UndefinedData.INSTANCE;
   }
 
   private static boolean isProtoOrUnionOfProtos(SoyType type) {
@@ -594,14 +590,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
               itemAccess.getType(), value.getClass().getSimpleName()));
     }
 
-    if (value != null) {
-      return value;
-    } else if (undefinedDataHandlingMode != UndefinedDataHandlingMode.BUGGED) {
-      // UndefinedData is a misfeature. The new map type should return null for failed lookups.
-      return NullData.INSTANCE;
-    } else {
-      return UndefinedData.INSTANCE;
-    }
+    return value != null ? value : UndefinedData.INSTANCE;
   }
 
   /**
@@ -654,7 +643,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
         case MAP_GET:
           SoyValue key = visit(methodNode.getParam(0));
           SoyValue value = ((SoyMap) base).get(key);
-          return value != null ? value : NullData.INSTANCE;
+          return value != null ? value : UndefinedData.INSTANCE;
         case BIND:
           TemplateValue template = (TemplateValue) base;
           ParamStore params = ParamStore.fromRecord((SoyRecord) visit(methodNode.getParam(0)));
@@ -905,7 +894,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
         case EMPTY_TO_NULL:
           {
             var value = visit(node.getParam(0));
-            return value.stringValue().isEmpty() ? NullData.INSTANCE : value;
+            return value.stringValue().isEmpty() ? UndefinedData.INSTANCE : value;
           }
         case UNDEFINED_TO_NULL:
         case UNDEFINED_TO_NULL_SSR:

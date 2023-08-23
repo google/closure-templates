@@ -39,9 +39,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-/**
- * Unit tests for {@link SimplifyExprVisitor}.
- */
+/** Unit tests for {@link SimplifyExprVisitor}. */
 @RunWith(JUnit4.class)
 public final class SimplifyExprVisitorTest {
 
@@ -141,9 +139,9 @@ public final class SimplifyExprVisitorTest {
     assertThat(new ExpressionParser("[1,2,3][1]").parseForParentNode()).simplifiesTo("2");
     assertThat(new ExpressionParser("[1,2,3]?[1]").parseForParentNode()).simplifiesTo("2");
 
-    assertThat(new ExpressionParser("[1,2,3][-1]").parseForParentNode()).simplifiesTo("null");
-    assertThat(new ExpressionParser("[1,2,3][3]").parseForParentNode()).simplifiesTo("null");
-    assertThat(new ExpressionParser("[1,2,3]?[3]").parseForParentNode()).simplifiesTo("null");
+    assertThat(new ExpressionParser("[1,2,3][-1]").parseForParentNode()).simplifiesTo("undefined");
+    assertThat(new ExpressionParser("[1,2,3][3]").parseForParentNode()).simplifiesTo("undefined");
+    assertThat(new ExpressionParser("[1,2,3]?[3]").parseForParentNode()).simplifiesTo("undefined");
 
     assertThat(new ExpressionParser("map('a':1, 'b':3).get('a')").parseForParentNode())
         .simplifiesTo("1");
@@ -151,9 +149,9 @@ public final class SimplifyExprVisitorTest {
         .simplifiesTo("1");
 
     assertThat(new ExpressionParser("map('a':1, 'b':3).get('c')").parseForParentNode())
-        .simplifiesTo("null");
+        .simplifiesTo("undefined");
     assertThat(new ExpressionParser("map('a':1, 'b':3)?.get('c')").parseForParentNode())
-        .simplifiesTo("null");
+        .simplifiesTo("undefined");
     // can't simplify unless all keys and indexes are constant
     assertThat(
             new ExpressionParser("map('a': 1, 'b': 3).get(randomInt(10) ? 'a' : 'b')")
@@ -173,6 +171,11 @@ public final class SimplifyExprVisitorTest {
                 .withVar("null", "true ? null : record(a: 1)")
                 .parseForParentNode())
         .simplifiesTo("null");
+    assertThat(
+            new ExpressionParser("$undef?.a")
+                .withVar("undef", "true ? undefined : record(a: 1)")
+                .parseForParentNode())
+        .simplifiesTo("undefined");
     assertThat(
             new ExpressionParser("$null?[2]")
                 .withVar("null", "true ? null : [1]")

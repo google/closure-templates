@@ -87,7 +87,7 @@ public abstract class SoyRuntimeType {
           // unions generally don't have a unique unboxed runtime type except in 2 special cases
           // 1. nullable reference types can be unboxed.
           // 2. if all members of the union have the same runtimeType then we can use that
-          SoyType nonNullType = SoyTypes.removeNull(soyType);
+          SoyType nonNullType = SoyTypes.tryRemoveNullish(soyType);
           if (!nonNullType.equals(soyType)) {
             return null;
           }
@@ -177,13 +177,13 @@ public abstract class SoyRuntimeType {
   public boolean assignableToNullableString() {
     return soyType.getKind().isKnownStringOrSanitizedContent()
         || (soyType.getKind() == Kind.UNION
-            && SoyTypes.removeNull(soyType).getKind().isKnownStringOrSanitizedContent());
+            && SoyTypes.tryRemoveNullish(soyType).getKind().isKnownStringOrSanitizedContent());
   }
 
   private boolean assignableToNullableType(SoyType type) {
     return type.isAssignableFromStrict(soyType)
         || (soyType.getKind() == Kind.UNION
-            && type.isAssignableFromStrict(SoyTypes.removeNull(soyType)));
+            && type.isAssignableFromStrict(SoyTypes.tryRemoveNullish(soyType)));
   }
 
   /**
@@ -288,14 +288,11 @@ public abstract class SoyRuntimeType {
     // Use tryRemoveNull instead of removeNull because there are times where the jbcsrc backend
     // infers stronger types than Soy proper (e.g. for `@state` params initialized to `null` but
     // declared with a different type)
-    return withNewSoyType(SoyTypes.tryRemoveNull(soyType));
+    return withNewSoyType(SoyTypes.tryRemoveNullish(soyType));
   }
 
-  public final SoyRuntimeType asSoyNullish() {
-    // Use tryRemoveNull instead of removeNull because there are times where the jbcsrc backend
-    // infers stronger types than Soy proper (e.g. for `@state` params initialized to `null` but
-    // declared with a different type)
-    return withNewSoyType(SoyTypes.makeNullable(soyType));
+  public final SoyRuntimeType asSoyUndefinable() {
+    return withNewSoyType(SoyTypes.makeUndefinable(soyType));
   }
 
   private SoyRuntimeType withNewSoyType(SoyType newSoyType) {

@@ -20,6 +20,7 @@ import com.google.common.util.concurrent.Futures;
 import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValueConverterUtility;
+import com.google.template.soy.data.restricted.NullData;
 
 /**
  * Unit tests for EvalVisitor.
@@ -40,6 +41,7 @@ public class EvalVisitorFutureTest extends EvalVisitorTest {
         "map0", Futures.immediateFuture(SoyValueConverterUtility.newDict()),
         "list0", Futures.immediateFuture(SoyValueConverterUtility.newList()),
         "longNumber", Futures.immediateFuture(1000000000000000001L),
-        "floatNumber", Futures.immediateFuture(1.5D));
+        "floatNumber", Futures.immediateFuture(1.5D),
+        "aNull", Futures.immediateFuture(NullData.INSTANCE));
   }
 }

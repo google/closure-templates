@@ -1352,7 +1352,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
       SoyType type = nullSafeAccessNode.getDataAccess().getType();
       if (isNullish(nullSafeAccessNode.getBase().getType())
           && !hasNonNullAssertion(nullSafeAccessNode.getDataAccess())) {
-        type = SoyTypes.makeNullable(type);
+        type = SoyTypes.makeUndefinable(type);
       }
       nullSafeAccessNode.setType(type);
       tryApplySubstitution(nullSafeAccessNode);

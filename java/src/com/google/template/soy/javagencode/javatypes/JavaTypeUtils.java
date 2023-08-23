@@ -268,13 +268,12 @@ public final class JavaTypeUtils {
 
     // Figure out if the union contains the {@link NullType}, which tells us if the param setters
     // should be nullable.
-    boolean unionAllowsNull =
-        unionType.getMembers().stream().anyMatch(member -> member instanceof NullType);
+    boolean unionAllowsNull = unionType.getMembers().stream().anyMatch(SoyType::isNullOrUndefined);
 
     // Collect a list of the Java types for each of the union member types.
     ImmutableList.Builder<JavaType> javaTypeListBuilder = new ImmutableList.Builder<>();
     for (SoyType soyUnionMemberType : unionType.getMembers()) {
-      if (soyUnionMemberType instanceof NullType) {
+      if (soyUnionMemberType.isNullOrUndefined()) {
         continue;
       }
       ImmutableList<JavaType> javaTypesForUnionMember =

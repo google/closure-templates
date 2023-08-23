@@ -21,7 +21,6 @@ import com.google.template.soy.data.RecordProperty;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.internal.ParamStore;
-import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.soytree.TemplateNode;
@@ -93,8 +92,7 @@ public abstract class Environment {
         SoyValueProvider provider =
             (param.isInjected() ? ijData : data).getFieldProvider(RecordProperty.get(param.name()));
         if (provider == null) {
-          provider =
-              param.isRequired() || param.hasDefault() ? UndefinedData.INSTANCE : NullData.INSTANCE;
+          provider = UndefinedData.INSTANCE;
         }
         bind(param, provider);
       }

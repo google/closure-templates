@@ -313,7 +313,8 @@ public class BytecodeCompilerTest {
             "");
     ParamStore params =
         new ParamStore(2).setField(RecordProperty.get("foo"), StringData.forValue("foo"));
-    assertThat(render(templates, params, "ns.callerDataAll")).isEqualTo("Foo: foo\nBoo: null\n");
+    assertThat(render(templates, params, "ns.callerDataAll"))
+        .isEqualTo("Foo: foo\nBoo: undefined\n");
     params.setField(RecordProperty.get("boo"), StringData.forValue("boo"));
     assertThat(render(templates, params, "ns.callerDataAll")).isEqualTo("Foo: foo\nBoo: boo\n");
 
@@ -326,7 +327,8 @@ public class BytecodeCompilerTest {
             .setField(
                 RecordProperty.get("rec"),
                 SoyValueConverter.INSTANCE.convert(ImmutableMap.of("foo", "foo")));
-    assertThat(render(templates, params, "ns.callerDataExpr")).isEqualTo("Foo: foo\nBoo: null\n");
+    assertThat(render(templates, params, "ns.callerDataExpr"))
+        .isEqualTo("Foo: foo\nBoo: undefined\n");
     params.setField(
         RecordProperty.get("rec"),
         SoyValueConverter.INSTANCE.convert(ImmutableMap.of("foo", "foo", "boo", "boo")));
@@ -824,7 +826,7 @@ public class BytecodeCompilerTest {
     assertThat(
             singleIj.render(ParamStore.EMPTY_INSTANCE, ParamStore.EMPTY_INSTANCE, builder, context))
         .isEqualTo(RenderResult.done());
-    assertThat(builder.getAndClearBuffer()).isEqualTo("null");
+    assertThat(builder.getAndClearBuffer()).isEqualTo("undefined");
   }
 
   @Test
