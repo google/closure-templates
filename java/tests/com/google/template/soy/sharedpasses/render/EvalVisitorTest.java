@@ -290,7 +290,8 @@ public class EvalVisitorTest {
     // TODO: If enabling exception for undefined LHS (see EvalVisitor), uncomment tests below.
     // assertRenderException(
     //    "$foo.bar.moo.tar", "encountered undefined LHS just before accessing \".tar\"");
-    assertThat(eval("$foo.bar.moo.tar")).isInstanceOf(UndefinedData.class);
+    assertRenderException(
+        "$foo.bar.moo.tar", "Attempted to access field \"moo\" of non-record type");
     // assertRenderException(
     //    "$foo.baz.moo.tar", "encountered undefined LHS just before accessing \".moo\"");
     assertThat(eval("$foo.baz.moo.tar")).isInstanceOf(UndefinedData.class);
@@ -301,7 +302,7 @@ public class EvalVisitorTest {
         "$foo[2]",
         "SoyDict accessed with non-string key (got key type"
             + " com.google.template.soy.data.restricted.IntegerData).");
-    assertThat(eval("$moo.too")).isInstanceOf(UndefinedData.class);
+    assertRenderException("$moo.too", "Attempted to access field \"too\" of non-record type");
     // assertRenderException(
     //    "$roo.too", "encountered undefined LHS just before accessing \".too\"");
     assertThat(eval("$roo.too")).isInstanceOf(UndefinedData.class);
