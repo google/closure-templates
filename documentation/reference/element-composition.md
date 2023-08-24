@@ -121,7 +121,7 @@ in the function call.
 
 ```soy
 {template example kind="html<div>"}
-  {@param name:string}
+  {@param name: string}
   <div>{$name}</div>
 {/template}
 
@@ -136,8 +136,8 @@ parameters must be provided with the
 
 ```soy
 {template example}
-  {@param tpl: (a:number) => html<div>}
-  <{$tpl.bind(record(a:3))}></>
+  {@param tpl: (a: number) => html<div>}
+  <{$tpl.bind(record(a: 3))}></>
 {/template}
 ```
 
@@ -147,7 +147,7 @@ Parameters of type `html` can be passed in as a `<parameter>` node.
 
 ```soy
 {template example kind="html<div>"}
-  {@param myContent:html}
+  {@param myContent: html}
   <div>{$myContent}</div>
 {/template}
 
@@ -205,7 +205,7 @@ prefix.
 
 ```soy
 {template example}
-  {@param tpl: (@aria-label:string) => html<div>}
+  {@param tpl: (@aria-label: string) => html<div>}
 {/template}
 ```
 

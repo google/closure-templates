@@ -51,7 +51,7 @@ Consider
 
 ```soy
 {template foo}
-  {@param complex: list<list<[foo:string,bar:number]>>}
+  {@param complex: list<list<[foo: string, bar: number]>>}
 ...
 {/template}
 ```
@@ -79,19 +79,19 @@ Consider the following templates,
 
 ```soy
 {template a}
-  {@param p1 :...}
+  {@param p1: ...}
   ...
-  {@param pN :...}
+  {@param pN: ...}
 {/template}
 {template b}
-  {@param p1 :...}
+  {@param p1: ...}
   ...
-  {@param pN :...}
+  {@param pN: ...}
 {/template}
 {template c}
-  {@param p1 :...}
+  {@param p1: ...}
   ...
-  {@param pN :...}
+  {@param pN: ...}
 {/template}
 ```
 
@@ -113,9 +113,9 @@ that could be considered
     ```
     {template dispatch}
       {@param selection: string}  // maybe consider using a proto enum?
-      {@param p1 :...}
+      {@param p1: ...}
       ...
-      {@param pN :...}
+      {@param pN: ...}
       {switch $selection}
         {case 'a'}
           {call a data="all"/}
