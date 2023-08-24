@@ -78,23 +78,6 @@ public final class TofuExceptionsTest {
   }
 
   @Test
-  public void testExceptions_undefined() throws Exception {
-    SoyDict data = SoyValueConverterUtility.newDict("foo.boo", 42);
-    // This is an exception that occurs during expression evaluation
-    try {
-      tofu.newRenderer("ns.callerTemplate").setData(data).render();
-      fail();
-    } catch (SoyTofuException ste) {
-      assertThat(ste).hasCauseThat().isNull();
-      assertThat(ste)
-          .hasMessageThat()
-          .isEqualTo("In 'print' tag, expression \"$foo.bad\" evaluates to undefined.");
-      assertThat(ste.getStackTrace()[0].toString()).isEqualTo("ns.calleeTemplate(no-path:11)");
-      assertThat(ste.getStackTrace()[1].toString()).isEqualTo("ns.callerTemplate(no-path:5)");
-    }
-  }
-
-  @Test
   public void testExceptions_badType() throws Exception {
     SoyDict data = SoyValueConverterUtility.newDict("foo", "not a record");
     // This is an exception that occurs during template calling due to a type checkin

@@ -42,6 +42,7 @@ import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.StringType;
+import com.google.template.soy.types.UndefinedType;
 import com.google.template.soy.types.UnknownType;
 import java.util.List;
 import org.objectweb.asm.Label;
@@ -174,6 +175,10 @@ public final class SoyExpression extends Expression {
   public static final SoyExpression SOY_NULL =
       new SoyExpression(
           SoyRuntimeType.getBoxedType(NullType.getInstance()), BytecodeUtils.soyNull());
+
+  public static final SoyExpression SOY_UNDEFINED =
+      new SoyExpression(
+          SoyRuntimeType.getBoxedType(UndefinedType.getInstance()), BytecodeUtils.soyUndefined());
 
   public static final SoyExpression TRUE = forBool(BytecodeUtils.constant(true));
 
@@ -571,8 +576,8 @@ public final class SoyExpression extends Expression {
 
     ListType asListType;
     SoyRuntimeType nonNullRuntimeType =
-        SoyRuntimeType.getBoxedType(SoyTypes.tryRemoveNull(soyType()));
-    if (soyType().getKind() != Kind.NULL && nonNullRuntimeType.isKnownListOrUnionOfLists()) {
+        SoyRuntimeType.getBoxedType(SoyTypes.tryRemoveNullish(soyType()));
+    if (!SoyTypes.isNullOrUndefined(soyType()) && nonNullRuntimeType.isKnownListOrUnionOfLists()) {
       asListType = nonNullRuntimeType.asListType();
     } else {
       Kind kind = soyType().getKind();

@@ -464,14 +464,22 @@ public final class BytecodeUtils {
   public static Optional<Expression> getSoleValue(Type type) {
     if (type.equals(BytecodeUtils.NULL_DATA_TYPE)) {
       return Optional.of(soyNull());
+    } else if (type.equals(BytecodeUtils.UNDEFINED_DATA_TYPE)) {
+      return Optional.of(soyUndefined());
     }
     return Optional.empty();
   }
 
-  private static final Expression SOY_NULL = FieldRef.NULL_PROVIDER.accessor();
+  private static final Expression SOY_NULL = FieldRef.NULL_DATA.accessor();
 
   public static Expression soyNull() {
     return SOY_NULL;
+  }
+
+  private static final Expression SOY_UNDEFINED = FieldRef.UNDEFINED_DATA.accessor();
+
+  public static Expression soyUndefined() {
+    return SOY_UNDEFINED;
   }
 
   /** Returns an {@link Expression} with the given type that always returns null. */
@@ -974,6 +982,22 @@ public final class BytecodeUtils {
   /** Returns a {@link SoyExpression} that evaluates to true if the expression evaluated to null. */
   public static SoyExpression isSoyNullish(Expression expr) {
     return SoyExpression.forBool(Branch.ifNonSoyNullish(expr).negate().asBoolean());
+  }
+
+  public static SoyExpression isNonSoyNull(Expression expr) {
+    return SoyExpression.forBool(Branch.ifNonSoyNull(expr).asBoolean());
+  }
+
+  public static SoyExpression isSoyNull(Expression expr) {
+    return SoyExpression.forBool(Branch.ifNonSoyNull(expr).negate().asBoolean());
+  }
+
+  public static SoyExpression isNonSoyUndefined(Expression expr) {
+    return SoyExpression.forBool(Branch.ifNonSoyUndefined(expr).asBoolean());
+  }
+
+  public static SoyExpression isSoyUndefined(Expression expr) {
+    return SoyExpression.forBool(Branch.ifNonSoyUndefined(expr).negate().asBoolean());
   }
 
   public static Type getTypeForClassName(String name) {

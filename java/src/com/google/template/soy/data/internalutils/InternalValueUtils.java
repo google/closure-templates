@@ -73,12 +73,11 @@ public class InternalValueUtils {
       return new FloatNode(primitiveData.floatValue(), location);
     } else if (primitiveData instanceof NullData) {
       return new NullNode(location);
+    } else if (primitiveData instanceof UndefinedData) {
+      return new UndefinedNode(location);
     } else {
       // Annoyingly UndefinedData.toString() throws, so workaround.
-      throw new IllegalArgumentException(
-          "can't convert: "
-              + (primitiveData instanceof UndefinedData ? "undefined" : primitiveData)
-              + " to an ExprNode");
+      throw new IllegalArgumentException("can't convert: " + primitiveData + " to an ExprNode");
     }
   }
 

@@ -59,6 +59,7 @@ import com.google.template.soy.exprtree.OperatorNodes.TripleNotEqualOpNode;
 import com.google.template.soy.exprtree.RecordLiteralNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
+import com.google.template.soy.exprtree.UndefinedNode;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.logging.LoggingFunction;
@@ -216,6 +217,12 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
   @Override
   protected PyExpr visitNullNode(NullNode node) {
     // Nulls are represented as 'None' in Python.
+    return NONE;
+  }
+
+  @Override
+  protected PyExpr visitUndefinedNode(UndefinedNode node) {
+    // No plans to support undefined in Python.
     return NONE;
   }
 
@@ -378,7 +385,7 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
       return genCodeForMethodCall(methodCall, base);
     } else {
       ItemAccessNode itemAccess = (ItemAccessNode) dataAccess;
-      SoyType baseType = SoyTypes.tryRemoveNull(itemAccess.getBaseExprChild().getType());
+      SoyType baseType = SoyTypes.tryRemoveNullish(itemAccess.getBaseExprChild().getType());
       PyExpr keyPyExpr = visit(itemAccess.getKeyExprChild());
       if (SoyTypes.isKindOrUnionOfKind(baseType, Kind.LIST)) {
         return genCodeForKeyAccess(base, keyPyExpr, NotFoundBehavior.returnNone());

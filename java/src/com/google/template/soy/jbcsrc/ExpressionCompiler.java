@@ -40,6 +40,7 @@ import com.google.template.soy.exprtree.ExprNode.AccessChainComponentNode;
 import com.google.template.soy.exprtree.ExprNode.OperatorNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
+import com.google.template.soy.exprtree.ExprNodes;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.FloatNode;
@@ -438,8 +439,7 @@ final class ExpressionCompiler {
 
     @Override
     protected SoyExpression visitUndefinedNode(UndefinedNode node) {
-      // TODO(b/291132644): Make undefined.
-      return SoyExpression.SOY_NULL;
+      return SoyExpression.SOY_UNDEFINED;
     }
 
     @Override
@@ -639,10 +639,10 @@ final class ExpressionCompiler {
 
     @Override
     protected SoyExpression visitEqualOpNode(EqualOpNode node) {
-      if (node.getChild(0).getKind() == ExprNode.Kind.NULL_NODE) {
+      if (ExprNodes.isNullishLiteral(node.getChild(0))) {
         return BytecodeUtils.isSoyNullish(visit(node.getChild(1)));
       }
-      if (node.getChild(1).getKind() == ExprNode.Kind.NULL_NODE) {
+      if (ExprNodes.isNullishLiteral(node.getChild(1))) {
         return BytecodeUtils.isSoyNullish(visit(node.getChild(0)));
       }
       return SoyExpression.forBool(
@@ -651,10 +651,10 @@ final class ExpressionCompiler {
 
     @Override
     protected SoyExpression visitNotEqualOpNode(NotEqualOpNode node) {
-      if (node.getChild(0).getKind() == ExprNode.Kind.NULL_NODE) {
+      if (ExprNodes.isNullishLiteral(node.getChild(0))) {
         return BytecodeUtils.isNonSoyNullish(visit(node.getChild(1)));
       }
-      if (node.getChild(1).getKind() == ExprNode.Kind.NULL_NODE) {
+      if (ExprNodes.isNullishLiteral(node.getChild(1))) {
         return BytecodeUtils.isNonSoyNullish(visit(node.getChild(0)));
       }
       return SoyExpression.forBool(
@@ -667,10 +667,16 @@ final class ExpressionCompiler {
     @Override
     protected SoyExpression visitTripleEqualOpNode(TripleEqualOpNode node) {
       if (node.getChild(0).getKind() == ExprNode.Kind.NULL_NODE) {
-        return BytecodeUtils.isSoyNullish(visit(node.getChild(1)));
+        return BytecodeUtils.isSoyNull(visit(node.getChild(1)));
+      }
+      if (node.getChild(0).getKind() == ExprNode.Kind.UNDEFINED_NODE) {
+        return BytecodeUtils.isSoyUndefined(visit(node.getChild(1)));
       }
       if (node.getChild(1).getKind() == ExprNode.Kind.NULL_NODE) {
-        return BytecodeUtils.isSoyNullish(visit(node.getChild(0)));
+        return BytecodeUtils.isSoyNull(visit(node.getChild(0)));
+      }
+      if (node.getChild(1).getKind() == ExprNode.Kind.UNDEFINED_NODE) {
+        return BytecodeUtils.isSoyUndefined(visit(node.getChild(1)));
       }
       return SoyExpression.forBool(
           BytecodeUtils.compareSoyTripleEquals(visit(node.getChild(0)), visit(node.getChild(1))));
@@ -679,10 +685,16 @@ final class ExpressionCompiler {
     @Override
     protected SoyExpression visitTripleNotEqualOpNode(TripleNotEqualOpNode node) {
       if (node.getChild(0).getKind() == ExprNode.Kind.NULL_NODE) {
-        return BytecodeUtils.isNonSoyNullish(visit(node.getChild(1)));
+        return BytecodeUtils.isNonSoyNull(visit(node.getChild(1)));
+      }
+      if (node.getChild(0).getKind() == ExprNode.Kind.UNDEFINED_NODE) {
+        return BytecodeUtils.isNonSoyUndefined(visit(node.getChild(1)));
       }
       if (node.getChild(1).getKind() == ExprNode.Kind.NULL_NODE) {
-        return BytecodeUtils.isNonSoyNullish(visit(node.getChild(0)));
+        return BytecodeUtils.isNonSoyNull(visit(node.getChild(0)));
+      }
+      if (node.getChild(1).getKind() == ExprNode.Kind.UNDEFINED_NODE) {
+        return BytecodeUtils.isNonSoyUndefined(visit(node.getChild(1)));
       }
       return SoyExpression.forBool(
           Branch.ifTrue(
@@ -1686,7 +1698,7 @@ final class ExpressionCompiler {
       } else if (javaType.equals(Type.DOUBLE_TYPE)) {
         return soyExpression.coerceToDouble().unboxAsDouble();
       } else if (javaType.getSort() == Type.OBJECT) {
-        SoyType nonNullableType = SoyTypes.tryRemoveNull(type);
+        SoyType nonNullableType = SoyTypes.tryRemoveNullish(type);
         if (nonNullableType.getKind() == Kind.ANY || nonNullableType.getKind() == Kind.UNKNOWN) {
           return soyExpression.boxOrJavaNull();
         } else if (nonNullableType.getKind() == Kind.PROTO) {

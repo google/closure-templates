@@ -24,6 +24,7 @@ import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.StringData;
+import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.jbcsrc.restricted.Expression.Feature;
 import com.google.template.soy.jbcsrc.restricted.Expression.Features;
 import com.google.template.soy.jbcsrc.shared.StackFrame;
@@ -37,8 +38,10 @@ import org.objectweb.asm.Type;
 @AutoValue
 public abstract class FieldRef {
 
-  public static final FieldRef NULL_PROVIDER =
+  public static final FieldRef NULL_DATA =
       staticFieldReference(NullData.class, "INSTANCE").asNonJavaNullable();
+  public static final FieldRef UNDEFINED_DATA =
+      staticFieldReference(UndefinedData.class, "INSTANCE").asNonJavaNullable();
   public static final FieldRef EMPTY_STRING_DATA =
       staticFieldReference(StringData.class, "EMPTY_STRING").asNonJavaNullable();
   public static final FieldRef EMPTY_PARAMS =

@@ -324,13 +324,13 @@ public final class Branch {
         return new Branch(
                 expression.features(),
                 new BooleanBrancher(MethodRef.SOY_VALUE_IS_NULLISH.invoke(expression)),
-                () -> "ifNonSoyNull{" + expression + "}")
+                () -> "ifSoyNullish{" + expression + "}")
             .negate();
       } else {
         return new Branch(
             expression.features(),
             new BooleanBrancher(MethodRef.IS_SOY_NON_NULLISH.invoke(expression)),
-            () -> "ifNonSoyNull{" + expression + "}");
+            () -> "ifSoyNullish{" + expression + "}");
       }
     } else {
       if (expression.isNonJavaNullable()) {
@@ -338,6 +338,39 @@ public final class Branch {
       }
 
       return ifNonJavaNull(expression);
+    }
+  }
+
+  public static Branch ifNonSoyNull(Expression expression) {
+    if (isDefinitelyAssignableFrom(SOY_VALUE_TYPE, expression.resultType())) {
+      if (expression.isNonSoyNullish()) {
+        return always();
+      }
+      return new Branch(
+              expression.features(),
+              new BooleanBrancher(MethodRef.SOY_VALUE_IS_NULL.invoke(expression)),
+              () -> "ifSoyNull{" + expression + "}")
+          .negate();
+    } else {
+      if (expression.isNonJavaNullable()) {
+        return always();
+      }
+      return ifNonJavaNull(expression);
+    }
+  }
+
+  public static Branch ifNonSoyUndefined(Expression expression) {
+    if (isDefinitelyAssignableFrom(SOY_VALUE_TYPE, expression.resultType())) {
+      if (expression.isNonSoyNullish()) {
+        return always();
+      }
+      return new Branch(
+              expression.features(),
+              new BooleanBrancher(MethodRef.SOY_VALUE_IS_UNDEFINED.invoke(expression)),
+              () -> "ifSoyNull{" + expression + "}")
+          .negate();
+    } else {
+      return always();
     }
   }
 

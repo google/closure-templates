@@ -19,9 +19,7 @@ package com.google.template.soy.data.restricted;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
-import com.google.template.soy.data.SoyDataException;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -36,12 +34,7 @@ public class PrimitiveDataTest {
   public void testUndefinedData() {
 
     UndefinedData ud = UndefinedData.INSTANCE;
-    try {
-      ud.coerceToString();
-      fail();
-    } catch (SoyDataException ste) {
-      // Test passes.
-    }
+    assertEquals("undefined", ud.coerceToString());
     assertEquals(false, ud.coerceToBoolean());
     assertTrue(ud.equals(UndefinedData.INSTANCE));
   }

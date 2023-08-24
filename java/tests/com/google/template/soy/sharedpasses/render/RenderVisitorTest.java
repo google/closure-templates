@@ -1365,22 +1365,6 @@ public class RenderVisitorTest {
   }
 
   @Test
-  public void testRenderExceptionsHaveExtraInfo() throws Exception {
-
-    assertRenderException(
-        "{@param undefined: ?}\n" + "  Hello {$undefined}\n",
-        "In 'print' tag, expression \"$undefined\" evaluates to undefined.");
-
-    assertRenderException(
-        "{@param undefined: ?}\n" + "  Hello {$undefined + 'foo'}\n",
-        "When evaluating \"$undefined + 'foo'\":");
-
-    assertRenderException(
-        "{@param undefined: ?}\n" + "  Hello {$undefined + 3}\n",
-        "When evaluating \"$undefined + 3\":");
-  }
-
-  @Test
   public void testParamTypeCheckSuccess() throws Exception {
     assertRender("{@param boo: int}\n{$boo}\n", "8");
     assertRender("{@param list1: list<int>}\n{$list1[0]}\n", "1");

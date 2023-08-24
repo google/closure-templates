@@ -20,6 +20,7 @@ import static com.google.common.truth.Truth.assertThat;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.asImmutableList;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.soyNull;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.soyUndefined;
 import static com.google.template.soy.jbcsrc.restricted.testing.ExpressionSubject.assertThatExpression;
 
 import com.google.common.base.Utf8;
@@ -98,5 +99,7 @@ public class BytecodeUtilsTest {
   public void testNullish() {
     assertThat(soyNull().isNonJavaNullable()).isTrue();
     assertThat(soyNull().isNonSoyNullish()).isFalse();
+    assertThat(soyUndefined().isNonJavaNullable()).isTrue();
+    assertThat(soyUndefined().isNonSoyNullish()).isFalse();
   }
 }

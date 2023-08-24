@@ -430,6 +430,12 @@ public abstract class MethodRef {
   public static final MethodRef SOY_VALUE_IS_NULLISH =
       create(SoyValue.class, "isNullish").asCheap().asNonJavaNullable();
 
+  public static final MethodRef SOY_VALUE_IS_NULL =
+      create(SoyValue.class, "isNull").asCheap().asNonJavaNullable();
+
+  public static final MethodRef SOY_VALUE_IS_UNDEFINED =
+      create(SoyValue.class, "isUndefined").asCheap().asNonJavaNullable();
+
   public static final MethodRef SOY_VALUE_JAVA_NUMBER_VALUE =
       create(NumberData.class, "javaNumberValue");
 

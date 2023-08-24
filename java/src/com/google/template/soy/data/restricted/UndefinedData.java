@@ -17,7 +17,6 @@
 package com.google.template.soy.data.restricted;
 
 import com.google.errorprone.annotations.Immutable;
-import com.google.template.soy.data.SoyDataException;
 
 /**
  * Undefined data. Used only by Tofu, not jbcsrc.
@@ -34,7 +33,7 @@ public final class UndefinedData extends NullishData {
 
   @Override
   public String toString() {
-    throw new SoyDataException("Attempted to coerce undefined value into a string.");
+    return "undefined";
   }
 
   @Override

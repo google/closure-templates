@@ -472,7 +472,7 @@ public abstract class Expression extends BytecodeProducer {
    * SoyValue}.
    */
   public Expression checkedSoyCast(SoyType type) {
-    type = SoyTypes.tryRemoveNull(type);
+    type = SoyTypes.tryRemoveNullish(type);
     if (BytecodeUtils.isDefinitelyAssignableFrom(BytecodeUtils.SOY_VALUE_TYPE, resultType)) {
       Class<? extends SoyValue> expectedClass = null;
 

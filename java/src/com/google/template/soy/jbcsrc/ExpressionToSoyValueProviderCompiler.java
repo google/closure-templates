@@ -26,6 +26,7 @@ import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.exprtree.OperatorNodes.ConditionalOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
+import com.google.template.soy.exprtree.UndefinedNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.jbcsrc.ExpressionCompiler.BasicExpressionCompiler;
 import com.google.template.soy.jbcsrc.restricted.Branch;
@@ -179,6 +180,11 @@ final class ExpressionToSoyValueProviderCompiler {
       // unlike other primitives, this doesn't really count as boxing, just a read of a static
       // constant field. so we always do it
       return Optional.of(BytecodeUtils.soyNull());
+    }
+
+    @Override
+    protected Optional<Expression> visitUndefinedNode(UndefinedNode node) {
+      return Optional.of(BytecodeUtils.soyUndefined());
     }
 
     @Override

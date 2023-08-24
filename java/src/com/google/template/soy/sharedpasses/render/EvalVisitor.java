@@ -117,6 +117,7 @@ import com.google.template.soy.exprtree.ProtoEnumValueNode;
 import com.google.template.soy.exprtree.RecordLiteralNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
+import com.google.template.soy.exprtree.UndefinedNode;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.logging.LoggingFunction;
@@ -279,6 +280,11 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
   @Override
   protected SoyValue visitNullNode(NullNode node) {
     return NullData.INSTANCE;
+  }
+
+  @Override
+  protected SoyValue visitUndefinedNode(UndefinedNode node) {
+    return UndefinedData.INSTANCE;
   }
 
   @Override
@@ -1017,7 +1023,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
       SoyJavaFunction fn, List<SoyValue> args, FunctionNode fnNode) {
     try {
       return fn.computeForJava(args);
-    } catch (Exception e) {
+    } catch (RuntimeException e) {
       throw RenderException.create(
           "While computing function \"" + fnNode.toSourceString() + "\": " + e.getMessage(), e);
     }
@@ -1035,7 +1041,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     try {
       return new TofuValueFactory(fnNode, pluginInstances)
           .computeForJava(fnNode.getSourceFunction(), args, context);
-    } catch (Exception e) {
+    } catch (RuntimeException e) {
       throw RenderException.create(
           "While computing function \"" + fnNode.toSourceString() + "\": " + e.getMessage(), e);
     }

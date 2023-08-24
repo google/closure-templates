@@ -20,11 +20,15 @@ import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static com.google.common.collect.ImmutableSortedSet.toImmutableSortedSet;
+import static com.google.template.soy.exprtree.ExprNodes.isNullishLiteral;
 import static com.google.template.soy.passes.CheckTemplateCallsPass.ARGUMENT_TYPE_MISMATCH;
 import static com.google.template.soy.types.SoyTypes.SAFE_PROTO_TO_SANITIZED_TYPE;
 import static com.google.template.soy.types.SoyTypes.getMapKeysType;
 import static com.google.template.soy.types.SoyTypes.getMapValuesType;
+import static com.google.template.soy.types.SoyTypes.tryKeepNullish;
 import static com.google.template.soy.types.SoyTypes.tryRemoveNull;
+import static com.google.template.soy.types.SoyTypes.tryRemoveNullish;
+import static com.google.template.soy.types.SoyTypes.tryRemoveUndefined;
 import static java.util.Comparator.naturalOrder;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
@@ -125,6 +129,7 @@ import com.google.template.soy.exprtree.OperatorNodes.TripleNotEqualOpNode;
 import com.google.template.soy.exprtree.RecordLiteralNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
+import com.google.template.soy.exprtree.UndefinedNode;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.internal.util.TopoSort;
@@ -194,6 +199,7 @@ import com.google.template.soy.types.StringType;
 import com.google.template.soy.types.TemplateImportType;
 import com.google.template.soy.types.TemplateModuleImportType;
 import com.google.template.soy.types.TemplateType;
+import com.google.template.soy.types.UndefinedType;
 import com.google.template.soy.types.UnionType;
 import com.google.template.soy.types.UnknownType;
 import com.google.template.soy.types.VeDataType;
@@ -676,7 +682,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
     protected void visitConstNode(ConstNode node) {
       constExprVisitor.exec(node.getExpr());
       SoyType type = node.getExpr().getType();
-      if (SoyTypes.isNullable(type)) {
+      if (SoyTypes.isNullish(type)) {
         errorReporter.report(node.getSourceLocation(), CONSTANTS_CANT_BE_NULLABLE, type);
       }
       node.getVar().setType(type);
@@ -862,7 +868,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
       super.visitMsgPluralNode(node);
       SoyType exprType = node.getExpr().getType();
       if (exprType != UnknownType.getInstance() && !SoyTypes.isIntFloatOrNumber(exprType)) {
-        SoyType notNullable = tryRemoveNull(exprType);
+        SoyType notNullable = tryRemoveNullish(exprType);
         if (!notNullable.equals(exprType) && SoyTypes.isIntFloatOrNumber(notNullable)) {
           errorReporter.warn(node.getExpr().getSourceLocation(), PLURAL_EXPR_NULLABLE, exprType);
         } else {
@@ -886,8 +892,8 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
 
       SourceLocation location = variant.getSourceLocation();
       SoyType variantType = variant.getType();
-      if (variantType.getKind() == SoyType.Kind.NULL
-          || !SoyTypes.isKindOrUnionOfKinds(tryRemoveNull(variantType), allowedVariantTypes)) {
+      if (SoyTypes.isNullOrUndefined(variantType)
+          || !SoyTypes.isKindOrUnionOfKinds(tryRemoveNullish(variantType), allowedVariantTypes)) {
         errorReporter.report(location, BAD_DELCALL_VARIANT_TYPE, variantType);
       }
 
@@ -1062,7 +1068,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
         errorReporter.report(node.getSourceLocation(), REDUNDANT_NON_NULL_ASSERTION_OPERATOR);
         node.setType(UnknownType.getInstance());
       } else {
-        node.setType(SoyTypes.removeNull(type));
+        node.setType(SoyTypes.tryRemoveNullish(type));
       }
     }
 
@@ -1465,10 +1471,10 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
     private void finishFieldAccessNode(FieldAccessNode node, boolean nullSafe) {
       SoyType baseType = node.getBaseExprChild().getType();
       if (nullSafe) {
-        baseType = SoyTypes.tryRemoveNull(baseType);
+        baseType = tryRemoveNullish(baseType);
       }
 
-      SoyType nonNullType = SoyTypes.tryRemoveNull(baseType);
+      SoyType nonNullType = tryRemoveNullish(baseType);
       SoySourceFunctionMethod fieldImpl = fieldRegistry.findField(node.getFieldName(), nonNullType);
       if (fieldImpl != null) {
         if (!nonNullType.equals(baseType)) {
@@ -1612,7 +1618,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
 
     @Nullable
     private SoyMethod resolveMethodFromBaseType(MethodCallNode node, SoyType baseType) {
-      if (SoyTypes.isNullable(baseType)) {
+      if (SoyTypes.isNullish(baseType)) {
         errorReporter.report(
             node.getBaseExprChild().getSourceLocation(),
             METHOD_BASE_TYPE_NULL_SAFE_REQUIRED,
@@ -2503,7 +2509,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
             SoyType fieldType = protoType.getFieldType(fieldName);
             if (fieldType != null) {
               emitProtoFieldError(protoType, fieldName, sourceLocation);
-              return SoyTypes.removeNull(fieldType);
+              return SoyTypes.tryRemoveNullish(fieldType);
             } else {
               String extraErrorMessage =
                   SoyErrors.getDidYouMeanMessageForProtoFields(
@@ -2557,7 +2563,8 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
           return UnknownType.getInstance();
 
         default:
-          ImmutableSet<String> allFields = fieldRegistry.getAllFieldNames(tryRemoveNull(baseType));
+          ImmutableSet<String> allFields =
+              fieldRegistry.getAllFieldNames(tryRemoveNullish(baseType));
           String didYouMean =
               allFields.isEmpty() ? "" : SoyErrors.getDidYouMeanMessage(allFields, fieldName);
           errorReporter.report(sourceLocation, NO_SUCH_FIELD, fieldName, baseType, didYouMean);
@@ -2645,7 +2652,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
               itemTypes.add(itemType);
             }
             // If this is a nullable union type but the operation is not null-safe, report an error.
-            if (unionType.isNullable() && !isNullSafe) {
+            if (SoyTypes.isNullish(unionType) && !isNullSafe) {
               errorReporter.report(baseLocation, BRACKET_ACCESS_NULLABLE_UNION);
               return UnknownType.getInstance();
             }
@@ -2728,7 +2735,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
                 node.getSourceLocation(), CHECK_NOT_NULL_ON_COMPILE_TIME_NULL, "call checkNotNull");
           } else {
             // Same type as its child but with nulls removed
-            node.setType(SoyTypes.removeNull(type));
+            node.setType(SoyTypes.tryRemoveNullish(type));
           }
           break;
         case IS_PRIMARY_MSG_IN_USE:
@@ -2972,6 +2979,14 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
     }
 
     @Override
+    protected void visitUndefinedNode(UndefinedNode node) {
+      if (node.getParent() instanceof ExprRootNode) {
+        notAllowed(node);
+      }
+      super.visitUndefinedNode(node);
+    }
+
+    @Override
     protected void visitFunctionNode(FunctionNode node) {
       if (node.isResolved()
           && node.getSoyFunction() != BuiltinFunction.PROTO_INIT
@@ -3055,7 +3070,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
       // {if $var != null} but something like {if $var > 0} should not be changed.
       visit(node);
       ExprEquivalence.Wrapper wrapped = exprEquivalence.wrap(node);
-      positiveTypeConstraints.put(wrapped, tryRemoveNull(node.getType()));
+      positiveTypeConstraints.put(wrapped, tryRemoveNullish(node.getType()));
       // TODO(lukes): The 'negative' type constraint here is not optimal.  What we really know is
       // that the value of the expression is 'falsy' we could use that to inform later checks but
       // for now we just assume it has its normal type.
@@ -3119,37 +3134,78 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
 
     @Override
     protected void visitEqualOpNode(EqualOpNode node) {
-      if (node.getChild(1).getKind() == ExprNode.Kind.NULL_NODE) {
-        ExprEquivalence.Wrapper wrappedExpr = exprEquivalence.wrap(node.getChild(0));
-        positiveTypeConstraints.put(wrappedExpr, NullType.getInstance());
-        negativeTypeConstraints.put(wrappedExpr, tryRemoveNull(wrappedExpr.get().getType()));
-      } else if (node.getChild(0).getKind() == ExprNode.Kind.NULL_NODE) {
-        ExprEquivalence.Wrapper wrappedExpr = exprEquivalence.wrap(node.getChild(1));
-        positiveTypeConstraints.put(wrappedExpr, NullType.getInstance());
-        negativeTypeConstraints.put(wrappedExpr, tryRemoveNull(wrappedExpr.get().getType()));
+      if (isNullishLiteral(node.getChild(1))) {
+        addNullishEqualOpConstraint(node.getChild(0), false);
+      } else if (isNullishLiteral(node.getChild(0))) {
+        addNullishEqualOpConstraint(node.getChild(1), false);
       }
-      // Otherwise don't make any inferences (don't visit children).
     }
 
     @Override
     protected void visitNotEqualOpNode(NotEqualOpNode node) {
-      if (node.getChild(1).getKind() == ExprNode.Kind.NULL_NODE) {
-        ExprEquivalence.Wrapper wrappedExpr = exprEquivalence.wrap(node.getChild(0));
-        positiveTypeConstraints.put(wrappedExpr, tryRemoveNull(wrappedExpr.get().getType()));
-        negativeTypeConstraints.put(wrappedExpr, NullType.getInstance());
-      } else if (node.getChild(0).getKind() == ExprNode.Kind.NULL_NODE) {
-        ExprEquivalence.Wrapper wrappedExpr = exprEquivalence.wrap(node.getChild(1));
-        positiveTypeConstraints.put(wrappedExpr, tryRemoveNull(wrappedExpr.get().getType()));
-        negativeTypeConstraints.put(wrappedExpr, NullType.getInstance());
+      if (isNullishLiteral(node.getChild(1))) {
+        addNullishEqualOpConstraint(node.getChild(0), true);
+      } else if (isNullishLiteral(node.getChild(0))) {
+        addNullishEqualOpConstraint(node.getChild(1), true);
       }
-      // Otherwise don't make any inferences (don't visit children).
+    }
+
+    private void addNullishEqualOpConstraint(ExprNode node, boolean notEqual) {
+      ExprEquivalence.Wrapper wrappedExpr = exprEquivalence.wrap(node);
+      SoyType type = wrappedExpr.get().getType();
+      (notEqual ? positiveTypeConstraints : negativeTypeConstraints)
+          .put(wrappedExpr, tryRemoveNullish(type));
+      (notEqual ? negativeTypeConstraints : positiveTypeConstraints)
+          .put(
+              wrappedExpr,
+              SoyTypes.isNullish(type) ? tryKeepNullish(type) : SoyTypes.NULL_OR_UNDEFINED);
+    }
+
+    @Override
+    protected void visitTripleEqualOpNode(TripleEqualOpNode node) {
+      if (isNullishLiteral(node.getChild(1))) {
+        addNullishTripleEqualOpConstraint(node.getChild(0), false, node.getChild(1).getKind());
+      } else if (isNullishLiteral(node.getChild(0))) {
+        addNullishTripleEqualOpConstraint(node.getChild(1), false, node.getChild(0).getKind());
+      }
+      // TODO(b/297033128): This is wrong.
+      super.visitTripleEqualOpNode(node);
+    }
+
+    @Override
+    protected void visitTripleNotEqualOpNode(TripleNotEqualOpNode node) {
+      if (isNullishLiteral(node.getChild(1))) {
+        addNullishTripleEqualOpConstraint(node.getChild(0), true, node.getChild(1).getKind());
+      } else if (isNullishLiteral(node.getChild(0))) {
+        addNullishTripleEqualOpConstraint(node.getChild(1), true, node.getChild(0).getKind());
+      }
+      // TODO(b/297033128): This is wrong.
+      super.visitTripleNotEqualOpNode(node);
+    }
+
+    private void addNullishTripleEqualOpConstraint(
+        ExprNode node, boolean notEqual, ExprNode.Kind compareKind) {
+      ExprEquivalence.Wrapper wrappedExpr = exprEquivalence.wrap(node);
+      SoyType type = wrappedExpr.get().getType();
+      (notEqual ? positiveTypeConstraints : negativeTypeConstraints)
+          .put(
+              wrappedExpr,
+              compareKind == ExprNode.Kind.NULL_NODE
+                  ? tryRemoveNull(type)
+                  : tryRemoveUndefined(type));
+      (notEqual ? negativeTypeConstraints : positiveTypeConstraints)
+          .put(
+              wrappedExpr,
+              compareKind == ExprNode.Kind.NULL_NODE
+                  ? NullType.getInstance()
+                  : UndefinedType.getInstance());
     }
 
     @Override
     protected void visitNullSafeAccessNode(NullSafeAccessNode node) {
       for (ExprNode nullSafeBase : node.asNullSafeBaseList()) {
         positiveTypeConstraints.put(
-            exprEquivalence.wrap(nullSafeBase), tryRemoveNull(nullSafeBase.getType()));
+            exprEquivalence.wrap(nullSafeBase), tryRemoveNullish(nullSafeBase.getType()));
       }
     }
 
@@ -3338,7 +3394,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
     @Override
     public ImmutableList<SoySourceFunctionMethod> matchForNameAndBase(
         String methodName, SoyType baseType) {
-      Preconditions.checkArgument(!SoyTypes.isNullable(baseType));
+      Preconditions.checkArgument(!SoyTypes.isNullish(baseType));
       return methodCache.getUnchecked(methodName).stream()
           .filter(m -> m.appliesToBase(baseType))
           .collect(toImmutableList());
@@ -3402,7 +3458,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
     @Nullable
     public SoySourceFunctionMethod findField(String fieldName, SoyType baseType) {
       Preconditions.checkArgument(
-          baseType == NullType.getInstance() || !SoyTypes.isNullable(baseType));
+          baseType == NullType.getInstance() || !SoyTypes.isNullish(baseType));
       return methodCache.getUnchecked(fieldName).stream()
           .filter(method -> method.appliesToBase(baseType))
           .findFirst()

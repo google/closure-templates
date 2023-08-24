@@ -31,6 +31,7 @@ import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.StringData;
+import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.types.AnyType;
 import com.google.template.soy.types.FloatType;
 import com.google.template.soy.types.IntType;
@@ -115,6 +116,13 @@ public class SoyExpressionTest {
     assertThat(SoyExpression.SOY_NULL.isBoxed()).isTrue();
     assertThat(SoyExpression.SOY_NULL.isNonJavaNullable()).isTrue();
     assertThat(SoyExpression.SOY_NULL.isNonSoyNullish()).isFalse();
+    assertThat(SoyExpression.SOY_UNDEFINED.isBoxed()).isTrue();
+    assertThat(SoyExpression.SOY_UNDEFINED.isNonJavaNullable()).isTrue();
+    assertThat(SoyExpression.SOY_UNDEFINED.isNonSoyNullish()).isFalse();
+
+    assertThatExpression(SoyExpression.SOY_UNDEFINED).evaluatesTo(UndefinedData.INSTANCE);
+    assertThatExpression(SoyExpression.SOY_UNDEFINED.coerceToBoolean()).evaluatesTo(false);
+    assertThatExpression(SoyExpression.SOY_UNDEFINED.coerceToString()).evaluatesTo("undefined");
   }
 
   @Test
@@ -174,10 +182,10 @@ public class SoyExpressionTest {
     // primitives get boxed
     assertThatExpression(SoyExpression.forBool(BytecodeUtils.constant(false)).box())
         .evaluatesTo(BooleanData.FALSE);
-    // null boxed types get converted to NULL_PROVIDER
+    // null boxed types get converted to NULL_DATA
     assertThatExpression(SoyExpression.forSoyValue(UnknownType.getInstance(), soyNull()).box())
         .evaluatesTo(NullData.INSTANCE);
-    // null unboxed values get converted to NULL_PROVIDER
+    // null unboxed values get converted to NULL_DATA
     assertThatExpression(forSoyValue(StringType.getInstance(), soyNull()).box())
         .evaluatesTo(NullData.INSTANCE);
   }

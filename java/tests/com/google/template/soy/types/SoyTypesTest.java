@@ -830,6 +830,20 @@ public class SoyTypesTest {
         .isNotAssignableFromLoose("[foo: string, bar: number]");
   }
 
+  @Test
+  public void testNullability() {
+    assertThat(SoyTypes.tryRemoveNull(NULL_TYPE)).isEqualTo(NULL_TYPE);
+    assertThat(SoyTypes.tryRemoveNull(UnionType.of(STRING_TYPE, NULL_TYPE))).isEqualTo(STRING_TYPE);
+
+    assertThat(SoyTypes.tryRemoveNullish(NULL_TYPE)).isEqualTo(NULL_TYPE);
+    assertThat(SoyTypes.tryRemoveNullish(UnionType.of(STRING_TYPE, NULL_TYPE)))
+        .isEqualTo(STRING_TYPE);
+    assertThat(SoyTypes.tryRemoveNullish(UnionType.of(STRING_TYPE, UNDEFINED_TYPE)))
+        .isEqualTo(STRING_TYPE);
+    assertThat(SoyTypes.tryRemoveNullish(UnionType.of(STRING_TYPE, NULL_TYPE, UNDEFINED_TYPE)))
+        .isEqualTo(STRING_TYPE);
+  }
+
   static SoyTypeSubject assertThatSoyType(String typeString, SoyTypeRegistry registry) {
     return Truth.<SoyTypeSubject, String>assertAbout(
             (meta, subject) -> new SoyTypeSubject(meta, subject, registry))

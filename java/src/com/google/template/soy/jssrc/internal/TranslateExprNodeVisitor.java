@@ -306,7 +306,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
 
   @Override
   protected Expression visitUndefinedNode(UndefinedNode node) {
-    return LITERAL_NULL;
+    return LITERAL_UNDEFINED;
   }
 
   @Override
@@ -343,7 +343,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
     if (node.getIndexVar() != null) {
       variableMappings.put(node.getIndexVar(), id(indexVarTranslation));
     }
-    SoyType listType = SoyTypes.tryRemoveNull(node.getListExpr().getType());
+    SoyType listType = SoyTypes.tryRemoveNullish(node.getListExpr().getType());
     // elementType can be unknown if it is the special EMPTY_LIST or if it isn't a known list type.
     SoyType elementType =
         listType.getKind() == SoyType.Kind.LIST
@@ -647,7 +647,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
         case GET_EXTENSION:
           // Nullability has already been checked, but nonnull assertion operators are removed by
           // so the type may still appear nullable, in which case we can safely remove it.
-          SoyProtoType protoBaseType = (SoyProtoType) SoyTypes.removeNull(baseType);
+          SoyProtoType protoBaseType = (SoyProtoType) SoyTypes.tryRemoveNullish(baseType);
           String extName = BuiltinMethod.getProtoExtensionIdFromMethodCall(methodCallNode);
           FieldDescriptor descriptor = protoBaseType.getFieldDescriptor(extName);
           return base.dotAccess(

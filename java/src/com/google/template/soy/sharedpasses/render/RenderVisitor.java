@@ -382,15 +382,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
 
   @Override
   protected void visitPrintNode(PrintNode node) {
-
     SoyValue result = eval(node.getExpr(), node);
-    if (result instanceof UndefinedData) {
-      throw RenderException.createWithSource(
-          "In 'print' tag, expression \""
-              + node.getExpr().toSourceString()
-              + "\" evaluates to undefined.",
-          node);
-    }
 
     // Process directives.
     for (PrintDirectiveNode directiveNode : node.getChildren()) {

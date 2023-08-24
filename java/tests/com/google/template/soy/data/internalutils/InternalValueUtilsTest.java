@@ -19,7 +19,6 @@ package com.google.template.soy.data.internalutils;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.base.SourceLocation;
@@ -36,15 +35,14 @@ import com.google.template.soy.exprtree.FloatNode;
 import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.exprtree.StringNode;
+import com.google.template.soy.exprtree.UndefinedNode;
 import java.util.Iterator;
 import java.util.Map;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-/**
- * Unit tests for InternalValueUtils.
- */
+/** Unit tests for InternalValueUtils. */
 @RunWith(JUnit4.class)
 public class InternalValueUtilsTest {
 
@@ -76,12 +74,9 @@ public class InternalValueUtilsTest {
                 InternalValueUtils.convertPrimitiveDataToExpr(StringData.forValue("boo"), location))
             .getValue());
 
-    try {
-      InternalValueUtils.convertPrimitiveDataToExpr(UndefinedData.INSTANCE, location);
-      fail();
-    } catch (IllegalArgumentException iae) {
-      // Test passes.
-    }
+    assertTrue(
+        InternalValueUtils.convertPrimitiveDataToExpr(UndefinedData.INSTANCE, location)
+            instanceof UndefinedNode);
   }
 
   @Test

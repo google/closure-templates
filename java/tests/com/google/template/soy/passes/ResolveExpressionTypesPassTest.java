@@ -904,7 +904,7 @@ public final class ResolveExpressionTypesPassTest {
   @Test
   public void testTypeNarrowingError() {
     assertResolveExpressionTypesFails(
-        "Expected expression of type 'string', found 'null'.",
+        "Expected expression of type 'string', found 'null|undefined'.",
         constructFileSource(
             "{@param p: [a: string]}",
             "{if $p.a != null}",
