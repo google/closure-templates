@@ -235,6 +235,14 @@ public abstract class SoyType {
     throw new AbstractMethodError();
   }
 
+  /**
+   * Returns true if this type has no non-nullish component, i.e. if it's null, undefined, or
+   * null|undefined.
+   */
+  public boolean isNullOrUndefined() {
+    return false;
+  }
+
   /** The type represented in a fully parseable format. */
   @Override
   public abstract String toString();

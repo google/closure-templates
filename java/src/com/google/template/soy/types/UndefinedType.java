@@ -31,6 +31,11 @@ public final class UndefinedType extends PrimitiveType {
   }
 
   @Override
+  public boolean isNullOrUndefined() {
+    return true;
+  }
+
+  @Override
   public String toString() {
     return "undefined";
   }
