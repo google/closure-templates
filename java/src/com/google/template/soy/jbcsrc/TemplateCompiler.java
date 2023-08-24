@@ -34,7 +34,6 @@ import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.exprtree.VarDefn.Kind;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.jbcsrc.ExpressionCompiler.BasicExpressionCompiler;
-import com.google.template.soy.jbcsrc.SoyNodeCompiler.CompiledMethodBody;
 import com.google.template.soy.jbcsrc.internal.InnerClasses;
 import com.google.template.soy.jbcsrc.internal.SoyClassWriter;
 import com.google.template.soy.jbcsrc.restricted.AnnotationRef;
@@ -518,22 +517,11 @@ final class TemplateCompiler {
                         localVariable, defaultValue.box())));
       }
     }
-    CompiledMethodBody methodBody =
-        SoyNodeCompiler.create(
-                templateNode,
-                analysis,
-                innerClasses,
-                appendable,
-                variableSet,
-                variables,
-                fields,
-                constantCompiler,
-                javaSourceFunctionCompiler,
-                fileSetMetadata)
-            .compile(
-                templateNode,
-                /* prefix= */ ExtraCodeCompiler.NO_OP,
-                /* suffix= */ ExtraCodeCompiler.NO_OP);
+    Statement methodBody =
+        nodeCompiler.compile(
+            templateNode,
+            /* prefix= */ ExtraCodeCompiler.NO_OP,
+            /* suffix= */ ExtraCodeCompiler.NO_OP);
     Statement exitTemplateScope = templateScope.exitScope();
     Statement returnDone = Statement.returnExpression(MethodRef.RENDER_RESULT_DONE.invoke());
     new Statement() {
@@ -543,7 +531,7 @@ final class TemplateCompiler {
         for (Statement paramInitStatement : paramInitStatements) {
           paramInitStatement.gen(adapter);
         }
-        methodBody.body().gen(adapter);
+        methodBody.gen(adapter);
         exitTemplateScope.gen(adapter);
         adapter.mark(end);
         returnDone.gen(adapter);
@@ -551,7 +539,6 @@ final class TemplateCompiler {
         variableSet.generateTableEntries(adapter);
       }
     }.writeIOExceptionMethod(methodAccess(), method, writer);
-    writer.setNumDetachStates(methodBody.numberOfDetachStates());
   }
 
   // TODO(lukes): it seems like this should actually compile params to SoyValueProvider instances

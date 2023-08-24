@@ -16,7 +16,6 @@
 
 package com.google.template.soy.jbcsrc.internal;
 
-import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.OBJECT;
 
@@ -98,7 +97,6 @@ public final class SoyClassWriter extends ClassVisitor {
   private final Writer writer;
   private final TypeInfo typeInfo;
   private int numFields;
-  private int numDetachStates;
 
   private SoyClassWriter(Writer writer, Builder builder) {
     super(
@@ -123,11 +121,6 @@ public final class SoyClassWriter extends ClassVisitor {
     }
   }
 
-  /** Sets the number of 'detach states' needed by the compiled class. */
-  public void setNumDetachStates(int numDetachStates) {
-    checkArgument(numDetachStates >= 0);
-    this.numDetachStates = numDetachStates;
-  }
 
   /** @deprecated Don't call visitSource(), SoyClassWriter calls it for you during construction. */
   @Deprecated
@@ -154,7 +147,7 @@ public final class SoyClassWriter extends ClassVisitor {
   /** Returns the bytecode of the class that was build with this class writer. */
   public ClassData toClassData() {
     try {
-      return ClassData.create(typeInfo, writer.toByteArray(), numFields, numDetachStates);
+      return ClassData.create(typeInfo, writer.toByteArray(), numFields);
     } catch (MethodTooLargeException methodTooLargeException) {
       // This error is unrecoverable and either implies that we need to improve compiler
       // optimizations or that the user needs to refactor their template.
@@ -162,9 +155,7 @@ public final class SoyClassWriter extends ClassVisitor {
           "Attempted to generate a method of size: "
               + methodTooLargeException.getCodeSize()
               + " bytes (max is 65536), numFields: "
-              + numFields
-              + ", numDetachStates: "
-              + numDetachStates,
+              + numFields,
           methodTooLargeException);
     }
   }

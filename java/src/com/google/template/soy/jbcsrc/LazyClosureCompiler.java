@@ -42,7 +42,6 @@ import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.jbcsrc.ExpressionCompiler.BasicExpressionCompiler;
 import com.google.template.soy.jbcsrc.ExpressionDetacher.BasicDetacher;
-import com.google.template.soy.jbcsrc.SoyNodeCompiler.CompiledMethodBody;
 import com.google.template.soy.jbcsrc.internal.SoyClassWriter;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
@@ -588,9 +587,7 @@ final class LazyClosureCompiler {
               constantCompiler,
               parent.javaSourceFunctionCompiler,
               parent.fileSetMetadata);
-      CompiledMethodBody compileChildren = soyNodeCompiler.compile(renderUnit, prefix, suffix);
-      writer.setNumDetachStates(compileChildren.numberOfDetachStates());
-      Statement nodeBody = compileChildren.body();
+      Statement nodeBody = soyNodeCompiler.compile(renderUnit, prefix, suffix);
       Statement returnDone = returnExpression(MethodRef.RENDER_RESULT_DONE.invoke());
       Statement fullMethodBody =
           new Statement() {

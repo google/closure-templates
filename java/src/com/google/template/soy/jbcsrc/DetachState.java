@@ -319,9 +319,4 @@ final class DetachState implements ExpressionDetacher.Factory {
     /** The statement that restores the state of local variables so we can resume execution. */
     abstract Optional<Statement> restoreStatement();
   }
-
-  /** Returns the number of unique detach/reattach points. */
-  int getNumberOfDetaches() {
-    return reattaches.size();
-  }
 }

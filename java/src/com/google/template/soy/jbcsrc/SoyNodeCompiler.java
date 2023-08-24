@@ -234,19 +234,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     this.fileSetMetadata = fileSetMetadata;
   }
 
-  @AutoValue
-  abstract static class CompiledMethodBody {
-    static CompiledMethodBody create(Statement body, int numDetaches) {
-      return new AutoValue_SoyNodeCompiler_CompiledMethodBody(body, numDetaches);
-    }
-
-    abstract Statement body();
-
-    abstract int numberOfDetachStates();
-  }
-
-  CompiledMethodBody compile(
-      RenderUnitNode node, ExtraCodeCompiler prefix, ExtraCodeCompiler suffix) {
+  Statement compile(RenderUnitNode node, ExtraCodeCompiler prefix, ExtraCodeCompiler suffix) {
     List<Statement> statements = new ArrayList<>();
     if (shouldCheckForSoftLimit(node)) {
       statements.add(detachState.detachLimited(appendableExpression));
@@ -255,8 +243,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     statements.add(
         // needs to go at the beginning but can only be generated after the whole method body.
         0, detachState.generateReattachTable());
-    return CompiledMethodBody.create(
-        Statement.concat(statements), detachState.getNumberOfDetaches());
+    return Statement.concat(statements);
   }
 
   Statement compileWithoutDetaches(
@@ -1904,7 +1891,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
             // needs to be part of the main tree.
             LetContentNode fakeLet =
                 LetContentNode.forVariable(
-                    /*id=*/ -1,
+                    /* id= */ -1,
                     node.getSourceLocation(),
                     "$" + phname,
                     node.getSourceLocation(),

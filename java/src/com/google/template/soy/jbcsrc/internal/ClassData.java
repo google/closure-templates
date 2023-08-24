@@ -41,20 +41,18 @@ import org.objectweb.asm.util.TraceClassVisitor;
  * <p>Note: not using an @AutoValue since it copies
  */
 public final class ClassData {
-  public static ClassData create(TypeInfo type, byte[] b, int numFields, int numDetachStates) {
-    return new ClassData(type, b, numFields, numDetachStates);
+  public static ClassData create(TypeInfo type, byte[] b, int numFields) {
+    return new ClassData(type, b, numFields);
   }
 
   private final TypeInfo type;
   private final byte[] data;
   private final int numberOfFields;
-  private final int numDetachStates;
 
-  private ClassData(TypeInfo type, byte[] data, int numberOfFields, int numDetachStates) {
+  private ClassData(TypeInfo type, byte[] data, int numberOfFields) {
     this.type = checkNotNull(type);
     this.data = checkNotNull(data);
     this.numberOfFields = numberOfFields;
-    this.numDetachStates = numDetachStates;
   }
 
   public TypeInfo type() {
@@ -70,9 +68,6 @@ public final class ClassData {
     return numberOfFields;
   }
 
-  public int numberOfDetachStates() {
-    return numDetachStates;
-  }
 
   /**
    * Runs the {@link CheckClassAdapter} on this class in basic analysis mode.
