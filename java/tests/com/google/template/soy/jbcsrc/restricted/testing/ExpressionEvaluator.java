@@ -137,7 +137,8 @@ public final class ExpressionEvaluator {
       }
     }
     TypeInfo generatedType =
-        TypeInfo.createClass(Names.CLASS_PREFIX + targetInterface.getSimpleName() + "Impl");
+        TypeInfo.createClass(
+            Names.javaClassNameFromSoyNamespace(targetInterface.getSimpleName() + "Impl"));
     SoyClassWriter cw =
         SoyClassWriter.builder(generatedType)
             .setAccess(Opcodes.ACC_FINAL | Opcodes.ACC_SUPER | Opcodes.ACC_PUBLIC)

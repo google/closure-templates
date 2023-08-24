@@ -64,7 +64,7 @@ public abstract class AbstractMemoryClassLoader extends ClassLoader
     // may contain a reference to the same class (if it is running with precompiled soy templates),
     // but we don't want to use it in this case.
     // This replicates part of super.loadClass.
-    if (name.startsWith(Names.CLASS_PREFIX)) {
+    if (Names.isGenerated(name)) {
       synchronized (getClassLoadingLock(name)) {
         // First, check if the class has already been loaded
         Class<?> c = findLoadedClass(name);

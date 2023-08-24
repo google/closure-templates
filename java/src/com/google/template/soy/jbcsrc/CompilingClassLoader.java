@@ -74,7 +74,7 @@ final class CompilingClassLoader extends AbstractMemoryClassLoader {
 
   @Override
   protected ClassData getClassData(String name) {
-    if (!name.startsWith(Names.CLASS_PREFIX)) {
+    if (!Names.isGenerated(name)) {
       // this means we couldn't possibly compile it.
       return null;
     }

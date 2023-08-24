@@ -39,7 +39,7 @@ public final class Names {
   public static final String META_INF_PLUGIN_PATH =
       "META-INF/services/com.google.template.soy.plugins";
 
-  public static final String CLASS_PREFIX = "com.google.template.soy.jbcsrc.gen.";
+  static final String CLASS_PREFIX = "com.google.template.soy.jbcsrc.gen.";
   public static final String INTERNAL_CLASS_PREFIX = CLASS_PREFIX.replace('.', '/');
 
   public static final String VARIANT_VAR_NAME = "__modifiable_variant__";
@@ -47,7 +47,11 @@ public final class Names {
   private Names() {}
 
   public static boolean isGenerated(Type type) {
-    return type.getClassName().startsWith(CLASS_PREFIX);
+    return isGenerated(type.getClassName());
+  }
+
+  public static boolean isGenerated(String javaFqn) {
+    return javaFqn.startsWith(CLASS_PREFIX);
   }
 
   public static final ImmutableSet<String> ALLOWED_SVP_PREFIXES =
@@ -146,7 +150,7 @@ public final class Names {
     StackTraceElement[] stack = throwable.getStackTrace();
     for (int i = 0; i < stack.length; i++) {
       StackTraceElement curr = stack[i];
-      if (curr.getClassName().startsWith(CLASS_PREFIX)) {
+      if (isGenerated(curr.getClassName())) {
         stack[i] =
             new StackTraceElement(
                 curr.getClassName().substring(CLASS_PREFIX.length()),
