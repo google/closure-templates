@@ -393,6 +393,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
 
   private final SoyMethod.Registry methodRegistry;
   private final Supplier<FileSetMetadata> templateRegistryFromDeps;
+
   /** Cached map that converts a string representation of types to actual soy types. */
   private final Map<Signature, ResolvedSignature> signatureMap = new HashMap<>();
 
@@ -641,8 +642,12 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
                           headerVar.defaultValue().getRoot(), SoyTypes.expandUnions(declaredType));
                 }
                 if (!declaredType.isAssignableFromLoose(actualType)) {
+                  SourceLocation loc = headerVar.defaultValue().getSourceLocation();
+                  if (!loc.isKnown()) {
+                    loc = headerVar.getSourceLocation();
+                  }
                   errorReporter.report(
-                      headerVar.defaultValue().getSourceLocation(),
+                      loc,
                       DECLARED_DEFAULT_TYPE_MISMATCH,
                       headerVar.name(),
                       actualType,
