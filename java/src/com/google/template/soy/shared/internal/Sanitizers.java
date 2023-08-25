@@ -447,7 +447,7 @@ public final class Sanitizers {
   public static String escapeJsValue(SoyValue value) {
     // We surround values with spaces so that they can't be interpolated into identifiers
     // by accident.  We could use parentheses but those might be interpreted as a function call.
-    if (NullData.INSTANCE == value || value == null) {
+    if (value == null || value.isNullish()) {
       // The JS counterpart of this code in soyutils.js emits " null " for both null and the special
       // JS value undefined.
       return " null ";
@@ -544,7 +544,7 @@ public final class Sanitizers {
       // we can skip this check when its unnecessary.
       return embedCssIntoHtml(value.coerceToString());
     }
-    return NullData.INSTANCE == value ? "" : filterCssValue(value.coerceToString());
+    return value.isNullish() ? "" : filterCssValue(value.coerceToString());
   }
 
   /**
