@@ -676,7 +676,7 @@ final class ExpressionCompiler {
         return BytecodeUtils.isSoyNull(visit(node.getChild(0)));
       }
       if (node.getChild(1).getKind() == ExprNode.Kind.UNDEFINED_NODE) {
-        return BytecodeUtils.isSoyUndefined(visit(node.getChild(1)));
+        return BytecodeUtils.isSoyUndefined(visit(node.getChild(0)));
       }
       return SoyExpression.forBool(
           BytecodeUtils.compareSoyTripleEquals(visit(node.getChild(0)), visit(node.getChild(1))));
@@ -694,7 +694,7 @@ final class ExpressionCompiler {
         return BytecodeUtils.isNonSoyNull(visit(node.getChild(0)));
       }
       if (node.getChild(1).getKind() == ExprNode.Kind.UNDEFINED_NODE) {
-        return BytecodeUtils.isNonSoyUndefined(visit(node.getChild(1)));
+        return BytecodeUtils.isNonSoyUndefined(visit(node.getChild(0)));
       }
       return SoyExpression.forBool(
           Branch.ifTrue(
