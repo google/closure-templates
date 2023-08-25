@@ -18,6 +18,7 @@ package com.google.template.soy.jssrc.dsl;
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.template.soy.exprtree.Operator.Associativity;
 import java.util.List;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
@@ -36,7 +37,8 @@ import javax.annotation.Nullable;
  * }</code>
  */
 @AutoValue
-abstract class TsFunction extends Expression implements Expression.InitialStatementsScope {
+abstract class TsFunction extends Expression
+    implements Expression.InitialStatementsScope, OperatorInterface {
 
   public enum Format {
     ANONYMOUS,
@@ -72,6 +74,16 @@ abstract class TsFunction extends Expression implements Expression.InitialStatem
   abstract Expression returnType();
 
   abstract ImmutableList<Statement> bodyStmts();
+
+  @Override
+  public Precedence precedence() {
+    return Precedence.P2; // For arrow function. Not sure for anonymous function.
+  }
+
+  @Override
+  public Associativity associativity() {
+    return Associativity.RIGHT;
+  }
 
   /**
    * If the body is a single return statement of a single expression, return that expresion,

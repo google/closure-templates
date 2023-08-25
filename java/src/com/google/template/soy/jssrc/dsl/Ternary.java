@@ -44,12 +44,12 @@ abstract class Ternary extends Operation {
   }
 
   @Override
-  Precedence precedence() {
+  public Precedence precedence() {
     return Precedence.forSoyOperator(CONDITIONAL);
   }
 
   @Override
-  Associativity associativity() {
+  public Associativity associativity() {
     return CONDITIONAL.getAssociativity();
   }
 

@@ -37,12 +37,12 @@ public abstract class Call extends Operation {
   }
 
   @Override
-  Precedence precedence() {
+  public Precedence precedence() {
     return Precedence.P17;
   }
 
   @Override
-  Associativity associativity() {
+  public Associativity associativity() {
     return LEFT;
   }
 

@@ -87,12 +87,12 @@ abstract class Concatenation extends Operation {
   }
 
   @Override
-  Precedence precedence() {
+  public Precedence precedence() {
     return Precedence.P11;
   }
 
   @Override
-  Associativity associativity() {
+  public Associativity associativity() {
     return Operator.PLUS.getAssociativity();
   }
 

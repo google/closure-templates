@@ -35,12 +35,12 @@ abstract class New extends Operation {
   }
 
   @Override
-  Precedence precedence() {
+  public Precedence precedence() {
     return Precedence.P17;
   }
 
   @Override
-  Associativity associativity() {
+  public Associativity associativity() {
     return LEFT; // it's unary, doesn't matter
   }
 

@@ -21,7 +21,7 @@ import com.google.template.soy.exprtree.Operator.Associativity;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 
 /** Base class for representing a JavaScript operation. */
-abstract class Operation extends Expression {
+abstract class Operation extends Expression implements OperatorInterface {
 
   public static String getOperatorToken(Operator soyOperator) {
     switch (soyOperator) {
@@ -60,9 +60,11 @@ abstract class Operation extends Expression {
     throw new AssertionError();
   }
 
-  abstract Precedence precedence();
+  @Override
+  public abstract Precedence precedence();
 
-  abstract Associativity associativity();
+  @Override
+  public abstract Associativity associativity();
 
   @Override
   public final JsExpr singleExprOrName(FormatOptions formatOptions) {
@@ -105,8 +107,8 @@ abstract class Operation extends Expression {
     if (cc instanceof TsxPrintNode) {
       cc = ((TsxPrintNode) operand).expr();
     }
-    if (cc instanceof Operation) {
-      Operation operation = (Operation) cc;
+    if (cc instanceof OperatorInterface) {
+      OperatorInterface operation = (OperatorInterface) cc;
       return operation.precedence().lessThan(this.precedence())
           || (operation.precedence() == this.precedence()
               && operandPosition.shouldParenthesize(operation.associativity()));

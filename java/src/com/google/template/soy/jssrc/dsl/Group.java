@@ -41,12 +41,12 @@ abstract class Group extends Operation {
   }
 
   @Override
-  Precedence precedence() {
+  public Precedence precedence() {
     return Precedence.P18;
   }
 
   @Override
-  Associativity associativity() {
+  public Associativity associativity() {
     return LEFT; // irrelevant
   }
 

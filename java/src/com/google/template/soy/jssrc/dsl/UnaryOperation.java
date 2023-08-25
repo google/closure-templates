@@ -48,7 +48,7 @@ abstract class UnaryOperation extends Operation {
   }
 
   @Override
-  Associativity associativity() {
+  public Associativity associativity() {
     return LEFT; // it's unary, doesn't matter
   }
 
