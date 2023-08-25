@@ -3168,8 +3168,6 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
       } else if (isNullishLiteral(node.getChild(0))) {
         addNullishTripleEqualOpConstraint(node.getChild(1), false, node.getChild(0).getKind());
       }
-      // TODO(b/297033128): This is wrong.
-      super.visitTripleEqualOpNode(node);
     }
 
     @Override
@@ -3179,8 +3177,6 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
       } else if (isNullishLiteral(node.getChild(0))) {
         addNullishTripleEqualOpConstraint(node.getChild(1), true, node.getChild(0).getKind());
       }
-      // TODO(b/297033128): This is wrong.
-      super.visitTripleNotEqualOpNode(node);
     }
 
     private void addNullishTripleEqualOpConstraint(
