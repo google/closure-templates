@@ -345,8 +345,7 @@ final class TemplateVariableManager implements LocalVariableManager {
               "bootstrapSaveState",
               MethodHandles.Lookup.class,
               String.class,
-              MethodType.class,
-              int.class)
+              MethodType.class)
           .asHandle();
   private static final Handle BOOTSTRAP_RESTORE_HANDLE =
       MethodRef.create(
@@ -359,6 +358,25 @@ final class TemplateVariableManager implements LocalVariableManager {
               int.class)
           .asHandle();
 
+  private static Type simplifyType(Type type) {
+    switch (type.getSort()) {
+      case Type.OBJECT:
+      case Type.ARRAY:
+        return BytecodeUtils.OBJECT.type();
+      case Type.BOOLEAN:
+      case Type.CHAR:
+      case Type.BYTE:
+      case Type.SHORT:
+      case Type.INT:
+      case Type.FLOAT:
+      case Type.LONG:
+      case Type.DOUBLE:
+        return type;
+      default:
+        throw new AssertionError("unsupported type: " + type);
+    }
+  }
+
   /** Returns a {@link SaveRestoreState} for the current state of the variable set. */
   SaveRestoreState saveRestoreState(
       RenderContextExpression renderContextExpression, int stateNumber) {
@@ -369,7 +387,7 @@ final class TemplateVariableManager implements LocalVariableManager {
     // The map is in insertion order.  This is important since it means derived variables will work.
     // So our restore logic needs to be executed in the same order in order to restore derived
     // variable directly.
-    List<Variable> restoresInOrder =
+    ImmutableList<Variable> restoresInOrder =
         variablesByKey.values().stream()
             .filter(v -> !(v instanceof TrivialVariable))
             .map(v -> (Variable) v)
@@ -388,7 +406,7 @@ final class TemplateVariableManager implements LocalVariableManager {
 
     // in order to do this, we need to canonicalize the order of the save operations.  The order
     // itself doesn't really matter, just that all save restore sites perform the same operation.
-    List<Variable> storesToPerform =
+    ImmutableList<Variable> storesToPerform =
         restoresInOrder.stream()
             .filter(v -> v.strategy == SaveStrategy.STORE)
             // sort based on the 'sort' of the local, getSort() returns a unique integer for every
@@ -397,22 +415,31 @@ final class TemplateVariableManager implements LocalVariableManager {
             .collect(toImmutableList());
     List<Type> methodTypeParams = new ArrayList<>();
     methodTypeParams.add(BytecodeUtils.RENDER_CONTEXT_TYPE);
+    methodTypeParams.add(Type.INT_TYPE);
     for (Variable variable : storesToPerform) {
-      methodTypeParams.add(variable.accessor().resultType());
+      // Type simplification isn't strictly necessary, but it does reduce the number of MethodType
+      // constants we create which can save on constant pool size.
+      methodTypeParams.add(simplifyType(variable.accessor().resultType()));
     }
 
-    Type methodType = Type.getMethodType(Type.VOID_TYPE, methodTypeParams.toArray(new Type[0]));
+    Type saveStateMethodType =
+        Type.getMethodType(Type.VOID_TYPE, methodTypeParams.toArray(new Type[0]));
     Statement saveState =
         new Statement() {
           @Override
           protected void doGen(CodeBuilder cb) {
             renderContextExpression.gen(cb);
+            // Because this is a constant, we could pass it to the visitInvokeDynamicInsn as a
+            // constant bootstrap argument.  There is no real benefit though since all we do is
+            // arrange to pass it to a constructor so we can just as easily do that here. Bootstrap
+            // arguments are mostly valuable when we can leverage them at linkage time.
+            cb.pushInt(stateNumber);
             // load all variables onto the stack
             for (Variable var : storesToPerform) {
               var.accessor().gen(cb);
             }
             cb.visitInvokeDynamicInsn(
-                "save", methodType.getDescriptor(), BOOTSTRAP_SAVE_HANDLE, stateNumber);
+                "save", saveStateMethodType.getDescriptor(), BOOTSTRAP_SAVE_HANDLE);
           }
         };
     // Restore instructions
@@ -451,7 +478,7 @@ final class TemplateVariableManager implements LocalVariableManager {
                                   BytecodeUtils.STACK_FRAME_TYPE)
                               .getDescriptor(),
                           BOOTSTRAP_RESTORE_HANDLE,
-                          methodType,
+                          saveStateMethodType,
                           storeToSlotIndex.get(variableToRestore));
                       cb.visitVarInsn(
                           varType.getOpcode(Opcodes.ISTORE), variableToRestore.local.index());
@@ -459,7 +486,7 @@ final class TemplateVariableManager implements LocalVariableManager {
                   }
                 });
 
-    List<Statement> restoreDerivedVariables =
+    ImmutableList<Statement> restoreDerivedVariables =
         restoresInOrder.stream()
             .filter(var -> var.strategy == SaveStrategy.DERIVED)
             .map(v -> v.local.store(v.initExpression))

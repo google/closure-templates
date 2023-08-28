@@ -37,7 +37,9 @@ public final class SaveStateMetaFactoryTest {
   @Test
   public void testSaveConstantFrame() throws Throwable {
     StackFrame frame =
-        (StackFrame) createSaveFrame(methodType(void.class, RenderContext.class), 20).invokeExact();
+        (StackFrame)
+            createSaveFrame(methodType(void.class, RenderContext.class, int.class), 20)
+                .invokeExact();
     assertThat(frame.getClass()).isEqualTo(StackFrame.class);
   }
 
@@ -47,7 +49,12 @@ public final class SaveStateMetaFactoryTest {
         (StackFrame)
             createSaveFrame(
                     methodType(
-                        void.class, RenderContext.class, int.class, long.class, String.class),
+                        void.class,
+                        RenderContext.class,
+                        int.class,
+                        int.class,
+                        long.class,
+                        String.class),
                     20)
                 .invokeExact(1, 5L, "foo");
     // make sure it is holding our data
@@ -96,12 +103,16 @@ public final class SaveStateMetaFactoryTest {
     StackFrame frame =
         (StackFrame)
             createSaveFrame(
-                    methodType(void.class, RenderContext.class, String.class, int[].class), 20)
+                    methodType(
+                        void.class, RenderContext.class, int.class, String.class, int[].class),
+                    20)
                 .invokeExact("foo", new int[] {1, 2, 3});
     StackFrame frame2 =
         (StackFrame)
             createSaveFrame(
-                    methodType(void.class, RenderContext.class, int[].class, String.class), 50)
+                    methodType(
+                        void.class, RenderContext.class, int.class, int[].class, String.class),
+                    50)
                 .invokeExact(new int[] {1, 2, 3}, "foo");
 
     // Thse frames have similar structures so they can share a class.
@@ -113,12 +124,14 @@ public final class SaveStateMetaFactoryTest {
     StackFrame frame =
         (StackFrame)
             createSaveFrame(
-                    methodType(void.class, RenderContext.class, int.class, String.class), 20)
+                    methodType(void.class, RenderContext.class, int.class, int.class, String.class),
+                    20)
                 .invokeExact(2, "foo");
     StackFrame frame2 =
         (StackFrame)
             createSaveFrame(
-                    methodType(void.class, RenderContext.class, String.class, int.class), 50)
+                    methodType(void.class, RenderContext.class, int.class, String.class, int.class),
+                    50)
                 .invokeExact("foo", 2);
 
     // Thse frames have different structures so they can't share a class.
@@ -130,7 +143,8 @@ public final class SaveStateMetaFactoryTest {
   @Test
   public void testRestoreState() throws Throwable {
     MethodType saveType =
-        methodType(void.class, RenderContext.class, int.class, String.class, boolean.class);
+        methodType(
+            void.class, RenderContext.class, int.class, int.class, String.class, boolean.class);
     StackFrame frame = (StackFrame) createSaveFrame(saveType, 20).invokeExact(2, "foo", false);
     assertThat(frame.stateNumber).isEqualTo(20);
     assertThat(
@@ -152,8 +166,7 @@ public final class SaveStateMetaFactoryTest {
 
   private MethodHandle createSaveFrame(MethodType type, int number) throws Exception {
     MethodHandle saveState =
-        SaveStateMetaFactory.bootstrapSaveState(MethodHandles.lookup(), "save", type, number)
-            .getTarget();
+        SaveStateMetaFactory.bootstrapSaveState(MethodHandles.lookup(), "save", type).getTarget();
     RenderContext ctx = createContext();
     MethodHandle restoreState =
         MethodHandles.insertArguments(
@@ -163,7 +176,7 @@ public final class SaveStateMetaFactoryTest {
             ctx);
 
     return MethodHandles.collectArguments(
-        restoreState, 0, MethodHandles.insertArguments(saveState, 0, ctx));
+        restoreState, 0, MethodHandles.insertArguments(saveState, 0, ctx, number));
   }
 
   private MethodHandle createRestoreState(MethodType restoreType, MethodType saveType, int slot) {

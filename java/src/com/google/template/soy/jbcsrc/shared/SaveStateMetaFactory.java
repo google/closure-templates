@@ -59,8 +59,6 @@ public final class SaveStateMetaFactory {
   private static final ConcurrentMap<FrameKey, Class<? extends StackFrame>> frameCache =
       new ConcurrentHashMap<>();
 
-  private static final MethodType SAVE_STATE_TYPE =
-      MethodType.methodType(void.class, StackFrame.class);
   private static final Type STACK_FRAME_TYPE = Type.getType(StackFrame.class);
 
   private static final String GENERATED_CLASS_NAME_PREFIX =
@@ -69,6 +67,21 @@ public final class SaveStateMetaFactory {
       GENERATED_CLASS_NAME_PREFIX.replace('.', '/');
   private static final MethodType STACK_FRAME_CTOR_TYPE =
       MethodType.methodType(void.class, int.class);
+
+  private static final MethodHandle RENDER_CONTEXT_PUSH_FRAME;
+
+  static {
+    try {
+      RENDER_CONTEXT_PUSH_FRAME =
+          MethodHandles.publicLookup()
+              .findVirtual(
+                  RenderContext.class,
+                  "pushFrame",
+                  MethodType.methodType(void.class, StackFrame.class));
+    } catch (ReflectiveOperationException nsme) {
+      throw new LinkageError(nsme.getMessage(), nsme);
+    }
+  }
 
   @AutoValue
   abstract static class FrameKey {
@@ -127,8 +140,8 @@ public final class SaveStateMetaFactory {
     // We generate a small class that is a subclass of StackFrame
     ImmutableList<Class<?>> fieldTypes =
         type.parameterList().stream()
-            // Skip RenderContext, the first parameter
-            .skip(1)
+            // Skip RenderContext and the state number, the first two parameters
+            .skip(2)
             // map to just primitive types and objects.
             // This is important because the class is defined in this classloader and so shouldn't
             // reference types from child loaders.  restoreState will take care of relevant cast
@@ -152,20 +165,11 @@ public final class SaveStateMetaFactory {
    *     invokeDynamic JVM infrastructure and currently unused. Hardcoded to 'save'
    * @param type The type of the method being called. This will be the method signature of the
    *     callsite we produce. Provided automatically by invokeDynamic JVM infrastructure. For this
-   *     method it is always (RenderContext, ....)->void where the parameters after render context
-   *     are all the values to be saves
-   * @param stateNumber The state number constant for this save point. These are small incrementing
-   *     integers that uniquely identify the point in the bytecode that control should return to.
+   *     method it is always (RenderContext,int, ....)->void where the parameters after render
+   *     context are all the values to be saves
    */
   public static CallSite bootstrapSaveState(
-      MethodHandles.Lookup lookup, String name, MethodType type, int stateNumber) {
-    MethodHandle renderContextSaveState;
-    try {
-      renderContextSaveState =
-          lookup.findVirtual(RenderContext.class, "pushFrame", SAVE_STATE_TYPE);
-    } catch (ReflectiveOperationException nsme) {
-      throw new LinkageError(nsme.getMessage(), nsme);
-    }
+      MethodHandles.Lookup lookup, String name, MethodType type) {
     // We generate a small class that is a subclass of StackFrame
     FrameKey frameKey = frameKeyFromSaveMethodType(type);
     // Generate a StackFrame subclass based on the set of fields it will hold.
@@ -178,17 +182,14 @@ public final class SaveStateMetaFactory {
     } catch (ReflectiveOperationException nsme) {
       throw new LinkageError(nsme.getMessage(), nsme);
     }
-    MethodHandle stackFrameConstructionHandle =
-        MethodHandles.insertArguments(ctorHandle, 0, stateNumber);
     // The handle is currently returning a specific subtype of StackFrame, modify the return type
     // to be StackFrame exactly which is required by the collectArguments combiner below.  Various
     // methodHandle APIs require exact type matching even though Java semantics would not.
-    stackFrameConstructionHandle =
-        stackFrameConstructionHandle.asType(
-            stackFrameConstructionHandle.type().changeReturnType(StackFrame.class));
+    MethodHandle stackFrameConstructionHandle =
+        ctorHandle.asType(ctorHandle.type().changeReturnType(StackFrame.class));
     MethodHandle saveStateHandle =
-        MethodHandles.collectArguments(renderContextSaveState, 1, stackFrameConstructionHandle);
-    // our target signature is something like (RenderContext, SoyValueProvider, long)void, but the
+        MethodHandles.collectArguments(RENDER_CONTEXT_PUSH_FRAME, 1, stackFrameConstructionHandle);
+    // our target signature is something like (I,RenderContext, SoyValueProvider, long)void, but the
     // stackFrameConstructionHandle here is (RenderContext, Object, long)void.
     // Our callsite signature needs to match exactly, asType() will adjust.
     return new ConstantCallSite(saveStateHandle.asType(type));

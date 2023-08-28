@@ -749,7 +749,7 @@ public final class JbcSrcRuntime {
         MethodType saveMethodType =
             methodType(void.class, RenderContext.class, BufferingAppendable.class);
         SAVE_STATE_METHOD_HANDLE =
-            SaveStateMetaFactory.bootstrapSaveState(lookup, "saveState", saveMethodType, 1)
+            SaveStateMetaFactory.bootstrapSaveState(lookup, "saveState", saveMethodType)
                 .getTarget();
         RESTORE_APPENDABLE_HANDLE =
             SaveStateMetaFactory.bootstrapRestoreState(
@@ -797,7 +797,7 @@ public final class JbcSrcRuntime {
         appendable.append(resultData.coerceToString());
       } else {
         try {
-          SaveRestoreState.SAVE_STATE_METHOD_HANDLE.invokeExact(context, buffer);
+          SaveRestoreState.SAVE_STATE_METHOD_HANDLE.invokeExact(context, 1, buffer);
         } catch (Throwable t) {
           throw new AssertionError(t);
         }
