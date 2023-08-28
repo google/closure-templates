@@ -40,9 +40,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-/**
- * Unit tests for GenJsExprsVisitor.
- */
+/** Unit tests for GenJsExprsVisitor. */
 @RunWith(JUnit4.class)
 public final class GenJsExprsVisitorTest {
 
@@ -50,9 +48,7 @@ public final class GenJsExprsVisitorTest {
 
   // Let 'goo' simulate a local variable from a 'foreach' loop.
   private static final ImmutableMap<String, Expression> LOCAL_VAR_TRANSLATIONS =
-      ImmutableMap.<String, Expression>builder()
-          .put("$goo", id("gooData8"))
-          .build();
+      ImmutableMap.of("$goo", id("gooData8"));
 
   @Test
   public void testRawText() {
@@ -102,8 +98,8 @@ public final class GenJsExprsVisitorTest {
     String soyNodeCode =
         JOINER.join("{@param boo : string}", "{map('a': 'b', $boo: 'c').get($boo)}");
     String expectedGenCode =
-        "/** @type {!Map<string, string>} */ (new"
-            + " Map()).set('a', 'b').set(soy.$$checkNotNull(opt_data.boo), 'c').get(opt_data.boo);";
+        "(/** @type {!Map<string, string>} */ (new Map())).set('a',"
+            + " 'b').set(soy.$$checkNotNull(opt_data.boo), 'c').get(opt_data.boo);";
     assertGeneratedChunks(soyNodeCode, expectedGenCode);
   }
 
@@ -206,7 +202,9 @@ public final class GenJsExprsVisitorTest {
     }
   }
 
-  /** @param indicesToNode Series of indices for walking down to the node we want to test. */
+  /**
+   * @param indicesToNode Series of indices for walking down to the node we want to test.
+   */
   private static void assertGeneratedJsExprs(
       String soyCode, List<JsExpr> expectedJsExprs, int... indicesToNode) {
     List<Expression> actualChunks = generateChunks(soyCode, indicesToNode);

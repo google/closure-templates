@@ -16,15 +16,18 @@
 
 package com.google.template.soy.jssrc.dsl;
 
+import static com.google.template.soy.exprtree.Operator.Associativity.LEFT;
+
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 import com.google.errorprone.annotations.Immutable;
+import com.google.template.soy.exprtree.Operator.Associativity;
 import java.util.stream.Stream;
 
 /** Represents a JavaScript type cast. */
 @AutoValue
 @Immutable
-abstract class Cast extends Expression implements CodeChunk.HasRequires {
+abstract class Cast extends Expression implements CodeChunk.HasRequires, OperatorInterface {
   abstract Expression expr();
 
   abstract String typeExpr();
@@ -53,5 +56,18 @@ abstract class Cast extends Expression implements CodeChunk.HasRequires {
   @Override
   public boolean isCheap() {
     return expr().isCheap();
+  }
+
+  @Override
+  public Precedence precedence() {
+    // No exact value exists. The ?. operator causes problems unless we group around the cast.
+    // != is P8 and we don't need: (/* type */ (...)) != null
+    // ?. is P17 and we do need: (/* type */ (...))?.foo
+    return Precedence.P9;
+  }
+
+  @Override
+  public Associativity associativity() {
+    return LEFT; // it's unary, doesn't matter
   }
 }
