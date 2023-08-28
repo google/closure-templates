@@ -19,6 +19,7 @@ package com.google.template.soy.jbcsrc;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.template.soy.jbcsrc.PrintDirectives.applyStreamingEscapingDirectives;
 import static com.google.template.soy.jbcsrc.PrintDirectives.areAllPrintDirectivesStreamable;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.IMMUTABLE_LIST_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_VALUE_PROVIDER_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.STRING_DATA_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
@@ -54,7 +55,6 @@ import java.util.Optional;
 import org.objectweb.asm.ConstantDynamic;
 import org.objectweb.asm.Handle;
 import org.objectweb.asm.Label;
-import org.objectweb.asm.Type;
 
 /**
  * A helper for compiling {@link MsgNode messages}.
@@ -70,7 +70,6 @@ import org.objectweb.asm.Type;
  * </ul>
  */
 final class MsgCompiler {
-  public static final Type IMMUTABLE_LIST_TYPE = Type.getType(ImmutableList.class);
   private static final Handle MESSAGE_FACTORY_HANDLE =
       MethodRef.create(
               MsgDefaultConstantFactory.class,
@@ -144,8 +143,12 @@ final class MsgCompiler {
    * @param escapingDirectives The set of escaping directives to apply.
    */
   Statement compileMessage(
-      MsgPartsAndIds partsAndId, MsgNode msg, ImmutableList<SoyPrintDirective> escapingDirectives) {
-    Expression soyMsgDefaultParts = compileDefaultMessagePartsConstant(partsAndId);
+      MsgPartsAndIds partsAndId,
+      MsgNode msg,
+      ImmutableList<SoyPrintDirective> escapingDirectives,
+      boolean isFallback) {
+    Expression soyMsgDefaultParts =
+        isFallback ? null : compileDefaultMessagePartsConstant(partsAndId);
     Expression soyMsgParts =
         msg.getAlternateId().isPresent()
             ? parameterLookup

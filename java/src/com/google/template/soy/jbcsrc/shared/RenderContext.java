@@ -309,6 +309,18 @@ public final class RenderContext {
   }
 
   /**
+   * Returns the {@link SoyMsg} associated with the {@code msgId} or throws if there is no such
+   * message.
+   */
+  public ImmutableList<SoyMsgPart> getSoyMsgParts(long msgId) {
+    ImmutableList<SoyMsgPart> msgParts = msgBundle.getMsgParts(msgId);
+    if (msgParts.isEmpty()) {
+      throw new AssertionError();
+    }
+    return msgParts;
+  }
+
+  /**
    * Returns the {@link SoyMsg} associated with the {@code msgId}, the {@code alternateId} or the
    * fallback (aka english) translation if there is no such message.
    */
@@ -319,6 +331,22 @@ public final class RenderContext {
       ImmutableList<SoyMsgPart> msgPartsByAlternateId = msgBundle.getMsgParts(alternateId);
       if (msgPartsByAlternateId.isEmpty()) {
         return defaultMsgParts;
+      }
+      return msgPartsByAlternateId;
+    }
+    return msgParts;
+  }
+
+  /**
+   * Returns the {@link SoyMsg} associated with the {@code msgId}, the {@code alternateId} or throws
+   * if there is no such message.
+   */
+  public ImmutableList<SoyMsgPart> getSoyMsgPartsWithAlternateId(long msgId, long alternateId) {
+    ImmutableList<SoyMsgPart> msgParts = msgBundle.getMsgParts(msgId);
+    if (msgParts.isEmpty()) {
+      ImmutableList<SoyMsgPart> msgPartsByAlternateId = msgBundle.getMsgParts(alternateId);
+      if (msgPartsByAlternateId.isEmpty()) {
+        throw new AssertionError();
       }
       return msgPartsByAlternateId;
     }

@@ -1193,7 +1193,9 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     MsgNode msg = node.getMsg();
     MsgPartsAndIds idAndParts = MsgUtils.buildMsgPartsAndComputeMsgIdForDualFormat(msg);
     ImmutableList<SoyPrintDirective> escapingDirectives = node.getEscapingDirectives();
-    Statement renderDefault = getMsgCompiler().compileMessage(idAndParts, msg, escapingDirectives);
+    Statement renderDefault =
+        getMsgCompiler()
+            .compileMessage(idAndParts, msg, escapingDirectives, /* isFallback= */ false);
     // fallback groups have 1 or 2 children.  if there are 2 then the second is a fallback and we
     // need to check for presence.
     if (node.hasFallbackMsg()) {
@@ -1236,7 +1238,9 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       return ControlFlow.ifElseChain(
           ImmutableList.of(ifAvailableRenderDefault),
           Optional.of(
-              getMsgCompiler().compileMessage(fallbackIdAndParts, fallback, escapingDirectives)));
+              getMsgCompiler()
+                  .compileMessage(
+                      fallbackIdAndParts, fallback, escapingDirectives, /* isFallback= */ true)));
     } else {
       return renderDefault;
     }
