@@ -19,7 +19,6 @@ package com.google.template.soy.jbcsrc.restricted;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.base.MoreObjects;
-import java.util.Optional;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -30,8 +29,7 @@ import org.objectweb.asm.Type;
  * <p>This does nothing to enforce required constraints, e.g.:
  *
  * <ul>
- *   <li>This does not ensure that {@link #start()} and {@link #end()} are valid and exist in the
- *       method.
+ *   <li>This does not ensure that {@link #start} and {@link #end} are valid and have been visited.
  *   <li>This does not ensure that the {@link #index} is otherwise unused and that only one variable
  *       is active at a time with the index.
  * </ul>
@@ -51,24 +49,50 @@ public final class LocalVariable extends Expression {
 
   public static LocalVariable createThisVar(TypeInfo owner, Label start, Label end) {
     return new LocalVariable(
-        "this", owner.type(), 0, start, end, Features.of(Feature.NON_JAVA_NULLABLE));
+        "this",
+        owner.type(),
+        new State(0, true),
+        start,
+        end,
+        Features.of(Feature.NON_JAVA_NULLABLE));
   }
 
   public static LocalVariable createLocal(
       String name, int index, Type type, Label start, Label end) {
-    return new LocalVariable(name, type, index, start, end, Features.of());
+    return new LocalVariable(name, type, new State(index, false), start, end, Features.of());
+  }
+
+  private static final class State {
+    int index;
+    boolean indexHasBeenRead;
+
+    State(int index, boolean indexHasBeenRead) {
+      this.index = index;
+      this.indexHasBeenRead = indexHasBeenRead;
+    }
+
+    void shiftIndex(int offset) {
+      if (indexHasBeenRead) {
+        throw new IllegalStateException("slot has been read");
+      }
+      this.index += offset;
+    }
+
+    void markRead() {
+      this.indexHasBeenRead = true;
+    }
   }
 
   private final String variableName;
-  private final int index;
+  private final State state;
   private final Label start;
   private final Label end;
 
   private LocalVariable(
-      String variableName, Type type, int index, Label start, Label end, Features features) {
+      String variableName, Type type, State state, Label start, Label end, Features features) {
     super(type, /* locals are always cheap */ features.plus(Feature.CHEAP));
     this.variableName = checkNotNull(variableName);
-    this.index = index;
+    this.state = state;
     this.start = checkNotNull(start);
     this.end = checkNotNull(end);
   }
@@ -79,12 +103,11 @@ public final class LocalVariable extends Expression {
   }
 
   public int index() {
-    return index;
+    return state.index;
   }
 
-  /** A label defining the earliest point at which this variable is defined. */
-  public Label start() {
-    return start;
+  public void shiftIndex(int offset) {
+    state.shiftIndex(offset);
   }
 
   /** A label defining the latest point at which this variable is defined. */
@@ -103,7 +126,7 @@ public final class LocalVariable extends Expression {
       return this;
     }
     return new LocalVariable(
-        variableName, resultType(), index, start, end, features().plus(Feature.NON_JAVA_NULLABLE));
+        variableName, resultType(), state, start, end, features().plus(Feature.NON_JAVA_NULLABLE));
   }
 
   @Override
@@ -112,7 +135,7 @@ public final class LocalVariable extends Expression {
       return this;
     }
     return new LocalVariable(
-        variableName, resultType(), index, start, end, features().plus(Feature.NON_SOY_NULLISH));
+        variableName, resultType(), state, start, end, features().plus(Feature.NON_SOY_NULLISH));
   }
 
   /**
@@ -120,50 +143,78 @@ public final class LocalVariable extends Expression {
    * names, types and lifetime.
    */
   public void tableEntry(CodeBuilder mv) {
+    state.markRead();
+    if (Flags.DEBUG) {
+      // calling getOffSet will throw if the label has not been visited
+      start.getOffset();
+      end.getOffset();
+    }
     mv.visitLocalVariable(
         variableName(),
         resultType().getDescriptor(),
         null, // no generic signature
-        start(),
-        end(),
+        start,
+        end,
         index());
   }
 
   @Override
-  protected void doGen(CodeBuilder mv) {
-    mv.visitVarInsn(resultType().getOpcode(Opcodes.ILOAD), index());
+  protected void doGen(CodeBuilder cb) {
+    cb.visitVarInsn(resultType().getOpcode(Opcodes.ILOAD), index());
+  }
+
+  public void storeUnchecked(CodeBuilder cb) {
+    state.markRead();
+    cb.visitVarInsn(resultType().getOpcode(Opcodes.ISTORE), index());
+  }
+
+  public void loadUnchecked(CodeBuilder cb) {
+    state.markRead();
+    cb.visitVarInsn(resultType().getOpcode(Opcodes.ILOAD), index());
   }
 
   /**
    * Return a {@link Statement} that stores the value of the given expression into this variable.
    */
   public Statement store(Expression expr) {
-    return store(expr, Optional.empty());
+    return doStore(expr, false);
   }
 
   /**
    * Return a {@link Statement} that stores the value of the given expression into this variable.
    *
    * @param expr The expression to store
-   * @param firstVarInstruction A label to use to mark the store instruction
    */
-  public Statement store(Expression expr, Label firstVarInstruction) {
-    return store(expr, Optional.of(firstVarInstruction));
+  public Statement initialize(Expression expr) {
+    return doStore(expr, true);
   }
 
   /** Writes the value at the top of the stack to the local variable. */
-  private Statement store(Expression expr, Optional<Label> firstVarInstruction) {
+  private Statement doStore(Expression expr, boolean initialization) {
     expr.checkAssignableTo(resultType());
     return new Statement() {
       @Override
       protected void doGen(CodeBuilder adapter) {
         expr.gen(adapter);
-        if (firstVarInstruction.isPresent()) {
-          adapter.mark(firstVarInstruction.get());
+        if (initialization) {
+          adapter.visitLabel(start);
         }
-        adapter.visitVarInsn(resultType().getOpcode(Opcodes.ISTORE), index());
+        storeUnchecked(adapter);
       }
     };
+  }
+
+  @Override
+  public String toString() {
+    // Make sure reading tostring (e.g. as debuggers do) doesn't set the read bit.
+    boolean indexHasBeenRead = state.indexHasBeenRead;
+    try {
+      return super.toString();
+    } finally {
+      if (!indexHasBeenRead) {
+        state.indexHasBeenRead = false;
+      }
+    }
   }
 
   @Override

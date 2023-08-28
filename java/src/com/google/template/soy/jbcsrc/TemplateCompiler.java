@@ -430,8 +430,7 @@ final class TemplateCompiler {
         ExpressionCompiler.createConstantCompiler(
             templateNode,
             analysis,
-            new SimpleLocalVariableManager(
-                template.typeInfo().type(), BytecodeUtils.CLASS_INIT, /* isStatic= */ true),
+            new SimpleLocalVariableManager(template.typeInfo().type(), /* isStatic= */ true),
             javaSourceFunctionCompiler,
             fileSetMetadata);
     Label start = new Label();
@@ -452,7 +451,7 @@ final class TemplateCompiler {
     TemplateVariableManager variableSet =
         new TemplateVariableManager(
             template.typeInfo().type(),
-            method,
+            method.getArgumentTypes(),
             paramNames.build(),
             start,
             end,
@@ -500,14 +499,13 @@ final class TemplateCompiler {
       if (param.isInjected()) {
         initialValue = getFieldProviderOrDefault(param.name(), ijVar, defaultValue);
         localVariable = templateScope.createNamedLocal(param.name(), initialValue.resultType());
-        paramInitStatements.add(
-            localVariable.store(initialValue).labelStart(localVariable.start()));
+        paramInitStatements.add(localVariable.initialize(initialValue));
       } else if (paramsVar.isPresent()) {
         initialValue = getFieldProviderOrDefault(param.name(), paramsVar.get(), defaultValue);
         localVariable = templateScope.createNamedLocal(param.name(), initialValue.resultType());
-        paramInitStatements.add(
-            localVariable.store(initialValue).labelStart(localVariable.start()));
+        paramInitStatements.add(localVariable.initialize(initialValue));
       } else {
+        // positional parameter
         localVariable = (LocalVariable) variableSet.getVariable(param.name());
         paramInitStatements.add(
             localVariable.store(
@@ -624,7 +622,7 @@ final class TemplateCompiler {
     TemplateVariableManager variableSet =
         new TemplateVariableManager(
             template.typeInfo().type(),
-            method,
+            method.getArgumentTypes(),
             paramNames.build(),
             start,
             end,

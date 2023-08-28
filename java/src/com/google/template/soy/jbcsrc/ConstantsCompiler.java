@@ -109,7 +109,7 @@ public final class ConstantsCompiler {
     TemplateVariableManager variableSet =
         new TemplateVariableManager(
             javaClass.type(),
-            method,
+            method.getArgumentTypes(),
             ImmutableList.of(StandardNames.RENDER_CONTEXT),
             start,
             end,
@@ -125,7 +125,7 @@ public final class ConstantsCompiler {
               ALL_RESOLVED,
               new SimpleLocalVariableManager(
                   javaClass.type(),
-                  method,
+                  method.getArgumentTypes(),
                   ImmutableList.of("renderContext"),
                   start,
                   end,
@@ -161,10 +161,9 @@ public final class ConstantsCompiler {
       String constKey = javaClassName + "#" + constant.getVar().name();
 
       boolean constIsPrimitive = BytecodeUtils.isPrimitive(methodType);
+      var constScope = variableSet.enterScope();
       Variable tmpVar =
-          variableSet
-              .enterScope()
-              .create("tmp", renderContextExpr.getConst(constKey), SaveStrategy.STORE);
+          constScope.create("tmp", renderContextExpr.getConst(constKey), SaveStrategy.STORE);
       Statement storeLocal =
           tmpVar
               .local()
@@ -184,6 +183,7 @@ public final class ConstantsCompiler {
       // Java
       // static memory) is necessary because constants can be initialized via externs that depend on
       // request scoped data (via type="instance").
+      var scopeExit = constScope.exitScope();
       new Statement() {
         @Override
         protected void doGen(CodeBuilder adapter) {
@@ -208,6 +208,7 @@ public final class ConstantsCompiler {
           adapter.mark(end);
           returnValue.gen(adapter);
           adapter.returnValue();
+          scopeExit.gen(adapter);
           variableSet.generateTableEntries(adapter);
         }
       }.writeMethod(methodAccess(), method, writer);

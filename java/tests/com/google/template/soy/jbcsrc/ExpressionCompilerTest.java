@@ -598,7 +598,7 @@ public class ExpressionCompilerTest {
             },
             new TemplateVariableManager(
                 BytecodeUtils.OBJECT.type(),
-                BytecodeUtils.CLASS_INIT,
+                BytecodeUtils.CLASS_INIT.getArgumentTypes(),
                 ImmutableList.of(),
                 null,
                 null,

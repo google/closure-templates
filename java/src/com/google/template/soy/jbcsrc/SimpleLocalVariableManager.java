@@ -18,6 +18,7 @@ package com.google.template.soy.jbcsrc;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
+import static java.util.stream.Collectors.toCollection;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -27,14 +28,16 @@ import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
 import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.LocalVariable;
 import com.google.template.soy.jbcsrc.restricted.Statement;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.BitSet;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Type;
-import org.objectweb.asm.commons.Method;
 
 /**
  * A class that can manage local variable lifetimes for a method.
@@ -43,43 +46,86 @@ import org.objectweb.asm.commons.Method;
  */
 final class SimpleLocalVariableManager implements LocalVariableManager {
   // Locals have the same rules as field names so we can just use the same mangling strategy.
-  private final UniqueNameGenerator localNames = JbcSrcNameGenerators.forFieldNames();
+  private final ArrayDeque<UniqueNameGenerator> localNames = new ArrayDeque<>();
   private final List<LocalVariable> allVariables = new ArrayList<>();
   private final BitSet availableSlots = new BitSet();
   private final Map<String, LocalVariable> activeVariables = new LinkedHashMap<>();
   private boolean generated;
+  private final boolean isStatic;
+  private Type[] parameterTypes;
+  private final Label methodBegin;
+  private final Label methodEnd;
 
-  SimpleLocalVariableManager(Type ownerType, Method method, boolean isStatic) {
-    this(ownerType, method, ImmutableList.of(), null, null, isStatic);
+  SimpleLocalVariableManager(Type ownerType, boolean isStatic) {
+    this(ownerType, new Type[0], ImmutableList.of(), null, null, isStatic);
   }
 
   SimpleLocalVariableManager(
       Type ownerType,
-      Method method,
-      ImmutableList<String> parameterNames,
+      Type[] argumentTypes,
+      List<String> parameterNames,
       Label methodBegin,
       Label methodEnd,
       boolean isStatic) {
-    Type[] argumentTypes = method.getArgumentTypes();
     checkArgument(
         argumentTypes.length == parameterNames.size(),
         "expected %s args, got %s paramNames: %s",
         argumentTypes.length,
         parameterNames.size(),
         parameterNames);
+    this.localNames.addLast(JbcSrcNameGenerators.forFieldNames());
+    this.isStatic = isStatic;
+    this.parameterTypes = argumentTypes;
+    this.methodBegin = methodBegin;
+    this.methodEnd = methodEnd;
     if (!isStatic) {
-      reserveParameter("this", ownerType, methodBegin, methodEnd);
+      reserveParameter("this", ownerType);
     }
     int parameterIndex = 0;
     for (Type type : argumentTypes) {
-      reserveParameter(parameterNames.get(parameterIndex), type, methodBegin, methodEnd);
+      reserveParameter(parameterNames.get(parameterIndex), type);
       parameterIndex++;
     }
   }
 
-  private void reserveParameter(String name, Type type, Label methodBegin, Label methodEnd) {
+  public void updateParameterTypes(Type[] parameterTypes, List<String> parameterNames) {
+    Set<String> allAllocatedVariableNames =
+        allVariables.stream().map(v -> v.variableName()).collect(toCollection(HashSet::new));
+    // We could support more changes (e.g. appending parameters, support instance methods), but
+    // it doesn't appear to be needed and this is simpler.
+    checkArgument(
+        this.parameterTypes.length == 0 && isStatic,
+        "Can only change parameters if the variable manager original had no parameters and was"
+            + " static.");
+    this.parameterTypes = parameterTypes;
+    int spaceForParameters = 0;
+    for (Type type : parameterTypes) {
+      spaceForParameters += type.getSize();
+    }
+    // We need to shift all allocated variables to account for the new parameters.
+    for (int i = availableSlots.size() - 1; (i = availableSlots.previousSetBit(i)) >= 0; ) {
+      availableSlots.set(i + spaceForParameters);
+      availableSlots.clear(i);
+    }
+    for (var var : allVariables) {
+      var.shiftIndex(spaceForParameters);
+    }
+    // now allocate the parameters
+    int parameterIndex = 0;
+    for (Type type : parameterTypes) {
+      String name = parameterNames.get(parameterIndex);
+      // because we are adding names late we need to mangle
+      while (!allAllocatedVariableNames.add(name)) {
+        name = "$" + name;
+      }
+      reserveParameter(name, type);
+      parameterIndex++;
+    }
+  }
+
+  private void reserveParameter(String name, Type type) {
     int slot = reserveSlotFor(type);
-    localNames.exact(name);
+    localNames.peek().exact(name);
     LocalVariable var =
         LocalVariable.createLocal(name, slot, type, /* start=*/ methodBegin, /* end=*/ methodEnd);
     allVariables.add(var);
@@ -103,25 +149,6 @@ final class SimpleLocalVariableManager implements LocalVariableManager {
     return ImmutableMap.copyOf(activeVariables);
   }
 
-  /**
-   * This is a tricky mechanism whereby a local variable will be created using the first free slot,
-   * but that slot will not be claimed. This variable will likely get stomped on by the next defined
-   * variable.
-   *
-   * <p>This is rarely useful as most variables have well defined scopes, however it may be used if
-   * the scope of the variable does not neatly match any lexical lifetime.
-   *
-   * <p>Like other methods in the class, it is the responsibility of the caller to ensure that
-   * {@link LocalVariable#start} is visited prior to the first use of this variable.
-   */
-  LocalVariable unsafeBorrowSlot(String name, Type type) {
-    int slot = reserveSlotFor(type);
-    LocalVariable var =
-        LocalVariable.createLocal(name, slot, type, /* start=*/ new Label(), /* end=*/ new Label());
-    returnSlotFor(var);
-    return var;
-  }
-
   @Override
   public void generateTableEntries(CodeBuilder cb) {
     generated = true;
@@ -138,14 +165,14 @@ final class SimpleLocalVariableManager implements LocalVariableManager {
   public Scope enterScope() {
     checkState(!generated);
     List<LocalVariable> frame = new ArrayList<>();
+    UniqueNameGenerator scopeNames = localNames.peekLast().branch();
+    localNames.addLast(scopeNames);
     return new Scope() {
       final Label scopeExit = new Label();
       boolean exited;
 
       @Override
       public LocalVariable createNamedLocal(String name, Type type) {
-        // TODO(lukes): ideally we would use 'claimName' here but for that to work we also need an
-        // 'unclaimName' api, which we don't have yet.
         LocalVariable var = createTemporary(name, type);
         activeVariables.put(name, var);
         return var;
@@ -155,11 +182,12 @@ final class SimpleLocalVariableManager implements LocalVariableManager {
       public LocalVariable createTemporary(String proposedName, Type type) {
         checkState(!generated);
         checkState(!exited);
-        String name = localNames.generate(proposedName);
+        String name = scopeNames.generate(proposedName);
         int slot = reserveSlotFor(type);
         LocalVariable var =
             LocalVariable.createLocal(
                 name, slot, type, /* start= */ new Label(), /* end= */ scopeExit);
+        allVariables.add(var);
         frame.add(var);
         return var;
       }
@@ -173,12 +201,8 @@ final class SimpleLocalVariableManager implements LocalVariableManager {
           returnSlotFor(var);
           activeVariables.remove(var.variableName());
         }
-        return new Statement() {
-          @Override
-          protected void doGen(CodeBuilder adapter) {
-            adapter.mark(scopeExit);
-          }
-        };
+        localNames.removeLast();
+        return Statement.NULL_STATEMENT.labelStart(scopeExit);
       }
     };
   }

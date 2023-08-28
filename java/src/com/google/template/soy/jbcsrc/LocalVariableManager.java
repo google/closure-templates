@@ -57,7 +57,7 @@ interface LocalVariableManager {
      * <p>It is the responsibility of the caller to ensure that {@link LocalVariable#start} is
      * visited prior to the first use of this variable.
      *
-     * <p>These variablles can be looked up with {@link LocalVariableManager#getNamedLocal}.
+     * <p>These variables can be looked up with {@link LocalVariableManager#getNamedLocal}.
      */
     LocalVariable createNamedLocal(String name, Type type);
 

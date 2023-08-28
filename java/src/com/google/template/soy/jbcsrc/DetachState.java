@@ -22,6 +22,7 @@ import static com.google.template.soy.jbcsrc.restricted.Statement.returnExpressi
 
 import com.google.auto.value.AutoValue;
 import com.google.template.soy.jbcsrc.TemplateVariableManager.SaveRestoreState;
+import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
 import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.FieldRef;
@@ -31,6 +32,7 @@ import com.google.template.soy.jbcsrc.restricted.Statement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
@@ -230,11 +232,10 @@ final class DetachState implements ExpressionDetacher.Factory {
     if (reattaches.isEmpty()) {
       return Statement.NULL_STATEMENT;
     }
-    LocalVariable stackFrameVar = variables.getStackFrameVar();
-    Statement initStackFrame =
-        stackFrameVar
-            .store(renderContextExpression.get().popFrame())
-            .labelStart(stackFrameVar.start());
+    var stackFrameScope = variables.enterScope();
+    LocalVariable stackFrameVar =
+        stackFrameScope.createTemporary(StandardNames.STACK_FRAME, BytecodeUtils.STACK_FRAME_TYPE);
+    Statement initStackFrame = stackFrameVar.initialize(renderContextExpression.get().popFrame());
     Expression readStateNumber = FieldRef.STACK_FRAME_STATE_NUMBER.accessor(stackFrameVar);
     // Generate a switch table.  Note, while it might be preferable to just 'goto state',
     // Java doesn't allow computable gotos (probably because it makes verification impossible).
@@ -250,6 +251,7 @@ final class DetachState implements ExpressionDetacher.Factory {
     caseLabels.add(end);
     for (ReattachState reattachState : reattaches) {
       if (reattachState.restoreStatement().isPresent()) {
+        Statement restoreState = reattachState.restoreStatement().get().apply(stackFrameVar);
         Label caseLabel = new Label();
         // execute the restore and jump to the reattach point
         casesToGen.add(
@@ -257,7 +259,7 @@ final class DetachState implements ExpressionDetacher.Factory {
               @Override
               protected void doGen(CodeBuilder cb) {
                 cb.mark(caseLabel);
-                reattachState.restoreStatement().get().gen(cb);
+                restoreState.gen(cb);
                 cb.goTo(reattachState.reattachPoint());
               }
             });
@@ -272,6 +274,7 @@ final class DetachState implements ExpressionDetacher.Factory {
     casesToGen.add(
         Statement.throwExpression(MethodRef.RUNTIME_UNEXPECTED_STATE_ERROR.invoke(stackFrameVar))
             .labelStart(unexpectedState));
+    var scopeExit = stackFrameScope.exitScope();
     return Statement.concat(
             initStackFrame,
             new Statement() {
@@ -282,8 +285,9 @@ final class DetachState implements ExpressionDetacher.Factory {
                 // accurate since it does extend into the beginning of some of the cases, but there
                 // is no consistent end point. This means that our debugging information will be
                 // slightly off, e.g. a debugger may think that this variable is out of scope before
-                // it technically is.
-                adapter.mark(stackFrameVar.end());
+                // it technically is.  But the most any case will access it is exactly once as the
+                // first instruction... so this is fine, if odd.
+                scopeExit.gen(adapter);
                 adapter.visitTableSwitchInsn(
                     /* min= */ 0,
                     /* max= */ reattaches.size(),
@@ -309,7 +313,8 @@ final class DetachState implements ExpressionDetacher.Factory {
 
   @AutoValue
   abstract static class ReattachState {
-    static ReattachState create(Label reattachPoint, Optional<Statement> restore) {
+    static ReattachState create(
+        Label reattachPoint, Optional<Function<LocalVariable, Statement>> restore) {
       return new AutoValue_DetachState_ReattachState(reattachPoint, restore);
     }
 
@@ -317,6 +322,6 @@ final class DetachState implements ExpressionDetacher.Factory {
     abstract Label reattachPoint();
 
     /** The statement that restores the state of local variables so we can resume execution. */
-    abstract Optional<Statement> restoreStatement();
+    abstract Optional<Function<LocalVariable, Statement>> restoreStatement();
   }
 }

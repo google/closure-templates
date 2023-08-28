@@ -372,14 +372,14 @@ final class LazyClosureCompiler {
         scope
             .createTemporary("buffer", MethodRef.LOGGING_ADVISING_APPENDABLE_BUFFERING.returnType())
             .asNonJavaNullable();
-    Statement initBuffer = variable.store(MethodRef.LOGGING_ADVISING_APPENDABLE_BUFFERING.invoke());
+    Statement initBuffer =
+        variable.initialize(MethodRef.LOGGING_ADVISING_APPENDABLE_BUFFERING.invoke());
     Statement populateBuffer =
         parent
             .compilerWithNewAppendable(AppendableExpression.forExpression(variable))
             .compileWithoutDetaches(renderUnitNode, prefix, suffix);
 
-    return Statement.concat(
-            initBuffer.labelStart(variable.start()), populateBuffer, scope.exitScope())
+    return Statement.concat(initBuffer, populateBuffer, scope.exitScope())
         .then(MethodRef.BUFFERED_SOY_VALUE_PROVIDER_CREATE.invoke(variable));
   }
 
@@ -455,7 +455,7 @@ final class LazyClosureCompiler {
       TemplateVariableManager variableSet =
           new TemplateVariableManager(
               type.type(),
-              DO_RESOLVE,
+              DO_RESOLVE.getArgumentTypes(),
               /* parameterNames= */ ImmutableList.of(),
               start,
               end,
@@ -501,7 +501,7 @@ final class LazyClosureCompiler {
       TemplateVariableManager variableSet =
           new TemplateVariableManager(
               type.type(),
-              DO_RESOLVE_DELEGATE,
+              DO_RESOLVE_DELEGATE.getArgumentTypes(),
               ImmutableList.of(),
               start,
               end,
@@ -558,14 +558,13 @@ final class LazyClosureCompiler {
           ExpressionCompiler.createConstantCompiler(
               node,
               analysis,
-              new SimpleLocalVariableManager(
-                  type.type(), BytecodeUtils.CLASS_INIT, /* isStatic= */ true),
+              new SimpleLocalVariableManager(type.type(), /* isStatic= */ true),
               parent.javaSourceFunctionCompiler,
               parent.fileSetMetadata);
       TemplateVariableManager variableSet =
           new TemplateVariableManager(
               type.type(),
-              DO_RENDER,
+              DO_RENDER.getArgumentTypes(),
               ImmutableList.of(StandardNames.APPENDABLE),
               start,
               end,

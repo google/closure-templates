@@ -23,12 +23,10 @@ import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_VALUE_
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.firstSoyNonNullish;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.numericConversion;
-import static java.util.stream.Collectors.toCollection;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Streams;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.exprtree.AbstractLocalVarDefn;
 import com.google.template.soy.exprtree.AbstractOperatorNode;
@@ -131,7 +129,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.Future;
-import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import org.objectweb.asm.Handle;
 import org.objectweb.asm.Label;
@@ -491,21 +488,18 @@ final class ExpressionCompiler {
       String varName = node.getListIterVar().name();
       LocalVariableManager.Scope scope = varManager.enterScope();
       LocalVariable listVar = scope.createTemporary(varName + "_input_list", LIST_TYPE);
-      Statement listVarInitializer = listVar.store(javaList, listVar.start());
+      Statement listVarInitializer = listVar.initialize(javaList);
       LocalVariable resultVar = scope.createTemporary(varName + "_output_list", LIST_TYPE);
-      Statement resultVarInitializer =
-          resultVar.store(ConstructorRef.ARRAY_LIST.construct(), resultVar.start());
+      Statement resultVarInitializer = resultVar.initialize(ConstructorRef.ARRAY_LIST.construct());
       LocalVariable sizeVar = scope.createTemporary(varName + "_input_list_size", Type.INT_TYPE);
-      Statement sizeVarInitializer =
-          sizeVar.store(listVar.invoke(MethodRef.LIST_SIZE), sizeVar.start());
+      Statement sizeVarInitializer = sizeVar.initialize(listVar.invoke(MethodRef.LIST_SIZE));
       LocalVariable indexVar = scope.createTemporary(varName + "_index", Type.INT_TYPE);
-      Statement indexVarInitializer = indexVar.store(constant(0), indexVar.start());
+      Statement indexVarInitializer = indexVar.initialize(constant(0));
       LocalVariable itemVar =
           scope.createNamedLocal(node.getListIterVar().name(), SOY_VALUE_PROVIDER_TYPE);
       Statement itemVarInitializer =
-          itemVar.store(
-              listVar.invoke(MethodRef.LIST_GET, indexVar).checkedCast(SOY_VALUE_PROVIDER_TYPE),
-              itemVar.start());
+          itemVar.initialize(
+              listVar.invoke(MethodRef.LIST_GET, indexVar).checkedCast(SOY_VALUE_PROVIDER_TYPE));
       LocalVariable userIndexVar =
           node.getIndexVar() == null
               ? null
@@ -513,8 +507,7 @@ final class ExpressionCompiler {
       Statement userIndexVarInitializer =
           userIndexVar == null
               ? null
-              : userIndexVar.store(
-                  numericConversion(indexVar, Type.LONG_TYPE), userIndexVar.start());
+              : userIndexVar.initialize(numericConversion(indexVar, Type.LONG_TYPE));
 
       // TODO: Consider compiling to a SoyValueProvider instead of boxing.
       Expression visitedMap = visit(mapExpr).box();
@@ -1618,10 +1611,9 @@ final class ExpressionCompiler {
     @Override
     SoyExpression visitPluginFunction(FunctionNode node) {
       Object fn = node.getSoyFunction();
-      List<SoyExpression> args = visitChildren(node);
       if (fn instanceof SoyJavaSourceFunction) {
         return sourceFunctionCompiler.compile(
-            node, (SoyJavaSourceFunction) fn, args, parameters, detacher);
+            node, (SoyJavaSourceFunction) fn, visitChildren(node), parameters, detacher);
       } else if (fn instanceof ExternRef) {
         return callExtern((ExternRef) fn, node.getParams());
       }
@@ -1633,7 +1625,7 @@ final class ExpressionCompiler {
               .getRenderContext()
               .getPluginInstance(node.getStaticFunctionName())
               .checkedCast(LegacyFunctionAdapter.class);
-      Expression list = SoyExpression.asBoxedListWithJavaNullItems(args);
+      Expression list = SoyExpression.asBoxedListWithJavaNullItems(visitChildren(node));
       // Most soy functions don't have return types, but if they do we should enforce it
       return SoyExpression.forSoyValue(
           node.getType(),
@@ -1649,15 +1641,12 @@ final class ExpressionCompiler {
       MethodRef ref = MethodRef.createStaticMethod(externOwner, asmMethod);
       SoyRuntimeType soyReturnType =
           ExternCompiler.getRuntimeType(extern.signature().getReturnType());
-      List<Expression> args =
-          Streams.concat(Stream.of(parameters.getRenderContext()), params.stream().map(this::visit))
-              .collect(toCollection(ArrayList::new));
-      for (int i = 1; i < args.size(); i++) {
-        args.set(
-            i,
+      List<Expression> args = new ArrayList<>();
+      args.add(parameters.getRenderContext());
+      for (int i = 0; i < params.size(); i++) {
+        args.add(
             adaptExternArg(
-                (SoyExpression) args.get(i),
-                extern.signature().getParameters().get(i - 1).getType()));
+                visit(params.get(i)), extern.signature().getParameters().get(i).getType()));
       }
       // Dispatch directly for locally defined externs
       if (namespace.equals(context.getNearestAncestor(SoyFileNode.class).getNamespace())) {

@@ -38,12 +38,11 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.IntStream;
 import org.objectweb.asm.Handle;
 import org.objectweb.asm.Label;
-import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
-import org.objectweb.asm.commons.Method;
 
 /**
  * Manages logical template variables and their scopes as well as calculating how to generate
@@ -179,7 +178,7 @@ final class TemplateVariableManager implements LocalVariableManager {
         local = local.asNonSoyNullish();
       }
       this.local = local;
-      this.initializer = local.store(initExpression, local.start());
+      this.initializer = local.initialize(initExpression);
       this.strategy = strategy;
     }
 
@@ -199,24 +198,31 @@ final class TemplateVariableManager implements LocalVariableManager {
 
   private final SimpleLocalVariableManager delegate;
   private final Map<VarKey, AbstractVariable> variablesByKey = new LinkedHashMap<>();
-  private LocalVariable stackFrameVariable;
 
-  /** @param method The method being generated */
   TemplateVariableManager(
       Type owner,
-      Method method,
+      Type[] methodArguments,
       ImmutableList<String> parameterNames,
       Label methodBegin,
       Label methodEnd,
       boolean isStatic) {
     this.delegate =
         new SimpleLocalVariableManager(
-            owner, method, parameterNames, methodBegin, methodEnd, /*isStatic=*/ isStatic);
+            owner,
+            methodArguments,
+            parameterNames,
+            methodBegin,
+            methodEnd,
+            /* isStatic= */ isStatic);
     // seed our map with all the method parameters from our delegate.
     delegate
         .allActiveVariables()
         .forEach(
             (key, value) -> variablesByKey.put(VarKey.create(key), new TrivialVariable(value)));
+  }
+
+  public void updateParameterTypes(Type[] parameterTypes, List<String> parameterNames) {
+    delegate.updateParameterTypes(parameterTypes, parameterNames);
   }
 
   /** Enters a new scope. Variables may only be defined within a scope. */
@@ -319,20 +325,12 @@ final class TemplateVariableManager implements LocalVariableManager {
         "No variable: '" + varKey + "' is bound. " + variablesByKey.keySet() + " are in scope");
   }
 
-  LocalVariable getStackFrameVar() {
-    if (stackFrameVariable == null) {
-      this.stackFrameVariable =
-          delegate.unsafeBorrowSlot(StandardNames.STACK_FRAME, BytecodeUtils.STACK_FRAME_TYPE);
-    }
-    return stackFrameVariable;
-  }
-
   /** Statements for saving and restoring local variables in class fields. */
   @AutoValue
   abstract static class SaveRestoreState {
     abstract Statement save();
 
-    abstract Optional<Statement> restore();
+    abstract Optional<Function<LocalVariable, Statement>> restore();
   }
 
   void assertSaveRestoreStateIsEmpty() {
@@ -455,36 +453,34 @@ final class TemplateVariableManager implements LocalVariableManager {
         restoresInOrder.stream()
             .filter(v -> v.strategy == SaveStrategy.STORE)
             .collect(toImmutableList());
-    Optional<Statement> restoreFromFrame =
+    Optional<Function<LocalVariable, Statement>> restoreFromFrame =
         variablesToRestoreFromStorage.isEmpty()
             ? Optional.empty()
             : Optional.of(
-                new Statement() {
-                  @Override
-                  protected void doGen(CodeBuilder cb) {
-                    getStackFrameVar().gen(cb);
-                    for (int i = 0; i < variablesToRestoreFromStorage.size(); i++) {
-                      if (i < variablesToRestoreFromStorage.size() - 1) {
-                        // duplicate the reference to the stack frame at the top of the stack
-                        // for all but the last restore operation
-                        cb.dup();
+                (stackFrameVar) ->
+                    new Statement() {
+                      @Override
+                      protected void doGen(CodeBuilder cb) {
+                        stackFrameVar.loadUnchecked(cb);
+                        for (int i = 0; i < variablesToRestoreFromStorage.size(); i++) {
+                          if (i < variablesToRestoreFromStorage.size() - 1) {
+                            // duplicate the reference to the stack frame at the top of the stack
+                            // for all but the last restore operation
+                            cb.dup();
+                          }
+                          Variable variableToRestore = variablesToRestoreFromStorage.get(i);
+                          Type varType = variableToRestore.accessor().resultType();
+                          cb.visitInvokeDynamicInsn(
+                              "restoreLocal",
+                              Type.getMethodType(varType, BytecodeUtils.STACK_FRAME_TYPE)
+                                  .getDescriptor(),
+                              BOOTSTRAP_RESTORE_HANDLE,
+                              saveStateMethodType,
+                              storeToSlotIndex.get(variableToRestore));
+                          variableToRestore.local.storeUnchecked(cb);
+                        }
                       }
-                      Variable variableToRestore = variablesToRestoreFromStorage.get(i);
-                      Type varType = variableToRestore.accessor().resultType();
-                      cb.visitInvokeDynamicInsn(
-                          "restoreLocal",
-                          Type.getMethodType(
-                                  variableToRestore.accessor().resultType(),
-                                  BytecodeUtils.STACK_FRAME_TYPE)
-                              .getDescriptor(),
-                          BOOTSTRAP_RESTORE_HANDLE,
-                          saveStateMethodType,
-                          storeToSlotIndex.get(variableToRestore));
-                      cb.visitVarInsn(
-                          varType.getOpcode(Opcodes.ISTORE), variableToRestore.local.index());
-                    }
-                  }
-                });
+                    });
 
     ImmutableList<Statement> restoreDerivedVariables =
         restoresInOrder.stream()
@@ -496,8 +492,11 @@ final class TemplateVariableManager implements LocalVariableManager {
         !restoreFromFrame.isPresent() && restoreDerivedVariables.isEmpty()
             ? Optional.empty()
             : Optional.of(
-                Statement.concat(
-                    restoreFromFrame.orElse(Statement.NULL_STATEMENT),
-                    Statement.concat(restoreDerivedVariables))));
+                (LocalVariable variable) ->
+                    Statement.concat(
+                        restoreFromFrame
+                            .orElse((LocalVariable v) -> Statement.NULL_STATEMENT)
+                            .apply(variable),
+                        Statement.concat(restoreDerivedVariables))));
   }
 }

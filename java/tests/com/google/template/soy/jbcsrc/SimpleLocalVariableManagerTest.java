@@ -26,7 +26,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Type;
-import org.objectweb.asm.commons.Method;
 
 @RunWith(JUnit4.class)
 public final class SimpleLocalVariableManagerTest {
@@ -34,10 +33,7 @@ public final class SimpleLocalVariableManagerTest {
   @Test
   public void testReserveSlots() throws Exception {
     SimpleLocalVariableManager vars =
-        new SimpleLocalVariableManager(
-            BytecodeUtils.OBJECT.type(),
-            new Method("foo", /*returnType=*/ Type.INT_TYPE, /*arguments=*/ new Type[] {}),
-            /* isStatic=*/ true);
+        new SimpleLocalVariableManager(BytecodeUtils.OBJECT.type(), /* isStatic= */ true);
 
     LocalVariableManager.Scope outer = vars.enterScope();
     LocalVariableManager.Scope inner = vars.enterScope();
@@ -71,14 +67,11 @@ public final class SimpleLocalVariableManagerTest {
     SimpleLocalVariableManager vars =
         new SimpleLocalVariableManager(
             BytecodeUtils.OBJECT.type(),
-            new Method(
-                "foo",
-                /*returnType=*/ Type.INT_TYPE,
-                /*arguments=*/ new Type[] {Type.getType(String.class), Type.getType(int.class)}),
+            /* argumentTypes= */ new Type[] {Type.getType(String.class), Type.getType(int.class)},
             ImmutableList.of("baz", "quux"),
             new Label(),
             new Label(),
-            /* isStatic=*/ false);
+            /* isStatic= */ false);
     LocalVariable thisVar = (LocalVariable) vars.getVariable("this");
     assertThat(thisVar.index()).isEqualTo(0);
     assertThat(thisVar.variableName()).isEqualTo("this");

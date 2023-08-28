@@ -720,7 +720,7 @@ final class ProtoUtils {
       Expression unboxedBaseExpr = getUnboxedBaseExpression();
       LocalVariable base =
           scope.createTemporary(fieldName + "__base", unboxedBaseExpr.resultType());
-      Statement baseInit = base.store(unboxedBaseExpr, base.start());
+      Statement baseInit = base.initialize(unboxedBaseExpr);
       Statement scopeExit = scope.exitScope();
 
       boolean foundBoxed = false;
@@ -1067,12 +1067,12 @@ final class ProtoUtils {
           resolved.invoke(MethodRef.MAP_ENTRY_SET).invoke(MethodRef.GET_ITERATOR);
       LocalVariable iter =
           scope.createTemporary(field.getName() + "__iter", getMapIterator.resultType());
-      Statement loopInitialization = iter.store(getMapIterator, iter.start());
+      Statement loopInitialization = iter.initialize(getMapIterator);
       // (Map.Entry) iter.next()
       Expression iterNext = iter.invoke(MethodRef.ITERATOR_NEXT).checkedCast(MAP_ENTRY_TYPE);
       LocalVariable mapEntry =
           scope.createTemporary(field.getName() + "__mapEntry", iterNext.resultType());
-      Statement initMapEntry = mapEntry.store(iterNext, mapEntry.start());
+      Statement initMapEntry = mapEntry.initialize(iterNext);
       // exitScope must be called after creating all the variables
       Statement scopeExit = scope.exitScope();
 
@@ -1245,11 +1245,10 @@ final class ProtoUtils {
 
       LocalVariable listSize = scope.createTemporary(field.getName() + "__size", Type.INT_TYPE);
       LocalVariable index = scope.createTemporary(field.getName() + "__index", Type.INT_TYPE);
-      Statement indexInitialization = index.store(constant(0), index.start());
+      Statement indexInitialization = index.initialize(constant(0));
       Statement loopInitialization =
           Statement.concat(
-              list.store(resolved, list.start()),
-              listSize.store(list.invoke(MethodRef.LIST_SIZE), listSize.start()));
+              list.initialize(resolved), listSize.initialize(list.invoke(MethodRef.LIST_SIZE)));
 
       // exitScope must be called after creating all the variables
       Statement scopeExit = scope.exitScope();

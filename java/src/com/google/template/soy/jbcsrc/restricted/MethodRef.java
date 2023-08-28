@@ -663,7 +663,7 @@ public abstract class MethodRef {
 
   public abstract Type returnType();
 
-  abstract ImmutableList<Type> argTypes();
+  public abstract ImmutableList<Type> argTypes();
 
   public abstract Features features();
 

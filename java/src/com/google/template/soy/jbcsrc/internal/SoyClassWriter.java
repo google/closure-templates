@@ -26,6 +26,7 @@ import com.google.template.soy.jbcsrc.restricted.TypeInfo;
 import com.google.template.soy.jbcsrc.shared.Names;
 import java.util.ArrayList;
 import java.util.List;
+import org.objectweb.asm.ClassTooLargeException;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.FieldVisitor;
@@ -148,6 +149,17 @@ public final class SoyClassWriter extends ClassVisitor {
   public ClassData toClassData() {
     try {
       return ClassData.create(typeInfo, writer.toByteArray(), numFields);
+    } catch (ClassTooLargeException classTooLargeException) {
+      // This error is unrecoverable and either implies that we need to improve compiler
+      // optimizations or that the user needs to refactor their template.
+      throw new RuntimeException(
+          "Attempted to generate a method of class with too many constants: "
+              + classTooLargeException.getConstantPoolCount()
+              + " constants (max is 65536, delta is "
+              + (classTooLargeException.getConstantPoolCount() - 65536)
+              + "), numFields: "
+              + numFields,
+          classTooLargeException);
     } catch (MethodTooLargeException methodTooLargeException) {
       // This error is unrecoverable and either implies that we need to improve compiler
       // optimizations or that the user needs to refactor their template.

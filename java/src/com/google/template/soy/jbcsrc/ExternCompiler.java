@@ -104,7 +104,7 @@ public final class ExternCompiler {
                     Names.javaClassNameFromSoyNamespace(
                         extern.getNearestAncestor(SoyFileNode.class).getNamespace()))
                 .type(),
-            memberMethod,
+            memberMethod.getArgumentTypes(),
             paramNames,
             start,
             end,
