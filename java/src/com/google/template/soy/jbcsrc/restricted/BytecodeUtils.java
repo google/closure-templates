@@ -127,8 +127,8 @@ public final class BytecodeUtils {
 
   public static final Type LINKED_HASH_MAP_TYPE = Type.getType(LinkedHashMap.class);
   public static final Type LIST_TYPE = Type.getType(List.class);
-  public static final Type IMMUTIBLE_LIST_TYPE = Type.getType(ImmutableList.class);
-  public static final Type IMMUTIBLE_MAP_TYPE = Type.getType(ImmutableMap.class);
+  public static final Type IMMUTABLE_LIST_TYPE = Type.getType(ImmutableList.class);
+  public static final Type IMMUTABLE_MAP_TYPE = Type.getType(ImmutableMap.class);
   public static final Type MAP_TYPE = Type.getType(Map.class);
   public static final Type MAP_ENTRY_TYPE = Type.getType(Map.Entry.class);
   public static final Type MESSAGE_TYPE = Type.getType(Message.class);

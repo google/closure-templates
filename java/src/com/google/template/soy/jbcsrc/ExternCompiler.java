@@ -314,7 +314,7 @@ public final class ExternCompiler {
     } else if (javaType.equals(BytecodeUtils.STRING_TYPE)) {
       return actualParam.unboxAsStringOrJavaNull();
     } else if (javaType.equals(BytecodeUtils.LIST_TYPE)
-        || javaType.equals(BytecodeUtils.IMMUTIBLE_LIST_TYPE)) {
+        || javaType.equals(BytecodeUtils.IMMUTABLE_LIST_TYPE)) {
       SoyType elmType = ((ListType) soyType).getElementType();
       SoyExpression unboxedList =
           actualParam.isBoxed() ? actualParam.unboxAsListOrJavaNull() : actualParam;
@@ -343,7 +343,7 @@ public final class ExternCompiler {
           throw new AssertionError("ValidateExternsPass should prevent this.");
       }
     } else if (javaType.equals(BytecodeUtils.MAP_TYPE)
-        || javaType.equals(BytecodeUtils.IMMUTIBLE_MAP_TYPE)) {
+        || javaType.equals(BytecodeUtils.IMMUTABLE_MAP_TYPE)) {
       if (nonNullableSoyType.getKind() == Kind.RECORD) {
         return JbcSrcExternRuntime.UNBOX_RECORD.invoke(actualParam);
       }
@@ -405,11 +405,11 @@ public final class ExternCompiler {
     } else if (externType.equals(BytecodeUtils.OBJECT.type())
         || externType.equals(BytecodeUtils.NUMBER_TYPE)
         || externType.equals(BytecodeUtils.MAP_TYPE)
-        || externType.equals(BytecodeUtils.IMMUTIBLE_MAP_TYPE)) {
+        || externType.equals(BytecodeUtils.IMMUTABLE_MAP_TYPE)) {
       if (soyReturnType.getKind() == SoyType.Kind.MAP) {
         checkState(
             externType.equals(BytecodeUtils.MAP_TYPE)
-                || externType.equals(BytecodeUtils.IMMUTIBLE_MAP_TYPE),
+                || externType.equals(BytecodeUtils.IMMUTABLE_MAP_TYPE),
             externType);
         // When Soy sees a map, it defaults to thinking it's a legacy_object_map, which only allow
         // string keys. We know that's not the case here (because the Soy return type of the extern
@@ -418,7 +418,7 @@ public final class ExternCompiler {
       }
       return JbcSrcExternRuntime.CONVERT_OBJECT_TO_SOY_VALUE_PROVIDER.invoke(externCall);
     } else if (externType.equals(BytecodeUtils.LIST_TYPE)
-        || externType.equals(BytecodeUtils.IMMUTIBLE_LIST_TYPE)) {
+        || externType.equals(BytecodeUtils.IMMUTABLE_LIST_TYPE)) {
       return JbcSrcExternRuntime.LIST_BOX_VALUES.invoke(externCall);
     } else if (externType.equals(BytecodeUtils.SAFE_URL_TYPE)) {
       return JbcSrcExternRuntime.CONVERT_SAFE_URL_TO_SOY_VALUE_PROVIDER.invoke(externCall);

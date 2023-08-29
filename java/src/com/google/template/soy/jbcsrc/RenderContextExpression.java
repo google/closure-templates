@@ -31,6 +31,7 @@ import com.google.template.soy.jbcsrc.shared.RenderContext;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.types.UnknownType;
 import java.util.List;
+import javax.annotation.Nullable;
 
 /** An expression for a {@link RenderContext} object. */
 final class RenderContextExpression extends Expression implements JbcSrcPluginContext {
@@ -58,6 +59,9 @@ final class RenderContextExpression extends Expression implements JbcSrcPluginCo
   private static final MethodRef GET_SOY_MSG_PARTS =
       MethodRef.create(RenderContext.class, "getSoyMsgParts", long.class, ImmutableList.class);
 
+  private static final MethodRef GET_SOY_MSG_PARTS_NO_DEFAULT =
+      MethodRef.create(RenderContext.class, "getSoyMsgParts", long.class);
+
   private static final MethodRef GET_SOY_MSG_PARTS_WITH_ALTERNATE_ID =
       MethodRef.create(
           RenderContext.class,
@@ -65,6 +69,10 @@ final class RenderContextExpression extends Expression implements JbcSrcPluginCo
           long.class,
           ImmutableList.class,
           long.class);
+
+  private static final MethodRef GET_SOY_MSG_PARTS_WITH_ALTERNATE_ID_NO_DEFAULT =
+      MethodRef.create(
+          RenderContext.class, "getSoyMsgPartsWithAlternateId", long.class, long.class);
 
   private static final MethodRef RENAME_CSS_SELECTOR =
       MethodRef.create(RenderContext.class, "renameCssSelector", String.class);
@@ -198,13 +206,19 @@ final class RenderContextExpression extends Expression implements JbcSrcPluginCo
     return delegate.invoke(GET_LOCALE);
   }
 
-  Expression getSoyMsgParts(long id, Expression defaultParts) {
-    return delegate.invoke(GET_SOY_MSG_PARTS, constant(id), defaultParts);
+  Expression getSoyMsgParts(long id, @Nullable Expression defaultParts) {
+    return defaultParts == null
+        ? delegate.invoke(GET_SOY_MSG_PARTS_NO_DEFAULT, constant(id))
+        : delegate.invoke(GET_SOY_MSG_PARTS, constant(id), defaultParts);
   }
 
-  Expression getSoyMsgPartsWithAlternateId(long id, Expression defaultParts, long alternateId) {
-    return delegate.invoke(
-        GET_SOY_MSG_PARTS_WITH_ALTERNATE_ID, constant(id), defaultParts, constant(alternateId));
+  Expression getSoyMsgPartsWithAlternateId(
+      long id, @Nullable Expression defaultParts, long alternateId) {
+    return defaultParts == null
+        ? delegate.invoke(
+            GET_SOY_MSG_PARTS_WITH_ALTERNATE_ID_NO_DEFAULT, constant(id), constant(alternateId))
+        : delegate.invoke(
+            GET_SOY_MSG_PARTS_WITH_ALTERNATE_ID, constant(id), defaultParts, constant(alternateId));
   }
 
   Expression getPrintDirective(String name) {
