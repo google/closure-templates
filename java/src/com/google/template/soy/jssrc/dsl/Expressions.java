@@ -505,4 +505,45 @@ public final class Expressions {
           afterTokens());
     }
   }
+
+  public static Expression nullSafeAccumulatorReceiver(
+      Expression delegate, Expression nullSafeCheck) {
+    return new NullSafeAccumulatorReceiver(delegate, nullSafeCheck);
+  }
+
+  /**
+   * @see com.google.template.soy.jssrc.internal.NullSafeAccumulator.FunctionCall
+   */
+  @SuppressWarnings("Immutable")
+  private static class NullSafeAccumulatorReceiver extends DelegatingExpression {
+
+    private final Expression nullSafeCheck;
+    private boolean dereferenced = false;
+
+    public NullSafeAccumulatorReceiver(Expression delegate, Expression nullSafeCheck) {
+      super(delegate);
+      this.nullSafeCheck = nullSafeCheck;
+    }
+
+    @Override
+    public Expression dotAccess(String identifier, boolean nullSafe) {
+      dereferenced = true;
+      return delegate.dotAccess(identifier, nullSafe);
+    }
+
+    @Override
+    public Expression bracketAccess(Expression arg, boolean nullSafe) {
+      dereferenced = true;
+      return delegate.bracketAccess(arg, nullSafe);
+    }
+
+    @Override
+    void doFormatOutputExpr(FormattingContext ctx) {
+      if (dereferenced) {
+        delegate.doFormatOutputExpr(ctx);
+      } else {
+        ctx.appendOutputExpression(nullSafeCheck.call(delegate));
+      }
+    }
+  }
 }
