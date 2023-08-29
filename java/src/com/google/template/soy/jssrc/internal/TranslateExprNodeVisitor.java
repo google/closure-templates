@@ -779,14 +779,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
     List<Expression> operands = visitChildren(node);
     Expression consequent = operands.get(0);
     Expression alternate = operands.get(1);
-    // if the consequent isn't trivial we should store the intermediate result in a new temporary
-    if (!consequent.isCheap()) {
-      consequent = codeGenerator.declarationBuilder().setRhs(consequent).build().ref();
-    }
-    return Expressions.ifExpression(
-            consequent.doubleNotEquals(Expressions.LITERAL_NULL), consequent)
-        .setElse(alternate)
-        .build(codeGenerator);
+    return consequent.nullishCoalesce(alternate, codeGenerator);
   }
 
   @Override

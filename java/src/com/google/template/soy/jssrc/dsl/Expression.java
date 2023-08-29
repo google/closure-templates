@@ -31,6 +31,7 @@ import com.google.template.soy.jssrc.restricted.JsExpr;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 /**
@@ -169,8 +170,9 @@ public abstract class Expression extends CodeChunk {
     return BinaryOperation.create(Operator.NOT_EQUAL, this, rhs);
   }
 
-  public final Expression nullishCoalesce(Expression rhs) {
-    return BinaryOperation.create(Operator.NULL_COALESCING, this, rhs);
+  public final Expression nullishCoalesce(Expression rhs, Generator codeGenerator) {
+    return shortCircuiting(
+        rhs, codeGenerator, Operator.NULL_COALESCING, Expression::doubleEqualsNull);
   }
 
   public final Expression tripleEquals(Expression rhs) {
@@ -212,16 +214,7 @@ public abstract class Expression extends CodeChunk {
    *     evaluates as true).
    */
   public final Expression and(Expression rhs, Generator codeGenerator) {
-    // If rhs has no initial statements, use the JS && operator directly.
-    // It's already short-circuiting.
-    if (this.hasEquivalentInitialStatements(rhs)) {
-      return BinaryOperation.create(AND, this, rhs);
-    }
-    // Otherwise, generate explicit short-circuiting code.
-    // rhs should be evaluated only if lhs evaluates to true.
-    Expression tmp = codeGenerator.declarationBuilder().setMutable().setRhs(this).build().ref();
-    return Composite.create(
-        ImmutableList.of(Statements.ifStatement(tmp, tmp.assign(rhs).asStatement()).build()), tmp);
+    return shortCircuiting(rhs, codeGenerator, AND, e -> e);
   }
 
   /**
@@ -233,17 +226,25 @@ public abstract class Expression extends CodeChunk {
    *     evaluates as false).
    */
   public final Expression or(Expression rhs, Generator codeGenerator) {
-    // If rhs has no initial statements, use the JS || operator directly.
+    return shortCircuiting(rhs, codeGenerator, OR, Expressions::not);
+  }
+
+  private Expression shortCircuiting(
+      Expression rhs,
+      Generator codeGenerator,
+      Operator nativeOp,
+      Function<Expression, Expression> lhsTest) {
+    // If rhs has no initial statements, use the JS operator directly.
     // It's already short-circuiting.
     if (this.hasEquivalentInitialStatements(rhs)) {
-      return BinaryOperation.create(OR, this, rhs);
+      return BinaryOperation.create(nativeOp, this, rhs);
     }
     // Otherwise, generate explicit short-circuiting code.
-    // rhs should be evaluated only if lhs evaluates to false.
+    // rhs should be evaluated only if testing the lhs is true.
     Expression tmp = codeGenerator.declarationBuilder().setMutable().setRhs(this).build().ref();
     return Composite.create(
         ImmutableList.of(
-            Statements.ifStatement(Expressions.not(tmp), tmp.assign(rhs).asStatement()).build()),
+            Statements.ifStatement(lhsTest.apply(tmp), tmp.assign(rhs).asStatement()).build()),
         tmp);
   }
 

@@ -71,7 +71,8 @@ abstract class BinaryOperation extends Operation {
   protected boolean shouldProtect(Expression operand, OperandPosition operandPosition) {
     // Closure compiler fails on expressions like "a ?? b && c" with:
     //   Logical OR and logical AND require parentheses when used with '??'
-    if (operator().equals("??")) {
+    boolean parentIsCoalesce = operator().equals("??");
+    if (parentIsCoalesce || operator().equals("||")) {
       // This traversal could probably be more selective, like not traversing into a grouping.
       boolean specialRequired =
           CodeChunks.breadthFirst(operand)
@@ -79,7 +80,8 @@ abstract class BinaryOperation extends Operation {
                   chunk -> {
                     if (chunk instanceof BinaryOperation) {
                       String thatOp = ((BinaryOperation) chunk).operator();
-                      return thatOp.equals("&&") || thatOp.equals("||");
+                      return thatOp.equals("??")
+                          || (parentIsCoalesce && (thatOp.equals("&&") || thatOp.equals("||")));
                     }
                     return false;
                   });
