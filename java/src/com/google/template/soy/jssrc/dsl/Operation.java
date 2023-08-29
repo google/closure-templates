@@ -17,7 +17,7 @@
 package com.google.template.soy.jssrc.dsl;
 
 import com.google.template.soy.exprtree.Operator;
-import com.google.template.soy.exprtree.Operator.Associativity;
+import com.google.template.soy.jssrc.dsl.Precedence.Associativity;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 
 /** Base class for representing a JavaScript operation. */
@@ -102,7 +102,7 @@ abstract class Operation extends Expression implements OperatorInterface {
    *       associative}, and it appears to the left of the operator.
    * </ul>
    */
-  private boolean shouldProtect(Expression operand, OperandPosition operandPosition) {
+  protected boolean shouldProtect(Expression operand, OperandPosition operandPosition) {
     CodeChunk cc = operand;
     if (cc instanceof TsxPrintNode) {
       cc = ((TsxPrintNode) operand).expr();

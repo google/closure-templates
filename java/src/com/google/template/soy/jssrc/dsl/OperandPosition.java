@@ -16,7 +16,7 @@
 
 package com.google.template.soy.jssrc.dsl;
 
-import com.google.template.soy.exprtree.Operator.Associativity;
+import com.google.template.soy.jssrc.dsl.Precedence.Associativity;
 
 /**
  * The position of an operand expression with respect to its parent operator. This is combined with

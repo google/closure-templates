@@ -18,7 +18,7 @@ package com.google.template.soy.jssrc.dsl;
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.google.template.soy.exprtree.Operator.Associativity;
+import com.google.template.soy.jssrc.dsl.Precedence.Associativity;
 import java.util.List;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;

@@ -16,11 +16,11 @@
 
 package com.google.template.soy.jssrc.dsl;
 
-import static com.google.template.soy.exprtree.Operator.Associativity.LEFT;
+import static com.google.template.soy.jssrc.dsl.Precedence.Associativity.UNARY;
 
 import com.google.auto.value.AutoValue;
 import com.google.errorprone.annotations.Immutable;
-import com.google.template.soy.exprtree.Operator.Associativity;
+import com.google.template.soy.jssrc.dsl.Precedence.Associativity;
 import java.util.stream.Stream;
 
 /** Represents the JavaScript {@code new} operator. */
@@ -41,7 +41,7 @@ abstract class New extends Operation {
 
   @Override
   public Associativity associativity() {
-    return LEFT; // it's unary, doesn't matter
+    return UNARY;
   }
 
   @Override

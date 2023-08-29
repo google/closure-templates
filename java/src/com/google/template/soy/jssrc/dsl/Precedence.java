@@ -42,6 +42,16 @@ public enum Precedence {
   P17,
   P18;
 
+  /** Enum for a JS operator's associativity. */
+  public enum Associativity {
+    /** Left-to-right. */
+    LEFT,
+    /** Right-to-left. */
+    RIGHT;
+
+    public static final Associativity UNARY = LEFT;
+  }
+
   public static Precedence forSoyOperator(Operator soyOperator) {
     switch (soyOperator) {
       case ASSERT_NON_NULL:
@@ -78,12 +88,21 @@ public enum Precedence {
       case AND:
         return P4;
       case OR:
-        return P3;
       case NULL_COALESCING:
+        return P3;
       case CONDITIONAL:
         return P2;
     }
     throw new AssertionError();
+  }
+
+  public static Associativity getAssociativity(Operator soyOperator) {
+    switch (soyOperator) {
+      case CONDITIONAL:
+        return Associativity.RIGHT;
+      default:
+        return Associativity.LEFT;
+    }
   }
 
   public boolean greaterThan(Precedence other) {

@@ -16,7 +16,7 @@
 
 package com.google.template.soy.jssrc.dsl;
 
-import com.google.template.soy.exprtree.Operator.Associativity;
+import com.google.template.soy.jssrc.dsl.Precedence.Associativity;
 
 interface OperatorInterface {
   Precedence precedence();

@@ -19,7 +19,7 @@ import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.exprtree.Operator;
-import com.google.template.soy.exprtree.Operator.Associativity;
+import com.google.template.soy.jssrc.dsl.Precedence.Associativity;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
@@ -93,7 +93,7 @@ abstract class Concatenation extends Operation {
 
   @Override
   public Associativity associativity() {
-    return Operator.PLUS.getAssociativity();
+    return Precedence.getAssociativity(Operator.PLUS);
   }
 
   @Override

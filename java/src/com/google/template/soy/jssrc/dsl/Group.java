@@ -16,11 +16,11 @@
 
 package com.google.template.soy.jssrc.dsl;
 
-import static com.google.template.soy.exprtree.Operator.Associativity.LEFT;
+import static com.google.template.soy.jssrc.dsl.Precedence.Associativity.UNARY;
 
 import com.google.auto.value.AutoValue;
 import com.google.errorprone.annotations.Immutable;
-import com.google.template.soy.exprtree.Operator.Associativity;
+import com.google.template.soy.jssrc.dsl.Precedence.Associativity;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import java.util.stream.Stream;
 
@@ -47,7 +47,7 @@ abstract class Group extends Operation {
 
   @Override
   public Associativity associativity() {
-    return LEFT; // irrelevant
+    return UNARY;
   }
 
   @Override

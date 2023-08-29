@@ -21,7 +21,7 @@ import static com.google.template.soy.exprtree.Operator.CONDITIONAL;
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
 import com.google.errorprone.annotations.Immutable;
-import com.google.template.soy.exprtree.Operator.Associativity;
+import com.google.template.soy.jssrc.dsl.Precedence.Associativity;
 import java.util.stream.Stream;
 
 /**
@@ -50,7 +50,7 @@ abstract class Ternary extends Operation {
 
   @Override
   public Associativity associativity() {
-    return CONDITIONAL.getAssociativity();
+    return Precedence.getAssociativity(CONDITIONAL);
   }
 
   @Override

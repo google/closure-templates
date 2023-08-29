@@ -19,7 +19,7 @@ package com.google.template.soy.jssrc.dsl;
 import com.google.auto.value.AutoValue;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.exprtree.Operator;
-import com.google.template.soy.exprtree.Operator.Associativity;
+import com.google.template.soy.jssrc.dsl.Precedence.Associativity;
 import java.util.stream.Stream;
 
 /** Represents a JavaScript binary operation. */
@@ -36,7 +36,7 @@ abstract class BinaryOperation extends Operation {
     return create(
         Operation.getOperatorToken(operator),
         Precedence.forSoyOperator(operator),
-        operator.getAssociativity(),
+        Precedence.getAssociativity(operator),
         arg1,
         arg2);
   }
@@ -65,5 +65,28 @@ abstract class BinaryOperation extends Operation {
   @Override
   boolean initialExpressionIsObjectLiteral() {
     return arg1().initialExpressionIsObjectLiteral();
+  }
+
+  @Override
+  protected boolean shouldProtect(Expression operand, OperandPosition operandPosition) {
+    // Closure compiler fails on expressions like "a ?? b && c" with:
+    //   Logical OR and logical AND require parentheses when used with '??'
+    if (operator().equals("??")) {
+      // This traversal could probably be more selective, like not traversing into a grouping.
+      boolean specialRequired =
+          CodeChunks.breadthFirst(operand)
+              .anyMatch(
+                  chunk -> {
+                    if (chunk instanceof BinaryOperation) {
+                      String thatOp = ((BinaryOperation) chunk).operator();
+                      return thatOp.equals("&&") || thatOp.equals("||");
+                    }
+                    return false;
+                  });
+      if (specialRequired) {
+        return true;
+      }
+    }
+    return super.shouldProtect(operand, operandPosition);
   }
 }

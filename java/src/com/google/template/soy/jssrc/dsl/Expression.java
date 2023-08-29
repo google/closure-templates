@@ -24,9 +24,9 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.exprtree.Operator;
-import com.google.template.soy.exprtree.Operator.Associativity;
 import com.google.template.soy.internal.util.TreeStreams;
 import com.google.template.soy.jssrc.dsl.Expressions.DecoratedExpression;
+import com.google.template.soy.jssrc.dsl.Precedence.Associativity;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import java.util.Arrays;
 import java.util.List;
@@ -169,11 +169,15 @@ public abstract class Expression extends CodeChunk {
     return BinaryOperation.create(Operator.NOT_EQUAL, this, rhs);
   }
 
+  public final Expression nullishCoalesce(Expression rhs) {
+    return BinaryOperation.create(Operator.NULL_COALESCING, this, rhs);
+  }
+
   public final Expression tripleEquals(Expression rhs) {
     return BinaryOperation.create(
         "===",
         Precedence.forSoyOperator(Operator.EQUAL),
-        Operator.EQUAL.getAssociativity(),
+        Precedence.getAssociativity(Operator.EQUAL),
         this,
         rhs);
   }
@@ -182,7 +186,7 @@ public abstract class Expression extends CodeChunk {
     return BinaryOperation.create(
         "!==",
         Precedence.forSoyOperator(Operator.EQUAL),
-        Operator.EQUAL.getAssociativity(),
+        Precedence.getAssociativity(Operator.EQUAL),
         this,
         rhs);
   }
