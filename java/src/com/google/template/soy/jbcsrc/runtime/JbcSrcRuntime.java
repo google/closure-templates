@@ -747,7 +747,7 @@ public final class JbcSrcRuntime {
       static {
         MethodHandles.Lookup lookup = MethodHandles.lookup();
         MethodType saveMethodType =
-            methodType(void.class, RenderContext.class, BufferingAppendable.class);
+            methodType(void.class, RenderContext.class, int.class, BufferingAppendable.class);
         SAVE_STATE_METHOD_HANDLE =
             SaveStateMetaFactory.bootstrapSaveState(lookup, "saveState", saveMethodType)
                 .getTarget();

@@ -488,9 +488,19 @@ public final class TemplateTester {
   }
 
   static CompiledTemplates compileFile(String... fileBody) {
+    return doCompileFileAndRunAutoescaper(false, fileBody);
+  }
+
+  static CompiledTemplates compileFileAndRunAutoescaper(String... fileBody) {
+    return doCompileFileAndRunAutoescaper(true, fileBody);
+  }
+
+  static CompiledTemplates doCompileFileAndRunAutoescaper(
+      boolean runAutoescaper, String... fileBody) {
     String file = Joiner.on('\n').join(fileBody);
     SoyFileSetParser parser =
         SoyFileSetParserBuilder.forFileContents(file)
+            .runAutoescaper(runAutoescaper)
             .errorReporter(ErrorReporter.explodeOnErrorsAndIgnoreDeprecations())
             .build();
     ParseResult parseResult = parser.parse();

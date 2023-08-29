@@ -443,6 +443,35 @@ public final class DetachStateTest {
     assertThat(output.toString()).isEqualTo("hello world");
   }
 
+  // Regression test for a bug where a detach in the middle of a non-streaming escape directive
+  // would cras
+  @Test
+  public void testDetachInNonStreamingCall() throws IOException {
+    CompiledTemplates templates =
+        TemplateTester.compileFileAndRunAutoescaper(
+            "{namespace ns}",
+            "{template c}<a href=\"{call u /}\"></a>{/template}",
+            "{template u kind='uri'}{@inject p:?}{$p}{/template}");
+    CompiledTemplate template = templates.getTemplate("ns.c");
+    RenderContext context = getDefaultContext(templates);
+
+    SettableFuture<String> pending = SettableFuture.create();
+    BufferingAppendable output = LoggingAdvisingAppendable.buffering();
+    TemplateRenderer renderer =
+        () ->
+            template.render(
+                ParamStore.EMPTY_INSTANCE,
+                asRecord(ImmutableMap.of("p", pending)),
+                output,
+                context);
+    assertThat(renderer.render()).isEqualTo(RenderResult.continueAfter(pending));
+    assertThat(output.toString()).isEqualTo("<a href=\"");
+    pending.set("www.foo.com");
+    // even if we call back in we are still stuck
+    assertThat(renderer.render()).isEqualTo(RenderResult.done());
+    assertThat(output.toString()).isEqualTo("<a href=\"www.foo.com\"></a>");
+  }
+
   @Test
   public void testLimitedAtTemplateEntryPoint_severalCalls() throws IOException {
     CompiledTemplates templates =
