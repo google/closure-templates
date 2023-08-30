@@ -1,4 +1,5 @@
 /*
+ * g3-format-prettier
  * @fileoverview Helper utilities for incremental dom code generation in Soy.
  * Copyright 2016 Google Inc.
  *
@@ -40,7 +41,7 @@ import {
 } from './api_idom';
 import {splitAttributes} from './attributes';
 import {IdomFunction, PatchFunction, SoyElement} from './element_lib_idom';
-import {getSoyUntyped, USE_TEMPLATE_CLONING} from './global';
+import {USE_TEMPLATE_CLONING} from './global';
 import {
   IdomSyncState,
   IdomTemplate,
@@ -62,7 +63,7 @@ const NODE_PART = '<?child-node-part?><?/child-node-part?>';
  * This acceptor receive `template.bind(acceptor)` and the template will use
  * state and data fields from the acceptor.
  */
-interface TemplateAcceptor<TDATA extends {}> {
+export interface TemplateAcceptor<TDATA extends {}> {
   template: IdomTemplate<TDATA>;
   renderInternal(renderer: IncrementalDomRenderer): void;
   render(renderer?: IncrementalDomRenderer): void;
@@ -147,86 +148,6 @@ attributes['muted'] = (el: Element, name: string, value: unknown) => {
 // Soy uses the {key} command syntax, rather than HTML attributes, to
 // indicate element keys.
 incrementaldom.setKeyAttributeName('ssk');
-
-/**
- * Tries to find an existing Soy element, if it exists. Otherwise, it creates
- * one. Afterwards, it queues up a Soy element (see docs for queueSoyElement)
- * and then proceeds to render the Soy element.
- */
-function handleSoyElement<T extends TemplateAcceptor<{}>>(
-  incrementaldom: IncrementalDomRenderer,
-  elementClassCtor: new () => T,
-  firstElementKey: string,
-  tagName: string,
-  data: {},
-  ijData: IjData,
-  template: IdomTemplate<unknown>,
-): T | null {
-  // If we're just testing truthiness, record an element but don't do anythng.
-  if (incrementaldom instanceof FalsinessRenderer) {
-    incrementaldom.open('div');
-    incrementaldom.close();
-    return null;
-  }
-  const soyElementKey = firstElementKey + incrementaldom.getCurrentKeyStack();
-  let soyElement: SoyElement<{}, {}> =
-    new elementClassCtor() as unknown as SoyElement<{}, {}>;
-  soyElement = new elementClassCtor() as unknown as SoyElement<{}, {}>;
-  soyElement.data = data;
-  soyElement.ijData = ijData;
-  soyElement.key = soyElementKey;
-  soyElement.template = template.bind(soyElement);
-  // NOTE(b/166257386): Without this, SoyElement re-renders don't have logging
-  soyElement.setLogger(incrementaldom.getLogger());
-  const isTemplateCloning =
-    ijData && (ijData as {[key: string]: unknown})['inTemplateCloning'];
-  /**
-   * Open the element early in order to execute lifeycle hooks. Suppress the
-   * next element open since we've already opened it.
-   */
-  let element = isTemplateCloning
-    ? null
-    : incrementaldom.open(tagName, firstElementKey);
-
-  const oldOpen = incrementaldom.open;
-  incrementaldom.open = (tagName, soyElementKey) => {
-    if (element) {
-      if (soyElementKey !== firstElementKey) {
-        throw new Error('Expected tag name and key to match.');
-      }
-    } else {
-      element = oldOpen.call(incrementaldom, tagName, soyElementKey);
-      soyElement.node = element!;
-      element!.__soy = soyElement;
-    }
-    incrementaldom.open = oldOpen;
-    return element!;
-  };
-
-  if (ijData && (ijData as {[key: string]: unknown})['inTemplateCloning']) {
-    soyElement.syncStateFromData(data);
-    return soyElement as unknown as T;
-  }
-
-  if (!element) {
-    // Template still needs to execute in order to trigger logging.
-    template.call(soyElement, incrementaldom, data, ijData);
-    return null;
-  }
-  if (getSoyUntyped(element) instanceof elementClassCtor) {
-    soyElement = getSoyUntyped(element)!;
-  }
-  const maybeSkip = soyElement.handleSoyElementRuntime(element, data);
-  soyElement.template = template.bind(soyElement);
-  USE_TEMPLATE_CLONING && (soyElement.ijData = ijData);
-  if (maybeSkip) {
-    incrementaldom.skip();
-    incrementaldom.close();
-    incrementaldom.open = oldOpen;
-    return null;
-  }
-  return soyElement as unknown as T;
-}
 
 function makeHtml(idomFn: PatchFunction): IdomFunction {
   const fn = ((renderer: IncrementalDomRenderer = defaultIdomRenderer) => {
@@ -779,7 +700,6 @@ export {
   callDynamicText as $$callDynamicText,
   compileToTemplate as $$compileToTemplate,
   defaultIdomRenderer as $$defaultIdomRenderer,
-  handleSoyElement as $$handleSoyElement,
   htmlToString as $$htmlToString,
   isIdom as $$isIdom,
   isTruthy as $$isTruthy,

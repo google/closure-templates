@@ -1,4 +1,5 @@
 /**
+ * g3-format-prettier
  * @fileoverview
  *
  * Functions necessary to interact with the Soy-Idom runtime.
@@ -14,9 +15,11 @@ import {
 } from 'google3/javascript/template/soy/soyutils_velog';
 import {truncate} from 'google3/third_party/javascript/closure/string/string';
 import * as incrementaldom from 'incrementaldom'; // from //third_party/javascript/incremental_dom:incrementaldom
-
 import {attributes} from './api_idom_attributes';
-
+import {SoyElement} from './element_lib_idom';
+import {USE_TEMPLATE_CLONING, getSoyUntyped} from './global';
+import {TemplateAcceptor} from './soyutils_idom';
+import {IjData, IdomTemplate as Template} from './templates';
 export {attributes} from './api_idom_attributes';
 export {IdomTemplate as Template} from './templates';
 
@@ -84,12 +87,12 @@ export const create = wrapAsGeneric(incrementaldom.createPatchInner, {
 /** PatchInner using Soy-IDOM DOM parts traversals. */
 export const createWithDomParts = wrapAsGeneric(
   incrementaldom.createPatchInner,
-  {inTemplateCloning: true, onlyOperateInNodeParts: true, ...patchConfig}
+  {inTemplateCloning: true, onlyOperateInNodeParts: true, ...patchConfig},
 );
 
 interface IdomRendererApi {
-  open(nameOrCtor: string, key?: string): void | HTMLElement;
-  openSimple(nameOrCtor: string, key?: string): void | HTMLElement;
+  open(nameOrCtor: string, key?: string): void;
+  openSimple(nameOrCtor: string, key?: string): void;
   keepGoing(el: HTMLElement | void, data: unknown): boolean;
   visit(el: void | HTMLElement): void;
   pushManualKey(key: incrementaldom.Key): void;
@@ -123,6 +126,14 @@ interface IdomRendererApi {
     args: Array<{}>,
     placeHolder: string,
   ): string;
+  handleSoyElement<T extends TemplateAcceptor<{}>>(
+    elementClassCtor: new () => T,
+    firstElementKey: string,
+    tagName: string,
+    data: {},
+    ijData: IjData,
+    template: Template<unknown>,
+  ): void;
 }
 
 /**
@@ -149,16 +160,22 @@ export class IncrementalDomRenderer implements IdomRendererApi {
    * Pushes/pops the given key from `keyStack` (versus `Array#concat`)
    * to avoid allocating a new array for every element open.
    */
-  open(nameOrCtor: string, key: string | undefined): HTMLElement | void {
+  open(nameOrCtor: string, key: string | undefined): void {
+    this.openInternal(nameOrCtor, key);
+  }
+
+  private openInternal(
+    nameOrCtor: string,
+    key: string | undefined,
+  ): HTMLElement | void {
     const el = incrementaldom.open(nameOrCtor, this.getNewKey(key));
     this.visit(el);
     return el;
   }
 
-  openSimple(nameOrCtor: string, key: string | undefined): HTMLElement | void {
+  openSimple(nameOrCtor: string, key: string | undefined): void {
     const el = incrementaldom.open(nameOrCtor, key);
     this.visit(el);
-    return el;
   }
 
   openChildNodePart() {
@@ -378,6 +395,80 @@ export class IncrementalDomRenderer implements IdomRendererApi {
     }
     return placeHolder;
   }
+
+  /**
+   * Tries to find an existing Soy element, if it exists. Otherwise, it creates
+   * one. Afterwards, it queues up a Soy element (see docs for queueSoyElement)
+   * and then proceeds to render the Soy element.
+   */
+  handleSoyElement<T extends TemplateAcceptor<{}>>(
+    elementClassCtor: new () => T,
+    firstElementKey: string,
+    tagName: string,
+    data: {},
+    ijData: IjData,
+    template: Template<unknown>,
+  ): void {
+    const soyElementKey = firstElementKey + this.getCurrentKeyStack();
+    let soyElement: SoyElement<{}, {}> =
+      new elementClassCtor() as unknown as SoyElement<{}, {}>;
+    soyElement = new elementClassCtor() as unknown as SoyElement<{}, {}>;
+    soyElement.data = data;
+    soyElement.ijData = ijData;
+    soyElement.key = soyElementKey;
+    soyElement.template = template.bind(soyElement);
+    // NOTE(b/166257386): Without this, SoyElement re-renders don't have logging
+    soyElement.setLogger(this.getLogger());
+    const isTemplateCloning =
+      ijData && (ijData as {[key: string]: unknown})['inTemplateCloning'];
+    /**
+     * Open the element early in order to execute lifecycle hooks. Suppress the
+     * next element open since we've already opened it.
+     */
+    let element = isTemplateCloning
+      ? null
+      : this.openInternal(tagName, firstElementKey);
+
+    const oldOpen = this.openInternal;
+    this.openInternal = (tagName, soyElementKey) => {
+      if (element) {
+        if (soyElementKey !== firstElementKey) {
+          throw new Error('Expected tag name and key to match.');
+        }
+      } else {
+        element = oldOpen.call(this, tagName, soyElementKey);
+        soyElement.node = element!;
+        element!.__soy = soyElement;
+      }
+      this.openInternal = oldOpen;
+      return element!;
+    };
+
+    if (ijData && (ijData as {[key: string]: unknown})['inTemplateCloning']) {
+      soyElement.syncStateFromData(data);
+      soyElement.renderInternal(this, data);
+      return;
+    }
+
+    if (!element) {
+      // Template still needs to execute in order to trigger logging.
+      template.call(soyElement, this, data, ijData);
+      return;
+    }
+    if (getSoyUntyped(element) instanceof elementClassCtor) {
+      soyElement = getSoyUntyped(element)!;
+    }
+    const maybeSkip = soyElement.handleSoyElementRuntime(element, data);
+    soyElement.template = template.bind(soyElement);
+    USE_TEMPLATE_CLONING && (soyElement.ijData = ijData);
+    if (maybeSkip) {
+      this.skip();
+      this.close();
+      this.openInternal = oldOpen;
+      return;
+    }
+    soyElement.renderInternal(this, data);
+  }
 }
 
 /**
@@ -553,12 +644,9 @@ export class FalsinessRenderer implements IdomRendererApi {
 
   open(nameOrCtor: string, key?: string) {
     this.rendered = true;
-    return undefined;
   }
 
-  openSimple(nameOrCtor: string, key?: string) {
-    return undefined;
-  }
+  openSimple(nameOrCtor: string, key?: string) {}
 
   keepGoing(el: HTMLElement | void, data: unknown) {
     return false;
@@ -606,5 +694,18 @@ export class FalsinessRenderer implements IdomRendererApi {
 
   skipNode() {
     this.rendered = true;
+  }
+
+  handleSoyElement<T extends TemplateAcceptor<{}>>(
+    elementClassCtor: new () => T,
+    firstElementKey: string,
+    tagName: string,
+    data: {},
+    ijData: IjData,
+    template: Template<unknown>,
+  ) {
+    // If we're just testing truthiness, record an element but don't do anythng.
+    this.open('div');
+    this.close();
   }
 }

@@ -574,25 +574,13 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
         JsRuntime.XID.call(Expressions.stringLiteral(tplName + "-root"));
     List<Expression> params =
         Arrays.asList(
-            INCREMENTAL_DOM,
             id(soyElementClassName),
             firstElementKey,
             Expressions.stringLiteral(node.getHtmlElementMetadata().getTag()),
             OPT_DATA,
             JsRuntime.IJ_DATA,
             id(soyElementClassName + "Render"));
-    return Statements.of(
-        VariableDeclaration.builder("soyEl")
-            .setRhs(SOY_IDOM.dotAccess("$$handleSoyElement").call(params))
-            .build(),
-        Statements.ifStatement(
-                id("soyEl"),
-                Statements.of(
-                    id("soyEl")
-                        .dotAccess("renderInternal")
-                        .call(INCREMENTAL_DOM, OPT_DATA)
-                        .asStatement()))
-            .build());
+    return Statements.of(INCREMENTAL_DOM.dotAccess("handleSoyElement").call(params).asStatement());
   }
 
   /** Generates class expression for the given template node, provided it is a Soy element. */
