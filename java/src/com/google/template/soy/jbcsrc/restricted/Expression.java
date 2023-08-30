@@ -483,9 +483,11 @@ public abstract class Expression extends BytecodeProducer {
         case VE_DATA:
           return this;
         case UNION:
-          if (type.equals(SoyTypes.NUMBER_TYPE)) {
-            return MethodRef.CHECK_NUMBER.invoke(this);
-          }
+          // This check was added during the boxing null to NullData change. It's correct but
+          // since it was added there are people depending on it. Of course there are.
+          // if (type.equals(SoyTypes.NUMBER_TYPE)) {
+          //   return MethodRef.CHECK_NUMBER.invoke(this);
+          // }
           return this;
         case NULL:
           return this.checkedCast(BytecodeUtils.NULL_DATA_TYPE);
