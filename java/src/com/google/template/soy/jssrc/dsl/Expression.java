@@ -254,20 +254,20 @@ public abstract class Expression extends CodeChunk {
 
   /** Takes in a String identifier for convenience, since that's what most use cases need. */
   public final Expression dotAccess(String identifier) {
-    return Dot.create(this, Expressions.id(identifier));
+    return dotAccess(identifier, false);
   }
 
-  public final Expression dotAccess(String identifier, boolean nullSafe) {
+  public Expression dotAccess(String identifier, boolean nullSafe) {
     return nullSafe
         ? Dot.createNullSafe(this, Expressions.id(identifier))
         : Dot.create(this, Expressions.id(identifier));
   }
 
   public final Expression bracketAccess(Expression arg) {
-    return Bracket.create(this, arg);
+    return bracketAccess(arg, false);
   }
 
-  public final Expression bracketAccess(Expression arg, boolean nullSafe) {
+  public Expression bracketAccess(Expression arg, boolean nullSafe) {
     return nullSafe ? Bracket.createNullSafe(this, arg) : Bracket.create(this, arg);
   }
 

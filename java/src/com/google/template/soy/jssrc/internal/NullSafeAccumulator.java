@@ -34,6 +34,7 @@ import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.template.soy.internal.proto.ProtoUtils;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.Expression;
+import com.google.template.soy.jssrc.dsl.Expressions;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
@@ -236,9 +237,8 @@ final class NullSafeAccumulator {
 
     @Override
     Expression extend(Expression prevTip) {
-      // Never allow a null method receiver.
-      prevTip = SOY_CHECK_NOT_NULL.call(prevTip);
-      return funct.apply(prevTip);
+      // Add a null check conditional on prevTip not being dereferenced, e.g. with a method call.
+      return funct.apply(Expressions.nullSafeAccumulatorReceiver(prevTip, SOY_CHECK_NOT_NULL));
     }
 
     @Override
