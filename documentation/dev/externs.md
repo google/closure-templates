@@ -205,7 +205,7 @@ proto enums            | the proto enum Java type                               
 `uri`                  | `com.google.common.html.types.SafeUrl`, `com.google.common.html.types.SafeUrlProto`                       |
 `trusted_resource_uri` | `com.google.common.html.types.TrustedResourceUrl`, `com.google.common.html.types.TrustedResourceUrlProto` |
 `html`                 | `com.google.common.html.types.SafeHtml`, `com.google.common.html.types.SafeHtmlProto`                     |
-`list<?>`              | `java.util.List`, `com.google.common.collect.ImmutableList`                                               | Supported element types are: `int`, `float`, `string`, `bool`, proto, and proto enum.
+`list<?>`              | `java.util.List`, `com.google.common.collect.ImmutableList`, `java.util.Collection`, `java.util.Iterable` | Supported element types are: `int`, `float`, `string`, `bool`, proto, and proto enum.
 `map<?,?>`             | `java.util.Map`, `com.google.common.collect.ImmutableMap`                                                 | Same supported element types as list.
 records                | `java.util.Map`, `com.google.common.collect.ImmutableMap`                                                 | Supports all value types other than `list`, `map`, records, and unions.
 unions                 | `java.lang.Object`, `com.google.template.soy.data.SoyValue`                                               | All unions other than `int\|float`. Supported union members are: `int`, `float`, `string`, `bool`, proto, proto enum, `uri`, `trusted_resource_uri`, and `html`.

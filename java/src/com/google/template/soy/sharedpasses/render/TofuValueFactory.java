@@ -19,8 +19,6 @@ package com.google.template.soy.sharedpasses.render;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.ImmutableMap.toImmutableMap;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.html.types.SafeHtml;
 import com.google.common.html.types.SafeHtmlProto;
@@ -40,7 +38,6 @@ import com.google.protobuf.ProtocolMessageEnum;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SoyDataException;
-import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyProtoValue;
 import com.google.template.soy.data.SoyValue;
@@ -320,21 +317,19 @@ class TofuValueFactory extends JavaValueFactory {
         return (float) value.numberValue();
       } else if (type == String.class) {
         return value.stringValue();
-      } else if (type == List.class || type == ImmutableList.class) {
+      } else if (Iterable.class.isAssignableFrom(type)) {
         if (isExternApi) {
-          return ((SoyList) value)
-              .asJavaList().stream()
-                  .map(
-                      item ->
-                          adaptParamItem(
-                              item,
-                              ((ListType) externSig.getParameters().get(i).getType())
-                                  .getElementType()))
-                  .collect(toImmutableList());
+          return value.asJavaList().stream()
+              .map(
+                  item ->
+                      adaptParamItem(
+                          item,
+                          ((ListType) externSig.getParameters().get(i).getType()).getElementType()))
+              .collect(toImmutableList());
         } else {
-          return ((SoyList) value).asJavaList();
+          return value.asJavaList();
         }
-      } else if ((type == Map.class || type == ImmutableMap.class) && isExternApi) {
+      } else if (Map.class.isAssignableFrom(type) && isExternApi) {
         SoyType paramType = externSig.getParameters().get(i).getType();
         if (paramType.getKind() == Kind.RECORD) {
           return ((SoyMap) value)
@@ -382,7 +377,7 @@ class TofuValueFactory extends JavaValueFactory {
       } else if (type == TrustedResourceUrlProto.class) {
         return ((SanitizedContent) value).toTrustedResourceUrlProto();
       } else if (Message.class.isAssignableFrom(type)) {
-        return type.cast(((SoyProtoValue) value).getProto());
+        return type.cast(value.getProto());
       } else {
         throw new UnsupportedOperationException(
             "cannot call method "

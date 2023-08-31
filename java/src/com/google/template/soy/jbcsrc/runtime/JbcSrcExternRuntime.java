@@ -23,6 +23,7 @@ import static java.util.stream.Collectors.toList;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Streams;
 import com.google.common.html.types.SafeHtml;
 import com.google.common.html.types.SafeHtmlProto;
 import com.google.common.html.types.SafeHtmls;
@@ -84,15 +85,15 @@ public final class JbcSrcExternRuntime {
   public static final MethodRef CONVERT_TRUSTED_RESOURCE_URL_TO_SOY_VALUE_PROVIDER =
       MethodRef.create(SanitizedContents.class, "fromTrustedResourceUrl", TrustedResourceUrl.class);
 
-  public static final MethodRef LIST_BOX_VALUES = create("listBoxValues", List.class);
+  public static final MethodRef LIST_BOX_VALUES = create("listBoxValues", Iterable.class);
 
   @Keep
   @Nullable
-  public static List<SoyValueProvider> listBoxValues(List<?> javaValues) {
+  public static List<SoyValueProvider> listBoxValues(Iterable<?> javaValues) {
     if (javaValues == null) {
       return null;
     }
-    return javaValues.stream().map(SoyValueConverter.INSTANCE::convert).collect(toList());
+    return Streams.stream(javaValues).map(SoyValueConverter.INSTANCE::convert).collect(toList());
   }
 
   public static final MethodRef LIST_UNBOX_BOOLS = create("listUnboxBools", List.class);

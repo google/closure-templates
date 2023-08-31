@@ -74,6 +74,7 @@ import java.io.Closeable;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -126,6 +127,8 @@ public final class BytecodeUtils {
   public static final Type SOY_VALUE_PROVIDER_TYPE = Type.getType(SoyValueProvider.class);
 
   public static final Type LINKED_HASH_MAP_TYPE = Type.getType(LinkedHashMap.class);
+  public static final Type COLLECTION_TYPE = Type.getType(Collection.class);
+  public static final Type ITERABLE_TYPE = Type.getType(Iterable.class);
   public static final Type LIST_TYPE = Type.getType(List.class);
   public static final Type IMMUTABLE_LIST_TYPE = Type.getType(ImmutableList.class);
   public static final Type IMMUTABLE_MAP_TYPE = Type.getType(ImmutableMap.class);

@@ -203,7 +203,8 @@ class ValidateExternsPass implements CompilerFilePass {
           extern.getType().getReturnType(),
           INCOMPATIBLE_RETURN_TYPE,
           () -> java.getAttributeValueLocation(JavaImplNode.RETURN),
-          extern);
+          extern,
+          Mode.EXTENDS);
     }
 
     List<String> paramTypes = new ArrayList<>(java.params());
@@ -234,7 +235,8 @@ class ValidateExternsPass implements CompilerFilePass {
             extern.getType().getParameters().get(i).getType(),
             INCOMPATIBLE_PARAM_TYPE,
             () -> java.getAttributeValueLocation(JavaImplNode.PARAMS),
-            extern);
+            extern,
+            Mode.SUPER);
       }
     }
 
@@ -308,16 +310,22 @@ class ValidateExternsPass implements CompilerFilePass {
     }
   }
 
+  private enum Mode {
+    EXTENDS,
+    SUPER
+  }
+
   private void validateTypes(
       String javaTypeName,
       SoyType soyType,
       SoyErrorKind compatibleErrorKind,
       Supplier<SourceLocation> loc,
-      ExternNode extern) {
+      ExternNode extern,
+      Mode mode) {
     Class<?> javaType = getType(javaTypeName);
     if (javaType != null) {
       // Verify that the soy param type and the java param type are compatible.
-      if (!typesAreCompatible(javaType, soyType, extern)) {
+      if (!typesAreCompatible(javaType, soyType, extern, mode)) {
         errorReporter.report(loc.get(), compatibleErrorKind, javaType.getName(), soyType);
       }
     } else if (!protoTypesAreCompatible(javaTypeName, soyType)) {
@@ -360,7 +368,8 @@ class ValidateExternsPass implements CompilerFilePass {
           .add(SoyType.Kind.CSS)
           .build();
 
-  private static boolean typesAreCompatible(Class<?> javaType, SoyType soyType, ExternNode extern) {
+  private static boolean typesAreCompatible(
+      Class<?> javaType, SoyType soyType, ExternNode extern, Mode mode) {
     boolean nullable = SoyTypes.isNullable(soyType);
     boolean isPrimitive = Primitives.allPrimitiveTypes().contains(javaType);
     if (nullable && isPrimitive) {
@@ -391,21 +400,35 @@ class ValidateExternsPass implements CompilerFilePass {
       case UNKNOWN:
         return javaType == Object.class || javaType == SoyValue.class;
       case LIST:
-        return (javaType == List.class || javaType == ImmutableList.class)
-            && isAllowedParameterizedType(((ListType) soyType).getElementType(), extern);
+        if (!isAllowedParameterizedType(((ListType) soyType).getElementType(), extern)) {
+          return false;
+        }
+        return mode == Mode.EXTENDS
+            ? Iterable.class.isAssignableFrom(javaType)
+            : (!javaType.equals(Object.class) && javaType.isAssignableFrom(ImmutableList.class));
       case MAP:
         MapType mapType = (MapType) soyType;
-        return (javaType == Map.class || javaType == ImmutableMap.class)
-            && ALLOWED_PARAMETERIZED_TYPES.contains(mapType.getKeyType().getKind())
-            && ALLOWED_PARAMETERIZED_TYPES.contains(mapType.getValueType().getKind());
+        if (!ALLOWED_PARAMETERIZED_TYPES.contains(mapType.getKeyType().getKind())
+            || !ALLOWED_PARAMETERIZED_TYPES.contains(mapType.getValueType().getKind())) {
+          return false;
+        }
+        return mode == Mode.EXTENDS
+            ? Map.class.isAssignableFrom(javaType)
+            : javaType == Map.class || javaType == ImmutableMap.class;
       case RECORD:
         RecordType recordType = (RecordType) soyType;
-        return (javaType == Map.class || javaType == ImmutableMap.class)
-            && recordType.getMembers().stream()
-                .map(m -> m.declaredType().getKind())
-                .allMatch(ALLOWED_RECORD_MEMBERS::contains);
+        if (!recordType.getMembers().stream()
+            .map(m -> m.declaredType().getKind())
+            .allMatch(ALLOWED_RECORD_MEMBERS::contains)) {
+          return false;
+        }
+        return mode == Mode.EXTENDS
+            ? Map.class.isAssignableFrom(javaType)
+            : javaType == Map.class || javaType == ImmutableMap.class;
       case MESSAGE:
-        return javaType == Message.class;
+        return mode == Mode.EXTENDS
+            ? Message.class.isAssignableFrom(javaType)
+            : javaType == Message.class;
       case URI:
         return javaType == SafeUrl.class || javaType == SafeUrlProto.class;
       case TRUSTED_RESOURCE_URI:
