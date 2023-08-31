@@ -93,7 +93,10 @@ export const createWithDomParts = wrapAsGeneric(
 interface IdomRendererApi {
   open(nameOrCtor: string, key?: string): void;
   openSimple(nameOrCtor: string, key?: string): void;
-  keepGoing(el: HTMLElement | void, data: unknown): boolean;
+  keepGoing(
+    data: unknown,
+    continueFn: (renderer: IdomRendererApi) => void,
+  ): void;
   visit(el: void | HTMLElement): void;
   pushManualKey(key: incrementaldom.Key): void;
   popManualKey(): void;
@@ -190,7 +193,8 @@ export class IncrementalDomRenderer implements IdomRendererApi {
     return incrementaldom.nextNodePart();
   }
 
-  keepGoing(el: HTMLElement | void, data: unknown) {
+  keepGoing(data: unknown, continueFn: (renderer: IdomRendererApi) => void) {
+    const el = this.currentElement() as HTMLElement;
     // `data` is only passed by {skip} elements that are roots of templates.
     if (!COMPILED && goog.DEBUG && el && data) {
       maybeReportErrors(el, data);
@@ -208,7 +212,7 @@ export class IncrementalDomRenderer implements IdomRendererApi {
       this.skip();
       // And exit its node so that we will continue with the next node.
       this.close();
-      return false;
+      return;
     }
     el.__hasBeenRendered = true;
 
@@ -218,7 +222,7 @@ export class IncrementalDomRenderer implements IdomRendererApi {
     }
 
     // If we have not yet populated this element, tell the template to do so.
-    return true;
+    continueFn(this);
   }
 
   // For users extending IncrementalDomRenderer
@@ -488,9 +492,10 @@ export class NullRenderer extends IncrementalDomRenderer {
     return undefined;
   }
 
-  override keepGoing(el: HTMLElement | void, data: unknown) {
-    return false;
-  }
+  override keepGoing(
+    data: unknown,
+    continueFn: (renderer: IdomRendererApi) => void,
+  ) {}
 
   override close() {}
   override elementClose() {}
@@ -648,9 +653,7 @@ export class FalsinessRenderer implements IdomRendererApi {
 
   openSimple(nameOrCtor: string, key?: string) {}
 
-  keepGoing(el: HTMLElement | void, data: unknown) {
-    return false;
-  }
+  keepGoing(data: unknown, continueFn: (renderer: IdomRendererApi) => void) {}
 
   close() {
     this.rendered = true;

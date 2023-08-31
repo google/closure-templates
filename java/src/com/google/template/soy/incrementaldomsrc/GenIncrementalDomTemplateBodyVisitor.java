@@ -70,6 +70,7 @@ import com.google.template.soy.jssrc.dsl.ConditionalBuilder;
 import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.jssrc.dsl.Expressions;
 import com.google.template.soy.jssrc.dsl.GoogRequire;
+import com.google.template.soy.jssrc.dsl.JsArrowFunction;
 import com.google.template.soy.jssrc.dsl.JsDoc;
 import com.google.template.soy.jssrc.dsl.LineComment;
 import com.google.template.soy.jssrc.dsl.Statement;
@@ -836,9 +837,8 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
     return Expressions.concatForceString(getAttributeValues(node));
   }
 
-  private Expression getMaybeSkip(HtmlOpenTagNode node) {
+  private Expression getMaybeSkip(HtmlOpenTagNode node, Statement continueStatements) {
     List<Expression> args = new ArrayList<>();
-    args.add(INCREMENTAL_DOM.dotAccess("currentElement").call());
     if (node.isElementRoot() && !node.isSkipChildrenRoot()) {
       Expression paramsObject;
       if (generatePositionalParamsSignature) {
@@ -854,7 +854,15 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
           Expressions.ifExpression(JsRuntime.GOOG_DEBUG, paramsObject)
               .setElse(Expressions.LITERAL_UNDEFINED)
               .build(templateTranslationContext.codeGenerator()));
+    } else {
+      args.add(Expressions.LITERAL_UNDEFINED);
     }
+    args.add(
+        JsArrowFunction.create(
+            JsDoc.builder()
+                .addParam(INCREMENTAL_DOM_PARAM_NAME, "incrementaldomlib.IncrementalDomRenderer")
+                .build(),
+            continueStatements));
     return INCREMENTAL_DOM_KEEP_GOING.call(args);
   }
 
@@ -1178,12 +1186,11 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
         maybeClose.isPresent()
             ? Statements.of(Statements.of(visitChildren(node)), maybeClose.get())
             : Statements.of(visitChildren(node));
-    Expression maybeSkip = getMaybeSkip(openTag);
-    var ifStmt =
-        Statements.ifStatement(
-            maybeSkip,
+    Expression maybeSkip =
+        getMaybeSkip(
+            openTag,
             node.skipOnlyChildren() ? childStatements : Statements.of(attributes, childStatements));
-    statements.add(ifStmt.build());
+    statements.add(maybeSkip.asStatement());
     return Statements.of(statements.build());
   }
 
