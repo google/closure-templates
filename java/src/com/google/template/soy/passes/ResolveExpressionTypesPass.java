@@ -20,15 +20,12 @@ import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static com.google.common.collect.ImmutableSortedSet.toImmutableSortedSet;
-import static com.google.template.soy.exprtree.ExprNodes.isNullishLiteral;
 import static com.google.template.soy.passes.CheckTemplateCallsPass.ARGUMENT_TYPE_MISMATCH;
 import static com.google.template.soy.types.SoyTypes.SAFE_PROTO_TO_SANITIZED_TYPE;
 import static com.google.template.soy.types.SoyTypes.getMapKeysType;
 import static com.google.template.soy.types.SoyTypes.getMapValuesType;
-import static com.google.template.soy.types.SoyTypes.tryKeepNullish;
 import static com.google.template.soy.types.SoyTypes.tryRemoveNull;
 import static com.google.template.soy.types.SoyTypes.tryRemoveNullish;
-import static com.google.template.soy.types.SoyTypes.tryRemoveUndefined;
 import static java.util.Comparator.naturalOrder;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
@@ -199,7 +196,6 @@ import com.google.template.soy.types.StringType;
 import com.google.template.soy.types.TemplateImportType;
 import com.google.template.soy.types.TemplateModuleImportType;
 import com.google.template.soy.types.TemplateType;
-import com.google.template.soy.types.UndefinedType;
 import com.google.template.soy.types.UnionType;
 import com.google.template.soy.types.UnknownType;
 import com.google.template.soy.types.VeDataType;
@@ -411,7 +407,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
   private final FieldRegistry fieldRegistry;
 
   /** Current set of type substitutions. */
-  private TypeSubstitution substitutions;
+  private TypeSubstitutions substitutions;
 
   private final ExprEquivalence exprEquivalence;
   private SoyTypeRegistry typeRegistry;
@@ -495,7 +491,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
   }
 
   private void prepFile(SoyFileNode file) {
-    substitutions = null;
+    substitutions = new TypeSubstitutions(exprEquivalence);
     typeRegistry = file.getSoyTypeRegistry();
     currentFile = file;
     pluginTypeConverter =
@@ -503,6 +499,10 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
             .setTypeRegistry(typeRegistry)
             .setSystemExternal(true)
             .build();
+  }
+
+  private TypeNarrowingConditionVisitor createTypeNarrowingConditionVisitor() {
+    return new TypeNarrowingConditionVisitor(exprEquivalence, typeRegistry);
   }
 
   /**
@@ -738,22 +738,22 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
 
     @Override
     protected void visitIfNode(IfNode node) {
-      TypeSubstitution savedSubstitutionState = substitutions;
+      TypeSubstitutions.Checkpoint savedSubstitutionState = substitutions.checkpoint();
       for (SoyNode child : node.getChildren()) {
         if (child instanceof IfCondNode) {
           IfCondNode icn = (IfCondNode) child;
           visitExpressions(icn);
 
           // Visit the conditional expression to compute which types can be narrowed.
-          TypeNarrowingConditionVisitor visitor = new TypeNarrowingConditionVisitor();
+          TypeNarrowingConditionVisitor visitor = createTypeNarrowingConditionVisitor();
           visitor.exec(icn.getExpr());
 
           // Save the state of substitutions from the previous if block.
-          TypeSubstitution previousSubstitutionState = substitutions;
+          TypeSubstitutions.Checkpoint previousSubstitutionState = substitutions.checkpoint();
 
           // Modify the current set of type substitutions for the 'true' branch
           // of the if statement.
-          addTypeSubstitutions(visitor.positiveTypeConstraints);
+          substitutions.addAll(visitor.positiveTypeConstraints);
           visitChildren(icn);
 
           // Rewind the substitutions back to the state before the if-condition.
@@ -764,15 +764,15 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
           // 'else' block it must be of type (B|C); If a subsequent 'elseif'
           // statement tests whether its type B, then in the following else block
           // it can only be of type C.
-          substitutions = previousSubstitutionState;
-          addTypeSubstitutions(visitor.negativeTypeConstraints);
+          substitutions.restore(previousSubstitutionState);
+          substitutions.addAll(visitor.negativeTypeConstraints);
         } else if (child instanceof IfElseNode) {
           // For the else node, we simply inherit the previous set of substitutions.
           IfElseNode ien = (IfElseNode) child;
           visitChildren(ien);
         }
       }
-      substitutions = savedSubstitutionState;
+      substitutions.restore(savedSubstitutionState);
     }
 
     private final ImmutableSet<SoyType.Kind> allowedSwitchTypes =
@@ -783,7 +783,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
     protected void visitSwitchNode(SwitchNode node) {
       visitExpressions(node);
 
-      TypeSubstitution savedSubstitutionState = substitutions;
+      TypeSubstitutions.Checkpoint savedSubstitutionState = substitutions.checkpoint();
       ExprNode switchExpr = node.getExpr().getRoot();
       SoyType switchExprType = switchExpr.getType();
       boolean exprTypeError = false;
@@ -824,14 +824,14 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
           }
           SoyType caseType = typeRegistry.getOrCreateUnionType(caseTypes);
 
-          TypeSubstitution previousSubstitutionState = substitutions;
+          TypeSubstitutions.Checkpoint previousSubstitutionState = substitutions.checkpoint();
 
           Map<ExprEquivalence.Wrapper, SoyType> positiveTypeConstraints = new HashMap<>();
           positiveTypeConstraints.put(exprEquivalence.wrap(switchExpr), caseType);
-          addTypeSubstitutions(positiveTypeConstraints);
+          substitutions.addAll(positiveTypeConstraints);
           visitChildren(scn);
 
-          substitutions = previousSubstitutionState;
+          substitutions.restore(previousSubstitutionState);
 
           if (nullFound) {
             // If a case statement has a null literal, the switch expression can't be null for any
@@ -839,7 +839,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
             Map<ExprEquivalence.Wrapper, SoyType> negativeTypeConstraints = new HashMap<>();
             negativeTypeConstraints.put(
                 exprEquivalence.wrap(switchExpr), tryRemoveNull(switchExpr.getType()));
-            addTypeSubstitutions(negativeTypeConstraints);
+            substitutions.addAll(negativeTypeConstraints);
           }
         } else if (child instanceof SwitchDefaultNode) {
           // No new type substitutions for a default statement, but inherit the previous (negative)
@@ -848,7 +848,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
           visitChildren(sdn);
         }
       }
-      substitutions = savedSubstitutionState;
+      substitutions.restore(savedSubstitutionState);
     }
 
     @Override
@@ -920,27 +920,6 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
 
       if (node instanceof ParentSoyNode<?>) {
         visitChildren((ParentSoyNode<?>) node);
-      }
-    }
-  }
-
-  // Given a map of type substitutions, add all the entries to the current set of
-  // active substitutions.
-  private void addTypeSubstitutions(Map<ExprEquivalence.Wrapper, SoyType> substitutionsToAdd) {
-    for (Map.Entry<ExprEquivalence.Wrapper, SoyType> entry : substitutionsToAdd.entrySet()) {
-      ExprNode expr = entry.getKey().get();
-      // Get the existing type
-      SoyType previousType = expr.getType();
-      for (TypeSubstitution subst = substitutions; subst != null; subst = subst.parent) {
-        if (exprEquivalence.equivalent(subst.expression, expr)) {
-          previousType = subst.type;
-          break;
-        }
-      }
-
-      // If the new type is different than the current type, then add a new type substitution.
-      if (!entry.getValue().equals(previousType)) {
-        substitutions = new TypeSubstitution(substitutions, expr, entry.getValue());
       }
     }
   }
@@ -1147,16 +1126,16 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
         node.getIndexVar().setType(IntType.getInstance());
       }
 
-      TypeSubstitution savedSubstitutions = substitutions;
+      TypeSubstitutions.Checkpoint savedSubstitutions = substitutions.checkpoint();
 
       if (node.getFilterExpr() != null) {
         // Visit the optional filter expr, and make sure it evaluates to a boolean.
         visit(node.getFilterExpr());
 
         // Narrow the type of the list item based on the filter expression.
-        TypeNarrowingConditionVisitor typeNarrowing = new TypeNarrowingConditionVisitor();
+        TypeNarrowingConditionVisitor typeNarrowing = createTypeNarrowingConditionVisitor();
         typeNarrowing.exec(node.getFilterExpr());
-        addTypeSubstitutions(typeNarrowing.positiveTypeConstraints);
+        substitutions.addAll(typeNarrowing.positiveTypeConstraints);
       }
 
       // Resolve the type of the itemMapExpr, and use it to determine the comprehension's resulting
@@ -1165,7 +1144,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
       node.setType(typeRegistry.getOrCreateListType(node.getListItemTransformExpr().getType()));
 
       // Return the type substitutions to their state before narrowing the list item type.
-      substitutions = savedSubstitutions;
+      substitutions.restore(savedSubstitutions);
 
       tryApplySubstitution(node);
     }
@@ -1309,7 +1288,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
         }
       }
 
-      SoyType newType = getTypeSubstitution(varRef);
+      SoyType newType = substitutions.getTypeSubstitution(varRef);
       if (newType != null) {
         varRef.setSubstituteType(newType);
       } else if (!varRef.hasType()) {
@@ -1338,7 +1317,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
 
       // Rebuild the normalized DataAcceessNode chain so that the type substitutions can be applied.
       ExprNode nsBaseExpr = nullSafeAccessNode.asMergedBase();
-      SoyType maybeSubstitutedType = getTypeSubstitution(nsBaseExpr);
+      SoyType maybeSubstitutedType = substitutions.getTypeSubstitution(nsBaseExpr);
       SoyType baseType =
           maybeSubstitutedType != null
               ? maybeSubstitutedType
@@ -1417,7 +1396,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
         // Rebuild the normalized DataAcceessNode chain by combining this section of the base access
         // with the merged bases of parent NullSafeAccessNodes.
         SoyType maybeSubstitutedType =
-            getTypeSubstitution(
+            substitutions.getTypeSubstitution(
                 NullSafeAccessNode.copyAndGraftPlaceholders(
                     (DataAccessNode) dataAccess.getBaseExprChild(), ImmutableList.of(nsBaseExpr)));
         baseType =
@@ -1854,19 +1833,19 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
       visit(node.getChild(0)); // Assign normal types to left child
 
       // Save the state of substitutions.
-      TypeSubstitution savedSubstitutionState = substitutions;
+      TypeSubstitutions.Checkpoint savedSubstitutionState = substitutions.checkpoint();
 
       // Visit the left hand side to help narrow types used on the right hand side.
-      TypeNarrowingConditionVisitor visitor = new TypeNarrowingConditionVisitor();
+      TypeNarrowingConditionVisitor visitor = createTypeNarrowingConditionVisitor();
       visitor.visitAndImplicitlyCastToBoolean(node.getChild(0));
 
       // For 'and' the second child only gets evaluated if node 0 is truthy.  So apply the positive
       // assertions.
-      addTypeSubstitutions(visitor.positiveTypeConstraints);
+      substitutions.addAll(visitor.positiveTypeConstraints);
       visit(node.getChild(1));
 
       // Restore substitutions to previous state
-      substitutions = savedSubstitutionState;
+      substitutions.restore(savedSubstitutionState);
 
       node.setType(BoolType.getInstance());
     }
@@ -1881,15 +1860,15 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
       visit(lhs); // Assign normal types to left child
 
       // Save the state of substitutions.
-      TypeSubstitution savedSubstitutionState = substitutions;
+      TypeSubstitutions.Checkpoint savedSubstitutionState = substitutions.checkpoint();
 
       // Visit the left hand side to help narrow types used on the right hand side.
-      TypeNarrowingConditionVisitor visitor = new TypeNarrowingConditionVisitor();
+      TypeNarrowingConditionVisitor visitor = createTypeNarrowingConditionVisitor();
       visitor.visitAndImplicitlyCastToBoolean(node.getChild(0));
 
       // For 'or' the second child only gets evaluated if node 0 is falsy.  So apply the negative
       // assertions.
-      addTypeSubstitutions(visitor.negativeTypeConstraints);
+      substitutions.addAll(visitor.negativeTypeConstraints);
       ExprNode rhs = node.getChild(1);
       visit(rhs);
       if (SoyTreeUtils.isConstantExpr(rhs)) {
@@ -1898,7 +1877,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
       }
 
       // Restore substitutions to previous state
-      substitutions = savedSubstitutionState;
+      substitutions.restore(savedSubstitutionState);
 
       node.setType(BoolType.getInstance());
     }
@@ -1908,24 +1887,24 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
       visit(node.getChild(0));
 
       // Save the state of substitutions.
-      TypeSubstitution savedSubstitutionState = substitutions;
+      TypeSubstitutions.Checkpoint savedSubstitutionState = substitutions.checkpoint();
 
       // Visit the conditional expression to compute which types can be narrowed.
-      TypeNarrowingConditionVisitor visitor = new TypeNarrowingConditionVisitor();
+      TypeNarrowingConditionVisitor visitor = createTypeNarrowingConditionVisitor();
       visitor.visitAndImplicitlyCastToBoolean(node.getChild(0));
 
       // Now, re-visit the first node but with substitutions. The reason is because
       // the value of node 0 is what will be returned if node 0 is truthy.
-      addTypeSubstitutions(visitor.positiveTypeConstraints);
+      substitutions.addAll(visitor.positiveTypeConstraints);
       visit(node.getChild(0));
 
       // For the null-coalescing operator, the node 1 only gets evaluated
       // if node 0 is falsey. Use the negative substitutions for this case.
-      addTypeSubstitutions(visitor.negativeTypeConstraints);
+      substitutions.addAll(visitor.negativeTypeConstraints);
       visit(node.getChild(1));
 
       // Restore substitutions to previous state
-      substitutions = savedSubstitutionState;
+      substitutions.restore(savedSubstitutionState);
 
       node.setType(
           SoyTypes.computeLowestCommonType(
@@ -1938,26 +1917,26 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
       visit(node.getChild(0));
 
       // Save the state of substitutions.
-      TypeSubstitution savedSubstitutionState = substitutions;
+      TypeSubstitutions.Checkpoint savedSubstitutionState = substitutions.checkpoint();
 
       // Visit the conditional expression to compute which types can be narrowed.
-      TypeNarrowingConditionVisitor visitor = new TypeNarrowingConditionVisitor();
+      TypeNarrowingConditionVisitor visitor = createTypeNarrowingConditionVisitor();
       visitor.visitAndImplicitlyCastToBoolean(node.getChild(0));
 
       // Modify the current set of type substitutions for the 'true' branch
       // of the conditional.
-      addTypeSubstitutions(visitor.positiveTypeConstraints);
+      substitutions.addAll(visitor.positiveTypeConstraints);
       visit(node.getChild(1));
 
       // Rewind the substitutions back to the state before the expression.
       // Add in the negative substitutions, which will affect the 'false'
       // branch.
-      substitutions = savedSubstitutionState;
-      addTypeSubstitutions(visitor.negativeTypeConstraints);
+      substitutions.restore(savedSubstitutionState);
+      substitutions.addAll(visitor.negativeTypeConstraints);
       visit(node.getChild(2));
 
       // Restore substitutions to previous state
-      substitutions = savedSubstitutionState;
+      substitutions.restore(savedSubstitutionState);
 
       // For a conditional node, it will return either child 1 or 2.
       node.setType(
@@ -2697,7 +2676,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
     }
 
     private void tryApplySubstitution(AbstractParentExprNode parentNode) {
-      SoyType newType = getTypeSubstitution(parentNode);
+      SoyType newType = substitutions.getTypeSubstitution(parentNode);
       if (newType != null) {
         if (!parentNode.getType().isAssignableFromStrict(newType)) {
           errorReporter.report(
@@ -2708,18 +2687,6 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
         }
         parentNode.setType(newType);
       }
-    }
-
-    @Nullable
-    private SoyType getTypeSubstitution(ExprNode expr) {
-      // If there's a type substitution in effect for this expression, then change
-      // the type of the variable reference to the substituted type.
-      for (TypeSubstitution subst = substitutions; subst != null; subst = subst.parent) {
-        if (exprEquivalence.equivalent(subst.expression, expr)) {
-          return subst.type;
-        }
-      }
-      return null;
     }
 
     /**
@@ -3025,299 +2992,10 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
     }
   }
 
-  /**
-   * Visitor which analyzes a boolean expression and determines if any of the variables involved in
-   * the expression can have their types narrowed depending on the outcome of the condition.
-   *
-   * <p>For example, if the condition is "$var != null", then we know that if the condition is true,
-   * then $var cannot be of null type. We also know that if the condition is false, then $var must
-   * be of the null type.
-   *
-   * <p>The result of the analysis is two "constraint maps", which map variables to types,
-   * indicating that the variable satisfies the criteria of being of that type.
-   *
-   * <p>The "positiveConstraints" map is the set of constraints that will be satisfied if the
-   * condition is true, the "negativeConstraints" is the set of constraints that will be satisfied
-   * if the condition is false.
-   *
-   * <p>TODO(user) - support instanceof tests. Right now the only type tests supported are
-   * comparisons with null. If we added an 'instanceof' operator to Soy, the combination of
-   * instanceof + flow-based type analysis would effectively allow template authors to do typecasts,
-   * without having to add a cast operator to the language.
-   */
-  private final class TypeNarrowingConditionVisitor extends AbstractExprNodeVisitor<Void> {
-    // Type constraints that are valid if the condition is true.
-    Map<ExprEquivalence.Wrapper, SoyType> positiveTypeConstraints = new LinkedHashMap<>();
-
-    // Type constraints that are valid if the condition is false.
-    Map<ExprEquivalence.Wrapper, SoyType> negativeTypeConstraints = new LinkedHashMap<>();
-
-    @Override
-    public Void exec(ExprNode node) {
-      visitAndImplicitlyCastToBoolean(node);
-      return null;
-    }
-
-    @Override
-    protected void visitExprRootNode(ExprRootNode node) {
-      visitAndImplicitlyCastToBoolean(node.getRoot());
-    }
-
-    void visitAndImplicitlyCastToBoolean(ExprNode node) {
-      // In places where the expression is implicitly cast to a boolean, treat
-      // a reference to a variable as a comparison of that variable with null.
-      // So for example an expression like {if $var} should be treated as
-      // {if $var != null} but something like {if $var > 0} should not be changed.
-      visit(node);
-      ExprEquivalence.Wrapper wrapped = exprEquivalence.wrap(node);
-      positiveTypeConstraints.put(wrapped, tryRemoveNullish(node.getType()));
-      // TODO(lukes): The 'negative' type constraint here is not optimal.  What we really know is
-      // that the value of the expression is 'falsy' we could use that to inform later checks but
-      // for now we just assume it has its normal type.
-      negativeTypeConstraints.put(wrapped, node.getType());
-    }
-
-    @Override
-    protected void visitAndOpNode(AndOpNode node) {
-      Preconditions.checkArgument(node.numChildren() == 2);
-      // Create two separate visitors to analyze each side of the expression.
-      TypeNarrowingConditionVisitor leftVisitor = new TypeNarrowingConditionVisitor();
-      TypeNarrowingConditionVisitor rightVisitor = new TypeNarrowingConditionVisitor();
-      leftVisitor.visitAndImplicitlyCastToBoolean(node.getChild(0));
-      rightVisitor.visitAndImplicitlyCastToBoolean(node.getChild(1));
-
-      // Both the left side and right side constraints will be valid if the condition is true.
-      computeConstraintUnionInto(
-          leftVisitor.positiveTypeConstraints,
-          rightVisitor.positiveTypeConstraints,
-          /* into= */ positiveTypeConstraints);
-      // If the condition is false, then the overall constraint is the intersection of
-      // the complements of the true constraints.
-      computeConstraintIntersectionInto(
-          leftVisitor.negativeTypeConstraints,
-          rightVisitor.negativeTypeConstraints,
-          /* into= */ negativeTypeConstraints);
-    }
-
-    @Override
-    protected void visitOrOpNode(OrOpNode node) {
-      Preconditions.checkArgument(node.numChildren() == 2);
-      // Create two separate visitors to analyze each side of the expression.
-      TypeNarrowingConditionVisitor leftVisitor = new TypeNarrowingConditionVisitor();
-      TypeNarrowingConditionVisitor rightVisitor = new TypeNarrowingConditionVisitor();
-      leftVisitor.visitAndImplicitlyCastToBoolean(node.getChild(0));
-      rightVisitor.visitAndImplicitlyCastToBoolean(node.getChild(1));
-
-      // If the condition is true, then only constraints that appear on both sides of the
-      // operator will be valid.
-      computeConstraintIntersectionInto(
-          leftVisitor.positiveTypeConstraints,
-          rightVisitor.positiveTypeConstraints,
-          /* into= */ positiveTypeConstraints);
-      // If the condition is false, then both sides must be false, so the overall constraint
-      // is the union of the complements of the constraints on each side.
-      computeConstraintUnionInto(
-          leftVisitor.negativeTypeConstraints,
-          rightVisitor.negativeTypeConstraints,
-          /* into= */ negativeTypeConstraints);
-    }
-
-    @Override
-    protected void visitNotOpNode(NotOpNode node) {
-      // For a logical not node, compute the positive and negative constraints of the
-      // operand and then simply swap them.
-      TypeNarrowingConditionVisitor childVisitor = new TypeNarrowingConditionVisitor();
-      childVisitor.visitAndImplicitlyCastToBoolean(node.getChild(0));
-      positiveTypeConstraints.putAll(childVisitor.negativeTypeConstraints);
-      negativeTypeConstraints.putAll(childVisitor.positiveTypeConstraints);
-    }
-
-    @Override
-    protected void visitEqualOpNode(EqualOpNode node) {
-      if (isNullishLiteral(node.getChild(1))) {
-        addNullishEqualOpConstraint(node.getChild(0), false);
-      } else if (isNullishLiteral(node.getChild(0))) {
-        addNullishEqualOpConstraint(node.getChild(1), false);
-      }
-    }
-
-    @Override
-    protected void visitNotEqualOpNode(NotEqualOpNode node) {
-      if (isNullishLiteral(node.getChild(1))) {
-        addNullishEqualOpConstraint(node.getChild(0), true);
-      } else if (isNullishLiteral(node.getChild(0))) {
-        addNullishEqualOpConstraint(node.getChild(1), true);
-      }
-    }
-
-    private void addNullishEqualOpConstraint(ExprNode node, boolean notEqual) {
-      ExprEquivalence.Wrapper wrappedExpr = exprEquivalence.wrap(node);
-      SoyType type = wrappedExpr.get().getType();
-      (notEqual ? positiveTypeConstraints : negativeTypeConstraints)
-          .put(wrappedExpr, tryRemoveNullish(type));
-      (notEqual ? negativeTypeConstraints : positiveTypeConstraints)
-          .put(
-              wrappedExpr,
-              SoyTypes.isNullish(type) ? tryKeepNullish(type) : SoyTypes.NULL_OR_UNDEFINED);
-    }
-
-    @Override
-    protected void visitTripleEqualOpNode(TripleEqualOpNode node) {
-      if (isNullishLiteral(node.getChild(1))) {
-        addNullishTripleEqualOpConstraint(node.getChild(0), false, node.getChild(1).getKind());
-      } else if (isNullishLiteral(node.getChild(0))) {
-        addNullishTripleEqualOpConstraint(node.getChild(1), false, node.getChild(0).getKind());
-      }
-    }
-
-    @Override
-    protected void visitTripleNotEqualOpNode(TripleNotEqualOpNode node) {
-      if (isNullishLiteral(node.getChild(1))) {
-        addNullishTripleEqualOpConstraint(node.getChild(0), true, node.getChild(1).getKind());
-      } else if (isNullishLiteral(node.getChild(0))) {
-        addNullishTripleEqualOpConstraint(node.getChild(1), true, node.getChild(0).getKind());
-      }
-    }
-
-    private void addNullishTripleEqualOpConstraint(
-        ExprNode node, boolean notEqual, ExprNode.Kind compareKind) {
-      ExprEquivalence.Wrapper wrappedExpr = exprEquivalence.wrap(node);
-      SoyType type = wrappedExpr.get().getType();
-      (notEqual ? positiveTypeConstraints : negativeTypeConstraints)
-          .put(
-              wrappedExpr,
-              compareKind == ExprNode.Kind.NULL_NODE
-                  ? tryRemoveNull(type)
-                  : tryRemoveUndefined(type));
-      (notEqual ? negativeTypeConstraints : positiveTypeConstraints)
-          .put(
-              wrappedExpr,
-              compareKind == ExprNode.Kind.NULL_NODE
-                  ? NullType.getInstance()
-                  : UndefinedType.getInstance());
-    }
-
-    @Override
-    protected void visitNullSafeAccessNode(NullSafeAccessNode node) {
-      for (ExprNode nullSafeBase : node.asNullSafeBaseList()) {
-        positiveTypeConstraints.put(
-            exprEquivalence.wrap(nullSafeBase), tryRemoveNullish(nullSafeBase.getType()));
-      }
-    }
-
-    @Override
-    protected void visitNullCoalescingOpNode(NullCoalescingOpNode node) {
-      // Don't make any inferences (don't visit children).
-      // Note: It would be possible to support this case by expanding it into
-      // if-statements.
-    }
-
-    @Override
-    protected void visitConditionalOpNode(ConditionalOpNode node) {
-      // Don't make any inferences (don't visit children).
-      // Note: It would be possible to support this case by expanding it into
-      // if-statements.
-    }
-
-    @Override
-    protected void visitFunctionNode(FunctionNode node) {}
-
-    @Override
-    protected void visitExprNode(ExprNode node) {
-      if (node instanceof ParentExprNode) {
-        visitChildren((ParentExprNode) node);
-      }
-    }
-
-    /**
-     * Compute a map which combines the constraints from both the left and right side of an
-     * expression. The result should be a set of constraints which satisfy <strong>both</strong>
-     * sides.
-     *
-     * @param left Constraints from the left side.
-     * @param right Constraints from the right side.
-     */
-    private <T> void computeConstraintUnionInto(
-        Map<T, SoyType> left, Map<T, SoyType> right, Map<T, SoyType> into) {
-      if (left.isEmpty()) {
-        return;
-      }
-      if (right.isEmpty()) {
-        return;
-      }
-      into.putAll(left);
-      for (Map.Entry<T, SoyType> entry : right.entrySet()) {
-        // The union of two constraints is a *stricter* constraint.
-        // Thus "((a instanceof any) AND (a instanceof bool)) == (a instanceof bool)"
-        // For now, it's sufficient that the map contains an entry for the variable
-        // (since we're only testing for nullability). Once we add support for more
-        // complex type tests, we'll need to add code here that combines the two
-        // constraints.
-        into.putIfAbsent(entry.getKey(), entry.getValue());
-      }
-    }
-
-    /**
-     * Compute a map which combines the constraints from both the left and right side of an
-     * expression. The result should be a set of constraints which satisfy <strong>either</strong>
-     * sides.
-     *
-     * @param left Constraints from the left side.
-     * @param right Constraints from the right side.
-     */
-    private <T> void computeConstraintIntersectionInto(
-        Map<T, SoyType> left, Map<T, SoyType> right, Map<T, SoyType> into) {
-      if (left.isEmpty()) {
-        return;
-      }
-      if (right.isEmpty()) {
-        return;
-      }
-      for (Map.Entry<T, SoyType> entry : left.entrySet()) {
-        // A variable must be present in both the left and right sides in order to be
-        // included in the output.
-        SoyType rightSideType = right.get(entry.getKey());
-        if (rightSideType != null) {
-          // The intersection of two constraints is a *looser* constraint.
-          // Thus "((a instanceof any) OR (a instanceof bool)) == (a instanceof any)"
-          into.put(
-              entry.getKey(),
-              SoyTypes.computeLowestCommonType(typeRegistry, entry.getValue(), rightSideType));
-        }
-      }
-    }
-  }
-
   /** Whether or not we allow unknown values to be accepted implicitly. */
   private enum UnknownPolicy {
     ALLOWED,
     DISALLOWED
-  }
-
-  /**
-   * Class that is used to temporarily substitute the type of a variable.
-   *
-   * <p>Type substitution preferences are implemented via a custom stack in order for new
-   * substitutions to override old ones. This means that lookups for type substitutions are linear
-   * in the number of active substitutions. This should be fine because the stack depth is unlikely
-   * to be >10. If we end up observing large stacks (100s of active substitutions), then we should
-   * rewrite to a hashed data structure to make it faster to do negative lookups.
-   */
-  private static final class TypeSubstitution {
-    /** Parent substitution. */
-    @Nullable final TypeSubstitution parent;
-
-    /** The expression whose type we are overriding. */
-    final ExprNode expression;
-
-    /** The new type of the variable. */
-    final SoyType type;
-
-    TypeSubstitution(@Nullable TypeSubstitution parent, ExprNode expression, SoyType type) {
-      this.parent = parent;
-      this.expression = expression;
-      this.type = type;
-    }
   }
 
   private static final class CompositeMethodRegistry implements SoyMethod.Registry {

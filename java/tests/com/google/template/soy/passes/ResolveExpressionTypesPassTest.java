@@ -58,9 +58,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-/**
- * Unit tests for {@link ResolveExpressionTypesPass}.
- */
+/** Unit tests for {@link ResolveExpressionTypesPass}. */
 @RunWith(JUnit4.class)
 public final class ResolveExpressionTypesPassTest {
   private static final SoyFunction ASSERT_TYPE_FUNCTION =
@@ -80,17 +78,11 @@ public final class ResolveExpressionTypesPassTest {
 
   @Test
   public void testOptionalParamTypes() {
-    SoyFileSetNode soyTree =
-        SoyFileSetParserBuilder.forFileContents(
-                constructFileSource(
-                    "{@param? pa: bool}",
-                    "{@param? pb: list<int>}",
-                    "{assertType('bool|null', $pa)}",
-                    "{assertType('list<int>|null', $pb)}"))
-            .addSoyFunction(ASSERT_TYPE_FUNCTION)
-            .parse()
-            .fileSet();
-    assertTypes(soyTree);
+    assertTypes(
+        "{@param? pa: bool}",
+        "{@param? pb: list<int>}",
+        "{assertType('bool|null', $pa)}",
+        "{assertType('list<int>|null', $pb)}");
   }
 
   @Test
@@ -185,57 +177,38 @@ public final class ResolveExpressionTypesPassTest {
 
   @Test
   public void testDataRefTypes() {
-    SoyFileSetNode soyTree =
-        SoyFileSetParserBuilder.forFileContents(
-                constructFileSource(
-                    "{@param pa: bool}",
-                    "{@param pb: list<int>}",
-                    "{@param pe: map<int, map<int, string>>}",
-                    "{assertType('bool', $pa)}",
-                    "{assertType('list<int>', $pb)}",
-                    "{assertType('int', $pb[0])}",
-                    "{assertType('map<int,map<int,string>>', $pe)}",
-                    "{assertType('map<int,string>', $pe.get(0)!)}",
-                    "{assertType('string', $pe.get(1 + 1)!.get(2)!)}"))
-            .addSoyFunction(ASSERT_TYPE_FUNCTION)
-            .parse()
-            .fileSet();
-    assertTypes(soyTree);
+    assertTypes(
+        "{@param pa: bool}",
+        "{@param pb: list<int>}",
+        "{@param pe: map<int, map<int, string>>}",
+        "{assertType('bool', $pa)}",
+        "{assertType('list<int>', $pb)}",
+        "{assertType('int', $pb[0])}",
+        "{assertType('map<int,map<int,string>>', $pe)}",
+        "{assertType('map<int,string>', $pe.get(0)!)}",
+        "{assertType('string', $pe.get(1 + 1)!.get(2)!)}");
   }
 
   @Test
   public void testRecordTypes() {
-    SoyFileSetNode soyTree =
-        SoyFileSetParserBuilder.forFileContents(
-                constructFileSource(
-                    "{@param pa: [a:int, b:string]}",
-                    "{assertType('int', $pa.a)}",
-                    "{assertType('string', $pa.b)}"))
-            .addSoyFunction(ASSERT_TYPE_FUNCTION)
-            .parse()
-            .fileSet();
-    assertTypes(soyTree);
+    assertTypes(
+        "{@param pa: [a:int, b:string]}",
+        "{assertType('int', $pa.a)}",
+        "{assertType('string', $pa.b)}");
   }
 
   @Test
   public void testDataRefTypesWithUnknown() {
     // Test that data with the 'unknown' type is allowed to function as a map or list.
-    SoyFileSetNode soyTree =
-        SoyFileSetParserBuilder.forFileContents(
-                constructFileSource(
-                    "{@param pa: ?}",
-                    "{@param pb: map<string, float>}",
-                    "{@param pc: map<int, string>}",
-                    "{assertType('?', $pa[0])}",
-                    "{assertType('?', $pa.xxx)}",
-                    "{assertType('?', $pa.xxx.yyy)}",
-                    "{assertType('float', $pb.get($pa)!)}",
-                    "{assertType('string', $pc.get($pa)!)}"))
-            .addSoyFunction(ASSERT_TYPE_FUNCTION)
-            .typeRegistry(TYPE_REGISTRY)
-            .parse()
-            .fileSet();
-    assertTypes(soyTree);
+    assertTypes(
+        "{@param pa: ?}",
+        "{@param pb: map<string, float>}",
+        "{@param pc: map<int, string>}",
+        "{assertType('?', $pa[0])}",
+        "{assertType('?', $pa.xxx)}",
+        "{assertType('?', $pa.xxx.yyy)}",
+        "{assertType('float', $pb.get($pa)!)}",
+        "{assertType('string', $pc.get($pa)!)}");
   }
 
   @Test
@@ -272,35 +245,28 @@ public final class ResolveExpressionTypesPassTest {
 
   @Test
   public void testArithmeticOps() {
-    SoyFileSetNode soyTree =
-        SoyFileSetParserBuilder.forFileContents(
-                constructFileSource(
-                    "{@param pa: ?}",
-                    "{@param pi: int}",
-                    "{@param pf: float}",
-                    "{assertType('?', $pa + $pa)}",
-                    "{assertType('int', $pi + $pi)}",
-                    "{assertType('float', $pf + $pf)}",
-                    "{assertType('?', $pa - $pa)}",
-                    "{assertType('int', $pi - $pi)}",
-                    "{assertType('float', $pf - $pf)}",
-                    "{assertType('?', $pa * $pa)}",
-                    "{assertType('int', $pi * $pi)}",
-                    "{assertType('float', $pf * $pf)}",
-                    "{assertType('float', $pa / $pa)}",
-                    "{assertType('float', $pi / $pi)}",
-                    "{assertType('float', $pf / $pf)}",
-                    "{assertType('?', $pa % $pa)}",
-                    "{assertType('int', $pi % $pi)}",
-                    "{assertType('float', $pf % $pf)}",
-                    "{assertType('?', -$pa)}",
-                    "{assertType('int', -$pi)}",
-                    "{assertType('float', -$pf)}"))
-            .addSoyFunction(ASSERT_TYPE_FUNCTION)
-            .typeRegistry(TYPE_REGISTRY)
-            .parse()
-            .fileSet();
-    assertTypes(soyTree);
+    assertTypes(
+        "{@param pa: ?}",
+        "{@param pi: int}",
+        "{@param pf: float}",
+        "{assertType('?', $pa + $pa)}",
+        "{assertType('int', $pi + $pi)}",
+        "{assertType('float', $pf + $pf)}",
+        "{assertType('?', $pa - $pa)}",
+        "{assertType('int', $pi - $pi)}",
+        "{assertType('float', $pf - $pf)}",
+        "{assertType('?', $pa * $pa)}",
+        "{assertType('int', $pi * $pi)}",
+        "{assertType('float', $pf * $pf)}",
+        "{assertType('float', $pa / $pa)}",
+        "{assertType('float', $pi / $pi)}",
+        "{assertType('float', $pf / $pf)}",
+        "{assertType('?', $pa % $pa)}",
+        "{assertType('int', $pi % $pi)}",
+        "{assertType('float', $pf % $pf)}",
+        "{assertType('?', -$pa)}",
+        "{assertType('int', -$pi)}",
+        "{assertType('float', -$pf)}");
   }
 
   @Test
@@ -312,99 +278,71 @@ public final class ResolveExpressionTypesPassTest {
 
   @Test
   public void testStringConcatenation() {
-    SoyFileSetNode soyTree =
-        SoyFileSetParserBuilder.forFileContents(
-                constructFileSource(
-                    "{@param ps: string}",
-                    "{@param pi: int}",
-                    "{@param pf: float}",
-                    "{assertType('string', $ps + $ps)}",
-                    "{assertType('string', $ps + $pi)}",
-                    "{assertType('string', $ps + $pf)}",
-                    "{assertType('string', $pi + $ps)}",
-                    "{assertType('string', $pf + $ps)}"))
-            .typeRegistry(TYPE_REGISTRY)
-            .addSoyFunction(ASSERT_TYPE_FUNCTION)
-            .parse()
-            .fileSet();
-    assertTypes(soyTree);
+    assertTypes(
+        "{@param ps: string}",
+        "{@param pi: int}",
+        "{@param pf: float}",
+        "{assertType('string', $ps + $ps)}",
+        "{assertType('string', $ps + $pi)}",
+        "{assertType('string', $ps + $pf)}",
+        "{assertType('string', $pi + $ps)}",
+        "{assertType('string', $pf + $ps)}");
   }
 
   @Test
   public void testLogicalOps() {
-    SoyFileSetNode soyTree =
-        SoyFileSetParserBuilder.forFileContents(
-                constructFileSource(
-                    "{@param pa: ?}",
-                    "{@param pi: int}",
-                    "{@param pf: float}",
-                    "{assertType('bool', $pa and $pa)}",
-                    "{assertType('bool', $pi and $pi)}",
-                    "{assertType('bool', $pf and $pf)}",
-                    "{assertType('bool', $pa or $pa)}",
-                    "{assertType('bool', $pi or $pi)}",
-                    "{assertType('bool', $pf or $pf)}",
-                    "{assertType('bool', not $pa)}",
-                    "{assertType('bool', not $pi)}",
-                    "{assertType('bool', not $pf)}"))
-            .typeRegistry(TYPE_REGISTRY)
-            .addSoyFunction(ASSERT_TYPE_FUNCTION)
-            .parse()
-            .fileSet();
-    assertTypes(soyTree);
+    assertTypes(
+        "{@param pa: ?}",
+        "{@param pi: int}",
+        "{@param pf: float}",
+        "{assertType('bool', $pa and $pa)}",
+        "{assertType('bool', $pi and $pi)}",
+        "{assertType('bool', $pf and $pf)}",
+        "{assertType('bool', $pa or $pa)}",
+        "{assertType('bool', $pi or $pi)}",
+        "{assertType('bool', $pf or $pf)}",
+        "{assertType('bool', not $pa)}",
+        "{assertType('bool', not $pi)}",
+        "{assertType('bool', not $pf)}");
   }
 
   @Test
   public void testComparisonOps() {
-    SoyFileSetNode soyTree =
-        SoyFileSetParserBuilder.forFileContents(
-                constructFileSource(
-                    "{@param pa: ?}",
-                    "{@param pi: int}",
-                    "{@param pf: float}",
-                    "{assertType('bool', $pa > $pa)}",
-                    "{assertType('bool', $pi > $pi)}",
-                    "{assertType('bool', $pf > $pf)}",
-                    "{assertType('bool', $pa >= $pa)}",
-                    "{assertType('bool', $pi >= $pi)}",
-                    "{assertType('bool', $pf >= $pf)}",
-                    "{assertType('bool', $pa < $pa)}",
-                    "{assertType('bool', $pi < $pi)}",
-                    "{assertType('bool', $pf < $pf)}",
-                    "{assertType('bool', $pa <= $pa)}",
-                    "{assertType('bool', $pi <= $pi)}",
-                    "{assertType('bool', $pf <= $pf)}",
-                    "{assertType('bool', $pa == $pa)}",
-                    "{assertType('bool', $pi == $pi)}",
-                    "{assertType('bool', $pf == $pf)}",
-                    "{assertType('bool', $pa != $pa)}",
-                    "{assertType('bool', $pi != $pi)}",
-                    "{assertType('bool', $pf != $pf)}"))
-            .typeRegistry(TYPE_REGISTRY)
-            .addSoyFunction(ASSERT_TYPE_FUNCTION)
-            .parse()
-            .fileSet();
-    assertTypes(soyTree);
+    assertTypes(
+        "{@param pa: ?}",
+        "{@param pi: int}",
+        "{@param pf: float}",
+        "{assertType('bool', $pa > $pa)}",
+        "{assertType('bool', $pi > $pi)}",
+        "{assertType('bool', $pf > $pf)}",
+        "{assertType('bool', $pa >= $pa)}",
+        "{assertType('bool', $pi >= $pi)}",
+        "{assertType('bool', $pf >= $pf)}",
+        "{assertType('bool', $pa < $pa)}",
+        "{assertType('bool', $pi < $pi)}",
+        "{assertType('bool', $pf < $pf)}",
+        "{assertType('bool', $pa <= $pa)}",
+        "{assertType('bool', $pi <= $pi)}",
+        "{assertType('bool', $pf <= $pf)}",
+        "{assertType('bool', $pa == $pa)}",
+        "{assertType('bool', $pi == $pi)}",
+        "{assertType('bool', $pf == $pf)}",
+        "{assertType('bool', $pa != $pa)}",
+        "{assertType('bool', $pi != $pi)}",
+        "{assertType('bool', $pf != $pf)}");
   }
 
   @Test
   public void testNullCoalescingAndConditionalOps() {
-    SoyFileSetNode soyTree =
-        SoyFileSetParserBuilder.forFileContents(
-                constructFileSource(
-                    "{@param pa: ?}",
-                    "{@param pi: int}",
-                    "{@param pf: float}",
-                    "{@param? ni: int}",
-                    "{assertType('?', $pa ?: $pi)}",
-                    "{assertType('float|int', $pi ?: $pf)}",
-                    "{assertType('float|int', $pa ? $pi : $pf)}",
-                    "{assertType('int', $ni ?: 0)}"))
-            .typeRegistry(TYPE_REGISTRY)
-            .addSoyFunction(ASSERT_TYPE_FUNCTION)
-            .parse()
-            .fileSet();
-    assertTypes(soyTree);
+    assertTypes(
+        "{@param pa: ?}",
+        "{@param pi: int}",
+        "{@param pf: float}",
+        "{@param? ni: int}",
+        "{assertType('?', $pa ?: $pi)}",
+        "{assertType('float|int', $pi ?: $pf)}",
+        "{assertType('float|int', $pa ? $pi : $pf)}",
+        "{assertType('int', $ni ?: 0)}");
   }
 
   @Test
@@ -421,85 +359,50 @@ public final class ResolveExpressionTypesPassTest {
 
   @Test
   public void testListLiteral() {
-    SoyFileSetNode soyTree =
-        SoyFileSetParserBuilder.forFileContents(
-                constructFileSource(
-                    "{@param pi: int}",
-                    "{@param pf: float}",
-                    "{let $list: [$pi, $pf]/}",
-                    "{assertType('list<float|int>', $list)}",
-                    "{assertType('int', length($list))}"))
-            .typeRegistry(TYPE_REGISTRY)
-            .addSoyFunction(ASSERT_TYPE_FUNCTION)
-            .parse()
-            .fileSet();
-    assertTypes(soyTree);
+    assertTypes(
+        "{@param pi: int}",
+        "{@param pf: float}",
+        "{let $list: [$pi, $pf]/}",
+        "{assertType('list<float|int>', $list)}",
+        "{assertType('int', length($list))}");
   }
 
   @Test
   public void testMapLiteral() {
-    SoyFileSetNode soyTree =
-        SoyFileSetParserBuilder.forFileContents(
-                constructFileSource(
-                    "{@param pi: int}",
-                    "{@param pf: float}",
-                    "{let $map: map(1: $pi, 2:$pf)/}",
-                    "{assertType('map<int,float|int>', $map)}"))
-            .typeRegistry(TYPE_REGISTRY)
-            .addSoyFunction(ASSERT_TYPE_FUNCTION)
-            .parse()
-            .fileSet();
-    assertTypes(soyTree);
+    assertTypes(
+        "{@param pi: int}",
+        "{@param pf: float}",
+        "{let $map: map(1: $pi, 2:$pf)/}",
+        "{assertType('map<int,float|int>', $map)}");
   }
 
   @Test
   public void testMapLiteralWithStringKeysAsMap() {
-    SoyFileSetNode soyTree =
-        SoyFileSetParserBuilder.forFileContents(
-                constructFileSource(
-                    "{@param v1: int}",
-                    "{@param v2: string}",
-                    "{@param k1: string}",
-                    "{let $map: map($k1: $v1, 'b': $v2) /}",
-                    "{assertType('map<string,int|string>', $map)}"))
-            .typeRegistry(TYPE_REGISTRY)
-            .addSoyFunction(ASSERT_TYPE_FUNCTION)
-            .parse()
-            .fileSet();
-    assertTypes(soyTree);
+    assertTypes(
+        "{@param v1: int}",
+        "{@param v2: string}",
+        "{@param k1: string}",
+        "{let $map: map($k1: $v1, 'b': $v2) /}",
+        "{assertType('map<string,int|string>', $map)}");
   }
 
   @Test
   public void testMapLiteralWithStringLiteralKeysDoesNotCreateRecord() {
-    SoyFileSetNode soyTree =
-        SoyFileSetParserBuilder.forFileContents(
-                constructFileSource(
-                    "{@param pi: int}",
-                    "{@param pf: float}",
-                    // With the old map syntax, this would create a record type (see next test)
-                    "{let $map: map('a': $pi, 'b':$pf)/}",
-                    "{assertType('map<string,float|int>', $map)}"))
-            .typeRegistry(TYPE_REGISTRY)
-            .addSoyFunction(ASSERT_TYPE_FUNCTION)
-            .parse()
-            .fileSet();
-    assertTypes(soyTree);
+    assertTypes(
+        "{@param pi: int}",
+        "{@param pf: float}",
+        // With the old map syntax, this would create a record type (see next test)
+        "{let $map: map('a': $pi, 'b':$pf)/}",
+        "{assertType('map<string,float|int>', $map)}");
   }
 
   @Test
   public void testRecordLiteralAsRecord() {
-    SoyFileSetNode soyTree =
-        SoyFileSetParserBuilder.forFileContents(
-                constructFileSource(
-                    "{@param pi: int}",
-                    "{@param pf: float}",
-                    "{let $record: record(a: $pi, b: $pf)/}",
-                    "{assertType('[a: int, b: float]', $record)}"))
-            .typeRegistry(TYPE_REGISTRY)
-            .addSoyFunction(ASSERT_TYPE_FUNCTION)
-            .parse()
-            .fileSet();
-    assertTypes(soyTree);
+    assertTypes(
+        "{@param pi: int}",
+        "{@param pf: float}",
+        "{let $record: record(a: $pi, b: $pf)/}",
+        "{assertType('[a: int, b: float]', $record)}");
   }
 
   @Test
@@ -517,241 +420,218 @@ public final class ResolveExpressionTypesPassTest {
 
   @Test
   public void testDataFlowTypeNarrowing() {
-    SoyFileSetNode soyTree =
-        SoyFileSetParserBuilder.forFileContents(
-                constructFileSource(
-                    "{@param pa: bool|null}",
-                    "{@param pb: bool}",
-                    "{if $pa != null}",
-                    "  {assertType('bool', $pa)}", // #0 must be non-null
-                    "{/if}",
-                    "{if $pa == null}",
-                    "  {assertType('null', $pa)}", // #1 must be null
-                    "{else}",
-                    "  {assertType('bool', $pa)}", // #2 must be non-null
-                    "{/if}",
-                    "{if $pa == null or $pb}",
-                    "  {assertType('bool|null', $pa)}", // #3 don't know
-                    "{else}",
-                    "  {assertType('bool', $pa)}", // #4 must be non-null
-                    "{/if}",
-                    "{if $pa == null and $pb}",
-                    "  {assertType('null', $pa)}", // #5 must be null
-                    "{else}",
-                    "  {assertType('bool|null', $pa)}", // #6 don't know
-                    "{/if}",
-                    "{if null != $pa}", // Reverse order
-                    "  {assertType('bool', $pa)}", // #7 must be non-null
-                    "{/if}",
-                    "{if not ($pa == null)}", // Not operator
-                    "  {assertType('bool', $pa)}", // #8 must be non-null
-                    "{/if}",
-                    "{if $pa}", // Implicit != null
-                    "  {assertType('bool', $pa)}", // #9 must be non-null
-                    "{/if}",
-                    "{if $pa and $pb}", // Implicit != null
-                    "  {assertType('bool', $pa)}", // #10 must be non-null
-                    "{/if}",
-                    "{if $pa}", // Chained conditions
-                    "{elseif $pb}",
-                    "  {assertType('bool|null', $pa)}", // #11 must be falsy
-                    "{else}",
-                    "  {assertType('bool|null', $pa)}", // #12 must be falsy
-                    "{/if}",
-                    "{if $pa}", // Nested if
-                    "  {if $pa}",
-                    "    {assertType('bool', $pa)}", // #13 must be non-null
-                    "  {/if}",
-                    "{/if}",
-                    "{if $pa != null}", // != null
-                    "  {assertType('bool', $pa)}", // #14 must be non-null
-                    "{else}",
-                    "  {assertType('null', $pa)}", // #15 must be null
-                    "{/if}",
-                    "{if $pa == null}", // == null
-                    "  {assertType('null', $pa)}", // #16 must be null
-                    "{else}",
-                    "  {assertType('bool', $pa)}", // #17 must be non-null
-                    "{/if}",
-                    "{if $pb or $pa == null}",
-                    "  {assertType('bool|null', $pa)}", // #18 don't know
-                    "{else}",
-                    "  {assertType('bool', $pa)}", // #19 must be non-null
-                    "{/if}",
-                    "{let $null: null /}",
-                    "{if $null == null or $null != null}",
-                    "  {assertType('null', $null)}", // #20  null type
-                    "{/if}",
-                    "{if $null}",
-                    "  {assertType('null', $null)}", // #21 null type (but this branch is dead)
-                    "{/if}",
-                    ""))
-            .addSoyFunction(ASSERT_TYPE_FUNCTION)
-            .parse()
-            .fileSet();
-    assertTypes(soyTree);
+    assertTypes(
+        "{@param pa: bool|null}",
+        "{@param pb: bool}",
+        "{if $pa != null}",
+        "  {assertType('bool', $pa)}", // #0 must be non-null
+        "{/if}",
+        "{if $pa == null}",
+        "  {assertType('null', $pa)}", // #1 must be null
+        "{else}",
+        "  {assertType('bool', $pa)}", // #2 must be non-null
+        "{/if}");
+    assertTypes(
+        "{@param pa: bool|null}",
+        "{@param pb: bool}",
+        "{if $pa == null or $pb}",
+        "  {assertType('bool|null', $pa)}", // #3 don't know
+        "{else}",
+        "  {assertType('bool', $pa)}", // #4 must be non-null
+        "{/if}",
+        "{if $pa == null and $pb}",
+        "  {assertType('null', $pa)}", // #5 must be null
+        "{else}",
+        "  {assertType('bool|null', $pa)}", // #6 don't know
+        "{/if}");
+    assertTypes(
+        "{@param pa: bool|null}",
+        "{@param pb: bool}",
+        "{if null != $pa}", // Reverse order
+        "  {assertType('bool', $pa)}", // #7 must be non-null
+        "{/if}",
+        "{if not ($pa == null)}", // Not operator
+        "  {assertType('bool', $pa)}", // #8 must be non-null
+        "{/if}",
+        "{if $pa}", // Implicit != null
+        "  {assertType('bool', $pa)}", // #9 must be non-null
+        "{/if}",
+        "{if $pa and $pb}", // Implicit != null
+        "  {assertType('bool', $pa)}", // #10 must be non-null
+        "{/if}");
+    assertTypes(
+        "{@param pa: bool|null}",
+        "{@param pb: bool}",
+        "{if $pa}", // Chained conditions
+        "{elseif $pb}",
+        "  {assertType('bool|null', $pa)}", // #11 must be falsy
+        "{else}",
+        "  {assertType('bool|null', $pa)}", // #12 must be falsy
+        "{/if}");
+    assertTypes(
+        "{@param pa: bool|null}",
+        "{@param pb: bool}",
+        "{if $pa}", // Nested if
+        "  {if $pa}",
+        "    {assertType('bool', $pa)}", // #13 must be non-null
+        "  {/if}",
+        "{/if}");
+    assertTypes(
+        "{@param pa: bool|null}",
+        "{@param pb: bool}",
+        "{if $pa != null}", // != null
+        "  {assertType('bool', $pa)}", // #14 must be non-null
+        "{else}",
+        "  {assertType('null', $pa)}", // #15 must be null
+        "{/if}");
+    assertTypes(
+        "{@param pa: bool|null}",
+        "{@param pb: bool}",
+        "{if $pa == null}", // == null
+        "  {assertType('null', $pa)}", // #16 must be null
+        "{else}",
+        "  {assertType('bool', $pa)}", // #17 must be non-null
+        "{/if}");
+    assertTypes(
+        "{@param pa: bool|null}",
+        "{@param pb: bool}",
+        "{if $pb or $pa == null}",
+        "  {assertType('bool|null', $pa)}", // #18 don't know
+        "{else}",
+        "  {assertType('bool', $pa)}", // #19 must be non-null
+        "{/if}");
+    assertTypes(
+        "{@param pa: bool|null}",
+        "{@param pb: bool}",
+        "{let $null: null /}",
+        "{if $null == null or $null != null}",
+        "  {assertType('null', $null)}", // #20  null type
+        "{/if}",
+        "{if $null}",
+        "  {assertType('null', $null)}", // #21 null type (but this branch is dead)
+        "{/if}",
+        "");
   }
 
   @Test
   public void testDataFlowTypeNarrowing_complexExpressions() {
-    SoyFileSetNode soyTree =
-        SoyFileSetParserBuilder.forFileContents(
-                constructFileSource(
-                    "{@param map: map<string, int|null>}",
-                    "{@param record: "
-                        + "[a : [nullableInt : int|null, nullableBool : bool|null]|null]}",
-                    "{if $map.get('a')}",
-                    "  {assertType('int', $map.get('a'))}",
-                    "{/if}",
-                    "{if $record.a?.nullableInt}",
-                    "  {assertType('int', $record.a?.nullableInt)}",
-                    "{/if}",
-                    ""))
-            .addSoyFunction(ASSERT_TYPE_FUNCTION)
-            .parse()
-            .fileSet();
-    assertTypes(soyTree);
+    assertTypes(
+        "{@param map: map<string, int|null>}",
+        "{@param record: " + "[a : [nullableInt : int|null, nullableBool : bool|null]|null]}",
+        "{if $map.get('a')}",
+        "  {assertType('int', $map.get('a'))}",
+        "{/if}",
+        "{if $record.a?.nullableInt}",
+        "  {assertType('int', $record.a?.nullableInt)}",
+        "{/if}",
+        "");
   }
 
   @Test
   public void testDataFlowTypeNarrowing_deadExpression() {
-    SoyFileSetNode soyTree =
-        SoyFileSetParserBuilder.forFileContents(
-                constructFileSource(
-                    "{@param record: ?}",
-                    "{if $record.unknownField}",
-                    "  {assertType('?', $record.unknownField)}",
-                    "{else}",
-                    "  {if $record.unknownField}",
-                    // This code is dead, but we can't prove it
-                    "    {assertType('?', $record.unknownField)}",
-                    "  {/if}",
-                    "{/if}",
-                    ""))
-            .addSoyFunction(ASSERT_TYPE_FUNCTION)
-            .parse()
-            .fileSet();
-    assertTypes(soyTree);
+    assertTypes(
+        "{@param record: ?}",
+        "{if $record.unknownField}",
+        "  {assertType('?', $record.unknownField)}",
+        "{else}",
+        "  {if $record.unknownField}",
+        // This code is dead, but we can't prove it
+        "    {assertType('?', $record.unknownField)}",
+        "  {/if}",
+        "{/if}",
+        "");
   }
 
   @Test
   public void testDataFlowTypeNarrowing_logicalExpressions() {
-    SoyFileSetNode soyTree =
-        SoyFileSetParserBuilder.forFileContents(
-                constructFileSource(
-                    "{@param? record: [active : bool|null]}",
-                    "{@param? selected: map<string,bool>}",
-                    "{assertType('bool', $selected and $selected.get('a'))}",
-                    "{assertType('bool', $selected == null or $selected.get('a'))}",
-                    "{if ($record.active != null) and (not $record.active)}",
-                    "  {assertType('bool', $record.active)}",
-                    "{/if}",
-                    ""))
-            .addSoyFunction(ASSERT_TYPE_FUNCTION)
-            .parse()
-            .fileSet();
-    assertTypes(soyTree);
+    assertTypes(
+        "{@param? record: [active : bool|null]}",
+        "{@param? selected: map<string,bool>}",
+        "{assertType('bool', $selected and $selected.get('a'))}",
+        "{assertType('bool', $selected == null or $selected.get('a'))}",
+        "{if ($record.active != null) and (not $record.active)}",
+        "  {assertType('bool', $record.active)}",
+        "{/if}",
+        "");
   }
 
   @Test
   public void testDataFlowTypeNarrowingFailure() {
     // Test for places where type narrowing shouldn't work
-    SoyFileSetNode soyTree =
-        SoyFileSetParserBuilder.forFileContents(
-                constructFileSource(
-                    "{@param pa: bool|null}",
-                    "{@param pb: bool}",
-                    "{if ($pa != null) != ($pb != null)}",
-                    "  {assertType('bool|null', $pa)}", // #0 don't know
-                    "{else}",
-                    "  {assertType('bool|null', $pa)}", // #1 don't know
-                    "{/if}",
-                    "{if $pa ?: $pb}",
-                    "  {assertType('bool|null', $pa)}", // #2 don't know
-                    "{/if}",
-                    "{if $pb ? $pa : false}",
-                    "  {assertType('bool|null', $pa)}", // #3 don't know
-                    "{/if}"))
-            .addSoyFunction(ASSERT_TYPE_FUNCTION)
-            .parse()
-            .fileSet();
-    assertTypes(soyTree);
+    assertTypes(
+        "{@param pa: bool|null}",
+        "{@param pb: bool}",
+        "{if ($pa != null) != ($pb != null)}",
+        "  {assertType('bool|null', $pa)}", // #0 don't know
+        "{else}",
+        "  {assertType('bool|null', $pa)}", // #1 don't know
+        "{/if}",
+        "{if $pa ?: $pb}",
+        "  {assertType('bool|null', $pa)}", // #2 don't know
+        "{/if}",
+        "{if $pb ? $pa : false}",
+        "  {assertType('bool|null', $pa)}", // #3 don't know
+        "{/if}");
   }
 
   @Test
   public void testDataFlowTypeNarrowing_switch() {
-    SoyFileSetNode soyTree =
-        SoyFileSetParserBuilder.forFileContents(
-                constructFileSource(
-                    "{@param? p: string|bool|int}",
-                    "{switch $p}",
-                    "  {case 'str'}",
-                    "    {assertType('string', $p)}",
-                    "  {case true}",
-                    "    {assertType('bool', $p)}",
-                    "  {case 'str', 'str2'}",
-                    "    {assertType('string', $p)}",
-                    "  {case 'str', 8675309}",
-                    "    {assertType('int|string', $p)}",
-                    "  {default}",
-                    "    {assertType('bool|int|null|string', $p)}",
-                    "{/switch}",
-                    "",
-                    "{switch $p}",
-                    "  {case null}",
-                    "    {assertType('null', $p)}",
-                    "  {default}",
-                    "    {assertType('bool|int|string', $p)}",
-                    "{/switch}",
-                    "",
-                    "{switch $p}",
-                    "  {case 'str', null}",
-                    "    {assertType('null|string', $p)}",
-                    "  {default}",
-                    "    {assertType('bool|int|string', $p)}",
-                    "{/switch}"))
-            .addSoyFunction(ASSERT_TYPE_FUNCTION)
-            .parse()
-            .fileSet();
-    assertTypes(soyTree);
+    assertTypes(
+        "{@param? p: string|bool|int}",
+        "{switch $p}",
+        "  {case 'str'}",
+        "    {assertType('string', $p)}",
+        "  {case true}",
+        "    {assertType('bool', $p)}",
+        "  {case 'str', 'str2'}",
+        "    {assertType('string', $p)}",
+        "  {case 'str', 8675309}",
+        "    {assertType('int|string', $p)}",
+        "  {default}",
+        "    {assertType('bool|int|null|string', $p)}",
+        "{/switch}");
+    assertTypes(
+        "{@param? p: string|bool|int}",
+        "{switch $p}",
+        "  {case null}",
+        "    {assertType('null', $p)}",
+        "  {default}",
+        "    {assertType('bool|int|string', $p)}",
+        "{/switch}");
+    assertTypes(
+        "{@param? p: string|bool|int}",
+        "{switch $p}",
+        "  {case 'str', null}",
+        "    {assertType('null|string', $p)}",
+        "  {default}",
+        "    {assertType('bool|int|string', $p)}",
+        "{/switch}");
   }
 
   @Test
   public void testConditionalOperatorDataFlowTypeNarrowing() {
-    SoyFileSetNode soyTree =
-        SoyFileSetParserBuilder.forFileContents(
-                constructFileSource(
-                    "{@param pa: bool|null}",
-                    "{@param pb: bool}",
-                    "{@param pc: [a : int|null]}",
-                    "{assertType('bool', $pa ? $pa : $pb)}", // #0 must be non-null
-                    "{assertType('bool', $pa != null ?: $pb)}", // #1 must be non-null
-                    "{assertType('bool', $pa ?: $pb)}",
-                    "{assertType('int', $pc.a ? $pc.a : 0)}",
-                    "{if not $pc.a}{assertType('int|null', $pc.a)}{/if}"))
-            .addSoyFunction(ASSERT_TYPE_FUNCTION)
-            .parse()
-            .fileSet(); // #2 must be non-null (re-written to ($pa != null ? $pa : $pb))
-    assertTypes(soyTree);
+    assertTypes(
+        "{@param pa: bool|null}",
+        "{@param pb: bool}",
+        "{@param pc: [a : int|null]}",
+        "{assertType('bool', $pa ? $pa : $pb)}", // #0 must be non-null
+        "{assertType('bool', $pa != null ?: $pb)}", // #1 must be non-null
+        "{assertType('bool', $pa ?: $pb)}", // #2 must be non-null (re-written to ($pa != null ? $pa
+        // : $pb))
+        "{assertType('int', $pc.a ? $pc.a : 0)}",
+        "{if not $pc.a}{assertType('int|null', $pc.a)}{/if}");
   }
 
   @Test
   public void testBuiltinFunctionTyping() {
-    SoyFileSetNode soyTree =
-        SoyFileSetParserBuilder.forFileContents(
-                constructFileSource(
-                    "{@inject list: list<int|null>}",
-                    "{for $item in $list}",
-                    "   {assertType('int|null', $item)}",
-                    "   {assertType('int', checkNotNull($item))}",
-                    "   {assertType('string', css('foo'))}",
-                    "   {assertType('string', xid('bar'))}",
-                    "{/for}"))
-            .addSoyFunction(ASSERT_TYPE_FUNCTION)
-            .errorReporter(ErrorReporter.explodeOnErrorsAndIgnoreDeprecations())
-            .parse()
-            .fileSet();
-    assertTypes(soyTree);
+    assertTypes(
+        "{@inject list: list<int|null>}",
+        "{for $item in $list}",
+        "   {assertType('int|null', $item)}",
+        "   {assertType('int', checkNotNull($item))}",
+        "   {assertType('string', css('foo'))}",
+        "   {assertType('string', xid('bar'))}",
+        "{/for}");
   }
 
   @Test
@@ -794,84 +674,54 @@ public final class ResolveExpressionTypesPassTest {
 
   @Test
   public void testInjectedParamTypes() {
-    SoyFileSetNode soyTree =
-        SoyFileSetParserBuilder.forFileContents(
-                constructFileSource(
-                    "{@inject pa: bool}",
-                    "{@inject? pb: list<int>}",
-                    "{assertType('bool', $pa)}",
-                    "{assertType('list<int>|null', $pb)}"))
-            .addSoyFunction(ASSERT_TYPE_FUNCTION)
-            .parse()
-            .fileSet();
-    assertTypes(soyTree);
+    assertTypes(
+        "{@inject pa: bool}",
+        "{@inject? pb: list<int>}",
+        "{assertType('bool', $pa)}",
+        "{assertType('list<int>|null', $pb)}");
   }
 
   @Test
   public void testConcatLists() {
-    SoyFileSetNode soyTree =
-        SoyFileSetParserBuilder.forFileContents(
-                constructFileSource(
-                    "{assertType('list<string>', ['1'].concat(['2']))}",
-                    "{assertType('list<int>', [1].concat([2]))}",
-                    "{assertType('list<int>', [1].concat([]))}",
-                    "{assertType('list<int>', [].concat([1]))}",
-                    "{assertType('list<int>', (true ? [] : [1]).concat([2]))}",
-                    "{assertType('list<null>', [].concat([]))}",
-                    "{assertType('list<int|string>', [1].concat([\"2\"]))}"))
-            .addSoyFunction(ASSERT_TYPE_FUNCTION)
-            .parse()
-            .fileSet();
-    assertTypes(soyTree);
+    assertTypes(
+        "{assertType('list<string>', ['1'].concat(['2']))}",
+        "{assertType('list<int>', [1].concat([2]))}",
+        "{assertType('list<int>', [1].concat([]))}",
+        "{assertType('list<int>', [].concat([1]))}",
+        "{assertType('list<int>', (true ? [] : [1]).concat([2]))}",
+        "{assertType('list<null>', [].concat([]))}",
+        "{assertType('list<int|string>', [1].concat([\"2\"]))}");
   }
 
   @Test
   public void testConcatMaps() {
-    SoyFileSetNode soyTree =
-        SoyFileSetParserBuilder.forFileContents(
-                constructFileSource(
-                    "{assertType('map<string,string>', map('1' : '2').concat(map('3':'4')))}",
-                    "{assertType('map<int,int>', map(1: 2).concat(map(3: 4)))}",
-                    "{assertType('map<int,int>', map(1: 2).concat(map()))}",
-                    "{assertType('map<int,int>', map().concat(map(3: 4)))}",
-                    "{assertType('map<int,int>', map().concat(true ? map() : map(3: 4)))}",
-                    "{assertType('map<int,int>', (true ? map() : map(1:2)).concat(map()))}",
-                    "{assertType('map<?,?>', map().concat(map()))}",
-                    "{assertType('map<int,int|string>', map(1: '2').concat(map(3: 4)))}"))
-            .addSoyFunction(ASSERT_TYPE_FUNCTION)
-            .parse()
-            .fileSet();
-    assertTypes(soyTree);
+    assertTypes(
+        "{assertType('map<string,string>', map('1' : '2').concat(map('3':'4')))}",
+        "{assertType('map<int,int>', map(1: 2).concat(map(3: 4)))}",
+        "{assertType('map<int,int>', map(1: 2).concat(map()))}",
+        "{assertType('map<int,int>', map().concat(map(3: 4)))}",
+        "{assertType('map<int,int>', map().concat(true ? map() : map(3: 4)))}",
+        "{assertType('map<int,int>', (true ? map() : map(1:2)).concat(map()))}",
+        "{assertType('map<?,?>', map().concat(map()))}",
+        "{assertType('map<int,int|string>', map(1: '2').concat(map(3: 4)))}");
   }
 
   @Test
   public void testMapKeys() {
-    SoyFileSetNode soyTree =
-        SoyFileSetParserBuilder.forFileContents(
-                constructFileSource(
-                    "{@param m: map<string, int>}",
-                    "{assertType('list<string>', $m.keys())}",
-                    "{assertType('list<null>', map().keys())}",
-                    ""))
-            .addSoyFunction(ASSERT_TYPE_FUNCTION)
-            .parse()
-            .fileSet();
-    assertTypes(soyTree);
+    assertTypes(
+        "{@param m: map<string, int>}",
+        "{assertType('list<string>', $m.keys())}",
+        "{assertType('list<null>', map().keys())}",
+        "");
   }
 
   @Test
   public void testMapToLegacyObjectMap() {
-    SoyFileSetNode soyTree =
-        SoyFileSetParserBuilder.forFileContents(
-                constructFileSource(
-                    "{@param m: map<string, int>}",
-                    "{assertType('legacy_object_map<string,int>', mapToLegacyObjectMap($m))}",
-                    "{assertType('legacy_object_map<null,null>', mapToLegacyObjectMap(map()))}",
-                    ""))
-            .addSoyFunction(ASSERT_TYPE_FUNCTION)
-            .parse()
-            .fileSet();
-    assertTypes(soyTree);
+    assertTypes(
+        "{@param m: map<string, int>}",
+        "{assertType('legacy_object_map<string,int>', mapToLegacyObjectMap($m))}",
+        "{assertType('legacy_object_map<null,null>', mapToLegacyObjectMap(map()))}",
+        "");
   }
 
   @Test
@@ -931,28 +781,22 @@ public final class ResolveExpressionTypesPassTest {
 
   @Test
   public void testNonNullAssertion() {
-    SoyFileSetNode soyTree =
-        SoyFileSetParserBuilder.forFileContents(
-                constructFileSource(
-                    "{@param i: int|null}",
-                    "{@param n: int|null}",
-                    "{@param b: bool}",
-                    "{@param r: [a: null|[b: null|[c: null|string]]]}",
-                    "{assertType('int', $i!)}",
-                    "{assertType('int|null', $i != null ? $i! : null)}",
-                    "{assertType('string', $r.a.b.c!)}",
-                    "{assertType('[c: null|string]', $r.a.b!)}",
-                    "{assertType('int', $i ?: $n!)}",
-                    "{assertType('int', ($b ? $i : $n)!)}",
-                    "{assertType('int|null', $b ? $i : $n!)}",
-                    "{assertType('[c: null|string]|null', $r!.a?.b)}",
-                    "{assertType('[c: null|string]|null', $r?.a!.b)}",
-                    "{assertType('string', $r?.a.b.c!)}",
-                    "{assertType('null|string', $r!.a!.b!.c)}"))
-            .addSoyFunction(ASSERT_TYPE_FUNCTION)
-            .parse()
-            .fileSet();
-    assertTypes(soyTree);
+    assertTypes(
+        "{@param i: int|null}",
+        "{@param n: int|null}",
+        "{@param b: bool}",
+        "{@param r: [a: null|[b: null|[c: null|string]]]}",
+        "{assertType('int', $i!)}",
+        "{assertType('int|null', $i != null ? $i! : null)}",
+        "{assertType('string', $r.a.b.c!)}",
+        "{assertType('[c: null|string]', $r.a.b!)}",
+        "{assertType('int', $i ?: $n!)}",
+        "{assertType('int', ($b ? $i : $n)!)}",
+        "{assertType('int|null', $b ? $i : $n!)}",
+        "{assertType('[c: null|string]|null', $r!.a?.b)}",
+        "{assertType('[c: null|string]|null', $r?.a!.b)}",
+        "{assertType('string', $r?.a.b.c!)}",
+        "{assertType('null|string', $r!.a!.b!.c)}");
   }
 
   @Test
@@ -1044,6 +888,15 @@ public final class ResolveExpressionTypesPassTest {
         .parse();
     assertThat(errorReporter.getErrors()).hasSize(1);
     assertThat(errorReporter.getErrors().get(0).message()).isEqualTo(expectedError);
+  }
+
+  private void assertTypes(String... lines) {
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forFileContents(constructFileSource(lines))
+            .addSoyFunction(ASSERT_TYPE_FUNCTION)
+            .parse()
+            .fileSet();
+    assertTypes(soyTree);
   }
 
   /** Traverses the tree and checks all the calls to {@code assertType} */
