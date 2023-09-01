@@ -21,7 +21,7 @@ import {isAttribute} from 'google3/javascript/template/soy/checks';
 import * as soy from 'google3/javascript/template/soy/soyutils_usegoog';
 import {Logger} from 'google3/javascript/template/soy/soyutils_velog';
 import {cacheReturnValue} from 'google3/third_party/javascript/closure/functions/functions';
-import {SafeHtml} from 'google3/third_party/javascript/closure/html/safehtml';
+
 import {
   SanitizedContent,
   SanitizedContentKind,
@@ -41,7 +41,6 @@ import {
 } from './api_idom';
 import {splitAttributes} from './attributes';
 import {IdomFunction, PatchFunction, SoyElement} from './element_lib_idom';
-import {USE_TEMPLATE_CLONING} from './global';
 import {
   IdomSyncState,
   IdomTemplate,
@@ -270,22 +269,6 @@ function attributesToString(fn: PatchFunction): string {
   return s.sort().join(' ');
 }
 
-/**
- * Calls an expression in case of a function or outputs it as text content.
- */
-function renderDynamicContent(
-  incrementaldom: IncrementalDomRenderer,
-  expr: IdomFunction,
-) {
-  // TODO(lukes): check content kind == html
-  if (expr && expr.isInvokableFn) {
-    // The Soy compiler will validate the content kind of the parameter.
-    expr.invoke(incrementaldom);
-  } else {
-    incrementaldom.text(String(expr));
-  }
-}
-
 /** Determines whether the template is idom */
 function isIdom<TParams>(
   template: Template<TParams>,
@@ -460,74 +443,6 @@ function getOriginalSanitizedContent(el: Element) {
   return el.__originalContent;
 }
 
-/**
- * Prints an expression depending on its type.
- */
-function print(
-  incrementaldom: IncrementalDomRenderer,
-  expr: unknown,
-  isSanitizedContent?: boolean | undefined,
-) {
-  if (USE_TEMPLATE_CLONING) {
-    incrementaldom.openChildNodePart();
-  }
-  if (
-    expr instanceof SanitizedHtml ||
-    isSanitizedContent ||
-    expr instanceof SafeHtml
-  ) {
-    const content =
-      expr instanceof SafeHtml ? SafeHtml.unwrap(expr) : String(expr);
-    if (!/&|</.test(content)) {
-      incrementaldom.text(content);
-      return;
-    }
-    // For HTML content we need to insert a custom element where we can
-    // place the content without incremental dom modifying it.
-    const el = document.createElement('html-blob');
-    googSoy.renderHtml(el, ordainSanitizedHtml(content));
-    const childNodes = Array.from(el.childNodes);
-    for (const child of childNodes) {
-      const currentPointer = incrementaldom.currentPointer();
-      const currentElement = incrementaldom.currentElement();
-      child.__originalContent = expr;
-      if (currentElement) {
-        if (!currentPointer) {
-          currentElement.appendChild(child);
-        } else if (currentPointer.__originalContent !== expr) {
-          currentElement.insertBefore(child, currentPointer);
-        }
-      }
-      incrementaldom.skipNode();
-    }
-  } else if (expr !== undefined) {
-    renderDynamicContent(incrementaldom, expr as IdomFunction);
-  }
-  if (USE_TEMPLATE_CLONING) {
-    incrementaldom.closeChildNodePart();
-  }
-}
-
-function visitHtmlCommentNode(
-  incrementaldom: IncrementalDomRenderer,
-  val: string,
-) {
-  const currNode = incrementaldom.currentElement();
-  if (!currNode) {
-    return;
-  }
-  if (
-    currNode.nextSibling != null &&
-    currNode.nextSibling.nodeType === Node.COMMENT_NODE
-  ) {
-    currNode.nextSibling.textContent = val;
-    // This is the case where we are creating new DOM from an empty element.
-  } else {
-    currNode.appendChild(document.createComment(val));
-  }
-  incrementaldom.skipNode();
-}
-
 function isTruthy(expr: unknown): boolean {
   if (!expr) return false;
 
@@ -593,46 +508,6 @@ function compileToTemplate(content: SanitizedContent): HTMLTemplateElement {
   return el;
 }
 
-function appendCloneToCurrent(
-  content: HTMLTemplateElement,
-  renderer: IncrementalDomRenderer,
-) {
-  const currentElement = renderer.currentElement();
-  if (!currentElement) {
-    return;
-  }
-  let currentPointer = renderer.currentPointer();
-  // We are at the inside of a node part created by a message. We should insert
-  // before the end of the node part.
-  if (
-    currentPointer === null &&
-    currentElement.nodeType === Node.COMMENT_NODE &&
-    (currentElement as unknown as Comment).data === '?/child-node-part?'
-  ) {
-    currentPointer = currentElement;
-  }
-  const clone = content.cloneNode(true) as HTMLTemplateElement;
-  if (currentPointer?.nodeType === Node.COMMENT_NODE) {
-    if (clone.content) {
-      currentPointer.parentNode?.insertBefore(clone.content, currentPointer);
-    } else {
-      const childNodes = Array.from(clone.childNodes);
-      for (const child of childNodes) {
-        currentPointer.parentNode?.insertBefore(child, currentPointer);
-      }
-    }
-  } else {
-    if (clone.content) {
-      currentElement.appendChild(clone.content);
-    } else {
-      const childNodes = Array.from(clone.childNodes);
-      for (const child of childNodes) {
-        currentElement.appendChild(child);
-      }
-    }
-  }
-}
-
 /**
  * Returns an idom- and classic- Soy compatible attribute with a unique value.
  *
@@ -692,7 +567,6 @@ function stableUniqueAttributeIdHolder(): IdHolder {
 
 export {USE_TEMPLATE_CLONING} from './global';
 export {
-  appendCloneToCurrent as $$appendCloneToCurrent,
   callDynamicAttributes as $$callDynamicAttributes,
   callDynamicCss as $$callDynamicCss,
   callDynamicHTML as $$callDynamicHTML,
@@ -705,12 +579,10 @@ export {
   isTruthy as $$isTruthy,
   makeAttributes as $$makeAttributes,
   makeHtml as $$makeHtml,
-  print as $$print,
   printDynamicAttr as $$printDynamicAttr,
   stableUniqueAttribute as $$stableUniqueAttribute,
   stableUniqueAttributeIdHolder as $$stableUniqueAttributeIdHolder,
   upgrade as $$upgrade,
-  visitHtmlCommentNode as $$visitHtmlCommentNode,
   SoyElement as $SoyElement,
   SoyTemplate as $SoyTemplate,
   getOriginalSanitizedContent,
