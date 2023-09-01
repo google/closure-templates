@@ -787,13 +787,13 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
       ExprNode switchExpr = node.getExpr().getRoot();
       SoyType switchExprType = switchExpr.getType();
       boolean exprTypeError = false;
-      if (switchExprType.getKind() == Kind.NULL
+      if (SoyTypes.isNullOrUndefined(switchExprType)
           || !SoyTypes.isKindOrUnionOfKinds(
-              SoyTypes.removeNull(switchExprType), allowedSwitchTypes)) {
+              SoyTypes.tryRemoveNullish(switchExprType), allowedSwitchTypes)) {
         errorReporter.report(
             switchExpr.getSourceLocation(), ILLEGAL_SWITCH_EXPRESSION_TYPE, switchExprType);
         exprTypeError = true;
-      } else if (SoyTypes.removeNull(switchExprType).getKind() == Kind.PROTO_ENUM) {
+      } else if (SoyTypes.tryRemoveNullish(switchExprType).getKind() == Kind.PROTO_ENUM) {
         // Allow int cases in proto switch.
         switchExprType = UnionType.of(switchExprType, IntType.getInstance());
       }

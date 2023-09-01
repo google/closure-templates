@@ -601,24 +601,36 @@ public final class BytecodeUtils {
     if (leftRuntimeType.isKnownString() || rightRuntimeType.isKnownString()) {
       return doEqualsString(left, right);
     }
-    if (leftRuntimeType.isKnownInt()
-        && rightRuntimeType.isKnownInt()
-        && left.isNonSoyNullish()
-        && right.isNonSoyNullish()) {
-      return Branch.ifEqual(left.unboxAsLong(), right.unboxAsLong()).asBoolean();
-    }
-    if (leftRuntimeType.isKnownNumber()
-        && rightRuntimeType.isKnownNumber()
-        && left.isNonSoyNullish()
-        && right.isNonSoyNullish()
-        && (leftRuntimeType.isKnownFloat() || rightRuntimeType.isKnownFloat())) {
-      return Branch.ifEqual(left.coerceToDouble(), right.coerceToDouble()).asBoolean();
+    Expression numberComparison = maybeFastCompareNumbers(left, right);
+    if (numberComparison != null) {
+      return numberComparison;
     }
     return MethodRef.RUNTIME_EQUAL.invoke(left.box(), right.box());
   }
 
   /** Compares two {@link SoyExpression}s for equality using soy === semantics. */
   public static Expression compareSoyTripleEquals(SoyExpression left, SoyExpression right) {
+    Expression numberComparison = maybeFastCompareNumbers(left, right);
+    if (numberComparison != null) {
+      return numberComparison;
+    }
+    return MethodRef.RUNTIME_TRIPLE_EQUAL.invoke(left.box(), right.box());
+  }
+
+  /**
+   * Same as {@link #compareSoyTripleEquals} except it has special handling for sanitized types and
+   * strings.
+   */
+  public static Expression compareSoySwitchCaseEquals(SoyExpression left, SoyExpression right) {
+    Expression numberComparison = maybeFastCompareNumbers(left, right);
+    if (numberComparison != null) {
+      return numberComparison;
+    }
+    return MethodRef.RUNTIME_SWITCH_CASE_EQUAL.invoke(left.box(), right.box());
+  }
+
+  @Nullable
+  private static Expression maybeFastCompareNumbers(SoyExpression left, SoyExpression right) {
     SoyRuntimeType leftRuntimeType = left.soyRuntimeType();
     SoyRuntimeType rightRuntimeType = right.soyRuntimeType();
     if (leftRuntimeType.isKnownInt()
@@ -634,7 +646,7 @@ public final class BytecodeUtils {
         && (leftRuntimeType.isKnownFloat() || rightRuntimeType.isKnownFloat())) {
       return Branch.ifEqual(left.coerceToDouble(), right.coerceToDouble()).asBoolean();
     }
-    return MethodRef.RUNTIME_TRIPLE_EQUAL.invoke(left.box(), right.box());
+    return null;
   }
 
   /**

@@ -77,6 +77,19 @@ public final class SharedRuntime {
     return operand0 == operand1;
   }
 
+  /**
+   * Same as {@link #tripleEqual} except it has special handling for sanitized types and strings.
+   */
+  public static boolean switchCaseEqual(SoyValue operand0, SoyValue operand1) {
+    if (operand0 instanceof SanitizedContent) {
+      operand0 = StringData.forValue(operand0.toString());
+    }
+    if (operand1 instanceof SanitizedContent) {
+      operand1 = StringData.forValue(operand1.toString());
+    }
+    return tripleEqual(operand0, operand1);
+  }
+
   /** Performs the {@code +} operator on the two values. */
   @Nonnull
   public static SoyValue plus(SoyValue operand0, SoyValue operand1) {

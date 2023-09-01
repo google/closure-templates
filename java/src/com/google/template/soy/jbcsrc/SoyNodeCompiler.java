@@ -26,7 +26,7 @@ import static com.google.template.soy.jbcsrc.TemplateVariableManager.SaveStrateg
 import static com.google.template.soy.jbcsrc.TemplateVariableManager.SaveStrategy.STORE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.RENDER_RESULT_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_VALUE_PROVIDER_TYPE;
-import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.compareSoyEquals;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.compareSoySwitchCaseEquals;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
 import static org.objectweb.asm.commons.GeneratorAdapter.EQ;
 
@@ -731,10 +731,8 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
           if (isFirst) {
             reattachPoint = new Label();
           }
-          // TODO(b/295895863): Backcompat for a bug. This should call compareSoyTriple to
-          // match the JavaScript implementation.
           Expression compiledCase =
-              compareSoyEquals(
+              compareSoySwitchCaseEquals(
                   switchVar,
                   exprCompiler.compileSubExpression(
                       caseExpr, detachState.createExpressionDetacher(reattachPoint)));

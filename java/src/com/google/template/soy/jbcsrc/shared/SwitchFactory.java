@@ -24,7 +24,6 @@ import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NullData;
-import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.data.restricted.UndefinedData;
 import java.lang.invoke.CallSite;
@@ -32,7 +31,6 @@ import java.lang.invoke.ConstantCallSite;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
-import java.util.ArrayList;
 import java.util.Map;
 
 /**
@@ -107,45 +105,6 @@ public final class SwitchFactory {
       map.putIfAbsent(caseValue, i);
     }
     Class<?> caseType = type.parameterType(0);
-    // if we have a mix of string and non-string values we have to be careful
-    // if there are  ambiguous keys under a number->string and string->number coercion we can
-    // break ties under cases ordering. Earliest case should always win.
-    // is. But for compatibility with b/295895863 we need to backfill keys for the stringified
-    // numbers and the numberified strings.
-    // TODO(b/295895863): stop doing this altogether.
-    for (Object key : new ArrayList<>(map.keySet())) {
-      if (key instanceof NumberData) {
-        String numberAsString = ((NumberData) key).coerceToString();
-        Integer stringifiedCase = map.get(numberAsString);
-        Integer thisCase = map.get(key);
-        // If there is a mapping for this already and it has a lower case index, then we need
-        // to remap ourselves to it.
-        if (stringifiedCase != null && stringifiedCase < thisCase) {
-          map.put(key, stringifiedCase);
-        } else {
-          map.put(numberAsString, thisCase);
-        }
-      } else if (key instanceof String) {
-        FloatData asNumber;
-        try {
-          // Parse the string as a number.
-          // N.B. this will throw on out of range values and non-integer values.
-          asNumber = FloatData.forValue(Double.parseDouble((String) key));
-        } catch (NumberFormatException nfe) {
-          // Didn't parse as a number this is fine just ignore it.
-          continue;
-        }
-        Integer numberifiedCase = map.get(asNumber);
-        Integer thisCase = map.get(key);
-        // If there is a mapping for this already and it has a lower case index, then we need
-        // to remap ourselves to it.
-        if (numberifiedCase != null && numberifiedCase < thisCase) {
-          map.put(key, numberifiedCase);
-        } else {
-          map.put(asNumber, thisCase);
-        }
-      }
-    }
     MethodHandle getOrDefaultFn =
         caseType == SoyValue.class ? GET_OR_DEFAULT_SOY_VALUE : GET_OR_DEFAULT_OBJECT;
 

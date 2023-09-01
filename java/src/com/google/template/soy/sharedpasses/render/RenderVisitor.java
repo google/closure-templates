@@ -435,7 +435,6 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
 
   @Override
   protected void visitSwitchNode(SwitchNode node) {
-
     SoyValue switchValue = eval(node.getExpr(), node);
 
     for (SoyNode child : node.getChildren()) {
@@ -443,7 +442,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
       if (child instanceof SwitchCaseNode) {
         SwitchCaseNode scn = (SwitchCaseNode) child;
         for (ExprNode caseExpr : scn.getExprList()) {
-          if (SharedRuntime.equal(switchValue, eval(caseExpr, scn))) {
+          if (SharedRuntime.switchCaseEqual(switchValue, eval(caseExpr, scn))) {
             visit(scn);
             return;
           }

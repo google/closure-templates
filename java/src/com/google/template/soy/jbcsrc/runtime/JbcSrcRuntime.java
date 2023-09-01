@@ -993,20 +993,6 @@ public final class JbcSrcRuntime {
     if (value instanceof NumberData) {
       return asSwitchableValue(value.numberValue(), unusedKey);
     }
-    if (value instanceof StringData) {
-      // TODO(b/295895863): Backcompat for a bug. Server soy implementations call
-      // SharedRuntime.equal to match switch cases.  Instead they should call
-      // SharedRuntime.tripleEqual to match the JavaScript implementation.
-      try {
-        // Parse the string as a number.
-        // N.B. this will throw on out of range values and non-integer values.
-        return Integer.parseInt(value.stringValue(), 10);
-      } catch (NumberFormatException nfe) {
-        // Didn't parse as a number.
-        // fall through and return unused
-      }
-    }
-
     return unusedKey;
   }
 

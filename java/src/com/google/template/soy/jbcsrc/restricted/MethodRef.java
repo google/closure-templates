@@ -286,6 +286,9 @@ public abstract class MethodRef {
   public static final MethodRef RUNTIME_TRIPLE_EQUAL =
       create(SharedRuntime.class, "tripleEqual", SoyValue.class, SoyValue.class);
 
+  public static final MethodRef RUNTIME_SWITCH_CASE_EQUAL =
+      create(SharedRuntime.class, "switchCaseEqual", SoyValue.class, SoyValue.class);
+
   public static final MethodRef RUNTIME_COMPARE_BOXED_STRING =
       create(JbcSrcRuntime.class, "compareBoxedStringToBoxed", SoyValue.class, SoyValue.class);
 
