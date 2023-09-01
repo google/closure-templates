@@ -444,7 +444,6 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
         break;
     }
 
-    String keyVariable = "_keyVariable" + staticsCounter++;
     RenderUnitNode renderUnitNode = node.getNearestAncestor(RenderUnitNode.class);
     boolean delegatesToTemplate = false;
     if (renderUnitNode instanceof TemplateNode) {
@@ -459,11 +458,9 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
             INCREMENTAL_DOM_PUSH_MANUAL_KEY.call(translateExpr(node.getKeyExpr())).asStatement());
       } else if (!delegatesToTemplate) {
         statements.add(
-            VariableDeclaration.builder(keyVariable)
-                .setRhs(
-                    INCREMENTAL_DOM_PUSH_KEY.call(
-                        JsRuntime.XID.call(Expressions.stringLiteral(node.getTemplateCallKey()))))
-                .build());
+            INCREMENTAL_DOM_PUSH_KEY
+                .call(JsRuntime.XID.call(Expressions.stringLiteral(node.getTemplateCallKey())))
+                .asStatement());
       }
     }
     // TODO: In reality, the CALL_X functions are really just IDOM versions of the related
@@ -478,7 +475,7 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
       if (node.getKeyExpr() != null) {
         statements.add(INCREMENTAL_DOM_POP_MANUAL_KEY.call().asStatement());
       } else if (!delegatesToTemplate) {
-        statements.add(INCREMENTAL_DOM_POP_KEY.call(Expressions.id(keyVariable)).asStatement());
+        statements.add(INCREMENTAL_DOM_POP_KEY.call().asStatement());
       }
     }
     // Only wrap in a node part if there are siblings within a template node. If all a template does

@@ -5,6 +5,7 @@
  * Functions necessary to interact with the Soy-Idom runtime.
  */
 
+import * as log from 'goog:goog.log';
 import {toObjectForTesting} from 'google3/javascript/apps/jspb/debug';
 import {Message} from 'google3/javascript/apps/jspb/message';
 import * as soy from 'google3/javascript/template/soy/soyutils_usegoog';
@@ -22,6 +23,8 @@ import {TemplateAcceptor} from './soyutils_idom';
 import {IjData, IdomTemplate as Template} from './templates';
 export {attributes} from './api_idom_attributes';
 export {IdomTemplate as Template} from './templates';
+
+const logger = log.getLogger('api_idom');
 
 declare global {
   interface Node {
@@ -100,10 +103,8 @@ interface IdomRendererApi {
   visit(el: void | HTMLElement): void;
   pushManualKey(key: incrementaldom.Key): void;
   popManualKey(): void;
-  pushKey(key: string): string;
-  getNewKey(key: string | undefined): string;
-  popKey(oldKey: string): void;
-  getCurrentKeyStack(): string;
+  pushKey(key: string): void;
+  popKey(): void;
   elementClose(): void | Element;
   close(): void | Element;
   text(value: string): void | Text;
@@ -249,12 +250,10 @@ export class IncrementalDomRenderer implements IdomRendererApi {
    * calls.
    */
   pushKey(key: string) {
-    const oldKey = this.getCurrentKeyStack();
     this.keyStackHolder[this.keyStackHolder.length - 1] = this.getNewKey(key);
-    return oldKey;
   }
 
-  getNewKey(key: string | undefined) {
+  private getNewKey(key: string | undefined) {
     const oldKey = this.getCurrentKeyStack();
     // This happens in the case where an element has a manual key. The very next
     // key should be undefined.
@@ -269,15 +268,24 @@ export class IncrementalDomRenderer implements IdomRendererApi {
    * Called (from generated template render function) AFTER template
    * calls.
    */
-  popKey(oldKey: string) {
-    this.keyStackHolder[this.keyStackHolder.length - 1] = oldKey;
+  popKey() {
+    const currentKeyStack = this.getCurrentKeyStack();
+    if (!currentKeyStack) {
+      // This can happen when templates are not fully idom compatible, eg
+      log.warning(logger, 'Key stack overrun!');
+      return;
+    }
+    const topKeySizeString = currentKeyStack.match(/[0-9]+/)![0];
+    const topKeySizeNumber = Number(topKeySizeString);
+    this.keyStackHolder[this.keyStackHolder.length - 1] =
+      currentKeyStack.substring(topKeySizeString.length + 1 + topKeySizeNumber);
   }
 
   /**
    * Returns the stack on top of the holder. This represents the current
    * chain of keys.
    */
-  getCurrentKeyStack(): string {
+  private getCurrentKeyStack(): string {
     return this.keyStackHolder[this.keyStackHolder.length - 1] || '';
   }
 
@@ -608,16 +616,8 @@ export class FalsinessRenderer implements IdomRendererApi {
   closeChildNodePart() {}
   nextNodePart() {}
   popManualKey(): void {}
-  pushKey(key: string): string {
-    return '';
-  }
-  getNewKey(key: string | undefined): string {
-    return '';
-  }
-  popKey(oldKey: string): void {}
-  getCurrentKeyStack(): string {
-    return '';
-  }
+  pushKey(key: string): void {}
+  popKey(): void {}
   enter(): void {}
   exit(): void {}
   toNullRenderer(): IdomRendererApi {
