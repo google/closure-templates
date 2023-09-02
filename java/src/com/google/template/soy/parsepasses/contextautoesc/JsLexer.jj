@@ -355,6 +355,7 @@ TOKEN_MGR_DECLS: {
 <DQ_STRING, SQ_STRING> SKIP: {
    < <NL> > {error("unexpected end of line in JavaScript String literal"); }
 |  < "\\" <NL> >  // escaped newline characters are fine
+|  < "\\\\" >  // double backslashes
 }
 
 <TEMPLATE_LITERAL> SKIP: {

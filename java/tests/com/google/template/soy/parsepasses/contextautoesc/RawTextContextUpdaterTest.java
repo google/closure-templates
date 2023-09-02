@@ -272,6 +272,8 @@ public final class RawTextContextUpdaterTest {
         Strings.repeat("foo \\t bar \\r baz \\\" quux", 10_000),
         "JS_DQ_STRING"); // Check for stack overflow
     assertTransition("JS_DQ_STRING", "\"", "JS DIV_OP");
+    assertTransition("JS_DQ_STRING", "\\\\", "JS_DQ_STRING");
+    assertTransition("JS_DQ_STRING", "\\\\\"", "JS DIV_OP");
     assertTransition(
         "JS_DQ_STRING NORMAL SCRIPT SINGLE_QUOTE",
         "Hello, World!",
