@@ -202,7 +202,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
    * The current replacement JS expressions for the local variables (and foreach-loop special
    * functions) current in scope.
    */
-  private final SoyToJsVariableMappings variableMappings;
+  private SoyToJsVariableMappings variableMappings;
 
   private final JavaScriptValueFactoryImpl javascriptValueFactory;
   private final ErrorReporter errorReporter;
@@ -335,71 +335,83 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
     Expression base = visit(node.getListExpr());
     String listIterVarTranslation =
         "list_comp_" + node.getNodeId() + "_" + node.getListIterVar().name();
-    variableMappings.put(node.getListIterVar(), id(listIterVarTranslation));
-    String indexVarTranslation =
-        node.getIndexVar() == null
-            ? null
-            : "list_comp_" + node.getNodeId() + "_" + node.getIndexVar().name();
-    if (node.getIndexVar() != null) {
-      variableMappings.put(node.getIndexVar(), id(indexVarTranslation));
-    }
-    SoyType listType = SoyTypes.tryRemoveNullish(node.getListExpr().getType());
-    // elementType can be unknown if it is the special EMPTY_LIST or if it isn't a known list type.
-    SoyType elementType =
-        listType.getKind() == SoyType.Kind.LIST
-            ? ((ListType) listType).getElementType()
-            : UnknownType.getInstance();
-    JsType elementJsType = jsTypeForStrict(elementType);
-    JsDoc doc =
-        node.getIndexVar() == null
-            ? JsDoc.builder()
-                .addParam(listIterVarTranslation, elementJsType.typeExpr())
-                .addGoogRequires(elementJsType.getGoogRequires())
-                .build()
-            : JsDoc.builder()
-                .addParam(listIterVarTranslation, elementJsType.typeExpr())
-                .addParam(indexVarTranslation, "number")
-                .addGoogRequires(elementJsType.getGoogRequires())
-                .build();
+    var oldVariableMappings = variableMappings;
+    // List comprehensions create a sub-scope, so create a new mappings object and restore it when
+    // we return.
+    variableMappings = SoyToJsVariableMappings.startingWith(variableMappings);
+    try {
+      variableMappings.put(node.getListIterVar(), id(listIterVarTranslation));
+      String indexVarTranslation =
+          node.getIndexVar() == null
+              ? null
+              : "list_comp_" + node.getNodeId() + "_" + node.getIndexVar().name();
+      if (node.getIndexVar() != null) {
+        variableMappings.put(node.getIndexVar(), id(indexVarTranslation));
+      }
+      SoyType listType = SoyTypes.tryRemoveNullish(node.getListExpr().getType());
+      // elementType can be unknown if it is the special EMPTY_LIST or if it isn't a known list
+      // type.
+      SoyType elementType =
+          listType.getKind() == SoyType.Kind.LIST
+              ? ((ListType) listType).getElementType()
+              : UnknownType.getInstance();
+      JsType elementJsType = jsTypeForStrict(elementType);
+      JsDoc doc =
+          node.getIndexVar() == null
+              ? JsDoc.builder()
+                  .addParam(listIterVarTranslation, elementJsType.typeExpr())
+                  .addGoogRequires(elementJsType.getGoogRequires())
+                  .build()
+              : JsDoc.builder()
+                  .addParam(listIterVarTranslation, elementJsType.typeExpr())
+                  .addParam(indexVarTranslation, "number")
+                  .addGoogRequires(elementJsType.getGoogRequires())
+                  .build();
 
-    if (node.getFilterExpr() != null && node.getIndexVar() != null) {
-      return SOY_FILTER_AND_MAP.call(
-          base,
-          arrowFunction(
-              doc,
-              maybeCoerceToBoolean(
-                  node.getFilterExpr().getType(), visit(node.getFilterExpr()), /* force= */ false)),
-          arrowFunction(doc, visit(node.getListItemTransformExpr())));
-    }
-    if (node.getFilterExpr() != null) {
-      // Cast the receiver type to ReadonlyArray to fix poor type inference on filter callback
-      // functions when the type is Array<X>|
+      if (node.getFilterExpr() != null && node.getIndexVar() != null) {
+        return SOY_FILTER_AND_MAP.call(
+            base,
+            arrowFunction(
+                doc,
+                maybeCoerceToBoolean(
+                    node.getFilterExpr().getType(),
+                    visit(node.getFilterExpr()),
+                    /* force= */ false)),
+            arrowFunction(doc, visit(node.getListItemTransformExpr())));
+      }
+      if (node.getFilterExpr() != null) {
+        // Cast the receiver type to ReadonlyArray to fix poor type inference on filter callback
+        // functions when the type is Array<X>|
+        base =
+            JsRuntime.SOY_AS_READONLY
+                .call(base)
+                .dotAccess("filter")
+                .call(
+                    arrowFunction(
+                        doc,
+                        maybeCoerceToBoolean(
+                            node.getFilterExpr().getType(),
+                            visit(node.getFilterExpr()),
+                            /* force= */ false)));
+      }
+      // handle a special case for trivial transformations
+      if (node.getListItemTransformExpr().getKind() == ExprNode.Kind.VAR_REF_NODE) {
+        VarRefNode transformNode = (VarRefNode) node.getListItemTransformExpr();
+        if (transformNode.getDefnDecl().equals(node.getListIterVar())) {
+          return base;
+        }
+      }
+      // Cast the receiver type to ReadonlyArray to fix poor type inference on map callback
+      // functions
       base =
           JsRuntime.SOY_AS_READONLY
               .call(base)
-              .dotAccess("filter")
-              .call(
-                  arrowFunction(
-                      doc,
-                      maybeCoerceToBoolean(
-                          node.getFilterExpr().getType(),
-                          visit(node.getFilterExpr()),
-                          /* force= */ false)));
+              .dotAccess("map")
+              .call(arrowFunction(doc, visit(node.getListItemTransformExpr())));
+      return base;
+    } finally {
+      variableMappings = oldVariableMappings;
     }
-    // handle a special case for trivial transformations
-    if (node.getListItemTransformExpr().getKind() == ExprNode.Kind.VAR_REF_NODE) {
-      VarRefNode transformNode = (VarRefNode) node.getListItemTransformExpr();
-      if (transformNode.getName().equals(node.getListIterVar().refName())) {
-        return base;
-      }
-    }
-    // Cast the receiver type to ReadonlyArray to fix poor type inference on map callback functions
-    base =
-        JsRuntime.SOY_AS_READONLY
-            .call(base)
-            .dotAccess("map")
-            .call(arrowFunction(doc, visit(node.getListItemTransformExpr())));
-    return base;
   }
 
   @Override
