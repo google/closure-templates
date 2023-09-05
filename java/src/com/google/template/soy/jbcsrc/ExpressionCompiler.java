@@ -1084,27 +1084,15 @@ final class ExpressionCompiler {
       if (expression.resultType().equals(Type.LONG_TYPE)) {
         // it can be an unboxed long when executing a foreach over a range
         return SoyExpression.forInt(expression);
-      } else if (!analysis.isResolved(varRef)) {
-        // otherwise it must be a SoyValueProvider, resolve and cast
-        expression = detacher.resolveSoyValueProvider(expression);
-        return SoyExpression.forSoyValue(
-            varRef.getType(), expression.checkedSoyCast(varRef.getType()));
-      } else {
-        return SoyExpression.forSoyValue(
-            varRef.getType(),
-            expression
-                .invoke(MethodRef.SOY_VALUE_PROVIDER_RESOLVE)
-                .checkedSoyCast(varRef.getType()));
       }
+      return resolveVarRefNode(varRef, expression);
     }
 
     // Params
 
     @Override
     SoyExpression visitParam(VarRefNode varRef, TemplateParam param) {
-      return SoyExpression.forSoyValue(
-          varRef.getType(),
-          resolveVarRefNode(varRef, parameters.getParam(param)).checkedSoyCast(varRef.getType()));
+      return resolveVarRefNode(varRef, parameters.getParam(param));
     }
 
     // Let vars
@@ -1169,9 +1157,7 @@ final class ExpressionCompiler {
 
     @Override
     SoyExpression visitLetNodeVar(VarRefNode varRef, LocalVar local) {
-      return SoyExpression.forSoyValue(
-          varRef.getType(),
-          resolveVarRefNode(varRef, parameters.getLocal(local)).checkedSoyCast(varRef.getType()));
+      return resolveVarRefNode(varRef, parameters.getLocal(local));
     }
 
     @Override
@@ -1180,9 +1166,7 @@ final class ExpressionCompiler {
       if (var.declaringNode().getIndexVar() == var) {
         return SoyExpression.forInt(parameters.getLocal(var));
       }
-      return SoyExpression.forSoyValue(
-          varRef.getType(),
-          resolveVarRefNode(varRef, parameters.getLocal(var)).checkedSoyCast(varRef.getType()));
+      return resolveVarRefNode(varRef, parameters.getLocal(var));
     }
 
     /**
@@ -1191,12 +1175,15 @@ final class ExpressionCompiler {
      * @param varRef The variable node that we want to generate an expression for.
      * @param unresolvedExpression The expression corresponding to the unresolved variable.
      */
-    private Expression resolveVarRefNode(VarRefNode varRef, Expression unresolvedExpression) {
-      Expression resolved;
+    private SoyExpression resolveVarRefNode(VarRefNode varRef, Expression unresolvedExpression) {
+      SoyExpression resolved;
+      SoyType type = varRef.getType();
       if (!analysis.isResolved(varRef)) {
-        resolved = detacher.resolveSoyValueProvider(unresolvedExpression);
+        resolved =
+            SoyExpression.forSoyValue(
+                type, detacher.resolveSoyValueProvider(unresolvedExpression).checkedSoyCast(type));
       } else {
-        resolved = unresolvedExpression.invoke(MethodRef.SOY_VALUE_PROVIDER_RESOLVE);
+        resolved = SoyExpression.resolveSoyValueProvider(type, unresolvedExpression);
       }
       if (unresolvedExpression.isNonSoyNullish()) {
         resolved = resolved.asNonSoyNullish();
@@ -1508,7 +1495,7 @@ final class ExpressionCompiler {
                 // Mark non nullable.
                 // Dereferencing for access below may require unboxing and there is no point in
                 // adding null safety checks to the unboxing code.  So we just mark non nullable.
-                // In otherwords, if we are going to hit an NPE while dereferencing this
+                // In other words, if we are going to hit an NPE while dereferencing this
                 // expression, it makes no difference if it is due to the unboxing or the actual
                 // dereference.
                 .asNonSoyNullish();

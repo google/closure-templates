@@ -159,6 +159,18 @@ public final class SoyExpression extends Expression {
     throw new UnsupportedOperationException();
   }
 
+  public static SoyExpression resolveSoyValueProvider(SoyType type, Expression delegate) {
+    checkArgument(
+        BytecodeUtils.isPossiblyAssignableFrom(
+            BytecodeUtils.SOY_VALUE_PROVIDER_TYPE, delegate.resultType()));
+    if (delegate.isNonJavaNullable()
+        || !BytecodeUtils.isDefinitelyAssignableFrom(
+            BytecodeUtils.SOY_VALUE_TYPE, delegate.resultType())) {
+      delegate = delegate.invoke(MethodRef.SOY_VALUE_PROVIDER_RESOLVE).checkedSoyCast(type);
+    }
+    return forSoyValue(type, delegate);
+  }
+
   /**
    * Returns an Expression that evaluates to a list containing all the items as boxed soy values,
    * with Soy nullish values converted to Java null.
@@ -502,6 +514,21 @@ public final class SoyExpression extends Expression {
     assertBoxed(long.class);
 
     return forInt(delegate.invoke(MethodRef.SOY_VALUE_LONG_VALUE));
+  }
+
+  /**
+   * Unboxes this to a {@link SoyExpression} with an `int` runtime type.
+   *
+   * <p>This method is appropriate when you know (likely via inspection of the {@link #soyType()},
+   * or other means) that the value does have the appropriate type but you prefer to interact with
+   * it as its unboxed representation. If you simply want to 'coerce' the given value to a new type
+   * consider {@link #coerceToDouble()} which is designed for that use case.
+   */
+  public Expression unboxAsInt() {
+    if (alreadyUnboxed(long.class)) {
+      return MethodRef.INTS_CHECKED_CAST.invoke(this);
+    }
+    return box().invoke(MethodRef.SOY_VALUE_INTEGER_VALUE);
   }
 
   /**

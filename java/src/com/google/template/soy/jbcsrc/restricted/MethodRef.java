@@ -428,6 +428,9 @@ public abstract class MethodRef {
   public static final MethodRef SOY_VALUE_LONG_VALUE =
       create(SoyValue.class, "longValue").asCheap();
 
+  public static final MethodRef SOY_VALUE_INTEGER_VALUE =
+      create(SoyValue.class, "integerValue").asCheap();
+
   public static final MethodRef SOY_VALUE_NUMBER_VALUE = create(SoyValue.class, "numberValue");
 
   public static final MethodRef SOY_VALUE_IS_NULLISH =

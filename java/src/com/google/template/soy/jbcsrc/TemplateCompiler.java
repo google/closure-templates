@@ -31,7 +31,7 @@ import com.google.template.soy.data.internal.Converters;
 import com.google.template.soy.exprtree.AbstractLocalVarDefn;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
-import com.google.template.soy.exprtree.VarDefn.Kind;
+import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.jbcsrc.ExpressionCompiler.BasicExpressionCompiler;
 import com.google.template.soy.jbcsrc.internal.InnerClasses;
@@ -556,7 +556,7 @@ final class TemplateCompiler {
         SoyExpression defaultValue = constantCompiler.compile(defaultValueNode);
         if (!defaultValue.isCheap()) {
           FieldRef ref;
-          if (headerVar.kind() == Kind.STATE) {
+          if (headerVar.kind() == VarDefn.Kind.STATE) {
             // State fields are package private so that lazy closures can access them directly.
             ref = fields.addPackagePrivateStaticField(headerVar.name(), defaultValue);
           } else {

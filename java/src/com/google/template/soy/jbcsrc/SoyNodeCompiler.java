@@ -953,7 +953,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
                         : compiledExpression.coerceToDouble(),
                     Type.LONG_TYPE));
       } else {
-        rangeValue = MethodRef.INTS_CHECKED_CAST.invoke(compiledExpression.unboxAsLong());
+        rangeValue = compiledExpression.unboxAsInt();
       }
       if (!rangeValue.isCheap()) {
         // bounce it into a local variable

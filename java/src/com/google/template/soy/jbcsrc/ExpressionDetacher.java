@@ -96,6 +96,10 @@ interface ExpressionDetacher {
     @Override
     public Expression resolveSoyValueProvider(Expression soyValueProvider) {
       soyValueProvider.checkAssignableTo(BytecodeUtils.SOY_VALUE_PROVIDER_TYPE);
+      if (BytecodeUtils.isDefinitelyAssignableFrom(
+          BytecodeUtils.SOY_VALUE_TYPE, soyValueProvider.resultType())) {
+        return soyValueProvider;
+      }
       return soyValueProvider.invoke(MethodRef.SOY_VALUE_PROVIDER_RESOLVE);
     }
 

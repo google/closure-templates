@@ -474,8 +474,10 @@ public abstract class Expression extends BytecodeProducer {
   public Expression checkedSoyCast(SoyType type) {
     type = SoyTypes.tryRemoveNullish(type);
     if (BytecodeUtils.isDefinitelyAssignableFrom(BytecodeUtils.SOY_VALUE_TYPE, resultType)) {
+      if (isDefinitelyAssignableFrom(BytecodeUtils.NULLISH_DATA_TYPE, resultType)) {
+        return this;
+      }
       Class<? extends SoyValue> expectedClass = null;
-
       switch (type.getKind()) {
         case ANY:
         case UNKNOWN:
@@ -484,6 +486,10 @@ public abstract class Expression extends BytecodeProducer {
           return this;
         case UNION:
           if (type.equals(SoyTypes.NUMBER_TYPE)) {
+            if (BytecodeUtils.isDefinitelyAssignableFrom(
+                BytecodeUtils.NUMBER_DATA_TYPE, resultType)) {
+              return this;
+            }
             return MethodRef.CHECK_NUMBER.invoke(this);
           }
           return this;
@@ -496,13 +502,24 @@ public abstract class Expression extends BytecodeProducer {
         case CSS:
           return MethodRef.CHECK_CONTENT_KIND.invoke(this, constant(ContentKind.CSS));
         case BOOL:
+          if (BytecodeUtils.isDefinitelyAssignableFrom(
+              BytecodeUtils.BOOLEAN_DATA_TYPE, resultType)) {
+            return this;
+          }
           return MethodRef.CHECK_BOOLEAN.invoke(this);
         case FLOAT:
+          if (BytecodeUtils.isDefinitelyAssignableFrom(BytecodeUtils.FLOAT_DATA_TYPE, resultType)) {
+            return this;
+          }
           return MethodRef.CHECK_FLOAT.invoke(this);
         case HTML:
         case ELEMENT:
           return MethodRef.CHECK_CONTENT_KIND.invoke(this, constant(ContentKind.HTML));
         case INT:
+          if (BytecodeUtils.isDefinitelyAssignableFrom(
+              BytecodeUtils.INTEGER_DATA_TYPE, resultType)) {
+            return this;
+          }
           return MethodRef.CHECK_INT.invoke(this);
         case JS:
           return MethodRef.CHECK_CONTENT_KIND.invoke(this, constant(ContentKind.JS));
@@ -531,6 +548,10 @@ public abstract class Expression extends BytecodeProducer {
           expectedClass = SoyRecord.class;
           break;
         case STRING:
+          if (BytecodeUtils.isDefinitelyAssignableFrom(
+              BytecodeUtils.STRING_DATA_TYPE, resultType)) {
+            return this;
+          }
           return MethodRef.CHECK_STRING.invoke(this);
         case TEMPLATE:
           expectedClass = TemplateValue.class;
@@ -553,8 +574,7 @@ public abstract class Expression extends BytecodeProducer {
       }
 
       Type expectedType = Type.getType(expectedClass);
-      if (resultType.equals(expectedType)
-          || isDefinitelyAssignableFrom(BytecodeUtils.NULLISH_DATA_TYPE, resultType)) {
+      if (isDefinitelyAssignableFrom(expectedType, resultType)) {
         return this;
       }
       return MethodRef.CHECK_TYPE.invoke(this, constant(expectedType));

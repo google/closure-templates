@@ -1121,7 +1121,7 @@ public class BytecodeCompilerTest {
         .withSoySourceFunction(new Overflow())
         .failsToRenderWithExceptionThat()
         .hasMessageThat()
-        .isEqualTo("Casting long to integer results in overflow: " + value);
+        .isEqualTo("Out of range: " + value);
   }
 
   private static int getTemplateLineNumber(String templateName, Throwable t) {

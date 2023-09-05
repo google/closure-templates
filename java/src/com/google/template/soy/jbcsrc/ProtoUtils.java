@@ -1081,7 +1081,6 @@ final class ProtoUtils {
       SoyType keyType = mapType.getKeyType();
       SoyRuntimeType keyRuntimeType = SoyRuntimeType.getBoxedType(keyType);
       SoyType valueType = mapType.getValueType();
-      SoyRuntimeType valueRuntimeType = SoyRuntimeType.getBoxedType(valueType);
 
       SoyExpression mapKey =
           SoyExpression.forSoyValue(
@@ -1095,20 +1094,16 @@ final class ProtoUtils {
                   .asNonJavaNullable());
 
       // Convert the soy value to java type
-
-      // ResolveExpressionTypesPass already enforces that the value is not nullable. If the value is
-      // null, it reports a type mismatch error.
       SoyExpression mapValue =
-          SoyExpression.forSoyValue(
+          // resolve() is safe since we called ExpressionDetacher at the very beginning
+          // of this method
+          // (SomeType) ((SoyValueProvider) mapEntry.getValue()).resolve()
+          SoyExpression.resolveSoyValueProvider(
                   valueType,
-                  mapEntry
-                      .invoke(MethodRef.MAP_GET_VALUE)
-                      .checkedCast(SOY_VALUE_PROVIDER_TYPE)
-                      // resolve() is safe since we called ExpressionDetacher at the very beginning
-                      // of this method
-                      // (SomeType) ((SoyValueProvider) mapEntry.getValue()).resolve()
-                      .invoke(MethodRef.SOY_VALUE_PROVIDER_RESOLVE)
-                      .checkedCast(valueRuntimeType.runtimeType()))
+                  mapEntry.invoke(MethodRef.MAP_GET_VALUE).checkedCast(SOY_VALUE_PROVIDER_TYPE))
+              // ResolveExpressionTypesPass already enforces that the value is not nullable. If the
+              // value is
+              // null, it reports a type mismatch error.
               .asNonJavaNullable();
 
       // iter.hasNext()
@@ -1257,15 +1252,13 @@ final class ProtoUtils {
       SoyRuntimeType elementType = SoyRuntimeType.getBoxedType(elementSoyType);
 
       // Call list.get(i).resolveSoyValueProvider(), then cast to the expected subtype of SoyValue
-      Expression getAndResolve =
+      Expression getItem =
           list // list
               .invoke(MethodRef.LIST_GET, index) // .get(i)
-              .checkedCast(SOY_VALUE_PROVIDER_TYPE) // cast Object to SoyValueProvider
-              .invoke(MethodRef.SOY_VALUE_PROVIDER_RESOLVE) // .resolve()
-              .checkedCast(elementType.runtimeType()); // cast SoyValue to appropriate subtype
+              .checkedCast(SOY_VALUE_PROVIDER_TYPE); // cast Object to SoyValueProvider
 
       SoyExpression soyValue =
-          SoyExpression.forSoyValue(elementType.soyType(), getAndResolve)
+          SoyExpression.resolveSoyValueProvider(elementType.soyType(), getItem)
               // Set soyValue as a non-nullable, even though it is possible for templates to receive
               // lists with null elements. Lists with null elements will simply result in a
               // NullPointerException thrown in .handleNormalSetter() / .handleExtension().

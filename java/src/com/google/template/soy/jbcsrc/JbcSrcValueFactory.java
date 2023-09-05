@@ -22,8 +22,8 @@ import static com.google.template.soy.jbcsrc.runtime.JbcSrcPluginRuntime.BOX_JAV
 import static com.google.template.soy.jbcsrc.runtime.JbcSrcPluginRuntime.BOX_JAVA_MAP_AS_SOY_MAP;
 import static com.google.template.soy.jbcsrc.runtime.JbcSrcPluginRuntime.BOX_JAVA_MAP_AS_SOY_RECORD;
 import static com.google.template.soy.jbcsrc.runtime.JbcSrcPluginRuntime.CONVERT_FUTURE_TO_SOY_VALUE_PROVIDER;
+import static com.google.template.soy.jbcsrc.runtime.JbcSrcPluginRuntime.JAVA_NULL_TO_SOY_NULL;
 import static com.google.template.soy.jbcsrc.runtime.JbcSrcPluginRuntime.NULLISH_TO_JAVA_NULL;
-import static com.google.template.soy.jbcsrc.runtime.JbcSrcPluginRuntime.SOY_VALUE_INTEGER_VALUE;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -252,6 +252,13 @@ final class JbcSrcValueFactory extends JavaValueFactory {
     return JbcSrcJavaValue.of(SoyExpression.SOY_NULL);
   }
 
+  private static Expression maybeSoyNullishToJavaNull(Expression expr) {
+    if (expr.isNonSoyNullish()) {
+      return expr;
+    }
+    return NULLISH_TO_JAVA_NULL.invoke(expr);
+  }
+
   private static Expression[] adaptParams(MethodSignature method, JavaValue[] userParams) {
     ImmutableList<Class<?>> methodParams = method.arguments();
     Expression[] params = new Expression[userParams.length];
@@ -263,7 +270,7 @@ final class JbcSrcValueFactory extends JavaValueFactory {
         params[i] = adaptParameter(methodParam, jbcJv);
       } else if (BytecodeUtils.isDefinitelyAssignableFrom(
           BytecodeUtils.SOY_VALUE_TYPE, expr.resultType())) {
-        params[i] = NULLISH_TO_JAVA_NULL.invoke(expr);
+        params[i] = maybeSoyNullishToJavaNull(expr);
       } else {
         params[i] = expr;
       }
@@ -284,11 +291,11 @@ final class JbcSrcValueFactory extends JavaValueFactory {
 
     // If expecting a bland 'SoyValue', just box the expr.
     if (expectedParamType == SoyValue.class) {
-      return NULLISH_TO_JAVA_NULL.invoke(actualParam.box());
+      return maybeSoyNullishToJavaNull(actualParam.box());
     }
     // If we expect a specific SoyValue subclass, then box + cast.
     if (SoyValue.class.isAssignableFrom(expectedParamType)) {
-      return NULLISH_TO_JAVA_NULL.invoke(actualParam.box()).checkedCast(expectedParamType);
+      return maybeSoyNullishToJavaNull(actualParam.box()).checkedCast(expectedParamType);
     }
 
     // Otherwise, we're an unboxed type (non-SoyValue).
@@ -297,7 +304,7 @@ final class JbcSrcValueFactory extends JavaValueFactory {
     if (expectedParamType == int.class) {
       // We box + invoke rather than unboxAsLong() + numericConversion so that we get overflow
       // checking (built into integerValue()).
-      return actualParam.box().invoke(SOY_VALUE_INTEGER_VALUE);
+      return actualParam.unboxAsInt();
     }
     // double needs special casing since we allow soy int -> double conversions (since double
     // has enough precision to hold soy int data).  We can't unbox longs as double, so we coerce.
@@ -479,17 +486,6 @@ final class JbcSrcValueFactory extends JavaValueFactory {
     Preconditions.checkArgument(
         BytecodeUtils.isDefinitelyAssignableFrom(
             BytecodeUtils.SOY_VALUE_TYPE, delegate.resultType()));
-    return new Expression(BytecodeUtils.SOY_VALUE_TYPE) {
-      @Override
-      protected void doGen(CodeBuilder adapter) {
-        Label end = new Label();
-        delegate.gen(adapter);
-        adapter.dup();
-        adapter.ifNonNull(end);
-        adapter.pop();
-        BytecodeUtils.soyNull().gen(adapter);
-        adapter.mark(end);
-      }
-    };
+    return JAVA_NULL_TO_SOY_NULL.invoke(delegate);
   }
 }

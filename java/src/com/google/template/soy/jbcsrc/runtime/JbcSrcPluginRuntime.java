@@ -30,6 +30,7 @@ import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.internal.SoyLegacyObjectMapImpl;
 import com.google.template.soy.data.internal.SoyMapImpl;
 import com.google.template.soy.data.internal.SoyRecordImpl;
+import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import java.util.Map;
 import java.util.concurrent.Future;
@@ -71,6 +72,14 @@ public final class JbcSrcPluginRuntime {
   @Nullable
   public static SoyValue soyNullToJavaNull(@Nonnull SoyValue value) {
     return value.isNull() ? null : value;
+  }
+
+  public static final MethodRef JAVA_NULL_TO_SOY_NULL =
+      create("javaNullToSoyNull", SoyValue.class).asNonJavaNullable();
+
+  @Keep
+  public static SoyValue javaNullToSoyNull(@Nullable SoyValue value) {
+    return value == null ? NullData.INSTANCE : value;
   }
 
   public static final MethodRef BOX_JAVA_MAP_AS_SOY_MAP = create("boxJavaMapAsSoyMap", Map.class);
