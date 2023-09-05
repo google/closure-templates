@@ -6,7 +6,6 @@
  */
 
 import * as log from 'goog:goog.log';
-import {ordainSanitizedHtml} from 'goog:soydata.VERY_UNSAFE'; // from //javascript/template/soy:soy_usegoog_js
 import {toObjectForTesting} from 'google3/javascript/apps/jspb/debug';
 import {Message} from 'google3/javascript/apps/jspb/message';
 import * as soy from 'google3/javascript/template/soy/soyutils_usegoog';
@@ -15,17 +14,13 @@ import {
   ElementMetadata,
   Logger,
 } from 'google3/javascript/template/soy/soyutils_velog';
-import {SafeHtml} from 'google3/third_party/javascript/closure/html/safehtml';
-import {SanitizedHtml} from 'google3/third_party/javascript/closure/soy/data';
-import * as googSoy from 'google3/third_party/javascript/closure/soy/soy';
 import {truncate} from 'google3/third_party/javascript/closure/string/string';
 import * as incrementaldom from 'incrementaldom'; // from //third_party/javascript/incremental_dom:incrementaldom
 import {attributes} from './api_idom_attributes';
-import {IdomFunction, SoyElement} from './element_lib_idom';
+import {SoyElement} from './element_lib_idom';
 import {USE_TEMPLATE_CLONING, getSoyUntyped} from './global';
 import {TemplateAcceptor} from './soyutils_idom';
 import {IjData, IdomTemplate as Template} from './templates';
-
 export {attributes} from './api_idom_attributes';
 export {type IdomTemplate as Template} from './templates';
 
@@ -113,9 +108,6 @@ interface IdomRendererApi {
   elementClose(): void | Element;
   close(): void | Element;
   text(value: string): void | Text;
-  print(expr: unknown, isSanitizedContent?: boolean | undefined): void;
-  visitHtmlCommentNode(val: string): void;
-  appendCloneToCurrent(content: HTMLTemplateElement): void;
   attr(name: string, value: string): void;
   currentPointer(): Node | null;
   skip(): void;
@@ -314,117 +306,6 @@ export class IncrementalDomRenderer implements IdomRendererApi {
     // client-side renders.
     if (value) {
       return incrementaldom.text(value);
-    }
-  }
-
-  /**
-   * Prints an expression depending on its type.
-   */
-  print(expr: unknown, isSanitizedContent?: boolean | undefined) {
-    if (USE_TEMPLATE_CLONING) {
-      this.openChildNodePart();
-    }
-    if (
-      expr instanceof SanitizedHtml ||
-      isSanitizedContent ||
-      expr instanceof SafeHtml
-    ) {
-      const content =
-        expr instanceof SafeHtml ? SafeHtml.unwrap(expr) : String(expr);
-      if (!/&|</.test(content)) {
-        this.text(content);
-        return;
-      }
-      // For HTML content we need to insert a custom element where we can
-      // place the content without incremental dom modifying it.
-      const el = document.createElement('html-blob');
-      googSoy.renderHtml(el, ordainSanitizedHtml(content));
-      const childNodes = Array.from(el.childNodes);
-      for (const child of childNodes) {
-        const currentPointer = this.currentPointer();
-        const currentElement = this.currentElement();
-        child.__originalContent = expr;
-        if (currentElement) {
-          if (!currentPointer) {
-            currentElement.appendChild(child);
-          } else if (currentPointer.__originalContent !== expr) {
-            currentElement.insertBefore(child, currentPointer);
-          }
-        }
-        this.skipNode();
-      }
-    } else if (expr !== undefined) {
-      this.renderDynamicContent(expr as IdomFunction);
-    }
-    if (USE_TEMPLATE_CLONING) {
-      this.closeChildNodePart();
-    }
-  }
-
-  /**
-   * Calls an expression in case of a function or outputs it as text content.
-   */
-  private renderDynamicContent(expr: IdomFunction) {
-    // TODO(lukes): check content kind == html
-    if (expr && expr.isInvokableFn) {
-      // The Soy compiler will validate the content kind of the parameter.
-      expr.invoke(this);
-    } else {
-      this.text(String(expr));
-    }
-  }
-
-  visitHtmlCommentNode(val: string) {
-    const currNode = this.currentElement();
-    if (!currNode) {
-      return;
-    }
-    if (
-      currNode.nextSibling != null &&
-      currNode.nextSibling.nodeType === Node.COMMENT_NODE
-    ) {
-      currNode.nextSibling.textContent = val;
-      // This is the case where we are creating new DOM from an empty element.
-    } else {
-      currNode.appendChild(document.createComment(val));
-    }
-    this.skipNode();
-  }
-
-  appendCloneToCurrent(content: HTMLTemplateElement) {
-    const currentElement = this.currentElement();
-    if (!currentElement) {
-      return;
-    }
-    let currentPointer = this.currentPointer();
-    // We are at the inside of a node part created by a message. We should insert
-    // before the end of the node part.
-    if (
-      currentPointer === null &&
-      currentElement.nodeType === Node.COMMENT_NODE &&
-      (currentElement as unknown as Comment).data === '?/child-node-part?'
-    ) {
-      currentPointer = currentElement;
-    }
-    const clone = content.cloneNode(true) as HTMLTemplateElement;
-    if (currentPointer?.nodeType === Node.COMMENT_NODE) {
-      if (clone.content) {
-        currentPointer.parentNode?.insertBefore(clone.content, currentPointer);
-      } else {
-        const childNodes = Array.from(clone.childNodes);
-        for (const child of childNodes) {
-          currentPointer.parentNode?.insertBefore(child, currentPointer);
-        }
-      }
-    } else {
-      if (clone.content) {
-        currentElement.appendChild(clone.content);
-      } else {
-        const childNodes = Array.from(clone.childNodes);
-        for (const child of childNodes) {
-          currentElement.appendChild(child);
-        }
-      }
     }
   }
 
@@ -788,18 +669,6 @@ export class FalsinessRenderer implements IdomRendererApi {
     if (value) {
       this.rendered = true;
     }
-  }
-
-  print(expr: unknown, isSanitizedContent?: boolean | undefined) {
-    this.rendered = true;
-  }
-
-  visitHtmlCommentNode(val: string) {
-    this.rendered = true;
-  }
-
-  appendCloneToCurrent(content: HTMLTemplateElement) {
-    this.rendered = true;
   }
 
   attr(name: string, value: string) {
