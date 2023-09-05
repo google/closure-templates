@@ -27,7 +27,7 @@ import {TemplateAcceptor} from './soyutils_idom';
 import {IjData, IdomTemplate as Template} from './templates';
 
 export {attributes} from './api_idom_attributes';
-export {IdomTemplate as Template} from './templates';
+export {type IdomTemplate as Template} from './templates';
 
 const logger = log.getLogger('api_idom');
 

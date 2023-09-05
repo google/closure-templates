@@ -584,7 +584,7 @@ export {
   stableUniqueAttributeIdHolder as $$stableUniqueAttributeIdHolder,
   upgrade as $$upgrade,
   SoyElement as $SoyElement,
-  SoyTemplate as $SoyTemplate,
   getOriginalSanitizedContent,
   NODE_PART,
+  type SoyTemplate as $SoyTemplate,
 };
