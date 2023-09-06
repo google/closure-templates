@@ -156,6 +156,11 @@ public final class MethodCallNode extends DataAccessNode implements ExprNode.Cal
   }
 
   @Override
+  public SoyPrecedence getPrecedence() {
+    return SoyPrecedence.P13;
+  }
+
+  @Override
   public ExprNode copy(CopyState copyState) {
     return new MethodCallNode(this, copyState);
   }

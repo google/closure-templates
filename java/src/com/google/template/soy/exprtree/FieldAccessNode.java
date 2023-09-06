@@ -61,6 +61,11 @@ public final class FieldAccessNode extends DataAccessNode {
     return Kind.FIELD_ACCESS_NODE;
   }
 
+  @Override
+  public SoyPrecedence getPrecedence() {
+    return SoyPrecedence.P13;
+  }
+
   /** Returns the field name. */
   public String getFieldName() {
     return fieldName;

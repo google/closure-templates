@@ -51,6 +51,11 @@ public final class ItemAccessNode extends DataAccessNode {
     return Kind.ITEM_ACCESS_NODE;
   }
 
+  @Override
+  public SoyPrecedence getPrecedence() {
+    return SoyPrecedence.P13;
+  }
+
   /** Returns the key expression. */
   public ExprNode getKeyExprChild() {
     return this.getChild(1);

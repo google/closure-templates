@@ -18,6 +18,7 @@ package com.google.template.soy.exprtree;
 
 import com.google.common.base.Preconditions;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.internal.SetOnce;
 import com.google.template.soy.basetree.AbstractNode;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.basetree.Node;
@@ -30,6 +31,7 @@ import com.google.template.soy.basetree.Node;
 public abstract class AbstractExprNode extends AbstractNode implements ExprNode {
 
   private final SourceLocation sourceLocation;
+  private SetOnce<Boolean> desugaredGroup = new SetOnce<>();
 
   @Override
   public ParentExprNode getParent() {
@@ -48,6 +50,7 @@ public abstract class AbstractExprNode extends AbstractNode implements ExprNode 
   protected AbstractExprNode(AbstractExprNode orig, CopyState copyState) {
     super(orig, copyState);
     this.sourceLocation = orig.sourceLocation;
+    this.desugaredGroup = orig.desugaredGroup.copy();
   }
 
   @Override
@@ -59,5 +62,15 @@ public abstract class AbstractExprNode extends AbstractNode implements ExprNode 
   public <N extends Node> N getNearestAncestor(Class<N> ancestorClass) {
     Preconditions.checkArgument(ExprNode.class.isAssignableFrom(ancestorClass));
     return super.getNearestAncestor(ancestorClass);
+  }
+
+  @Override
+  public boolean isDesugaredGroup() {
+    return desugaredGroup.isPresent() ? desugaredGroup.get() : false;
+  }
+
+  @Override
+  public void setDesugaredGroup(boolean groupedInSource) {
+    this.desugaredGroup.set(groupedInSource);
   }
 }

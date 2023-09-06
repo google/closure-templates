@@ -22,6 +22,7 @@ import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.basetree.Node;
 import com.google.template.soy.basetree.ParentNode;
+import com.google.template.soy.exprtree.SoyPrecedence.Associativity;
 import com.google.template.soy.types.SoyType;
 import java.util.List;
 import java.util.Optional;
@@ -117,6 +118,22 @@ public interface ExprNode extends Node {
   @Override
   ExprNode copy(CopyState copyState);
 
+  /** Returns the Soy operator precedence of this node. */
+  default SoyPrecedence getPrecedence() {
+    return SoyPrecedence.PRIMARY;
+  }
+
+  /** Returns the Soy operator associativity of this node. */
+  default SoyPrecedence.Associativity getAssociativity() {
+    return Associativity.LEFT;
+  }
+
+  /** Returns true if this node was inside a {@link GroupNode} in the original source. */
+  boolean isDesugaredGroup();
+
+  /** A "set-once" value called by {@link com.google.template.soy.passes.DesugarGroupNodesPass}. */
+  void setDesugaredGroup(boolean groupedInSource);
+
   // -----------------------------------------------------------------------------------------------
 
   /** A node in an expression parse tree that may be a parent. */
@@ -131,6 +148,16 @@ public interface ExprNode extends Node {
 
     @Override
     OperatorNode copy(CopyState copyState);
+
+    @Override
+    default SoyPrecedence getPrecedence() {
+      return getOperator().getPrecedence();
+    }
+
+    @Override
+    default Associativity getAssociativity() {
+      return getOperator().getAssociativity();
+    }
   }
 
   // -----------------------------------------------------------------------------------------------

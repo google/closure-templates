@@ -17,6 +17,7 @@
 package com.google.template.soy.passes;
 
 import com.google.template.soy.base.internal.IdGenerator;
+import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.GroupNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
@@ -27,7 +28,9 @@ final class DesugarGroupNodesPass implements CompilerFilePass {
   @Override
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
     for (GroupNode gn : SoyTreeUtils.getAllNodesOfType(file, GroupNode.class)) {
-      gn.getParent().replaceChild(gn, gn.getChild(0));
+      ExprNode content = gn.getChild(0);
+      content.setDesugaredGroup(true);
+      gn.getParent().replaceChild(gn, content);
     }
   }
 }

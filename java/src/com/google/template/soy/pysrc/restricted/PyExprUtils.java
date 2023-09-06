@@ -23,11 +23,11 @@ import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.internal.Converters;
 import com.google.template.soy.data.internalutils.NodeContentKinds;
 import com.google.template.soy.exprtree.Operator;
-import com.google.template.soy.exprtree.Operator.Associativity;
 import com.google.template.soy.exprtree.Operator.Operand;
 import com.google.template.soy.exprtree.Operator.Spacer;
 import com.google.template.soy.exprtree.Operator.SyntaxElement;
 import com.google.template.soy.exprtree.Operator.Token;
+import com.google.template.soy.exprtree.SoyPrecedence;
 import com.google.template.soy.internal.targetexpr.TargetExpr;
 import java.util.ArrayList;
 import java.util.List;
@@ -380,8 +380,8 @@ public final class PyExprUtils {
   public static String genExprWithNewToken(
       Operator op, List<? extends TargetExpr> operandExprs, String newToken) {
 
-    int opPrec = op.getPrecedence();
-    boolean isLeftAssociative = op.getAssociativity() == Associativity.LEFT;
+    int opPrec = PYTHON_PRECEDENCES.get(op);
+    boolean isLeftAssociative = op.getAssociativity() == SoyPrecedence.Associativity.LEFT;
 
     StringBuilder exprSb = new StringBuilder();
 

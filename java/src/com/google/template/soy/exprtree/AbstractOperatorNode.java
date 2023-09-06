@@ -16,11 +16,9 @@
 
 package com.google.template.soy.exprtree;
 
-
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.exprtree.ExprNode.OperatorNode;
-import com.google.template.soy.exprtree.Operator.Associativity;
 import com.google.template.soy.exprtree.Operator.Operand;
 import com.google.template.soy.exprtree.Operator.Spacer;
 import com.google.template.soy.exprtree.Operator.SyntaxElement;
@@ -74,7 +72,7 @@ public abstract class AbstractOperatorNode extends AbstractParentExprNode implem
   @Override
   public String toSourceString() {
 
-    boolean isLeftAssociative = operator.getAssociativity() == Associativity.LEFT;
+    boolean isLeftAssociative = operator.getAssociativity() == SoyPrecedence.Associativity.LEFT;
     StringBuilder sourceSb = new StringBuilder();
 
     List<SyntaxElement> syntax = operator.getSyntax();
@@ -140,15 +138,17 @@ public abstract class AbstractOperatorNode extends AbstractParentExprNode implem
    *     parentheses.
    */
   private String getOperandProtectedForPrecHelper(int index, boolean shouldProtectEqualPrec) {
-
-    int thisOpPrec = operator.getPrecedence();
+    SoyPrecedence thisOpPrec = operator.getPrecedence();
 
     ExprNode child = getChild(index);
 
     boolean shouldProtect;
     if (child instanceof OperatorNode) {
-      int childOpPrec = ((OperatorNode) child).getOperator().getPrecedence();
-      shouldProtect = shouldProtectEqualPrec ? childOpPrec <= thisOpPrec : childOpPrec < thisOpPrec;
+      SoyPrecedence childOpPrec = ((OperatorNode) child).getOperator().getPrecedence();
+      shouldProtect =
+          shouldProtectEqualPrec
+              ? childOpPrec.lessThanOrEqual(thisOpPrec)
+              : childOpPrec.lessThan(thisOpPrec);
     } else {
       shouldProtect = false;
     }
