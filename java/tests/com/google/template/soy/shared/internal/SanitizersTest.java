@@ -448,7 +448,8 @@ public class SanitizersTest {
           "data:image/gif;base64," + allBase64Chars,
           "data:image/tiff;base64," + allBase64Chars,
           "data:image/webp;base64," + allBase64Chars,
-          "data:image/bmp;base64," + allBase64Chars
+          "data:image/bmp;base64," + allBase64Chars,
+          "data:image/x-icon;base64," + allBase64Chars,
         };
     // These are safe specifically in the src of img, but not in other URI contexts where they
     // could be risky.

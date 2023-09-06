@@ -1032,7 +1032,7 @@ public final class EscapingConventions {
                   // Allow image data URIs. Ignore the subtype because browsers ignore them anyways.
                   // In fact, most browsers happily accept text/html or a completely empty MIME, but
                   // it doesn't hurt to verify that it at least looks vaguely correct.
-                  + "|^data:image/[a-z0-9+]+"
+                  + "|^data:image/[a-z0-9+-]+"
                   + ";base64,[a-z0-9+/]+=*\\z"
                   // Blob URIs -- while there's no saying what's in them, (a) they are created on
                   // the same origin, and (b) no worse than loading a random http/https link.
@@ -1074,7 +1074,7 @@ public final class EscapingConventions {
     private FilterImageDataUri() {
       super(
           Pattern.compile(
-              "^data:image/(?:bmp|gif|jpe?g|png|tiff|webp);base64,[a-z0-9+/]+=*\\z",
+              "^data:image/(?:bmp|gif|jpe?g|png|tiff|webp|x-icon);base64,[a-z0-9+/]+=*\\z",
               Pattern.CASE_INSENSITIVE),
           null);
     }
