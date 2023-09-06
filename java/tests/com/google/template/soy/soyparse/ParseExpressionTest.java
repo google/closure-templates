@@ -39,7 +39,6 @@ import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.exprtree.OperatorNodes.AssertNonNullOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ConditionalOpNode;
-import com.google.template.soy.exprtree.OperatorNodes.EqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.LessThanOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.MinusOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NegativeOpNode;
@@ -55,9 +54,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-/**
- * Unit tests for Soy expression parsing.
- */
+/** Unit tests for Soy expression parsing. */
 @RunWith(JUnit4.class)
 public final class ParseExpressionTest {
 
@@ -471,18 +468,16 @@ public final class ParseExpressionTest {
     assertThat(orOp.getChild(0).toSourceString()).isEqualTo("$a");
     assertThat(((BooleanNode) orOp.getChild(1)).getValue()).isTrue();
 
-    expr = assertThatExpression("$a ?: $b ?: $c").isValidExpression();
-    NullCoalescingOpNode nullCoalOp0 = (NullCoalescingOpNode) expr;
+    expr = assertThatExpression("$a ?? $b ?? $c").isValidExpression();
+    NullCoalescingOpNode nullCoalOp1 = (NullCoalescingOpNode) expr;
+    NullCoalescingOpNode nullCoalOp0 = (NullCoalescingOpNode) nullCoalOp1.getChild(0);
     assertThat(nullCoalOp0.getChild(0).toSourceString()).isEqualTo("$a");
-    NullCoalescingOpNode nullCoalOp1 = (NullCoalescingOpNode) nullCoalOp0.getChild(1);
-    assertThat(nullCoalOp1.getChild(0).toSourceString()).isEqualTo("$b");
+    assertThat(nullCoalOp0.getChild(1).toSourceString()).isEqualTo("$b");
     assertThat(nullCoalOp1.getChild(1).toSourceString()).isEqualTo("$c");
 
-    expr = assertThatExpression("$a?:$b==null?0*1:0x1").isValidExpression();
-    NullCoalescingOpNode nullCoalOp = (NullCoalescingOpNode) expr;
-    assertThat(nullCoalOp.getChild(0).toSourceString()).isEqualTo("$a");
-    ConditionalOpNode condOp = (ConditionalOpNode) nullCoalOp.getChild(1);
-    assertThat(condOp.getChild(0)).isInstanceOf(EqualOpNode.class);
+    expr = assertThatExpression("$a??$b==null?0*1:0x1").isValidExpression();
+    ConditionalOpNode condOp = (ConditionalOpNode) expr;
+    assertThat(condOp.getChild(0)).isInstanceOf(NullCoalescingOpNode.class);
     assertThat(condOp.getChild(1)).isInstanceOf(TimesOpNode.class);
     assertThat(condOp.getChild(2)).isInstanceOf(IntegerNode.class);
   }
@@ -497,6 +492,8 @@ public final class ParseExpressionTest {
 
     // ?: is right associative
     assertThat(precedenceString("$a ?: $b ?: $c")).isEqualTo("$a ?: ($b ?: $c)");
+    // ?? is left associative
+    assertThat(precedenceString("$a ?? $b ?? $c")).isEqualTo("($a ?? $b) ?? $c");
 
     // ternary is right associative (though still confusing)
     assertThat(precedenceString("$a ? $b ? $c : $d : $e ? $f : $g"))

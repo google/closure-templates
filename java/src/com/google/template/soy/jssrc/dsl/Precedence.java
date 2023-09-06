@@ -89,6 +89,7 @@ public enum Precedence {
         return P4;
       case OR:
       case NULL_COALESCING:
+      case LEGACY_NULL_COALESCING:
         return P3;
       case CONDITIONAL:
         return P2;

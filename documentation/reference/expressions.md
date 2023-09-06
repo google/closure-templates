@@ -171,8 +171,8 @@ Here are the supported operators, listed in decreasing order of precedence
 9.  `^`
 10. `|`
 11. `and`
-12. `or`
-13. `?:`(binary) `? :`(ternary)
+12. `or` `??`
+13. `? :`(ternary)
 
 The Soy programming language respects the order of evaluation indicated
 explicitly by parentheses and implicitly by operator precedence.
@@ -378,8 +378,8 @@ equivalently in all backends. It is therefore safe to use a string as the first
 argument of a ternary statement but not safe to compare strings to booleans.
 
 Rather than using the short-circuit property of the `or` operator, you should
-use `?:`, the [null coalescing operator](#null-coalescing-operator). This more
-clearly expresses your intent.
+use `??`, the [nullish coalescing operator](#null-coalescing-operator). This
+more clearly expresses your intent.
 
 For example, these expressions will produce a warning:
 
@@ -389,17 +389,17 @@ For example, these expressions will produce a warning:
 {param isEnabled: $optBoolVar or false /}
 ```
 
-Simplify or use `?:` for all new Soy code.
+Simplify or use `??` for all new Soy code.
 
 ```soy {.good}
-{param myLabel: $myProto?.label ?: '' /}
+{param myLabel: $myProto?.label ?? '' /}
 {param isEnabled: $isButtonVisible /}
-{param isEnabled: $optBoolVar ?: false /}
+{param isEnabled: $optBoolVar ?? false /}
 ```
 
-### Null coalescing operator `?:` {#null-coalescing-operator}
+### Nullish coalescing operator `??` {#null-coalescing-operator}
 
-The null coalescing operator (also known as the 'elvis operator') returns the
+The nullish coalescing operator (also known as the 'elvis operator') returns the
 left side if it is non-`null`, and the right side otherwise. This is often
 useful for supplying default values.
 
@@ -408,7 +408,7 @@ right side will not be evaluated.
 
 For example,
 
-*   `$foo ?: 0`
+*   `$foo ?? 0`
 
 ### Ternary operator `? :` {#ternary-operator}
 
@@ -419,8 +419,8 @@ For example,
 
 *   `$foo ? 1 : 2`
 
-NOTE: The checks done by the binary operator `?:` and the ternary operator `? :`
-are different. Specifically, `$a ?: $b` is not equivalent to `$a ? $a : $b`.
+NOTE: The checks done by the binary operator `??` and the ternary operator `? :`
+are different. Specifically, `$a ?? $b` is not equivalent to `$a ? $a : $b`.
 Rather, the former expression is equivalent to `$a != null ? $a : $b`.
 
 ## List comprehensions

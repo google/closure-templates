@@ -377,7 +377,7 @@ there.
 Soy has a relatively simple expression language divided into 4 main parts:
 
 1.  Literals: `1`, `'foo'`, `[1,2,3,4]`, `['k': 'v', 'k2': 'v2']`
-2.  Operators: `+`, `-`, `==`, `?:` etc.
+2.  Operators: `+`, `-`, `==`, `??` etc.
 3.  Function invocations: `length()`, `parseInt()`, etc.
 4.  Data access expressions: `$foo`, `$foo.bar.baz`, `$foo.get($key)`, `$foo[1]`
 

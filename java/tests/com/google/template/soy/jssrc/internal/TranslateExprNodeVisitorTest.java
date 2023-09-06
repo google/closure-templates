@@ -107,6 +107,15 @@ public final class TranslateExprNodeVisitorTest {
 
     assertThatSoyExpr("$a ?: $b ? $c : $d")
         .generatesCode("opt_data.a ?? (opt_data.b ? opt_data.c : opt_data.d);");
+
+    assertThatSoyExpr("$boo ?? -1").generatesCode("opt_data.boo ?? -1;");
+
+    assertThatSoyExpr("$a ?? $b ?? $c").generatesCode("opt_data.a ?? opt_data.b ?? opt_data.c;");
+    assertThatSoyExpr("$a ?? ($b ?? $c)")
+        .generatesCode("opt_data.a ?? (opt_data.b ?? opt_data.c);");
+
+    assertThatSoyExpr("$a ?? ($b ? $c : $d)")
+        .generatesCode("opt_data.a ?? (opt_data.b ? opt_data.c : opt_data.d);");
   }
 
   @Test

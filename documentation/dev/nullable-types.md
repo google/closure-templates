@@ -37,8 +37,7 @@ This type narrowing feature is triggered by the various control flow mechanisms:
 
 *   [if statements](../reference/control-flow#if)
 *   [and/or operators](../reference/expressions#logical-operators)
-*   [null coalescing
-    operator](../reference/expressions#null-coalescing-operator)
+*   [nullish coalescing operator](../reference/expressions#null-coalescing-operator)
 *   [ternary operator](../reference/expressions#ternary)
 
 When the predicate of the conditional is a comparison with `null` the compiler

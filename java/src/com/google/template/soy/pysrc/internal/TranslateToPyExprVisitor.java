@@ -826,12 +826,15 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
     // Python's ternary operator switches the order from <conditional> ? <true> : <false> to
     // <true> if <conditional> else <false>.
     int conditionalPrecedence = PyExprUtils.pyPrecedenceForOperator(Operator.CONDITIONAL);
+    // Not safe to nest ternaries in each other without parens.
+    int safeSubprecedence = conditionalPrecedence + 1;
+
     String exprSb =
-        PyExprUtils.maybeProtect(trueExpr, conditionalPrecedence).getText()
+        PyExprUtils.maybeProtect(trueExpr, safeSubprecedence).getText()
             + " if "
-            + PyExprUtils.maybeProtect(conditionalExpr, conditionalPrecedence).getText()
+            + PyExprUtils.maybeProtect(conditionalExpr, safeSubprecedence).getText()
             + " else "
-            + PyExprUtils.maybeProtect(falseExpr, conditionalPrecedence).getText();
+            + PyExprUtils.maybeProtect(falseExpr, safeSubprecedence).getText();
 
     return new PyExpr(exprSb, conditionalPrecedence);
   }

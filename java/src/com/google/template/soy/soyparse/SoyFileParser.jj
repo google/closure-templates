@@ -1356,6 +1356,7 @@ TOKEN_MGR_DECLS: {
 | < COLON: ":" >          // Also used as part of part of map literal syntax
 | < QCOLON: "?:" >
 | < OR: "or" >            // Precedence 2 operators
+| < QQ: "??" >
 | < AND: "and" >          // Precedence 3 operators
 //| < BITWISE_OR: "|" >   // Precedence 4 operators. Actually VBAR.
 | < BITWISE_XOR: "^" >    // Precedence 5 operators
@@ -4060,7 +4061,7 @@ private ExprNode PrecExpr1(ExprState state) :
     op = <QCOLON>
     expr1 = PrecExpr1(state)
 
-    { expr = Operator.NULL_COALESCING.createNode(createSrcLoc(expr, expr1), createSrcLoc(op), expr, expr1); }
+    { expr = Operator.LEGACY_NULL_COALESCING.createNode(createSrcLoc(expr, expr1), createSrcLoc(op), expr, expr1); }
   |
     op = <QMARK>
     expr1 = PrecExpr1(state)
@@ -4089,6 +4090,12 @@ private ExprNode PrecExpr2(ExprState state) :
 
   expr = PrecExpr3(state)
   (
+    op = <QQ>
+    rightHand = PrecExpr3(state)
+
+    { expr = Operator.NULL_COALESCING.createNode(
+        createSrcLoc(expr, rightHand), createSrcLoc(op), expr, rightHand); }
+  |
     op = <OR>
     rightHand = PrecExpr3(state)
 

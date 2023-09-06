@@ -216,11 +216,19 @@ public enum Operator {
       return new OrOpNode(location, operatorLocation);
     }
   },
-
-  NULL_COALESCING(ImmutableList.of(OPERAND_0, SP, new Token("?:"), SP, OPERAND_1), 1, RIGHT) {
+  NULL_COALESCING(ImmutableList.of(OPERAND_0, SP, new Token("??"), SP, OPERAND_1), 2, LEFT) {
     @Override
     public OperatorNode createNode(SourceLocation location, SourceLocation operatorLocation) {
       return new NullCoalescingOpNode(location, operatorLocation);
+    }
+  },
+
+  // TODO(b/297933058) Remove.
+  LEGACY_NULL_COALESCING(
+      ImmutableList.of(OPERAND_0, SP, new Token("?:"), SP, OPERAND_1), 1, RIGHT) {
+    @Override
+    public OperatorNode createNode(SourceLocation location, SourceLocation operatorLocation) {
+      return new NullCoalescingOpNode(location, this, operatorLocation);
     }
   },
   CONDITIONAL(
@@ -233,7 +241,6 @@ public enum Operator {
       return new ConditionalOpNode(location, operatorLocation);
     }
   },
-
   ;
 
   /** Constants used in the enum definitions above. */

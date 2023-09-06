@@ -283,7 +283,7 @@ correct the bug by adding a comparison to `null` to the EXPRESSION:
 or better yet, use the null-coalescing operator:
 
 ```soy
-{param smallerNum: $pair.smallerInt ?: $pair.largerInt - 100 /}
+{param smallerNum: $pair.smallerInt ?? $pair.largerInt - 100 /}
 ```
 
 #### Use a combination of these
