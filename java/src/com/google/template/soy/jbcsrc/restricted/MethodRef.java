@@ -239,8 +239,13 @@ public abstract class MethodRef {
   public static final MethodRef RENDER_RESULT_LIMITED =
       create(RenderResult.class, "limited").asCheap();
 
-  public static final MethodRef RUNTIME_APPLY_ESCAPERS =
-      create(JbcSrcRuntime.class, "applyEscapers", CompiledTemplate.class, ImmutableList.class);
+  public static final MethodRef BUFFER_TEMPLATE =
+      create(
+          JbcSrcRuntime.class,
+          "bufferTemplate",
+          CompiledTemplate.class,
+          boolean.class,
+          JbcSrcRuntime.BufferedRenderDoneFn.class);
 
   public static final MethodRef RUNTIME_CHECK_RESOLVED_LIST =
       create(JbcSrcRuntime.class, "checkResolved", List.class);

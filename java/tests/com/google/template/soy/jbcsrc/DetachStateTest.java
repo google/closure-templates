@@ -520,4 +520,30 @@ public final class DetachStateTest {
     assertThat(renderer.render()).isEqualTo(RenderResult.done());
     assertThat(output.toString()).isEqualTo("4321");
   }
+
+  @Test
+  public void testDetachInErrorFallbackCall() throws IOException {
+    CompiledTemplates templates =
+        TemplateTester.compileFileAndRunAutoescaper(
+            "{namespace ns}",
+            "{template c}<div>{call u errorfallback=\"skip\" /}</div>{/template}",
+            "{template u}{@inject p:?}{$p}{/template}");
+    CompiledTemplate template = templates.getTemplate("ns.c");
+    RenderContext context = getDefaultContext(templates);
+
+    SettableFuture<String> pending = SettableFuture.create();
+    BufferingAppendable output = LoggingAdvisingAppendable.buffering();
+    TemplateRenderer renderer =
+        () ->
+            template.render(
+                ParamStore.EMPTY_INSTANCE,
+                asRecord(ImmutableMap.of("p", pending)),
+                output,
+                context);
+    assertThat(renderer.render()).isEqualTo(RenderResult.continueAfter(pending));
+    assertThat(output.toString()).isEqualTo("<div>");
+    pending.set("HELLO");
+    assertThat(renderer.render()).isEqualTo(RenderResult.done());
+    assertThat(output.toString()).isEqualTo("<div>HELLO</div>");
+  }
 }

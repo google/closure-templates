@@ -168,6 +168,9 @@ public class IsComputableAsJsExprsVisitor extends AbstractReturningSoyNodeVisito
 
   @Override
   protected Boolean visitCallNode(CallNode node) {
+    if (node.isErrorFallbackSkip()) {
+      return false;
+    }
     return areChildrenComputableAsJsExprs(node);
   }
 

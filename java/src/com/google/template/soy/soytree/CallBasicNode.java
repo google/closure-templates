@@ -69,6 +69,7 @@ public final class CallBasicNode extends CallNode {
         case "key":
         case PHNAME_ATTR:
         case PHEX_ATTR:
+        case CallNode.ERROR_FALLBACK:
           // Parsed in CallNode.
           break;
         case "variant":
@@ -81,7 +82,8 @@ public final class CallBasicNode extends CallNode {
               UNSUPPORTED_ATTRIBUTE_KEY,
               ident,
               "call",
-              ImmutableList.of("data", "key", PHNAME_ATTR, PHEX_ATTR, "variant"));
+              ImmutableList.of(
+                  "data", CallNode.ERROR_FALLBACK, "key", PHNAME_ATTR, PHEX_ATTR, "variant"));
       }
     }
   }

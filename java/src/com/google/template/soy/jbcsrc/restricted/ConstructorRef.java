@@ -100,6 +100,12 @@ public abstract class ConstructorRef {
           int.class,
           boolean.class);
 
+  public static final ConstructorRef REPLAYING_BUFFERED_RENDER_DONE_FN =
+      create(JbcSrcRuntime.ReplayingBufferedRenderDoneFn.class);
+
+  public static final ConstructorRef ESCAPING_BUFFERED_RENDER_DONE_FN =
+      create(JbcSrcRuntime.EscapingBufferedRenderDoneFn.class, ImmutableList.class);
+
   public abstract TypeInfo instanceClass();
 
   public abstract Method method();

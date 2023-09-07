@@ -82,7 +82,7 @@ public final class CallDelegateNode extends CallNode {
               attr.getName().location(),
               UNSUPPORTED_ATTRIBUTE_KEY,
               name,
-              "call",
+              "delcall",
               ImmutableList.of("data", "key", PHNAME_ATTR, PHEX_ATTR, "variant"));
       }
     }

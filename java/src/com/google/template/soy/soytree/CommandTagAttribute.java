@@ -50,7 +50,7 @@ public final class CommandTagAttribute implements Copyable<CommandTagAttribute> 
 
   private static final SoyErrorKind DUPLICATE_ATTRIBUTE =
       SoyErrorKind.of("Attribute ''{0}'' was already specified.");
-  private static final SoyErrorKind INVALID_ATTRIBUTE =
+  public static final SoyErrorKind INVALID_ATTRIBUTE =
       SoyErrorKind.of("Invalid value for attribute ''{0}'', expected {1}.");
   private static final SoyErrorKind INVALID_ATTRIBUTE_LIST =
       SoyErrorKind.of("Invalid value for attribute ''{0}'', expected one of {1}.");

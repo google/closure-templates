@@ -17,7 +17,6 @@
 package com.google.template.soy.jbcsrc.runtime;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Preconditions.checkState;
 import static java.lang.invoke.MethodType.methodType;
 
 import com.google.common.base.Preconditions;
@@ -234,16 +233,18 @@ public final class JbcSrcRuntime {
   }
 
   /**
-   * Wraps a given template with a collection of escapers to apply.
+   * Wraps a given template with a buffer.
    *
    * @param delegate The delegate template to render
-   * @param directives The set of directives to apply
+   * @param ignoreExceptions Whether exceptions should be ignored.
+   * @param bufferedRenderDoneFn Function to apply after main rendering is done.
    */
   @Keep
-  public static CompiledTemplate applyEscapers(
-      CompiledTemplate delegate, ImmutableList<SoyJavaPrintDirective> directives) {
-    checkState(!directives.isEmpty());
-    return new EscapedCompiledTemplate(delegate, directives);
+  public static CompiledTemplate bufferTemplate(
+      CompiledTemplate delegate,
+      boolean ignoreExceptions,
+      BufferedRenderDoneFn bufferedRenderDoneFn) {
+    return new BufferedCompiledTemplate(delegate, ignoreExceptions, bufferedRenderDoneFn);
   }
 
   @Keep
@@ -730,15 +731,53 @@ public final class JbcSrcRuntime {
     return v == null ? "null" : v.coerceToString();
   }
 
-  /** Wraps a compiled template to apply escaping directives. */
+  /** Function to execute after rendering of a section of buffered template is done. */
   @Immutable
-  private static final class EscapedCompiledTemplate implements CompiledTemplate {
-    private final CompiledTemplate delegate;
+  public static interface BufferedRenderDoneFn {
+    public void exec(LoggingAdvisingAppendable appendable, BufferingAppendable buffer)
+        throws IOException;
+  }
+
+  /** Replays commands to the main appendable, including logging. */
+  public static class ReplayingBufferedRenderDoneFn implements BufferedRenderDoneFn {
+    @Override
+    public void exec(LoggingAdvisingAppendable appendable, BufferingAppendable buffer)
+        throws IOException {
+      buffer.replayOn(appendable);
+    }
+  }
+
+  /** Coerces to a string and applies non-streaming escaping directives. */
+  public static class EscapingBufferedRenderDoneFn implements BufferedRenderDoneFn {
 
     // these directives are builtin escaping directives which are all pure
     // functions but not annotated.
     @SuppressWarnings("Immutable")
     private final ImmutableList<SoyJavaPrintDirective> directives;
+
+    public EscapingBufferedRenderDoneFn(ImmutableList<SoyJavaPrintDirective> directives) {
+      this.directives = directives;
+    }
+
+    @Override
+    public void exec(LoggingAdvisingAppendable appendable, BufferingAppendable buffer)
+        throws IOException {
+      SoyValue resultData = buffer.getAsSoyValue();
+      for (SoyJavaPrintDirective directive : directives) {
+        resultData = directive.applyForJava(resultData, ImmutableList.of());
+      }
+      appendable.append(resultData.coerceToString());
+    }
+  }
+
+  /** Wraps a compiled template with a buffer. */
+  @Immutable
+  private static final class BufferedCompiledTemplate implements CompiledTemplate {
+    private final CompiledTemplate delegate;
+
+    private final boolean ignoreExceptions;
+
+    private final BufferedRenderDoneFn bufferedRenderDoneFn;
 
     static class SaveRestoreState {
       static final MethodHandle SAVE_STATE_METHOD_HANDLE;
@@ -762,9 +801,13 @@ public final class JbcSrcRuntime {
       }
     }
 
-    EscapedCompiledTemplate(CompiledTemplate delegate, List<SoyJavaPrintDirective> directives) {
+    BufferedCompiledTemplate(
+        CompiledTemplate delegate,
+        boolean ignoreExceptions,
+        BufferedRenderDoneFn bufferedRenderDoneFn) {
       this.delegate = checkNotNull(delegate);
-      this.directives = ImmutableList.copyOf(directives);
+      this.ignoreExceptions = ignoreExceptions;
+      this.bufferedRenderDoneFn = bufferedRenderDoneFn;
     }
 
     @Override
@@ -780,7 +823,9 @@ public final class JbcSrcRuntime {
         case 1:
           try {
             buffer =
-                (BufferingAppendable) SaveRestoreState.RESTORE_APPENDABLE_HANDLE.invokeExact(frame);
+                (BufferingAppendable)
+                    BufferedCompiledTemplate.SaveRestoreState.RESTORE_APPENDABLE_HANDLE.invokeExact(
+                        frame);
           } catch (Throwable t) {
             throw new AssertionError(t);
           }
@@ -788,16 +833,21 @@ public final class JbcSrcRuntime {
         default:
           throw unexpectedStateError(frame);
       }
-      RenderResult result = delegate.render(params, ij, buffer, context);
-      if (result.isDone()) {
-        SoyValue resultData = buffer.getAsSoyValue();
-        for (SoyJavaPrintDirective directive : directives) {
-          resultData = directive.applyForJava(resultData, ImmutableList.of());
+      RenderResult result;
+      try {
+        result = delegate.render(params, ij, buffer, context);
+      } catch (RuntimeException e) {
+        if (ignoreExceptions) {
+          return RenderResult.done();
         }
-        appendable.append(resultData.coerceToString());
+        throw e;
+      }
+      if (result.isDone()) {
+        bufferedRenderDoneFn.exec(appendable, buffer);
       } else {
         try {
-          SaveRestoreState.SAVE_STATE_METHOD_HANDLE.invokeExact(context, 1, buffer);
+          BufferedCompiledTemplate.SaveRestoreState.SAVE_STATE_METHOD_HANDLE.invokeExact(
+              context, 1, buffer);
         } catch (Throwable t) {
           throw new AssertionError(t);
         }

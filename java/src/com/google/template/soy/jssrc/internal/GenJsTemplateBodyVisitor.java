@@ -45,6 +45,7 @@ import com.google.template.soy.jssrc.dsl.GoogRequire;
 import com.google.template.soy.jssrc.dsl.Statement;
 import com.google.template.soy.jssrc.dsl.Statements;
 import com.google.template.soy.jssrc.dsl.SwitchBuilder;
+import com.google.template.soy.jssrc.dsl.TryCatch;
 import com.google.template.soy.jssrc.dsl.VariableDeclaration;
 import com.google.template.soy.shared.RangeArgs;
 import com.google.template.soy.soytree.AbstractReturningSoyNodeVisitor;
@@ -692,8 +693,16 @@ public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<St
     Expression call =
         genCallCodeUtils.gen(
             node, templateAliases, templateTranslationContext, errorReporter, getExprTranslator());
-
-    return outputVars.addChunkToOutputVar(call.withInitialStatements(statements));
+    if (node.isErrorFallbackSkip()) {
+      VariableDeclaration callResult =
+          VariableDeclaration.builder("call_" + node.getId()).setRhs(call).build();
+      return Statements.of(
+          outputVars.initOutputVarIfNecessary().orElse(Statements.EMPTY),
+          TryCatch.create(
+              Statements.of(callResult, outputVars.addChunkToOutputVar(callResult.ref()))));
+    } else {
+      return outputVars.addChunkToOutputVar(call.withInitialStatements(statements));
+    }
   }
 
   @Override

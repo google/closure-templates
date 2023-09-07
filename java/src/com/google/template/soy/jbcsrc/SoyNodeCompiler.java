@@ -1588,14 +1588,19 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     TemplateVariableManager.Scope renderScope = variables.enterScope();
     RecordOrPositional paramsExpression = prepareParamsHelper(node);
     Statement initCallee = Statement.NULL_STATEMENT;
-    if (!areAllPrintDirectivesStreamable(node)) {
-      // in this case we need to wrap a CompiledTemplate to apply escaping directives, so we
-      // definitely need a record style call.
+    if (!areAllPrintDirectivesStreamable(node) || node.isErrorFallbackSkip()) {
+      // in this case we need to wrap a CompiledTemplate to buffer to catch exceptions or to
+      // apply non-streaming escaping directives.
       ExpressionAndInitializer expressionAndInitializer = paramsExpression.asRecord(renderScope);
       initParams = expressionAndInitializer.initializer();
       Expression calleeExpression =
-          MethodRef.RUNTIME_APPLY_ESCAPERS.invoke(
-              callGenerator.asCompiledTemplate(), getEscapingDirectivesList(node));
+          MethodRef.BUFFER_TEMPLATE.invoke(
+              callGenerator.asCompiledTemplate(),
+              BytecodeUtils.constant(node.isErrorFallbackSkip()),
+              !areAllPrintDirectivesStreamable(node)
+                  ? ConstructorRef.ESCAPING_BUFFERED_RENDER_DONE_FN.construct(
+                      getEscapingDirectivesList(node))
+                  : ConstructorRef.REPLAYING_BUFFERED_RENDER_DONE_FN.construct());
       TemplateVariableManager.Variable calleeVariable =
           renderScope.createSynthetic(
               SyntheticVarName.renderee(),
@@ -1634,22 +1639,22 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
           boundCall = simpleCall(calleeVariable.accessor(), expressionAndInitializer.expression());
         }
       }
-      if (!node.getEscapingDirectives().isEmpty()) {
-        PrintDirectives.AppendableAndFlushBuffersDepth wrappedAppendable =
-            applyStreamingEscapingDirectives(
-                node.getEscapingDirectives(), appendable, parameterLookup.getPluginContext());
-        TemplateVariableManager.Variable variable =
-            renderScope.createSynthetic(
-                SyntheticVarName.appendable(),
-                wrappedAppendable.appendable(),
-                // TODO(lukes): this could be STORE or derive depending on whether or not flush
-                // logic is required.
-                TemplateVariableManager.SaveStrategy.STORE);
-        initAppendable = variable.initializer();
-        appendable = AppendableExpression.forExpression(variable.accessor());
-        if (wrappedAppendable.flushBuffersDepth() >= 0) {
-          flushAppendable = appendable.flushBuffers(wrappedAppendable.flushBuffersDepth());
-        }
+    }
+    if (!node.getEscapingDirectives().isEmpty() && areAllPrintDirectivesStreamable(node)) {
+      PrintDirectives.AppendableAndFlushBuffersDepth wrappedAppendable =
+          applyStreamingEscapingDirectives(
+              node.getEscapingDirectives(), appendable, parameterLookup.getPluginContext());
+      TemplateVariableManager.Variable variable =
+          renderScope.createSynthetic(
+              SyntheticVarName.appendable(),
+              wrappedAppendable.appendable(),
+              // TODO(lukes): this could be STORE or derive depending on whether or not flush
+              // logic is required.
+              TemplateVariableManager.SaveStrategy.STORE);
+      initAppendable = variable.initializer();
+      appendable = AppendableExpression.forExpression(variable.accessor());
+      if (wrappedAppendable.flushBuffersDepth() >= 0) {
+        flushAppendable = appendable.flushBuffers(wrappedAppendable.flushBuffersDepth());
       }
     }
 

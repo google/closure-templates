@@ -20,6 +20,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.template.soy.base.SourceLocation.UNKNOWN;
 import static com.google.template.soy.base.internal.BaseUtils.convertToUpperUnderscore;
+import static com.google.template.soy.soytree.CommandTagAttribute.INVALID_ATTRIBUTE;
 import static com.google.template.soy.soytree.MessagePlaceholder.PHEX_ATTR;
 import static com.google.template.soy.soytree.MessagePlaceholder.PHNAME_ATTR;
 import static com.google.template.soy.soytree.MessagePlaceholder.validatePlaceholderExample;
@@ -63,6 +64,7 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
 
   static final String KEY = "key";
   static final String DATA = "data";
+  static final String ERROR_FALLBACK = "errorfallback";
 
   /** True if this call is passing data="all". */
   private boolean isPassingAllData;
@@ -98,6 +100,8 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
   /** True if this node is within a HTML context. */
   private boolean isPcData = false;
 
+  private final boolean errorFallbackSkip;
+
   /** Protected constructor for use by subclasses. */
   protected CallNode(
       int id,
@@ -112,6 +116,7 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
     SourceLocation phNameLocation = null;
     String phName = null;
     Optional<String> phExample = Optional.empty();
+    boolean errorFallbackSkip = false;
     for (CommandTagAttribute attr : attributes) {
       String name = attr.getName().identifier();
 
@@ -136,6 +141,13 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
               Optional.ofNullable(
                   validatePlaceholderExample(attr.getValue(), attr.getValueLocation(), reporter));
           break;
+        case ERROR_FALLBACK:
+          if (attr.getValue().equals("skip")) {
+            errorFallbackSkip = true;
+          } else {
+            reporter.report(attr.getSourceLocation(), INVALID_ATTRIBUTE, ERROR_FALLBACK, "skip");
+          }
+          break;
         default:
           // do nothing, validated by subclasses
       }
@@ -149,6 +161,7 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
             : MessagePlaceholder.createWithUserSuppliedName(
                 convertToUpperUnderscore(phName), phName, phNameLocation, phExample);
     this.openTagLocation = openTagLocation;
+    this.errorFallbackSkip = errorFallbackSkip;
   }
 
   /**
@@ -168,6 +181,7 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
     this.selfClosing = orig.selfClosing;
     this.attributes =
         orig.attributes.stream().map(c -> c.copy(copyState)).collect(toImmutableList());
+    this.errorFallbackSkip = orig.errorFallbackSkip;
     // we may have handed out a copy to ourselves via genSamenessKey()
     copyState.updateRefs(orig, this);
   }
@@ -205,6 +219,10 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
 
   public boolean isSelfClosing() {
     return this.selfClosing;
+  }
+
+  public boolean isErrorFallbackSkip() {
+    return errorFallbackSkip;
   }
 
   @Override
