@@ -105,9 +105,9 @@ interface IdomRendererApi {
   popManualKey(): void;
   pushKey(key: string): void;
   popKey(): void;
-  elementClose(): void | Element;
-  close(): void | Element;
-  text(value: string): void | Text;
+  elementClose(): void;
+  close(): void;
+  text(value: string): void;
   attr(name: string, value: string): void;
   currentPointer(): Node | null;
   skip(): void;
@@ -289,23 +289,26 @@ export class IncrementalDomRenderer implements IdomRendererApi {
     return this.keyStackHolder[this.keyStackHolder.length - 1] || '';
   }
 
-  close(): Element | void {
+  protected closeInternal(): Element | void {
     return incrementaldom.close();
   }
 
-  elementClose(): Element | void {
-    const el = this.close();
+  close() {
+    this.closeInternal();
+  }
+
+  elementClose() {
+    const el = this.closeInternal();
     if (el && el.__soy_patch_handler) {
       el.__soy_patch_handler();
     }
-    return el;
   }
 
-  text(value: string): Text | void {
+  text(value: string) {
     // This helps ensure that hydrations on the server are consistent with
     // client-side renders.
     if (value) {
-      return incrementaldom.text(value);
+      incrementaldom.text(value);
     }
   }
 
