@@ -16,6 +16,7 @@
 
 package com.google.template.soy.jbcsrc;
 
+import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.util.concurrent.Futures.immediateFailedFuture;
 import static com.google.template.soy.jbcsrc.TemplateTester.asRecord;
@@ -27,7 +28,6 @@ import static com.google.template.soy.jbcsrc.TemplateTester.getDefaultContextWit
 import static org.junit.Assert.fail;
 
 import com.google.common.base.Joiner;
-import com.google.common.base.Strings;
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -83,7 +83,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -620,7 +619,7 @@ public class BytecodeCompilerTest {
   @Test
   public void testRawTextNode_largeText() {
     // This string is larger than the max constant pool entry size
-    String largeString = Strings.repeat("x", 1 << 17);
+    String largeString = "x".repeat(1 << 17);
     assertThatTemplateBody(largeString).rendersAs(largeString);
     assertThatTemplateBody("{@param foo:?}\n{'" + largeString + "' + $foo}")
         .rendersAs(largeString + "hello", ImmutableMap.of("foo", "hello"));
@@ -1387,12 +1386,12 @@ public class BytecodeCompilerTest {
 
   private static SoyFileSetParser createParserForFileContentsWithDependencies(
       Map<String, String> soyFileContents, Iterable<CompilationUnitAndKind> dependencies) {
-    List<SoyFileSupplier> files =
+    ImmutableList<SoyFileSupplier> files =
         soyFileContents.entrySet().stream()
             .map(
                 e ->
                     SoyFileSupplier.Factory.create(e.getValue(), SourceFilePath.create(e.getKey())))
-            .collect(Collectors.toList());
+            .collect(toImmutableList());
     return SoyFileSetParserBuilder.forSuppliers(files).addCompilationUnits(dependencies).build();
   }
 

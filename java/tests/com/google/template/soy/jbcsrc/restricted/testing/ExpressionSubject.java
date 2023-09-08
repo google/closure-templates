@@ -18,11 +18,11 @@ package com.google.template.soy.jbcsrc.restricted.testing;
 
 import static com.google.common.truth.Fact.fact;
 import static com.google.common.truth.Fact.simpleFact;
+import static com.google.common.truth.Truth.assertAbout;
 
 import com.google.common.base.Joiner;
 import com.google.common.truth.FailureMetadata;
 import com.google.common.truth.Subject;
-import com.google.common.truth.Truth;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.testing.ExpressionEvaluator.BooleanInvoker;
@@ -43,7 +43,7 @@ public final class ExpressionSubject extends Subject {
 
   /** Returns a truth subject that can be used to assert on an {@link Expression}. */
   public static ExpressionSubject assertThatExpression(Expression resp) {
-    return Truth.assertAbout(ExpressionSubject::new).that(resp);
+    return assertAbout(ExpressionSubject::new).that(resp);
   }
 
   private final Expression actual;
@@ -67,6 +67,7 @@ public final class ExpressionSubject extends Subject {
     try {
       actual = ((BooleanInvoker) evaluator.invoker).invoke();
     } catch (Throwable t) {
+      t.printStackTrace();
       return failExpectingValue(expected, t);
     }
     check("invoke()").that(actual).isEqualTo(expected);
@@ -79,6 +80,7 @@ public final class ExpressionSubject extends Subject {
     try {
       actual = ((DoubleInvoker) evaluator.invoker).invoke();
     } catch (Throwable t) {
+      t.printStackTrace();
       return failExpectingValue(expected, t);
     }
     check("invoke()").that(actual).isEqualTo(expected);
@@ -91,6 +93,7 @@ public final class ExpressionSubject extends Subject {
     try {
       actual = ((LongInvoker) evaluator.invoker).invoke();
     } catch (Throwable t) {
+      t.printStackTrace();
       return failExpectingValue(expected, t);
     }
     check("invoke()").that(actual).isEqualTo(expected);
@@ -102,7 +105,9 @@ public final class ExpressionSubject extends Subject {
     char actual;
     try {
       actual = ((CharInvoker) evaluator.invoker).invoke();
+      
     } catch (Throwable t) {
+      t.printStackTrace();
       return failExpectingValue(expected, t);
     }
     check("invoke()").that(actual).isEqualTo(expected);
@@ -115,6 +120,7 @@ public final class ExpressionSubject extends Subject {
     try {
       actual = ((ObjectInvoker) evaluator.invoker).invoke();
     } catch (Throwable t) {
+      t.printStackTrace();
       return failExpectingValue(expected, t);
     }
     check("invoke()").that(actual).isEqualTo(expected);
@@ -153,6 +159,7 @@ public final class ExpressionSubject extends Subject {
     try {
       actual = ((ObjectInvoker) evaluator.invoker).invoke();
     } catch (Throwable t) {
+      t.printStackTrace();
       failWithoutActual(
           fact("expected to evaluate to an instance of", expected),
           fact("but failed with", t),
