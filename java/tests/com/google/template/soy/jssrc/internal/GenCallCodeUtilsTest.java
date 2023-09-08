@@ -167,7 +167,6 @@ public final class GenCallCodeUtilsTest {
             SoyToJsVariableMappings.newEmpty()
                 .put("$boo", Expressions.id("boo"))
                 .put("$goo", Expressions.id("goo")),
-            CodeChunk.Generator.create(nameGenerator),
             nameGenerator);
     ErrorReporter errorReporter = ErrorReporter.exploding();
     TranslateExprNodeVisitor exprTranslator =

@@ -32,14 +32,12 @@ import com.google.errorprone.annotations.CheckReturnValue;
 import com.google.errorprone.annotations.ForOverride;
 import com.google.protobuf.Descriptors.GenericDescriptor;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
-import com.google.template.soy.base.internal.UniqueNameGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyError;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
-import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.jssrc.dsl.FormatOptions;
 import com.google.template.soy.jssrc.dsl.Precedence;
@@ -246,14 +244,12 @@ abstract class JsSrcSubject<T extends Subject> extends Subject {
       assertThat(printNodes).hasSize(1);
 
       ExprNode exprNode = printNodes.get(0).getExpr();
-      UniqueNameGenerator nameGenerator = JsSrcNameGenerators.forLocalVariables();
       this.chunk =
           new TranslateExprNodeVisitor(
                   new JavaScriptValueFactoryImpl(BidiGlobalDir.LTR, ErrorReporter.exploding()),
                   TranslationContext.of(
                       SoyToJsVariableMappings.startingWith(initialLocalVarTranslations),
-                      CodeChunk.Generator.create(nameGenerator),
-                      nameGenerator),
+                      JsSrcNameGenerators.forLocalVariables()),
                   AliasUtils.createTemplateAliases(
                       parseResult.fileSet().getChild(0), parseResult.registry()),
                   errorReporter,

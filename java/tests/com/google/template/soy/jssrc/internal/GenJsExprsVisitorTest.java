@@ -23,9 +23,7 @@ import static com.google.template.soy.jssrc.internal.JsRuntime.OPT_DATA;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.template.soy.base.internal.UniqueNameGenerator;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.jssrc.dsl.FormatOptions;
 import com.google.template.soy.jssrc.dsl.Precedence;
@@ -229,14 +227,12 @@ public final class GenJsExprsVisitorTest {
         SoyFileSetParserBuilder.forTemplateContents(soyCode).errorReporter(boom).parse().fileSet();
     SoyNode node = SharedTestUtils.getNode(soyTree, indicesToNode);
 
-    UniqueNameGenerator nameGenerator = JsSrcNameGenerators.forLocalVariables();
     GenJsExprsVisitor visitor =
         JsSrcTestUtils.createGenJsExprsVisitorFactory()
             .create(
                 TranslationContext.of(
                     SoyToJsVariableMappings.startingWith(LOCAL_VAR_TRANSLATIONS),
-                    CodeChunk.Generator.create(nameGenerator),
-                    nameGenerator),
+                    JsSrcNameGenerators.forLocalVariables()),
                 AliasUtils.IDENTITY_ALIASES,
                 boom,
                 OPT_DATA);

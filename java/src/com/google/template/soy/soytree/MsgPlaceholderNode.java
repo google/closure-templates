@@ -104,7 +104,7 @@ public final class MsgPlaceholderNode extends AbstractBlockNode implements MsgSu
 
   @Override
   public String toSourceString() {
-    return getChild(0).toSourceString();
+    return numChildren() == 0 ? "" : getChild(0).toSourceString();
   }
 
   @Override

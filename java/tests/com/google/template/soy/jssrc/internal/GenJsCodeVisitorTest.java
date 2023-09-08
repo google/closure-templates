@@ -29,7 +29,6 @@ import com.google.template.soy.css.CssRegistry;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
-import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.testing.SharedTestUtils;
@@ -1045,12 +1044,9 @@ public final class GenJsCodeVisitorTest {
     genJsCodeVisitor.jsCodeBuilder.pushOutputVar("output");
     genJsCodeVisitor.jsCodeBuilder.setOutputVarInited();
     UniqueNameGenerator nameGenerator = JsSrcNameGenerators.forLocalVariables();
-    CodeChunk.Generator codeGenerator = CodeChunk.Generator.create(nameGenerator);
     TranslationContext translationContext =
         TranslationContext.of(
-            SoyToJsVariableMappings.startingWith(LOCAL_VAR_TRANSLATIONS),
-            codeGenerator,
-            nameGenerator);
+            SoyToJsVariableMappings.startingWith(LOCAL_VAR_TRANSLATIONS), nameGenerator);
     genJsCodeVisitor.templateTranslationContext = translationContext;
     genJsCodeVisitor.genJsExprsVisitor =
         JsSrcTestUtils.createGenJsExprsVisitorFactory()

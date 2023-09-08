@@ -16,28 +16,65 @@
 
 package com.google.template.soy.jssrc.internal;
 
-import com.google.auto.value.AutoValue;
 import com.google.template.soy.base.internal.UniqueNameGenerator;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 
-/**
- * Encapsulates state needed throughout the jssrc backend,
- * to prevent parameter lists from getting too long.
- * TODO: bags-of-parameters are still a code smell. Sort out which parts
- * actually need this stuff.
- */
-@AutoValue
-public abstract class TranslationContext {
-
-  public abstract SoyToJsVariableMappings soyToJsVariableMappings();
-  public abstract CodeChunk.Generator codeGenerator();
-  /** The name generator for this template. */
-  abstract UniqueNameGenerator nameGenerator();
+/** Manages variable scopes and lifetimes. */
+public final class TranslationContext {
 
   public static TranslationContext of(
-      SoyToJsVariableMappings soyToJsVariableMappings,
-      CodeChunk.Generator codeGenerator,
-      UniqueNameGenerator nameGenerator) {
-    return new AutoValue_TranslationContext(soyToJsVariableMappings, codeGenerator, nameGenerator);
+      SoyToJsVariableMappings soyToJsVariableMappings, UniqueNameGenerator nameGenerator) {
+    return new TranslationContext(soyToJsVariableMappings, nameGenerator);
+  }
+
+  private SoyToJsVariableMappings soyToJsVariableMappings;
+  private UniqueNameGenerator nameGenerator;
+
+  private TranslationContext(
+      SoyToJsVariableMappings soyToJsVariableMappings, UniqueNameGenerator nameGenerator) {
+    this.soyToJsVariableMappings = soyToJsVariableMappings;
+    this.nameGenerator = nameGenerator;
+  }
+
+  public SoyToJsVariableMappings soyToJsVariableMappings() {
+    return soyToJsVariableMappings;
+  }
+
+  public CodeChunk.Generator codeGenerator() {
+    return CodeChunk.Generator.create(nameGenerator);
+  }
+
+  /** The name generator for this template. */
+  UniqueNameGenerator nameGenerator() {
+    return nameGenerator;
+  }
+
+  /** A simple closeable to exit a variable scope. */
+  public interface ExitScope extends AutoCloseable {
+    @Override
+    void close();
+  }
+
+  /** Creates a new variable naming scope that will be active until the `ExitScope` is closed. */
+  public ExitScope enterSoyScope() {
+    var prevMappings = soyToJsVariableMappings;
+    soyToJsVariableMappings = SoyToJsVariableMappings.startingWith(prevMappings);
+    return () -> soyToJsVariableMappings = prevMappings;
+  }
+
+  /**
+   * Creates a new variable naming scope that will be active until the `ExitScope` is closed. Use
+   * this when we are entering a JS block scope as well, since this can be used to reduce name
+   * mangling.
+   */
+  public ExitScope enterSoyAndJsScope() {
+    var prevMappings = soyToJsVariableMappings;
+    soyToJsVariableMappings = SoyToJsVariableMappings.startingWith(prevMappings);
+    var prevGenerator = nameGenerator;
+    nameGenerator = nameGenerator.branch();
+    return () -> {
+      soyToJsVariableMappings = prevMappings;
+      nameGenerator = prevGenerator;
+    };
   }
 }

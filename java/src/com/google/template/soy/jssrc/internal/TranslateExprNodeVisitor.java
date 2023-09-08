@@ -19,6 +19,8 @@ package com.google.template.soy.jssrc.internal;
 import static com.google.common.base.CaseFormat.LOWER_CAMEL;
 import static com.google.common.base.CaseFormat.UPPER_CAMEL;
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
 import static com.google.template.soy.jssrc.dsl.Expressions.LITERAL_FALSE;
 import static com.google.template.soy.jssrc.dsl.Expressions.LITERAL_NULL;
 import static com.google.template.soy.jssrc.dsl.Expressions.LITERAL_TRUE;
@@ -102,7 +104,6 @@ import com.google.template.soy.exprtree.UndefinedNode;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.internal.proto.ProtoUtils;
-import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.jssrc.dsl.Expressions;
 import com.google.template.soy.jssrc.dsl.GoogRequire;
@@ -202,11 +203,10 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
    * The current replacement JS expressions for the local variables (and foreach-loop special
    * functions) current in scope.
    */
-  private final SoyToJsVariableMappings variableMappings;
+  private final TranslationContext translationContext;
 
   private final JavaScriptValueFactoryImpl javascriptValueFactory;
   private final ErrorReporter errorReporter;
-  private final CodeChunk.Generator codeGenerator;
   private final TemplateAliases templateAliases;
 
   /**
@@ -223,14 +223,18 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
       Expression dataSource) {
     this.javascriptValueFactory = javascriptValueFactory;
     this.errorReporter = errorReporter;
-    this.variableMappings = translationContext.soyToJsVariableMappings();
-    this.codeGenerator = translationContext.codeGenerator();
+    this.translationContext = translationContext;
     this.templateAliases = templateAliases;
     this.dataSource = dataSource;
   }
 
   public Expression getDataSource() {
     return dataSource;
+  }
+
+  @Override
+  protected Expression visit(ExprNode node) {
+    return checkNotNull(super.visit(node), "visit(%s) returned null", node);
   }
 
   /**
@@ -242,6 +246,10 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
    */
   Expression genCodeForParamAccess(String paramName, VarDefn varDefn) {
     Expression source = dataSource;
+    checkState(
+        varDefn instanceof TemplateParam || varDefn instanceof TemplateStateVar,
+        "expected a parameter type, got, %s",
+        varDefn);
     if (varDefn.isInjected()) {
       // Special case for csp_nonce. It is created by the compiler itself, and users should not need
       // to set it. So, instead of generating opt_ij_data.csp_nonce, we generate opt_ij_data &&
@@ -249,7 +257,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
       // TODO(lukes): we only need to generate this logic if there aren't any other ij params
       if (paramName.equals(CSP_NONCE_VARIABLE_NAME)
           || paramName.equals(CSP_STYLE_NONCE_VARIABLE_NAME)) {
-        return IJ_DATA.and(IJ_DATA.dotAccess(paramName), codeGenerator);
+        return IJ_DATA.and(IJ_DATA.dotAccess(paramName), translationContext.codeGenerator());
       }
       source = IJ_DATA;
     } else if (varDefn.kind() == VarDefn.Kind.STATE) {
@@ -335,71 +343,83 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
     Expression base = visit(node.getListExpr());
     String listIterVarTranslation =
         "list_comp_" + node.getNodeId() + "_" + node.getListIterVar().name();
-    variableMappings.put(node.getListIterVar(), id(listIterVarTranslation));
-    String indexVarTranslation =
-        node.getIndexVar() == null
-            ? null
-            : "list_comp_" + node.getNodeId() + "_" + node.getIndexVar().name();
-    if (node.getIndexVar() != null) {
-      variableMappings.put(node.getIndexVar(), id(indexVarTranslation));
-    }
-    SoyType listType = SoyTypes.tryRemoveNullish(node.getListExpr().getType());
-    // elementType can be unknown if it is the special EMPTY_LIST or if it isn't a known list type.
-    SoyType elementType =
-        listType.getKind() == SoyType.Kind.LIST
-            ? ((ListType) listType).getElementType()
-            : UnknownType.getInstance();
-    JsType elementJsType = jsTypeForStrict(elementType);
-    JsDoc doc =
-        node.getIndexVar() == null
-            ? JsDoc.builder()
-                .addParam(listIterVarTranslation, elementJsType.typeExpr())
-                .addGoogRequires(elementJsType.getGoogRequires())
-                .build()
-            : JsDoc.builder()
-                .addParam(listIterVarTranslation, elementJsType.typeExpr())
-                .addParam(indexVarTranslation, "number")
-                .addGoogRequires(elementJsType.getGoogRequires())
-                .build();
+    // List comprehensions create a sub-scope, so create a new mappings object and restore it when
+    // we return.
+    try (var unused = translationContext.enterSoyScope()) {
+      translationContext
+          .soyToJsVariableMappings()
+          .put(node.getListIterVar(), id(listIterVarTranslation));
+      String indexVarTranslation =
+          node.getIndexVar() == null
+              ? null
+              : "list_comp_" + node.getNodeId() + "_" + node.getIndexVar().name();
+      if (node.getIndexVar() != null) {
+        translationContext
+            .soyToJsVariableMappings()
+            .put(node.getIndexVar(), id(indexVarTranslation));
+      }
+      SoyType listType = SoyTypes.tryRemoveNullish(node.getListExpr().getType());
+      // elementType can be unknown if it is the special EMPTY_LIST or if it isn't a known list
+      // type.
+      SoyType elementType =
+          listType.getKind() == SoyType.Kind.LIST
+              ? ((ListType) listType).getElementType()
+              : UnknownType.getInstance();
+      JsType elementJsType = jsTypeForStrict(elementType);
+      JsDoc doc =
+          node.getIndexVar() == null
+              ? JsDoc.builder()
+                  .addParam(listIterVarTranslation, elementJsType.typeExpr())
+                  .addGoogRequires(elementJsType.getGoogRequires())
+                  .build()
+              : JsDoc.builder()
+                  .addParam(listIterVarTranslation, elementJsType.typeExpr())
+                  .addParam(indexVarTranslation, "number")
+                  .addGoogRequires(elementJsType.getGoogRequires())
+                  .build();
 
-    if (node.getFilterExpr() != null && node.getIndexVar() != null) {
-      return SOY_FILTER_AND_MAP.call(
-          base,
-          arrowFunction(
-              doc,
-              maybeCoerceToBoolean(
-                  node.getFilterExpr().getType(), visit(node.getFilterExpr()), /* force= */ false)),
-          arrowFunction(doc, visit(node.getListItemTransformExpr())));
-    }
-    if (node.getFilterExpr() != null) {
-      // Cast the receiver type to ReadonlyArray to fix poor type inference on filter callback
-      // functions when the type is Array<X>|
+      if (node.getFilterExpr() != null && node.getIndexVar() != null) {
+        return SOY_FILTER_AND_MAP.call(
+            base,
+            arrowFunction(
+                doc,
+                maybeCoerceToBoolean(
+                    node.getFilterExpr().getType(),
+                    visit(node.getFilterExpr()),
+                    /* force= */ false)),
+            arrowFunction(doc, visit(node.getListItemTransformExpr())));
+      }
+      if (node.getFilterExpr() != null) {
+        // Cast the receiver type to ReadonlyArray to fix poor type inference on filter callback
+        // functions when the type is Array<X>|
+        base =
+            JsRuntime.SOY_AS_READONLY
+                .call(base)
+                .dotAccess("filter")
+                .call(
+                    arrowFunction(
+                        doc,
+                        maybeCoerceToBoolean(
+                            node.getFilterExpr().getType(),
+                            visit(node.getFilterExpr()),
+                            /* force= */ false)));
+      }
+      // handle a special case for trivial transformations
+      if (node.getListItemTransformExpr().getKind() == ExprNode.Kind.VAR_REF_NODE) {
+        VarRefNode transformNode = (VarRefNode) node.getListItemTransformExpr();
+        if (transformNode.getDefnDecl().equals(node.getListIterVar())) {
+          return base;
+        }
+      }
+      // Cast the receiver type to ReadonlyArray to fix poor type inference on map callback
+      // functions
       base =
           JsRuntime.SOY_AS_READONLY
               .call(base)
-              .dotAccess("filter")
-              .call(
-                  arrowFunction(
-                      doc,
-                      maybeCoerceToBoolean(
-                          node.getFilterExpr().getType(),
-                          visit(node.getFilterExpr()),
-                          /* force= */ false)));
+              .dotAccess("map")
+              .call(arrowFunction(doc, visit(node.getListItemTransformExpr())));
+      return base;
     }
-    // handle a special case for trivial transformations
-    if (node.getListItemTransformExpr().getKind() == ExprNode.Kind.VAR_REF_NODE) {
-      VarRefNode transformNode = (VarRefNode) node.getListItemTransformExpr();
-      if (transformNode.getName().equals(node.getListIterVar().refName())) {
-        return base;
-      }
-    }
-    // Cast the receiver type to ReadonlyArray to fix poor type inference on map callback functions
-    base =
-        JsRuntime.SOY_AS_READONLY
-            .call(base)
-            .dotAccess("map")
-            .call(arrowFunction(doc, visit(node.getListItemTransformExpr())));
-    return base;
   }
 
   @Override
@@ -481,7 +501,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
 
   @Override
   protected Expression visitVarRefNode(VarRefNode node) {
-    Expression translation = variableMappings.maybeGet(node.getName());
+    Expression translation = translationContext.soyToJsVariableMappings().maybeGet(node.getName());
     if (translation != null) {
       // Case 1: In-scope local var.
       return translation;
@@ -497,7 +517,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
   protected Expression visitDataAccessNode(DataAccessNode node) {
     // All null safe accesses should've already been converted to NullSafeAccessNodes.
     checkArgument(!node.isNullSafe());
-    return accumulateDataAccess(node).result(codeGenerator);
+    return accumulateDataAccess(node).result(translationContext.codeGenerator());
   }
 
   @Override
@@ -510,7 +530,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
       dataAccess = nullSafe.getDataAccess();
     }
     return accumulateNullSafeDataAccessTail((AccessChainComponentNode) dataAccess, accumulator)
-        .result(codeGenerator);
+        .result(translationContext.codeGenerator());
   }
 
   /** Returns a function that can 'unpack' safe proto types into sanitized content types.. */
@@ -573,7 +593,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
                       fieldAccess.getFieldName(),
                       (SoyJavaScriptSourceFunction) sourceMethod.getImpl(),
                       ImmutableList.of(baseExpr),
-                      codeGenerator));
+                      translationContext.codeGenerator()));
         }
 
         FieldAccess access =
@@ -726,7 +746,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
                 methodCallNode.getMethodName().identifier(),
                 (SoyJavaScriptSourceFunction) sourceMethod.getImpl(),
                 args,
-                codeGenerator);
+                translationContext.codeGenerator());
           });
     } else {
       throw new AssertionError(soyMethod.getClass());
@@ -779,7 +799,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
     List<Expression> operands = visitChildren(node);
     Expression consequent = operands.get(0);
     Expression alternate = operands.get(1);
-    return consequent.nullishCoalesce(alternate, codeGenerator);
+    return consequent.nullishCoalesce(alternate, translationContext.codeGenerator());
   }
 
   @Override
@@ -794,7 +814,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
     //    semantics, so explicit coercions are necessary to ensure we get a boolean value.
     Expression lhChunk = maybeCoerceToBoolean(lhOperand.getType(), visit(lhOperand), true);
     Expression rhChunk = maybeCoerceToBoolean(rhOperand.getType(), visit(rhOperand), true);
-    return lhChunk.and(rhChunk, codeGenerator);
+    return lhChunk.and(rhChunk, translationContext.codeGenerator());
   }
 
   @Override
@@ -805,16 +825,18 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
     // See comments in visitAndOpNode for why explicit coercions are required.
     Expression lhChunk = maybeCoerceToBoolean(lhOperand.getType(), visit(lhOperand), true);
     Expression rhChunk = maybeCoerceToBoolean(rhOperand.getType(), visit(rhOperand), true);
-    return lhChunk.or(rhChunk, codeGenerator);
+    return lhChunk.or(rhChunk, translationContext.codeGenerator());
   }
 
   @Override
   protected Expression visitConditionalOpNode(ConditionalOpNode node) {
     Preconditions.checkArgument(node.numChildren() == 3);
-    return codeGenerator.conditionalExpression(
-        maybeCoerceToBoolean(node.getChild(0).getType(), visit(node.getChild(0)), false),
-        visit(node.getChild(1)),
-        visit(node.getChild(2)));
+    return translationContext
+        .codeGenerator()
+        .conditionalExpression(
+            maybeCoerceToBoolean(node.getChild(0).getType(), visit(node.getChild(0)), false),
+            visit(node.getChild(1)),
+            visit(node.getChild(2)));
   }
 
   @Override
@@ -832,6 +854,8 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
    * @param force {@code true} to always coerce to boolean; {@code false} to only coerce for idom.
    */
   protected Expression maybeCoerceToBoolean(SoyType type, Expression chunk, boolean force) {
+    checkNotNull(type);
+    checkNotNull(chunk);
     // TODO(lukes): we can have smarter logic here,  most types have trivial boolean coercions
     // we only need to be careful about ?,any and the sanitized types
     if (force && type.getKind() != Kind.BOOL) {
@@ -1026,7 +1050,8 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
           return visit(node.getChild(0));
         case DEBUG_SOY_TEMPLATE_INFO:
           // TODO(lukes): does this need a goog.debug guard? it exists in the runtime
-          return GOOG_DEBUG.and(JsRuntime.SOY_DEBUG_SOY_TEMPLATE_INFO.call(), codeGenerator);
+          return GOOG_DEBUG.and(
+              JsRuntime.SOY_DEBUG_SOY_TEMPLATE_INFO.call(), translationContext.codeGenerator());
         case VE_DATA:
           return visitVeDataFunction(node);
         case VE_DEF:
@@ -1047,10 +1072,10 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
           node.getStaticFunctionName(),
           (SoyJavaScriptSourceFunction) soyFunction,
           visitChildren(node),
-          codeGenerator);
+          translationContext.codeGenerator());
     } else if (soyFunction instanceof ExternRef) {
       ExternRef ref = (ExternRef) soyFunction;
-      return variableMappings.get(ref.name()).call(visitChildren(node));
+      return translationContext.soyToJsVariableMappings().get(ref.name()).call(visitChildren(node));
     } else {
       if (!(soyFunction instanceof SoyJsSrcFunction)) {
         errorReporter.report(
@@ -1109,12 +1134,13 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
                     ((LocalVar) ((VarRefNode) node.getChild(0)).getDefnDecl()).declaringNode())
                 .getChild(0);
 
-    return variableMappings.isPrimaryMsgInUse(msgNode);
+    return translationContext.soyToJsVariableMappings().isPrimaryMsgInUse(msgNode);
   }
 
   private Expression visitUnknownJsGlobal(FunctionNode node) {
     StringNode expr = (StringNode) node.getChild(0);
-    return codeGenerator
+    return translationContext
+        .codeGenerator()
         .declarationBuilder()
         .setRhs(Expressions.dottedIdNoRequire(expr.getValue()))
         .setJsDoc(JsDoc.builder().addParameterizedAnnotation("suppress", "missingRequire").build())
@@ -1131,7 +1157,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
     Expression debugNameExpr =
         Expressions.ifExpression(GOOG_DEBUG, visit(node.getChild(0)))
             .setElse(Expressions.LITERAL_UNDEFINED)
-            .build(codeGenerator);
+            .build(translationContext.codeGenerator());
     return construct(SOY_VISUAL_ELEMENT, visit(node.getChild(1)), metadataExpr, debugNameExpr);
   }
 

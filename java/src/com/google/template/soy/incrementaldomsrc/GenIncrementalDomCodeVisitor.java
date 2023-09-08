@@ -228,6 +228,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
             .addParameterizedAnnotation("suppress", "checkTypes")
             .build();
     // Build `renderInternal` method.
+    try (var unused = templateTranslationContext.enterSoyAndJsScope()) {
     Expression fn =
         Expressions.function(
             jsDoc,
@@ -251,6 +252,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
         .setJsDoc(jsDoc)
         .setRhs(fn)
         .build();
+    }
   }
 
   private Statement generateInitInternal(TemplateElementNode node) {
@@ -294,6 +296,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
             .addParameterizedAnnotation("suppress", "checkTypes")
             .addParam("syncOnlyData", "boolean=")
             .build();
+    try (var exitScope = templateTranslationContext.enterSoyAndJsScope()) {
     return VariableDeclaration.builder(soyElementClassName + "SyncInternal")
         .setJsDoc(jsDoc)
         .setRhs(
@@ -307,6 +310,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
                         .build(),
                     genSyncStateCalls(node, alias))))
         .build();
+    }
   }
 
   @Override
@@ -592,52 +596,43 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
 
     String paramsType = hasOnlyImplicitParams(node) ? "null" : "!" + alias + ".Params";
 
-    ImmutableList.Builder<MethodDeclaration> stateMethods = ImmutableList.builder();
-    for (TemplateStateVar stateVar : node.getStateVars()) {
-      stateMethods.addAll(
-          this.generateStateMethodsForSoyElementClass(soyElementClassName, stateVar));
+    ImmutableList.Builder<MethodDeclaration> methods = ImmutableList.builder();
+    try (var unused = templateTranslationContext.enterSoyAndJsScope()) {
+      ImmutableList.Builder<Statement> stateVarInitializations = ImmutableList.builder();
+      stateVarInitializations.add(generateInitInternal(node));
+      if (hasNonConstantState) {
+        stateVarInitializations.add(
+            Statements.assign(
+                Expressions.THIS.dotAccess("syncStateFromData"),
+                id(soyElementClassName + "SyncInternal")));
+      }
+      // Build constructor method.
+      Statement ctorBody =
+          Statements.of(
+              id("super").call().asStatement(), Statements.of(stateVarInitializations.build()));
+      MethodDeclaration constructorMethod =
+          MethodDeclaration.create("constructor", JsDoc.builder().build(), ctorBody);
+      methods.add(constructorMethod);
     }
-    ImmutableList.Builder<MethodDeclaration> parameterMethods = ImmutableList.builder();
+    for (TemplateStateVar stateVar : node.getStateVars()) {
+      methods.addAll(this.generateStateMethodsForSoyElementClass(soyElementClassName, stateVar));
+    }
     for (TemplateParam param : node.getParams()) {
       if (param.isImplicit()) {
         continue;
       }
-      parameterMethods.add(
+      methods.add(
           this.generateGetParamMethodForSoyElementClass(
               param, /* isAbstract= */ false, /* isInjected= */ false));
     }
-    ImmutableList.Builder<MethodDeclaration> injectedParameterMethods = ImmutableList.builder();
     for (TemplateParam injectedParam : node.getInjectedParams()) {
-      injectedParameterMethods.add(
+      methods.add(
           this.generateGetParamMethodForSoyElementClass(
               injectedParam, /* isAbstract= */ false, /* isInjected= */ true));
     }
 
-    ImmutableList.Builder<Statement> stateVarInitializations = ImmutableList.builder();
-    stateVarInitializations.add(generateInitInternal(node));
-    if (hasNonConstantState) {
-      stateVarInitializations.add(
-          Statements.assign(
-              Expressions.THIS.dotAccess("syncStateFromData"),
-              id(soyElementClassName + "SyncInternal")));
-    }
-    // Build constructor method.
-    Statement ctorBody =
-        Statements.of(
-            id("super").call().asStatement(), Statements.of(stateVarInitializations.build()));
-    MethodDeclaration constructorMethod =
-        MethodDeclaration.create("constructor", JsDoc.builder().build(), ctorBody);
-    ImmutableList.Builder<MethodDeclaration> builder = ImmutableList.builder();
-    builder.add(constructorMethod);
-
     ClassExpression soyElementClass =
-        ClassExpression.create(
-            SOY_IDOM.dotAccess("$SoyElement"),
-            builder
-                .addAll(stateMethods.build())
-                .addAll(parameterMethods.build())
-                .addAll(injectedParameterMethods.build())
-                .build());
+        ClassExpression.create(SOY_IDOM.dotAccess("$SoyElement"), methods.build());
     String elementAccessor = soyElementClassName + "Interface";
     return VariableDeclaration.builder(soyElementClassName)
         .setJsDoc(
@@ -697,45 +692,52 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
       String soyElementClassName, TemplateStateVar stateVar) {
     ImmutableList.Builder<MethodDeclaration> methods = ImmutableList.builder();
 
-    // Generate getters.
     JsType typeForState = JsType.forIncrementalDomDeclarations(stateVar.type());
     JsType typeForGetters = JsType.forIncrementalDomGetters(stateVar.type());
     String stateAccessorSuffix =
         Ascii.toUpperCase(stateVar.name().substring(0, 1)) + stateVar.name().substring(1);
-    Expression getterStateValue =
-        maybeCastAs(
-            id("this").dotAccess(STATE_PREFIX + stateVar.name()), typeForState, typeForGetters);
-    methods.add(
-        MethodDeclaration.create(
-            "get" + stateAccessorSuffix,
-            JsDoc.builder().addParameterizedAnnotation("return", typeForGetters.typeExpr()).build(),
-            Statements.returnValue(getterStateValue)));
+    try (var unused = templateTranslationContext.enterSoyAndJsScope()) {
+      // Generate getters.
+      Expression getterStateValue =
+          maybeCastAs(
+              id("this").dotAccess(STATE_PREFIX + stateVar.name()), typeForState, typeForGetters);
+      methods.add(
+          MethodDeclaration.create(
+              "get" + stateAccessorSuffix,
+              JsDoc.builder()
+                  .addParameterizedAnnotation("return", typeForGetters.typeExpr())
+                  .build(),
+              Statements.returnValue(getterStateValue)));
+    }
 
     // Generate setters.
-    ImmutableList.Builder<Statement> setStateMethodStatements = ImmutableList.builder();
-    JsType typeForSetters = JsType.forIncrementalDomSetters(stateVar.type());
-    Optional<Expression> typeAssertion =
-        typeForSetters.getSoyParamTypeAssertion(
-            id(stateVar.name()),
-            stateVar.name(),
-            /* paramKind= */ "@state",
-            templateTranslationContext.codeGenerator());
-    if (typeAssertion.isPresent()) {
-      setStateMethodStatements.add(typeAssertion.get().asStatement());
+    try (var unused = templateTranslationContext.enterSoyAndJsScope()) {
+
+      ImmutableList.Builder<Statement> setStateMethodStatements = ImmutableList.builder();
+      JsType typeForSetters = JsType.forIncrementalDomSetters(stateVar.type());
+      Optional<Expression> typeAssertion =
+          typeForSetters.getSoyParamTypeAssertion(
+              id(stateVar.name()),
+              stateVar.name(),
+              /* paramKind= */ "@state",
+              templateTranslationContext.codeGenerator());
+      if (typeAssertion.isPresent()) {
+        setStateMethodStatements.add(typeAssertion.get().asStatement());
+      }
+      Expression setterStateValue = id("this").dotAccess(STATE_PREFIX + stateVar.name());
+      // TODO(b/230911572): remove this cast when types are always aligned.
+      Expression setterParam = maybeCastAs(id(stateVar.name()), typeForSetters, typeForState);
+      setStateMethodStatements.add(
+          setterStateValue.assign(setterParam).asStatement(), Statements.returnValue(id("this")));
+      methods.add(
+          MethodDeclaration.create(
+              "set" + stateAccessorSuffix,
+              JsDoc.builder()
+                  .addParam(stateVar.name(), typeForSetters.typeExpr())
+                  .addParameterizedAnnotation("return", "!" + soyElementClassName)
+                  .build(),
+              Statements.of(setStateMethodStatements.build())));
     }
-    Expression setterStateValue = id("this").dotAccess(STATE_PREFIX + stateVar.name());
-    // TODO(b/230911572): remove this cast when types are always aligned.
-    Expression setterParam = maybeCastAs(id(stateVar.name()), typeForSetters, typeForState);
-    setStateMethodStatements.add(
-        setterStateValue.assign(setterParam).asStatement(), Statements.returnValue(id("this")));
-    methods.add(
-        MethodDeclaration.create(
-            "set" + stateAccessorSuffix,
-            JsDoc.builder()
-                .addParam(stateVar.name(), typeForSetters.typeExpr())
-                .addParameterizedAnnotation("return", "!" + soyElementClassName)
-                .build(),
-            Statements.of(setStateMethodStatements.build())));
 
     return methods.build();
   }
@@ -756,39 +758,41 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
               .build(),
           Statements.of(ImmutableList.of()));
     }
-    // TODO(b/230911572): remove this cast when types are always aligned.
-    Expression value =
-        maybeCastAs(
-            id("this").dotAccess(isInjected ? "ijData" : "data").dotAccess(param.name()),
-            JsType.forIncrementalDomState(param.type()),
-            jsType);
-    if (param.hasDefault()) {
-      value =
-          templateTranslationContext
-              .codeGenerator()
-              .declarationBuilder()
-              .setMutable()
-              .setRhs(value)
-              .build()
-              .ref();
-      value =
-          value.withInitialStatement(
-              genParamDefault(param, value, jsType, templateTranslationContext.codeGenerator()));
+    try (var unused = templateTranslationContext.enterSoyAndJsScope()) {
+      // TODO(b/230911572): remove this cast when types are always aligned.
+      Expression value =
+          maybeCastAs(
+              id("this").dotAccess(isInjected ? "ijData" : "data").dotAccess(param.name()),
+              JsType.forIncrementalDomState(param.type()),
+              jsType);
+      if (param.hasDefault()) {
+        value =
+            templateTranslationContext
+                .codeGenerator()
+                .declarationBuilder()
+                .setMutable()
+                .setRhs(value)
+                .build()
+                .ref();
+        value =
+            value.withInitialStatement(
+                genParamDefault(param, value, jsType, templateTranslationContext.codeGenerator()));
+      }
+      // Injected params are marked as optional to account for unused templates, see:
+      // We can assert the presence of the injected param if it being called.
+      Optional<Expression> typeAssertion =
+          isInjected
+              ? jsType.getSoyParamTypeAssertion(
+                  value,
+                  param.name(),
+                  /* paramKind= */ "@inject",
+                  templateTranslationContext.codeGenerator())
+              : Optional.empty();
+      return MethodDeclaration.create(
+          "get" + accessorSuffix,
+          JsDoc.builder().addAnnotation("override").addAnnotation("public").build(),
+          Statements.returnValue(typeAssertion.orElse(value)));
     }
-    // Injected params are marked as optional to account for unused templates, see:
-    // We can assert the presence of the injected param if it being called.
-    Optional<Expression> typeAssertion =
-        isInjected
-            ? jsType.getSoyParamTypeAssertion(
-                value,
-                param.name(),
-                /* paramKind= */ "@inject",
-                templateTranslationContext.codeGenerator())
-            : Optional.empty();
-    return MethodDeclaration.create(
-        "get" + accessorSuffix,
-        JsDoc.builder().addAnnotation("override").addAnnotation("public").build(),
-        Statements.returnValue(typeAssertion.orElse(value)));
   }
 
   /** Constructs template class name, e.g. converts template `ns.foo` => `$FooElement`. */

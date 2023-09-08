@@ -52,7 +52,6 @@ import com.google.errorprone.annotations.CheckReturnValue;
 import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.SanitizedContentKind;
-import com.google.template.soy.base.internal.UniqueNameGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
@@ -160,7 +159,6 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
   private final SoyTypeRegistry typeRegistry;
 
   protected ErrorReporter errorReporter;
-  protected SoyToJsVariableMappings topLevelSymbols;
   protected TranslationContext templateTranslationContext;
 
   protected List<Statement> staticVarDeclarations;
@@ -232,7 +230,9 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
   void visitForTesting(SoyNode node, FileSetMetadata registry, ErrorReporter errorReporter) {
     this.errorReporter = errorReporter;
     this.fileSetMetadata = registry;
-    this.topLevelSymbols = SoyToJsVariableMappings.newEmpty();
+    this.templateTranslationContext =
+        TranslationContext.of(
+            SoyToJsVariableMappings.newEmpty(), JsSrcNameGenerators.forLocalVariables());
     visit(node);
   }
 
@@ -378,15 +378,14 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       }
     }
 
-    topLevelSymbols = SoyToJsVariableMappings.newEmpty();
-
+    // TODO(lukes): reserve all the namespace prefixes that are in scope
+    // TODO(lukes): use this for all local variable declarations
+    templateTranslationContext =
+        TranslationContext.of(
+            SoyToJsVariableMappings.newEmpty(), JsSrcNameGenerators.forLocalVariables());
     for (ImportNode importNode : node.getImports()) {
       visit(importNode);
     }
-    UniqueNameGenerator nameGenerator = JsSrcNameGenerators.forLocalVariables();
-    CodeChunk.Generator codeGenerator = CodeChunk.Generator.create(nameGenerator);
-    templateTranslationContext =
-        TranslationContext.of(topLevelSymbols, codeGenerator, nameGenerator);
     // Install all constant references in the topLevelSymbols map so that templates can find them
     for (ConstNode constant : node.getConstants()) {
       registerLocalConstant(constant);
@@ -599,13 +598,17 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
             }
             if (var.type().getKind() == Kind.FUNCTION) {
               Expression translation = dottedIdNoRequire(namespace + "." + var.getSymbol());
-              topLevelSymbols.put(var.getSymbol(), translation);
+              templateTranslationContext
+                  .soyToJsVariableMappings()
+                  .put(var.getSymbol(), translation);
             } else {
-              topLevelSymbols.put(
-                  var.name(),
-                  JsRuntime.SOY_GET_CONST.call(
-                      dottedIdNoRequire(namespace + "." + var.getSymbol()),
-                      JsRuntime.SOY_INTERNAL_CALL_MARKER));
+              templateTranslationContext
+                  .soyToJsVariableMappings()
+                  .put(
+                      var.name(),
+                      JsRuntime.SOY_GET_CONST.call(
+                          dottedIdNoRequire(namespace + "." + var.getSymbol()),
+                          JsRuntime.SOY_INTERNAL_CALL_MARKER));
             }
           }
         });
@@ -676,10 +679,12 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
   }
 
   private void registerLocalConstant(ConstNode node) {
-    topLevelSymbols.put(
-        node.getVar().name(),
-        JsRuntime.SOY_GET_CONST.call(
-            getLocalConstantExpr(node), JsRuntime.SOY_INTERNAL_CALL_MARKER));
+    templateTranslationContext
+        .soyToJsVariableMappings()
+        .put(
+            node.getVar().name(),
+            JsRuntime.SOY_GET_CONST.call(
+                getLocalConstantExpr(node), JsRuntime.SOY_INTERNAL_CALL_MARKER));
   }
 
   private Statement makeRegisterDelegateFn(
@@ -790,200 +795,202 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
     // TODO(lukes): reserve all the namespace prefixes that are in scope
     // TODO(lukes): use this for all local variable declarations
-    UniqueNameGenerator nameGenerator = JsSrcNameGenerators.forLocalVariables();
-    CodeChunk.Generator codeGenerator = CodeChunk.Generator.create(nameGenerator);
-    templateTranslationContext =
-        TranslationContext.of(
-            SoyToJsVariableMappings.startingWith(topLevelSymbols), codeGenerator, nameGenerator);
-    genJsExprsVisitor =
-        genJsExprsVisitorFactory.create(
-            templateTranslationContext, templateAliases, errorReporter, OPT_DATA);
+    try (var unused = templateTranslationContext.enterSoyAndJsScope()) {
+      genJsExprsVisitor =
+          genJsExprsVisitorFactory.create(
+              templateTranslationContext, templateAliases, errorReporter, OPT_DATA);
 
-    ImmutableList.Builder<Statement> declarations = ImmutableList.builder();
+      ImmutableList.Builder<Statement> declarations = ImmutableList.builder();
 
-    if (node instanceof TemplateDelegateNode && node.getChildren().isEmpty()) {
-      TemplateDelegateNode nodeAsDelTemplate = (TemplateDelegateNode) node;
-      // Don't emit anything for an empty default deltemplate, at runtime a missing entry in the
-      // runtime map will be assumed to be an explicit empty template
-      if (nodeAsDelTemplate.getDelTemplateVariant().isEmpty()
-          && nodeAsDelTemplate.getModName() == null) {
+      if (node instanceof TemplateDelegateNode && node.getChildren().isEmpty()) {
+        TemplateDelegateNode nodeAsDelTemplate = (TemplateDelegateNode) node;
+        // Don't emit anything for an empty default deltemplate, at runtime a missing entry in the
+        // runtime map will be assumed to be an explicit empty template
+        if (nodeAsDelTemplate.getDelTemplateVariant().isEmpty()
+            && nodeAsDelTemplate.getModName() == null) {
+          return;
+        }
+        Expression emptyFnCall = SOY_MAKE_EMPTY_TEMPLATE_FN.call(stringLiteral(templateName));
+        JsDoc jsDoc = generateEmptyFunctionJsDoc(node);
+        if (jsSrcOptions.shouldGenerateGoogModules()) {
+          declarations.add(
+              VariableDeclaration.builder(alias).setJsDoc(jsDoc).setRhs(emptyFnCall).build());
+        } else {
+          declarations.add(Statements.assign(aliasExp, emptyFnCall, jsDoc));
+        }
+        declarations.add(makeRegisterDelegateFn(nodeAsDelTemplate, aliasExp));
+        jsCodeBuilder.append(Statements.of(declarations.build()));
         return;
       }
-      Expression emptyFnCall = SOY_MAKE_EMPTY_TEMPLATE_FN.call(stringLiteral(templateName));
-      JsDoc jsDoc = generateEmptyFunctionJsDoc(node);
-      if (jsSrcOptions.shouldGenerateGoogModules()) {
-        declarations.add(
-            VariableDeclaration.builder(alias).setJsDoc(jsDoc).setRhs(emptyFnCall).build());
-      } else {
-        declarations.add(Statements.assign(aliasExp, emptyFnCall, jsDoc));
-      }
-      declarations.add(makeRegisterDelegateFn(nodeAsDelTemplate, aliasExp));
-      jsCodeBuilder.append(Statements.of(declarations.build()));
-      return;
-    }
 
-    if (generatePositionalParamsSignature) {
-      JsDoc jsDoc =
-          generateFunctionJsDoc(
-              node,
-              alias,
-              /* suppressCheckTypes= */ false,
-              /* addVariantParam= */ isModifiableWithUseVariantType(node));
-      Expression publicFunction =
-          Expressions.function(jsDoc, generateDelegateFunction(node, alias));
-      JsDoc positionalFunctionDoc =
-          generatePositionalFunctionJsDoc(
-              node, /* addVariantParam= */ isModifiableWithUseVariantType(node));
-      Expression positionalFunction =
-          Expressions.function(
-              positionalFunctionDoc,
-              isModifiable(node)
-                  ? generateModTemplateSelection(node, alias, codeGenerator)
-                  : generateFunctionBody(
-                      node, alias, /* objectParamName= */ null, /* addStubMapLogic= */ true));
+      if (generatePositionalParamsSignature) {
+        JsDoc jsDoc =
+            generateFunctionJsDoc(
+                node,
+                alias,
+                /* suppressCheckTypes= */ false,
+                /* addVariantParam= */ isModifiableWithUseVariantType(node));
+        Expression publicFunction =
+            Expressions.function(jsDoc, generateDelegateFunction(node, alias));
+        JsDoc positionalFunctionDoc =
+            generatePositionalFunctionJsDoc(
+                node, /* addVariantParam= */ isModifiableWithUseVariantType(node));
+        Expression positionalFunction =
+            Expressions.function(
+                positionalFunctionDoc,
+                isModifiable(node)
+                    ? generateModTemplateSelection(
+                        node, alias, templateTranslationContext.codeGenerator())
+                    : generateFunctionBody(
+                        node, alias, /* objectParamName= */ null, /* addStubMapLogic= */ true));
 
-      if (jsSrcOptions.shouldGenerateGoogModules()) {
-        VariableDeclaration publicDeclaration =
-            VariableDeclaration.builder(alias).setJsDoc(jsDoc).setRhs(publicFunction).build();
-        declarations.add(publicDeclaration);
-        VariableDeclaration positionalDeclaration =
-            VariableDeclaration.builder(alias + "$")
-                .setJsDoc(positionalFunctionDoc)
-                .setRhs(positionalFunction)
-                .build();
-        declarations.add(positionalDeclaration);
-        // don't export deltemplates or private templates
-        if (!(node instanceof TemplateDelegateNode) && node.getVisibility() == Visibility.PUBLIC) {
-          declarations.add(
-              assign(JsRuntime.EXPORTS.dotAccess(partialName), publicDeclaration.ref()));
-          declarations.add(
-              assign(JsRuntime.EXPORTS.dotAccess(partialName + "$"), positionalDeclaration.ref()));
-        }
-      } else {
-        declarations.add(Statements.assign(aliasExp, publicFunction, jsDoc));
-        declarations.add(
-            Statements.assign(
-                dottedIdNoRequire(alias + "$"), positionalFunction, positionalFunctionDoc));
-      }
-    } else {
-      JsDoc jsDoc =
-          generateFunctionJsDoc(
-              node,
-              alias,
-              /* suppressCheckTypes= */ true,
-              /* addVariantParam= */ isModifiableWithUseVariantType(node));
-      String objectParamType = jsDoc.params().get(1).type();
-      Expression function =
-          Expressions.function(
-              jsDoc,
-              isModifiable(node)
-                  ? generateModTemplateSelection(node, alias, codeGenerator)
-                  : generateFunctionBody(
-                      // Remove optional type cast
-                      node,
-                      alias,
-                      // Strip the optional suffix character "="
-                      /* objectParamName= */ objectParamType.substring(
-                          0, objectParamType.length() - 1),
-                      /* addStubMapLogic= */ true));
-
-      if (jsSrcOptions.shouldGenerateGoogModules()) {
-        declarations.add(
-            VariableDeclaration.builder(alias).setJsDoc(jsDoc).setRhs(function).build());
-        // don't export deltemplates or private templates
-        if (!(node instanceof TemplateDelegateNode) && node.getVisibility() == Visibility.PUBLIC) {
-          declarations.add(assign(JsRuntime.EXPORTS.dotAccess(partialName), aliasExp));
-        }
-      } else {
-        declarations.add(Statements.assign(aliasExp, function, jsDoc));
-      }
-    }
-
-    if (!jsSrcOptions.shouldGenerateGoogModules()
-        && node.getContentKind() == SanitizedContentKind.HTML
-        && node.getVisibility() == Visibility.PUBLIC) {
-      declarations.add(
-          Statements.ifStatement(
-                  Expressions.LITERAL_FALSE,
-                  VariableDeclaration.builder(alias + "_" + StandardNames.SOY_STUB)
-                      .setJsDoc(
-                          generatePositionalFunctionJsDoc(
-                              node, /* addVariantParam= */ isModifiableWithUseVariantType(node)))
-                      .build())
-              .build());
-    }
-
-    // ------ Add the @typedef of opt_data. ------
-    if (!hasOnlyImplicitParams(node)) {
-      declarations.add(
-          aliasExp
-              .dotAccess("Params")
-              .asStatement(
-                  JsDoc.builder()
-                      .addParameterizedAnnotation("typedef", genParamsRecordType(node))
-                      .build()));
-    }
-
-    // ------ Add the fully qualified template name to the function to use in debug code. ------
-    declarations.add(
-        ifStatement(
-                GOOG_DEBUG,
+        if (jsSrcOptions.shouldGenerateGoogModules()) {
+          VariableDeclaration publicDeclaration =
+              VariableDeclaration.builder(alias).setJsDoc(jsDoc).setRhs(publicFunction).build();
+          declarations.add(publicDeclaration);
+          VariableDeclaration positionalDeclaration =
+              VariableDeclaration.builder(alias + "$")
+                  .setJsDoc(positionalFunctionDoc)
+                  .setRhs(positionalFunction)
+                  .build();
+          declarations.add(positionalDeclaration);
+          // don't export deltemplates or private templates
+          if (!(node instanceof TemplateDelegateNode)
+              && node.getVisibility() == Visibility.PUBLIC) {
+            declarations.add(
+                assign(JsRuntime.EXPORTS.dotAccess(partialName), publicDeclaration.ref()));
+            declarations.add(
                 assign(
-                    aliasExp.dotAccess("soyTemplateName"),
-                    stringLiteral(templateName),
-                    JsDoc.builder()
-                        .addAnnotation("nocollapse")
-                        .addParameterizedAnnotation("type", "string")
-                        .build()))
-            .build());
-
-    // ------ If delegate template, generate a statement to register it. ------
-    if (node instanceof TemplateDelegateNode) {
-      TemplateDelegateNode nodeAsDelTemplate = (TemplateDelegateNode) node;
-      declarations.add(makeRegisterDelegateFn(nodeAsDelTemplate, aliasExp));
-    }
-
-    // ------ For modifiable templates, generate and register the default implementation. -----
-    if (isModifiable(node) && !node.getChildren().isEmpty()) {
-      String defaultImplName = alias + modifiableDefaultImplSuffix;
-      JsDoc jsDoc =
-          generatePositionalParamsSignature
-              ? generatePositionalFunctionJsDoc(node, /* addVariantParam= */ false)
-              : generateFunctionJsDoc(
-                  node, alias, /* suppressCheckTypes= */ true, /* addVariantParam= */ false);
-      String objectParamType = jsDoc.params().get(1).type();
-      Expression impl =
-          Expressions.function(
-              jsDoc,
-              generateFunctionBody(
-                  node,
-                  alias,
-                  /* objectParamName= */ generatePositionalParamsSignature
-                      ? null
-                      // Strip the optional suffix character "="
-                      : objectParamType.substring(0, objectParamType.length() - 1),
-                  /* addStubMapLogic= */ false));
-      if (jsSrcOptions.shouldGenerateGoogModules()) {
-        declarations.add(
-            VariableDeclaration.builder(defaultImplName).setJsDoc(jsDoc).setRhs(impl).build());
+                    JsRuntime.EXPORTS.dotAccess(partialName + "$"), positionalDeclaration.ref()));
+          }
+        } else {
+          declarations.add(Statements.assign(aliasExp, publicFunction, jsDoc));
+          declarations.add(
+              Statements.assign(
+                  dottedIdNoRequire(alias + "$"), positionalFunction, positionalFunctionDoc));
+        }
       } else {
-        declarations.add(Statements.assign(dottedIdNoRequire(defaultImplName), impl, jsDoc));
+        JsDoc jsDoc =
+            generateFunctionJsDoc(
+                node,
+                alias,
+                /* suppressCheckTypes= */ true,
+                /* addVariantParam= */ isModifiableWithUseVariantType(node));
+        String objectParamType = jsDoc.params().get(1).type();
+        Expression function =
+            Expressions.function(
+                jsDoc,
+                isModifiable(node)
+                    ? generateModTemplateSelection(
+                        node, alias, templateTranslationContext.codeGenerator())
+                    : generateFunctionBody(
+                        // Remove optional type cast
+                        node,
+                        alias,
+                        // Strip the optional suffix character "="
+                        /* objectParamName= */ objectParamType.substring(
+                            0, objectParamType.length() - 1),
+                        /* addStubMapLogic= */ true));
+
+        if (jsSrcOptions.shouldGenerateGoogModules()) {
+          declarations.add(
+              VariableDeclaration.builder(alias).setJsDoc(jsDoc).setRhs(function).build());
+          // don't export deltemplates or private templates
+          if (!(node instanceof TemplateDelegateNode)
+              && node.getVisibility() == Visibility.PUBLIC) {
+            declarations.add(assign(JsRuntime.EXPORTS.dotAccess(partialName), aliasExp));
+          }
+        } else {
+          declarations.add(Statements.assign(aliasExp, function, jsDoc));
+        }
       }
-      TemplateBasicNode templateBasicNode = (TemplateBasicNode) node;
-      declarations.add(
-          makeRegisterDefaultFnCall(templateBasicNode, dottedIdNoRequire(defaultImplName)));
-    }
 
-    // ------ For mod templates, generate a statement to register it. ------
-    if (isModTemplate(node)) {
-      declarations.add(
-          makeRegisterModFn(
-              (TemplateBasicNode) node,
-              dottedIdNoRequire(alias + (generatePositionalParamsSignature ? "$" : ""))));
-    }
+      if (!jsSrcOptions.shouldGenerateGoogModules()
+          && node.getContentKind() == SanitizedContentKind.HTML
+          && node.getVisibility() == Visibility.PUBLIC) {
+        declarations.add(
+            Statements.ifStatement(
+                    Expressions.LITERAL_FALSE,
+                    VariableDeclaration.builder(alias + "_" + StandardNames.SOY_STUB)
+                        .setJsDoc(
+                            generatePositionalFunctionJsDoc(
+                                node, /* addVariantParam= */ isModifiableWithUseVariantType(node)))
+                        .build())
+                .build());
+      }
 
-    jsCodeBuilder.append(Statements.of(declarations.build()));
-    this.generatePositionalParamsSignature = false;
+      // ------ Add the @typedef of opt_data. ------
+      if (!hasOnlyImplicitParams(node)) {
+        declarations.add(
+            aliasExp
+                .dotAccess("Params")
+                .asStatement(
+                    JsDoc.builder()
+                        .addParameterizedAnnotation("typedef", genParamsRecordType(node))
+                        .build()));
+      }
+
+      // ------ Add the fully qualified template name to the function to use in debug code. ------
+      declarations.add(
+          ifStatement(
+                  GOOG_DEBUG,
+                  assign(
+                      aliasExp.dotAccess("soyTemplateName"),
+                      stringLiteral(templateName),
+                      JsDoc.builder()
+                          .addAnnotation("nocollapse")
+                          .addParameterizedAnnotation("type", "string")
+                          .build()))
+              .build());
+
+      // ------ If delegate template, generate a statement to register it. ------
+      if (node instanceof TemplateDelegateNode) {
+        TemplateDelegateNode nodeAsDelTemplate = (TemplateDelegateNode) node;
+        declarations.add(makeRegisterDelegateFn(nodeAsDelTemplate, aliasExp));
+      }
+
+      // ------ For modifiable templates, generate and register the default implementation. -----
+      if (isModifiable(node) && !node.getChildren().isEmpty()) {
+        String defaultImplName = alias + modifiableDefaultImplSuffix;
+        JsDoc jsDoc =
+            generatePositionalParamsSignature
+                ? generatePositionalFunctionJsDoc(node, /* addVariantParam= */ false)
+                : generateFunctionJsDoc(
+                    node, alias, /* suppressCheckTypes= */ true, /* addVariantParam= */ false);
+        String objectParamType = jsDoc.params().get(1).type();
+        Expression impl =
+            Expressions.function(
+                jsDoc,
+                generateFunctionBody(
+                    node,
+                    alias,
+                    /* objectParamName= */ generatePositionalParamsSignature
+                        ? null
+                        // Strip the optional suffix character "="
+                        : objectParamType.substring(0, objectParamType.length() - 1),
+                    /* addStubMapLogic= */ false));
+        if (jsSrcOptions.shouldGenerateGoogModules()) {
+          declarations.add(
+              VariableDeclaration.builder(defaultImplName).setJsDoc(jsDoc).setRhs(impl).build());
+        } else {
+          declarations.add(Statements.assign(dottedIdNoRequire(defaultImplName), impl, jsDoc));
+        }
+        TemplateBasicNode templateBasicNode = (TemplateBasicNode) node;
+        declarations.add(
+            makeRegisterDefaultFnCall(templateBasicNode, dottedIdNoRequire(defaultImplName)));
+      }
+
+      // ------ For mod templates, generate a statement to register it. ------
+      if (isModTemplate(node)) {
+        declarations.add(
+            makeRegisterModFn(
+                (TemplateBasicNode) node,
+                dottedIdNoRequire(alias + (generatePositionalParamsSignature ? "$" : ""))));
+      }
+
+      jsCodeBuilder.append(Statements.of(declarations.build()));
+      this.generatePositionalParamsSignature = false;
+    }
   }
 
   protected boolean hasOnlyImplicitParams(TemplateNode node) {
@@ -1392,7 +1399,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     String externName = externNode.getIdentifier().originalName();
 
     // Skip if we handled this impl already, e.g. a prev extern overload.
-    if (topLevelSymbols.has(externName)) {
+    if (templateTranslationContext.soyToJsVariableMappings().has(externName)) {
       return;
     }
 
@@ -1407,7 +1414,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
           GOOG_MODULE_GET.call(stringLiteral(node.module())).dotAccess(node.function());
     }
     jsCodeBuilder.addGoogRequire(externRequire);
-    topLevelSymbols.put(externName, externReference);
+    templateTranslationContext.soyToJsVariableMappings().put(externName, externReference);
 
     if (externNode.isExported()) {
       SoyFileNode file = node.getNearestAncestor(SoyFileNode.class);

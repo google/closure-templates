@@ -191,6 +191,30 @@ public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<St
     return statements;
   }
 
+  /**
+   * Visits the children in a new variable scope.
+   *
+   * <p>Use when the Soy variable scoping rules create a new lexical scope but the JS output does
+   * not.
+   */
+  protected final List<Statement> visitChildrenInNewSoyScope(ParentSoyNode<?> node) {
+    try (var scope = templateTranslationContext.enterSoyScope()) {
+      return visitChildren(node);
+    }
+  }
+
+  /**
+   * Visits the children in a new variable scope.
+   *
+   * <p>Use when the Soy variable scoping rules create a new lexical scope and we are creating a JS
+   * block scope.
+   */
+  protected final List<Statement> visitChildrenInNewSoyAndJsScope(ParentSoyNode<?> node) {
+    try (var scope = templateTranslationContext.enterSoyAndJsScope()) {
+      return visitChildren(node);
+    }
+  }
+
   // -----------------------------------------------------------------------------------------------
   // Implementations for specific nodes.
 
@@ -288,7 +312,7 @@ public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<St
     // Generate code to define the local var.
     outputVars.pushOutputVar(generatedVarName);
 
-    List<Statement> statements = visitChildren(node);
+    List<Statement> statements = visitChildrenInNewSoyScope(node);
 
     outputVars.popOutputVar();
 
@@ -371,8 +395,9 @@ public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<St
         // Convert body.
         Statement consequent =
             shouldAddStaticsContent
-                ? addStaticsContent(() -> Statements.of(visitChildren(condNode)), false)
-                : Statements.of(visitChildren(condNode));
+                ? addStaticsContent(
+                    () -> Statements.of(visitChildrenInNewSoyAndJsScope(condNode)), false)
+                : Statements.of(visitChildrenInNewSoyAndJsScope(condNode));
         // Add if-block to conditional.
         if (conditional == null) {
           conditional = ifStatement(predicate, consequent);
@@ -384,8 +409,9 @@ public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<St
         // Convert body.
         Statement trailingElse =
             shouldAddStaticsContent
-                ? addStaticsContent(() -> Statements.of(visitChildren((IfElseNode) child)), false)
-                : Statements.of(visitChildren((IfElseNode) child));
+                ? addStaticsContent(
+                    () -> Statements.of(visitChildrenInNewSoyAndJsScope((IfElseNode) child)), false)
+                : Statements.of(visitChildrenInNewSoyAndJsScope((IfElseNode) child));
         // Add else-block to conditional.
         conditional.setElse(trailingElse);
       } else {
@@ -442,8 +468,8 @@ public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<St
         }
         Statement body =
             shouldAddStaticsContent
-                ? addStaticsContent(() -> Statements.of(visitChildren(scn)), false)
-                : Statements.of(visitChildren(scn));
+                ? addStaticsContent(() -> Statements.of(visitChildrenInNewSoyScope(scn)), false)
+                : Statements.of(visitChildrenInNewSoyScope(scn));
         switchBuilder.addCase(caseChunks.build(), body);
       } else if (child instanceof SwitchDefaultNode) {
         Statement body = visitSwitchDefaultNode((SwitchDefaultNode) child);
@@ -457,7 +483,7 @@ public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<St
 
   @Override
   protected Statement visitSwitchDefaultNode(SwitchDefaultNode node) {
-    return Statements.of(visitChildren(node));
+    return Statements.of(visitChildrenInNewSoyScope(node));
   }
 
   // js switch statements use === for comparing the switch expr to the cases.  In order to preserve
@@ -625,6 +651,8 @@ public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<St
             .setRhs(getDataItemFunction.apply(id(loopIndexName)))
             .build();
 
+    try (var scope = templateTranslationContext.enterSoyAndJsScope()) {
+
     // Populate the local var translations with the translations from this node.
     templateTranslationContext.soyToJsVariableMappings().put(refPrefix, id(dataName));
 
@@ -641,8 +669,11 @@ public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<St
                 () -> Statements.of(data, Statements.of(visitChildren(node))), false)
             : Statements.of(data, Statements.of(visitChildren(node)));
 
+    
+
     // Create the entire for block.
     return forLoop(loopIndexName, limit, foreachBody);
+    }
   }
 
   @Override
@@ -717,7 +748,7 @@ public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<St
 
     outputVars.pushOutputVar("param" + node.getId());
 
-    List<Statement> content = visitChildren(node);
+    List<Statement> content = visitChildrenInNewSoyScope(node);
 
     outputVars.popOutputVar();
 

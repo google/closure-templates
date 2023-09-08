@@ -40,11 +40,19 @@ public final class SoyToJsVariableMappings {
    * The MsgFallbackGroupNode to an expression that evaluates to whether or not the primary message
    * is in use.
    */
-  private final IdentityHashMap<MsgFallbackGroupNode, Expression>
-      isPrimaryMsgInUseForFallbackGroup = new IdentityHashMap<>();
+  private final IdentityHashMap<MsgFallbackGroupNode, Expression> isPrimaryMsgInUseForFallbackGroup;
+  ;
 
   private SoyToJsVariableMappings(Map<String, ? extends Expression> initialMappings) {
     mappings = new HashMap<>(initialMappings);
+    isPrimaryMsgInUseForFallbackGroup = new IdentityHashMap<>();
+  }
+
+  private SoyToJsVariableMappings(SoyToJsVariableMappings parent) {
+    mappings = new HashMap<>(parent.mappings);
+    // Confusingly this map doesn't reflect block scoping. however because the keys are nodes there
+    // is no namespace issue we need to manage.
+    isPrimaryMsgInUseForFallbackGroup = parent.isPrimaryMsgInUseForFallbackGroup;
   }
 
   /** Returns a new {@link SoyToJsVariableMappings} suitable for translating an entire template. */
@@ -53,7 +61,7 @@ public final class SoyToJsVariableMappings {
   }
 
   static SoyToJsVariableMappings startingWith(SoyToJsVariableMappings initialMappings) {
-    return new SoyToJsVariableMappings(initialMappings.mappings);
+    return new SoyToJsVariableMappings(initialMappings);
   }
 
   /** Returns a {@link SoyToJsVariableMappings} seeded with the given mappings. For testing only. */
