@@ -24,6 +24,7 @@ import static java.util.Comparator.comparing;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Streams;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
 import com.google.template.soy.jbcsrc.restricted.Expression;
@@ -40,6 +41,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import org.objectweb.asm.Handle;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Type;
@@ -196,8 +198,8 @@ final class TemplateVariableManager implements LocalVariableManager {
     }
   }
 
+  private ScopeImpl activeScope;
   private final SimpleLocalVariableManager delegate;
-  private final Map<VarKey, AbstractVariable> variablesByKey = new LinkedHashMap<>();
 
   TemplateVariableManager(
       Type owner,
@@ -214,11 +216,13 @@ final class TemplateVariableManager implements LocalVariableManager {
             methodBegin,
             methodEnd,
             /* isStatic= */ isStatic);
+    activeScope = new ScopeImpl();
     // seed our map with all the method parameters from our delegate.
     delegate
         .allActiveVariables()
         .forEach(
-            (key, value) -> variablesByKey.put(VarKey.create(key), new TrivialVariable(value)));
+            (key, value) ->
+                activeScope.variablesByKey.put(VarKey.create(key), new TrivialVariable(value)));
   }
 
   public void updateParameterTypes(Type[] parameterTypes, List<String> parameterNames) {
@@ -228,9 +232,21 @@ final class TemplateVariableManager implements LocalVariableManager {
   /** Enters a new scope. Variables may only be defined within a scope. */
   @Override
   public Scope enterScope() {
-    LocalVariableManager.Scope delegateScope = delegate.enterScope();
-    return new Scope() {
-      final List<VarKey> activeVariables = new ArrayList<>();
+    return new ScopeImpl();
+  }
+
+  private class ScopeImpl extends Scope {
+    final ScopeImpl parent;
+
+    final LocalVariableManager.Scope delegateScope = delegate.enterScope();
+
+    final List<VarKey> activeVariables = new ArrayList<>();
+    final Map<VarKey, AbstractVariable> variablesByKey = new LinkedHashMap<>();
+
+    ScopeImpl() {
+      this.parent = TemplateVariableManager.this.activeScope;
+      TemplateVariableManager.this.activeScope = this;
+    }
 
       @Override
       void createTrivial(String name, Expression expression) {
@@ -270,11 +286,11 @@ final class TemplateVariableManager implements LocalVariableManager {
             throw new IllegalStateException("no variable active for key: " + key);
           }
         }
+      TemplateVariableManager.this.activeScope = parent;
         return delegateScope.exitScope();
       }
 
-      private Variable doCreate(
-          String proposedName, Expression initExpr, VarKey key, SaveStrategy strategy) {
+    Variable doCreate(String proposedName, Expression initExpr, VarKey key, SaveStrategy strategy) {
         Variable var =
             new Variable(
                 initExpr,
@@ -284,14 +300,35 @@ final class TemplateVariableManager implements LocalVariableManager {
         return var;
       }
 
-      private void putVariable(VarKey key, AbstractVariable var) {
+    void putVariable(VarKey key, AbstractVariable var) {
         AbstractVariable old = variablesByKey.put(key, var);
         if (old != null) {
           throw new IllegalStateException("multiple variables active for key: " + key);
         }
-        activeVariables.add(key);
+      activeVariables.add(key);
+    }
+
+    Expression getVariable(VarKey key) {
+      var variable = variablesByKey.get(key);
+      if (variable == null) {
+        if (parent != null) {
+          return parent.getVariable(key);
+        }
+        throw new IllegalStateException(
+            "no variable: '" + key + "' is bound. " + variablesByKey.keySet() + " are in scope");
       }
-    };
+      return variable.accessor();
+    }
+
+    /** Returns all variables currently in scope in creation order. */
+    Stream<AbstractVariable> allVariables() {
+      var direct = variablesByKey.values().stream();
+      if (parent != null) {
+        // Put parents first to preserve ordering
+        return Streams.concat(parent.allVariables(), direct);
+      }
+      return direct;
+    }
   }
 
   @Override
@@ -317,12 +354,7 @@ final class TemplateVariableManager implements LocalVariableManager {
   }
 
   private Expression getVariable(VarKey varKey) {
-    AbstractVariable var = variablesByKey.get(varKey);
-    if (var != null) {
-      return var.accessor();
-    }
-    throw new IllegalArgumentException(
-        "No variable: '" + varKey + "' is bound. " + variablesByKey.keySet() + " are in scope");
+    return activeScope.getVariable(varKey);
   }
 
   /** Statements for saving and restoring local variables in class fields. */
@@ -334,7 +366,7 @@ final class TemplateVariableManager implements LocalVariableManager {
   }
 
   void assertSaveRestoreStateIsEmpty() {
-    checkState(variablesByKey.values().stream().noneMatch(v -> v instanceof Variable));
+    checkState(activeScope.allVariables().noneMatch(v -> v instanceof Variable));
   }
 
   private static final Handle BOOTSTRAP_SAVE_HANDLE =
@@ -386,7 +418,8 @@ final class TemplateVariableManager implements LocalVariableManager {
     // So our restore logic needs to be executed in the same order in order to restore derived
     // variable directly.
     ImmutableList<Variable> restoresInOrder =
-        variablesByKey.values().stream()
+        activeScope
+            .allVariables()
             .filter(v -> !(v instanceof TrivialVariable))
             .map(v -> (Variable) v)
             .collect(toImmutableList());
