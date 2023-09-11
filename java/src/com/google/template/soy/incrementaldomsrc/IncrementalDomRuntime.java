@@ -128,6 +128,9 @@ final class IncrementalDomRuntime {
   public static final Expression INCREMENTAL_DOM_EVAL_LOG_FN =
       INCREMENTAL_DOM.dotAccess("evalLoggingFunction");
 
+  public static final Expression INCREMENTAL_DOM_LOGGING_FUNCTION_ATTR =
+      INCREMENTAL_DOM.dotAccess("loggingFunctionAttr");
+
   /** Prefix for state vars of stateful template objects. */
   public static final String STATE_PREFIX = "state_";
 

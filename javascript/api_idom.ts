@@ -130,6 +130,12 @@ interface IdomRendererApi {
     args: Array<{}>,
     placeHolder: string,
   ): string;
+  loggingFunctionAttr(
+    attrName: string,
+    loggingFuncName: string,
+    args: Array<{}>,
+    placeHolder: string,
+  ): void;
   handleSoyElement<T extends TemplateAcceptor<{}>>(
     elementClassCtor: new () => T,
     firstElementKey: string,
@@ -412,6 +418,22 @@ export class IncrementalDomRenderer implements IdomRendererApi {
   }
 
   /**
+   * Sets the attribute named "attrName" on the current element to the result
+   * of evaluating the specified logging function.
+   */
+  loggingFunctionAttr(
+    attrName: string,
+    loggingFuncName: string,
+    args: Array<{}>,
+    placeHolder: string,
+  ) {
+    const attrValue = this.logger
+      ? this.logger.evalLoggingFunction(loggingFuncName, args)
+      : placeHolder;
+    this.attr(attrName, attrValue);
+  }
+
+  /**
    * Tries to find an existing Soy element, if it exists. Otherwise, it creates
    * one. Afterwards, it queues up a Soy element (see docs for queueSoyElement)
    * and then proceeds to render the Soy element.
@@ -643,7 +665,17 @@ export class FalsinessRenderer implements IdomRendererApi {
   ): string {
     return placeHolder;
   }
+
   private rendered = false;
+
+  loggingFunctionAttr(
+    attrName: string,
+    loggingFuncName: string,
+    args: Array<{}>,
+    placeHolder: string,
+  ) {
+    this.rendered = true;
+  }
 
   /** Checks whether any DOM was rendered. */
   didRender() {

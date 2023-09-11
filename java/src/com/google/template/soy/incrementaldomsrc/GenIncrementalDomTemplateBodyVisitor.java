@@ -27,6 +27,7 @@ import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.IN
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_ENTER;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_EXIT;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_KEEP_GOING;
+import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_LOGGING_FUNCTION_ATTR;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_OPEN;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_OPEN_SIMPLE;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_PARAM_NAME;
@@ -56,6 +57,7 @@ import static com.google.template.soy.jssrc.dsl.Expressions.stringLiteral;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_STRING_UNESCAPE_ENTITIES;
 import static com.google.template.soy.jssrc.internal.JsRuntime.OPT_DATA;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_ESCAPE_HTML;
+import static com.google.template.soy.jssrc.internal.JsRuntime.XID;
 
 import com.google.common.base.Ascii;
 import com.google.common.collect.ImmutableList;
@@ -89,6 +91,7 @@ import com.google.template.soy.jssrc.internal.OutputVarHandler;
 import com.google.template.soy.jssrc.internal.TemplateAliases;
 import com.google.template.soy.jssrc.internal.TranslateExprNodeVisitor;
 import com.google.template.soy.jssrc.internal.TranslationContext;
+import com.google.template.soy.logging.LoggingFunction;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallNode;
@@ -707,16 +710,47 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
       // Attribute keys can only be print statements or constants. As such, the first child
       // should be the key and the second the value.
       checkState(isComputableAsJsExprsVisitor.exec(node.getChild(0)));
-
-      return INCREMENTAL_DOM_ATTR
-          .call(
-              // Attributes can only be print nodes or constants
-              genJsExprsVisitor.exec(node.getChild(0)).get(0),
-              Expressions.concatForceString(getAttributeValues(node)))
-          .asStatement();
+      return maybeLoggingFunctionAttrExpr(node)
+          .orElse(
+              INCREMENTAL_DOM_ATTR
+                  .call(
+                      // Attributes can only be print nodes or constants
+                      genJsExprsVisitor.exec(node.getChild(0)).get(0),
+                      Expressions.concatForceString(getAttributeValues(node)))
+                  .asStatement());
     } else {
       return Statements.of(visitChildren(node)); // Prints raw text or attributes node.
     }
+  }
+
+  /**
+   * If the html attribute value is a logging function return the idom renderer method to set it.
+   */
+  Optional<Statement> maybeLoggingFunctionAttrExpr(HtmlAttributeNode node) {
+    if (node.hasValue() && (node.getChild(1) instanceof HtmlAttributeValueNode)) {
+      HtmlAttributeValueNode attrValue = (HtmlAttributeValueNode) node.getChild(1);
+      if (attrValue.numChildren() == 1 && attrValue.getChild(0) instanceof PrintNode) {
+        PrintNode printNode = (PrintNode) attrValue.getChild(0);
+        if (printNode.getExpr().getRoot() instanceof FunctionNode) {
+          FunctionNode func = (FunctionNode) printNode.getExpr().getRoot();
+          if (func.getSoyFunction() instanceof LoggingFunction) {
+            LoggingFunction loggingNode = (LoggingFunction) func.getSoyFunction();
+            return Optional.of(
+                INCREMENTAL_DOM_LOGGING_FUNCTION_ATTR
+                    .call(
+                        genJsExprsVisitor.exec(node.getChild(0)).get(0),
+                        XID.call(Expressions.stringLiteral(func.getStaticFunctionName())),
+                        Expressions.arrayLiteral(
+                            func.getChildren().stream()
+                                .map(n -> getExprTranslator().exec(n))
+                                .collect(toImmutableList())),
+                        Expressions.stringLiteral(loggingNode.getPlaceholder()))
+                    .asStatement());
+          }
+        }
+      }
+    }
+    return Optional.empty();
   }
 
   @Override
