@@ -663,14 +663,14 @@ public final class BytecodeUtils {
         return doUnboxedStringEquals(left, right);
       }
     } else if (right.resultType().equals(STRING_TYPE)) {
-      return doUnboxedStringEquals(right, left);
+      return doBoxedValueEqualsUnboxedString(left, right);
     }
 
     // neither is an unboxed string
     if (left.soyRuntimeType().isKnownString()) {
       return doBoxedStringEquals(left, right);
     } else {
-      return doBoxedStringEquals(right, left);
+      return doValueEqualsBoxedString(left, right);
     }
   }
 
@@ -682,28 +682,56 @@ public final class BytecodeUtils {
           unboxedString, other.coerceToDouble());
     }
     if (!other.isBoxed()) {
+      // TODO - b/296964679: This is a similar problem where analysis assumes these expression get
+      // evaluated but they don't actually. Can we make this an error instead?
       return constant(false);
     }
     return MethodRef.RUNTIME_COMPARE_UNBOXED_STRING.invoke(unboxedString, other);
+  }
+
+  private static Expression doBoxedValueEqualsUnboxedString(
+      SoyExpression other, SoyExpression unboxedString) {
+    if (other.soyRuntimeType().isKnownNumber() && other.isNonSoyNullish()) {
+      // in this case, we actually try to convert stringExpr to a number
+      return MethodRef.RUNTIME_NUMBER_EQUALS_STRING_AS_NUMBER.invoke(
+          other.coerceToDouble(), unboxedString);
+    }
+    if (!other.isBoxed()) {
+      // TODO - b/296964679: This is a similar problem where analysis assumes these expression get
+      // evaluated but they don't actually. Can we make this an error instead?
+      return constant(false);
+    }
+    return MethodRef.RUNTIME_COMPARE_BOXED_VALUE_TO_UNBOXED_STRING.invoke(other, unboxedString);
   }
 
   private static Expression doBoxedStringEquals(SoyExpression boxedString, SoyExpression other) {
     if (other.soyRuntimeType().isKnownNumber()) {
       other = other.box();
     } else if (!other.isBoxed()) {
+      // TODO - b/296964679: This is a similar problem where analysis assumes these expression get
+      // evaluated but they don't actually. Can we make this an error instead?
       return constant(false);
     }
     return MethodRef.RUNTIME_COMPARE_BOXED_STRING.invoke(boxedString, other);
   }
 
-  private static Expression doJavaEquals(SoyExpression left, SoyExpression right) {
-    if (left.isNonJavaNullable()) {
-      return left.invoke(MethodRef.EQUALS, right);
-    } else if (right.isNonJavaNullable()) {
-      return right.invoke(MethodRef.EQUALS, left);
-    } else {
-      return MethodRef.OBJECTS_EQUALS.invoke(left, right);
+  private static Expression doValueEqualsBoxedString(
+      SoyExpression other, SoyExpression boxedString) {
+    if (other.soyRuntimeType().isKnownNumber()) {
+      other = other.box();
+    } else if (!other.isBoxed()) {
+      // TODO - b/296964679: This is a similar problem where analysis assumes these expression get
+      // evaluated but they don't actually. Can we make this an error instead?
+      return constant(false);
     }
+    return MethodRef.RUNTIME_COMPARE_BOXED_VALUE_TO_BOXED_STRING.invoke(other, boxedString);
+  }
+
+  private static Expression doJavaEquals(SoyExpression left, SoyExpression right) {
+    // NOTE: don't do anything clever here, like switch the order to right.equals(left) if left is
+    // nullable and right isn't. The gencode depends on the execution order so we must maintain
+    // that.
+    return MethodRef.OBJECTS_EQUALS.invoke(left, right);
   }
 
   /**

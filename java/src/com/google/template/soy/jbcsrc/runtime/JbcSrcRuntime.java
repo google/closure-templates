@@ -115,6 +115,11 @@ public final class JbcSrcRuntime {
   }
 
   @Keep
+  public static boolean numberEqualsStringAsNumber(double number, String expr) {
+    return stringEqualsAsNumber(expr, number);
+  }
+
+  @Keep
   public static boolean stringEqualsAsNumber(String expr, double number) {
     if (expr == null) {
       return false;
@@ -672,6 +677,16 @@ public final class JbcSrcRuntime {
       return true;
     }
     return compareUnboxedStringToBoxed(string.stringValue(), other);
+  }
+
+  @Keep
+  public static boolean compareBoxedValueToBoxedString(SoyValue other, SoyValue string) {
+    return compareBoxedStringToBoxed(string, other);
+  }
+
+  @Keep
+  public static boolean compareBoxedValueToUnboxedString(SoyValue other, String stringValue) {
+    return compareUnboxedStringToBoxed(stringValue, other);
   }
 
   @Keep

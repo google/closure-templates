@@ -297,8 +297,14 @@ public abstract class MethodRef {
   public static final MethodRef RUNTIME_COMPARE_BOXED_STRING =
       create(JbcSrcRuntime.class, "compareBoxedStringToBoxed", SoyValue.class, SoyValue.class);
 
+  public static final MethodRef RUNTIME_COMPARE_BOXED_VALUE_TO_BOXED_STRING =
+      create(JbcSrcRuntime.class, "compareBoxedValueToBoxedString", SoyValue.class, SoyValue.class);
+
   public static final MethodRef RUNTIME_COMPARE_UNBOXED_STRING =
       create(JbcSrcRuntime.class, "compareUnboxedStringToBoxed", String.class, SoyValue.class);
+
+  public static final MethodRef RUNTIME_COMPARE_BOXED_VALUE_TO_UNBOXED_STRING =
+      create(JbcSrcRuntime.class, "compareBoxedValueToUnboxedString", SoyValue.class, String.class);
 
   public static final MethodRef RUNTIME_GET_FIELD =
       create(JbcSrcRuntime.class, "getField", SoyValue.class, String.class);
@@ -407,6 +413,9 @@ public abstract class MethodRef {
 
   public static final MethodRef RUNTIME_STRING_EQUALS_AS_NUMBER =
       create(JbcSrcRuntime.class, "stringEqualsAsNumber", String.class, double.class);
+
+  public static final MethodRef RUNTIME_NUMBER_EQUALS_STRING_AS_NUMBER =
+      create(JbcSrcRuntime.class, "numberEqualsStringAsNumber", double.class, String.class);
 
   public static final MethodRef RUNTIME_EMPTY_TO_NULL =
       create(JbcSrcRuntime.class, "emptyToNull", SoyValue.class);

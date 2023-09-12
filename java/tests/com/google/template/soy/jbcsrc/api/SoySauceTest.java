@@ -22,10 +22,12 @@ import static com.google.template.soy.data.UnsafeSanitizedContentOrdainer.ordain
 import static org.junit.Assert.fail;
 
 import com.google.common.base.Joiner;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.SettableFuture;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.SoyFileSet;
+import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyValueProvider;
@@ -34,6 +36,7 @@ import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.jbcsrc.api.SoySauce.Continuation;
 import com.google.template.soy.jbcsrc.api.SoySauce.WriteContinuation;
 import com.google.template.soy.jbcsrc.runtime.DetachableSoyValueProvider;
+import com.google.template.soy.testing.Foo;
 import java.io.IOException;
 import org.junit.Before;
 import org.junit.Test;
@@ -53,6 +56,7 @@ public class SoySauceTest {
     builder.add(SoySauceTest.class.getResource("strict.soy"));
     testAsyncPlugin = new TestAsyncPlugin();
     builder.addSourceFunction(testAsyncPlugin);
+    builder.addProtoDescriptors(SoyFileKind.DEP, Foo.getDescriptor());
     sauce = builder.build().compileTemplates();
   }
 
@@ -357,12 +361,12 @@ public class SoySauceTest {
       String fullStack = "Full stack:\n" + Joiner.on('\n').join(stackTrace) + "\n";
       assertWithMessage(fullStack)
           .that(stackTrace[1].toString())
-          .isEqualTo("strict_test.callsItself(strict.soy:69)");
+          .isEqualTo("strict_test.callsItself(strict.soy:71)");
 
       for (int i = 2; i < 12; i++) {
         assertWithMessage(fullStack)
             .that(stackTrace[i].toString())
-            .isEqualTo("strict_test.callsItself(strict.soy:71)");
+            .isEqualTo("strict_test.callsItself(strict.soy:73)");
       }
     }
   }
@@ -374,6 +378,33 @@ public class SoySauceTest {
 
     assertThat(tmpl.setData(ImmutableMap.of("p", NullData.INSTANCE)).renderText().get())
         .isEqualTo("null");
+  }
+
+  /**
+   * Regression test for http://b/296964679. This ensures that execution order in == is preserved
+   * (i.e. the left expression is always executed first). We analyze templates to figure out which
+   * values have been resolved already so we won't generate detach code when we can prove the value
+   * is already resolved, but that relies on the execution order staying the same.
+   */
+  @Test
+  public void testExecutionOrder() {
+    SoySauce.Renderer tmpl = sauce.renderTemplate("strict_test.testExecutionOrder");
+    SettableFuture<Foo> s = SettableFuture.create();
+
+    Continuation<SanitizedContent> continuation =
+        tmpl.setData(ImmutableMap.of("protoFuture", s)).renderHtml();
+
+    assertThat(continuation.result().type()).isEqualTo(RenderResult.Type.DETACH);
+
+    s.set(
+        Foo.newBuilder()
+            .setBoolField(true)
+            .addAllStringA(ImmutableList.of("these", "are", "strings", "!!"))
+            .build());
+
+    continuation = continuation.continueRender();
+    assertThat(continuation.result()).isEqualTo(RenderResult.done());
+    assertThat(continuation.get().getContent()).isEqualTo("it works!");
   }
 
   private static final class TestAppendable implements AdvisingAppendable {

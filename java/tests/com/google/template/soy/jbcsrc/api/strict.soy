@@ -14,6 +14,8 @@
 
 {namespace strict_test}
 
+import {Foo} from 'src/test/protobuf/test.proto';
+
 /** hello html */
 {template helloHtml}
   {call hello /}
@@ -78,4 +80,24 @@
   {@param p: int|null = 18}
 
   {$p}
+{/template}
+
+{template testExecutionOrder}
+  {@param protoFuture: Foo}
+
+  {let $boxedString kind="text"}
+    {for $s in $protoFuture.getStringAList()}
+      {$s}|
+    {/for}
+  {/let}
+
+  {let $laterUse: $protoFuture.getBoolField() ? "these|are|strings|!!|" : "" /}
+
+  // Both these values depend on $protoFuture. Since $boxedString is on the left, we assume it'll
+  // get executed first, so generated detach code there. We assume $laterUse has already been
+  // resolved since $boxedString is resolved, which means $protoFuture must already be resolved.
+  // This tests those assumptions.
+  {if $boxedString == $laterUse}
+    it works!
+  {/if}
 {/template}
