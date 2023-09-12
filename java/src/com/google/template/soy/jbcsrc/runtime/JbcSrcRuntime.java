@@ -1046,5 +1046,9 @@ public final class JbcSrcRuntime {
     return unusedKey;
   }
 
+  public static SoyValue emptyToNull(SoyValue value) {
+    return value.stringValue().isEmpty() ? NullData.INSTANCE : value;
+  }
+
   private JbcSrcRuntime() {}
 }

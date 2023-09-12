@@ -107,6 +107,8 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
           return visitProtoInitFunction(node);
         case VE_DEF:
           return visitVeDefNode(node);
+        case EMPTY_TO_NULL:
+          return visitEmptyToNullFunction(node);
         case MSG_WITH_ID:
         case REMAINDER:
           // should have been removed earlier in the compiler
@@ -178,6 +180,10 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
   }
 
   T visitVeDefNode(FunctionNode node) {
+    return visitExprNode(node);
+  }
+
+  T visitEmptyToNullFunction(FunctionNode node) {
     return visitExprNode(node);
   }
 

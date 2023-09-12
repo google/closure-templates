@@ -32,11 +32,10 @@ import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprNode;
-import com.google.template.soy.exprtree.NullNode;
-import com.google.template.soy.exprtree.Operator;
-import com.google.template.soy.exprtree.OperatorNodes.ConditionalOpNode;
+import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.parsepasses.contextautoesc.ContextualAutoescaper;
+import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallParamContentNode;
@@ -477,8 +476,7 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
             nodeIdGen.genId(),
             attr.getSourceLocation(),
             Identifier.create(paramName, unknown),
-            Operator.CONDITIONAL.createNode(
-                unknown, unknown, condition.get(), val, new NullNode(unknown)));
+            emptyToNull(val));
       } else {
         return new CallParamValueNode(
             nodeIdGen.genId(),
@@ -520,7 +518,7 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
      * <pre>
      *   {let $__internal_call_someAttr_0 kind="text"}{if $cond}...{/if}{/let}
      *   {call foo}
-     *     {param someAttr: $cond ? $__internal_call_someAttr_0 : null /}
+     *     {param someAttr: $$emptyToNull($__internal_call_someAttr_0) /}
      *   {/call}
      * </pre>
      */
@@ -549,13 +547,19 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
     }
     VarRefNode varRef =
         new VarRefNode("$" + letContentNode.getVar().name(), unknown, letContentNode.getVar());
-    ConditionalOpNode op =
-        (ConditionalOpNode)
-            Operator.CONDITIONAL.createNode(
-                unknown, unknown, condition.get(), varRef, new NullNode(unknown));
-    op.setType(UnionType.of(NullType.getInstance(), varRef.getType()));
     return new CallParamValueNode(
-        nodeIdGen.genId(), unknown, Identifier.create(paramName, unknown), op);
+        nodeIdGen.genId(), unknown, Identifier.create(paramName, unknown), emptyToNull(varRef));
+  }
+
+  private static ExprNode emptyToNull(ExprNode val) {
+    var functionNode =
+        FunctionNode.newPositional(
+            Identifier.create(BuiltinFunction.EMPTY_TO_NULL.getName(), val.getSourceLocation()),
+            BuiltinFunction.EMPTY_TO_NULL,
+            val.getSourceLocation());
+    functionNode.setType(UnionType.of(NullType.getInstance(), val.getType()));
+    functionNode.addChild(val);
+    return functionNode;
   }
 
   private static String getKind(SoyType attrType) {

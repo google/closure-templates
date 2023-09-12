@@ -120,6 +120,7 @@ import com.google.template.soy.shared.internal.BuiltinMethod;
 import com.google.template.soy.shared.restricted.SoyMethod;
 import com.google.template.soy.shared.restricted.SoySourceFunctionMethod;
 import com.google.template.soy.soytree.LetContentNode;
+import com.google.template.soy.soytree.LetNode;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
@@ -1056,6 +1057,9 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
           return visitVeDataFunction(node);
         case VE_DEF:
           return visitVeDefFunction(node);
+        case EMPTY_TO_NULL:
+          return visitEmptyToNullFunction(node);
+
         case LEGACY_DYNAMIC_TAG:
         case REMAINDER:
         case MSG_WITH_ID:
@@ -1159,6 +1163,16 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
             .setElse(Expressions.LITERAL_UNDEFINED)
             .build(translationContext.codeGenerator());
     return construct(SOY_VISUAL_ELEMENT, visit(node.getChild(1)), metadataExpr, debugNameExpr);
+  }
+
+  protected Expression visitEmptyToNullFunction(FunctionNode node) {
+    // Child is either a string or a sanitized content block, but it is always pointing at a local
+    var defn = ((VarRefNode) node.getChild(0)).getDefnDecl();
+    // check that we are pointing at a let, if we are then we can use `||` since internal blocks map
+    // empty sanitized content to `''` so `||` works.
+    checkState(((LocalVar) defn).declaringNode() instanceof LetNode);
+    Expression child = visit(node.getChild(0));
+    return child.or(LITERAL_NULL, translationContext.codeGenerator());
   }
 
   private static SoyJsSrcFunction getUnknownFunction(String name, int argSize) {

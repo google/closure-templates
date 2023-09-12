@@ -464,6 +464,10 @@ function isTruthy(expr: unknown): boolean {
   return true;
 }
 
+function emptyToNull<T>(expr: T): T | null {
+  return isTruthy(expr) ? expr : null;
+}
+
 let uidCounter = 0;
 
 /**
@@ -574,6 +578,7 @@ export {
   callDynamicText as $$callDynamicText,
   compileToTemplate as $$compileToTemplate,
   defaultIdomRenderer as $$defaultIdomRenderer,
+  emptyToNull as $$emptyToNull,
   htmlToString as $$htmlToString,
   isIdom as $$isIdom,
   isTruthy as $$isTruthy,

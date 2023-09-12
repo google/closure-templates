@@ -46,6 +46,7 @@ public enum BuiltinFunction implements SoyFunction {
   DEBUG_SOY_TEMPLATE_INFO("$$debugSoyTemplateInfo"),
   PROTO_INIT("$$protoInit"),
   VE_DEF("ve_def"),
+  EMPTY_TO_NULL("$$emptyToNull"),
   ;
 
   /** The function name. */
@@ -78,6 +79,7 @@ public enum BuiltinFunction implements SoyFunction {
       case REMAINDER:
       case MSG_WITH_ID:
       case TO_FLOAT:
+      case EMPTY_TO_NULL:
         return ImmutableSet.of(1);
       case PROTO_INIT:
         throw new UnsupportedOperationException();
@@ -103,6 +105,7 @@ public enum BuiltinFunction implements SoyFunction {
       case VE_DATA:
       case TO_FLOAT:
       case PROTO_INIT:
+      case EMPTY_TO_NULL:
         return true;
       case CSS: // implicitly depends on a renaming map or js compiler flag
       case XID: // implicitly depends on a renaming map or js compiler flag

@@ -97,7 +97,6 @@ import com.google.template.soy.soytree.VeLogNode;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
@@ -145,7 +144,7 @@ final class TemplateAnalysisImpl implements TemplateAnalysis {
 
   /**
    * This visitor (and the {@link PseudoEvaluatorExprVisitor}) visits every Soy node in the order
-   * that the code generated from those node would execute and contructs an {@link AccessGraph}.
+   * that the code generated from those node would execute and constructs an {@link AccessGraph}.
    */
   private static final class PseudoEvaluatorVisitor extends AbstractSoyNodeVisitor<Void> {
     final Map<VarDefn, AccessGraph> letNodes = new HashMap<>();
@@ -682,7 +681,7 @@ final class TemplateAnalysisImpl implements TemplateAnalysis {
       //   +--- FieldAccessNode("field")
       //          +--- GroupNode(NullNode())
       //
-      // Since the DataAcessNode has a global placeholder for its own base expression, all field
+      // Since the DataAccessNode has a global placeholder for its own base expression, all field
       // accesses with the same name will match each other, regardless of the actual base
       // expression. Don't traverse it to avoid marking nodes as incorrectly resolved.
       visit(node.getBase());
@@ -768,7 +767,7 @@ final class TemplateAnalysisImpl implements TemplateAnalysis {
         // let block, we could have separate logic based on if we know it will be inlined or lazy
         // and calculate both. We can know this by checking if all references in the entire block
         // are definitely resolved, or not (although that in turn depends on if the block will be
-        // inlined, or lazy evaluted).
+        // inlined, or lazy evaluated).
         AccessGraph copy = letContent.copy();
         this.current.successors.add(copy.start);
         this.current = copy.end.addBranch();
@@ -800,6 +799,7 @@ final class TemplateAnalysisImpl implements TemplateAnalysis {
           case TO_FLOAT:
           case VE_DATA:
           case XID:
+          case EMPTY_TO_NULL:
             // visit children normally
             break;
           case UNKNOWN_JS_GLOBAL:
@@ -992,7 +992,7 @@ final class TemplateAnalysisImpl implements TemplateAnalysis {
       // scenarios where whole AccessGraph objects are copied, this should be beneficial.
       // Additionally, it makes visualizing the graph simpler.
 
-      // ensure our simplification doens't modify the sink
+      // ensure our simplification doesn't modify the sink
       eliminateEmptyNodes(start, end);
       eliminateUnconditionalBranches(start, end);
       // check basic constraints.
@@ -1072,7 +1072,7 @@ final class TemplateAnalysisImpl implements TemplateAnalysis {
       return currentBlockSet;
     }
 
-    private Collection<Block> getTopologicalOrdering() {
+    private Set<Block> getTopologicalOrdering() {
       Set<Block> ordering = new LinkedHashSet<>();
       Set<Block> discoveredButNotVisited = new LinkedHashSet<>();
       discoveredButNotVisited.add(start);
@@ -1206,10 +1206,6 @@ final class TemplateAnalysisImpl implements TemplateAnalysis {
     }
 
     void add(DataAccessNode dataAccess) {
-      exprs.add(dataAccess);
-    }
-
-    void add(NullSafeAccessNode dataAccess) {
       exprs.add(dataAccess);
     }
 

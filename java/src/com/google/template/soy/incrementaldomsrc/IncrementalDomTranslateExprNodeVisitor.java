@@ -17,6 +17,7 @@ package com.google.template.soy.incrementaldomsrc;
 
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_EVAL_LOG_FN;
+import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_EMPTY_TO_NULL;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_IS_TRUTHY;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.STATE_PREFIX;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.STATE_VAR_PREFIX;
@@ -78,6 +79,11 @@ public class IncrementalDomTranslateExprNodeVisitor extends TranslateExprNodeVis
           Expressions.stringLiteral(loggingNode.getPlaceholder()));
     }
     return super.visitFunctionNode(node);
+  }
+
+  @Override
+  protected Expression visitEmptyToNullFunction(FunctionNode node) {
+    return SOY_IDOM_EMPTY_TO_NULL.call(visit(node.getChild(0)));
   }
 
   @Override

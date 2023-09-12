@@ -408,6 +408,9 @@ public abstract class MethodRef {
   public static final MethodRef RUNTIME_STRING_EQUALS_AS_NUMBER =
       create(JbcSrcRuntime.class, "stringEqualsAsNumber", String.class, double.class);
 
+  public static final MethodRef RUNTIME_EMPTY_TO_NULL =
+      create(JbcSrcRuntime.class, "emptyToNull", SoyValue.class);
+
   public static final MethodRef RUNTIME_UNEXPECTED_STATE_ERROR =
       create(JbcSrcRuntime.class, "unexpectedStateError", StackFrame.class);
 

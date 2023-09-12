@@ -2758,6 +2758,8 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
         case PROTO_INIT:
           visitProtoInitFunction(node);
           break;
+        case EMPTY_TO_NULL:
+          throw new AssertionError("impossible, this is only used by desuraging passes: " + node);
       }
     }
 

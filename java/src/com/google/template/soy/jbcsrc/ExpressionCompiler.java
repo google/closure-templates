@@ -1593,6 +1593,12 @@ final class ExpressionCompiler {
           node.getType(), MethodRef.SOY_VISUAL_ELEMENT_DATA_CREATE.invoke(ve, data));
     }
 
+    @Override
+    SoyExpression visitEmptyToNullFunction(FunctionNode node) {
+      return SoyExpression.forSoyValue(
+          node.getType(), MethodRef.RUNTIME_EMPTY_TO_NULL.invoke(visit(node.getChild(0)).box()));
+    }
+
     // Non-builtin functions
 
     @Override

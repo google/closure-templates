@@ -607,6 +607,13 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
       case TO_FLOAT:
         // this is a no-op in python
         return visit(node.getChild(0));
+      case EMPTY_TO_NULL:
+        return new PyExpr(
+            PyExprUtils.genExprWithNewToken(
+                Operator.OR,
+                ImmutableList.of(visit(node.getChild(0)), new PyExpr("None", Integer.MAX_VALUE)),
+                "or"),
+            PyExprUtils.pyPrecedenceForOperator(Operator.OR));
       case DEBUG_SOY_TEMPLATE_INFO:
         // 'debugSoyTemplateInfo' is used for inpsecting soy template info from rendered pages.
         // Always resolve to false since there is no plan to support this feature in PySrc.
