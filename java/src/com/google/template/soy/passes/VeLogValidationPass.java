@@ -20,6 +20,7 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.base.internal.IdGenerator;
+import com.google.template.soy.basetree.Node;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprNode;
@@ -29,6 +30,7 @@ import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.HtmlCloseTagNode;
 import com.google.template.soy.soytree.HtmlOpenTagNode;
+import com.google.template.soy.soytree.HtmlTagNode;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;
 import com.google.template.soy.soytree.MsgNode;
 import com.google.template.soy.soytree.PrintNode;
@@ -50,6 +52,7 @@ import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.VeType;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * Validates uses of the {@code velog} command and {@code ve_data} expression.
@@ -106,6 +109,10 @@ final class VeLogValidationPass implements CompilerFileSetPass {
 
   private static final SoyErrorKind LOG_WITHIN_MESSAGE_REQUIRES_ELEMENT =
       SoyErrorKind.of("'{velog'} within '{msg'} must directly wrap an HTML element.");
+
+  private static final SoyErrorKind LOGGING_FUNCTION_ELEMENT_CALL =
+      SoyErrorKind.of(
+          "Logging functions cannot be used for attributes passed with element " + "composition.");
 
   private final ErrorReporter reporter;
   private final SoyTypeRegistry typeRegistry;
@@ -191,6 +198,12 @@ final class VeLogValidationPass implements CompilerFileSetPass {
           INVALID_LOGGING_FUNCTION_LOCATION,
           function.getStaticFunctionName(),
           " It has sibling nodes in the attribute value.");
+      return;
+    }
+    Optional<? extends Node> tag =
+        SoyTreeUtils.ancestors(printNode).filter(n -> n instanceof HtmlTagNode).findFirst();
+    if (tag.isPresent() && ((HtmlTagNode) tag.get()).getTagName().isTemplateCall()) {
+      reporter.report(function.getSourceLocation(), LOGGING_FUNCTION_ELEMENT_CALL);
     }
   }
 

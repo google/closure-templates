@@ -201,19 +201,6 @@ public class SimplifyVisitorTest {
   }
 
   @Test
-  public void testCallParamWithLoggingFunctionNotRewritten() {
-    assertSimplification(
-            "<{t2()} data-ved=\"{currentVed()}\"></>",
-            "{/template}",
-            "{template t2 kind=\"html<?>\"}",
-            "  {@attribute? data-ved: string}",
-            "  <div @data-ved></div>")
-        .isEqualTo(
-            "{call t2}{param dataVed kind=\"text\"}{currentVed()"
-                + " |escapeHtmlAttribute}{/param}{/call}");
-  }
-
-  @Test
   public void testCallBind() {
     assertSimplification(
             "{@param tpl: (a: string, b: string) => html<?>}",
