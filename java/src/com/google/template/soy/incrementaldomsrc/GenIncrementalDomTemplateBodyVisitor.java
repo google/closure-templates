@@ -19,6 +19,7 @@ package com.google.template.soy.incrementaldomsrc;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM;
+import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_APPEND_CLONE_TO_CURRENT;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_APPLY_ATTRS;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_APPLY_STATICS;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_ATTR;
@@ -33,13 +34,14 @@ import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.IN
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_PARAM_NAME;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_POP_KEY;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_POP_MANUAL_KEY;
+import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_PRINT;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_PUSH_KEY;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_PUSH_MANUAL_KEY;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_TEXT;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_TODEFAULT;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_TONULL;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_VERIFY_LOGONLY;
-import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_APPEND_CLONE;
+import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_VISIT_HTML_COMMENT;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_CALL_DYNAMIC_ATTRIBUTES;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_CALL_DYNAMIC_CSS;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_CALL_DYNAMIC_HTML;
@@ -48,9 +50,7 @@ import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SO
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_COMPILE_TO_TEMPLATE;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_MAKE_ATTRIBUTES;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_MAKE_HTML;
-import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_PRINT;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_PRINT_DYNAMIC_ATTR;
-import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_VISIT_HTML_COMMENT;
 import static com.google.template.soy.jssrc.dsl.Expressions.LITERAL_EMPTY_STRING;
 import static com.google.template.soy.jssrc.dsl.Expressions.id;
 import static com.google.template.soy.jssrc.dsl.Expressions.stringLiteral;
@@ -584,7 +584,7 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
               .build();
       staticVarDeclarations.add(varDecl);
       var expr =
-          SOY_IDOM_APPEND_CLONE.call(
+          INCREMENTAL_DOM_APPEND_CLONE_TO_CURRENT.call(
               id(varDecl.varName())
                   .or(
                       id(varDecl.varName())
@@ -593,8 +593,7 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
                                   JsRuntime.sanitizedContentOrdainerFunction(
                                           SanitizedContentKind.HTML)
                                       .call(staticTemplate))),
-                      codeGenerator),
-              Expressions.id(INCREMENTAL_DOM_PARAM_NAME));
+                      codeGenerator));
       staticTemplate = oldStringBuilder;
       if (isSelfContainedBlock) {
         shouldCollectHtml = oldShouldCollectHtml;
@@ -674,7 +673,7 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
     for (int i = 0; i < node.numChildren(); i++) {
       statements.add(visit(node.getChild(i)));
     }
-    statements.add(SOY_IDOM_VISIT_HTML_COMMENT.call(INCREMENTAL_DOM, id(id)).asStatement());
+    statements.add(INCREMENTAL_DOM_VISIT_HTML_COMMENT.call(id(id)).asStatement());
     outputVars.popOutputVar();
     contentKind.pop();
     return Statements.of(statements);
@@ -1187,11 +1186,11 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
                         node.getChild(node.numChildren() - 1).getPrintDirective())
                     .getContentKind()
                 == SanitizedContent.ContentKind.HTML) {
-          return SOY_IDOM_PRINT
-              .call(INCREMENTAL_DOM, Expressions.concat(chunks), Expressions.LITERAL_TRUE)
+          return INCREMENTAL_DOM_PRINT
+              .call(Expressions.concat(chunks), Expressions.LITERAL_TRUE)
               .asStatement();
         } else {
-          return SOY_IDOM_PRINT.call(INCREMENTAL_DOM, Expressions.concat(chunks)).asStatement();
+          return INCREMENTAL_DOM_PRINT.call(Expressions.concat(chunks)).asStatement();
         }
       case HTML_RCDATA:
         return INCREMENTAL_DOM_TEXT

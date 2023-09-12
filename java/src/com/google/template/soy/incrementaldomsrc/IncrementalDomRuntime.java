@@ -79,6 +79,11 @@ final class IncrementalDomRuntime {
       INCREMENTAL_DOM.dotAccess("toNullRenderer");
 
   public static final Expression INCREMENTAL_DOM_TEXT = INCREMENTAL_DOM.dotAccess("text");
+  public static final Expression INCREMENTAL_DOM_PRINT = INCREMENTAL_DOM.dotAccess("print");
+  public static final Expression INCREMENTAL_DOM_VISIT_HTML_COMMENT =
+      INCREMENTAL_DOM.dotAccess("visitHtmlCommentNode");
+  public static final Expression INCREMENTAL_DOM_APPEND_CLONE_TO_CURRENT =
+      INCREMENTAL_DOM.dotAccess("appendCloneToCurrent");
 
   public static final Expression INCREMENTAL_DOM_ATTR = INCREMENTAL_DOM.dotAccess("attr");
 
@@ -88,9 +93,6 @@ final class IncrementalDomRuntime {
       INCREMENTAL_DOM.dotAccess("pushManualKey");
   public static final Expression INCREMENTAL_DOM_POP_MANUAL_KEY =
       INCREMENTAL_DOM.dotAccess("popManualKey");
-
-  public static final Expression SOY_IDOM_APPEND_CLONE =
-      SOY_IDOM.dotAccess("$$appendCloneToCurrent");
 
   public static final Expression SOY_IDOM_COMPILE_TO_TEMPLATE =
       SOY_IDOM.dotAccess("$$compileToTemplate");
@@ -108,8 +110,6 @@ final class IncrementalDomRuntime {
 
   public static final Expression SOY_IDOM_CALL_DYNAMIC_CSS = SOY_IDOM.dotAccess("$$callDynamicCss");
   public static final Expression SOY_IDOM_CALL_DYNAMIC_JS = SOY_IDOM.dotAccess("$$callDynamicJs");
-  public static final Expression SOY_IDOM_VISIT_HTML_COMMENT =
-      SOY_IDOM.dotAccess("$$visitHtmlCommentNode");
   public static final Expression SOY_IDOM_CALL_DYNAMIC_TEXT =
       SOY_IDOM.dotAccess("$$callDynamicText");
 
@@ -121,7 +121,6 @@ final class IncrementalDomRuntime {
 
   public static final Expression SOY_IDOM_IS_TRUTHY = SOY_IDOM.dotAccess("$$isTruthy");
 
-  public static final Expression SOY_IDOM_PRINT = SOY_IDOM.dotAccess("$$print");
   public static final Expression SOY_IDOM_PRINT_WITH_NODE_PARTS =
       SOY_IDOM.dotAccess("$$printWithNodeParts");
 
