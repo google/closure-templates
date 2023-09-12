@@ -287,18 +287,21 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
               + "Consider simplifying or using the ?: operator, see "
               + "go/soy/reference/expressions.md#logical-operators",
           StyleAllowance.NO_PUNCTUATION);
-  private static final SoyErrorKind UNDEFINED_FIELD_FOR_PROTO_TYPE =
-      SoyErrorKind.of(
-          "Undefined field ''{0}'' for proto type {1}.{2}", StyleAllowance.NO_PUNCTUATION);
   private static final SoyErrorKind UNDEFINED_FIELD_FOR_RECORD_TYPE =
       SoyErrorKind.of(
           "Undefined field ''{0}'' for record type {1}.{2}", StyleAllowance.NO_PUNCTUATION);
   private static final SoyErrorKind PROTO_FIELD_DOES_NOT_EXIST =
       SoyErrorKind.of(
           "Proto field ''{0}'' does not exist in {1}.{2}", StyleAllowance.NO_PUNCTUATION);
+  private static final SoyErrorKind DID_YOU_MEAN_GETTER_ONLY_FIELD_FOR_PROTO_TYPE =
+      SoyErrorKind.of(
+          "Did you mean ''{0}''? Proto field ''{0}'' for proto type {1} can only be accessed "
+              + "via ''{2}''. See http://go/soy/dev/protos.md#accessing-proto-fields for more "
+              + "info.",
+          StyleAllowance.NO_PUNCTUATION);
   private static final SoyErrorKind GETTER_ONLY_FIELD_FOR_PROTO_TYPE =
       SoyErrorKind.of(
-          "Proto field ''{0}'' for proto type {1} can only be accessed via ''{2}()''. "
+          "Proto field ''{0}'' for proto type {1} can only be accessed via ''{2}''. "
               + "See http://go/soy/dev/protos.md#accessing-proto-fields for more info.",
           StyleAllowance.NO_PUNCTUATION);
   private static final SoyErrorKind PROTO_MISSING_REQUIRED_FIELD =
@@ -2487,20 +2490,21 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
             SoyProtoType protoType = (SoyProtoType) baseType;
             SoyType fieldType = protoType.getFieldType(fieldName);
             if (fieldType != null) {
-              emitProtoFieldError(protoType, fieldName, sourceLocation);
-              return SoyTypes.tryRemoveNullish(fieldType);
+              emitProtoFieldError(
+                  protoType, fieldName, sourceLocation, /* isSuggestedFieldName= */ false);
             } else {
-              String extraErrorMessage =
-                  SoyErrors.getDidYouMeanMessageForProtoFields(
-                      protoType.getFieldNames(), protoType.getDescriptor(), fieldName);
-              errorReporter.report(
-                  sourceLocation,
-                  UNDEFINED_FIELD_FOR_PROTO_TYPE,
-                  fieldName,
-                  baseType,
-                  extraErrorMessage);
-              return UnknownType.getInstance();
+              String suggestedName = getSuggestedProtoFieldName(protoType, fieldName);
+              if (suggestedName != null) {
+                fieldType = protoType.getFieldType(suggestedName);
+                emitProtoFieldError(
+                    protoType, suggestedName, sourceLocation, /* isSuggestedFieldName= */ true);
+              } else {
+                // no matches are close enough.
+                emitDefaultFieldNotFoundError(baseType, fieldName, sourceLocation);
+                fieldType = UnknownType.getInstance();
+              }
             }
+            return SoyTypes.tryRemoveNullish(fieldType);
           }
 
         case LEGACY_OBJECT_MAP:
@@ -2542,23 +2546,33 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
           return UnknownType.getInstance();
 
         default:
-          ImmutableSet<String> allFields =
-              fieldRegistry.getAllFieldNames(tryRemoveNullish(baseType));
-          String didYouMean =
-              allFields.isEmpty() ? "" : SoyErrors.getDidYouMeanMessage(allFields, fieldName);
-          errorReporter.report(sourceLocation, NO_SUCH_FIELD, fieldName, baseType, didYouMean);
+          emitDefaultFieldNotFoundError(baseType, fieldName, sourceLocation);
           return UnknownType.getInstance();
       }
     }
 
+    private String getSuggestedProtoFieldName(SoyProtoType protoType, String fieldName) {
+      if (protoType.getFieldNames().contains(fieldName + "List")) {
+        return fieldName + "List";
+      } else if (protoType.getFieldNames().contains(fieldName + "Map")) {
+        return fieldName + "Map";
+      }
+      return SoyErrors.getClosest(protoType.getFieldNames(), fieldName);
+    }
+
+    private void emitDefaultFieldNotFoundError(
+        SoyType baseType, String fieldName, SourceLocation sourceLocation) {
+      ImmutableSet<String> allFields = fieldRegistry.getAllFieldNames(tryRemoveNullish(baseType));
+      String didYouMean =
+          allFields.isEmpty() ? "" : SoyErrors.getDidYouMeanMessage(allFields, fieldName);
+      errorReporter.report(sourceLocation, NO_SUCH_FIELD, fieldName, baseType, didYouMean);
+    }
+
     private void emitProtoFieldError(
-        SoyProtoType baseType, String fieldName, SourceLocation sourceLocation) {
-      errorReporter.report(
-          sourceLocation,
-          GETTER_ONLY_FIELD_FOR_PROTO_TYPE,
-          fieldName,
-          baseType,
-          BuiltinMethod.protoFieldToGetMethodName(fieldName));
+        SoyProtoType baseType,
+        String fieldName,
+        SourceLocation sourceLocation,
+        boolean isSuggestedFieldName) {
     }
 
     /** Given a base type and an item key type, compute the item value type. */

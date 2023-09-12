@@ -475,11 +475,11 @@ public enum BuiltinMethod implements SoyMethod {
     return "get" + CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_CAMEL, fieldName);
   }
 
-  private static String protoFieldToGetReadonlyMethodName(String fieldName) {
+  public static String protoFieldToGetReadonlyMethodName(String fieldName) {
     return "getReadonly" + CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_CAMEL, fieldName);
   }
 
-  private static String fieldToGetOrUndefinedMethodName(String fieldName) {
+  public static String fieldToGetOrUndefinedMethodName(String fieldName) {
     return "get" + CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_CAMEL, fieldName) + "OrUndefined";
   }
 
