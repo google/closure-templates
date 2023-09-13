@@ -974,6 +974,9 @@
             <configuration>
               <protocArtifact>com.google.protobuf:protoc:${proto.version}</protocArtifact>
               <addSources>test</addSources>
+              <includeDirectories>
+                <include>${project.basedir}</include>
+              </includeDirectories>
               <inputDirectories>
                 <include>src/test/protobuf</include>
               </inputDirectories>
