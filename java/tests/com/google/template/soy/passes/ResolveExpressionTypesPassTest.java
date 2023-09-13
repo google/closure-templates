@@ -511,6 +511,200 @@ public final class ResolveExpressionTypesPassTest {
         "  {assertType('null', $null)}", // #21 null type (but this branch is dead)
         "{/if}",
         "");
+    assertTypes(
+        "{@param? pa: string}",
+        "{@param? pb: string}",
+        "{if $pa != null and $pb != null}",
+        "  {assertType('string', $pa)}",
+        "  {assertType('string', $pb)}",
+        "{else}",
+        "  {assertType('null|string', $pa)}",
+        "  {assertType('null|string', $pb)}",
+        "{/if}",
+        "",
+        "{if $pa != null or $pb != null}",
+        "  {assertType('null|string', $pa)}",
+        "  {assertType('null|string', $pb)}",
+        "{else}",
+        "  {assertType('null', $pa)}",
+        "  {assertType('null', $pb)}",
+        "{/if}",
+        "");
+    assertTypes(
+        "{@param? pa: string|null}",
+        "{if $pa != null and $pa.length > 0}",
+        "  {assertType('string', $pa)}",
+        "{/if}",
+        "",
+        "{if ($pa == null or $pa.length != 1) or $pa.substring(1) == 'a'}",
+        "  {assertType('null|string', $pa)}",
+        "{/if}",
+        "");
+  }
+
+  @Test
+  public void testDataFlowTypeNarrowing_nullSafeChains() {
+    assertTypes(
+        "{@param r: [a: null|[b: null|[c: null|string]]]}",
+        "{if $r.a?.b?.c}",
+        "  {assertType('[b: [c: null|string]|null]', $r.a)}",
+        "  {assertType('[c: null|string]', $r.a.b)}",
+        "  {assertType('null|string', $r.a.b.c)}", // b/297033128
+        "{/if}",
+        "");
+    assertTypes(
+        "{@param r: [a: null|[b: null|string]]}",
+        "{if $r.a?.b != null}",
+        "  {assertType('[b: null|string]|null', $r.a)}", // b/297033128
+        "  {assertType('null|string', $r.a.b)}", // b/297033128
+        "{else}",
+        "  {assertType('[b: null|string]|null', $r.a)}",
+        "{/if}",
+        "",
+        "{if $r.a?.b?.length}",
+        "  {assertType('[b: null|string]', $r.a)}",
+        "  {assertType('string', $r.a.b)}",
+        "{else}",
+        "  {assertType('[b: null|string]|null', $r.a)}",
+        "{/if}",
+        "",
+        "{if $r.a?.b !== null}",
+        "  {assertType('[b: null|string]|null', $r.a)}", // b/297033128
+        "  {assertType('null|string', $r.a.b)}", // b/297033128
+        "{else}",
+        "  {assertType('[b: null|string]|null', $r.a)}",
+        "{/if}",
+        "");
+    assertTypes(
+        "{@param? m: map<string, string>}",
+        "{if $m?.get('a')}",
+        "  {assertType('map<string,string>', $m)}",
+        "  {assertType('string', $m?.get('a'))}",
+        "  {assertType('null|string', $m.get('a'))}", // b/297033128
+        "{else}",
+        "  {assertType('map<string,string>|null', $m)}",
+        "  {assertType('null|string', $m?.get('a'))}",
+        "{/if}",
+        "",
+        "{if $m?.get('a') == 'b'}",
+        "  {assertType('map<string,string>|null', $m)}", // b/297033128
+        // b/297033128 "  {assertType('string', $m.get('a'))}",
+        "{else}",
+        "  {assertType('map<string,string>|null', $m)}",
+        "  {assertType('null|string', $m?.get('a'))}",
+        "{/if}",
+        "",
+        "{if $m?.get('a') != 'b'}",
+        "  {assertType('null|string', $m?.get('a'))}",
+        "  {assertType('map<string,string>|null', $m)}",
+        "{else}",
+        "  {assertType('null|string', $m?.get('a'))}",
+        "  {assertType('map<string,string>|null', $m)}",
+        "{/if}",
+        "",
+        "{if $m?.get('a') == null}",
+        "  {assertType('null', $m?.get('a'))}",
+        "  {assertType('map<string,string>|null', $m)}",
+        "{else}",
+        // b/297033128 "  {assertType('string', $m.get('a'))}",
+        "  {assertType('map<string,string>|null', $m)}", // b/297033128
+        "{/if}",
+        "",
+        "{if $m?.get('a') != null}",
+        // b/297033128 "  {assertType('string', $m.get('a'))}",
+        "  {assertType('map<string,string>|null', $m)}", // b/297033128
+        "{else}",
+        "  {assertType('null', $m?.get('a'))}",
+        "  {assertType('map<string,string>|null', $m)}",
+        "{/if}",
+        "");
+    assertTypes(
+        "{@param m: map<string, null|map<string, null|string>>}",
+        "{if $m.get('a')?.get('b')}",
+        "  {assertType('map<string,null|string>', $m.get('a'))}",
+        "  {assertType('null|string', $m.get('a').get('b'))}", // b/297033128
+        // We aren't quite sure why you can call `get` on $m?.get('a') since the base's type hasn't
+        // been narrowed according to assertType.
+        "  {assertType('map<string,null|string>|null', $m?.get('a'))}",
+        "  {assertType('null|string', $m?.get('a').get('b'))}",
+        "{else}",
+        "  {assertType('null|string', $m?.get('a')?.get('b'))}",
+        "{/if}",
+        "");
+  }
+
+  @Test
+  public void testDataFlowTypeNarrowing_nullSafeChains_notAllPermutations() {
+    // There's probably no reason not to support these narrowings. Just a regression test to make
+    // explicit that we don't support them currently.
+    assertTypes(
+        "{@param r: [a: null|[b: null|[c: null|string]]]}",
+        "{if $r.a?.b?.c}",
+        "  {assertType('null|string', $r.a.b.c)}", // b/297033128
+        "  {assertType('string', $r.a?.b?.c)}",
+        "  {assertType('null|string', $r?.a.b.c)}",
+        "  {assertType('null|string', $r.a?.b.c)}",
+        "  {assertType('null|string', $r.a.b?.c)}",
+        "  {assertType('null|string', $r?.a?.b.c)}",
+        "  {assertType('null|string', $r?.a.b?.c)}",
+        "  {assertType('null|string', $r?.a?.b?.c)}",
+        "{/if}",
+        "");
+  }
+
+  @Test
+  public void testDataFlowTypeNarrowing_tripleEq() {
+    assertTypes(
+        "{@param? m: map<string, string|undefined>}",
+        "{assertType('null|string|undefined', $m?.get('a'))}",
+        "{if $m?.get('a') === undefined}",
+        "  {assertType('undefined', $m?.get('a'))}",
+        // b/297033128 "  {assertType('undefined', $m.get('a'))}", // Only true while ?. coalesces
+        // to null.
+        "  {assertType('map<string,string|undefined>|null', $m)}", // b/297033128
+        "{else}",
+        "  {assertType('null|string', $m?.get('a'))}",
+        "  {assertType('map<string,string|undefined>|null', $m)}",
+        "{/if}",
+        "",
+        "{if $m?.get('a') !== undefined}",
+        "  {assertType('null|string', $m?.get('a'))}",
+        "  {assertType('map<string,string|undefined>|null', $m)}",
+        "{else}",
+        "  {assertType('undefined', $m?.get('a'))}",
+        // b/297033128 "  {assertType('undefined', $m.get('a'))}",
+        "  {assertType('map<string,string|undefined>|null', $m)}", // b/297033128
+        "{/if}",
+        "");
+    assertTypes(
+        "{@param? m: map<string, string>}",
+        "{if $m?.get('a') === null}",
+        "  {assertType('null', $m?.get('a'))}",
+        "  {assertType('map<string,string>|null', $m)}",
+        "{else}",
+        "  {assertType('string', $m?.get('a'))}",
+        "  {assertType('map<string,string>|null', $m)}", // b/297033128
+        "{/if}",
+        "");
+  }
+
+  @Test
+  public void testDataFlowTypeNarrowing_greaterLessThan() {
+    assertTypes(
+        "{@param? r: [a?: string]}",
+        "{if $r?.a?.length > 0}",
+        "  {assertType('string', $r.a)}",
+        "{/if}",
+        "{if $r?.a?.length < 0}",
+        "  {assertType('string', $r.a)}",
+        "{/if}",
+        "{if $r?.a?.length >= 0}",
+        "  {assertType('string', $r.a)}", // b/297033128
+        "{/if}",
+        "{if $r?.a?.length <= 0}",
+        "  {assertType('string', $r.a)}", // b/297033128
+        "{/if}",
+        "");
   }
 
   @Test
@@ -523,6 +717,15 @@ public final class ResolveExpressionTypesPassTest {
         "{/if}",
         "{if $record.a?.nullableInt}",
         "  {assertType('int', $record.a?.nullableInt)}",
+        "{/if}",
+        "");
+    // Don't add |null to types for checks like this.
+    assertTypes(
+        "{@param s: string}",
+        "{if $s == null or $s == 'a'}",
+        "  {assertType('string', $s)}",
+        "{else}",
+        "  {assertType('string', $s)}",
         "{/if}",
         "");
   }
