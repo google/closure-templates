@@ -213,6 +213,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
       return namespace;
     }
 
+    @Nullable
     public String getModName() {
       return modNameDeclaration == null ? null : modNameDeclaration.name().identifier();
     }
@@ -670,6 +671,11 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
 
   public ImmutableList<TemplateHeaderVarDefn> getHeaderParams() {
     return this.headerParams;
+  }
+
+  public void removeHeaderParam(TemplateHeaderVarDefn param) {
+    this.headerParams =
+        headerParams.stream().filter(p -> !p.equals(param)).collect(toImmutableList());
   }
 
   @Override

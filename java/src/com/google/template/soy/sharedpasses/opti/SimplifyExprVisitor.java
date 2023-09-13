@@ -237,6 +237,7 @@ final class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
     this.visitDataAccessNodeInternal(node, SimplifyExprVisitor::visitItemAccessNode);
   }
 
+  @Nullable
   private static ExprNode visitItemAccessNode(ItemAccessNode node, ExprNode baseExpr) {
     ExprNode keyExpr = node.getChild(1);
     if (baseExpr instanceof ListLiteralNode && keyExpr instanceof IntegerNode) {
@@ -395,6 +396,14 @@ final class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
     // Cannot simplify nonplugin functions.
     // TODO(user): we can actually simplify checkNotNull.
     if (node.getSoyFunction() instanceof BuiltinFunction) {
+      switch ((BuiltinFunction) node.getSoyFunction()) {
+        case EMPTY_TO_NULL:
+          visitExprNode(node);
+          break;
+        default:
+          // we could eliminate checkNotNull and protoInit and maybe some others
+          break;
+      }
       return;
     }
     if (node.getSoyFunction() instanceof LoggingFunction) {
@@ -483,6 +492,7 @@ final class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
   }
 
   /** Returns the value of the given expression if it's constant, else returns null. */
+  @Nullable
   static SoyValue getConstantOrNull(ExprNode expr) {
     switch (expr.getKind()) {
       case NULL_NODE:

@@ -1167,6 +1167,12 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
 
   protected Expression visitEmptyToNullFunction(FunctionNode node) {
     // Child is either a string or a sanitized content block, but it is always pointing at a local
+    var childNode = node.getChild(0);
+    checkState(
+        childNode instanceof VarRefNode,
+        "expected child %s @%s to be a varref",
+        childNode,
+        childNode.getSourceLocation());
     var defn = ((VarRefNode) node.getChild(0)).getDefnDecl();
     // check that we are pointing at a let, if we are then we can use `||` since internal blocks map
     // empty sanitized content to `''` so `||` works.

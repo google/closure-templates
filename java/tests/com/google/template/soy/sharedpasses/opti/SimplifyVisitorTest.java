@@ -25,21 +25,38 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.logging.LoggingFunction;
 import com.google.template.soy.shared.restricted.Signature;
 import com.google.template.soy.shared.restricted.SoyFunctionSignature;
+import com.google.template.soy.soytree.HtmlAttributeNode;
+import com.google.template.soy.soytree.HtmlAttributeValueNode;
+import com.google.template.soy.soytree.HtmlOpenTagNode;
+import com.google.template.soy.soytree.IfNode;
+import com.google.template.soy.soytree.LetNode;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;
 import com.google.template.soy.soytree.MsgNode;
 import com.google.template.soy.soytree.MsgPlaceholderNode;
+import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
+import com.google.template.soy.soytree.TemplateBasicNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 @RunWith(JUnit4.class)
 public class SimplifyVisitorTest {
+
+  private boolean desugarIdomFeatures;
+  private boolean desugarHtmlNodes;
+
+  @Before
+  public void setUp() {
+    desugarIdomFeatures = true;
+    desugarHtmlNodes = true;
+  }
 
   @Test
   public void testMsgBlockNodeChildrenAreNotReplaced() throws Exception {
@@ -149,6 +166,117 @@ public class SimplifyVisitorTest {
             "  777",
             "{/if}")
         .isEqualTo("{@param boo: ?}\n{if $boo}222{else}444{/if}");
+  }
+
+  @Test
+  public void simplifyIfWithEmptyChildren_delete() {
+    assertSimplification("{@param boo: ?}", "{if $boo}", "  {let $baz:2/}", "{/if}")
+        .isEqualTo("{@param boo: ?}");
+  }
+
+  @Test
+  public void simplifyIfWithEmptyChildren_elseToIf() {
+    assertSimplification(
+            "{@param boo: ?}", "{if $boo}", "  {let $baz:2/}", "{else}", "hello", "{/if}")
+        .isEqualTo("{@param boo: ?}\n{if not $boo}hello{/if}");
+  }
+
+  @Test
+  public void simplifyIfWithEmptyChildren_invertNextIf() {
+    assertSimplification(
+            "{@param boo: ?}",
+            "{@param qoo: ?}",
+            "{if $boo}",
+            "  {let $baz:2/}",
+            "{elseif $qoo}",
+            "  hello",
+            "{/if}")
+        .isEqualTo("{@param boo: ?}\n  {@param qoo: ?}\n{if not $boo and $qoo}hello{/if}");
+  }
+
+  @Test
+  public void simplifyIfWithEmptyChildren_invertAllFollowingIfs() {
+    // If it is the first once, we can surround with an if
+    assertSimplification(
+            "{@param boo: ?}",
+            "{@param qoo: ?}",
+            "{@param soo: ?}",
+            "{if $boo}",
+            "  {nil}",
+            "{elseif $qoo}",
+            "  hello",
+            "{elseif $soo}",
+            "  goodbye",
+            "{/if}")
+        .isEqualTo(
+            "{@param boo: ?}\n"
+                + "  {@param qoo: ?}\n"
+                + "  {@param soo: ?}\n"
+                + "{if not $boo}{if $qoo}hello{elseif $soo}goodbye{/if}{/if}");
+
+    assertSimplification(
+            "{@param boo: ?}",
+            "{@param qoo: ?}",
+            "{@param soo: ?}",
+            "{if $boo}",
+            "  hello",
+            "{elseif $qoo}",
+            "  {nil}",
+            "{elseif $soo}",
+            "  goodbye",
+            "{/if}")
+        .isEqualTo(
+            "{@param boo: ?}\n"
+                + "  {@param qoo: ?}\n"
+                + "  {@param soo: ?}\n"
+                + "{if $boo}hello{elseif not $qoo and $soo}goodbye{/if}");
+
+    // If it is in the middle, we need to introduce an ele-if
+    assertSimplification(
+            "{@param boo: ?}",
+            "{@param qoo: ?}",
+            "{@param soo: ?}",
+            "{if $boo}",
+            "  hello",
+            "{elseif $qoo}",
+            "  {nil}",
+            "{elseif $soo}",
+            "  goodbye",
+            "{else}",
+            "  still here?",
+            "{/if}")
+        .isEqualTo(
+            "{@param boo: ?}\n"
+                + "  {@param qoo: ?}\n"
+                + "  {@param soo: ?}\n"
+                + "{if $boo}hello{elseif not $qoo}{if $soo}goodbye{else}still here?{/if}{/if}");
+
+    // If there are multipole we need to handle them all.
+    assertSimplification(
+            "{@param boo: ?}",
+            "{@param qoo: ?}",
+            "{@param soo: ?}",
+            "{@param foo: ?}",
+            "{if $boo}",
+            "  hello",
+            "{elseif $qoo}",
+            "  {nil}",
+            "{elseif $soo}",
+            "  goodbye",
+            "{elseif $foo}",
+            "  {nil}",
+            "{else}",
+            "  still here?",
+            "{/if}")
+        .isEqualTo(
+            "{@param boo: ?}\n"
+                + "  {@param qoo: ?}\n"
+                + "  {@param soo: ?}\n"
+                + "  {@param foo: ?}\n"
+                + "{if $boo}hello"
+                + "{elseif not $qoo}"
+                + "{if $soo}goodbye{elseif not $foo}still here?{/if}"
+                + "{/if}");
   }
 
   @Test
@@ -284,7 +412,117 @@ public class SimplifyVisitorTest {
         .isEqualTo(normalized("{msg desc=\"...\"}Hello foo{/msg}"));
   }
 
-  private static StringSubject assertSimplification(String... input) {
+  @Test
+  public void testMoveLetPastPrintingNodes() {
+    assertSimplification("{let $name : 'hello'/}Hello {$name} Goodbye:{$name}")
+        .isEqualTo(normalized("Hello {let $name : 'hello'/}{$name} Goodbye:{$name}"));
+    assertSimplification(
+            "{let $greeting: 'something' /}{let $name : 'hello'/}{$greeting} {$name}"
+                + " {$greeting}:{$name}")
+        .isEqualTo(
+            normalized(
+                "{let $greeting : 'something' /}{$greeting} {let $name : 'hello' /}{$name}"
+                    + " {$greeting}:{$name}"));
+  }
+
+  @Test
+  public void testMoveLetIntoIfStatement() {
+    assertSimplification(
+            "{let $name : 'hello'/}{if randomInt(2) == 1}Hello {$name} Goodbye:{$name}{/if}")
+        .isEqualTo(
+            normalized(
+                " {if randomInt(2) == 1}Hello {let $name : 'hello' /}{$name}"
+                    + " Goodbye:{$name}{/if}"));
+  }
+
+  @Test
+  public void testDontMoveLetIntoLoop() {
+    assertNoOp("{let $name: randomInt(10) /}{for $i in range(10)}{$name}{/for}");
+  }
+
+  @Test
+  public void testDontMoveLetPastSkipNode() {
+    desugarIdomFeatures = false;
+    desugarHtmlNodes = false;
+    assertNoOp("{let $name: randomInt(10) /}<div {skip}>{$name}</div>{$name}");
+    desugarIdomFeatures = true;
+    desugarHtmlNodes = true;
+    assertSimplification("{let $name: randomInt(10) /}<div {skip}>{$name}</div>{$name}")
+        .isEqualTo(normalized("<div {skip}>{let $name : randomInt(10) /}{$name}</div>{$name}"));
+  }
+
+  @Test
+  public void testMoveMultipleDependentLets() {
+    assertSimplification(
+            "{let $foo: 'hello'/}{let $bar : $foo + 2/}{if $foo}Hello {$foo+$bar}"
+                + " Goodbye:{$bar}{/if}")
+        .isEqualTo(
+            normalized(
+                "{let $foo: 'hello' /}{if $foo}Hello {let $bar : $foo + 2 /}{$foo + $bar}"
+                    + " Goodbye:{$bar}{/if}"));
+  }
+
+  @Test
+  public void testMoveMultipleDependentLets_preserve_order() {
+    // foo and bar could be reordered but we shouldn't do that.
+    assertNoOp("{let $foo: 'hello'/}{let $bar :'goodbye'/}{if $foo}{$bar}{elseif $bar}{$foo}{/if}");
+  }
+
+  @Test
+  public void testMoveMultipleIndependentLets() {
+    assertSimplification("{let $h : 'hello'/}{let $g :'goodbye'/}{$h}{$g}{$h}{$g}")
+        .isEqualTo(normalized("{let $h : 'hello'/}{$h}{let $g :'goodbye'/}{$g}{$h}{$g}"));
+  }
+
+  @Test
+  public void testEvalutationOrder() {
+    TemplateBasicNode template =
+        (TemplateBasicNode) parse("{let $foo : 'a'/}hello{$foo}").getChild(0).getChild(0);
+    LetNode let = (LetNode) template.getChild(0);
+    PrintNode print = (PrintNode) template.getChild(2);
+    assertThat(SimplifyVisitor.evaluationOrder(let, print)).containsExactly(template.getChild(1));
+  }
+
+  @Test
+  public void testEvalutationOrder_goesOverBlockNodes() {
+    TemplateBasicNode template =
+        (TemplateBasicNode)
+            parse("{let $foo : 'a'/}{if true}hello{/if}{$foo}").getChild(0).getChild(0);
+    LetNode let = (LetNode) template.getChild(0);
+    PrintNode print = (PrintNode) template.getChild(2);
+    // The path marks the if but not the ifs children
+    assertThat(SimplifyVisitor.evaluationOrder(let, print)).containsExactly(template.getChild(1));
+  }
+
+  @Test
+  public void testEvalutationOrder_goesIntoBlockNodes() {
+    TemplateBasicNode template =
+        (TemplateBasicNode)
+            parse("{let $foo : 'a'/}{if true}hello {$foo}{/if}").getChild(0).getChild(0);
+    LetNode let = (LetNode) template.getChild(0);
+    IfNode ifNode = (IfNode) template.getChild(1);
+    PrintNode print = (PrintNode) ifNode.getChild(0).getChild(1);
+    // The path marks the ifnode, the ifcondnode and the RawTextNode
+    assertThat(SimplifyVisitor.evaluationOrder(let, print))
+        .containsExactly(ifNode, ifNode.getChild(0), (RawTextNode) ifNode.getChild(0).getChild(0));
+  }
+
+  @Test
+  public void testEvalutationOrder_letStartsInOddLocation() {
+    desugarHtmlNodes = false;
+    TemplateBasicNode template =
+        (TemplateBasicNode)
+            parse("<a href=\"{let $foo : 'a'/}weird\">{$foo}</a>").getChild(0).getChild(0);
+    var attributeNode =
+        (HtmlAttributeValueNode)
+            ((HtmlAttributeNode) ((HtmlOpenTagNode) template.getChild(0)).getChild(1)).getChild(1);
+    LetNode let = (LetNode) attributeNode.getChild(0);
+    PrintNode print = (PrintNode) template.getChild(1);
+    assertThat(SimplifyVisitor.evaluationOrder(let, print))
+        .containsExactly(attributeNode.getChild(1));
+  }
+
+  private StringSubject assertSimplification(String... input) {
     SoyFileSetNode node = parse(join(input));
     SimplifyVisitor.create(
             node.getNodeIdGenerator(),
@@ -294,7 +532,7 @@ public class SimplifyVisitorTest {
     return assertThat(toString(node.getChild(0).getChild(0)));
   }
 
-  private static void assertNoOp(String... input) {
+  private void assertNoOp(String... input) {
     SoyFileSetNode node = parse(join(input));
     String original = toString(node.getChild(0).getChild(0));
     SimplifyVisitor.create(
@@ -306,10 +544,12 @@ public class SimplifyVisitorTest {
     assertThat(rewritten).isEqualTo(original);
   }
 
-  private static SoyFileSetNode parse(String input) {
+  private SoyFileSetNode parse(String input) {
     return SoyFileSetParserBuilder.forFileContents(
             join("{namespace ns}", "{template t}", input, "{/template}"))
         .runOptimizer(false)
+        .desugarIdomFeatures(desugarIdomFeatures)
+        .desugarHtmlNodes(desugarHtmlNodes)
         .addSoySourceFunction(new CurrentVedFunction())
         .parse()
         .fileSet();
@@ -320,7 +560,7 @@ public class SimplifyVisitorTest {
     return string.replace("{template t}\n", "").replace("\n{/template}", "").trim();
   }
 
-  private static String normalized(String... args) {
+  private String normalized(String... args) {
     return toString(parse(join(args)).getChild(0).getChild(0));
   }
 

@@ -16,6 +16,8 @@
 
 package com.google.template.soy.soytree;
 
+import static com.google.common.base.Preconditions.checkState;
+
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.basetree.CopyState;
@@ -34,7 +36,7 @@ public final class ForNonemptyNode extends AbstractBlockNode
     implements ConditionalBlockNode, LocalVarBlockNode {
 
   private final LocalVar var;
-  @Nullable private final LocalVar indexVar;
+  @Nullable private LocalVar indexVar;
 
   /**
    * @param id The id for this node.
@@ -45,7 +47,7 @@ public final class ForNonemptyNode extends AbstractBlockNode
   public ForNonemptyNode(
       int id,
       Identifier varIdentifier,
-      Identifier indexVarIdentifier,
+      @Nullable Identifier indexVarIdentifier,
       SourceLocation contentLocation) {
     super(id, contentLocation);
     this.var =
@@ -96,7 +98,7 @@ public final class ForNonemptyNode extends AbstractBlockNode
 
   @Nullable
   public String getIndexVarName() {
-    return indexVar.name();
+    return indexVar == null ? null : indexVar.name();
   }
 
   /** Returns the expression we're iterating over. */
@@ -119,5 +121,13 @@ public final class ForNonemptyNode extends AbstractBlockNode
   @Override
   public ForNonemptyNode copy(CopyState copyState) {
     return new ForNonemptyNode(this, copyState);
+  }
+
+  /**
+   * Removes the index variable from the for node. Used by the optimizer after proving it is dead.
+   */
+  public void deleteIndexVar() {
+    checkState(this.indexVar != null, "indexVar is null");
+    this.indexVar = null;
   }
 }

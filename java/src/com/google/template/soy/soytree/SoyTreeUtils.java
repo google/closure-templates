@@ -20,7 +20,6 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
-import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
@@ -58,6 +57,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 /**
  * Shared utilities for the 'soytree' package.
@@ -97,6 +97,7 @@ public final class SoyTreeUtils {
     return (SoyNode) nextSiblingNode(node);
   }
 
+  @Nullable
   public static Node nextSiblingNode(Node node) {
     ParentNode<?> parent = node.getParent();
     if (parent == null) {
@@ -111,7 +112,7 @@ public final class SoyTreeUtils {
   /** An enum that allows a {#visitAllNodes} visitor to control how the AST is traversed. */
   public enum VisitDirective {
     /**
-     * This means that the childrent of the current node should not be visited, but traversal should
+     * This means that the children of the current node should not be visited, but traversal should
      * continue.
      */
     SKIP_CHILDREN,
@@ -280,7 +281,7 @@ public final class SoyTreeUtils {
   private static StringBuilder buildAstStringHelper(
       ParentNode<?> node, int indent, StringBuilder sb) {
     for (Node child : node.getChildren()) {
-      sb.append(Strings.repeat("  ", indent)).append(child.getKind()).append('\n');
+      sb.append("  ".repeat(indent)).append(child.getKind()).append('\n');
       if (child instanceof ParentNode) {
         buildAstStringHelper((ParentNode<?>) child, indent + 1, sb);
       }
@@ -558,6 +559,7 @@ public final class SoyTreeUtils {
    * Returns the node as an HTML tag node, if one can be extracted from it (e.g. wrapped in a
    * MsgPlaceholderNode). Otherwise, returns null.
    */
+  @Nullable
   public static HtmlTagNode getNodeAsHtmlTagNode(SoyNode node, boolean openTag) {
     if (node == null) {
       return null;
@@ -615,7 +617,7 @@ public final class SoyTreeUtils {
         }
 
         @Override
-        public List<? extends TypeNode> visit(FunctionTypeNode node) {
+        public ImmutableList<? extends TypeNode> visit(FunctionTypeNode node) {
           ImmutableList.Builder<TypeNode> types = ImmutableList.builder();
           types.add(node.returnType());
           node.parameters().forEach(p -> types.add(p.type()));

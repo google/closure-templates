@@ -56,7 +56,7 @@ public class TemplateParam extends AbstractVarDefn implements TemplateHeaderVarD
 
   private final boolean isExplicitlyOptional;
 
-  @Nullable private final ExprRootNode defaultValue;
+  @Nullable private ExprRootNode defaultValue;
 
   public TemplateParam(
       String name,
@@ -188,6 +188,11 @@ public class TemplateParam extends AbstractVarDefn implements TemplateHeaderVarD
 
   public boolean hasDefault() {
     return defaultValue != null;
+  }
+
+  public void clearDefault() {
+    checkState(defaultValue != null, "defaultValue has already been cleared");
+    defaultValue = null;
   }
 
   @Override

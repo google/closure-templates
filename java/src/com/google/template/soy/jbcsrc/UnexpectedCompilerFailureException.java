@@ -55,6 +55,10 @@ final class UnexpectedCompilerFailureException extends RuntimeException {
 
   @Override
   public String getMessage() {
-    return super.getMessage() + "\nwhile compiling:\n" + printSoyStack();
+    return super.getMessage()
+        + "\nwhile compiling:\n"
+        + printSoyStack()
+        + "\nSourceString: "
+        + compilationPath.getLast().toSourceString();
   }
 }
