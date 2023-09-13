@@ -57,6 +57,8 @@ public final class SoyJsSrcOptions implements Cloneable {
    */
   private boolean useGoogIsRtlForBidiGlobalDir;
 
+  private boolean replaceXidNodes;
+
   public SoyJsSrcOptions() {
     depsStrategy = JsDepsStrategy.NAMESPACES;
 
@@ -65,6 +67,7 @@ public final class SoyJsSrcOptions implements Cloneable {
     googMsgsAreExternal = false;
     bidiGlobalDir = 0;
     useGoogIsRtlForBidiGlobalDir = false;
+    replaceXidNodes = false;
   }
 
   private SoyJsSrcOptions(SoyJsSrcOptions orig) {
@@ -74,6 +77,7 @@ public final class SoyJsSrcOptions implements Cloneable {
     this.googMsgsAreExternal = orig.googMsgsAreExternal;
     this.bidiGlobalDir = orig.bidiGlobalDir;
     this.useGoogIsRtlForBidiGlobalDir = orig.useGoogIsRtlForBidiGlobalDir;
+    this.replaceXidNodes = orig.replaceXidNodes;
   }
 
   /**
@@ -120,6 +124,14 @@ public final class SoyJsSrcOptions implements Cloneable {
   /** Returns whether we should generate Closure Library message definitions (i.e. goog.getMsg). */
   public boolean shouldGenerateGoogMsgDefs() {
     return shouldGenerateGoogMsgDefs;
+  }
+
+  public void setReplaceXidNodes(boolean replaceXidNodes) {
+    this.replaceXidNodes = replaceXidNodes;
+  }
+
+  public boolean replaceXidNodes() {
+    return replaceXidNodes;
   }
 
   /**

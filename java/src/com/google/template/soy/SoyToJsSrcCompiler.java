@@ -113,6 +113,9 @@ public final class SoyToJsSrcCompiler extends AbstractSoyCompiler {
               + " com.google.template.soy.xliffmsgplugin.XliffMsgPlugin. ")
   private SoyMsgPlugin messagePlugin = new XliffMsgPlugin();
 
+  @Option(name = "--replaceXidNodes", usage = "")
+  private boolean replaceXidNodes = false;
+
   private final PerInputOutputFiles outputFiles =
       new PerInputOutputFiles("soy.js", PerInputOutputFiles.JS_JOINER);
 
@@ -152,6 +155,7 @@ public final class SoyToJsSrcCompiler extends AbstractSoyCompiler {
     jsSrcOptions.setGoogMsgsAreExternal(googMsgsAreExternal);
     jsSrcOptions.setBidiGlobalDir(bidiGlobalDir);
     jsSrcOptions.setUseGoogIsRtlForBidiGlobalDir(useGoogIsRtlForBidiGlobalDir);
+    jsSrcOptions.setReplaceXidNodes(replaceXidNodes);
 
     // Compile.
     boolean generateLocalizedJs = !locales.isEmpty();
