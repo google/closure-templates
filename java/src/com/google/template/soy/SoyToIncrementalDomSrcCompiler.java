@@ -59,6 +59,9 @@ public final class SoyToIncrementalDomSrcCompiler extends AbstractSoyCompiler {
               + " for your messages.")
   private boolean googMsgsAreExternal = false;
 
+  @Option(name = "--replaceXidNodes", usage = "")
+  private boolean replaceXidNodes = false;
+
   private final PerInputOutputFiles outputFiles =
       new PerInputOutputFiles("idom.soy.js", PerInputOutputFiles.JS_JOINER);
 
@@ -93,6 +96,7 @@ public final class SoyToIncrementalDomSrcCompiler extends AbstractSoyCompiler {
     SoyIncrementalDomSrcOptions options = new SoyIncrementalDomSrcOptions();
     options.setDependOnCssHeader(dependOnCssHeader);
     options.setGoogMsgsAreExternal(googMsgsAreExternal);
+    options.setReplaceXidNodes(replaceXidNodes);
     outputFiles.writeFiles(
         srcs, sfs.compileToIncrementalDomSrcInternal(options), /* locale= */ null);
   }

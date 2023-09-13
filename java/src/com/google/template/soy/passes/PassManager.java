@@ -281,6 +281,7 @@ public final class PassManager {
     private ErrorReporter errorReporter;
     private SoyGeneralOptions options;
     private CssRegistry cssRegistry = CssRegistry.EMPTY;
+    private boolean replaceXidNodes;
     private boolean allowUnknownGlobals;
     private boolean allowUnknownJsGlobals;
     private boolean disableAllTypeChecking;
@@ -540,6 +541,7 @@ public final class PassManager {
           .add(new RewriteGlobalsPass())
           .add(
               new XidPass(
+                  replaceXidNodes,
                   errorReporter))
           .add(new UnknownJsGlobalPass(allowUnknownJsGlobals, errorReporter))
           .add(new ResolveNamesPass(errorReporter))

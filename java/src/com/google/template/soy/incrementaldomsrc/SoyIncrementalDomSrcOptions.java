@@ -30,14 +30,18 @@ public final class SoyIncrementalDomSrcOptions {
 
   private boolean googMsgsAreExternal;
 
+  private boolean replaceXidNodes;
+
   public SoyIncrementalDomSrcOptions() {
     dependOnCssHeader = false;
     googMsgsAreExternal = true;
+    replaceXidNodes = false;
   }
 
   private SoyIncrementalDomSrcOptions(SoyIncrementalDomSrcOptions orig) {
     this.dependOnCssHeader = orig.dependOnCssHeader;
     this.googMsgsAreExternal = orig.googMsgsAreExternal;
+    this.replaceXidNodes = orig.replaceXidNodes;
   }
 
   /**
@@ -52,6 +56,14 @@ public final class SoyIncrementalDomSrcOptions {
   /** Returns whether we should add a requirecss annotation for the generated GSS header file. */
   public boolean dependOnCssHeader() {
     return dependOnCssHeader;
+  }
+
+  public void setReplaceXidNodes(boolean replaceXidNodes) {
+    this.replaceXidNodes = replaceXidNodes;
+  }
+
+  public boolean replaceXidNodes() {
+    return replaceXidNodes;
   }
 
   /**

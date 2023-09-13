@@ -1048,6 +1048,7 @@ public final class SoyFileSet {
               passManagerBuilder()
                   .allowUnknownJsGlobals()
                   .desugarHtmlNodes(false)
+                  .setReplaceXidNodes(jsSrcOptions.replaceXidNodes())
                   .validateJavaMethods(false);
           ParseResult result = parse(builder);
           throwIfErrorsPresent();
@@ -1078,6 +1079,7 @@ public final class SoyFileSet {
                       .desugarHtmlNodes(false)
                       .allowUnknownJsGlobals()
                       .desugarIdomFeatures(false)
+                      .setReplaceXidNodes(jsSrcOptions.replaceXidNodes())
                       .validateJavaMethods(false));
           throwIfErrorsPresent();
           return new IncrementalDomSrcMain(scopedData.enterable(), typeRegistry)

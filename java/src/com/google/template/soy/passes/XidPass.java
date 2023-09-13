@@ -38,10 +38,13 @@ public final class XidPass implements CompilerFilePass {
               + "dotted identifier.");
 
   private final ErrorReporter reporter;
+  private final boolean replaceXidNodes;
 
   XidPass(
+      boolean replaceXidNodes,
       ErrorReporter reporter) {
     this.reporter = reporter;
+    this.replaceXidNodes = replaceXidNodes;
   }
 
   @Override
@@ -58,8 +61,14 @@ public final class XidPass implements CompilerFilePass {
                 case GLOBAL_NODE:
                   GlobalNode global = (GlobalNode) child;
                   String xid = global.getName();
+                  boolean isControllerOrModelXid = isControllerOrModelXid(xid);
                   fn.replaceChild(
-                      0, new StringNode(xid, QuoteStyle.SINGLE, global.getSourceLocation()));
+                      0,
+                      new StringNode(
+                          xid,
+                          QuoteStyle.SINGLE,
+                          global.getSourceLocation(),
+                          isControllerOrModelXid && replaceXidNodes));
                   break;
                 case VAR_REF_NODE:
                 case FIELD_ACCESS_NODE:
@@ -74,8 +83,14 @@ public final class XidPass implements CompilerFilePass {
                   String expanded =
                       file.resolveAlias(Identifier.create(source, SourceLocation.UNKNOWN))
                           .identifier();
+                  isControllerOrModelXid = isControllerOrModelXid(expanded);
                   fn.replaceChild(
-                      0, new StringNode(expanded, QuoteStyle.SINGLE, child.getSourceLocation()));
+                      0,
+                      new StringNode(
+                          expanded,
+                          QuoteStyle.SINGLE,
+                          child.getSourceLocation(),
+                          isControllerOrModelXid && replaceXidNodes));
                   break;
                 case STRING_NODE:
                   break;
