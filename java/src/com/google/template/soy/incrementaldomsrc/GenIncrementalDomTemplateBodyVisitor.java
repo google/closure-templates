@@ -18,6 +18,7 @@ package com.google.template.soy.incrementaldomsrc;
 
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.ImmutableList.toImmutableList;
+import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.BUFFERING_IDOM_RENDERER;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_APPEND_CLONE_TO_CURRENT;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_APPLY_ATTRS;
@@ -77,6 +78,7 @@ import com.google.template.soy.jssrc.dsl.JsDoc;
 import com.google.template.soy.jssrc.dsl.LineComment;
 import com.google.template.soy.jssrc.dsl.Statement;
 import com.google.template.soy.jssrc.dsl.Statements;
+import com.google.template.soy.jssrc.dsl.TryCatch;
 import com.google.template.soy.jssrc.dsl.VariableDeclaration;
 import com.google.template.soy.jssrc.internal.CanInitOutputVarVisitor;
 import com.google.template.soy.jssrc.internal.GenCallCodeUtils;
@@ -351,33 +353,36 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
     // TODO(lukes): instead of these helper functions callDynamicXXX for managing context mismatches
     // maybe we should create IncrementalDomRenderer subtypes that can perform the coercions, this
     // would be similar to how jbcsrc manages streaming escapers.
-
+    Expression idomRenderer = INCREMENTAL_DOM;
+    if (node.isErrorFallbackSkip()) {
+      VariableDeclaration bufferRendererInit =
+          VariableDeclaration.builder("renderer_call_" + node.getId())
+              .setRhs(Expressions.construct(BUFFERING_IDOM_RENDERER))
+              .build();
+      idomRenderer = bufferRendererInit.ref();
+      statements.add(bufferRendererInit);
+    }
     switch (node.getHtmlContext()) {
       case HTML_TAG:
         if (!kind.isPresent() || kind.get() != SanitizedContentKind.ATTRIBUTES) {
           call =
               SOY_IDOM_CALL_DYNAMIC_ATTRIBUTES.call(
-                  INCREMENTAL_DOM, callee.objectStyle(), objToPass.get(), JsRuntime.IJ_DATA);
+                  idomRenderer, callee.objectStyle(), objToPass.get(), JsRuntime.IJ_DATA);
         } else {
           call =
               directCall(
-                  callee,
-                  node,
-                  getExprTranslator(),
-                  positionalParameters,
-                  objToPass,
-                  /* isIdomCall= */ true);
+                  callee, node, getExprTranslator(), positionalParameters, objToPass, idomRenderer);
         }
         break;
       case CSS:
         call =
             SOY_IDOM_CALL_DYNAMIC_CSS.call(
-                INCREMENTAL_DOM, callee.objectStyle(), objToPass.get(), JsRuntime.IJ_DATA);
+                idomRenderer, callee.objectStyle(), objToPass.get(), JsRuntime.IJ_DATA);
         break;
       case JS:
         call =
             SOY_IDOM_CALL_DYNAMIC_JS.call(
-                INCREMENTAL_DOM, callee.objectStyle(), objToPass.get(), JsRuntime.IJ_DATA);
+                idomRenderer, callee.objectStyle(), objToPass.get(), JsRuntime.IJ_DATA);
         break;
         // stringlike kinds
       case URI:
@@ -403,24 +408,25 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
         } else {
           // This is executed in the case of TEXT Context -> Text Template
           textCall =
-              directCall(
-                  callee,
-                  node,
-                  getExprTranslator(),
-                  positionalParameters,
-                  objToPass,
-                  /* isIdomCall= */ false);
+              directCall(callee, node, getExprTranslator(), positionalParameters, objToPass, null);
         }
-        statements.add(
+        Statement callStatement =
             outputVars.addChunkToOutputVar(
-                GenCallCodeUtils.applyEscapingDirectives(textCall, node)));
+                GenCallCodeUtils.applyEscapingDirectives(textCall, node));
+        statements.add(
+            node.isErrorFallbackSkip()
+                ? TryCatch.create(
+                    Statements.of(
+                        callStatement,
+                        idomRenderer.dotAccess("replayOn").call(INCREMENTAL_DOM).asStatement()))
+                : callStatement);
         return Statements.of(statements);
       default:
         if (!kind.isPresent() || !kind.get().isHtml()) {
           if (node instanceof CallBasicNode && ((CallBasicNode) node).getVariantExpr() != null) {
             call =
                 SOY_IDOM_CALL_DYNAMIC_HTML.call(
-                    INCREMENTAL_DOM,
+                    idomRenderer,
                     callee.objectStyle(),
                     objToPass.get(),
                     JsRuntime.IJ_DATA,
@@ -428,7 +434,7 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
           } else {
             call =
                 SOY_IDOM_CALL_DYNAMIC_HTML.call(
-                    INCREMENTAL_DOM, callee.objectStyle(), objToPass.get(), JsRuntime.IJ_DATA);
+                    idomRenderer, callee.objectStyle(), objToPass.get(), JsRuntime.IJ_DATA);
           }
           shouldPushKey = true;
         } else {
@@ -436,12 +442,7 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
           // passed through to runtime functions.
           call =
               directCall(
-                  callee,
-                  node,
-                  getExprTranslator(),
-                  positionalParameters,
-                  objToPass,
-                  /* isIdomCall= */ true);
+                  callee, node, getExprTranslator(), positionalParameters, objToPass, idomRenderer);
           shouldPushKey = true;
         }
         break;
@@ -469,11 +470,17 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
     // TODO: In reality, the CALL_X functions are really just IDOM versions of the related
     // escaping directives. Consider doing a replace instead of not using escaping directives
     // at all.
-    if (node.getHtmlContext() == HtmlContext.JS) {
-      statements.add(outputVars.addChunkToOutputVar(call));
-    } else {
-      statements.add(call.asStatement());
-    }
+    Statement callStatement =
+        node.getHtmlContext() == HtmlContext.JS
+            ? outputVars.addChunkToOutputVar(call)
+            : call.asStatement();
+    statements.add(
+        node.isErrorFallbackSkip()
+            ? TryCatch.create(
+                Statements.of(
+                    callStatement,
+                    idomRenderer.dotAccess("replayOn").call(INCREMENTAL_DOM).asStatement()))
+            : callStatement);
     if (shouldPushKey) {
       if (node.getKeyExpr() != null) {
         statements.add(INCREMENTAL_DOM_POP_MANUAL_KEY.call().asStatement());
@@ -495,10 +502,10 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
       TranslateExprNodeVisitor exprTranslator,
       Optional<Supplier<List<Expression>>> positionalParameters,
       Supplier<Expression> paramObject,
-      boolean isIdomCall) {
+      @Nullable Expression rendererParam) {
     List<Expression> params = new ArrayList<>();
-    if (isIdomCall) {
-      params.add(INCREMENTAL_DOM);
+    if (rendererParam != null) {
+      params.add(rendererParam);
     }
     if (positionalParameters.isPresent()) {
       params.add(0, JsRuntime.IJ_DATA);

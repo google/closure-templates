@@ -19,7 +19,7 @@ package com.google.template.soy.incrementaldomsrc;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.ImmutableMap.toImmutableMap;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM;
-import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_LIB;
+import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_LIB_TYPE;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_PARAM_NAME;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_TYPE_ATTRIBUTE;
@@ -385,7 +385,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
   private static void maybeAddRenderer(JsDoc.Builder jsDocBuilder, TemplateNode node) {
     SanitizedContentKind kind = node.getContentKind();
     if (kind.isHtml() || kind == SanitizedContentKind.ATTRIBUTES) {
-      jsDocBuilder.addGoogRequire(INCREMENTAL_DOM_LIB);
+      jsDocBuilder.addGoogRequire(INCREMENTAL_DOM_LIB_TYPE);
       jsDocBuilder.addParam(
           INCREMENTAL_DOM_PARAM_NAME, "!incrementaldomlib.IncrementalDomRenderer");
     }

@@ -489,12 +489,12 @@ export class IncrementalDomRenderer implements IdomRendererApi {
    * Switches runtime to produce incremental dom calls that do not traverse
    * the DOM. This happens when logOnly in a velogging node is set to true.
    */
-  toNullRenderer() {
+  toNullRenderer(): IdomRendererApi {
     const nullRenderer = new NullRenderer(this);
     return nullRenderer;
   }
 
-  toDefaultRenderer(): IncrementalDomRenderer {
+  toDefaultRenderer(): IdomRendererApi {
     throw new Error(
       'Cannot transition a default renderer to a default renderer',
     );
@@ -631,7 +631,7 @@ export class IncrementalDomRenderer implements IdomRendererApi {
  * Renderer that mutes all IDOM commands and returns void.
  */
 export class NullRenderer extends IncrementalDomRenderer {
-  constructor(private readonly renderer: IncrementalDomRenderer) {
+  constructor(private readonly renderer: IdomRendererApi) {
     super();
     this.setLogger(renderer.getLogger());
   }
@@ -861,5 +861,240 @@ export class FalsinessRenderer extends IncrementalDomRenderer {
     // If we're just testing truthiness, record an element but don't do anythng.
     this.open('div');
     this.close();
+  }
+}
+
+const noArgCallConsts = {
+  openChildNodePart: (actual: IncrementalDomRenderer) => {
+    actual.openChildNodePart();
+  },
+  closeChildNodePart: (actual: IncrementalDomRenderer) => {
+    actual.closeChildNodePart();
+  },
+  nextNodePart: (actual: IncrementalDomRenderer) => {
+    actual.nextNodePart();
+  },
+  popManualKey: (actual: IncrementalDomRenderer) => {
+    actual.popManualKey();
+  },
+  popKey: (actual: IncrementalDomRenderer) => {
+    actual.popKey();
+  },
+  exit: (actual: IncrementalDomRenderer) => {
+    actual.exit();
+  },
+  close: (actual: IncrementalDomRenderer) => {
+    actual.close();
+  },
+  elementClose: (actual: IncrementalDomRenderer) => {
+    actual.elementClose();
+  },
+  applyAttrs: (actual: IncrementalDomRenderer) => {
+    actual.applyAttrs();
+  },
+  skip: (actual: IncrementalDomRenderer) => {
+    actual.skip();
+  },
+  skipNode: (actual: IncrementalDomRenderer) => {
+    actual.skipNode();
+  },
+};
+
+/**
+ * A renderer that stores all calls and can be replayed onto another renderer.
+ */
+export class BufferingIncrementalDomRenderer implements IdomRendererApi {
+  private readonly buffer: Array<(actual: IncrementalDomRenderer) => void> = [];
+
+  visit(el: void | HTMLElement): void {
+    this.buffer.push((actual) => {
+      actual.visit(el);
+    });
+  }
+  pushManualKey(key: incrementaldom.Key) {
+    this.buffer.push((actual) => {
+      actual.pushManualKey(key);
+    });
+  }
+  openChildNodePart() {
+    this.buffer.push(noArgCallConsts.openChildNodePart);
+  }
+  closeChildNodePart() {
+    this.buffer.push(noArgCallConsts.closeChildNodePart);
+  }
+  nextNodePart() {
+    this.buffer.push(noArgCallConsts.nextNodePart);
+  }
+  popManualKey(): void {
+    this.buffer.push(noArgCallConsts.popManualKey);
+  }
+  pushKey(key: string): void {
+    this.buffer.push((actual) => {
+      actual.pushKey(key);
+    });
+  }
+  popKey(): void {
+    this.buffer.push(noArgCallConsts.popKey);
+  }
+  enter(veData: $$VisualElementData, logOnly: boolean): void {
+    this.buffer.push((actual) => {
+      actual.enter(veData, logOnly);
+    });
+  }
+  exit(): void {
+    this.buffer.push(noArgCallConsts.exit);
+  }
+  toNullRenderer(): IdomRendererApi {
+    return new NullRenderer(this);
+  }
+  toDefaultRenderer(): IdomRendererApi {
+    throw new Error(
+      'Cannot transition a buffered renderer to a default renderer',
+    );
+  }
+  setLogger(logger: Logger | null): void {
+    throw new Error(
+      'Tried to call setLogger on BufferingIncrementalDomRenderer.',
+    );
+  }
+  getLogger(): Logger | null {
+    throw new Error(
+      'Tried to call getLogger on BufferingIncrementalDomRenderer.',
+    );
+  }
+  verifyLogOnly(logOnly: boolean): boolean {
+    return logOnly;
+  }
+  evalLoggingFunction(
+    name: string,
+    args: Array<{}>,
+    placeHolder: string,
+  ): string {
+    throw new Error(
+      'Tried to call evalLoggingFunction on BufferingIncrementalDomRenderer. ' +
+        'errorfallback is incompatible with passing attributes with ' +
+        'element composition.',
+    );
+  }
+  loggingFunctionAttr(
+    attrName: string,
+    name: string,
+    args: Array<{}>,
+    placeHolder: string,
+  ) {
+    this.buffer.push((actual) => {
+      actual.loggingFunctionAttr(attrName, name, args, placeHolder);
+    });
+  }
+  open(nameOrCtor: string, key?: string) {
+    this.buffer.push((actual) => {
+      actual.open(nameOrCtor, key);
+    });
+  }
+
+  openSimple(nameOrCtor: string, key?: string) {
+    this.buffer.push((actual) => {
+      actual.openSimple(nameOrCtor, key);
+    });
+  }
+
+  keepGoing(data: unknown, continueFn: (renderer: IdomRendererApi) => void) {
+    this.buffer.push((actual) => {
+      actual.keepGoing(data, continueFn);
+    });
+  }
+
+  close() {
+    this.buffer.push(noArgCallConsts.close);
+  }
+
+  elementClose() {
+    this.buffer.push(noArgCallConsts.elementClose);
+  }
+
+  text(value: string) {
+    this.buffer.push((actual) => {
+      actual.text(value);
+    });
+  }
+
+  print(expr: unknown, isSanitizedContent?: boolean | undefined) {
+    this.buffer.push((actual) => {
+      actual.print(expr, isSanitizedContent);
+    });
+  }
+
+  visitHtmlCommentNode(val: string) {
+    this.buffer.push((actual) => {
+      actual.visitHtmlCommentNode(val);
+    });
+  }
+
+  appendCloneToCurrent(content: HTMLTemplateElement) {
+    this.buffer.push((actual) => {
+      actual.appendCloneToCurrent(content);
+    });
+  }
+
+  attr(name: string, value: string) {
+    this.buffer.push((actual) => {
+      actual.attr(name, value);
+    });
+  }
+
+  currentPointer(): never {
+    throw new Error(
+      'Tried to call currentPointer() on BufferingIncrementalDomRenderer',
+    );
+  }
+
+  applyAttrs() {
+    this.buffer.push(noArgCallConsts.applyAttrs);
+  }
+
+  applyStatics(statics: incrementaldom.Statics) {
+    this.buffer.push((actual) => {
+      actual.applyStatics(statics);
+    });
+  }
+
+  skip() {
+    this.buffer.push(noArgCallConsts.skip);
+  }
+
+  currentElement() {
+    throw new Error(
+      'Tried to call currentElement() on BufferingIncrementalDomRenderer',
+    );
+  }
+
+  skipNode() {
+    this.buffer.push(noArgCallConsts.skipNode);
+  }
+
+  handleSoyElement<T extends TemplateAcceptor<{}>>(
+    elementClassCtor: new () => T,
+    firstElementKey: string,
+    tagName: string,
+    data: {},
+    ijData: IjData,
+    template: Template<unknown>,
+  ) {
+    this.buffer.push((actual) => {
+      actual.handleSoyElement(
+        elementClassCtor,
+        firstElementKey,
+        tagName,
+        data,
+        ijData,
+        template,
+      );
+    });
+  }
+
+  replayOn(actual: IncrementalDomRenderer) {
+    this.buffer.forEach((fn) => {
+      fn(actual);
+    });
   }
 }

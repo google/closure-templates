@@ -31,9 +31,15 @@ import com.google.template.soy.jssrc.dsl.GoogRequire;
  */
 final class IncrementalDomRuntime {
 
-  static final GoogRequire INCREMENTAL_DOM_LIB =
+  static final GoogRequire INCREMENTAL_DOM_LIB_TYPE =
       GoogRequire.createTypeRequireWithAlias(
           "google3.javascript.template.soy.api_idom", "incrementaldomlib");
+
+  static final GoogRequire INCREMENTAL_DOM_LIB =
+      GoogRequire.createWithAlias("google3.javascript.template.soy.api_idom", "incrementaldomlib");
+
+  public static final Expression BUFFERING_IDOM_RENDERER =
+      INCREMENTAL_DOM_LIB.dotAccess("BufferingIncrementalDomRenderer");
 
   private static final GoogRequire SANITIZED_CONTENT_KIND =
       GoogRequire.createWithAlias("goog.soy.data.SanitizedContentKind", "SanitizedContentKind");
