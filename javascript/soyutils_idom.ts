@@ -32,10 +32,11 @@ import * as googSoy from 'google3/third_party/javascript/closure/soy/soy';
 import * as incrementaldom from 'incrementaldom'; // from //third_party/javascript/incremental_dom:incrementaldom
 
 import {
-  attributes,
   FalsinessRenderer,
+  IdomRendererApi,
   IncrementalDomRenderer,
   NullRenderer,
+  attributes,
   patch,
   patchOuter,
 } from './api_idom';
@@ -149,13 +150,13 @@ attributes['muted'] = (el: Element, name: string, value: unknown) => {
 incrementaldom.setKeyAttributeName('ssk');
 
 function makeHtml(idomFn: PatchFunction): IdomFunction {
-  const fn = ((renderer: IncrementalDomRenderer = defaultIdomRenderer) => {
+  const fn = ((renderer: IdomRendererApi = defaultIdomRenderer) => {
     idomFn(renderer);
   }) as unknown as SanitizedHtml & IdomFunction;
-  fn.invoke = (renderer: IncrementalDomRenderer = defaultIdomRenderer) => {
+  fn.invoke = (renderer: IdomRendererApi = defaultIdomRenderer) => {
     idomFn(renderer);
   };
-  fn.toString = (renderer: IncrementalDomRenderer = htmlToStringRenderer) =>
+  fn.toString = (renderer: IdomRendererApi = htmlToStringRenderer) =>
     htmlToString(idomFn, renderer);
   fn.getContent = fn.toString;
   fn.contentKind = SanitizedContentKind.HTML;
@@ -199,7 +200,7 @@ function makeAttributes(
   }) as unknown as SanitizedHtmlAttribute & IdomFunction;
 
   Object.setPrototypeOf(fn, SanitizedHtmlAttribute.prototype);
-  fn.invoke = (renderer: IncrementalDomRenderer = defaultIdomRenderer) => {
+  fn.invoke = (renderer: IdomRendererApi = defaultIdomRenderer) => {
     idomFn(renderer);
   };
 
@@ -226,7 +227,7 @@ function toLazyFunction<T extends string | number>(fn: T | (() => T)): () => T {
  */
 function htmlToString(
   fn: PatchFunction,
-  renderer: IncrementalDomRenderer = htmlToStringRenderer,
+  renderer: IdomRendererApi = htmlToStringRenderer,
 ) {
   const el = document.createElement('div');
   patch(el, () => {
@@ -528,7 +529,7 @@ function stableUniqueAttribute(
   // Note that the prefix must be different from other unique-value functions.
   return makeAttributes(
     // idom callback:
-    (idomRenderer: IncrementalDomRenderer) => {
+    (idomRenderer: IdomRendererApi) => {
       // If we aren't rendering into actual elements, don't affect any state.
       // This prevents {if} truthiness checks for affecting idHolder.
       if (
@@ -589,7 +590,7 @@ export {
   stableUniqueAttributeIdHolder as $$stableUniqueAttributeIdHolder,
   upgrade as $$upgrade,
   SoyElement as $SoyElement,
-  getOriginalSanitizedContent,
   NODE_PART,
+  getOriginalSanitizedContent,
   type SoyTemplate as $SoyTemplate,
 };

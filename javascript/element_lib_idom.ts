@@ -14,7 +14,7 @@ import {IDisposable} from 'google3/third_party/javascript/closure/disposable/idi
 import {SafeHtml} from 'google3/third_party/javascript/closure/html/safehtml';
 import {SanitizedContentKind} from 'google3/third_party/javascript/closure/soy/data';
 
-import {IncrementalDomRenderer, patchOuter} from './api_idom';
+import {IdomRendererApi, IncrementalDomRenderer, patchOuter} from './api_idom';
 import {USE_TEMPLATE_CLONING, isTaggedForSkip} from './global';
 import {IdomTemplate, IjData} from './templates';
 
@@ -23,7 +23,7 @@ import {IdomTemplate, IjData} from './templates';
  *
  * These callbacks are never exposed directly; they're wrapped in IdomFunction.
  */
-export type PatchFunction = (a: IncrementalDomRenderer) => void;
+export type PatchFunction = (a: IdomRendererApi) => void;
 
 /**
  * Function that executes before a patch and determines whether to proceed. If
@@ -271,7 +271,7 @@ export abstract class SoyElement<TData extends {} | null, TInterface extends {}>
   /**
    * Makes idom patch calls, inside of a patch context.
    */
-  renderInternal(renderer: IncrementalDomRenderer, data: TData) {
+  renderInternal(renderer: IdomRendererApi, data: TData) {
     this.template(renderer, data);
   }
 }
@@ -281,11 +281,11 @@ export abstract class SoyElement<TData extends {} | null, TInterface extends {}>
  * to strings.
  */
 export interface IdomFunction {
-  (idom: IncrementalDomRenderer): void;
-  invoke: (idom: IncrementalDomRenderer) => void;
+  (idom: IdomRendererApi): void;
+  invoke: (idom: IdomRendererApi) => void;
   isInvokableFn: boolean;
   contentKind: SanitizedContentKind;
-  toString: (renderer?: IncrementalDomRenderer) => string;
+  toString: (renderer?: IdomRendererApi) => string;
   renderElement?: (el: Element | ShadowRoot) => void;
   renderAsElement?: () => Element;
   toSafeHtml: () => SafeHtml;
