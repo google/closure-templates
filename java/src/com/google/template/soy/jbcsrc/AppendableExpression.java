@@ -43,38 +43,39 @@ import org.objectweb.asm.Type;
  */
 final class AppendableExpression extends Expression {
   private static final MethodRef APPEND =
-      MethodRef.create(LoggingAdvisingAppendable.class, "append", CharSequence.class);
+      MethodRef.createNonPure(LoggingAdvisingAppendable.class, "append", CharSequence.class);
 
   private static final MethodRef APPEND_CHAR =
-      MethodRef.create(LoggingAdvisingAppendable.class, "append", char.class);
+      MethodRef.createNonPure(LoggingAdvisingAppendable.class, "append", char.class);
 
   private static final MethodRef SOFT_LIMITED =
-      MethodRef.create(LoggingAdvisingAppendable.class, "softLimitReached").asCheap();
+      MethodRef.createNonPure(LoggingAdvisingAppendable.class, "softLimitReached").asCheap();
 
   static final MethodRef ENTER_LOGGABLE_STATEMENT =
-      MethodRef.create(LoggingAdvisingAppendable.class, "enterLoggableElement", LogStatement.class);
+      MethodRef.createNonPure(
+          LoggingAdvisingAppendable.class, "enterLoggableElement", LogStatement.class);
 
   private static final MethodRef EXIT_LOGGABLE_STATEMENT =
-      MethodRef.create(LoggingAdvisingAppendable.class, "exitLoggableElement");
+      MethodRef.createNonPure(LoggingAdvisingAppendable.class, "exitLoggableElement");
 
   private static final MethodRef APPEND_LOGGING_FUNCTION_INVOCATION =
-      MethodRef.create(
+      MethodRef.createNonPure(
           LoggingAdvisingAppendable.class,
           "appendLoggingFunctionInvocation",
           LoggingFunctionInvocation.class,
           ImmutableList.class);
 
   private static final MethodRef LOGGING_FUNCTION_INVOCATION_CREATE =
-      MethodRef.create(
+      MethodRef.createNonPure(
           LoggingFunctionInvocation.class, "create", String.class, String.class, List.class);
 
   private static final MethodRef SET_SANITIZED_CONTENT_KIND_AND_DIRECTIONALITY =
-      MethodRef.create(
+      MethodRef.createNonPure(
               LoggingAdvisingAppendable.class, "setKindAndDirectionality", ContentKind.class)
           .asCheap();
 
   private static final MethodRef FLUSH_BUFFERS =
-      MethodRef.create(LoggingAdvisingAppendable.class, "flushBuffers", int.class);
+      MethodRef.createNonPure(LoggingAdvisingAppendable.class, "flushBuffers", int.class);
 
   static AppendableExpression forExpression(Expression delegate) {
     return new AppendableExpression(

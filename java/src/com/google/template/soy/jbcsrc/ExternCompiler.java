@@ -17,6 +17,7 @@
 package com.google.template.soy.jbcsrc;
 
 import static com.google.common.base.Preconditions.checkState;
+import static java.util.Arrays.stream;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Streams;
@@ -28,6 +29,7 @@ import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
 import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
+import com.google.template.soy.jbcsrc.restricted.MethodRef.MethodPureness;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyRuntimeType;
 import com.google.template.soy.jbcsrc.restricted.Statement;
@@ -47,7 +49,6 @@ import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypes;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
 import org.objectweb.asm.Label;
@@ -94,7 +95,7 @@ public final class ExternCompiler {
         javaImpl.params().stream()
             .map(ExternCompiler::getTypeInfoLoadedIfPossible)
             .toArray(TypeInfo[]::new);
-    Type[] paramTypes = Arrays.stream(paramTypesInfos).map(TypeInfo::type).toArray(Type[]::new);
+    Type[] paramTypes = stream(paramTypesInfos).map(TypeInfo::type).toArray(Type[]::new);
 
     Label start = new Label();
     Label end = new Label();
@@ -136,11 +137,14 @@ public final class ExternCompiler {
 
     MethodRef extMethodRef;
     if (javaImpl.isStatic()) {
-      extMethodRef = MethodRef.createStaticMethod(externClass, externMethod);
+      extMethodRef =
+          MethodRef.createStaticMethod(externClass, externMethod, MethodPureness.NON_PURE);
     } else if (javaImpl.isInterface()) {
-      extMethodRef = MethodRef.createInterfaceMethod(externClass, externMethod);
+      extMethodRef =
+          MethodRef.createInterfaceMethod(externClass, externMethod, MethodPureness.NON_PURE);
     } else {
-      extMethodRef = MethodRef.createInstanceMethod(externClass, externMethod);
+      extMethodRef =
+          MethodRef.createInstanceMethod(externClass, externMethod, MethodPureness.NON_PURE);
     }
 
     Expression body =
@@ -280,7 +284,9 @@ public final class ExternCompiler {
             BytecodeUtils.constant(BytecodeUtils.getTypeForClassName(javaType.getClassName())));
       }
       return MethodRef.createStaticMethod(
-              javaTypeInfo, new Method("forNumber", javaType, new Type[] {Type.INT_TYPE}))
+              javaTypeInfo,
+              new Method("forNumber", javaType, new Type[] {Type.INT_TYPE}),
+              MethodPureness.PURE)
           .invoke(BytecodeUtils.numericConversion(actualParam.unboxAsLong(), Type.INT_TYPE));
     }
 

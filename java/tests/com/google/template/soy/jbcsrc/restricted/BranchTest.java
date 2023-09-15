@@ -240,8 +240,10 @@ public final class BranchTest {
     return false;
   }
 
-  private static final MethodRef RETURNS_TRUE = MethodRef.create(BranchTest.class, "returnsTrue");
-  private static final MethodRef RETURNS_FALSE = MethodRef.create(BranchTest.class, "returnsFalse");
+  private static final MethodRef RETURNS_TRUE =
+      MethodRef.createPure(BranchTest.class, "returnsTrue");
+  private static final MethodRef RETURNS_FALSE =
+      MethodRef.createPure(BranchTest.class, "returnsFalse");
 
   @Test
   public void testIfTrue() {

@@ -88,10 +88,10 @@ final class InsertWordBreaksDirective
 
   private static final class JbcSrcMethods {
     static final MethodRef INSERT_WORD_BREAKS =
-        MethodRef.create(
+        MethodRef.createPure(
             BasicDirectivesRuntime.class, "insertWordBreaks", SoyValue.class, int.class);
     static final MethodRef INSERT_WORD_BREAKS_STREAMING =
-        MethodRef.create(
+        MethodRef.createNonPure(
             BasicDirectivesRuntime.class,
             "insertWordBreaksStreaming",
             LoggingAdvisingAppendable.class,

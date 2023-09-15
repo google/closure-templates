@@ -59,7 +59,7 @@ public final class JbcSrcExternRuntime {
   private JbcSrcExternRuntime() {}
 
   private static MethodRef create(String methodName, Class<?>... params) {
-    return MethodRef.create(JbcSrcExternRuntime.class, methodName, params);
+    return MethodRef.createPure(JbcSrcExternRuntime.class, methodName, params);
   }
 
   public static final MethodRef CONVERT_OBJECT_TO_SOY_VALUE_PROVIDER =
@@ -72,18 +72,19 @@ public final class JbcSrcExternRuntime {
   }
 
   public static final MethodRef CONVERT_SAFE_HTML_PROTO_TO_SOY_VALUE_PROVIDER =
-      MethodRef.create(SanitizedContents.class, "fromSafeHtmlProto", SafeHtmlProto.class);
+      MethodRef.createPure(SanitizedContents.class, "fromSafeHtmlProto", SafeHtmlProto.class);
   public static final MethodRef CONVERT_SAFE_HTML_TO_SOY_VALUE_PROVIDER =
-      MethodRef.create(SanitizedContents.class, "fromSafeHtml", SafeHtml.class);
+      MethodRef.createPure(SanitizedContents.class, "fromSafeHtml", SafeHtml.class);
   public static final MethodRef CONVERT_SAFE_URL_PROTO_TO_SOY_VALUE_PROVIDER =
-      MethodRef.create(SanitizedContents.class, "fromSafeUrlProto", SafeUrlProto.class);
+      MethodRef.createPure(SanitizedContents.class, "fromSafeUrlProto", SafeUrlProto.class);
   public static final MethodRef CONVERT_SAFE_URL_TO_SOY_VALUE_PROVIDER =
-      MethodRef.create(SanitizedContents.class, "fromSafeUrl", SafeUrl.class);
+      MethodRef.createPure(SanitizedContents.class, "fromSafeUrl", SafeUrl.class);
   public static final MethodRef CONVERT_TRUSTED_RESOURCE_URL_PROTO_TO_SOY_VALUE_PROVIDER =
-      MethodRef.create(
+      MethodRef.createPure(
           SanitizedContents.class, "fromTrustedResourceUrlProto", TrustedResourceUrlProto.class);
   public static final MethodRef CONVERT_TRUSTED_RESOURCE_URL_TO_SOY_VALUE_PROVIDER =
-      MethodRef.create(SanitizedContents.class, "fromTrustedResourceUrl", TrustedResourceUrl.class);
+      MethodRef.createPure(
+          SanitizedContents.class, "fromTrustedResourceUrl", TrustedResourceUrl.class);
 
   public static final MethodRef LIST_BOX_VALUES = create("listBoxValues", Iterable.class);
 
@@ -189,7 +190,7 @@ public final class JbcSrcExternRuntime {
   }
 
   public static final MethodRef MARK_AS_SOY_MAP =
-      MethodRef.create(SoyValueConverter.class, "markAsSoyMap", Map.class);
+      MethodRef.createNonPure(SoyValueConverter.class, "markAsSoyMap", Map.class);
 
   public static final MethodRef NO_EXTERN_JAVA_IMPL = create("noExternJavaImpl");
 
@@ -272,11 +273,11 @@ public final class JbcSrcExternRuntime {
     return getEnumValue(clazz, value.integerValue());
   }
 
-  public static final MethodRef UNBOX_BOOLEAN = MethodRef.create(Boolean.class, "booleanValue");
-  public static final MethodRef UNBOX_DOUBLE = MethodRef.create(Double.class, "doubleValue");
-  public static final MethodRef UNBOX_FLOAT = MethodRef.create(Float.class, "doubleValue");
-  public static final MethodRef UNBOX_INTEGER = MethodRef.create(Integer.class, "longValue");
-  public static final MethodRef UNBOX_LONG = MethodRef.create(Long.class, "longValue");
+  public static final MethodRef UNBOX_BOOLEAN = MethodRef.createPure(Boolean.class, "booleanValue");
+  public static final MethodRef UNBOX_DOUBLE = MethodRef.createPure(Double.class, "doubleValue");
+  public static final MethodRef UNBOX_FLOAT = MethodRef.createPure(Float.class, "doubleValue");
+  public static final MethodRef UNBOX_INTEGER = MethodRef.createPure(Integer.class, "longValue");
+  public static final MethodRef UNBOX_LONG = MethodRef.createPure(Long.class, "longValue");
 
   public static final MethodRef UNBOX_MAP =
       create("unboxMap", SoyValue.class, Class.class, Class.class);
@@ -296,7 +297,7 @@ public final class JbcSrcExternRuntime {
   }
 
   public static final MethodRef UNBOX_OBJECT =
-      MethodRef.create(SoyValueUnconverter.class, "unconvert", SoyValueProvider.class);
+      MethodRef.createPure(SoyValueUnconverter.class, "unconvert", SoyValueProvider.class);
 
   public static final MethodRef UNBOX_RECORD = create("unboxRecord", SoyValue.class);
 

@@ -65,7 +65,7 @@ final class FilterSipUriDirective
 
   private static final class JbcSrcMethods {
     static final MethodRef FILTER_SIP_URI =
-        MethodRef.create(Sanitizers.class, "filterSipUri", SoyValue.class);
+        MethodRef.createPure(Sanitizers.class, "filterSipUri", SoyValue.class);
   }
 
   @Override

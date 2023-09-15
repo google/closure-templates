@@ -38,6 +38,7 @@ import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
 import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
+import com.google.template.soy.jbcsrc.restricted.MethodRef.MethodPureness;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyRuntimeType;
 import com.google.template.soy.jbcsrc.restricted.TypeInfo;
@@ -196,11 +197,12 @@ final class JbcSrcValueFactory extends JavaValueFactory {
               .checkedCast(owner.type());
       MethodRef methodRef =
           methodSignature.inInterface()
-              ? MethodRef.createInterfaceMethod(owner, asmMethod)
-              : MethodRef.createInstanceMethod(owner, asmMethod);
+              ? MethodRef.createInterfaceMethod(owner, asmMethod, MethodPureness.NON_PURE)
+              : MethodRef.createInstanceMethod(owner, asmMethod, MethodPureness.NON_PURE);
       methodCall = runtime.invoke(methodRef, adapted);
     } else {
-      methodCall = MethodRef.createStaticMethod(owner, asmMethod).invoke(adapted);
+      methodCall =
+          MethodRef.createStaticMethod(owner, asmMethod, MethodPureness.NON_PURE).invoke(adapted);
     }
     return JbcSrcJavaValue.of(tryToWrapInSoyExpression(methodCall), methodSignature);
   }
@@ -363,7 +365,7 @@ final class JbcSrcValueFactory extends JavaValueFactory {
   }
 
   private static MethodRef getForNumberMethod(Class<?> enumType) {
-    return MethodRef.create(enumType, "forNumber", int.class);
+    return MethodRef.createPure(enumType, "forNumber", int.class);
   }
 
   private static String nameFromDescriptor(Class<?> protoType) {

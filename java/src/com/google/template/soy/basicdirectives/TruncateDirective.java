@@ -90,10 +90,10 @@ final class TruncateDirective
 
   private static final class JbcSrcMethods {
     static final MethodRef TRUNCATE =
-        MethodRef.create(
+        MethodRef.createPure(
             BasicDirectivesRuntime.class, "truncate", String.class, int.class, boolean.class);
     static final MethodRef TRUNCATE_STREAMING =
-        MethodRef.create(
+        MethodRef.createNonPure(
             BasicDirectivesRuntime.class,
             "truncateStreaming",
             LoggingAdvisingAppendable.class,

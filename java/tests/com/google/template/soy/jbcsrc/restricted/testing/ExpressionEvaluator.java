@@ -27,6 +27,7 @@ import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
 import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.LocalVariable;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
+import com.google.template.soy.jbcsrc.restricted.MethodRef.MethodPureness;
 import com.google.template.soy.jbcsrc.restricted.Statement;
 import com.google.template.soy.jbcsrc.restricted.TypeInfo;
 import com.google.template.soy.jbcsrc.shared.Names;
@@ -156,7 +157,7 @@ public final class ExpressionEvaluator {
     }
     Statement.concat(
             LocalVariable.createThisVar(generatedType, new Label(), new Label())
-                .invoke(MethodRef.create(invokeMethod))
+                .invoke(MethodRef.create(invokeMethod, MethodPureness.NON_PURE))
                 .toStatement(),
             new Statement() {
               @Override

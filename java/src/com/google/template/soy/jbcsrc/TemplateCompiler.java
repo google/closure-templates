@@ -154,7 +154,7 @@ final class TemplateCompiler {
   }
 
   private static final Handle METAFACTORY_HANDLE =
-      MethodRef.create(
+      MethodRef.createPure(
               LambdaMetafactory.class,
               "metafactory",
               MethodHandles.Lookup.class,
@@ -166,7 +166,7 @@ final class TemplateCompiler {
           .asHandle();
 
   private static final Handle DELEGATE_FACTORY_HANDLE =
-      MethodRef.create(
+      MethodRef.createPure(
               RecordToPositionalCallFactory.class,
               "bootstrapDelegate",
               MethodHandles.Lookup.class,

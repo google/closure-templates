@@ -137,7 +137,7 @@ public abstract class BasicEscapeDirective
   }
 
   private MethodRef findMethodRefForType(Class<?> paramType) {
-    return MethodRef.create(Sanitizers.class, name.substring(1), paramType);
+    return MethodRef.createPure(Sanitizers.class, name.substring(1), paramType);
   }
 
   /**
@@ -152,7 +152,7 @@ public abstract class BasicEscapeDirective
     if (sanitizerMethod == null) {
       // lazily allocated
       sanitizerMethod =
-          MethodRef.create(
+          MethodRef.createNonPure(
               Sanitizers.class, name.substring(1) + "Streaming", LoggingAdvisingAppendable.class);
       javaStreamingSanitizer = sanitizerMethod;
     }

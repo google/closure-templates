@@ -70,11 +70,11 @@ public class EscapeHtmlDirective
 
   private static final class JbcSrcMethods {
     static final MethodRef ESCAPE_HTML =
-        MethodRef.create(CoreDirectivesRuntime.class, "escapeHtml", SoyValue.class);
+        MethodRef.createPure(CoreDirectivesRuntime.class, "escapeHtml", SoyValue.class);
     static final MethodRef ESCAPE_HTML_STRING =
-        MethodRef.create(CoreDirectivesRuntime.class, "escapeHtml", String.class);
+        MethodRef.createPure(CoreDirectivesRuntime.class, "escapeHtml", String.class);
     static final MethodRef STREAMING_ESCAPE_HTML =
-        MethodRef.create(
+        MethodRef.createNonPure(
             CoreDirectivesRuntime.class, "streamingEscapeHtml", LoggingAdvisingAppendable.class);
   }
 

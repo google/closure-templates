@@ -82,6 +82,7 @@ import com.google.template.soy.jbcsrc.restricted.Expression.Feature;
 import com.google.template.soy.jbcsrc.restricted.FieldRef;
 import com.google.template.soy.jbcsrc.restricted.LocalVariable;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
+import com.google.template.soy.jbcsrc.restricted.MethodRef.MethodPureness;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyRuntimeType;
 import com.google.template.soy.jbcsrc.restricted.Statement;
@@ -121,24 +122,26 @@ final class ProtoUtils {
   private static final Type[] ONE_INT_ARG = {Type.INT_TYPE};
 
   private static final MethodRef BASE64_ENCODE =
-      MethodRef.create(JbcSrcRuntime.class, "base64Encode", ByteString.class);
+      MethodRef.createPure(JbcSrcRuntime.class, "base64Encode", ByteString.class);
   private static final MethodRef BASE64_DECODE =
-      MethodRef.create(JbcSrcRuntime.class, "base64Decode", String.class);
+      MethodRef.createPure(JbcSrcRuntime.class, "base64Decode", String.class);
 
   private static final MethodRef EXTENDABLE_BUILDER_ADD_EXTENSION =
-      MethodRef.create(ExtendableBuilder.class, "addExtension", ExtensionLite.class, Object.class)
+      MethodRef.createNonPure(
+              ExtendableBuilder.class, "addExtension", ExtensionLite.class, Object.class)
           .asNonJavaNullable();
 
   private static final MethodRef EXTENDABLE_BUILDER_SET_EXTENSION =
-      MethodRef.create(ExtendableBuilder.class, "setExtension", ExtensionLite.class, Object.class)
+      MethodRef.createNonPure(
+              ExtendableBuilder.class, "setExtension", ExtensionLite.class, Object.class)
           .asNonJavaNullable();
 
   private static final MethodRef EXTENDABLE_MESSAGE_GET_EXTENSION =
-      MethodRef.create(ExtendableMessage.class, "getExtension", ExtensionLite.class)
+      MethodRef.createPure(ExtendableMessage.class, "getExtension", ExtensionLite.class)
           .asNonJavaNullable()
           .asCheap();
   private static final MethodRef EXTENDABLE_MESSAGE_HAS_EXTENSION =
-      MethodRef.create(ExtendableMessage.class, "hasExtension", ExtensionLite.class)
+      MethodRef.createPure(ExtendableMessage.class, "hasExtension", ExtensionLite.class)
           .asNonJavaNullable()
           .asCheap();
 
@@ -168,7 +171,7 @@ final class ProtoUtils {
           .buildOrThrow();
 
   private static MethodRef createSafeProtoToSanitizedContentFactoryMethod(Class<?> clazz) {
-    return MethodRef.create(SanitizedContents.class, "from" + clazz.getSimpleName(), clazz)
+    return MethodRef.createPure(SanitizedContents.class, "from" + clazz.getSimpleName(), clazz)
         .asNonJavaNullable();
   }
 
@@ -176,22 +179,22 @@ final class ProtoUtils {
       ImmutableMap.<String, MethodRef>builder()
           .put(
               SafeHtmlProto.getDescriptor().getFullName(),
-              MethodRef.create(SanitizedContent.class, "toSafeHtmlProto"))
+              MethodRef.createPure(SanitizedContent.class, "toSafeHtmlProto"))
           .put(
               SafeScriptProto.getDescriptor().getFullName(),
-              MethodRef.create(SanitizedContent.class, "toSafeScriptProto"))
+              MethodRef.createPure(SanitizedContent.class, "toSafeScriptProto"))
           .put(
               SafeStyleProto.getDescriptor().getFullName(),
-              MethodRef.create(SanitizedContent.class, "toSafeStyleProto"))
+              MethodRef.createPure(SanitizedContent.class, "toSafeStyleProto"))
           .put(
               SafeStyleSheetProto.getDescriptor().getFullName(),
-              MethodRef.create(SanitizedContent.class, "toSafeStyleSheetProto"))
+              MethodRef.createPure(SanitizedContent.class, "toSafeStyleSheetProto"))
           .put(
               SafeUrlProto.getDescriptor().getFullName(),
-              MethodRef.create(SanitizedContent.class, "toSafeUrlProto"))
+              MethodRef.createPure(SanitizedContent.class, "toSafeUrlProto"))
           .put(
               TrustedResourceUrlProto.getDescriptor().getFullName(),
-              MethodRef.create(SanitizedContent.class, "toTrustedResourceUrlProto"))
+              MethodRef.createPure(SanitizedContent.class, "toTrustedResourceUrlProto"))
           .buildOrThrow();
 
   private static final RepeatedFieldInterpreter REPEATED_FIELD_INTERPRETER =
@@ -430,7 +433,7 @@ final class ProtoUtils {
         Label endLabel = new Label();
         return SoyExpression.forSoyValue(
             interpreted.soyType(),
-            new Expression(BytecodeUtils.SOY_VALUE_TYPE, Feature.NON_JAVA_NULLABLE) {
+            new Expression(BytecodeUtils.SOY_VALUE_TYPE, Feature.NON_JAVA_NULLABLE.asFeatures()) {
               @Override
               protected void doGen(CodeBuilder adapter) {
                 typedBaseExpr.gen(adapter);
@@ -575,7 +578,7 @@ final class ProtoUtils {
         Label endLabel = new Label();
         return SoyExpression.forSoyValue(
             interpreted.soyType(),
-            new Expression(BytecodeUtils.SOY_VALUE_TYPE, Feature.NON_JAVA_NULLABLE) {
+            new Expression(BytecodeUtils.SOY_VALUE_TYPE, Feature.NON_JAVA_NULLABLE.asFeatures()) {
               @Override
               protected void doGen(CodeBuilder adapter) {
                 typedBaseExpr.gen(adapter);
@@ -1624,7 +1627,8 @@ final class ProtoUtils {
                     + (isOpenEnum ? "Value" : "")
                     + repeatedType,
                 runtimeType,
-                MethodRef.NO_METHOD_ARGS))
+                MethodRef.NO_METHOD_ARGS),
+            MethodPureness.PURE)
         // All protos are guaranteed to never return null
         .asNonJavaNullable()
         .asCheap();
@@ -1657,7 +1661,8 @@ final class ProtoUtils {
             new Method(
                 "has" + getFieldName(descriptor, true),
                 Type.BOOLEAN_TYPE,
-                MethodRef.NO_METHOD_ARGS))
+                MethodRef.NO_METHOD_ARGS),
+            MethodPureness.PURE)
         .asCheap();
   }
 
@@ -1669,7 +1674,8 @@ final class ProtoUtils {
             new Method(
                 "get" + underscoresToCamelCase(descriptor.getName(), true) + "Case",
                 TypeInfo.createClass(JavaQualifiedNames.getCaseEnumClassName(descriptor)).type(),
-                MethodRef.NO_METHOD_ARGS))
+                MethodRef.NO_METHOD_ARGS),
+            MethodPureness.PURE)
         .asCheap();
   }
 
@@ -1678,7 +1684,9 @@ final class ProtoUtils {
     TypeInfo message = messageRuntimeType(descriptor);
     TypeInfo builder = builderRuntimeType(descriptor);
     return MethodRef.createStaticMethod(
-            message, new Method("newBuilder", builder.type(), MethodRef.NO_METHOD_ARGS))
+            message,
+            new Method("newBuilder", builder.type(), MethodRef.NO_METHOD_ARGS),
+            MethodPureness.NON_PURE)
         .asNonJavaNullable();
   }
 
@@ -1686,7 +1694,9 @@ final class ProtoUtils {
   private static MethodRef getDefaultInstanceMethod(Descriptor descriptor) {
     TypeInfo message = messageRuntimeType(descriptor);
     return MethodRef.createStaticMethod(
-            message, new Method("getDefaultInstance", message.type(), MethodRef.NO_METHOD_ARGS))
+            message,
+            new Method("getDefaultInstance", message.type(), MethodRef.NO_METHOD_ARGS),
+            MethodPureness.PURE)
         .asNonJavaNullable()
         .asCheap();
   }
@@ -1701,7 +1711,8 @@ final class ProtoUtils {
         new Method(
             "put" + getFieldName(descriptor, true),
             builder.type(),
-            new Type[] {getRuntimeType(mapFields.get(0)), getRuntimeType(mapFields.get(1))}));
+            new Type[] {getRuntimeType(mapFields.get(0)), getRuntimeType(mapFields.get(1))}),
+        MethodPureness.NON_PURE);
   }
 
   /** Returns the {@link MethodRef} for the generated setter/adder method. */
@@ -1715,7 +1726,8 @@ final class ProtoUtils {
             new Method(
                 prefix + getFieldName(descriptor, true) + suffix,
                 builder.type(),
-                new Type[] {isOpenEnumField ? Type.INT_TYPE : getRuntimeType(descriptor)}))
+                new Type[] {isOpenEnumField ? Type.INT_TYPE : getRuntimeType(descriptor)}),
+            MethodPureness.NON_PURE)
         .asNonJavaNullable();
   }
 
@@ -1724,7 +1736,9 @@ final class ProtoUtils {
     TypeInfo message = messageRuntimeType(descriptor);
     TypeInfo builder = builderRuntimeType(descriptor);
     return MethodRef.createInstanceMethod(
-            builder, new Method("build", message.type(), MethodRef.NO_METHOD_ARGS))
+            builder,
+            new Method("build", message.type(), MethodRef.NO_METHOD_ARGS),
+            MethodPureness.NON_PURE)
         .asNonJavaNullable();
   }
 
@@ -1739,7 +1753,7 @@ final class ProtoUtils {
   private static MethodRef getForNumberMethod(EnumDescriptor descriptor) {
     TypeInfo enumType = enumRuntimeType(descriptor);
     return MethodRef.createStaticMethod(
-            enumType, new Method("forNumber", enumType.type(), ONE_INT_ARG))
+            enumType, new Method("forNumber", enumType.type(), ONE_INT_ARG), MethodPureness.PURE)
         // Note: Enum.forNumber() returns null if there is no corresponding enum. If a bad value is
         // passed in (via unknown types), the generated bytecode will NPE.
         .asNonJavaNullable()

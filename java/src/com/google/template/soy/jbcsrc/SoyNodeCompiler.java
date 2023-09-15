@@ -461,7 +461,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   }
 
   private static final Handle BOOLEAN_CONSTANT_HANDLE =
-      MethodRef.create(
+      MethodRef.createPure(
               ExtraConstantBootstraps.class,
               "constantBoolean",
               MethodHandles.Lookup.class,
@@ -477,7 +477,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       new ConstantDynamic("false", Type.BOOLEAN_TYPE.getDescriptor(), BOOLEAN_CONSTANT_HANDLE, 0);
 
   private static final Handle GET_STATIC_FINAL_HANDLE =
-      MethodRef.create(
+      MethodRef.createPure(
               ConstantBootstraps.class,
               "getStaticFinal",
               MethodHandles.Lookup.class,
@@ -500,7 +500,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
           BytecodeUtils.UNDEFINED_DATA_TYPE);
 
   private static final Handle STRING_SWITCH_FACTORY_HANDLE =
-      MethodRef.create(
+      MethodRef.createPure(
               SwitchFactory.class,
               "bootstrapSwitch",
               MethodHandles.Lookup.class,
@@ -788,7 +788,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       itemVar =
           scope.create(
               nonEmptyNode.getVarName(),
-              new Expression(Type.LONG_TYPE, Feature.CHEAP) {
+              new Expression(Type.LONG_TYPE, Feature.CHEAP.asFeatures()) {
                 @Override
                 protected void doGen(CodeBuilder adapter) {
                   // executes ((long) start + index * step)
@@ -1404,7 +1404,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   }
 
   private static final Handle STATIC_CALL_HANDLE =
-      MethodRef.create(
+      MethodRef.createPure(
               ClassLoaderFallbackCallFactory.class,
               "bootstrapCall",
               MethodHandles.Lookup.class,
@@ -1414,7 +1414,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
           .asHandle();
 
   private static final Handle STATIC_TEMPLATE_HANDLE =
-      MethodRef.create(
+      MethodRef.createPure(
               ClassLoaderFallbackCallFactory.class,
               "bootstrapTemplateLookup",
               MethodHandles.Lookup.class,
@@ -1436,6 +1436,8 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       // classloader setups to have {call} commands cross classloader boundaries.  It also enables
       // our stubbing library to intercept all calls.
       CompiledTemplateMetadata metadata = CompiledTemplateMetadata.create(node);
+      // For private calls we can directly dispatch, but in order to support test stubbing we need
+      // to dispatch all calls to public templates through our invokedyanmic infrastructure
       boolean isPrivateCall = CompiledTemplateMetadata.isPrivateCall(node);
 
       return renderCallNode(
@@ -1448,7 +1450,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
               }
               Expression renderContext = parameterLookup.getRenderContext();
               return new Expression(
-                  BytecodeUtils.COMPILED_TEMPLATE_TYPE, Feature.NON_JAVA_NULLABLE) {
+                  BytecodeUtils.COMPILED_TEMPLATE_TYPE, Feature.NON_JAVA_NULLABLE.asFeatures()) {
                 @Override
                 protected void doGen(CodeBuilder adapter) {
                   renderContext.gen(adapter);

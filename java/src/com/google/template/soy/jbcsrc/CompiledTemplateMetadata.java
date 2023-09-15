@@ -22,6 +22,7 @@ import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
+import com.google.template.soy.jbcsrc.restricted.MethodRef.MethodPureness;
 import com.google.template.soy.jbcsrc.restricted.TypeInfo;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.Names;
@@ -142,31 +143,38 @@ abstract class CompiledTemplateMetadata {
                     type,
                     createRenderMethod(
                         methodName
-                            + (templateType.isModifiable() ? DEFAULT_IMPL_JBC_CLASS_SUFFIX : "")))
+                            + (templateType.isModifiable() ? DEFAULT_IMPL_JBC_CLASS_SUFFIX : "")),
+                    MethodPureness.NON_PURE)
                 .asNonJavaNullable())
         .setPositionalRenderMethod(
             Optional.ofNullable(
                 hasPositionalSignature
                     ? MethodRef.createStaticMethod(
-                            type, createPositionalRenderMethod(methodName, templateType))
+                            type,
+                            createPositionalRenderMethod(methodName, templateType),
+                            MethodPureness.NON_PURE)
                         .asNonJavaNullable()
                     : null))
         .setModifiableSelectMethod(
             Optional.ofNullable(
                 templateType.isModifiable()
-                    ? MethodRef.createStaticMethod(type, createRenderMethod(methodName))
+                    ? MethodRef.createStaticMethod(
+                            type, createRenderMethod(methodName), MethodPureness.NON_PURE)
                         .asCheap()
                         .asNonJavaNullable()
                     : null))
         .setTemplateMethod(
-            MethodRef.createStaticMethod(type, createTemplateMethod(methodName))
+            MethodRef.createStaticMethod(
+                    type, createTemplateMethod(methodName), MethodPureness.PURE)
                 .asCheap()
                 .asNonJavaNullable())
         .setDefaultModTemplateMethod(
             Optional.ofNullable(
                 templateType.isModifiable()
                     ? MethodRef.createStaticMethod(
-                            type, createTemplateMethod(methodName + DEFAULT_IMPL_JBC_CLASS_SUFFIX))
+                            type,
+                            createTemplateMethod(methodName + DEFAULT_IMPL_JBC_CLASS_SUFFIX),
+                            MethodPureness.NON_PURE)
                         .asCheap()
                         .asNonJavaNullable()
                     : null))

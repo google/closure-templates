@@ -308,7 +308,7 @@ public final class BytecodeUtils {
 
   /** Returns an {@link Expression} that can load the given constant. */
   public static Expression constant(Type type, ConstantDynamic value) {
-    return new Expression(type, Feature.CHEAP) {
+    return new Expression(type, Feature.CHEAP.asFeatures()) {
       @Override
       protected void doGen(CodeBuilder cb) {
         cb.visitLdcInsn(value);
@@ -323,7 +323,7 @@ public final class BytecodeUtils {
 
   /** Returns an {@link Expression} that can load the given int constant. */
   public static Expression constant(int value) {
-    return new Expression(Type.INT_TYPE, Feature.CHEAP) {
+    return new Expression(Type.INT_TYPE, Feature.CHEAP.asFeatures()) {
       @Override
       protected void doGen(CodeBuilder mv) {
         mv.pushInt(value);
@@ -333,7 +333,7 @@ public final class BytecodeUtils {
 
   /** Returns an {@link Expression} that can load the given char constant. */
   public static Expression constant(char value) {
-    return new Expression(Type.CHAR_TYPE, Feature.CHEAP) {
+    return new Expression(Type.CHAR_TYPE, Feature.CHEAP.asFeatures()) {
       @Override
       protected void doGen(CodeBuilder mv) {
         mv.pushInt(value);
@@ -343,7 +343,7 @@ public final class BytecodeUtils {
 
   /** Returns an {@link Expression} that can load the given long constant. */
   public static Expression constant(long value) {
-    return new Expression(Type.LONG_TYPE, Feature.CHEAP) {
+    return new Expression(Type.LONG_TYPE, Feature.CHEAP.asFeatures()) {
       @Override
       protected void doGen(CodeBuilder mv) {
         mv.pushLong(value);
@@ -353,7 +353,7 @@ public final class BytecodeUtils {
 
   /** Returns an {@link Expression} that can load the given double constant. */
   public static Expression constant(double value) {
-    return new Expression(Type.DOUBLE_TYPE, Feature.CHEAP) {
+    return new Expression(Type.DOUBLE_TYPE, Feature.CHEAP.asFeatures()) {
       @Override
       protected void doGen(CodeBuilder mv) {
         mv.pushDouble(value);
@@ -363,7 +363,7 @@ public final class BytecodeUtils {
 
   /** Returns an {@link Expression} that can load the given double constant. */
   public static Expression constant(float value) {
-    return new Expression(Type.FLOAT_TYPE, Feature.CHEAP) {
+    return new Expression(Type.FLOAT_TYPE, Feature.CHEAP.asFeatures()) {
       @Override
       protected void doGen(CodeBuilder mv) {
         mv.pushFloat(value);
@@ -407,7 +407,7 @@ public final class BytecodeUtils {
     }
     stringConstants.add(value.substring(previousStart));
     return stringConstants.size() == 1
-        ? new Expression(STRING_TYPE, Feature.CHEAP, Feature.NON_JAVA_NULLABLE) {
+        ? new Expression(STRING_TYPE, Features.of(Feature.CHEAP, Feature.NON_JAVA_NULLABLE)) {
           @Override
           protected void doGen(CodeBuilder mv) {
             mv.visitLdcInsn(stringConstants.get(0));
@@ -434,7 +434,7 @@ public final class BytecodeUtils {
   }
 
   public static Expression constant(Type type) {
-    return new Expression(CLASS_TYPE, Feature.CHEAP, Feature.NON_JAVA_NULLABLE) {
+    return new Expression(CLASS_TYPE, Features.of(Feature.CHEAP, Feature.NON_JAVA_NULLABLE)) {
       @Override
       protected void doGen(CodeBuilder mv) {
         mv.pushType(type);
@@ -443,7 +443,7 @@ public final class BytecodeUtils {
   }
 
   private static final Handle LARGE_STRING_CONSTANT_HANDLE =
-      MethodRef.create(
+      MethodRef.createPure(
               LargeStringConstantFactory.class,
               "bootstrapLargeStringConstant",
               MethodHandles.Lookup.class,
@@ -491,7 +491,7 @@ public final class BytecodeUtils {
         type.getSort() == Type.OBJECT || type.getSort() == Type.ARRAY,
         "%s is not a reference type",
         type);
-    return new Expression(type, Feature.CHEAP) {
+    return new Expression(type, Feature.CHEAP.asFeatures()) {
       @Override
       protected void doGen(CodeBuilder mv) {
         mv.pushNull();
@@ -788,7 +788,7 @@ public final class BytecodeUtils {
 
   private static Expression asArray(Type arrayType, ImmutableList<? extends Expression> elements) {
     Type elementType = arrayType.getElementType();
-    return new Expression(arrayType, Feature.NON_JAVA_NULLABLE) {
+    return new Expression(arrayType, Feature.NON_JAVA_NULLABLE.asFeatures()) {
       @Override
       protected void doGen(CodeBuilder adapter) {
         adapter.pushInt(elements.size());
@@ -812,7 +812,7 @@ public final class BytecodeUtils {
     // Note, we cannot necessarily use ImmutableList for anything besides the empty list because
     // we may need to put a null in it.
     Expression construct = ConstructorRef.ARRAY_LIST_SIZE.construct(constant(copy.size()));
-    return new Expression(LIST_TYPE, Feature.NON_JAVA_NULLABLE) {
+    return new Expression(LIST_TYPE, Feature.NON_JAVA_NULLABLE.asFeatures()) {
       @Override
       protected void doGen(CodeBuilder mv) {
         construct.gen(mv);
@@ -984,7 +984,7 @@ public final class BytecodeUtils {
       checkArgument(valuesCopy.get(i).resultType().getSort() == Type.OBJECT);
     }
     Expression construct = constructorRef.construct(constant(hashMapCapacity(keysCopy.size())));
-    return new Expression(mapType, Feature.NON_JAVA_NULLABLE) {
+    return new Expression(mapType, Feature.NON_JAVA_NULLABLE.asFeatures()) {
       @Override
       protected void doGen(CodeBuilder mv) {
         construct.gen(mv);

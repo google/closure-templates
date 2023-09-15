@@ -93,9 +93,14 @@ public abstract class Expression extends BytecodeProducer {
      * <p>Cheapness is useful when deciding if it would be reasonable to evaluate an expression more
      * than once if the alternative is generating additional fields and save/restore code.
      */
-    CHEAP
+    CHEAP;
+
     // TODO(lukes): an idempotent feature would be useful some expressions are not safe to gen more
     // than once.
+
+    public Features asFeatures() {
+      return Features.of(this);
+    }
   }
 
   /** An immutable wrapper of an EnumSet of {@link Feature}. */
@@ -239,10 +244,6 @@ public abstract class Expression extends BytecodeProducer {
 
   protected Expression(Type resultType) {
     this(resultType, Features.of());
-  }
-
-  protected Expression(Type resultType, Feature first, Feature... rest) {
-    this(resultType, Features.of(first, rest));
   }
 
   protected Expression(Type resultType, Features features) {

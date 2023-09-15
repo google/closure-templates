@@ -75,9 +75,9 @@ final class ChangeNewlineToBrDirective
   private static final class JbcSrcMethods {
 
     static final MethodRef CHANGE_NEWLINE_TO_BR =
-        MethodRef.create(BasicDirectivesRuntime.class, "changeNewlineToBr", SoyValue.class);
+        MethodRef.createPure(BasicDirectivesRuntime.class, "changeNewlineToBr", SoyValue.class);
     static final MethodRef CHANGE_NEWLINE_TO_BR_STREAMING =
-        MethodRef.create(
+        MethodRef.createNonPure(
             BasicDirectivesRuntime.class,
             "changeNewlineToBrStreaming",
             LoggingAdvisingAppendable.class);

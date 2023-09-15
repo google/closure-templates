@@ -73,7 +73,7 @@ final class TextDirective
 
   private static final class JbcSrcMethods {
     static final MethodRef stringCoercing =
-        MethodRef.create(
+        MethodRef.createNonPure(
             LoggingAdvisingAppendable.class, "stringCoercing", LoggingAdvisingAppendable.class);
   }
 

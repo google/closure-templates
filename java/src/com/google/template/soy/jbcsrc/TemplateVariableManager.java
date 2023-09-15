@@ -370,7 +370,7 @@ final class TemplateVariableManager implements LocalVariableManager {
   }
 
   private static final Handle BOOTSTRAP_SAVE_HANDLE =
-      MethodRef.create(
+      MethodRef.createPure(
               SaveStateMetaFactory.class,
               "bootstrapSaveState",
               MethodHandles.Lookup.class,
@@ -378,7 +378,7 @@ final class TemplateVariableManager implements LocalVariableManager {
               MethodType.class)
           .asHandle();
   private static final Handle BOOTSTRAP_RESTORE_HANDLE =
-      MethodRef.create(
+      MethodRef.createPure(
               SaveStateMetaFactory.class,
               "bootstrapRestoreState",
               MethodHandles.Lookup.class,

@@ -96,15 +96,15 @@ final class CleanHtmlDirective
 
   private static final class JbcSrcMethods {
     static final MethodRef CLEAN_HTML =
-        MethodRef.create(Sanitizers.class, "cleanHtml", SoyValue.class, Collection.class);
+        MethodRef.createPure(Sanitizers.class, "cleanHtml", SoyValue.class, Collection.class);
     static final MethodRef CLEAN_HTML_STREAMING =
-        MethodRef.create(
+        MethodRef.createNonPure(
             Sanitizers.class,
             "cleanHtmlStreaming",
             LoggingAdvisingAppendable.class,
             Collection.class);
     static final MethodRef FROM_TAG_NAME =
-        MethodRef.create(OptionalSafeTag.class, "fromTagName", String.class);
+        MethodRef.createPure(OptionalSafeTag.class, "fromTagName", String.class);
   }
 
   @Override

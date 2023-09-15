@@ -43,7 +43,7 @@ public final class JbcSrcPluginRuntime {
   private JbcSrcPluginRuntime() {}
 
   private static MethodRef create(String methodName, Class<?>... params) {
-    return MethodRef.create(JbcSrcPluginRuntime.class, methodName, params);
+    return MethodRef.createPure(JbcSrcPluginRuntime.class, methodName, params);
   }
 
   public static final MethodRef CONVERT_FUTURE_TO_SOY_VALUE_PROVIDER =
@@ -54,9 +54,6 @@ public final class JbcSrcPluginRuntime {
   public static SoyValueProvider convertFutureToSoyValueProvider(Future<?> future) {
     return SoyValueConverter.INSTANCE.convert(future);
   }
-
-  public static final MethodRef SOY_VALUE_INTEGER_VALUE =
-      MethodRef.create(SoyValue.class, "integerValue").asCheap();
 
   public static final MethodRef NULLISH_TO_JAVA_NULL = create("nullishToJavaNull", SoyValue.class);
 

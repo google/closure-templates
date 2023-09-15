@@ -37,10 +37,10 @@ import javax.annotation.Nullable;
 final class RenderContextExpression extends Expression implements JbcSrcPluginContext {
 
   private static final MethodRef GET_DELTEMPLATE =
-      MethodRef.create(RenderContext.class, "getDelTemplate", String.class, String.class);
+      MethodRef.createNonPure(RenderContext.class, "getDelTemplate", String.class, String.class);
 
   private static final MethodRef RENDER_MODIFIABLE =
-      MethodRef.create(
+      MethodRef.createNonPure(
           RenderContext.class,
           "renderModifiable",
           String.class,
@@ -49,21 +49,23 @@ final class RenderContextExpression extends Expression implements JbcSrcPluginCo
           LoggingAdvisingAppendable.class);
 
   private static final MethodRef GET_PLUGIN_INSTANCE =
-      MethodRef.create(RenderContext.class, "getPluginInstance", String.class);
+      MethodRef.createNonPure(RenderContext.class, "getPluginInstance", String.class);
 
-  private static final MethodRef GET_LOCALE = MethodRef.create(RenderContext.class, "getLocale");
+  private static final MethodRef GET_LOCALE =
+      MethodRef.createNonPure(RenderContext.class, "getLocale");
 
   private static final MethodRef GET_PRINT_DIRECTIVE =
-      MethodRef.create(RenderContext.class, "getPrintDirective", String.class);
+      MethodRef.createNonPure(RenderContext.class, "getPrintDirective", String.class);
 
   private static final MethodRef GET_SOY_MSG_PARTS =
-      MethodRef.create(RenderContext.class, "getSoyMsgParts", long.class, ImmutableList.class);
+      MethodRef.createNonPure(
+          RenderContext.class, "getSoyMsgParts", long.class, ImmutableList.class);
 
   private static final MethodRef GET_SOY_MSG_PARTS_NO_DEFAULT =
-      MethodRef.create(RenderContext.class, "getSoyMsgParts", long.class);
+      MethodRef.createNonPure(RenderContext.class, "getSoyMsgParts", long.class);
 
   private static final MethodRef GET_SOY_MSG_PARTS_WITH_ALTERNATE_ID =
-      MethodRef.create(
+      MethodRef.createNonPure(
           RenderContext.class,
           "getSoyMsgPartsWithAlternateId",
           long.class,
@@ -71,20 +73,21 @@ final class RenderContextExpression extends Expression implements JbcSrcPluginCo
           long.class);
 
   private static final MethodRef GET_SOY_MSG_PARTS_WITH_ALTERNATE_ID_NO_DEFAULT =
-      MethodRef.create(
+      MethodRef.createNonPure(
           RenderContext.class, "getSoyMsgPartsWithAlternateId", long.class, long.class);
 
   private static final MethodRef RENAME_CSS_SELECTOR =
-      MethodRef.create(RenderContext.class, "renameCssSelector", String.class);
+      MethodRef.createNonPure(RenderContext.class, "renameCssSelector", String.class);
 
   private static final MethodRef RENAME_XID =
-      MethodRef.create(RenderContext.class, "renameXid", String.class);
+      MethodRef.createNonPure(RenderContext.class, "renameXid", String.class);
 
   private static final MethodRef USE_PRIMARY_MSG_IF_FALLBACK =
-      MethodRef.create(RenderContext.class, "usePrimaryMsgIfFallback", long.class, long.class);
+      MethodRef.createNonPure(
+          RenderContext.class, "usePrimaryMsgIfFallback", long.class, long.class);
 
   private static final MethodRef USE_PRIMARY_OR_ALTERNATE_IF_FALLBACK =
-      MethodRef.create(
+      MethodRef.createNonPure(
           RenderContext.class,
           "usePrimaryOrAlternateIfFallback",
           long.class,
@@ -92,7 +95,7 @@ final class RenderContextExpression extends Expression implements JbcSrcPluginCo
           long.class);
 
   private static final MethodRef USE_PRIMARY_IF_FALLBACK_OR_FALLBACK_ALTERNATE =
-      MethodRef.create(
+      MethodRef.createNonPure(
           RenderContext.class,
           "usePrimaryIfFallbackOrFallbackAlternate",
           long.class,
@@ -100,7 +103,7 @@ final class RenderContextExpression extends Expression implements JbcSrcPluginCo
           long.class);
 
   private static final MethodRef USE_PRIMARY_OR_ALTERNATE_IF_FALLBACK_OR_FALLBACK_ALTERNATE =
-      MethodRef.create(
+      MethodRef.createNonPure(
           RenderContext.class,
           "usePrimaryOrAlternateIfFallbackOrFallbackAlternate",
           long.class,
@@ -109,36 +112,38 @@ final class RenderContextExpression extends Expression implements JbcSrcPluginCo
           long.class);
 
   private static final MethodRef GET_DEBUG_SOY_TEMPLATE_INFO =
-      MethodRef.create(RenderContext.class, "getDebugSoyTemplateInfo");
+      MethodRef.createNonPure(RenderContext.class, "getDebugSoyTemplateInfo");
 
   private static final MethodRef GET_BIDI_GLOBAL_DIR =
-      MethodRef.create(RenderContext.class, "getBidiGlobalDir");
+      MethodRef.createNonPure(RenderContext.class, "getBidiGlobalDir");
 
   private static final MethodRef GET_BIDI_GLOBAL_DIR_DIR =
-      MethodRef.create(RenderContext.class, "getBidiGlobalDirDir");
+      MethodRef.createNonPure(RenderContext.class, "getBidiGlobalDirDir");
 
   private static final MethodRef GET_ALL_REQUIRED_CSS_NAMESPACES =
-      MethodRef.create(RenderContext.class, "getAllRequiredCssNamespaces", String.class);
+      MethodRef.createNonPure(RenderContext.class, "getAllRequiredCssNamespaces", String.class);
 
   private static final MethodRef GET_ALL_REQUIRED_CSS_PATHS =
-      MethodRef.create(RenderContext.class, "getAllRequiredCssPaths", String.class);
+      MethodRef.createNonPure(RenderContext.class, "getAllRequiredCssPaths", String.class);
 
   private static final MethodRef GET_ESCAPING_DIRECTIVE_AS_FUNCTION =
-      MethodRef.create(RenderContext.class, "getEscapingDirectiveAsFunction", String.class);
+      MethodRef.createNonPure(RenderContext.class, "getEscapingDirectiveAsFunction", String.class);
 
   private static final MethodRef HAS_LOGGER =
-      MethodRef.create(RenderContext.class, "hasLogger").asCheap();
+      MethodRef.createNonPure(RenderContext.class, "hasLogger").asCheap();
 
-  private static final MethodRef GET_LOGGER = MethodRef.create(RenderContext.class, "getLogger");
-  private static final MethodRef POP_FRAME = MethodRef.create(RenderContext.class, "popFrame");
+  private static final MethodRef GET_LOGGER =
+      MethodRef.createNonPure(RenderContext.class, "getLogger");
+  private static final MethodRef POP_FRAME =
+      MethodRef.createNonPure(RenderContext.class, "popFrame");
   private static final MethodRef GET_RENDER_CSS_HELPER =
-      MethodRef.create(RenderContext.class, "getRenderCssHelper");
+      MethodRef.createNonPure(RenderContext.class, "getRenderCssHelper");
 
   private static final MethodRef GET_CONST =
-      MethodRef.create(RenderContext.class, "getConst", String.class);
+      MethodRef.createNonPure(RenderContext.class, "getConst", String.class);
 
   private static final MethodRef STORE_CONST =
-      MethodRef.create(RenderContext.class, "storeConst", String.class, Object.class);
+      MethodRef.createNonPure(RenderContext.class, "storeConst", String.class, Object.class);
 
   private final Expression delegate;
 

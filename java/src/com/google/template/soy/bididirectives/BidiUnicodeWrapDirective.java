@@ -74,10 +74,10 @@ final class BidiUnicodeWrapDirective
 
   private static final class JbcSrcMethods {
     static final MethodRef BIDI_UNICODE_WRAP =
-        MethodRef.create(
+        MethodRef.createPure(
             BidiDirectivesRuntime.class, "bidiUnicodeWrap", BidiGlobalDir.class, SoyValue.class);
     static final MethodRef BIDI_UNICODE_WRAP_STREAMING =
-        MethodRef.create(
+        MethodRef.createNonPure(
             BidiDirectivesRuntime.class,
             "bidiUnicodeWrapStreaming",
             LoggingAdvisingAppendable.class,

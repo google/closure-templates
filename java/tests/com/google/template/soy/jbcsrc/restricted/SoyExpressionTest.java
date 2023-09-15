@@ -24,7 +24,6 @@ import static com.google.template.soy.jbcsrc.restricted.SoyExpression.forSoyValu
 import static com.google.template.soy.jbcsrc.restricted.SoyExpression.forString;
 import static com.google.template.soy.jbcsrc.restricted.testing.ExpressionSubject.assertThatExpression;
 
-import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.internal.ListImpl;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
@@ -171,10 +170,10 @@ public class SoyExpressionTest {
   // invoke a StringData method next we will get a verification error.
   @Test
   public void testBoxNullable() {
-    MethodRef stringDataGetValue = MethodRef.create(SoyValue.class, "stringValue");
     SoyExpression nullableString = forString(constant("hello").asJavaNullable());
     assertThatExpression(nullableString).evaluatesTo("hello");
-    assertThatExpression(nullableString.box().invoke(stringDataGetValue)).evaluatesTo("hello");
+    assertThatExpression(nullableString.box().invoke(MethodRef.SOY_VALUE_STRING_VALUE))
+        .evaluatesTo("hello");
   }
 
   @Test

@@ -49,7 +49,6 @@ import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.VeLogNode;
 import com.google.template.soy.types.StringType;
 import java.lang.invoke.MethodHandles;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.objectweb.asm.ConstantDynamic;
@@ -71,7 +70,7 @@ import org.objectweb.asm.Label;
  */
 final class MsgCompiler {
   private static final Handle MESSAGE_FACTORY_HANDLE =
-      MethodRef.create(
+      MethodRef.createPure(
               MsgDefaultConstantFactory.class,
               "bootstrapMsgConstant",
               MethodHandles.Lookup.class,
@@ -197,7 +196,7 @@ final class MsgCompiler {
 
   /** Handles a translation consisting of a single raw text node. */
   private Statement handleBasicTranslation(
-      MsgNode msg, List<SoyPrintDirective> escapingDirectives, Expression soyMsgParts) {
+      MsgNode msg, ImmutableList<SoyPrintDirective> escapingDirectives, Expression soyMsgParts) {
     // optimize for simple constant translations (very common)
     // this becomes: renderContext.getSoyMessge(<id>).getParts().get(0).getRawText()
     SoyExpression text =

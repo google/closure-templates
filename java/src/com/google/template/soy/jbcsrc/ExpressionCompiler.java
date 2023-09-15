@@ -94,8 +94,10 @@ import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
 import com.google.template.soy.jbcsrc.restricted.ConstructorRef;
 import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.Expression.Feature;
+import com.google.template.soy.jbcsrc.restricted.Expression.Features;
 import com.google.template.soy.jbcsrc.restricted.LocalVariable;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
+import com.google.template.soy.jbcsrc.restricted.MethodRef.MethodPureness;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyRuntimeType;
 import com.google.template.soy.jbcsrc.restricted.Statement;
@@ -538,7 +540,7 @@ final class ExpressionCompiler {
       */
       return SoyExpression.forList(
           (ListType) node.getType(),
-          new Expression(BytecodeUtils.LIST_TYPE, Feature.NON_JAVA_NULLABLE) {
+          new Expression(BytecodeUtils.LIST_TYPE, Features.of(Feature.NON_JAVA_NULLABLE)) {
             @Override
             protected void doGen(CodeBuilder adapter) {
               listVarInitializer.gen(adapter); //   List<?> a_list = ...;
@@ -1098,7 +1100,7 @@ final class ExpressionCompiler {
     // Let vars
 
     private static final Handle GET_CONST_HANDLE =
-        MethodRef.create(
+        MethodRef.createPure(
                 ClassLoaderFallbackCallFactory.class,
                 "bootstrapConstLookup",
                 MethodHandles.Lookup.class,
@@ -1108,7 +1110,7 @@ final class ExpressionCompiler {
                 String.class)
             .asHandle();
     private static final Handle CALL_EXTERN_HANDLE =
-        MethodRef.create(
+        MethodRef.createPure(
                 ClassLoaderFallbackCallFactory.class,
                 "bootstrapExternCall",
                 MethodHandles.Lookup.class,
@@ -1149,7 +1151,9 @@ final class ExpressionCompiler {
           TypeInfo.createClass(Names.javaClassNameFromSoyNamespace(fileNode.getNamespace()));
       MethodRef methodRef =
           MethodRef.createStaticMethod(
-              typeInfo, ConstantsCompiler.getConstantMethod(constVar.name(), constVar.type()));
+              typeInfo,
+              ConstantsCompiler.getConstantMethod(constVar.name(), constVar.type()),
+              MethodPureness.NON_PURE);
       return SoyExpression.forRuntimeType(
           ConstantsCompiler.getConstantRuntimeType(constVar.type()),
           methodRef.invoke(parameters.getRenderContext()));
@@ -1228,7 +1232,8 @@ final class ExpressionCompiler {
             return SoyExpression.forSoyValue(
                 node.getType(),
                 new Expression(
-                    SoyRuntimeType.getBoxedType(node.getType()).runtimeType(), Feature.CHEAP) {
+                    SoyRuntimeType.getBoxedType(node.getType()).runtimeType(),
+                    Features.of(Feature.CHEAP)) {
                   @Override
                   protected void doGen(CodeBuilder cb) {
                     String accessType;
@@ -1631,7 +1636,7 @@ final class ExpressionCompiler {
       String namespace = fileSetMetadata.getNamespaceForPath(extern.path());
       TypeInfo externOwner = TypeInfo.createClass(Names.javaClassNameFromSoyNamespace(namespace));
       Method asmMethod = ExternCompiler.buildMemberMethod(extern.name(), extern.signature());
-      MethodRef ref = MethodRef.createStaticMethod(externOwner, asmMethod);
+      MethodRef ref = MethodRef.createStaticMethod(externOwner, asmMethod, MethodPureness.NON_PURE);
       SoyRuntimeType soyReturnType =
           ExternCompiler.getRuntimeType(extern.signature().getReturnType());
       List<Expression> args = new ArrayList<>();
@@ -1647,8 +1652,7 @@ final class ExpressionCompiler {
       }
 
       // For externs defined in other files use invoke dynamic so that we can support the
-      // classloader
-      // fallback.
+      // classloader fallback.
       Expression externCall =
           new Expression(soyReturnType.runtimeType()) {
             @Override
@@ -1727,7 +1731,7 @@ final class ExpressionCompiler {
     }
 
     private static final Handle GET_TEMPLATE_VALUE_HANDLE =
-        MethodRef.create(
+        MethodRef.createPure(
                 ClassLoaderFallbackCallFactory.class,
                 "bootstrapTemplateValueLookup",
                 MethodHandles.Lookup.class,
@@ -1748,7 +1752,8 @@ final class ExpressionCompiler {
                     TypeInfo.createClass(
                         Names.javaClassNameFromSoyTemplateName(node.getResolvedName())),
                     CompiledTemplateMetadata.createTemplateMethod(
-                        Names.renderMethodNameFromSoyTemplateName(node.getResolvedName())))
+                        Names.renderMethodNameFromSoyTemplateName(node.getResolvedName())),
+                    MethodPureness.PURE)
                 .asCheap()
                 .asNonJavaNullable()
                 .invoke();
@@ -1760,7 +1765,8 @@ final class ExpressionCompiler {
       Expression renderContext = parameters.getRenderContext();
       return SoyExpression.forSoyValue(
           node.getType(),
-          new Expression(BytecodeUtils.TEMPLATE_VALUE_TYPE, Feature.NON_JAVA_NULLABLE) {
+          new Expression(
+              BytecodeUtils.TEMPLATE_VALUE_TYPE, Features.of(Feature.NON_JAVA_NULLABLE)) {
             @Override
             protected void doGen(CodeBuilder adapter) {
               renderContext.gen(adapter);
@@ -1810,14 +1816,15 @@ final class ExpressionCompiler {
           return false;
         case CONST:
           // For consts we could allow references if they are in the same file and they themselves
-          // are constants.
+          // are constants. However, this would require changing the calling convention so that
+          // passing a `RenderContext` is optional.
           return false;
         case STATE:
           // In jbcsrc all @state variables are compiled to constants so we can reference them
           return true;
         case IMPORT_VAR:
           // For things like proto extensions and constructors we could allow references. But it
-          // isn't clear that that is very useful.
+          // isn't clear that that is very useful. For cross file `const`s this isn't possible
           return false;
         case TEMPLATE:
         case EXTERN:
@@ -1834,8 +1841,8 @@ final class ExpressionCompiler {
 
     @Override
     protected Boolean visitTemplateLiteralNode(TemplateLiteralNode node) {
-      // If the literal is in the same file, we can statically bind to it, otherwise a RenderContext
-      // is required for dynamic cross file resolution.
+      // This requires a RenderContext object to look up the template unless it is a same file
+      // reference to a private template.
       return CompiledTemplateMetadata.isPrivateReference(context, node);
     }
 
