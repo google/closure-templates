@@ -59,7 +59,11 @@ public final class XidPass implements CompilerFilePass {
                   GlobalNode global = (GlobalNode) child;
                   String xid = global.getName();
                   fn.replaceChild(
-                      0, new StringNode(xid, QuoteStyle.SINGLE, global.getSourceLocation()));
+                      0,
+                      new StringNode(
+                          xid,
+                          QuoteStyle.SINGLE,
+                          global.getSourceLocation()) );
                   break;
                 case VAR_REF_NODE:
                 case FIELD_ACCESS_NODE:
@@ -75,7 +79,11 @@ public final class XidPass implements CompilerFilePass {
                       file.resolveAlias(Identifier.create(source, SourceLocation.UNKNOWN))
                           .identifier();
                   fn.replaceChild(
-                      0, new StringNode(expanded, QuoteStyle.SINGLE, child.getSourceLocation()));
+                      0,
+                      new StringNode(
+                          expanded,
+                          QuoteStyle.SINGLE,
+                          child.getSourceLocation()) );
                   break;
                 case STRING_NODE:
                   break;

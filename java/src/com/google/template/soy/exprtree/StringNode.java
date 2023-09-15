@@ -35,17 +35,25 @@ public final class StringNode extends AbstractPrimitiveNode {
 
   private final QuoteStyle quoteStyle;
 
+  private final boolean isXid;
+
   /**
    * @param value The string value.
    * @param sourceLocation The node's source location.
    */
   public StringNode(String value, QuoteStyle quoteStyle, SourceLocation sourceLocation) {
+    this(value, quoteStyle, sourceLocation, false);
+  }
+
+  public StringNode(
+      String value, QuoteStyle quoteStyle, SourceLocation sourceLocation, boolean isXid) {
     super(sourceLocation);
     this.value = Preconditions.checkNotNull(value);
     Preconditions.checkArgument(
         quoteStyle == QuoteStyle.SINGLE || quoteStyle == QuoteStyle.DOUBLE,
         "StringNode quote style must be SINGLE or DOUBLE");
     this.quoteStyle = quoteStyle;
+    this.isXid = isXid;
   }
 
   /**
@@ -57,6 +65,7 @@ public final class StringNode extends AbstractPrimitiveNode {
     super(orig, copyState);
     this.value = orig.value;
     this.quoteStyle = orig.quoteStyle;
+    this.isXid = orig.isXid;
   }
 
   @Override
@@ -77,6 +86,10 @@ public final class StringNode extends AbstractPrimitiveNode {
   /** Return the quote style of this string. */
   public QuoteStyle getQuoteStyle() {
     return quoteStyle;
+  }
+
+  public boolean isXid() {
+    return isXid;
   }
 
   /**
