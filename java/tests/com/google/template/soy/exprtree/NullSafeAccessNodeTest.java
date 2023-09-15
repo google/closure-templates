@@ -27,6 +27,8 @@ import com.google.template.soy.exprtree.testing.ExpressionParser;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.testing.Extendable;
 import com.google.template.soy.testing.Foo;
+import java.util.List;
+import java.util.stream.Collectors;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -253,6 +255,26 @@ public class NullSafeAccessNodeTest {
                 "    GROUP_NODE: null|*.MessageField: (null)",
                 "      NULL_NODE: null: null",
                 ""));
+  }
+
+  @Test
+  public void testAsNullSafeBaseList() {
+    ExprNode node =
+        new ExpressionParser("$foo?.getMessageField()?.getFoo()?.getMessageField()")
+            .withProto(Foo.getDescriptor())
+            .withParam("foo", "Foo")
+            .parse();
+    NullSafeAccessNode nsan = (NullSafeAccessNode) node;
+    List<String> sources =
+        nsan.asNullSafeBaseList().stream()
+            .map(ExprNode::toSourceString)
+            .collect(Collectors.toList());
+    assertThat(sources)
+        .containsExactly(
+            "$foo",
+            "$foo.getMessageField()",
+            "$foo.getMessageField().getFoo()",
+            "$foo.getMessageField().getFoo().getMessageField()");
   }
 
   private static String buildAstStringWithPreview(ExprNode node) {

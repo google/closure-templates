@@ -549,14 +549,14 @@ public final class ResolveExpressionTypesPassTest {
         "{if $r.a?.b?.c}",
         "  {assertType('[b: [c: null|string]|null]', $r.a)}",
         "  {assertType('[c: null|string]', $r.a.b)}",
-        "  {assertType('null|string', $r.a.b.c)}", // b/297033128
+        "  {assertType('string', $r.a.b.c)}",
         "{/if}",
         "");
     assertTypes(
         "{@param r: [a: null|[b: null|string]]}",
         "{if $r.a?.b != null}",
-        "  {assertType('[b: null|string]|null', $r.a)}", // b/297033128
-        "  {assertType('null|string', $r.a.b)}", // b/297033128
+        "  {assertType('[b: null|string]', $r.a)}",
+        "  {assertType('string', $r.a.b)}",
         "{else}",
         "  {assertType('[b: null|string]|null', $r.a)}",
         "{/if}",
@@ -569,8 +569,8 @@ public final class ResolveExpressionTypesPassTest {
         "{/if}",
         "",
         "{if $r.a?.b !== null}",
-        "  {assertType('[b: null|string]|null', $r.a)}", // b/297033128
-        "  {assertType('null|string', $r.a.b)}", // b/297033128
+        "  {assertType('[b: null|string]', $r.a)}",
+        "  {assertType('string', $r.a.b)}",
         "{else}",
         "  {assertType('[b: null|string]|null', $r.a)}",
         "{/if}",
@@ -580,15 +580,15 @@ public final class ResolveExpressionTypesPassTest {
         "{if $m?.get('a')}",
         "  {assertType('map<string,string>', $m)}",
         "  {assertType('string', $m?.get('a'))}",
-        "  {assertType('null|string', $m.get('a'))}", // b/297033128
+        "  {assertType('string', $m.get('a'))}",
         "{else}",
         "  {assertType('map<string,string>|null', $m)}",
         "  {assertType('null|string', $m?.get('a'))}",
         "{/if}",
         "",
         "{if $m?.get('a') == 'b'}",
-        "  {assertType('map<string,string>|null', $m)}", // b/297033128
-        // b/297033128 "  {assertType('string', $m.get('a'))}",
+        "  {assertType('map<string,string>', $m)}",
+        "  {assertType('string', $m.get('a'))}",
         "{else}",
         "  {assertType('map<string,string>|null', $m)}",
         "  {assertType('null|string', $m?.get('a'))}",
@@ -606,13 +606,13 @@ public final class ResolveExpressionTypesPassTest {
         "  {assertType('null', $m?.get('a'))}",
         "  {assertType('map<string,string>|null', $m)}",
         "{else}",
-        // b/297033128 "  {assertType('string', $m.get('a'))}",
-        "  {assertType('map<string,string>|null', $m)}", // b/297033128
+        "  {assertType('string', $m.get('a'))}",
+        "  {assertType('map<string,string>', $m)}",
         "{/if}",
         "",
         "{if $m?.get('a') != null}",
-        // b/297033128 "  {assertType('string', $m.get('a'))}",
-        "  {assertType('map<string,string>|null', $m)}", // b/297033128
+        "  {assertType('string', $m.get('a'))}",
+        "  {assertType('map<string,string>', $m)}",
         "{else}",
         "  {assertType('null', $m?.get('a'))}",
         "  {assertType('map<string,string>|null', $m)}",
@@ -622,7 +622,7 @@ public final class ResolveExpressionTypesPassTest {
         "{@param m: map<string, null|map<string, null|string>>}",
         "{if $m.get('a')?.get('b')}",
         "  {assertType('map<string,null|string>', $m.get('a'))}",
-        "  {assertType('null|string', $m.get('a').get('b'))}", // b/297033128
+        "  {assertType('string', $m.get('a').get('b'))}",
         // We aren't quite sure why you can call `get` on $m?.get('a') since the base's type hasn't
         // been narrowed according to assertType.
         "  {assertType('map<string,null|string>|null', $m?.get('a'))}",
@@ -640,7 +640,7 @@ public final class ResolveExpressionTypesPassTest {
     assertTypes(
         "{@param r: [a: null|[b: null|[c: null|string]]]}",
         "{if $r.a?.b?.c}",
-        "  {assertType('null|string', $r.a.b.c)}", // b/297033128
+        "  {assertType('string', $r.a.b.c)}",
         "  {assertType('string', $r.a?.b?.c)}",
         "  {assertType('null|string', $r?.a.b.c)}",
         "  {assertType('null|string', $r.a?.b.c)}",
@@ -659,9 +659,8 @@ public final class ResolveExpressionTypesPassTest {
         "{assertType('null|string|undefined', $m?.get('a'))}",
         "{if $m?.get('a') === undefined}",
         "  {assertType('undefined', $m?.get('a'))}",
-        // b/297033128 "  {assertType('undefined', $m.get('a'))}", // Only true while ?. coalesces
-        // to null.
-        "  {assertType('map<string,string|undefined>|null', $m)}", // b/297033128
+        "  {assertType('undefined', $m.get('a'))}", // Only true while ?. coalesces to null.
+        "  {assertType('map<string,string|undefined>', $m)}",
         "{else}",
         "  {assertType('null|string', $m?.get('a'))}",
         "  {assertType('map<string,string|undefined>|null', $m)}",
@@ -672,8 +671,8 @@ public final class ResolveExpressionTypesPassTest {
         "  {assertType('map<string,string|undefined>|null', $m)}",
         "{else}",
         "  {assertType('undefined', $m?.get('a'))}",
-        // b/297033128 "  {assertType('undefined', $m.get('a'))}",
-        "  {assertType('map<string,string|undefined>|null', $m)}", // b/297033128
+        "  {assertType('undefined', $m.get('a'))}",
+        "  {assertType('map<string,string|undefined>', $m)}",
         "{/if}",
         "");
     assertTypes(
@@ -683,7 +682,7 @@ public final class ResolveExpressionTypesPassTest {
         "  {assertType('map<string,string>|null', $m)}",
         "{else}",
         "  {assertType('string', $m?.get('a'))}",
-        "  {assertType('map<string,string>|null', $m)}", // b/297033128
+        "  {assertType('map<string,string>', $m)}",
         "{/if}",
         "");
   }
@@ -699,10 +698,10 @@ public final class ResolveExpressionTypesPassTest {
         "  {assertType('string', $r.a)}",
         "{/if}",
         "{if $r?.a?.length >= 0}",
-        "  {assertType('string', $r.a)}", // b/297033128
+        "  {assertType('null|string', $r.a)}",
         "{/if}",
         "{if $r?.a?.length <= 0}",
-        "  {assertType('string', $r.a)}", // b/297033128
+        "  {assertType('null|string', $r.a)}",
         "{/if}",
         "");
   }
@@ -957,7 +956,7 @@ public final class ResolveExpressionTypesPassTest {
   @Test
   public void testTypeNarrowingError() {
     assertResolveExpressionTypesFails(
-        "Expected expression of type 'string', found 'null|undefined'.",
+        "Cannot narrow expression of type 'string' to 'null|undefined'.",
         constructFileSource(
             "{@param p: [a: string]}",
             "{if $p.a != null}",

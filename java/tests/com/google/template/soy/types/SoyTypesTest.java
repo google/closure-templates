@@ -22,6 +22,7 @@ import static com.google.common.truth.Fact.simpleFact;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth8.assertThat;
 import static com.google.template.soy.types.SoyTypes.NUMBER_TYPE;
+import static com.google.template.soy.types.SoyTypes.makeNullable;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -397,6 +398,15 @@ public class SoyTypesTest {
 
     assertThat(SoyTypes.eitherOfKind(FLOAT_TYPE, NUMBER_TYPE, ImmutableSet.of())).isFalse();
     assertThat(SoyTypes.eitherOfKind(FLOAT_TYPE, NUMBER_TYPE, INT_TYPE.getKind())).isFalse();
+  }
+
+  @Test
+  public void testComputeStricterType() {
+    assertThat(SoyTypes.computeStricterType(INT_TYPE, ANY_TYPE)).hasValue(INT_TYPE);
+    assertThat(SoyTypes.computeStricterType(NUMBER_TYPE, INT_TYPE)).hasValue(INT_TYPE);
+    assertThat(SoyTypes.computeStricterType(makeNullable(STRING_TYPE), STRING_TYPE))
+        .hasValue(STRING_TYPE);
+    assertThat(SoyTypes.computeStricterType(INT_TYPE, STRING_TYPE)).isEmpty();
   }
 
   @Test

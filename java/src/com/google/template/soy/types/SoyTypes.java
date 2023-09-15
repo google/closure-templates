@@ -217,6 +217,16 @@ public final class SoyTypes {
     return type.getKind() == Kind.UNKNOWN || NUMBER_TYPE.isAssignableFromStrict(type);
   }
 
+  public static Optional<SoyType> computeStricterType(SoyType t0, SoyType t1) {
+    if (t0.isAssignableFromLoose(t1)) {
+      return Optional.of(t1);
+    } else if (t1.isAssignableFromStrict(t0)) {
+      return Optional.of(t0);
+    } else {
+      return Optional.empty();
+    }
+  }
+
   /**
    * Compute the most specific type that is assignable from both t0 and t1.
    *

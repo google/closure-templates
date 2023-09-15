@@ -16,26 +16,27 @@
 
 package com.google.template.soy.passes;
 
+import static com.google.template.soy.exprtree.ExprNodes.isNonFalsyLiteral;
+import static com.google.template.soy.exprtree.ExprNodes.isNonNullishLiteral;
 import static com.google.template.soy.exprtree.ExprNodes.isNullishLiteral;
-import static com.google.template.soy.types.SoyTypes.tryKeepNullish;
-import static com.google.template.soy.types.SoyTypes.tryRemoveNull;
-import static com.google.template.soy.types.SoyTypes.tryRemoveNullish;
-import static com.google.template.soy.types.SoyTypes.tryRemoveUndefined;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Sets;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
 import com.google.template.soy.exprtree.ExprEquivalence;
 import com.google.template.soy.exprtree.ExprNode;
-import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
-import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.NullSafeAccessNode;
 import com.google.template.soy.exprtree.OperatorNodes.AndOpNode;
-import com.google.template.soy.exprtree.OperatorNodes.ConditionalOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.EqualOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.GreaterThanOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.GreaterThanOrEqualOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.LessThanOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.LessThanOrEqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NotEqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NotOpNode;
-import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TripleEqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TripleNotEqualOpNode;
@@ -67,7 +68,7 @@ import java.util.Map;
  * + flow-based type analysis would effectively allow template authors to do typecasts, without
  * having to add a cast operator to the language.
  */
-final class TypeNarrowingConditionVisitor extends AbstractExprNodeVisitor<Void> {
+final class TypeNarrowingConditionVisitor {
 
   private final ExprEquivalence exprEquivalence;
   private final SoyTypeRegistry typeRegistry;
@@ -84,185 +85,309 @@ final class TypeNarrowingConditionVisitor extends AbstractExprNodeVisitor<Void> 
     this.typeRegistry = typeRegistry;
   }
 
-  @Override
-  public Void exec(ExprNode node) {
-    visitAndImplicitlyCastToBoolean(node);
-    return null;
-  }
-
-  @Override
-  protected void visitExprRootNode(ExprRootNode node) {
-    visitAndImplicitlyCastToBoolean(node.getRoot());
-  }
-
-  void visitAndImplicitlyCastToBoolean(ExprNode node) {
+  public void ifTruthy(ExprNode node) {
     // In places where the expression is implicitly cast to a boolean, treat
     // a reference to a variable as a comparison of that variable with null.
     // So for example an expression like {if $var} should be treated as
     // {if $var != null} but something like {if $var > 0} should not be changed.
-    visit(node);
-    ExprEquivalence.Wrapper wrapped = exprEquivalence.wrap(node);
-    positiveTypeConstraints.put(wrapped, tryRemoveNullish(node.getType()));
-    // TODO(lukes): The 'negative' type constraint here is not optimal.  What we really know is
-    // that the value of the expression is 'falsy' we could use that to inform later checks but
-    // for now we just assume it has its normal type.
-    negativeTypeConstraints.put(wrapped, node.getType());
+    new TruthyVisitor().exec(node);
   }
 
-  @Override
-  protected void visitAndOpNode(AndOpNode node) {
-    Preconditions.checkArgument(node.numChildren() == 2);
-    // Create two separate visitors to analyze each side of the expression.
-    TypeNarrowingConditionVisitor leftVisitor =
-        new TypeNarrowingConditionVisitor(exprEquivalence, typeRegistry);
-    TypeNarrowingConditionVisitor rightVisitor =
-        new TypeNarrowingConditionVisitor(exprEquivalence, typeRegistry);
-    leftVisitor.visitAndImplicitlyCastToBoolean(node.getChild(0));
-    rightVisitor.visitAndImplicitlyCastToBoolean(node.getChild(1));
-
-    // Both the left side and right side constraints will be valid if the condition is true.
-    computeConstraintUnionInto(
-        leftVisitor.positiveTypeConstraints,
-        rightVisitor.positiveTypeConstraints,
-        /* into= */ positiveTypeConstraints);
-    // If the condition is false, then the overall constraint is the intersection of
-    // the complements of the true constraints.
-    computeConstraintIntersectionInto(
-        leftVisitor.negativeTypeConstraints,
-        rightVisitor.negativeTypeConstraints,
-        /* into= */ negativeTypeConstraints);
+  private void ifNullish(ExprNode node, NullishMode mode, boolean neq) {
+    new NonNullishVisitor(neq, mode, true).exec(node);
   }
 
-  @Override
-  protected void visitOrOpNode(OrOpNode node) {
-    Preconditions.checkArgument(node.numChildren() == 2);
-    // Create two separate visitors to analyze each side of the expression.
-    TypeNarrowingConditionVisitor leftVisitor =
-        new TypeNarrowingConditionVisitor(exprEquivalence, typeRegistry);
-    TypeNarrowingConditionVisitor rightVisitor =
-        new TypeNarrowingConditionVisitor(exprEquivalence, typeRegistry);
-    leftVisitor.visitAndImplicitlyCastToBoolean(node.getChild(0));
-    rightVisitor.visitAndImplicitlyCastToBoolean(node.getChild(1));
-
-    // If the condition is true, then only constraints that appear on both sides of the
-    // operator will be valid.
-    computeConstraintIntersectionInto(
-        leftVisitor.positiveTypeConstraints,
-        rightVisitor.positiveTypeConstraints,
-        /* into= */ positiveTypeConstraints);
-    // If the condition is false, then both sides must be false, so the overall constraint
-    // is the union of the complements of the constraints on each side.
-    computeConstraintUnionInto(
-        leftVisitor.negativeTypeConstraints,
-        rightVisitor.negativeTypeConstraints,
-        /* into= */ negativeTypeConstraints);
+  private void ifNonNullish(ExprNode node) {
+    new NonNullishVisitor(false, NullishMode.NULLISH, false).exec(node);
   }
 
-  @Override
-  protected void visitNotOpNode(NotOpNode node) {
-    // For a logical not node, compute the positive and negative constraints of the
-    // operand and then simply swap them.
-    TypeNarrowingConditionVisitor childVisitor =
-        new TypeNarrowingConditionVisitor(exprEquivalence, typeRegistry);
-    childVisitor.visitAndImplicitlyCastToBoolean(node.getChild(0));
-    positiveTypeConstraints.putAll(childVisitor.negativeTypeConstraints);
-    negativeTypeConstraints.putAll(childVisitor.positiveTypeConstraints);
+  private TypeNarrowingConditionVisitor createTypeNarrowingConditionVisitor() {
+    return new TypeNarrowingConditionVisitor(exprEquivalence, typeRegistry);
   }
 
-  @Override
-  protected void visitEqualOpNode(EqualOpNode node) {
-    if (isNullishLiteral(node.getChild(1))) {
-      addNullishEqualOpConstraint(node.getChild(0), false);
-    } else if (isNullishLiteral(node.getChild(0))) {
-      addNullishEqualOpConstraint(node.getChild(1), false);
+  enum NullishMode {
+    NULLISH,
+    NULL,
+    UNDEFINED;
+
+    public static NullishMode forNode(ExprNode node) {
+      switch (node.getKind()) {
+        case NULL_NODE:
+          return NULL;
+        case UNDEFINED_NODE:
+          return UNDEFINED;
+        default:
+          throw new IllegalArgumentException(node.getKind().toString());
+      }
     }
   }
 
-  @Override
-  protected void visitNotEqualOpNode(NotEqualOpNode node) {
-    if (isNullishLiteral(node.getChild(1))) {
-      addNullishEqualOpConstraint(node.getChild(0), true);
-    } else if (isNullishLiteral(node.getChild(0))) {
-      addNullishEqualOpConstraint(node.getChild(1), true);
+  private final class NonNullishVisitor extends AbstractExprNodeVisitor<Void> {
+
+    private final boolean neq; // if operator is != or !==
+    private final boolean nullish; // if comparing to null/undefined
+    private final NullishMode mode;
+
+    public NonNullishVisitor(boolean neq, NullishMode mode, boolean nullish) {
+      this.neq = neq;
+      this.mode = mode;
+      this.nullish = nullish;
+    }
+
+    private SoyType tryRemoveNullish(SoyType type) {
+      switch (mode) {
+        case NULLISH:
+          return SoyTypes.tryRemoveNullish(type);
+        case NULL:
+          return SoyTypes.tryRemoveNull(type);
+        case UNDEFINED:
+          return SoyTypes.tryRemoveUndefined(type);
+      }
+      throw new AssertionError();
+    }
+
+    private SoyType tryKeepNullish(SoyType type) {
+      switch (mode) {
+        case NULLISH:
+          return SoyTypes.isNullish(type)
+              ? SoyTypes.tryKeepNullish(type)
+              : SoyTypes.NULL_OR_UNDEFINED;
+        case NULL:
+          return NullType.getInstance();
+        case UNDEFINED:
+          return UndefinedType.getInstance();
+      }
+      throw new AssertionError();
+    }
+
+    @Override
+    protected void visitExprNode(ExprNode node) {
+      ExprEquivalence.Wrapper wrapped = exprEquivalence.wrap(node);
+      if (nullish) {
+        if (neq) {
+          // x != null -> positive: not null, negative: null
+          negativeTypeConstraints.put(wrapped, tryKeepNullish(node.getType()));
+          positiveTypeConstraints.put(wrapped, tryRemoveNullish(node.getType()));
+        } else {
+          // x == null -> positive: null, negative: not null
+          positiveTypeConstraints.put(wrapped, tryKeepNullish(node.getType()));
+          negativeTypeConstraints.put(wrapped, tryRemoveNullish(node.getType()));
+        }
+      } else {
+        if (neq) {
+          // x != 'a' -> -
+        } else {
+          // x == 'a' -> positive: not null
+          positiveTypeConstraints.put(wrapped, tryRemoveNullish(node.getType()));
+        }
+      }
+    }
+
+    @Override
+    protected void visitNullSafeAccessNode(NullSafeAccessNode node) {
+      // TODO(b/291132644): swap NULL for UNDEFINED here.
+      boolean nonNullConstant = mode == NullishMode.UNDEFINED || !nullish;
+      Map<ExprEquivalence.Wrapper, SoyType> chainConstraints;
+      if (neq) {
+        if (nonNullConstant) {
+          // a?.b !== undefined: negative (for now)
+          // a?.b != 'a': negative
+          chainConstraints = negativeTypeConstraints;
+        } else {
+          // a?.b != null: positive
+          // a?.b !== null: positive (for now)
+          chainConstraints = positiveTypeConstraints;
+        }
+      } else {
+        if (nonNullConstant) {
+          // a?.b == 'a': positive
+          // a?.b === undefined: positive (for now)
+          chainConstraints = positiveTypeConstraints;
+        } else {
+          // a?.b == null: negative
+          // a?.b === null: negative (for now)
+          chainConstraints = negativeTypeConstraints;
+        }
+      }
+
+      ImmutableList<ExprNode> chain = node.asNullSafeBaseList();
+      // Narrow [a, a.b] to non-nullish
+      for (int i = 0; i < chain.size() - 1; i++) {
+        ExprNode nullSafeBase = chain.get(i);
+        chainConstraints.put(
+            exprEquivalence.wrap(nullSafeBase), SoyTypes.tryRemoveNullish(nullSafeBase.getType()));
+      }
+      // Narrow a.b.c to non null/undefined/nullish
+      visitExprNode(Iterables.getLast(chain));
+
+      // a?.b?.c was already narrowed by TruthyVisitor
+      visitExprNode(node);
     }
   }
 
-  private void addNullishEqualOpConstraint(ExprNode node, boolean notEqual) {
-    ExprEquivalence.Wrapper wrappedExpr = exprEquivalence.wrap(node);
-    SoyType type = wrappedExpr.get().getType();
-    (notEqual ? positiveTypeConstraints : negativeTypeConstraints)
-        .put(wrappedExpr, tryRemoveNullish(type));
-    (notEqual ? negativeTypeConstraints : positiveTypeConstraints)
-        .put(
-            wrappedExpr,
-            SoyTypes.isNullish(type) ? tryKeepNullish(type) : SoyTypes.NULL_OR_UNDEFINED);
-  }
+  private final class TruthyVisitor extends AbstractExprNodeVisitor<Void> {
 
-  @Override
-  protected void visitTripleEqualOpNode(TripleEqualOpNode node) {
-    if (isNullishLiteral(node.getChild(1))) {
-      addNullishTripleEqualOpConstraint(node.getChild(0), false, node.getChild(1).getKind());
-    } else if (isNullishLiteral(node.getChild(0))) {
-      addNullishTripleEqualOpConstraint(node.getChild(1), false, node.getChild(0).getKind());
+    @Override
+    protected void visitExprNode(ExprNode node) {
+      ExprEquivalence.Wrapper wrapped = exprEquivalence.wrap(node);
+      positiveTypeConstraints.put(wrapped, SoyTypes.tryRemoveNullish(node.getType()));
+      // TODO(lukes): The 'negative' type constraint here is not optimal.  What we really know is
+      // that the value of the expression is 'falsy' we could use that to inform later checks but
+      // for now we just assume it has its normal type.
+      negativeTypeConstraints.put(wrapped, node.getType());
     }
-  }
 
-  @Override
-  protected void visitTripleNotEqualOpNode(TripleNotEqualOpNode node) {
-    if (isNullishLiteral(node.getChild(1))) {
-      addNullishTripleEqualOpConstraint(node.getChild(0), true, node.getChild(1).getKind());
-    } else if (isNullishLiteral(node.getChild(0))) {
-      addNullishTripleEqualOpConstraint(node.getChild(1), true, node.getChild(0).getKind());
+    @Override
+    protected void visitExprRootNode(ExprRootNode node) {
+      visit(node.getRoot());
+      super.visitExprRootNode(node);
     }
-  }
 
-  private void addNullishTripleEqualOpConstraint(
-      ExprNode node, boolean notEqual, ExprNode.Kind compareKind) {
-    ExprEquivalence.Wrapper wrappedExpr = exprEquivalence.wrap(node);
-    SoyType type = wrappedExpr.get().getType();
-    (notEqual ? positiveTypeConstraints : negativeTypeConstraints)
-        .put(
-            wrappedExpr,
-            compareKind == ExprNode.Kind.NULL_NODE
-                ? tryRemoveNull(type)
-                : tryRemoveUndefined(type));
-    (notEqual ? negativeTypeConstraints : positiveTypeConstraints)
-        .put(
-            wrappedExpr,
-            compareKind == ExprNode.Kind.NULL_NODE
-                ? NullType.getInstance()
-                : UndefinedType.getInstance());
-  }
+    @Override
+    protected void visitAndOpNode(AndOpNode node) {
+      Preconditions.checkArgument(node.numChildren() == 2);
+      // Create two separate visitors to analyze each side of the expression.
+      TypeNarrowingConditionVisitor leftVisitor = createTypeNarrowingConditionVisitor();
+      TypeNarrowingConditionVisitor rightVisitor = createTypeNarrowingConditionVisitor();
+      leftVisitor.ifTruthy(node.getChild(0));
+      rightVisitor.ifTruthy(node.getChild(1));
 
-  @Override
-  protected void visitNullSafeAccessNode(NullSafeAccessNode node) {
-    for (ExprNode nullSafeBase : node.asNullSafeBaseList()) {
-      positiveTypeConstraints.put(
-          exprEquivalence.wrap(nullSafeBase), tryRemoveNullish(nullSafeBase.getType()));
+      // Both the left side and right side constraints will be valid if the condition is true.
+      computeConstraintUnionInto(
+          leftVisitor.positiveTypeConstraints,
+          rightVisitor.positiveTypeConstraints,
+          /* into= */ positiveTypeConstraints);
+      // If the condition is false, then the overall constraint is the intersection of
+      // the complements of the true constraints.
+      computeConstraintIntersectionInto(
+          leftVisitor.negativeTypeConstraints,
+          rightVisitor.negativeTypeConstraints,
+          /* into= */ negativeTypeConstraints);
     }
-  }
 
-  @Override
-  protected void visitNullCoalescingOpNode(NullCoalescingOpNode node) {
-    // Don't make any inferences (don't visit children).
-    // Note: It would be possible to support this case by expanding it into
-    // if-statements.
-  }
+    @Override
+    protected void visitOrOpNode(OrOpNode node) {
+      Preconditions.checkArgument(node.numChildren() == 2);
+      // Create two separate visitors to analyze each side of the expression.
+      TypeNarrowingConditionVisitor leftVisitor = createTypeNarrowingConditionVisitor();
+      TypeNarrowingConditionVisitor rightVisitor = createTypeNarrowingConditionVisitor();
+      leftVisitor.ifTruthy(node.getChild(0));
+      rightVisitor.ifTruthy(node.getChild(1));
 
-  @Override
-  protected void visitConditionalOpNode(ConditionalOpNode node) {
-    // Don't make any inferences (don't visit children).
-    // Note: It would be possible to support this case by expanding it into
-    // if-statements.
-  }
+      // If the condition is true, then only constraints that appear on both sides of the
+      // operator will be valid.
+      computeConstraintIntersectionInto(
+          leftVisitor.positiveTypeConstraints,
+          rightVisitor.positiveTypeConstraints,
+          /* into= */ positiveTypeConstraints);
+      // If the condition is false, then both sides must be false, so the overall constraint
+      // is the union of the complements of the constraints on each side.
+      computeConstraintUnionInto(
+          leftVisitor.negativeTypeConstraints,
+          rightVisitor.negativeTypeConstraints,
+          /* into= */ negativeTypeConstraints);
+    }
 
-  @Override
-  protected void visitFunctionNode(FunctionNode node) {}
+    @Override
+    protected void visitNotOpNode(NotOpNode node) {
+      // For a logical not node, compute the positive and negative constraints of the
+      // operand and then simply swap them.
+      TypeNarrowingConditionVisitor childVisitor = createTypeNarrowingConditionVisitor();
+      childVisitor.ifTruthy(node.getChild(0));
+      positiveTypeConstraints.putAll(childVisitor.negativeTypeConstraints);
+      negativeTypeConstraints.putAll(childVisitor.positiveTypeConstraints);
+    }
 
-  @Override
-  protected void visitExprNode(ExprNode node) {
-    if (node instanceof ParentExprNode) {
-      visitChildren((ParentExprNode) node);
+    @Override
+    protected void visitEqualOpNode(EqualOpNode node) {
+      if (isNullishLiteral(node.getChild(1))) {
+        ifNullish(node.getChild(0), NullishMode.NULLISH, false);
+      } else if (isNonNullishLiteral(node.getChild(1))) {
+        ifNonNullish(node.getChild(0));
+      }
+
+      if (isNullishLiteral(node.getChild(0))) {
+        ifNullish(node.getChild(1), NullishMode.NULLISH, false);
+      } else if (isNonNullishLiteral(node.getChild(0))) {
+        ifNonNullish(node.getChild(1));
+      }
+    }
+
+    @Override
+    protected void visitNotEqualOpNode(NotEqualOpNode node) {
+      if (isNullishLiteral(node.getChild(1))) {
+        ifNullish(node.getChild(0), NullishMode.NULLISH, true);
+      }
+      if (isNullishLiteral(node.getChild(0))) {
+        ifNullish(node.getChild(1), NullishMode.NULLISH, true);
+      }
+    }
+
+    @Override
+    protected void visitTripleEqualOpNode(TripleEqualOpNode node) {
+      if (isNullishLiteral(node.getChild(1))) {
+        ifNullish(node.getChild(0), NullishMode.forNode(node.getChild(1)), false);
+      } else if (isNonNullishLiteral(node.getChild(1))) {
+        ifNonNullish(node.getChild(0));
+      }
+
+      if (isNullishLiteral(node.getChild(0))) {
+        ifNullish(node.getChild(1), NullishMode.forNode(node.getChild(0)), false);
+      } else if (isNonNullishLiteral(node.getChild(0))) {
+        ifNonNullish(node.getChild(1));
+      }
+    }
+
+    @Override
+    protected void visitTripleNotEqualOpNode(TripleNotEqualOpNode node) {
+      if (isNullishLiteral(node.getChild(1))) {
+        ifNullish(node.getChild(0), NullishMode.forNode(node.getChild(1)), true);
+      } else if (isNullishLiteral(node.getChild(0))) {
+        ifNullish(node.getChild(1), NullishMode.forNode(node.getChild(0)), true);
+      }
+    }
+
+    @Override
+    protected void visitNullSafeAccessNode(NullSafeAccessNode node) {
+      // Narrow [a, a.b, a.b.c]
+      for (ExprNode nullSafeBase : node.asNullSafeBaseList()) {
+        positiveTypeConstraints.put(
+            exprEquivalence.wrap(nullSafeBase), SoyTypes.tryRemoveNullish(nullSafeBase.getType()));
+      }
+      // Narrow a?.b?.c
+      super.visitNullSafeAccessNode(node);
+    }
+
+    @Override
+    protected void visitLessThanOpNode(LessThanOpNode node) {
+      ifNonNullish(node.getChild(0));
+      ifNonNullish(node.getChild(1));
+    }
+
+    @Override
+    protected void visitGreaterThanOpNode(GreaterThanOpNode node) {
+      ifNonNullish(node.getChild(0));
+      ifNonNullish(node.getChild(1));
+    }
+
+    @Override
+    protected void visitLessThanOrEqualOpNode(LessThanOrEqualOpNode node) {
+      // TODO(b/291132644): this behavior is coupled to Number(null) -> 0.
+      if (isNonFalsyLiteral(node.getChild(1))) {
+        ifNonNullish(node.getChild(0));
+      } else if (isNonFalsyLiteral(node.getChild(0))) {
+        ifNonNullish(node.getChild(1));
+      }
+    }
+
+    @Override
+    protected void visitGreaterThanOrEqualOpNode(GreaterThanOrEqualOpNode node) {
+      // TODO(b/291132644): this behavior is coupled to Number(null) -> 0.
+      if (isNonFalsyLiteral(node.getChild(1))) {
+        ifNonNullish(node.getChild(0));
+      } else if (isNonFalsyLiteral(node.getChild(0))) {
+        ifNonNullish(node.getChild(1));
+      }
     }
   }
 
@@ -274,24 +399,27 @@ final class TypeNarrowingConditionVisitor extends AbstractExprNodeVisitor<Void> 
    * @param left Constraints from the left side.
    * @param right Constraints from the right side.
    */
-  private <T> void computeConstraintUnionInto(
-      Map<T, SoyType> left, Map<T, SoyType> right, Map<T, SoyType> into) {
-    if (left.isEmpty()) {
-      return;
-    }
-    if (right.isEmpty()) {
-      return;
-    }
-    into.putAll(left);
-    for (Map.Entry<T, SoyType> entry : right.entrySet()) {
-      // The union of two constraints is a *stricter* constraint.
-      // Thus "((a instanceof any) AND (a instanceof bool)) == (a instanceof bool)"
-      // For now, it's sufficient that the map contains an entry for the variable
-      // (since we're only testing for nullability). Once we add support for more
-      // complex type tests, we'll need to add code here that combines the two
-      // constraints.
-      into.putIfAbsent(entry.getKey(), entry.getValue());
-    }
+  private static void computeConstraintUnionInto(
+      Map<ExprEquivalence.Wrapper, SoyType> left,
+      Map<ExprEquivalence.Wrapper, SoyType> right,
+      Map<ExprEquivalence.Wrapper, SoyType> into) {
+    Sets.union(left.keySet(), right.keySet())
+        .forEach(
+            key -> {
+              SoyType lhsType = left.get(key);
+              SoyType rhsType = right.get(key);
+              SoyType stricter;
+              if (lhsType == null) {
+                stricter = rhsType;
+              } else if (rhsType == null) {
+                stricter = lhsType;
+              } else {
+                stricter =
+                    SoyTypes.computeStricterType(lhsType, rhsType)
+                        .orElse(/* Properly we would use the `never` type here. */ lhsType);
+              }
+              into.put(key, stricter);
+            });
   }
 
   /**
@@ -302,25 +430,31 @@ final class TypeNarrowingConditionVisitor extends AbstractExprNodeVisitor<Void> 
    * @param left Constraints from the left side.
    * @param right Constraints from the right side.
    */
-  private <T> void computeConstraintIntersectionInto(
-      Map<T, SoyType> left, Map<T, SoyType> right, Map<T, SoyType> into) {
-    if (left.isEmpty()) {
-      return;
-    }
-    if (right.isEmpty()) {
-      return;
-    }
-    for (Map.Entry<T, SoyType> entry : left.entrySet()) {
-      // A variable must be present in both the left and right sides in order to be
-      // included in the output.
-      SoyType rightSideType = right.get(entry.getKey());
-      if (rightSideType != null) {
-        // The intersection of two constraints is a *looser* constraint.
-        // Thus "((a instanceof any) OR (a instanceof bool)) == (a instanceof any)"
-        into.put(
-            entry.getKey(),
-            SoyTypes.computeLowestCommonType(typeRegistry, entry.getValue(), rightSideType));
-      }
-    }
+  private void computeConstraintIntersectionInto(
+      Map<ExprEquivalence.Wrapper, SoyType> left,
+      Map<ExprEquivalence.Wrapper, SoyType> right,
+      Map<ExprEquivalence.Wrapper, SoyType> into) {
+    // A variable must be present in both the left and right sides in order to be
+    // included in the output.
+    Sets.intersection(left.keySet(), right.keySet())
+        .forEach(
+            key -> {
+              SoyType originalType = key.get().getType();
+              SoyType lhsType = left.get(key);
+              SoyType rhsType = right.get(key);
+              SoyType lct = SoyTypes.computeLowestCommonType(typeRegistry, lhsType, rhsType);
+              // Don't add |null or |undefined to a type due to an OR condition.
+              if (!lct.isNullOrUndefined()) {
+                if (!SoyTypes.isUndefinable(originalType)) {
+                  lct = SoyTypes.tryRemoveUndefined(lct);
+                }
+                if (!SoyTypes.isNullable(originalType)) {
+                  lct = SoyTypes.tryRemoveNull(lct);
+                }
+              }
+              // The intersection of two constraints is a *looser* constraint.
+              // Thus "((a instanceof any) OR (a instanceof bool)) == (a instanceof any)"
+              into.put(key, lct);
+            });
   }
 }

@@ -276,7 +276,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
   private static final SoyErrorKind EMPTY_MAP_ACCESS =
       SoyErrorKind.of("Accessing item in empty map.");
   private static final SoyErrorKind INVALID_TYPE_SUBSTITUTION =
-      SoyErrorKind.of("Expected expression of type ''{0}'', found ''{1}''.");
+      SoyErrorKind.of("Cannot narrow expression of type ''{0}'' to ''{1}''.");
   private static final SoyErrorKind MISSING_SOY_TYPE =
       SoyErrorKind.of("Missing Soy type for node {0}.");
   private static final SoyErrorKind NOT_PROTO_INIT =
@@ -749,7 +749,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
 
           // Visit the conditional expression to compute which types can be narrowed.
           TypeNarrowingConditionVisitor visitor = createTypeNarrowingConditionVisitor();
-          visitor.exec(icn.getExpr());
+          visitor.ifTruthy(icn.getExpr());
 
           // Save the state of substitutions from the previous if block.
           TypeSubstitutions.Checkpoint previousSubstitutionState = substitutions.checkpoint();
@@ -1137,7 +1137,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
 
         // Narrow the type of the list item based on the filter expression.
         TypeNarrowingConditionVisitor typeNarrowing = createTypeNarrowingConditionVisitor();
-        typeNarrowing.exec(node.getFilterExpr());
+        typeNarrowing.ifTruthy(node.getFilterExpr());
         substitutions.addAll(typeNarrowing.positiveTypeConstraints);
       }
 
@@ -1840,7 +1840,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
 
       // Visit the left hand side to help narrow types used on the right hand side.
       TypeNarrowingConditionVisitor visitor = createTypeNarrowingConditionVisitor();
-      visitor.visitAndImplicitlyCastToBoolean(node.getChild(0));
+      visitor.ifTruthy(node.getChild(0));
 
       // For 'and' the second child only gets evaluated if node 0 is truthy.  So apply the positive
       // assertions.
@@ -1867,7 +1867,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
 
       // Visit the left hand side to help narrow types used on the right hand side.
       TypeNarrowingConditionVisitor visitor = createTypeNarrowingConditionVisitor();
-      visitor.visitAndImplicitlyCastToBoolean(node.getChild(0));
+      visitor.ifTruthy(lhs);
 
       // For 'or' the second child only gets evaluated if node 0 is falsy.  So apply the negative
       // assertions.
@@ -1894,7 +1894,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
 
       // Visit the conditional expression to compute which types can be narrowed.
       TypeNarrowingConditionVisitor visitor = createTypeNarrowingConditionVisitor();
-      visitor.visitAndImplicitlyCastToBoolean(node.getChild(0));
+      visitor.ifTruthy(node.getChild(0));
 
       // Now, re-visit the first node but with substitutions. The reason is because
       // the value of node 0 is what will be returned if node 0 is truthy.
@@ -1924,7 +1924,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
 
       // Visit the conditional expression to compute which types can be narrowed.
       TypeNarrowingConditionVisitor visitor = createTypeNarrowingConditionVisitor();
-      visitor.visitAndImplicitlyCastToBoolean(node.getChild(0));
+      visitor.ifTruthy(node.getChild(0));
 
       // Modify the current set of type substitutions for the 'true' branch
       // of the conditional.

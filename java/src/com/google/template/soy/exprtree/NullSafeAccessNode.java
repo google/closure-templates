@@ -263,6 +263,7 @@ public final class NullSafeAccessNode extends AbstractParentExprNode {
         }
       }
       if (accessChainTail == accessChainHead) {
+        nullSafeBases.add(accessChainHead);
         break;
       }
       accessChainTail = (AccessChainComponentNode) accessChainTail.getParent();
