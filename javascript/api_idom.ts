@@ -865,37 +865,37 @@ export class FalsinessRenderer extends IncrementalDomRenderer {
 }
 
 const noArgCallConsts = {
-  openChildNodePart: (actual: IncrementalDomRenderer) => {
+  openChildNodePart: (actual: IdomRendererApi) => {
     actual.openChildNodePart();
   },
-  closeChildNodePart: (actual: IncrementalDomRenderer) => {
+  closeChildNodePart: (actual: IdomRendererApi) => {
     actual.closeChildNodePart();
   },
-  nextNodePart: (actual: IncrementalDomRenderer) => {
+  nextNodePart: (actual: IdomRendererApi) => {
     actual.nextNodePart();
   },
-  popManualKey: (actual: IncrementalDomRenderer) => {
+  popManualKey: (actual: IdomRendererApi) => {
     actual.popManualKey();
   },
-  popKey: (actual: IncrementalDomRenderer) => {
+  popKey: (actual: IdomRendererApi) => {
     actual.popKey();
   },
-  exit: (actual: IncrementalDomRenderer) => {
+  exit: (actual: IdomRendererApi) => {
     actual.exit();
   },
-  close: (actual: IncrementalDomRenderer) => {
+  close: (actual: IdomRendererApi) => {
     actual.close();
   },
-  elementClose: (actual: IncrementalDomRenderer) => {
+  elementClose: (actual: IdomRendererApi) => {
     actual.elementClose();
   },
-  applyAttrs: (actual: IncrementalDomRenderer) => {
+  applyAttrs: (actual: IdomRendererApi) => {
     actual.applyAttrs();
   },
-  skip: (actual: IncrementalDomRenderer) => {
+  skip: (actual: IdomRendererApi) => {
     actual.skip();
   },
-  skipNode: (actual: IncrementalDomRenderer) => {
+  skipNode: (actual: IdomRendererApi) => {
     actual.skipNode();
   },
 };
@@ -904,7 +904,7 @@ const noArgCallConsts = {
  * A renderer that stores all calls and can be replayed onto another renderer.
  */
 export class BufferingIncrementalDomRenderer implements IdomRendererApi {
-  private readonly buffer: Array<(actual: IncrementalDomRenderer) => void> = [];
+  private readonly buffer: Array<(actual: IdomRendererApi) => void> = [];
 
   visit(el: void | HTMLElement): void {
     this.buffer.push((actual) => {
@@ -999,8 +999,12 @@ export class BufferingIncrementalDomRenderer implements IdomRendererApi {
   }
 
   keepGoing(data: unknown, continueFn: (renderer: IdomRendererApi) => void) {
+    const innerBuffer = new BufferingIncrementalDomRenderer();
+    continueFn(innerBuffer);
     this.buffer.push((actual) => {
-      actual.keepGoing(data, continueFn);
+      actual.keepGoing(data, (innerRenderer: IdomRendererApi) => {
+        innerBuffer.replayOn(innerRenderer);
+      });
     });
   }
 
@@ -1080,6 +1084,15 @@ export class BufferingIncrementalDomRenderer implements IdomRendererApi {
     ijData: IjData,
     template: Template<unknown>,
   ) {
+    const innerBuffer = new BufferingIncrementalDomRenderer();
+    const soyElement = new elementClassCtor() as unknown as SoyElement<{}, {}>;
+    soyElement.ijData = ijData;
+    template.call(
+      soyElement,
+      // TODO(b/146498641): Update idom internals to accept IdomRendererApi.
+      innerBuffer as unknown as IncrementalDomRenderer,
+      data,
+    );
     this.buffer.push((actual) => {
       actual.handleSoyElement(
         elementClassCtor,
@@ -1087,12 +1100,14 @@ export class BufferingIncrementalDomRenderer implements IdomRendererApi {
         tagName,
         data,
         ijData,
-        template,
+        (innerRenderer: IdomRendererApi) => {
+          innerBuffer.replayOn(innerRenderer);
+        },
       );
     });
   }
 
-  replayOn(actual: IncrementalDomRenderer) {
+  replayOn(actual: IdomRendererApi) {
     this.buffer.forEach((fn) => {
       fn(actual);
     });
