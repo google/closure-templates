@@ -882,6 +882,7 @@ public final class SoyFileSet {
   public SoyTofu compileToTofu() {
     return compileToTofu(ImmutableMap.of());
   }
+
   /**
    * Compiles this Soy file set into a Java object (type {@code SoyTofu}) capable of rendering the
    * compiled templates.
