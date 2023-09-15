@@ -628,6 +628,12 @@ export class IncrementalDomRenderer implements IdomRendererApi {
 }
 
 /**
+ * Temporary alias while references to `new IncrementalDomRenderer` are updated
+ * `new IncrementalDomRendererImpl`.
+ */
+export const IncrementalDomRendererImpl = IncrementalDomRenderer;
+
+/**
  * Renderer that mutes all IDOM commands and returns void.
  */
 export class NullRenderer extends IncrementalDomRenderer {

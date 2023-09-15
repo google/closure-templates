@@ -35,6 +35,7 @@ import {
   attributes,
   FalsinessRenderer,
   IncrementalDomRenderer,
+  IncrementalDomRendererImpl,
   NullRenderer,
   patch,
   patchOuter,
@@ -52,8 +53,8 @@ import {
 // Declare properties that need to be applied not as attributes but as
 // actual DOM properties.
 
-const defaultIdomRenderer = new IncrementalDomRenderer();
-const htmlToStringRenderer = new IncrementalDomRenderer();
+const defaultIdomRenderer = new IncrementalDomRendererImpl();
+const htmlToStringRenderer = new IncrementalDomRendererImpl();
 
 const NODE_PART = '<?child-node-part?><?/child-node-part?>';
 
@@ -93,12 +94,12 @@ function upgrade<X extends {}, T extends TemplateAcceptor<X>>(
 ) {
   acceptor.prototype.init = init;
   acceptor.prototype.idomSyncFn = sync;
-  acceptor.prototype.idomRenderer = new IncrementalDomRenderer();
+  acceptor.prototype.idomRenderer = new IncrementalDomRendererImpl();
   acceptor.prototype.idomPatcher = patchOuter;
   acceptor.prototype.idomTemplate = template;
   acceptor.prototype.render = function (
     this: T,
-    renderer = new IncrementalDomRenderer(),
+    renderer = new IncrementalDomRendererImpl(),
   ) {
     const self = this as TemplateAcceptor<X>;
     patchOuter(this as unknown as HTMLElement, () => {

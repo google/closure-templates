@@ -14,7 +14,11 @@ import {IDisposable} from 'google3/third_party/javascript/closure/disposable/idi
 import {SafeHtml} from 'google3/third_party/javascript/closure/html/safehtml';
 import {SanitizedContentKind} from 'google3/third_party/javascript/closure/soy/data';
 
-import {IncrementalDomRenderer, patchOuter} from './api_idom';
+import {
+  IncrementalDomRenderer,
+  IncrementalDomRendererImpl,
+  patchOuter,
+} from './api_idom';
 import {USE_TEMPLATE_CLONING, isTaggedForSkip} from './global';
 import {IdomTemplate, IjData} from './templates';
 
@@ -108,7 +112,7 @@ export abstract class SoyElement<TData extends {} | null, TInterface extends {}>
    * @param renderer Allows injecting a subclass of IncrementalDomRenderer
    *                 to customize the behavior of patches.
    */
-  render(renderer = new IncrementalDomRenderer()) {
+  render(renderer = new IncrementalDomRendererImpl()) {
     assert(this.node);
     if (this.loggerPrivate && !renderer.getLogger()) {
       renderer.setLogger(this.loggerPrivate);
