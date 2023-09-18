@@ -30,14 +30,21 @@ public final class SoyIncrementalDomSrcOptions {
 
   private boolean googMsgsAreExternal;
 
+  private boolean generateMaybeRequireForControllerAndModelXids; // MOE: strip_line
+
   public SoyIncrementalDomSrcOptions() {
     dependOnCssHeader = false;
     googMsgsAreExternal = true;
+    generateMaybeRequireForControllerAndModelXids = false; // MOE: strip_line
   }
 
   private SoyIncrementalDomSrcOptions(SoyIncrementalDomSrcOptions orig) {
     this.dependOnCssHeader = orig.dependOnCssHeader;
     this.googMsgsAreExternal = orig.googMsgsAreExternal;
+    // MOE: begin_strip
+    this.generateMaybeRequireForControllerAndModelXids =
+        orig.generateMaybeRequireForControllerAndModelXids;
+    // MOE: end_strip
   }
 
   /**
@@ -53,6 +60,19 @@ public final class SoyIncrementalDomSrcOptions {
   public boolean dependOnCssHeader() {
     return dependOnCssHeader;
   }
+
+  // MOE: begin_strip
+  public void setGenerateMaybeRequireForControllerAndModelXids(
+      boolean generateMaybeRequireForControllerAndModelXids) {
+    this.generateMaybeRequireForControllerAndModelXids =
+        generateMaybeRequireForControllerAndModelXids;
+  }
+
+  public boolean generateMaybeRequireForControllerAndModelXids() {
+    return generateMaybeRequireForControllerAndModelXids;
+  }
+
+  // MOE: end_strip
 
   /**
    * Sets whether we should add a requirecss annotation for the generated GSS header file.

@@ -54,6 +54,7 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprNode;
+import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
@@ -377,6 +378,16 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
                 .asStatement());
       }
     }
+
+    // MOE: begin_strip
+    if (jsSrcOptions.generateMaybeRequireForControllerAndModelXids()) {
+      SoyTreeUtils.allNodesOfType(node, StringNode.class)
+          .filter(StringNode::isXid)
+          .map(StringNode::getValue)
+          .map(GoogRequire::createMaybeRequire)
+          .forEach(jsCodeBuilder::addGoogRequire);
+    }
+    // MOE: end_strip
 
     // TODO(lukes): reserve all the namespace prefixes that are in scope
     // TODO(lukes): use this for all local variable declarations

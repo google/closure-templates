@@ -57,6 +57,8 @@ public final class SoyJsSrcOptions implements Cloneable {
    */
   private boolean useGoogIsRtlForBidiGlobalDir;
 
+  private boolean generateMaybeRequireForControllerAndModelXids; // MOE: strip_line
+
   public SoyJsSrcOptions() {
     depsStrategy = JsDepsStrategy.NAMESPACES;
 
@@ -65,6 +67,7 @@ public final class SoyJsSrcOptions implements Cloneable {
     googMsgsAreExternal = false;
     bidiGlobalDir = 0;
     useGoogIsRtlForBidiGlobalDir = false;
+    generateMaybeRequireForControllerAndModelXids = false; // MOE: strip_line
   }
 
   private SoyJsSrcOptions(SoyJsSrcOptions orig) {
@@ -74,6 +77,10 @@ public final class SoyJsSrcOptions implements Cloneable {
     this.googMsgsAreExternal = orig.googMsgsAreExternal;
     this.bidiGlobalDir = orig.bidiGlobalDir;
     this.useGoogIsRtlForBidiGlobalDir = orig.useGoogIsRtlForBidiGlobalDir;
+    // MOE: begin_strip
+    this.generateMaybeRequireForControllerAndModelXids =
+        orig.generateMaybeRequireForControllerAndModelXids;
+    // MOE: end_strip
   }
 
   /**
@@ -121,6 +128,19 @@ public final class SoyJsSrcOptions implements Cloneable {
   public boolean shouldGenerateGoogMsgDefs() {
     return shouldGenerateGoogMsgDefs;
   }
+
+  // MOE: begin_strip
+  public void setGenerateMaybeRequireForControllerAndModelXids(
+      boolean generateMaybeRequireForControllerAndModelXids) {
+    this.generateMaybeRequireForControllerAndModelXids =
+        generateMaybeRequireForControllerAndModelXids;
+  }
+
+  public boolean generateMaybeRequireForControllerAndModelXids() {
+    return generateMaybeRequireForControllerAndModelXids;
+  }
+
+  // MOE: end_strip
 
   /**
    * Sets whether we should add a requirecss annotation for the generated CSS header file.

@@ -35,6 +35,8 @@ public abstract class GoogRequire implements Comparable<GoogRequire> {
 
   private static final Expression GOOG_REQUIRE = dottedIdNoRequire("goog.require");
   private static final Expression GOOG_REQUIRE_TYPE = dottedIdNoRequire("goog.requireType");
+  private static final Expression GOOG_MAYBE_REQUIRE =
+      dottedIdNoRequire("goog.maybeRequireFrameworkInternalOnlyDoNotCallOrElse");
 
   /**
    * Creates a new {@code GoogRequire} that requires the given symbol: {@code
@@ -42,7 +44,11 @@ public abstract class GoogRequire implements Comparable<GoogRequire> {
    */
   public static GoogRequire create(String symbol) {
     return new AutoValue_GoogRequire(
-        symbol, symbol, GOOG_REQUIRE.call(stringLiteral(symbol)), /* isTypeRequire= */ false);
+        symbol,
+        symbol,
+        GOOG_REQUIRE.call(stringLiteral(symbol)),
+        /* isTypeRequire= */ false,
+        /* isMaybeRequire= */ false);
   }
 
   /**
@@ -51,7 +57,11 @@ public abstract class GoogRequire implements Comparable<GoogRequire> {
    */
   public static GoogRequire createTypeRequire(String symbol) {
     return new AutoValue_GoogRequire(
-        symbol, symbol, GOOG_REQUIRE_TYPE.call(stringLiteral(symbol)), /* isTypeRequire= */ true);
+        symbol,
+        symbol,
+        GOOG_REQUIRE_TYPE.call(stringLiteral(symbol)),
+        /* isTypeRequire= */ true,
+        /* isMaybeRequire= */ false);
   }
 
   /**
@@ -64,7 +74,8 @@ public abstract class GoogRequire implements Comparable<GoogRequire> {
         symbol,
         alias,
         VariableDeclaration.builder(alias).setRhs(GOOG_REQUIRE.call(stringLiteral(symbol))).build(),
-        /* isTypeRequire= */ false);
+        /* isTypeRequire= */ false,
+        /* isMaybeRequire= */ false);
   }
 
   /**
@@ -79,7 +90,17 @@ public abstract class GoogRequire implements Comparable<GoogRequire> {
         VariableDeclaration.builder(alias)
             .setRhs(GOOG_REQUIRE_TYPE.call(stringLiteral(symbol)))
             .build(),
-        /* isTypeRequire= */ true);
+        /* isTypeRequire= */ true,
+        /* isMaybeRequire= */ false);
+  }
+
+  public static GoogRequire createMaybeRequire(String symbol) {
+    return new AutoValue_GoogRequire(
+        symbol,
+        symbol,
+        GOOG_MAYBE_REQUIRE.call(stringLiteral(symbol)),
+        /* isTypeRequire= */ false,
+        /* isMaybeRequire= */ true);
   }
 
   public static GoogRequire createImport(String symbol, String path) {
@@ -88,7 +109,11 @@ public abstract class GoogRequire implements Comparable<GoogRequire> {
 
   public static GoogRequire createImport(String symbol, String alias, String path) {
     return new AutoValue_GoogRequire(
-        symbol, alias, Import.symbolImport(symbol, alias, path), /* isTypeRequire= */ false);
+        symbol,
+        alias,
+        Import.symbolImport(symbol, alias, path),
+        /* isTypeRequire= */ false,
+        /* isMaybeRequire= */ false);
   }
 
   /** The symbol to require. */
@@ -105,8 +130,11 @@ public abstract class GoogRequire implements Comparable<GoogRequire> {
     if (isTypeRequire()) {
       return this;
     }
-    return new AutoValue_GoogRequire(symbol(), alias(), chunk(), /* isTypeRequire= */ true);
+    return new AutoValue_GoogRequire(
+        symbol(), alias(), chunk(), /* isTypeRequire= */ true, /* isMaybeRequire= */ false);
   }
+
+  abstract boolean isMaybeRequire();
 
   /** Returns a code chunk that can act as a reference to the required symbol. */
   public Expression reference() {
