@@ -98,12 +98,13 @@ export const createWithDomParts = wrapAsGeneric(
   {inTemplateCloning: true, onlyOperateInNodeParts: true, ...patchConfig},
 );
 
-interface IdomRendererApi {
+/** Interface for idom renderers. */
+export interface IncrementalDomRenderer {
   open(nameOrCtor: string, key?: string): void;
   openSimple(nameOrCtor: string, key?: string): void;
   keepGoing(
     data: unknown,
-    continueFn: (renderer: IdomRendererApi) => void,
+    continueFn: (renderer: IncrementalDomRenderer) => void,
   ): void;
   visit(el: void | HTMLElement): void;
   pushManualKey(key: incrementaldom.Key): void;
@@ -125,8 +126,8 @@ interface IdomRendererApi {
   applyStatics(statics: incrementaldom.Statics): void;
   enter(veData: $$VisualElementData, logOnly: boolean): void;
   exit(): void;
-  toNullRenderer(): IdomRendererApi;
-  toDefaultRenderer(): IdomRendererApi;
+  toNullRenderer(): IncrementalDomRenderer;
+  toDefaultRenderer(): IncrementalDomRenderer;
   setLogger(logger: Logger | null): void;
   getLogger(): Logger | null;
   verifyLogOnly(logOnly: boolean): boolean;
@@ -159,7 +160,7 @@ interface IdomRendererApi {
  * eventually take in a logger and conditionally mute. These methods may
  * return void when idom commands are muted for velogging.
  */
-export class IncrementalDomRenderer implements IdomRendererApi {
+export class IncrementalDomRendererImpl implements IncrementalDomRenderer {
   // Stack (holder) of key stacks for the current template being rendered, which
   // has context on where the template was called from and is used to
   // key each template call (see go/soy-idom-diffing-semantics).
@@ -208,7 +209,10 @@ export class IncrementalDomRenderer implements IdomRendererApi {
     return incrementaldom.nextNodePart();
   }
 
-  keepGoing(data: unknown, continueFn: (renderer: IdomRendererApi) => void) {
+  keepGoing(
+    data: unknown,
+    continueFn: (renderer: IncrementalDomRenderer) => void,
+  ) {
     const el = this.currentElement() as HTMLElement;
     // `data` is only passed by {skip} elements that are roots of templates.
     if (!COMPILED && goog.DEBUG && el && data) {
@@ -489,12 +493,12 @@ export class IncrementalDomRenderer implements IdomRendererApi {
    * Switches runtime to produce incremental dom calls that do not traverse
    * the DOM. This happens when logOnly in a velogging node is set to true.
    */
-  toNullRenderer(): IdomRendererApi {
+  toNullRenderer(): IncrementalDomRenderer {
     const nullRenderer = new NullRenderer(this);
     return nullRenderer;
   }
 
-  toDefaultRenderer(): IdomRendererApi {
+  toDefaultRenderer(): IncrementalDomRenderer {
     throw new Error(
       'Cannot transition a default renderer to a default renderer',
     );
@@ -628,16 +632,10 @@ export class IncrementalDomRenderer implements IdomRendererApi {
 }
 
 /**
- * Temporary alias while references to `new IncrementalDomRenderer` are updated
- * `new IncrementalDomRendererImpl`.
- */
-export const IncrementalDomRendererImpl = IncrementalDomRenderer;
-
-/**
  * Renderer that mutes all IDOM commands and returns void.
  */
-export class NullRenderer extends IncrementalDomRenderer {
-  constructor(private readonly renderer: IdomRendererApi) {
+export class NullRenderer extends IncrementalDomRendererImpl {
+  constructor(private readonly renderer: IncrementalDomRenderer) {
     super();
     this.setLogger(renderer.getLogger());
   }
@@ -652,7 +650,7 @@ export class NullRenderer extends IncrementalDomRenderer {
 
   override keepGoing(
     data: unknown,
-    continueFn: (renderer: IdomRendererApi) => void,
+    continueFn: (renderer: IncrementalDomRenderer) => void,
   ) {}
 
   override close() {}
@@ -759,7 +757,7 @@ ${el.dataset['debugSoy'] || truncate(el.outerHTML, 256)}`);
  * but never actually does anything  This is used to check whether an HTML value
  * is empty (if it's used in an `{if}` or conditional operator).
  */
-export class FalsinessRenderer extends IncrementalDomRenderer {
+export class FalsinessRenderer extends IncrementalDomRendererImpl {
   override visit(el: void | HTMLElement): void {}
   override pushManualKey(key: incrementaldom.Key) {}
   override openChildNodePart() {}
@@ -809,7 +807,7 @@ export class FalsinessRenderer extends IncrementalDomRenderer {
 
   override keepGoing(
     data: unknown,
-    continueFn: (renderer: IdomRendererApi) => void,
+    continueFn: (renderer: IncrementalDomRenderer) => void,
   ) {}
 
   override close() {
@@ -871,37 +869,37 @@ export class FalsinessRenderer extends IncrementalDomRenderer {
 }
 
 const noArgCallConsts = {
-  openChildNodePart: (actual: IdomRendererApi) => {
+  openChildNodePart: (actual: IncrementalDomRenderer) => {
     actual.openChildNodePart();
   },
-  closeChildNodePart: (actual: IdomRendererApi) => {
+  closeChildNodePart: (actual: IncrementalDomRenderer) => {
     actual.closeChildNodePart();
   },
-  nextNodePart: (actual: IdomRendererApi) => {
+  nextNodePart: (actual: IncrementalDomRenderer) => {
     actual.nextNodePart();
   },
-  popManualKey: (actual: IdomRendererApi) => {
+  popManualKey: (actual: IncrementalDomRenderer) => {
     actual.popManualKey();
   },
-  popKey: (actual: IdomRendererApi) => {
+  popKey: (actual: IncrementalDomRenderer) => {
     actual.popKey();
   },
-  exit: (actual: IdomRendererApi) => {
+  exit: (actual: IncrementalDomRenderer) => {
     actual.exit();
   },
-  close: (actual: IdomRendererApi) => {
+  close: (actual: IncrementalDomRenderer) => {
     actual.close();
   },
-  elementClose: (actual: IdomRendererApi) => {
+  elementClose: (actual: IncrementalDomRenderer) => {
     actual.elementClose();
   },
-  applyAttrs: (actual: IdomRendererApi) => {
+  applyAttrs: (actual: IncrementalDomRenderer) => {
     actual.applyAttrs();
   },
-  skip: (actual: IdomRendererApi) => {
+  skip: (actual: IncrementalDomRenderer) => {
     actual.skip();
   },
-  skipNode: (actual: IdomRendererApi) => {
+  skipNode: (actual: IncrementalDomRenderer) => {
     actual.skipNode();
   },
 };
@@ -909,8 +907,8 @@ const noArgCallConsts = {
 /**
  * A renderer that stores all calls and can be replayed onto another renderer.
  */
-export class BufferingIncrementalDomRenderer implements IdomRendererApi {
-  private readonly buffer: Array<(actual: IdomRendererApi) => void> = [];
+export class BufferingIncrementalDomRenderer implements IncrementalDomRenderer {
+  private readonly buffer: Array<(actual: IncrementalDomRenderer) => void> = [];
 
   visit(el: void | HTMLElement): void {
     this.buffer.push((actual) => {
@@ -950,10 +948,10 @@ export class BufferingIncrementalDomRenderer implements IdomRendererApi {
   exit(): void {
     this.buffer.push(noArgCallConsts.exit);
   }
-  toNullRenderer(): IdomRendererApi {
+  toNullRenderer(): IncrementalDomRenderer {
     return new NullRenderer(this);
   }
-  toDefaultRenderer(): IdomRendererApi {
+  toDefaultRenderer(): IncrementalDomRenderer {
     throw new Error(
       'Cannot transition a buffered renderer to a default renderer',
     );
@@ -1004,11 +1002,14 @@ export class BufferingIncrementalDomRenderer implements IdomRendererApi {
     });
   }
 
-  keepGoing(data: unknown, continueFn: (renderer: IdomRendererApi) => void) {
+  keepGoing(
+    data: unknown,
+    continueFn: (renderer: IncrementalDomRenderer) => void,
+  ) {
     const innerBuffer = new BufferingIncrementalDomRenderer();
     continueFn(innerBuffer);
     this.buffer.push((actual) => {
-      actual.keepGoing(data, (innerRenderer: IdomRendererApi) => {
+      actual.keepGoing(data, (innerRenderer: IncrementalDomRenderer) => {
         innerBuffer.replayOn(innerRenderer);
       });
     });
@@ -1093,12 +1094,7 @@ export class BufferingIncrementalDomRenderer implements IdomRendererApi {
     const innerBuffer = new BufferingIncrementalDomRenderer();
     const soyElement = new elementClassCtor() as unknown as SoyElement<{}, {}>;
     soyElement.ijData = ijData;
-    template.call(
-      soyElement,
-      // TODO(b/146498641): Update idom internals to accept IdomRendererApi.
-      innerBuffer as unknown as IncrementalDomRenderer,
-      data,
-    );
+    template.call(soyElement, innerBuffer, data);
     this.buffer.push((actual) => {
       actual.handleSoyElement(
         elementClassCtor,
@@ -1106,14 +1102,14 @@ export class BufferingIncrementalDomRenderer implements IdomRendererApi {
         tagName,
         data,
         ijData,
-        (innerRenderer: IdomRendererApi) => {
+        (innerRenderer: IncrementalDomRenderer) => {
           innerBuffer.replayOn(innerRenderer);
         },
       );
     });
   }
 
-  replayOn(actual: IdomRendererApi) {
+  replayOn(actual: IncrementalDomRenderer) {
     this.buffer.forEach((fn) => {
       fn(actual);
     });
