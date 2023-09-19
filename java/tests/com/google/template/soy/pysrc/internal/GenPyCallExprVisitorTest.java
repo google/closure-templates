@@ -33,7 +33,7 @@ public final class GenPyCallExprVisitorTest {
           + "{template goo}\n"
           + "  {@param? goo: string}\n"
           + "  {@param? moo: string}\n"
-          + "  {$moo ?: 'Hello'} {$goo}\n"
+          + "  {$moo ?? 'Hello'} {$goo}\n"
           + "{/template}\n"
           + "{template moo}\n"
           + "  %s\n"

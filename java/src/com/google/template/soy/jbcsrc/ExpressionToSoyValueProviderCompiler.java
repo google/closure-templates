@@ -189,7 +189,7 @@ final class ExpressionToSoyValueProviderCompiler {
 
     @Override
     protected Optional<Expression> visitNullCoalescingOpNode(NullCoalescingOpNode node) {
-      // All non-trivial ?: will require detaches for the left hand side.
+      // All non-trivial ?? will require detaches for the left hand side.
       if (allowsDetaches()) {
         Optional<Expression> maybeLeft = visit(node.getLeftChild());
         Optional<Expression> maybeRight = visit(node.getRightChild());

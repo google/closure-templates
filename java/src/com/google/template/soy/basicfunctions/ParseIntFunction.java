@@ -45,7 +45,7 @@ import java.util.List;
  * <p>Ex: <code>
  *   {parseInt('10') + 20}  // evaluates to 30
  *   {parseInt('10',2) + 20}  // evaluates to 22
- *   {parseInt('garbage') ?: -1}  // evaluates to -1
+ *   {parseInt('garbage') ?? -1}  // evaluates to -1
  * </code>
  */
 @SoyPureFunction

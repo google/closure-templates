@@ -759,7 +759,7 @@ public class BytecodeCompilerTest {
         .rendersAs("3", ImmutableMap.of(), ImmutableMap.of("foo", 2))
         .rendersAs("4", ImmutableMap.of(), ImmutableMap.of("foo", 3));
 
-    assertThatTemplateBody("{@inject foo: ?}", "{let $bar: $foo ?: 'abc' /}", "{$bar}")
+    assertThatTemplateBody("{@inject foo: ?}", "{let $bar: $foo ?? 'abc' /}", "{$bar}")
         .rendersAs("abc", ImmutableMap.of(), ImmutableMap.of())
         .rendersAs("abc", ImmutableMap.of(), ImmutableMap.of("foo", NullData.INSTANCE))
         .rendersAs("abc", ImmutableMap.of(), ImmutableMap.of("foo", UndefinedData.INSTANCE))
@@ -790,7 +790,7 @@ public class BytecodeCompilerTest {
   @Test
   public void testParamValidation() throws Exception {
     CompiledTemplates templates =
-        TemplateTester.compileTemplateBody("{@param foo : int}", "{$foo ?: -1}");
+        TemplateTester.compileTemplateBody("{@param foo : int}", "{$foo ?? -1}");
     CompiledTemplate singleParam = templates.getTemplate("ns.foo");
     RenderContext context = getDefaultContext(templates);
     BufferingAppendable builder = LoggingAdvisingAppendable.buffering();
@@ -834,7 +834,7 @@ public class BytecodeCompilerTest {
             "{namespace ns}",
             "{template foo}",
             "  {@param? content : string}",
-            "  {$content ?: 'empty'}",
+            "  {$content ?? 'empty'}",
             "{/template}");
     subject.rendersAs("empty");
     subject.rendersAs("full", ImmutableMap.of("content", "full"));

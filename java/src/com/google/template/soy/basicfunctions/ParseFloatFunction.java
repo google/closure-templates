@@ -42,7 +42,7 @@ import java.util.List;
  *
  * <p>Ex: <code>
  *   {parseFloat('9.1') + 1}  // evaluates to 10.1
- *   {parseFloat('garbage') ?: 1.0}  // evaluates to 1.0
+ *   {parseFloat('garbage') ?? 1.0}  // evaluates to 1.0
  * </code>
  */
 @SoyPureFunction

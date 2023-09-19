@@ -287,7 +287,7 @@ public final class VeLoggingTest {
         "    <div>hello</div>",
         "  {/velog}",
         "{/let}",
-        "{$log ?: ''}");
+        "{$log ?? ''}");
     assertThat(testLogger.builder.toString()).isEqualTo("velog{id=1}");
     assertThat(sb.toString()).isEqualTo("<div>hello</div>");
   }

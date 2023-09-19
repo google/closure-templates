@@ -142,7 +142,7 @@ public class LazyClosureCompilerTest {
     CompiledTemplateSubject tester =
         assertThatTemplateBody(
             "{@param? param : bool}",
-            "{let $paramWithDefault : $param ?: true /}",
+            "{let $paramWithDefault : $param ?? true /}",
             "{$paramWithDefault ? 'true' : 'false'}");
     tester.rendersAs("true", ImmutableMap.of());
     tester.rendersAs("true", ImmutableMap.<String, Object>of("param", true));
@@ -155,7 +155,7 @@ public class LazyClosureCompilerTest {
         assertThatTemplateBody(
             "{@param? param : string}",
             "{@param? param2 : string}",
-            "{let $paramWithDefault : $param ?: $param2 /}",
+            "{let $paramWithDefault : $param ?? $param2 /}",
             "{$paramWithDefault}");
     tester.rendersAs("null", ImmutableMap.of());
     tester.rendersAs("1", ImmutableMap.<String, Object>of("param", "1"));

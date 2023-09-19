@@ -370,18 +370,18 @@ public class ExpressionCompilerTest {
 
   @Test
   public void testNullCoalescingOpNode() {
-    assertExpression("1 ?: 2").evaluatesTo(1L);
+    assertExpression("1 ?? 2").evaluatesTo(1L);
     // force the type checker to interpret the left hand side as a nullable string, the literal null
     // is rejected by the type checker.
-    assertExpression("(true ? null : 'a') ?: 2").evaluatesTo(IntegerData.forValue(2));
-    assertExpression("(true ? null : 'a') ?: 'b'").evaluatesTo(StringData.forValue("b"));
-    assertExpression("(false ? null : 'a') ?: 'b'").evaluatesTo(StringData.forValue("a"));
+    assertExpression("(true ? null : 'a') ?? 2").evaluatesTo(IntegerData.forValue(2));
+    assertExpression("(true ? null : 'a') ?? 'b'").evaluatesTo(StringData.forValue("b"));
+    assertExpression("(false ? null : 'a') ?? 'b'").evaluatesTo(StringData.forValue("a"));
 
     variables.put(
         "p1",
         untypedBoxedSoyExpression(SoyExpression.forSoyValue(StringType.getInstance(), soyNull())));
     variables.put("p2", SoyExpression.forString(constant("a")).box());
-    assertExpression("$p1 ?: $p2").evaluatesTo(StringData.forValue("a"));
+    assertExpression("$p1 ?? $p2").evaluatesTo(StringData.forValue("a"));
 
     SoyType htmlType = SanitizedType.getTypeForContentKind(SanitizedContentKind.HTML);
     variables.put(
@@ -390,9 +390,9 @@ public class ExpressionCompilerTest {
             htmlType,
             MethodRef.ORDAIN_AS_SAFE.invoke(constant("<b>hello</b>"), constant(ContentKind.HTML))));
     variables.put("p2", SoyExpression.forString(constant("")).box());
-    assertExpression("$p1 ?: $p2").evaluatesTo(SanitizedContents.constantHtml("<b>hello</b>"));
+    assertExpression("$p1 ?? $p2").evaluatesTo(SanitizedContents.constantHtml("<b>hello</b>"));
     variables.put("p1", SoyExpression.forSoyValue(htmlType, soyNull()).asJavaNullable());
-    assertExpression("$p1 ?: $p2").evaluatesTo(StringData.forValue(""));
+    assertExpression("$p1 ?? $p2").evaluatesTo(StringData.forValue(""));
   }
 
   // null coalescing op expression have had a number of bugs due to the advanced unboxing
@@ -400,7 +400,7 @@ public class ExpressionCompilerTest {
   @Test
   public void testNullCoalescingOpNode_advanced() {
     CompiledTemplateSubject tester =
-        assertThatTemplateBody("{@param v : list<string>}", "{$v[0] ?: $v[1] }");
+        assertThatTemplateBody("{@param v : list<string>}", "{$v[0] ?? $v[1] }");
     tester.rendersAs("null", ImmutableMap.<String, Object>of("v", Arrays.asList()));
     tester.rendersAs("b", ImmutableMap.<String, Object>of("v", Arrays.asList(null, "b")));
     tester.rendersAs("a", ImmutableMap.<String, Object>of("v", Arrays.asList("a", "b")));

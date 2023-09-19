@@ -284,7 +284,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
   private static final SoyErrorKind OR_OPERATOR_HAS_CONSTANT_OPERAND =
       SoyErrorKind.of(
           "Constant operand ''{0}'' used with ''or'' operator. "
-              + "Consider simplifying or using the ?: operator, see "
+              + "Consider simplifying or using the ?? operator, see "
               + "go/soy/reference/expressions.md#logical-operators",
           StyleAllowance.NO_PUNCTUATION);
   private static final SoyErrorKind UNDEFINED_FIELD_FOR_RECORD_TYPE =
@@ -1318,7 +1318,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
         errorReporter.report(nullSafeAccessNode.getSourceLocation(), UNNECESSARY_NULL_SAFE_ACCESS);
       }
 
-      // Rebuild the normalized DataAcceessNode chain so that the type substitutions can be applied.
+      // Rebuild the normalized DataAccessNode chain so that the type substitutions can be applied.
       ExprNode nsBaseExpr = nullSafeAccessNode.asMergedBase();
       SoyType maybeSubstitutedType = substitutions.getTypeSubstitution(nsBaseExpr);
       SoyType baseType =
@@ -1396,7 +1396,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
             nsBaseExpr, baseType, (DataAccessNode) dataAccess.getBaseExprChild());
         nullSafe = false;
 
-        // Rebuild the normalized DataAcceessNode chain by combining this section of the base access
+        // Rebuild the normalized DataAccessNode chain by combining this section of the base access
         // with the merged bases of parent NullSafeAccessNodes.
         SoyType maybeSubstitutedType =
             substitutions.getTypeSubstitution(

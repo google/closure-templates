@@ -92,13 +92,13 @@ public final class ProtoSupportTest {
 
   @Test
   public void testSimpleProto_nullCoalescing() {
-    assertThatTemplateBody("{@param? proto : KvPair}", "{$proto?.getValueOrUndefined() ?: 'bar'}")
+    assertThatTemplateBody("{@param? proto : KvPair}", "{$proto?.getValueOrUndefined() ?? 'bar'}")
         .rendersAs("bar");
 
     CompiledTemplateSubject tester =
         assertThatTemplateBody(
             "{@param proto : ProtoMap}",
-            "{$proto.getMapMessageFieldMap()?.get(2390)?.getFieldOrUndefined() ?: 'bar'}");
+            "{$proto.getMapMessageFieldMap()?.get(2390)?.getFieldOrUndefined() ?? 'bar'}");
     tester.rendersAs(
         "4837",
         ImmutableMap.of(
@@ -115,7 +115,7 @@ public final class ProtoSupportTest {
     assertThatTemplateBody(
             "{@param? proto : KvPair}",
             "{@param? proto2 : KvPair}",
-            "{$proto?.getValueOrUndefined() ?: $proto2?.getValueOrUndefined()}")
+            "{$proto?.getValueOrUndefined() ?? $proto2?.getValueOrUndefined()}")
         .rendersAs("null");
   }
 

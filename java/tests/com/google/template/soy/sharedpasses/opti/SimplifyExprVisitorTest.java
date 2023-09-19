@@ -412,9 +412,9 @@ public final class SimplifyExprVisitorTest {
 
   @Test
   public void testSimplifyNullSafeOp() {
-    assertThat(new ExpressionParser("null ?: 'aaa'").parseForParentNode()).simplifiesTo("aaa");
-    assertThat(new ExpressionParser("2 ?: 'aaa'").parseForParentNode()).simplifiesTo("2");
-    assertThat(new ExpressionParser("[null] ?: 'aaa'").parseForParentNode()).simplifiesTo("[null]");
+    assertThat(new ExpressionParser("null ?? 'aaa'").parseForParentNode()).simplifiesTo("aaa");
+    assertThat(new ExpressionParser("2 ?? 'aaa'").parseForParentNode()).simplifiesTo("2");
+    assertThat(new ExpressionParser("[null] ?? 'aaa'").parseForParentNode()).simplifiesTo("[null]");
   }
 
   @Test

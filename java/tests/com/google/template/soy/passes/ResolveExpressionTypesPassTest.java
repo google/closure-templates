@@ -339,17 +339,17 @@ public final class ResolveExpressionTypesPassTest {
         "{@param pi: int}",
         "{@param pf: float}",
         "{@param? ni: int}",
-        "{assertType('?', $pa ?: $pi)}",
-        "{assertType('float|int', $pi ?: $pf)}",
+        "{assertType('?', $pa ?? $pi)}",
+        "{assertType('float|int', $pi ?? $pf)}",
         "{assertType('float|int', $pa ? $pi : $pf)}",
-        "{assertType('int', $ni ?: 0)}");
+        "{assertType('int', $ni ?? 0)}");
   }
 
   @Test
   public void testNullCoalescingAndConditionalOps_complexCondition() {
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(
-                constructFileSource("{@param? l: [a :int]}", "{assertType('int', $l?.a ?: 0)}"))
+                constructFileSource("{@param? l: [a :int]}", "{assertType('int', $l?.a ?? 0)}"))
             .typeRegistry(TYPE_REGISTRY)
             .addSoyFunction(ASSERT_TYPE_FUNCTION)
             .parse()
@@ -768,7 +768,7 @@ public final class ResolveExpressionTypesPassTest {
         "{else}",
         "  {assertType('bool|null', $pa)}", // #1 don't know
         "{/if}",
-        "{if $pa ?: $pb}",
+        "{if $pa ?? $pb}",
         "  {assertType('bool|null', $pa)}", // #2 don't know
         "{/if}",
         "{if $pb ? $pa : false}",
@@ -817,8 +817,8 @@ public final class ResolveExpressionTypesPassTest {
         "{@param pb: bool}",
         "{@param pc: [a : int|null]}",
         "{assertType('bool', $pa ? $pa : $pb)}", // #0 must be non-null
-        "{assertType('bool', $pa != null ?: $pb)}", // #1 must be non-null
-        "{assertType('bool', $pa ?: $pb)}", // #2 must be non-null (re-written to ($pa != null ? $pa
+        "{assertType('bool', $pa != null ?? $pb)}", // #1 must be non-null
+        "{assertType('bool', $pa ?? $pb)}", // #2 must be non-null (re-written to ($pa != null ? $pa
         // : $pb))
         "{assertType('int', $pc.a ? $pc.a : 0)}",
         "{if not $pc.a}{assertType('int|null', $pc.a)}{/if}");
@@ -992,7 +992,7 @@ public final class ResolveExpressionTypesPassTest {
         "{assertType('int|null', $i != null ? $i! : null)}",
         "{assertType('string', $r.a.b.c!)}",
         "{assertType('[c: null|string]', $r.a.b!)}",
-        "{assertType('int', $i ?: $n!)}",
+        "{assertType('int', $i ?? $n!)}",
         "{assertType('int', ($b ? $i : $n)!)}",
         "{assertType('int|null', $b ? $i : $n!)}",
         "{assertType('[c: null|string]|null', $r!.a?.b)}",
@@ -1016,7 +1016,7 @@ public final class ResolveExpressionTypesPassTest {
                         "{template aaa}",
                         "  {@param? nullableString: string}",
                         "",
-                        "  {assertType('string', returnsNullable() ?: '')}",
+                        "  {assertType('string', returnsNullable() ?? '')}",
                         "{/template}"))
             .addSoyFunction(ASSERT_TYPE_FUNCTION)
             .parse()

@@ -386,8 +386,8 @@ public class EvalVisitorTest {
 
   @Test
   public void testEvalNullCoalescingOperator() throws Exception {
-    assertEval("true ?: $undefinedName", true); // short-circuit evaluation
-    assertEval("$f ?: 0.0 ?: ''", false);
+    assertEval("true ?? $undefinedName", true); // short-circuit evaluation
+    assertEval("$f ?? 0.0 ?? ''", false);
   }
 
   @Test

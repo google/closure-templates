@@ -44,7 +44,7 @@ public final class PreevalVisitorTest {
 
     assertThat(preeval("-99+-111").integerValue()).isEqualTo(-210);
     assertThat(preeval("-99 + '-111'").stringValue()).isEqualTo("-99-111");
-    assertThat(preeval("false ?: 0 ?: 0.0 ?: ''").booleanValue()).isFalse();
+    assertThat(preeval("false ?? 0 ?? 0.0 ?? ''").booleanValue()).isFalse();
     assertThat(preeval("0 <= 0").booleanValue()).isTrue();
     assertThat(preeval("'22' == 22").booleanValue()).isTrue();
     assertThat(preeval("'22' == '' + 22").booleanValue()).isTrue();

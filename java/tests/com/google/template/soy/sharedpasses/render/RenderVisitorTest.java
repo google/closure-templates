@@ -403,7 +403,7 @@ public class RenderVisitorTest {
             + "  {$boo} {$foo.bar}{sp}\n"
             + "  {$ijStr}\n"
             + "  {$goo[5] + 1}{sp}\n"
-            + "  {$f ?: ''} {$undefined ?: -1}{sp}\n"
+            + "  {$f ?? ''} {$undefined ?? -1}{sp}\n"
             + "  {' blah aablahblahblah' |insertWordBreaks:8}{sp}\n"
             + "  {$toStringTestValue}\n";
 
@@ -716,7 +716,7 @@ public class RenderVisitorTest {
             + "{@inject ijBool: ?}\n"
             + "  {if $boo}{$boo}{/if}\n"
             + "  {if ''}-{else}+{/if}\n"
-            + "  {if $f ?: 0.0}\n"
+            + "  {if $f ?? 0.0}\n"
             + "    Blah\n"
             + "  {elseif $goo[2] > 2 and $ijBool}\n"
             + "    {$moo}\n"

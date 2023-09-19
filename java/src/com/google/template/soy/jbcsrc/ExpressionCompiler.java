@@ -1014,12 +1014,12 @@ final class ExpressionCompiler {
     protected SoyExpression visitNullCoalescingOpNode(NullCoalescingOpNode node) {
       SoyExpression left = visit(node.getLeftChild());
       if (left.isNonSoyNullish()) {
-        // This would be for when someone writes '1 ?: 2', we just compile that to '1'
+        // This would be for when someone writes '1 ?? 2', we just compile that to '1'
         // This case is insane and should potentially be a compiler error, for now we just assume
         // it is dead code.
         return left;
       }
-      // It is extremely common for a user to write '<complex-expression> ?: <primitive-expression>
+      // It is extremely common for a user to write '<complex-expression> ?? <primitive-expression>
       // so try to generate code that doesn't involve unconditionally boxing the right hand side.
       SoyExpression right = visit(node.getRightChild());
       if (left.resultType().equals(right.resultType())) {

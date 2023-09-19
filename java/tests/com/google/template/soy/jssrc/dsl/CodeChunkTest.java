@@ -599,7 +599,7 @@ public final class CodeChunkTest {
   public void testAssociativity_ternary() {
     Expression leaf = ifExpression(id("a"), id("b")).setElse(id("c")).build(cg);
     Expression branch = ifExpression(leaf, id("d")).setElse(id("e")).build(cg);
-    // ?: is right-associative, so requires parens when appearing as the left operand...
+    // ternary is right-associative, so requires parens when appearing as the left operand...
     assertThat(branch.getCode(JSSRC)).isEqualTo("(a ? b : c) ? d : e;");
 
     leaf = ifExpression(id("c"), id("d")).setElse(id("e")).build(cg);

@@ -118,7 +118,7 @@ public class TranslateToPyExprVisitorTest {
 
   @Test
   public void testNullCoalescingOperator() {
-    assertThatSoyExpr("$boo ?: 5")
+    assertThatSoyExpr("$boo ?? 5")
         .translatesTo(
             "data.get('boo') if data.get('boo') is not None else 5", Operator.CONDITIONAL);
   }
