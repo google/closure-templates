@@ -66,16 +66,11 @@ public interface SoyValueProvider {
    * call to this method will resume rendering from the previous point.
    *
    * @param appendable The appendable to render to.
-   * @param isLast True if this is <em>definitely</em> the last time this value will be rendered.
-   *     Used as a hint to implementations to not optimize for later calls (for example, by storing
-   *     render results in a buffer for faster re-renders). The value of this parameter should not
-   *     affect behavior of this method, only performance.
    * @return A {@link RenderResult} that describes whether or not rendering completed. If the
    *     returned result is not {@link RenderResult#done() done}, then to complete rendering you
    *     must call this method again.
    * @throws IOException If the appendable throws an IOException
    */
   @Nonnull
-  RenderResult renderAndResolve(LoggingAdvisingAppendable appendable, boolean isLast)
-      throws IOException;
+  RenderResult renderAndResolve(LoggingAdvisingAppendable appendable) throws IOException;
 }

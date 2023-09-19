@@ -17,6 +17,7 @@
 package com.google.template.soy.jbcsrc.runtime;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
 import static java.lang.invoke.MethodType.methodType;
 
 import com.google.common.base.Preconditions;
@@ -345,7 +346,7 @@ public final class JbcSrcRuntime {
    * message parts and can dynamically render them. This manages a small state machine that allows
    * for rendering to proceed.
    */
-  public static class MsgRenderer extends DetachableContentProvider {
+  public static class MsgRenderer implements SoyValueProvider {
     ImmutableList<SoyMsgPart> msgParts;
     final ULocale locale;
     private int partIndex;
@@ -361,6 +362,8 @@ public final class JbcSrcRuntime {
     @Nullable SetMultimap<String, String> endPlaceholderToStartPlaceholder;
     private final long msgId;
     private final boolean htmlEscape;
+    private BufferingAppendable buffer;
+    private boolean isDone;
 
     public MsgRenderer(
         long msgId,
@@ -456,18 +459,39 @@ public final class JbcSrcRuntime {
       return this;
     }
 
-    /**
-     * Renders the message to the given output stream incrementally.
-     *
-     * <p>Currently this doesn't check for {@link LoggingAdvisingAppendable#softLimitReached()}
-     * though such support could be easily added. The justification is that messages tend to be
-     * small.
-     */
     @Override
-    public RenderResult doRender(LoggingAdvisingAppendable out) throws IOException {
+    public final RenderResult status() {
+      if (isDone) {
+        return RenderResult.done();
+      }
+      BufferingAppendable currentBuilder = buffer;
+      if (currentBuilder == null) {
+        buffer = currentBuilder = LoggingAdvisingAppendable.buffering();
+      }
+      RenderResult result;
+      try {
+        result = renderAndResolve(currentBuilder);
+      } catch (IOException ioe) {
+        throw new AssertionError("impossible", ioe);
+      }
+      if (result.isDone()) {
+        isDone = true;
+      }
+      return result;
+    }
+
+    @Override
+    public final SoyValue resolve() {
+      checkState(status().isDone());
+      return buffer.getAsSoyValue();
+    }
+
+    /** Renders the message to the given output stream incrementally. */
+    @Override
+    public RenderResult renderAndResolve(LoggingAdvisingAppendable out) throws IOException {
       // if we were in the middle of a placeholder render, finish that.
       if (pendingRender != null) {
-        RenderResult result = pendingRender.renderAndResolve(out, /* isLast= */ false);
+        RenderResult result = pendingRender.renderAndResolve(out);
         if (!result.isDone()) {
           return result;
         }
@@ -517,9 +541,7 @@ public final class JbcSrcRuntime {
                     + placeholders.keySet());
           }
           try {
-            // TODO(lukes): we could set the isLast flag by scanning forward in msgParts for more
-            // occurrences of this placeholder
-            RenderResult result = placeholderValue.renderAndResolve(out, /* isLast= */ false);
+            RenderResult result = placeholderValue.renderAndResolve(out);
             if (!result.isDone()) {
               // store partIndex as i + 1 so that after the placeholder is done we proceed to the
               // next part
@@ -569,7 +591,7 @@ public final class JbcSrcRuntime {
     }
 
     @Override
-    public RenderResult doRender(LoggingAdvisingAppendable out) throws IOException {
+    public RenderResult renderAndResolve(LoggingAdvisingAppendable out) throws IOException {
       if (!resolvedCases) {
         // plural/select messages always start with a sequence of plural and select values.
         // Additionally, we are guaranteed (by contract with the gencode) that the plural/select
@@ -615,7 +637,7 @@ public final class JbcSrcRuntime {
         resolvedCases = true;
       }
       // render the cases.
-      return super.doRender(out);
+      return super.renderAndResolve(out);
     }
 
     @Override

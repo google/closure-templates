@@ -512,11 +512,7 @@ public abstract class MethodRef {
       createPure(TemplateValue.class, "create", String.class, Object.class);
 
   public static final MethodRef SOY_VALUE_PROVIDER_RENDER_AND_RESOLVE =
-      createNonPure(
-          SoyValueProvider.class,
-          "renderAndResolve",
-          LoggingAdvisingAppendable.class,
-          boolean.class);
+      createNonPure(SoyValueProvider.class, "renderAndResolve", LoggingAdvisingAppendable.class);
 
   public static final MethodRef COALESCE_TO_JAVA_NULL =
       createNonPure(JbcSrcRuntime.class, "coalesceToJavaNull", SoyValue.class);
@@ -632,7 +628,6 @@ public abstract class MethodRef {
 
   private static java.lang.reflect.Method getMethodUnchecked(
       Class<?> clazz, String methodName, Class<?>... params) {
-    java.lang.reflect.Method m;
     try {
       // Ensure that the method exists and is public.
       return clazz.getMethod(methodName, params);

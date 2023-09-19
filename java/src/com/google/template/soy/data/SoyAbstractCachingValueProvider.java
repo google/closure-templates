@@ -18,7 +18,6 @@ package com.google.template.soy.data;
 
 import com.google.common.base.Preconditions;
 import com.google.template.soy.jbcsrc.api.RenderResult;
-import com.google.template.soy.jbcsrc.api.RenderResult.Type;
 import java.io.IOException;
 import javax.annotation.Nullable;
 
@@ -73,11 +72,10 @@ public abstract class SoyAbstractCachingValueProvider implements SoyValueProvide
   }
 
   @Override
-  public RenderResult renderAndResolve(LoggingAdvisingAppendable appendable, boolean isLast)
-      throws IOException {
+  public RenderResult renderAndResolve(LoggingAdvisingAppendable appendable) throws IOException {
     // Gives a reasonable default implementation, if subclasses can do better they can override.
     RenderResult result = status();
-    if (result.type() == Type.DONE) {
+    if (result.isDone()) {
       resolve().render(appendable);
     }
     return result;

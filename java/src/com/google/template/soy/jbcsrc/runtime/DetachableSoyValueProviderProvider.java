@@ -54,15 +54,14 @@ public abstract class DetachableSoyValueProviderProvider implements SoyValueProv
   }
 
   @Override
-  public RenderResult renderAndResolve(LoggingAdvisingAppendable appendable, boolean isLast)
-      throws IOException {
+  public RenderResult renderAndResolve(LoggingAdvisingAppendable appendable) throws IOException {
     RenderResult result = status();
     // This means we have not made enough progress to even begin delegating, keep calling status()
     // until we have.
     if (resolvedValueProvider == null) {
       return result;
     }
-    return resolvedValueProvider.renderAndResolve(appendable, isLast);
+    return resolvedValueProvider.renderAndResolve(appendable);
   }
 
   /** Overridden by generated subclasses to implement lazy detachable resolution. */

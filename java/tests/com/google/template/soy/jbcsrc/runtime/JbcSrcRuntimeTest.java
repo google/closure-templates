@@ -169,8 +169,7 @@ public final class JbcSrcRuntimeTest {
     }
 
     @Override
-    public RenderResult renderAndResolve(
-        LoggingAdvisingAppendable advisingAppendable, boolean isLast) {
+    public RenderResult renderAndResolve(LoggingAdvisingAppendable advisingAppendable) {
       throw new UnsupportedOperationException();
     }
 

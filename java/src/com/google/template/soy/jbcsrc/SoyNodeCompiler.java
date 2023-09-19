@@ -647,9 +647,11 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
           // for things in the range that don't map to a known case we just jump to dflt
           Label[] labels = new Label[range];
           Arrays.fill(labels, dflt);
-          for (var key : casesByKey.keySet()) {
+          for (Map.Entry<Integer, SoyNodeCompiler.StatementAndStartLabel> entry :
+              casesByKey.entrySet()) {
+            Integer key = entry.getKey();
             int labelIndex = key - min;
-            labels[labelIndex] = casesByKey.get(key).startLabel;
+            labels[labelIndex] = entry.getValue().startLabel;
           }
           adapter.visitTableSwitchInsn(
               /* min= */ min, /* max= */ max, /* dflt= */ dflt, /* labels...= */ labels);
@@ -1131,12 +1133,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       }
     }
     Expression callRenderAndResolve =
-        soyValueProvider.invoke(
-            MethodRef.SOY_VALUE_PROVIDER_RENDER_AND_RESOLVE,
-            appendable,
-            // the isLast param
-            // TODO(b/63530876): pass a real value here when we have expression use analysis.
-            constant(false));
+        soyValueProvider.invoke(MethodRef.SOY_VALUE_PROVIDER_RENDER_AND_RESOLVE, appendable);
     Statement doCall =
         requiresDetachLogic
             ? detachState.detachForRender(callRenderAndResolve)

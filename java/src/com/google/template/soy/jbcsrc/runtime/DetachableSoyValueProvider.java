@@ -34,28 +34,26 @@ import java.io.IOException;
  * {@link DetachableSoyValueProviderProvider} instead.
  */
 public abstract class DetachableSoyValueProvider implements SoyValueProvider {
-  // TOMBSTONE marks this field as uninitialized which allows it to accept 'null' as a valid value.
-  protected SoyValue resolvedValue = TombstoneValue.INSTANCE;
+  protected SoyValue resolvedValue;
 
   @Override
   public final SoyValue resolve() {
     JbcSrcRuntime.awaitProvider(this);
     SoyValue local = resolvedValue;
-    checkState(local != TombstoneValue.INSTANCE, "doResolve didn't replace tombstone");
+    checkState(local != null, "doResolve didn't replace tombstone");
     return local;
   }
 
   @Override
   public final RenderResult status() {
-    if (resolvedValue != TombstoneValue.INSTANCE) {
+    if (resolvedValue != null) {
       return RenderResult.done();
     }
     return doResolve();
   }
 
   @Override
-  public RenderResult renderAndResolve(LoggingAdvisingAppendable appendable, boolean isLast)
-      throws IOException {
+  public RenderResult renderAndResolve(LoggingAdvisingAppendable appendable) throws IOException {
     RenderResult result = status();
     if (result.isDone()) {
       SoyValue resolved = resolve();

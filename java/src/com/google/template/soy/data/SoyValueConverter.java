@@ -141,7 +141,7 @@ public final class SoyValueConverter {
       builder.put((String) entry.getKey(), convertLazy(entry.getValue()));
     }
     return DictImpl.forProviderMap(
-        builder.build(),
+        builder.buildOrThrow(),
         // This Java map could represent a Soy legacy_object_map, a Soy map, or a Soy record.
         // We don't know which until one of the SoyMap, SoyLegacyObjectMap, or SoyRecord methods
         // is invoked on it.
@@ -297,9 +297,8 @@ public final class SoyValueConverter {
     }
 
     @Override
-    public RenderResult renderAndResolve(LoggingAdvisingAppendable appendable, boolean isLast)
-        throws IOException {
-      return delegate().renderAndResolve(appendable, isLast);
+    public RenderResult renderAndResolve(LoggingAdvisingAppendable appendable) throws IOException {
+      return delegate().renderAndResolve(appendable);
     }
 
     SoyValueProvider delegate() {
@@ -366,6 +365,7 @@ public final class SoyValueConverter {
             return c;
           }
 
+          @Nullable
           private Function<?, ?> getConverterOrNull(Class<?> clz) {
             if (clz == null) {
               return null;

@@ -281,12 +281,7 @@ final class MsgCompiler {
       Expression callRenderAndResolve =
           msgRendererVar
               .accessor()
-              .invoke(
-                  MethodRef.SOY_VALUE_PROVIDER_RENDER_AND_RESOLVE,
-                  appendable,
-                  // set the isLast field to true since we know this will only be rendered
-                  // once.
-                  /* isLast */ constant(true));
+              .invoke(MethodRef.SOY_VALUE_PROVIDER_RENDER_AND_RESOLVE, appendable);
       render =
           Statement.concat(
               initAppendable,

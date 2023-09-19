@@ -25,7 +25,7 @@ import java.io.IOException;
 import javax.annotation.Nonnull;
 
 /**
- * A SoyValueProvider that wraps a BufferingAppendable. Useful for evaluting a block inline but
+ * A SoyValueProvider that wraps a BufferingAppendable. Useful for evaluating a block inline but
  * preserving log statements.
  */
 public final class BufferedSoyValueProvider implements SoyValueProvider {
@@ -56,8 +56,7 @@ public final class BufferedSoyValueProvider implements SoyValueProvider {
   }
 
   @Override
-  public RenderResult renderAndResolve(LoggingAdvisingAppendable appendable, boolean isLast)
-      throws IOException {
+  public RenderResult renderAndResolve(LoggingAdvisingAppendable appendable) throws IOException {
     buffer.replayOn(appendable);
     return RenderResult.done();
   }

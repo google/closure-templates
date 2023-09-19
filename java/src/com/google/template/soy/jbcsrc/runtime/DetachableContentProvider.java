@@ -16,7 +16,6 @@
 
 package com.google.template.soy.jbcsrc.runtime;
 
-import static com.google.common.base.Preconditions.checkState;
 
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
@@ -52,11 +51,7 @@ public abstract class DetachableContentProvider implements SoyValueProvider {
   @Override
   public final SoyValue resolve() {
     JbcSrcRuntime.awaitProvider(this);
-    SoyValue local = getResolvedValue();
-    checkState(
-        local != TombstoneValue.INSTANCE,
-        "called resolve() after calling renderAndResolve with isLast == true");
-    return local;
+    return getResolvedValue();
   }
 
   @Override
@@ -83,22 +78,10 @@ public abstract class DetachableContentProvider implements SoyValueProvider {
   }
 
   @Override
-  public RenderResult renderAndResolve(LoggingAdvisingAppendable appendable, boolean isLast)
-      throws IOException {
+  public RenderResult renderAndResolve(LoggingAdvisingAppendable appendable) throws IOException {
     if (isDone()) {
-      if (buffer == null && resolvedValue == TombstoneValue.INSTANCE) {
-        throw new IllegalStateException(
-            "calling renderAndResolve after setting isLast = true is not supported");
-      }
       buffer.replayOn(appendable);
       return RenderResult.done();
-    }
-    if (isLast) {
-      RenderResult result = doRender(appendable);
-      if (result.isDone()) {
-        resolvedValue = TombstoneValue.INSTANCE;
-      }
-      return result;
     }
 
     TeeAdvisingAppendable currentBuilder = (TeeAdvisingAppendable) builder;

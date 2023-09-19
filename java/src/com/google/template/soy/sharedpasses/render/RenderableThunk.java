@@ -47,8 +47,7 @@ public abstract class RenderableThunk implements SoyValueProvider {
   }
 
   @Override
-  public RenderResult renderAndResolve(LoggingAdvisingAppendable appendable, boolean isLast)
-      throws IOException {
+  public RenderResult renderAndResolve(LoggingAdvisingAppendable appendable) throws IOException {
     if (content == null) {
       doResolveOnto(new TeeAppendable(appendable));
     } else {
