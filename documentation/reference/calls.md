@@ -342,9 +342,10 @@ parameter. This installs an error handler that will catch and log any errors
 thrown during evaluation of the template. If an error is caught, then the
 behavior will be as though the template rendered nothing.
 
-NOTE: Using this feature disables streaming at the template call site. During
-server rendering all data will be buffered and idom patching will be paused as
-well.
+NOTE: Using this feature disables streaming at the template call site. All data
+from the callee template (including idom updates) will be buffered for the life
+of the call. If an exception is thrown the data is discarded, otherwise the data
+is applied when the call returns.
 
 Example:
 
