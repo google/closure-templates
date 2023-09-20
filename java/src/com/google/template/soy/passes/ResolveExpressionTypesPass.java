@@ -24,6 +24,7 @@ import static com.google.template.soy.passes.CheckTemplateCallsPass.ARGUMENT_TYP
 import static com.google.template.soy.types.SoyTypes.SAFE_PROTO_TO_SANITIZED_TYPE;
 import static com.google.template.soy.types.SoyTypes.getMapKeysType;
 import static com.google.template.soy.types.SoyTypes.getMapValuesType;
+import static com.google.template.soy.types.SoyTypes.isNullOrUndefined;
 import static com.google.template.soy.types.SoyTypes.tryRemoveNull;
 import static com.google.template.soy.types.SoyTypes.tryRemoveNullish;
 import static java.util.Comparator.naturalOrder;
@@ -1894,24 +1895,23 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
 
       // Visit the conditional expression to compute which types can be narrowed.
       TypeNarrowingConditionVisitor visitor = createTypeNarrowingConditionVisitor();
-      visitor.ifTruthy(node.getChild(0));
-
-      // Now, re-visit the first node but with substitutions. The reason is because
-      // the value of node 0 is what will be returned if node 0 is truthy.
-      substitutions.addAll(visitor.positiveTypeConstraints);
-      visit(node.getChild(0));
+      visitor.ifNonNullish(node.getChild(0));
 
       // For the null-coalescing operator, the node 1 only gets evaluated
-      // if node 0 is falsey. Use the negative substitutions for this case.
+      // if node 0 is nullish. Use the negative substitutions for this case.
       substitutions.addAll(visitor.negativeTypeConstraints);
       visit(node.getChild(1));
 
       // Restore substitutions to previous state
       substitutions.restore(savedSubstitutionState);
 
-      node.setType(
-          SoyTypes.computeLowestCommonType(
-              typeRegistry, node.getChild(0).getType(), node.getChild(1).getType()));
+      SoyType resultType = node.getChild(1).getType();
+      if (!isNullOrUndefined(node.getChild(0).getType())) {
+        resultType =
+            SoyTypes.computeLowestCommonType(
+                typeRegistry, tryRemoveNullish(node.getChild(0).getType()), resultType);
+      }
+      node.setType(resultType);
       tryApplySubstitution(node);
     }
 
@@ -2294,6 +2294,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
 
       // Replace the proto init node to have a list of the resolved param names.
       if (hasAliasedParams && !errorReporter.errorsSince(checkpoint)) {
+        // This transformation means that resolving the type of this node may not be idempotent.
         FunctionNode resolvedNode =
             CallableExprBuilder.builder(node).setParamNames(resolvedIdentifiers).buildFunction();
         resolvedNode.setSoyFunction(node.getSoyFunction());

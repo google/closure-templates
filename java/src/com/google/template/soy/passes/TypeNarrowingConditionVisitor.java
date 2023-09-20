@@ -97,7 +97,7 @@ final class TypeNarrowingConditionVisitor {
     new NonNullishVisitor(neq, mode, true).exec(node);
   }
 
-  private void ifNonNullish(ExprNode node) {
+  public void ifNonNullish(ExprNode node) {
     new NonNullishVisitor(false, NullishMode.NULLISH, false).exec(node);
   }
 
