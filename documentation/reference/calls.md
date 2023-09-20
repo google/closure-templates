@@ -334,3 +334,41 @@ import {content as hotelReviewContent} from 'path/to/soy/file/bar.soy'
   {call hotelReviewContent /}
 {/template}
 ```
+
+### Recovering from errors
+
+When calling a template you can pass an optional `errorfallback="skip"`
+parameter. This installs an error handler that will catch and log any errors
+thrown during evaluation of the template. If an error is caught, then the
+behavior will be as though the template rendered nothing.
+
+NOTE: Using this feature disables streaming at the template call site. During
+server rendering all data will be buffered and idom patching will be paused as
+well.
+
+Example:
+
+```soy
+
+{template myTemplate}
+  {call buggyTemplate errorfallback="skip" /}
+{/template}
+```
+
+If you want to have custom fallback behavior you can use a `let` and an `if`:
+
+```soy
+
+{template myTemplate}
+  {let $maybeBuggy kind='html'}
+    {call buggyTemplate errorfallback="skip" /}
+  {/let}
+  {if $maybeBuggy}
+    {$maybeBuggy}
+  {else}
+    {call oopsSomethingWentWrong /}
+  {/if}
+{/template}
+```
+
+This allows you to add any custom rendering you need when errors occur.
