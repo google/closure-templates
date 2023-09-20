@@ -50,7 +50,7 @@ var global_1 = goog.require('google3.javascript.template.soy.global');
 // Declare properties that need to be applied not as attributes but as
 // actual DOM properties.
 var attributes = incrementaldom.attributes;
-var defaultIdomRenderer = new api_idom_1.IncrementalDomRenderer();
+var defaultIdomRenderer = new api_idom_1.IncrementalDomRendererImpl();
 // tslint:disable-next-line:no-any
 attributes['checked'] = function (el, name, value) {
     // We don't use !!value because:

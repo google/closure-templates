@@ -60,7 +60,7 @@ var SoyElement = /** @class */ (function () {
      */
     SoyElement.prototype.render = function (renderer) {
         var _this = this;
-        if (renderer === void 0) { renderer = new api_idom_1.IncrementalDomRenderer(); }
+        if (renderer === void 0) { renderer = new api_idom_1.IncrementalDomRendererImpl(); }
         goog_goog_asserts_1.assert(this.node);
         // It is possible that this Soy element has a skip handler on it. When
         // render() is called, ignore the skip handler.
