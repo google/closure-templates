@@ -188,11 +188,12 @@ public final class SoyTypes {
     return keepNullish(soyType);
   }
 
+  public static SoyType makeNullish(SoyType type) {
+    return UnionType.of(type, NullType.getInstance(), UndefinedType.getInstance());
+  }
+
   public static SoyType makeNullable(SoyType type) {
-    if (isNullable(type)) {
-      return type;
-    }
-    return UnionType.of(type, NullType.getInstance());
+    return isNullable(type) ? type : UnionType.of(type, NullType.getInstance());
   }
 
   public static boolean isNullable(SoyType type) {
@@ -201,6 +202,10 @@ public final class SoyTypes {
 
   public static boolean isUndefinable(SoyType type) {
     return containsKind(type, Kind.UNDEFINED);
+  }
+
+  public static SoyType makeUndefinable(SoyType type) {
+    return isUndefinable(type) ? type : UnionType.of(type, UndefinedType.getInstance());
   }
 
   /** Returns true if the type is null, undefined, or a union containing one of those kinds. */

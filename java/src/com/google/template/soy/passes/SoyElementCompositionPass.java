@@ -398,7 +398,7 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
     // Any print node or call node whose type/kind is 'attributes' may appear within the root
     // element HTML node.
     return (attrNode.getChild(0).getKind() == Kind.PRINT_NODE
-            && SoyTypes.makeNullable(AttributesType.getInstance())
+            && SoyTypes.makeNullish(AttributesType.getInstance())
                 .isAssignableFromStrict(((PrintNode) attrNode.getChild(0)).getExpr().getType()))
         || (attrNode.getChild(0).getKind() == Kind.CALL_BASIC_NODE
             && ((TemplateType) ((CallBasicNode) attrNode.getChild(0)).getCalleeExpr().getType())
@@ -563,7 +563,7 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
   }
 
   private static String getKind(SoyType attrType) {
-    attrType = SoyTypes.removeNull(attrType);
+    attrType = SoyTypes.tryRemoveNullish(attrType);
     if (TrustedResourceUriType.getInstance().isAssignableFromStrict(attrType)) {
       return "trusted_resource_uri";
     } else if (UriType.getInstance().isAssignableFromStrict(attrType)) {

@@ -52,7 +52,6 @@ import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.TemplateParam;
-import com.google.template.soy.types.NullType;
 import com.google.template.soy.types.SanitizedType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypes;
@@ -393,7 +392,7 @@ final class CheckTemplateCallsPass implements CompilerFileSetPass {
       // Our runtime type checking code isn't perfect and varies by backend.
       if (!formalType.isAssignableFromLoose(argType)) {
         if (calleeParams.isIndirect(paramName)
-            && formalType.isAssignableFromLoose(SoyTypes.tryRemoveNull(argType))) {
+            && formalType.isAssignableFromLoose(SoyTypes.tryRemoveNullish(argType))) {
           // Special case for indirect params: Allow a nullable type to be assigned
           // to a non-nullable type if the non-nullable type is an indirect parameter type.
           // The reason is because without flow analysis, we can't know whether or not
@@ -541,9 +540,9 @@ final class CheckTemplateCallsPass implements CompilerFileSetPass {
       if (node.getVariantExpr() == null) {
         return;
       }
-      if (calleeType.getUseVariantType().equals(NullType.getInstance())) {
+      if (calleeType.getUseVariantType().isNullOrUndefined()) {
         errorReporter.report(node.getSourceLocation(), NO_USEVARIANTTYPE);
-      } else if (!UnionType.of(calleeType.getUseVariantType(), NullType.getInstance())
+      } else if (!SoyTypes.makeNullish(calleeType.getUseVariantType())
           .isAssignableFromStrict(node.getVariantExpr().getType())) {
         errorReporter.report(
             node.getVariantExpr().getSourceLocation(),

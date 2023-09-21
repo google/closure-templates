@@ -338,13 +338,13 @@ final class ValidatorFactory extends JavaValueFactory {
     // Exit early if the class is primitive and the type is nullable -- that's not allowed.
     // Then remove null from the type.  This allows us to accept precise params for nullable
     // types, e.g, for int|null we can allow IntegerData (which will be passed as 'null').
-    if (SoyTypes.isNullable(type) && Primitives.allPrimitiveTypes().contains(clazz)) {
+    if (SoyTypes.isNullish(type) && Primitives.allPrimitiveTypes().contains(clazz)) {
       return ValidationResult.forNullToPrimitive(type);
     }
 
     ImmutableSet<Class<?>> expectedClasses = null;
     GenericDescriptor expectedDescriptor = null;
-    type = SoyTypes.tryRemoveNull(type);
+    type = SoyTypes.tryRemoveNullish(type);
     switch (type.getKind()) {
       case ANY:
       case UNKNOWN:

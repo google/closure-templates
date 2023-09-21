@@ -18,6 +18,7 @@ package com.google.template.soy.jbcsrc;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
+import static com.google.template.soy.exprtree.ExprNodes.isNullishLiteral;
 import static com.google.template.soy.internal.proto.JavaQualifiedNames.getFieldName;
 import static com.google.template.soy.internal.proto.JavaQualifiedNames.underscoresToCamelCase;
 import static com.google.template.soy.internal.proto.ProtoUtils.getContainingOneof;
@@ -667,7 +668,7 @@ final class ProtoUtils {
     private SoyExpression messageToSoyExpression(Expression field) {
       // Message fields are nullable, but we don't care about that here. This just needs the raw
       // proto type and will still work even if the value is null.
-      SoyType nonNullableFieldType = SoyTypes.removeNull(fieldType);
+      SoyType nonNullableFieldType = SoyTypes.tryRemoveNullish(fieldType);
       if (nonNullableFieldType.getKind() == SoyType.Kind.PROTO) {
         SoyProtoType fieldProtoType = (SoyProtoType) nonNullableFieldType;
         SoyRuntimeType protoRuntimeType = SoyRuntimeType.getUnboxedType(fieldProtoType).get();
@@ -696,7 +697,7 @@ final class ProtoUtils {
         LocalVariableManager varManager,
         Function<SoyExpression, SoyExpression> memberGenerator) {
       checkArgument(baseExpr.soyType().getKind() == SoyType.Kind.UNION, baseExpr.soyType());
-      checkArgument(!SoyTypes.isNullable(baseExpr.soyType()), baseExpr.soyType());
+      checkArgument(!SoyTypes.isNullish(baseExpr.soyType()), baseExpr.soyType());
       this.baseExpr = baseExpr;
       this.fieldName = fieldName;
       this.fieldType = fieldType;
@@ -912,7 +913,7 @@ final class ProtoUtils {
         ExprNode baseArg = node.getChild(i);
         // Handle some special cases
         // baseArg nulls are not common, but we can trivially skip
-        if (baseArg.getKind() == ExprNode.Kind.NULL_NODE) {
+        if (isNullishLiteral(baseArg)) {
           continue;
         }
         // linking to stateVar with null defaults are common, we can save a lot of code in this way.
@@ -920,7 +921,7 @@ final class ProtoUtils {
           VarRefNode varRefNode = (VarRefNode) baseArg;
           if (varRefNode.getDefnDecl().kind() == VarDefn.Kind.STATE) {
             TemplateStateVar stateVarDefn = (TemplateStateVar) varRefNode.getDefnDecl();
-            if (stateVarDefn.defaultValue().getRoot().getKind() == ExprNode.Kind.NULL_NODE) {
+            if (isNullishLiteral(stateVarDefn.defaultValue().getRoot())) {
               continue;
             }
           }

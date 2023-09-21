@@ -495,7 +495,7 @@ public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<St
     // If the type is possibly a sanitized content type then we need to toString it.
     // TODO(lukes): this condition is wrong. it should be if is unknown, any or sanitized (or union
     // of sanitized)
-    if (SoyTypes.makeNullable(StringType.getInstance()).isAssignableFromStrict(type)
+    if (SoyTypes.makeNullish(StringType.getInstance()).isAssignableFromStrict(type)
         || type.equals(AnyType.getInstance())
         || type.equals(UnknownType.getInstance())) {
       CodeChunk.Generator codeGenerator = templateTranslationContext.codeGenerator();

@@ -78,7 +78,7 @@ public enum BuiltinMethod implements SoyMethod {
       }
       // getExtension is incorrectly typed as non-nullable even though it can be null for singular
       // message fields.
-      return SoyTypes.removeNull(protoType.getFieldType(extType.get().getFieldName()));
+      return SoyTypes.tryRemoveNullish(protoType.getFieldType(extType.get().getFieldName()));
     }
   },
   GET_READONLY_EXTENSION("getReadonlyExtension", 1) {
@@ -106,7 +106,7 @@ public enum BuiltinMethod implements SoyMethod {
             params.get(0).getSourceLocation(),
             GET_READONLY_EXTENSION_MAY_ONLY_BE_CALLED_ON_MESSAGE_EXTENSIONS);
       }
-      return SoyTypes.removeNull(protoType.getFieldType(extType.get().getFieldName()));
+      return SoyTypes.tryRemoveNullish(protoType.getFieldType(extType.get().getFieldName()));
     }
   },
   HAS_EXTENSION("hasExtension", 1) {
@@ -140,7 +140,7 @@ public enum BuiltinMethod implements SoyMethod {
   HAS_PROTO_FIELD("has[X]", 0) {
     @Override
     public boolean appliesToBase(SoyType baseType) {
-      Preconditions.checkArgument(!SoyTypes.isNullable(baseType));
+      Preconditions.checkArgument(!SoyTypes.isNullish(baseType));
       return SoyTypes.isKindOrUnionOfKind(baseType, SoyType.Kind.PROTO);
     }
 
@@ -178,7 +178,7 @@ public enum BuiltinMethod implements SoyMethod {
   GET_PROTO_FIELD("get[X]", 0) {
     @Override
     public boolean appliesToBase(SoyType baseType) {
-      Preconditions.checkArgument(!SoyTypes.isNullable(baseType));
+      Preconditions.checkArgument(!SoyTypes.isNullish(baseType));
       return SoyTypes.isKindOrUnionOfKind(baseType, SoyType.Kind.PROTO);
     }
 
@@ -221,7 +221,7 @@ public enum BuiltinMethod implements SoyMethod {
   GET_PROTO_FIELD_OR_UNDEFINED("get[X]OrUndefined", 0) {
     @Override
     public boolean appliesToBase(SoyType baseType) {
-      Preconditions.checkArgument(!SoyTypes.isNullable(baseType));
+      Preconditions.checkArgument(!SoyTypes.isNullish(baseType));
       return SoyTypes.isKindOrUnionOfKind(baseType, SoyType.Kind.PROTO);
     }
 
@@ -265,7 +265,7 @@ public enum BuiltinMethod implements SoyMethod {
   GET_READONLY_PROTO_FIELD("getReadonly[X]", 0) {
     @Override
     public boolean appliesToBase(SoyType baseType) {
-      Preconditions.checkArgument(!SoyTypes.isNullable(baseType));
+      Preconditions.checkArgument(!SoyTypes.isNullish(baseType));
       return SoyTypes.isKindOrUnionOfKind(baseType, SoyType.Kind.PROTO);
     }
 
@@ -290,7 +290,7 @@ public enum BuiltinMethod implements SoyMethod {
         List<ExprNode> params,
         SoyTypeRegistry soyTypeRegistry,
         ErrorReporter errorReporter) {
-      return SoyTypes.removeNull(
+      return SoyTypes.tryRemoveNullish(
           computeTypeForProtoFieldName(
               baseType, getGetReadonlyFieldName(methodName).get(), soyTypeRegistry));
     }
@@ -307,7 +307,7 @@ public enum BuiltinMethod implements SoyMethod {
 
     @Override
     public boolean appliesToBase(SoyType baseType) {
-      Preconditions.checkArgument(!SoyTypes.isNullable(baseType));
+      Preconditions.checkArgument(!SoyTypes.isNullish(baseType));
       return SoyTypes.isKindOrUnionOfKind(baseType, SoyType.Kind.MAP);
     }
 
@@ -318,7 +318,7 @@ public enum BuiltinMethod implements SoyMethod {
         List<ExprNode> params,
         SoyTypeRegistry soyTypeRegistry,
         ErrorReporter errorReporter) {
-      Preconditions.checkArgument(!SoyTypes.isNullable(baseType));
+      Preconditions.checkArgument(!SoyTypes.isNullish(baseType));
       SoyType keyType = SoyTypes.getMapKeysType(baseType);
 
       ExprNode arg = params.get(0);
@@ -341,7 +341,7 @@ public enum BuiltinMethod implements SoyMethod {
 
     @Override
     public boolean appliesToBase(SoyType baseType) {
-      Preconditions.checkArgument(!SoyTypes.isNullable(baseType));
+      Preconditions.checkArgument(!SoyTypes.isNullish(baseType));
       return SoyTypes.isKindOrUnionOfKinds(
           baseType, ImmutableSet.of(SoyType.Kind.TEMPLATE, SoyType.Kind.TEMPLATE_TYPE));
     }
@@ -353,7 +353,7 @@ public enum BuiltinMethod implements SoyMethod {
         List<ExprNode> params,
         SoyTypeRegistry soyTypeRegistry,
         ErrorReporter errorReporter) {
-      Preconditions.checkArgument(!SoyTypes.isNullable(baseType));
+      Preconditions.checkArgument(!SoyTypes.isNullish(baseType));
       Preconditions.checkArgument(params.size() == 1);
       ExprNode param = params.get(0);
       if (param.getKind() != ExprNode.Kind.RECORD_LITERAL_NODE) {
@@ -540,7 +540,7 @@ public enum BuiltinMethod implements SoyMethod {
       case GET_READONLY_EXTENSION:
         return ImmutableList.of(
             ProtoUtils.getQualifiedOuterClassname(
-                ((SoyProtoType) SoyTypes.removeNull(methodNode.getBaseExprChild().getType()))
+                ((SoyProtoType) SoyTypes.tryRemoveNullish(methodNode.getBaseExprChild().getType()))
                     .getFieldDescriptor(getProtoExtensionIdFromMethodCall(methodNode))));
       case HAS_PROTO_FIELD:
       case GET_PROTO_FIELD:
@@ -613,7 +613,7 @@ public enum BuiltinMethod implements SoyMethod {
   }
 
   private static boolean isExtendableMessageType(SoyType baseType) {
-    Preconditions.checkArgument(!SoyTypes.isNullable(baseType));
+    Preconditions.checkArgument(!SoyTypes.isNullish(baseType));
     return baseType.getKind() == SoyType.Kind.PROTO
         && ((SoyProtoType) baseType).getDescriptor().isExtendable();
   }

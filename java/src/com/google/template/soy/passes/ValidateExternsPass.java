@@ -370,13 +370,13 @@ class ValidateExternsPass implements CompilerFilePass {
 
   private static boolean typesAreCompatible(
       Class<?> javaType, SoyType soyType, ExternNode extern, Mode mode) {
-    boolean nullable = SoyTypes.isNullable(soyType);
+    boolean nullable = SoyTypes.isNullish(soyType);
     boolean isPrimitive = Primitives.allPrimitiveTypes().contains(javaType);
     if (nullable && isPrimitive) {
       return false;
     }
 
-    soyType = SoyTypes.removeNull(soyType);
+    soyType = SoyTypes.tryRemoveNullish(soyType);
     javaType = Primitives.wrap(javaType);
     switch (soyType.getKind()) {
       case INT:
@@ -463,7 +463,7 @@ class ValidateExternsPass implements CompilerFilePass {
   }
 
   private static boolean protoTypesAreCompatible(String javaType, SoyType soyType) {
-    soyType = SoyTypes.removeNull(soyType);
+    soyType = SoyTypes.tryRemoveNullish(soyType);
     switch (soyType.getKind()) {
       case PROTO:
         SoyProtoType protoType = (SoyProtoType) soyType;

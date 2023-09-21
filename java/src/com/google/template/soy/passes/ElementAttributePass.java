@@ -246,7 +246,7 @@ final class ElementAttributePass implements CompilerFileSetPass {
         .map(AttrParam.class::cast)
         .forEach(
             attr -> {
-              SoyType type = SoyTypes.removeNull(attr.type());
+              SoyType type = SoyTypes.tryRemoveNullish(attr.type());
               if (!(type instanceof SanitizedType || type instanceof StringType)
                   || SanitizedType.HtmlType.getInstance().isAssignableFromStrict(type)) {
                 errorReporter.report(attr.getSourceLocation(), BAD_ATTRIBUTE_TYPE);
@@ -361,7 +361,7 @@ final class ElementAttributePass implements CompilerFileSetPass {
                           attrNode,
                           attrExpr,
                           SanitizedType.StyleType.getInstance()
-                              .isAssignableFromStrict(SoyTypes.removeNull(attr.type())),
+                              .isAssignableFromStrict(SoyTypes.tryRemoveNullish(attr.type())),
                           id,
                           attrNode.getEqualsLocation());
                 } else {
@@ -583,13 +583,13 @@ final class ElementAttributePass implements CompilerFileSetPass {
     if (isCss) {
       fn.setAllowedParamTypes(
           ImmutableList.of(
-              SoyTypes.makeNullable(SanitizedType.StyleType.getInstance()),
-              SoyTypes.makeNullable(SanitizedType.StyleType.getInstance())));
+              SoyTypes.makeNullish(SanitizedType.StyleType.getInstance()),
+              SoyTypes.makeNullish(SanitizedType.StyleType.getInstance())));
     } else {
       fn.setAllowedParamTypes(
           ImmutableList.of(
-              SoyTypes.makeNullable(StringType.getInstance()),
-              SoyTypes.makeNullable(StringType.getInstance()),
+              SoyTypes.makeNullish(StringType.getInstance()),
+              SoyTypes.makeNullish(StringType.getInstance()),
               StringType.getInstance()));
     }
     LetValueNode letValueNode =

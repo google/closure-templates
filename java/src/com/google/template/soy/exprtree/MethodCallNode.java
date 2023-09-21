@@ -110,7 +110,7 @@ public final class MethodCallNode extends DataAccessNode implements ExprNode.Cal
   public SoyType getBaseType(boolean nullSafe) {
     SoyType type = getBaseExprChild().getType();
     if (nullSafe) {
-      type = SoyTypes.tryRemoveNull(type);
+      type = SoyTypes.tryRemoveNullish(type);
     }
     return type;
   }
