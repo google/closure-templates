@@ -80,6 +80,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Consumer;
 import javax.annotation.Nullable;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ConstantDynamic;
@@ -836,8 +837,12 @@ public final class BytecodeUtils {
       MethodRef.SOY_VALUE_IS_NULLISH.invokeUnchecked(builder);
       builder.ifZCmp(Opcodes.IFNE, nullExit);
     } else {
-      nullCoalesce(builder, nullExit, argType, /* pushSoyNull= */ true);
+      nullCoalesce(builder, nullExit, argType, cb -> soyNull().gen(cb));
     }
+  }
+
+  public static void soyUndefinedCoalesce(CodeBuilder builder, Type argType, Label nullExit) {
+    nullCoalesce(builder, nullExit, argType, cb -> soyUndefined().gen(cb));
   }
 
   /**
@@ -845,11 +850,11 @@ public final class BytecodeUtils {
    * of the stack.
    */
   public static void soyNullToNullCoalesce(CodeBuilder builder, Type argType, Label nullExit) {
-    nullCoalesce(builder, nullExit, argType, /* pushSoyNull= */ false);
+    nullCoalesce(builder, nullExit, argType, CodeBuilder::pushNull);
   }
 
   private static void nullCoalesce(
-      CodeBuilder builder, Label nullExit, Type argType, boolean pushSoyNull) {
+      CodeBuilder builder, Label nullExit, Type argType, Consumer<CodeBuilder> pusher) {
     Label nonNull = new Label();
     builder.dup();
     ifNonNullish(builder, argType, nonNull);
@@ -857,11 +862,7 @@ public final class BytecodeUtils {
     // but even though the value at the top of the stack here is null, its type isn't.  So we need
     // to pop and push.  This is the idiomatic pattern.
     builder.pop();
-    if (pushSoyNull) {
-      soyNull().gen(builder);
-    } else {
-      builder.pushNull();
-    }
+    pusher.accept(builder);
     builder.goTo(nullExit);
     builder.mark(nonNull);
   }

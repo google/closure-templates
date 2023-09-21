@@ -367,7 +367,7 @@ public final class Branch {
       return new Branch(
               expression.features(),
               new BooleanBrancher(MethodRef.SOY_VALUE_IS_UNDEFINED.invoke(expression)),
-              () -> "ifSoyNull{" + expression + "}")
+              () -> "ifSoyUndefined{" + expression + "}")
           .negate();
     } else {
       return always();
