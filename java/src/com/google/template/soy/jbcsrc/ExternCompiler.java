@@ -182,7 +182,7 @@ public final class ExternCompiler {
    * implementation.
    */
   static SoyRuntimeType getRuntimeType(SoyType type) {
-    SoyType nonNullable = SoyTypes.tryRemoveNull(type);
+    SoyType nonNullable = SoyTypes.tryRemoveNullish(type);
     SoyRuntimeType runtimeType =
         SoyRuntimeType.getUnboxedType(nonNullable)
             .orElseGet(() -> SoyRuntimeType.getBoxedType(nonNullable));
@@ -226,13 +226,16 @@ public final class ExternCompiler {
     boolean isObject = javaType.equals(BytecodeUtils.OBJECT.type());
 
     // If expecting a bland 'SoyValue', just box the expr.
-    if (javaType.equals(BytecodeUtils.SOY_VALUE_TYPE)) {
-      return actualParam.boxOrJavaNull().checkedCast(javaType);
+    if (javaType.equals(BytecodeUtils.SOY_VALUE_TYPE)
+        || javaType.equals(BytecodeUtils.PRIMITIVE_DATA_TYPE)) {
+      // NullData -> null, UndefinedData -> UndefinedData
+      return actualParam.boxWithSoyNullAsJavaNull().checkedCast(javaType);
     }
     // If we expect a specific SoyValue subclass, then box + cast.
     if (javaTypeInfo.classOptional().isPresent()
         && SoyValue.class.isAssignableFrom(javaTypeInfo.classOptional().get())) {
-      return actualParam.boxOrJavaNull().checkedCast(javaType);
+      // NullData -> null, UndefinedData -> null
+      return actualParam.boxWithSoyNullishAsJavaNull().checkedCast(javaType);
     }
 
     // Otherwise, we're an unboxed type (non-SoyValue).
@@ -264,7 +267,7 @@ public final class ExternCompiler {
       return actualParam.unboxAsNumberOrJavaNull();
     }
 
-    SoyType nonNullableSoyType = SoyTypes.removeNull(soyType);
+    SoyType nonNullableSoyType = SoyTypes.tryRemoveNullish(soyType);
 
     // For protos, we need to unbox as Message & then cast.
     if (nonNullableSoyType.getKind() == Kind.MESSAGE) {

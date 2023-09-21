@@ -102,6 +102,9 @@ public abstract class JavaScriptValueFactory {
   /** Creates a null constant. */
   public abstract JavaScriptValue constantNull();
 
+  /** Creates a undefined constant. */
+  public abstract JavaScriptValue constantUndefined();
+
   /** Creates an empty object literal. */
   public abstract JavaScriptValue emptyObjLiteral();
 

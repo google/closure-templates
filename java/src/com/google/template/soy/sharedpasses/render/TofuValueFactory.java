@@ -50,7 +50,6 @@ import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.data.restricted.StringData;
-import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.internal.proto.JavaQualifiedNames;
 import com.google.template.soy.plugin.internal.JavaPluginExecContext;
 import com.google.template.soy.plugin.java.PluginInstances;
@@ -278,7 +277,7 @@ class TofuValueFactory extends JavaValueFactory {
       return tofuVal.rawValue();
     } else {
       SoyValue value = tofuVal.soyValue();
-      if (value instanceof NullData || value instanceof UndefinedData) {
+      if (value.isNullish()) {
         if (Primitives.allPrimitiveTypes().contains(type)) {
           throw RenderException.create(
               "cannot call method "
@@ -292,6 +291,11 @@ class TofuValueFactory extends JavaValueFactory {
                   + "], but actual value is null [ "
                   + tofuVal
                   + "]");
+        }
+        // Always pass NullData as java null. Pass UndefinedData as UndefinedData unless that
+        // would be a CCE in the java implementation, otherwise pass null.
+        if (!value.isNull() && type.isAssignableFrom(value.getClass())) {
+          return value;
         }
         return null;
       } else if (isExternApi && type == Object.class) {

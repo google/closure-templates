@@ -265,6 +265,9 @@ public class LazyClosureCompilerTest {
     assertThatTemplateBody("{let $foo : ident(null) /}{$foo}")
         .withLegacySoyFunction(new IdentityJavaFunction())
         .rendersAs("null");
+    assertThatTemplateBody("{let $foo : ident(undefined) /}{$foo}")
+        .withLegacySoyFunction(new IdentityJavaFunction())
+        .rendersAs("undefined");
     assertThatTemplateBody("{let $foo : ident(1) /}{$foo}")
         .withLegacySoyFunction(new IdentityJavaFunction())
         .rendersAs("1");
@@ -284,6 +287,9 @@ public class LazyClosureCompilerTest {
     assertThatTemplateBody("{let $foo : ident(null) /}{$foo}")
         .withSoySourceFunction(new IdentityJavaSourceFunction())
         .rendersAs("null");
+    assertThatTemplateBody("{let $foo : ident(undefined) /}{$foo}")
+        .withSoySourceFunction(new IdentityJavaSourceFunction())
+        .rendersAs("undefined");
     assertThatTemplateBody("{let $foo : ident(1) /}{$foo}")
         .withSoySourceFunction(new IdentityJavaSourceFunction())
         .rendersAs("1");

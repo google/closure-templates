@@ -517,8 +517,11 @@ public abstract class MethodRef {
   public static final MethodRef SOY_VALUE_PROVIDER_RENDER_AND_RESOLVE =
       createNonPure(SoyValueProvider.class, "renderAndResolve", LoggingAdvisingAppendable.class);
 
-  public static final MethodRef COALESCE_TO_JAVA_NULL =
-      createNonPure(JbcSrcRuntime.class, "coalesceToJavaNull", SoyValue.class);
+  public static final MethodRef SOY_NULLISH_TO_JAVA_NULL =
+      createNonPure(JbcSrcRuntime.class, "soyNullishToJavaNull", SoyValue.class);
+
+  public static final MethodRef SOY_NULL_TO_JAVA_NULL =
+      createNonPure(JbcSrcRuntime.class, "soyNullToJavaNull", SoyValue.class);
 
   public static final MethodRef SOY_VALUE_PROVIDER_OR_NULLISH =
       createNonPure(JbcSrcRuntime.class, "soyValueProviderOrNullish", SoyValueProvider.class);
@@ -550,6 +553,8 @@ public abstract class MethodRef {
       createNonPure(JbcSrcRuntime.class, "checkExpressionNotNull", Object.class, String.class);
   public static final MethodRef IS_SOY_NON_NULLISH =
       createPure(JbcSrcRuntime.class, "isNonSoyNullish", SoyValueProvider.class);
+  public static final MethodRef IS_SOY_NON_NULL =
+      createPure(JbcSrcRuntime.class, "isNonSoyNull", SoyValueProvider.class);
 
   public static final MethodRef STRING_DATA_FOR_VALUE =
       createPure(StringData.class, "forValue", String.class).asCheap();

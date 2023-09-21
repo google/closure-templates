@@ -175,9 +175,14 @@ public final class SoyExpression extends Expression {
    * Returns an Expression that evaluates to a list containing all the items as boxed soy values,
    * with Soy nullish values converted to Java null.
    */
-  public static Expression asBoxedListWithJavaNullItems(List<SoyExpression> items) {
+  public static Expression boxListWithSoyNullishAsJavaNull(List<SoyExpression> items) {
     return BytecodeUtils.asList(
-        items.stream().map(SoyExpression::boxOrJavaNull).collect(toImmutableList()));
+        items.stream().map(SoyExpression::boxWithSoyNullishAsJavaNull).collect(toImmutableList()));
+  }
+
+  public static Expression boxListWithSoyNullAsJavaNull(List<SoyExpression> items) {
+    return BytecodeUtils.asList(
+        items.stream().map(SoyExpression::boxWithSoyNullAsJavaNull).collect(toImmutableList()));
   }
 
   public static Expression asBoxedValueProviderList(List<SoyExpression> items) {
@@ -293,7 +298,7 @@ public final class SoyExpression extends Expression {
             delegate.gen(adapter);
             if (!nonNullable) {
               end = new Label();
-              BytecodeUtils.soyNullCoalesce(adapter, delegate.resultType(), end);
+              BytecodeUtils.coalesceSoyNullishToSoyNull(adapter, delegate.resultType(), end);
             }
             doBox(adapter, soyRuntimeType.asNonSoyNullish());
             if (end != null) {
@@ -308,12 +313,12 @@ public final class SoyExpression extends Expression {
    * an extern or plugin implementation, which both expect Java null rather than NullData or
    * UndefinedData.
    */
-  public SoyExpression boxOrJavaNull() {
+  public SoyExpression boxWithSoyNullishAsJavaNull() {
     if (isNonSoyNullish()) {
       return this.box();
     }
     if (this.isBoxed()) {
-      return withSource(MethodRef.COALESCE_TO_JAVA_NULL.invoke(delegate));
+      return withSource(MethodRef.SOY_NULLISH_TO_JAVA_NULL.invoke(delegate));
     }
     return asBoxed(
         new Expression(soyRuntimeType.box().runtimeType()) {
@@ -321,7 +326,27 @@ public final class SoyExpression extends Expression {
           protected void doGen(CodeBuilder adapter) {
             Label end = new Label();
             delegate.gen(adapter);
-            BytecodeUtils.soyNullToNullCoalesce(adapter, delegate.resultType(), end);
+            BytecodeUtils.coalesceSoyNullishToJavaNull(adapter, delegate.resultType(), end);
+            doBox(adapter, soyRuntimeType.asNonSoyNullish());
+            adapter.mark(end);
+          }
+        });
+  }
+
+  public SoyExpression boxWithSoyNullAsJavaNull() {
+    if (isNonSoyNullish()) {
+      return this.box();
+    }
+    if (this.isBoxed()) {
+      return withSource(MethodRef.SOY_NULL_TO_JAVA_NULL.invoke(delegate));
+    }
+    return asBoxed(
+        new Expression(soyRuntimeType.box().runtimeType()) {
+          @Override
+          protected void doGen(CodeBuilder adapter) {
+            Label end = new Label();
+            delegate.gen(adapter);
+            BytecodeUtils.coalesceSoyNullToJavaNull(adapter, delegate.resultType(), end);
             doBox(adapter, soyRuntimeType.asNonSoyNullish());
             adapter.mark(end);
           }
@@ -474,7 +499,7 @@ public final class SoyExpression extends Expression {
       protected void doGen(CodeBuilder adapter) {
         Label end = new Label();
         delegate.gen(adapter);
-        BytecodeUtils.soyNullToNullCoalesce(adapter, delegate.resultType(), end);
+        BytecodeUtils.coalesceSoyNullishToJavaNull(adapter, delegate.resultType(), end);
         adapter.checkCast(BytecodeUtils.NUMBER_DATA_TYPE);
         MethodRef.SOY_VALUE_JAVA_NUMBER_VALUE.invokeUnchecked(adapter);
         adapter.mark(end);

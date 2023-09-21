@@ -208,6 +208,11 @@ public final class JavaScriptValueFactoryImpl extends JavaScriptValueFactory {
   }
 
   @Override
+  public JavaScriptValue constantUndefined() {
+    return new JavaScriptValueImpl(Expressions.LITERAL_UNDEFINED);
+  }
+
+  @Override
   public JavaScriptValue emptyObjLiteral() {
     return new JavaScriptValueImpl(Expressions.EMPTY_OBJECT_LITERAL);
   }

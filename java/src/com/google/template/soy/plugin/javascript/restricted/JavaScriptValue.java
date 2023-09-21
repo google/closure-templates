@@ -24,12 +24,14 @@ import java.util.Optional;
 public interface JavaScriptValue extends SoySourceValue {
 
   /**
-   * Returns a JavaValue that evaluates to 'true' if this JavaScriptValue is not null (false
+   * Returns a JavaValue that evaluates to 'true' if this JavaScriptValue is not nullish (false
    * otherwise).
    */
   JavaScriptValue isNonNull();
 
-  /** Returns a JavaValue that evaluates to 'true' if this JavaValue is null (false otherwise). */
+  /**
+   * Returns a JavaValue that evaluates to 'true' if this JavaValue is nullish (false otherwise).
+   */
   JavaScriptValue isNull();
 
   /** Returns the literal value of this value if it is a string literal. */

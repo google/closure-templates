@@ -1469,7 +1469,8 @@ final class ExpressionCompiler {
                 @Override
                 protected void doGen(CodeBuilder adapter) {
                   baseExpr.gen(adapter);
-                  BytecodeUtils.soyNullCoalesce(adapter, baseExpr.resultType(), nullSafeExit);
+                  BytecodeUtils.coalesceSoyNullishToSoyNull(
+                      adapter, baseExpr.resultType(), nullSafeExit);
                 }
               })
           .asNonSoyNullish();
@@ -1623,7 +1624,7 @@ final class ExpressionCompiler {
               .getRenderContext()
               .getPluginInstance(node.getStaticFunctionName())
               .checkedCast(LegacyFunctionAdapter.class);
-      Expression list = SoyExpression.asBoxedListWithJavaNullItems(visitChildren(node));
+      Expression list = SoyExpression.boxListWithSoyNullAsJavaNull(visitChildren(node));
       // Most soy functions don't have return types, but if they do we should enforce it
       return SoyExpression.forSoyValue(
           node.getType(),
@@ -1686,7 +1687,7 @@ final class ExpressionCompiler {
       } else if (javaType.getSort() == Type.OBJECT) {
         SoyType nonNullableType = SoyTypes.tryRemoveNullish(type);
         if (nonNullableType.getKind() == Kind.ANY || nonNullableType.getKind() == Kind.UNKNOWN) {
-          return soyExpression.boxOrJavaNull();
+          return soyExpression.boxWithSoyNullAsJavaNull();
         } else if (nonNullableType.getKind() == Kind.PROTO) {
           return soyExpression.unboxAsMessageOrJavaNull(
               ProtoUtils.messageRuntimeType(((SoyProtoType) nonNullableType).getDescriptor())
@@ -1701,7 +1702,7 @@ final class ExpressionCompiler {
         } else if (javaType.equals(BytecodeUtils.SOY_VALUE_TYPE)) {
           return soyExpression.box().checkedCast(javaType);
         } else {
-          return soyExpression.boxOrJavaNull().checkedCast(javaType);
+          return soyExpression.boxWithSoyNullishAsJavaNull().checkedCast(javaType);
         }
       } else {
         return soyExpression;

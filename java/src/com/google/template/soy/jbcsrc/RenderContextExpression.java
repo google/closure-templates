@@ -257,7 +257,7 @@ final class RenderContextExpression extends Expression implements JbcSrcPluginCo
               MethodRef.RUNTIME_APPLY_PRINT_DIRECTIVE.invoke(
                   getPrintDirective(directive.getName()),
                   value.box(),
-                  SoyExpression.asBoxedListWithJavaNullItems(args)));
+                  SoyExpression.boxListWithSoyNullishAsJavaNull(args)));
     }
     return value;
   }

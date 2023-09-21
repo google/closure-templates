@@ -1031,9 +1031,20 @@ public final class JbcSrcRuntime {
   }
 
   @Keep
+  public static boolean isNonSoyNull(SoyValueProvider value) {
+    return !value.resolve().isNull();
+  }
+
+  @Keep
   @Nullable
-  public static SoyValue coalesceToJavaNull(SoyValue value) {
+  public static SoyValue soyNullishToJavaNull(SoyValue value) {
     return value == null || value.isNullish() ? null : value;
+  }
+
+  @Keep
+  @Nullable
+  public static SoyValue soyNullToJavaNull(SoyValue value) {
+    return value == null || value.isNull() ? null : value;
   }
 
   @Keep

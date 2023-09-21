@@ -173,7 +173,7 @@ final class AppendableExpression extends Expression {
             LOGGING_FUNCTION_INVOCATION_CREATE.invoke(
                 constant(functionName),
                 constant(placeholderValue),
-                SoyExpression.asBoxedListWithJavaNullItems(args)),
+                SoyExpression.boxListWithSoyNullishAsJavaNull(args)),
             BytecodeUtils.asImmutableList(escapingDirectives)),
         true);
   }

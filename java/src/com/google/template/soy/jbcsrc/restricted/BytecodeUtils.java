@@ -831,34 +831,49 @@ public final class BytecodeUtils {
    * Tests the top of the stack for soy nullishness, exiting to nullExit with a NullData value at
    * the top of the stack.
    */
-  public static void soyNullCoalesce(CodeBuilder builder, Type argType, Label nullExit) {
+  public static void coalesceSoyNullishToSoyNull(
+      CodeBuilder builder, Type argType, Label nullExit) {
     if (argType.equals(SOY_VALUE_TYPE)) {
       MethodRef.SOY_VALUE_NULLISH_TO_NULL.invokeUnchecked(builder);
       builder.dup();
       MethodRef.SOY_VALUE_IS_NULLISH.invokeUnchecked(builder);
       builder.ifZCmp(Opcodes.IFNE, nullExit);
     } else {
-      nullCoalesce(builder, nullExit, argType, cb -> soyNull().gen(cb));
+      nullCoalesce(builder, nullExit, argType, cb -> soyNull().gen(cb), /* ish= */ true);
     }
   }
 
-  public static void soyUndefinedCoalesce(CodeBuilder builder, Type argType, Label nullExit) {
-    nullCoalesce(builder, nullExit, argType, cb -> soyUndefined().gen(cb));
+  public static void coalesceSoyNullishToSoyUndefined(
+      CodeBuilder builder, Type argType, Label nullExit) {
+    nullCoalesce(builder, nullExit, argType, cb -> soyUndefined().gen(cb), /* ish= */ true);
   }
 
   /**
    * Tests the top of the stack for soy nullishness, exiting to nullExit with a Java null at the top
    * of the stack.
    */
-  public static void soyNullToNullCoalesce(CodeBuilder builder, Type argType, Label nullExit) {
-    nullCoalesce(builder, nullExit, argType, CodeBuilder::pushNull);
+  public static void coalesceSoyNullishToJavaNull(
+      CodeBuilder builder, Type argType, Label nullExit) {
+    nullCoalesce(builder, nullExit, argType, CodeBuilder::pushNull, /* ish= */ true);
+  }
+
+  public static void coalesceSoyNullToJavaNull(CodeBuilder builder, Type argType, Label nullExit) {
+    nullCoalesce(builder, nullExit, argType, CodeBuilder::pushNull, /* ish= */ false);
   }
 
   private static void nullCoalesce(
-      CodeBuilder builder, Label nullExit, Type argType, Consumer<CodeBuilder> pusher) {
+      CodeBuilder builder,
+      Label nullExit,
+      Type argType,
+      Consumer<CodeBuilder> pusher,
+      boolean ish) {
     Label nonNull = new Label();
     builder.dup();
-    ifNonNullish(builder, argType, nonNull);
+    if (ish) {
+      ifNonNullish(builder, argType, nonNull);
+    } else {
+      ifNonSoyNull(builder, argType, nonNull);
+    }
     // See http://mail.ow2.org/wws/arc/asm/2016-02/msg00001.html for a discussion of this pattern
     // but even though the value at the top of the stack here is null, its type isn't.  So we need
     // to pop and push.  This is the idiomatic pattern.
@@ -866,6 +881,19 @@ public final class BytecodeUtils {
     pusher.accept(builder);
     builder.goTo(nullExit);
     builder.mark(nonNull);
+  }
+
+  /** Like {@link #ifNonNullish} but tests on `SoyValue.isNull` rather than `SoyValue.isNullish`. */
+  public static void ifNonSoyNull(CodeBuilder cb, Type argType, Label ifNonNull) {
+    if (isDefinitelyAssignableFrom(SOY_VALUE_TYPE, argType)) {
+      MethodRef.SOY_VALUE_IS_NULL.invokeUnchecked(cb);
+      cb.ifZCmp(Opcodes.IFEQ, ifNonNull);
+    } else if (isDefinitelyAssignableFrom(SOY_VALUE_PROVIDER_TYPE, argType)) {
+      MethodRef.IS_SOY_NON_NULL.invokeUnchecked(cb);
+      cb.ifZCmp(Opcodes.IFNE, ifNonNull);
+    } else {
+      cb.ifNonNull(ifNonNull);
+    }
   }
 
   /**

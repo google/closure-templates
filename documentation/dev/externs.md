@@ -209,7 +209,7 @@ proto enums            | the proto enum Java type                               
 `map<?,?>`             | `java.util.Map`, `com.google.common.collect.ImmutableMap`                                                 | Same supported element types as list.
 records                | `java.util.Map`, `com.google.common.collect.ImmutableMap`                                                 | Supports all value types other than `list`, `map`, records, and unions.
 unions                 | `java.lang.Object`, `com.google.template.soy.data.SoyValue`                                               | All unions other than `int\|float`. Supported union members are: `int`, `float`, `string`, `bool`, proto, proto enum, `uri`, `trusted_resource_uri`, and `html`.
-`any`                  | `java.lang.Object`, `com.google.template.soy.data.SoyValue`                                               |
+`any`                  | `java.lang.Object`, `com.google.template.soy.data.SoyValue`                                               | For params, `NullData` is provided as Java `null` while `UndefinedData` is provided as-is.
 
 \* If the Soy type is nullable then the primitive Java type is not allowed.
 
