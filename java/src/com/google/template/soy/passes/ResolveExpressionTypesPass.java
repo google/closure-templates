@@ -1905,13 +1905,25 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
       // Restore substitutions to previous state
       substitutions.restore(savedSubstitutionState);
 
-      SoyType resultType = node.getChild(1).getType();
-      if (!isNullOrUndefined(node.getChild(0).getType())) {
-        resultType =
-            SoyTypes.computeLowestCommonType(
-                typeRegistry, tryRemoveNullish(node.getChild(0).getType()), resultType);
+      // If one side is of type attributes and the other is empty string, the empty string can be
+      // coerced to attributes so the node should have attributes type.
+      if (node.getChild(0) instanceof StringNode
+          && ((StringNode) node.getChild(0)).getValue().isEmpty()
+          && SoyTypes.tryRemoveNull(node.getChild(1).getType()).getKind() == Kind.ATTRIBUTES) {
+        node.setType(node.getChild(1).getType());
+      } else if (node.getChild(1) instanceof StringNode
+          && ((StringNode) node.getChild(1)).getValue().isEmpty()
+          && SoyTypes.tryRemoveNull(node.getChild(0).getType()).getKind() == Kind.ATTRIBUTES) {
+        node.setType(node.getChild(0).getType());
+      } else {
+        SoyType resultType = node.getChild(1).getType();
+        if (!isNullOrUndefined(node.getChild(0).getType())) {
+          resultType =
+              SoyTypes.computeLowestCommonType(
+                  typeRegistry, tryRemoveNullish(node.getChild(0).getType()), resultType);
+        }
+        node.setType(resultType);
       }
-      node.setType(resultType);
       tryApplySubstitution(node);
     }
 
@@ -1942,9 +1954,21 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
       substitutions.restore(savedSubstitutionState);
 
       // For a conditional node, it will return either child 1 or 2.
-      node.setType(
-          SoyTypes.computeLowestCommonType(
-              typeRegistry, node.getChild(1).getType(), node.getChild(2).getType()));
+      // If one side is of type attributes and the other is empty string, the empty string can be
+      // coerced to attributes so the node should have attributes type.
+      if (node.getChild(1) instanceof StringNode
+          && ((StringNode) node.getChild(1)).getValue().isEmpty()
+          && SoyTypes.tryRemoveNull(node.getChild(2).getType()).getKind() == Kind.ATTRIBUTES) {
+        node.setType(node.getChild(2).getType());
+      } else if (node.getChild(2) instanceof StringNode
+          && ((StringNode) node.getChild(2)).getValue().isEmpty()
+          && SoyTypes.tryRemoveNull(node.getChild(1).getType()).getKind() == Kind.ATTRIBUTES) {
+        node.setType(node.getChild(1).getType());
+      } else {
+        node.setType(
+            SoyTypes.computeLowestCommonType(
+                typeRegistry, node.getChild(1).getType(), node.getChild(2).getType()));
+      }
       tryApplySubstitution(node);
     }
 
