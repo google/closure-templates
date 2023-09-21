@@ -828,11 +828,12 @@ public final class BytecodeUtils {
   }
 
   /**
-   * Tests the top of the stack for soy nullishness, exiting to nullExit with a nullish value at the
-   * top of the stack.
+   * Tests the top of the stack for soy nullishness, exiting to nullExit with a NullData value at
+   * the top of the stack.
    */
   public static void soyNullCoalesce(CodeBuilder builder, Type argType, Label nullExit) {
     if (argType.equals(SOY_VALUE_TYPE)) {
+      MethodRef.SOY_VALUE_NULLISH_TO_NULL.invokeUnchecked(builder);
       builder.dup();
       MethodRef.SOY_VALUE_IS_NULLISH.invokeUnchecked(builder);
       builder.ifZCmp(Opcodes.IFNE, nullExit);

@@ -473,6 +473,9 @@ public abstract class MethodRef {
   public static final MethodRef SOY_VALUE_IS_UNDEFINED =
       createPure(SoyValue.class, "isUndefined").asCheap().asNonJavaNullable();
 
+  public static final MethodRef SOY_VALUE_NULLISH_TO_NULL =
+      createPure(SoyValue.class, "nullishToNull").asCheap().asNonJavaNullable();
+
   public static final MethodRef SOY_VALUE_JAVA_NUMBER_VALUE =
       createPure(NumberData.class, "javaNumberValue");
 
