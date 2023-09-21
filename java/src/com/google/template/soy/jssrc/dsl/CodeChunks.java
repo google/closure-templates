@@ -106,6 +106,12 @@ public final class CodeChunks {
                 map.put(Expressions.objectLiteralSpreadKey(), (Expression) c);
               }
             });
+    if (map.size() == 1 && ObjectLiteral.isSpreadKey(Iterables.getOnlyElement(map.keySet()))) {
+      // Simplify `{...d}` to just `d`. Note that sometimes there is a duplicate spread in the
+      // key and value, since eg a non-static html attribute transpiles to `...d`.
+      Expression val = Iterables.getOnlyElement(map.values());
+      return Expressions.isSpread(val) ? ((UnaryOperation) val).arg() : val;
+    }
     return Expressions.objectLiteralWithQuotedKeys(map);
   }
 

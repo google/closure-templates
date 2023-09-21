@@ -36,6 +36,10 @@ public abstract class ObjectLiteral extends Expression {
     return SPREAD_PREFIX + SERIAL.incrementAndGet();
   }
 
+  public static boolean isSpreadKey(String key) {
+    return key.startsWith(SPREAD_PREFIX);
+  }
+
   private static boolean isSpread(Expression e) {
     String leafText = Expressions.getLeafText(e);
     return (leafText != null && leafText.startsWith(SPREAD_PREFIX))
