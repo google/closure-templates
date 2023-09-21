@@ -22,11 +22,14 @@ import com.google.template.soy.plugin.restricted.SoySourceValue;
 public interface JavaValue extends SoySourceValue {
 
   /**
-   * Returns a JavaValue that evaluates to 'true' if this JavaValue is not null (false otherwise).
+   * Returns a JavaValue that evaluates to 'true' if this JavaValue is not nullish (false
+   * otherwise).
    */
   JavaValue isNonNull();
 
-  /** Returns a JavaValue that evaluates to 'true' if this JavaValue is null (false otherwise). */
+  /**
+   * Returns a JavaValue that evaluates to 'true' if this JavaValue is nullish (false otherwise).
+   */
   JavaValue isNull();
 
   /**

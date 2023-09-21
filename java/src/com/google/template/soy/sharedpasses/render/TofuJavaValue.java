@@ -23,9 +23,7 @@ import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.BooleanData;
-import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.StringData;
-import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.plugin.java.restricted.JavaValue;
 import com.google.template.soy.types.BoolType;
 import com.google.template.soy.types.IntType;
@@ -73,9 +71,7 @@ final class TofuJavaValue implements JavaValue {
       throw RenderException.create(
           "isNonNull is only supported on the 'args' parameters of JavaValueFactory methods");
     }
-    return forSoyValue(
-        BooleanData.forValue(!(soyValue instanceof UndefinedData || soyValue instanceof NullData)),
-        sourceLocation);
+    return forSoyValue(BooleanData.forValue(!soyValue.isNullish()), sourceLocation);
   }
 
   @Override
@@ -84,9 +80,7 @@ final class TofuJavaValue implements JavaValue {
       throw RenderException.create(
           "isNull is only supported on the 'args' parameters of JavaValueFactory methods");
     }
-    return forSoyValue(
-        BooleanData.forValue(soyValue instanceof UndefinedData || soyValue instanceof NullData),
-        sourceLocation);
+    return forSoyValue(BooleanData.forValue(soyValue.isNullish()), sourceLocation);
   }
 
   @CanIgnoreReturnValue
