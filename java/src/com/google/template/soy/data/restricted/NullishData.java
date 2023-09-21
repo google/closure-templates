@@ -19,11 +19,32 @@ package com.google.template.soy.data.restricted;
 import com.google.errorprone.annotations.Immutable;
 import com.google.protobuf.Message;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
+import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.data.SoyValue;
 
 /** Abstract superclass of null and undefined. */
 @Immutable
 public abstract class NullishData extends PrimitiveData {
+
+  @Override
+  public final int integerValue() {
+    throw new SoyDataException("'" + this + "' cannot be coerced to integer");
+  }
+
+  @Override
+  public final long longValue() {
+    throw new SoyDataException("'" + this + "' cannot be coerced to long");
+  }
+
+  @Override
+  public final double floatValue() {
+    throw new SoyDataException("'" + this + "' cannot be coerced to float");
+  }
+
+  @Override
+  public final double numberValue() {
+    throw new SoyDataException("'" + this + "' cannot be coerced to number");
+  }
 
   @Override
   public final boolean coerceToBoolean() {
