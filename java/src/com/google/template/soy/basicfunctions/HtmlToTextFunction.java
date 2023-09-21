@@ -44,7 +44,7 @@ import java.util.List;
     name = "htmlToText",
     value =
         @Signature(
-            parameterTypes = {"html|string|null"},
+            parameterTypes = {"html|string|null|undefined"},
             returnType = "string"))
 final class HtmlToTextFunction
     implements SoyJavaSourceFunction, SoyJavaScriptSourceFunction, SoyPythonSourceFunction {

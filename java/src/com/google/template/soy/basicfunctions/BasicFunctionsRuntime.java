@@ -115,13 +115,16 @@ public final class BasicFunctionsRuntime {
   }
 
   public static String concatAttributeValues(SoyValue l, SoyValue r, String delimiter) {
-    if (l == null && r == null) {
+    boolean lnull = l == null || l.isNullish();
+    boolean rnull = r == null || r.isNullish();
+
+    if (lnull && rnull) {
       return "";
     }
-    if (l == null) {
+    if (lnull) {
       return r.coerceToString();
     }
-    if (r == null) {
+    if (rnull) {
       return l.coerceToString();
     }
     String lValue = l.stringValue();

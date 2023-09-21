@@ -35,15 +35,13 @@ import com.google.template.soy.shared.restricted.SoyPureFunction;
 import java.lang.reflect.Method;
 import java.util.List;
 
-/**
- * Soy function that concatenates two css style attributes.
- */
+/** Soy function that concatenates two css style attributes. */
 @SoyPureFunction
 @SoyFunctionSignature(
     name = "_concatCssValues",
     value = {
       @Signature(
-          parameterTypes = {"css|null", "css|null"},
+          parameterTypes = {"css|undefined|null", "css|undefined|null"},
           returnType = "css"),
     })
 public final class ConcatCssValuesFunction

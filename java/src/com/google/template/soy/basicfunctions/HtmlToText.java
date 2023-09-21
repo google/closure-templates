@@ -29,7 +29,6 @@ import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.internal.base.UnescapeUtils;
 import java.util.ArrayDeque;
 import java.util.Optional;
@@ -131,7 +130,7 @@ public final class HtmlToText {
   private HtmlToText() {}
 
   public static String convert(SoyValue value) {
-    if (value == null || value instanceof NullData) {
+    if (value == null || value.isNullish()) {
       return "";
     }
     if (!(value instanceof SanitizedContent)) {

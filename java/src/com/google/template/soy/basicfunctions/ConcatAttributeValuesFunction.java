@@ -35,15 +35,13 @@ import com.google.template.soy.shared.restricted.SoyPureFunction;
 import java.lang.reflect.Method;
 import java.util.List;
 
-/**
- * Soy function that concatenates two attribute values that are strings.
- */
+/** Soy function that concatenates two attribute values that are strings. */
 @SoyPureFunction
 @SoyFunctionSignature(
     name = "_concatAttributeValues",
     value =
         @Signature(
-            parameterTypes = {"string|null", "string|null", "string"},
+            parameterTypes = {"string|undefined|null", "string|undefined|null", "string"},
             returnType = "string"))
 public final class ConcatAttributeValuesFunction
     implements SoyJavaSourceFunction, SoyJavaScriptSourceFunction, SoyPythonSourceFunction {
