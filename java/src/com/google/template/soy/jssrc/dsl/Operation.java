@@ -84,11 +84,11 @@ abstract class Operation extends Expression implements OperatorInterface {
       Expression operand, OperandPosition operandPosition, FormattingContext ctx) {
     boolean protect = shouldProtect(operand, operandPosition);
     if (protect) {
-      ctx.append('(');
+      ctx.enterGroup();
     }
     ctx.appendOutputExpression(operand);
     if (protect) {
-      ctx.append(')');
+      ctx.exitGroup();
     }
   }
 

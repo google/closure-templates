@@ -35,9 +35,9 @@ import java.util.stream.Stream;
  */
 @AutoValue
 @Immutable
-abstract class Concatenation extends Operation {
+public abstract class Concatenation extends Operation {
 
-  static Concatenation create(Iterable<? extends Expression> parts) {
+  static Expression create(Iterable<? extends Expression> parts) {
     ImmutableList.Builder<Expression> partsBuilder = ImmutableList.builder();
     for (Expression part : parts) {
       if (part instanceof Concatenation) {
@@ -48,13 +48,17 @@ abstract class Concatenation extends Operation {
         partsBuilder.add(part);
       }
     }
-    return new AutoValue_Concatenation(partsBuilder.build());
+    ImmutableList<Expression> list = partsBuilder.build();
+    if (list.size() == 1) {
+      return list.get(0);
+    }
+    return new AutoValue_Concatenation(list);
   }
 
   abstract ImmutableList<Expression> parts();
 
   /** Returns a new concatenation by mapping each part of this instance with {@code mapper}. */
-  public Concatenation map1to1(Function<Expression, Expression> mapper) {
+  public Expression map1to1(Function<Expression, Expression> mapper) {
     boolean diff = false;
     List<Expression> mappedParts = new ArrayList<>(parts().size());
     for (Expression part : parts()) {
@@ -71,7 +75,7 @@ abstract class Concatenation extends Operation {
    * Returns a new concatenation by mapping each part of this instance with {@code mapper}. The
    * mapping function can return 0-n replacements for each part.
    */
-  public Concatenation map1toN(Function<Expression, Stream<CodeChunk>> mapper) {
+  public Expression map1toN(Function<Expression, Stream<CodeChunk>> mapper) {
     boolean diff = false;
     List<Expression> mappedParts = new ArrayList<>(parts().size());
     for (Expression part : parts()) {

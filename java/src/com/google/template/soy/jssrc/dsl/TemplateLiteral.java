@@ -60,9 +60,8 @@ public abstract class TemplateLiteral extends Expression {
 
   @Override
   void doFormatOutputExpr(FormattingContext ctx) {
-    ctx.pushLexicalState(LexicalState.TTL);
-
     ctx.append('`');
+    ctx.pushLexicalState(LexicalState.TTL);
     for (CodeChunk s : body()) {
       ctx.appendAll(s);
     }

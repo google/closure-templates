@@ -48,8 +48,8 @@ public abstract class HtmlAttribute extends Expression {
   void doFormatOutputExpr(FormattingContext ctx) {
     ctx.append(name());
     if (value() != null) {
-      ctx.pushLexicalState(LexicalState.TSX_ATTR);
       ctx.append("=");
+      ctx.pushLexicalState(LexicalState.TSX_ATTR);
       ctx.appendOutputExpression(value());
       ctx.popLexicalState();
     }

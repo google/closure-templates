@@ -57,6 +57,6 @@ abstract class Group extends Operation {
 
   @Override
   void doFormatOutputExpr(FormattingContext ctx) {
-    ctx.append('(').appendOutputExpression(underlying()).append(')');
+    ctx.enterGroup().appendOutputExpression(underlying()).exitGroup();
   }
 }

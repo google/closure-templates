@@ -176,6 +176,15 @@ class FormattingContext implements AutoCloseable {
     throw new AssertionError();
   }
 
+  boolean whitespaceIsSignificant() {
+    switch (getCurrentLexicalState()) {
+      case TTL:
+        return true;
+      default:
+        return false;
+    }
+  }
+
   /** Delays any line breaking until after the next token append. */
   @CanIgnoreReturnValue
   public FormattingContext noBreak() {
@@ -192,17 +201,37 @@ class FormattingContext implements AutoCloseable {
 
   @CanIgnoreReturnValue
   FormattingContext append(String stuff) {
-    maybeBreakLineInsideTsxElement(stuff);
-    maybeIndent(stuff.isEmpty() ? '\0' : stuff.charAt(0));
+    if (!whitespaceIsSignificant()) {
+      maybeBreakLineInsideTsxElement(stuff);
+      maybeIndent(stuff.isEmpty() ? '\0' : stuff.charAt(0));
+    }
     buf.append(stuff);
     return this;
   }
 
   @CanIgnoreReturnValue
   FormattingContext append(char c) {
-    maybeBreakLineInsideTsxElement(Character.toString(c));
-    maybeIndent(c);
+    if (!whitespaceIsSignificant()) {
+      maybeBreakLineInsideTsxElement(Character.toString(c));
+      maybeIndent(c);
+    }
     buf.append(c);
+    return this;
+  }
+
+  @CanIgnoreReturnValue
+  FormattingContext enterGroup() {
+    if (lexicalStateStack.peek() == LexicalState.JS) {
+      append('(');
+    }
+    return this;
+  }
+
+  @CanIgnoreReturnValue
+  FormattingContext exitGroup() {
+    if (lexicalStateStack.peek() == LexicalState.JS) {
+      append(')');
+    }
     return this;
   }
 
@@ -350,7 +379,7 @@ class FormattingContext implements AutoCloseable {
   private void maybeIndent(char nextChar) {
     char lastChar = getLastChar();
     LexicalState current = lexicalStateStack.peek();
-    if ((current != LexicalState.RANGE_COMMENT)) {
+    if (current != LexicalState.RANGE_COMMENT) {
       // TSX safeguard: it's never safe to break a line when there's a space character at the join
       // location.
       // The reasoning above is faulty (blaming this on TSX). Some line breaks in JS are also
