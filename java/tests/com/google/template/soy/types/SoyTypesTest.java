@@ -584,11 +584,11 @@ public class SoyTypesTest {
     assertThat(
             SoyTypes.getSoyTypeForBinaryOperator(
                 UnionType.of(NULL_TYPE, FLOAT_TYPE), UnionType.of(NULL_TYPE, INT_TYPE), plusOp))
-        .isEqualTo(UnionType.of(NULL_TYPE, FLOAT_TYPE));
+        .isEqualTo(FLOAT_TYPE);
     assertThat(
             SoyTypes.getSoyTypeForBinaryOperator(
                 UnionType.of(NULL_TYPE, STRING_TYPE), UnionType.of(NULL_TYPE, INT_TYPE), plusOp))
-        .isEqualTo(UnionType.of(NULL_TYPE, STRING_TYPE));
+        .isEqualTo(STRING_TYPE);
   }
 
   @Test
@@ -663,7 +663,7 @@ public class SoyTypesTest {
     assertThat(
             SoyTypes.getSoyTypeForBinaryOperator(
                 UnionType.of(NULL_TYPE, FLOAT_TYPE), UnionType.of(NULL_TYPE, INT_TYPE), plusOp))
-        .isEqualTo(UnionType.of(NULL_TYPE, FLOAT_TYPE));
+        .isEqualTo(FLOAT_TYPE);
   }
 
   @Test

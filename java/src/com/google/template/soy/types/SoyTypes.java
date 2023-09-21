@@ -303,7 +303,7 @@ public final class SoyTypes {
    */
   @Nullable
   private static SoyType getSoyTypeFromUnionForBinaryOperator(
-      UnionType t0, SoyType t1, boolean isNullable, SoyTypeBinaryOperator operator) {
+      UnionType t0, SoyType t1, SoyTypeBinaryOperator operator) {
     List<SoyType> subTypes = new ArrayList<>();
     for (SoyType unionMember : t0.getMembers()) {
       SoyType result = getSoyTypeForBinaryOperator(unionMember, t1, operator);
@@ -312,8 +312,7 @@ public final class SoyTypes {
       }
       subTypes.add(result);
     }
-    SoyType result = UnionType.of(subTypes);
-    return isNullable ? makeNullable(result) : result;
+    return UnionType.of(subTypes);
   }
 
   /**
@@ -327,27 +326,18 @@ public final class SoyTypes {
   @Nullable
   public static SoyType getSoyTypeForBinaryOperator(
       SoyType t0, SoyType t1, SoyTypeBinaryOperator operator) {
-    // If both types are nullable, we will make the result nullable as well.
-    // If only one of these input types is nullable, we don't. For example, {int} and {int|null}
-    // probably should return {int} instead of {int|null}.
-    boolean isNullable = isNullable(t0) && isNullable(t1);
-    // TODO(b/64098780): Make arithmetic operations on nullable type consistent.
-    // For now, we remove nulltype from the union type.
-    SoyType left = tryRemoveNull(t0);
-    SoyType right = tryRemoveNull(t1);
+    // None of the operators covered by SoyTypeBinaryOperator can evaluate to null/undefined.
+    SoyType left = tryRemoveNullish(t0);
+    SoyType right = tryRemoveNullish(t1);
     if (left.getKind() == Kind.UNION) {
-      return getSoyTypeFromUnionForBinaryOperator((UnionType) left, right, isNullable, operator);
+      return getSoyTypeFromUnionForBinaryOperator((UnionType) left, right, operator);
     }
     if (right.getKind() == Kind.UNION) {
       // When we calculate the return type of a binary operator, it should always be commutative so
       // the order should not matter.
-      return getSoyTypeFromUnionForBinaryOperator((UnionType) right, left, isNullable, operator);
+      return getSoyTypeFromUnionForBinaryOperator((UnionType) right, left, operator);
     }
-    SoyType result = operator.resolve(left, right);
-    if (result == null) {
-      return null;
-    }
-    return isNullable ? makeNullable(result) : result;
+    return operator.resolve(left, right);
   }
 
   /**
@@ -518,11 +508,18 @@ public final class SoyTypes {
   }
 
   /**
-   * A type resolver interface that can be passed into getSoyTypeForBinaryOperator method. Note that
-   * the implementation of this resolver does not need to handle union types. The logic for union
-   * type should be handled by the callers that take this resolver as an argument.
+   * A type resolver interface that can be passed into getSoyTypeForBinaryOperator method.
+   *
+   * <p>All operators modeled by this interface should evaluate to a type that is not nullable. e.g.
+   * `==` is OK because its type is always `boolean` but `??` is not because it can be nullable if
+   * the rhs is nullable. This is due to the logic in getSoyTypeForBinaryOperator, which ignores
+   * nullability.
+   *
+   * <p>Note that the implementation of this resolver does not need to handle union types. The logic
+   * for union type should be handled by the callers that take this resolver as an argument.
    */
   public interface SoyTypeBinaryOperator {
+    @Nullable
     SoyType resolve(SoyType left, SoyType right);
   }
 
