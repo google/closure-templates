@@ -20,6 +20,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;
 import java.util.List;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 /**
  * Represent all of a function's params. Formats them as: "{amount, name = ‘Vesper’} : {amount:
@@ -37,12 +38,19 @@ public abstract class ParamDecls extends Expression {
 
   abstract boolean namedStyle();
 
+  @Nullable
+  abstract TsInterface tsInterface();
+
   public static ParamDecls createNamed(List<ParamDecl> params) {
-    return new AutoValue_ParamDecls(ImmutableList.copyOf(params), true);
+    return new AutoValue_ParamDecls(ImmutableList.copyOf(params), true, null);
+  }
+
+  public static ParamDecls createFromInterface(TsInterface tsInterface) {
+    return new AutoValue_ParamDecls(tsInterface.properties(), true, tsInterface);
   }
 
   public static ParamDecls create(List<ParamDecl> params) {
-    return new AutoValue_ParamDecls(ImmutableList.copyOf(params), false);
+    return new AutoValue_ParamDecls(ImmutableList.copyOf(params), false, null);
   }
 
   @Override
@@ -68,15 +76,20 @@ public abstract class ParamDecls extends Expression {
           ctx.noBreak().append(" = ").appendOutputExpression(param.defaultValue());
         }
       }
-      ctx.append("}: {");
+      ctx.append("}: ");
 
-      // Generate the dict of param types (e.g. "{amount: number, name?: string}").
-      first = true;
-      for (ParamDecl param : params()) {
-        first = ctx.commaAfterFirst(first);
-        ctx.appendOutputExpression(param);
+      if (tsInterface() != null) {
+        ctx.append(tsInterface().name());
+      } else {
+        ctx.append("{");
+        // Generate the dict of param types (e.g. "{amount: number, name?: string}").
+        first = true;
+        for (ParamDecl param : params()) {
+          first = ctx.commaAfterFirst(first);
+          ctx.appendOutputExpression(param);
+        }
+        ctx.append("}");
       }
-      ctx.append("}");
     } else {
       boolean first = true;
       for (ParamDecl param : params()) {

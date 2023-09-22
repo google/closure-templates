@@ -17,6 +17,7 @@ package com.google.template.soy.jssrc.dsl;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -28,15 +29,39 @@ public abstract class TsInterface extends Statement {
 
   abstract ImmutableList<ParamDecl> properties();
 
+  abstract ImmutableMap<String, JsDoc> docs();
+
+  abstract boolean isExported();
+
   public static TsInterface create(String name, List<ParamDecl> properties) {
-    return new AutoValue_TsInterface(name, ImmutableList.copyOf(properties));
+    return new AutoValue_TsInterface(
+        name, ImmutableList.copyOf(properties), ImmutableMap.of(), false);
+  }
+
+  public static TsInterface create(
+      String name,
+      List<ParamDecl> properties,
+      ImmutableMap<String, JsDoc> docs,
+      boolean isExported) {
+    return new AutoValue_TsInterface(name, ImmutableList.copyOf(properties), docs, isExported);
+  }
+
+  public boolean hasDoc() {
+    return !docs().isEmpty();
   }
 
   @Override
   void doFormatStatement(FormattingContext ctx) {
+    if (isExported()) {
+      ctx.append("export ");
+    }
     ctx.append(String.format("interface %s ", name()));
     ctx.enterBlock();
     for (ParamDecl prop : properties()) {
+      if (docs().containsKey(prop.name())) {
+        ctx.appendAll(docs().get(prop.name()));
+        ctx.endLine();
+      }
       ctx.append(String.format("%s%s", prop.name(), prop.optional() ? "?" : ""));
       if (prop.type() != null) {
         ctx.append(": ");
@@ -46,6 +71,7 @@ public abstract class TsInterface extends Statement {
       ctx.endLine();
     }
     ctx.close();
+    ctx.endLine();
   }
 
   @Override
