@@ -793,18 +793,20 @@ public final class ResolveExpressionTypesPassTest {
         "    {assertType('bool|int|null|string', $p)}",
         "{/switch}");
     assertTypes(
-        "{@param? p: string|bool|int}",
+        "{@param p: string|bool|int|null|undefined}",
         "{switch $p}",
         "  {case null}",
         "    {assertType('null', $p)}",
         "  {default}",
-        "    {assertType('bool|int|string', $p)}",
+        "    {assertType('bool|int|string|undefined', $p)}",
         "{/switch}");
     assertTypes(
-        "{@param? p: string|bool|int}",
+        "{@param p: string|bool|int|null|undefined}",
         "{switch $p}",
         "  {case 'str', null}",
         "    {assertType('null|string', $p)}",
+        "  {case undefined}",
+        "    {assertType('undefined', $p)}",
         "  {default}",
         "    {assertType('bool|int|string', $p)}",
         "{/switch}");

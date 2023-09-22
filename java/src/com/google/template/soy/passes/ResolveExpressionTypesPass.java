@@ -25,8 +25,10 @@ import static com.google.template.soy.types.SoyTypes.SAFE_PROTO_TO_SANITIZED_TYP
 import static com.google.template.soy.types.SoyTypes.getMapKeysType;
 import static com.google.template.soy.types.SoyTypes.getMapValuesType;
 import static com.google.template.soy.types.SoyTypes.isNullOrUndefined;
+import static com.google.template.soy.types.SoyTypes.isNullish;
 import static com.google.template.soy.types.SoyTypes.tryRemoveNull;
 import static com.google.template.soy.types.SoyTypes.tryRemoveNullish;
+import static com.google.template.soy.types.SoyTypes.tryRemoveUndefined;
 import static java.util.Comparator.naturalOrder;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
@@ -184,7 +186,6 @@ import com.google.template.soy.types.IntType;
 import com.google.template.soy.types.LegacyObjectMapType;
 import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.MapType;
-import com.google.template.soy.types.NullType;
 import com.google.template.soy.types.ProtoImportType;
 import com.google.template.soy.types.RecordType;
 import com.google.template.soy.types.SanitizedType;
@@ -242,7 +243,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
           "Union type that is nullable cannot use bracket access. To access this value, "
               + "first check for null or use null-safe (\"?[\") operations.");
   private static final SoyErrorKind CHECK_NOT_NULL_ON_COMPILE_TIME_NULL =
-      SoyErrorKind.of("Cannot {0} on a value with a static type of ''null''.");
+      SoyErrorKind.of("Cannot {0} on a value with a static type of ''null'' or ''undefined''.");
   private static final SoyErrorKind REDUNDANT_NON_NULL_ASSERTION_OPERATOR =
       SoyErrorKind.of("Found redundant non-null assertion operators (''!'').");
   private static final SoyErrorKind NULLISH_FIELD_ACCESS =
@@ -308,7 +309,8 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
   private static final SoyErrorKind PROTO_MISSING_REQUIRED_FIELD =
       SoyErrorKind.of("Missing required proto field ''{0}''.");
   private static final SoyErrorKind PROTO_NULL_ARG_TYPE =
-      SoyErrorKind.of("Cannot assign static type ''null'' to proto field ''{0}''.");
+      SoyErrorKind.of(
+          "Cannot assign static type ''null'' or ''undefined'' to proto field ''{0}''.");
   private static final SoyErrorKind PROTO_FIELD_NAME_IMPORT_CONFLICT =
       SoyErrorKind.of(
           "Imported symbol ''{0}'' conflicts with a field of proto constructor ''{1}''.");
@@ -350,7 +352,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
           "Method calls are not allowed on objects with nullable types (''{0}''). Either ensure"
               + " the type is non-nullable or perform a null safe access (''?.'').");
   private static final SoyErrorKind EXPLICIT_NULL =
-      SoyErrorKind.of("Explicit use of the ''null'' type is not allowed.");
+      SoyErrorKind.of("Use of the ''null'' or ''undefined'' literal is not allowed.");
   private static final SoyErrorKind AMBIGUOUS_INFERRED_TYPE =
       SoyErrorKind.of(
           "Using {0} in the initializer for a parameter with an inferred type is ambiguous. "
@@ -588,8 +590,8 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
         if (headerVar instanceof TemplateStateVar) {
           allStateVars.add((TemplateStateVar) headerVar);
         }
-        // TODO(lukes): there are more non-sensical declarations than just 'null'
-        if (headerVar.getTypeNode() != null && NullType.getInstance().equals(headerVar.type())) {
+        // TODO(lukes): there are more nonsensical declarations than just 'null'
+        if (headerVar.getTypeNode() != null && headerVar.type().isNullOrUndefined()) {
           errorReporter.report(headerVar.getTypeNode().sourceLocation(), EXPLICIT_NULL);
         }
         if (headerVar.defaultValue() == null) {
@@ -686,7 +688,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
     protected void visitConstNode(ConstNode node) {
       constExprVisitor.exec(node.getExpr());
       SoyType type = node.getExpr().getType();
-      if (SoyTypes.isNullish(type)) {
+      if (isNullish(type)) {
         errorReporter.report(node.getSourceLocation(), CONSTANTS_CANT_BE_NULLABLE, type);
       }
       node.getVar().setType(type);
@@ -792,15 +794,15 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
       SoyType switchExprType = switchExpr.getType();
       boolean exprTypeError = false;
       if (SoyTypes.isNullOrUndefined(switchExprType)
-          || !SoyTypes.isKindOrUnionOfKinds(
-              SoyTypes.tryRemoveNullish(switchExprType), allowedSwitchTypes)) {
+          || !SoyTypes.isKindOrUnionOfKinds(tryRemoveNullish(switchExprType), allowedSwitchTypes)) {
         errorReporter.report(
             switchExpr.getSourceLocation(), ILLEGAL_SWITCH_EXPRESSION_TYPE, switchExprType);
         exprTypeError = true;
-      } else if (SoyTypes.tryRemoveNullish(switchExprType).getKind() == Kind.PROTO_ENUM) {
+      } else if (tryRemoveNullish(switchExprType).getKind() == Kind.PROTO_ENUM) {
         // Allow int cases in proto switch.
         switchExprType = UnionType.of(switchExprType, IntType.getInstance());
       }
+      SoyType switchExprNarrowedType = switchExpr.getType();
       for (SoyNode child : node.getChildren()) {
         if (child instanceof SwitchCaseNode) {
           SwitchCaseNode scn = ((SwitchCaseNode) child);
@@ -809,15 +811,17 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
           // Calculate a new type for the switch expression: the union of the types of the case
           // statement.
           List<SoyType> caseTypes = new ArrayList<>();
-          boolean nullFound = false;
+
           for (ExprRootNode expr : scn.getExprList()) {
             SoyType type = expr.getType();
             caseTypes.add(type);
             if (expr.getRoot().getKind() == ExprNode.Kind.NULL_NODE) {
-              nullFound = true;
+              switchExprNarrowedType = tryRemoveNull(switchExprNarrowedType);
+            } else if (expr.getRoot().getKind() == ExprNode.Kind.UNDEFINED_NODE) {
+              switchExprNarrowedType = tryRemoveUndefined(switchExprNarrowedType);
             }
 
-            if (!exprTypeError && type.getKind() != Kind.UNKNOWN && type.getKind() != Kind.NULL) {
+            if (!exprTypeError && type.getKind() != Kind.UNKNOWN && !type.isNullOrUndefined()) {
               // Type system has problems with nullability and proto values. So we have to allow
               // "case null" even if we don't think the type is nullable.
               if (!switchExprType.isAssignableFromLoose(type)) {
@@ -837,12 +841,11 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
 
           substitutions.restore(previousSubstitutionState);
 
-          if (nullFound) {
-            // If a case statement has a null literal, the switch expression can't be null for any
-            // of the following case statements.
+          if (!switchExpr.getType().equals(switchExprNarrowedType)) {
+            // If a case statement has a null/undefined literal, the switch expression can't be
+            // null/undefined for any of the following case statements.
             Map<ExprEquivalence.Wrapper, SoyType> negativeTypeConstraints = new HashMap<>();
-            negativeTypeConstraints.put(
-                exprEquivalence.wrap(switchExpr), tryRemoveNull(switchExpr.getType()));
+            negativeTypeConstraints.put(exprEquivalence.wrap(switchExpr), switchExprNarrowedType);
             substitutions.addAll(negativeTypeConstraints);
           }
         } else if (child instanceof SwitchDefaultNode) {
@@ -1041,7 +1044,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
     private void finishAssertNonNullOpNode(AssertNonNullOpNode node) {
       ExprNode child = node.getChild(0);
       SoyType type = child.getType();
-      if (type.getKind() == Kind.NULL) {
+      if (type.isNullOrUndefined()) {
         errorReporter.report(
             node.getSourceLocation(),
             CHECK_NOT_NULL_ON_COMPILE_TIME_NULL,
@@ -1051,7 +1054,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
         errorReporter.report(node.getSourceLocation(), REDUNDANT_NON_NULL_ASSERTION_OPERATOR);
         node.setType(UnknownType.getInstance());
       } else {
-        node.setType(SoyTypes.tryRemoveNullish(type));
+        node.setType(tryRemoveNullish(type));
       }
     }
 
@@ -1339,7 +1342,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
         finishAssertNonNullOpNodeChain(dataAccess);
       }
       SoyType type = nullSafeAccessNode.getDataAccess().getType();
-      if (SoyTypes.isNullable(nullSafeAccessNode.getBase().getType())
+      if (isNullish(nullSafeAccessNode.getBase().getType())
           && !hasNonNullAssertion(nullSafeAccessNode.getDataAccess())) {
         type = SoyTypes.makeNullable(type);
       }
@@ -1601,7 +1604,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
 
     @Nullable
     private SoyMethod resolveMethodFromBaseType(MethodCallNode node, SoyType baseType) {
-      if (SoyTypes.isNullish(baseType)) {
+      if (isNullish(baseType)) {
         errorReporter.report(
             node.getBaseExprChild().getSourceLocation(),
             METHOD_BASE_TYPE_NULL_SAFE_REQUIRED,
@@ -1909,11 +1912,11 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
       // coerced to attributes so the node should have attributes type.
       if (node.getChild(0) instanceof StringNode
           && ((StringNode) node.getChild(0)).getValue().isEmpty()
-          && SoyTypes.tryRemoveNull(node.getChild(1).getType()).getKind() == Kind.ATTRIBUTES) {
+          && tryRemoveNullish(node.getChild(1).getType()).getKind() == Kind.ATTRIBUTES) {
         node.setType(node.getChild(1).getType());
       } else if (node.getChild(1) instanceof StringNode
           && ((StringNode) node.getChild(1)).getValue().isEmpty()
-          && SoyTypes.tryRemoveNull(node.getChild(0).getType()).getKind() == Kind.ATTRIBUTES) {
+          && tryRemoveNullish(node.getChild(0).getType()).getKind() == Kind.ATTRIBUTES) {
         node.setType(node.getChild(0).getType());
       } else {
         SoyType resultType = node.getChild(1).getType();
@@ -1958,11 +1961,11 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
       // coerced to attributes so the node should have attributes type.
       if (node.getChild(1) instanceof StringNode
           && ((StringNode) node.getChild(1)).getValue().isEmpty()
-          && SoyTypes.tryRemoveNull(node.getChild(2).getType()).getKind() == Kind.ATTRIBUTES) {
+          && tryRemoveNullish(node.getChild(2).getType()).getKind() == Kind.ATTRIBUTES) {
         node.setType(node.getChild(2).getType());
       } else if (node.getChild(2) instanceof StringNode
           && ((StringNode) node.getChild(2)).getValue().isEmpty()
-          && SoyTypes.tryRemoveNull(node.getChild(1).getType()).getKind() == Kind.ATTRIBUTES) {
+          && tryRemoveNullish(node.getChild(1).getType()).getKind() == Kind.ATTRIBUTES) {
         node.setType(node.getChild(1).getType());
       } else {
         node.setType(
@@ -2354,7 +2357,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
 
         // Check that the arg type is not null and that it matches the expected field type.
         SoyType argType = expr.getType();
-        if (argType.equals(NullType.getInstance())) {
+        if (argType.isNullOrUndefined()) {
           errorReporter.report(
               expr.getSourceLocation(), PROTO_NULL_ARG_TYPE, fieldName.identifier());
         }
@@ -2369,7 +2372,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
           }
         }
 
-        SoyType expectedType = SoyTypes.makeNullable(fieldType);
+        SoyType expectedType = SoyTypes.makeNullish(fieldType);
         if (!expectedType.isAssignableFromLoose(argType)) {
           argType =
               RuntimeTypeCoercion.maybeCoerceType(
@@ -2483,7 +2486,6 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
      */
     private SoyType getFieldType(
         SoyType baseType, String fieldName, SourceLocation sourceLocation) {
-      Preconditions.checkNotNull(baseType);
       switch (baseType.getKind()) {
         case UNKNOWN:
           // If we don't know anything about the base type, then make no assumptions
@@ -2529,7 +2531,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
                 fieldType = UnknownType.getInstance();
               }
             }
-            return SoyTypes.tryRemoveNullish(fieldType);
+            return tryRemoveNullish(fieldType);
           }
 
         case LEGACY_OBJECT_MAP:
@@ -2547,9 +2549,9 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
             UnionType unionType = (UnionType) baseType;
             List<SoyType> fieldTypes = new ArrayList<>(unionType.getMembers().size());
             for (SoyType unionMember : unionType.getMembers()) {
-              // TODO:(b/246982549): Remoove this if-statement, as is this means you can freely
+              // TODO:(b/246982549): Remove this if-statement, as is this means you can freely
               // dereference nullish types without the compiler complaining.
-              if (unionMember.getKind() == SoyType.Kind.NULL) {
+              if (unionMember.isNullOrUndefined()) {
                 continue;
               }
               SoyType fieldType = getFieldType(unionMember, fieldName, sourceLocation);
@@ -2656,7 +2658,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
             List<SoyType> itemTypes = new ArrayList<>(unionType.getMembers().size());
             for (SoyType unionMember : unionType.getMembers()) {
               // Skips null types for now.
-              if (unionMember.equals(NullType.getInstance())) {
+              if (unionMember.isNullOrUndefined()) {
                 continue;
               }
               SoyType itemType =
@@ -2670,7 +2672,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
               itemTypes.add(itemType);
             }
             // If this is a nullable union type but the operation is not null-safe, report an error.
-            if (SoyTypes.isNullish(unionType) && !isNullSafe) {
+            if (isNullish(unionType) && !isNullSafe) {
               errorReporter.report(baseLocation, BRACKET_ACCESS_NULLABLE_UNION);
               return UnknownType.getInstance();
             }
@@ -2736,12 +2738,12 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
       switch (builtinFunction) {
         case CHECK_NOT_NULL:
           SoyType type = node.getChild(0).getType();
-          if (type.equals(NullType.getInstance())) {
+          if (type.isNullOrUndefined()) {
             errorReporter.report(
                 node.getSourceLocation(), CHECK_NOT_NULL_ON_COMPILE_TIME_NULL, "call checkNotNull");
           } else {
             // Same type as its child but with nulls removed
-            node.setType(SoyTypes.tryRemoveNullish(type));
+            node.setType(tryRemoveNullish(type));
           }
           break;
         case IS_PRIMARY_MSG_IN_USE:
@@ -3109,7 +3111,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
     @Override
     public ImmutableList<SoySourceFunctionMethod> matchForNameAndBase(
         String methodName, SoyType baseType) {
-      Preconditions.checkArgument(!SoyTypes.isNullish(baseType));
+      Preconditions.checkArgument(!isNullish(baseType));
       return methodCache.getUnchecked(methodName).stream()
           .filter(m -> m.appliesToBase(baseType))
           .collect(toImmutableList());
@@ -3172,8 +3174,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
 
     @Nullable
     public SoySourceFunctionMethod findField(String fieldName, SoyType baseType) {
-      Preconditions.checkArgument(
-          baseType == NullType.getInstance() || !SoyTypes.isNullish(baseType));
+      Preconditions.checkArgument(baseType.isNullOrUndefined() || !isNullish(baseType));
       return methodCache.getUnchecked(fieldName).stream()
           .filter(method -> method.appliesToBase(baseType))
           .findFirst()
