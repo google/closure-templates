@@ -62,7 +62,7 @@ HTML-tag templates can be called using the traditional `{call}` syntax:
 {/call}
 ```
 
-## Calling templates with element composition {#element-composition}
+## Calling templates with element composition {#el-composition}
 
 HTML-tag templates can also be called using the **element-composition syntax**.
 This syntax is based on the fact that HTML-tag templates return exactly one
