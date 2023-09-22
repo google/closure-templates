@@ -268,6 +268,21 @@ public abstract class TemplateType extends SoyType {
       return getTypeWrapper().getType();
     }
 
+    SoyType getDeclaredType() {
+      SoyType type = getType();
+      if (!isRequired()) {
+        // Not totally true because you could have had a redundant declaration:
+        //   {@param? f: null|string}
+        // TODO(b/291132644): Switch to "tryRemoveUndefined".
+        type = SoyTypes.tryRemoveNull(type);
+      }
+      return type;
+    }
+
+    String getTypeStringRepresentation() {
+      return getDeclaredType().toString();
+    }
+
     abstract LazyTypeWrapper getTypeWrapper();
 
     public abstract boolean isRequired();
@@ -473,7 +488,7 @@ public abstract class TemplateType extends SoyType {
         sb.append("?");
       }
       sb.append(": ");
-      sb.append(parameter.getType());
+      sb.append(parameter.getTypeStringRepresentation());
     }
     if (!reservedAttributes.isEmpty()) {
       if (!first) {

@@ -47,6 +47,8 @@ import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.soytree.defn.TemplateStateVar;
 import com.google.template.soy.templatecall.TemplateCallMetadata;
+import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.TemplateImportType;
 import com.google.template.soy.types.TemplateType;
 import java.util.Collection;
@@ -723,11 +725,18 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
       if (!headerVar.isRequired()) {
         sb.append("?");
       }
-      sb.append(" ")
-          .append(headerVar.name())
-          .append(": ")
-          .append(headerVar.hasType() ? headerVar.type() : headerVar.getTypeNode())
-          .append("}");
+      sb.append(" ").append(headerVar.name()).append(": ");
+      if (headerVar.hasType()) {
+        SoyType type = headerVar.type();
+        if (!headerVar.isRequired()) {
+          // TODO(b/291132644): Switch to "tryRemoveUndefined".
+          type = SoyTypes.tryRemoveNull(type);
+        }
+        sb.append(type);
+      } else {
+        sb.append(headerVar.getOriginalTypeNode());
+      }
+      sb.append("}");
       if (headerVar.desc() != null) {
         sb.append("  /** ").append(headerVar.desc()).append(" */");
       }

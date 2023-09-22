@@ -58,8 +58,8 @@ public final class TemplateStateVar extends AbstractVarDefn implements TemplateH
     this.sourceLocation = sourceLocation;
 
     // Optional params become nullable
-    if (optional && typeNode != null) {
-      typeNode = TemplateParam.getNullableTypeNode(typeNode);
+    if (optional && typeNode != null && !TemplateParam.isAlreadyOptionalType(typeNode)) {
+      typeNode = TemplateParam.getOptionalParamTypeNode(typeNode);
     }
     this.typeNode = typeNode;
   }

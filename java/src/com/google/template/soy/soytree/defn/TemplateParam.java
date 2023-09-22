@@ -37,6 +37,9 @@ import javax.annotation.Nullable;
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  */
 public class TemplateParam extends AbstractVarDefn implements TemplateHeaderVarDefn {
+  // TODO(b/291132644): Switch to "undefined".
+  private static final String TYPE_OF_OPTIONAL_PARAM = "null";
+
   private final TypeNode typeNode;
   private final TypeNode originalTypeNode;
   private String desc;
@@ -76,27 +79,12 @@ public class TemplateParam extends AbstractVarDefn implements TemplateHeaderVarD
     this.defaultValue = defaultValue == null ? null : new ExprRootNode(defaultValue);
     this.sourceLocation = sourceLocation;
     this.isExplicitlyOptional = optional;
-
-    boolean isNullable = false;
-    if (typeNode instanceof UnionTypeNode) {
-      UnionTypeNode utn = (UnionTypeNode) typeNode;
-      for (TypeNode tn : utn.candidates()) {
-        if (tn instanceof NamedTypeNode
-            && ((NamedTypeNode) tn).name().identifier().equals("null")) {
-          isNullable = true;
-          break;
-        }
-      }
-    } else if (typeNode instanceof NamedTypeNode
-        && ((NamedTypeNode) typeNode).name().identifier().equals("null")) {
-      isNullable = true;
-    }
-    // Optional params become nullable
-    if (optional && !isNullable && typeNode != null) {
-      typeNode = getNullableTypeNode(typeNode);
+    boolean typeIsOptional = typeNode != null && isAlreadyOptionalType(typeNode);
+    if (optional && typeNode != null && !typeIsOptional) {
+      typeNode = getOptionalParamTypeNode(typeNode);
     }
     this.typeNode = typeNode;
-    this.isRequired = defaultValue == null && !optional && !isNullable;
+    this.isRequired = defaultValue == null && !optional && !typeIsOptional;
   }
 
   protected TemplateParam(TemplateParam param, CopyState copyState) {
@@ -205,8 +193,25 @@ public class TemplateParam extends AbstractVarDefn implements TemplateHeaderVarD
     return new TemplateParam(this, copyState);
   }
 
-  public static TypeNode getNullableTypeNode(TypeNode typeNode) {
-    NamedTypeNode nullType = NamedTypeNode.create(typeNode.sourceLocation(), "null");
+  static boolean isAlreadyOptionalType(TypeNode typeNode) {
+    if (typeNode instanceof UnionTypeNode) {
+      UnionTypeNode utn = (UnionTypeNode) typeNode;
+      for (TypeNode tn : utn.candidates()) {
+        if (tn instanceof NamedTypeNode
+            && ((NamedTypeNode) tn).name().identifier().equals(TYPE_OF_OPTIONAL_PARAM)) {
+          return true;
+        }
+      }
+    } else if (typeNode instanceof NamedTypeNode
+        && ((NamedTypeNode) typeNode).name().identifier().equals(TYPE_OF_OPTIONAL_PARAM)) {
+      return true;
+    }
+    return false;
+  }
+
+  static TypeNode getOptionalParamTypeNode(TypeNode typeNode) {
+    NamedTypeNode nullType =
+        NamedTypeNode.create(typeNode.sourceLocation(), TYPE_OF_OPTIONAL_PARAM);
     return typeNode instanceof UnionTypeNode
         ? UnionTypeNode.create(
             ImmutableList.<TypeNode>builder()
