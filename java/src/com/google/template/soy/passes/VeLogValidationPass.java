@@ -286,7 +286,7 @@ final class VeLogValidationPass implements CompilerFileSetPass {
     ExprNode dataExpr = node.getChild(1);
 
     if (veExpr.getType().getKind() == Kind.VE) {
-      if (dataExpr.getType().getKind() != Kind.NULL) {
+      if (!dataExpr.getType().isNullOrUndefined()) {
         VeType veType = (VeType) veExpr.getType();
         SoyType dataType = dataExpr.getType();
         if (!veType.getDataType().isPresent()) {
@@ -307,7 +307,7 @@ final class VeLogValidationPass implements CompilerFileSetPass {
     } else if (SoyTypes.isKindOrUnionOfKind(veExpr.getType(), Kind.VE)) {
       // This is a union of VE types with different data types, so it's okay to wrap in ve_data as
       // long as ve_data's data parameter is null.
-      if (dataExpr.getType().getKind() != Kind.NULL) {
+      if (!dataExpr.getType().isNullOrUndefined()) {
         reporter.report(dataExpr.getSourceLocation(), VE_UNION_WITH_DATA, veExpr.getType());
       }
     } else {

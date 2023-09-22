@@ -544,8 +544,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     }
     if (type.getKind() == SoyType.Kind.UNION) {
       for (SoyType memberType : ((UnionType) type).getMembers()) {
-        if (memberType.getKind() != SoyType.Kind.PROTO
-            && memberType.getKind() != SoyType.Kind.NULL) {
+        if (memberType.getKind() != SoyType.Kind.PROTO && !memberType.isNullOrUndefined()) {
           return false;
         }
       }

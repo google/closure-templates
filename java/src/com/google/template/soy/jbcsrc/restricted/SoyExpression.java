@@ -632,8 +632,7 @@ public final class SoyExpression extends Expression {
     if (!SoyTypes.isNullOrUndefined(soyType()) && nonNullRuntimeType.isKnownListOrUnionOfLists()) {
       asListType = nonNullRuntimeType.asListType();
     } else {
-      Kind kind = soyType().getKind();
-      if (kind == Kind.UNKNOWN || kind == Kind.NULL) {
+      if (soyType().getKind() == Kind.UNKNOWN || soyType().isNullOrUndefined()) {
         asListType = ListType.of(UnknownType.getInstance());
       } else {
         // The type checker should have already rejected all of these
@@ -654,7 +653,7 @@ public final class SoyExpression extends Expression {
    * NullData or UndefinedData.
    */
   public Expression unboxAsMessageOrJavaNull(Type runtimeType) {
-    if (soyType().getKind() == Kind.NULL) {
+    if (soyType().isNullOrUndefined()) {
       // If this is a null literal, return a Messaged-typed null literal.
       return BytecodeUtils.constantNull(runtimeType);
     }

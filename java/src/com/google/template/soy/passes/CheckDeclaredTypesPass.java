@@ -106,7 +106,7 @@ final class CheckDeclaredTypesPass implements CompilerFilePass {
           checkArgument(node.arguments().size() == 1);
           TypeNode dataType = node.arguments().get(0);
           if (dataType.getResolvedType().getKind() != Kind.PROTO
-              && dataType.getResolvedType().getKind() != Kind.NULL) {
+              && !dataType.getResolvedType().isNullOrUndefined()) {
             errorReporter.report(
                 dataType.sourceLocation(), VE_BAD_DATA_TYPE, dataType.getResolvedType());
           }
