@@ -145,24 +145,28 @@ interface ExpressionDetacher {
       Statement saveOperation = saveOperationSupplier.get();
       return new Expression(soyValueProvider.resultType()) {
         @Override
-        protected void doGen(CodeBuilder adapter) {
+        protected void doGen(CodeBuilder cb) {
           // We use a bunch of dup() operations in order to save extra field reads and method
           // invocations.  This makes it difficult/confusing to use the expression api. So instead
           // call a bunch of unchecked invocations.
           // Legend: SVP = SoyValueProvider, RR = RenderResult, Z = boolean, SV = SoyValue
-          soyValueProvider.gen(adapter); // Stack: SVP
-          adapter.dup(); // Stack: SVP, SVP
-          MethodRef.SOY_VALUE_PROVIDER_STATUS.invokeUnchecked(adapter); // Stack: SVP, RR
-          adapter.dup(); // Stack: SVP, RR, RR
-          MethodRef.RENDER_RESULT_IS_DONE.invokeUnchecked(adapter); // Stack: SVP, RR, Z
+          soyValueProvider.gen(cb); // Stack: SVP
+          cb.dup(); // Stack: SVP, SVP
+          MethodRef.SOY_VALUE_PROVIDER_STATUS.invokeUnchecked(cb); // Stack: SVP, RR
+          if (DetachState.FORCE_EVERY_DETACH_POINT) {
+            cb.visitLdcInsn(DetachState.ForceDetachPointsForTesting.uniqueCallSite());
+            DetachState.ForceDetachPointsForTesting.MAYBE_FORCE_CONTINUE_AFTER.invokeUnchecked(cb);
+          }
+          cb.dup(); // Stack: SVP, RR, RR
+          MethodRef.RENDER_RESULT_IS_DONE.invokeUnchecked(cb); // Stack: SVP, RR, Z
           Label end = new Label();
           // if isDone goto end
-          adapter.ifZCmp(Opcodes.IFNE, end); // Stack: SVP, RR
+          cb.ifZCmp(Opcodes.IFNE, end); // Stack: SVP, RR
 
-          saveOperation.gen(adapter);
-          adapter.returnValue();
-          adapter.mark(end);
-          adapter.pop(); // Stack: SVP
+          saveOperation.gen(cb);
+          cb.returnValue();
+          cb.mark(end);
+          cb.pop(); // Stack: SVP
         }
       };
     }
@@ -192,6 +196,10 @@ interface ExpressionDetacher {
           soyValueProviderList.gen(cb); // Stack: List
           cb.dup(); // Stack: List, List
           MethodRef.RUNTIME_GET_LIST_STATUS.invokeUnchecked(cb); // Stack: List, RR
+          if (DetachState.FORCE_EVERY_DETACH_POINT) {
+            cb.visitLdcInsn(DetachState.ForceDetachPointsForTesting.uniqueCallSite());
+            DetachState.ForceDetachPointsForTesting.MAYBE_FORCE_CONTINUE_AFTER.invokeUnchecked(cb);
+          }
           cb.dup(); // Stack: List, RR, RR
           MethodRef.RENDER_RESULT_IS_DONE.invokeUnchecked(cb); // Stack: List, RR, Z
           Label end = new Label();
@@ -220,6 +228,10 @@ interface ExpressionDetacher {
           soyValueProviderMap.gen(cb); // Stack: Map
           cb.dup(); // Stack: Map, Map
           MethodRef.RUNTIME_GET_MAP_STATUS.invokeUnchecked(cb); // Stack: Map, RR
+          if (DetachState.FORCE_EVERY_DETACH_POINT) {
+            cb.visitLdcInsn(DetachState.ForceDetachPointsForTesting.uniqueCallSite());
+            DetachState.ForceDetachPointsForTesting.MAYBE_FORCE_CONTINUE_AFTER.invokeUnchecked(cb);
+          }
           cb.dup(); // Stack: Map, RR, RR
           MethodRef.RENDER_RESULT_IS_DONE.invokeUnchecked(cb); // Stack: Map, RR, Z
           Label end = new Label();

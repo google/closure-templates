@@ -22,6 +22,7 @@ import static com.google.template.soy.jbcsrc.restricted.Statement.returnExpressi
 
 import com.google.auto.value.AutoValue;
 import com.google.template.soy.jbcsrc.TemplateVariableManager.SaveRestoreState;
+import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
 import com.google.template.soy.jbcsrc.restricted.Expression;
@@ -29,11 +30,17 @@ import com.google.template.soy.jbcsrc.restricted.FieldRef;
 import com.google.template.soy.jbcsrc.restricted.LocalVariable;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.Statement;
+import com.google.template.soy.jbcsrc.runtime.JbcSrcRuntime;
+import com.google.template.soy.jbcsrc.shared.ExtraConstantBootstraps;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import org.objectweb.asm.ConstantDynamic;
+import org.objectweb.asm.Handle;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
 
@@ -100,6 +107,49 @@ import org.objectweb.asm.Opcodes;
  * this class is responsible for calculating the save/restore reattach logic.
  */
 final class DetachState implements ExpressionDetacher.Factory {
+
+  static final boolean FORCE_EVERY_DETACH_POINT =
+      Boolean.getBoolean("soy_jbcsrc_take_every_detach_point");
+
+  /** Constants to support a test that triggers every detach point in a template. */
+  static final class ForceDetachPointsForTesting {
+    private ForceDetachPointsForTesting() {}
+
+    private static final Handle CALL_SITE_KEY_HANDLE =
+        MethodRef.createPure(
+                ExtraConstantBootstraps.class,
+                "callSiteKey",
+                MethodHandles.Lookup.class,
+                String.class,
+                Class.class,
+                int.class)
+            .asHandle();
+
+    static final MethodRef MAYBE_FORCE_LIMITED =
+        MethodRef.createNonPure(
+            JbcSrcRuntime.EveryDetachStateForTesting.class,
+            "maybeForceLimited",
+            boolean.class,
+            Object.class);
+
+    static final MethodRef MAYBE_FORCE_CONTINUE_AFTER =
+        MethodRef.createNonPure(
+            JbcSrcRuntime.EveryDetachStateForTesting.class,
+            "maybeForceContinueAfter",
+            RenderResult.class,
+            Object.class);
+    private static final AtomicInteger counter = new AtomicInteger();
+
+    /** Constructs a key that can be used to identify if a call site has been visited before. */
+    static ConstantDynamic uniqueCallSite() {
+      return new ConstantDynamic(
+          "callsite",
+          BytecodeUtils.OBJECT.type().getDescriptor(),
+          CALL_SITE_KEY_HANDLE,
+          counter.getAndIncrement());
+    }
+  }
+
   private final TemplateVariableManager variables;
   private final List<ReattachState> reattaches = new ArrayList<>();
   private final Supplier<RenderContextExpression> renderContextExpression;
@@ -163,6 +213,10 @@ final class DetachState implements ExpressionDetacher.Factory {
       protected void doGen(CodeBuilder adapter) {
         Label continueLabel = new Label();
         isSoftLimited.gen(adapter);
+        if (FORCE_EVERY_DETACH_POINT) {
+          adapter.visitLdcInsn(ForceDetachPointsForTesting.uniqueCallSite());
+          ForceDetachPointsForTesting.MAYBE_FORCE_LIMITED.invokeUnchecked(adapter);
+        }
         adapter.ifZCmp(Opcodes.IFEQ, continueLabel); // if !softLimited
         returnLimited.gen(adapter);
         adapter.mark(continueLabel);
@@ -209,6 +263,24 @@ final class DetachState implements ExpressionDetacher.Factory {
       protected void doGen(CodeBuilder adapter) {
         adapter.mark(reattachPoint);
         // Legend: RR = RenderResult, Z = boolean
+        if (DetachState.FORCE_EVERY_DETACH_POINT) {
+          // we insert the extra detach operation _before_ calling into render
+          // This ensures that we always detach at least once and we never call back into render
+          // after it returns done().  Otherwise we might end up double rendering.
+          MethodRef.RENDER_RESULT_DONE.invokeUnchecked(adapter);
+          adapter.visitLdcInsn(DetachState.ForceDetachPointsForTesting.uniqueCallSite());
+          DetachState.ForceDetachPointsForTesting.MAYBE_FORCE_CONTINUE_AFTER.invokeUnchecked(
+              adapter);
+          adapter.dup(); // Stack: RR, RR
+          MethodRef.RENDER_RESULT_IS_DONE.invokeUnchecked(adapter); // Stack: RR, Z
+          // if isDone goto Done
+          Label end = new Label();
+          adapter.ifZCmp(Opcodes.IFNE, end); // Stack: RR
+          saveState.gen(adapter);
+          adapter.returnValue();
+          adapter.mark(end);
+          adapter.pop(); // Stack:
+        }
         render.gen(adapter); // Stack: RR
         adapter.dup(); // Stack: RR, RR
         MethodRef.RENDER_RESULT_IS_DONE.invokeUnchecked(adapter); // Stack: RR, Z
@@ -299,7 +371,7 @@ final class DetachState implements ExpressionDetacher.Factory {
         .labelEnd(end);
   }
 
-  /** Add a new state item and return the statment that saves state. */
+  /** Add a new state item and return the statement that saves state. */
   private Statement addState(Label reattachPoint) {
     checkDetachesAllowed();
     // the index of the ReattachState in the list + 1, 0 is reserved for 'initial state'.

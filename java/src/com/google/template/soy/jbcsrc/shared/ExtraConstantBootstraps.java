@@ -26,5 +26,14 @@ public final class ExtraConstantBootstraps {
     return v != 0;
   }
 
+  /**
+   * Returns a unique object. Useful for associating with a callsite to uniquely identify it at
+   * runtime.
+   */
+  @Keep
+  public static Object callSiteKey(MethodHandles.Lookup lookup, String name, Class<?> type, int v) {
+    return new Object();
+  }
+
   private ExtraConstantBootstraps() {}
 }

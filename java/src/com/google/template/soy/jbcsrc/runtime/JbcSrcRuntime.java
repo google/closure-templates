@@ -20,6 +20,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 import static java.lang.invoke.MethodType.methodType;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.HashMultiset;
@@ -27,7 +28,9 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multiset;
 import com.google.common.collect.SetMultimap;
+import com.google.common.collect.Sets;
 import com.google.common.io.BaseEncoding;
+import com.google.common.util.concurrent.Futures;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.errorprone.annotations.Immutable;
 import com.google.errorprone.annotations.Keep;
@@ -1096,6 +1099,34 @@ public final class JbcSrcRuntime {
 
   public static SoyValue emptyToNull(SoyValue value) {
     return value.stringValue().isEmpty() ? NullData.INSTANCE : value;
+  }
+
+  /**
+   * Holds some rarely needed constants so that we can defer initializing them in the common case
+   */
+  @VisibleForTesting
+  public static final class EveryDetachStateForTesting {
+    private static final Set<Object> visited = Sets.newConcurrentHashSet();
+
+    private static final RenderResult TRIVIAL_PENDING =
+        RenderResult.continueAfter(Futures.immediateVoidFuture());
+
+    public static void clear() {
+      visited.clear();
+    }
+
+    public static boolean maybeForceLimited(boolean actual, Object callsite) {
+      return actual || EveryDetachStateForTesting.visited.add(callsite);
+    }
+
+    public static RenderResult maybeForceContinueAfter(RenderResult actual, Object callsite) {
+      if (actual.isDone() && EveryDetachStateForTesting.visited.add(callsite)) {
+        actual = EveryDetachStateForTesting.TRIVIAL_PENDING;
+      }
+      return actual;
+    }
+
+    private EveryDetachStateForTesting() {}
   }
 
   private JbcSrcRuntime() {}
