@@ -20,6 +20,7 @@ import static com.google.common.truth.Truth.assertThat;
 
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueConverterUtility;
+import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.plugin.java.restricted.testing.SoyJavaSourceFunctionTester;
 import java.util.List;
 import org.junit.Test;
@@ -42,6 +43,8 @@ public class KeysFunctionTest {
             "boo", "bar", "foo", 2, "goo", SoyValueConverterUtility.newDict("moo", 4));
     Object result = tester.callFunction(map);
     assertThat(result).isInstanceOf(List.class);
-    assertThat((List<?>) result).containsExactly("boo", "foo", "goo");
+    assertThat((List<?>) result)
+        .containsExactly(
+            StringData.forValue("boo"), StringData.forValue("foo"), StringData.forValue("goo"));
   }
 }

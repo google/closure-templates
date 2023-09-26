@@ -87,15 +87,11 @@ public final class StringData extends PrimitiveData {
 
   @Override
   public boolean equals(Object other) {
-    // Keep this in sync with UnsanitizedString#equals so that StringData and UnsanitizedString can
-    // be used interchangeably.
-    return other != null && getValue().equals(other.toString());
+    return other instanceof StringData && getValue().equals(((StringData) other).getValue());
   }
 
   @Override
   public int hashCode() {
-    // Keep this in sync with UnsanitizedString#hashCode so that StringData and UnsanitizedString
-    // can be used interchangeably.
     return stringValue().hashCode();
   }
 
