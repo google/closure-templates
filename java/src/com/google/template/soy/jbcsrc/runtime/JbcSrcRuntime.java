@@ -53,7 +53,6 @@ import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.SoyVisualElementData;
 import com.google.template.soy.data.TemplateValue;
 import com.google.template.soy.data.internal.LazyProtoToSoyValueList;
-import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.data.restricted.StringData;
@@ -166,14 +165,14 @@ public final class JbcSrcRuntime {
   @Keep
   @Nonnull
   public static SoyValueProvider getFieldProvider(
-      SoyRecord record, String field, @Nullable SoyValue defaultValue) {
+      SoyRecord record, String field, SoyValue defaultValue) {
     return paramOrDefault(record.getFieldProvider(field), defaultValue);
   }
 
   @Keep
   @Nonnull
   public static SoyValueProvider getFieldProvider(SoyRecord record, String field) {
-    return paramOrDefault(record.getFieldProvider(field), /* defaultValue= */ null);
+    return paramOrDefault(record.getFieldProvider(field), /* defaultValue= */ NullData.INSTANCE);
   }
 
   /**
@@ -182,7 +181,7 @@ public final class JbcSrcRuntime {
   @Keep
   @Nonnull
   public static SoyValueProvider param(SoyValueProvider provider) {
-    return paramOrDefault(provider, null);
+    return paramOrDefault(provider, NullData.INSTANCE);
   }
 
   /**
@@ -193,17 +192,9 @@ public final class JbcSrcRuntime {
   @Keep
   @Nonnull
   public static SoyValueProvider paramOrDefault(
-      @Nullable SoyValueProvider provider, @Nullable SoyValue defaultValue) {
-    if (provider == UndefinedData.INSTANCE) {
-      provider = null;
-    }
-    return provider != null ? provider : (defaultValue != null ? defaultValue : NullData.INSTANCE);
-  }
+      @Nullable SoyValueProvider provider, SoyValue defaultValue) {
 
-  @Keep
-  @Nonnull
-  public static ParamStore setField(ParamStore store, String field, SoyValueProvider provider) {
-    return store.setField(field, Preconditions.checkNotNull(provider));
+    return provider == null || provider == UndefinedData.INSTANCE ? defaultValue : provider;
   }
 
   /**
@@ -306,11 +297,8 @@ public final class JbcSrcRuntime {
   @Keep
   @Nonnull
   public static SoyValueProvider getSoyMapItemProvider(SoyValue soyMap, SoyValue key) {
-    if (soyMap == null || soyMap.isNullish()) {
+    if (soyMap.isNullish()) {
       throw new NullPointerException("Attempted to access map item '" + key + "' of null");
-    }
-    if (key == null) {
-      key = NullData.INSTANCE;
     }
     SoyValueProvider soyValueProvider = ((SoyMap) soyMap).getProvider(key);
     return soyValueProvider == null ? NullData.INSTANCE : soyValueProvider;

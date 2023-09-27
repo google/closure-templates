@@ -46,13 +46,12 @@ public final class ParamStore extends SoyAbstractValue implements SoyRecord {
     backingStore.forEach(localStore::put);
   }
 
-  // private constructor for the empty instance
-  private ParamStore(boolean unused) {
-    this.localStore = ImmutableMap.of();
-  }
-
   public ParamStore(int size) {
     this.localStore = Maps.newHashMapWithExpectedSize(size);
+  }
+
+  public ParamStore(ImmutableMap<String, SoyValueProvider> map) {
+    this.localStore = map;
   }
 
   /**
@@ -155,5 +154,5 @@ public final class ParamStore extends SoyAbstractValue implements SoyRecord {
   // -----------------------------------------------------------------------------------------------
   // Empty instance.
 
-  public static final ParamStore EMPTY_INSTANCE = new ParamStore(true);
+  public static final ParamStore EMPTY_INSTANCE = new ParamStore(ImmutableMap.of());
 }

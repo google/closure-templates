@@ -455,7 +455,7 @@ public final class BytecodeUtils {
 
   /**
    * Returns an {@link Expression} that evaluates to the {@link ContentKind} value that is
-   * equivalent to the given {@link SanitizedContentKind}, or null.
+   * equivalent to the given {@link SanitizedContentKind}.
    */
   public static Expression constantSanitizedContentKindAsContentKind(SanitizedContentKind kind) {
     return FieldRef.enumReference(Converters.toContentKind(kind)).accessor();
@@ -785,6 +785,27 @@ public final class BytecodeUtils {
         asArray(OBJECT_ARRAY_TYPE, copy.subList(MethodRef.IMMUTABLE_LIST_OF.size(), copy.size()));
     return MethodRef.IMMUTABLE_LIST_OF_ARRAY.invoke(
         Iterables.concat(explicit, ImmutableList.of(remainder)));
+  }
+
+  public static Expression newImmutableMap(
+      List<Expression> keys, List<Expression> values, boolean allowDuplicates) {
+    // We can only call ImmutableList.of if we disallow duplicates or there are 1 or 0 keys
+    if (keys.size() < MethodRef.IMMUTABLE_MAP_OF.size() && (keys.size() <= 1 || !allowDuplicates)) {
+      List<Expression> kvps = new ArrayList<>();
+      for (int i = 0; i < keys.size(); i++) {
+        kvps.add(keys.get(i));
+        kvps.add(values.get(i));
+      }
+      return MethodRef.IMMUTABLE_MAP_OF.get(keys.size()).invoke(kvps);
+    }
+    var builder = MethodRef.IMMUTABLE_MAP_BUILDER_WITH_EXPECTED_SIZE.invoke(constant(keys.size()));
+    for (int i = 0; i < keys.size(); i++) {
+      builder = builder.invoke(MethodRef.IMMUTABLE_MAP_BUILDER_PUT, keys.get(i), values.get(i));
+    }
+    return builder.invoke(
+        allowDuplicates
+            ? MethodRef.IMMUTABLE_MAP_BUILDER_BUILD_KEEPING_LAST
+            : MethodRef.IMMUTABLE_MAP_BUILDER_BUILD_OR_THROW);
   }
 
   private static Expression asArray(Type arrayType, ImmutableList<? extends Expression> elements) {

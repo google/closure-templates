@@ -297,7 +297,8 @@ final class JbcSrcValueFactory extends JavaValueFactory {
     // For explicit null types, we can just cast w/o doing any other work.
     // We already validated that it isn't primitive types.
     if (actualParam.soyRuntimeType().soyType().equals(NullType.getInstance())) {
-      return BytecodeUtils.constantNull(Type.getType(expectedParamType));
+      return BytecodeUtils.constantNull(Type.getType(expectedParamType))
+          .withSourceLocation(actualParam.location());
     }
 
     // If expecting a bland 'SoyValue', just box the expr.

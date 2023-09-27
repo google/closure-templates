@@ -43,7 +43,12 @@ public final class SoyRecordImpl extends SoyAbstractValue implements SoyRecord {
 
   @Nonnull
   public static SoyRecordImpl forProviderMap(Map<String, SoyValueProvider> map) {
-    return new SoyRecordImpl(ImmutableMap.copyOf(map));
+    return forProviderMap(ImmutableMap.copyOf(map));
+  }
+
+  @Nonnull
+  public static SoyRecordImpl forProviderMap(ImmutableMap<String, SoyValueProvider> map) {
+    return new SoyRecordImpl(map);
   }
 
   @Override

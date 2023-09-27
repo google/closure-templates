@@ -44,8 +44,7 @@ import com.google.template.soy.shared.SoyIdRenamingMap;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.ibm.icu.util.ULocale;
 import java.io.IOException;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.IdentityHashMap;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -76,17 +75,16 @@ public final class RenderContext {
    * Stores memoized {const} values, which in SSR are actually request-scoped values, not Java
    * static values.
    */
-  private final Map<String, Object> constValues = new ConcurrentHashMap<>();
+  private final IdentityHashMap<String, Object> constValues = new IdentityHashMap<>();
 
   private final boolean debugSoyTemplateInfo;
   private final SoyLogger logger;
 
   // This stores the stack frame for restoring state after a detach operation.  It is initialised to
   // a special state 0 that represents the first call to any detachable method.
-  // TODO(lukes): ideally this would not be stored in RenderContext, but instead would be a method
-  // parameter to every detachable method and would be encoded in RenderResult for when methods
-  // return.  This is a little difficult right now because RenderResult is a public type.  For now,
-  // storing a mutable field on RenderContext is simpler.
+  // Storing a mutable value here is a bit strange, but it is a natural place and alternate
+  // approaches would require threading a new parameter through all of our 'detachable' methods and
+  // as such doesn't appear to be an improvement over using our 'god object'.
   private StackFrame topFrame = StackFrame.INIT;
 
   private RenderContext(
@@ -398,9 +396,11 @@ public final class RenderContext {
    */
   public StackFrame popFrame() {
     StackFrame next = topFrame;
-    // NOTE: the special frame StackFrame.INIT is linked to itself, so we don't need to test for a
-    // basecase.
-    this.topFrame = next.child;
+    // NOTE: the special frame StackFrame.INIT is linked to itself, if we have advanced to it, we
+    // don't need to follow it.  This saves some field writes.
+    if (next != StackFrame.INIT) {
+      this.topFrame = next.child;
+    }
     return next;
   }
 

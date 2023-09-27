@@ -41,10 +41,8 @@ import javax.annotation.Nullable;
  */
 public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
 
-  /**
-   * The kind of the content appended to this appendable.
-   */
-  private ContentKind kind;
+  /** The kind of the content appended to this appendable. */
+  @Nullable private ContentKind kind;
 
   /** The directionality of the content appended to this appendable. */
   @Nullable private Dir contentDir;
@@ -135,9 +133,15 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
    * not need to track this in the appendable.
    */
   @Nonnull
+  @CanIgnoreReturnValue
   public final LoggingAdvisingAppendable setKindAndDirectionality(ContentKind kind)
       throws IOException {
-    return setKindAndDirectionality(kind, kind.getDefaultDir());
+    if (this.kind == null) {
+      this.kind = kind;
+      var direction = this.contentDir = kind.getDefaultDir();
+      notifyKindAndDirectionality(kind, direction);
+    }
+    return this;
   }
 
   /**
@@ -272,12 +276,14 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
     }
 
     /**
-     * Returns the commands list, allocating it if neccesary and appending any string data to it.
+     * Returns the commands list, allocating it if necessary and appending any string data to it.
      */
     private List<Object> getCommandsAndAddPendingStringData() {
+      var commands = this.commands;
       if (commands == null) {
-        commands = new ArrayList<>();
+        this.commands = commands = new ArrayList<>();
       }
+      var delegate = this.delegate;
       if (delegate.length() != 0) {
         commands.add(delegate.toString());
         delegate.setLength(0);

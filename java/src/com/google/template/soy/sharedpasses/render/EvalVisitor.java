@@ -21,7 +21,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.template.soy.shared.internal.SharedRuntime.bitwiseAnd;
 import static com.google.template.soy.shared.internal.SharedRuntime.bitwiseOr;
 import static com.google.template.soy.shared.internal.SharedRuntime.bitwiseXor;
-import static com.google.template.soy.shared.internal.SharedRuntime.checkMapFromListConstructorCondition;
 import static com.google.template.soy.shared.internal.SharedRuntime.constructMapFromList;
 import static com.google.template.soy.shared.internal.SharedRuntime.dividedBy;
 import static com.google.template.soy.shared.internal.SharedRuntime.equal;
@@ -151,7 +150,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.OptionalInt;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
@@ -381,9 +379,6 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     ExprNode listExpr = node.getListExpr();
     SoyValue listValue = visit(listExpr);
     try {
-      checkMapFromListConstructorCondition(
-          listValue instanceof SoyList, listValue, OptionalInt.empty());
-
       List<? extends SoyValueProvider> list = ((SoyList) listValue).asJavaList();
       return constructMapFromList(list);
     } catch (IllegalArgumentException e) {

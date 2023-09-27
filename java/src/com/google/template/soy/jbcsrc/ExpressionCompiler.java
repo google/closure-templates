@@ -600,8 +600,8 @@ final class ExpressionCompiler {
         values.add(visit(node.getChild(i)).box());
       }
       Expression soyDict =
-          MethodRef.RECORD_IMPL_FOR_PROVIDER_MAP.invoke(
-              BytecodeUtils.newLinkedHashMap(keys, values));
+          ConstructorRef.SOY_RECORD_IMPL.construct(
+              BytecodeUtils.newImmutableMap(keys, values, /* allowDuplicates= */ false));
       return SoyExpression.forSoyValue(node.getType(), soyDict);
     }
 
@@ -617,7 +617,7 @@ final class ExpressionCompiler {
       }
       Expression soyDict =
           MethodRef.MAP_IMPL_FOR_PROVIDER_MAP_NO_NULL_KEYS.invoke(
-              BytecodeUtils.newHashMap(keys, values));
+              BytecodeUtils.newImmutableMap(keys, values, /* allowDuplicates= */ true));
       return SoyExpression.forSoyValue(node.getType(), soyDict);
     }
 

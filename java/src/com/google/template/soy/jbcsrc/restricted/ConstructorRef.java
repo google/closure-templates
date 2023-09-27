@@ -20,9 +20,11 @@ import static com.google.common.base.Preconditions.checkArgument;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.internal.ParamStore;
+import com.google.template.soy.data.internal.SoyRecordImpl;
 import com.google.template.soy.jbcsrc.restricted.Expression.Feature;
 import com.google.template.soy.jbcsrc.runtime.JbcSrcRuntime;
 import com.ibm.icu.util.ULocale;
@@ -82,7 +84,10 @@ public abstract class ConstructorRef {
   public static final ConstructorRef PARAM_STORE_AUGMENT =
       create(ParamStore.class, SoyRecord.class, int.class);
   public static final ConstructorRef PARAM_STORE_SIZE = create(ParamStore.class, int.class);
-
+  public static final ConstructorRef PARAM_STORE_FROM_MAP =
+      create(ParamStore.class, ImmutableMap.class);
+  public static final ConstructorRef SOY_RECORD_IMPL =
+      create(SoyRecordImpl.class, ImmutableMap.class);
   public static final ConstructorRef MSG_RENDERER =
       create(
           JbcSrcRuntime.MsgRenderer.class,

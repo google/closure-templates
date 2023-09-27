@@ -19,8 +19,6 @@ package com.google.template.soy.jbcsrc.shared;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SoyRecord;
-import com.google.template.soy.data.TemplateValue;
-import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import java.io.IOException;
 import javax.annotation.Nonnull;
@@ -28,19 +26,6 @@ import javax.annotation.Nonnull;
 /** A compiled Soy template. Each instance is suitable for being rendered exactly once. */
 @Immutable
 public interface CompiledTemplate {
-
-  @SuppressWarnings("Immutable")
-  @Nonnull
-  static CompiledTemplate createFromTemplateValue(TemplateValue templateValue) {
-    return (params, ij, appendable, context) ->
-        context
-            .getTemplate(templateValue.getTemplateName())
-            .render(
-                templateValue.getBoundParameters().orElseGet(() -> ParamStore.EMPTY_INSTANCE),
-                ij,
-                appendable,
-                context);
-  }
 
   /**
    * Renders the template.

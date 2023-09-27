@@ -89,8 +89,9 @@ public final class RenderResult {
   }
 
   /** Returns {@code true} if the result is done. */
+  @SuppressWarnings("ReferenceEquality") // safe because we control all construction of RenderResult
   public boolean isDone() {
-    return type == Type.DONE;
+    return this == DONE_RESULT;
   }
 
   /** Throws an IllegalStateException if this result is not {@link #isDone done}. */

@@ -18,6 +18,7 @@ package com.google.template.soy.jbcsrc;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
+import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.ImmutableMap.toImmutableMap;
 import static com.google.template.soy.jbcsrc.PrintDirectives.applyStreamingEscapingDirectives;
 import static com.google.template.soy.jbcsrc.PrintDirectives.applyStreamingPrintDirectives;
@@ -264,8 +265,9 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   private Statement doCompile(
       RenderUnitNode node, ExtraCodeCompiler prefix, ExtraCodeCompiler suffix) {
     return Statement.concat(
-        // Tag the content with the kind
-        // TODO(lukes): directionality is always the default, do we need to set it?
+        // Tag the content with the kind.
+        // TODO(lukes): this is often unnecessary and could be avoided by either shifting management
+        // to the caller or simply making this call cheaper.
         appendableExpression
             .setSanitizedContentKindAndDirectionality(node.getContentKind())
             .toStatement(),
@@ -1614,7 +1616,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       if (asDirectPositionalCall.isPresent()
           && (explicitParams =
                   paramsExpression.asPositionalParams(
-                      renderScope, asDirectPositionalCall.get().calleeType()))
+                      node, renderScope, asDirectPositionalCall.get().calleeType()))
               .isPresent()) {
         initParams = explicitParams.get().initializer();
         boundCall =
@@ -1716,7 +1718,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
 
     static RecordOrPositional create(
         Supplier<Expression> record,
-        Optional<ImmutableMap<CallParamNode, Supplier<Expression>>> explicit) {
+        Optional<ImmutableMap<String, Supplier<Expression>>> explicit) {
       return new AutoValue_SoyNodeCompiler_RecordOrPositional(record, explicit);
     }
 
@@ -1736,26 +1738,28 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     }
 
     Optional<ListOfExpressionsAndInitializer> asPositionalParams(
-        TemplateVariableManager.Scope scope, TemplateType calleeType) {
+        CallNode node, TemplateVariableManager.Scope scope, TemplateType calleeType) {
       if (!explicit().isPresent()) {
         return Optional.empty();
       }
 
       List<Statement> initStatements = new ArrayList<>();
       ImmutableList.Builder<Expression> builder = ImmutableList.builder();
-      ImmutableMap<String, CallParamNode> nameToNode =
-          explicit().get().keySet().stream()
-              .collect(toImmutableMap(n -> n.getKey().identifier(), n -> n));
-      Map<CallParamNode, Supplier<Expression>> explicit = new HashMap<>(explicit().get());
+      Map<String, Supplier<Expression>> explicit = new HashMap<>(explicit().get());
+      ImmutableMap<String, CallParamNode> keyToParam = null;
       for (TemplateType.Parameter param : calleeType.getActualParameters()) {
-        CallParamNode paramNode = nameToNode.get(param.getName());
-        Supplier<Expression> supplier = explicit.remove(paramNode);
+        Supplier<Expression> supplier = explicit.remove(param.getName());
         Expression value =
             supplier == null ? BytecodeUtils.constantNull(SOY_VALUE_PROVIDER_TYPE) : supplier.get();
         if (!value.isCheap()) {
+          if (keyToParam == null) {
+            keyToParam =
+                node.getChildren().stream()
+                    .collect(toImmutableMap(n -> n.getKey().identifier(), child -> child));
+          }
           TemplateVariableManager.Variable variable =
               scope.createSynthetic(
-                  SyntheticVarName.forParam(paramNode),
+                  SyntheticVarName.forParam(keyToParam.get(param.getName())),
                   value,
                   TemplateVariableManager.SaveStrategy.STORE);
           value = variable.accessor();
@@ -1774,7 +1778,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
 
     abstract Supplier<Expression> record();
 
-    abstract Optional<ImmutableMap<CallParamNode, Supplier<Expression>>> explicit();
+    abstract Optional<ImmutableMap<String, Supplier<Expression>>> explicit();
   }
 
   private RecordOrPositional prepareParamsHelper(CallNode node) {
@@ -1802,32 +1806,19 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
           maybeAddDefaultParams(
                   node,
                   ConstructorRef.PARAM_STORE_AUGMENT.construct(
-                      paramsRecord, constant(node.numChildren())))
+                      paramsRecord, constant(node.numChildren())),
+                  ImmutableMap.of())
               .orElse(paramsRecord));
     }
 
-    ImmutableMap<CallParamNode, Supplier<Expression>> explicitParams = compileExplicitParams(node);
-    Supplier<Expression> recordExpression =
-        () -> {
-          Expression paramStoreExpression = getParamStoreExpression(node);
-          for (Map.Entry<CallParamNode, Supplier<Expression>> explicit :
-              explicitParams.entrySet()) {
-            String paramKey = explicit.getKey().getKey().identifier();
-            // ParamStore.setField return 'this' so we can just chain the invocations together.
-            paramStoreExpression =
-                MethodRef.PARAM_STORE_SET_FIELD.invoke(
-                    paramStoreExpression,
-                    BytecodeUtils.constant(paramKey),
-                    explicit.getValue().get());
-          }
-          return paramStoreExpression;
-        };
+    ImmutableMap<String, Supplier<Expression>> explicitParams = compileExplicitParams(node);
+    Supplier<Expression> recordExpression = () -> getParamStoreExpression(node, explicitParams);
     return RecordOrPositional.create(
         recordExpression, node.isPassingData() ? Optional.empty() : Optional.of(explicitParams));
   }
 
-  private ImmutableMap<CallParamNode, Supplier<Expression>> compileExplicitParams(CallNode node) {
-    ImmutableMap.Builder<CallParamNode, Supplier<Expression>> builder = ImmutableMap.builder();
+  private ImmutableMap<String, Supplier<Expression>> compileExplicitParams(CallNode node) {
+    ImmutableMap.Builder<String, Supplier<Expression>> builder = ImmutableMap.builder();
     for (CallParamNode child : node.getChildren()) {
       String paramKey = child.getKey().identifier();
       Supplier<Expression> valueExpr;
@@ -1845,7 +1836,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
                         "param", child, paramKey, ((CallParamValueNode) child).getExpr())
                     .soyValueProvider();
       }
-      builder.put(child, valueExpr);
+      builder.put(child.getKey().identifier(), valueExpr);
     }
     return builder.buildOrThrow();
   }
@@ -1854,9 +1845,14 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
    * Returns an expression that creates a new {@link ParamStore} suitable for holding all the
    * parameters.
    */
-  private Expression getParamStoreExpression(CallNode node) {
+  private Expression getParamStoreExpression(
+      CallNode node, Map<String, Supplier<Expression>> params) {
     if (!node.isPassingData()) {
-      return ConstructorRef.PARAM_STORE_SIZE.construct(constant(node.numChildren()));
+      return ConstructorRef.PARAM_STORE_FROM_MAP.construct(
+          BytecodeUtils.newImmutableMap(
+              params.keySet().stream().map(BytecodeUtils::constant).collect(toImmutableList()),
+              params.values().stream().map(Supplier::get).collect(toImmutableList()),
+              /* allowDuplicates= */ false));
     }
 
     Label reattachDataLabel = new Label();
@@ -1872,20 +1868,27 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
             .labelStart(reattachDataLabel);
     if (node.isPassingAllData()) {
       paramStoreExpression =
-          maybeAddDefaultParams(node, paramStoreExpression).orElse(paramStoreExpression);
+          maybeAddDefaultParams(node, paramStoreExpression, params).orElse(paramStoreExpression);
+    }
+    for (var entry : params.entrySet()) {
+      paramStoreExpression =
+          MethodRef.PARAM_STORE_SET_FIELD.invoke(
+              paramStoreExpression, BytecodeUtils.constant(entry.getKey()), entry.getValue().get());
     }
     return paramStoreExpression;
   }
 
   private Optional<Expression> maybeAddDefaultParams(
-      CallNode node, Expression paramStoreExpression) {
+      CallNode node,
+      Expression paramStoreExpression,
+      Map<String, Supplier<Expression>> explicitParams) {
     boolean foundDefaultParams = false;
     // If this is a data="all" call and the caller has default parameters we need to augment the
     // params record to make sure any unset default parameters are set to the default in the
     // params record. It's not worth it to determine if we're using the default value or not
     // here, so just augment all default parameters with whatever value they ended up with.
     for (TemplateParam param : node.getNearestAncestor(TemplateNode.class).getParams()) {
-      if (param.hasDefault()) {
+      if (param.hasDefault() && !explicitParams.containsKey(param.name())) {
         foundDefaultParams = true;
         paramStoreExpression =
             MethodRef.PARAM_STORE_SET_FIELD.invoke(

@@ -158,7 +158,9 @@ public final class SoySauceImpl implements SoySauce {
   public RendererImpl newRenderer(SoyTemplate params) {
     String template = params.getTemplateName();
     CompiledTemplates.TemplateData data = templates.getTemplateData(template);
-    return new RendererImpl(template, data.template(), data.kind(), params.getParamsAsMap());
+    @SuppressWarnings("unchecked") // getParamsAsMap has a loose type to fix a build cycle.
+    var typedParams = (Map<String, SoyValueProvider>) params.getParamsAsMap();
+    return new RendererImpl(template, data.template(), data.kind(), typedParams);
   }
 
   final class RendererImpl implements Renderer {
@@ -176,27 +178,20 @@ public final class SoySauceImpl implements SoySauce {
         String templateName,
         CompiledTemplate template,
         ContentKind contentKind,
-        @Nullable Map<String, ?> data) {
+        @Nullable Map<String, SoyValueProvider> data) {
       this.templateName = templateName;
       this.template = checkNotNull(template);
       this.contentKind = contentKind;
       if (data != null) {
-        this.data = soyValueProviderMapAsParamStore(data);
+        this.data = new ParamStore(ImmutableMap.copyOf(data));
         // TODO(lukes): eliminate this and just use the nullness of data to enforce this.
         this.dataSetInConstructor = true;
       }
     }
 
-    private ParamStore soyValueProviderMapAsParamStore(Map<String, ?> source) {
-      ParamStore dest = new ParamStore(source.size());
-      for (Map.Entry<String, ?> entry : source.entrySet()) {
-        dest.setField(entry.getKey(), (SoyValueProvider) entry.getValue());
-      }
-      return dest;
-    }
-
     private ParamStore mapAsParamStore(Map<String, ?> source) {
-      ParamStore dest = new ParamStore(source.size());
+      ImmutableMap.Builder<String, SoyValueProvider> builder =
+          ImmutableMap.builderWithExpectedSize(source.size());
       for (Map.Entry<String, ?> entry : source.entrySet()) {
         String key = entry.getKey();
         SoyValueProvider value;
@@ -206,9 +201,9 @@ public final class SoySauceImpl implements SoySauce {
           throw new IllegalArgumentException(
               "Unable to convert param " + key + " to a SoyValue", e);
         }
-        dest.setField(key, value);
+        builder.put(key, value);
       }
-      return dest;
+      return new ParamStore(builder.buildOrThrow());
     }
 
     @CanIgnoreReturnValue
@@ -221,7 +216,9 @@ public final class SoySauceImpl implements SoySauce {
     @CanIgnoreReturnValue
     @Override
     public RendererImpl setIj(SoyTemplateData templateData) {
-      this.ij = soyValueProviderMapAsParamStore(templateData.getParamsAsMap());
+      @SuppressWarnings("unchecked") // getParamsAsMap has a loose type to fix a build cycle.
+      var typedParams = (Map<String, SoyValueProvider>) templateData.getParamsAsMap();
+      this.ij = new ParamStore(ImmutableMap.copyOf(typedParams));
       return this;
     }
 
@@ -373,7 +370,7 @@ public final class SoySauceImpl implements SoySauce {
       }
     }
 
-    private <T> WriteContinuation startRender(AdvisingAppendable out, ContentKind contentKind)
+    private WriteContinuation startRender(AdvisingAppendable out, ContentKind contentKind)
         throws IOException {
       enforceContentKind(contentKind);
 

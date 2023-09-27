@@ -186,7 +186,8 @@ public final class SoyExpression extends Expression {
   }
 
   public static Expression asBoxedValueProviderList(List<SoyExpression> items) {
-    return BytecodeUtils.asList(items.stream().map(SoyExpression::box).collect(toImmutableList()));
+    return BytecodeUtils.asImmutableList(
+        items.stream().map(SoyExpression::box).collect(toImmutableList()));
   }
 
   public static final SoyExpression SOY_NULL =
@@ -245,6 +246,13 @@ public final class SoyExpression extends Expression {
   @Override
   public SoyExpression withSourceLocation(SourceLocation location) {
     return withSource(delegate.withSourceLocation(location));
+  }
+
+  // Need to override since we also overrode `withSourceLocation` otherwise all SoyExpression
+  // objects have `unknown` locations.
+  @Override
+  public SourceLocation location() {
+    return delegate.location();
   }
 
   public boolean assignableToNullableInt() {

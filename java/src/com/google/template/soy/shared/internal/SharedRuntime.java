@@ -16,6 +16,7 @@
 
 package com.google.template.soy.shared.internal;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyRecord;
@@ -28,11 +29,8 @@ import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.exprtree.MapLiteralFromListNode;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
-import java.util.OptionalInt;
 import javax.annotation.Nonnull;
 
 /**
@@ -231,41 +229,31 @@ public final class SharedRuntime {
 
   @Nonnull
   public static SoyMap constructMapFromList(List<? extends SoyValueProvider> list) {
-    Map<SoyValue, SoyValueProvider> map = new HashMap<>();
+    ImmutableMap.Builder<SoyValue, SoyValueProvider> map =
+        ImmutableMap.builderWithExpectedSize(list.size());
     for (int i = 0; i < list.size(); i++) {
       SoyValue recordEntry = list.get(i).resolve();
+      checkMapFromListConstructorCondition(recordEntry instanceof SoyRecord, recordEntry, i);
+      SoyRecord record = (SoyRecord) recordEntry;
+      SoyValue key = record.getField(MapLiteralFromListNode.KEY_STRING);
+      SoyValueProvider valueProvider = record.getFieldProvider(MapLiteralFromListNode.VALUE_STRING);
       checkMapFromListConstructorCondition(
-          recordEntry instanceof SoyRecord, recordEntry, OptionalInt.of(i));
-
-      checkMapFromListConstructorCondition(
-          ((SoyRecord) recordEntry).hasField(MapLiteralFromListNode.KEY_STRING)
-              && ((SoyRecord) recordEntry).hasField(MapLiteralFromListNode.VALUE_STRING),
-          recordEntry,
-          OptionalInt.of(i));
-
-      SoyValue key = ((SoyRecord) recordEntry).getField(MapLiteralFromListNode.KEY_STRING);
-      SoyValueProvider valueProvider =
-          ((SoyRecord) recordEntry).getFieldProvider(MapLiteralFromListNode.VALUE_STRING);
-      checkMapFromListConstructorCondition(
-          SoyMap.isAllowedKeyType(key), recordEntry, OptionalInt.of(i));
-
+          SoyMap.isAllowedKeyType(key) && valueProvider != null, recordEntry, i);
       map.put(key, valueProvider);
     }
 
-    return SoyMapImpl.forProviderMap(map);
+    return SoyMapImpl.forProviderMap(map.buildKeepingLast());
   }
 
   public static void checkMapFromListConstructorCondition(
-      boolean condition, SoyValue list, OptionalInt index) {
+      boolean condition, SoyValue value, int index) {
     if (!condition) {
       String exceptionString =
           String.format(
               "Error constructing map. Expected a list where each item is a record of 'key',"
-                  + " 'value' pairs, with the 'key' fields holding primitive values. Found: %s",
-              list);
-      if (index.isPresent()) {
-        exceptionString += String.format(" at index %d", index.getAsInt());
-      }
+                  + " 'value' pairs, with the 'key' fields holding primitive values. Found: %s at"
+                  + " index %d",
+              value, index);
 
       // TODO: throw a RenderException here
       throw new IllegalArgumentException(exceptionString);

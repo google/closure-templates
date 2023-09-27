@@ -23,6 +23,7 @@ import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
 import com.google.common.base.VerifyException;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.UnsignedInts;
 import com.google.common.primitives.UnsignedLongs;
@@ -76,6 +77,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.TreeMap;
 import javax.annotation.Nonnull;
 import org.objectweb.asm.Handle;
 import org.objectweb.asm.Opcodes;
@@ -139,8 +141,20 @@ public abstract class MethodRef {
 
   public static final MethodRef IMMUTABLE_LIST_OF_ARRAY;
 
+  /** a list of all the ImmutableList.of overloads, indexed by number of entries. */
+  public static final ImmutableList<MethodRef> IMMUTABLE_MAP_OF;
+
+  public static final MethodRef IMMUTABLE_MAP_BUILDER_WITH_EXPECTED_SIZE =
+      MethodRef.createNonPure(ImmutableMap.class, "builderWithExpectedSize", int.class);
+  public static final MethodRef IMMUTABLE_MAP_BUILDER_PUT =
+      MethodRef.createNonPure(ImmutableMap.Builder.class, "put", Object.class, Object.class);
+  public static final MethodRef IMMUTABLE_MAP_BUILDER_BUILD_KEEPING_LAST =
+      MethodRef.createNonPure(ImmutableMap.Builder.class, "buildKeepingLast");
+  public static final MethodRef IMMUTABLE_MAP_BUILDER_BUILD_OR_THROW =
+      MethodRef.createNonPure(ImmutableMap.Builder.class, "buildOrThrow");
+
   static {
-    MethodRef[] immutableListOfMethods = new MethodRef[12];
+    Map<Integer, MethodRef> immutableListOfMethods = new TreeMap<>();
     MethodRef immutableListOfArray = null;
     for (java.lang.reflect.Method m : ImmutableList.class.getMethods()) {
       if (m.getName().equals("of")) {
@@ -156,11 +170,31 @@ public abstract class MethodRef {
           // the zero arg one is 'cheap'
           ref = ref.asCheap();
         }
-        immutableListOfMethods[arity] = ref;
+        immutableListOfMethods.put(arity, ref);
       }
     }
     IMMUTABLE_LIST_OF_ARRAY = immutableListOfArray;
-    IMMUTABLE_LIST_OF = ImmutableList.copyOf(immutableListOfMethods);
+    IMMUTABLE_LIST_OF = ImmutableList.copyOf(immutableListOfMethods.values());
+
+    Map<Integer, MethodRef> immutableMapOfMethods = new TreeMap<>();
+    for (java.lang.reflect.Method m : ImmutableMap.class.getMethods()) {
+      if (m.getName().equals("of")) {
+        Class<?>[] params = m.getParameterTypes();
+        MethodRef ref = create(m, MethodPureness.PURE).asNonJavaNullable();
+        if (params.length > 0 && params[params.length - 1].isArray()) {
+          // skip the one that takes an array in the final position
+          immutableListOfArray = ref;
+          continue;
+        }
+        int arity = params.length;
+        if (arity == 0) {
+          // the zero arg one is 'cheap'
+          ref = ref.asCheap();
+        }
+        immutableMapOfMethods.put(arity / 2, ref);
+      }
+    }
+    IMMUTABLE_MAP_OF = ImmutableList.copyOf(immutableMapOfMethods.values());
   }
 
   public static final MethodRef INTEGER_DATA_FOR_VALUE =
@@ -233,8 +267,7 @@ public abstract class MethodRef {
           Dir.class);
 
   public static final MethodRef PARAM_STORE_SET_FIELD =
-      createNonPure(
-          JbcSrcRuntime.class, "setField", ParamStore.class, String.class, SoyValueProvider.class);
+      createNonPure(ParamStore.class, "setField", String.class, SoyValueProvider.class);
 
   public static final MethodRef SOY_PROTO_VALUE_CREATE =
       createPure(SoyProtoValue.class, "create", Message.class);

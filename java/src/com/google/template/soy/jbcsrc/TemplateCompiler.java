@@ -44,7 +44,6 @@ import com.google.template.soy.jbcsrc.restricted.FieldRef;
 import com.google.template.soy.jbcsrc.restricted.LocalVariable;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
-import com.google.template.soy.jbcsrc.restricted.SoyRuntimeType;
 import com.google.template.soy.jbcsrc.restricted.Statement;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.RecordToPositionalCallFactory;
@@ -547,13 +546,10 @@ final class TemplateCompiler {
     ExprRootNode defaultValueNode = headerVar.defaultValue();
     if (defaultValueNode.getType() == NullType.getInstance()) {
       // a special case for null to avoid poor handling elsewhere in the compiler.
-      // TODO(lukes): should this just 'return null'?
-      return SoyExpression.forSoyValue(
-          headerVar.type(),
-          BytecodeUtils.constantNull(SoyRuntimeType.getBoxedType(headerVar.type()).runtimeType()));
+      return SoyExpression.SOY_NULL;
     } else {
       if (ExpressionCompiler.canCompileToConstant(templateNode, defaultValueNode)) {
-        SoyExpression defaultValue = constantCompiler.compile(defaultValueNode);
+        SoyExpression defaultValue = constantCompiler.compile(defaultValueNode).box();
         if (!defaultValue.isCheap()) {
           FieldRef ref;
           if (headerVar.kind() == VarDefn.Kind.STATE) {

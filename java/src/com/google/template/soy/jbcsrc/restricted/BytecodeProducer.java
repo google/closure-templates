@@ -61,7 +61,7 @@ public abstract class BytecodeProducer {
     this.location = checkNotNull(location);
   }
 
-  public final SourceLocation location() {
+  public SourceLocation location() {
     return location;
   }
 
