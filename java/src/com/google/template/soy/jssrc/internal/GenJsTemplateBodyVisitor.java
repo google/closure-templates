@@ -55,7 +55,6 @@ import com.google.template.soy.soytree.CallParamNode;
 import com.google.template.soy.soytree.DebuggerNode;
 import com.google.template.soy.soytree.ForNode;
 import com.google.template.soy.soytree.ForNonemptyNode;
-import com.google.template.soy.soytree.HtmlContext;
 import com.google.template.soy.soytree.IfCondNode;
 import com.google.template.soy.soytree.IfElseNode;
 import com.google.template.soy.soytree.IfNode;
@@ -83,7 +82,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 /**
  * Visitor for generating the full JS code (i.e. statements) for a template body.
@@ -368,20 +366,9 @@ public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<St
     }
   }
 
-  /**
-   * When some portion of a template is unstable, the rest of the block should also be unstable.
-   * However, some content that's in Let/CallParamContent/Velog/Msg shouldn't. isSelfContainedBlock
-   * controls whether to let the "unstableness" of a block infect the rest of the template or not.
-   */
-  protected Statement addStaticsContent(
-      Supplier<Statement> function, boolean isSelfContainedBlock) {
-    return function.get();
-  }
-
   /** Generates the JavaScript code for an {if} block that cannot be done as an expression. */
   protected Statement generateNonExpressionIfNode(IfNode node) {
     ConditionalBuilder conditional = null;
-    boolean shouldAddStaticsContent = node.getHtmlContext() == HtmlContext.HTML_PCDATA;
 
     for (SoyNode child : node.getChildren()) {
       if (child instanceof IfCondNode) {
@@ -393,11 +380,7 @@ public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<St
                 .maybeCoerceToBoolean(
                     condNode.getExpr().getType(), translateExpr(condNode.getExpr()), false);
         // Convert body.
-        Statement consequent =
-            shouldAddStaticsContent
-                ? addStaticsContent(
-                    () -> Statements.of(visitChildrenInNewSoyAndJsScope(condNode)), false)
-                : Statements.of(visitChildrenInNewSoyAndJsScope(condNode));
+        Statement consequent = Statements.of(visitChildrenInNewSoyAndJsScope(condNode));
         // Add if-block to conditional.
         if (conditional == null) {
           conditional = ifStatement(predicate, consequent);
@@ -407,11 +390,7 @@ public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<St
 
       } else if (child instanceof IfElseNode) {
         // Convert body.
-        Statement trailingElse =
-            shouldAddStaticsContent
-                ? addStaticsContent(
-                    () -> Statements.of(visitChildrenInNewSoyAndJsScope((IfElseNode) child)), false)
-                : Statements.of(visitChildrenInNewSoyAndJsScope((IfElseNode) child));
+        Statement trailingElse = Statements.of(visitChildrenInNewSoyAndJsScope((IfElseNode) child));
         // Add else-block to conditional.
         conditional.setElse(trailingElse);
       } else {
@@ -457,7 +436,6 @@ public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<St
 
     Expression switchOn = coerceTypeForSwitchComparison(node.getExpr());
     SwitchBuilder switchBuilder = switchValue(switchOn);
-    boolean shouldAddStaticsContent = node.getHtmlContext() == HtmlContext.HTML_PCDATA;
     for (SoyNode child : node.getChildren()) {
       if (child instanceof SwitchCaseNode) {
         SwitchCaseNode scn = (SwitchCaseNode) child;
@@ -466,10 +444,7 @@ public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<St
           Expression caseChunk = translateExpr(caseExpr);
           caseChunks.add(caseChunk);
         }
-        Statement body =
-            shouldAddStaticsContent
-                ? addStaticsContent(() -> Statements.of(visitChildrenInNewSoyScope(scn)), false)
-                : Statements.of(visitChildrenInNewSoyScope(scn));
+        Statement body = Statements.of(visitChildrenInNewSoyScope(scn));
         switchBuilder.addCase(caseChunks.build(), body);
       } else if (child instanceof SwitchDefaultNode) {
         Statement body = visitSwitchDefaultNode((SwitchDefaultNode) child);
@@ -640,7 +615,6 @@ public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<St
     // TODO(b/32224284): A more consistent pattern for local variable management.
     String loopIndexName = jsLetPrefix + "Index";
     String dataName = jsLetPrefix + "Data";
-    boolean shouldAddStaticsContent = node.getParent().getHtmlContext() == HtmlContext.HTML_PCDATA;
 
     // TODO(b/32224284): This could be a ref() and CodeChunk could handle adding this (if it's used)
     // but if this is used by both branches of an if, it would get separately declared in each. So
@@ -662,14 +636,8 @@ public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<St
           .put(node.getIndexVar(), id(loopIndexName));
     }
 
-    // Generate the loop body.
-    Statement foreachBody =
-        shouldAddStaticsContent
-            ? addStaticsContent(
-                () -> Statements.of(data, Statements.of(visitChildren(node))), false)
-            : Statements.of(data, Statements.of(visitChildren(node)));
-
-    
+      // Generate the loop body.
+      Statement foreachBody = Statements.of(data, Statements.of(visitChildren(node)));
 
     // Create the entire for block.
     return forLoop(loopIndexName, limit, foreachBody);

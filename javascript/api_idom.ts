@@ -22,7 +22,7 @@ import {truncate} from 'google3/third_party/javascript/closure/string/string';
 import * as incrementaldom from 'incrementaldom'; // from //third_party/javascript/incremental_dom:incrementaldom
 import {attributes} from './api_idom_attributes';
 import {IdomFunction, SoyElement} from './element_lib_idom';
-import {USE_TEMPLATE_CLONING, getSoyUntyped} from './global';
+import {getSoyUntyped} from './global';
 import {TemplateAcceptor} from './soyutils_idom';
 import {IjData, IdomTemplate as Template} from './templates';
 
@@ -87,16 +87,6 @@ export const patchOuter = wrapAsGeneric(
 );
 /** PatchInner using Soy-IDOM semantics. */
 export const patch = patchInner;
-/** PatchInner using Soy-IDOM template cloning semantics. */
-export const create = wrapAsGeneric(incrementaldom.createPatchInner, {
-  inTemplateCloning: true,
-  ...patchConfig,
-});
-/** PatchInner using Soy-IDOM DOM parts traversals. */
-export const createWithDomParts = wrapAsGeneric(
-  incrementaldom.createPatchInner,
-  {inTemplateCloning: true, onlyOperateInNodeParts: true, ...patchConfig},
-);
 
 interface IdomRendererApi {
   open(nameOrCtor: string, key?: string): void;
@@ -130,9 +120,6 @@ interface IdomRendererApi {
   setLogger(logger: Logger | null): void;
   getLogger(): Logger | null;
   verifyLogOnly(logOnly: boolean): boolean;
-  openChildNodePart(): void;
-  closeChildNodePart(): void;
-  nextNodePart(): HTMLElement | void;
   evalLoggingFunction(
     name: string,
     args: Array<{}>,
@@ -196,18 +183,6 @@ export class IncrementalDomRenderer implements IdomRendererApi {
     this.visit(el);
   }
 
-  openChildNodePart() {
-    incrementaldom.openChildNodePart();
-  }
-
-  closeChildNodePart() {
-    incrementaldom.closeChildNodePart();
-  }
-
-  nextNodePart(): HTMLElement | void {
-    return incrementaldom.nextNodePart();
-  }
-
   keepGoing(data: unknown, continueFn: (renderer: IdomRendererApi) => void) {
     const el = this.currentElement() as HTMLElement;
     // `data` is only passed by {skip} elements that are roots of templates.
@@ -219,11 +194,7 @@ export class IncrementalDomRenderer implements IdomRendererApi {
     // client-side rendering use case, this is straight forward because
     // we can tag the element. in SSR, we do best effort guessing using
     // child nodes.
-    if (
-      !el ||
-      el.__hasBeenRendered ||
-      (!incrementaldom.inTemplateCloning() && el.hasChildNodes())
-    ) {
+    if (!el || el.__hasBeenRendered || el.hasChildNodes()) {
       this.skip();
       // And exit its node so that we will continue with the next node.
       this.close();
@@ -330,9 +301,6 @@ export class IncrementalDomRenderer implements IdomRendererApi {
    * Prints an expression depending on its type.
    */
   print(expr: unknown, isSanitizedContent?: boolean | undefined) {
-    if (USE_TEMPLATE_CLONING) {
-      this.openChildNodePart();
-    }
     if (
       expr instanceof SanitizedHtml ||
       isSanitizedContent ||
@@ -364,9 +332,6 @@ export class IncrementalDomRenderer implements IdomRendererApi {
       }
     } else if (expr !== undefined) {
       this.renderDynamicContent(expr as IdomFunction);
-    }
-    if (USE_TEMPLATE_CLONING) {
-      this.closeChildNodePart();
     }
   }
 
@@ -616,7 +581,6 @@ export class IncrementalDomRenderer implements IdomRendererApi {
     }
     const maybeSkip = soyElement.handleSoyElementRuntime(element, data);
     soyElement.template = template.bind(soyElement);
-    USE_TEMPLATE_CLONING && (soyElement.ijData = ijData);
     if (maybeSkip) {
       this.skip();
       this.close();
@@ -762,9 +726,6 @@ ${el.dataset['debugSoy'] || truncate(el.outerHTML, 256)}`);
 export class FalsinessRenderer extends IncrementalDomRenderer {
   override visit(el: void | HTMLElement): void {}
   override pushManualKey(key: incrementaldom.Key) {}
-  override openChildNodePart() {}
-  override closeChildNodePart() {}
-  override nextNodePart() {}
   override popManualKey(): void {}
   override pushKey(key: string): void {}
   override popKey(): void {}
@@ -871,15 +832,6 @@ export class FalsinessRenderer extends IncrementalDomRenderer {
 }
 
 const noArgCallConsts = {
-  openChildNodePart: (actual: IdomRendererApi) => {
-    actual.openChildNodePart();
-  },
-  closeChildNodePart: (actual: IdomRendererApi) => {
-    actual.closeChildNodePart();
-  },
-  nextNodePart: (actual: IdomRendererApi) => {
-    actual.nextNodePart();
-  },
   popManualKey: (actual: IdomRendererApi) => {
     actual.popManualKey();
   },
@@ -921,15 +873,6 @@ export class BufferingIncrementalDomRenderer implements IdomRendererApi {
     this.buffer.push((actual) => {
       actual.pushManualKey(key);
     });
-  }
-  openChildNodePart() {
-    this.buffer.push(noArgCallConsts.openChildNodePart);
-  }
-  closeChildNodePart() {
-    this.buffer.push(noArgCallConsts.closeChildNodePart);
-  }
-  nextNodePart() {
-    this.buffer.push(noArgCallConsts.nextNodePart);
   }
   popManualKey(): void {
     this.buffer.push(noArgCallConsts.popManualKey);

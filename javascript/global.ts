@@ -16,8 +16,6 @@ import {isDataInitialized} from 'incrementaldom'; // from //third_party/javascri
 
 import {SoyElement} from './element_lib_idom';
 
-export {USE_TEMPLATE_CLONING} from 'incrementaldom'; // from //third_party/javascript/incremental_dom:incrementaldom
-
 declare global {
   interface Node {
     // tslint:disable-next-line: enforce-name-casing

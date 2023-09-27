@@ -20,7 +20,6 @@ import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.BUFFERING_IDOM_RENDERER;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM;
-import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_APPEND_CLONE_TO_CURRENT;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_APPLY_ATTRS;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_APPLY_STATICS;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_ATTR;
@@ -48,7 +47,6 @@ import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SO
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_CALL_DYNAMIC_HTML;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_CALL_DYNAMIC_JS;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_CALL_DYNAMIC_TEXT;
-import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_COMPILE_TO_TEMPLATE;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_MAKE_ATTRIBUTES;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_MAKE_HTML;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_PRINT_DYNAMIC_ATTR;
@@ -110,7 +108,6 @@ import com.google.template.soy.soytree.HtmlOpenTagNode;
 import com.google.template.soy.soytree.IfNode;
 import com.google.template.soy.soytree.KeyNode;
 import com.google.template.soy.soytree.LetContentNode;
-import com.google.template.soy.soytree.LetNode;
 import com.google.template.soy.soytree.Metadata;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;
 import com.google.template.soy.soytree.MsgHtmlTagNode;
@@ -168,8 +165,6 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
     }
   }
 
-  private static final Expression EMPTY_STATIC_TEMPLATE = Expressions.stringLiteral("");
-
   private final Deque<SanitizedContentKind> contentKind;
   private final List<Statement> staticVarDeclarations;
   private final boolean generatePositionalParamsSignature;
@@ -178,8 +173,6 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
 
   // Counter for static variables that are declared at the global scope.
   private int staticsCounter = 0;
-  private Expression staticTemplate = EMPTY_STATIC_TEMPLATE;
-  private boolean shouldCollectHtml;
 
   GenIncrementalDomTemplateBodyVisitor(
       OutputVarHandler outputVars,
@@ -196,8 +189,7 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
       List<Statement> staticVarDeclarations,
       boolean generatePositionalParamsSignature,
       FileSetMetadata fileSetMetadata,
-      String alias,
-      boolean shouldCollectHtml) {
+      String alias) {
     super(
         outputVars,
         jsSrcOptions,
@@ -214,7 +206,6 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
     this.generatePositionalParamsSignature = generatePositionalParamsSignature;
     this.fileSetMetadata = fileSetMetadata;
     this.alias = alias;
-    this.shouldCollectHtml = shouldCollectHtml;
   }
 
   /**
@@ -257,10 +248,7 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
           JsDoc.builder()
               .addParam(INCREMENTAL_DOM_PARAM_NAME, "incrementaldomlib.IncrementalDomRenderer")
               .build();
-      var content =
-          kind.isHtml()
-              ? addStaticsContent(() -> Statements.of(visitChildren(node)), true)
-              : Statements.of(visitChildren(node));
+      var content = Statements.of(visitChildren(node));
       definition =
           builder.setRhs(constructor.call(Expressions.arrowFunction(jsdoc, content))).build();
     } else {
@@ -488,11 +476,6 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
         statements.add(INCREMENTAL_DOM_POP_KEY.call().asStatement());
       }
     }
-    // Only wrap in a node part if there are siblings within a template node. If all a template does
-    // is delegate to another template, then there is no need to create a node part.
-    if (node.getHtmlContext() == HtmlContext.HTML_PCDATA) {
-      return wrapInTemplateCloning(Statements.of(statements), node);
-    }
     return Statements.of(statements);
   }
 
@@ -527,9 +510,6 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
   @Override
   protected Statement visitIfNode(IfNode node) {
     if (!isTextContent(contentKind.peek())) {
-      if (node.getHtmlContext() == HtmlContext.HTML_PCDATA) {
-        return wrapInTemplateCloning(super.generateNonExpressionIfNode(node), node);
-      }
       return super.generateNonExpressionIfNode(node);
     } else {
       return super.visitIfNode(node);
@@ -539,110 +519,23 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
   @Override
   protected Statement visitForNode(ForNode node) {
     var ret = super.visitForNode(node);
-    if (node.getHtmlContext() == HtmlContext.HTML_PCDATA) {
-      return wrapInTemplateCloning(ret, node);
-    }
     return ret;
   }
 
   @Override
   protected Statement visitSwitchNode(SwitchNode node) {
     var ret = super.visitSwitchNode(node);
-    if (node.getHtmlContext() == HtmlContext.HTML_PCDATA) {
-      return wrapInTemplateCloning(ret, node);
-    }
     return ret;
   }
 
   @Override
   protected Statement visitSwitchCaseNode(SwitchCaseNode node) {
-    if (((SwitchNode) node.getParent()).getHtmlContext() == HtmlContext.HTML_PCDATA) {
-      return addStaticsContent(() -> super.visitSwitchCaseNode(node), false);
-    }
     return super.visitSwitchCaseNode(node);
   }
 
   @Override
   protected Statement visitSwitchDefaultNode(SwitchDefaultNode node) {
-    if (((SwitchNode) node.getParent()).getHtmlContext() == HtmlContext.HTML_PCDATA) {
-      return addStaticsContent(() -> super.visitSwitchDefaultNode(node), false);
-    }
     return super.visitSwitchDefaultNode(node);
-  }
-
-  @Override
-  protected Statement addStaticsContent(
-      Supplier<Statement> function, boolean isSelfContainedBlock) {
-    if (!shouldCollectHtml) {
-      return function.get();
-    }
-    var codeGenerator = templateTranslationContext.codeGenerator();
-    var oldStringBuilder = staticTemplate;
-    staticTemplate = EMPTY_STATIC_TEMPLATE;
-    var oldShouldCollectHtml = shouldCollectHtml;
-    if (isSelfContainedBlock) {
-      shouldCollectHtml = true;
-    }
-    var stmt = function.get();
-    if (staticTemplate != EMPTY_STATIC_TEMPLATE && shouldCollectHtml) {
-      var varDecl =
-          VariableDeclaration.builder("statics_template_" + alias + "_" + staticsCounter++)
-              .setMutable()
-              .build();
-      staticVarDeclarations.add(varDecl);
-      var expr =
-          INCREMENTAL_DOM_APPEND_CLONE_TO_CURRENT.call(
-              id(varDecl.varName())
-                  .or(
-                      id(varDecl.varName())
-                          .assign(
-                              SOY_IDOM_COMPILE_TO_TEMPLATE.call(
-                                  JsRuntime.sanitizedContentOrdainerFunction(
-                                          SanitizedContentKind.HTML)
-                                      .call(staticTemplate))),
-                      codeGenerator));
-      staticTemplate = oldStringBuilder;
-      if (isSelfContainedBlock) {
-        shouldCollectHtml = oldShouldCollectHtml;
-      }
-      return Statements.of(useTemplateCloning(expr).asStatement(), stmt);
-    }
-    staticTemplate = oldStringBuilder;
-    if (isSelfContainedBlock) {
-      shouldCollectHtml = oldShouldCollectHtml;
-    }
-    return stmt;
-  }
-
-  private Expression useTemplateCloning(Expression expr) {
-    var codeGenerator = templateTranslationContext.codeGenerator();
-    var baseExpression =
-        JsRuntime.IJ_DATA
-            .and(IncrementalDomRuntime.USE_TEMPLATE_CLONING, codeGenerator)
-            .and(
-                JsRuntime.IJ_DATA.bracketAccess(Expressions.stringLiteral("inTemplateCloning")),
-                codeGenerator);
-    if (expr != null) {
-      return baseExpression.and(expr, codeGenerator);
-    }
-    return baseExpression;
-  }
-
-  private Statement wrapInTemplateCloning(Statement stmt, SoyNode node) {
-    if (node.getParent().getChildren().stream().filter(p -> !(p instanceof LetNode)).count() == 1
-        || !shouldCollectHtml) {
-      return stmt;
-    }
-    var codeGenerator = templateTranslationContext.codeGenerator();
-    staticTemplate = Expressions.concat(staticTemplate, IncrementalDomRuntime.NODE_PART);
-    return Statements.of(
-        IncrementalDomRuntime.USE_TEMPLATE_CLONING
-            .and(INCREMENTAL_DOM.dotAccess("openChildNodePart").call(), codeGenerator)
-            .asStatement(),
-        stmt,
-        IncrementalDomRuntime.USE_TEMPLATE_CLONING
-            .and(INCREMENTAL_DOM.dotAccess("closeChildNodePart").call(), codeGenerator)
-            .asStatement());
   }
 
   /**
@@ -915,13 +808,6 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
       key = translateExpr(node.getKeyNode().getExpr());
     }
     args.add(key);
-    shouldCollectHtml = shouldCollectHtml && !node.hasUnpredictableTagLocation();
-    if (shouldCollectHtml) {
-      staticTemplate =
-          Expressions.concat(
-              staticTemplate,
-              Expressions.stringLiteral("<" + node.getTagName().getStaticTagName()));
-    }
     var openCall = node.isDynamic() ? INCREMENTAL_DOM_OPEN : INCREMENTAL_DOM_OPEN_SIMPLE;
     return openCall.call(args);
   }
@@ -1015,15 +901,6 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
   private Optional<Statement> getClose(HtmlOpenTagNode node) {
     Expression close = node.isElementRoot() ? INCREMENTAL_DOM_ELEMENT_CLOSE : INCREMENTAL_DOM_CLOSE;
     boolean isSelfClosing = node.isSelfClosing() || node.getTagName().isDefinitelyVoid();
-    // Whether or not it is valid for this tag to be self closing has already been validated by the
-    // HtmlContextVisitor.  So we just need to output the close instructions if the node is self
-    // closing or definitely void.
-    if (shouldCollectHtml) {
-      staticTemplate =
-          Expressions.concat(
-              staticTemplate,
-              isSelfClosing ? Expressions.stringLiteral(" />") : Expressions.stringLiteral(">"));
-    }
     if (isSelfClosing) {
       return Optional.of(close.call().asStatement());
     }
@@ -1038,29 +915,6 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
       statements.add(maybeApplyStatics.get().asStatement());
     }
     statements.add(getApplyAttrs(node).asStatement());
-    if (shouldCollectHtml) {
-      staticAttributes.forEach(
-          (key, valueExpression) -> {
-            staticTemplate =
-                Expressions.concat(
-                    staticTemplate,
-                    Expressions.stringLiteral(" " + key + "='"),
-                    valueExpression,
-                    Expressions.stringLiteral("' "));
-          });
-      node.getChildren()
-          .forEach(
-              child -> {
-                if (child instanceof HtmlAttributeNode
-                    && ((HtmlAttributeNode) child).getStaticKey() != null) {
-                  HtmlAttributeNode attributeNode = (HtmlAttributeNode) child;
-                  staticTemplate =
-                      Expressions.concat(
-                          staticTemplate,
-                          Expressions.stringLiteral(" " + attributeNode.getStaticKey() + "=''"));
-                }
-              });
-    }
     return Statements.of(statements);
   }
 
@@ -1118,14 +972,6 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
     if (!node.getTagName().isDefinitelyVoid()) {
       statements.add(close.call().asStatement());
     }
-    shouldCollectHtml = shouldCollectHtml && !node.hasUnpredictableTagLocation();
-    if (shouldCollectHtml) {
-      staticTemplate =
-          Expressions.concat(
-              staticTemplate,
-              Expressions.stringLiteral(
-                  String.format("</%s>", node.getTagName().getStaticTagName())));
-    }
     return Statements.of(statements);
   }
 
@@ -1151,8 +997,6 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
       case CSS:
       case HTML_RCDATA:
       case HTML_PCDATA:
-        staticTemplate =
-            Expressions.concat(staticTemplate, Expressions.stringLiteral(node.getRawText()));
         // Note - we don't use generateTextCall since this text can never be null.
         return INCREMENTAL_DOM_TEXT.call(textArg).asStatement();
       case HTML_TAG:
@@ -1185,7 +1029,6 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
       case CSS:
         // fall through
       case HTML_PCDATA:
-        staticTemplate = Expressions.concat(staticTemplate, IncrementalDomRuntime.NODE_PART);
         if (node.numChildren() > 0
             && node.getChild(node.numChildren() - 1).getPrintDirective()
                 instanceof SanitizedContentOperator
@@ -1236,11 +1079,7 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
     List<Statement> statements = new ArrayList<>();
     VeLogStateHolder state = openVeLogNode(node);
     statements.add(state.enterStatement);
-    if (node.getLogonlyExpression() != null) {
-      statements.add(addStaticsContent(() -> Statements.of(visitChildren(node)), true));
-    } else {
-      statements.addAll(visitChildren(node));
-    }
+    statements.addAll(visitChildren(node));
     statements.add(exitVeLogNode(node, state.logOnlyConditional));
     return Statements.of(statements);
   }
@@ -1290,20 +1129,18 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
                 .setRhs(Expressions.objectLiteral(ImmutableMap.of()))
                 .build();
         staticVarDeclarations.add(staticDecl);
-        return wrapInTemplateCloning(
-            new AssistantForHtmlMsgs(
-                    /* idomTemplateBodyVisitor= */ this,
-                    jsSrcOptions,
-                    genCallCodeUtils,
-                    isComputableAsJsExprsVisitor,
-                    templateAliases,
-                    genJsExprsVisitor,
-                    templateTranslationContext,
-                    errorReporter,
-                    id,
-                    outputVars)
-                .generateMsgGroupCode(node),
-            node);
+        return new AssistantForHtmlMsgs(
+                /* idomTemplateBodyVisitor= */ this,
+                jsSrcOptions,
+                genCallCodeUtils,
+                isComputableAsJsExprsVisitor,
+                templateAliases,
+                genJsExprsVisitor,
+                templateTranslationContext,
+                errorReporter,
+                id,
+                outputVars)
+            .generateMsgGroupCode(node);
         // Messages in attribute values are plain text. However, since the translated content
         // includes entities (because other Soy backends treat these messages as HTML source), we
         // must unescape the translations before passing them to the idom APIs.

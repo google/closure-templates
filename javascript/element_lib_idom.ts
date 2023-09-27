@@ -19,7 +19,7 @@ import {
   IncrementalDomRendererImpl,
   patchOuter,
 } from './api_idom';
-import {USE_TEMPLATE_CLONING, isTaggedForSkip} from './global';
+import {isTaggedForSkip} from './global';
 import {IdomTemplate, IjData} from './templates';
 
 /**
@@ -127,9 +127,6 @@ export abstract class SoyElement<TData extends {} | null, TInterface extends {}>
         );
       };
     }
-    USE_TEMPLATE_CLONING &&
-      this.ijData &&
-      delete (this.ijData as {[key: string]: unknown})['inTemplateCloning'];
     const origSyncState = this.syncState;
     this.syncState = false;
     // It is possible that this Soy element has a skip handler on it. When

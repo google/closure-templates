@@ -57,7 +57,6 @@ final class IncrementalDomRuntime {
   public static final Expression INCREMENTAL_DOM_KEEP_GOING =
       INCREMENTAL_DOM.dotAccess("keepGoing");
 
-  public static final Expression USE_TEMPLATE_CLONING = SOY_IDOM.dotAccess("USE_TEMPLATE_CLONING");
   public static final Expression NODE_PART = SOY_IDOM.dotAccess("NODE_PART");
 
   public static final Expression INCREMENTAL_DOM_ELEMENT_CLOSE =
@@ -88,8 +87,6 @@ final class IncrementalDomRuntime {
   public static final Expression INCREMENTAL_DOM_PRINT = INCREMENTAL_DOM.dotAccess("print");
   public static final Expression INCREMENTAL_DOM_VISIT_HTML_COMMENT =
       INCREMENTAL_DOM.dotAccess("visitHtmlCommentNode");
-  public static final Expression INCREMENTAL_DOM_APPEND_CLONE_TO_CURRENT =
-      INCREMENTAL_DOM.dotAccess("appendCloneToCurrent");
 
   public static final Expression INCREMENTAL_DOM_ATTR = INCREMENTAL_DOM.dotAccess("attr");
 
@@ -99,9 +96,6 @@ final class IncrementalDomRuntime {
       INCREMENTAL_DOM.dotAccess("pushManualKey");
   public static final Expression INCREMENTAL_DOM_POP_MANUAL_KEY =
       INCREMENTAL_DOM.dotAccess("popManualKey");
-
-  public static final Expression SOY_IDOM_COMPILE_TO_TEMPLATE =
-      SOY_IDOM.dotAccess("$$compileToTemplate");
 
   public static final Expression SOY_IDOM_MAKE_HTML = SOY_IDOM.dotAccess("$$makeHtml");
 

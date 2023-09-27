@@ -28,7 +28,6 @@ import {
   SanitizedHtml,
   SanitizedHtmlAttribute,
 } from 'google3/third_party/javascript/closure/soy/data';
-import * as googSoy from 'google3/third_party/javascript/closure/soy/soy';
 import * as incrementaldom from 'incrementaldom'; // from //third_party/javascript/incremental_dom:incrementaldom
 
 import {
@@ -507,12 +506,6 @@ function passToIdHolder(value: string, idHolder?: IdHolder) {
   return value;
 }
 
-function compileToTemplate(content: SanitizedContent): HTMLTemplateElement {
-  const el = document.createElement('template');
-  googSoy.renderHtml(el, content);
-  return el;
-}
-
 /**
  * Returns an idom- and classic- Soy compatible attribute with a unique value.
  *
@@ -570,14 +563,12 @@ function stableUniqueAttributeIdHolder(): IdHolder {
   return goog.DEBUG ? new IdHolderForDebug() : {};
 }
 
-export {USE_TEMPLATE_CLONING} from './global';
 export {
   callDynamicAttributes as $$callDynamicAttributes,
   callDynamicCss as $$callDynamicCss,
   callDynamicHTML as $$callDynamicHTML,
   callDynamicJs as $$callDynamicJs,
   callDynamicText as $$callDynamicText,
-  compileToTemplate as $$compileToTemplate,
   defaultIdomRenderer as $$defaultIdomRenderer,
   emptyToNull as $$emptyToNull,
   htmlToString as $$htmlToString,

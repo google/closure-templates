@@ -190,9 +190,7 @@ final class AssistantForHtmlMsgs extends GenJsCodeVisitorAssistantForMsgs {
     // to decide which branch to execute.
     SwitchBuilder switchBuilder = Statements.switchValue(item.bracketAccess(Expressions.number(1)));
     for (Map.Entry<String, MsgPlaceholderNode> ph : placeholderNames.entrySet()) {
-      Statement value =
-          idomTemplateBodyVisitor.addStaticsContent(
-              () -> idomTemplateBodyVisitor.visit(ph.getValue()), true);
+      Statement value = idomTemplateBodyVisitor.visit(ph.getValue());
       MsgPlaceholderNode phNode = ph.getValue();
       if (phNode.getParent() instanceof VeLogNode) {
         VeLogNode parent = (VeLogNode) phNode.getParent();
