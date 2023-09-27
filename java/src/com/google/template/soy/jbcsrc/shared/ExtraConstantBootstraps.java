@@ -15,10 +15,20 @@
  */
 package com.google.template.soy.jbcsrc.shared;
 
+import static com.google.common.collect.ImmutableList.toImmutableList;
+import static java.util.Arrays.stream;
+
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.errorprone.annotations.Keep;
+import com.google.template.soy.data.SoyValue;
+import com.google.template.soy.data.SoyValueConverter;
+import com.google.template.soy.data.SoyValueProvider;
+import com.google.template.soy.data.internal.SoyMapImpl;
+import com.google.template.soy.data.internal.SoyRecordImpl;
 import java.lang.invoke.MethodHandles;
 
-/** Extra constant boostrap methods. */
+/** Extra constant bootstrap methods. */
 public final class ExtraConstantBootstraps {
   @Keep
   public static boolean constantBoolean(
@@ -33,6 +43,45 @@ public final class ExtraConstantBootstraps {
   @Keep
   public static Object callSiteKey(MethodHandles.Lookup lookup, String name, Class<?> type, int v) {
     return new Object();
+  }
+
+  @Keep
+  public static char constantChar(MethodHandles.Lookup lookup, String name, Class<?> type, int v) {
+    return (char) v;
+  }
+
+  // NOTE: we don't use the `salt` parameters, they are just used to ensure we get unique constants
+  @Keep
+  public static ImmutableList<SoyValue> constantSoyList(
+      MethodHandles.Lookup lookup, String name, Class<?> type, int salt, Object... args) {
+    return stream(args)
+        .map(v -> SoyValueConverter.INSTANCE.convert(v).resolve())
+        .collect(toImmutableList());
+  }
+
+  @Keep
+  public static SoyMapImpl constantSoyMap(
+      MethodHandles.Lookup lookup, String name, Class<?> type, int salt, Object... keyValuePairs) {
+    ImmutableMap.Builder<SoyValue, SoyValue> map =
+        ImmutableMap.builderWithExpectedSize(keyValuePairs.length / 2);
+    for (int i = 0; i < keyValuePairs.length; i += 2) {
+      map.put(
+          SoyValueConverter.INSTANCE.convert(keyValuePairs[i]).resolve(),
+          SoyValueConverter.INSTANCE.convert(keyValuePairs[i + 1]).resolve());
+    }
+    return SoyMapImpl.forProviderMap(map.buildKeepingLast());
+  }
+
+  @Keep
+  public static SoyRecordImpl constantSoyRecord(
+      MethodHandles.Lookup lookup, String name, Class<?> type, int salt, Object... keyValuePairs) {
+    ImmutableMap.Builder<String, SoyValueProvider> map = ImmutableMap.builder();
+    for (int i = 0; i < keyValuePairs.length; i += 2) {
+      map.put(
+          (String) keyValuePairs[i],
+          SoyValueConverter.INSTANCE.convert(keyValuePairs[i + 1]).resolve());
+    }
+    return SoyRecordImpl.forProviderMap(map.buildOrThrow());
   }
 
   private ExtraConstantBootstraps() {}

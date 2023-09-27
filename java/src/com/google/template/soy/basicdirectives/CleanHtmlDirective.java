@@ -128,7 +128,7 @@ final class CleanHtmlDirective
       // Ignore nullishness because we `fromTagName` doesn't support null parameters.
       optionalSafeTags.add(JbcSrcMethods.FROM_TAG_NAME.invoke(arg.unboxAsStringUnchecked()));
     }
-    return BytecodeUtils.asList(optionalSafeTags);
+    return BytecodeUtils.asImmutableList(optionalSafeTags).toMaybeConstant();
   }
 
   @Override

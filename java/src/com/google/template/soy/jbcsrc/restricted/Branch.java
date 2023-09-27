@@ -52,7 +52,14 @@ public final class Branch {
     private final Branch branch;
 
     BranchToBoolean(Features features, Branch branch, SourceLocation location) {
-      super(Type.BOOLEAN_TYPE, features, location);
+      super(
+          Type.BOOLEAN_TYPE,
+          features,
+          location,
+          branch.brancher == NEVER
+              ? Optional.of(
+                  branch.isNegated ? BytecodeUtils.CONSTANT_TRUE : BytecodeUtils.CONSTANT_FALSE)
+              : Optional.empty());
       this.branch = branch;
       checkState(!(branch.brancher instanceof BooleanBrancher) || branch.isNegated);
     }
@@ -125,6 +132,11 @@ public final class Branch {
 
     @Override
     public BranchToBoolean labelEnd(Label label) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Expression withConstantValue(ConstantValue constantValue) {
       throw new UnsupportedOperationException();
     }
   }
@@ -446,7 +458,7 @@ public final class Branch {
         mode = this.mode;
         branches = this.branches;
       }
-      Branch finalBranch = branches.get(branches.size() - 1);
+      Branch finalBranch = Iterables.getLast(branches);
       if (!(finalBranch.brancher instanceof BooleanBrancher) || finalBranch.isNegated) {
         return false;
       }

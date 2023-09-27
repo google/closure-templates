@@ -18,6 +18,7 @@ package com.google.template.soy.jbcsrc.restricted;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.isDefinitelyAssignableFrom;
 
@@ -43,6 +44,9 @@ import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypes;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.Optional;
+import javax.annotation.Nullable;
+import org.objectweb.asm.ConstantDynamic;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Type;
 
@@ -72,7 +76,152 @@ import org.objectweb.asm.Type;
 public abstract class Expression extends BytecodeProducer {
 
   /**
-   * Expression features track additional metadata for expressions.
+   * Represents a value that can be compiled to a JVM constant.
+   *
+   * <p>This abstraction is useful for 2 usecases:
+   *
+   * <ol>
+   *   <li>The construction of 'composite' constants via `ConstantDynamic` for these we need all
+   *       bootstrap method arguments to also be encoded as JVM constants and this abstraction
+   *       allows us to track them.
+   *   <li>Compile time constant folding of primitive operations. By tracking 'java values' we can
+   *       constant fold certain operations more flexibly than otherwise especially when those
+   *       values are related to jvm specific encodings. A standard example is 'numeric
+   *       conversions', these are about adapting jvm types and as such the Soy compilers
+   *       OptimizationPass is not useful.
+   * </ol>
+   */
+  public static final class ConstantValue {
+    private static void checkJavaValueType(Object javaValue, Type type) {
+      switch (type.getSort()) {
+        case Type.OBJECT:
+          // null works for all object type
+          if (javaValue == null) {
+            break;
+          }
+          checkType(javaValue, String.class);
+          break;
+        case Type.BOOLEAN:
+          checkType(javaValue, Boolean.class);
+          break;
+        case Type.INT:
+          checkType(javaValue, Integer.class);
+          break;
+        case Type.CHAR:
+          checkType(javaValue, Character.class);
+          break;
+        case Type.LONG:
+          checkType(javaValue, Long.class);
+          break;
+        case Type.DOUBLE:
+          checkType(javaValue, Double.class);
+          break;
+        case Type.BYTE:
+        case Type.SHORT:
+        case Type.FLOAT:
+        case Type.VOID:
+        case Type.ARRAY:
+        case Type.METHOD:
+          throw new IllegalArgumentException("Invalid constant type: " + javaValue);
+        default:
+          throw new AssertionError("unexpected constant type " + javaValue);
+      }
+    }
+
+    public static ConstantValue raw(Object javaValue, Type type) {
+      checkJavaValueType(javaValue, type);
+      return new ConstantValue(
+          Optional.of(javaValue), javaValue, type, /* isTrivialConstant= */ true);
+    }
+
+    public static ConstantValue raw(
+        @Nullable Object javaValue,
+        ConstantDynamic byteCodeValue,
+        Type type,
+        boolean isTrivialConstant) {
+      checkState(type.getDescriptor().equals(byteCodeValue.getDescriptor()));
+      checkJavaValueType(javaValue, type);
+
+      return new ConstantValue(
+          javaValue == null ? Optional.of(NULL_MARKER) : Optional.of(javaValue),
+          byteCodeValue,
+          type,
+          isTrivialConstant);
+    }
+
+    public static ConstantValue dynamic(
+        ConstantDynamic byteCodeValue, Type type, boolean isTrivialConstant) {
+      checkState(type.getDescriptor().equals(byteCodeValue.getDescriptor()));
+      return new ConstantValue(Optional.empty(), byteCodeValue, type, isTrivialConstant);
+    }
+
+    private static final Object NULL_MARKER = new Object();
+    private final Optional<Object> javaValue;
+    private final Object byteCodeValue;
+    private final Type type;
+    private final boolean isTrivialConstant;
+
+    private ConstantValue(
+        Optional<Object> javaValue, Object byteCodeValue, Type type, boolean isTrivialConstant) {
+      // The relationship between these 3 values is enforced by our callers
+      this.javaValue = javaValue;
+      this.byteCodeValue = checkNotNull(byteCodeValue);
+      this.type = type;
+      this.isTrivialConstant = isTrivialConstant;
+      checkArgument(!(byteCodeValue instanceof ConstantValue));
+    }
+
+    /**
+     * Returns whether or not this is a trivial constant. Trivial constants are useful for passing
+     * as arguments to other more complex constant expressions but are not themselves usefully
+     * encoded as a 'constant'
+     *
+     * <p>For example, the constant `true` for a boolean, we just shouldn't bother. Similarly for
+     * static final field references. a `getstatic` instruction is just as good as an LDC.
+     */
+    public boolean isTrivialConstant() {
+      return isTrivialConstant;
+    }
+
+    /**
+     * Returns whether or not this constant has a Java value. Not all constants do, for example we
+     * might compile a proto literal to a constant but not be able to represent it in the compiler
+     * itself because the proto gencode isn't on our classpath.
+     */
+    public boolean hasJavaValue() {
+      return javaValue.isPresent();
+    }
+
+    /**
+     * Returns the java value that is the same as what the content would evaluate to.
+     *
+     * @throws IllegalStateException if {@link #hasJavaValue} would return `false`
+     */
+    @Nullable
+    public Object getJavaValue() {
+      Object rawValue = javaValue.get();
+      return rawValue == NULL_MARKER ? null : rawValue;
+    }
+
+    /**
+     * Returns the Java value as the given type or absent if it doesn't match the type (or we don't
+     * have a raw value).
+     */
+    public <T> Optional<T> getJavaValueAsType(Class<T> type) {
+      return javaValue.map(value -> type.isInstance(value) ? type.cast(value) : null);
+    }
+
+    @Override
+    public String toString() {
+      return MoreObjects.toStringHelper(this)
+          .add("javaValue", hasJavaValue() ? getJavaValue() : "N/A")
+          .add("byteCodeValue", byteCodeValue)
+          .toString();
+    }
+  }
+
+  /**
+   * q Expression features track additional metadata for expressions.
    *
    * <p>Features should be defined such that not setting a feature on an expression is a safe
    * default. That way if they get accidentally dropped in a transformation we simply generate less
@@ -208,17 +357,16 @@ public abstract class Expression extends BytecodeProducer {
 
   /** Returns true if all referenced expressions are {@linkplain #isCheap() cheap}. */
   public static boolean areAllCheap(Iterable<? extends Expression> args) {
-    for (Expression arg : args) {
-      if (!arg.isCheap()) {
-        return false;
-      }
-    }
-    return true;
+    return Iterables.all(args, Expression::isCheap);
   }
 
   /** Returns true if all referenced expressions are {@linkplain #isCheap() cheap}. */
   public static boolean areAllCheap(Expression first, Expression... rest) {
     return areAllCheap(ImmutableList.<Expression>builder().add(first).add(rest).build());
+  }
+
+  public static boolean areAllConstant(Iterable<? extends Expression> args) {
+    return Iterables.all(args, Expression::isConstant);
   }
 
   /** Checks that the given expressions are compatible with the given types. */
@@ -241,6 +389,7 @@ public abstract class Expression extends BytecodeProducer {
 
   private final Features features;
   private final Type resultType;
+  private final Optional<ConstantValue> constantValue;
 
   protected Expression(Type resultType) {
     this(resultType, Features.of());
@@ -250,10 +399,37 @@ public abstract class Expression extends BytecodeProducer {
     this(resultType, features, SourceLocation.UNKNOWN);
   }
 
+  protected Expression(Type resultType, ConstantValue constantValue, Features features) {
+    this(resultType, features, SourceLocation.UNKNOWN, Optional.of(constantValue));
+  }
+
   protected Expression(Type resultType, Features features, SourceLocation location) {
+    this(resultType, features, location, Optional.empty());
+  }
+
+  protected Expression(
+      Type resultType,
+      Features features,
+      SourceLocation location,
+      Optional<ConstantValue> constantValue) {
     super(location);
     this.resultType = checkNotNull(resultType);
     this.features = Features.forType(resultType, features);
+    this.constantValue = checkNotNull(constantValue);
+    if (Flags.DEBUG && constantValue.isPresent()) {
+      checkState(
+          resultType.equals(constantValue.get().type),
+          "Type mismatch. Expected constant value of type %s to have type %s",
+          constantValue.get().type,
+          resultType);
+    }
+  }
+
+  private static void checkType(Object value, Class<?> type) {
+    if (!type.isInstance(value)) {
+      throw new IllegalStateException(
+          "expected " + value + " a " + value.getClass() + " to be a " + type);
+    }
   }
 
   /**
@@ -272,6 +448,31 @@ public abstract class Expression extends BytecodeProducer {
       return this;
     }
     return new DelegatingExpression(this, location);
+  }
+
+  /**
+   * If this expression has a constant form, return an expression that evaluates it via an `ldc`
+   * instruction unless it is so trivial as to not be worth it.
+   */
+  public Expression toMaybeConstant() {
+    if (isConstant() && !constantValue.get().isTrivialConstant()) {
+      return toConstantExpression();
+    }
+    return this;
+  }
+
+  /**
+   * Returns this expression encoded as a constantdynamic expression. Throw an error if {@link
+   * #isConstant} is false.
+   */
+  public Expression toConstantExpression() {
+    var actualConstantValue = constantValue.get().byteCodeValue;
+    return new Expression(resultType, features.plus(Feature.CHEAP), location, constantValue) {
+      @Override
+      protected void doGen(CodeBuilder adapter) {
+        adapter.visitLdcInsn(actualConstantValue);
+      }
+    };
   }
 
   /** The type of the expression. */
@@ -442,7 +643,7 @@ public abstract class Expression extends BytecodeProducer {
    * the expression.
    */
   public Expression labelStart(Label label) {
-    return new Expression(resultType(), features) {
+    return new Expression(resultType(), features, SourceLocation.UNKNOWN, constantValue) {
       @Override
       protected void doGen(CodeBuilder adapter) {
         adapter.mark(label);
@@ -456,13 +657,31 @@ public abstract class Expression extends BytecodeProducer {
    * the expression.
    */
   public Expression labelEnd(Label label) {
-    return new Expression(resultType(), features) {
+    return new Expression(resultType(), features, SourceLocation.UNKNOWN, constantValue) {
       @Override
       protected void doGen(CodeBuilder adapter) {
         Expression.this.gen(adapter);
         adapter.mark(label);
       }
     };
+  }
+
+  /** Returns true if this expression has a constant value. */
+  public boolean isConstant() {
+    return constantValue.isPresent();
+  }
+
+  public ConstantValue constantValue() {
+    return constantValue.get();
+  }
+
+  public Object constantBytecodeValue() {
+    return constantValue.get().byteCodeValue;
+  }
+
+  /** Returns an instanceof of this expression with an attached constant form. */
+  public Expression withConstantValue(ConstantValue constantValue) {
+    return new DelegatingExpression(this, constantValue);
   }
 
   /**
@@ -622,17 +841,22 @@ public abstract class Expression extends BytecodeProducer {
     private final Expression delegate;
 
     public DelegatingExpression(Expression delegate, Type resultType, Features features) {
-      super(resultType, features, delegate.location);
+      super(resultType, features, delegate.location, delegate.constantValue);
       this.delegate = delegate;
     }
 
     public DelegatingExpression(Expression delegate, Features features) {
-      super(delegate.resultType, features, delegate.location);
+      super(delegate.resultType, features, delegate.location, delegate.constantValue);
       this.delegate = delegate;
     }
 
     public DelegatingExpression(Expression delegate, SourceLocation location) {
-      super(delegate.resultType, delegate.features, location);
+      super(delegate.resultType, delegate.features, location, delegate.constantValue);
+      this.delegate = delegate;
+    }
+
+    public DelegatingExpression(Expression delegate, ConstantValue value) {
+      super(delegate.resultType, delegate.features, delegate.location, Optional.of(value));
       this.delegate = delegate;
     }
 

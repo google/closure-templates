@@ -549,7 +549,8 @@ final class TemplateCompiler {
       return SoyExpression.SOY_NULL;
     } else {
       if (ExpressionCompiler.canCompileToConstant(templateNode, defaultValueNode)) {
-        SoyExpression defaultValue = constantCompiler.compile(defaultValueNode).box();
+        SoyExpression defaultValue =
+            constantCompiler.compile(defaultValueNode).box().toMaybeConstant();
         if (!defaultValue.isCheap()) {
           FieldRef ref;
           if (headerVar.kind() == VarDefn.Kind.STATE) {

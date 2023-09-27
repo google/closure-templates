@@ -70,11 +70,9 @@ import com.google.template.soy.jbcsrc.restricted.Expression.Feature;
 import com.google.template.soy.jbcsrc.restricted.FieldRef;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
-import com.google.template.soy.jbcsrc.restricted.SoyRuntimeType;
 import com.google.template.soy.jbcsrc.restricted.Statement;
 import com.google.template.soy.jbcsrc.runtime.JbcSrcRuntime;
 import com.google.template.soy.jbcsrc.shared.ClassLoaderFallbackCallFactory;
-import com.google.template.soy.jbcsrc.shared.ExtraConstantBootstraps;
 import com.google.template.soy.jbcsrc.shared.Names;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
 import com.google.template.soy.jbcsrc.shared.SwitchFactory;
@@ -124,7 +122,6 @@ import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.VeLogNode;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.TemplateType;
-import java.lang.invoke.ConstantBootstraps;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.util.ArrayList;
@@ -138,7 +135,6 @@ import java.util.NavigableSet;
 import java.util.Optional;
 import java.util.TreeMap;
 import java.util.function.Supplier;
-import org.objectweb.asm.ConstantDynamic;
 import org.objectweb.asm.Handle;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
@@ -462,45 +458,6 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     };
   }
 
-  private static final Handle BOOLEAN_CONSTANT_HANDLE =
-      MethodRef.createPure(
-              ExtraConstantBootstraps.class,
-              "constantBoolean",
-              MethodHandles.Lookup.class,
-              String.class,
-              Class.class,
-              int.class)
-          .asHandle();
-
-  private static final ConstantDynamic BOOLEAN_CONSTANT_TRUE =
-      new ConstantDynamic("true", Type.BOOLEAN_TYPE.getDescriptor(), BOOLEAN_CONSTANT_HANDLE, 1);
-
-  private static final ConstantDynamic BOOLEAN_CONSTANT_FALSE =
-      new ConstantDynamic("false", Type.BOOLEAN_TYPE.getDescriptor(), BOOLEAN_CONSTANT_HANDLE, 0);
-
-  private static final Handle GET_STATIC_FINAL_HANDLE =
-      MethodRef.createPure(
-              ConstantBootstraps.class,
-              "getStaticFinal",
-              MethodHandles.Lookup.class,
-              String.class,
-              Class.class,
-              Class.class)
-          .asHandle();
-
-  private static final ConstantDynamic NULL_DATA_CONSTANT =
-      new ConstantDynamic(
-          "INSTANCE",
-          BytecodeUtils.NULL_DATA_TYPE.getDescriptor(),
-          GET_STATIC_FINAL_HANDLE,
-          BytecodeUtils.NULL_DATA_TYPE);
-  private static final ConstantDynamic UNDEFINED_DATA_CONSTANT =
-      new ConstantDynamic(
-          "INSTANCE",
-          BytecodeUtils.UNDEFINED_DATA_TYPE.getDescriptor(),
-          GET_STATIC_FINAL_HANDLE,
-          BytecodeUtils.UNDEFINED_DATA_TYPE);
-
   private static final Handle STRING_SWITCH_FACTORY_HANDLE =
       MethodRef.createPure(
               SwitchFactory.class,
@@ -567,8 +524,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
             cases.putIfAbsent(((ProtoEnumValueNode) root).getValueAsInt(), caseNode);
           } else if (root instanceof BooleanNode) {
             cases.putIfAbsent(
-                ((BooleanNode) root).getValue() ? BOOLEAN_CONSTANT_TRUE : BOOLEAN_CONSTANT_FALSE,
-                caseNode);
+                constant(((BooleanNode) root).getValue()).constantBytecodeValue(), caseNode);
           } else if (root instanceof FloatNode) {
             double floatValue = ((FloatNode) root).getValue();
             if (floatValue == (int) floatValue) {
@@ -581,9 +537,9 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
           } else if (root instanceof StringNode) {
             cases.putIfAbsent(((StringNode) root).getValue(), caseNode);
           } else if (root instanceof NullNode) {
-            cases.putIfAbsent(NULL_DATA_CONSTANT, caseNode);
+            cases.putIfAbsent(BytecodeUtils.soyNull().constantBytecodeValue(), caseNode);
           } else if (root instanceof UndefinedNode) {
-            cases.putIfAbsent(UNDEFINED_DATA_CONSTANT, caseNode);
+            cases.putIfAbsent(BytecodeUtils.soyUndefined().constantBytecodeValue(), caseNode);
           } else {
             return Optional.empty();
           }
@@ -944,21 +900,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       SoyExpression compiledExpression =
           exprCompiler.compileSubExpression(
               expression.get(), detachState.createExpressionDetacher(startDetachPoint));
-      Expression rangeValue;
-      SoyRuntimeType type = compiledExpression.soyRuntimeType();
-      if (!type.isKnownInt()) {
-        // The type checker allows for numeric types, but we only support ints in the runtime.
-        // simply unbox to a double and cast to an int
-        rangeValue =
-            MethodRef.INTS_CHECKED_CAST.invoke(
-                BytecodeUtils.numericConversion(
-                    type.isKnownFloat()
-                        ? compiledExpression.unboxAsDouble()
-                        : compiledExpression.coerceToDouble(),
-                    Type.LONG_TYPE));
-      } else {
-        rangeValue = compiledExpression.unboxAsInt();
-      }
+      Expression rangeValue = compiledExpression.coerceToInt();
       if (!rangeValue.isCheap()) {
         // bounce it into a local variable
         Variable startVar = scope.createSynthetic(varName, rangeValue, STORE);

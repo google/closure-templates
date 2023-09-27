@@ -226,15 +226,17 @@ final class LazyClosureCompiler {
   LazyClosure compileLazyExpression(
       String namePrefix, SoyNode declaringNode, String varName, ExprRootNode exprNode) {
     if (ExpressionCompiler.canCompileToConstant(declaringNode, exprNode)) {
-      SoyExpression expression = parent.constantCompiler.compile(exprNode).box();
+      SoyExpression expression = parent.constantCompiler.compile(exprNode).box().toMaybeConstant();
       Expression value =
           BytecodeUtils.getSoleValue(expression.resultType())
               .orElseGet(
                   () ->
-                      parent
-                          .fields
-                          .addStaticField(getProposedName(namePrefix, varName), expression.box())
-                          .accessor());
+                      expression.isConstant()
+                          ? expression
+                          : parent
+                              .fields
+                              .addStaticField(getProposedName(namePrefix, varName), expression)
+                              .accessor());
       return LazyClosure.create(
           varName, value, /* isTrivial= */ true, /* requiresDetachLogicToResolve= */ false);
     }
@@ -321,7 +323,7 @@ final class LazyClosureCompiler {
     // ExtraCodeCompiler means that it isn't just textual.
     Optional<Expression> asRawText =
         prefix == ExtraCodeCompiler.NO_OP && suffix == ExtraCodeCompiler.NO_OP
-            ? asRawTextOnly(proposedName, renderUnit)
+            ? asRawTextOnly(renderUnit)
             : Optional.empty();
     if (asRawText.isPresent()) {
       return LazyClosure.create(
@@ -387,7 +389,7 @@ final class LazyClosureCompiler {
    * Returns an SoyValueProvider expression for the given RenderUnitNode if it is composed of only
    * raw text.
    */
-  private Optional<Expression> asRawTextOnly(String name, RenderUnitNode renderUnit) {
+  private Optional<Expression> asRawTextOnly(RenderUnitNode renderUnit) {
     StringBuilder builder = null;
     List<SoyNode> children = new ArrayList<>(renderUnit.getChildren());
     for (int i = 0; i < children.size(); i++) {
@@ -416,9 +418,7 @@ final class LazyClosureCompiler {
       value =
           MethodRef.ORDAIN_AS_SAFE.invoke(value, constantSanitizedContentKindAsContentKind(kind));
     }
-
-    FieldRef staticField = parent.fields.addStaticField(name, value);
-    return Optional.of(staticField.accessor());
+    return Optional.of(value.toConstantExpression());
   }
 
   private String getProposedName(String prefix, String varName) {

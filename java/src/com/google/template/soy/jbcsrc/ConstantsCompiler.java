@@ -132,14 +132,18 @@ public final class ConstantsCompiler {
                   /* isStatic= */ true),
               javaSourceFunctionCompiler,
               fileSetMetadata);
-      SoyExpression expression = constantCompiler.compile(constant.getExpr());
+      SoyExpression expression = constantCompiler.compile(constant.getExpr()).toMaybeConstant();
       Expression value =
-          BytecodeUtils.isPrimitive(expression.resultType())
+          expression.isConstant()
               ? expression
               : fields.addStaticField("const$" + constant.getVar().name(), expression).accessor();
 
       Preconditions.checkArgument(
-          isDefinitelyAssignableFrom(expression.soyRuntimeType().runtimeType(), methodType));
+          isDefinitelyAssignableFrom(expression.soyRuntimeType().runtimeType(), methodType),
+          "expected %s to be assignabled to %s @%s",
+          methodType,
+          expression.soyRuntimeType().runtimeType(),
+          constant.getSourceLocation());
       Statement.returnExpression(value)
           .labelStart(start)
           .labelEnd(end)

@@ -103,6 +103,7 @@ import com.google.template.soy.jbcsrc.restricted.SoyRuntimeType;
 import com.google.template.soy.jbcsrc.restricted.Statement;
 import com.google.template.soy.jbcsrc.restricted.TypeInfo;
 import com.google.template.soy.jbcsrc.shared.ClassLoaderFallbackCallFactory;
+import com.google.template.soy.jbcsrc.shared.ExtraConstantBootstraps;
 import com.google.template.soy.jbcsrc.shared.LegacyFunctionAdapter;
 import com.google.template.soy.jbcsrc.shared.Names;
 import com.google.template.soy.plugin.java.internal.PluginAnalyzer;
@@ -132,6 +133,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.Future;
 import javax.annotation.Nullable;
+import org.objectweb.asm.ConstantDynamic;
 import org.objectweb.asm.Handle;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
@@ -174,7 +176,8 @@ final class ExpressionCompiler {
               varManager,
               BasicDetacher.INSTANCE,
               sourceFunctionCompiler,
-              fileSetMetadata);
+              fileSetMetadata,
+              /* isConstantContext= */ false);
     }
 
     private BasicExpressionCompiler(CompilerVisitor visitor) {
@@ -267,7 +270,8 @@ final class ExpressionCompiler {
             varManager,
             ExpressionDetacher.NullDetatcher.INSTANCE,
             sourceFunctionCompiler,
-            fileSetMetadata));
+            fileSetMetadata,
+            /* isConstantContext= */ true));
   }
 
   /**
@@ -291,7 +295,7 @@ final class ExpressionCompiler {
    * Returns {@code true} if the value can be compiled to a constant expression in a static
    * initializer.
    */
-  static boolean canCompileToConstant(SoyNode context, ExprRootNode expr) {
+  static boolean canCompileToConstant(SoyNode context, ExprNode expr) {
     return new CanCompileToConstantVisitor(context).exec(expr);
   }
 
@@ -371,7 +375,8 @@ final class ExpressionCompiler {
                 varManager,
                 /* detacher= */ null,
                 sourceFunctionCompiler,
-                fileSetMetadata)
+                fileSetMetadata,
+                /* isConstantContext= */ false)
             .exec(node));
   }
 
@@ -388,7 +393,8 @@ final class ExpressionCompiler {
             varManager,
             detacher,
             sourceFunctionCompiler,
-            fileSetMetadata));
+            fileSetMetadata,
+            /* isConstantContext= */ false));
   }
 
   private static final class CompilerVisitor
@@ -401,6 +407,7 @@ final class ExpressionCompiler {
     private final LocalVariableManager varManager;
     private final JavaSourceFunctionCompiler sourceFunctionCompiler;
     private final PartialFileSetMetadata fileSetMetadata;
+    private final boolean isConstantContext;
 
     CompilerVisitor(
         SoyNode context,
@@ -409,7 +416,8 @@ final class ExpressionCompiler {
         LocalVariableManager varManager,
         ExpressionDetacher detacher,
         JavaSourceFunctionCompiler sourceFunctionCompiler,
-        PartialFileSetMetadata fileSetMetadata) {
+        PartialFileSetMetadata fileSetMetadata,
+        boolean isConstantContext) {
       this.context = Preconditions.checkNotNull(context);
       this.analysis = analysis;
       this.detacher = detacher;
@@ -417,6 +425,7 @@ final class ExpressionCompiler {
       this.varManager = varManager;
       this.sourceFunctionCompiler = sourceFunctionCompiler;
       this.fileSetMetadata = fileSetMetadata;
+      this.isConstantContext = isConstantContext;
     }
 
     @Override
@@ -468,12 +477,43 @@ final class ExpressionCompiler {
 
     // Collection literals
 
+    private static final Handle CONSTANT_LIST_HANDLE =
+        MethodRef.createPure(
+                ExtraConstantBootstraps.class,
+                "constantSoyList",
+                MethodHandles.Lookup.class,
+                String.class,
+                Class.class,
+                int.class,
+                Object[].class)
+            .asHandle();
+
     @Override
     protected SoyExpression visitListLiteralNode(ListLiteralNode node) {
+      var compiledChildren = visitChildren(node);
       // TODO(lukes): this should really box the children as SoyValueProviders, we are boxing them
       // anyway and could additionally delay detach generation. Ditto for RecordLiteralNode.
-      return SoyExpression.forList(
-          (ListType) node.getType(), SoyExpression.asBoxedValueProviderList(visitChildren(node)));
+      var asList = SoyExpression.asBoxedValueProviderList(compiledChildren);
+      var asListSoyExpression = SoyExpression.forList((ListType) node.getType(), asList);
+      // lists show up in defaults and const expressions, special case those
+      if (isConstantContext && Expression.areAllConstant(compiledChildren)) {
+        Object[] constantArgs = new Object[1 + compiledChildren.size()];
+        constantArgs[0] = node.getSourceLocation().hashCode();
+        for (int i = 0; i < compiledChildren.size(); i++) {
+          constantArgs[i + 1] = compiledChildren.get(i).constantBytecodeValue();
+        }
+        return asListSoyExpression.withConstantValue(
+            Expression.ConstantValue.dynamic(
+                new ConstantDynamic(
+                    "constantList",
+                    BytecodeUtils.IMMUTABLE_LIST_TYPE.getDescriptor(),
+                    CONSTANT_LIST_HANDLE,
+                    constantArgs),
+                BytecodeUtils.IMMUTABLE_LIST_TYPE,
+                /* isTrivialConstant= */ false));
+      }
+
+      return asListSoyExpression;
     }
 
     @Override
@@ -589,6 +629,17 @@ final class ExpressionCompiler {
           });
     }
 
+    private static final Handle CONSTANT_RECORD_HANDLE =
+        MethodRef.createPure(
+                ExtraConstantBootstraps.class,
+                "constantSoyRecord",
+                MethodHandles.Lookup.class,
+                String.class,
+                Class.class,
+                int.class,
+                Object[].class)
+            .asHandle();
+
     @Override
     protected SoyExpression visitRecordLiteralNode(RecordLiteralNode node) {
       int numItems = node.numChildren();
@@ -599,11 +650,44 @@ final class ExpressionCompiler {
         keys.add(BytecodeUtils.constant(node.getKey(i).identifier()));
         values.add(visit(node.getChild(i)).box());
       }
-      Expression soyDict =
-          ConstructorRef.SOY_RECORD_IMPL.construct(
-              BytecodeUtils.newImmutableMap(keys, values, /* allowDuplicates= */ false));
-      return SoyExpression.forSoyValue(node.getType(), soyDict);
+      var soyRecord =
+          SoyExpression.forSoyValue(
+              node.getType(),
+              MethodRef.RECORD_IMPL_FOR_PROVIDER_MAP.invoke(
+                  BytecodeUtils.newImmutableMap(keys, values, /* allowDuplicates= */ false)));
+      if (isConstantContext && Expression.areAllConstant(values)) {
+        Object[] constantArgs = new Object[1 + node.numChildren() * 2];
+        // We store a hash of the source location so that each distinct list authored gets a unique
+        // value to preserve identity semantics even in constant settings
+        constantArgs[0] = node.getSourceLocation().hashCode();
+        for (int i = 0; i < values.size(); i++) {
+          constantArgs[2 * i + 1] = node.getKey(i).identifier();
+          constantArgs[2 * i + 2] = values.get(i).constantBytecodeValue();
+        }
+        soyRecord =
+            soyRecord.withConstantValue(
+                Expression.ConstantValue.dynamic(
+                    new ConstantDynamic(
+                        "constantRecord",
+                        BytecodeUtils.SOY_RECORD_IMPL_TYPE.getDescriptor(),
+                        CONSTANT_RECORD_HANDLE,
+                        constantArgs),
+                    BytecodeUtils.SOY_RECORD_IMPL_TYPE,
+                    /* isTrivialConstant= */ false));
+      }
+      return soyRecord;
     }
+
+    private static final Handle CONSTANT_MAP_HANDLE =
+        MethodRef.createPure(
+                ExtraConstantBootstraps.class,
+                "constantSoyMap",
+                MethodHandles.Lookup.class,
+                String.class,
+                Class.class,
+                int.class,
+                Object[].class)
+            .asHandle();
 
     @Override
     protected SoyExpression visitMapLiteralNode(MapLiteralNode node) {
@@ -615,10 +699,36 @@ final class ExpressionCompiler {
         keys.add(visit(node.getChild(2 * i)).box());
         values.add(visit(node.getChild(2 * i + 1)).box());
       }
-      Expression soyDict =
-          MethodRef.MAP_IMPL_FOR_PROVIDER_MAP_NO_NULL_KEYS.invoke(
-              BytecodeUtils.newImmutableMap(keys, values, /* allowDuplicates= */ true));
-      return SoyExpression.forSoyValue(node.getType(), soyDict);
+      var soyMap =
+          SoyExpression.forSoyValue(
+              node.getType(),
+              MethodRef.MAP_IMPL_FOR_PROVIDER_MAP_NO_NULL_KEYS.invoke(
+                  BytecodeUtils.newImmutableMap(keys, values, /* allowDuplicates= */ true)));
+      if (isConstantContext
+          && Expression.areAllConstant(keys)
+          && Expression.areAllConstant(values)) {
+        Object[] constantArgs = new Object[1 + node.numChildren()];
+        // We store a hash of the source location so that each distinct list authored gets a unique
+        // value to preserve identity semantics even in constant settings
+        constantArgs[0] = node.getSourceLocation().hashCode();
+        for (int i = 0; i < keys.size(); i++) {
+          constantArgs[2 * i + 1] = keys.get(i).constantBytecodeValue();
+          constantArgs[2 * i + 2] = values.get(i).constantBytecodeValue();
+        }
+        soyMap =
+            soyMap.withConstantValue(
+                Expression.ConstantValue.dynamic(
+                    new ConstantDynamic(
+                        "constantMap",
+                        // needs to exactly match the return type of
+                        // MAP_IMPL_FOR_PROVIDER_MAP_NO_NULL_KEYS
+                        BytecodeUtils.SOY_MAP_IMPL_TYPE.getDescriptor(),
+                        CONSTANT_MAP_HANDLE,
+                        constantArgs),
+                    BytecodeUtils.SOY_MAP_IMPL_TYPE,
+                    /* isTrivialConstant= */ false));
+      }
+      return soyMap;
     }
 
     @Override
@@ -821,7 +931,8 @@ final class ExpressionCompiler {
       if (leftRuntimeType.isKnownString() || rightRuntimeType.isKnownString()) {
         SoyExpression leftString = left.coerceToString();
         SoyExpression rightString = right.coerceToString();
-        return SoyExpression.forString(leftString.invoke(MethodRef.STRING_CONCAT, rightString));
+        return SoyExpression.forString(
+            leftString.invoke(MethodRef.STRING_CONCAT, rightString).toMaybeConstant());
       }
       return SoyExpression.forSoyValue(
           SoyTypes.NUMBER_TYPE, MethodRef.RUNTIME_PLUS.invoke(left.box(), right.box()));
@@ -1551,6 +1662,7 @@ final class ExpressionCompiler {
         SoyExpression base = visit(node.getChild(0)).coerceToString();
         Expression fullSelector =
             base.invoke(MethodRef.STRING_CONCAT, constant("-"))
+                .toMaybeConstant()
                 .invoke(MethodRef.STRING_CONCAT, renamedSelector);
         return SoyExpression.forString(fullSelector);
       }

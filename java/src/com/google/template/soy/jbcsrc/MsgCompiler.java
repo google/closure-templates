@@ -30,6 +30,8 @@ import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.ConstructorRef;
 import com.google.template.soy.jbcsrc.restricted.Expression;
+import com.google.template.soy.jbcsrc.restricted.Expression.Feature;
+import com.google.template.soy.jbcsrc.restricted.Expression.Features;
 import com.google.template.soy.jbcsrc.restricted.FieldRef;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
@@ -185,13 +187,13 @@ final class MsgCompiler {
     ImmutableList<Object> constantParts =
         MsgDefaultConstantFactory.msgToPartsList(partsAndId.parts);
     return constant(
-            IMMUTABLE_LIST_TYPE,
-            new ConstantDynamic(
-                "defaultMsg",
-                IMMUTABLE_LIST_TYPE.getDescriptor(),
-                MESSAGE_FACTORY_HANDLE,
-                constantParts.toArray()))
-        .asNonJavaNullable();
+        IMMUTABLE_LIST_TYPE,
+        new ConstantDynamic(
+            "defaultMsg",
+            IMMUTABLE_LIST_TYPE.getDescriptor(),
+            MESSAGE_FACTORY_HANDLE,
+            constantParts.toArray()),
+        Features.of(Feature.CHEAP, Feature.NON_JAVA_NULLABLE));
   }
 
   /** Handles a translation consisting of a single raw text node. */

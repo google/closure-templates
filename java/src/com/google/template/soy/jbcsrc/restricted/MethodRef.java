@@ -18,6 +18,7 @@ package com.google.template.soy.jbcsrc.restricted;
 
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.template.soy.jbcsrc.restricted.Expression.areAllCheap;
+import static com.google.template.soy.jbcsrc.restricted.Expression.areAllConstant;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
@@ -31,6 +32,7 @@ import com.google.protobuf.ExtensionLite;
 import com.google.protobuf.GeneratedMessage.ExtendableMessage;
 import com.google.protobuf.Message;
 import com.google.protobuf.ProtocolMessageEnum;
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.data.Dir;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.LoggingAdvisingAppendable.BufferingAppendable;
@@ -70,6 +72,9 @@ import com.google.template.soy.logging.LoggableElementMetadata;
 import com.google.template.soy.shared.internal.SharedRuntime;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import java.io.Closeable;
+import java.lang.invoke.ConstantBootstraps;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -77,8 +82,10 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.TreeMap;
 import javax.annotation.Nonnull;
+import org.objectweb.asm.ConstantDynamic;
 import org.objectweb.asm.Handle;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -87,7 +94,16 @@ import org.objectweb.asm.commons.Method;
 /** A reference to a method that can be called at runtime. */
 @AutoValue
 public abstract class MethodRef {
-
+  private static final Handle INVOKE_HANDLE =
+      createPure(
+              ConstantBootstraps.class,
+              "invoke",
+              MethodHandles.Lookup.class,
+              String.class,
+              Class.class,
+              MethodHandle.class,
+              Object[].class)
+          .asHandle();
   public static final Type[] NO_METHOD_ARGS = {};
 
   public static final MethodRef ARRAY_LIST_ADD =
@@ -822,6 +838,37 @@ public abstract class MethodRef {
     if (!areAllCheap(args)) {
       features = features.minus(Feature.CHEAP);
     }
+    if (pureness() == MethodPureness.PURE && areAllConstant(args)) {
+      var params = new ArrayList<>();
+      params.add(asHandle());
+      SourceLocation loc = SourceLocation.UNKNOWN;
+      for (var arg : args) {
+        params.add(arg.constantBytecodeValue());
+        SourceLocation argLoc = arg.location();
+        if (argLoc.isKnown()) {
+          loc = loc.isKnown() ? loc.createSuperRangeWith(argLoc) : argLoc;
+        }
+      }
+      return new Expression(
+          returnType(),
+          features,
+          loc,
+          Optional.of(
+              Expression.ConstantValue.dynamic(
+                  new ConstantDynamic(
+                      method().getName(),
+                      returnType().getDescriptor(),
+                      INVOKE_HANDLE,
+                      params.toArray(new Object[0])),
+                  returnType(),
+                  /* isTrivialConstant= */ false))) {
+        @Override
+        protected void doGen(CodeBuilder mv) {
+          doInvoke(mv, args);
+        }
+      };
+    }
+
     return new Expression(returnType(), features) {
       @Override
       protected void doGen(CodeBuilder mv) {

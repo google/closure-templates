@@ -48,6 +48,8 @@ import com.google.template.soy.data.SoyVisualElement;
 import com.google.template.soy.data.SoyVisualElementData;
 import com.google.template.soy.data.TemplateValue;
 import com.google.template.soy.data.internal.Converters;
+import com.google.template.soy.data.internal.SoyMapImpl;
+import com.google.template.soy.data.internal.SoyRecordImpl;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
@@ -62,6 +64,7 @@ import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.restricted.Expression.Feature;
 import com.google.template.soy.jbcsrc.restricted.Expression.Features;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
+import com.google.template.soy.jbcsrc.shared.ExtraConstantBootstraps;
 import com.google.template.soy.jbcsrc.shared.LargeStringConstantFactory;
 import com.google.template.soy.jbcsrc.shared.Names;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
@@ -71,6 +74,7 @@ import com.google.template.soy.types.SoyProtoEnumType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
 import java.io.Closeable;
+import java.lang.invoke.ConstantBootstraps;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
@@ -122,8 +126,10 @@ public final class BytecodeUtils {
   public static final Type SOY_LIST_TYPE = Type.getType(SoyList.class);
   public static final Type SOY_LEGACY_OBJECT_MAP_TYPE = Type.getType(SoyLegacyObjectMap.class);
   public static final Type SOY_MAP_TYPE = Type.getType(SoyMap.class);
+  public static final Type SOY_MAP_IMPL_TYPE = Type.getType(SoyMapImpl.class);
   public static final Type SOY_PROTO_VALUE_TYPE = Type.getType(SoyProtoValue.class);
   public static final Type SOY_RECORD_TYPE = Type.getType(SoyRecord.class);
+  public static final Type SOY_RECORD_IMPL_TYPE = Type.getType(SoyRecordImpl.class);
   public static final Type SOY_VALUE_TYPE = Type.getType(SoyValue.class);
   public static final Type SOY_VALUE_PROVIDER_TYPE = Type.getType(SoyValueProvider.class);
 
@@ -149,6 +155,7 @@ public final class BytecodeUtils {
   public static final Type BOXED_LONG_TYPE = Type.getType(Long.class);
   public static final Type BOXED_BOOLEAN_TYPE = Type.getType(Boolean.class);
   public static final Type BOXED_DOUBLE_TYPE = Type.getType(Double.class);
+  public static final Type BOXED_CHARACTER_TYPE = Type.getType(Character.class);
   public static final Type BOXED_FLOAT_TYPE = Type.getType(Float.class);
   public static final Type NUMBER_TYPE = Type.getType(Number.class);
   public static final Type LOGGABLE_ELEMENT_METADATA_TYPE =
@@ -164,6 +171,62 @@ public final class BytecodeUtils {
 
   public static final Method CLASS_INIT = Method.getMethod("void <clinit>()");
   public static final Method NULLARY_INIT = Method.getMethod("void <init>()");
+
+  private static final Handle LARGE_STRING_CONSTANT_HANDLE =
+      MethodRef.createPure(
+              LargeStringConstantFactory.class,
+              "bootstrapLargeStringConstant",
+              MethodHandles.Lookup.class,
+              String.class,
+              Class.class,
+              String[].class)
+          .asHandle();
+
+  private static final Handle NULL_CONSTANT_HANDLE =
+      MethodRef.createPure(
+              ConstantBootstraps.class,
+              "nullConstant",
+              MethodHandles.Lookup.class,
+              String.class,
+              Class.class)
+          .asHandle();
+
+  private static final Handle CHAR_CONSTANT_HANDLE =
+      MethodRef.createPure(
+              ExtraConstantBootstraps.class,
+              "constantBoolean",
+              MethodHandles.Lookup.class,
+              String.class,
+              Class.class,
+              int.class)
+          .asHandle();
+
+  private static final Handle BOOLEAN_CONSTANT_HANDLE =
+      MethodRef.createPure(
+              ExtraConstantBootstraps.class,
+              "constantBoolean",
+              MethodHandles.Lookup.class,
+              String.class,
+              Class.class,
+              int.class)
+          .asHandle();
+  // Booleans are modeled as integers in the bytecode but in the constant dynamic api we
+  // need to use actual boolean values
+  public static final Expression.ConstantValue CONSTANT_FALSE =
+      Expression.ConstantValue.raw(
+          false,
+          new ConstantDynamic(
+              "false", Type.BOOLEAN_TYPE.getDescriptor(), BOOLEAN_CONSTANT_HANDLE, 0),
+          Type.BOOLEAN_TYPE,
+          /* isTrivialConstant= */ true);
+
+  public static final Expression.ConstantValue CONSTANT_TRUE =
+      Expression.ConstantValue.raw(
+          true,
+          new ConstantDynamic(
+              "true", Type.BOOLEAN_TYPE.getDescriptor(), BOOLEAN_CONSTANT_HANDLE, 1),
+          Type.BOOLEAN_TYPE,
+          /* isTrivialConstant= */ true);
 
   private static final LoadingCache<Type, Optional<Class<?>>> objectTypeToClassCache =
       CacheBuilder.newBuilder()
@@ -299,17 +362,18 @@ public final class BytecodeUtils {
         .orElseThrow(() -> new IllegalArgumentException("Could not load: " + type));
   }
 
-  private static final Expression FALSE = Branch.never().asBoolean();
-  private static final Expression TRUE = Branch.never().negate().asBoolean();
-
   /** Returns an {@link Expression} that can load the given constant. */
-  public static Expression constant(ConstantDynamic value) {
-    return constant(Type.getType(value.getDescriptor()), value);
+  public static Expression constant(ConstantDynamic value, Features features) {
+    return constant(Type.getType(value.getDescriptor()), value, features);
   }
 
   /** Returns an {@link Expression} that can load the given constant. */
-  public static Expression constant(Type type, ConstantDynamic value) {
-    return new Expression(type, Feature.CHEAP.asFeatures()) {
+  public static Expression constant(Type type, ConstantDynamic value, Features features) {
+    return new Expression(
+        type,
+        // There is no benefit with transforming to an ldc command because we are already there.
+        Expression.ConstantValue.dynamic(value, type, /* isTrivialConstant= */ true),
+        features.plus(Feature.CHEAP)) {
       @Override
       protected void doGen(CodeBuilder cb) {
         cb.visitLdcInsn(value);
@@ -319,12 +383,15 @@ public final class BytecodeUtils {
 
   /** Returns an {@link Expression} that can load the given boolean constant. */
   public static Expression constant(boolean value) {
-    return value ? TRUE : FALSE;
+    return (value ? Branch.always() : Branch.never()).asBoolean();
   }
 
   /** Returns an {@link Expression} that can load the given int constant. */
   public static Expression constant(int value) {
-    return new Expression(Type.INT_TYPE, Feature.CHEAP.asFeatures()) {
+    return new Expression(
+        Type.INT_TYPE,
+        Expression.ConstantValue.raw(value, Type.INT_TYPE),
+        Feature.CHEAP.asFeatures()) {
       @Override
       protected void doGen(CodeBuilder mv) {
         mv.pushInt(value);
@@ -333,8 +400,18 @@ public final class BytecodeUtils {
   }
 
   /** Returns an {@link Expression} that can load the given char constant. */
-  public static Expression constant(char value) {
-    return new Expression(Type.CHAR_TYPE, Feature.CHEAP.asFeatures()) {
+  public static Expression constant(final char value) {
+    return new Expression(
+        Type.CHAR_TYPE,
+        // Characters are modeled as integers in the bytecode but in the constant dynamic api we
+        // need to use actual char values, use a custom bootstrap
+        Expression.ConstantValue.raw(
+            value,
+            new ConstantDynamic(
+                "char", Type.CHAR_TYPE.getDescriptor(), CHAR_CONSTANT_HANDLE, (int) value),
+            Type.CHAR_TYPE,
+            /* isTrivialConstant= */ true),
+        Feature.CHEAP.asFeatures()) {
       @Override
       protected void doGen(CodeBuilder mv) {
         mv.pushInt(value);
@@ -344,7 +421,10 @@ public final class BytecodeUtils {
 
   /** Returns an {@link Expression} that can load the given long constant. */
   public static Expression constant(long value) {
-    return new Expression(Type.LONG_TYPE, Feature.CHEAP.asFeatures()) {
+    return new Expression(
+        Type.LONG_TYPE,
+        Expression.ConstantValue.raw(value, Type.LONG_TYPE),
+        Feature.CHEAP.asFeatures()) {
       @Override
       protected void doGen(CodeBuilder mv) {
         mv.pushLong(value);
@@ -354,7 +434,10 @@ public final class BytecodeUtils {
 
   /** Returns an {@link Expression} that can load the given double constant. */
   public static Expression constant(double value) {
-    return new Expression(Type.DOUBLE_TYPE, Feature.CHEAP.asFeatures()) {
+    return new Expression(
+        Type.DOUBLE_TYPE,
+        Expression.ConstantValue.raw(value, Type.DOUBLE_TYPE),
+        Feature.CHEAP.asFeatures()) {
       @Override
       protected void doGen(CodeBuilder mv) {
         mv.pushDouble(value);
@@ -407,21 +490,26 @@ public final class BytecodeUtils {
       index++;
     }
     stringConstants.add(value.substring(previousStart));
-    return stringConstants.size() == 1
-        ? new Expression(STRING_TYPE, Features.of(Feature.CHEAP, Feature.NON_JAVA_NULLABLE)) {
-          @Override
-          protected void doGen(CodeBuilder mv) {
-            mv.visitLdcInsn(stringConstants.get(0));
-          }
+    if (stringConstants.size() == 1) {
+      String basicString = stringConstants.get(0);
+      return new Expression(
+          STRING_TYPE,
+          Expression.ConstantValue.raw(basicString, STRING_TYPE),
+          Features.of(Feature.CHEAP, Feature.NON_JAVA_NULLABLE)) {
+        @Override
+        protected void doGen(CodeBuilder mv) {
+          mv.visitLdcInsn(basicString);
         }
-        : constant(
-                STRING_TYPE,
-                new ConstantDynamic(
-                    "largeString",
-                    STRING_TYPE.getDescriptor(),
-                    LARGE_STRING_CONSTANT_HANDLE,
-                    stringConstants.toArray()))
-            .asNonJavaNullable();
+      };
+    }
+    return constant(
+        STRING_TYPE,
+        new ConstantDynamic(
+            "largeString",
+            STRING_TYPE.getDescriptor(),
+            LARGE_STRING_CONSTANT_HANDLE,
+            stringConstants.toArray()),
+        Feature.NON_JAVA_NULLABLE.asFeatures());
   }
 
   /** Returns an {@link Expression} that evaluates to the given ContentKind, or null. */
@@ -443,15 +531,6 @@ public final class BytecodeUtils {
     };
   }
 
-  private static final Handle LARGE_STRING_CONSTANT_HANDLE =
-      MethodRef.createPure(
-              LargeStringConstantFactory.class,
-              "bootstrapLargeStringConstant",
-              MethodHandles.Lookup.class,
-              String.class,
-              Class.class,
-              String[].class)
-          .asHandle();
 
   /**
    * Returns an {@link Expression} that evaluates to the {@link ContentKind} value that is
@@ -492,7 +571,14 @@ public final class BytecodeUtils {
         type.getSort() == Type.OBJECT || type.getSort() == Type.ARRAY,
         "%s is not a reference type",
         type);
-    return new Expression(type, Feature.CHEAP.asFeatures()) {
+    return new Expression(
+        type,
+        Expression.ConstantValue.raw(
+            null,
+            new ConstantDynamic("null", type.getDescriptor(), NULL_CONSTANT_HANDLE),
+            type,
+            /* isTrivialConstant= */ true),
+        Feature.CHEAP.asFeatures()) {
       @Override
       protected void doGen(CodeBuilder mv) {
         mv.pushNull();
@@ -513,6 +599,29 @@ public final class BytecodeUtils {
     }
     if (!isNumericPrimitive(to) || !isNumericPrimitive(expr.resultType())) {
       throw new IllegalArgumentException("Cannot convert from " + expr.resultType() + " to " + to);
+    }
+    // support constant expressions since soy primitives are always long/double and may need
+    // conversion to work in other contexts
+    if (expr.isConstant()
+        && expr.constantValue().hasJavaValue()
+        && expr.constantValue().getJavaValue() instanceof Number) {
+      var value = (Number) expr.constantValue().getJavaValue();
+      switch (to.getSort()) {
+        case Type.DOUBLE:
+          return constant(value.doubleValue());
+        case Type.INT:
+          return constant(value.intValue());
+        case Type.LONG:
+          return constant(value.longValue());
+        case Type.FLOAT:
+          return constant(value.floatValue());
+        case Type.SHORT:
+        case Type.BYTE:
+        case Type.CHAR:
+          throw new UnsupportedOperationException("unimplemented");
+        default:
+          throw new AssertionError("unexpected type " + to);
+      }
     }
     return new Expression(to, expr.features()) {
       @Override

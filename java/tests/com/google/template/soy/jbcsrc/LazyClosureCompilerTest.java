@@ -52,7 +52,6 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.List;
-import java.util.Set;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -248,7 +247,7 @@ public class LazyClosureCompilerTest {
     }
 
     @Override
-    public Set<Integer> getValidArgsSizes() {
+    public ImmutableSet<Integer> getValidArgsSizes() {
       return ImmutableSet.of(1);
     }
 
@@ -310,15 +309,10 @@ public class LazyClosureCompilerTest {
   @Test
   public void testTrivialLetClassStructure() throws Exception {
     CompiledTemplates templates =
-        compileTemplateBody("{let $bar : 'a' /}", "{let $foo : $bar /} {$foo}");
+        compileTemplateBody("{let $bar : [0,1,2][randomInt(1)] /}", "{let $foo : $bar /} {$foo}");
     Class<?> fileClass = templates.getTemplateData("ns.foo").templateClass();
-    // no inner classes besides the factory
-    assertThat(asList(fileClass.getDeclaredClasses())).isEmpty();
-    // we only store bar in a private static field
-    Field barField = fileClass.getDeclaredField("let_bar");
-    assertThat(asList(fileClass.getDeclaredFields())).containsExactly(barField);
-    assertThat(barField.getType()).isEqualTo(SoyValue.class);
-    assertThat(barField.getModifiers())
-        .isEqualTo(Modifier.PRIVATE | Modifier.STATIC | Modifier.FINAL);
+    assertThat(asList(fileClass.getDeclaredClasses())).hasSize(1);
+    assertThat(fileClass.getDeclaredClasses()[0].getSimpleName()).isEqualTo("let_bar");
+    assertThat(asList(fileClass.getDeclaredFields())).isEmpty();
   }
 }

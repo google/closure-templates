@@ -22,21 +22,43 @@ import static com.google.common.base.Preconditions.checkState;
 import com.google.auto.value.AutoValue;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.data.internal.ParamStore;
+import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.jbcsrc.restricted.Expression.Feature;
 import com.google.template.soy.jbcsrc.restricted.Expression.Features;
 import com.google.template.soy.jbcsrc.shared.StackFrame;
+import java.lang.invoke.ConstantBootstraps;
+import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.ConstantDynamic;
+import org.objectweb.asm.Handle;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 
 /** Representation of a field in a java class. */
 @AutoValue
 public abstract class FieldRef {
+  private static final Handle ENUM_CONSTANT_HANDLE =
+      MethodRef.createPure(
+              ConstantBootstraps.class,
+              "enumConstant",
+              MethodHandles.Lookup.class,
+              String.class,
+              Class.class)
+          .asHandle();
+  private static final Handle GET_STATIC_FIELD_HANDLE =
+      MethodRef.createPure(
+              ConstantBootstraps.class,
+              "getStaticFinal",
+              MethodHandles.Lookup.class,
+              String.class,
+              Class.class,
+              Class.class)
+          .asHandle();
 
   public static final FieldRef NULL_DATA =
       staticFieldReference(NullData.class, "INSTANCE").asNonJavaNullable();
@@ -46,6 +68,10 @@ public abstract class FieldRef {
       staticFieldReference(StringData.class, "EMPTY_STRING").asNonJavaNullable();
   public static final FieldRef EMPTY_PARAMS =
       staticFieldReference(ParamStore.class, "EMPTY_INSTANCE").asNonJavaNullable();
+  public static final FieldRef BOOLEAN_DATA_FALSE =
+      staticFieldReference(BooleanData.class, "FALSE").asNonJavaNullable();
+  public static final FieldRef BOOLEAN_DATA_TRUE =
+      staticFieldReference(BooleanData.class, "TRUE").asNonJavaNullable();
 
   public static final FieldRef STACK_FRAME_STATE_NUMBER =
       instanceFieldReference(StackFrame.class, "stateNumber");
@@ -210,6 +236,29 @@ public abstract class FieldRef {
     Features features = Features.of(Feature.CHEAP);
     if (!isNullable) {
       features = features.plus(Feature.NON_JAVA_NULLABLE);
+    }
+    if (isFinal()) {
+      // static final fields can be loaded as constants
+      ConstantDynamic constant;
+      if (owner().classOptional().map(Class::isEnum).orElse(false)) {
+        constant = new ConstantDynamic(name(), type().getDescriptor(), ENUM_CONSTANT_HANDLE);
+      } else {
+        constant =
+            new ConstantDynamic(
+                name(), type().getDescriptor(), GET_STATIC_FIELD_HANDLE, owner().type());
+      }
+      // enum and static final field refs are always trivial constants, a getstatic is just as good
+      // as an ldc instruction and tends to be smaller.  It fits with the principle of generate code
+      // that javac generates.
+      return new Expression(
+          type(),
+          Expression.ConstantValue.dynamic(constant, type(), /* isTrivialConstant= */ true),
+          features) {
+        @Override
+        protected void doGen(CodeBuilder mv) {
+          accessStaticUnchecked(mv);
+        }
+      };
     }
     return new Expression(type(), features) {
       @Override
