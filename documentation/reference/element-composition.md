@@ -141,6 +141,16 @@ parameters must be provided with the
 {/template}
 ```
 
+#### Pass parameters as HTML attributes {#param}
+
+Parameter values can also be passed as attributes on the tag.
+
+```soy
+{template exampleCaller}
+  <{example()} name="Bob"></>
+{/template}
+```
+
 #### Pass `html` parameters as `<parameter>`. {#param}
 
 Parameters of type `html` can be passed in as a `<parameter>` node.

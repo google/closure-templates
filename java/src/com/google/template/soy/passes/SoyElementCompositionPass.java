@@ -463,7 +463,7 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
       return null;
     }
 
-    String paramName = Parameter.attrToParamName(attrName);
+    String paramName = attrName.contains("-") ? Parameter.attrToParamName(attrName) : attrName;
     if (!parameterMap.containsKey(paramName)) {
       // attributesNode can't be null, bad attrs caught in ResolveExpressionTypesCrossTemplatePass
       maybePrintAttribute(attributesNode, condition, nodeIdGen, attr);

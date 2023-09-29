@@ -431,15 +431,8 @@ public abstract class TemplateType extends SoyType {
     // The source template type's arguments must be a superset of this type's arguments (possibly
     // containing some optional parameters omitted from this type).
     for (Parameter thisParam : getParameters()) {
-      if (thisParam.getKind() == ParameterKind.ATTRIBUTE) {
-        if (!(srcParams.containsKey(thisParam.getName())
-            && srcParams.get(thisParam.getName()).getKind() == ParameterKind.ATTRIBUTE)) {
-          return false;
-        }
-      } else {
-        if (!srcParams.containsKey(thisParam.getName())) {
-          return false;
-        }
+      if (!srcParams.containsKey(thisParam.getName())) {
+        return false;
       }
     }
 

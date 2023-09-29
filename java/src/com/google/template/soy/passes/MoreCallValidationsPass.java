@@ -59,11 +59,9 @@ import com.google.template.soy.types.TemplateType.Parameter;
 import com.google.template.soy.types.TemplateType.ParameterKind;
 import com.google.template.soy.types.UnknownType;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -97,9 +95,6 @@ final class MoreCallValidationsPass implements CompilerFileSetPass {
 
   private static final SoyErrorKind NEGATIVE_ATTRIBUTE =
       SoyErrorKind.of("Callee template does not allow attribute ''{0}''.");
-
-  private static final SoyErrorKind PARAM_AS_ATTRIBUTE =
-      SoyErrorKind.of("Param ''{0}'' may not be set as an attribute.");
 
   private static final SoyErrorKind NO_SUCH_ATTRIBUTE =
       SoyErrorKind.of("Unrecognized attribute.{0}", StyleAllowance.NO_PUNCTUATION);
@@ -256,9 +251,8 @@ final class MoreCallValidationsPass implements CompilerFileSetPass {
 
     boolean hasAllAttributes = templateType.getAllowExtraAttributes();
     ImmutableSet<String> reservedAttributes = templateType.getReservedAttributes();
-    ImmutableMap<String, Parameter> allParamsByAttrName =
-        templateType.getParameters().stream()
-            .collect(toImmutableMap(p -> Parameter.paramToAttrName(p.getName()), p -> p));
+    ImmutableMap<String, Parameter> allParamsByParamName =
+        templateType.getParameters().stream().collect(toImmutableMap(Parameter::getName, p -> p));
 
     SoyTreeUtils.getAllNodesOfType(openTagNode, HtmlAttributeNode.class)
         .forEach(
@@ -266,7 +260,7 @@ final class MoreCallValidationsPass implements CompilerFileSetPass {
                 validateAttribute(
                     a,
                     seenAttributes::add,
-                    allParamsByAttrName,
+                    allParamsByParamName,
                     hasAllAttributes,
                     reservedAttributes));
 
@@ -311,7 +305,8 @@ final class MoreCallValidationsPass implements CompilerFileSetPass {
                       MISSING_ATTRIBUTE,
                       Parameter.paramToAttrName(p.getName()));
                 }
-              } else if (!seenSlots.contains(p.getName())) {
+              } else if (!seenSlots.contains(p.getName())
+                  && !seenAttributes.contains(p.getName())) {
                 // Note that <{tpl(a: 'foo')} /> is rewritten to <{tpl.bind(record(a: 'foo'))} />
                 // in ResolveTemplateFunctionsPass. So any params that are correctly set won't be
                 // in the resulting template type and won't need to be in `seenSlots` to validate
@@ -324,7 +319,7 @@ final class MoreCallValidationsPass implements CompilerFileSetPass {
   private void validateAttribute(
       HtmlAttributeNode attr,
       Function<String, Boolean> addAttr,
-      ImmutableMap<String, Parameter> allParamsByAttrName,
+      ImmutableMap<String, Parameter> allParamsByParamName,
       boolean hasAllAttributes,
       ImmutableSet<String> reservedAttributes) {
     String name = attr.getStaticKey();
@@ -340,8 +335,7 @@ final class MoreCallValidationsPass implements CompilerFileSetPass {
     if (isSoyAttr) {
       name = name.substring(1);
     }
-    if (Parameter.isValidAttrName(name)) {
-      String paramName = Parameter.attrToParamName(name);
+    String paramName = name.contains("-") ? Parameter.attrToParamName(name) : name;
       // This is a synthetically created IfCond Node created by somethin akin to @class="Hello"
       if (((attr.getParent() instanceof IfCondNode
                   && !attr.getParent().getSourceLocation().isKnown())
@@ -350,31 +344,32 @@ final class MoreCallValidationsPass implements CompilerFileSetPass {
         errorReporter.report(loc, DUPLICATE_PARAM, name);
         return;
       } else if (!hasAllAttributes) {
-        Parameter param = allParamsByAttrName.get(name);
-        if (param == null) {
-          String didYouMeanMessage =
-              SoyErrors.getDidYouMeanMessage(
-                  allParamsByAttrName.entrySet().stream()
-                      .filter(e -> e.getValue().getKind() == ParameterKind.ATTRIBUTE)
-                      .map(Map.Entry::getKey)
-                      .collect(Collectors.toList()),
-                  name);
+      Parameter param = allParamsByParamName.get(paramName);
+      if (param == null) {
+        String didYouMeanMessage =
+            SoyErrors.getDidYouMeanMessage(
+                allParamsByParamName.entrySet().stream()
+                    .map(
+                        e ->
+                            e.getValue().getKind() == ParameterKind.ATTRIBUTE
+                                ? Parameter.paramToAttrName(e.getKey())
+                                : e.getKey())
+                    .collect(toImmutableList()),
+                name);
           errorReporter.report(loc, NO_SUCH_ATTRIBUTE, didYouMeanMessage);
-          return;
-        } else if (param.getKind() != ParameterKind.ATTRIBUTE) {
-          errorReporter.report(loc, PARAM_AS_ATTRIBUTE, param.getName());
-          return;
-        }
-      } else if (reservedAttributes.contains(name)) {
-        errorReporter.report(loc, NEGATIVE_ATTRIBUTE, name);
         return;
       }
-    } else {
-      errorReporter.report(loc, BAD_ATTRIBUTE_NAME);
+      if (param.getKind() == ParameterKind.ATTRIBUTE && !Parameter.isValidAttrName(name)) {
+        // For attributes, require that the exact hyphen-cased name is used.
+        errorReporter.report(loc, BAD_ATTRIBUTE_NAME);
+        return;
+      }
+    } else if (reservedAttributes.contains(name)) {
+      errorReporter.report(loc, NEGATIVE_ATTRIBUTE, name);
       return;
     }
 
-    if (!attr.hasValue() && !isSoyAttr && allParamsByAttrName.containsKey(name)) {
+    if (!attr.hasValue() && !isSoyAttr && allParamsByParamName.containsKey(paramName)) {
       errorReporter.report(attr.getSourceLocation(), NO_ATTRIBUTE_VALUE);
     }
     if (attr.hasValue() && isSoyAttr) {
