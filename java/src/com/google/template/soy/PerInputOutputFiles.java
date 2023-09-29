@@ -108,6 +108,20 @@ final class PerInputOutputFiles {
     this(null, fileJoiner);
   }
 
+  /**
+   * Returns a derived instance which shares all properties with the original except the extension.
+   */
+  PerInputOutputFiles derivedOutputFiles(String extension) {
+    PerInputOutputFiles perInputOutputFiles =
+        new PerInputOutputFiles(extension, this.fileJoiner.orElse(null));
+    perInputOutputFiles.outputPathFormat = this.outputPathFormat;
+    perInputOutputFiles.inputRoots = this.inputRoots;
+    perInputOutputFiles.outputDirectory = this.outputDirectory;
+    perInputOutputFiles.subdir = this.subdir;
+    perInputOutputFiles.outputExtension = this.outputExtension;
+    return perInputOutputFiles;
+  }
+
   String getExtension() {
     return extension == null ? outputExtension : extension;
   }
