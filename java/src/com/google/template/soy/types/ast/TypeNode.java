@@ -20,6 +20,7 @@ import static com.google.common.base.Preconditions.checkState;
 
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.types.SoyType;
+import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
 /** The base class for an immutable node in the type AST. */
@@ -56,5 +57,9 @@ public abstract class TypeNode {
 
   void copyResolvedTypeFrom(TypeNode old) {
     this.resolvedType = old.resolvedType;
+  }
+
+  public Stream<TypeNode> asStreamExpandingUnion() {
+    return Stream.of(this);
   }
 }

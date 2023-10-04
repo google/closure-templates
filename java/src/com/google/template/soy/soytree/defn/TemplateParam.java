@@ -194,19 +194,12 @@ public class TemplateParam extends AbstractVarDefn implements TemplateHeaderVarD
   }
 
   static boolean isAlreadyOptionalType(TypeNode typeNode) {
-    if (typeNode instanceof UnionTypeNode) {
-      UnionTypeNode utn = (UnionTypeNode) typeNode;
-      for (TypeNode tn : utn.candidates()) {
-        if (tn instanceof NamedTypeNode
-            && ((NamedTypeNode) tn).name().identifier().equals(TYPE_OF_OPTIONAL_PARAM)) {
-          return true;
-        }
-      }
-    } else if (typeNode instanceof NamedTypeNode
-        && ((NamedTypeNode) typeNode).name().identifier().equals(TYPE_OF_OPTIONAL_PARAM)) {
-      return true;
-    }
-    return false;
+    return typeNode
+        .asStreamExpandingUnion()
+        .anyMatch(
+            tn ->
+                tn instanceof NamedTypeNode
+                    && ((NamedTypeNode) tn).name().identifier().equals(TYPE_OF_OPTIONAL_PARAM));
   }
 
   static TypeNode getOptionalParamTypeNode(TypeNode typeNode) {

@@ -72,4 +72,9 @@ public abstract class UnionTypeNode extends TypeNode {
     copy.copyResolvedTypeFrom(this);
     return copy;
   }
+
+  @Override
+  public Stream<TypeNode> asStreamExpandingUnion() {
+    return candidates().stream();
+  }
 }
