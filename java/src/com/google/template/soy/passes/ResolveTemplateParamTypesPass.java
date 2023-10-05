@@ -29,7 +29,6 @@ import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.AttrParam;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.soytree.defn.TemplateStateVar;
-import com.google.template.soy.types.FunctionType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypes;
@@ -62,7 +61,7 @@ final class ResolveTemplateParamTypesPass implements CompilerFilePass {
             .build();
 
     for (ExternNode extern : file.getExterns()) {
-      extern.setType((FunctionType) converter.getOrCreateType(extern.typeNode()));
+      extern.setType(converter.getOrCreateFunctionTypeForExtern(extern.typeNode()));
     }
 
     for (TemplateNode template : file.getTemplates()) {

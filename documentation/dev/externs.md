@@ -29,7 +29,7 @@ Some good use cases for custom functions include:
 *   Custom date or number formatting
 *   Complex math functions
 *   Date calculations
-*   Sorting or aggregating datastructures
+*   Sorting or aggregating data structures
 *   ...
 
 All of the above are difficult or impossible to implement in a plain template.

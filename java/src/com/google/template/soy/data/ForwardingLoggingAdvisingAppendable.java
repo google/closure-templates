@@ -57,6 +57,11 @@ public abstract class ForwardingLoggingAdvisingAppendable extends LoggingAdvisin
     return this;
   }
 
+  @Override
+  public LoggingAdvisingAppendable append(DeferredText value) throws IOException {
+    return delegate.append(value);
+  }
+
   @CanIgnoreReturnValue
   @Override
   public LoggingAdvisingAppendable enterLoggableElement(LogStatement statement) {

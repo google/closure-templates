@@ -29,6 +29,8 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Multiset;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
+import com.google.common.flogger.GoogleLogger;
+import com.google.common.flogger.StackSize;
 import com.google.common.io.BaseEncoding;
 import com.google.common.util.concurrent.Futures;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
@@ -45,6 +47,7 @@ import com.google.template.soy.data.LoggingFunctionInvocation;
 import com.google.template.soy.data.ProtoFieldInterpreter;
 import com.google.template.soy.data.RecordProperty;
 import com.google.template.soy.data.SanitizedContent;
+import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyLegacyObjectMap;
 import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyRecord;
@@ -52,18 +55,21 @@ import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.SoyVisualElementData;
 import com.google.template.soy.data.TemplateValue;
+import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.data.internal.LazyProtoToSoyValueList;
 import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.data.restricted.UndefinedData;
+import com.google.template.soy.jbcsrc.api.OutputAppendable;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.LegacyFunctionAdapter;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
 import com.google.template.soy.jbcsrc.shared.SaveStateMetaFactory;
 import com.google.template.soy.jbcsrc.shared.StackFrame;
+import com.google.template.soy.logging.SoyLogger;
 import com.google.template.soy.msgs.restricted.SoyMsgPart;
 import com.google.template.soy.msgs.restricted.SoyMsgPlaceholderPart;
 import com.google.template.soy.msgs.restricted.SoyMsgPluralPart;
@@ -85,8 +91,6 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.function.Function;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
@@ -98,7 +102,7 @@ import javax.annotation.Nullable;
  */
 @SuppressWarnings("ShortCircuitBoolean")
 public final class JbcSrcRuntime {
-  private static final Logger logger = Logger.getLogger(JbcSrcRuntime.class.getName());
+  private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
 
   @Nonnull
   public static AssertionError unexpectedStateError(StackFrame frame) {
@@ -110,12 +114,9 @@ public final class JbcSrcRuntime {
    * here to easily stop execution at the right location.
    */
   public static void debugger(String fileName, int lineNumber) {
-    logger.log(
-        Level.WARNING,
-        String.format(
-            "Hit {debugger} statement at %s:%d. Put a breakpoint here to halt Soy rendering.",
-            fileName, lineNumber),
-        new Exception());
+    logger.atWarning().withStackTrace(StackSize.MEDIUM).log(
+        "Hit {debugger} statement at %s:%d. Put a breakpoint here to halt Soy rendering.",
+        fileName, lineNumber);
   }
 
   @Keep
@@ -663,6 +664,11 @@ public final class JbcSrcRuntime {
         }
 
         @Override
+        protected void doAppend(DeferredText supplier) {
+          System.out.append(supplier.getStringForCoercion());
+        }
+
+        @Override
         protected void doEnterLoggableElement(LogStatement statement) {}
 
         @Override
@@ -899,6 +905,30 @@ public final class JbcSrcRuntime {
     return LogStatement.create(veData.ve().id(), veData.data(), logOnly);
   }
 
+  private static SanitizedContent doFlushLogsAndRender(
+      SoyValueProvider delegate, SoyLogger logger) {
+    Preconditions.checkState(
+        delegate.status().isDone(),
+        "Soy generated code should ensure this is done before calling.");
+    StringBuilder output = new StringBuilder();
+    // Create our own OutputAppendable so we can use the current state of the SoyLogger, but
+    // render to our own StringBuilder to return the rendered content.
+    OutputAppendable content = OutputAppendable.create(output, logger);
+    try {
+      // Go through renderAndResolve because we need to replay the logging commands. This is
+      // already fully resolved so this will replay everything.
+      RenderResult result = delegate.renderAndResolve(content);
+      checkState(result.isDone());
+    } catch (IOException e) {
+      throw new AssertionError(e);
+    }
+    // The result is the same HTML that came in, except with logging statements removed. So it's
+    // safe to ordain as HTML (with an assert just to make sure).
+    checkState(content.getSanitizedContentKind() == ContentKind.HTML);
+    return UnsafeSanitizedContentOrdainer.ordainAsSafe(
+        output.toString(), ContentKind.HTML, content.getSanitizedContentDirectionality());
+  }
+
   /** Asserts that all members of the list are resolved. */
   @Keep
   @Nonnull
@@ -1001,12 +1031,8 @@ public final class JbcSrcRuntime {
               "SoyValueProvider.status() returned a RenderResult.limited() which is out of spec");
         case DETACH:
           Future<?> future = result.future();
-          if (logger.isLoggable(Level.WARNING)) {
-            logger.log(
-                Level.WARNING,
-                "blocking to resolve a SoyValueProvider: " + future,
-                new Exception());
-          }
+          logger.atWarning().withStackTrace(StackSize.FULL).log(
+              "blocking to resolve a SoyValueProvider: %s", future);
           try {
             future.get();
           } catch (InterruptedException ie) {
@@ -1124,6 +1150,39 @@ public final class JbcSrcRuntime {
     }
 
     private EveryDetachStateForTesting() {}
+  }
+
+  /**
+   * A functional interface implemented by the code generator purely to pass to `appendAsSupplier`
+   */
+  @FunctionalInterface
+  public interface DeferredHtmlFactory {
+    SoyValue invoke(SoyValue deferredHtml);
+  }
+
+  public static void appendAsDeferredText(
+      LoggingAdvisingAppendable appendable,
+      RenderContext ctx,
+      DeferredHtmlFactory factory,
+      SoyValueProvider provider)
+      throws IOException {
+    appendable.append(
+        (isOutputAppendable) -> {
+          if (isOutputAppendable) {
+            try (RenderContext.DeferredLoggingContext logContext = ctx.beginDeferredLogging()) {
+              SanitizedContent content = doFlushLogsAndRender(provider, logContext.logger());
+              if (logContext.isReentrant()) {
+                return content.stringValue();
+              }
+              return factory.invoke(content).stringValue();
+            }
+          } else {
+            logger.atWarning().withStackTrace(StackSize.MEDIUM).log(
+                "evaluating deferred_html in a context that needs to be escaped, Logging behavior"
+                    + " is undefined and deferral is skipped when this happens.");
+            return provider.resolve().stringValue();
+          }
+        });
   }
 
   private JbcSrcRuntime() {}

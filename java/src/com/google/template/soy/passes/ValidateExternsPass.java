@@ -26,6 +26,7 @@ import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.ListMultimap;
 import com.google.common.html.types.SafeHtml;
 import com.google.common.html.types.SafeHtmlProto;
+import com.google.common.html.types.SafeScript;
 import com.google.common.html.types.SafeUrl;
 import com.google.common.html.types.SafeUrlProto;
 import com.google.common.html.types.TrustedResourceUrl;
@@ -198,7 +199,7 @@ class ValidateExternsPass implements CompilerFilePass {
     if (Strings.isNullOrEmpty(java.returnType())) {
       errorReporter.report(java.getSourceLocation(), ATTRIBUTE_REQUIRED, JavaImplNode.RETURN);
     } else {
-      validateTypes(
+      validateJavaType(
           java.returnType(),
           extern.getType().getReturnType(),
           INCOMPATIBLE_RETURN_TYPE,
@@ -230,7 +231,7 @@ class ValidateExternsPass implements CompilerFilePass {
     } else {
       for (int i = 0; i < paramTypes.size(); i++) {
         String paramType = paramTypes.get(i);
-        validateTypes(
+        validateJavaType(
             paramType,
             extern.getType().getParameters().get(i).getType(),
             INCOMPATIBLE_PARAM_TYPE,
@@ -315,7 +316,7 @@ class ValidateExternsPass implements CompilerFilePass {
     SUPER
   }
 
-  private void validateTypes(
+  private void validateJavaType(
       String javaTypeName,
       SoyType soyType,
       SoyErrorKind compatibleErrorKind,
@@ -325,7 +326,7 @@ class ValidateExternsPass implements CompilerFilePass {
     Class<?> javaType = getType(javaTypeName);
     if (javaType != null) {
       // Verify that the soy param type and the java param type are compatible.
-      if (!typesAreCompatible(javaType, soyType, extern, mode)) {
+      if (!isJavaTypeCompatibleWithSoyType(javaType, soyType, extern, mode)) {
         errorReporter.report(loc.get(), compatibleErrorKind, javaType.getName(), soyType);
       }
     } else if (!protoTypesAreCompatible(javaTypeName, soyType)) {
@@ -368,7 +369,7 @@ class ValidateExternsPass implements CompilerFilePass {
           .add(SoyType.Kind.CSS)
           .build();
 
-  private static boolean typesAreCompatible(
+  private static boolean isJavaTypeCompatibleWithSoyType(
       Class<?> javaType, SoyType soyType, ExternNode extern, Mode mode) {
     boolean nullable = SoyTypes.isNullish(soyType);
     boolean isPrimitive = Primitives.allPrimitiveTypes().contains(javaType);
@@ -435,6 +436,8 @@ class ValidateExternsPass implements CompilerFilePass {
         return javaType == TrustedResourceUrl.class || javaType == TrustedResourceUrlProto.class;
       case ATTRIBUTES:
         return javaType == SanitizedContent.class;
+      case JS:
+        return javaType == SanitizedContent.class || javaType == SafeScript.class;
       case HTML:
         return javaType == SafeHtml.class || javaType == SafeHtmlProto.class;
       case PROTO:

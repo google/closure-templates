@@ -65,6 +65,7 @@ message SoyTypeP {
     string tag_name = 4;
     bool allow_extra_attributes = 2;
     repeated string reserved_attributes = 3;
+    bool is_deferred = 5;
   }
   message RecordTypeP {
     repeated RecordMemberP members = 1;
@@ -155,6 +156,9 @@ message FunctionTypeP {
     string name = 1;
     // The type of the parameter.
     SoyTypeP type = 2;
+    // Whether or not this is an html param that has 'deferral' semantics.
+    // this only affects SSR.
+    bool is_html_deferral_sink = 3;
   }
 
   repeated Parameter parameters = 1;

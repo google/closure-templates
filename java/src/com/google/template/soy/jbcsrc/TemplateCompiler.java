@@ -28,6 +28,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.internal.Converters;
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.AbstractLocalVarDefn;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
@@ -101,6 +102,7 @@ final class TemplateCompiler {
   private final TemplateAnalysis analysis;
   private final JavaSourceFunctionCompiler javaSourceFunctionCompiler;
   private final PartialFileSetMetadata fileSetMetadata;
+  private final ErrorReporter errorReporter;
 
   TemplateCompiler(
       TemplateNode templateNode,
@@ -108,7 +110,8 @@ final class TemplateCompiler {
       FieldManager fields,
       InnerClasses innerClasses,
       JavaSourceFunctionCompiler javaSourceFunctionCompiler,
-      PartialFileSetMetadata fileSetMetadata) {
+      PartialFileSetMetadata fileSetMetadata,
+      ErrorReporter errorReporter) {
     this.template = CompiledTemplateMetadata.create(templateNode);
     this.templateNode = templateNode;
     this.writer = writer;
@@ -117,6 +120,7 @@ final class TemplateCompiler {
     this.analysis = TemplateAnalysisImpl.analyze(templateNode);
     this.javaSourceFunctionCompiler = javaSourceFunctionCompiler;
     this.fileSetMetadata = fileSetMetadata;
+    this.errorReporter = errorReporter;
   }
 
   /**
@@ -455,7 +459,8 @@ final class TemplateCompiler {
             fields,
             constantCompiler,
             javaSourceFunctionCompiler,
-            fileSetMetadata);
+            fileSetMetadata,
+            errorReporter);
     // Allocate local variables for all declared parameters.
     // NOTE: we initialize the parameters prior to where the jump table is initialized, this means
     // that all variables will be re-initialized ever time we re-enter the template.

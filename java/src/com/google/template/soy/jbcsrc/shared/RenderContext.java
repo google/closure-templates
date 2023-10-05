@@ -23,6 +23,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
+import com.google.errorprone.annotations.MustBeClosed;
 import com.google.template.soy.data.Dir;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SoyValue;
@@ -79,6 +80,7 @@ public final class RenderContext {
 
   private final boolean debugSoyTemplateInfo;
   private final SoyLogger logger;
+  private boolean isDeferredLogging;
 
   // This stores the stack frame for restoring state after a detach operation.  It is initialised to
   // a special state 0 that represents the first call to any detachable method.
@@ -200,6 +202,40 @@ public final class RenderContext {
 
   public SoyLogger getLogger() {
     return logger;
+  }
+
+  /** A closeable interface for detecting when we deferring html re-entrantly. */
+  public interface DeferredLoggingContext extends AutoCloseable {
+    SoyLogger logger();
+
+    boolean isReentrant();
+
+    @Override
+    public void close();
+  }
+
+  @MustBeClosed
+  public DeferredLoggingContext beginDeferredLogging() {
+    boolean wasDeferredLogging = isDeferredLogging;
+    isDeferredLogging = true;
+    return new DeferredLoggingContext() {
+      @Override
+      public SoyLogger logger() {
+        return logger;
+      }
+
+      @Override
+      public boolean isReentrant() {
+        return wasDeferredLogging;
+      }
+
+      @Override
+      public void close() {
+        if (!wasDeferredLogging) {
+          isDeferredLogging = false;
+        }
+      }
+    };
   }
 
   public CompiledTemplate getTemplate(String calleeName) {

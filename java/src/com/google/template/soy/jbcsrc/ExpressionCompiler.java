@@ -97,6 +97,7 @@ import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
 import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.Expression.Feature;
 import com.google.template.soy.jbcsrc.restricted.Expression.Features;
+import com.google.template.soy.jbcsrc.restricted.LambdaFactory;
 import com.google.template.soy.jbcsrc.restricted.LocalVariable;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.MethodRef.MethodPureness;
@@ -125,6 +126,7 @@ import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.NullType;
+import com.google.template.soy.types.SanitizedType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
@@ -192,6 +194,12 @@ final class ExpressionCompiler {
     /** Compile an expression. */
     SoyExpression compile(ExprNode expr) {
       return compilerVisitor.exec(expr);
+    }
+
+    /** Compile an expression. */
+    Statement compileHtmlDeferralExtern(
+        FunctionNode node, ExternRef extern, AppendableExpression appendableExpr) {
+      return compilerVisitor.callHtmlDeferralExtern(extern, node.getParams(), appendableExpr);
     }
 
     /**
@@ -1751,20 +1759,51 @@ final class ExpressionCompiler {
               .checkedSoyCast(node.getType()));
     }
 
-    private SoyExpression callExtern(ExternRef extern, List<ExprNode> params) {
+    private Statement callHtmlDeferralExtern(
+        ExternRef extern, List<ExprNode> params, AppendableExpression appendable) {
       String namespace = fileSetMetadata.getNamespaceForPath(extern.path());
-      TypeInfo externOwner = TypeInfo.createClass(Names.javaClassNameFromSoyNamespace(namespace));
-      Method asmMethod = ExternCompiler.buildMemberMethod(extern.name(), extern.signature());
-      MethodRef ref = MethodRef.createStaticMethod(externOwner, asmMethod, MethodPureness.NON_PURE);
-      SoyRuntimeType soyReturnType =
-          ExternCompiler.getRuntimeType(extern.signature().getReturnType());
+      MethodRef ref = getExternMethodRef(extern);
       List<Expression> args = new ArrayList<>();
       args.add(parameters.getRenderContext());
       for (int i = 0; i < params.size(); i++) {
         args.add(
-            adaptExternArg(
-                visit(params.get(i)), extern.signature().getParameters().get(i).getType()));
+            adaptExternArg(params.get(i), extern.signature().getParameters().get(i).getType()));
       }
+      if (!namespace.equals(context.getNearestAncestor(SoyFileNode.class).getNamespace())) {
+        throw new IllegalStateException(
+            "Can only call html deferral functions from within the same file, consider wrapping"
+                + " them in a public template");
+      }
+      var supplier =
+          LambdaFactory.create(MethodRefs.DEFERRED_HTML_FACTORY_INVOKE, ref)
+              .invoke(args.subList(0, args.size() - 1));
+
+      return MethodRefs.RUNTIME_APPEND_AS_DEFERRED_TEXT.invokeVoid(
+          appendable, parameters.getRenderContext(), supplier, Iterables.getLast(args));
+    }
+
+    private SoyExpression callExtern(ExternRef extern, List<ExprNode> params) {
+      List<Expression> args = new ArrayList<>();
+      args.add(parameters.getRenderContext());
+      for (int i = 0; i < params.size(); i++) {
+        args.add(
+            adaptExternArg(params.get(i), extern.signature().getParameters().get(i).getType()));
+      }
+      return doCallExtern(extern, args);
+    }
+
+    private MethodRef getExternMethodRef(ExternRef extern) {
+      String namespace = fileSetMetadata.getNamespaceForPath(extern.path());
+      TypeInfo externOwner = TypeInfo.createClass(Names.javaClassNameFromSoyNamespace(namespace));
+      Method asmMethod = ExternCompiler.buildMemberMethod(extern.name(), extern.signature());
+      return MethodRef.createStaticMethod(externOwner, asmMethod, MethodPureness.NON_PURE);
+    }
+
+    private SoyExpression doCallExtern(ExternRef extern, List<Expression> args) {
+      String namespace = fileSetMetadata.getNamespaceForPath(extern.path());
+      MethodRef ref = getExternMethodRef(extern);
+      SoyRuntimeType soyReturnType =
+          ExternCompiler.getRuntimeType(extern.signature().getReturnType());
       // Dispatch directly for locally defined externs
       if (namespace.equals(context.getNearestAncestor(SoyFileNode.class).getNamespace())) {
         return SoyExpression.forRuntimeType(soyReturnType, ref.invoke(args));
@@ -1781,49 +1820,79 @@ final class ExpressionCompiler {
               }
               adapter.visitInvokeDynamicInsn(
                   "call",
-                  asmMethod.getDescriptor(),
+                  ref.method().getDescriptor(),
                   CALL_EXTERN_HANDLE,
-                  externOwner.className(),
-                  asmMethod.getName());
+                  ref.owner().className(),
+                  ref.method().getName());
             }
           };
       return SoyExpression.forRuntimeType(soyReturnType, externCall);
     }
 
-    private static Expression adaptExternArg(SoyExpression soyExpression, SoyType type) {
+    private Expression adaptExternArg(ExprNode paramExpr, SoyType type) {
       SoyRuntimeType runtimeType = ExternCompiler.getRuntimeType(type);
       Type javaType = runtimeType.runtimeType();
 
       if (javaType.equals(Type.BOOLEAN_TYPE)) {
-        return soyExpression.coerceToBoolean().unboxAsBoolean();
+        return visit(paramExpr).coerceToBoolean().unboxAsBoolean();
       } else if (javaType.equals(Type.LONG_TYPE)) {
-        return soyExpression.unboxAsLong();
+        return visit(paramExpr).unboxAsLong();
       } else if (javaType.equals(BytecodeUtils.STRING_TYPE)) {
-        return soyExpression.unboxAsStringOrJavaNull();
+        return visit(paramExpr).unboxAsStringOrJavaNull();
       } else if (javaType.equals(Type.DOUBLE_TYPE)) {
-        return soyExpression.coerceToDouble().unboxAsDouble();
+        return visit(paramExpr).coerceToDouble().unboxAsDouble();
       } else if (javaType.getSort() == Type.OBJECT) {
         SoyType nonNullableType = SoyTypes.tryRemoveNullish(type);
         if (nonNullableType.getKind() == Kind.ANY || nonNullableType.getKind() == Kind.UNKNOWN) {
-          return soyExpression.boxWithSoyNullAsJavaNull();
+          return visit(paramExpr).boxWithSoyNullAsJavaNull();
         } else if (nonNullableType.getKind() == Kind.PROTO) {
-          return soyExpression.unboxAsMessageOrJavaNull(
-              ProtoUtils.messageRuntimeType(((SoyProtoType) nonNullableType).getDescriptor())
-                  .type());
+          return visit(paramExpr)
+              .unboxAsMessageOrJavaNull(
+                  ProtoUtils.messageRuntimeType(((SoyProtoType) nonNullableType).getDescriptor())
+                      .type());
         } else if (nonNullableType.getKind() == Kind.MESSAGE) {
-          return soyExpression.unboxAsMessageOrJavaNull(BytecodeUtils.MESSAGE_TYPE);
+          return visit(paramExpr).unboxAsMessageOrJavaNull(BytecodeUtils.MESSAGE_TYPE);
         } else if (type.getKind() == Kind.PROTO_ENUM) {
           // TODO(b/217186858): support nullable proto enum parameters.
-          return soyExpression.unboxAsLong();
+          return visit(paramExpr).unboxAsLong();
         } else if (nonNullableType.getKind() == Kind.LIST) {
-          return soyExpression.unboxAsListOrJavaNull();
+          return visit(paramExpr).unboxAsListOrJavaNull();
         } else if (javaType.equals(BytecodeUtils.SOY_VALUE_TYPE)) {
-          return soyExpression.box().checkedCast(javaType);
+          if (type.equals(SanitizedType.DeferredHtmlType.getInstance())) {
+            // This is guaranteed by the VeLogValidationPass
+            VarRefNode varRef = (VarRefNode) paramExpr;
+            Expression ref = null;
+            switch (varRef.getDefnDecl().kind()) {
+              case LOCAL_VAR:
+                ref = parameters.getLocal((LocalVar) varRef.getDefnDecl());
+                break;
+              case PARAM:
+                ref = parameters.getParam((TemplateParam) varRef.getDefnDecl());
+                break;
+              case COMPREHENSION_VAR:
+              case STATE:
+              case IMPORT_VAR:
+              case CONST:
+              case TEMPLATE:
+              case EXTERN:
+                throw new AssertionError(varRef.getDefnDecl().kind());
+            }
+            // In some perfect world we could defer waiting at this point since the data isn't
+            // needed
+            // until possibly much later and deferral plugins could be satisfied with receiving a
+            // Future. However, this interferes with logging since we need to evaluate in the
+            // correct
+            // logging context.  An explicit 'placeholder' api in the log for deferral usecases
+            // could
+            // be made to work.
+            return analysis.isResolved(varRef) ? ref : detacher.waitForSoyValueProvider(ref);
+          }
+          return visit(paramExpr).box().checkedCast(javaType);
         } else {
-          return soyExpression.boxWithSoyNullishAsJavaNull().checkedCast(javaType);
+          return visit(paramExpr).boxWithSoyNullishAsJavaNull().checkedCast(javaType);
         }
       } else {
-        return soyExpression;
+        return visit(paramExpr);
       }
     }
 

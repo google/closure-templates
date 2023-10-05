@@ -21,6 +21,7 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.internal.exemptions.NamespaceExemptions;
 import com.google.template.soy.jbcsrc.internal.ClassData;
 import com.google.template.soy.jbcsrc.internal.InnerClasses;
@@ -44,14 +45,17 @@ final class SoyFileCompiler {
   private final SoyFileNode fileNode;
   private final JavaSourceFunctionCompiler javaSourceFunctionCompiler;
   private final PartialFileSetMetadata fileSetMetadata;
+  private final ErrorReporter errorReporter;
 
   SoyFileCompiler(
       SoyFileNode fileNode,
       JavaSourceFunctionCompiler javaSourceFunctionCompiler,
-      PartialFileSetMetadata fileSetMetadata) {
+      PartialFileSetMetadata fileSetMetadata,
+      ErrorReporter errorReporter) {
     this.fileNode = fileNode;
     this.javaSourceFunctionCompiler = javaSourceFunctionCompiler;
     this.fileSetMetadata = fileSetMetadata;
+    this.errorReporter = errorReporter;
   }
 
   ImmutableList<ClassData> compile() {
@@ -82,7 +86,8 @@ final class SoyFileCompiler {
                           typeWriter.fields(),
                           typeWriter.innerClasses(),
                           javaSourceFunctionCompiler,
-                          fileSetMetadata)
+                          fileSetMetadata,
+                          errorReporter)
                       .compile();
                   return typeWriter;
                 })
@@ -114,7 +119,8 @@ final class SoyFileCompiler {
                         typeWriter.fields(),
                         typeWriter.innerClasses(),
                         javaSourceFunctionCompiler,
-                        fileSetMetadata)
+                        fileSetMetadata,
+                        errorReporter)
                     .compile();
               }
             });

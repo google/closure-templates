@@ -2745,6 +2745,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
         case TEMPLATE_TYPE:
         case TEMPLATE_MODULE:
         case FUNCTION:
+        case DEFERRED_HTML:
           errorReporter.report(baseLocation, BRACKET_ACCESS_NOT_SUPPORTED, baseType);
           return UnknownType.getInstance();
       }

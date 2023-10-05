@@ -75,6 +75,11 @@ public final class OutputAppendable extends AbstractLoggingAdvisingAppendable {
   }
 
   @Override
+  protected void doAppend(DeferredText supplier) throws IOException {
+    outputAppendable.append(supplier.getStringForOutput());
+  }
+
+  @Override
   protected void doAppendLoggingFunctionInvocation(
       LoggingFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers)
       throws IOException {

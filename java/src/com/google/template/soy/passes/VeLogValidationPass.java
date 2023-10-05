@@ -24,6 +24,7 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.FunctionNode;
+import com.google.template.soy.exprtree.FunctionNode.ExternRef;
 import com.google.template.soy.logging.LoggingFunction;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.soytree.CallBasicNode;
@@ -60,10 +61,16 @@ import java.util.Objects;
  *   <li>VeRewritePass since that rewrites VE syntactic sugar
  *   <li>ResolveTypesPass since we rely on type resolution data
  *   <li>ResolveFunctions pass since we need to validate the use of {@link LoggingFunction}
- *       invocations
+ *       invocations and certain {@code deferred_html} functions
  *   <li>VeLogRewritePass since that rewrites more VE syntactic sugar
  * </ul>
  */
+@RunAfter({
+  VeRewritePass.class,
+  ResolveExpressionTypesPass.class,
+  VeLogRewritePass.class,
+  CheckAllFunctionsResolvedPass.class
+})
 final class VeLogValidationPass implements CompilerFileSetPass {
   private static final SoyErrorKind UNEXPECTED_DATA =
       SoyErrorKind.of(
@@ -80,10 +87,9 @@ final class VeLogValidationPass implements CompilerFileSetPass {
       SoyErrorKind.of(
           "The '{'velog ...'}' command can only be used in templates with stricthtml=\"true\".");
 
-  private static final SoyErrorKind INVALID_LOGGING_FUNCTION_LOCATION =
+  private static final SoyErrorKind INVALID_FUNCTION_LOCATION =
       SoyErrorKind.of(
-          "The logging function ''{0}'' can only be evaluated in a print command that is the "
-              + "only direct child of an html attribute value.{1}",
+          "The {0} ''{1}'' can only be evaluated in a print command.{2}",
           SoyErrorKind.StyleAllowance.NO_PUNCTUATION);
 
   private static final SoyErrorKind NO_PRINT_DIRECTIVES =
@@ -125,6 +131,13 @@ final class VeLogValidationPass implements CompilerFileSetPass {
     return Result.CONTINUE;
   }
 
+  private boolean isDeferredHtmlFunction(FunctionNode function) {
+    if (function.isResolved() && function.getSoyFunction() instanceof ExternRef) {
+      return ((ExternRef) function.getSoyFunction()).isHtmlDeferralFunction();
+    }
+    return false;
+  }
+
   private void run(TemplateNode template) {
     SoyTreeUtils.allFunctionInvocations(template, BuiltinFunction.VE_DATA)
         .forEach(this::validateVeDataFunctionNode);
@@ -148,16 +161,33 @@ final class VeLogValidationPass implements CompilerFileSetPass {
         FunctionNode.class,
         (holderNode, function) -> {
           if (function.isResolved() && function.getSoyFunction() instanceof LoggingFunction) {
-            validateLoggingFunction(holderNode, function);
+            validateContextualFunction("logging function", holderNode, function);
+            // Additionally logging functions must be a direct HtmlAttributeValueNode child with
+            // no siblings
+            if (holderNode.getParent().getKind() != SoyNode.Kind.HTML_ATTRIBUTE_VALUE_NODE
+                || holderNode.getParent().numChildren() > 1) {
+              reporter.report(
+                  function.getSourceLocation(),
+                  INVALID_FUNCTION_LOCATION,
+                  "logging function",
+                  function.getStaticFunctionName(),
+                  " Logging functions must be the only direct child of an attribute value.");
+              return;
+            }
+          }
+          if (isDeferredHtmlFunction(function)) {
+            validateContextualFunction("deferral function", holderNode, function);
           }
         });
   }
 
-  private void validateLoggingFunction(ExprHolderNode holderNode, FunctionNode function) {
+  private void validateContextualFunction(
+      String name, ExprHolderNode holderNode, FunctionNode function) {
     if (function.getParent().getKind() != ExprNode.Kind.EXPR_ROOT_NODE) {
       reporter.report(
           function.getSourceLocation(),
-          INVALID_LOGGING_FUNCTION_LOCATION,
+          INVALID_FUNCTION_LOCATION,
+          name,
           function.getStaticFunctionName(),
           " It is part of complex expression.");
       return;
@@ -165,9 +195,10 @@ final class VeLogValidationPass implements CompilerFileSetPass {
     if (holderNode.getKind() != SoyNode.Kind.PRINT_NODE) {
       reporter.report(
           function.getSourceLocation(),
-          INVALID_LOGGING_FUNCTION_LOCATION,
+          INVALID_FUNCTION_LOCATION,
+          name,
           function.getStaticFunctionName(),
-          " It isn't in a print node.");
+          "");
       return;
     }
     PrintNode printNode = (PrintNode) holderNode;
@@ -176,21 +207,6 @@ final class VeLogValidationPass implements CompilerFileSetPass {
           printNode.getChild(0).getSourceLocation(),
           NO_PRINT_DIRECTIVES,
           function.getStaticFunctionName());
-    }
-    if (holderNode.getParent().getKind() != SoyNode.Kind.HTML_ATTRIBUTE_VALUE_NODE) {
-      reporter.report(
-          function.getSourceLocation(),
-          INVALID_LOGGING_FUNCTION_LOCATION,
-          function.getStaticFunctionName(),
-          " It isn't the direct child of an attribute value.");
-      return;
-    }
-    if (holderNode.getParent().numChildren() > 1) {
-      reporter.report(
-          function.getSourceLocation(),
-          INVALID_LOGGING_FUNCTION_LOCATION,
-          function.getStaticFunctionName(),
-          " It has sibling nodes in the attribute value.");
     }
   }
 

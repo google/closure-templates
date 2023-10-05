@@ -36,6 +36,7 @@ import com.google.template.soy.types.NullType;
 import com.google.template.soy.types.ProtoTypeRegistry;
 import com.google.template.soy.types.RecordType;
 import com.google.template.soy.types.SanitizedType;
+import com.google.template.soy.types.SanitizedType.DeferredHtmlType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypeRegistry;
@@ -65,6 +66,9 @@ public final class TypeNodeConverter
 
   private static final SoyErrorKind DUPLICATE_FUNCTION_PARAM =
       SoyErrorKind.of("Duplicate parameter ''{0}'' in function type declaration.");
+  private static final SoyErrorKind DEFERRED_HTML_TYPE_ONLY_ALLOWED_IN_LAST_POSITION_OF_EXTERN =
+      SoyErrorKind.of(
+          "Type `deferred_html` is only allowed in the last position of an extern declaration.");
 
   private static final SoyErrorKind INVALID_TEMPLATE_RETURN_TYPE =
       SoyErrorKind.of(
@@ -156,7 +160,7 @@ public final class TypeNodeConverter
                   return interner.getOrCreateElementType(tag);
                 }
               })
-          .build();
+          .buildOrThrow();
 
   private abstract static class BaseGenericTypeInfo {
     final int numParams;
@@ -274,6 +278,10 @@ public final class TypeNodeConverter
     return node.accept(this);
   }
 
+  public FunctionType getOrCreateFunctionTypeForExtern(FunctionTypeNode node) {
+    return visitFunctionType(node, /* isParsingFunctionTypeForExterns= */ true);
+  }
+
   @Override
   public SoyType visit(NamedTypeNode node) {
     String name = node.name().identifier();
@@ -282,6 +290,12 @@ public final class TypeNodeConverter
     // type generics) NamedTypeNode is not parsed here. It is processed with TypeNode::toString.
     if (name.contains("-")) {
       errorReporter.report(node.sourceLocation(), DASH_NOT_ALLOWED);
+      node.setResolvedType(UnknownType.getInstance());
+      return UnknownType.getInstance();
+    }
+    if (isDeferredHtmlType(node)) {
+      errorReporter.report(
+          node.sourceLocation(), DEFERRED_HTML_TYPE_ONLY_ALLOWED_IN_LAST_POSITION_OF_EXTERN);
       node.setResolvedType(UnknownType.getInstance());
       return UnknownType.getInstance();
     }
@@ -455,18 +469,43 @@ public final class TypeNodeConverter
 
   @Override
   public SoyType visit(FunctionTypeNode node) {
+    return visitFunctionType(node, /* isParsingFunctionTypeForExterns= */ false);
+  }
+
+  private static boolean isDeferredHtmlType(TypeNode node) {
+    return node instanceof NamedTypeNode && isDeferredHtmlType((NamedTypeNode) node);
+  }
+
+  private static boolean isDeferredHtmlType(NamedTypeNode node) {
+    return node.name().identifier().equals(DeferredHtmlType.NAME);
+  }
+
+  private FunctionType visitFunctionType(
+      FunctionTypeNode node, boolean isParsingFunctionTypeForExterns) {
     Map<String, FunctionType.Parameter> map = new LinkedHashMap<>();
-    for (FunctionTypeNode.Parameter parameter : node.parameters()) {
+    var params = node.parameters();
+    for (int i = 0; i < params.size(); i++) {
+      var parameter = params.get(i);
+      SoyType type;
+      if (isDeferredHtmlType(parameter.type())) {
+        if (isParsingFunctionTypeForExterns && i == params.size() - 1) {
+          type = DeferredHtmlType.getInstance();
+        } else {
+          errorReporter.report(
+              node.sourceLocation(), DEFERRED_HTML_TYPE_ONLY_ALLOWED_IN_LAST_POSITION_OF_EXTERN);
+          type = UnknownType.getInstance();
+        }
+      } else {
+        type = parameter.type().accept(this);
+      }
       FunctionType.Parameter oldParameter =
-          map.put(
-              parameter.name(),
-              FunctionType.Parameter.of(parameter.name(), parameter.type().accept(this)));
+          map.put(parameter.name(), FunctionType.Parameter.of(parameter.name(), type));
       if (oldParameter != null) {
         errorReporter.report(parameter.nameLocation(), DUPLICATE_FUNCTION_PARAM, parameter.name());
         map.put(parameter.name(), oldParameter);
       }
     }
-    SoyType type = interner.intern(FunctionType.of(map.values(), node.returnType().accept(this)));
+    var type = interner.intern(FunctionType.of(map.values(), node.returnType().accept(this)));
     node.setResolvedType(type);
     return type;
   }

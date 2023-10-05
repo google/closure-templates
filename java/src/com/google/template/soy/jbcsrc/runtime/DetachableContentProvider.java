@@ -165,6 +165,13 @@ public abstract class DetachableContentProvider implements SoyValueProvider {
     }
 
     @Override
+    public LoggingAdvisingAppendable append(DeferredText supplier) throws IOException {
+      delegate.append(supplier);
+      buffer.append(supplier);
+      return this;
+    }
+
+    @Override
     public boolean softLimitReached() {
       return delegate.softLimitReached();
     }

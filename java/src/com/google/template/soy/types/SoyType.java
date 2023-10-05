@@ -94,6 +94,7 @@ public abstract class SoyType {
     STRING,
     // Sanitized types (subtypes of string)
     HTML,
+    DEFERRED_HTML,
     ELEMENT,
     ATTRIBUTES,
     JS,

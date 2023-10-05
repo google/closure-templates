@@ -273,7 +273,8 @@ public final class BytecodeCompiler {
         new JavaSourceFunctionCompiler(typeRegistry, errorReporter);
     for (SoyFileNode file : fileSet.getChildren()) {
       for (ClassData clazz :
-          new SoyFileCompiler(file, javaSourceFunctionCompiler, fileSetMetadata).compile()) {
+          new SoyFileCompiler(file, javaSourceFunctionCompiler, fileSetMetadata, errorReporter)
+              .compile()) {
         if (Flags.DEBUG) {
           clazz.checkClass();
         }

@@ -792,6 +792,7 @@ public abstract class Expression extends BytecodeProducer {
         case PROTO_MODULE:
         case TEMPLATE_TYPE:
         case TEMPLATE_MODULE:
+        case DEFERRED_HTML:
         case FUNCTION:
           throw new UnsupportedOperationException();
       }

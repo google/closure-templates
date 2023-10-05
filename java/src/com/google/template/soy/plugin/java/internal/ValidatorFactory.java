@@ -418,6 +418,7 @@ final class ValidatorFactory extends JavaValueFactory {
       case VE_DATA:
         expectedClasses = VE_DATA_TYPES;
         break;
+      case DEFERRED_HTML:
       case TEMPLATE:
       case CSS_TYPE:
       case CSS_MODULE:

@@ -46,8 +46,6 @@ public final class JavaImplNode extends ExternImplNode {
       ImmutableSet.of(TYPE_STATIC, TYPE_INSTANCE, TYPE_INTERFACE, TYPE_STATIC_INTERFACE);
   public static final String DEFAULT_TYPE = TYPE_STATIC;
 
-  private static final SoyErrorKind INVALID_IMPL_ATTRIBUTE =
-      SoyErrorKind.of("Invalid attribute ''{0}''.");
   private static final SoyErrorKind MISSING_ATTR =
       SoyErrorKind.of("Missing required attribute ''{0}''.");
   private static final SoyErrorKind BAD_TYPE =
@@ -96,21 +94,33 @@ public final class JavaImplNode extends ExternImplNode {
    */
   private void initAttributes(ErrorReporter errorReporter) {
     for (CommandTagAttribute attr : attributes) {
-      if (attr.hasName(CLASS)) {
-        this.className = attr;
-      } else if (attr.hasName(METHOD)) {
-        this.methodName = attr;
-      } else if (attr.hasName(PARAMS)) {
-        this.params = attr;
-      } else if (attr.hasName(RETURN)) {
-        this.returnType = attr;
-      } else if (attr.hasName(TYPE)) {
-        this.type = attr;
-        if (!ALLOWED_TYPES.contains(type.getValue())) {
-          errorReporter.report(attr.getSourceLocation(), BAD_TYPE);
-        }
-      } else {
-        errorReporter.report(attr.getSourceLocation(), INVALID_IMPL_ATTRIBUTE, attr.getName());
+      switch (attr.getName().identifier()) {
+        case CLASS:
+          this.className = attr;
+          break;
+        case METHOD:
+          this.methodName = attr;
+          break;
+        case PARAMS:
+          this.params = attr;
+          break;
+        case RETURN:
+          this.returnType = attr;
+          break;
+        case TYPE:
+          this.type = attr;
+          if (!ALLOWED_TYPES.contains(type.getValue())) {
+            errorReporter.report(attr.getSourceLocation(), BAD_TYPE);
+          }
+          break;
+        default:
+          errorReporter.report(
+              attr.getSourceLocation(),
+              CommandTagAttribute.UNSUPPORTED_ATTRIBUTE_KEY,
+              attr.getName(),
+              "javaimpl",
+              ImmutableList.of(CLASS, METHOD, PARAMS, RETURN, TYPE));
+          break;
       }
     }
 
