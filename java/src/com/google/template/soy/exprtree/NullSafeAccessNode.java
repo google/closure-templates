@@ -26,6 +26,7 @@ import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.exprtree.OperatorNodes.AssertNonNullOpNode;
 import com.google.template.soy.internal.util.TreeStreams;
 import java.util.List;
+import javax.annotation.Nullable;
 
 /**
  * Represents a null safe access: {@code ?.} or {@code ?[]}.
@@ -191,6 +192,7 @@ public final class NullSafeAccessNode extends AbstractParentExprNode {
    * <p>The returned view of the AST may make some calculations easier, at the cost of copying the
    * AST.
    */
+  @Nullable
   public AccessChainComponentNode asAccessChain() {
     // Clone entire branch so we can modify without worrying.
     NullSafeAccessNode nsan = (NullSafeAccessNode) this.copy(new CopyState());
@@ -220,7 +222,11 @@ public final class NullSafeAccessNode extends AbstractParentExprNode {
         base = base.getParent();
       }
     }
-    return (AccessChainComponentNode) base;
+    if (base instanceof AccessChainComponentNode) {
+      return (AccessChainComponentNode) base;
+    }
+    // This is possible with certain upstream errors.
+    return null;
   }
 
   /**
@@ -249,6 +255,9 @@ public final class NullSafeAccessNode extends AbstractParentExprNode {
    */
   public ImmutableList<ExprNode> asNullSafeBaseList() {
     AccessChainComponentNode accessChainHead = this.asAccessChain();
+    if (accessChainHead == null) {
+      return ImmutableList.of();
+    }
     AccessChainComponentNode accessChainTail = accessChainHead;
     while (accessChainTail.getChild(0) instanceof AccessChainComponentNode) {
       accessChainTail = (AccessChainComponentNode) accessChainTail.getChild(0);
