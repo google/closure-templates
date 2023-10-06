@@ -37,30 +37,19 @@ public final class TemplateStateVar extends AbstractVarDefn implements TemplateH
   @Nullable private final TypeNode typeNode;
   private final TypeNode originalTypeNode;
   private final ExprRootNode initialValue;
-  private final boolean isExplicitlyOptional;
 
   public TemplateStateVar(
       String name,
       @Nullable TypeNode typeNode,
-      boolean optional,
-      @Nullable ExprNode initialValue,
+      ExprNode initialValue, // TODO(b/291132644): Make @Nullable again and default to UNDEFINED.
       @Nullable String desc,
       @Nullable SourceLocation nameLocation,
       SourceLocation sourceLocation) {
     super(name, nameLocation, /* type= */ null);
     this.originalTypeNode = typeNode;
-    this.isExplicitlyOptional = optional;
     this.desc = desc;
-    this.initialValue =
-        initialValue == null
-            ? new ExprRootNode(new NullNode(/* Tell formatter to omit. */ SourceLocation.UNKNOWN))
-            : new ExprRootNode(initialValue);
+    this.initialValue = new ExprRootNode(initialValue);
     this.sourceLocation = sourceLocation;
-
-    // Optional params become nullable
-    if (optional && typeNode != null && !TemplateParam.isAlreadyOptionalType(typeNode)) {
-      typeNode = TemplateParam.getOptionalParamTypeNode(typeNode);
-    }
     this.typeNode = typeNode;
   }
 
@@ -68,7 +57,6 @@ public final class TemplateStateVar extends AbstractVarDefn implements TemplateH
     super(old);
     this.originalTypeNode = old.originalTypeNode == null ? null : old.originalTypeNode.copy();
     this.typeNode = old.typeNode == null ? null : old.typeNode.copy();
-    this.isExplicitlyOptional = old.isExplicitlyOptional;
     this.desc = old.desc;
     this.initialValue = old.initialValue.copy(copyState);
     this.sourceLocation = old.sourceLocation;
@@ -130,7 +118,7 @@ public final class TemplateStateVar extends AbstractVarDefn implements TemplateH
 
   @Override
   public boolean isExplicitlyOptional() {
-    return isExplicitlyOptional;
+    return false;
   }
 
   @Override
