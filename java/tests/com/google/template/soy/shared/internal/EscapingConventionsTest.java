@@ -147,6 +147,8 @@ public class EscapingConventionsTest {
           "translateY(-50%) translate(0) translate3d(-10px, 40px, 0)",
           "translateX(calc(-10.55% - 8px))",
           "rotateZ(180deg) rotate(90deg)",
+          "var(--cssvar)",
+          "var(--cssvar, #000)"
         };
 
     for (String uri : shouldReject) {
