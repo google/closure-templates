@@ -44,6 +44,7 @@ import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.Kind;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
+import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import com.google.template.soy.types.ast.FunctionTypeNode;
 import com.google.template.soy.types.ast.GenericTypeNode;
 import com.google.template.soy.types.ast.NamedTypeNode;
@@ -55,6 +56,7 @@ import com.google.template.soy.types.ast.TypeNodeVisitor;
 import com.google.template.soy.types.ast.UnionTypeNode;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
@@ -248,6 +250,7 @@ public final class SoyTreeUtils {
   public static String buildAstString(ParentSoyNode<?> node) {
     return buildAstStringHelper(node, 0, new StringBuilder()).toString();
   }
+
   /**
    * Given an expr node, returns a {@code StringBuilder} that can be used to pretty print the AST
    * structure.
@@ -625,7 +628,27 @@ public final class SoyTreeUtils {
         }
       };
 
+  /** Returns a breadth-first stream starting at root and containing all nested type nodes. */
   public static Stream<? extends TypeNode> allTypeNodes(TypeNode root) {
     return TreeStreams.breadthFirst(root, next -> next.accept(TRAVERSING));
+  }
+
+  /** Returns a stream of all the type nodes contained in a Soy node branch. */
+  public static Stream<TypeNode> allTypeNodes(SoyNode root) {
+    return allNodes(root, SoyTreeUtils::visitNonExpr)
+        .flatMap(
+            node -> {
+              // If we had something like ExprHolderNode for type nodes we could avoid this switch.
+              if (node instanceof TemplateNode) {
+                TemplateNode templateNode = (TemplateNode) node;
+                return templateNode.getHeaderParams().stream()
+                    .map(TemplateHeaderVarDefn::getOriginalTypeNode)
+                    .filter(Objects::nonNull);
+              } else if (node instanceof ExternNode) {
+                return Stream.of(((ExternNode) node).typeNode());
+              } else {
+                return Stream.of();
+              }
+            });
   }
 }
