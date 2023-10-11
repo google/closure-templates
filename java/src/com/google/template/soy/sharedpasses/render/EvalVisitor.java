@@ -882,6 +882,9 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
             var value = visit(node.getChild(0));
             return value.stringValue().isEmpty() ? NullData.INSTANCE : value;
           }
+        case UNDEFINED_TO_NULL:
+        case UNDEFINED_TO_NULL_SSR:
+          return visit(node.getChild(0)).nullishToNull();
         case MSG_WITH_ID:
         case REMAINDER:
           // should have been removed earlier in the compiler

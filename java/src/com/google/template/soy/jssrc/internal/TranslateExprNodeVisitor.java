@@ -1059,6 +1059,12 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
           return visitVeDefFunction(node);
         case EMPTY_TO_NULL:
           return visitEmptyToNullFunction(node);
+        case UNDEFINED_TO_NULL:
+          return visit(node.getChild(0))
+              .nullishCoalesce(LITERAL_NULL, translationContext.codeGenerator());
+        case UNDEFINED_TO_NULL_SSR:
+          // CSR no-op
+          return visit(node.getChild(0));
 
         case LEGACY_DYNAMIC_TAG:
         case REMAINDER:

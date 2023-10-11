@@ -507,6 +507,17 @@ public final class SoyTypes {
     return false;
   }
 
+  public static SoyType undefinedToNull(SoyType type) {
+    if (type == UndefinedType.getInstance()) {
+      return NullType.getInstance();
+    } else if (type instanceof UnionType) {
+      if (isUndefinable(type)) {
+        return makeNullable(removeUndefined(type));
+      }
+    }
+    return type;
+  }
+
   /**
    * A type resolver interface that can be passed into getSoyTypeForBinaryOperator method.
    *

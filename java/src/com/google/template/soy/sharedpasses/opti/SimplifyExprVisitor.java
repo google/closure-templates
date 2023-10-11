@@ -398,6 +398,8 @@ final class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
     if (node.getSoyFunction() instanceof BuiltinFunction) {
       switch ((BuiltinFunction) node.getSoyFunction()) {
         case EMPTY_TO_NULL:
+        case UNDEFINED_TO_NULL:
+        case UNDEFINED_TO_NULL_SSR:
           visitExprNode(node);
           break;
         default:

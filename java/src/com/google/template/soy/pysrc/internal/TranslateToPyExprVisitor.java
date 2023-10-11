@@ -605,7 +605,9 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
       case IS_PRIMARY_MSG_IN_USE:
         return visitIsPrimaryMsgInUseFunction(node);
       case TO_FLOAT:
-        // this is a no-op in python
+      case UNDEFINED_TO_NULL:
+      case UNDEFINED_TO_NULL_SSR:
+        // Python runtime does not distinguish between null and undefined.
         return visit(node.getChild(0));
       case EMPTY_TO_NULL:
         return new PyExpr(

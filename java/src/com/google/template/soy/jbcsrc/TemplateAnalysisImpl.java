@@ -800,6 +800,8 @@ final class TemplateAnalysisImpl implements TemplateAnalysis {
           case VE_DATA:
           case XID:
           case EMPTY_TO_NULL:
+          case UNDEFINED_TO_NULL:
+          case UNDEFINED_TO_NULL_SSR:
             // visit children normally
             break;
           case UNKNOWN_JS_GLOBAL:

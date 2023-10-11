@@ -708,6 +708,18 @@ value:
 > callee template prints the parameter in multiple places (which should be
 > rare).
 
+### `undefinedToNullForMigration(expr)` and `undefinedToNullForSsrMigration(expr)` {#undefinedToNullForMigration} {#undefinedToNullForSsrMigration}
+
+Converts `undefined` to `null` to aid in the introduction of `undefined` to the
+Soy language. The `undefinedToNullForSsrMigration` variant affects server side
+rendering behavior only, for cases where introducing `undefined` is only
+changing server side rendering code.
+
+Both variants change the type of the expression, replacing `undefined` with
+`null` if the expression type is a union type containing `undefined`. Note that
+in the case of `undefinedToNullForSsrMigration` and client side rendering this
+could result in a value of `undefined` for an expression of type `T|null`.
+
 ## Localization (l10n) Functions
 
 ### `remainder(length)` {#remainder}

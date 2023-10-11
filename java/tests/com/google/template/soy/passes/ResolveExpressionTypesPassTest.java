@@ -1026,6 +1026,23 @@ public final class ResolveExpressionTypesPassTest {
     assertTypes(soyTree);
   }
 
+  @Test
+  public void testUndefinedToNullForMigration() {
+    assertTypes(
+        "{@param s1: string}",
+        "{@param s2: string|undefined}",
+        "{@param s3: string|null}",
+        "{@param s4: string|null|undefined}",
+        "{assertType('string', undefinedToNullForMigration($s1))}",
+        "{assertType('null|string', undefinedToNullForMigration($s2))}",
+        "{assertType('null|string', undefinedToNullForMigration($s3))}",
+        "{assertType('null|string', undefinedToNullForMigration($s4))}",
+        "{assertType('string', undefinedToNullForSsrMigration($s1))}",
+        "{assertType('null|string', undefinedToNullForSsrMigration($s2))}",
+        "{assertType('null|string', undefinedToNullForSsrMigration($s3))}",
+        "{assertType('null|string', undefinedToNullForSsrMigration($s4))}");
+  }
+
   private SoyType parseSoyType(String type) {
     return parseSoyType(type, ErrorReporter.exploding());
   }
