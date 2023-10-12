@@ -61,6 +61,7 @@ public class SoyTypesTest {
   @Test
   public void testAnyType() {
     assertThatSoyType("any").isAssignableFromStrict("null");
+    assertThatSoyType("any").isAssignableFromStrict("undefined");
     assertThatSoyType("any").isAssignableFromStrict("any");
     assertThatSoyType("any").isAssignableFromStrict("?");
     assertThatSoyType("any").isAssignableFromStrict("string");
@@ -70,6 +71,7 @@ public class SoyTypesTest {
   @Test
   public void testUnknownType() {
     assertThatSoyType("?").isAssignableFromStrict("null");
+    assertThatSoyType("?").isAssignableFromStrict("undefined");
     assertThatSoyType("?").isAssignableFromStrict("any");
     assertThatSoyType("?").isAssignableFromStrict("?");
     assertThatSoyType("?").isAssignableFromStrict("string");
@@ -79,11 +81,23 @@ public class SoyTypesTest {
   @Test
   public void testNullType() {
     assertThatSoyType("null").isAssignableFromStrict("null");
+    assertThatSoyType("null").isNotAssignableFromStrict("undefined");
     assertThatSoyType("null").isNotAssignableFromStrict("string");
     assertThatSoyType("null").isNotAssignableFromStrict("int");
     assertThatSoyType("null").isNotAssignableFromStrict("any");
     assertThatSoyType("null").isNotAssignableFromStrict("?");
     assertThatSoyType("null").isAssignableFromLoose("?");
+  }
+
+  @Test
+  public void testUndefinedType() {
+    assertThatSoyType("undefined").isAssignableFromStrict("undefined");
+    assertThatSoyType("undefined").isNotAssignableFromStrict("null");
+    assertThatSoyType("undefined").isNotAssignableFromStrict("string");
+    assertThatSoyType("undefined").isNotAssignableFromStrict("int");
+    assertThatSoyType("undefined").isNotAssignableFromStrict("any");
+    assertThatSoyType("undefined").isNotAssignableFromStrict("?");
+    assertThatSoyType("undefined").isAssignableFromLoose("?");
   }
 
   @Test
