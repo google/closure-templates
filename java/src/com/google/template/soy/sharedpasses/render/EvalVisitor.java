@@ -37,6 +37,7 @@ import static com.google.template.soy.shared.internal.SharedRuntime.times;
 import static com.google.template.soy.shared.internal.SharedRuntime.tripleEqual;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableTable;
 import com.google.common.collect.Iterables;
 import com.google.errorprone.annotations.ForOverride;
@@ -56,10 +57,9 @@ import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.SoyVisualElement;
 import com.google.template.soy.data.SoyVisualElementData;
 import com.google.template.soy.data.TemplateValue;
-import com.google.template.soy.data.internal.DictImpl;
 import com.google.template.soy.data.internal.ListImpl;
-import com.google.template.soy.data.internal.RuntimeMapTypeTracker;
 import com.google.template.soy.data.internal.SoyMapImpl;
+import com.google.template.soy.data.internal.SoyRecordImpl;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
@@ -146,7 +146,6 @@ import com.google.template.soy.types.UnionType;
 import com.ibm.icu.util.ULocale;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -351,11 +350,11 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
   protected SoyValue visitRecordLiteralNode(RecordLiteralNode node) {
     int numItems = node.numChildren();
 
-    Map<String, SoyValue> map = new LinkedHashMap<>();
+    ImmutableMap.Builder<String, SoyValueProvider> map = ImmutableMap.builder();
     for (int i = 0; i < numItems; i++) {
       map.put(node.getKey(i).identifier(), visit(node.getChild(i)));
     }
-    return DictImpl.forProviderMap(map, RuntimeMapTypeTracker.Type.LEGACY_OBJECT_MAP_OR_RECORD);
+    return new SoyRecordImpl(map.buildOrThrow());
   }
 
   @Override

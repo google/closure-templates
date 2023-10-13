@@ -19,6 +19,7 @@ package com.google.template.soy.sharedpasses.render;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.ImmutableMap.toImmutableMap;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.html.types.SafeHtml;
 import com.google.common.html.types.SafeHtmlProto;
@@ -40,6 +41,7 @@ import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyProtoValue;
+import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.SoyValueProvider;
@@ -336,12 +338,9 @@ class TofuValueFactory extends JavaValueFactory {
       } else if (Map.class.isAssignableFrom(type) && isExternApi) {
         SoyType paramType = externSig.getParameters().get(i).getType();
         if (paramType.getKind() == Kind.RECORD) {
-          return ((SoyMap) value)
-              .entrySet().stream()
-                  .collect(
-                      toImmutableMap(
-                          e -> e.getKey().coerceToString(),
-                          e -> SoyValueUnconverter.unconvert(e.getValue())));
+          ImmutableMap.Builder<String, Object> builder = ImmutableMap.builder();
+          ((SoyRecord) value).forEach((s, v) -> builder.put(s, SoyValueUnconverter.unconvert(v)));
+          return builder.buildOrThrow();
         }
         MapType mapType = (MapType) paramType;
         return ((SoyMap) value)

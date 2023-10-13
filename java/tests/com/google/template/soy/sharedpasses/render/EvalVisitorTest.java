@@ -24,7 +24,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableTable;
 import com.google.template.soy.data.SoyDataException;
-import com.google.template.soy.data.SoyDict;
 import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
@@ -43,7 +42,6 @@ import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
-import java.util.Set;
 import javax.annotation.Nullable;
 import org.junit.Before;
 import org.junit.Test;
@@ -120,7 +118,7 @@ public class EvalVisitorTest {
                               }
 
                               @Override
-                              public Set<Integer> getValidArgsSizes() {
+                              public ImmutableSet<Integer> getValidArgsSizes() {
                                 return ImmutableSet.of(1);
                               }
                             })
@@ -266,8 +264,8 @@ public class EvalVisitorTest {
 
   @Test
   public void testEvalRecordLiteral() throws Exception {
-    SoyDict result = (SoyDict) eval("record(aaa: 'blah', bbb: 123, ccc: $boo)");
-    assertThat(result.getItemKeys()).hasSize(3);
+    SoyRecord result = (SoyRecord) eval("record(aaa: 'blah', bbb: 123, ccc: $boo)");
+    assertThat(result.recordSize()).isEqualTo(3);
     assertThat(result.getField("aaa").stringValue()).isEqualTo("blah");
     assertThat(result.getField("bbb").integerValue()).isEqualTo(123);
     assertThat(result.getField("ccc").integerValue()).isEqualTo(8);
