@@ -133,7 +133,7 @@ public final class GenJsCodeVisitorTest {
         "{msg desc=\"\"}\n" + "Unable to reach {PRODUCT_NAME_HTML}. Eeeek!\n" + "{/msg}\n";
     String expectedJsCode =
         ""
-            + "/** @desc  */\n"
+            + "/** @desc */\n"
             + "const MSG_UNNAMED = goog.getMsg("
             + "'Unable to reach {$productNameHtml}. Eeeek!', "
             + "{'productNameHtml': PRODUCT_NAME_HTML}, {html: true});\n"
@@ -149,7 +149,7 @@ public final class GenJsCodeVisitorTest {
             + "{/msg}\n";
     expectedJsCode =
         ""
-            + "/** @desc  */\n"
+            + "/** @desc */\n"
             + "const MSG_UNNAMED = goog.getMsg("
             + "'{$field}{$aField}{$forest}{$x}{$xxXx}', "
             + "{'field': window.field, "
@@ -165,7 +165,7 @@ public final class GenJsCodeVisitorTest {
     soyCode = "{msg desc=\"\"}\n" + "{window.FOO.BAR} {window.ORIGINAL_SERVER_NAME}\n" + "{/msg}\n";
     expectedJsCode =
         ""
-            + "/** @desc  */\n"
+            + "/** @desc */\n"
             + "const MSG_UNNAMED = goog.getMsg("
             + "'{$bar} {$originalServerName}', "
             + "{'bar': window.FOO.BAR, "
@@ -177,7 +177,7 @@ public final class GenJsCodeVisitorTest {
     soyCode = "{msg desc=\"\"}\n" + " {camelCaseName}{global.camelCase}. \n" + "{/msg}\n";
     expectedJsCode =
         ""
-            + "/** @desc  */\n"
+            + "/** @desc */\n"
             + "const MSG_UNNAMED = goog.getMsg("
             + "'{$camelCaseName}{$camelCase}.', "
             + "{'camelCaseName': camelCaseName, "
@@ -189,7 +189,7 @@ public final class GenJsCodeVisitorTest {
     soyCode = "{msg desc=\"\"}\n" + "Unable to reach {CamelCaseName}. Eeeek!\n" + "{/msg}\n";
     expectedJsCode =
         ""
-            + "/** @desc  */\n"
+            + "/** @desc */\n"
             + "const MSG_UNNAMED = goog.getMsg("
             + "'Unable to reach {$camelCaseName}. Eeeek!', "
             + "{'camelCaseName': CamelCaseName}, {html: true});\n"
@@ -234,7 +234,7 @@ public final class GenJsCodeVisitorTest {
             + "{/msg}\n";
     String expectedJsCode =
         ""
-            + "/** @desc  */\n"
+            + "/** @desc */\n"
             + "const MSG_UNNAMED = goog.getMsg("
             + "'Unable to reach {$productNameHtml}. Eeeek!', "
             + "{'productNameHtml': opt_data.PRODUCT_NAME_HTML}, {html: true});\n"
@@ -252,7 +252,7 @@ public final class GenJsCodeVisitorTest {
             + "{/msg}\n";
     expectedJsCode =
         ""
-            + "/** @desc  */\n"
+            + "/** @desc */\n"
             + "const MSG_UNNAMED = goog.getMsg("
             + "'{$bar}{$originalServer}{$xxXx}', "
             + "{'bar': opt_data.myvar.foo.bar, "
@@ -270,7 +270,7 @@ public final class GenJsCodeVisitorTest {
             + "{/msg}\n";
     expectedJsCode =
         ""
-            + "/** @desc  */\n"
+            + "/** @desc */\n"
             + "const MSG_UNNAMED = goog.getMsg("
             + "'{$bar}{$trail}{$barBarBar}', "
             + "{'bar': opt_data.myvar.foo._bar, "
@@ -288,7 +288,7 @@ public final class GenJsCodeVisitorTest {
             + "{/msg}\n";
     expectedJsCode =
         ""
-            + "/** @desc  */\n"
+            + "/** @desc */\n"
             + "const MSG_UNNAMED = goog.getMsg("
             + "'{$productName}{$otherProductName}', "
             + "{'productName': opt_data.productName, "
@@ -941,7 +941,7 @@ public final class GenJsCodeVisitorTest {
             + "{/msg}\n";
     String expectedJsCode =
         ""
-            + "/** @desc  */\n"
+            + "/** @desc */\n"
             + "const MSG_UNNAMED = goog.getMsg("
             + "'Notify {$startSpan}{$num}{$endSpan} people via email &rsaquo;', "
             + "{'startSpan': '<span class=\"'"

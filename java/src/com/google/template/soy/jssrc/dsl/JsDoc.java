@@ -19,6 +19,7 @@ package com.google.template.soy.jssrc.dsl;
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -183,7 +184,7 @@ public abstract class JsDoc extends SpecialToken implements CodeChunk.HasRequire
 
     @Override
     public final String toString() {
-      if (type() == null && field() == null) {
+      if (type() == null && Strings.isNullOrEmpty(field())) {
         return String.format("@%s", annotationType());
       } else if (field() != null) {
         return String.format("@%s %s", annotationType(), field());
