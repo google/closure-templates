@@ -67,7 +67,7 @@ public final class TemplateElementNode extends TemplateNode implements ExprHolde
     }
     return builder.build();
   }
-  
+
   @Override
   public String getTemplateNameForUserMsgs() {
     return getTemplateName();

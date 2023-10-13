@@ -692,7 +692,7 @@ public abstract class MethodRef {
       throw new VerifyException(
           "Couldn't find the expected method among: " + Arrays.toString(clazz.getMethods()), e);
     }
-    
+
   }
 
   public static MethodRef create(java.lang.reflect.Method method, MethodPureness pureness) {

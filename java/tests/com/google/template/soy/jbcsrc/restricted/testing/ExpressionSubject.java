@@ -105,7 +105,7 @@ public final class ExpressionSubject extends Subject {
     char actual;
     try {
       actual = ((CharInvoker) evaluator.invoker).invoke();
-      
+
     } catch (Throwable t) {
       t.printStackTrace();
       return failExpectingValue(expected, t);

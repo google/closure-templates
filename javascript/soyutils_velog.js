@@ -438,8 +438,8 @@ class $$VisualElement {
     /** @private @const {string|undefined} */
     this.name_ = name;
   }
-  
-  /** 
+
+  /**
    * @param {!$$VisualElement} ve
    * @return {boolean}
    */

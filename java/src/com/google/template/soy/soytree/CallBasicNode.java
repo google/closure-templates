@@ -136,7 +136,7 @@ public final class CallBasicNode extends CallNode {
     this.calleeExpr = calleeExpr;
   }
 
-  
+
   public void setOriginalShortFormExprEquivalence(
       ExprEquivalence.Wrapper originalShortFormExprEquivalence) {
     this.originalShortFormExprEquivalence = originalShortFormExprEquivalence;

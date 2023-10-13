@@ -113,7 +113,7 @@ public class SoyMsgBundleImpl extends SoyMsgBundle {
   public ULocale getLocale() {
     return locale;
   }
-  
+
   @Override
   public boolean isRtl() {
     return isRtl;
