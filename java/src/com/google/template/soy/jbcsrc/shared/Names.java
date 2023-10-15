@@ -21,6 +21,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.internal.BaseUtils;
+import com.google.template.soy.data.RecordProperty;
 import com.google.template.soy.internal.exemptions.NamespaceExemptions;
 import java.util.regex.Pattern;
 import org.objectweb.asm.Type;
@@ -43,6 +44,7 @@ public final class Names {
   public static final String INTERNAL_CLASS_PREFIX = CLASS_PREFIX.replace('.', '/');
 
   public static final String VARIANT_VAR_NAME = "__modifiable_variant__";
+  public static final RecordProperty VARIANT_VAR_SYMBOL = RecordProperty.get(VARIANT_VAR_NAME);
 
   private Names() {}
 

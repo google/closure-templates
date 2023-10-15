@@ -61,7 +61,7 @@ public final class SoyValueUnconverter {
         SoyRecord.class,
         v -> {
           Map<String, Object> unconverted = new LinkedHashMap<>();
-          v.forEach((key, value) -> unconverted.put(key, unconvert(value)));
+          v.forEach((key, value) -> unconverted.put(key.getName(), unconvert(value)));
           return unconverted;
         });
     CONVERTERS.put(

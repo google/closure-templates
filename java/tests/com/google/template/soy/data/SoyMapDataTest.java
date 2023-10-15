@@ -215,8 +215,9 @@ public final class SoyMapDataTest {
 
     SoyMapData recordOrLegacyObjectMap = new SoyMapData(underlying);
     // Call some SoyRecord methods first.
-    assertThat(recordOrLegacyObjectMap.hasField("a")).isTrue();
-    assertThat(recordOrLegacyObjectMap.getField("a").coerceToString()).isEqualTo("b");
+    assertThat(recordOrLegacyObjectMap.hasField(RecordProperty.get("a"))).isTrue();
+    assertThat(recordOrLegacyObjectMap.getField(RecordProperty.get("a")).coerceToString())
+        .isEqualTo("b");
 
     // Now call some SoyLegacyObjectMap methods.
     assertThat(recordOrLegacyObjectMap.getItemCnt()).isEqualTo(1);

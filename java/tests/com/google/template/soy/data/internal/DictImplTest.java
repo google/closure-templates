@@ -21,6 +21,7 @@ import static org.junit.Assert.fail;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
+import com.google.template.soy.data.RecordProperty;
 import com.google.template.soy.data.SoyDict;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
@@ -39,6 +40,9 @@ import org.junit.runners.JUnit4;
  */
 @RunWith(JUnit4.class)
 public class DictImplTest {
+  private static final RecordProperty BOO = RecordProperty.get("boo");
+  private static final RecordProperty FOO = RecordProperty.get("foo");
+  private static final RecordProperty TOO = RecordProperty.get("too");
 
   @Test
   public void testSoyValueMethods() {
@@ -78,23 +82,23 @@ public class DictImplTest {
 
     Map<String, SoyValueProvider> providerMap = new HashMap<>();
     SoyDict dict = DictImpl.forProviderMap(providerMap, RuntimeMapTypeTracker.Type.UNKNOWN);
-    assertThat(dict.hasField("boo")).isFalse();
-    assertThat(dict.getField("boo")).isNull();
-    assertThat(dict.getFieldProvider("boo")).isNull();
+    assertThat(dict.hasField(BOO)).isFalse();
+    assertThat(dict.getField(BOO)).isNull();
+    assertThat(dict.getFieldProvider(BOO)).isNull();
     providerMap.put("boo", StringData.forValue("blah"));
-    assertThat(dict.hasField("boo")).isTrue();
-    assertThat(dict.getField("boo").stringValue()).isEqualTo("blah");
-    assertThat(dict.getFieldProvider("boo").resolve().stringValue()).isEqualTo("blah");
+    assertThat(dict.hasField(BOO)).isTrue();
+    assertThat(dict.getField(BOO).stringValue()).isEqualTo("blah");
+    assertThat(dict.getFieldProvider(BOO).resolve().stringValue()).isEqualTo("blah");
     providerMap.remove("boo");
-    assertThat(dict.hasField("boo")).isFalse();
-    assertThat(dict.getField("boo")).isNull();
-    assertThat(dict.getFieldProvider("boo")).isNull();
+    assertThat(dict.hasField(BOO)).isFalse();
+    assertThat(dict.getField(BOO)).isNull();
+    assertThat(dict.getFieldProvider(BOO)).isNull();
 
     providerMap.put("foo", FloatData.forValue(3.14));
     providerMap.put("too", BooleanData.TRUE);
-    assertThat(dict.hasField("foo")).isTrue();
-    assertThat(dict.getField("foo").floatValue()).isEqualTo(3.14);
-    assertThat(dict.getField("too").booleanValue()).isTrue();
+    assertThat(dict.hasField(FOO)).isTrue();
+    assertThat(dict.getField(FOO).floatValue()).isEqualTo(3.14);
+    assertThat(dict.getField(TOO).booleanValue()).isTrue();
   }
 
   @Test

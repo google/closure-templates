@@ -17,6 +17,7 @@
 package com.google.template.soy.sharedpasses.render;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.template.soy.data.RecordProperty;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
@@ -56,7 +57,7 @@ public final class TestingEnvironment extends Environment {
 
   @Override
   boolean hasVar(VarDefn var) {
-    return params.hasField(var.name());
+    return params.hasField(RecordProperty.get(var.name()));
   }
 
   @Override
@@ -72,7 +73,7 @@ public final class TestingEnvironment extends Environment {
   private SoyValueProvider doGetProvider(String name) {
     SoyValueProvider provider = locals.get(name);
     if (provider == null) {
-      provider = params.getFieldProvider(name);
+      provider = params.getFieldProvider(RecordProperty.get(name));
       if (provider == null) {
         provider = UndefinedData.INSTANCE;
       }

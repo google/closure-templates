@@ -57,6 +57,7 @@ java_library(
         "//java/src/com/google/template/soy/coredirectives",
         "//java/src/com/google/template/soy/css",
         "//java/src/com/google/template/soy/data",
+        "//java/src/com/google/template/soy/data:record_property",
         "//java/src/com/google/template/soy/error:error_reporter",
         "//java/src/com/google/template/soy/exprtree",
         "//java/src/com/google/template/soy/jbcsrc",

@@ -16,6 +16,7 @@
 
 package com.google.template.soy.jbcsrc;
 
+import static com.google.common.truth.Truth.assertThat;
 import static com.google.template.soy.jbcsrc.TemplateTester.assertThatTemplateBody;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.soyNull;
@@ -28,9 +29,7 @@ import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SanitizedContents;
 import com.google.template.soy.data.SoyDataException;
-import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.data.internal.DictImpl;
-import com.google.template.soy.data.internal.RuntimeMapTypeTracker;
+import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
@@ -45,6 +44,7 @@ import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
+import com.google.template.soy.jbcsrc.restricted.testing.ExpressionEvaluator;
 import com.google.template.soy.jbcsrc.restricted.testing.ExpressionSubject;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.soytree.PrintNode;
@@ -104,21 +104,21 @@ public class ExpressionCompilerTest {
   }
 
   @Test
-  public void testCollectionLiterals_record() {
-    // Record values are always boxed.  SoyMaps use == for equality, so check equivalence by
+  public void testCollectionLiterals_record() throws Exception {
+    // Record values are always boxed.  records use == for equality, so check equivalence by
     // comparing their string representations.
-    SoyExpression compile =
-        compileExpression("record(a: 1, b: 1.0, c: 'asdf', d: false)").coerceToString();
-    ExpressionSubject.assertThatExpression(compile)
-        .evaluatesTo(
-            DictImpl.forProviderMap(
-                    ImmutableMap.<String, SoyValue>of(
-                        "a", IntegerData.forValue(1),
-                        "b", FloatData.forValue(1.0),
-                        "c", StringData.forValue("asdf"),
-                        "d", BooleanData.FALSE),
-                    RuntimeMapTypeTracker.Type.LEGACY_OBJECT_MAP_OR_RECORD)
-                .toString());
+    SoyExpression recordExpr = compileExpression("record(a: 1, b: 1.0, c: 'asdf', d: false)");
+    var recordValue = (SoyRecord) ExpressionEvaluator.evaluate(recordExpr);
+    assertThat(recordValue.recordAsMap())
+        .containsExactly(
+            "a",
+            IntegerData.forValue(1),
+            "b",
+            FloatData.forValue(1.0),
+            "c",
+            StringData.forValue("asdf"),
+            "d",
+            BooleanData.FALSE);
   }
 
   @Test

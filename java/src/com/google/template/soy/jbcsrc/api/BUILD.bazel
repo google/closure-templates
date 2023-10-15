@@ -47,6 +47,7 @@ java_library(
         ":helpers",
         ":output_appendable",
         "//java/src/com/google/template/soy/data",
+        "//java/src/com/google/template/soy/data:record_property",
         "//java/src/com/google/template/soy/data:unsafesanitizedcontentordainer",
         "//java/src/com/google/template/soy/internal/i18n",
         "//java/src/com/google/template/soy/jbcsrc/shared",

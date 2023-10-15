@@ -17,6 +17,7 @@
 package com.google.template.soy.shared.internal;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.template.soy.data.RecordProperty;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyRecord;
@@ -28,7 +29,6 @@ import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.data.restricted.StringData;
-import com.google.template.soy.exprtree.MapLiteralFromListNode;
 import java.util.List;
 import java.util.Objects;
 import javax.annotation.Nonnull;
@@ -235,8 +235,8 @@ public final class SharedRuntime {
       SoyValue recordEntry = list.get(i).resolve();
       checkMapFromListConstructorCondition(recordEntry instanceof SoyRecord, recordEntry, i);
       SoyRecord record = (SoyRecord) recordEntry;
-      SoyValue key = record.getField(MapLiteralFromListNode.KEY_STRING);
-      SoyValueProvider valueProvider = record.getFieldProvider(MapLiteralFromListNode.VALUE_STRING);
+      SoyValue key = record.getField(RecordProperty.KEY);
+      SoyValueProvider valueProvider = record.getFieldProvider(RecordProperty.VALUE);
       checkMapFromListConstructorCondition(
           SoyMap.isAllowedKeyType(key) && valueProvider != null, recordEntry, i);
       map.put(key, valueProvider);

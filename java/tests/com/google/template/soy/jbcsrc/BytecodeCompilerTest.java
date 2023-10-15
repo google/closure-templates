@@ -42,6 +42,7 @@ import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.css.CssRegistry;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.LoggingAdvisingAppendable.BufferingAppendable;
+import com.google.template.soy.data.RecordProperty;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SanitizedContents;
 import com.google.template.soy.data.SoyDict;
@@ -311,35 +312,40 @@ public class BytecodeCompilerTest {
             "Boo: {$boo}{\\n}",
             "{/template}",
             "");
-    ParamStore params = new ParamStore(2);
-    params.setField("foo", StringData.forValue("foo"));
+    ParamStore params =
+        new ParamStore(2).setField(RecordProperty.get("foo"), StringData.forValue("foo"));
     assertThat(render(templates, params, "ns.callerDataAll")).isEqualTo("Foo: foo\nBoo: null\n");
-    params.setField("boo", StringData.forValue("boo"));
+    params.setField(RecordProperty.get("boo"), StringData.forValue("boo"));
     assertThat(render(templates, params, "ns.callerDataAll")).isEqualTo("Foo: foo\nBoo: boo\n");
 
     assertThat(getTemplateMetadata(templates, "ns.callerDataAll").callees())
         .asList()
         .containsExactly("ns.callee");
 
-    params = new ParamStore(2);
-    params.setField("rec", new ParamStore(2).setField("foo", StringData.forValue("foo")));
+    params =
+        new ParamStore(2)
+            .setField(
+                RecordProperty.get("rec"),
+                new ParamStore(2).setField(RecordProperty.get("foo"), StringData.forValue("foo")));
     assertThat(render(templates, params, "ns.callerDataExpr")).isEqualTo("Foo: foo\nBoo: null\n");
-    ((ParamStore) params.getField("rec")).setField("boo", StringData.forValue("boo"));
+    ((ParamStore) params.getField(RecordProperty.get("rec")))
+        .setField(RecordProperty.get("boo"), StringData.forValue("boo"));
     assertThat(render(templates, params, "ns.callerDataExpr")).isEqualTo("Foo: foo\nBoo: boo\n");
     assertThat(getTemplateMetadata(templates, "ns.callerDataExpr").callees())
         .asList()
         .containsExactly("ns.callee");
 
     params = new ParamStore(2);
-    params.setField("p1", StringData.forValue("foo"));
+    params.setField(RecordProperty.get("p1"), StringData.forValue("foo"));
     assertThat(render(templates, params, "ns.callerParams")).isEqualTo("Foo: foo\nBoo: a1b\n");
     assertThat(getTemplateMetadata(templates, "ns.callerParams").callees())
         .asList()
         .containsExactly("ns.callee");
 
-    params = new ParamStore(2);
-    params.setField("p1", StringData.forValue("foo"));
-    params.setField("boo", StringData.forValue("boo"));
+    params =
+        new ParamStore(2)
+            .setField(RecordProperty.get("p1"), StringData.forValue("foo"))
+            .setField(RecordProperty.get("boo"), StringData.forValue("boo"));
     assertThat(render(templates, params, "ns.callerParamsAndData"))
         .isEqualTo("Foo: foo\nBoo: boo\n");
     assertThat(getTemplateMetadata(templates, "ns.callerParamsAndData").callees())

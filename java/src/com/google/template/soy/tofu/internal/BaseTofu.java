@@ -30,6 +30,7 @@ import com.google.common.collect.Sets;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.internal.SanitizedContentKind;
+import com.google.template.soy.data.RecordProperty;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyRecord;
@@ -445,13 +446,13 @@ public final class BaseTofu implements SoyTofu {
     private static ParamStore mapAsParamStore(Map<String, ?> source) {
       ParamStore dest = new ParamStore(source.size());
       for (Map.Entry<String, ?> entry : source.entrySet()) {
-        String key = entry.getKey();
+        RecordProperty key = RecordProperty.get(entry.getKey());
         SoyValueProvider value;
         try {
           value = SoyValueConverter.INSTANCE.convert(entry.getValue());
         } catch (Exception e) {
           throw new IllegalArgumentException(
-              "Unable to convert param " + key + " to a SoyValue", e);
+              "Unable to convert param " + key.getName() + " to a SoyValue", e);
         }
         dest.setField(key, value);
       }

@@ -233,21 +233,21 @@ public final class SoyProtoValue extends SoyAbstractValue implements SoyLegacyOb
 
   @Deprecated
   @Override
-  public boolean hasField(String name) {
+  public boolean hasField(RecordProperty name) {
     asRecord();
     return false;
   }
 
   @Deprecated
   @Override
-  public SoyValue getField(String name) {
+  public SoyValue getField(RecordProperty name) {
     asRecord();
     return null;
   }
 
   @Deprecated
   @Override
-  public SoyValueProvider getFieldProvider(String name) {
+  public SoyValueProvider getFieldProvider(RecordProperty name) {
     asRecord();
     return null;
   }
@@ -258,7 +258,7 @@ public final class SoyProtoValue extends SoyAbstractValue implements SoyLegacyOb
   }
 
   @Override
-  public void forEach(BiConsumer<String, ? super SoyValueProvider> action) {
+  public void forEach(BiConsumer<RecordProperty, ? super SoyValueProvider> action) {
     throw new UnsupportedOperationException();
   }
 

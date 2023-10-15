@@ -17,16 +17,18 @@
 package com.google.template.soy.data.internal;
 
 import static com.google.common.base.Preconditions.checkState;
+import static com.google.common.collect.ImmutableMap.toImmutableMap;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Maps;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
+import com.google.template.soy.data.RecordProperty;
 import com.google.template.soy.data.SoyAbstractValue;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
+import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.function.BiConsumer;
 import javax.annotation.Nonnull;
@@ -36,22 +38,22 @@ import javax.annotation.Nonnull;
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  */
-public final class ParamStore extends SoyAbstractValue implements SoyRecord {
+public class ParamStore extends SoyAbstractValue implements SoyRecord {
 
   /** The internal map holding the fields (params). */
-  private final Map<String, SoyValueProvider> localStore;
+  private final IdentityHashMap<RecordProperty, SoyValueProvider> localStore;
 
   public ParamStore(SoyRecord backingStore, int size) {
-    this.localStore = Maps.newHashMapWithExpectedSize(backingStore.recordSize() + size);
+    this.localStore = new IdentityHashMap<>(backingStore.recordSize() + size);
     backingStore.forEach(localStore::put);
   }
 
   public ParamStore(int size) {
-    this.localStore = Maps.newHashMapWithExpectedSize(size);
+    this.localStore = new IdentityHashMap<>(size);
   }
 
-  public ParamStore(ImmutableMap<String, SoyValueProvider> map) {
-    this.localStore = map;
+  public ParamStore(IdentityHashMap<RecordProperty, SoyValueProvider> localStore) {
+    this.localStore = localStore;
   }
 
   /**
@@ -61,7 +63,7 @@ public final class ParamStore extends SoyAbstractValue implements SoyRecord {
    * @param valueProvider A provider of the field value.
    */
   @CanIgnoreReturnValue
-  public ParamStore setField(String name, @Nonnull SoyValueProvider valueProvider) {
+  public ParamStore setField(RecordProperty name, @Nonnull SoyValueProvider valueProvider) {
     Preconditions.checkNotNull(valueProvider);
     localStore.put(name, valueProvider);
     return this;
@@ -76,7 +78,7 @@ public final class ParamStore extends SoyAbstractValue implements SoyRecord {
    * @param valueProvider A provider of the field value.
    */
   @CanIgnoreReturnValue
-  public ParamStore setFieldCritical(String name, @Nonnull SoyValueProvider valueProvider) {
+  public ParamStore setFieldCritical(RecordProperty name, @Nonnull SoyValueProvider valueProvider) {
     Preconditions.checkNotNull(valueProvider);
     SoyValueProvider previous = localStore.put(name, valueProvider);
     checkState(previous == null, "value already set for param %s", name);
@@ -84,22 +86,23 @@ public final class ParamStore extends SoyAbstractValue implements SoyRecord {
   }
 
   @Override
-  public boolean hasField(String name) {
+  public boolean hasField(RecordProperty name) {
     return localStore.containsKey(name);
   }
 
   @Override
-  public SoyValueProvider getFieldProvider(String name) {
+  public SoyValueProvider getFieldProvider(RecordProperty name) {
     return localStore.get(name);
   }
 
   @Override
   public ImmutableMap<String, SoyValueProvider> recordAsMap() {
-    return ImmutableMap.copyOf(localStore);
+    return localStore.entrySet().stream()
+        .collect(toImmutableMap(e -> e.getKey().getName(), Map.Entry::getValue));
   }
 
   @Override
-  public void forEach(BiConsumer<String, ? super SoyValueProvider> action) {
+  public void forEach(BiConsumer<RecordProperty, ? super SoyValueProvider> action) {
     localStore.forEach(action);
   }
 
@@ -109,7 +112,7 @@ public final class ParamStore extends SoyAbstractValue implements SoyRecord {
   }
 
   @Override
-  public SoyValue getField(String name) {
+  public SoyValue getField(RecordProperty name) {
     SoyValueProvider valueProvider = getFieldProvider(name);
     return (valueProvider != null) ? valueProvider.resolve() : null;
   }
@@ -154,5 +157,16 @@ public final class ParamStore extends SoyAbstractValue implements SoyRecord {
   // -----------------------------------------------------------------------------------------------
   // Empty instance.
 
-  public static final ParamStore EMPTY_INSTANCE = new ParamStore(ImmutableMap.of());
+  public static final ParamStore EMPTY_INSTANCE =
+      new ParamStore(0) {
+        @Override
+        public ParamStore setField(RecordProperty name, SoyValueProvider valueProvider) {
+          throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public ParamStore setFieldCritical(RecordProperty name, SoyValueProvider valueProvider) {
+          throw new UnsupportedOperationException();
+        }
+      };
 }

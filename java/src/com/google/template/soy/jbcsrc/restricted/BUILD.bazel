@@ -26,6 +26,7 @@ java_library(
         "//java/src/com/google/template/soy/base/internal",
         "//java/src/com/google/template/soy/data",
         "//java/src/com/google/template/soy/data:data_internal",
+        "//java/src/com/google/template/soy/data:record_property",
         "//java/src/com/google/template/soy/data:unsafesanitizedcontentordainer",
         "//java/src/com/google/template/soy/data:ve",
         "//java/src/com/google/template/soy/internal/proto",

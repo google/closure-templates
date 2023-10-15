@@ -17,6 +17,7 @@
 package com.google.template.soy.sharedpasses.render;
 
 import com.google.common.base.Preconditions;
+import com.google.template.soy.data.RecordProperty;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
@@ -90,7 +91,7 @@ public abstract class Environment {
       this.data = data;
       for (TemplateParam param : template.getAllParams()) {
         SoyValueProvider provider =
-            (param.isInjected() ? ijData : data).getFieldProvider(param.name());
+            (param.isInjected() ? ijData : data).getFieldProvider(RecordProperty.get(param.name()));
         if (provider == null) {
           provider =
               param.isRequired() || param.hasDefault() ? UndefinedData.INSTANCE : NullData.INSTANCE;
@@ -133,7 +134,7 @@ public abstract class Environment {
 
     @Override
     boolean hasVar(VarDefn var) {
-      return data.hasField(var.name());
+      return data.hasField(RecordProperty.get(var.name()));
     }
   }
 

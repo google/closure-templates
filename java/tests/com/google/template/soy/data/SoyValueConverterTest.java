@@ -17,12 +17,12 @@
 package com.google.template.soy.data;
 
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.util.concurrent.Futures.immediateFuture;
 import static org.junit.Assert.assertThrows;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.util.concurrent.Futures;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.StringData;
 import java.util.HashMap;
@@ -45,16 +45,20 @@ public class SoyValueConverterTest {
     assertThat(dict1.getItemCnt()).isEqualTo(0);
 
     SoyDict dict2 = SoyValueConverterUtility.newDict("foo", 3.14, "too", true);
-    assertThat(dict2.getField("foo").floatValue()).isEqualTo(3.14);
-    assertThat(dict2.getField("too").booleanValue()).isTrue();
+    assertThat(dict2.getField(RecordProperty.get("foo")).floatValue()).isEqualTo(3.14);
+    assertThat(dict2.getField(RecordProperty.get("too")).booleanValue()).isTrue();
 
     SoyDict dict3 = SoyValueConverterUtility.newDict("boo", 111, "foo.goo", 222);
-    assertThat(dict3.getField("boo").integerValue()).isEqualTo(111);
-    assertThat(((SoyDict) dict3.getField("foo")).getField("goo").integerValue()).isEqualTo(222);
+    assertThat(dict3.getField(RecordProperty.get("boo")).integerValue()).isEqualTo(111);
+    assertThat(
+            ((SoyDict) dict3.getField(RecordProperty.get("foo")))
+                .getField(RecordProperty.get("goo"))
+                .integerValue())
+        .isEqualTo(222);
 
     SoyDict dict4 = CONVERTER.newDictFromMap(ImmutableMap.of("foo", 3.14, "too", true));
-    assertThat(dict4.getField("foo").floatValue()).isEqualTo(3.14);
-    assertThat(dict4.getField("too").booleanValue()).isTrue();
+    assertThat(dict4.getField(RecordProperty.get("foo")).floatValue()).isEqualTo(3.14);
+    assertThat(dict4.getField(RecordProperty.get("too")).booleanValue()).isTrue();
   }
 
   @Test
@@ -78,7 +82,7 @@ public class SoyValueConverterTest {
     assertThat(CONVERTER.convert(8).resolve().integerValue()).isEqualTo(8);
     assertThat(
             ((SoyDict) CONVERTER.convert(ImmutableMap.of("boo", "foo")))
-                .getField("boo")
+                .getField(RecordProperty.get("boo"))
                 .stringValue())
         .isEqualTo("foo");
     assertThat(((SoyList) CONVERTER.convert(ImmutableList.of("goo"))).get(0).stringValue())
@@ -91,10 +95,9 @@ public class SoyValueConverterTest {
 
   @Test
   public void testConvertFuture() {
-    assertThat(CONVERTER.convert(Futures.immediateFuture("future")))
+    assertThat(CONVERTER.convert(immediateFuture("future")))
         .isInstanceOf(SoyFutureValueProvider.class);
-    assertThat(CONVERTER.convert(Futures.immediateFuture("soy")).resolve().stringValue())
-        .isEqualTo("soy");
+    assertThat(CONVERTER.convert(immediateFuture("soy")).resolve().stringValue()).isEqualTo("soy");
   }
 
   @Test

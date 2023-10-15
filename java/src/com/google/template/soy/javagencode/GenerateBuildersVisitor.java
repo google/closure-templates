@@ -315,7 +315,7 @@ public final class GenerateBuildersVisitor
     ilb.appendLine(
         "private "
             + templateClass
-            + "(com.google.common.collect.ImmutableMap<java.lang.String,"
+            + "(java.util.IdentityHashMap<com.google.template.soy.data.RecordProperty,"
             + " com.google.template.soy.data.SoyValueProvider> data) {");
     ilb.increaseIndent();
     ilb.appendLine("super(data);");
@@ -437,7 +437,7 @@ public final class GenerateBuildersVisitor
               + DEFAULT_INSTANCE_FIELD
               + " = new "
               + templateParamsClassname
-              + "(com.google.common.collect.ImmutableMap.of());");
+              + "(new java.util.IdentityHashMap<>());");
       ilb.appendLine();
 
       appendJavadoc(
@@ -499,11 +499,7 @@ public final class GenerateBuildersVisitor
 
     // #buildInternal() for FooTemplate.Builder.
     ilb.appendLine("@java.lang.Override");
-    ilb.appendLine(
-        "protected "
-            + templateParamsClassname
-            + " buildInternal(com.google.common.collect.ImmutableMap<java.lang.String,"
-            + " com.google.template.soy.data.SoyValueProvider> data) {");
+    ilb.appendLine("protected " + templateParamsClassname + " buildInternal() {");
     ilb.increaseIndent();
     ilb.appendLine("return new " + templateParamsClassname + "(data);");
     ilb.decreaseIndent();

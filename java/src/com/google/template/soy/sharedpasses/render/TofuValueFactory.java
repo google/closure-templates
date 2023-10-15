@@ -339,7 +339,8 @@ class TofuValueFactory extends JavaValueFactory {
         SoyType paramType = externSig.getParameters().get(i).getType();
         if (paramType.getKind() == Kind.RECORD) {
           ImmutableMap.Builder<String, Object> builder = ImmutableMap.builder();
-          ((SoyRecord) value).forEach((s, v) -> builder.put(s, SoyValueUnconverter.unconvert(v)));
+          ((SoyRecord) value)
+              .forEach((s, v) -> builder.put(s.getName(), SoyValueUnconverter.unconvert(v)));
           return builder.buildOrThrow();
         }
         MapType mapType = (MapType) paramType;

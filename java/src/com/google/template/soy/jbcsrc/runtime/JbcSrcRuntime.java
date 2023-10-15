@@ -43,6 +43,7 @@ import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.LoggingAdvisingAppendable.BufferingAppendable;
 import com.google.template.soy.data.LoggingFunctionInvocation;
 import com.google.template.soy.data.ProtoFieldInterpreter;
+import com.google.template.soy.data.RecordProperty;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SoyLegacyObjectMap;
 import com.google.template.soy.data.SoyMap;
@@ -145,9 +146,9 @@ public final class JbcSrcRuntime {
 
   @Keep
   @Nonnull
-  public static SoyValue getField(SoyValue record, String field) {
+  public static SoyValue getField(SoyValue record, RecordProperty field) {
     if (record.isNullish()) {
-      throw new NullPointerException("Attempted to access field '" + field + "' of null");
+      throw new NullPointerException("Attempted to access field '" + field.getName() + "' of null");
     }
     SoyValue value = ((SoyRecord) record).getField(field);
     return value != null ? value : NullData.INSTANCE;
@@ -155,9 +156,9 @@ public final class JbcSrcRuntime {
 
   @Keep
   @Nonnull
-  public static SoyValueProvider getFieldProvider(SoyValue record, String field) {
+  public static SoyValueProvider getFieldProvider(SoyValue record, RecordProperty field) {
     if (record.isNullish()) {
-      throw new NullPointerException("Attempted to access field '" + field + "' of null");
+      throw new NullPointerException("Attempted to access field '" + field.getName() + "' of null");
     }
     return getFieldProvider((SoyRecord) record, field);
   }
@@ -165,13 +166,13 @@ public final class JbcSrcRuntime {
   @Keep
   @Nonnull
   public static SoyValueProvider getFieldProvider(
-      SoyRecord record, String field, SoyValue defaultValue) {
+      SoyRecord record, RecordProperty field, SoyValue defaultValue) {
     return paramOrDefault(record.getFieldProvider(field), defaultValue);
   }
 
   @Keep
   @Nonnull
-  public static SoyValueProvider getFieldProvider(SoyRecord record, String field) {
+  public static SoyValueProvider getFieldProvider(SoyRecord record, RecordProperty field) {
     return paramOrDefault(record.getFieldProvider(field), /* defaultValue= */ NullData.INSTANCE);
   }
 

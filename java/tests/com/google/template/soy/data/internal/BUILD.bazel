@@ -28,6 +28,7 @@ java_library(
     deps = [
         "//java/src/com/google/template/soy/data",
         "//java/src/com/google/template/soy/data:data_internal",
+        "//java/src/com/google/template/soy/data:record_property",
         "//java/tests/com/google/template/soy/data:soy_value_converter_utility",
         "//src/test/protobuf:test_protos_java_proto",
         "@maven//:com_google_guava_guava",

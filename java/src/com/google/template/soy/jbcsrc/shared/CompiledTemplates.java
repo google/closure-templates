@@ -18,6 +18,7 @@ package com.google.template.soy.jbcsrc.shared;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.collect.ImmutableList.toImmutableList;
 import static java.lang.invoke.MethodType.methodType;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -28,6 +29,7 @@ import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Sets;
 import com.google.errorprone.annotations.concurrent.LazyInit;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
+import com.google.template.soy.data.RecordProperty;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValueProvider;
@@ -471,7 +473,11 @@ public class CompiledTemplates {
                 positionalRenderMethod,
                 0,
                 MethodHandles.insertArguments(
-                    HandlesForTesting.POSITIONAL_TO_RECORD, 0, positionalParameters));
+                    HandlesForTesting.POSITIONAL_TO_RECORD,
+                    0,
+                    positionalParameters.stream()
+                        .map(RecordProperty::get)
+                        .collect(toImmutableList())));
         // Collect the positional parameters into an array in the first position to match the
         // positional signature.
         this.positionalRenderMethod =
@@ -639,7 +645,7 @@ public class CompiledTemplates {
 
     /** Adapts a set of positional parameters to a SoyRecord */
     private static SoyRecord positionalToRecord(
-        ImmutableList<String> names, SoyValueProvider[] values) {
+        ImmutableList<RecordProperty> names, SoyValueProvider[] values) {
       ParamStore paramStore = new ParamStore(names.size());
       for (int i = 0; i < names.size(); i++) {
         if (values[i] != null) {

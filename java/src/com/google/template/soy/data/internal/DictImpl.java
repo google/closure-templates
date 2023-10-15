@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
+import com.google.template.soy.data.RecordProperty;
 import com.google.template.soy.data.SoyAbstractValue;
 import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.data.SoyDict;
@@ -105,26 +106,30 @@ public final class DictImpl extends SoyAbstractValue implements SoyDict, SoyMap 
   private final RuntimeMapTypeTracker typeTracker;
 
   @Override
-  public boolean hasField(String name) {
+  public boolean hasField(RecordProperty symbol) {
     typeTracker.maybeSetLegacyObjectMapOrRecordType();
-    return providerMap.containsKey(name);
+    return providerMap.containsKey(symbol.getName());
   }
 
   @Override
-  public SoyValue getField(String name) {
+  public SoyValue getField(RecordProperty symbol) {
     typeTracker.maybeSetLegacyObjectMapOrRecordType();
-    return getFieldInternal(name);
+    return getFieldInternal(symbol);
   }
 
-  private SoyValue getFieldInternal(String name) {
-    SoyValueProvider provider = providerMap.get(name);
+  private SoyValue getFieldInternal(RecordProperty symbol) {
+    return getFieldInternal(symbol.getName());
+  }
+
+  private SoyValue getFieldInternal(String key) {
+    SoyValueProvider provider = providerMap.get(key);
     return (provider != null) ? provider.resolve() : null;
   }
 
   @Override
-  public SoyValueProvider getFieldProvider(String name) {
+  public SoyValueProvider getFieldProvider(RecordProperty symbol) {
     typeTracker.maybeSetLegacyObjectMapOrRecordType();
-    return providerMap.get(name);
+    return providerMap.get(symbol.getName());
   }
 
   @Override
@@ -134,9 +139,9 @@ public final class DictImpl extends SoyAbstractValue implements SoyDict, SoyMap 
   }
 
   @Override
-  public void forEach(BiConsumer<String, ? super SoyValueProvider> action) {
+  public void forEach(BiConsumer<RecordProperty, ? super SoyValueProvider> action) {
     typeTracker.maybeSetLegacyObjectMapOrRecordType();
-    providerMap.forEach(action);
+    providerMap.forEach((key, value) -> action.accept(RecordProperty.get(key), value));
   }
 
   @Override

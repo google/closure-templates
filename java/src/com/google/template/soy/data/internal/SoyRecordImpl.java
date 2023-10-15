@@ -16,17 +16,20 @@
 package com.google.template.soy.data.internal;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.collect.ImmutableMap.toImmutableMap;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
+import com.google.template.soy.data.RecordProperty;
 import com.google.template.soy.data.SoyAbstractValue;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
 import java.io.IOException;
+import java.util.IdentityHashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.BiConsumer;
-import javax.annotation.Nonnull;
 
 /**
  * A record implementation.
@@ -35,29 +38,20 @@ import javax.annotation.Nonnull;
  */
 public final class SoyRecordImpl extends SoyAbstractValue implements SoyRecord {
 
-  private final ImmutableMap<String, SoyValueProvider> map;
+  private final IdentityHashMap<RecordProperty, SoyValueProvider> map;
 
-  public SoyRecordImpl(ImmutableMap<String, SoyValueProvider> map) {
+  public SoyRecordImpl(IdentityHashMap<RecordProperty, SoyValueProvider> map) {
     this.map = checkNotNull(map);
-  }
-
-  @Nonnull
-  public static SoyRecordImpl forProviderMap(Map<String, SoyValueProvider> map) {
-    return forProviderMap(ImmutableMap.copyOf(map));
-  }
-
-  @Nonnull
-  public static SoyRecordImpl forProviderMap(ImmutableMap<String, SoyValueProvider> map) {
-    return new SoyRecordImpl(map);
   }
 
   @Override
   public ImmutableMap<String, SoyValueProvider> recordAsMap() {
-    return map;
+    return map.entrySet().stream()
+        .collect(toImmutableMap((entry) -> entry.getKey().getName(), Map.Entry::getValue));
   }
 
   @Override
-  public void forEach(BiConsumer<String, ? super SoyValueProvider> action) {
+  public void forEach(BiConsumer<RecordProperty, ? super SoyValueProvider> action) {
     map.forEach(action);
   }
 
@@ -87,13 +81,13 @@ public final class SoyRecordImpl extends SoyAbstractValue implements SoyRecord {
     appendable.append('{');
 
     boolean isFirst = true;
-    for (Map.Entry<String, SoyValueProvider> entry : map.entrySet()) {
+    for (Map.Entry<RecordProperty, SoyValueProvider> entry : map.entrySet()) {
       if (isFirst) {
         isFirst = false;
       } else {
         appendable.append(", ");
       }
-      appendable.append(entry.getKey()).append(": ");
+      appendable.append(entry.getKey().getName()).append(": ");
       entry.getValue().resolve().render(appendable);
     }
     appendable.append('}');
@@ -110,21 +104,25 @@ public final class SoyRecordImpl extends SoyAbstractValue implements SoyRecord {
   }
 
   @Override
-  public boolean hasField(String name) {
+  public boolean hasField(RecordProperty name) {
     return map.containsKey(name);
   }
 
   @Override
-  public SoyValueProvider getFieldProvider(String name) {
+  public SoyValueProvider getFieldProvider(RecordProperty name) {
     return map.get(name);
   }
 
   @Override
-  public SoyValue getField(String name) {
+  public SoyValue getField(RecordProperty name) {
     SoyValueProvider svp = map.get(name);
     if (svp == null) {
       return null;
     }
     return svp.resolve();
+  }
+
+  public Set<RecordProperty> keys() {
+    return map.keySet();
   }
 }

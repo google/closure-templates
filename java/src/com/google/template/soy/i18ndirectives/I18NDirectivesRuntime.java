@@ -19,6 +19,7 @@ package com.google.template.soy.i18ndirectives;
 import static java.util.Comparator.comparing;
 
 import com.google.common.collect.ImmutableList;
+import com.google.template.soy.data.RecordProperty;
 import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
@@ -162,23 +163,27 @@ public final class I18NDirectivesRuntime {
     return numberFormat.format(number);
   }
 
+  private static final RecordProperty NUMERIC = RecordProperty.get("numeric");
+  private static final RecordProperty CASE_FIRST = RecordProperty.get("caseFirst");
+  private static final RecordProperty SENSITIVITY = RecordProperty.get("sensitivity");
+
   public static ImmutableList<SoyValueProvider> localeSort(
       ULocale uLocale, SoyList list, @Nullable SoyRecord options) {
     RuleBasedCollator collator = (RuleBasedCollator) Collator.getInstance(uLocale);
     if (options != null) {
-      if (options.hasField("numeric")) {
-        collator.setNumericCollation(options.getField("numeric").booleanValue());
+      if (options.hasField(NUMERIC)) {
+        collator.setNumericCollation(options.getField(NUMERIC).booleanValue());
       }
-      if (options.hasField("caseFirst")) {
-        String caseFirst = options.getField("caseFirst").stringValue();
+      if (options.hasField(CASE_FIRST)) {
+        String caseFirst = options.getField(CASE_FIRST).stringValue();
         if ("upper".equals(caseFirst)) {
           collator.setUpperCaseFirst(true);
         } else if ("lower".equals(caseFirst)) {
           collator.setLowerCaseFirst(true);
         }
       }
-      if (options.hasField("sensitivity")) {
-        String sensitivity = options.getField("sensitivity").stringValue();
+      if (options.hasField(SENSITIVITY)) {
+        String sensitivity = options.getField(SENSITIVITY).stringValue();
         switch (sensitivity) {
           case "base":
             collator.setStrength(Collator.PRIMARY);

@@ -228,7 +228,7 @@ public final class RenderContext {
       SoyRecord ijData,
       LoggingAdvisingAppendable appendable)
       throws IOException {
-    SoyValueProvider variantProvider = params.getFieldProvider(Names.VARIANT_VAR_NAME);
+    SoyValueProvider variantProvider = params.getFieldProvider(Names.VARIANT_VAR_SYMBOL);
     String variant;
     if (variantProvider == null) {
       variant = "";

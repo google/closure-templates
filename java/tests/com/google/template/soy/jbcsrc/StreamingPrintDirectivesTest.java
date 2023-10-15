@@ -33,13 +33,13 @@ import com.google.template.soy.data.LogStatement;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.LoggingAdvisingAppendable.BufferingAppendable;
 import com.google.template.soy.data.LoggingFunctionInvocation;
+import com.google.template.soy.data.RecordProperty;
 import com.google.template.soy.data.SoyDict;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.SoyValueConverterUtility;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.internal.ParamStore;
-import com.google.template.soy.data.internal.SoyRecordImpl;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
@@ -113,12 +113,9 @@ public final class StreamingPrintDirectivesTest {
     SettableFuture<String> future1 = SettableFuture.create();
     SettableFuture<String> future2 = SettableFuture.create();
     SoyRecord params =
-        new SoyRecordImpl(
-            ImmutableMap.of(
-                "future1",
-                SoyValueConverter.INSTANCE.convert(future1),
-                "future2",
-                SoyValueConverter.INSTANCE.convert(future2)));
+        new ParamStore(2)
+            .setField(RecordProperty.get("future1"), SoyValueConverter.INSTANCE.convert(future1))
+            .setField(RecordProperty.get("future2"), SoyValueConverter.INSTANCE.convert(future2));
     Callable<RenderResult> renderer =
         () -> template.render(params, ParamStore.EMPTY_INSTANCE, output, context);
 

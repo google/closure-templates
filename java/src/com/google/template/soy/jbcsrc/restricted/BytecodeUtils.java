@@ -35,6 +35,7 @@ import com.google.protobuf.Message;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.data.Dir;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
+import com.google.template.soy.data.RecordProperty;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyLegacyObjectMap;
@@ -80,11 +81,13 @@ import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
+import java.util.function.IntFunction;
 import javax.annotation.Nullable;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ConstantDynamic;
@@ -134,6 +137,7 @@ public final class BytecodeUtils {
   public static final Type SOY_VALUE_PROVIDER_TYPE = Type.getType(SoyValueProvider.class);
 
   public static final Type LINKED_HASH_MAP_TYPE = Type.getType(LinkedHashMap.class);
+  public static final Type IDENTITY_HASH_MAP_TYPE = Type.getType(IdentityHashMap.class);
   public static final Type COLLECTION_TYPE = Type.getType(Collection.class);
   public static final Type ITERABLE_TYPE = Type.getType(Iterable.class);
   public static final Type LIST_TYPE = Type.getType(List.class);
@@ -168,6 +172,7 @@ public final class BytecodeUtils {
   public static final Type SAFE_HTML_PROTO_TYPE = Type.getType(SafeHtmlProto.class);
   public static final Type SAFE_HTML_TYPE = Type.getType(SafeHtml.class);
   public static final Type TRUSTED_RESOURCE_URL_TYPE = Type.getType(TrustedResourceUrl.class);
+  public static final Type RECORD_SYMBOL_TYPE = Type.getType(RecordProperty.class);
 
   public static final Method CLASS_INIT = Method.getMethod("void <clinit>()");
   public static final Method NULLARY_INIT = Method.getMethod("void <init>()");
@@ -227,6 +232,15 @@ public final class BytecodeUtils {
               "true", Type.BOOLEAN_TYPE.getDescriptor(), BOOLEAN_CONSTANT_HANDLE, 1),
           Type.BOOLEAN_TYPE,
           /* isTrivialConstant= */ true);
+
+  private static final Handle RECORD_SYMBOL_CONSTANT_HANDLE =
+      MethodRef.createPure(
+              ExtraConstantBootstraps.class,
+              "symbol",
+              MethodHandles.Lookup.class,
+              String.class,
+              Class.class)
+          .asHandle();
 
   private static final LoadingCache<Type, Optional<Class<?>>> objectTypeToClassCache =
       CacheBuilder.newBuilder()
@@ -531,6 +545,13 @@ public final class BytecodeUtils {
     };
   }
 
+  /** Returns an {@link Expression} that can load the given `RecordSymbol` constant. */
+  public static Expression constantRecordSymbol(String value) {
+    return constant(
+        new ConstantDynamic(
+            value, RECORD_SYMBOL_TYPE.getDescriptor(), RECORD_SYMBOL_CONSTANT_HANDLE),
+        Features.of(Feature.NON_JAVA_NULLABLE, Feature.CHEAP));
+  }
 
   /**
    * Returns an {@link Expression} that evaluates to the {@link ContentKind} value that is
@@ -1119,7 +1140,12 @@ public final class BytecodeUtils {
   /** Returns an expression that returns a new {@link HashMap} containing all the given entries. */
   public static Expression newHashMap(
       Iterable<? extends Expression> keys, Iterable<? extends Expression> values) {
-    return newMap(keys, values, ConstructorRef.HASH_MAP_CAPACITY, HASH_MAP_TYPE);
+    return newMap(
+        keys,
+        values,
+        expectedSize ->
+            ConstructorRef.HASH_MAP_CAPACITY.construct(constant(hashMapCapacity(expectedSize))),
+        HASH_MAP_TYPE);
   }
 
   /**
@@ -1128,13 +1154,32 @@ public final class BytecodeUtils {
    */
   public static Expression newLinkedHashMap(
       Iterable<? extends Expression> keys, Iterable<? extends Expression> values) {
-    return newMap(keys, values, ConstructorRef.LINKED_HASH_MAP_CAPACITY, LINKED_HASH_MAP_TYPE);
+    return newMap(
+        keys,
+        values,
+        expectedSize ->
+            ConstructorRef.LINKED_HASH_MAP_CAPACITY.construct(
+                constant(hashMapCapacity(expectedSize))),
+        LINKED_HASH_MAP_TYPE);
+  }
+
+  /**
+   * Returns an expression that returns a new {@link LinkedHashMap} containing all the given
+   * entries.
+   */
+  public static Expression newIdentityHashMap(
+      Iterable<? extends Expression> keys, Iterable<? extends Expression> values) {
+    return newMap(
+        keys,
+        values,
+        expectedSize -> ConstructorRef.IDENTITY_HASH_MAP_SIZE.construct(constant(expectedSize)),
+        IDENTITY_HASH_MAP_TYPE);
   }
 
   private static Expression newMap(
       Iterable<? extends Expression> keys,
       Iterable<? extends Expression> values,
-      ConstructorRef constructorRef,
+      IntFunction<Expression> constructorWithExpectedSize,
       Type mapType) {
     ImmutableList<Expression> keysCopy = ImmutableList.copyOf(keys);
     ImmutableList<Expression> valuesCopy = ImmutableList.copyOf(values);
@@ -1143,7 +1188,7 @@ public final class BytecodeUtils {
       checkArgument(keysCopy.get(i).resultType().getSort() == Type.OBJECT);
       checkArgument(valuesCopy.get(i).resultType().getSort() == Type.OBJECT);
     }
-    Expression construct = constructorRef.construct(constant(hashMapCapacity(keysCopy.size())));
+    Expression construct = constructorWithExpectedSize.apply(keysCopy.size());
     return new Expression(mapType, Feature.NON_JAVA_NULLABLE.asFeatures()) {
       @Override
       protected void doGen(CodeBuilder mv) {

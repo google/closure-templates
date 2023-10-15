@@ -23,6 +23,7 @@ import static java.lang.invoke.MethodType.methodType;
 import static java.util.Arrays.stream;
 
 import com.google.common.collect.ImmutableList;
+import com.google.template.soy.data.RecordProperty;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValueProvider;
 import java.lang.invoke.CallSite;
@@ -77,7 +78,7 @@ public final class RecordToPositionalCallFactory {
     // First use the paramNames to generate a list of ordered SoyRecord->SoyValueProvider adapters
     MethodHandle[] argumentAdapters =
         stream(paramNames)
-            .map(paramName -> insertArguments(getFieldProvider, 1, paramName))
+            .map(paramName -> insertArguments(getFieldProvider, 1, RecordProperty.get(paramName)))
             .toArray(MethodHandle[]::new);
     // handle is now (SoyRecord1...,SoyRecordN, SoyRecord,LoggingAdvisingAppendable,RenderContext)
     MethodHandle handle = filterArguments(implMethod, 0, argumentAdapters);
@@ -101,13 +102,13 @@ public final class RecordToPositionalCallFactory {
   }
 
   private static final MethodType GET_FIELD_PROVIDER_TYPE =
-      methodType(SoyValueProvider.class, String.class);
+      methodType(SoyValueProvider.class, RecordProperty.class);
 
   private static MethodHandle getFieldProviderHandle(MethodHandles.Lookup lookup) {
     try {
       return lookup.findVirtual(SoyRecord.class, "getPositionalParam", GET_FIELD_PROVIDER_TYPE);
     } catch (ReflectiveOperationException roe) {
-      throw new AssertionError(roe);
+      throw new LinkageError(roe.getMessage(), roe);
     }
   }
 

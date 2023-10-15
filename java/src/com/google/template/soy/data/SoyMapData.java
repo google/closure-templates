@@ -227,18 +227,18 @@ public class SoyMapData extends CollectionData implements SoyDict, SoyMap {
   // SoyRecord.
 
   @Override
-  public boolean hasField(String name) {
-    return getSingle(name) != null;
+  public boolean hasField(RecordProperty name) {
+    return getSingle(name.getName()) != null;
   }
 
   @Override
-  public SoyValue getField(String name) {
-    return getSingle(name);
+  public SoyValue getField(RecordProperty name) {
+    return getSingle(name.getName());
   }
 
   @Override
-  public SoyValueProvider getFieldProvider(String name) {
-    return getSingle(name);
+  public SoyValueProvider getFieldProvider(RecordProperty name) {
+    return getSingle(name.getName());
   }
 
   @Override
@@ -247,8 +247,8 @@ public class SoyMapData extends CollectionData implements SoyDict, SoyMap {
   }
 
   @Override
-  public void forEach(BiConsumer<String, ? super SoyValueProvider> action) {
-    map.forEach(action);
+  public void forEach(BiConsumer<RecordProperty, ? super SoyValueProvider> action) {
+    map.forEach((key, value) -> action.accept(RecordProperty.get(key), value));
   }
 
   @Override

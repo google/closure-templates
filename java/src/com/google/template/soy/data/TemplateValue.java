@@ -16,8 +16,6 @@
 package com.google.template.soy.data;
 
 import com.google.auto.value.AutoValue;
-import com.google.template.soy.data.internal.SoyRecordImpl;
-import java.util.Map;
 import java.util.Optional;
 import javax.annotation.Nonnull;
 
@@ -52,9 +50,7 @@ public abstract class TemplateValue extends SoyAbstractValue {
   @Nonnull
   public static TemplateValue createFromTemplate(
       TemplateInterface template, Object compiledTemplate) {
-    @SuppressWarnings("unchecked")
-    SoyRecord record =
-        SoyRecordImpl.forProviderMap((Map<String, SoyValueProvider>) template.getParamsAsMap());
+    SoyRecord record = (SoyRecord) template.getParamsAsRecord();
     return new AutoValue_TemplateValue(
         template.getTemplateName(), Optional.of(record), Optional.of(compiledTemplate));
   }

@@ -23,6 +23,7 @@ java_library(
     srcs = glob(["*.java"]),
     deps = [
         "//java/src/com/google/template/soy/data",
+        "//java/src/com/google/template/soy/data:record_property",
         "//java/src/com/google/template/soy/plugin/java/restricted",
         "//java/src/com/google/template/soy/plugin/javascript/restricted",
         "//java/src/com/google/template/soy/plugin/python/restricted",

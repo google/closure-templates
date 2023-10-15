@@ -32,4 +32,6 @@ public interface TemplateInterface {
    * framework.
    */
   Map<String, ?> getParamsAsMap();
+
+  Object getParamsAsRecord();
 }

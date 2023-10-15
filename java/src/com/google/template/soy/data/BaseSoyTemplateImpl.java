@@ -19,12 +19,10 @@ package com.google.template.soy.data;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
-import static com.google.common.collect.ImmutableMap.toImmutableMap;
 import static com.google.common.collect.Streams.stream;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.MoreObjects;
-import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -69,14 +67,21 @@ import javax.annotation.Nullable;
  */
 public abstract class BaseSoyTemplateImpl implements SoyTemplate {
 
-  protected final ImmutableMap<String, SoyValueProvider> data;
+  protected final SoyRecordImpl data;
 
-  protected BaseSoyTemplateImpl(ImmutableMap<String, SoyValueProvider> data) {
-    this.data = data;
+  protected BaseSoyTemplateImpl(IdentityHashMap<RecordProperty, SoyValueProvider> data) {
+    this.data = new SoyRecordImpl(data);
   }
 
   @Override
   public final ImmutableMap<String, ?> getParamsAsMap() {
+    ImmutableMap.Builder<String, Object> builder = ImmutableMap.builder();
+    data.forEach((key, value) -> builder.put(key.getName(), value));
+    return builder.buildOrThrow();
+  }
+
+  @Override
+  public final Object getParamsAsRecord() {
     return data;
   }
 
@@ -86,9 +91,9 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
    */
   public final ImmutableMap<String, Object> getRawParamsAsMap() {
     // This is the only place where SoyValueUnconverter escapes this package.
-    return data.entrySet().stream()
-        .collect(
-            toImmutableMap(Map.Entry::getKey, e -> SoyValueUnconverter.unconvert(e.getValue())));
+    ImmutableMap.Builder<String, Object> builder = ImmutableMap.builder();
+    data.forEach((key, value) -> builder.put(key.getName(), SoyValueUnconverter.unconvert(value)));
+    return builder.buildOrThrow();
   }
 
   @Override
@@ -96,12 +101,12 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
   public boolean equals(Object o) {
     return o != null
         && getClass().equals(o.getClass())
-        && data.equals(((BaseSoyTemplateImpl) o).data);
+        && SoyTemplateData.soyRecordEquals(data, ((BaseSoyTemplateImpl) o).data);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(getClass(), data);
+    return getClass().hashCode() * 31 + SoyTemplateData.soyRecordHashCode(data);
   }
 
   @Override
@@ -127,8 +132,9 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
     //  2. We have an appropriate key object that we know will be a singleton
     //  3. They tend to be faster.
     //  One downside is that they have less efficient entrySet() implementations, but we can
-    // easily workaround that.
-    private final IdentityHashMap<SoyTemplateParam<?>, SoyValueProvider> data;
+    // easily workaround that by calling forEach instead.
+    protected IdentityHashMap<RecordProperty, SoyValueProvider> data;
+    private boolean needsCopyOnWrite;
 
     protected AbstractBuilder(int numParams) {
       this.data = new IdentityHashMap<>(/* expectedMaxSize= */ numParams);
@@ -137,10 +143,13 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
     @CheckReturnValue
     @Override
     public final T build() {
-      ImmutableMap<String, SoyValueProvider> finalData =
-          buildDataMapWithChecks(/* checkRequired= */ true);
-      return buildInternal(finalData);
+      prepareData(/* checkRequired= */ true);
+      // set this so we make a copy on the next mutation, otherwise we can just zero copy share
+      // the map.
+      this.needsCopyOnWrite = true;
+      return buildInternal();
     }
+ 
     private static class PartialSoyTemplateImpl<T extends SoyTemplate>
         implements PartialSoyTemplate {
       private final T soyTemplate;
@@ -159,33 +168,44 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
       public Map<String, SoyValueProvider> getParamsAsMap() {
         return (Map<String, SoyValueProvider>) soyTemplate.getParamsAsMap();
       }
+
+      @Override
+      public Object getParamsAsRecord() {
+        return soyTemplate.getParamsAsRecord();
+      }
     }
 
     @Override
     public final PartialSoyTemplate buildPartial() {
-      ImmutableMap<String, SoyValueProvider> finalData =
-          buildDataMapWithChecks(/* checkRequired= */ false);
-      return new PartialSoyTemplateImpl<T>(buildInternal(finalData));
+      prepareData(/* checkRequired= */ false);
+      // set this so we make a copy on the next mutation, otherwise we can just zero copy share
+      // the map.
+      this.needsCopyOnWrite = true;
+      return new PartialSoyTemplateImpl<T>(buildInternal());
     }
 
     @ForOverride
     protected abstract ImmutableSet<SoyTemplateParam<?>> allParams();
 
     @ForOverride
-    protected abstract T buildInternal(ImmutableMap<String, SoyValueProvider> data);
+    protected abstract T buildInternal();
 
     /**
      * Sets an arbitrary parameter to an arbitrary value.
      *
      * @throws NullPointerException if {@code name} is null
-     * @throws SoyDataException if {@code value} is not convertable to a {@link SoyValueProvider}
+     * @throws SoyDataException if {@code value} is not convertible to a {@link SoyValueProvider}
      */
     @SuppressWarnings("unchecked")
     @CanIgnoreReturnValue
     protected final B setParamInternal(SoyTemplateParam<?> name, SoyValueProvider soyValue) {
       checkNotNull(name);
       checkNotNull(soyValue);
-      data.put(name, soyValue);
+      if (needsCopyOnWrite) {
+        data = new IdentityHashMap<>(data);
+        needsCopyOnWrite = false;
+      }
+      data.put(name.getSymbol(), soyValue);
       return (B) this;
     }
 
@@ -265,13 +285,13 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
     protected static SoyRecord asRecord(
         String firstKey, SoyValueProvider firstValue, Object... more) {
       checkArgument((more.length % 2) == 0);
-      ImmutableMap.Builder<String, SoyValueProvider> map =
-          ImmutableMap.<String, SoyValueProvider>builderWithExpectedSize(1 + more.length / 2)
-              .put(firstKey, firstValue);
+      IdentityHashMap<RecordProperty, SoyValueProvider> map =
+          new IdentityHashMap<>(1 + more.length / 2);
+      map.put(RecordProperty.get(firstKey), firstValue);
       for (int i = 0; i < more.length; i += 2) {
-        map.put((String) more[i], (SoyValueProvider) more[i + 1]);
+        map.put(RecordProperty.get((String) more[i]), (SoyValueProvider) more[i + 1]);
       }
-      return new SoyRecordImpl(map.build());
+      return new SoyRecordImpl(map);
     }
 
     /**
@@ -439,7 +459,7 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
       return SoyValueConverter.INSTANCE.convert(object);
     }
 
-    @SuppressWarnings({"unchecked", "Immutable"})
+    @SuppressWarnings("Immutable")
     protected static SoyValueProvider asTemplateValue(TemplateInterface template) {
       return TemplateValue.createFromTemplate(
           template,
@@ -454,10 +474,7 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
               return context
                   .getTemplate(template.getTemplateName())
                   .render(
-                      SoyRecords.merge(
-                          params,
-                          SoyRecordImpl.forProviderMap(
-                              (Map<String, SoyValueProvider>) template.getParamsAsMap())),
+                      SoyRecords.merge(params, (SoyRecord) template.getParamsAsRecord()),
                       ij,
                       appendable,
                       context);
@@ -469,35 +486,26 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
     void prepareDataForBuild() {}
 
     /**
-     * @param checkRequired Whether or not to enforce that all required parameters are set.
-     * @return the fully built parameter map
+     * @param checkRequired Whether or not to enforce that all required parameters are set. =
      */
-    private ImmutableMap<String, SoyValueProvider> buildDataMapWithChecks(boolean checkRequired) {
-      // checkRequired=false could be used in the future for "build partial"
+    private void prepareData(boolean checkRequired) {
       prepareDataForBuild();
-      ImmutableMap.Builder<String, SoyValueProvider> finalDataBuilder =
-          ImmutableMap.builderWithExpectedSize(data.size());
-      // Use forEach instead of looping over the entry set to avoid allocating entrySet+entry
-      // objects
-      data.forEach((k, v) -> finalDataBuilder.put(k.getName(), v));
-      ImmutableMap<String, SoyValueProvider> finalData = finalDataBuilder.build();
-
+      // checkRequired=false could be used in the future for "build partial"
       if (checkRequired) {
-        List<String> missingParams = getMissingParamNames(finalData);
+        List<String> missingParams = getMissingParamNames();
         if (!missingParams.isEmpty()) {
           throw new IllegalStateException(
               "Missing required params: " + Joiner.on(", ").join(missingParams));
         }
       }
-      return finalData;
     }
 
-    private List<String> getMissingParamNames(Map<String, ?> data) {
+    private List<String> getMissingParamNames() {
       List<String> missing = ImmutableList.of();
       ImmutableList<SoyTemplateParam<?>> params = allParams().asList();
       for (int i = 0; i < params.size(); i++) {
         SoyTemplateParam<?> param = params.get(i);
-        if (param.isRequired() && !param.isIndirect() && !data.containsKey(param.getName())) {
+        if (param.isRequired() && !param.isIndirect() && !data.containsKey(param.getSymbol())) {
           if (missing.isEmpty()) {
             missing = new ArrayList<>();
           }

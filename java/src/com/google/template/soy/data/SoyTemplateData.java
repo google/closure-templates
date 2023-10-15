@@ -16,12 +16,12 @@
 
 package com.google.template.soy.data;
 
-import static java.util.stream.Collectors.toMap;
-
+import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
-import java.util.HashMap;
+import com.google.template.soy.data.internal.SoyRecordImpl;
+import java.util.IdentityHashMap;
 import java.util.Map;
 
 /**
@@ -40,36 +40,43 @@ public final class SoyTemplateData {
   /** Builder for {@link SoyTemplateData}. */
   public static final class Builder {
 
-    private final Map<String, SoyValueProvider> data;
-    private final SoyValueConverter soyValueConverter;
+    private IdentityHashMap<RecordProperty, SoyValueProvider> data;
+    private boolean copyOnWrite;
 
     private Builder() {
-      data = new HashMap<>();
-      soyValueConverter = SoyValueConverter.INSTANCE;
+      data = new IdentityHashMap<>();
+    }
+
+    private Builder setParamInternal(SoyTemplateParam<?> param, Object value) {
+      if (copyOnWrite) {
+        this.data = new IdentityHashMap<>(data);
+        copyOnWrite = false;
+      }
+      data.put(param.getSymbol(), SoyValueConverter.INSTANCE.convert(value));
+      return this;
     }
 
     @CanIgnoreReturnValue
     public <T> Builder setParam(SoyTemplateParam<? super T> param, T value) {
-      data.put(param.getName(), soyValueConverter.convert(value));
-      return this;
+      return setParamInternal(param, value);
     }
 
     @CanIgnoreReturnValue
     public <T> Builder setParamFuture(
         SoyTemplateParam<? super T> param, ListenableFuture<T> value) {
-      data.put(param.getName(), soyValueConverter.convert(value));
-      return this;
+      return setParamInternal(param, value);
     }
 
     public SoyTemplateData build() {
+      this.copyOnWrite = true;
       return new SoyTemplateData(this);
     }
   }
 
-  private final ImmutableMap<String, SoyValueProvider> data;
+  private final SoyRecordImpl data;
 
   private SoyTemplateData(Builder builder) {
-    this.data = ImmutableMap.copyOf(builder.data);
+    this.data = new SoyRecordImpl(builder.data);
   }
 
   /**
@@ -77,7 +84,9 @@ public final class SoyTemplateData {
    * framework.
    */
   public Map<String, ?> getParamsAsMap() {
-    return data;
+    ImmutableMap.Builder<String, SoyValueProvider> params = ImmutableMap.builder();
+    data.forEach((k, v) -> params.put(k.getName(), v));
+    return params.buildOrThrow();
   }
 
   /**
@@ -85,17 +94,51 @@ public final class SoyTemplateData {
    * intended to be called only by test code.
    */
   public Map<String, Object> getRawParamsAsMap() {
-    return data.entrySet().stream()
-        .collect(toMap(Map.Entry::getKey, e -> SoyValueUnconverter.unconvert(e.getValue())));
+    ImmutableMap.Builder<String, Object> params = ImmutableMap.builder();
+    data.forEach((k, v) -> params.put(k.getName(), SoyValueUnconverter.unconvert(v)));
+    return params.buildOrThrow();
+  }
+
+  /** Returns the parameters as a record. Intended only for soy internal usecases. */
+  public Object getParamsAsRecord() {
+    return data;
   }
 
   @Override
   public boolean equals(Object o) {
-    return o instanceof SoyTemplateData && data.equals(((SoyTemplateData) o).data);
+    return o instanceof SoyTemplateData && soyRecordEquals(data, ((SoyTemplateData) o).data);
   }
 
   @Override
   public int hashCode() {
-    return data.hashCode();
+    return soyRecordHashCode(data);
+  }
+
+  @Override
+  public String toString() {
+    return MoreObjects.toStringHelper(getClass()).add("data", getParamsAsMap()).toString();
+  }
+
+  /** An equals operator for SoyRecord */
+  static boolean soyRecordEquals(SoyRecordImpl o1, SoyRecordImpl o2) {
+    if (o1.recordSize() != o2.recordSize()) {
+      return false;
+    }
+    for (var key : o1.keys()) {
+      if (!o1.getFieldProvider(key).equals(o2.getFieldProvider(key))) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  /** A hash function for SoyRecord */
+  static int soyRecordHashCode(SoyRecordImpl record) {
+    int result = 0;
+    for (var key : record.keys()) {
+      // We accumulate with + to ensure we are associative (insensitive to ordering)
+      result += System.identityHashCode(key) ^ record.getFieldProvider(key).hashCode();
+    }
+    return result;
   }
 }

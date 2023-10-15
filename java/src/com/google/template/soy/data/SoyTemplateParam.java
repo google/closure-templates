@@ -29,22 +29,26 @@ public abstract class SoyTemplateParam<T> {
   /** Creates a standard optional or required param with the given name. */
   public static <T> SoyTemplateParam<T> standard(String name, boolean required, TypeToken<T> type) {
     return new AutoValue_SoyTemplateParam<>(
-        name, required, /* indirect= */ false, /* injected= */ false, type);
+        RecordProperty.get(name), required, /* indirect= */ false, /* injected= */ false, type);
   }
 
   /** Creates an indirect param with the given name. Indirect params are always optional. */
   public static <T> SoyTemplateParam<T> indirect(String name, boolean required, TypeToken<T> type) {
     return new AutoValue_SoyTemplateParam<>(
-        name, required, /* indirect= */ true, /* injected= */ false, type);
+        RecordProperty.get(name), required, /* indirect= */ true, /* injected= */ false, type);
   }
 
   /** Creates an injected param with the given name. */
   public static <T> SoyTemplateParam<T> injected(String name, boolean required, TypeToken<T> type) {
     return new AutoValue_SoyTemplateParam<>(
-        name, required, /* indirect= */ false, /* injected= */ true, type);
+        RecordProperty.get(name), required, /* indirect= */ false, /* injected= */ true, type);
   }
 
-  public abstract String getName();
+  public final String getName() {
+    return getSymbol().getName();
+  }
+
+  abstract RecordProperty getSymbol();
 
   /**
    * Returns whether the parameter is declared as required. All required, non-indirect parameters

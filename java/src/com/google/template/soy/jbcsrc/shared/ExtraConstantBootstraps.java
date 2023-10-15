@@ -21,12 +21,14 @@ import static java.util.Arrays.stream;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.errorprone.annotations.Keep;
+import com.google.template.soy.data.RecordProperty;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.internal.SoyMapImpl;
 import com.google.template.soy.data.internal.SoyRecordImpl;
 import java.lang.invoke.MethodHandles;
+import java.util.IdentityHashMap;
 
 /** Extra constant bootstrap methods. */
 public final class ExtraConstantBootstraps {
@@ -75,13 +77,19 @@ public final class ExtraConstantBootstraps {
   @Keep
   public static SoyRecordImpl constantSoyRecord(
       MethodHandles.Lookup lookup, String name, Class<?> type, int salt, Object... keyValuePairs) {
-    ImmutableMap.Builder<String, SoyValueProvider> map = ImmutableMap.builder();
+    IdentityHashMap<RecordProperty, SoyValueProvider> map =
+        new IdentityHashMap<>(keyValuePairs.length / 2);
     for (int i = 0; i < keyValuePairs.length; i += 2) {
       map.put(
-          (String) keyValuePairs[i],
+          RecordProperty.get((String) keyValuePairs[i]),
           SoyValueConverter.INSTANCE.convert(keyValuePairs[i + 1]).resolve());
     }
-    return SoyRecordImpl.forProviderMap(map.buildOrThrow());
+    return new SoyRecordImpl(map);
+  }
+
+  @Keep
+  public static RecordProperty symbol(MethodHandles.Lookup lookup, String name, Class<?> type) {
+    return RecordProperty.get(name);
   }
 
   private ExtraConstantBootstraps() {}

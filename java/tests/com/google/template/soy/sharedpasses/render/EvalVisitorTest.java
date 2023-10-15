@@ -23,6 +23,7 @@ import static org.junit.Assert.fail;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableTable;
+import com.google.template.soy.data.RecordProperty;
 import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyRecord;
@@ -266,9 +267,9 @@ public class EvalVisitorTest {
   public void testEvalRecordLiteral() throws Exception {
     SoyRecord result = (SoyRecord) eval("record(aaa: 'blah', bbb: 123, ccc: $boo)");
     assertThat(result.recordSize()).isEqualTo(3);
-    assertThat(result.getField("aaa").stringValue()).isEqualTo("blah");
-    assertThat(result.getField("bbb").integerValue()).isEqualTo(123);
-    assertThat(result.getField("ccc").integerValue()).isEqualTo(8);
+    assertThat(result.getField(RecordProperty.get("aaa")).stringValue()).isEqualTo("blah");
+    assertThat(result.getField(RecordProperty.get("bbb")).integerValue()).isEqualTo(123);
+    assertThat(result.getField(RecordProperty.get("ccc")).integerValue()).isEqualTo(8);
   }
 
   @Test

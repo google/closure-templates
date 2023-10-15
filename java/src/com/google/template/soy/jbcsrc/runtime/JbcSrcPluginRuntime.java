@@ -18,9 +18,9 @@ package com.google.template.soy.jbcsrc.runtime;
 
 import static com.google.common.collect.ImmutableMap.toImmutableMap;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.google.errorprone.annotations.Keep;
+import com.google.template.soy.data.RecordProperty;
 import com.google.template.soy.data.SoyLegacyObjectMap;
 import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyRecord;
@@ -32,6 +32,7 @@ import com.google.template.soy.data.internal.SoyMapImpl;
 import com.google.template.soy.data.internal.SoyRecordImpl;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
+import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.concurrent.Future;
 import javax.annotation.Nonnull;
@@ -99,7 +100,12 @@ public final class JbcSrcPluginRuntime {
   @Keep
   @Nonnull
   public static SoyRecord boxJavaMapAsSoyRecord(Map<String, ?> javaMap) {
-    return new SoyRecordImpl(javaMapAsProviderMap(javaMap));
+    IdentityHashMap<RecordProperty, SoyValueProvider> map = new IdentityHashMap<>(javaMap.size());
+    for (var entry : javaMap.entrySet()) {
+      map.put(
+          RecordProperty.get(entry.getKey()), SoyValueConverter.INSTANCE.convert(entry.getValue()));
+    }
+    return new SoyRecordImpl(map);
   }
 
   public static final MethodRef BOX_JAVA_MAP_AS_SOY_LEGACY_OBJECT_MAP =
@@ -108,14 +114,11 @@ public final class JbcSrcPluginRuntime {
   @Keep
   @Nonnull
   public static SoyLegacyObjectMap boxJavaMapAsSoyLegacyObjectMap(Map<String, ?> javaMap) {
-    return new SoyLegacyObjectMapImpl(javaMapAsProviderMap(javaMap));
+    return new SoyLegacyObjectMapImpl(
+        javaMap.entrySet().stream()
+            .collect(
+                toImmutableMap(
+                    Map.Entry::getKey, e -> SoyValueConverter.INSTANCE.convert(e.getValue()))));
   }
 
-  private static ImmutableMap<String, SoyValueProvider> javaMapAsProviderMap(
-      Map<String, ?> javaMap) {
-    return javaMap.entrySet().stream()
-        .collect(
-            toImmutableMap(
-                Map.Entry::getKey, e -> SoyValueConverter.INSTANCE.convert(e.getValue())));
-  }
 }

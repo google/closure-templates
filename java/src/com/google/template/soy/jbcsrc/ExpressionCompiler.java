@@ -21,6 +21,7 @@ import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.LIST_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.NULL_POINTER_EXCEPTION_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_VALUE_PROVIDER_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constantRecordSymbol;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.firstSoyNonNullish;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.numericConversion;
 
@@ -647,20 +648,23 @@ final class ExpressionCompiler {
       List<Expression> values = new ArrayList<>(numItems);
       for (int i = 0; i < numItems; i++) {
         // Keys are strings and values are SoyValue object.
-        keys.add(BytecodeUtils.constant(node.getKey(i).identifier()));
+        keys.add(BytecodeUtils.constantRecordSymbol(node.getKey(i).identifier()));
         values.add(visit(node.getChild(i)).box());
       }
       var soyRecord =
           SoyExpression.forSoyValue(
               node.getType(),
-              MethodRef.RECORD_IMPL_FOR_PROVIDER_MAP.invoke(
-                  BytecodeUtils.newImmutableMap(keys, values, /* allowDuplicates= */ false)));
+              ConstructorRef.SOY_RECORD_IMPL.construct(
+                  BytecodeUtils.newIdentityHashMap(keys, values)));
       if (isConstantContext && Expression.areAllConstant(values)) {
         Object[] constantArgs = new Object[1 + node.numChildren() * 2];
         // We store a hash of the source location so that each distinct list authored gets a unique
         // value to preserve identity semantics even in constant settings
         constantArgs[0] = node.getSourceLocation().hashCode();
         for (int i = 0; i < values.size(); i++) {
+          // We could pass keys.get(i).constantBytecodeValue() but it is more efficient to invoke
+          // one bulk bootstrap method than a lot of little ones.  Caching within `RecordSymbol`
+          // itself ensures we don't construct duplicate keys.
           constantArgs[2 * i + 1] = node.getKey(i).identifier();
           constantArgs[2 * i + 2] = values.get(i).constantBytecodeValue();
         }
@@ -1422,11 +1426,12 @@ final class ExpressionCompiler {
       Expression baseExprAsRecord = baseExpr.box();
       if (analysis.isResolved(node)) {
         fieldAccess =
-            MethodRef.RUNTIME_GET_FIELD.invoke(baseExprAsRecord, constant(node.getFieldName()));
+            MethodRef.RUNTIME_GET_FIELD.invoke(
+                baseExprAsRecord, constantRecordSymbol(node.getFieldName()));
       } else {
         Expression fieldProvider =
             MethodRef.RUNTIME_GET_FIELD_PROVIDER.invoke(
-                baseExprAsRecord, constant(node.getFieldName()));
+                baseExprAsRecord, constantRecordSymbol(node.getFieldName()));
         fieldAccess = detacher.resolveSoyValueProvider(fieldProvider);
       }
       return SoyExpression.forSoyValue(node.getType(), fieldAccess.checkedSoyCast(node.getType()));

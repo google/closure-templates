@@ -24,6 +24,7 @@ import com.google.common.collect.ImmutableTable;
 import com.google.common.collect.Lists;
 import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.internal.SanitizedContentKind;
+import com.google.template.soy.data.RecordProperty;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyAbstractCachingValueProvider;
 import com.google.template.soy.data.SoyAbstractCachingValueProvider.ValueAssertion;
@@ -169,7 +170,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
   /** The runtime instances for functions. */
   private final PluginInstances pluginInstances;
 
-  private static final String VARIANT_PARAM_NAME = "$$__variant__";
+  private static final RecordProperty VARIANT_PARAM_SYMBOL = RecordProperty.get("$$__variant__");
 
   /**
    * @param evalVisitorFactory Factory for creating an instance of EvalVisitor.
@@ -303,7 +304,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
               ? templateBasicNode.getLegacyDeltemplateNamespace()
               : templateBasicNode.getTemplateName();
       return deltemplates.selectTemplate(
-          mapKey, data.getField(VARIANT_PARAM_NAME).stringValue(), activeModSelector);
+          mapKey, data.getField(VARIANT_PARAM_SYMBOL).stringValue(), activeModSelector);
     }
 
     return template;
@@ -649,7 +650,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
   private SoyRecord createCallParamsWithVariant(CallNode node) {
     SoyRecord params = createCallParams(node);
     return new ParamStore(params, params.recordSize() + 1)
-        .setField(VARIANT_PARAM_NAME, StringData.forValue(getVariant(node)));
+        .setField(VARIANT_PARAM_SYMBOL, StringData.forValue(getVariant(node)));
   }
 
   private SoyRecord createCallParams(CallNode node) {
@@ -669,13 +670,14 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
       // If this is a data="all" call and the caller has default parameters we need to augment the
       // data record to make sure any default parameters are set to the default in the data record.
       for (TemplateParam param : params) {
-        if (param.hasDefault() && data.getField(param.name()) == null) {
+        var paramSymbol = RecordProperty.get(param.name());
+        if (param.hasDefault() && data.getField(paramSymbol) == null) {
           if (dataWithDefaults == null) {
             dataWithDefaults = new ParamStore(data, params.size());
           }
           // This could be made more performant by precalculating the default value, but Tofu is
           // legacy so don't worry about.
-          dataWithDefaults.setField(param.name(), lazyEval(param.defaultValue(), node));
+          dataWithDefaults.setField(paramSymbol, lazyEval(param.defaultValue(), node));
         }
       }
       return dataWithDefaults == null ? data : dataWithDefaults;
@@ -696,8 +698,9 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
           // If this is a data="all" call and the caller has default parameters we need to augment
           // the params record to make sure any unset default parameters are set to the default in
           // the params record.
-          if (param.hasDefault() && params.getField(param.name()) == null) {
-            params.setField(param.name(), lazyEval(param.defaultValue(), node));
+          var key = RecordProperty.get(param.name());
+          if (param.hasDefault() && params.getField(key) == null) {
+            params.setField(key, lazyEval(param.defaultValue(), node));
           }
         }
       }
@@ -711,11 +714,13 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
 
       if (child instanceof CallParamValueNode) {
         params.setField(
-            child.getKey().identifier(), lazyEval(((CallParamValueNode) child).getExpr(), child));
+            RecordProperty.get(child.getKey().identifier()),
+            lazyEval(((CallParamValueNode) child).getExpr(), child));
 
       } else if (child instanceof CallParamContentNode) {
         params.setField(
-            child.getKey().identifier(), renderRenderUnitNode((CallParamContentNode) child));
+            RecordProperty.get(child.getKey().identifier()),
+            renderRenderUnitNode((CallParamContentNode) child));
 
       } else {
         throw new AssertionError();

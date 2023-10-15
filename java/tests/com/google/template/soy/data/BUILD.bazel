@@ -31,6 +31,7 @@ java_library(
     deps = [
         ":soy_value_converter_utility",
         "//java/src/com/google/template/soy/data",
+        "//java/src/com/google/template/soy/data:record_property",
         "//java/src/com/google/template/soy/data:unsafesanitizedcontentordainer_testonly",
         "//java/src/com/google/template/soy/jbcsrc/api",
         "//java/src/com/google/template/soy/parseinfo",

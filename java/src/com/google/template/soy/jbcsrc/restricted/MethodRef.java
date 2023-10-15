@@ -37,6 +37,7 @@ import com.google.template.soy.data.Dir;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.LoggingAdvisingAppendable.BufferingAppendable;
 import com.google.template.soy.data.ProtoFieldInterpreter;
+import com.google.template.soy.data.RecordProperty;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyProtoValue;
 import com.google.template.soy.data.SoyRecord;
@@ -53,7 +54,6 @@ import com.google.template.soy.data.internal.ListImpl;
 import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.data.internal.RuntimeMapTypeTracker;
 import com.google.template.soy.data.internal.SoyMapImpl;
-import com.google.template.soy.data.internal.SoyRecordImpl;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
@@ -134,9 +134,6 @@ public abstract class MethodRef {
 
   public static final MethodRef MAP_IMPL_FOR_PROVIDER_MAP_NO_NULL_KEYS =
       createPure(SoyMapImpl.class, "forProviderMapNoNullKeys", Map.class);
-
-  public static final MethodRef RECORD_IMPL_FOR_PROVIDER_MAP =
-      createPure(SoyRecordImpl.class, "forProviderMap", Map.class);
 
   public static final MethodRef DOUBLE_TO_STRING =
       createPure(FloatData.class, "toString", double.class);
@@ -283,7 +280,7 @@ public abstract class MethodRef {
           Dir.class);
 
   public static final MethodRef PARAM_STORE_SET_FIELD =
-      createNonPure(ParamStore.class, "setField", String.class, SoyValueProvider.class);
+      createNonPure(ParamStore.class, "setField", RecordProperty.class, SoyValueProvider.class);
 
   public static final MethodRef SOY_PROTO_VALUE_CREATE =
       createPure(SoyProtoValue.class, "create", Message.class);
@@ -368,17 +365,21 @@ public abstract class MethodRef {
           JbcSrcRuntime.class, "compareBoxedValueToUnboxedString", SoyValue.class, String.class);
 
   public static final MethodRef RUNTIME_GET_FIELD =
-      createPure(JbcSrcRuntime.class, "getField", SoyValue.class, String.class);
+      createPure(JbcSrcRuntime.class, "getField", SoyValue.class, RecordProperty.class);
 
   public static final MethodRef RUNTIME_GET_FIELD_PROVIDER =
-      createPure(JbcSrcRuntime.class, "getFieldProvider", SoyValue.class, String.class);
+      createPure(JbcSrcRuntime.class, "getFieldProvider", SoyValue.class, RecordProperty.class);
 
   public static final MethodRef RUNTIME_GET_RECORD_FIELD_PROVIDER =
-      createPure(JbcSrcRuntime.class, "getFieldProvider", SoyRecord.class, String.class);
+      createPure(JbcSrcRuntime.class, "getFieldProvider", SoyRecord.class, RecordProperty.class);
 
   public static final MethodRef RUNTIME_GET_RECORD_FIELD_PROVIDER_DEFAULT =
       createPure(
-          JbcSrcRuntime.class, "getFieldProvider", SoyRecord.class, String.class, SoyValue.class);
+          JbcSrcRuntime.class,
+          "getFieldProvider",
+          SoyRecord.class,
+          RecordProperty.class,
+          SoyValue.class);
 
   public static final MethodRef RUNTIME_PARAM_OR_DEFAULT =
       createPure(JbcSrcRuntime.class, "paramOrDefault", SoyValueProvider.class, SoyValue.class)

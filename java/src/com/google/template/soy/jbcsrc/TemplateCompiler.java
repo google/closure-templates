@@ -578,10 +578,10 @@ final class TemplateCompiler {
     // here instead they will just turn into null.  Existing templates depend on this.
     if (defaultValue == null) {
       return MethodRef.RUNTIME_GET_RECORD_FIELD_PROVIDER.invoke(
-          record, BytecodeUtils.constant(name));
+          record, BytecodeUtils.constantRecordSymbol(name));
     } else {
       return MethodRef.RUNTIME_GET_RECORD_FIELD_PROVIDER_DEFAULT.invoke(
-          record, BytecodeUtils.constant(name), defaultValue.box());
+          record, BytecodeUtils.constantRecordSymbol(name), defaultValue.box());
     }
   }
 

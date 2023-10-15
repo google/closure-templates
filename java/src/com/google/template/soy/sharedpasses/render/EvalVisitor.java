@@ -37,13 +37,13 @@ import static com.google.template.soy.shared.internal.SharedRuntime.times;
 import static com.google.template.soy.shared.internal.SharedRuntime.tripleEqual;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableTable;
 import com.google.common.collect.Iterables;
 import com.google.errorprone.annotations.ForOverride;
 import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.data.Dir;
+import com.google.template.soy.data.RecordProperty;
 import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.data.SoyLegacyObjectMap;
 import com.google.template.soy.data.SoyList;
@@ -146,6 +146,7 @@ import com.google.template.soy.types.UnionType;
 import com.ibm.icu.util.ULocale;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -350,11 +351,11 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
   protected SoyValue visitRecordLiteralNode(RecordLiteralNode node) {
     int numItems = node.numChildren();
 
-    ImmutableMap.Builder<String, SoyValueProvider> map = ImmutableMap.builder();
+    IdentityHashMap<RecordProperty, SoyValueProvider> map = new IdentityHashMap<>();
     for (int i = 0; i < numItems; i++) {
-      map.put(node.getKey(i).identifier(), visit(node.getChild(i)));
+      map.put(RecordProperty.get(node.getKey(i).identifier()), visit(node.getChild(i)));
     }
-    return new SoyRecordImpl(map.buildOrThrow());
+    return new SoyRecordImpl(map);
   }
 
   @Override
@@ -509,7 +510,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     }
     maybeMarkBadProtoAccess(fieldAccess, base);
     // base is a valid SoyRecord: get value
-    SoyValue value = ((SoyRecord) base).getField(fieldAccess.getFieldName());
+    SoyValue value = ((SoyRecord) base).getField(RecordProperty.get(fieldAccess.getFieldName()));
 
     // Note that this code treats value of null and value of NullData differently. Only the latter
     // will trigger this check, which is partly why places like

@@ -23,11 +23,11 @@ import static java.util.stream.Collectors.joining;
 
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.primitives.Doubles;
 import com.google.common.primitives.Longs;
 import com.google.protobuf.Message;
+import com.google.template.soy.data.RecordProperty;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyDict;
@@ -50,6 +50,7 @@ import com.google.template.soy.data.restricted.StringData;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -256,7 +257,13 @@ public final class BasicFunctionsRuntime {
 
   public static ImmutableList<SoyValueProvider> mapEntries(SoyMap map) {
     return map.entrySet().stream()
-        .map(e -> new SoyRecordImpl(ImmutableMap.of("key", e.getKey(), "value", e.getValue())))
+        .map(
+            e -> {
+              IdentityHashMap<RecordProperty, SoyValueProvider> record = new IdentityHashMap<>(2);
+              record.put(RecordProperty.KEY, e.getKey());
+              record.put(RecordProperty.VALUE, e.getValue());
+              return new SoyRecordImpl(record);
+            })
         .collect(toImmutableList());
   }
 

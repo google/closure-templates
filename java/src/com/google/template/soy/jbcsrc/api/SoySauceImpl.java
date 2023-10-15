@@ -30,6 +30,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.errorprone.annotations.concurrent.GuardedBy;
+import com.google.template.soy.data.RecordProperty;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyRecord;
@@ -57,6 +58,7 @@ import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import java.io.IOException;
 import java.util.Collection;
+import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -158,8 +160,8 @@ public final class SoySauceImpl implements SoySauce {
   public RendererImpl newRenderer(SoyTemplate params) {
     String template = params.getTemplateName();
     CompiledTemplates.TemplateData data = templates.getTemplateData(template);
-    @SuppressWarnings("unchecked") // getParamsAsMap has a loose type to fix a build cycle.
-    var typedParams = (Map<String, SoyValueProvider>) params.getParamsAsMap();
+    // getParamsAsMap has a loose type to fix a build cycle.
+    var typedParams = (SoyRecord) params.getParamsAsRecord();
     return new RendererImpl(template, data.template(), data.kind(), typedParams);
   }
 
@@ -178,20 +180,20 @@ public final class SoySauceImpl implements SoySauce {
         String templateName,
         CompiledTemplate template,
         ContentKind contentKind,
-        @Nullable Map<String, SoyValueProvider> data) {
+        @Nullable SoyRecord data) {
       this.templateName = templateName;
       this.template = checkNotNull(template);
       this.contentKind = contentKind;
       if (data != null) {
-        this.data = new ParamStore(ImmutableMap.copyOf(data));
+        this.data = data;
         // TODO(lukes): eliminate this and just use the nullness of data to enforce this.
         this.dataSetInConstructor = true;
       }
     }
 
     private ParamStore mapAsParamStore(Map<String, ?> source) {
-      ImmutableMap.Builder<String, SoyValueProvider> builder =
-          ImmutableMap.builderWithExpectedSize(source.size());
+      IdentityHashMap<RecordProperty, SoyValueProvider> params =
+          new IdentityHashMap<>(source.size());
       for (Map.Entry<String, ?> entry : source.entrySet()) {
         String key = entry.getKey();
         SoyValueProvider value;
@@ -201,9 +203,9 @@ public final class SoySauceImpl implements SoySauce {
           throw new IllegalArgumentException(
               "Unable to convert param " + key + " to a SoyValue", e);
         }
-        builder.put(key, value);
+        params.put(RecordProperty.get(key), value);
       }
-      return new ParamStore(builder.buildOrThrow());
+      return new ParamStore(params);
     }
 
     @CanIgnoreReturnValue
@@ -216,9 +218,7 @@ public final class SoySauceImpl implements SoySauce {
     @CanIgnoreReturnValue
     @Override
     public RendererImpl setIj(SoyTemplateData templateData) {
-      @SuppressWarnings("unchecked") // getParamsAsMap has a loose type to fix a build cycle.
-      var typedParams = (Map<String, SoyValueProvider>) templateData.getParamsAsMap();
-      this.ij = new ParamStore(ImmutableMap.copyOf(typedParams));
+      this.ij = (SoyRecord) templateData.getParamsAsRecord();
       return this;
     }
 

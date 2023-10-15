@@ -1791,10 +1791,11 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       CallNode node, Map<String, Supplier<Expression>> params) {
     if (!node.isPassingData()) {
       return ConstructorRef.PARAM_STORE_FROM_MAP.construct(
-          BytecodeUtils.newImmutableMap(
-              params.keySet().stream().map(BytecodeUtils::constant).collect(toImmutableList()),
-              params.values().stream().map(Supplier::get).collect(toImmutableList()),
-              /* allowDuplicates= */ false));
+          BytecodeUtils.newIdentityHashMap(
+              params.keySet().stream()
+                  .map(BytecodeUtils::constantRecordSymbol)
+                  .collect(toImmutableList()),
+              params.values().stream().map(Supplier::get).collect(toImmutableList())));
     }
 
     Label reattachDataLabel = new Label();
@@ -1815,7 +1816,9 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     for (var entry : params.entrySet()) {
       paramStoreExpression =
           MethodRef.PARAM_STORE_SET_FIELD.invoke(
-              paramStoreExpression, BytecodeUtils.constant(entry.getKey()), entry.getValue().get());
+              paramStoreExpression,
+              BytecodeUtils.constantRecordSymbol(entry.getKey()),
+              entry.getValue().get());
     }
     return paramStoreExpression;
   }
@@ -1835,7 +1838,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
         paramStoreExpression =
             MethodRef.PARAM_STORE_SET_FIELD.invoke(
                 paramStoreExpression,
-                BytecodeUtils.constant(param.name()),
+                BytecodeUtils.constantRecordSymbol(param.name()),
                 parameterLookup.getParam(param));
       }
     }

@@ -50,11 +50,19 @@ TEMPLATE_RESTRICTED_UTIL = [
     "SoyTemplatesRestrictedApi.java",
 ]
 
+RECORD_PROPERTY = ["RecordProperty.java"]
+
+java_library(
+    name = "record_property",
+    srcs = RECORD_PROPERTY,
+    visibility = ["//visibility:public"],
+)
 java_library(
     name = "template",
     srcs = TEMPLATE,
     visibility = ["//visibility:public"],
     deps = [
+        ":record_property",
         "@com_google_auto_value_auto_value",
         "@maven//:com_google_common_html_types_types",
         "@maven//:com_google_guava_guava",
@@ -89,13 +97,14 @@ java_library(
             "restricted/*.java",
             "internal/*.java",
         ],
-        exclude = LOCKED_DOWN + ACTUAL_INTERNAL + VE + CODE_GENERATION + TEMPLATE + TEMPLATE_UTIL + TEMPLATE_RESTRICTED_UTIL,
+        exclude = LOCKED_DOWN + ACTUAL_INTERNAL + VE + CODE_GENERATION + TEMPLATE + TEMPLATE_UTIL + TEMPLATE_RESTRICTED_UTIL + RECORD_PROPERTY,
     ),
     visibility = ["//visibility:public"],
     exports = [
         ":template",
     ],
     deps = [
+        ":record_property",
         ":template",
         "//java/src/com/google/template/soy/base/internal",
         "//java/src/com/google/template/soy/internal/proto",
@@ -138,6 +147,7 @@ java_library(
     srcs = CODE_GENERATION,
     visibility = ["//visibility:public"],
     deps = [
+        ":record_property",
         ":data",
         "//java/src/com/google/template/soy/jbcsrc/api:helpers",
         "//java/src/com/google/template/soy/jbcsrc/shared:shared",
