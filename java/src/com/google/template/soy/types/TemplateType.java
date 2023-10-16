@@ -42,11 +42,11 @@ import javax.annotation.Nullable;
 @AutoValue
 public abstract class TemplateType extends SoyType {
 
-  public static final String ATTRIBUTES_HIDDEN_PARAM_NAME = "__soyInternalAttributes";
+  public static final String EXTRA_ROOT_ELEMENT_ATTRIBUTES = "extraRootElementAttributes";
   public static final String KEY_HIDDEN_ATTRIBUTE_NAME = "ssk";
-  private static final Parameter ATTRIBUTES_HIDDEN_PARAM =
+  private static final Parameter EXTRA_ROOT_ELEMENT_ATTRIBUTES_PARAM =
       Parameter.builder()
-          .setName(ATTRIBUTES_HIDDEN_PARAM_NAME)
+          .setName(EXTRA_ROOT_ELEMENT_ATTRIBUTES)
           .setType(SanitizedType.AttributesType.getInstance())
           .setKind(ParameterKind.PARAM)
           .setRequired(false)
@@ -87,6 +87,13 @@ public abstract class TemplateType extends SoyType {
 
   public abstract boolean getAllowExtraAttributes();
 
+  // Return if template has {attribute *} or an explicit param named EXTRA_ROOT_ELEMENT_ATTRIBUTES.
+  public boolean getAllowExtraAttributesOrExplicit() {
+    return getAllowExtraAttributes()
+        || getParameters().stream()
+            .anyMatch(p -> p.getName().equals(EXTRA_ROOT_ELEMENT_ATTRIBUTES));
+  }
+
   public abstract ImmutableSet<String> getReservedAttributes();
 
   public abstract TemplateKind getTemplateKind();
@@ -106,7 +113,7 @@ public abstract class TemplateType extends SoyType {
       builder.add(KEY_HIDDEN_ATTRIBUTE);
     }
     if (getAllowExtraAttributes()) {
-      builder.add(ATTRIBUTES_HIDDEN_PARAM);
+      builder.add(EXTRA_ROOT_ELEMENT_ATTRIBUTES_PARAM);
     }
     return builder.build();
   }
@@ -166,16 +173,7 @@ public abstract class TemplateType extends SoyType {
 
     public abstract Builder setLegacyDeltemplateNamespace(String legacyDeltemplateNamespace);
 
-    abstract TemplateType autoBuild();
-
-    public TemplateType build() {
-      TemplateType built = autoBuild();
-      if (built.getParameters().stream()
-          .anyMatch(p -> p.getName().equals(ATTRIBUTES_HIDDEN_PARAM_NAME))) {
-        throw new IllegalStateException();
-      }
-      return built;
-    }
+    public abstract TemplateType build();
   }
 
   /**

@@ -97,7 +97,10 @@ final class MoreCallValidationsPass implements CompilerFileSetPass {
       SoyErrorKind.of("Callee template does not allow attribute ''{0}''.");
 
   private static final SoyErrorKind NO_SUCH_ATTRIBUTE =
-      SoyErrorKind.of("Unrecognized attribute.{0}", StyleAllowance.NO_PUNCTUATION);
+      SoyErrorKind.of(
+          "Unrecognized attribute (does the called template specify ''@attribute *'' or is"
+              + " ''extraRootElementAttributes'' already bound?).{0}",
+          StyleAllowance.NO_PUNCTUATION);
 
   private static final SoyErrorKind MISUSED_AT_ATTRIBUTE =
       SoyErrorKind.of("Attributes with a leading @ should not have values.");
@@ -249,7 +252,7 @@ final class MoreCallValidationsPass implements CompilerFileSetPass {
     TemplateType templateType =
         (TemplateType) openTagNode.getTagName().getDynamicTagName().getExpr().getType();
 
-    boolean hasAllAttributes = templateType.getAllowExtraAttributes();
+    boolean hasAllAttributes = templateType.getAllowExtraAttributesOrExplicit();
     ImmutableSet<String> reservedAttributes = templateType.getReservedAttributes();
     ImmutableMap<String, Parameter> allParamsByParamName =
         templateType.getParameters().stream().collect(toImmutableMap(Parameter::getName, p -> p));
@@ -336,14 +339,13 @@ final class MoreCallValidationsPass implements CompilerFileSetPass {
       name = name.substring(1);
     }
     String paramName = name.contains("-") ? Parameter.attrToParamName(name) : name;
-      // This is a synthetically created IfCond Node created by somethin akin to @class="Hello"
-      if (((attr.getParent() instanceof IfCondNode
-                  && !attr.getParent().getSourceLocation().isKnown())
-              || attr.getParent() instanceof HtmlOpenTagNode)
-          && !addAttr.apply(paramName)) {
-        errorReporter.report(loc, DUPLICATE_PARAM, name);
-        return;
-      } else if (!hasAllAttributes) {
+    // This is a synthetically created IfCond Node created by somethin akin to @class="Hello"
+    if (((attr.getParent() instanceof IfCondNode && !attr.getParent().getSourceLocation().isKnown())
+            || attr.getParent() instanceof HtmlOpenTagNode)
+        && !addAttr.apply(paramName)) {
+      errorReporter.report(loc, DUPLICATE_PARAM, name);
+      return;
+    } else if (!hasAllAttributes) {
       Parameter param = allParamsByParamName.get(paramName);
       if (param == null) {
         String didYouMeanMessage =

@@ -67,6 +67,7 @@ import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.AttrParam;
+import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.treebuilder.ExprNodes;
 import com.google.template.soy.types.BoolType;
@@ -135,6 +136,11 @@ final class ElementAttributePass implements CompilerFileSetPass {
 
   private static final SoyErrorKind DELEGATE_KIND_MISMATCH =
       SoyErrorKind.of("Expected the called template to have root tag {0}, found {1}.");
+
+  private static final SoyErrorKind ATTRIBUTE_STAR_AND_EXPLICIT =
+      SoyErrorKind.of("Cannot specify a param named ''{0}'' along with ''attribute *''.");
+  private static final SoyErrorKind EXTRA_ROOT_ELEMENT_ATTRIBUTES_TYPE =
+      SoyErrorKind.of("Param ''{0}'' must be optional and of type 'attributes'.");
 
   private static final SoySourceFunction concatCssFunction = new ConcatCssValuesFunction();
 
@@ -476,6 +482,24 @@ final class ElementAttributePass implements CompilerFileSetPass {
         openTagNode.removeChild(openTagNode.getKeyNode());
       }
     }
+    for (TemplateHeaderVarDefn param : templateNode.getHeaderParams()) {
+      if (param.name().equals(TemplateType.EXTRA_ROOT_ELEMENT_ATTRIBUTES)) {
+        if (templateNode.getAllowExtraAttributes()) {
+          errorReporter.report(
+              param.getSourceLocation(),
+              ATTRIBUTE_STAR_AND_EXPLICIT,
+              TemplateType.EXTRA_ROOT_ELEMENT_ATTRIBUTES);
+        }
+        if (!SoyTypes.tryRemoveNullish(param.type())
+                .equals(SanitizedType.AttributesType.getInstance())
+            || !param.isExplicitlyOptional()) {
+          errorReporter.report(
+              param.getSourceLocation(),
+              EXTRA_ROOT_ELEMENT_ATTRIBUTES_TYPE,
+              TemplateType.EXTRA_ROOT_ELEMENT_ATTRIBUTES);
+        }
+      }
+    }
 
     if (templateNode.getAllowExtraAttributes()) {
       /*
@@ -483,18 +507,18 @@ final class ElementAttributePass implements CompilerFileSetPass {
        *
        * <pre>
        * {template foo}
-       *   {@param soyInternalAttributes:attributes}
-       *   <div {$soyInternalAttributes}></div>
+       *   {@param extraRootElementAttributes:attributes}
+       *   <div {$extraRootElementAttributes}></div>
        * {/template}
        * </pre>
        */
       TemplateParam attrsParam =
           new TemplateParam(
-              TemplateType.ATTRIBUTES_HIDDEN_PARAM_NAME,
+              TemplateType.EXTRA_ROOT_ELEMENT_ATTRIBUTES,
               SourceLocation.UNKNOWN,
               SourceLocation.UNKNOWN,
               NamedTypeNode.create(
-                  SourceLocation.UNKNOWN, TemplateType.ATTRIBUTES_HIDDEN_PARAM_NAME),
+                  SourceLocation.UNKNOWN, TemplateType.EXTRA_ROOT_ELEMENT_ATTRIBUTES),
               /* isInjected= */ false,
               /* isImplicit= */ true,
               /* optional= */ true,
