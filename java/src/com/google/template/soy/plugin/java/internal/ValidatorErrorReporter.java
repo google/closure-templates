@@ -390,7 +390,7 @@ public final class ValidatorErrorReporter {
     return "Error in plugin implementation for function ''{0}''."
         + "\n"
         + innerFmt
-        + "\n  expected one of: {3}"
+        + "\n  expected one of:{3}"
         + "\n  actual: {4}"
         + "\nPlugin implementation: {1}"
         + "{2}";
