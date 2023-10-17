@@ -7,15 +7,17 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.parseinfo.SoyFileInfo;
 import com.google.template.soy.parseinfo.SoyTemplateInfo;
+import javax.annotation.Generated;
 
 /**
  * Soy parse info for features.soy.
  *
- * @deprecated Use {@link com.google.template.soy.examples.FeaturesTemplates} instead. See go/soy-java-type-safe.
+ * @deprecated Use {@link com.google.template.soy.examples.FeaturesTemplates} instead. See
+ *     go/soy-java-type-safe.
  */
 @Deprecated
+@Generated("com.google.template.soy.SoyParseInfoGenerator")
 public final class FeaturesSoyInfo extends SoyFileInfo {
-
 
   /** This Soy file's namespace. */
   public static final String __NAMESPACE__ = "soy.examples.features";
@@ -25,71 +27,107 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
   public static final class TemplateName {
     private TemplateName() {}
 
-    /** The full template name of the .demoComments template. */
+    /** The full template name of the demoComments template. */
     public static final String DEMO_COMMENTS = "soy.examples.features.demoComments";
+
     public static final com.google.template.soy.parseinfo.TemplateName DEMO_COMMENTS__NAME = com.google.template.soy.parseinfo.TemplateName.of(DEMO_COMMENTS);
-    /** The full template name of the .demoLineJoining template. */
+
+    /** The full template name of the demoLineJoining template. */
     public static final String DEMO_LINE_JOINING = "soy.examples.features.demoLineJoining";
+
     public static final com.google.template.soy.parseinfo.TemplateName DEMO_LINE_JOINING__NAME = com.google.template.soy.parseinfo.TemplateName.of(DEMO_LINE_JOINING);
-    /** The full template name of the .demoRawTextCommands template. */
+
+    /** The full template name of the demoRawTextCommands template. */
     public static final String DEMO_RAW_TEXT_COMMANDS = "soy.examples.features.demoRawTextCommands";
+
     public static final com.google.template.soy.parseinfo.TemplateName DEMO_RAW_TEXT_COMMANDS__NAME = com.google.template.soy.parseinfo.TemplateName.of(DEMO_RAW_TEXT_COMMANDS);
-    /** The full template name of the .demoPrint template. */
+
+    /** The full template name of the demoPrint template. */
     public static final String DEMO_PRINT = "soy.examples.features.demoPrint";
+
     public static final com.google.template.soy.parseinfo.TemplateName DEMO_PRINT__NAME = com.google.template.soy.parseinfo.TemplateName.of(DEMO_PRINT);
-    /** The full template name of the .demoAutoescapeTrue template. */
+
+    /** The full template name of the demoAutoescapeTrue template. */
     public static final String DEMO_AUTOESCAPE_TRUE = "soy.examples.features.demoAutoescapeTrue";
+
     public static final com.google.template.soy.parseinfo.TemplateName DEMO_AUTOESCAPE_TRUE__NAME = com.google.template.soy.parseinfo.TemplateName.of(DEMO_AUTOESCAPE_TRUE);
-    /** The full template name of the .demoMsg template. */
+
+    /** The full template name of the demoMsg template. */
     public static final String DEMO_MSG = "soy.examples.features.demoMsg";
+
     public static final com.google.template.soy.parseinfo.TemplateName DEMO_MSG__NAME = com.google.template.soy.parseinfo.TemplateName.of(DEMO_MSG);
-    /** The full template name of the .demoIf template. */
+
+    /** The full template name of the demoIf template. */
     public static final String DEMO_IF = "soy.examples.features.demoIf";
+
     public static final com.google.template.soy.parseinfo.TemplateName DEMO_IF__NAME = com.google.template.soy.parseinfo.TemplateName.of(DEMO_IF);
-    /** The full template name of the .demoSwitch template. */
+
+    /** The full template name of the demoSwitch template. */
     public static final String DEMO_SWITCH = "soy.examples.features.demoSwitch";
+
     public static final com.google.template.soy.parseinfo.TemplateName DEMO_SWITCH__NAME = com.google.template.soy.parseinfo.TemplateName.of(DEMO_SWITCH);
-    /** The full template name of the .demoFor template. */
+
+    /** The full template name of the demoFor template. */
     public static final String DEMO_FOR = "soy.examples.features.demoFor";
+
     public static final com.google.template.soy.parseinfo.TemplateName DEMO_FOR__NAME = com.google.template.soy.parseinfo.TemplateName.of(DEMO_FOR);
-    /** The full template name of the .demoFor_Range template. */
+
+    /** The full template name of the demoFor_Range template. */
     public static final String DEMO_FOR_RANGE = "soy.examples.features.demoFor_Range";
+
     public static final com.google.template.soy.parseinfo.TemplateName DEMO_FOR_RANGE__NAME = com.google.template.soy.parseinfo.TemplateName.of(DEMO_FOR_RANGE);
-    /** The full template name of the .demoCallWithoutParam template. */
+
+    /** The full template name of the demoCallWithoutParam template. */
     public static final String DEMO_CALL_WITHOUT_PARAM =
         "soy.examples.features.demoCallWithoutParam";
 
     public static final com.google.template.soy.parseinfo.TemplateName DEMO_CALL_WITHOUT_PARAM__NAME = com.google.template.soy.parseinfo.TemplateName.of(DEMO_CALL_WITHOUT_PARAM);
-    /** The full template name of the .demoCallOtherFile template. */
+
+    /** The full template name of the demoCallOtherFile template. */
     public static final String DEMO_CALL_OTHER_FILE = "soy.examples.features.demoCallOtherFile";
+
     public static final com.google.template.soy.parseinfo.TemplateName DEMO_CALL_OTHER_FILE__NAME = com.google.template.soy.parseinfo.TemplateName.of(DEMO_CALL_OTHER_FILE);
-    /** The full template name of the .demoCallWithParam template. */
+
+    /** The full template name of the demoCallWithParam template. */
     public static final String DEMO_CALL_WITH_PARAM = "soy.examples.features.demoCallWithParam";
+
     public static final com.google.template.soy.parseinfo.TemplateName DEMO_CALL_WITH_PARAM__NAME = com.google.template.soy.parseinfo.TemplateName.of(DEMO_CALL_WITH_PARAM);
-    /** The full template name of the .demoCallWithParamBlock template. */
+
+    /** The full template name of the demoCallWithParamBlock template. */
     public static final String DEMO_CALL_WITH_PARAM_BLOCK =
         "soy.examples.features.demoCallWithParamBlock";
 
     public static final com.google.template.soy.parseinfo.TemplateName DEMO_CALL_WITH_PARAM_BLOCK__NAME = com.google.template.soy.parseinfo.TemplateName.of(DEMO_CALL_WITH_PARAM_BLOCK);
-    /** The full template name of the .demoParamWithKindAttribute template. */
+
+    /** The full template name of the demoParamWithKindAttribute template. */
     public static final String DEMO_PARAM_WITH_KIND_ATTRIBUTE =
         "soy.examples.features.demoParamWithKindAttribute";
 
     public static final com.google.template.soy.parseinfo.TemplateName DEMO_PARAM_WITH_KIND_ATTRIBUTE__NAME = com.google.template.soy.parseinfo.TemplateName.of(DEMO_PARAM_WITH_KIND_ATTRIBUTE);
-    /** The full template name of the .demoExpressions template. */
+
+    /** The full template name of the demoExpressions template. */
     public static final String DEMO_EXPRESSIONS = "soy.examples.features.demoExpressions";
+
     public static final com.google.template.soy.parseinfo.TemplateName DEMO_EXPRESSIONS__NAME = com.google.template.soy.parseinfo.TemplateName.of(DEMO_EXPRESSIONS);
-    /** The full template name of the .demoDoubleBraces template. */
+
+    /** The full template name of the demoDoubleBraces template. */
     public static final String DEMO_DOUBLE_BRACES = "soy.examples.features.demoDoubleBraces";
+
     public static final com.google.template.soy.parseinfo.TemplateName DEMO_DOUBLE_BRACES__NAME = com.google.template.soy.parseinfo.TemplateName.of(DEMO_DOUBLE_BRACES);
-    /** The full template name of the .demoBidiSupport template. */
+
+    /** The full template name of the demoBidiSupport template. */
     public static final String DEMO_BIDI_SUPPORT = "soy.examples.features.demoBidiSupport";
+
     public static final com.google.template.soy.parseinfo.TemplateName DEMO_BIDI_SUPPORT__NAME = com.google.template.soy.parseinfo.TemplateName.of(DEMO_BIDI_SUPPORT);
-    /** The full template name of the .bidiGlobalDir template. */
+
+    /** The full template name of the bidiGlobalDir template. */
     public static final String BIDI_GLOBAL_DIR = "soy.examples.features.bidiGlobalDir";
+
     public static final com.google.template.soy.parseinfo.TemplateName BIDI_GLOBAL_DIR__NAME = com.google.template.soy.parseinfo.TemplateName.of(BIDI_GLOBAL_DIR);
-    /** The full template name of the .exampleHeader template. */
+
+    /** The full template name of the exampleHeader template. */
     public static final String EXAMPLE_HEADER = "soy.examples.features.exampleHeader";
+
     public static final com.google.template.soy.parseinfo.TemplateName EXAMPLE_HEADER__NAME = com.google.template.soy.parseinfo.TemplateName.of(EXAMPLE_HEADER);
   }
 
@@ -156,11 +194,11 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
     public static final String YEAR = "year";
   }
 
-
   /**
    * Demo comments.
-   * 
-   * @deprecated Use {@link com.google.template.soy.examples.FeaturesTemplates.DemoComments} instead. See go/soy-java-type-safe.
+   *
+   * @deprecated Use {@link com.google.template.soy.examples.FeaturesTemplates.DemoComments}
+   *     instead. See go/soy-java-type-safe.
    */
   @Deprecated
   public static final class DemoCommentsSoyTemplateInfo extends SoyTemplateInfo {
@@ -170,7 +208,7 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
     private static final com.google.template.soy.parseinfo.TemplateName __TEMPLATE_NAME__ = TemplateName.DEMO_COMMENTS__NAME;
 
     private DemoCommentsSoyTemplateInfo() {
-      super(__NAME__, __TEMPLATE_NAME__, ImmutableMap.of());
+      super(__NAME__, __TEMPLATE_NAME__, ImmutableMap.<String, ParamRequisiteness>of());
     }
 
     private static final DemoCommentsSoyTemplateInfo __INSTANCE__ =
@@ -186,11 +224,11 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
   public static final DemoCommentsSoyTemplateInfo DEMO_COMMENTS =
       DemoCommentsSoyTemplateInfo.getInstance();
 
-
   /**
    * Demo line joining.
-   * 
-   * @deprecated Use {@link com.google.template.soy.examples.FeaturesTemplates.DemoLineJoining} instead. See go/soy-java-type-safe.
+   *
+   * @deprecated Use {@link com.google.template.soy.examples.FeaturesTemplates.DemoLineJoining}
+   *     instead. See go/soy-java-type-safe.
    */
   @Deprecated
   public static final class DemoLineJoiningSoyTemplateInfo extends SoyTemplateInfo {
@@ -200,7 +238,7 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
     private static final com.google.template.soy.parseinfo.TemplateName __TEMPLATE_NAME__ = TemplateName.DEMO_LINE_JOINING__NAME;
 
     private DemoLineJoiningSoyTemplateInfo() {
-      super(__NAME__, __TEMPLATE_NAME__, ImmutableMap.of());
+      super(__NAME__, __TEMPLATE_NAME__, ImmutableMap.<String, ParamRequisiteness>of());
     }
 
     private static final DemoLineJoiningSoyTemplateInfo __INSTANCE__ =
@@ -216,11 +254,11 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
   public static final DemoLineJoiningSoyTemplateInfo DEMO_LINE_JOINING =
       DemoLineJoiningSoyTemplateInfo.getInstance();
 
-
   /**
    * Demo raw text commands.
-   * 
-   * @deprecated Use {@link com.google.template.soy.examples.FeaturesTemplates.DemoRawTextCommands} instead. See go/soy-java-type-safe.
+   *
+   * @deprecated Use {@link com.google.template.soy.examples.FeaturesTemplates.DemoRawTextCommands}
+   *     instead. See go/soy-java-type-safe.
    */
   @Deprecated
   public static final class DemoRawTextCommandsSoyTemplateInfo extends SoyTemplateInfo {
@@ -230,7 +268,7 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
     private static final com.google.template.soy.parseinfo.TemplateName __TEMPLATE_NAME__ = TemplateName.DEMO_RAW_TEXT_COMMANDS__NAME;
 
     private DemoRawTextCommandsSoyTemplateInfo() {
-      super(__NAME__, __TEMPLATE_NAME__, ImmutableMap.of());
+      super(__NAME__, __TEMPLATE_NAME__, ImmutableMap.<String, ParamRequisiteness>of());
     }
 
     private static final DemoRawTextCommandsSoyTemplateInfo __INSTANCE__ =
@@ -246,11 +284,11 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
   public static final DemoRawTextCommandsSoyTemplateInfo DEMO_RAW_TEXT_COMMANDS =
       DemoRawTextCommandsSoyTemplateInfo.getInstance();
 
-
   /**
    * Demo 'print'.
-   * 
-   * @deprecated Use {@link com.google.template.soy.examples.FeaturesTemplates.DemoPrint} instead. See go/soy-java-type-safe.
+   *
+   * @deprecated Use {@link com.google.template.soy.examples.FeaturesTemplates.DemoPrint} instead.
+   *     See go/soy-java-type-safe.
    */
   @Deprecated
   public static final class DemoPrintSoyTemplateInfo extends SoyTemplateInfo {
@@ -287,11 +325,11 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
   public static final DemoPrintSoyTemplateInfo DEMO_PRINT =
       DemoPrintSoyTemplateInfo.getInstance();
 
-
   /**
    * Demo autoescape true.
-   * 
-   * @deprecated Use {@link com.google.template.soy.examples.FeaturesTemplates.DemoAutoescapeTrue} instead. See go/soy-java-type-safe.
+   *
+   * @deprecated Use {@link com.google.template.soy.examples.FeaturesTemplates.DemoAutoescapeTrue}
+   *     instead. See go/soy-java-type-safe.
    */
   @Deprecated
   public static final class DemoAutoescapeTrueSoyTemplateInfo extends SoyTemplateInfo {
@@ -324,11 +362,11 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
   public static final DemoAutoescapeTrueSoyTemplateInfo DEMO_AUTOESCAPE_TRUE =
       DemoAutoescapeTrueSoyTemplateInfo.getInstance();
 
-
   /**
    * Demo 'msg'.
-   * 
-   * @deprecated Use {@link com.google.template.soy.examples.FeaturesTemplates.DemoMsg} instead. See go/soy-java-type-safe.
+   *
+   * @deprecated Use {@link com.google.template.soy.examples.FeaturesTemplates.DemoMsg} instead. See
+   *     go/soy-java-type-safe.
    */
   @Deprecated
   public static final class DemoMsgSoyTemplateInfo extends SoyTemplateInfo {
@@ -362,11 +400,11 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
   public static final DemoMsgSoyTemplateInfo DEMO_MSG =
       DemoMsgSoyTemplateInfo.getInstance();
 
-
   /**
    * Demo 'if'.
-   * 
-   * @deprecated Use {@link com.google.template.soy.examples.FeaturesTemplates.DemoIf} instead. See go/soy-java-type-safe.
+   *
+   * @deprecated Use {@link com.google.template.soy.examples.FeaturesTemplates.DemoIf} instead. See
+   *     go/soy-java-type-safe.
    */
   @Deprecated
   public static final class DemoIfSoyTemplateInfo extends SoyTemplateInfo {
@@ -400,11 +438,11 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
   public static final DemoIfSoyTemplateInfo DEMO_IF =
       DemoIfSoyTemplateInfo.getInstance();
 
-
   /**
    * Demo 'switch'.
-   * 
-   * @deprecated Use {@link com.google.template.soy.examples.FeaturesTemplates.DemoSwitch} instead. See go/soy-java-type-safe.
+   *
+   * @deprecated Use {@link com.google.template.soy.examples.FeaturesTemplates.DemoSwitch} instead.
+   *     See go/soy-java-type-safe.
    */
   @Deprecated
   public static final class DemoSwitchSoyTemplateInfo extends SoyTemplateInfo {
@@ -438,11 +476,11 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
   public static final DemoSwitchSoyTemplateInfo DEMO_SWITCH =
       DemoSwitchSoyTemplateInfo.getInstance();
 
-
   /**
    * Demo 'for'.
-   * 
-   * @deprecated Use {@link com.google.template.soy.examples.FeaturesTemplates.DemoFor} instead. See go/soy-java-type-safe.
+   *
+   * @deprecated Use {@link com.google.template.soy.examples.FeaturesTemplates.DemoFor} instead. See
+   *     go/soy-java-type-safe.
    */
   @Deprecated
   public static final class DemoForSoyTemplateInfo extends SoyTemplateInfo {
@@ -479,11 +517,11 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
   public static final DemoForSoyTemplateInfo DEMO_FOR =
       DemoForSoyTemplateInfo.getInstance();
 
-
   /**
    * Demo 'for' using range.
-   * 
-   * @deprecated Use {@link com.google.template.soy.examples.FeaturesTemplates.DemoForRange} instead. See go/soy-java-type-safe.
+   *
+   * @deprecated Use {@link com.google.template.soy.examples.FeaturesTemplates.DemoForRange}
+   *     instead. See go/soy-java-type-safe.
    */
   @Deprecated
   public static final class DemoForRangeSoyTemplateInfo extends SoyTemplateInfo {
@@ -517,11 +555,11 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
   public static final DemoForRangeSoyTemplateInfo DEMO_FOR_RANGE =
       DemoForRangeSoyTemplateInfo.getInstance();
 
-
   /**
    * Demo 'call' without 'param's.
-   * 
-   * @deprecated Use {@link com.google.template.soy.examples.FeaturesTemplates.DemoCallWithoutParam} instead. See go/soy-java-type-safe.
+   *
+   * @deprecated Use {@link com.google.template.soy.examples.FeaturesTemplates.DemoCallWithoutParam}
+   *     instead. See go/soy-java-type-safe.
    */
   @Deprecated
   public static final class DemoCallWithoutParamSoyTemplateInfo extends SoyTemplateInfo {
@@ -562,11 +600,11 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
   public static final DemoCallWithoutParamSoyTemplateInfo DEMO_CALL_WITHOUT_PARAM =
       DemoCallWithoutParamSoyTemplateInfo.getInstance();
 
-
   /**
    * Demo a 'call' out to a template defined in another file.
-   * 
-   * @deprecated Use {@link com.google.template.soy.examples.FeaturesTemplates.DemoCallOtherFile} instead. See go/soy-java-type-safe.
+   *
+   * @deprecated Use {@link com.google.template.soy.examples.FeaturesTemplates.DemoCallOtherFile}
+   *     instead. See go/soy-java-type-safe.
    */
   @Deprecated
   public static final class DemoCallOtherFileSoyTemplateInfo extends SoyTemplateInfo {
@@ -576,7 +614,7 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
     private static final com.google.template.soy.parseinfo.TemplateName __TEMPLATE_NAME__ = TemplateName.DEMO_CALL_OTHER_FILE__NAME;
 
     private DemoCallOtherFileSoyTemplateInfo() {
-      super(__NAME__, __TEMPLATE_NAME__, ImmutableMap.of());
+      super(__NAME__, __TEMPLATE_NAME__, ImmutableMap.<String, ParamRequisiteness>of());
     }
 
     private static final DemoCallOtherFileSoyTemplateInfo __INSTANCE__ =
@@ -592,11 +630,11 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
   public static final DemoCallOtherFileSoyTemplateInfo DEMO_CALL_OTHER_FILE =
       DemoCallOtherFileSoyTemplateInfo.getInstance();
 
-
   /**
    * Demo 'call' with 'param's.
-   * 
-   * @deprecated Use {@link com.google.template.soy.examples.FeaturesTemplates.DemoCallWithParam} instead. See go/soy-java-type-safe.
+   *
+   * @deprecated Use {@link com.google.template.soy.examples.FeaturesTemplates.DemoCallWithParam}
+   *     instead. See go/soy-java-type-safe.
    */
   @Deprecated
   public static final class DemoCallWithParamSoyTemplateInfo extends SoyTemplateInfo {
@@ -639,11 +677,12 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
   public static final DemoCallWithParamSoyTemplateInfo DEMO_CALL_WITH_PARAM =
       DemoCallWithParamSoyTemplateInfo.getInstance();
 
-
   /**
    * Demo 'call' with a 'param' block.
-   * 
-   * @deprecated Use {@link com.google.template.soy.examples.FeaturesTemplates.DemoCallWithParamBlock} instead. See go/soy-java-type-safe.
+   *
+   * @deprecated Use {@link
+   *     com.google.template.soy.examples.FeaturesTemplates.DemoCallWithParamBlock} instead. See
+   *     go/soy-java-type-safe.
    */
   @Deprecated
   public static final class DemoCallWithParamBlockSoyTemplateInfo extends SoyTemplateInfo {
@@ -676,11 +715,12 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
   public static final DemoCallWithParamBlockSoyTemplateInfo DEMO_CALL_WITH_PARAM_BLOCK =
       DemoCallWithParamBlockSoyTemplateInfo.getInstance();
 
-
   /**
    * Demo {param} blocks with 'kind' attribute.
-   * 
-   * @deprecated Use {@link com.google.template.soy.examples.FeaturesTemplates.DemoParamWithKindAttribute} instead. See go/soy-java-type-safe.
+   *
+   * @deprecated Use {@link
+   *     com.google.template.soy.examples.FeaturesTemplates.DemoParamWithKindAttribute} instead. See
+   *     go/soy-java-type-safe.
    */
   @Deprecated
   public static final class DemoParamWithKindAttributeSoyTemplateInfo extends SoyTemplateInfo {
@@ -717,11 +757,11 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
   public static final DemoParamWithKindAttributeSoyTemplateInfo DEMO_PARAM_WITH_KIND_ATTRIBUTE =
       DemoParamWithKindAttributeSoyTemplateInfo.getInstance();
 
-
   /**
    * Demo expressions.
-   * 
-   * @deprecated Use {@link com.google.template.soy.examples.FeaturesTemplates.DemoExpressions} instead. See go/soy-java-type-safe.
+   *
+   * @deprecated Use {@link com.google.template.soy.examples.FeaturesTemplates.DemoExpressions}
+   *     instead. See go/soy-java-type-safe.
    */
   @Deprecated
   public static final class DemoExpressionsSoyTemplateInfo extends SoyTemplateInfo {
@@ -758,11 +798,11 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
   public static final DemoExpressionsSoyTemplateInfo DEMO_EXPRESSIONS =
       DemoExpressionsSoyTemplateInfo.getInstance();
 
-
   /**
    * Demo double braces.
-   * 
-   * @deprecated Use {@link com.google.template.soy.examples.FeaturesTemplates.DemoDoubleBraces} instead. See go/soy-java-type-safe.
+   *
+   * @deprecated Use {@link com.google.template.soy.examples.FeaturesTemplates.DemoDoubleBraces}
+   *     instead. See go/soy-java-type-safe.
    */
   @Deprecated
   public static final class DemoDoubleBracesSoyTemplateInfo extends SoyTemplateInfo {
@@ -799,11 +839,11 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
   public static final DemoDoubleBracesSoyTemplateInfo DEMO_DOUBLE_BRACES =
       DemoDoubleBracesSoyTemplateInfo.getInstance();
 
-
   /**
    * Demo BiDi support.
-   * 
-   * @deprecated Use {@link com.google.template.soy.examples.FeaturesTemplates.DemoBidiSupport} instead. See go/soy-java-type-safe.
+   *
+   * @deprecated Use {@link com.google.template.soy.examples.FeaturesTemplates.DemoBidiSupport}
+   *     instead. See go/soy-java-type-safe.
    */
   @Deprecated
   public static final class DemoBidiSupportSoyTemplateInfo extends SoyTemplateInfo {
@@ -845,12 +885,12 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
   public static final DemoBidiSupportSoyTemplateInfo DEMO_BIDI_SUPPORT =
       DemoBidiSupportSoyTemplateInfo.getInstance();
 
-
   /**
    * Template that outputs -1 in a right-to-left page and 1 in a left-to-right page, i.e. basically
    * exposes the results of Soy's bidiGlobalDir() to scripts.
-   * 
-   * @deprecated Use {@link com.google.template.soy.examples.FeaturesTemplates.BidiGlobalDir} instead. See go/soy-java-type-safe.
+   *
+   * @deprecated Use {@link com.google.template.soy.examples.FeaturesTemplates.BidiGlobalDir}
+   *     instead. See go/soy-java-type-safe.
    */
   @Deprecated
   public static final class BidiGlobalDirSoyTemplateInfo extends SoyTemplateInfo {
@@ -860,7 +900,7 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
     private static final com.google.template.soy.parseinfo.TemplateName __TEMPLATE_NAME__ = TemplateName.BIDI_GLOBAL_DIR__NAME;
 
     private BidiGlobalDirSoyTemplateInfo() {
-      super(__NAME__, __TEMPLATE_NAME__, ImmutableMap.of());
+      super(__NAME__, __TEMPLATE_NAME__, ImmutableMap.<String, ParamRequisiteness>of());
     }
 
     private static final BidiGlobalDirSoyTemplateInfo __INSTANCE__ =
@@ -876,11 +916,11 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
   public static final BidiGlobalDirSoyTemplateInfo BIDI_GLOBAL_DIR =
       BidiGlobalDirSoyTemplateInfo.getInstance();
 
-
   /**
    * Template for printing the header to add before each example.
-   * 
-   * @deprecated Use {@link com.google.template.soy.examples.FeaturesTemplates.ExampleHeader} instead. See go/soy-java-type-safe.
+   *
+   * @deprecated Use {@link com.google.template.soy.examples.FeaturesTemplates.ExampleHeader}
+   *     instead. See go/soy-java-type-safe.
    */
   @Deprecated
   public static final class ExampleHeaderSoyTemplateInfo extends SoyTemplateInfo {
@@ -922,7 +962,7 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
     super(
         "features.soy",
         __NAMESPACE__,
-        com.google.common.collect.ImmutableList.of(
+        com.google.common.collect.ImmutableList.<SoyTemplateInfo>of(
             DEMO_COMMENTS,
             DEMO_LINE_JOINING,
             DEMO_RAW_TEXT_COMMANDS,
@@ -943,7 +983,7 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
             DEMO_BIDI_SUPPORT,
             BIDI_GLOBAL_DIR,
             EXAMPLE_HEADER),
-        ImmutableSet.of());
+        ImmutableSet.<String>of());
   }
 
 

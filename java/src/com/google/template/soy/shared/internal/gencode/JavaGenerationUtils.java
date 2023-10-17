@@ -164,7 +164,11 @@ public final class JavaGenerationUtils {
       // Multiline.
       ilb.appendLine("/**");
       for (String line : Splitter.on('\n').split(doc)) {
-        ilb.appendLine(" * ", line);
+        ilb.appendLineStart(" *");
+        if (!line.isEmpty()) {
+          ilb.appendLineMiddle(" ", line);
+        }
+        ilb.appendLineEnd();
       }
       ilb.appendLine(" */");
 
