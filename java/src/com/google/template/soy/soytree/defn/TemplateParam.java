@@ -193,7 +193,7 @@ public class TemplateParam extends AbstractVarDefn implements TemplateHeaderVarD
     return new TemplateParam(this, copyState);
   }
 
-  static boolean isAlreadyOptionalType(TypeNode typeNode) {
+  public static boolean isAlreadyOptionalType(TypeNode typeNode) {
     return typeNode
         .asStreamExpandingUnion()
         .anyMatch(

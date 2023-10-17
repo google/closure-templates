@@ -93,6 +93,9 @@ public final class TypeNodeConverter
           StyleAllowance.NO_CAPS,
           StyleAllowance.NO_PUNCTUATION);
 
+  public static final SoyErrorKind OPTIONAL_RECORD_PROPERTY_MUST_BE_NULLABLE =
+      SoyErrorKind.of("Optional record property should be typed as ''|null''.");
+
   private static final ImmutableSet<Kind> ALLOWED_TEMPLATE_RETURN_TYPES =
       Sets.immutableEnumSet(
           Kind.ELEMENT,
@@ -390,15 +393,20 @@ public final class TypeNodeConverter
     // LinkedHashMap insertion order iteration on values() is important here.
     Map<String, RecordType.Member> map = Maps.newLinkedHashMap();
     for (RecordTypeNode.Property property : node.properties()) {
-      RecordType.Member oldType =
+      SoyType propertyType = property.type().accept(this);
+      RecordType.Member duplicatePropertyNameMember =
           map.put(
               property.name(),
-              RecordType.memberOf(
-                  property.name(), property.optional(), property.type().accept(this)));
-      if (oldType != null) {
+              RecordType.memberOf(property.name(), property.optional(), propertyType));
+      if (duplicatePropertyNameMember != null) {
         errorReporter.report(property.nameLocation(), DUPLICATE_RECORD_FIELD, property.name());
         // restore old mapping and keep going
-        map.put(property.name(), oldType);
+        map.put(property.name(), duplicatePropertyNameMember);
+      }
+      // TODO(b/291132644): Remove this restriction.
+      if (property.optional() && !propertyType.isAssignableFromStrict(NullType.getInstance())) {
+        errorReporter.warn(
+            property.type().sourceLocation(), OPTIONAL_RECORD_PROPERTY_MUST_BE_NULLABLE);
       }
     }
     SoyType type = interner.getOrCreateRecordType(map.values());

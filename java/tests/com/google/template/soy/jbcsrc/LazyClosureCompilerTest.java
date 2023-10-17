@@ -140,7 +140,7 @@ public class LazyClosureCompilerTest {
   public void testLetValueNode_nullableParameter() {
     CompiledTemplateSubject tester =
         assertThatTemplateBody(
-            "{@param? param : bool}",
+            "{@param? param : bool|null}",
             "{let $paramWithDefault : $param ?? true /}",
             "{$paramWithDefault ? 'true' : 'false'}");
     tester.rendersAs("true", ImmutableMap.of());
@@ -152,8 +152,8 @@ public class LazyClosureCompilerTest {
   public void testLetValueNode_nullableString() {
     CompiledTemplateSubject tester =
         assertThatTemplateBody(
-            "{@param? param : string}",
-            "{@param? param2 : string}",
+            "{@param? param : string|null}",
+            "{@param? param2 : string|null}",
             "{let $paramWithDefault : $param ?? $param2 /}",
             "{$paramWithDefault}");
     tester.rendersAs("null", ImmutableMap.of());
@@ -167,7 +167,7 @@ public class LazyClosureCompilerTest {
     CompiledTemplateSubject tester =
         assertThatTemplateBody(
             "{@param comments: list<string>}",
-            "{@param? numComments: number}",
+            "{@param? numComments: number|null}",
             "  {let $numNotShown: ",
             "      ($numComments != null) and length($comments) > $numComments + 2 ?",
             "          length($comments) - $numComments : 0 /}",

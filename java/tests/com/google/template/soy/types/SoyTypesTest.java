@@ -32,6 +32,7 @@ import com.google.common.truth.FailureMetadata;
 import com.google.common.truth.Subject;
 import com.google.common.truth.Truth;
 import com.google.template.soy.base.internal.SanitizedContentKind;
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import com.google.template.soy.types.SanitizedType.ElementType;
@@ -973,6 +974,9 @@ public class SoyTypesTest {
               SoyFileSetParserBuilder.forTemplateContents(
                       "{@param p : " + input + "|string}\n{$p ? 't' : 'f'}")
                   .typeRegistry(registry)
+                  .errorReporter(
+                      ErrorReporter
+                          .explodeOnErrorsAndIgnoreWarnings()) // ignore optional/nullable mismatch
                   .parse()
                   .fileSet()
                   .getChild(0)

@@ -322,8 +322,8 @@ import * as simple from 'examples/simple.soy';
  * Reports on a trip.
  */
 {template tripReport_ visibility="private" kind="text"}
-  {@param? name: string}  /** The name of the person who took a trip (optional). */
-  {@param? destination: string}  /** The destination of the trip (optional). */
+  {@param? name: string|null}           /** The name of the person who took a trip (optional). */
+  {@param? destination: string|null}    /** The destination of the trip (optional). */
   // Note: The template name demonstrates the good practice of adding a trailing underscore to
   // private templates (template that should never be called from hand-written code).
 

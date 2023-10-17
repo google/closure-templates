@@ -346,14 +346,14 @@ public class ExpressionCompilerTest {
   @Test
   public void testConditionalOpNode_advanced() {
     CompiledTemplateSubject tester =
-        assertThatTemplateBody("{@param? p : string}", "{$p ? $p : '' }");
+        assertThatTemplateBody("{@param? p : string|null}", "{$p ? $p : '' }");
     tester.rendersAs("", ImmutableMap.of());
     tester.rendersAs("hello", ImmutableMap.<String, Object>of("p", "hello"));
     tester =
         assertThatTemplateBody(
-            "{@param? p : map<string, string>}", "{if $p}", "  {$p.get('key')}", "{/if}");
+            "{@param? p : map<string, string>|null}", "{if $p}", "  {$p.get('key')}", "{/if}");
     tester.rendersAs("", ImmutableMap.of());
-    tester = assertThatTemplateBody("{@param? p : string}", "{$p ? $p : 1 }");
+    tester = assertThatTemplateBody("{@param? p : string|null}", "{$p ? $p : 1 }");
     tester.rendersAs("1", ImmutableMap.of());
     tester.rendersAs("hello", ImmutableMap.<String, Object>of("p", "hello"));
 

@@ -189,7 +189,7 @@ public class TemplateNodeTest {
                 "  {@param goo : ?}",
                 "  /** Something milky. */",
                 "  {@param moo : bool}",
-                "  {@param? too : string}",
+                "  {@param? too : string|null}",
                 "{sp}{sp}{$foo}{$goo}{$moo ? 'moo' : ''}{$too}\n",
                 "{/template}"));
     assertEquals(

@@ -91,7 +91,8 @@ public final class ProtoSupportTest {
 
   @Test
   public void testSimpleProto_nullCoalescing() {
-    assertThatTemplateBody("{@param? proto : KvPair}", "{$proto?.getValueOrUndefined() ?? 'bar'}")
+    assertThatTemplateBody(
+            "{@param? proto : KvPair|null}", "{$proto?.getValueOrUndefined() ?? 'bar'}")
         .rendersAs("bar");
 
     CompiledTemplateSubject tester =
@@ -112,8 +113,8 @@ public final class ProtoSupportTest {
     tester.rendersAs("bar", ImmutableMap.of("proto", ProtoMap.getDefaultInstance()));
 
     assertThatTemplateBody(
-            "{@param? proto : KvPair}",
-            "{@param? proto2 : KvPair}",
+            "{@param? proto : KvPair|null}",
+            "{@param? proto2 : KvPair|null}",
             "{$proto?.getValueOrUndefined() ?? $proto2?.getValueOrUndefined()}")
         .rendersAs("null");
   }
@@ -123,10 +124,11 @@ public final class ProtoSupportTest {
   // values
   @Test
   public void testSimpleProto_nullSafePrimitive() {
-    assertThatTemplateBody("{@param? proto : KvPair}", "{$proto?.getAnotherValueOrUndefined()}")
+    assertThatTemplateBody(
+            "{@param? proto : KvPair|null}", "{$proto?.getAnotherValueOrUndefined()}")
         .rendersAs("null");
     assertThatTemplateBody(
-            "{@param? proto : ExampleExtendable}",
+            "{@param? proto : ExampleExtendable|null}",
             "{if not $proto?.getBoolFieldOrUndefined()}",
             "  foo",
             "{/if}")
@@ -137,7 +139,7 @@ public final class ProtoSupportTest {
   public void testSimpleProto_nullSafeReference() {
     CompiledTemplateSubject tester =
         assertThatTemplateBody(
-            "{@param? proto : ExampleExtendable}",
+            "{@param? proto : ExampleExtendable|null}",
             "{if $proto?.getSomeEmbeddedMessage()}",
             "  foo",
             "{/if}");
@@ -155,7 +157,7 @@ public final class ProtoSupportTest {
   public void testSimpleProto_nullSafeProtoLetVar() {
     CompiledTemplateSubject tester =
         assertThatTemplateBody(
-            "{@param? proto : ExampleExtendable}",
+            "{@param? proto : ExampleExtendable|null}",
             "{let $foo : $proto?.getSomeEmbeddedMessage() /}",
             "{$foo ? 'true' : 'false'}");
     tester.rendersAs("false", ImmutableMap.of());
@@ -172,7 +174,7 @@ public final class ProtoSupportTest {
   public void testSimpleProto_nullSafeStringLetVar() {
     CompiledTemplateSubject tester =
         assertThatTemplateBody(
-            "{@param? proto : ExampleExtendable}",
+            "{@param? proto : ExampleExtendable|null}",
             "{let $foo : $proto?.getSomeEmbeddedMessage()?.getSomeEmbeddedStringOrUndefined() /}",
             "{$foo}");
     tester.rendersAs("null", ImmutableMap.of());
@@ -190,7 +192,7 @@ public final class ProtoSupportTest {
   public void testMathOnNullableValues() {
     CompiledTemplateSubject tester =
         assertThatTemplateBody(
-            "{@param? proto : ExampleExtendable}",
+            "{@param? proto : ExampleExtendable|null}",
             "{let $foo : $proto?.getSomeEmbeddedMessage()?.getSomeEmbeddedStringOrUndefined() /}",
             "{$foo}");
     tester.rendersAs("null", ImmutableMap.of());
@@ -271,7 +273,7 @@ public final class ProtoSupportTest {
             "{/template}",
             "",
             "{template callee}",
-            "  {@param? str : string}",
+            "  {@param? str : string|null}",
             "  {if $str}",
             "    {$str}",
             "  {/if}",

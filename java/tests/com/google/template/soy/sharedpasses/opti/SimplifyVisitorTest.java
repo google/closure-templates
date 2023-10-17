@@ -334,7 +334,7 @@ public class SimplifyVisitorTest {
             "<{t2()} data-ved=\"{currentVed()}\"></>",
             "{/template}",
             "{template t2 kind=\"html<?>\"}",
-            "  {@attribute? data-ved: string}",
+            "  {@attribute? data-ved: string|null}",
             "  <div @data-ved></div>")
         .isEqualTo(
             "{call t2}{param dataVed kind=\"text\"}{currentVed()"

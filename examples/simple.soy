@@ -31,7 +31,7 @@
  * Says hello to a person (or to the world if no person is given).
  */
 {template helloName}
-  {@param? name: string}  /** The name of the person to say hello to. */
+  {@param? name: string|null}    /** The name of the person to say hello to. */
   {if $name}
     {msg desc="Says hello to a person."}
       Hello {$name}!

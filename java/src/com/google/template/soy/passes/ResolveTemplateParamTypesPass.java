@@ -15,6 +15,9 @@
  */
 package com.google.template.soy.passes;
 
+import static com.google.template.soy.soytree.defn.TemplateParam.isAlreadyOptionalType;
+
+import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.TemplateContentKind;
 import com.google.template.soy.error.ErrorReporter;
@@ -27,6 +30,9 @@ import com.google.template.soy.soytree.defn.AttrParam;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.soytree.defn.TemplateStateVar;
 import com.google.template.soy.types.FunctionType;
+import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.SoyType.Kind;
+import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.UnknownType;
 import com.google.template.soy.types.ast.TypeNodeConverter;
 
@@ -37,6 +43,9 @@ final class ResolveTemplateParamTypesPass implements CompilerFilePass {
 
   private static final SoyErrorKind ATTRIBUTE_PARAM_ONLY_IN_ELEMENT_TEMPLATE =
       SoyErrorKind.of("Only templates of kind=\"html<?>\" can have @attribute.");
+
+  private static final SoyErrorKind OPTIONAL_AND_NULLABLE_DISAGREE =
+      SoyErrorKind.of("Optional params should be declared with both a ''?'' and ''|null''.");
 
   public ResolveTemplateParamTypesPass(
       ErrorReporter errorReporter, boolean disableAllTypeChecking) {
@@ -64,7 +73,16 @@ final class ResolveTemplateParamTypesPass implements CompilerFilePass {
           errorReporter.report(param.getSourceLocation(), ATTRIBUTE_PARAM_ONLY_IN_ELEMENT_TEMPLATE);
         }
         if (param.getTypeNode() != null) {
-          param.setType(converter.getOrCreateType(param.getTypeNode()));
+          SoyType paramType = converter.getOrCreateType(param.getTypeNode());
+          param.setType(paramType);
+          // TODO(b/291132644): Remove this restriction.
+          if (param.getOriginalTypeNode() != null
+              && !param.hasDefault()
+              && !SoyTypes.containsKinds(paramType, ImmutableSet.of(Kind.ANY, Kind.UNKNOWN))
+              && param.isExplicitlyOptional()
+                  != isAlreadyOptionalType(param.getOriginalTypeNode())) {
+            errorReporter.warn(param.getSourceLocation(), OPTIONAL_AND_NULLABLE_DISAGREE);
+          }
         } else if (disableAllTypeChecking) {
           // If there's no type node, this is a default parameter. Normally, we'd set the type on
           // this once we figure out the type of the default expression in

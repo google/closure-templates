@@ -50,7 +50,9 @@ import java.util.List;
           parameterTypes = {},
           returnType = "list<string>"),
       @Signature(
-          parameterTypes = {"[numeric?:bool, caseFirst?:string, sensitivity?:string]"},
+          parameterTypes = {
+            "[numeric?:bool|null, caseFirst?:string|null, sensitivity?:string|null]"
+          },
           returnType = "list<string>"),
     })
 @SoyPureFunction

@@ -306,7 +306,7 @@ public class BytecodeCompilerTest {
             "",
             "{template callee}",
             "  {@param foo : string}",
-            "  {@param? boo : string}",
+            "  {@param? boo : string|null}",
             "Foo: {$foo}{\\n}",
             "Boo: {$boo}{\\n}",
             "{/template}",
@@ -592,7 +592,7 @@ public class BytecodeCompilerTest {
   public void testIfNode_nullableBool() {
     CompiledTemplateSubject tester =
         assertThatTemplateBody(
-            "{@param? cond1 : bool}",
+            "{@param? cond1 : bool|null}",
             "{@param cond2 : bool}",
             "{if $cond2 or $cond1}",
             "  hello",
@@ -719,7 +719,7 @@ public class BytecodeCompilerTest {
   public void testOptionalListIteration() {
     CompiledTemplateSubject tester =
         assertThatTemplateBody(
-            "{@param? list : list<int>}",
+            "{@param? list : list<int>|null}",
             "{if $list}",
             "  {for $item in $list}",
             "    {$item}",
@@ -833,7 +833,7 @@ public class BytecodeCompilerTest {
         TemplateTester.assertThatFile(
             "{namespace ns}",
             "{template foo}",
-            "  {@param? content : string}",
+            "  {@param? content : string|null}",
             "  {checkNotNull($content)}",
             "{/template}");
     subject.rendersAs("full", ImmutableMap.of("content", "full"));
@@ -846,7 +846,7 @@ public class BytecodeCompilerTest {
         TemplateTester.assertThatFile(
             "{namespace ns}",
             "{template foo}",
-            "  {@param? content : string}",
+            "  {@param? content : string|null}",
             "  {$content ?? 'empty'}",
             "{/template}");
     subject.rendersAs("empty");

@@ -79,8 +79,8 @@ public final class ResolveExpressionTypesPassTest {
   @Test
   public void testOptionalParamTypes() {
     assertTypes(
-        "{@param? pa: bool}",
-        "{@param? pb: list<int>}",
+        "{@param? pa: bool|null}",
+        "{@param? pb: list<int>|null}",
         "{assertType('bool|null', $pa)}",
         "{assertType('list<int>|null', $pb)}");
   }
@@ -338,7 +338,7 @@ public final class ResolveExpressionTypesPassTest {
         "{@param pa: ?}",
         "{@param pi: int}",
         "{@param pf: float}",
-        "{@param? ni: int}",
+        "{@param? ni: int|null}",
         "{assertType('?', $pa ?? $pi)}",
         "{assertType('float|int', $pi ?? $pf)}",
         "{assertType('float|int', $pa ? $pi : $pf)}",
@@ -349,7 +349,8 @@ public final class ResolveExpressionTypesPassTest {
   public void testNullCoalescingAndConditionalOps_complexCondition() {
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(
-                constructFileSource("{@param? l: [a :int]}", "{assertType('int', $l?.a ?? 0)}"))
+                constructFileSource(
+                    "{@param? l: [a :int]|null}", "{assertType('int', $l?.a ?? 0)}"))
             .typeRegistry(TYPE_REGISTRY)
             .addSoyFunction(ASSERT_TYPE_FUNCTION)
             .parse()
@@ -421,7 +422,7 @@ public final class ResolveExpressionTypesPassTest {
   @Test
   public void testDataFlowTypeNarrowing() {
     assertTypes(
-        "{@param pa: bool|null}",
+        "{@param? pa: bool|null}",
         "{@param pb: bool}",
         "{if $pa != null}",
         "  {assertType('bool', $pa)}", // #0 must be non-null
@@ -432,7 +433,7 @@ public final class ResolveExpressionTypesPassTest {
         "  {assertType('bool', $pa)}", // #2 must be non-null
         "{/if}");
     assertTypes(
-        "{@param pa: bool|null}",
+        "{@param? pa: bool|null}",
         "{@param pb: bool}",
         "{if $pa == null or $pb}",
         "  {assertType('bool|null', $pa)}", // #3 don't know
@@ -445,7 +446,7 @@ public final class ResolveExpressionTypesPassTest {
         "  {assertType('bool|null', $pa)}", // #6 don't know
         "{/if}");
     assertTypes(
-        "{@param pa: bool|null}",
+        "{@param? pa: bool|null}",
         "{@param pb: bool}",
         "{if null != $pa}", // Reverse order
         "  {assertType('bool', $pa)}", // #7 must be non-null
@@ -460,7 +461,7 @@ public final class ResolveExpressionTypesPassTest {
         "  {assertType('bool', $pa)}", // #10 must be non-null
         "{/if}");
     assertTypes(
-        "{@param pa: bool|null}",
+        "{@param? pa: bool|null}",
         "{@param pb: bool}",
         "{if $pa}", // Chained conditions
         "{elseif $pb}",
@@ -469,7 +470,7 @@ public final class ResolveExpressionTypesPassTest {
         "  {assertType('bool|null', $pa)}", // #12 must be falsy
         "{/if}");
     assertTypes(
-        "{@param pa: bool|null}",
+        "{@param? pa: bool|null}",
         "{@param pb: bool}",
         "{if $pa}", // Nested if
         "  {if $pa}",
@@ -477,7 +478,7 @@ public final class ResolveExpressionTypesPassTest {
         "  {/if}",
         "{/if}");
     assertTypes(
-        "{@param pa: bool|null}",
+        "{@param? pa: bool|null}",
         "{@param pb: bool}",
         "{if $pa != null}", // != null
         "  {assertType('bool', $pa)}", // #14 must be non-null
@@ -485,7 +486,7 @@ public final class ResolveExpressionTypesPassTest {
         "  {assertType('null', $pa)}", // #15 must be null
         "{/if}");
     assertTypes(
-        "{@param pa: bool|null}",
+        "{@param? pa: bool|null}",
         "{@param pb: bool}",
         "{if $pa == null}", // == null
         "  {assertType('null', $pa)}", // #16 must be null
@@ -493,7 +494,7 @@ public final class ResolveExpressionTypesPassTest {
         "  {assertType('bool', $pa)}", // #17 must be non-null
         "{/if}");
     assertTypes(
-        "{@param pa: bool|null}",
+        "{@param? pa: bool|null}",
         "{@param pb: bool}",
         "{if $pb or $pa == null}",
         "  {assertType('bool|null', $pa)}", // #18 don't know
@@ -501,7 +502,7 @@ public final class ResolveExpressionTypesPassTest {
         "  {assertType('bool', $pa)}", // #19 must be non-null
         "{/if}");
     assertTypes(
-        "{@param pa: bool|null}",
+        "{@param? pa: bool|null}",
         "{@param pb: bool}",
         "{let $null: null /}",
         "{if $null == null or $null != null}",
@@ -512,8 +513,8 @@ public final class ResolveExpressionTypesPassTest {
         "{/if}",
         "");
     assertTypes(
-        "{@param? pa: string}",
-        "{@param? pb: string}",
+        "{@param? pa: string|null}",
+        "{@param? pb: string|null}",
         "{if $pa != null and $pb != null}",
         "  {assertType('string', $pa)}",
         "  {assertType('string', $pb)}",
@@ -576,7 +577,7 @@ public final class ResolveExpressionTypesPassTest {
         "{/if}",
         "");
     assertTypes(
-        "{@param? m: map<string, string>}",
+        "{@param? m: map<string, string>|null}",
         "{if $m?.get('a')}",
         "  {assertType('map<string,string>', $m)}",
         "  {assertType('string', $m?.get('a'))}",
@@ -655,7 +656,7 @@ public final class ResolveExpressionTypesPassTest {
   @Test
   public void testDataFlowTypeNarrowing_tripleEq() {
     assertTypes(
-        "{@param? m: map<string, string|undefined>}",
+        "{@param? m: map<string, string|undefined>|null}",
         "{assertType('null|string|undefined', $m?.get('a'))}",
         "{if $m?.get('a') === undefined}",
         "  {assertType('undefined', $m?.get('a'))}",
@@ -676,7 +677,7 @@ public final class ResolveExpressionTypesPassTest {
         "{/if}",
         "");
     assertTypes(
-        "{@param? m: map<string, string>}",
+        "{@param? m: map<string, string>|null}",
         "{if $m?.get('a') === null}",
         "  {assertType('null', $m?.get('a'))}",
         "  {assertType('map<string,string>|null', $m)}",
@@ -690,7 +691,7 @@ public final class ResolveExpressionTypesPassTest {
   @Test
   public void testDataFlowTypeNarrowing_greaterLessThan() {
     assertTypes(
-        "{@param? r: [a?: string]}",
+        "{@param? r: [a?: string|null]|null}",
         "{if $r?.a?.length > 0}",
         "  {assertType('string', $r.a)}",
         "{/if}",
@@ -747,8 +748,8 @@ public final class ResolveExpressionTypesPassTest {
   @Test
   public void testDataFlowTypeNarrowing_logicalExpressions() {
     assertTypes(
-        "{@param? record: [active : bool|null]}",
-        "{@param? selected: map<string,bool>}",
+        "{@param? record: [active : bool|null]|null}",
+        "{@param? selected: map<string,bool>|null}",
         "{assertType('bool', $selected and $selected.get('a'))}",
         "{assertType('bool', $selected == null or $selected.get('a'))}",
         "{if ($record.active != null) and (not $record.active)}",
@@ -761,7 +762,7 @@ public final class ResolveExpressionTypesPassTest {
   public void testDataFlowTypeNarrowingFailure() {
     // Test for places where type narrowing shouldn't work
     assertTypes(
-        "{@param pa: bool|null}",
+        "{@param? pa: bool|null}",
         "{@param pb: bool}",
         "{if ($pa != null) != ($pb != null)}",
         "  {assertType('bool|null', $pa)}", // #0 don't know
@@ -779,7 +780,7 @@ public final class ResolveExpressionTypesPassTest {
   @Test
   public void testDataFlowTypeNarrowing_switch() {
     assertTypes(
-        "{@param? p: string|bool|int}",
+        "{@param? p: string|bool|int|null}",
         "{switch $p}",
         "  {case 'str'}",
         "    {assertType('string', $p)}",
@@ -793,7 +794,7 @@ public final class ResolveExpressionTypesPassTest {
         "    {assertType('bool|int|null|string', $p)}",
         "{/switch}");
     assertTypes(
-        "{@param p: string|bool|int|null|undefined}",
+        "{@param? p: string|bool|int|null|undefined}",
         "{switch $p}",
         "  {case null}",
         "    {assertType('null', $p)}",
@@ -801,7 +802,7 @@ public final class ResolveExpressionTypesPassTest {
         "    {assertType('bool|int|string|undefined', $p)}",
         "{/switch}");
     assertTypes(
-        "{@param p: string|bool|int|null|undefined}",
+        "{@param? p: string|bool|int|null|undefined}",
         "{switch $p}",
         "  {case 'str', null}",
         "    {assertType('null|string', $p)}",
@@ -815,7 +816,7 @@ public final class ResolveExpressionTypesPassTest {
   @Test
   public void testConditionalOperatorDataFlowTypeNarrowing() {
     assertTypes(
-        "{@param pa: bool|null}",
+        "{@param? pa: bool|null}",
         "{@param pb: bool}",
         "{@param pc: [a : int|null]}",
         "{assertType('bool', $pa ? $pa : $pb)}", // #0 must be non-null
@@ -880,7 +881,7 @@ public final class ResolveExpressionTypesPassTest {
   public void testInjectedParamTypes() {
     assertTypes(
         "{@inject pa: bool}",
-        "{@inject? pb: list<int>}",
+        "{@inject? pb: list<int>|null}",
         "{assertType('bool', $pa)}",
         "{assertType('list<int>|null', $pb)}");
   }
@@ -986,8 +987,8 @@ public final class ResolveExpressionTypesPassTest {
   @Test
   public void testNonNullAssertion() {
     assertTypes(
-        "{@param i: int|null}",
-        "{@param n: int|null}",
+        "{@param? i: int|null}",
+        "{@param? n: int|null}",
         "{@param b: bool}",
         "{@param r: [a: null|[b: null|[c: null|string]]]}",
         "{assertType('int', $i!)}",
@@ -1016,7 +1017,7 @@ public final class ResolveExpressionTypesPassTest {
                         "{/extern}",
                         "",
                         "{template aaa}",
-                        "  {@param? nullableString: string}",
+                        "  {@param? nullableString: string|null}",
                         "",
                         "  {assertType('string', returnsNullable() ?? '')}",
                         "{/template}"))
@@ -1031,8 +1032,8 @@ public final class ResolveExpressionTypesPassTest {
     assertTypes(
         "{@param s1: string}",
         "{@param s2: string|undefined}",
-        "{@param s3: string|null}",
-        "{@param s4: string|null|undefined}",
+        "{@param? s3: string|null}",
+        "{@param? s4: string|null|undefined}",
         "{assertType('string', undefinedToNullForMigration($s1))}",
         "{assertType('null|string', undefinedToNullForMigration($s2))}",
         "{assertType('null|string', undefinedToNullForMigration($s3))}",

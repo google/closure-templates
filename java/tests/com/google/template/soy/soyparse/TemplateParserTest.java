@@ -231,7 +231,7 @@ public final class TemplateParserTest {
     assertValidTemplate("  \n{@param foo: int}\nBODY{$foo}");
     assertValidTemplate("  \n  {@param foo:\n  int}\n  BODY{$foo}");
 
-    assertValidTemplate("{@param foo: int|list<[a: map<string, int|string>, b:?|null]>}\n{$foo}");
+    assertValidTemplate("{@param foo: int|list<[a: map<string, int|string>, b:?]>}\n{$foo}");
 
     assertValidTemplate(
         ""
@@ -848,7 +848,7 @@ public final class TemplateParserTest {
             + "  /* Something strong. (Not doc comment.) */\n"
             + "  // {@param commentedOut: string}\n"
             + "  {@param moo: string}{@param too: string}\n"
-            + "  {@param? woo: string}  /** Something exciting. */  {@param hoo: string}\n"
+            + "  {@param? woo: string|null}  /** Something exciting. */  {@param hoo: string}\n"
             + "/** New line means no doc. */\n"
             + "  {$boo + $goo + $moo + $too + $woo + $hoo}{$foo}\n"; // use all the params
 
