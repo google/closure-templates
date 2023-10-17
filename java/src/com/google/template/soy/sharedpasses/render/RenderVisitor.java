@@ -33,7 +33,6 @@ import com.google.template.soy.data.SoyFutureValueProvider;
 import com.google.template.soy.data.SoyFutureValueProvider.FutureBlockCallback;
 import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyRecord;
-import com.google.template.soy.data.SoyRecords;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.SoyValueProvider;
@@ -120,11 +119,12 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
   protected final ImmutableMap<String, TemplateNode> basicTemplates;
   protected final DelTemplateSelector<TemplateNode> deltemplates;
   protected final ImmutableTable<SourceFilePath, String, ConstNode> constants;
+
   /** The current template data. */
-  protected final SoyRecord data;
+  protected final ParamStore data;
 
   /** The current injected data. */
-  protected final SoyRecord ijData;
+  protected final ParamStore ijData;
 
   private final ImmutableTable<SourceFilePath, String, ImmutableList<ExternNode>> externs;
 
@@ -192,8 +192,8 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
       DelTemplateSelector<TemplateNode> deltemplates,
       ImmutableTable<SourceFilePath, String, ConstNode> constants,
       ImmutableTable<SourceFilePath, String, ImmutableList<ExternNode>> externs,
-      SoyRecord data,
-      @Nullable SoyRecord ijData,
+      ParamStore data,
+      @Nullable ParamStore ijData,
       @Nullable Predicate<String> activeModSelector,
       @Nullable SoyMsgBundle msgBundle,
       @Nullable SoyIdRenamingMap xidRenamingMap,
@@ -253,7 +253,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
    * @param data The template data.
    * @return The newly created RenderVisitor instance.
    */
-  protected RenderVisitor createHelperInstance(Appendable outputBuf, SoyRecord data) {
+  protected RenderVisitor createHelperInstance(Appendable outputBuf, ParamStore data) {
     return new RenderVisitor(
         evalVisitorFactory,
         outputBuf,
@@ -304,7 +304,9 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
               ? templateBasicNode.getLegacyDeltemplateNamespace()
               : templateBasicNode.getTemplateName();
       return deltemplates.selectTemplate(
-          mapKey, data.getField(VARIANT_PARAM_SYMBOL).stringValue(), activeModSelector);
+          mapKey,
+          data.getFieldProvider(VARIANT_PARAM_SYMBOL).resolve().stringValue(),
+          activeModSelector);
     }
 
     return template;
@@ -589,12 +591,12 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
   }
 
   private void visitCallNodeHelper(
-      CallNode node, TemplateNode callee, Optional<SoyRecord> boundParams) {
+      CallNode node, TemplateNode callee, Optional<ParamStore> boundParams) {
 
     // ------ Build the call data. ------
-    SoyRecord callData = createCallParamsWithVariant(node);
+    ParamStore callData = createCallParamsWithVariant(node);
     if (boundParams.isPresent()) {
-      callData = SoyRecords.merge(boundParams.get(), callData);
+      callData = ParamStore.merge(boundParams.get(), callData);
     }
 
     // ------ Render the callee template with the callData built above. ------
@@ -647,13 +649,14 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
     return variantString(callBasicNode.getVariantExpr(), callBasicNode);
   }
 
-  private SoyRecord createCallParamsWithVariant(CallNode node) {
-    SoyRecord params = createCallParams(node);
-    return new ParamStore(params, params.recordSize() + 1)
-        .setField(VARIANT_PARAM_SYMBOL, StringData.forValue(getVariant(node)));
+  private ParamStore createCallParamsWithVariant(CallNode node) {
+    ParamStore params = createCallParams(node);
+    return new ParamStore(params, params.size() + 1)
+        .setField(VARIANT_PARAM_SYMBOL, StringData.forValue(getVariant(node)))
+        .freeze();
   }
 
-  private SoyRecord createCallParams(CallNode node) {
+  private ParamStore createCallParams(CallNode node) {
     if (node.numChildren() == 0) {
       if (!node.isPassingData()) {
         // Case 1: Not passing data and not passing params.
@@ -662,7 +665,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
 
       // Case 2: Passing data and not passing params.
       if (!node.isPassingAllData()) {
-        return getDataRecord(node);
+        return ParamStore.fromRecord(getDataRecord(node));
       }
 
       ImmutableList<TemplateParam> params = node.getNearestAncestor(TemplateNode.class).getParams();
@@ -671,7 +674,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
       // data record to make sure any default parameters are set to the default in the data record.
       for (TemplateParam param : params) {
         var paramSymbol = RecordProperty.get(param.name());
-        if (param.hasDefault() && data.getField(paramSymbol) == null) {
+        if (param.hasDefault() && !data.containsKey(paramSymbol)) {
           if (dataWithDefaults == null) {
             dataWithDefaults = new ParamStore(data, params.size());
           }
@@ -680,17 +683,17 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
           dataWithDefaults.setField(paramSymbol, lazyEval(param.defaultValue(), node));
         }
       }
-      return dataWithDefaults == null ? data : dataWithDefaults;
+      return dataWithDefaults == null ? data : dataWithDefaults.freeze();
     }
 
     ParamStore params;
     if (node.isPassingData()) {
       // Case 3: Passing data and passing params.
-      SoyRecord dataRecord;
+      ParamStore dataRecord;
       if (node.isPassingAllData()) {
         dataRecord = data;
       } else {
-        dataRecord = getDataRecord(node);
+        dataRecord = ParamStore.fromRecord(getDataRecord(node));
       }
       params = new ParamStore(dataRecord, node.numChildren());
       if (node.isPassingAllData()) {
@@ -699,7 +702,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
           // the params record to make sure any unset default parameters are set to the default in
           // the params record.
           var key = RecordProperty.get(param.name());
-          if (param.hasDefault() && params.getField(key) == null) {
+          if (param.hasDefault() && !params.hasField(key)) {
             params.setField(key, lazyEval(param.defaultValue(), node));
           }
         }

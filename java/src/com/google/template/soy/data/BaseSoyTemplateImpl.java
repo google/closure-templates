@@ -37,6 +37,7 @@ import com.google.errorprone.annotations.ForOverride;
 import com.google.protobuf.Message;
 import com.google.protobuf.ProtocolMessageEnum;
 import com.google.template.soy.data.internal.ListImpl;
+import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.data.internal.SoyLegacyObjectMapImpl;
 import com.google.template.soy.data.internal.SoyMapImpl;
 import com.google.template.soy.data.internal.SoyRecordImpl;
@@ -67,17 +68,15 @@ import javax.annotation.Nullable;
  */
 public abstract class BaseSoyTemplateImpl implements SoyTemplate {
 
-  protected final SoyRecordImpl data;
+  protected final ParamStore data;
 
-  protected BaseSoyTemplateImpl(IdentityHashMap<RecordProperty, SoyValueProvider> data) {
-    this.data = new SoyRecordImpl(data);
+  protected BaseSoyTemplateImpl(AbstractBuilder<?, ?> builder) {
+    this.data = builder.data.freeze();
   }
 
   @Override
   public final ImmutableMap<String, ?> getParamsAsMap() {
-    ImmutableMap.Builder<String, Object> builder = ImmutableMap.builder();
-    data.forEach((key, value) -> builder.put(key.getName(), value));
-    return builder.buildOrThrow();
+    return data.asStringMap();
   }
 
   @Override
@@ -101,12 +100,12 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
   public boolean equals(Object o) {
     return o != null
         && getClass().equals(o.getClass())
-        && SoyTemplateData.soyRecordEquals(data, ((BaseSoyTemplateImpl) o).data);
+        && data.equals(((BaseSoyTemplateImpl) o).data);
   }
 
   @Override
   public int hashCode() {
-    return getClass().hashCode() * 31 + SoyTemplateData.soyRecordHashCode(data);
+    return getClass().hashCode() * 31 + data.hashCode();
   }
 
   @Override
@@ -133,20 +132,16 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
     //  3. They tend to be faster.
     //  One downside is that they have less efficient entrySet() implementations, but we can
     // easily workaround that by calling forEach instead.
-    protected IdentityHashMap<RecordProperty, SoyValueProvider> data;
-    private boolean needsCopyOnWrite;
+    private ParamStore data;
 
     protected AbstractBuilder(int numParams) {
-      this.data = new IdentityHashMap<>(/* expectedMaxSize= */ numParams);
+      this.data = new ParamStore(/* size= */ numParams);
     }
 
     @CheckReturnValue
     @Override
     public final T build() {
       prepareData(/* checkRequired= */ true);
-      // set this so we make a copy on the next mutation, otherwise we can just zero copy share
-      // the map.
-      this.needsCopyOnWrite = true;
       return buildInternal();
     }
  
@@ -178,9 +173,6 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
     @Override
     public final PartialSoyTemplate buildPartial() {
       prepareData(/* checkRequired= */ false);
-      // set this so we make a copy on the next mutation, otherwise we can just zero copy share
-      // the map.
-      this.needsCopyOnWrite = true;
       return new PartialSoyTemplateImpl<T>(buildInternal());
     }
 
@@ -201,11 +193,11 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
     protected final B setParamInternal(SoyTemplateParam<?> name, SoyValueProvider soyValue) {
       checkNotNull(name);
       checkNotNull(soyValue);
-      if (needsCopyOnWrite) {
-        data = new IdentityHashMap<>(data);
-        needsCopyOnWrite = false;
+      if (data.isFrozen()) {
+        // This happens when someone calls build, followed by another setter.
+        data = new ParamStore(data, 1);
       }
-      data.put(name.getSymbol(), soyValue);
+      data.setField(name.getSymbol(), soyValue);
       return (B) this;
     }
 
@@ -285,11 +277,10 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
     protected static SoyRecord asRecord(
         String firstKey, SoyValueProvider firstValue, Object... more) {
       checkArgument((more.length % 2) == 0);
-      IdentityHashMap<RecordProperty, SoyValueProvider> map =
-          new IdentityHashMap<>(1 + more.length / 2);
-      map.put(RecordProperty.get(firstKey), firstValue);
+      ParamStore map = new ParamStore(1 + more.length / 2);
+      map.setField(RecordProperty.get(firstKey), firstValue);
       for (int i = 0; i < more.length; i += 2) {
-        map.put(RecordProperty.get((String) more[i]), (SoyValueProvider) more[i + 1]);
+        map.setField(RecordProperty.get((String) more[i]), (SoyValueProvider) more[i + 1]);
       }
       return new SoyRecordImpl(map);
     }
@@ -466,15 +457,15 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
           new CompiledTemplate() {
             @Override
             public RenderResult render(
-                SoyRecord params,
-                SoyRecord ij,
+                ParamStore params,
+                ParamStore ij,
                 LoggingAdvisingAppendable appendable,
                 RenderContext context)
                 throws IOException {
               return context
                   .getTemplate(template.getTemplateName())
                   .render(
-                      SoyRecords.merge(params, (SoyRecord) template.getParamsAsRecord()),
+                      ParamStore.merge(params, (ParamStore) template.getParamsAsRecord()),
                       ij,
                       appendable,
                       context);

@@ -34,7 +34,6 @@ import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.LoggingAdvisingAppendable.BufferingAppendable;
 import com.google.template.soy.data.LoggingFunctionInvocation;
 import com.google.template.soy.data.RecordProperty;
-import com.google.template.soy.data.SoyDict;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.SoyValueConverterUtility;
@@ -112,7 +111,7 @@ public final class StreamingPrintDirectivesTest {
     RenderContext context = getDefaultContext(templates);
     SettableFuture<String> future1 = SettableFuture.create();
     SettableFuture<String> future2 = SettableFuture.create();
-    SoyRecord params =
+    ParamStore params =
         new ParamStore(2)
             .setField(RecordProperty.get("future1"), SoyValueConverter.INSTANCE.convert(future1))
             .setField(RecordProperty.get("future2"), SoyValueConverter.INSTANCE.convert(future2));
@@ -174,11 +173,13 @@ public final class StreamingPrintDirectivesTest {
             "  {$i |nonstreaming}",
             "{/template}");
     RenderContext context = getDefaultContext(templates);
-    SoyDict badParam = SoyValueConverterUtility.newDict("i", "notAnInt");
+    ParamStore badParam = SoyValueConverterUtility.newParams("i", "notAnInt");
     BufferingAppendable output = BufferingAppendable.buffering();
-    templates
-        .getTemplate("ns.streamable")
-        .render(badParam, ParamStore.EMPTY_INSTANCE, output, context);
+    assertThat(
+            templates
+                .getTemplate("ns.streamable")
+                .render(badParam, ParamStore.EMPTY_INSTANCE, output, context))
+        .isEqualTo(RenderResult.done());
     assertThat(output.getAndClearBuffer()).isEqualTo("(stream: notAnInt)");
 
     ClassCastException cce =
@@ -210,9 +211,11 @@ public final class StreamingPrintDirectivesTest {
             "{/template}");
     RenderContext context = getDefaultContext(templates);
     BufferingAppendable output = BufferingAppendable.buffering();
-    templates
-        .getTemplate("ns.tag")
-        .render(ParamStore.EMPTY_INSTANCE, ParamStore.EMPTY_INSTANCE, output, context);
+    assertThat(
+            templates
+                .getTemplate("ns.tag")
+                .render(ParamStore.EMPTY_INSTANCE, ParamStore.EMPTY_INSTANCE, output, context))
+        .isEqualTo(RenderResult.done());
     assertThat(output.getAndClearBuffer()).isEqualTo("<div class=\"foo\"></div>");
   }
 
@@ -244,7 +247,7 @@ public final class StreamingPrintDirectivesTest {
     Callable<RenderResult> renderer =
         () ->
             template.render(
-                SoyValueConverterUtility.newDict("future", future),
+                SoyValueConverterUtility.newParams("future", future),
                 ParamStore.EMPTY_INSTANCE,
                 output,
                 context);
@@ -270,13 +273,15 @@ public final class StreamingPrintDirectivesTest {
             "");
     RenderContext context = getDefaultContext(templates);
     BufferingAppendable output = BufferingAppendable.buffering();
-    templates
-        .getTemplate("ns.foo")
-        .render(
-            SoyValueConverterUtility.newDict("s", "hello"),
-            ParamStore.EMPTY_INSTANCE,
-            output,
-            context);
+    assertThat(
+            templates
+                .getTemplate("ns.foo")
+                .render(
+                    SoyValueConverterUtility.newParams("s", "hello"),
+                    ParamStore.EMPTY_INSTANCE,
+                    output,
+                    context))
+        .isEqualTo(RenderResult.done());
     assertThat(output.getAndClearBuffer()).isEqualTo("(second: (first: hello))");
   }
 
@@ -326,7 +331,7 @@ public final class StreamingPrintDirectivesTest {
         templates
             .getTemplate(name)
             .render(
-                (SoyRecord) SoyValueConverter.INSTANCE.convert(params),
+                ParamStore.fromRecord((SoyRecord) SoyValueConverter.INSTANCE.convert(params)),
                 ParamStore.EMPTY_INSTANCE,
                 output,
                 context);

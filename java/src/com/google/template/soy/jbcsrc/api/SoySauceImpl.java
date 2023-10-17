@@ -33,7 +33,6 @@ import com.google.errorprone.annotations.concurrent.GuardedBy;
 import com.google.template.soy.data.RecordProperty;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
-import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyTemplate;
 import com.google.template.soy.data.SoyTemplateData;
 import com.google.template.soy.data.SoyValueConverter;
@@ -58,7 +57,6 @@ import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import java.io.IOException;
 import java.util.Collection;
-import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -118,10 +116,9 @@ public final class SoySauceImpl implements SoySauce {
       if (dataValue instanceof TemplateValue) {
         TemplateValue tmpl = (TemplateValue) dataValue;
         output.addAll(templates.getTransitiveIjParamsForTemplate(tmpl.getTemplateName()));
-        if (tmpl.getBoundParameters().isPresent()) {
-          addIjForTemplateParams(
-              output,
-              ((TemplateValue) dataValue).getBoundParameters().get().recordAsMap().values());
+        var boundParams = tmpl.getBoundParameters();
+        if (boundParams.isPresent()) {
+          addIjForTemplateParams(output, boundParams.get().asStringMap().values());
         }
       }
     }
@@ -161,7 +158,7 @@ public final class SoySauceImpl implements SoySauce {
     String template = params.getTemplateName();
     CompiledTemplates.TemplateData data = templates.getTemplateData(template);
     // getParamsAsMap has a loose type to fix a build cycle.
-    var typedParams = (SoyRecord) params.getParamsAsRecord();
+    var typedParams = (ParamStore) params.getParamsAsRecord();
     return new RendererImpl(template, data.template(), data.kind(), typedParams);
   }
 
@@ -172,15 +169,15 @@ public final class SoySauceImpl implements SoySauce {
     private final RenderContext.Builder contextBuilder =
         new RenderContext.Builder(templates, printDirectives, SoySauceImpl.this.pluginInstances);
 
-    private SoyRecord data;
-    private SoyRecord ij;
+    private ParamStore data;
+    private ParamStore ij;
     private boolean dataSetInConstructor;
 
     RendererImpl(
         String templateName,
         CompiledTemplate template,
         ContentKind contentKind,
-        @Nullable SoyRecord data) {
+        @Nullable ParamStore data) {
       this.templateName = templateName;
       this.template = checkNotNull(template);
       this.contentKind = contentKind;
@@ -192,8 +189,7 @@ public final class SoySauceImpl implements SoySauce {
     }
 
     private ParamStore mapAsParamStore(Map<String, ?> source) {
-      IdentityHashMap<RecordProperty, SoyValueProvider> params =
-          new IdentityHashMap<>(source.size());
+      var params = new ParamStore(source.size());
       for (Map.Entry<String, ?> entry : source.entrySet()) {
         String key = entry.getKey();
         SoyValueProvider value;
@@ -203,9 +199,9 @@ public final class SoySauceImpl implements SoySauce {
           throw new IllegalArgumentException(
               "Unable to convert param " + key + " to a SoyValue", e);
         }
-        params.put(RecordProperty.get(key), value);
+        params.setField(RecordProperty.get(key), value);
       }
-      return new ParamStore(params);
+      return params.freeze();
     }
 
     @CanIgnoreReturnValue
@@ -218,7 +214,7 @@ public final class SoySauceImpl implements SoySauce {
     @CanIgnoreReturnValue
     @Override
     public RendererImpl setIj(SoyTemplateData templateData) {
-      this.ij = (SoyRecord) templateData.getParamsAsRecord();
+      this.ij = (ParamStore) templateData.getParamsAsRecord();
       return this;
     }
 
@@ -374,8 +370,8 @@ public final class SoySauceImpl implements SoySauce {
         throws IOException {
       enforceContentKind(contentKind);
 
-      SoyRecord params = data == null ? ParamStore.EMPTY_INSTANCE : data;
-      SoyRecord injectedParams = ij == null ? ParamStore.EMPTY_INSTANCE : ij;
+      ParamStore params = data == null ? ParamStore.EMPTY_INSTANCE : data;
+      ParamStore injectedParams = ij == null ? ParamStore.EMPTY_INSTANCE : ij;
       RenderContext context = contextBuilder.build();
       OutputAppendable output = OutputAppendable.create(out, context.getLogger());
       RendererClosure renderer = () -> template.render(params, injectedParams, output, context);

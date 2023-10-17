@@ -18,7 +18,7 @@ package com.google.template.soy.jbcsrc;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.truth.Truth.assertThat;
-import static com.google.template.soy.jbcsrc.TemplateTester.asRecord;
+import static com.google.template.soy.jbcsrc.TemplateTester.asParams;
 import static com.google.template.soy.jbcsrc.TemplateTester.assertThatTemplateBody;
 import static com.google.template.soy.jbcsrc.TemplateTester.compileTemplateBody;
 import static com.google.template.soy.jbcsrc.TemplateTester.getDefaultContext;
@@ -103,7 +103,7 @@ public class LazyClosureCompilerTest {
     TemplateRenderer renderer =
         () ->
             template.render(
-                asRecord(ImmutableMap.of("bar", bar)), ParamStore.EMPTY_INSTANCE, output, context);
+                asParams(ImmutableMap.of("bar", bar)), ParamStore.EMPTY_INSTANCE, output, context);
     RenderResult result = renderer.render();
     assertThat(result.type()).isEqualTo(RenderResult.Type.DETACH);
     assertThat(result.future()).isSameInstanceAs(bar); // we found bar!
@@ -208,7 +208,7 @@ public class LazyClosureCompilerTest {
     TemplateRenderer renderer =
         () ->
             template.render(
-                asRecord(ImmutableMap.of("bar", bar)), ParamStore.EMPTY_INSTANCE, output, context);
+                asParams(ImmutableMap.of("bar", bar)), ParamStore.EMPTY_INSTANCE, output, context);
     RenderResult result = renderer.render();
     assertThat(result.type()).isEqualTo(RenderResult.Type.DETACH);
     assertThat(result.future()).isSameInstanceAs(bar); // we found bar!

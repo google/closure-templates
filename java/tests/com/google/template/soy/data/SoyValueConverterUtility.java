@@ -21,11 +21,16 @@ import static com.google.template.soy.data.SoyValueConverter.INSTANCE;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.data.internal.ListImpl;
+import com.google.template.soy.data.internal.ParamStore;
 import java.util.HashMap;
 import java.util.Map;
 
 /** Shared utilities for converting Java objects to SoyValues in a convenient way. */
 public final class SoyValueConverterUtility {
+
+  public static ParamStore newParams(Object... alternatingKeysAndValues) {
+    return ParamStore.fromRecord(newDict(alternatingKeysAndValues));
+  }
 
   /**
    * Creates a new SoyDict initialized from the given keys and values. Values are converted eagerly.

@@ -31,7 +31,6 @@ import com.google.errorprone.annotations.concurrent.LazyInit;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.RecordProperty;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
-import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.TemplateValue;
 import com.google.template.soy.data.internal.ParamStore;
@@ -66,8 +65,8 @@ public class CompiledTemplates {
   private static final MethodType RENDER_TYPE =
       methodType(
           RenderResult.class,
-          SoyRecord.class,
-          SoyRecord.class,
+          ParamStore.class,
+          ParamStore.class,
           LoggingAdvisingAppendable.class,
           RenderContext.class);
 
@@ -534,7 +533,7 @@ public class CompiledTemplates {
         String templateMethodName = Names.renderMethodNameFromSoyTemplateName(soyTemplateName);
         Class<?>[] paramTypes = new Class<?>[arity + 3];
         Arrays.fill(paramTypes, 0, arity, SoyValueProvider.class);
-        paramTypes[paramTypes.length - 3] = SoyRecord.class; // ij
+        paramTypes[paramTypes.length - 3] = ParamStore.class; // ij
         paramTypes[paramTypes.length - 2] = LoggingAdvisingAppendable.class;
         paramTypes[paramTypes.length - 1] = RenderContext.class;
         try {
@@ -637,14 +636,14 @@ public class CompiledTemplates {
                 .findStatic(
                     HandlesForTesting.class,
                     "positionalToRecord",
-                    methodType(SoyRecord.class, ImmutableList.class, SoyValueProvider[].class));
+                    methodType(ParamStore.class, ImmutableList.class, SoyValueProvider[].class));
       } catch (ReflectiveOperationException e) {
         throw new LinkageError(e.getMessage(), e);
       }
     }
 
     /** Adapts a set of positional parameters to a SoyRecord */
-    private static SoyRecord positionalToRecord(
+    private static ParamStore positionalToRecord(
         ImmutableList<RecordProperty> names, SoyValueProvider[] values) {
       ParamStore paramStore = new ParamStore(names.size());
       for (int i = 0; i < names.size(); i++) {
@@ -652,7 +651,7 @@ public class CompiledTemplates {
           paramStore.setField(names.get(i), values[i]);
         }
       }
-      return paramStore;
+      return paramStore.freeze();
     }
   }
 }

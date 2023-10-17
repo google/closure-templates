@@ -25,9 +25,9 @@ import com.google.common.collect.ImmutableMap;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.data.Dir;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
-import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
+import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.jbcsrc.api.RenderResult;
@@ -224,11 +224,11 @@ public final class RenderContext {
 
   public RenderResult renderModifiable(
       String delCalleeName,
-      SoyRecord params,
-      SoyRecord ijData,
+      ParamStore params,
+      ParamStore ijData,
       LoggingAdvisingAppendable appendable)
       throws IOException {
-    SoyValueProvider variantProvider = params.getFieldProvider(Names.VARIANT_VAR_SYMBOL);
+    SoyValueProvider variantProvider = params.getFieldProvider(Names.VARIANT_VAR_PROPERTY);
     String variant;
     if (variantProvider == null) {
       variant = "";

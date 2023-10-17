@@ -181,8 +181,8 @@ final class TemplateCompiler {
   private static final Type COMPILED_TEMPLATE_RENDER_DESCRIPTOR =
       Type.getMethodType(
           BytecodeUtils.RENDER_RESULT_TYPE,
-          BytecodeUtils.SOY_RECORD_TYPE,
-          BytecodeUtils.SOY_RECORD_TYPE,
+          BytecodeUtils.PARAM_STORE_TYPE,
+          BytecodeUtils.PARAM_STORE_TYPE,
           BytecodeUtils.LOGGING_ADVISING_APPENDABLE_TYPE,
           BytecodeUtils.RENDER_CONTEXT_TYPE);
 
@@ -577,11 +577,11 @@ final class TemplateCompiler {
     // NOTE: for compatibility with Tofu and jssrc we do not check for missing required parameters
     // here instead they will just turn into null.  Existing templates depend on this.
     if (defaultValue == null) {
-      return MethodRef.RUNTIME_GET_RECORD_FIELD_PROVIDER.invoke(
-          record, BytecodeUtils.constantRecordSymbol(name));
+      return MethodRef.RUNTIME_GET_PARAMETER.invoke(
+          record, BytecodeUtils.constantRecordProperty(name));
     } else {
-      return MethodRef.RUNTIME_GET_RECORD_FIELD_PROVIDER_DEFAULT.invoke(
-          record, BytecodeUtils.constantRecordSymbol(name), defaultValue.box());
+      return MethodRef.RUNTIME_GET_PARAMETER_DEFAULT.invoke(
+          record, BytecodeUtils.constantRecordProperty(name), defaultValue.box());
     }
   }
 

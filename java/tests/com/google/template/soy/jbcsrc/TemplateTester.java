@@ -151,6 +151,10 @@ public final class TemplateTester {
     return (SoyRecord) SoyValueConverter.INSTANCE.convert(params);
   }
 
+  static ParamStore asParams(Map<String, ?> params) {
+    return ParamStore.fromRecord(asRecord(params));
+  }
+
   static final class CompiledTemplateSubject extends Subject {
     private final String actual;
     private final List<SoyFunction> soyFunctions = new ArrayList<>();
@@ -226,12 +230,12 @@ public final class TemplateTester {
     CompiledTemplateSubject rendersAs(String expected, Map<String, ?> params) {
       compile();
       return rendersAndLogs(
-          expected, "", asRecord(params), ParamStore.EMPTY_INSTANCE, defaultContext);
+          expected, "", asParams(params), ParamStore.EMPTY_INSTANCE, defaultContext);
     }
 
     CompiledTemplateSubject rendersAs(String expected, Map<String, ?> params, Map<String, ?> ij) {
       compile();
-      return rendersAndLogs(expected, "", asRecord(params), asRecord(ij), defaultContext);
+      return rendersAndLogs(expected, "", asParams(params), asParams(ij), defaultContext);
     }
 
     CompiledTemplateSubject failsToRenderWith(Class<? extends Throwable> expected) {
@@ -244,7 +248,8 @@ public final class TemplateTester {
       BufferingAppendable builder = LoggingAdvisingAppendable.buffering();
       compile();
       try {
-        template.render(asRecord(params), ParamStore.EMPTY_INSTANCE, builder, defaultContext);
+        var unused =
+            template.render(asParams(params), ParamStore.EMPTY_INSTANCE, builder, defaultContext);
         failWithoutActual(
             simpleFact(
                 String.format(
@@ -266,7 +271,8 @@ public final class TemplateTester {
       BufferingAppendable builder = LoggingAdvisingAppendable.buffering();
       compile();
       try {
-        template.render(asRecord(params), ParamStore.EMPTY_INSTANCE, builder, defaultContext);
+        var unused =
+            template.render(asParams(params), ParamStore.EMPTY_INSTANCE, builder, defaultContext);
         failWithoutActual(
             simpleFact(
                 String.format(
@@ -309,16 +315,16 @@ public final class TemplateTester {
       return check("errors()").that(Lists.transform(errors.getErrors(), SoyError::message));
     }
 
-    private SoyRecord asRecord(Map<String, ?> params) {
-      return (SoyRecord) SoyValueConverter.INSTANCE.convert(params);
+    private ParamStore asParams(Map<String, ?> params) {
+      return ParamStore.fromRecord((SoyRecord) SoyValueConverter.INSTANCE.convert(params));
     }
 
     @CanIgnoreReturnValue
     private CompiledTemplateSubject rendersAndLogs(
         String expectedOutput,
         String expectedLogged,
-        SoyRecord params,
-        SoyRecord ij,
+        ParamStore params,
+        ParamStore ij,
         RenderContext context) {
       BufferingAppendable builder = LoggingAdvisingAppendable.buffering();
       LogCapturer logOutput = new LogCapturer();

@@ -27,12 +27,12 @@ import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.SoyValueProvider;
+import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.data.internal.SoyLegacyObjectMapImpl;
 import com.google.template.soy.data.internal.SoyMapImpl;
 import com.google.template.soy.data.internal.SoyRecordImpl;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
-import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.concurrent.Future;
 import javax.annotation.Nonnull;
@@ -100,9 +100,9 @@ public final class JbcSrcPluginRuntime {
   @Keep
   @Nonnull
   public static SoyRecord boxJavaMapAsSoyRecord(Map<String, ?> javaMap) {
-    IdentityHashMap<RecordProperty, SoyValueProvider> map = new IdentityHashMap<>(javaMap.size());
+    ParamStore map = new ParamStore(javaMap.size());
     for (var entry : javaMap.entrySet()) {
-      map.put(
+      map.setField(
           RecordProperty.get(entry.getKey()), SoyValueConverter.INSTANCE.convert(entry.getValue()));
     }
     return new SoyRecordImpl(map);

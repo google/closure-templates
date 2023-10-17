@@ -27,6 +27,7 @@ import com.google.template.soy.data.internal.DictImpl;
 import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.data.internal.RuntimeMapTypeTracker;
 import com.google.template.soy.data.internal.SoyMapImpl;
+import com.google.template.soy.data.internal.SoyRecordImpl;
 import com.google.template.soy.data.restricted.StringData;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -44,7 +45,7 @@ public class SoyMapsTest {
                 DictImpl.forProviderMap(ImmutableMap.of(), RuntimeMapTypeTracker.Type.UNKNOWN)))
         .isTrue();
     assertThat(isMapOrLegacyObjectMap(StringData.EMPTY_STRING)).isFalse();
-    assertThat(isMapOrLegacyObjectMap(ParamStore.EMPTY_INSTANCE)).isFalse();
+    assertThat(isMapOrLegacyObjectMap(new SoyRecordImpl(ParamStore.EMPTY_INSTANCE))).isFalse();
   }
 
   @Test

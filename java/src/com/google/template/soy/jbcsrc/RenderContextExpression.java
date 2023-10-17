@@ -19,7 +19,7 @@ import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
-import com.google.template.soy.data.SoyRecord;
+import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
 import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
@@ -44,8 +44,8 @@ final class RenderContextExpression extends Expression implements JbcSrcPluginCo
           RenderContext.class,
           "renderModifiable",
           String.class,
-          SoyRecord.class,
-          SoyRecord.class,
+          ParamStore.class,
+          ParamStore.class,
           LoggingAdvisingAppendable.class);
 
   private static final MethodRef GET_PLUGIN_INSTANCE =

@@ -21,7 +21,6 @@ import static com.google.common.base.Preconditions.checkArgument;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
-import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.data.internal.SoyRecordImpl;
 import com.google.template.soy.jbcsrc.restricted.Expression.Feature;
@@ -31,7 +30,6 @@ import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import org.objectweb.asm.Handle;
 import org.objectweb.asm.Opcodes;
@@ -81,17 +79,11 @@ public abstract class ConstructorRef {
   public static final ConstructorRef HASH_MAP_CAPACITY = create(HashMap.class, int.class);
   public static final ConstructorRef LINKED_HASH_MAP_CAPACITY =
       create(LinkedHashMap.class, int.class);
-  // Confusingly unlike HashMap and LinkedHashMap which accept an expected 'capacity' this one takes
-  // an expected size.
-  public static final ConstructorRef IDENTITY_HASH_MAP_SIZE =
-      create(IdentityHashMap.class, int.class);
   public static final ConstructorRef PARAM_STORE_AUGMENT =
-      create(ParamStore.class, SoyRecord.class, int.class);
+      create(ParamStore.class, ParamStore.class, int.class);
   public static final ConstructorRef PARAM_STORE_SIZE = create(ParamStore.class, int.class);
-  public static final ConstructorRef PARAM_STORE_FROM_MAP =
-      create(ParamStore.class, IdentityHashMap.class);
   public static final ConstructorRef SOY_RECORD_IMPL =
-      create(SoyRecordImpl.class, IdentityHashMap.class);
+      create(SoyRecordImpl.class, ParamStore.class);
   public static final ConstructorRef MSG_RENDERER =
       create(
           JbcSrcRuntime.MsgRenderer.class,

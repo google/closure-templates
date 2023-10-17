@@ -50,7 +50,6 @@ import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyProtoValue;
 import com.google.template.soy.data.SoyRecord;
-import com.google.template.soy.data.SoyRecords;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.SoyValueProvider;
@@ -58,6 +57,7 @@ import com.google.template.soy.data.SoyVisualElement;
 import com.google.template.soy.data.SoyVisualElementData;
 import com.google.template.soy.data.TemplateValue;
 import com.google.template.soy.data.internal.ListImpl;
+import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.data.internal.SoyMapImpl;
 import com.google.template.soy.data.internal.SoyRecordImpl;
 import com.google.template.soy.data.restricted.BooleanData;
@@ -146,7 +146,6 @@ import com.google.template.soy.types.UnionType;
 import com.ibm.icu.util.ULocale;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -351,9 +350,9 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
   protected SoyValue visitRecordLiteralNode(RecordLiteralNode node) {
     int numItems = node.numChildren();
 
-    IdentityHashMap<RecordProperty, SoyValueProvider> map = new IdentityHashMap<>();
+    ParamStore map = new ParamStore(numItems);
     for (int i = 0; i < numItems; i++) {
-      map.put(RecordProperty.get(node.getKey(i).identifier()), visit(node.getChild(i)));
+      map.setField(RecordProperty.get(node.getKey(i).identifier()), visit(node.getChild(i)));
     }
     return new SoyRecordImpl(map);
   }
@@ -656,11 +655,12 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
           return value != null ? value : NullData.INSTANCE;
         case BIND:
           TemplateValue template = (TemplateValue) base;
-          SoyRecord params = (SoyRecord) visit(methodNode.getParams().get(0));
+          ParamStore params =
+              ParamStore.fromRecord((SoyRecord) visit(methodNode.getParams().get(0)));
           return TemplateValue.createWithBoundParameters(
               template.getTemplateName(),
               template.getBoundParameters().isPresent()
-                  ? SoyRecords.merge(template.getBoundParameters().get(), params)
+                  ? ParamStore.merge(template.getBoundParameters().get(), params)
                   : params);
       }
     } else if (method instanceof SoySourceFunctionMethod) {

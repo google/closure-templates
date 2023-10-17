@@ -17,6 +17,7 @@
 package com.google.template.soy.jbcsrc;
 
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.template.soy.jbcsrc.TemplateTester.asParams;
 import static com.google.template.soy.jbcsrc.TemplateTester.getDefaultContext;
 
 import com.google.common.base.Joiner;
@@ -30,8 +31,6 @@ import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.LoggingAdvisingAppendable.BufferingAppendable;
 import com.google.template.soy.data.SoyDataException;
-import com.google.template.soy.data.SoyRecord;
-import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.jbcsrc.TemplateTester.CompiledTemplateSubject;
@@ -289,12 +288,12 @@ public final class ProtoSupportTest {
                 parser.soyFileSuppliers(),
                 builder.getTypeRegistry())
             .get();
-    render(
-        templates,
-        "ns.caller",
-        (SoyRecord)
-            SoyValueConverter.INSTANCE.convert(
-                ImmutableMap.of("pair", KvPair.newBuilder().setAnotherValue(2))));
+    assertThat(
+            render(
+                templates,
+                "ns.caller",
+                asParams(ImmutableMap.of("pair", KvPair.newBuilder().setAnotherValue(2)))))
+        .isEmpty();
   }
 
   @Test
@@ -474,7 +473,7 @@ public final class ProtoSupportTest {
     }
   }
 
-  private String render(CompiledTemplates templates, String name, SoyRecord params) {
+  private String render(CompiledTemplates templates, String name, ParamStore params) {
     CompiledTemplate caller = templates.getTemplate(name);
     BufferingAppendable sb = LoggingAdvisingAppendable.buffering();
     try {

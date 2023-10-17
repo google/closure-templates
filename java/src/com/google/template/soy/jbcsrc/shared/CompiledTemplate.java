@@ -18,7 +18,7 @@ package com.google.template.soy.jbcsrc.shared;
 
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
-import com.google.template.soy.data.SoyRecord;
+import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import java.io.IOException;
 import javax.annotation.Nonnull;
@@ -44,6 +44,6 @@ public interface CompiledTemplate {
    */
   @Nonnull
   RenderResult render(
-      SoyRecord params, SoyRecord ij, LoggingAdvisingAppendable appendable, RenderContext context)
+      ParamStore params, ParamStore ij, LoggingAdvisingAppendable appendable, RenderContext context)
       throws IOException;
 }

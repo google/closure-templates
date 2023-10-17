@@ -742,7 +742,7 @@ final class LazyClosureCompiler {
       if (ijCapture == null) {
         ijCapture =
             ParentCapture.create(
-                params.fields.addFinalField(StandardNames.IJ, BytecodeUtils.SOY_RECORD_TYPE),
+                params.fields.addFinalField(StandardNames.IJ, BytecodeUtils.PARAM_STORE_TYPE),
                 parentParameterLookup.getIjRecord());
       }
       return ijCapture.field().accessor(thisVar);
@@ -753,7 +753,7 @@ final class LazyClosureCompiler {
       if (paramsCapture == null) {
         paramsCapture =
             ParentCapture.create(
-                params.fields.addFinalField(StandardNames.PARAMS, BytecodeUtils.SOY_RECORD_TYPE),
+                params.fields.addFinalField(StandardNames.PARAMS, BytecodeUtils.PARAM_STORE_TYPE),
                 parentParameterLookup.getParamsRecord());
       }
       return paramsCapture.field().accessor(thisVar);

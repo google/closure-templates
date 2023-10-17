@@ -19,7 +19,6 @@ import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.fail;
 
 import com.google.common.base.Joiner;
-import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.html.types.SafeHtml;
 import com.google.template.soy.SoyFileSetParser;
@@ -58,7 +57,7 @@ public final class VeLoggingTest {
       if (builder.length() > 0) {
         builder.append('\n');
       }
-      builder.append(Strings.repeat("  ", depth)).append(statement);
+      builder.append("  ".repeat(depth)).append(statement);
       depth++;
       return Optional.empty();
     }
@@ -327,7 +326,7 @@ public final class VeLoggingTest {
     RenderResult result =
         templates
             .getTemplate("ns.foo")
-            .render(TemplateTester.asRecord(params), ParamStore.EMPTY_INSTANCE, output, ctx);
+            .render(TemplateTester.asParams(params), ParamStore.EMPTY_INSTANCE, output, ctx);
     assertThat(result).isEqualTo(RenderResult.done());
   }
 }

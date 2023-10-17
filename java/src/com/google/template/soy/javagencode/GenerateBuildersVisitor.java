@@ -312,13 +312,9 @@ public final class GenerateBuildersVisitor
     appendFutureWrapperMethod(templateClass);
 
     // Constructor for Foo.
-    ilb.appendLine(
-        "private "
-            + templateClass
-            + "(java.util.IdentityHashMap<com.google.template.soy.data.RecordProperty,"
-            + " com.google.template.soy.data.SoyValueProvider> data) {");
+    ilb.appendLine("private " + templateClass + "(" + templateClass + ".Builder builder) {");
     ilb.increaseIndent();
-    ilb.appendLine("super(data);");
+    ilb.appendLine("super(builder);");
     ilb.decreaseIndent();
     ilb.appendLine("}");
 
@@ -424,6 +420,9 @@ public final class GenerateBuildersVisitor
                   return false;
                 })
             .collect(toList());
+
+    appendParamConstants(ilb, combinedParams);
+
     List<ParamInfo> nonInjectedParams =
         combinedParams.stream().filter(p -> !p.injected()).collect(toList());
 
@@ -437,7 +436,7 @@ public final class GenerateBuildersVisitor
               + DEFAULT_INSTANCE_FIELD
               + " = new "
               + templateParamsClassname
-              + "(new java.util.IdentityHashMap<>());");
+              + "(builder());");
       ilb.appendLine();
 
       appendJavadoc(
@@ -455,7 +454,6 @@ public final class GenerateBuildersVisitor
       ilb.appendLine("}");
       ilb.appendLine();
     }
-    appendParamConstants(ilb, combinedParams);
 
     boolean anyAccumulatorParameters =
         nonInjectedParams.stream()
@@ -501,7 +499,7 @@ public final class GenerateBuildersVisitor
     ilb.appendLine("@java.lang.Override");
     ilb.appendLine("protected " + templateParamsClassname + " buildInternal() {");
     ilb.increaseIndent();
-    ilb.appendLine("return new " + templateParamsClassname + "(data);");
+    ilb.appendLine("return new " + templateParamsClassname + "(this);");
     ilb.decreaseIndent();
     ilb.appendLine("}");
 

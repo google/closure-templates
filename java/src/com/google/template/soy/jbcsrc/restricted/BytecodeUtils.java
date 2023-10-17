@@ -49,6 +49,7 @@ import com.google.template.soy.data.SoyVisualElement;
 import com.google.template.soy.data.SoyVisualElementData;
 import com.google.template.soy.data.TemplateValue;
 import com.google.template.soy.data.internal.Converters;
+import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.data.internal.SoyMapImpl;
 import com.google.template.soy.data.internal.SoyRecordImpl;
 import com.google.template.soy.data.restricted.BooleanData;
@@ -149,6 +150,7 @@ public final class BytecodeUtils {
   public static final Type NULL_POINTER_EXCEPTION_TYPE = Type.getType(NullPointerException.class);
   public static final Type RENDER_CONTEXT_TYPE = Type.getType(RenderContext.class);
   public static final Type RENDER_RESULT_TYPE = Type.getType(RenderResult.class);
+  public static final Type PARAM_STORE_TYPE = Type.getType(ParamStore.class);
   public static final Type STRING_TYPE = Type.getType(String.class);
   public static final Type THROWABLE_TYPE = Type.getType(Throwable.class);
   public static final Type ILLEGAL_STATE_EXCEPTION_TYPE = Type.getType(IllegalStateException.class);
@@ -546,7 +548,7 @@ public final class BytecodeUtils {
   }
 
   /** Returns an {@link Expression} that can load the given `RecordSymbol` constant. */
-  public static Expression constantRecordSymbol(String value) {
+  public static Expression constantRecordProperty(String value) {
     return constant(
         new ConstantDynamic(
             value, RECORD_SYMBOL_TYPE.getDescriptor(), RECORD_SYMBOL_CONSTANT_HANDLE),
@@ -1161,19 +1163,6 @@ public final class BytecodeUtils {
             ConstructorRef.LINKED_HASH_MAP_CAPACITY.construct(
                 constant(hashMapCapacity(expectedSize))),
         LINKED_HASH_MAP_TYPE);
-  }
-
-  /**
-   * Returns an expression that returns a new {@link LinkedHashMap} containing all the given
-   * entries.
-   */
-  public static Expression newIdentityHashMap(
-      Iterable<? extends Expression> keys, Iterable<? extends Expression> values) {
-    return newMap(
-        keys,
-        values,
-        expectedSize -> ConstructorRef.IDENTITY_HASH_MAP_SIZE.construct(constant(expectedSize)),
-        IDENTITY_HASH_MAP_TYPE);
   }
 
   private static Expression newMap(

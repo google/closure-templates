@@ -21,7 +21,7 @@ import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.LIST_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.NULL_POINTER_EXCEPTION_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_VALUE_PROVIDER_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
-import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constantRecordSymbol;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constantRecordProperty;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.firstSoyNonNullish;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.numericConversion;
 
@@ -641,21 +641,39 @@ final class ExpressionCompiler {
                 Object[].class)
             .asHandle();
 
+    private static final Handle CONSTANT_PARAM_STORE =
+        MethodRef.createPure(
+                ExtraConstantBootstraps.class,
+                "constantParamStore",
+                MethodHandles.Lookup.class,
+                String.class,
+                Class.class,
+                int.class,
+                Object[].class)
+            .asHandle();
+
     @Override
     protected SoyExpression visitRecordLiteralNode(RecordLiteralNode node) {
+      return SoyExpression.forSoyValue(
+          node.getType(), doVisitRecordLiteralNode(node, /* asParamStore= */ false));
+    }
+
+    private Expression doVisitRecordLiteralNode(RecordLiteralNode node, boolean asParamStore) {
       int numItems = node.numChildren();
       List<Expression> keys = new ArrayList<>(numItems);
       List<Expression> values = new ArrayList<>(numItems);
       for (int i = 0; i < numItems; i++) {
-        // Keys are strings and values are SoyValue object.
-        keys.add(BytecodeUtils.constantRecordSymbol(node.getKey(i).identifier()));
+        // Keys are RecordProperty objects and values are SoyValue object.
+        keys.add(BytecodeUtils.constantRecordProperty(node.getKey(i).identifier()));
         values.add(visit(node.getChild(i)).box());
       }
-      var soyRecord =
-          SoyExpression.forSoyValue(
-              node.getType(),
-              ConstructorRef.SOY_RECORD_IMPL.construct(
-                  BytecodeUtils.newIdentityHashMap(keys, values)));
+      Expression soyRecord = ConstructorRef.PARAM_STORE_SIZE.construct(constant(keys.size()));
+      for (int i = 0; i < numItems; i++) {
+        soyRecord = soyRecord.invoke(MethodRef.PARAM_STORE_SET_FIELD, keys.get(i), values.get(i));
+      }
+      if (!asParamStore) {
+        soyRecord = ConstructorRef.SOY_RECORD_IMPL.construct(soyRecord);
+      }
       if (isConstantContext && Expression.areAllConstant(values)) {
         Object[] constantArgs = new Object[1 + node.numChildren() * 2];
         // We store a hash of the source location so that each distinct list authored gets a unique
@@ -670,14 +688,23 @@ final class ExpressionCompiler {
         }
         soyRecord =
             soyRecord.withConstantValue(
-                Expression.ConstantValue.dynamic(
-                    new ConstantDynamic(
-                        "constantRecord",
-                        BytecodeUtils.SOY_RECORD_IMPL_TYPE.getDescriptor(),
-                        CONSTANT_RECORD_HANDLE,
-                        constantArgs),
-                    BytecodeUtils.SOY_RECORD_IMPL_TYPE,
-                    /* isTrivialConstant= */ false));
+                asParamStore
+                    ? Expression.ConstantValue.dynamic(
+                        new ConstantDynamic(
+                            "constantParamStore",
+                            BytecodeUtils.PARAM_STORE_TYPE.getDescriptor(),
+                            CONSTANT_PARAM_STORE,
+                            constantArgs),
+                        BytecodeUtils.PARAM_STORE_TYPE,
+                        /* isTrivialConstant= */ false)
+                    : Expression.ConstantValue.dynamic(
+                        new ConstantDynamic(
+                            "constantRecord",
+                            BytecodeUtils.SOY_RECORD_IMPL_TYPE.getDescriptor(),
+                            CONSTANT_RECORD_HANDLE,
+                            constantArgs),
+                        BytecodeUtils.SOY_RECORD_IMPL_TYPE,
+                        /* isTrivialConstant= */ false));
       }
       return soyRecord;
     }
@@ -1427,11 +1454,11 @@ final class ExpressionCompiler {
       if (analysis.isResolved(node)) {
         fieldAccess =
             MethodRef.RUNTIME_GET_FIELD.invoke(
-                baseExprAsRecord, constantRecordSymbol(node.getFieldName()));
+                baseExprAsRecord, constantRecordProperty(node.getFieldName()));
       } else {
         Expression fieldProvider =
             MethodRef.RUNTIME_GET_FIELD_PROVIDER.invoke(
-                baseExprAsRecord, constantRecordSymbol(node.getFieldName()));
+                baseExprAsRecord, constantRecordProperty(node.getFieldName()));
         fieldAccess = detacher.resolveSoyValueProvider(fieldProvider);
       }
       return SoyExpression.forSoyValue(node.getType(), fieldAccess.checkedSoyCast(node.getType()));
@@ -1544,7 +1571,8 @@ final class ExpressionCompiler {
                 node.getType(),
                 MethodRef.RUNTIME_BIND_TEMPLATE_PARAMS.invoke(
                     baseExpr.checkedCast(BytecodeUtils.TEMPLATE_VALUE_TYPE),
-                    visit(node.getChild(1)).checkedCast(BytecodeUtils.SOY_RECORD_TYPE)));
+                    doVisitRecordLiteralNode(
+                        (RecordLiteralNode) node.getChild(1), /* asParamStore= */ true)));
         }
       } else if (function instanceof SoySourceFunctionMethod) {
         SoySourceFunctionMethod sourceMethod = (SoySourceFunctionMethod) function;

@@ -16,6 +16,7 @@
 package com.google.template.soy.data;
 
 import com.google.auto.value.AutoValue;
+import com.google.template.soy.data.internal.ParamStore;
 import java.util.Optional;
 import javax.annotation.Nonnull;
 
@@ -35,14 +36,14 @@ public abstract class TemplateValue extends SoyAbstractValue {
 
   @Nonnull
   public static TemplateValue createWithBoundParameters(
-      String templateName, SoyRecord boundParameters) {
+      String templateName, ParamStore boundParameters) {
     return new AutoValue_TemplateValue(
         templateName, Optional.of(boundParameters), Optional.empty());
   }
 
   @Nonnull
   public static TemplateValue createWithBoundParameters(
-      String templateName, SoyRecord boundParameters, Object compiledTemplate) {
+      String templateName, ParamStore boundParameters, Object compiledTemplate) {
     return new AutoValue_TemplateValue(
         templateName, Optional.of(boundParameters), Optional.of(compiledTemplate));
   }
@@ -50,14 +51,14 @@ public abstract class TemplateValue extends SoyAbstractValue {
   @Nonnull
   public static TemplateValue createFromTemplate(
       TemplateInterface template, Object compiledTemplate) {
-    SoyRecord record = (SoyRecord) template.getParamsAsRecord();
+    ParamStore record = (ParamStore) template.getParamsAsRecord();
     return new AutoValue_TemplateValue(
         template.getTemplateName(), Optional.of(record), Optional.of(compiledTemplate));
   }
 
   public abstract String getTemplateName();
 
-  public abstract Optional<SoyRecord> getBoundParameters();
+  public abstract Optional<ParamStore> getBoundParameters();
 
   // This is supposed to be the CompiledTemplate interface, but is an Object here because of
   // circular build dependencies.

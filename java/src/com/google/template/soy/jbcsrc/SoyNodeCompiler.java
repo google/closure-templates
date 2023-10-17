@@ -18,7 +18,6 @@ package com.google.template.soy.jbcsrc;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
-import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.ImmutableMap.toImmutableMap;
 import static com.google.template.soy.jbcsrc.PrintDirectives.applyStreamingEscapingDirectives;
 import static com.google.template.soy.jbcsrc.PrintDirectives.applyStreamingPrintDirectives;
@@ -1789,35 +1788,31 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
    */
   private Expression getParamStoreExpression(
       CallNode node, Map<String, Supplier<Expression>> params) {
+    Expression paramStoreExpression;
     if (!node.isPassingData()) {
-      return ConstructorRef.PARAM_STORE_FROM_MAP.construct(
-          BytecodeUtils.newIdentityHashMap(
-              params.keySet().stream()
-                  .map(BytecodeUtils::constantRecordSymbol)
-                  .collect(toImmutableList()),
-              params.values().stream().map(Supplier::get).collect(toImmutableList())));
-    }
-
-    Label reattachDataLabel = new Label();
-    Expression dataExpression;
-    if (node.isPassingAllData()) {
-      dataExpression = parameterLookup.getParamsRecord();
+      paramStoreExpression = ConstructorRef.PARAM_STORE_SIZE.construct(constant(params.size()));
     } else {
-      dataExpression = getDataRecordExpression(node, reattachDataLabel);
-    }
-    Expression paramStoreExpression =
-        ConstructorRef.PARAM_STORE_AUGMENT
-            .construct(dataExpression, constant(node.numChildren()))
-            .labelStart(reattachDataLabel);
-    if (node.isPassingAllData()) {
+      Label reattachDataLabel = new Label();
+      Expression dataExpression;
+      if (node.isPassingAllData()) {
+        dataExpression = parameterLookup.getParamsRecord();
+      } else {
+        dataExpression = getDataRecordExpression(node, reattachDataLabel);
+      }
       paramStoreExpression =
-          maybeAddDefaultParams(node, paramStoreExpression, params).orElse(paramStoreExpression);
+          ConstructorRef.PARAM_STORE_AUGMENT
+              .construct(dataExpression, constant(params.size()))
+              .labelStart(reattachDataLabel);
+      if (node.isPassingAllData()) {
+        paramStoreExpression =
+            maybeAddDefaultParams(node, paramStoreExpression, params).orElse(paramStoreExpression);
+      }
     }
     for (var entry : params.entrySet()) {
       paramStoreExpression =
           MethodRef.PARAM_STORE_SET_FIELD.invoke(
               paramStoreExpression,
-              BytecodeUtils.constantRecordSymbol(entry.getKey()),
+              BytecodeUtils.constantRecordProperty(entry.getKey()),
               entry.getValue().get());
     }
     return paramStoreExpression;
@@ -1838,7 +1833,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
         paramStoreExpression =
             MethodRef.PARAM_STORE_SET_FIELD.invoke(
                 paramStoreExpression,
-                BytecodeUtils.constantRecordSymbol(param.name()),
+                BytecodeUtils.constantRecordProperty(param.name()),
                 parameterLookup.getParam(param));
       }
     }
@@ -1846,11 +1841,12 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   }
 
   private Expression getDataRecordExpression(CallNode node, Label reattachPoint) {
-    return exprCompiler
-        .compileSubExpression(
-            node.getDataExpr(), detachState.createExpressionDetacher(reattachPoint))
-        .box()
-        .checkedCast(SoyRecord.class);
+    return MethodRef.PARAM_STORE_FROM_RECORD.invoke(
+        exprCompiler
+            .compileSubExpression(
+                node.getDataExpr(), detachState.createExpressionDetacher(reattachPoint))
+            .box()
+            .checkedCast(SoyRecord.class));
   }
 
   @Override

@@ -48,12 +48,12 @@ import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SoyLegacyObjectMap;
 import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyRecord;
-import com.google.template.soy.data.SoyRecords;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.SoyVisualElementData;
 import com.google.template.soy.data.TemplateValue;
 import com.google.template.soy.data.internal.LazyProtoToSoyValueList;
+import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.data.restricted.StringData;
@@ -160,20 +160,22 @@ public final class JbcSrcRuntime {
     if (record.isNullish()) {
       throw new NullPointerException("Attempted to access field '" + field.getName() + "' of null");
     }
-    return getFieldProvider((SoyRecord) record, field);
+    return paramOrDefault(
+        ((SoyRecord) record).getFieldProvider(field), /* defaultValue= */ NullData.INSTANCE);
   }
 
   @Keep
   @Nonnull
-  public static SoyValueProvider getFieldProvider(
-      SoyRecord record, RecordProperty field, SoyValue defaultValue) {
-    return paramOrDefault(record.getFieldProvider(field), defaultValue);
+  public static SoyValueProvider getParameter(
+      ParamStore paramStore, RecordProperty field, SoyValue defaultValue) {
+    return paramOrDefault(paramStore.getFieldProvider(field), defaultValue);
   }
 
   @Keep
   @Nonnull
-  public static SoyValueProvider getFieldProvider(SoyRecord record, RecordProperty field) {
-    return paramOrDefault(record.getFieldProvider(field), /* defaultValue= */ NullData.INSTANCE);
+  public static SoyValueProvider getParameter(ParamStore paramStore, RecordProperty field) {
+    return paramOrDefault(
+        paramStore.getFieldProvider(field), /* defaultValue= */ NullData.INSTANCE);
   }
 
   /**
@@ -841,7 +843,10 @@ public final class JbcSrcRuntime {
 
     @Override
     public RenderResult render(
-        SoyRecord params, SoyRecord ij, LoggingAdvisingAppendable appendable, RenderContext context)
+        ParamStore params,
+        ParamStore ij,
+        LoggingAdvisingAppendable appendable,
+        RenderContext context)
         throws IOException {
       StackFrame frame = context.popFrame();
       BufferingAppendable buffer;
@@ -942,7 +947,7 @@ public final class JbcSrcRuntime {
 
   @Nonnull
   @Keep
-  public static TemplateValue bindTemplateParams(TemplateValue template, SoyRecord boundParams) {
+  public static TemplateValue bindTemplateParams(TemplateValue template, ParamStore boundParams) {
     var newTemplate =
         new PartiallyBoundTemplate(boundParams, (CompiledTemplate) template.getCompiledTemplate());
     return TemplateValue.createWithBoundParameters(
@@ -952,16 +957,16 @@ public final class JbcSrcRuntime {
   @Immutable
   private static final class PartiallyBoundTemplate implements CompiledTemplate {
     @SuppressWarnings("Immutable") // this is never mutated
-    private final SoyRecord boundParams;
+    private final ParamStore boundParams;
 
     private final CompiledTemplate delegate;
 
-    PartiallyBoundTemplate(SoyRecord boundParams, CompiledTemplate delegate) {
+    PartiallyBoundTemplate(ParamStore boundParams, CompiledTemplate delegate) {
       // unwrap delegation by eagerly merging params, this removes layers of indirection at call
       // time
       if (delegate instanceof PartiallyBoundTemplate) {
         PartiallyBoundTemplate partiallyBoundTemplate = (PartiallyBoundTemplate) delegate;
-        boundParams = SoyRecords.merge(partiallyBoundTemplate.boundParams, boundParams);
+        boundParams = ParamStore.merge(partiallyBoundTemplate.boundParams, boundParams);
         delegate = partiallyBoundTemplate.delegate;
       }
       this.delegate = delegate;
@@ -970,9 +975,12 @@ public final class JbcSrcRuntime {
 
     @Override
     public RenderResult render(
-        SoyRecord params, SoyRecord ij, LoggingAdvisingAppendable appendable, RenderContext context)
+        ParamStore params,
+        ParamStore ij,
+        LoggingAdvisingAppendable appendable,
+        RenderContext context)
         throws IOException {
-      return delegate.render(SoyRecords.merge(boundParams, params), ij, appendable, context);
+      return delegate.render(ParamStore.merge(boundParams, params), ij, appendable, context);
     }
   }
 

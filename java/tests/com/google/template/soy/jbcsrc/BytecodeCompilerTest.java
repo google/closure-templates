@@ -19,7 +19,7 @@ package com.google.template.soy.jbcsrc;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.util.concurrent.Futures.immediateFailedFuture;
-import static com.google.template.soy.jbcsrc.TemplateTester.asRecord;
+import static com.google.template.soy.jbcsrc.TemplateTester.asParams;
 import static com.google.template.soy.jbcsrc.TemplateTester.assertThatElementBody;
 import static com.google.template.soy.jbcsrc.TemplateTester.assertThatFile;
 import static com.google.template.soy.jbcsrc.TemplateTester.assertThatTemplateBody;
@@ -45,10 +45,9 @@ import com.google.template.soy.data.LoggingAdvisingAppendable.BufferingAppendabl
 import com.google.template.soy.data.RecordProperty;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SanitizedContents;
-import com.google.template.soy.data.SoyDict;
 import com.google.template.soy.data.SoyList;
-import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
+import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.SoyValueConverterUtility;
 import com.google.template.soy.data.internal.ListImpl;
 import com.google.template.soy.data.internal.ParamStore;
@@ -326,10 +325,11 @@ public class BytecodeCompilerTest {
         new ParamStore(2)
             .setField(
                 RecordProperty.get("rec"),
-                new ParamStore(2).setField(RecordProperty.get("foo"), StringData.forValue("foo")));
+                SoyValueConverter.INSTANCE.convert(ImmutableMap.of("foo", "foo")));
     assertThat(render(templates, params, "ns.callerDataExpr")).isEqualTo("Foo: foo\nBoo: null\n");
-    ((ParamStore) params.getField(RecordProperty.get("rec")))
-        .setField(RecordProperty.get("boo"), StringData.forValue("boo"));
+    params.setField(
+        RecordProperty.get("rec"),
+        SoyValueConverter.INSTANCE.convert(ImmutableMap.of("foo", "foo", "boo", "boo")));
     assertThat(render(templates, params, "ns.callerDataExpr")).isEqualTo("Foo: foo\nBoo: boo\n");
     assertThat(getTemplateMetadata(templates, "ns.callerDataExpr").callees())
         .asList()
@@ -431,7 +431,7 @@ public class BytecodeCompilerTest {
     return templates.getTemplateData(name).templateMethod().getAnnotation(TemplateMetadata.class);
   }
 
-  private String render(CompiledTemplates templates, SoyRecord params, String name)
+  private String render(CompiledTemplates templates, ParamStore params, String name)
       throws IOException {
     CompiledTemplate caller = templates.getTemplate(name);
     BufferingAppendable builder = LoggingAdvisingAppendable.buffering();
@@ -801,22 +801,29 @@ public class BytecodeCompilerTest {
     RenderContext context = getDefaultContext(templates);
     BufferingAppendable builder = LoggingAdvisingAppendable.buffering();
 
-    SoyDict params = SoyValueConverterUtility.newDict("foo", IntegerData.forValue(1));
-    singleParam.render(params, ParamStore.EMPTY_INSTANCE, builder, context);
+    ParamStore params = SoyValueConverterUtility.newParams("foo", IntegerData.forValue(1));
+    assertThat(singleParam.render(params, ParamStore.EMPTY_INSTANCE, builder, context))
+        .isEqualTo(RenderResult.done());
     assertThat(builder.getAndClearBuffer()).isEqualTo("1");
 
-    singleParam.render(ParamStore.EMPTY_INSTANCE, ParamStore.EMPTY_INSTANCE, builder, context);
+    assertThat(
+            singleParam.render(
+                ParamStore.EMPTY_INSTANCE, ParamStore.EMPTY_INSTANCE, builder, context))
+        .isEqualTo(RenderResult.done());
     assertThat(builder.getAndClearBuffer()).isEqualTo("-1");
 
     templates = TemplateTester.compileTemplateBody("{@inject foo : int}", "{$foo}");
     CompiledTemplate singleIj = templates.getTemplate("ns.foo");
     context = getDefaultContext(templates);
 
-    params = SoyValueConverterUtility.newDict("foo", IntegerData.forValue(1));
-    singleIj.render(ParamStore.EMPTY_INSTANCE, params, builder, context);
+    params = SoyValueConverterUtility.newParams("foo", IntegerData.forValue(1));
+    assertThat(singleIj.render(ParamStore.EMPTY_INSTANCE, params, builder, context))
+        .isEqualTo(RenderResult.done());
     assertThat(builder.getAndClearBuffer()).isEqualTo("1");
 
-    singleIj.render(ParamStore.EMPTY_INSTANCE, ParamStore.EMPTY_INSTANCE, builder, context);
+    assertThat(
+            singleIj.render(ParamStore.EMPTY_INSTANCE, ParamStore.EMPTY_INSTANCE, builder, context))
+        .isEqualTo(RenderResult.done());
     assertThat(builder.getAndClearBuffer()).isEqualTo("null");
   }
 
@@ -1010,35 +1017,35 @@ public class BytecodeCompilerTest {
                     "{/template}"));
     assertThat(
             render(
-                templates, asRecord(ImmutableMap.of("p1", 1, "p2", 2, "p3", 3, "p4", 4)), "ns.foo"))
+                templates, asParams(ImmutableMap.of("p1", 1, "p2", 2, "p3", 3, "p4", 4)), "ns.foo"))
         .isEqualTo("10");
     ListenableFuture<?> failed = immediateFailedFuture(new RuntimeException("boom"));
     // since each parameter is on a different source line, depending on which one is assigned the
     // failed future, the template should show a different line number
     try {
       render(
-          templates, asRecord(ImmutableMap.of("p1", failed, "p2", 2, "p3", 3, "p4", 4)), "ns.foo");
+          templates, asParams(ImmutableMap.of("p1", failed, "p2", 2, "p3", 3, "p4", 4)), "ns.foo");
       fail();
     } catch (Exception e) {
       assertThat(getTemplateLineNumber("ns.foo", e)).isEqualTo(8);
     }
     try {
       render(
-          templates, asRecord(ImmutableMap.of("p1", 1, "p2", failed, "p3", 3, "p4", 4)), "ns.foo");
+          templates, asParams(ImmutableMap.of("p1", 1, "p2", failed, "p3", 3, "p4", 4)), "ns.foo");
       fail();
     } catch (Exception e) {
       assertThat(getTemplateLineNumber("ns.foo", e)).isEqualTo(9);
     }
     try {
       render(
-          templates, asRecord(ImmutableMap.of("p1", 1, "p2", 2, "p3", failed, "p4", 4)), "ns.foo");
+          templates, asParams(ImmutableMap.of("p1", 1, "p2", 2, "p3", failed, "p4", 4)), "ns.foo");
       fail();
     } catch (Exception e) {
       assertThat(getTemplateLineNumber("ns.foo", e)).isEqualTo(10);
     }
     try {
       render(
-          templates, asRecord(ImmutableMap.of("p1", 1, "p2", 2, "p3", 3, "p4", failed)), "ns.foo");
+          templates, asParams(ImmutableMap.of("p1", 1, "p2", 2, "p3", 3, "p4", failed)), "ns.foo");
       fail();
     } catch (Exception e) {
       assertThat(getTemplateLineNumber("ns.foo", e)).isEqualTo(11);
@@ -1068,13 +1075,13 @@ public class BytecodeCompilerTest {
                     "{/if}",
                     "{/template}"));
     assertThat(
-            render(templates, asRecord(ImmutableMap.of("list", ImmutableList.of(1, 2))), "ns.foo"))
+            render(templates, asParams(ImmutableMap.of("list", ImmutableList.of(1, 2))), "ns.foo"))
         .isEqualTo("1 2 ");
     ListenableFuture<?> failed = immediateFailedFuture(new RuntimeException("boom"));
     // since each parameter is on a different source line, depending on which one is assigned the
     // failed future, the template should show a different line number
     try {
-      render(templates, asRecord(ImmutableMap.of("list", failed)), "ns.foo");
+      render(templates, asParams(ImmutableMap.of("list", failed)), "ns.foo");
       fail();
     } catch (Exception e) {
       assertThat(getTemplateLineNumber("ns.foo", e)).isEqualTo(7);

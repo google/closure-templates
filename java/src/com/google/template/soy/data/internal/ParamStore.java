@@ -17,20 +17,19 @@
 package com.google.template.soy.data.internal;
 
 import static com.google.common.base.Preconditions.checkState;
-import static com.google.common.collect.ImmutableMap.toImmutableMap;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
-import com.google.template.soy.data.LoggingAdvisingAppendable;
+import com.google.errorprone.annotations.DoNotCall;
 import com.google.template.soy.data.RecordProperty;
-import com.google.template.soy.data.SoyAbstractValue;
 import com.google.template.soy.data.SoyRecord;
-import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
+import com.google.template.soy.data.restricted.UndefinedData;
+import java.util.Collection;
 import java.util.IdentityHashMap;
 import java.util.Map;
-import java.util.function.BiConsumer;
+import java.util.Set;
 import javax.annotation.Nonnull;
 
 /**
@@ -38,22 +37,47 @@ import javax.annotation.Nonnull;
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  */
-public class ParamStore extends SoyAbstractValue implements SoyRecord {
+public final class ParamStore extends IdentityHashMap<RecordProperty, SoyValueProvider> {
 
-  /** The internal map holding the fields (params). */
-  private final IdentityHashMap<RecordProperty, SoyValueProvider> localStore;
+  public static ParamStore merge(ParamStore store1, ParamStore store2) {
+    var newStore = new ParamStore(store1.size() + store2.size());
+    store1.forEach(newStore::setFieldCritical);
+    store2.forEach(newStore::setFieldCritical);
+    return newStore.freeze();
+  }
 
-  public ParamStore(SoyRecord backingStore, int size) {
-    this.localStore = new IdentityHashMap<>(backingStore.recordSize() + size);
-    backingStore.forEach(localStore::put);
+  public static ParamStore fromRecord(SoyRecord record) {
+    if (record instanceof SoyRecordImpl) {
+      return ((SoyRecordImpl) record).getParamStore();
+    }
+    var newStore = new ParamStore(record.recordSize());
+    record.forEach(newStore::setFieldCritical);
+    return newStore.freeze();
+  }
+
+  private boolean frozen;
+
+  public ParamStore(ParamStore backingStore, int size) {
+    super(backingStore.size() + size);
+    backingStore.forEach(super::put);
   }
 
   public ParamStore(int size) {
-    this.localStore = new IdentityHashMap<>(size);
+    super(size);
   }
 
-  public ParamStore(IdentityHashMap<RecordProperty, SoyValueProvider> localStore) {
-    this.localStore = localStore;
+  public ParamStore() {
+    super();
+  }
+
+  @CanIgnoreReturnValue
+  public ParamStore freeze() {
+    frozen = true;
+    return this;
+  }
+
+  public boolean isFrozen() {
+    return frozen;
   }
 
   /**
@@ -64,8 +88,9 @@ public class ParamStore extends SoyAbstractValue implements SoyRecord {
    */
   @CanIgnoreReturnValue
   public ParamStore setField(RecordProperty name, @Nonnull SoyValueProvider valueProvider) {
+    checkState(!frozen);
     Preconditions.checkNotNull(valueProvider);
-    localStore.put(name, valueProvider);
+    super.put(name, valueProvider);
     return this;
   }
 
@@ -79,70 +104,31 @@ public class ParamStore extends SoyAbstractValue implements SoyRecord {
    */
   @CanIgnoreReturnValue
   public ParamStore setFieldCritical(RecordProperty name, @Nonnull SoyValueProvider valueProvider) {
+    checkState(!frozen);
     Preconditions.checkNotNull(valueProvider);
-    SoyValueProvider previous = localStore.put(name, valueProvider);
+    SoyValueProvider previous = super.put(name, valueProvider);
     checkState(previous == null, "value already set for param %s", name);
     return this;
   }
 
-  @Override
   public boolean hasField(RecordProperty name) {
-    return localStore.containsKey(name);
+    return super.containsKey(name);
   }
 
-  @Override
   public SoyValueProvider getFieldProvider(RecordProperty name) {
-    return localStore.get(name);
+    return super.get(name);
   }
 
-  @Override
-  public ImmutableMap<String, SoyValueProvider> recordAsMap() {
-    return localStore.entrySet().stream()
-        .collect(toImmutableMap(e -> e.getKey().getName(), Map.Entry::getValue));
+  public SoyValueProvider getPositionalParam(RecordProperty name) {
+    SoyValueProvider provider = super.get(name);
+    return provider != null ? provider : UndefinedData.INSTANCE;
   }
 
-  @Override
-  public void forEach(BiConsumer<RecordProperty, ? super SoyValueProvider> action) {
-    localStore.forEach(action);
-  }
-
-  @Override
-  public int recordSize() {
-    return localStore.size();
-  }
-
-  @Override
-  public SoyValue getField(RecordProperty name) {
-    SoyValueProvider valueProvider = getFieldProvider(name);
-    return (valueProvider != null) ? valueProvider.resolve() : null;
-  }
-
-  // -----------------------------------------------------------------------------------------------
-  // SoyValue.
-
-  @Override
-  public boolean coerceToBoolean() {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public String coerceToString() {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public void render(LoggingAdvisingAppendable appendable) {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public boolean equals(Object other) {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public int hashCode() {
-    throw new UnsupportedOperationException();
+  public ImmutableMap<String, SoyValueProvider> asStringMap() {
+    ImmutableMap.Builder<String, SoyValueProvider> builder =
+        ImmutableMap.builderWithExpectedSize(size());
+    forEach((k, v) -> builder.put(k.getName(), v));
+    return builder.buildOrThrow();
   }
 
   /**
@@ -154,19 +140,93 @@ public class ParamStore extends SoyAbstractValue implements SoyRecord {
     return getClass().toString();
   }
 
+  @Override
+  public boolean equals(Object o) {
+    checkState(frozen);
+    if (!(o instanceof ParamStore)) {
+      return false;
+    }
+    ParamStore otherStore = (ParamStore) o;
+    if (size() != otherStore.size()) {
+      return false;
+    }
+    for (var key : super.keySet()) {
+      if (!getFieldProvider(key).equals(otherStore.getFieldProvider(key))) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  @Override
+  public int hashCode() {
+    checkState(frozen);
+    int result = 0;
+    for (var key : super.keySet()) {
+      // We accumulate with + to ensure we are associative (insensitive to ordering)
+      result += System.identityHashCode(key) ^ getFieldProvider(key).hashCode();
+    }
+    return result;
+  }
+
+  public Set<RecordProperty> properties() {
+    return super.keySet();
+  }
+
+  // Override base methods methods to clarify our api... too bad java doesn't have private
+  // inheritance
+
+  @DoNotCall
+  @Override
+  public SoyValueProvider put(RecordProperty property, SoyValueProvider value) {
+    throw new UnsupportedOperationException();
+  }
+
+  @DoNotCall
+  @Override
+  public void putAll(Map<? extends RecordProperty, ? extends SoyValueProvider> map) {
+    throw new UnsupportedOperationException();
+  }
+
+  @DoNotCall
+  @Override
+  public SoyValueProvider remove(Object property) {
+    throw new UnsupportedOperationException();
+  }
+
+  @DoNotCall
+  @Override
+  public void clear() {
+    throw new UnsupportedOperationException();
+  }
+
+  @DoNotCall
+  @Override
+  public Set<Map.Entry<RecordProperty, SoyValueProvider>> entrySet() {
+    throw new UnsupportedOperationException();
+  }
+
+  @DoNotCall
+  @Override
+  public Set<RecordProperty> keySet() {
+
+    throw new UnsupportedOperationException();
+  }
+
+  @DoNotCall
+  @Override
+  public Collection<SoyValueProvider> values() {
+    throw new UnsupportedOperationException();
+  }
+
+  @DoNotCall
+  @Override
+  public SoyValueProvider get(Object key) {
+    throw new UnsupportedOperationException();
+  }
+
   // -----------------------------------------------------------------------------------------------
   // Empty instance.
 
-  public static final ParamStore EMPTY_INSTANCE =
-      new ParamStore(0) {
-        @Override
-        public ParamStore setField(RecordProperty name, SoyValueProvider valueProvider) {
-          throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public ParamStore setFieldCritical(RecordProperty name, SoyValueProvider valueProvider) {
-          throw new UnsupportedOperationException();
-        }
-      };
+  public static final ParamStore EMPTY_INSTANCE = new ParamStore(0).freeze();
 }

@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.SoyValueProvider;
+import com.google.template.soy.data.internal.ParamStore;
 import java.io.IOException;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
@@ -44,9 +45,9 @@ public final class RecordToPositionalCallFactoryTest {
 
     MethodHandle delegate =
         RecordToPositionalCallFactory.bootstrapDelegate(
-                lookup, "delegate", methodType(String.class, SoyRecord.class), example0)
+                lookup, "delegate", methodType(String.class, ParamStore.class), example0)
             .getTarget();
-    String result = (String) delegate.invokeExact(asRecord(ImmutableMap.of("p1", "foobar")));
+    String result = (String) delegate.invokeExact(asParams(ImmutableMap.of("p1", "foobar")));
     assertThat(result).isEqualTo("nada");
   }
 
@@ -64,9 +65,9 @@ public final class RecordToPositionalCallFactoryTest {
 
     MethodHandle delegate =
         RecordToPositionalCallFactory.bootstrapDelegate(
-                lookup, "delegate", methodType(String.class, SoyRecord.class), example1, "p1")
+                lookup, "delegate", methodType(String.class, ParamStore.class), example1, "p1")
             .getTarget();
-    String result = (String) delegate.invokeExact(asRecord(ImmutableMap.of("p1", "foobar")));
+    String result = (String) delegate.invokeExact(asParams(ImmutableMap.of("p1", "foobar")));
     assertThat(result).isEqualTo("p1: foobar");
   }
 
@@ -92,7 +93,7 @@ public final class RecordToPositionalCallFactoryTest {
         RecordToPositionalCallFactory.bootstrapDelegate(
                 lookup,
                 "delegate",
-                methodType(String.class, SoyRecord.class),
+                methodType(String.class, ParamStore.class),
                 example5,
                 "p1",
                 "p2",
@@ -103,7 +104,7 @@ public final class RecordToPositionalCallFactoryTest {
     String result =
         (String)
             delegate.invokeExact(
-                asRecord(ImmutableMap.of("p1", "a", "p2", "b", "p3", "c", "p4", "d", "p5", "e")));
+                asParams(ImmutableMap.of("p1", "a", "p2", "b", "p3", "c", "p4", "d", "p5", "e")));
     assertThat(result).isEqualTo("p1: a, p2: b, p3: c, p4: d, p5: e");
   }
 
@@ -126,7 +127,7 @@ public final class RecordToPositionalCallFactoryTest {
         + p5.resolve().coerceToString();
   }
 
-  static SoyRecord asRecord(Map<String, ?> params) {
-    return (SoyRecord) SoyValueConverter.INSTANCE.convert(params);
+  static ParamStore asParams(Map<String, ?> params) {
+    return ParamStore.fromRecord((SoyRecord) SoyValueConverter.INSTANCE.convert(params));
   }
 }

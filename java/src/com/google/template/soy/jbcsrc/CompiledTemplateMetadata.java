@@ -16,9 +16,7 @@
 
 package com.google.template.soy.jbcsrc;
 
-
 import com.google.auto.value.AutoValue;
-import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
@@ -55,16 +53,16 @@ abstract class CompiledTemplateMetadata {
   public static final String DEFAULT_IMPL_JBC_CLASS_SUFFIX = "__modifiable_default_impl__";
 
   /**
-   * The {@link Method} signature of the {@link
-   * CompiledTemplate#render(SoyRecord,SoyRecord,AdvisingAppendable, RenderContext)} method.
+   * The {@link Method} signature of the {@link CompiledTemplate#render(ParamStore,ParamStore,
+   * AdvisingAppendable, RenderContext)} method.
    */
   static Method createRenderMethod(String methodName) {
     return new Method(
         methodName,
         Type.getMethodDescriptor(
             BytecodeUtils.RENDER_RESULT_TYPE,
-            BytecodeUtils.SOY_RECORD_TYPE,
-            BytecodeUtils.SOY_RECORD_TYPE,
+            BytecodeUtils.PARAM_STORE_TYPE,
+            BytecodeUtils.PARAM_STORE_TYPE,
             BytecodeUtils.LOGGING_ADVISING_APPENDABLE_TYPE,
             BytecodeUtils.RENDER_CONTEXT_TYPE));
   }
@@ -79,7 +77,7 @@ abstract class CompiledTemplateMetadata {
                     templateType.getActualParameters().stream()
                         .map(i -> BytecodeUtils.SOY_VALUE_PROVIDER_TYPE),
                     Stream.of(
-                        BytecodeUtils.SOY_RECORD_TYPE,
+                        BytecodeUtils.PARAM_STORE_TYPE,
                         BytecodeUtils.LOGGING_ADVISING_APPENDABLE_TYPE,
                         BytecodeUtils.RENDER_CONTEXT_TYPE))
                 .toArray(Type[]::new)));

@@ -18,9 +18,9 @@ package com.google.template.soy.sharedpasses.render;
 
 import com.google.common.base.Preconditions;
 import com.google.template.soy.data.RecordProperty;
-import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
+import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.exprtree.VarDefn;
@@ -49,7 +49,7 @@ public abstract class Environment {
    * <p>Allocates the local variable table for the template and prepopulates it with data from the
    * given SoyRecords.
    */
-  static Environment create(TemplateNode template, SoyRecord data, SoyRecord ijData) {
+  static Environment create(TemplateNode template, ParamStore data, ParamStore ijData) {
     return new Impl(template, data, ijData);
   }
 
@@ -85,9 +85,9 @@ public abstract class Environment {
     }
 
     final IdentityHashMap<VarDefn, Object> localVariables = new IdentityHashMap<>();
-    final SoyRecord data;
+    final ParamStore data;
 
-    Impl(TemplateNode template, SoyRecord data, SoyRecord ijData) {
+    Impl(TemplateNode template, ParamStore data, ParamStore ijData) {
       this.data = data;
       for (TemplateParam param : template.getAllParams()) {
         SoyValueProvider provider =

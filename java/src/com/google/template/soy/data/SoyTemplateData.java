@@ -20,8 +20,7 @@ import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
-import com.google.template.soy.data.internal.SoyRecordImpl;
-import java.util.IdentityHashMap;
+import com.google.template.soy.data.internal.ParamStore;
 import java.util.Map;
 
 /**
@@ -40,19 +39,17 @@ public final class SoyTemplateData {
   /** Builder for {@link SoyTemplateData}. */
   public static final class Builder {
 
-    private IdentityHashMap<RecordProperty, SoyValueProvider> data;
-    private boolean copyOnWrite;
+    private ParamStore data;
 
     private Builder() {
-      data = new IdentityHashMap<>();
+      data = new ParamStore();
     }
 
     private Builder setParamInternal(SoyTemplateParam<?> param, Object value) {
-      if (copyOnWrite) {
-        this.data = new IdentityHashMap<>(data);
-        copyOnWrite = false;
+      if (data.isFrozen()) {
+        this.data = new ParamStore(data, 1);
       }
-      data.put(param.getSymbol(), SoyValueConverter.INSTANCE.convert(value));
+      data.setField(param.getSymbol(), SoyValueConverter.INSTANCE.convert(value));
       return this;
     }
 
@@ -68,15 +65,14 @@ public final class SoyTemplateData {
     }
 
     public SoyTemplateData build() {
-      this.copyOnWrite = true;
-      return new SoyTemplateData(this);
+      return new SoyTemplateData(data.freeze());
     }
   }
 
-  private final SoyRecordImpl data;
+  private final ParamStore data;
 
-  private SoyTemplateData(Builder builder) {
-    this.data = new SoyRecordImpl(builder.data);
+  private SoyTemplateData(ParamStore data) {
+    this.data = data;
   }
 
   /**
@@ -106,39 +102,16 @@ public final class SoyTemplateData {
 
   @Override
   public boolean equals(Object o) {
-    return o instanceof SoyTemplateData && soyRecordEquals(data, ((SoyTemplateData) o).data);
+    return o instanceof SoyTemplateData && data.equals(((SoyTemplateData) o).data);
   }
 
   @Override
   public int hashCode() {
-    return soyRecordHashCode(data);
+    return data.hashCode();
   }
 
   @Override
   public String toString() {
     return MoreObjects.toStringHelper(getClass()).add("data", getParamsAsMap()).toString();
-  }
-
-  /** An equals operator for SoyRecord */
-  static boolean soyRecordEquals(SoyRecordImpl o1, SoyRecordImpl o2) {
-    if (o1.recordSize() != o2.recordSize()) {
-      return false;
-    }
-    for (var key : o1.keys()) {
-      if (!o1.getFieldProvider(key).equals(o2.getFieldProvider(key))) {
-        return false;
-      }
-    }
-    return true;
-  }
-
-  /** A hash function for SoyRecord */
-  static int soyRecordHashCode(SoyRecordImpl record) {
-    int result = 0;
-    for (var key : record.keys()) {
-      // We accumulate with + to ensure we are associative (insensitive to ordering)
-      result += System.identityHashCode(key) ^ record.getFieldProvider(key).hashCode();
-    }
-    return result;
   }
 }

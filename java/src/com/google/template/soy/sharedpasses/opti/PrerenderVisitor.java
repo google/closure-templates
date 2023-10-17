@@ -18,7 +18,6 @@ package com.google.template.soy.sharedpasses.opti;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableTable;
-import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.plugin.java.PluginInstances;
 import com.google.template.soy.shared.internal.DelTemplateSelector;
@@ -75,7 +74,7 @@ final class PrerenderVisitor extends RenderVisitor {
   }
 
   @Override
-  protected PrerenderVisitor createHelperInstance(Appendable outputBuf, SoyRecord data) {
+  protected PrerenderVisitor createHelperInstance(Appendable outputBuf, ParamStore data) {
 
     return new PrerenderVisitor(
         (PreevalVisitorFactory) evalVisitorFactory, outputBuf, basicTemplates);

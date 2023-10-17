@@ -310,8 +310,8 @@ public final class BaseTofu implements SoyTofu {
   private TemplateNode renderMain(
       Appendable outputBuf,
       String templateName,
-      @Nullable SoyRecord data,
-      @Nullable SoyRecord ijData,
+      @Nullable ParamStore data,
+      @Nullable ParamStore ijData,
       @Nullable Predicate<String> activeModNames,
       @Nullable SoyMsgBundle msgBundle,
       @Nullable SoyIdRenamingMap idRenamingMap,
@@ -355,8 +355,8 @@ public final class BaseTofu implements SoyTofu {
   private TemplateNode renderMainHelper(
       Appendable outputBuf,
       String templateName,
-      @Nullable SoyRecord data,
-      @Nullable SoyRecord ijData,
+      @Nullable ParamStore data,
+      @Nullable ParamStore ijData,
       Predicate<String> activeModNames,
       @Nullable SoyMsgBundle msgBundle,
       @Nullable SoyIdRenamingMap idRenamingMap,
@@ -415,8 +415,8 @@ public final class BaseTofu implements SoyTofu {
 
     private final BaseTofu baseTofu;
     private final String templateName;
-    private SoyRecord data;
-    private SoyRecord ijData;
+    private ParamStore data;
+    private ParamStore ijData;
     private SoyMsgBundle msgBundle;
     private SoyIdRenamingMap idRenamingMap;
     private SoyCssRenamingMap cssRenamingMap;
@@ -476,7 +476,7 @@ public final class BaseTofu implements SoyTofu {
       Preconditions.checkState(
           !dataSetInConstructor,
           "May not call setData on a Renderer created from a TemplateParams");
-      this.data = data;
+      this.data = ParamStore.fromRecord(data);
       return this;
     }
 
@@ -490,7 +490,7 @@ public final class BaseTofu implements SoyTofu {
     @CanIgnoreReturnValue
     @Override
     public RendererImpl setIjData(SoyRecord ijData) {
-      this.ijData = ijData;
+      this.ijData = ParamStore.fromRecord(ijData);
       return this;
     }
 

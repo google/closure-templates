@@ -24,9 +24,9 @@ import static java.lang.invoke.MethodType.methodType;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ObjectArrays;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
-import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.TemplateValue;
+import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import java.lang.invoke.CallSite;
 import java.lang.invoke.ConstantCallSite;
@@ -104,8 +104,8 @@ public final class ClassLoaderFallbackCallFactory {
                 RenderResult.class,
                 SoyCallSite.class,
                 String.class,
-                SoyRecord.class,
-                SoyRecord.class,
+                ParamStore.class,
+                ParamStore.class,
                 LoggingAdvisingAppendable.class,
                 RenderContext.class));
 
@@ -117,7 +117,7 @@ public final class ClassLoaderFallbackCallFactory {
                 SoyCallSite.class,
                 String.class,
                 SoyValueProvider[].class,
-                SoyRecord.class,
+                ParamStore.class,
                 LoggingAdvisingAppendable.class,
                 RenderContext.class));
 
@@ -152,8 +152,8 @@ public final class ClassLoaderFallbackCallFactory {
     private static final MethodType RENDER_TYPE =
         methodType(
             RenderResult.class,
-            SoyRecord.class,
-            SoyRecord.class,
+            ParamStore.class,
+            ParamStore.class,
             LoggingAdvisingAppendable.class,
             RenderContext.class);
 
@@ -301,7 +301,7 @@ public final class ClassLoaderFallbackCallFactory {
             : SlowPathHandles.SLOWPATH_RENDER_POSITIONAL;
     slowPathRenderHandle = insertArguments(slowPathRenderHandle, 1, templateName);
     if (!type.equals(SlowPathHandles.RENDER_TYPE)) {
-      // target type has a signature like (SVP,SVP,...SVP,SoyRecord,Appendable,RenderContext)
+      // target type has a signature like (SVP,SVP,...SVP,ParamStore,Appendable,RenderContext)
       // we want to collect the leading SVPs into an array at the end of the slowpath
       int numParams = type.parameterCount();
       int numPositionalParams =
@@ -484,7 +484,7 @@ public final class ClassLoaderFallbackCallFactory {
       SoyCallSite callSite,
       String templateName,
       SoyValueProvider[] params,
-      SoyRecord ij,
+      ParamStore ij,
       LoggingAdvisingAppendable appendable,
       RenderContext context)
       throws Throwable {
@@ -505,8 +505,8 @@ public final class ClassLoaderFallbackCallFactory {
   public static RenderResult slowPathRenderRecord(
       SoyCallSite callSite,
       String templateName,
-      SoyRecord params,
-      SoyRecord ij,
+      ParamStore params,
+      ParamStore ij,
       LoggingAdvisingAppendable appendable,
       RenderContext context)
       throws Throwable {

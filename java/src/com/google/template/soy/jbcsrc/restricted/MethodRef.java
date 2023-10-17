@@ -121,8 +121,8 @@ public abstract class MethodRef {
       createNonPure(
           CompiledTemplate.class,
           "render",
-          SoyRecord.class,
-          SoyRecord.class,
+          ParamStore.class,
+          ParamStore.class,
           LoggingAdvisingAppendable.class,
           RenderContext.class);
 
@@ -281,6 +281,8 @@ public abstract class MethodRef {
 
   public static final MethodRef PARAM_STORE_SET_FIELD =
       createNonPure(ParamStore.class, "setField", RecordProperty.class, SoyValueProvider.class);
+  public static final MethodRef PARAM_STORE_FROM_RECORD =
+      createPure(ParamStore.class, "fromRecord", SoyRecord.class);
 
   public static final MethodRef SOY_PROTO_VALUE_CREATE =
       createPure(SoyProtoValue.class, "create", Message.class);
@@ -323,7 +325,7 @@ public abstract class MethodRef {
           List.class);
 
   public static final MethodRef RUNTIME_BIND_TEMPLATE_PARAMS =
-      createPure(JbcSrcRuntime.class, "bindTemplateParams", TemplateValue.class, SoyRecord.class);
+      createPure(JbcSrcRuntime.class, "bindTemplateParams", TemplateValue.class, ParamStore.class);
 
   public static final MethodRef RUNTIME_CALL_LEGACY_FUNCTION =
       createNonPure(
@@ -370,14 +372,14 @@ public abstract class MethodRef {
   public static final MethodRef RUNTIME_GET_FIELD_PROVIDER =
       createPure(JbcSrcRuntime.class, "getFieldProvider", SoyValue.class, RecordProperty.class);
 
-  public static final MethodRef RUNTIME_GET_RECORD_FIELD_PROVIDER =
-      createPure(JbcSrcRuntime.class, "getFieldProvider", SoyRecord.class, RecordProperty.class);
+  public static final MethodRef RUNTIME_GET_PARAMETER =
+      createPure(JbcSrcRuntime.class, "getParameter", ParamStore.class, RecordProperty.class);
 
-  public static final MethodRef RUNTIME_GET_RECORD_FIELD_PROVIDER_DEFAULT =
+  public static final MethodRef RUNTIME_GET_PARAMETER_DEFAULT =
       createPure(
           JbcSrcRuntime.class,
-          "getFieldProvider",
-          SoyRecord.class,
+          "getParameter",
+          ParamStore.class,
           RecordProperty.class,
           SoyValue.class);
 

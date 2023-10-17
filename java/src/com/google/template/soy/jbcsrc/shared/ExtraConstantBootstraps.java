@@ -24,11 +24,10 @@ import com.google.errorprone.annotations.Keep;
 import com.google.template.soy.data.RecordProperty;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueConverter;
-import com.google.template.soy.data.SoyValueProvider;
+import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.data.internal.SoyMapImpl;
 import com.google.template.soy.data.internal.SoyRecordImpl;
 import java.lang.invoke.MethodHandles;
-import java.util.IdentityHashMap;
 
 /** Extra constant bootstrap methods. */
 public final class ExtraConstantBootstraps {
@@ -77,14 +76,23 @@ public final class ExtraConstantBootstraps {
   @Keep
   public static SoyRecordImpl constantSoyRecord(
       MethodHandles.Lookup lookup, String name, Class<?> type, int salt, Object... keyValuePairs) {
-    IdentityHashMap<RecordProperty, SoyValueProvider> map =
-        new IdentityHashMap<>(keyValuePairs.length / 2);
+    return new SoyRecordImpl(asParams(keyValuePairs));
+  }
+
+  @Keep
+  public static ParamStore constantParamStore(
+      MethodHandles.Lookup lookup, String name, Class<?> type, int salt, Object... keyValuePairs) {
+    return asParams(keyValuePairs);
+  }
+
+  private static ParamStore asParams(Object... keyValuePairs) {
+    ParamStore params = new ParamStore(keyValuePairs.length / 2);
     for (int i = 0; i < keyValuePairs.length; i += 2) {
-      map.put(
+      params.setField(
           RecordProperty.get((String) keyValuePairs[i]),
           SoyValueConverter.INSTANCE.convert(keyValuePairs[i + 1]).resolve());
     }
-    return new SoyRecordImpl(map);
+    return params.freeze();
   }
 
   @Keep
