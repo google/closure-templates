@@ -102,7 +102,7 @@ final class MoreCallValidationsPass implements CompilerFileSetPass {
   private static final SoyErrorKind MISUSED_AT_ATTRIBUTE =
       SoyErrorKind.of("Attributes with a leading @ should not have values.");
 
-  private static final SoyErrorKind BAD_ATTRIBUTE_NAME =
+  static final SoyErrorKind BAD_ATTRIBUTE_NAME =
       SoyErrorKind.of("Element attribute names must be lower hyphen case.");
 
   private static final SoyErrorKind NO_ATTRIBUTE_VALUE =

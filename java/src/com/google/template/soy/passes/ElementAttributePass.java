@@ -310,6 +310,10 @@ final class ElementAttributePass implements CompilerFileSetPass {
               }
 
               AttrParam attr = attrs.get(attrName);
+              if (!TemplateType.Parameter.isValidAttrName(attrName)) {
+                errorReporter.report(
+                    attr.getSourceLocation(), MoreCallValidationsPass.BAD_ATTRIBUTE_NAME);
+              }
               unseenParams.remove(attr);
               VarRefNode attrExpr = new VarRefNode("$" + attr.name(), unknown, attr);
 
