@@ -2170,7 +2170,7 @@ const getBidiFormatterInstance_ = function(bidiGlobalDir) {
  * @param {?} text The content whose directionality is to be estimated.
  * @param {boolean=} isHtml Whether text is HTML/HTML-escaped.
  *     Default: false.
- * @return {number} 1 if text is LTR, -1 if it is RTL, and 0 if it is neutral.
+ * @return {!bidi.Dir} 1 if text is LTR, -1 if it is RTL, and 0 if it is neutral.
  */
 const $$bidiTextDir = function(text, isHtml) {
   const contentDir = getContentDir(text);
@@ -2203,13 +2203,9 @@ const $$bidiTextDir = function(text, isHtml) {
  *     else, the empty string.
  */
 const $$bidiDirAttr = function(bidiGlobalDir, text, isHtml) {
+  const contentDir = $$bidiTextDir(text, isHtml);
+
   const formatter = getBidiFormatterInstance_(bidiGlobalDir);
-  let contentDir = getContentDir(text);
-  if (contentDir == null) {
-    isHtml = isHtml || isContentKind_(text, SanitizedContentKind.HTML);
-    contentDir = bidi.estimateDirection(text + '', isHtml);
-    cacheContentDir_(text, contentDir);
-  }
   return VERY_UNSAFE.ordainSanitizedHtmlAttribute(
       formatter.knownDirAttr(contentDir));
 };
@@ -2263,13 +2259,9 @@ const $$bidiMark = function(/** number */ dir) {
  *     bidiGlobalDir, or bidiGlobalDir is 0 (unknown).
  */
 const $$bidiMarkAfter = function(bidiGlobalDir, text, isHtml) {
-  const formatter = getBidiFormatterInstance_(bidiGlobalDir);
   isHtml = isHtml || isContentKind_(text, SanitizedContentKind.HTML);
-  let dir = getContentDir(text);
-  if (dir == null) {
-    dir = bidi.estimateDirection(text + '', isHtml);
-    cacheContentDir_(text, dir);
-  }
+  const dir = $$bidiTextDir(text, isHtml);
+  const formatter = getBidiFormatterInstance_(bidiGlobalDir);
   return formatter.markAfterKnownDir(dir, text + '', isHtml);
 };
 
