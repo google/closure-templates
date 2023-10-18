@@ -14,7 +14,10 @@ writing custom print directives, see [Plugins](../dev/plugins.md).
 
 If the overall directionality of the print command is different from the global
 directionality, then the compiler wraps the print command output in a span with
-`dir=ltr` or `dir=rtl`.
+`dir=ltr` or `dir=rtl`. Any user-generated content has the potential to be in a
+different direction.
+https://www.w3.org/International/articles/inline-bidi-markup/uba-basics is a
+good resource for understanding the Unicode bidirectional algorithm.
 
 NOTE: The template compiler applies autoescaping before evaluating
 `|bidiSpanWrap`, which is safe because `|bidiSpanWrap` correctly handles
