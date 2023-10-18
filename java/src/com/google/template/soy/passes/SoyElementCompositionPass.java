@@ -218,7 +218,7 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
             nodeIdGen.genId(),
             location,
             UNKNOWN,
-            Identifier.create(TemplateType.ATTRIBUTES_HIDDEN_PARAM_NAME, UNKNOWN),
+            Identifier.create(TemplateType.EXTRA_ROOT_ELEMENT_ATTRIBUTES, UNKNOWN),
             new CommandTagAttribute(
                 Identifier.create("kind", UNKNOWN),
                 QuoteStyle.SINGLE,
@@ -325,7 +325,7 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
             });
 
     if (attributesNode != null && attributesNode.numChildren() > 0) {
-      if (templateType.getAllowExtraAttributes()) {
+      if (templateType.getAllowExtraAttributesOrExplicit()) {
         call.addChild(attributesNode);
       } else {
         errorReporter.report(tagNode.getSourceLocation(), EXTRA_ATTRIBUTES_NOT_ALLOWED);

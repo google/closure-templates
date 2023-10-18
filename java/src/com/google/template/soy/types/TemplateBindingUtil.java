@@ -77,8 +77,14 @@ public final class TemplateBindingUtil {
       ErrorReporter.LocationBound errorReporter) {
     Set<String> unboundParameters = new HashSet<>(base.getParameterMap().keySet());
     boolean reportedErrors = false;
+    TemplateType.Builder builder = base.toBuilder();
     for (RecordType.Member member : parameters.getMembers()) {
       if (!base.getParameterMap().containsKey(member.name())) {
+        if (member.name().equals(TemplateType.EXTRA_ROOT_ELEMENT_ATTRIBUTES)
+            && base.getAllowExtraAttributes()) {
+          builder.setAllowExtraAttributes(false);
+          continue;
+        }
         String didYouMeanMessage =
             SoyErrors.getDidYouMeanMessage(base.getParameterMap().keySet(), member.name());
         errorReporter.report(PARAMETER_NAME_MISMATCH, member.name(), base, didYouMeanMessage);
@@ -99,7 +105,6 @@ public final class TemplateBindingUtil {
     if (reportedErrors) {
       return UnknownType.getInstance();
     }
-    TemplateType.Builder builder = base.toBuilder();
     ImmutableList<TemplateType.Parameter> newParameters =
         base.getParameters().stream()
             .filter((parameter) -> unboundParameters.contains(parameter.getName()))

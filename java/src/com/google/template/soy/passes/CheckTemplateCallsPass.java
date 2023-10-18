@@ -519,6 +519,10 @@ final class CheckTemplateCallsPass implements CompilerFileSetPass {
             return;
           }
         }
+        if (paramName.equals(TemplateType.EXTRA_ROOT_ELEMENT_ATTRIBUTES)
+            && callee.getAllowExtraAttributes()) {
+          return;
+        }
         if (!ipi.indirectParams.containsKey(paramName)) {
           Set<String> allParams =
               ImmutableSet.<String>builder()
