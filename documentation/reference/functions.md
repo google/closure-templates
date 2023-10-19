@@ -173,7 +173,7 @@ NOTE: We do not test for deep equality in the implementation. Hence, this
 function does not remove duplicate records or protobufs. Only primitive types
 (null, bool, int, float, number, string) are successfully deduplicated.
 
-<span id="list-string|int_join"></span>
+<span id="list-string|number_join"></span>
 
 ### `list.join(separator)` {#join}
 

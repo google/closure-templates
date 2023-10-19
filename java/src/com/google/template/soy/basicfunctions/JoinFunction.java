@@ -46,7 +46,7 @@ import java.util.List;
     })
 @SoyMethodSignature(
     name = "join",
-    baseType = "list<string|int>",
+    baseType = "list<string|number>",
     value = @Signature(parameterTypes = "string", returnType = "string"))
 @SoyPureFunction
 public final class JoinFunction
