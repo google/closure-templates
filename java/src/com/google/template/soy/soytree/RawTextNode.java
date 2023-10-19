@@ -19,6 +19,7 @@ package com.google.template.soy.soytree;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkElementIndex;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.lang.Math.min;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
@@ -31,6 +32,7 @@ import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.soytree.RawTextNode.SourceOffsets.Reason;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.regex.Matcher;
@@ -430,6 +432,10 @@ public final class RawTextNode extends AbstractSoyNode
         Provenance.CONCATENATED);
   }
 
+  public String[] getSourceLines() {
+    return this.offsets.getSourceLines(rawText);
+  }
+
   @Override
   public String toSourceString() {
     // If it's a command character node, don't use the rawText (which is already processed). Use the
@@ -673,6 +679,27 @@ public final class RawTextNode extends AbstractSoyNode
     public SourceLocation getSourceLocation(SourceFilePath filePath) {
       return new SourceLocation(
           filePath, lines[0], columns[0], lines[lines.length - 1], columns[columns.length - 1]);
+    }
+
+    String[] getSourceLines(String text) {
+      String[] sourceLines = new String[lines[lines.length - 1] - lines[0] + 1];
+      Arrays.fill(sourceLines, "");
+      int minIndent = Integer.MAX_VALUE;
+      for (int i = 1; i < columns.length - 1; i++) {
+        minIndent = min(minIndent, columns[i]);
+      }
+      for (int i = 0; i < indexes.length - 1; i++) {
+        String sourceLine = text.substring(indexes[i], indexes[i + 1]);
+        if (i < indexes.length - 2 && sourceLine.charAt(sourceLine.length() - 1) == ' ') {
+          sourceLine = sourceLine.substring(0, sourceLine.length() - 1);
+        }
+        if (i > 1) {
+          sourceLine =
+              String.join("", Collections.nCopies(columns[i] - minIndent, " ")) + sourceLine;
+        }
+        sourceLines[lines[i] - lines[0]] = sourceLine;
+      }
+      return sourceLines;
     }
 
     @Override
