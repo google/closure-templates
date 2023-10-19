@@ -312,6 +312,8 @@ public final class RawTextContextUpdaterTest {
     assertTransition("JS_REGEX", "[/*]", "JS_REGEX");
     assertTransition("JS_REGEX", "[a", "ERROR"); // can't end in a character class
     assertTransition("JS_REGEX", "\"", "JS_REGEX");
+    assertTransition("JS_REGEX", "\\\\", "JS_REGEX");
+    assertTransition("JS_REGEX", "^[^:/\\\\]+\\/", "JS_REGEX");
     assertTransition("JS_REGEX", "\\x27", "JS_REGEX");
     assertTransition("JS_REGEX", "\\'", "JS_REGEX");
     assertTransition("JS_REGEX", "\r", "ERROR");

@@ -318,6 +318,7 @@ TOKEN_MGR_DECLS: {
 <REGEX> SKIP: {
    < <NL> > {error("unexpected end of line in JavaScript regex literal");}
 |  < "\\/" >
+|  < "\\\\" > // double backslashes
 |  < "\\[" >
 |  < "[" > : REGEX_CHARACTER_CLASS
 |  < "/"> {
@@ -330,6 +331,7 @@ TOKEN_MGR_DECLS: {
 // Within a character class, the rules are a bit different
 <REGEX_CHARACTER_CLASS> SKIP: {
   < "]"> : REGEX
+|  < "\\\\" > // double backslashes
 | < "\\]" > // escaped square bracket
 | < <NL> > {error("unexpected end of line in JavaScript regex literal");}
 }
