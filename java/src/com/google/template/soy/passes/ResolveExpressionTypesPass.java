@@ -2904,22 +2904,33 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
 
     private SoyType getGenericListType(Iterable<ExprNode> intersectionOf) {
       ImmutableSet.Builder<SoyType> elementTypesBuilder = ImmutableSet.builder();
+      SoyType elementType = null;
       for (ExprNode childNode : intersectionOf) {
         // If one of the types isn't a list, we can't compute the intersection. Return UnknownType
         // and assume the caller is already reporting an error for bad args.
         if (!(childNode.getType() instanceof ListType)) {
           return UnknownType.getInstance();
         }
-        SoyType elementType = ((ListType) childNode.getType()).getElementType();
-        if (elementType != null) { // Empty lists have no element type
-          elementTypesBuilder.add(elementType);
+        SoyType childNodeElementType = ((ListType) childNode.getType()).getElementType();
+        if (childNodeElementType == null) {
+          continue;
+        }
+        if (elementType == null || childNodeElementType.isAssignableFromStrict(elementType)) {
+          elementType = childNodeElementType;
+        } else {
+          throw new AssertionError(
+              "Unexpected type: "
+                  + elementType
+                  + " "
+                  + childNodeElementType
+                  + " in "
+                  + childNode.getSourceLocation());
         }
       }
 
-      ImmutableSet<SoyType> elementTypes = elementTypesBuilder.build();
-      return elementTypes.isEmpty()
+      return elementType == null
           ? ListType.EMPTY_LIST
-          : typeRegistry.getOrCreateListType(typeRegistry.getOrCreateUnionType(elementTypes));
+          : typeRegistry.getOrCreateListType(elementType);
     }
 
     private SoyType getGenericMapType(Iterable<ExprNode> intersectionOf) {
