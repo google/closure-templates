@@ -56,6 +56,8 @@ import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.basicfunctions.ConcatListsFunction;
 import com.google.template.soy.basicfunctions.ConcatMapsMethod;
+import com.google.template.soy.basicfunctions.JavascriptAndFunction;
+import com.google.template.soy.basicfunctions.JavascriptOrFunction;
 import com.google.template.soy.basicfunctions.KeysFunction;
 import com.google.template.soy.basicfunctions.LegacyObjectMapToMapFunction;
 import com.google.template.soy.basicfunctions.ListFlatMethod;
@@ -1838,6 +1840,10 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
 
     @Override
     protected void visitAndOpNode(AndOpNode node) {
+      processAnd(node);
+    }
+
+    private void processAnd(AbstractParentExprNode node) {
       visit(node.getChild(0)); // Assign normal types to left child
 
       // Save the state of substitutions.
@@ -1860,10 +1866,18 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
 
     @Override
     protected void visitOrOpNode(OrOpNode node) {
+      processOr(node);
+    }
+
+    private void processOr(AbstractParentExprNode node) {
       ExprNode lhs = node.getChild(0);
       if (SoyTreeUtils.isConstantExpr(lhs)) {
         errorReporter.warn(
-            node.getOperatorLocation(), OR_OPERATOR_HAS_CONSTANT_OPERAND, lhs.toSourceString());
+            node instanceof AbstractOperatorNode
+                ? ((AbstractOperatorNode) node).getOperatorLocation()
+                : node.getSourceLocation(),
+            OR_OPERATOR_HAS_CONSTANT_OPERAND,
+            lhs.toSourceString());
       }
       visit(lhs); // Assign normal types to left child
 
@@ -1881,7 +1895,11 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
       visit(rhs);
       if (SoyTreeUtils.isConstantExpr(rhs)) {
         errorReporter.warn(
-            node.getOperatorLocation(), OR_OPERATOR_HAS_CONSTANT_OPERAND, rhs.toSourceString());
+            node instanceof AbstractOperatorNode
+                ? ((AbstractOperatorNode) node).getOperatorLocation()
+                : node.getSourceLocation(),
+            OR_OPERATOR_HAS_CONSTANT_OPERAND,
+            rhs.toSourceString());
       }
 
       // Restore substitutions to previous state
@@ -2056,8 +2074,26 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
       return true;
     }
 
+    private boolean isJavascriptAndOr(FunctionNode node) {
+      return node.isResolved()
+          && (node.getSoyFunction() instanceof JavascriptAndFunction
+              || node.getSoyFunction() instanceof JavascriptOrFunction);
+    }
+
     @Override
     protected void visitFunctionNode(FunctionNode node) {
+      if (isJavascriptAndOr(node)) {
+        if (node.getSoyFunction() instanceof JavascriptAndFunction) {
+          processAnd(node);
+        } else if (node.getSoyFunction() instanceof JavascriptOrFunction) {
+          processOr(node);
+        }
+        visitSoyFunctionWithSignature(
+            node.getSoyFunction().getClass().getAnnotation(SoyFunctionSignature.class),
+            node.getSoyFunction().getClass().getCanonicalName(),
+            node);
+        return;
+      }
       if (!node.hasStaticName()
           && !node.allowedToInvokeAsFunction()
           && (node.getNameExpr().getType() instanceof TemplateImportType

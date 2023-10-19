@@ -679,6 +679,16 @@ def soy_round(num, precision=0):
   return rounded_number
 
 
+def javascript_and(arg0, arg1):
+  """Implements Javascript "&&" semantics."""
+  return arg0 and arg1
+
+
+def javascript_or(arg0, arg1):
+  """Implements Javascript "||" semantics."""
+  return arg0 or arg1
+
+
 ######################
 # Utility functions. #
 ######################

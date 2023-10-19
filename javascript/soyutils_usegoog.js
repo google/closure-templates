@@ -2535,6 +2535,29 @@ function $$maybeMakeImmutableProto(/** !Message*/ message) {
   return message;
 }
 
+/** 
+ * Follows javascript "and" semantics.
+ * @template T1
+ * @template T2
+ * @param {T1} arg0
+ * @param {T2} arg1
+ * @return {T1|T2|boolean}
+ */
+function $$javascriptAnd(arg0, arg1) {
+  return arg0 && arg1;
+}
+
+/** 
+ * Follows javascript "or" semantics. 
+ * @template T1
+ * @template T2
+ * @param {T1} arg0
+ * @param {T2} arg1
+ * @return {T1|T2|boolean}
+ */
+function $$javascriptOr(arg0, arg1) {
+  return arg0 || arg1;
+}
 
 // -----------------------------------------------------------------------------
 // Generated code.
@@ -2631,6 +2654,8 @@ exports = {
   $$stubsMap,
   $$internalCallMarkerDoNotUse,
   $$areYouAnInternalCaller,
+  $$javascriptAnd,
+  $$javascriptOr,
   // The following are exported just for tests
   $$balanceTags_,
   isContentKind_,

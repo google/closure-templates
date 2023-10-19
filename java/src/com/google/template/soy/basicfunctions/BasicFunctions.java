@@ -33,6 +33,8 @@ public class BasicFunctions {
         new FloorFunction(),
         new HtmlToTextFunction(),
         new IsFiniteFunction(),
+        new JavascriptAndFunction(),
+        new JavascriptOrFunction(),
         new JoinFunction(),
         new KeysFunction(),
         new LegacyObjectMapToMapFunction(),

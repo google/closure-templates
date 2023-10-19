@@ -24,10 +24,14 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
+import com.google.template.soy.basicfunctions.JavascriptAndFunction;
+import com.google.template.soy.basicfunctions.JavascriptOrFunction;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
+import com.google.template.soy.exprtree.AbstractParentExprNode;
 import com.google.template.soy.exprtree.ExprEquivalence;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.NullSafeAccessNode;
 import com.google.template.soy.exprtree.OperatorNodes.AndOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.EqualOpNode;
@@ -246,7 +250,22 @@ final class TypeNarrowingConditionVisitor {
     }
 
     @Override
+    protected void visitFunctionNode(FunctionNode node) {
+      if (node.isResolved()) {
+        if (node.getSoyFunction() instanceof JavascriptAndFunction) {
+          processAnd(node);
+        } else if (node.getSoyFunction() instanceof JavascriptOrFunction) {
+          processOr(node);
+        }
+      }
+    }
+
+    @Override
     protected void visitAndOpNode(AndOpNode node) {
+      processAnd(node);
+    }
+
+    private void processAnd(AbstractParentExprNode node) {
       Preconditions.checkArgument(node.numChildren() == 2);
       // Create two separate visitors to analyze each side of the expression.
       TypeNarrowingConditionVisitor leftVisitor = createTypeNarrowingConditionVisitor();
@@ -269,6 +288,10 @@ final class TypeNarrowingConditionVisitor {
 
     @Override
     protected void visitOrOpNode(OrOpNode node) {
+      processOr(node);
+    }
+
+    private void processOr(AbstractParentExprNode node) {
       Preconditions.checkArgument(node.numChildren() == 2);
       // Create two separate visitors to analyze each side of the expression.
       TypeNarrowingConditionVisitor leftVisitor = createTypeNarrowingConditionVisitor();

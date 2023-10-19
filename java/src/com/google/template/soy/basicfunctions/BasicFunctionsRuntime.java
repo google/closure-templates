@@ -44,6 +44,7 @@ import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.data.internal.RuntimeMapTypeTracker;
 import com.google.template.soy.data.internal.SoyMapImpl;
 import com.google.template.soy.data.internal.SoyRecordImpl;
+import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NumberData;
@@ -487,5 +488,21 @@ public final class BasicFunctionsRuntime {
   /** Returns whether the argument is a finite value (not NaN or Infinity). */
   public static boolean isFinite(SoyValue arg) {
     return arg instanceof NumberData && Double.isFinite(arg.numberValue());
+  }
+
+  /** Follows javascript "and" semantics. */
+  public static SoyValue javascriptAnd(SoyValue arg0, SoyValue arg1) {
+    if (arg0 == null || !arg0.coerceToBoolean()) {
+      return BooleanData.FALSE;
+    }
+    return arg1;
+  }
+
+  /** Follows javascript "or" semantics. */
+  public static SoyValue javascriptOr(SoyValue arg0, SoyValue arg1) {
+    if (arg0 != null && arg0.coerceToBoolean()) {
+      return arg0;
+    }
+    return arg1;
   }
 }
