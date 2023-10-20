@@ -18,6 +18,7 @@ package com.google.template.soy.jssrc.dsl;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import java.util.stream.Stream;
@@ -25,7 +26,8 @@ import java.util.stream.Stream;
 /** Represents a reference to a previously declared variable. */
 @AutoValue
 @Immutable
-abstract class VariableReference extends Expression implements Expression.HasInitialStatements {
+abstract class VariableReference extends Expression
+    implements Expression.HasInitialStatements, CodeChunk.HasRequires {
 
   abstract VariableDeclaration declaration();
 
@@ -58,11 +60,16 @@ abstract class VariableReference extends Expression implements Expression.HasIni
 
   @Override
   Stream<? extends CodeChunk> childrenStream() {
-    return Stream.of(declaration());
+    return Stream.of();
   }
 
   @Override
   public ImmutableList<Statement> initialStatements() {
     return ImmutableList.of(declaration());
+  }
+
+  @Override
+  public ImmutableSet<GoogRequire> googRequires() {
+    return declaration().googRequires();
   }
 }

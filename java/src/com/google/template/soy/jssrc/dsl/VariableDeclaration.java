@@ -21,6 +21,7 @@ import com.google.auto.value.extension.memoized.Memoized;
 import com.google.common.collect.ImmutableSet;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.errorprone.annotations.Immutable;
+import java.util.Objects;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
@@ -95,9 +96,7 @@ public abstract class VariableDeclaration extends Statement implements CodeChunk
 
   @Override
   Stream<? extends CodeChunk> childrenStream() {
-    // Special faking of requires children. See #googRequires(). Would be
-    // Stream.of(rhs(), jsDoc(), type()).filter(Objects::nonNull);
-    return Stream.empty();
+    return Stream.of(rhs(), jsDoc(), type()).filter(Objects::nonNull);
   }
 
   // A cache of all the transitive requires.  Necessary because every time we traverse a variable
