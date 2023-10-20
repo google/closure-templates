@@ -39,7 +39,8 @@ public final class TreeStreamsTest {
                     .put(2, list(4, 5))
                     .put(3, list(6, 7))
                     .buildOrThrow()))
-        .containsExactly(1, 2, 3, 4, 5, 6, 7);
+        .containsExactly(1, 2, 3, 4, 5, 6, 7)
+        .inOrder();
   }
 
   @Test
@@ -52,7 +53,8 @@ public final class TreeStreamsTest {
                     .put(2, list(4, 5))
                     .put(3, list(6, 7))
                     .buildOrThrow()))
-        .containsExactly(1, 2, 4, 5, 3, 6, 7);
+        .containsExactly(1, 2, 4, 5, 3, 6, 7)
+        .inOrder();
   }
 
   private static <T> ImmutableList<T> list(T... items) {
@@ -65,7 +67,7 @@ public final class TreeStreamsTest {
   }
 
   private static <T> ImmutableList<T> dfs(T root, Map<T, Iterable<T>> data) {
-    return TreeStreams.breadthFirst(root, k -> data.getOrDefault(k, ImmutableList.of()))
+    return TreeStreams.depthFirst(root, k -> data.getOrDefault(k, ImmutableList.of()))
         .collect(ImmutableList.toImmutableList());
   }
 }
