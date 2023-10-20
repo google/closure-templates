@@ -2211,6 +2211,38 @@ const $$bidiDirAttr = function(bidiGlobalDir, text, isHtml) {
 };
 
 /**
+ * Returns 'ltr' or 'rtl', depending on text's estimated directionality, if it
+ * is not the same as bidiGlobalDir. Otherwise, returns undefined.
+ * If opt_isHtml, makes sure to ignore the LTR nature of the mark-up and escapes
+ * in text, making the logic suitable for HTML and HTML-escaped text.
+ * If text has a bidi.Dir-valued contentDir, this is used instead of
+ * estimating the directionality.
+ *
+ * @param {number} bidiGlobalDir The global directionality context: 1 if ltr, -1
+ *     if rtl, 0 if unknown.
+ * @param {?} text The content whose directionality is to be estimated.
+ * @param {boolean=} isHtml Whether text is HTML/HTML-escaped.
+ *     Default: false.
+ * @return {string|undefined} 'dir="rtl"' for RTL text in
+ *     non-RTL context; 'dir="ltr"' for LTR text in non-LTR context;
+ *     else, undefined
+ */
+const $$bidiDirAttrValue = function(bidiGlobalDir, text, isHtml) {
+  const contentDir = $$bidiTextDir(text, isHtml);
+
+  // We want this to behave the same as knownDirAttr(dir) in
+  // goog.i18n.BidiFormatter, but without the dir= part.
+  // formatter.knownDirAttrValue behaves a bit differently so we have to
+  // explicitly check for where knownDirAttr would have returned an empty
+  // string.
+  if (contentDir === bidiGlobalDir || contentDir === bidi.Dir.NEUTRAL) {
+    return undefined;
+  }
+
+  const formatter = getBidiFormatterInstance_(bidiGlobalDir);
+  return formatter.knownDirAttrValue(contentDir);
+};
+/**
  * Returns the name of the start edge ('left' or 'right') for the current global
  * bidi directionality.
  *
@@ -2536,11 +2568,6 @@ function $$maybeMakeImmutableProto(/** !Message*/ message) {
 }
 
 
-// -----------------------------------------------------------------------------
-// Generated code.
-
-
-
 exports = {
   $$maybeMakeImmutableProto,
   $$emptyProto,
@@ -2613,6 +2640,7 @@ exports = {
   $$strToAsciiUpperCase,
   $$strReplaceAll,
   $$bidiDirAttr,
+  $$bidiDirAttrValue,
   $$bidiTextDir,
   $$bidiStartEdge,
   $$bidiEndEdge,
@@ -2635,6 +2663,11 @@ exports = {
   $$balanceTags_,
   isContentKind_,
 };
+// -----------------------------------------------------------------------------
+// Generated code.
+
+
+
 // START GENERATED CODE FOR ESCAPERS.
 
 /**
