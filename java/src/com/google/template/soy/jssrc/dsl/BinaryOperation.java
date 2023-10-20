@@ -25,8 +25,8 @@ import java.util.stream.Stream;
 /** Represents a JavaScript binary operation. */
 @AutoValue
 @Immutable
-abstract class BinaryOperation extends Operation {
-  abstract String operator();
+public abstract class BinaryOperation extends Operation {
+  public abstract String operator();
 
   abstract Expression arg1();
 
