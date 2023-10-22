@@ -41,6 +41,7 @@ import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.MethodRef.MethodPureness;
+import com.google.template.soy.jbcsrc.restricted.MethodRefs;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyRuntimeType;
 import com.google.template.soy.jbcsrc.restricted.TypeInfo;
@@ -354,7 +355,7 @@ final class JbcSrcValueFactory extends JavaValueFactory {
           Label end = new Label();
           actualParam.gen(mv);
           BytecodeUtils.coalesceSoyNullishToJavaNull(mv, actualParam.resultType(), end);
-          MethodRef.SOY_VALUE_LONG_VALUE.invokeUnchecked(mv);
+          MethodRefs.SOY_VALUE_LONG_VALUE.invokeUnchecked(mv);
           mv.cast(Type.LONG_TYPE, Type.INT_TYPE);
           forNumber.invokeUnchecked(mv);
           mv.mark(end);
@@ -484,7 +485,7 @@ final class JbcSrcValueFactory extends JavaValueFactory {
         soyExpr =
             SoyExpression.forInt(
                 BytecodeUtils.numericConversion(
-                    MethodRef.PROTOCOL_ENUM_GET_NUMBER.invoke(expr), Type.LONG_TYPE));
+                    MethodRefs.PROTOCOL_ENUM_GET_NUMBER.invoke(expr), Type.LONG_TYPE));
       } else {
         throw new IllegalStateException("invalid type: " + type);
       }

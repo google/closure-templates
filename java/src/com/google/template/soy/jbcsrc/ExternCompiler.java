@@ -30,6 +30,7 @@ import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
 import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.MethodRef.MethodPureness;
+import com.google.template.soy.jbcsrc.restricted.MethodRefs;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyRuntimeType;
 import com.google.template.soy.jbcsrc.restricted.Statement;
@@ -247,21 +248,21 @@ public final class ExternCompiler {
       if (soyTypeBoxed) {
         return JbcSrcExternRuntime.SOY_VALUE_TO_BOXED_INTEGER.invoke(actualParam);
       }
-      return MethodRef.BOX_INTEGER.invoke(JbcSrcExternRuntime.LONG_TO_INT.invoke(actualParam));
+      return MethodRefs.BOX_INTEGER.invoke(JbcSrcExternRuntime.LONG_TO_INT.invoke(actualParam));
     } else if (javaType.equals(Type.DOUBLE_TYPE)) {
       return actualParam.coerceToDouble();
     } else if (javaType.equals(BytecodeUtils.BOXED_DOUBLE_TYPE)) {
       if (soyTypeBoxed) {
         return JbcSrcExternRuntime.SOY_VALUE_TO_BOXED_DOUBLE.invoke(actualParam);
       }
-      return MethodRef.BOX_DOUBLE.invoke(actualParam.coerceToDouble());
+      return MethodRefs.BOX_DOUBLE.invoke(actualParam.coerceToDouble());
     } else if (javaType.equals(Type.FLOAT_TYPE)) {
       return BytecodeUtils.numericConversion(actualParam.coerceToDouble(), Type.FLOAT_TYPE);
     } else if (javaType.equals(BytecodeUtils.BOXED_FLOAT_TYPE)) {
       if (soyTypeBoxed) {
         return JbcSrcExternRuntime.SOY_VALUE_TO_BOXED_FLOAT.invoke(actualParam);
       }
-      return MethodRef.BOX_FLOAT.invoke(
+      return MethodRefs.BOX_FLOAT.invoke(
           BytecodeUtils.numericConversion(actualParam.coerceToDouble(), Type.FLOAT_TYPE));
     } else if (javaType.equals(BytecodeUtils.NUMBER_TYPE)) {
       return actualParam.unboxAsNumberOrJavaNull();
@@ -313,14 +314,14 @@ public final class ExternCompiler {
       if (soyTypeBoxed) {
         return JbcSrcExternRuntime.SOY_VALUE_TO_BOXED_BOOLEAN.invoke(actualParam);
       }
-      return MethodRef.BOX_BOOLEAN.invoke(actualParam.unboxAsBoolean());
+      return MethodRefs.BOX_BOOLEAN.invoke(actualParam.unboxAsBoolean());
     } else if (javaType.equals(Type.LONG_TYPE)) {
       return actualParam.unboxAsLong();
     } else if (javaType.equals(BytecodeUtils.BOXED_LONG_TYPE)) {
       if (soyTypeBoxed) {
         return JbcSrcExternRuntime.SOY_VALUE_TO_BOXED_LONG.invoke(actualParam);
       }
-      return MethodRef.BOX_LONG.invoke(actualParam.unboxAsLong());
+      return MethodRefs.BOX_LONG.invoke(actualParam.unboxAsLong());
     } else if (javaType.equals(BytecodeUtils.STRING_TYPE)) {
       return actualParam.unboxAsStringOrJavaNull();
     } else if (!isObject
@@ -442,7 +443,7 @@ public final class ExternCompiler {
           externCall);
     } else if (soyReturnType.getKind() == SoyType.Kind.PROTO_ENUM) {
       return BytecodeUtils.numericConversion(
-          MethodRef.PROTOCOL_ENUM_GET_NUMBER.invoke(externCall), Type.LONG_TYPE);
+          MethodRefs.PROTOCOL_ENUM_GET_NUMBER.invoke(externCall), Type.LONG_TYPE);
     } else if (BytecodeUtils.SOY_VALUE_TYPE.equals(getRuntimeType(soyReturnType).runtimeType())) {
       // If the Soy return type of the extern is SoyValue, then we need to make sure the value
       // returned from the implementation is boxed.

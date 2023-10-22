@@ -141,10 +141,10 @@ public class SoyExpressionTest {
     assertThatExpression(forSoyValue(list, soyNull()).coerceToBoolean()).evaluatesTo(false);
     assertThatExpression(forSoyValue(list, soyNull())).evaluatesTo(NullData.INSTANCE);
     assertThatExpression(
-            forList(list, MethodRef.IMMUTABLE_LIST_OF.get(0).invoke()).coerceToBoolean())
+            forList(list, MethodRefs.IMMUTABLE_LIST_OF.get(0).invoke()).coerceToBoolean())
         .evaluatesTo(true);
     // SoyList uses Object identity for equality so we can't really assert on the value.
-    assertThatExpression(forList(list, MethodRef.IMMUTABLE_LIST_OF.get(0).invoke()).box())
+    assertThatExpression(forList(list, MethodRefs.IMMUTABLE_LIST_OF.get(0).invoke()).box())
         .evaluatesToInstanceOf(ListImpl.class);
   }
 
@@ -172,7 +172,7 @@ public class SoyExpressionTest {
   public void testBoxNullable() {
     SoyExpression nullableString = forString(constant("hello").asJavaNullable());
     assertThatExpression(nullableString).evaluatesTo("hello");
-    assertThatExpression(nullableString.box().invoke(MethodRef.SOY_VALUE_STRING_VALUE))
+    assertThatExpression(nullableString.box().invoke(MethodRefs.SOY_VALUE_STRING_VALUE))
         .evaluatesTo("hello");
   }
 
@@ -195,9 +195,10 @@ public class SoyExpressionTest {
     SoyExpression nullableString =
         SoyExpression.forSoyValue(
             StringType.getInstance(),
-            MethodRef.STRING_DATA_FOR_VALUE.invoke(constant("hello")).asJavaNullable());
+            MethodRefs.STRING_DATA_FOR_VALUE.invoke(constant("hello")).asJavaNullable());
     assertThatExpression(nullableString).evaluatesTo(StringData.forValue("hello"));
-    assertThatExpression(nullableString.unboxAsStringOrJavaNull().invoke(MethodRef.STRING_IS_EMPTY))
+    assertThatExpression(
+            nullableString.unboxAsStringOrJavaNull().invoke(MethodRefs.STRING_IS_EMPTY))
         .evaluatesTo(false);
   }
 

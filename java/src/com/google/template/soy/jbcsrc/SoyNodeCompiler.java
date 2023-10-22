@@ -41,8 +41,6 @@ import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.basetree.Node;
 import com.google.template.soy.data.SoyRecord;
-import com.google.template.soy.data.SoyValueProvider;
-import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.exprtree.BooleanNode;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
@@ -63,17 +61,15 @@ import com.google.template.soy.jbcsrc.internal.InnerClasses;
 import com.google.template.soy.jbcsrc.restricted.Branch;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
-import com.google.template.soy.jbcsrc.restricted.ConstructorRef;
 import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.Expression.Feature;
 import com.google.template.soy.jbcsrc.restricted.FieldRef;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
+import com.google.template.soy.jbcsrc.restricted.MethodRefs;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.Statement;
-import com.google.template.soy.jbcsrc.runtime.JbcSrcRuntime;
 import com.google.template.soy.jbcsrc.shared.ClassLoaderFallbackCallFactory;
 import com.google.template.soy.jbcsrc.shared.Names;
-import com.google.template.soy.jbcsrc.shared.RenderContext;
 import com.google.template.soy.jbcsrc.shared.SwitchFactory;
 import com.google.template.soy.logging.LoggingFunction;
 import com.google.template.soy.msgs.internal.MsgUtils;
@@ -422,11 +418,11 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     // improve JS/Java compatibility. Right now there are several Soy templates that fail as a
     // result, in each case it is a clear bug in the template.
     if (switchExpr.resultType().equals(Type.LONG_TYPE)) {
-      return MethodRef.AS_SWITCHABLE_VALUE_LONG.invoke(switchExpr, constant(unusedKey));
+      return MethodRefs.AS_SWITCHABLE_VALUE_LONG.invoke(switchExpr, constant(unusedKey));
     } else if (switchExpr.resultType().equals(Type.DOUBLE_TYPE)) {
-      return MethodRef.AS_SWITCHABLE_VALUE_DOUBLE.invoke(switchExpr, constant(unusedKey));
+      return MethodRefs.AS_SWITCHABLE_VALUE_DOUBLE.invoke(switchExpr, constant(unusedKey));
     } else {
-      return MethodRef.AS_SWITCHABLE_VALUE_SOY_VALUE.invoke(switchExpr.box(), constant(unusedKey));
+      return MethodRefs.AS_SWITCHABLE_VALUE_SOY_VALUE.invoke(switchExpr.box(), constant(unusedKey));
     }
   }
 
@@ -730,7 +726,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       sizeVar =
           scope.createSynthetic(
               SyntheticVarName.foreachLoopLength(nonEmptyNode),
-              MethodRef.RUNTIME_RANGE_LOOP_LENGTH.invoke(
+              MethodRefs.RUNTIME_RANGE_LOOP_LENGTH.invoke(
                   compiledArgs.start(), compiledArgs.end(), compiledArgs.step()),
               DERIVED);
       indexVar =
@@ -769,7 +765,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       sizeVar =
           scope.createSynthetic(
               SyntheticVarName.foreachLoopLength(nonEmptyNode),
-              MethodRef.LIST_SIZE.invoke(listVar.local()),
+              MethodRefs.LIST_SIZE.invoke(listVar.local()),
               DERIVED);
       indexVar =
           scope.createSynthetic(
@@ -784,7 +780,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       itemVar =
           scope.create(
               nonEmptyNode.getVarName(),
-              MethodRef.LIST_GET
+              MethodRefs.LIST_GET
                   .invoke(listVar.local(), indexVar.local())
                   .checkedCast(SOY_VALUE_PROVIDER_TYPE),
               DERIVED);
@@ -1076,7 +1072,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       }
     }
     Expression callRenderAndResolve =
-        soyValueProvider.invoke(MethodRef.SOY_VALUE_PROVIDER_RENDER_AND_RESOLVE, appendable);
+        soyValueProvider.invoke(MethodRefs.SOY_VALUE_PROVIDER_RENDER_AND_RESOLVE, appendable);
     Statement doCall =
         requiresDetachLogic
             ? detachState.detachForRender(callRenderAndResolve)
@@ -1100,7 +1096,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   protected Statement visitDebuggerNode(DebuggerNode node) {
     // Call JbcSrcRuntime.debuggger.  This logs a stack trace by default and is an obvious place to
     // put a breakpoint.
-    return MethodRef.RUNTIME_DEBUGGER.invokeVoid(
+    return MethodRefs.RUNTIME_DEBUGGER.invokeVoid(
         constant(node.getSourceLocation().getFilePath().path()),
         constant(node.getSourceLocation().getBeginLine()));
   }
@@ -1226,7 +1222,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
           hasLogger.gen(cb); // HL, LO
           cb.ifZCmp(EQ, noLogger); // LO
           veData.gen(cb); // veData, LO
-          MethodRef.CREATE_LOG_STATEMENT.invokeUnchecked(cb); // LS
+          MethodRefs.CREATE_LOG_STATEMENT.invokeUnchecked(cb); // LS
           appendableExpression.gen(cb); // A, LS
           cb.swap(); // LS, A
           AppendableExpression.ENTER_LOGGABLE_STATEMENT.invokeUnchecked(cb); // A
@@ -1250,7 +1246,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
                   Branch.ifTrue(hasLogger),
                   appendableExpression
                       .enterLoggableElement(
-                          MethodRef.CREATE_LOG_STATEMENT.invoke(
+                          MethodRefs.CREATE_LOG_STATEMENT.invoke(
                               BytecodeUtils.constant(false), veData))
                       .toStatement()
                       .labelStart(restartPoint))
@@ -1476,7 +1472,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
               exprCompiler
                   .compileRootExpression(node.getCalleeExpr(), detachState)
                   .checkedCast(BytecodeUtils.TEMPLATE_VALUE_TYPE)
-                  .invoke(MethodRef.GET_COMPILED_TEMPLATE_FROM_VALUE)
+                  .invoke(MethodRefs.GET_COMPILED_TEMPLATE_FROM_VALUE)
                   .checkedCast(BytecodeUtils.COMPILED_TEMPLATE_TYPE));
     }
   }
@@ -1485,7 +1481,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       Expression compiledTemplateExpression) {
     return (params, ij, output, context) ->
         compiledTemplateExpression.invoke(
-            MethodRef.COMPILED_TEMPLATE_RENDER, params, ij, output, context);
+            MethodRefs.COMPILED_TEMPLATE_RENDER, params, ij, output, context);
   }
 
   private static BoundCallGenerator simpleCall(
@@ -1536,13 +1532,13 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       ExpressionAndInitializer expressionAndInitializer = paramsExpression.asRecord(renderScope);
       initParams = expressionAndInitializer.initializer();
       Expression calleeExpression =
-          MethodRef.BUFFER_TEMPLATE.invoke(
+          MethodRefs.BUFFER_TEMPLATE.invoke(
               callGenerator.asCompiledTemplate(),
               BytecodeUtils.constant(node.isErrorFallbackSkip()),
               !areAllPrintDirectivesStreamable(node)
-                  ? ConstructorRef.ESCAPING_BUFFERED_RENDER_DONE_FN.construct(
+                  ? MethodRefs.ESCAPING_BUFFERED_RENDER_DONE_FN.invoke(
                       getEscapingDirectivesList(node))
-                  : ConstructorRef.REPLAYING_BUFFERED_RENDER_DONE_FN.construct());
+                  : MethodRefs.REPLAYING_BUFFERED_RENDER_DONE_FN.invoke());
       TemplateVariableManager.Variable calleeVariable =
           renderScope.createSynthetic(
               SyntheticVarName.renderee(),
@@ -1746,8 +1742,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       return RecordOrPositional.create(
           maybeAddDefaultParams(
                   node,
-                  ConstructorRef.PARAM_STORE_AUGMENT.construct(
-                      paramsRecord, constant(node.numChildren())),
+                  MethodRefs.PARAM_STORE_AUGMENT.invoke(paramsRecord, constant(node.numChildren())),
                   ImmutableMap.of())
               .orElse(paramsRecord));
     }
@@ -1790,7 +1785,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       CallNode node, Map<String, Supplier<Expression>> params) {
     Expression paramStoreExpression;
     if (!node.isPassingData()) {
-      paramStoreExpression = ConstructorRef.PARAM_STORE_SIZE.construct(constant(params.size()));
+      paramStoreExpression = MethodRefs.PARAM_STORE_SIZE.invoke(constant(params.size()));
     } else {
       Label reattachDataLabel = new Label();
       Expression dataExpression;
@@ -1800,8 +1795,8 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
         dataExpression = getDataRecordExpression(node, reattachDataLabel);
       }
       paramStoreExpression =
-          ConstructorRef.PARAM_STORE_AUGMENT
-              .construct(dataExpression, constant(params.size()))
+          MethodRefs.PARAM_STORE_AUGMENT
+              .invoke(dataExpression, constant(params.size()))
               .labelStart(reattachDataLabel);
       if (node.isPassingAllData()) {
         paramStoreExpression =
@@ -1810,7 +1805,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     }
     for (var entry : params.entrySet()) {
       paramStoreExpression =
-          MethodRef.PARAM_STORE_SET_FIELD.invoke(
+          MethodRefs.PARAM_STORE_SET_FIELD.invoke(
               paramStoreExpression,
               BytecodeUtils.constantRecordProperty(entry.getKey()),
               entry.getValue().get());
@@ -1831,7 +1826,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       if (param.hasDefault() && !explicitParams.containsKey(param.name())) {
         foundDefaultParams = true;
         paramStoreExpression =
-            MethodRef.PARAM_STORE_SET_FIELD.invoke(
+            MethodRefs.PARAM_STORE_SET_FIELD.invoke(
                 paramStoreExpression,
                 BytecodeUtils.constantRecordProperty(param.name()),
                 parameterLookup.getParam(param));
@@ -1841,7 +1836,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   }
 
   private Expression getDataRecordExpression(CallNode node, Label reattachPoint) {
-    return MethodRef.PARAM_STORE_FROM_RECORD.invoke(
+    return MethodRefs.PARAM_STORE_FROM_RECORD.invoke(
         exprCompiler
             .compileSubExpression(
                 node.getDataExpr(), detachState.createExpressionDetacher(reattachPoint))

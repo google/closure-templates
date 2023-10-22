@@ -29,6 +29,7 @@ import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.FieldRef;
 import com.google.template.soy.jbcsrc.restricted.LocalVariable;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
+import com.google.template.soy.jbcsrc.restricted.MethodRefs;
 import com.google.template.soy.jbcsrc.restricted.Statement;
 import com.google.template.soy.jbcsrc.runtime.JbcSrcRuntime;
 import com.google.template.soy.jbcsrc.shared.ExtraConstantBootstraps;
@@ -207,7 +208,7 @@ final class DetachState implements ExpressionDetacher.Factory {
       return appendable.toStatement();
     }
     Expression isSoftLimited = appendable.softLimitReached();
-    Statement returnLimited = returnExpression(MethodRef.RENDER_RESULT_LIMITED.invoke());
+    Statement returnLimited = returnExpression(MethodRefs.RENDER_RESULT_LIMITED.invoke());
     return new Statement() {
       @Override
       protected void doGen(CodeBuilder adapter) {
@@ -232,7 +233,7 @@ final class DetachState implements ExpressionDetacher.Factory {
    * instruction.
    */
   Statement assertFullyRenderered(Expression render) {
-    return render.invokeVoid(MethodRef.RENDER_RESULT_ASSERT_DONE);
+    return render.invokeVoid(MethodRefs.RENDER_RESULT_ASSERT_DONE);
   }
 
   /**
@@ -267,12 +268,12 @@ final class DetachState implements ExpressionDetacher.Factory {
           // we insert the extra detach operation _before_ calling into render
           // This ensures that we always detach at least once and we never call back into render
           // after it returns done().  Otherwise we might end up double rendering.
-          MethodRef.RENDER_RESULT_DONE.invokeUnchecked(adapter);
+          MethodRefs.RENDER_RESULT_DONE.invokeUnchecked(adapter);
           adapter.visitLdcInsn(DetachState.ForceDetachPointsForTesting.uniqueCallSite());
           DetachState.ForceDetachPointsForTesting.MAYBE_FORCE_CONTINUE_AFTER.invokeUnchecked(
               adapter);
           adapter.dup(); // Stack: RR, RR
-          MethodRef.RENDER_RESULT_IS_DONE.invokeUnchecked(adapter); // Stack: RR, Z
+          MethodRefs.RENDER_RESULT_IS_DONE.invokeUnchecked(adapter); // Stack: RR, Z
           // if isDone goto Done
           Label end = new Label();
           adapter.ifZCmp(Opcodes.IFNE, end); // Stack: RR
@@ -283,7 +284,7 @@ final class DetachState implements ExpressionDetacher.Factory {
         }
         render.gen(adapter); // Stack: RR
         adapter.dup(); // Stack: RR, RR
-        MethodRef.RENDER_RESULT_IS_DONE.invokeUnchecked(adapter); // Stack: RR, Z
+        MethodRefs.RENDER_RESULT_IS_DONE.invokeUnchecked(adapter); // Stack: RR, Z
         // if isDone goto Done
         Label end = new Label();
         adapter.ifZCmp(Opcodes.IFNE, end); // Stack: RR
@@ -344,7 +345,7 @@ final class DetachState implements ExpressionDetacher.Factory {
     // we throw a generic assertion error, if we wanted a potentially better error message we could
     // augment 'restoreState' to take the expected max state and move this logic in there.
     casesToGen.add(
-        Statement.throwExpression(MethodRef.RUNTIME_UNEXPECTED_STATE_ERROR.invoke(stackFrameVar))
+        Statement.throwExpression(MethodRefs.RUNTIME_UNEXPECTED_STATE_ERROR.invoke(stackFrameVar))
             .labelStart(unexpectedState));
     var scopeExit = stackFrameScope.exitScope();
     return Statement.concat(

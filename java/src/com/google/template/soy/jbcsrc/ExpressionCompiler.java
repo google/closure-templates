@@ -92,13 +92,13 @@ import com.google.template.soy.jbcsrc.ExpressionDetacher.BasicDetacher;
 import com.google.template.soy.jbcsrc.restricted.Branch;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
-import com.google.template.soy.jbcsrc.restricted.ConstructorRef;
 import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.Expression.Feature;
 import com.google.template.soy.jbcsrc.restricted.Expression.Features;
 import com.google.template.soy.jbcsrc.restricted.LocalVariable;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.MethodRef.MethodPureness;
+import com.google.template.soy.jbcsrc.restricted.MethodRefs;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyRuntimeType;
 import com.google.template.soy.jbcsrc.restricted.Statement;
@@ -533,16 +533,16 @@ final class ExpressionCompiler {
       LocalVariable listVar = scope.createTemporary(varName + "_input_list", LIST_TYPE);
       Statement listVarInitializer = listVar.initialize(javaList);
       LocalVariable resultVar = scope.createTemporary(varName + "_output_list", LIST_TYPE);
-      Statement resultVarInitializer = resultVar.initialize(ConstructorRef.ARRAY_LIST.construct());
+      Statement resultVarInitializer = resultVar.initialize(MethodRefs.ARRAY_LIST.invoke());
       LocalVariable sizeVar = scope.createTemporary(varName + "_input_list_size", Type.INT_TYPE);
-      Statement sizeVarInitializer = sizeVar.initialize(listVar.invoke(MethodRef.LIST_SIZE));
+      Statement sizeVarInitializer = sizeVar.initialize(listVar.invoke(MethodRefs.LIST_SIZE));
       LocalVariable indexVar = scope.createTemporary(varName + "_index", Type.INT_TYPE);
       Statement indexVarInitializer = indexVar.initialize(constant(0));
       LocalVariable itemVar =
           scope.createNamedLocal(node.getListIterVar().name(), SOY_VALUE_PROVIDER_TYPE);
       Statement itemVarInitializer =
           itemVar.initialize(
-              listVar.invoke(MethodRef.LIST_GET, indexVar).checkedCast(SOY_VALUE_PROVIDER_TYPE));
+              listVar.invoke(MethodRefs.LIST_GET, indexVar).checkedCast(SOY_VALUE_PROVIDER_TYPE));
       LocalVariable userIndexVar =
           node.getIndexVar() == null
               ? null
@@ -613,7 +613,7 @@ final class ExpressionCompiler {
 
               resultVar.gen(adapter);
               visitedMap.gen(adapter);
-              MethodRef.ARRAY_LIST_ADD.invokeUnchecked(adapter); // a_result.add(map.apply(a,i));
+              MethodRefs.ARRAY_LIST_ADD.invokeUnchecked(adapter); // a_result.add(map.apply(a,i));
               adapter.pop(); // pop boolean return value of List.add()
 
               adapter.mark(loopContinue);
@@ -667,12 +667,12 @@ final class ExpressionCompiler {
         keys.add(BytecodeUtils.constantRecordProperty(node.getKey(i).identifier()));
         values.add(visit(node.getChild(i)).box());
       }
-      Expression soyRecord = ConstructorRef.PARAM_STORE_SIZE.construct(constant(keys.size()));
+      Expression soyRecord = MethodRefs.PARAM_STORE_SIZE.invoke(constant(keys.size()));
       for (int i = 0; i < numItems; i++) {
-        soyRecord = soyRecord.invoke(MethodRef.PARAM_STORE_SET_FIELD, keys.get(i), values.get(i));
+        soyRecord = soyRecord.invoke(MethodRefs.PARAM_STORE_SET_FIELD, keys.get(i), values.get(i));
       }
       if (!asParamStore) {
-        soyRecord = ConstructorRef.SOY_RECORD_IMPL.construct(soyRecord);
+        soyRecord = MethodRefs.SOY_RECORD_IMPL.invoke(soyRecord);
       }
       if (isConstantContext && Expression.areAllConstant(values)) {
         Object[] constantArgs = new Object[1 + node.numChildren() * 2];
@@ -733,7 +733,7 @@ final class ExpressionCompiler {
       var soyMap =
           SoyExpression.forSoyValue(
               node.getType(),
-              MethodRef.MAP_IMPL_FOR_PROVIDER_MAP_NO_NULL_KEYS.invoke(
+              MethodRefs.MAP_IMPL_FOR_PROVIDER_MAP_NO_NULL_KEYS.invoke(
                   BytecodeUtils.newImmutableMap(keys, values, /* allowDuplicates= */ true)));
       if (isConstantContext
           && Expression.areAllConstant(keys)
@@ -766,7 +766,7 @@ final class ExpressionCompiler {
     protected SoyExpression visitMapLiteralFromListNode(MapLiteralFromListNode node) {
       return SoyExpression.forSoyValue(
           node.getType(),
-          MethodRef.CONSTRUCT_MAP_FROM_LIST.invoke(
+          MethodRefs.CONSTRUCT_MAP_FROM_LIST.invoke(
               // constructMapFromList doesn't support null list params
               visit(node.getListExpr()).unboxAsListUnchecked()));
     }
@@ -859,7 +859,7 @@ final class ExpressionCompiler {
       if (left.assignableToNullableString() && right.assignableToNullableString()) {
         return createStringComparisonOperator(Opcodes.IFLT, left, right);
       }
-      return SoyExpression.forBool(MethodRef.RUNTIME_LESS_THAN.invoke(left.box(), right.box()));
+      return SoyExpression.forBool(MethodRefs.RUNTIME_LESS_THAN.invoke(left.box(), right.box()));
     }
 
     @Override
@@ -879,7 +879,7 @@ final class ExpressionCompiler {
         return createStringComparisonOperator(Opcodes.IFGT, left, right);
       }
       // Note the argument reversal
-      return SoyExpression.forBool(MethodRef.RUNTIME_LESS_THAN.invoke(right.box(), left.box()));
+      return SoyExpression.forBool(MethodRefs.RUNTIME_LESS_THAN.invoke(right.box(), left.box()));
     }
 
     @Override
@@ -899,7 +899,7 @@ final class ExpressionCompiler {
         return createStringComparisonOperator(Opcodes.IFLE, left, right);
       }
       return SoyExpression.forBool(
-          MethodRef.RUNTIME_LESS_THAN_OR_EQUAL.invoke(left.box(), right.box()));
+          MethodRefs.RUNTIME_LESS_THAN_OR_EQUAL.invoke(left.box(), right.box()));
     }
 
     @Override
@@ -920,7 +920,7 @@ final class ExpressionCompiler {
       }
       // Note the reversal of the arguments.
       return SoyExpression.forBool(
-          MethodRef.RUNTIME_LESS_THAN_OR_EQUAL.invoke(right.box(), left.box()));
+          MethodRefs.RUNTIME_LESS_THAN_OR_EQUAL.invoke(right.box(), left.box()));
     }
 
     private SoyExpression createStringComparisonOperator(
@@ -928,7 +928,8 @@ final class ExpressionCompiler {
       return SoyExpression.forBool(
           Branch.compare(
                   operator,
-                  left.coerceToString().invoke(MethodRef.STRING_COMPARE_TO, right.coerceToString()),
+                  left.coerceToString()
+                      .invoke(MethodRefs.STRING_COMPARE_TO, right.coerceToString()),
                   BytecodeUtils.constant(0))
               .asBoolean());
     }
@@ -963,10 +964,10 @@ final class ExpressionCompiler {
         SoyExpression leftString = left.coerceToString();
         SoyExpression rightString = right.coerceToString();
         return SoyExpression.forString(
-            leftString.invoke(MethodRef.STRING_CONCAT, rightString).toMaybeConstant());
+            leftString.invoke(MethodRefs.STRING_CONCAT, rightString).toMaybeConstant());
       }
       return SoyExpression.forSoyValue(
-          SoyTypes.NUMBER_TYPE, MethodRef.RUNTIME_PLUS.invoke(left.box(), right.box()));
+          SoyTypes.NUMBER_TYPE, MethodRefs.RUNTIME_PLUS.invoke(left.box(), right.box()));
     }
 
     private SoyExpression visitBinaryOperator(
@@ -989,12 +990,12 @@ final class ExpressionCompiler {
 
     @Override
     protected SoyExpression visitMinusOpNode(MinusOpNode node) {
-      return visitBinaryOperator(node, Opcodes.LSUB, Opcodes.DSUB, MethodRef.RUNTIME_MINUS);
+      return visitBinaryOperator(node, Opcodes.LSUB, Opcodes.DSUB, MethodRefs.RUNTIME_MINUS);
     }
 
     @Override
     protected SoyExpression visitTimesOpNode(TimesOpNode node) {
-      return visitBinaryOperator(node, Opcodes.LMUL, Opcodes.DMUL, MethodRef.RUNTIME_TIMES);
+      return visitBinaryOperator(node, Opcodes.LMUL, Opcodes.DMUL, MethodRefs.RUNTIME_TIMES);
     }
 
     @Override
@@ -1007,37 +1008,37 @@ final class ExpressionCompiler {
 
     @Override
     protected SoyExpression visitModOpNode(ModOpNode node) {
-      return visitBinaryOperator(node, Opcodes.LREM, Opcodes.DREM, MethodRef.RUNTIME_MOD);
+      return visitBinaryOperator(node, Opcodes.LREM, Opcodes.DREM, MethodRefs.RUNTIME_MOD);
     }
 
     @Override
     protected SoyExpression visitShiftLeftOpNode(ShiftLeftOpNode node) {
       return applyBitwiseIntOperator(
-          node, Opcodes.LSHL, Type.INT_TYPE, MethodRef.RUNTIME_SHIFT_LEFT);
+          node, Opcodes.LSHL, Type.INT_TYPE, MethodRefs.RUNTIME_SHIFT_LEFT);
     }
 
     @Override
     protected SoyExpression visitShiftRightOpNode(ShiftRightOpNode node) {
       return applyBitwiseIntOperator(
-          node, Opcodes.LSHR, Type.INT_TYPE, MethodRef.RUNTIME_SHIFT_RIGHT);
+          node, Opcodes.LSHR, Type.INT_TYPE, MethodRefs.RUNTIME_SHIFT_RIGHT);
     }
 
     @Override
     protected SoyExpression visitBitwiseOrOpNode(BitwiseOrOpNode node) {
       return applyBitwiseIntOperator(
-          node, Opcodes.LOR, Type.LONG_TYPE, MethodRef.RUNTIME_BITWISE_OR);
+          node, Opcodes.LOR, Type.LONG_TYPE, MethodRefs.RUNTIME_BITWISE_OR);
     }
 
     @Override
     protected SoyExpression visitBitwiseXorOpNode(BitwiseXorOpNode node) {
       return applyBitwiseIntOperator(
-          node, Opcodes.LXOR, Type.LONG_TYPE, MethodRef.RUNTIME_BITWISE_XOR);
+          node, Opcodes.LXOR, Type.LONG_TYPE, MethodRefs.RUNTIME_BITWISE_XOR);
     }
 
     @Override
     protected SoyExpression visitBitwiseAndOpNode(BitwiseAndOpNode node) {
       return applyBitwiseIntOperator(
-          node, Opcodes.LAND, Type.LONG_TYPE, MethodRef.RUNTIME_BITWISE_AND);
+          node, Opcodes.LAND, Type.LONG_TYPE, MethodRefs.RUNTIME_BITWISE_AND);
     }
 
     private SoyExpression applyBitwiseIntOperator(
@@ -1123,7 +1124,7 @@ final class ExpressionCompiler {
             });
       }
       return SoyExpression.forSoyValue(
-          SoyTypes.NUMBER_TYPE, MethodRef.RUNTIME_NEGATIVE.invoke(child.box()));
+          SoyTypes.NUMBER_TYPE, MethodRefs.RUNTIME_NEGATIVE.invoke(child.box()));
     }
 
     // Boolean operators
@@ -1453,11 +1454,11 @@ final class ExpressionCompiler {
       Expression baseExprAsRecord = baseExpr.box();
       if (analysis.isResolved(node)) {
         fieldAccess =
-            MethodRef.RUNTIME_GET_FIELD.invoke(
+            MethodRefs.RUNTIME_GET_FIELD.invoke(
                 baseExprAsRecord, constantRecordProperty(node.getFieldName()));
       } else {
         Expression fieldProvider =
-            MethodRef.RUNTIME_GET_FIELD_PROVIDER.invoke(
+            MethodRefs.RUNTIME_GET_FIELD_PROVIDER.invoke(
                 baseExprAsRecord, constantRecordProperty(node.getFieldName()));
         fieldAccess = detacher.resolveSoyValueProvider(fieldProvider);
       }
@@ -1477,21 +1478,21 @@ final class ExpressionCompiler {
         SoyExpression list = baseExpr.unboxAsListUnchecked();
         SoyExpression index = keyExpr.unboxAsLong();
         if (analysis.isResolved(node)) {
-          soyValueProvider = MethodRef.RUNTIME_GET_LIST_ITEM.invoke(list, index);
+          soyValueProvider = MethodRefs.RUNTIME_GET_LIST_ITEM.invoke(list, index);
         } else {
           soyValueProvider =
               detacher.resolveSoyValueProvider(
-                  MethodRef.RUNTIME_GET_LIST_ITEM_PROVIDER.invoke(list, index));
+                  MethodRefs.RUNTIME_GET_LIST_ITEM_PROVIDER.invoke(list, index));
         }
       } else {
         Expression map = baseExpr.box();
         SoyExpression index = keyExpr.box();
         if (analysis.isResolved(node)) {
-          soyValueProvider = MethodRef.RUNTIME_GET_LEGACY_OBJECT_MAP_ITEM.invoke(map, index);
+          soyValueProvider = MethodRefs.RUNTIME_GET_LEGACY_OBJECT_MAP_ITEM.invoke(map, index);
         } else {
           soyValueProvider =
               detacher.resolveSoyValueProvider(
-                  MethodRef.RUNTIME_GET_LEGACY_OBJECT_MAP_ITEM_PROVIDER.invoke(map, index));
+                  MethodRefs.RUNTIME_GET_LEGACY_OBJECT_MAP_ITEM_PROVIDER.invoke(map, index));
         }
       }
       return SoyExpression.forSoyValue(
@@ -1504,11 +1505,11 @@ final class ExpressionCompiler {
       Expression map = baseExpr.box();
       SoyExpression index = keyExpr.box();
       if (analysis.isResolved(node)) {
-        soyValueProvider = MethodRef.RUNTIME_GET_MAP_ITEM.invoke(map, index);
+        soyValueProvider = MethodRefs.RUNTIME_GET_MAP_ITEM.invoke(map, index);
       } else {
         soyValueProvider =
             detacher.resolveSoyValueProvider(
-                MethodRef.RUNTIME_GET_MAP_ITEM_PROVIDER.invoke(map, index));
+                MethodRefs.RUNTIME_GET_MAP_ITEM_PROVIDER.invoke(map, index));
       }
       return soyValueProvider;
     }
@@ -1569,7 +1570,7 @@ final class ExpressionCompiler {
           case BIND:
             return SoyExpression.forSoyValue(
                 node.getType(),
-                MethodRef.RUNTIME_BIND_TEMPLATE_PARAMS.invoke(
+                MethodRefs.RUNTIME_BIND_TEMPLATE_PARAMS.invoke(
                     baseExpr.checkedCast(BytecodeUtils.TEMPLATE_VALUE_TYPE),
                     doVisitRecordLiteralNode(
                         (RecordLiteralNode) node.getChild(1), /* asParamStore= */ true)));
@@ -1669,7 +1670,7 @@ final class ExpressionCompiler {
         return expr;
       }
       return expr.withSource(
-              MethodRef.CHECK_NOT_NULL
+              MethodRefs.CHECK_NOT_NULL
                   .invoke(expr, constant(childNode.toSourceString()))
                   .checkedCast(expr.resultType()))
           .asNonSoyNullish();
@@ -1694,9 +1695,9 @@ final class ExpressionCompiler {
       } else {
         SoyExpression base = visit(node.getChild(0)).coerceToString();
         Expression fullSelector =
-            base.invoke(MethodRef.STRING_CONCAT, constant("-"))
+            base.invoke(MethodRefs.STRING_CONCAT, constant("-"))
                 .toMaybeConstant()
-                .invoke(MethodRef.STRING_CONCAT, renamedSelector);
+                .invoke(MethodRefs.STRING_CONCAT, renamedSelector);
         return SoyExpression.forString(fullSelector);
       }
     }
@@ -1711,7 +1712,7 @@ final class ExpressionCompiler {
     @Override
     SoyExpression visitSoyServerKeyFunction(FunctionNode node) {
       ExprNode child = Iterables.getOnlyElement(node.getChildren());
-      return SoyExpression.forString(MethodRef.SOY_SERVER_KEY.invoke(visit(child).box()));
+      return SoyExpression.forString(MethodRefs.SOY_SERVER_KEY.invoke(visit(child).box()));
     }
 
     @Override
@@ -1741,20 +1742,20 @@ final class ExpressionCompiler {
       Expression data =
           visit(node.getChild(1)).unboxAsMessageOrJavaNull(BytecodeUtils.MESSAGE_TYPE);
       return SoyExpression.forSoyValue(
-          node.getType(), MethodRef.SOY_VISUAL_ELEMENT_DATA_CREATE.invoke(ve, data));
+          node.getType(), MethodRefs.SOY_VISUAL_ELEMENT_DATA_CREATE.invoke(ve, data));
     }
 
     @Override
     SoyExpression visitEmptyToNullFunction(FunctionNode node) {
       return SoyExpression.forSoyValue(
-          node.getType(), MethodRef.RUNTIME_EMPTY_TO_NULL.invoke(visit(node.getChild(0)).box()));
+          node.getType(), MethodRefs.RUNTIME_EMPTY_TO_NULL.invoke(visit(node.getChild(0)).box()));
     }
 
     @Override
     SoyExpression visitUndefinedToNullFunction(FunctionNode node) {
       return SoyExpression.forSoyValue(
           SoyTypes.undefinedToNull(node.getType()),
-          MethodRef.SOY_VALUE_NULLISH_TO_NULL.invoke(visit(node.getChild(0)).box()));
+          MethodRefs.SOY_VALUE_NULLISH_TO_NULL.invoke(visit(node.getChild(0)).box()));
     }
 
     // Non-builtin functions
@@ -1780,7 +1781,7 @@ final class ExpressionCompiler {
       // Most soy functions don't have return types, but if they do we should enforce it
       return SoyExpression.forSoyValue(
           node.getType(),
-          MethodRef.RUNTIME_CALL_LEGACY_FUNCTION
+          MethodRefs.RUNTIME_CALL_LEGACY_FUNCTION
               .invoke(legacyFunctionRuntimeExpr, list)
               .checkedSoyCast(node.getType()));
     }
@@ -1876,9 +1877,9 @@ final class ExpressionCompiler {
       if (node.numChildren() == 4) {
         Expression metadata = visitProtoInitFunction((FunctionNode) node.getChild(3));
         visualElement =
-            MethodRef.SOY_VISUAL_ELEMENT_CREATE_WITH_METADATA.invoke(id, name, metadata);
+            MethodRefs.SOY_VISUAL_ELEMENT_CREATE_WITH_METADATA.invoke(id, name, metadata);
       } else {
-        visualElement = MethodRef.SOY_VISUAL_ELEMENT_CREATE.invoke(id, name);
+        visualElement = MethodRefs.SOY_VISUAL_ELEMENT_CREATE.invoke(id, name);
       }
       return SoyExpression.forSoyValue(node.getType(), visualElement);
     }
@@ -1912,7 +1913,7 @@ final class ExpressionCompiler {
                 .invoke();
         return SoyExpression.forSoyValue(
             node.getType(),
-            MethodRef.CREATE_TEMPLATE_VALUE.invoke(
+            MethodRefs.CREATE_TEMPLATE_VALUE.invoke(
                 constant(node.getResolvedName()), templateValue));
       }
       Expression renderContext = parameters.getRenderContext();

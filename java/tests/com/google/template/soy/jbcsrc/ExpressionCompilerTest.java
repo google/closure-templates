@@ -42,7 +42,7 @@ import com.google.template.soy.jbcsrc.TemplateTester.CompiledTemplateSubject;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
-import com.google.template.soy.jbcsrc.restricted.MethodRef;
+import com.google.template.soy.jbcsrc.restricted.MethodRefs;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.testing.ExpressionEvaluator;
 import com.google.template.soy.jbcsrc.restricted.testing.ExpressionSubject;
@@ -388,7 +388,8 @@ public class ExpressionCompilerTest {
         "p1",
         SoyExpression.forSoyValue(
             htmlType,
-            MethodRef.ORDAIN_AS_SAFE.invoke(constant("<b>hello</b>"), constant(ContentKind.HTML))));
+            MethodRefs.ORDAIN_AS_SAFE.invoke(
+                constant("<b>hello</b>"), constant(ContentKind.HTML))));
     variables.put("p2", SoyExpression.forString(constant("")).box());
     assertExpression("$p1 ?? $p2").evaluatesTo(SanitizedContents.constantHtml("<b>hello</b>"));
     variables.put("p1", SoyExpression.forSoyValue(htmlType, soyNull()).asJavaNullable());
@@ -620,7 +621,7 @@ public class ExpressionCompilerTest {
                   // SoyValueProviders, but that is annoying.
                   return soyValueProvider;
                 }
-                return MethodRef.SOY_VALUE_PROVIDER_RESOLVE.invoke(soyValueProvider);
+                return MethodRefs.SOY_VALUE_PROVIDER_RESOLVE.invoke(soyValueProvider);
               }
 
               @Override

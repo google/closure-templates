@@ -738,7 +738,7 @@ public final class BytecodeUtils {
     if (numberComparison != null) {
       return numberComparison;
     }
-    return MethodRef.RUNTIME_EQUAL.invoke(left.box(), right.box());
+    return MethodRefs.RUNTIME_EQUAL.invoke(left.box(), right.box());
   }
 
   /** Compares two {@link SoyExpression}s for equality using soy === semantics. */
@@ -747,7 +747,7 @@ public final class BytecodeUtils {
     if (numberComparison != null) {
       return numberComparison;
     }
-    return MethodRef.RUNTIME_TRIPLE_EQUAL.invoke(left.box(), right.box());
+    return MethodRefs.RUNTIME_TRIPLE_EQUAL.invoke(left.box(), right.box());
   }
 
   /**
@@ -759,7 +759,7 @@ public final class BytecodeUtils {
     if (numberComparison != null) {
       return numberComparison;
     }
-    return MethodRef.RUNTIME_SWITCH_CASE_EQUAL.invoke(left.box(), right.box());
+    return MethodRefs.RUNTIME_SWITCH_CASE_EQUAL.invoke(left.box(), right.box());
   }
 
   @Nullable
@@ -811,7 +811,7 @@ public final class BytecodeUtils {
       SoyExpression unboxedString, SoyExpression other) {
     if (other.soyRuntimeType().isKnownNumber() && other.isNonSoyNullish()) {
       // in this case, we actually try to convert stringExpr to a number
-      return MethodRef.RUNTIME_STRING_EQUALS_AS_NUMBER.invoke(
+      return MethodRefs.RUNTIME_STRING_EQUALS_AS_NUMBER.invoke(
           unboxedString, other.coerceToDouble());
     }
     if (!other.isBoxed()) {
@@ -819,14 +819,14 @@ public final class BytecodeUtils {
       // evaluated but they don't actually. Can we make this an error instead?
       return constant(false);
     }
-    return MethodRef.RUNTIME_COMPARE_UNBOXED_STRING.invoke(unboxedString, other);
+    return MethodRefs.RUNTIME_COMPARE_UNBOXED_STRING.invoke(unboxedString, other);
   }
 
   private static Expression doBoxedValueEqualsUnboxedString(
       SoyExpression other, SoyExpression unboxedString) {
     if (other.soyRuntimeType().isKnownNumber() && other.isNonSoyNullish()) {
       // in this case, we actually try to convert stringExpr to a number
-      return MethodRef.RUNTIME_NUMBER_EQUALS_STRING_AS_NUMBER.invoke(
+      return MethodRefs.RUNTIME_NUMBER_EQUALS_STRING_AS_NUMBER.invoke(
           other.coerceToDouble(), unboxedString);
     }
     if (!other.isBoxed()) {
@@ -834,7 +834,7 @@ public final class BytecodeUtils {
       // evaluated but they don't actually. Can we make this an error instead?
       return constant(false);
     }
-    return MethodRef.RUNTIME_COMPARE_BOXED_VALUE_TO_UNBOXED_STRING.invoke(other, unboxedString);
+    return MethodRefs.RUNTIME_COMPARE_BOXED_VALUE_TO_UNBOXED_STRING.invoke(other, unboxedString);
   }
 
   private static Expression doBoxedStringEquals(SoyExpression boxedString, SoyExpression other) {
@@ -845,7 +845,7 @@ public final class BytecodeUtils {
       // evaluated but they don't actually. Can we make this an error instead?
       return constant(false);
     }
-    return MethodRef.RUNTIME_COMPARE_BOXED_STRING.invoke(boxedString, other);
+    return MethodRefs.RUNTIME_COMPARE_BOXED_STRING.invoke(boxedString, other);
   }
 
   private static Expression doValueEqualsBoxedString(
@@ -857,14 +857,14 @@ public final class BytecodeUtils {
       // evaluated but they don't actually. Can we make this an error instead?
       return constant(false);
     }
-    return MethodRef.RUNTIME_COMPARE_BOXED_VALUE_TO_BOXED_STRING.invoke(other, boxedString);
+    return MethodRefs.RUNTIME_COMPARE_BOXED_VALUE_TO_BOXED_STRING.invoke(other, boxedString);
   }
 
   private static Expression doJavaEquals(SoyExpression left, SoyExpression right) {
     // NOTE: don't do anything clever here, like switch the order to right.equals(left) if left is
     // nullable and right isn't. The gencode depends on the execution order so we must maintain
     // that.
-    return MethodRef.OBJECTS_EQUALS.invoke(left, right);
+    return MethodRefs.OBJECTS_EQUALS.invoke(left, right);
   }
 
   /**
@@ -909,35 +909,36 @@ public final class BytecodeUtils {
    */
   public static Expression asImmutableList(Iterable<? extends Expression> items) {
     ImmutableList<Expression> copy = ImmutableList.copyOf(items);
-    if (copy.size() < MethodRef.IMMUTABLE_LIST_OF.size()) {
-      return MethodRef.IMMUTABLE_LIST_OF.get(copy.size()).invoke(copy);
+    if (copy.size() < MethodRefs.IMMUTABLE_LIST_OF.size()) {
+      return MethodRefs.IMMUTABLE_LIST_OF.get(copy.size()).invoke(copy);
     }
-    ImmutableList<Expression> explicit = copy.subList(0, MethodRef.IMMUTABLE_LIST_OF.size());
+    ImmutableList<Expression> explicit = copy.subList(0, MethodRefs.IMMUTABLE_LIST_OF.size());
     Expression remainder =
-        asArray(OBJECT_ARRAY_TYPE, copy.subList(MethodRef.IMMUTABLE_LIST_OF.size(), copy.size()));
-    return MethodRef.IMMUTABLE_LIST_OF_ARRAY.invoke(
+        asArray(OBJECT_ARRAY_TYPE, copy.subList(MethodRefs.IMMUTABLE_LIST_OF.size(), copy.size()));
+    return MethodRefs.IMMUTABLE_LIST_OF_ARRAY.invoke(
         Iterables.concat(explicit, ImmutableList.of(remainder)));
   }
 
   public static Expression newImmutableMap(
       List<Expression> keys, List<Expression> values, boolean allowDuplicates) {
     // We can only call ImmutableList.of if we disallow duplicates or there are 1 or 0 keys
-    if (keys.size() < MethodRef.IMMUTABLE_MAP_OF.size() && (keys.size() <= 1 || !allowDuplicates)) {
+    if (keys.size() < MethodRefs.IMMUTABLE_MAP_OF.size()
+        && (keys.size() <= 1 || !allowDuplicates)) {
       List<Expression> kvps = new ArrayList<>();
       for (int i = 0; i < keys.size(); i++) {
         kvps.add(keys.get(i));
         kvps.add(values.get(i));
       }
-      return MethodRef.IMMUTABLE_MAP_OF.get(keys.size()).invoke(kvps);
+      return MethodRefs.IMMUTABLE_MAP_OF.get(keys.size()).invoke(kvps);
     }
-    var builder = MethodRef.IMMUTABLE_MAP_BUILDER_WITH_EXPECTED_SIZE.invoke(constant(keys.size()));
+    var builder = MethodRefs.IMMUTABLE_MAP_BUILDER_WITH_EXPECTED_SIZE.invoke(constant(keys.size()));
     for (int i = 0; i < keys.size(); i++) {
-      builder = builder.invoke(MethodRef.IMMUTABLE_MAP_BUILDER_PUT, keys.get(i), values.get(i));
+      builder = builder.invoke(MethodRefs.IMMUTABLE_MAP_BUILDER_PUT, keys.get(i), values.get(i));
     }
     return builder.invoke(
         allowDuplicates
-            ? MethodRef.IMMUTABLE_MAP_BUILDER_BUILD_KEEPING_LAST
-            : MethodRef.IMMUTABLE_MAP_BUILDER_BUILD_OR_THROW);
+            ? MethodRefs.IMMUTABLE_MAP_BUILDER_BUILD_KEEPING_LAST
+            : MethodRefs.IMMUTABLE_MAP_BUILDER_BUILD_OR_THROW);
   }
 
   private static Expression asArray(Type arrayType, ImmutableList<? extends Expression> elements) {
@@ -961,11 +962,11 @@ public final class BytecodeUtils {
   public static Expression asList(Iterable<? extends Expression> items) {
     ImmutableList<Expression> copy = ImmutableList.copyOf(items);
     if (copy.isEmpty()) {
-      return MethodRef.IMMUTABLE_LIST_OF.get(0).invoke();
+      return MethodRefs.IMMUTABLE_LIST_OF.get(0).invoke();
     }
     // Note, we cannot necessarily use ImmutableList for anything besides the empty list because
     // we may need to put a null in it.
-    Expression construct = ConstructorRef.ARRAY_LIST_SIZE.construct(constant(copy.size()));
+    Expression construct = MethodRefs.ARRAY_LIST_SIZE.invoke(constant(copy.size()));
     return new Expression(LIST_TYPE, Feature.NON_JAVA_NULLABLE.asFeatures()) {
       @Override
       protected void doGen(CodeBuilder mv) {
@@ -973,7 +974,7 @@ public final class BytecodeUtils {
         for (Expression child : copy) {
           mv.dup();
           child.gen(mv);
-          MethodRef.ARRAY_LIST_ADD.invokeUnchecked(mv);
+          MethodRefs.ARRAY_LIST_ADD.invokeUnchecked(mv);
           mv.pop(); // pop the bool result of arraylist.add
         }
       }
@@ -987,9 +988,9 @@ public final class BytecodeUtils {
   public static void coalesceSoyNullishToSoyNull(
       CodeBuilder builder, Type argType, Label nullExit) {
     if (argType.equals(SOY_VALUE_TYPE)) {
-      MethodRef.SOY_VALUE_NULLISH_TO_NULL.invokeUnchecked(builder);
+      MethodRefs.SOY_VALUE_NULLISH_TO_NULL.invokeUnchecked(builder);
       builder.dup();
-      MethodRef.SOY_VALUE_IS_NULLISH.invokeUnchecked(builder);
+      MethodRefs.SOY_VALUE_IS_NULLISH.invokeUnchecked(builder);
       builder.ifZCmp(Opcodes.IFNE, nullExit);
     } else {
       nullCoalesce(builder, nullExit, argType, cb -> soyNull().gen(cb), /* ish= */ true);
@@ -1039,10 +1040,10 @@ public final class BytecodeUtils {
   /** Like {@link #ifNonNullish} but tests on `SoyValue.isNull` rather than `SoyValue.isNullish`. */
   public static void ifNonSoyNull(CodeBuilder cb, Type argType, Label ifNonNull) {
     if (isDefinitelyAssignableFrom(SOY_VALUE_TYPE, argType)) {
-      MethodRef.SOY_VALUE_IS_NULL.invokeUnchecked(cb);
+      MethodRefs.SOY_VALUE_IS_NULL.invokeUnchecked(cb);
       cb.ifZCmp(Opcodes.IFEQ, ifNonNull);
     } else if (isDefinitelyAssignableFrom(SOY_VALUE_PROVIDER_TYPE, argType)) {
-      MethodRef.IS_SOY_NON_NULL.invokeUnchecked(cb);
+      MethodRefs.IS_SOY_NON_NULL.invokeUnchecked(cb);
       cb.ifZCmp(Opcodes.IFNE, ifNonNull);
     } else {
       cb.ifNonNull(ifNonNull);
@@ -1056,10 +1057,10 @@ public final class BytecodeUtils {
    */
   public static void ifNonNullish(CodeBuilder cb, Type argType, Label ifNonNullish) {
     if (isDefinitelyAssignableFrom(SOY_VALUE_TYPE, argType)) {
-      MethodRef.SOY_VALUE_IS_NULLISH.invokeUnchecked(cb);
+      MethodRefs.SOY_VALUE_IS_NULLISH.invokeUnchecked(cb);
       cb.ifZCmp(Opcodes.IFEQ, ifNonNullish);
     } else if (isDefinitelyAssignableFrom(SOY_VALUE_PROVIDER_TYPE, argType)) {
-      MethodRef.IS_SOY_NON_NULLISH.invokeUnchecked(cb);
+      MethodRefs.IS_SOY_NON_NULLISH.invokeUnchecked(cb);
       cb.ifZCmp(Opcodes.IFNE, ifNonNullish);
     } else {
       cb.ifNonNull(ifNonNullish);
@@ -1069,10 +1070,10 @@ public final class BytecodeUtils {
   /** The inverse of {@link #ifNonNullish}. */
   public static void ifNullish(CodeBuilder cb, Type argType, Label ifNullish) {
     if (isDefinitelyAssignableFrom(SOY_VALUE_TYPE, argType)) {
-      MethodRef.SOY_VALUE_IS_NULLISH.invokeUnchecked(cb);
+      MethodRefs.SOY_VALUE_IS_NULLISH.invokeUnchecked(cb);
       cb.ifZCmp(Opcodes.IFNE, ifNullish);
     } else if (isDefinitelyAssignableFrom(SOY_VALUE_PROVIDER_TYPE, argType)) {
-      MethodRef.IS_SOY_NON_NULLISH.invokeUnchecked(cb);
+      MethodRefs.IS_SOY_NON_NULLISH.invokeUnchecked(cb);
       cb.ifZCmp(Opcodes.IFEQ, ifNullish);
     } else {
       cb.ifNull(ifNullish);
@@ -1105,33 +1106,33 @@ public final class BytecodeUtils {
     }
 
     if (asType.equals(boolean.class)) {
-      MethodRef.SOY_VALUE_BOOLEAN_VALUE.invokeUnchecked(cb);
+      MethodRefs.SOY_VALUE_BOOLEAN_VALUE.invokeUnchecked(cb);
       return Type.BOOLEAN_TYPE;
     }
 
     if (asType.equals(long.class)) {
-      MethodRef.SOY_VALUE_LONG_VALUE.invokeUnchecked(cb);
+      MethodRefs.SOY_VALUE_LONG_VALUE.invokeUnchecked(cb);
       return Type.LONG_TYPE;
     }
 
     if (asType.equals(double.class)) {
-      MethodRef.SOY_VALUE_FLOAT_VALUE.invokeUnchecked(cb);
+      MethodRefs.SOY_VALUE_FLOAT_VALUE.invokeUnchecked(cb);
       return Type.DOUBLE_TYPE;
     }
 
     if (asType.equals(String.class)) {
-      MethodRef.SOY_VALUE_STRING_VALUE.invokeUnchecked(cb);
+      MethodRefs.SOY_VALUE_STRING_VALUE.invokeUnchecked(cb);
       return STRING_TYPE;
     }
 
     if (asType.equals(List.class)) {
       cb.checkCast(SOY_LIST_TYPE);
-      MethodRef.SOY_VALUE_AS_JAVA_LIST.invokeUnchecked(cb);
+      MethodRefs.SOY_VALUE_AS_JAVA_LIST.invokeUnchecked(cb);
       return LIST_TYPE;
     }
 
     if (asType.equals(Message.class)) {
-      MethodRef.SOY_VALUE_GET_PROTO.invokeUnchecked(cb);
+      MethodRefs.SOY_VALUE_GET_PROTO.invokeUnchecked(cb);
       return MESSAGE_TYPE;
     }
 
@@ -1146,7 +1147,7 @@ public final class BytecodeUtils {
         keys,
         values,
         expectedSize ->
-            ConstructorRef.HASH_MAP_CAPACITY.construct(constant(hashMapCapacity(expectedSize))),
+            MethodRefs.HASH_MAP_CAPACITY.invoke(constant(hashMapCapacity(expectedSize))),
         HASH_MAP_TYPE);
   }
 
@@ -1160,8 +1161,7 @@ public final class BytecodeUtils {
         keys,
         values,
         expectedSize ->
-            ConstructorRef.LINKED_HASH_MAP_CAPACITY.construct(
-                constant(hashMapCapacity(expectedSize))),
+            MethodRefs.LINKED_HASH_MAP_CAPACITY.invoke(constant(hashMapCapacity(expectedSize))),
         LINKED_HASH_MAP_TYPE);
   }
 
@@ -1188,7 +1188,7 @@ public final class BytecodeUtils {
           mv.dup();
           key.gen(mv);
           value.gen(mv);
-          MethodRef.MAP_PUT.invokeUnchecked(mv);
+          MethodRefs.MAP_PUT.invokeUnchecked(mv);
           mv.pop(); // pop the Object result of map.put
         }
       }
@@ -1270,15 +1270,15 @@ public final class BytecodeUtils {
   public static Expression boxJavaPrimitive(Type type, Expression expr) {
     switch (type.getSort()) {
       case Type.INT:
-        return MethodRef.BOX_INTEGER.invoke(expr);
+        return MethodRefs.BOX_INTEGER.invoke(expr);
       case Type.LONG:
-        return MethodRef.BOX_LONG.invoke(expr);
+        return MethodRefs.BOX_LONG.invoke(expr);
       case Type.BOOLEAN:
-        return MethodRef.BOX_BOOLEAN.invoke(expr);
+        return MethodRefs.BOX_BOOLEAN.invoke(expr);
       case Type.FLOAT:
-        return MethodRef.BOX_FLOAT.invoke(expr);
+        return MethodRefs.BOX_FLOAT.invoke(expr);
       case Type.DOUBLE:
-        return MethodRef.BOX_DOUBLE.invoke(expr);
+        return MethodRefs.BOX_DOUBLE.invoke(expr);
       default:
         throw new IllegalArgumentException(type.getClassName());
     }
@@ -1287,15 +1287,15 @@ public final class BytecodeUtils {
   public static Expression unboxJavaPrimitive(Type type, Expression expr) {
     switch (type.getSort()) {
       case Type.INT:
-        return MethodRef.NUMBER_INT_VALUE.invoke(expr.checkedCast(NUMBER_TYPE));
+        return MethodRefs.NUMBER_INT_VALUE.invoke(expr.checkedCast(NUMBER_TYPE));
       case Type.LONG:
-        return MethodRef.NUMBER_LONG_VALUE.invoke(expr.checkedCast(NUMBER_TYPE));
+        return MethodRefs.NUMBER_LONG_VALUE.invoke(expr.checkedCast(NUMBER_TYPE));
       case Type.BOOLEAN:
-        return MethodRef.BOOLEAN_VALUE.invoke(expr.checkedCast(BOXED_BOOLEAN_TYPE));
+        return MethodRefs.BOOLEAN_VALUE.invoke(expr.checkedCast(BOXED_BOOLEAN_TYPE));
       case Type.FLOAT:
-        return MethodRef.NUMBER_FLOAT_VALUE.invoke(expr.checkedCast(NUMBER_TYPE));
+        return MethodRefs.NUMBER_FLOAT_VALUE.invoke(expr.checkedCast(NUMBER_TYPE));
       case Type.DOUBLE:
-        return MethodRef.NUMBER_DOUBLE_VALUE.invoke(expr.checkedCast(NUMBER_TYPE));
+        return MethodRefs.NUMBER_DOUBLE_VALUE.invoke(expr.checkedCast(NUMBER_TYPE));
       default:
         throw new IllegalArgumentException(type.getClassName());
     }

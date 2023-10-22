@@ -28,12 +28,12 @@ import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
-import com.google.template.soy.jbcsrc.restricted.ConstructorRef;
 import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.Expression.Feature;
 import com.google.template.soy.jbcsrc.restricted.Expression.Features;
 import com.google.template.soy.jbcsrc.restricted.FieldRef;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
+import com.google.template.soy.jbcsrc.restricted.MethodRefs;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.Statement;
 import com.google.template.soy.jbcsrc.shared.MsgDefaultConstantFactory;
@@ -204,8 +204,8 @@ final class MsgCompiler {
     SoyExpression text =
         SoyExpression.forString(
             (msg.getEscapingMode() == EscapingMode.ESCAPE_HTML
-                    ? MethodRef.HANDLE_BASIC_TRANSLATION_AND_ESCAPE_HTML
-                    : MethodRef.HANDLE_BASIC_TRANSLATION)
+                    ? MethodRefs.HANDLE_BASIC_TRANSLATION_AND_ESCAPE_HTML
+                    : MethodRefs.HANDLE_BASIC_TRANSLATION)
                 .invoke(soyMsgParts));
     // Note: there is no point in trying to stream here, since we are starting with a constant
     // string.
@@ -225,10 +225,10 @@ final class MsgCompiler {
       Expression locale,
       MsgPartsAndIds partsAndId) {
     Label reattachPoint = new Label();
-    ConstructorRef cstruct =
-        msg.isPlrselMsg() ? ConstructorRef.PLRSEL_MSG_RENDERER : ConstructorRef.MSG_RENDERER;
+    MethodRef cstruct =
+        msg.isPlrselMsg() ? MethodRefs.PLRSEL_MSG_RENDERER : MethodRefs.MSG_RENDERER;
     Expression renderer =
-        cstruct.construct(
+        cstruct.invoke(
             constant(partsAndId.id),
             soyMsgParts,
             locale,
@@ -244,14 +244,16 @@ final class MsgCompiler {
       if (placeholder.endTagToMatch().isPresent()) {
         renderer =
             renderer.invoke(
-                MethodRef.MSG_RENDERER_SET_PLACEHOLDER_AND_ORDERING,
+                MethodRefs.MSG_RENDERER_SET_PLACEHOLDER_AND_ORDERING,
                 constant(phName),
                 placeholder.expression(),
                 constant(placeholder.endTagToMatch().get()));
       } else {
         renderer =
             renderer.invoke(
-                MethodRef.MSG_RENDERER_SET_PLACEHOLDER, constant(phName), placeholder.expression());
+                MethodRefs.MSG_RENDERER_SET_PLACEHOLDER,
+                constant(phName),
+                placeholder.expression());
       }
     }
     TemplateVariableManager.Scope scope = variableManager.enterScope();
@@ -283,7 +285,7 @@ final class MsgCompiler {
       Expression callRenderAndResolve =
           msgRendererVar
               .accessor()
-              .invoke(MethodRef.SOY_VALUE_PROVIDER_RENDER_AND_RESOLVE, appendable);
+              .invoke(MethodRefs.SOY_VALUE_PROVIDER_RENDER_AND_RESOLVE, appendable);
       render =
           Statement.concat(
               initAppendable,
@@ -300,7 +302,7 @@ final class MsgCompiler {
                       ? detachState
                           .createExpressionDetacher(start)
                           .resolveSoyValueProvider(msgRendererVar.accessor())
-                      : msgRendererVar.accessor().invoke(MethodRef.SOY_VALUE_PROVIDER_RESOLVE))
+                      : msgRendererVar.accessor().invoke(MethodRefs.SOY_VALUE_PROVIDER_RESOLVE))
                   .checkedCast(STRING_DATA_TYPE));
       for (SoyPrintDirective directive : escapingDirectives) {
         value = parameterLookup.getRenderContext().applyPrintDirective(directive, value);
@@ -403,7 +405,7 @@ final class MsgCompiler {
                         detachStateForExtraCodeCompiler.createExpressionDetacher(restartPoint));
                 return appendable
                     .enterLoggableElement(
-                        MethodRef.CREATE_LOG_STATEMENT.invoke(
+                        MethodRefs.CREATE_LOG_STATEMENT.invoke(
                             /*logonly*/ BytecodeUtils.constant(false), veData))
                     .toStatement()
                     .labelStart(restartPoint);

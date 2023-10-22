@@ -32,7 +32,7 @@ import com.google.template.soy.jbcsrc.ExpressionCompiler.BasicExpressionCompiler
 import com.google.template.soy.jbcsrc.restricted.Branch;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.Expression;
-import com.google.template.soy.jbcsrc.restricted.MethodRef;
+import com.google.template.soy.jbcsrc.restricted.MethodRefs;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
@@ -215,7 +215,7 @@ final class ExpressionToSoyValueProviderCompiler {
             left = compileToSoyValueProviderWithDetaching(node.getLeftChild());
           }
 
-          left = MethodRef.SOY_VALUE_PROVIDER_OR_NULLISH.invoke(left);
+          left = MethodRefs.SOY_VALUE_PROVIDER_OR_NULLISH.invoke(left);
           return Optional.of(BytecodeUtils.firstSoyNonNullish(left, right));
         }
       }

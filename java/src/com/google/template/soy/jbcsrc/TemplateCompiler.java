@@ -43,6 +43,7 @@ import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.FieldRef;
 import com.google.template.soy.jbcsrc.restricted.LocalVariable;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
+import com.google.template.soy.jbcsrc.restricted.MethodRefs;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.Statement;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
@@ -509,8 +510,8 @@ final class TemplateCompiler {
         paramInitStatements.add(
             localVariable.store(
                 defaultValue == null
-                    ? MethodRef.RUNTIME_PARAM.invoke(localVariable)
-                    : MethodRef.RUNTIME_PARAM_OR_DEFAULT.invoke(
+                    ? MethodRefs.RUNTIME_PARAM.invoke(localVariable)
+                    : MethodRefs.RUNTIME_PARAM_OR_DEFAULT.invoke(
                         localVariable, defaultValue.box())));
       }
     }
@@ -520,7 +521,7 @@ final class TemplateCompiler {
             /* prefix= */ ExtraCodeCompiler.NO_OP,
             /* suffix= */ ExtraCodeCompiler.NO_OP);
     Statement exitTemplateScope = templateScope.exitScope();
-    Statement returnDone = Statement.returnExpression(MethodRef.RENDER_RESULT_DONE.invoke());
+    Statement returnDone = Statement.returnExpression(MethodRefs.RENDER_RESULT_DONE.invoke());
     new Statement() {
       @Override
       protected void doGen(CodeBuilder adapter) {
@@ -577,10 +578,10 @@ final class TemplateCompiler {
     // NOTE: for compatibility with Tofu and jssrc we do not check for missing required parameters
     // here instead they will just turn into null.  Existing templates depend on this.
     if (defaultValue == null) {
-      return MethodRef.RUNTIME_GET_PARAMETER.invoke(
+      return MethodRefs.RUNTIME_GET_PARAMETER.invoke(
           record, BytecodeUtils.constantRecordProperty(name));
     } else {
-      return MethodRef.RUNTIME_GET_PARAMETER_DEFAULT.invoke(
+      return MethodRefs.RUNTIME_GET_PARAMETER_DEFAULT.invoke(
           record, BytecodeUtils.constantRecordProperty(name), defaultValue.box());
     }
   }

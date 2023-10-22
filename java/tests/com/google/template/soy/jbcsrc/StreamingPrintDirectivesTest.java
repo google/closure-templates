@@ -42,9 +42,9 @@ import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
-import com.google.template.soy.jbcsrc.restricted.ConstructorRef;
 import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
+import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcPrintDirective;
 import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcPrintDirective.Streamable.AppendableAndOptions;
@@ -385,9 +385,9 @@ public final class StreamingPrintDirectivesTest {
         wrapperText = BytecodeUtils.constant("stream");
       }
       return AppendableAndOptions.create(
-          ConstructorRef.create(
+          MethodRef.createNonPureConstructor(
                   AnnotatingAppendable.class, String.class, LoggingAdvisingAppendable.class)
-              .construct(wrapperText, delegateAppendable));
+              .invoke(wrapperText, delegateAppendable));
     }
   }
 
@@ -498,9 +498,9 @@ public final class StreamingPrintDirectivesTest {
     public AppendableAndOptions applyForJbcSrcStreaming(
         JbcSrcPluginContext context, Expression delegateAppendable, List<SoyExpression> args) {
       return AppendableAndOptions.createCloseable(
-          ConstructorRef.create(
+          MethodRef.createNonPureConstructor(
                   CloseableAppendable.class, LoggingAdvisingAppendable.class, String.class)
-              .construct(delegateAppendable, args.get(0).coerceToString()));
+              .invoke(delegateAppendable, args.get(0).coerceToString()));
     }
   }
 

@@ -24,7 +24,7 @@ import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
 import com.google.template.soy.jbcsrc.restricted.Expression;
-import com.google.template.soy.jbcsrc.restricted.MethodRef;
+import com.google.template.soy.jbcsrc.restricted.MethodRefs;
 import com.google.template.soy.jbcsrc.restricted.Statement;
 import java.util.function.Supplier;
 import org.objectweb.asm.Label;
@@ -100,19 +100,19 @@ interface ExpressionDetacher {
           BytecodeUtils.SOY_VALUE_TYPE, soyValueProvider.resultType())) {
         return soyValueProvider;
       }
-      return soyValueProvider.invoke(MethodRef.SOY_VALUE_PROVIDER_RESOLVE);
+      return soyValueProvider.invoke(MethodRefs.SOY_VALUE_PROVIDER_RESOLVE);
     }
 
     @Override
     public Expression resolveSoyValueProviderList(Expression soyValueProviderList) {
       soyValueProviderList.checkAssignableTo(BytecodeUtils.LIST_TYPE);
-      return MethodRef.RUNTIME_CHECK_RESOLVED_LIST.invoke(soyValueProviderList);
+      return MethodRefs.RUNTIME_CHECK_RESOLVED_LIST.invoke(soyValueProviderList);
     }
 
     @Override
     public Expression resolveSoyValueProviderMap(Expression soyValueProviderMap) {
       soyValueProviderMap.checkAssignableTo(BytecodeUtils.MAP_TYPE);
-      return MethodRef.RUNTIME_CHECK_RESOLVED_MAP.invoke(soyValueProviderMap);
+      return MethodRefs.RUNTIME_CHECK_RESOLVED_MAP.invoke(soyValueProviderMap);
     }
   }
 
@@ -152,13 +152,13 @@ interface ExpressionDetacher {
           // Legend: SVP = SoyValueProvider, RR = RenderResult, Z = boolean, SV = SoyValue
           soyValueProvider.gen(cb); // Stack: SVP
           cb.dup(); // Stack: SVP, SVP
-          MethodRef.SOY_VALUE_PROVIDER_STATUS.invokeUnchecked(cb); // Stack: SVP, RR
+          MethodRefs.SOY_VALUE_PROVIDER_STATUS.invokeUnchecked(cb); // Stack: SVP, RR
           if (DetachState.FORCE_EVERY_DETACH_POINT) {
             cb.visitLdcInsn(DetachState.ForceDetachPointsForTesting.uniqueCallSite());
             DetachState.ForceDetachPointsForTesting.MAYBE_FORCE_CONTINUE_AFTER.invokeUnchecked(cb);
           }
           cb.dup(); // Stack: SVP, RR, RR
-          MethodRef.RENDER_RESULT_IS_DONE.invokeUnchecked(cb); // Stack: SVP, RR, Z
+          MethodRefs.RENDER_RESULT_IS_DONE.invokeUnchecked(cb); // Stack: SVP, RR, Z
           Label end = new Label();
           // if isDone goto end
           cb.ifZCmp(Opcodes.IFNE, end); // Stack: SVP, RR
@@ -179,7 +179,8 @@ interface ExpressionDetacher {
       if (BytecodeUtils.isDefinitelyAssignableFrom(SOY_VALUE_TYPE, soyValueProvider.resultType())) {
         return soyValueProvider;
       }
-      return waitForSoyValueProvider(soyValueProvider).invoke(MethodRef.SOY_VALUE_PROVIDER_RESOLVE);
+      return waitForSoyValueProvider(soyValueProvider)
+          .invoke(MethodRefs.SOY_VALUE_PROVIDER_RESOLVE);
     }
 
     @Override
@@ -195,13 +196,13 @@ interface ExpressionDetacher {
           // Legend: List = SoyValueProviderList, RR = RenderResult, Z = boolean
           soyValueProviderList.gen(cb); // Stack: List
           cb.dup(); // Stack: List, List
-          MethodRef.RUNTIME_GET_LIST_STATUS.invokeUnchecked(cb); // Stack: List, RR
+          MethodRefs.RUNTIME_GET_LIST_STATUS.invokeUnchecked(cb); // Stack: List, RR
           if (DetachState.FORCE_EVERY_DETACH_POINT) {
             cb.visitLdcInsn(DetachState.ForceDetachPointsForTesting.uniqueCallSite());
             DetachState.ForceDetachPointsForTesting.MAYBE_FORCE_CONTINUE_AFTER.invokeUnchecked(cb);
           }
           cb.dup(); // Stack: List, RR, RR
-          MethodRef.RENDER_RESULT_IS_DONE.invokeUnchecked(cb); // Stack: List, RR, Z
+          MethodRefs.RENDER_RESULT_IS_DONE.invokeUnchecked(cb); // Stack: List, RR, Z
           Label end = new Label();
           // if isDone goto end
           cb.ifZCmp(Opcodes.IFNE, end); // Stack: List, RR
@@ -227,13 +228,13 @@ interface ExpressionDetacher {
           // Legend: Map = SoyValueProviderMap, RR = RenderResult, Z = boolean
           soyValueProviderMap.gen(cb); // Stack: Map
           cb.dup(); // Stack: Map, Map
-          MethodRef.RUNTIME_GET_MAP_STATUS.invokeUnchecked(cb); // Stack: Map, RR
+          MethodRefs.RUNTIME_GET_MAP_STATUS.invokeUnchecked(cb); // Stack: Map, RR
           if (DetachState.FORCE_EVERY_DETACH_POINT) {
             cb.visitLdcInsn(DetachState.ForceDetachPointsForTesting.uniqueCallSite());
             DetachState.ForceDetachPointsForTesting.MAYBE_FORCE_CONTINUE_AFTER.invokeUnchecked(cb);
           }
           cb.dup(); // Stack: Map, RR, RR
-          MethodRef.RENDER_RESULT_IS_DONE.invokeUnchecked(cb); // Stack: Map, RR, Z
+          MethodRefs.RENDER_RESULT_IS_DONE.invokeUnchecked(cb); // Stack: Map, RR, Z
           Label end = new Label();
           // if isDone go to end
           cb.ifZCmp(Opcodes.IFNE, end); // Stack: Map, RR

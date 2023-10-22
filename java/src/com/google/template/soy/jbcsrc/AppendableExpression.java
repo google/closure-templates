@@ -31,6 +31,7 @@ import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
 import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
+import com.google.template.soy.jbcsrc.restricted.MethodRefs;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.Statement;
 import java.util.List;
@@ -93,7 +94,7 @@ final class AppendableExpression extends Expression {
 
   static AppendableExpression logger() {
     return new AppendableExpression(
-        MethodRef.RUNTIME_LOGGER.invoke(),
+        MethodRefs.RUNTIME_LOGGER.invoke(),
         /* hasSideEffects= */ false,
         /* supportsSoftLimiting= */ false);
   }

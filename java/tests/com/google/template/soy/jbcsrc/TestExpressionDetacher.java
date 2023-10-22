@@ -16,7 +16,7 @@
 package com.google.template.soy.jbcsrc;
 
 import com.google.template.soy.jbcsrc.restricted.Expression;
-import com.google.template.soy.jbcsrc.restricted.MethodRef;
+import com.google.template.soy.jbcsrc.restricted.MethodRefs;
 
 /** Stub implementation of {@link ExpressionDetacher} suitable for use in tests. */
 public final class TestExpressionDetacher implements ExpressionDetacher {
@@ -25,7 +25,7 @@ public final class TestExpressionDetacher implements ExpressionDetacher {
 
   @Override
   public Expression resolveSoyValueProvider(Expression soyValueProvider) {
-    return MethodRef.SOY_VALUE_PROVIDER_RESOLVE.invoke(soyValueProvider);
+    return MethodRefs.SOY_VALUE_PROVIDER_RESOLVE.invoke(soyValueProvider);
   }
 
   @Override

@@ -167,7 +167,7 @@ public final class SoyExpression extends Expression {
     if (delegate.isNonJavaNullable()
         || !BytecodeUtils.isDefinitelyAssignableFrom(
             BytecodeUtils.SOY_VALUE_TYPE, delegate.resultType())) {
-      delegate = delegate.invoke(MethodRef.SOY_VALUE_PROVIDER_RESOLVE).checkedSoyCast(type);
+      delegate = delegate.invoke(MethodRefs.SOY_VALUE_PROVIDER_RESOLVE).checkedSoyCast(type);
     }
     return forSoyValue(type, delegate);
   }
@@ -326,13 +326,13 @@ public final class SoyExpression extends Expression {
           return asBoxed(FieldRef.BOOLEAN_DATA_FALSE.accessor());
         }
       }
-      return asBoxed(MethodRef.BOOLEAN_DATA_FOR_VALUE.invoke(delegate).toMaybeConstant());
+      return asBoxed(MethodRefs.BOOLEAN_DATA_FOR_VALUE.invoke(delegate).toMaybeConstant());
     }
     if (soyRuntimeType.isKnownInt()) {
-      return asBoxed(MethodRef.INTEGER_DATA_FOR_VALUE.invoke(delegate).toMaybeConstant());
+      return asBoxed(MethodRefs.INTEGER_DATA_FOR_VALUE.invoke(delegate).toMaybeConstant());
     }
     if (soyRuntimeType.isKnownFloat()) {
-      return asBoxed(MethodRef.FLOAT_DATA_FOR_VALUE.invoke(delegate).toMaybeConstant());
+      return asBoxed(MethodRefs.FLOAT_DATA_FOR_VALUE.invoke(delegate).toMaybeConstant());
     }
     // If null is expected and it is a reference type we want to propagate null through the boxing
     // operation
@@ -366,7 +366,7 @@ public final class SoyExpression extends Expression {
       return this.box();
     }
     if (this.isBoxed()) {
-      return withSource(MethodRef.SOY_NULLISH_TO_JAVA_NULL.invoke(delegate));
+      return withSource(MethodRefs.SOY_NULLISH_TO_JAVA_NULL.invoke(delegate));
     }
     return asBoxed(
         new Expression(soyRuntimeType.box().runtimeType()) {
@@ -386,7 +386,7 @@ public final class SoyExpression extends Expression {
       return this.box();
     }
     if (this.isBoxed()) {
-      return withSource(MethodRef.SOY_NULL_TO_JAVA_NULL.invoke(delegate));
+      return withSource(MethodRefs.SOY_NULL_TO_JAVA_NULL.invoke(delegate));
     }
     return asBoxed(
         new Expression(soyRuntimeType.box().runtimeType()) {
@@ -411,19 +411,19 @@ public final class SoyExpression extends Expression {
           Converters.toContentKind(((SanitizedType) type.soyType()).getContentKind());
       checkState(kind != ContentKind.TEXT); // sanity check
       FieldRef.enumReference(kind).accessStaticUnchecked(adapter);
-      MethodRef.ORDAIN_AS_SAFE.invokeUnchecked(adapter);
+      MethodRefs.ORDAIN_AS_SAFE.invokeUnchecked(adapter);
     } else if (type.isKnownString()) {
-      MethodRef.STRING_DATA_FOR_VALUE.invokeUnchecked(adapter);
+      MethodRefs.STRING_DATA_FOR_VALUE.invokeUnchecked(adapter);
     } else if (type.isKnownListOrUnionOfLists()) {
-      MethodRef.LIST_IMPL_FOR_PROVIDER_LIST.invokeUnchecked(adapter);
+      MethodRefs.LIST_IMPL_FOR_PROVIDER_LIST.invokeUnchecked(adapter);
     } else if (type.isKnownLegacyObjectMapOrUnionOfMaps()) {
       FieldRef.enumReference(RuntimeMapTypeTracker.Type.LEGACY_OBJECT_MAP_OR_RECORD)
           .putUnchecked(adapter);
-      MethodRef.DICT_IMPL_FOR_PROVIDER_MAP.invokeUnchecked(adapter);
+      MethodRefs.DICT_IMPL_FOR_PROVIDER_MAP.invokeUnchecked(adapter);
     } else if (type.isKnownMapOrUnionOfMaps()) {
-      MethodRef.MAP_IMPL_FOR_PROVIDER_MAP.invokeUnchecked(adapter);
+      MethodRefs.MAP_IMPL_FOR_PROVIDER_MAP.invokeUnchecked(adapter);
     } else if (type.isKnownProtoOrUnionOfProtos()) {
-      MethodRef.SOY_PROTO_VALUE_CREATE.invokeUnchecked(adapter);
+      MethodRefs.SOY_PROTO_VALUE_CREATE.invokeUnchecked(adapter);
     } else {
       throw new IllegalStateException("Can't box soy expression of type " + type);
     }
@@ -438,7 +438,7 @@ public final class SoyExpression extends Expression {
       ContentKind kind =
           Converters.toContentKind(((SanitizedType) type.soyType()).getContentKind());
       checkState(kind != ContentKind.TEXT); // sanity check
-      return MethodRef.ORDAIN_AS_SAFE
+      return MethodRefs.ORDAIN_AS_SAFE
           .invoke(delegate, FieldRef.enumReference(kind).accessor())
           .toMaybeConstant();
     } else if (type.isKnownString()) {
@@ -450,19 +450,19 @@ public final class SoyExpression extends Expression {
           return FieldRef.EMPTY_STRING_DATA.accessor().withSourceLocation(delegate.location);
         }
       }
-      return MethodRef.STRING_DATA_FOR_VALUE.invoke(delegate).toMaybeConstant();
+      return MethodRefs.STRING_DATA_FOR_VALUE.invoke(delegate).toMaybeConstant();
     } else if (type.isKnownListOrUnionOfLists()) {
-      return MethodRef.LIST_IMPL_FOR_PROVIDER_LIST.invoke(delegate);
+      return MethodRefs.LIST_IMPL_FOR_PROVIDER_LIST.invoke(delegate);
     } else if (type.isKnownLegacyObjectMapOrUnionOfMaps()) {
-      return MethodRef.DICT_IMPL_FOR_PROVIDER_MAP.invoke(
+      return MethodRefs.DICT_IMPL_FOR_PROVIDER_MAP.invoke(
           delegate,
           FieldRef.enumReference(RuntimeMapTypeTracker.Type.LEGACY_OBJECT_MAP_OR_RECORD)
               .accessor());
     } else if (type.isKnownMapOrUnionOfMaps()) {
-      return MethodRef.MAP_IMPL_FOR_PROVIDER_MAP.invoke(delegate);
+      return MethodRefs.MAP_IMPL_FOR_PROVIDER_MAP.invoke(delegate);
     } else if (type.isKnownProtoOrUnionOfProtos()) {
       // no builder methods are 'constable' but `getDefaultInstance` is, so this is safe
-      return MethodRef.SOY_PROTO_VALUE_CREATE.invoke(delegate).toMaybeConstant();
+      return MethodRefs.SOY_PROTO_VALUE_CREATE.invoke(delegate).toMaybeConstant();
     } else {
       throw new IllegalStateException("Can't box soy expression of type " + type);
     }
@@ -480,7 +480,7 @@ public final class SoyExpression extends Expression {
         return Branch.ifTrue(this);
       } else if (resultType().equals(Type.DOUBLE_TYPE)) {
         return Branch.ifTrue(
-            MethodRef.RUNTIME_COERCE_DOUBLE_TO_BOOLEAN.invoke(delegate).toMaybeConstant());
+            MethodRefs.RUNTIME_COERCE_DOUBLE_TO_BOOLEAN.invoke(delegate).toMaybeConstant());
       } else if (resultType().equals(Type.LONG_TYPE)) {
         if (delegate.isConstant()) {
           Long maybeLong = delegate.constantValue().getJavaValueAsType(Long.class).orElse(null);
@@ -501,18 +501,18 @@ public final class SoyExpression extends Expression {
       // If we are boxed, just call the SoyValue method
       if (delegate.isNonJavaNullable()) {
         return Branch.ifTrue(
-            delegate.invoke(MethodRef.SOY_VALUE_COERCE_TO_BOOLEAN).toMaybeConstant());
+            delegate.invoke(MethodRefs.SOY_VALUE_COERCE_TO_BOOLEAN).toMaybeConstant());
       } else {
         return Branch.ifTrue(
-            MethodRef.RUNTIME_COERCE_TO_BOOLEAN.invoke(delegate).toMaybeConstant());
+            MethodRefs.RUNTIME_COERCE_TO_BOOLEAN.invoke(delegate).toMaybeConstant());
       }
     }
     // unboxed non-primitive types.  This would be strings, protos or lists
     if (resultType().equals(STRING_TYPE)) {
       return isNonJavaNullable()
-          ? Branch.ifTrue(delegate.invoke(MethodRef.STRING_IS_EMPTY).toMaybeConstant()).negate()
+          ? Branch.ifTrue(delegate.invoke(MethodRefs.STRING_IS_EMPTY).toMaybeConstant()).negate()
           : Branch.ifTrue(
-              MethodRef.RUNTIME_COERCE_STRING_TO_BOOLEAN.invoke(delegate).toMaybeConstant());
+              MethodRefs.RUNTIME_COERCE_STRING_TO_BOOLEAN.invoke(delegate).toMaybeConstant());
     }
     // All other types are always truthy unless null
     return Branch.ifNonSoyNullish(delegate);
@@ -529,16 +529,16 @@ public final class SoyExpression extends Expression {
       if (isNonJavaNullable()) {
         return this;
       } else {
-        return forString(MethodRef.STRING_VALUE_OF.invoke(delegate));
+        return forString(MethodRefs.STRING_VALUE_OF.invoke(delegate));
       }
     }
     if (BytecodeUtils.isPrimitive(resultType())) {
       if (resultType().equals(Type.BOOLEAN_TYPE)) {
-        return forString(MethodRef.BOOLEAN_TO_STRING.invoke(delegate).toMaybeConstant());
+        return forString(MethodRefs.BOOLEAN_TO_STRING.invoke(delegate).toMaybeConstant());
       } else if (resultType().equals(Type.DOUBLE_TYPE)) {
-        return forString(MethodRef.DOUBLE_TO_STRING.invoke(delegate).toMaybeConstant());
+        return forString(MethodRefs.DOUBLE_TO_STRING.invoke(delegate).toMaybeConstant());
       } else if (resultType().equals(Type.LONG_TYPE)) {
-        return forString(MethodRef.LONG_TO_STRING.invoke(delegate).toMaybeConstant());
+        return forString(MethodRefs.LONG_TO_STRING.invoke(delegate).toMaybeConstant());
       } else {
         throw new AssertionError(
             "resultType(): " + resultType() + " is not a valid type for a SoyExpression");
@@ -547,12 +547,12 @@ public final class SoyExpression extends Expression {
     if (!isBoxed()) {
       // this is for unboxed reference types (strings, lists, protos) String.valueOf handles null
       // implicitly
-      return forString(MethodRef.STRING_VALUE_OF.invoke(delegate).toMaybeConstant());
+      return forString(MethodRefs.STRING_VALUE_OF.invoke(delegate).toMaybeConstant());
     }
     if (isNonJavaNullable()) {
-      return forString(MethodRef.SOY_VALUE_COERCE_TO_STRING.invoke(delegate).toMaybeConstant());
+      return forString(MethodRefs.SOY_VALUE_COERCE_TO_STRING.invoke(delegate).toMaybeConstant());
     }
-    return forString(MethodRef.RUNTIME_COERCE_TO_STRING.invoke(delegate).toMaybeConstant());
+    return forString(MethodRefs.RUNTIME_COERCE_TO_STRING.invoke(delegate).toMaybeConstant());
   }
 
   /** Coerce this expression to a double value. Useful for float-int comparisons. */
@@ -568,9 +568,9 @@ public final class SoyExpression extends Expression {
       throw new UnsupportedOperationException("Can't convert " + resultType() + " to a double");
     }
     if (soyRuntimeType.isKnownFloat()) {
-      return forFloat(delegate.invoke(MethodRef.SOY_VALUE_FLOAT_VALUE).toMaybeConstant());
+      return forFloat(delegate.invoke(MethodRefs.SOY_VALUE_FLOAT_VALUE).toMaybeConstant());
     }
-    return forFloat(delegate.invoke(MethodRef.SOY_VALUE_NUMBER_VALUE).toMaybeConstant());
+    return forFloat(delegate.invoke(MethodRefs.SOY_VALUE_NUMBER_VALUE).toMaybeConstant());
   }
 
   /**
@@ -581,15 +581,15 @@ public final class SoyExpression extends Expression {
   public Expression unboxAsNumberOrJavaNull() {
     if (!isBoxed()) {
       if (soyRuntimeType.isKnownFloat()) {
-        return MethodRef.BOX_DOUBLE.invoke(this).toMaybeConstant();
+        return MethodRefs.BOX_DOUBLE.invoke(this).toMaybeConstant();
       }
       if (soyRuntimeType.isKnownInt()) {
-        return MethodRef.BOX_LONG.invoke(this).toMaybeConstant();
+        return MethodRefs.BOX_LONG.invoke(this).toMaybeConstant();
       }
       throw new UnsupportedOperationException("Can't convert " + resultType() + " to a Number");
     }
     if (isNonSoyNullish()) {
-      return MethodRef.SOY_VALUE_JAVA_NUMBER_VALUE.invoke(
+      return MethodRefs.SOY_VALUE_JAVA_NUMBER_VALUE.invoke(
           this.checkedCast(BytecodeUtils.NUMBER_DATA_TYPE));
     }
     return new Expression(BytecodeUtils.NUMBER_TYPE, featuresAfterUnboxing()) {
@@ -599,7 +599,7 @@ public final class SoyExpression extends Expression {
         delegate.gen(adapter);
         BytecodeUtils.coalesceSoyNullishToJavaNull(adapter, delegate.resultType(), end);
         adapter.checkCast(BytecodeUtils.NUMBER_DATA_TYPE);
-        MethodRef.SOY_VALUE_JAVA_NUMBER_VALUE.invokeUnchecked(adapter);
+        MethodRefs.SOY_VALUE_JAVA_NUMBER_VALUE.invokeUnchecked(adapter);
         adapter.mark(end);
       }
     };
@@ -619,7 +619,7 @@ public final class SoyExpression extends Expression {
     }
     assertBoxed(boolean.class);
 
-    return forBool(delegate.invoke(MethodRef.SOY_VALUE_BOOLEAN_VALUE).toMaybeConstant());
+    return forBool(delegate.invoke(MethodRefs.SOY_VALUE_BOOLEAN_VALUE).toMaybeConstant());
   }
 
   /**
@@ -636,7 +636,7 @@ public final class SoyExpression extends Expression {
     }
     assertBoxed(long.class);
 
-    return forInt(delegate.invoke(MethodRef.SOY_VALUE_LONG_VALUE));
+    return forInt(delegate.invoke(MethodRefs.SOY_VALUE_LONG_VALUE));
   }
 
   /**
@@ -651,7 +651,7 @@ public final class SoyExpression extends Expression {
     if (alreadyUnboxed(long.class)) {
       return checkedCastLongToInt(this);
     }
-    return box().invoke(MethodRef.SOY_VALUE_INTEGER_VALUE);
+    return box().invoke(MethodRefs.SOY_VALUE_INTEGER_VALUE);
   }
 
   public Expression coerceToInt() {
@@ -674,7 +674,7 @@ public final class SoyExpression extends Expression {
         // otherwise fall through and generate code that issues a runtime exception
       }
     }
-    return MethodRef.INTS_CHECKED_CAST.invoke(delegate);
+    return MethodRefs.INTS_CHECKED_CAST.invoke(delegate);
   }
 
   /**
@@ -691,7 +691,7 @@ public final class SoyExpression extends Expression {
     }
     assertBoxed(double.class);
 
-    return forFloat(delegate.invoke(MethodRef.SOY_VALUE_FLOAT_VALUE));
+    return forFloat(delegate.invoke(MethodRefs.SOY_VALUE_FLOAT_VALUE));
   }
 
   private Features featuresAfterUnboxing() {
@@ -721,8 +721,8 @@ public final class SoyExpression extends Expression {
     return forString(
         delegate.invoke(
             delegate.isNonSoyNullish()
-                ? MethodRef.SOY_VALUE_STRING_VALUE
-                : MethodRef.SOY_VALUE_STRING_VALUE_OR_NULL));
+                ? MethodRefs.SOY_VALUE_STRING_VALUE
+                : MethodRefs.SOY_VALUE_STRING_VALUE_OR_NULL));
   }
 
   /** Unboxes a list and its items. Throws an exception if the boxed list value is nullish. */
@@ -744,8 +744,8 @@ public final class SoyExpression extends Expression {
     Expression unboxedList =
         delegate.invoke(
             delegate.isNonSoyNullish()
-                ? MethodRef.SOY_VALUE_AS_JAVA_LIST
-                : MethodRef.SOY_VALUE_AS_JAVA_LIST_OR_NULL);
+                ? MethodRefs.SOY_VALUE_AS_JAVA_LIST
+                : MethodRefs.SOY_VALUE_AS_JAVA_LIST_OR_NULL);
 
     ListType asListType;
     SoyRuntimeType nonNullRuntimeType =
@@ -794,8 +794,8 @@ public final class SoyExpression extends Expression {
     return delegate
         .invoke(
             delegate.isNonSoyNullish()
-                ? MethodRef.SOY_VALUE_GET_PROTO
-                : MethodRef.SOY_VALUE_GET_PROTO_OR_NULL)
+                ? MethodRefs.SOY_VALUE_GET_PROTO
+                : MethodRefs.SOY_VALUE_GET_PROTO_OR_NULL)
         .checkedCast(runtimeType);
   }
 

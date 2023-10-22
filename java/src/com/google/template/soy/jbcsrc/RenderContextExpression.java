@@ -24,6 +24,7 @@ import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
 import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
+import com.google.template.soy.jbcsrc.restricted.MethodRefs;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcPrintDirective;
 import com.google.template.soy.jbcsrc.restricted.Statement;
@@ -254,7 +255,7 @@ final class RenderContextExpression extends Expression implements JbcSrcPluginCo
       value =
           SoyExpression.forSoyValue(
               UnknownType.getInstance(),
-              MethodRef.RUNTIME_APPLY_PRINT_DIRECTIVE.invoke(
+              MethodRefs.RUNTIME_APPLY_PRINT_DIRECTIVE.invoke(
                   getPrintDirective(directive.getName()),
                   value.box(),
                   SoyExpression.boxListWithSoyNullishAsJavaNull(args)));

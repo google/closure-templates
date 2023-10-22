@@ -143,14 +143,15 @@ instances of `BytecodeProducer` while generating code. This forces a model where
 all `BytecodeProducer` objects are created and wired together and then we do a
 single pass to generate code.
 
-### `MethodRef`, `ConstructorRef`, `FieldRef`
+### `MethodRef`, `FieldRef`
 
-These are analgous to the object `java.lang.reflect.Method`,
-`java.lang.reflect.Constructor`, and `java.lang.reflect.Field` (and in fact
-there are adapters for converting from the reflect objects to these). They are
-optimized for generating expressions that invoke the methods or access the
-fields, and it is also possible to construct these object for methods that do
-not yet exist (because we haven't generated them yet).
+`MethodRef` is analgous to the objects `java.lang.reflect.Method`,and
+`java.lang.reflect.Constructor`, and `FieldRef` corresponds to
+`java.lang.reflect.Field` (and in fact there are adapters for converting from
+the reflect objects to these). They are optimized for generating expressions
+that invoke the methods or access the fields, and it is also possible to
+construct these object for methods that do not yet exist (because we haven't
+generated them yet).
 
 ## `CodeBuilder`
 

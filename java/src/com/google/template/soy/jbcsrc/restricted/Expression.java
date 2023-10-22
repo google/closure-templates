@@ -710,7 +710,7 @@ public abstract class Expression extends BytecodeProducer {
                 BytecodeUtils.NUMBER_DATA_TYPE, resultType)) {
               return this;
             }
-            return MethodRef.CHECK_NUMBER.invoke(this);
+            return MethodRefs.CHECK_NUMBER.invoke(this);
           }
           return this;
         case NULL:
@@ -718,31 +718,31 @@ public abstract class Expression extends BytecodeProducer {
         case UNDEFINED:
           return this.checkedCast(BytecodeUtils.UNDEFINED_DATA_TYPE);
         case ATTRIBUTES:
-          return MethodRef.CHECK_CONTENT_KIND.invoke(this, constant(ContentKind.ATTRIBUTES));
+          return MethodRefs.CHECK_CONTENT_KIND.invoke(this, constant(ContentKind.ATTRIBUTES));
         case CSS:
-          return MethodRef.CHECK_CONTENT_KIND.invoke(this, constant(ContentKind.CSS));
+          return MethodRefs.CHECK_CONTENT_KIND.invoke(this, constant(ContentKind.CSS));
         case BOOL:
           if (BytecodeUtils.isDefinitelyAssignableFrom(
               BytecodeUtils.BOOLEAN_DATA_TYPE, resultType)) {
             return this;
           }
-          return MethodRef.CHECK_BOOLEAN.invoke(this);
+          return MethodRefs.CHECK_BOOLEAN.invoke(this);
         case FLOAT:
           if (BytecodeUtils.isDefinitelyAssignableFrom(BytecodeUtils.FLOAT_DATA_TYPE, resultType)) {
             return this;
           }
-          return MethodRef.CHECK_FLOAT.invoke(this);
+          return MethodRefs.CHECK_FLOAT.invoke(this);
         case HTML:
         case ELEMENT:
-          return MethodRef.CHECK_CONTENT_KIND.invoke(this, constant(ContentKind.HTML));
+          return MethodRefs.CHECK_CONTENT_KIND.invoke(this, constant(ContentKind.HTML));
         case INT:
           if (BytecodeUtils.isDefinitelyAssignableFrom(
               BytecodeUtils.INTEGER_DATA_TYPE, resultType)) {
             return this;
           }
-          return MethodRef.CHECK_INT.invoke(this);
+          return MethodRefs.CHECK_INT.invoke(this);
         case JS:
-          return MethodRef.CHECK_CONTENT_KIND.invoke(this, constant(ContentKind.JS));
+          return MethodRefs.CHECK_CONTENT_KIND.invoke(this, constant(ContentKind.JS));
         case LIST:
           expectedClass = SoyList.class;
           break;
@@ -760,7 +760,7 @@ public abstract class Expression extends BytecodeProducer {
               TypeInfo.create(
                       JavaQualifiedNames.getClassName(((SoyProtoType) type).getDescriptor()), false)
                   .type();
-          return MethodRef.CHECK_PROTO.invoke(this, constant(protoType));
+          return MethodRefs.CHECK_PROTO.invoke(this, constant(protoType));
         case PROTO_ENUM:
           expectedClass = IntegerData.class;
           break;
@@ -772,15 +772,15 @@ public abstract class Expression extends BytecodeProducer {
               BytecodeUtils.STRING_DATA_TYPE, resultType)) {
             return this;
           }
-          return MethodRef.CHECK_STRING.invoke(this);
+          return MethodRefs.CHECK_STRING.invoke(this);
         case TEMPLATE:
           expectedClass = TemplateValue.class;
           break;
         case TRUSTED_RESOURCE_URI:
-          return MethodRef.CHECK_CONTENT_KIND.invoke(
+          return MethodRefs.CHECK_CONTENT_KIND.invoke(
               this, constant(ContentKind.TRUSTED_RESOURCE_URI));
         case URI:
-          return MethodRef.CHECK_CONTENT_KIND.invoke(this, constant(ContentKind.URI));
+          return MethodRefs.CHECK_CONTENT_KIND.invoke(this, constant(ContentKind.URI));
         case CSS_TYPE:
         case CSS_MODULE:
         case PROTO_TYPE:
@@ -797,7 +797,7 @@ public abstract class Expression extends BytecodeProducer {
       if (isDefinitelyAssignableFrom(expectedType, resultType)) {
         return this;
       }
-      return MethodRef.CHECK_TYPE.invoke(this, constant(expectedType));
+      return MethodRefs.CHECK_TYPE.invoke(this, constant(expectedType));
     }
 
     SoyRuntimeType unboxedType = SoyRuntimeType.getUnboxedType(type).orElse(null);

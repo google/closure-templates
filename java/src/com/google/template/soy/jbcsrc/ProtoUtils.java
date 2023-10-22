@@ -84,6 +84,7 @@ import com.google.template.soy.jbcsrc.restricted.FieldRef;
 import com.google.template.soy.jbcsrc.restricted.LocalVariable;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.MethodRef.MethodPureness;
+import com.google.template.soy.jbcsrc.restricted.MethodRefs;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyRuntimeType;
 import com.google.template.soy.jbcsrc.restricted.Statement;
@@ -369,7 +370,7 @@ final class ProtoUtils {
       } else if (descriptor.isRepeated()) {
         return SoyExpression.forBoxedList(
             fieldType,
-            MethodRef.LAZY_PROTO_TO_SOY_VALUE_LIST_FOR_LIST.invoke(
+            MethodRefs.LAZY_PROTO_TO_SOY_VALUE_LIST_FOR_LIST.invoke(
                 typedBaseExpr.invoke(getMethodRef),
                 FieldVisitor.visitField(descriptor, REPEATED_FIELD_INTERPRETER)));
       }
@@ -463,11 +464,11 @@ final class ProtoUtils {
 
     private static void doBox(CodeBuilder adapter, SoyRuntimeType soyRuntimeType) {
       if (soyRuntimeType.isKnownBool()) {
-        MethodRef.BOOLEAN_DATA_FOR_VALUE.invokeUnchecked(adapter);
+        MethodRefs.BOOLEAN_DATA_FOR_VALUE.invokeUnchecked(adapter);
       } else if (soyRuntimeType.isKnownInt()) {
-        MethodRef.INTEGER_DATA_FOR_VALUE.invokeUnchecked(adapter);
+        MethodRefs.INTEGER_DATA_FOR_VALUE.invokeUnchecked(adapter);
       } else if (soyRuntimeType.isKnownFloat()) {
-        MethodRef.FLOAT_DATA_FOR_VALUE.invokeUnchecked(adapter);
+        MethodRefs.FLOAT_DATA_FOR_VALUE.invokeUnchecked(adapter);
       } else {
         SoyExpression.doBox(adapter, soyRuntimeType);
       }
@@ -479,7 +480,7 @@ final class ProtoUtils {
       FieldDescriptor valueDescriptor = mapFields.get(1);
       return SoyExpression.forMap(
           (MapType) fieldType,
-          MethodRef.LAZY_PROTO_TO_SOY_VALUE_MAP_FOR_MAP.invoke(
+          MethodRefs.LAZY_PROTO_TO_SOY_VALUE_MAP_FOR_MAP.invoke(
               typedBaseExpr.invoke(getMethodRef),
               FieldVisitor.visitField(keyDescriptor, REPEATED_FIELD_INTERPRETER),
               FieldVisitor.visitField(valueDescriptor, REPEATED_FIELD_INTERPRETER),
@@ -516,21 +517,21 @@ final class ProtoUtils {
           }
           // otherwise it is closed and we need to extract the number.
           return SoyExpression.forInt(
-              numericConversion(field.invoke(MethodRef.PROTOCOL_ENUM_GET_NUMBER), Type.LONG_TYPE));
+              numericConversion(field.invoke(MethodRefs.PROTOCOL_ENUM_GET_NUMBER), Type.LONG_TYPE));
         case INT:
           // Since soy 'int's are java longs, we can actually fully represent an unsigned 32bit
           // integer.
           if (isUnsigned(descriptor)) {
-            return SoyExpression.forInt(MethodRef.UNSIGNED_INTS_TO_LONG.invoke(field));
+            return SoyExpression.forInt(MethodRefs.UNSIGNED_INTS_TO_LONG.invoke(field));
           } else {
             return SoyExpression.forInt(numericConversion(field, Type.LONG_TYPE));
           }
         case LONG:
           if (shouldConvertBetweenStringAndLong(descriptor)) {
             if (isUnsigned(descriptor)) {
-              return SoyExpression.forString(MethodRef.UNSIGNED_LONGS_TO_STRING.invoke(field));
+              return SoyExpression.forString(MethodRefs.UNSIGNED_LONGS_TO_STRING.invoke(field));
             } else {
-              return SoyExpression.forString(MethodRef.LONG_TO_STRING.invoke(field));
+              return SoyExpression.forString(MethodRefs.LONG_TO_STRING.invoke(field));
             }
           }
           // If the value is large and the field is unsigned we might corrupt it here (e.g. it will
@@ -561,7 +562,7 @@ final class ProtoUtils {
       if (descriptor.isRepeated()) {
         return SoyExpression.forBoxedList(
             fieldType,
-            MethodRef.GET_EXTENSION_LIST.invoke(
+            MethodRefs.GET_EXTENSION_LIST.invoke(
                 typedBaseExpr,
                 extensionFieldAccessor,
                 FieldVisitor.visitField(descriptor, REPEATED_FIELD_INTERPRETER)));
@@ -617,38 +618,38 @@ final class ProtoUtils {
         case FLOAT:
         case DOUBLE:
           return SoyExpression.forFloat(
-              field.checkedCast(Number.class).invoke(MethodRef.NUMBER_DOUBLE_VALUE));
+              field.checkedCast(Number.class).invoke(MethodRefs.NUMBER_DOUBLE_VALUE));
         case ENUM:
           return SoyExpression.forInt(
               numericConversion(
                   field
                       .checkedCast(ProtocolMessageEnum.class)
-                      .invoke(MethodRef.PROTOCOL_ENUM_GET_NUMBER),
+                      .invoke(MethodRefs.PROTOCOL_ENUM_GET_NUMBER),
                   Type.LONG_TYPE));
         case INT:
           if (isUnsigned(descriptor)) {
             return SoyExpression.forInt(
-                MethodRef.UNSIGNED_INTS_TO_LONG.invoke(
-                    field.checkedCast(Integer.class).invoke(MethodRef.NUMBER_INT_VALUE)));
+                MethodRefs.UNSIGNED_INTS_TO_LONG.invoke(
+                    field.checkedCast(Integer.class).invoke(MethodRefs.NUMBER_INT_VALUE)));
           } else {
             return SoyExpression.forInt(
-                field.checkedCast(Integer.class).invoke(MethodRef.NUMBER_LONG_VALUE));
+                field.checkedCast(Integer.class).invoke(MethodRefs.NUMBER_LONG_VALUE));
           }
         case LONG:
           if (shouldConvertBetweenStringAndLong(descriptor)) {
             if (isUnsigned(descriptor)) {
               return SoyExpression.forString(
-                  MethodRef.UNSIGNED_LONGS_TO_STRING.invoke(
-                      field.checkedCast(Long.class).invoke(MethodRef.NUMBER_LONG_VALUE)));
+                  MethodRefs.UNSIGNED_LONGS_TO_STRING.invoke(
+                      field.checkedCast(Long.class).invoke(MethodRefs.NUMBER_LONG_VALUE)));
             } else {
-              return SoyExpression.forString(field.invoke(MethodRef.OBJECT_TO_STRING));
+              return SoyExpression.forString(field.invoke(MethodRefs.OBJECT_TO_STRING));
             }
           }
           return SoyExpression.forInt(
-              field.checkedCast(Number.class).invoke(MethodRef.NUMBER_LONG_VALUE));
+              field.checkedCast(Number.class).invoke(MethodRefs.NUMBER_LONG_VALUE));
         case BOOLEAN:
           return SoyExpression.forBool(
-              field.checkedCast(Boolean.class).invoke(MethodRef.BOOLEAN_VALUE));
+              field.checkedCast(Boolean.class).invoke(MethodRefs.BOOLEAN_VALUE));
         case STRING:
           return SoyExpression.forString(field.checkedCast(String.class));
         case MESSAGE:
@@ -708,7 +709,7 @@ final class ProtoUtils {
     private Expression getUnboxedBaseExpression() {
       // This is a proto union type so must be boxed.
       checkState(baseExpr.isBoxed());
-      return baseExpr.invoke(MethodRef.SOY_VALUE_GET_PROTO);
+      return baseExpr.invoke(MethodRefs.SOY_VALUE_GET_PROTO);
     }
 
     SoyExpression generate() {
@@ -1061,19 +1062,19 @@ final class ProtoUtils {
           detacher.resolveSoyValueProviderMap(
               mapArg
                   .checkedCast(BytecodeUtils.SOY_MAP_TYPE)
-                  .invoke(MethodRef.SOY_VALUE_AS_JAVA_MAP));
+                  .invoke(MethodRefs.SOY_VALUE_AS_JAVA_MAP));
 
       // Enter new scope
       LocalVariableManager.Scope scope = varManager.enterScope();
 
       // map.entrySet().iterator()
       Expression getMapIterator =
-          resolved.invoke(MethodRef.MAP_ENTRY_SET).invoke(MethodRef.GET_ITERATOR);
+          resolved.invoke(MethodRefs.MAP_ENTRY_SET).invoke(MethodRefs.GET_ITERATOR);
       LocalVariable iter =
           scope.createTemporary(field.getName() + "__iter", getMapIterator.resultType());
       Statement loopInitialization = iter.initialize(getMapIterator);
       // (Map.Entry) iter.next()
-      Expression iterNext = iter.invoke(MethodRef.ITERATOR_NEXT).checkedCast(MAP_ENTRY_TYPE);
+      Expression iterNext = iter.invoke(MethodRefs.ITERATOR_NEXT).checkedCast(MAP_ENTRY_TYPE);
       LocalVariable mapEntry =
           scope.createTemporary(field.getName() + "__mapEntry", iterNext.resultType());
       Statement initMapEntry = mapEntry.initialize(iterNext);
@@ -1090,7 +1091,7 @@ final class ProtoUtils {
           SoyExpression.forSoyValue(
               keyType,
               mapEntry
-                  .invoke(MethodRef.MAP_GET_KEY)
+                  .invoke(MethodRefs.MAP_GET_KEY)
                   .checkedCast(keyRuntimeType.runtimeType())
                   // In ResolveExpressionTypesPass we already enforce that key is not nullable.  By
                   // asserting that it isn't we just get an NPE when we are wrong, which is what we
@@ -1104,14 +1105,14 @@ final class ProtoUtils {
           // (SomeType) ((SoyValueProvider) mapEntry.getValue()).resolve()
           SoyExpression.resolveSoyValueProvider(
                   valueType,
-                  mapEntry.invoke(MethodRef.MAP_GET_VALUE).checkedCast(SOY_VALUE_PROVIDER_TYPE))
+                  mapEntry.invoke(MethodRefs.MAP_GET_VALUE).checkedCast(SOY_VALUE_PROVIDER_TYPE))
               // ResolveExpressionTypesPass already enforces that the value is not nullable. If the
               // value is
               // null, it reports a type mismatch error.
               .asNonJavaNullable();
 
       // iter.hasNext()
-      Expression iterHasNext = iter.invoke(MethodRef.ITERATOR_HAS_NEXT);
+      Expression iterHasNext = iter.invoke(MethodRefs.ITERATOR_HAS_NEXT);
 
       // Invokes the putFooFieldMap method in proto message builder
       Statement putOne = handleMapSetter(mapKey, mapValue, field);
@@ -1247,7 +1248,7 @@ final class ProtoUtils {
       Statement indexInitialization = index.initialize(constant(0));
       Statement loopInitialization =
           Statement.concat(
-              list.initialize(resolved), listSize.initialize(list.invoke(MethodRef.LIST_SIZE)));
+              list.initialize(resolved), listSize.initialize(list.invoke(MethodRefs.LIST_SIZE)));
 
       // exitScope must be called after creating all the variables
       Statement scopeExit = scope.exitScope();
@@ -1258,7 +1259,7 @@ final class ProtoUtils {
       // Call list.get(i).resolveSoyValueProvider(), then cast to the expected subtype of SoyValue
       Expression getItem =
           list // list
-              .invoke(MethodRef.LIST_GET, index) // .get(i)
+              .invoke(MethodRefs.LIST_GET, index) // .get(i)
               .checkedCast(SOY_VALUE_PROVIDER_TYPE); // cast Object to SoyValueProvider
 
       SoyExpression soyValue =
@@ -1484,7 +1485,7 @@ final class ProtoUtils {
         case INT:
           checkState(currentType.equals(Type.LONG_TYPE));
           if (isUnsigned(field)) {
-            MethodRef.UNSIGNED_INTS_SATURATED_CAST.invokeUnchecked(cb);
+            MethodRefs.UNSIGNED_INTS_SATURATED_CAST.invokeUnchecked(cb);
           } else {
             // lossy!
             cb.cast(currentType, Type.INT_TYPE);
@@ -1493,9 +1494,9 @@ final class ProtoUtils {
         case LONG:
           if (shouldConvertBetweenStringAndLong(field)) {
             if (isUnsigned(field)) {
-              MethodRef.UNSIGNED_LONGS_PARSE_UNSIGNED_LONG.invokeUnchecked(cb);
+              MethodRefs.UNSIGNED_LONGS_PARSE_UNSIGNED_LONG.invokeUnchecked(cb);
             } else {
-              MethodRef.LONG_PARSE_LONG.invokeUnchecked(cb);
+              MethodRefs.LONG_PARSE_LONG.invokeUnchecked(cb);
             }
           }
           break;

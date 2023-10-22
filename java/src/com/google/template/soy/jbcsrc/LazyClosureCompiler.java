@@ -23,7 +23,7 @@ import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constantSanitizedContentKindAsContentKind;
 import static com.google.template.soy.jbcsrc.restricted.LocalVariable.createLocal;
 import static com.google.template.soy.jbcsrc.restricted.LocalVariable.createThisVar;
-import static com.google.template.soy.jbcsrc.restricted.MethodRef.RENDER_RESULT_DONE;
+import static com.google.template.soy.jbcsrc.restricted.MethodRefs.RENDER_RESULT_DONE;
 import static com.google.template.soy.jbcsrc.restricted.Statement.returnExpression;
 import static com.google.template.soy.soytree.SoyTreeUtils.isDescendantOf;
 import static java.util.Arrays.asList;
@@ -34,8 +34,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
-import com.google.template.soy.data.SanitizedContent;
-import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.exprtree.AbstractLocalVarDefn;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
@@ -45,11 +43,11 @@ import com.google.template.soy.jbcsrc.ExpressionDetacher.BasicDetacher;
 import com.google.template.soy.jbcsrc.internal.SoyClassWriter;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
-import com.google.template.soy.jbcsrc.restricted.ConstructorRef;
 import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.FieldRef;
 import com.google.template.soy.jbcsrc.restricted.LocalVariable;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
+import com.google.template.soy.jbcsrc.restricted.MethodRefs;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.Statement;
 import com.google.template.soy.jbcsrc.restricted.TypeInfo;
@@ -57,12 +55,7 @@ import com.google.template.soy.jbcsrc.runtime.DetachableContentProvider;
 import com.google.template.soy.jbcsrc.runtime.DetachableSoyValueProvider;
 import com.google.template.soy.jbcsrc.runtime.DetachableSoyValueProviderProvider;
 import com.google.template.soy.jbcsrc.shared.Names;
-import com.google.template.soy.jbcsrc.shared.RenderContext;
 import com.google.template.soy.soytree.CallNode;
-import com.google.template.soy.soytree.CallParamContentNode;
-import com.google.template.soy.soytree.CallParamValueNode;
-import com.google.template.soy.soytree.LetContentNode;
-import com.google.template.soy.soytree.LetValueNode;
 import com.google.template.soy.soytree.MsgHtmlTagNode;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyNode;
@@ -372,17 +365,18 @@ final class LazyClosureCompiler {
     TemplateVariableManager.Scope scope = parent.variables.enterScope();
     LocalVariable variable =
         scope
-            .createTemporary("buffer", MethodRef.LOGGING_ADVISING_APPENDABLE_BUFFERING.returnType())
+            .createTemporary(
+                "buffer", MethodRefs.LOGGING_ADVISING_APPENDABLE_BUFFERING.returnType())
             .asNonJavaNullable();
     Statement initBuffer =
-        variable.initialize(MethodRef.LOGGING_ADVISING_APPENDABLE_BUFFERING.invoke());
+        variable.initialize(MethodRefs.LOGGING_ADVISING_APPENDABLE_BUFFERING.invoke());
     Statement populateBuffer =
         parent
             .compilerWithNewAppendable(AppendableExpression.forExpression(variable))
             .compileWithoutDetaches(renderUnitNode, prefix, suffix);
 
     return Statement.concat(initBuffer, populateBuffer, scope.exitScope())
-        .then(MethodRef.BUFFERED_SOY_VALUE_PROVIDER_CREATE.invoke(variable));
+        .then(MethodRefs.BUFFERED_SOY_VALUE_PROVIDER_CREATE.invoke(variable));
   }
 
   /**
@@ -413,10 +407,10 @@ final class LazyClosureCompiler {
     Expression value = constant(builder == null ? "" : builder.toString());
     SanitizedContentKind kind = renderUnit.getContentKind();
     if (kind == SanitizedContentKind.TEXT) {
-      value = MethodRef.STRING_DATA_FOR_VALUE.invoke(value);
+      value = MethodRefs.STRING_DATA_FOR_VALUE.invoke(value);
     } else {
       value =
-          MethodRef.ORDAIN_AS_SAFE.invoke(value, constantSanitizedContentKindAsContentKind(kind));
+          MethodRefs.ORDAIN_AS_SAFE.invoke(value, constantSanitizedContentKindAsContentKind(kind));
     }
     return Optional.of(value.toConstantExpression());
   }
@@ -587,7 +581,7 @@ final class LazyClosureCompiler {
               parent.javaSourceFunctionCompiler,
               parent.fileSetMetadata);
       Statement nodeBody = soyNodeCompiler.compile(renderUnit, prefix, suffix);
-      Statement returnDone = returnExpression(MethodRef.RENDER_RESULT_DONE.invoke());
+      Statement returnDone = returnExpression(MethodRefs.RENDER_RESULT_DONE.invoke());
       Statement fullMethodBody =
           new Statement() {
             @Override
@@ -654,9 +648,10 @@ final class LazyClosureCompiler {
             }
           };
 
-      ConstructorRef constructor = ConstructorRef.create(type, paramTypes);
+      MethodRef constructor =
+          MethodRef.createConstructorMethod(type, MethodRef.MethodPureness.PURE, paramTypes);
       constructorBody.writeMethod(Opcodes.ACC_PUBLIC, constructor.method(), writer);
-      return constructor.construct(argExpressions);
+      return constructor.invoke(argExpressions);
     }
   }
 

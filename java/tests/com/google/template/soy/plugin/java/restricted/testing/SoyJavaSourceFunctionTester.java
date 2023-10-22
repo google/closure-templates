@@ -49,11 +49,11 @@ import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.jbcsrc.JbcSrcJavaValues;
 import com.google.template.soy.jbcsrc.TestExpressionDetacher;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
-import com.google.template.soy.jbcsrc.restricted.ConstructorRef;
 import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.FieldRef;
 import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
+import com.google.template.soy.jbcsrc.restricted.MethodRefs;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.testing.ExpressionEvaluator;
 import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
@@ -252,7 +252,7 @@ public class SoyJavaSourceFunctionTester {
     } else if (value instanceof SanitizedContent) {
       SanitizedContent content = (SanitizedContent) value;
       Expression sanitizedExpr =
-          MethodRef.ORDAIN_AS_SAFE_DIR.invoke(
+          MethodRefs.ORDAIN_AS_SAFE_DIR.invoke(
               BytecodeUtils.constant(content.toString()),
               BytecodeUtils.constant(content.getContentKind()),
               BytecodeUtils.constant(content.getContentDirection()));
@@ -271,7 +271,7 @@ public class SoyJavaSourceFunctionTester {
       }
       return SoyExpression.forSoyValue(
           UnknownType.getInstance(),
-          MethodRef.DICT_IMPL_FOR_PROVIDER_MAP.invoke(
+          MethodRefs.DICT_IMPL_FOR_PROVIDER_MAP.invoke(
               BytecodeUtils.newLinkedHashMap(keys, values),
               FieldRef.enumReference(RuntimeMapTypeTracker.Type.LEGACY_OBJECT_MAP_OR_RECORD)
                   .accessor()));
@@ -286,7 +286,8 @@ public class SoyJavaSourceFunctionTester {
       }
       return SoyExpression.forSoyValue(
           UnknownType.getInstance(),
-          MethodRef.MAP_IMPL_FOR_PROVIDER_MAP.invoke(BytecodeUtils.newLinkedHashMap(keys, values)));
+          MethodRefs.MAP_IMPL_FOR_PROVIDER_MAP.invoke(
+              BytecodeUtils.newLinkedHashMap(keys, values)));
     } else if (value instanceof SoyList) {
       List<Expression> items = new ArrayList<>();
       for (SoyValue item : ((SoyList) value).asResolvedJavaList()) {
@@ -303,13 +304,14 @@ public class SoyJavaSourceFunctionTester {
     throw new UnsupportedOperationException("Not implemented yet");
   }
 
-  private static final ConstructorRef ULOCALE = ConstructorRef.create(ULocale.class, String.class);
+  private static final MethodRef ULOCALE =
+      MethodRef.createPureConstructor(ULocale.class, String.class);
 
   private class InternalContext implements JbcSrcPluginContext {
 
     @Override
     public Expression getULocale() {
-      return ULOCALE.construct(BytecodeUtils.constant(locale.toString()));
+      return ULOCALE.invoke(BytecodeUtils.constant(locale.toString()));
     }
 
     @Override
