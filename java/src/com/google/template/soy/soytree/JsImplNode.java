@@ -33,9 +33,9 @@ public final class JsImplNode extends ExternImplNode {
 
   private static final String NAMESPACE = "namespace";
   private static final String FUNCTION = "function";
-  public static final String FIELDS = String.format("%s,%s", NAMESPACE, FUNCTION);
+  private static final String FIELDS = String.format("%s, %s", NAMESPACE, FUNCTION);
   private static final SoyErrorKind UNEXPECTED_ARGS =
-      SoyErrorKind.of("JS implementations require attributes" + JsImplNode.FIELDS + " .");
+      SoyErrorKind.of("JS implementations require the following attributes: " + FIELDS + ".");
 
   private final ImmutableList<CommandTagAttribute> attributes;
 
