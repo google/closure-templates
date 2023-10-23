@@ -418,8 +418,8 @@ public abstract class Expression extends BytecodeProducer {
     this.constantValue = checkNotNull(constantValue);
     if (Flags.DEBUG && constantValue.isPresent()) {
       checkState(
-          resultType.equals(constantValue.get().type),
-          "Type mismatch. Expected constant value of type %s to have type %s",
+          BytecodeUtils.isPossiblyAssignableFrom(resultType, constantValue.get().type),
+          "Type mismatch. Expected constant value of type %s to to be assignable to %s",
           constantValue.get().type,
           resultType);
     }
@@ -583,7 +583,10 @@ public abstract class Expression extends BytecodeProducer {
     if (!isNonSoyNullish()) {
       return this;
     }
+    checkAssignableTo(BytecodeUtils.SOY_VALUE_TYPE);
     return new DelegatingExpression(
+        // The only type that is a super type of a NullData,UndefinedData and any other SoyValue is
+        // SoyValue itself.
         this, BytecodeUtils.SOY_VALUE_TYPE, features.minus(Feature.NON_SOY_NULLISH));
   }
 
