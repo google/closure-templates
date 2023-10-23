@@ -120,14 +120,11 @@ public final class CodeChunks {
   }
 
   public static Stream<? extends CodeChunk> breadthFirst(CodeChunk root) {
-    return TreeStreams.breadthFirst(root, c -> c.childrenStream().collect(Collectors.toList()));
+    return TreeStreams.breadthFirstWithStream(root, CodeChunk::childrenStream);
   }
 
   public static Stream<? extends CodeChunk> breadthFirst(List<? extends CodeChunk> roots) {
     return roots.stream()
-        .flatMap(
-            root ->
-                TreeStreams.<CodeChunk>breadthFirst(
-                    root, c -> c.childrenStream().collect(Collectors.toList())));
+        .flatMap(root -> TreeStreams.breadthFirstWithStream(root, CodeChunk::childrenStream));
   }
 }

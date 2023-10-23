@@ -27,6 +27,7 @@ import java.util.Deque;
 import java.util.List;
 import java.util.Spliterator;
 import java.util.Spliterators.AbstractSpliterator;
+import java.util.function.BiConsumer;
 import java.util.function.BiPredicate;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -73,6 +74,17 @@ public final class TreeStreams {
    */
   public static <T> Stream<? extends T> breadthFirst(
       T root, Function<T, Iterable<? extends T>> successors) {
+    return breadthFirstInternal(
+        root, (queue, next) -> Iterables.addAll(queue, successors.apply(next)));
+  }
+
+  public static <T> Stream<? extends T> breadthFirstWithStream(
+      T root, Function<T, Stream<? extends T>> successors) {
+    return breadthFirstInternal(root, (queue, next) -> successors.apply(next).forEach(queue::add));
+  }
+
+  private static <T> Stream<? extends T> breadthFirstInternal(
+      T root, BiConsumer<Deque<T>, T> pusher) {
     Deque<T> queue = new ArrayDeque<>();
     queue.add(root);
     return StreamSupport.stream(
@@ -87,7 +99,7 @@ public final class TreeStreams {
             if (next == null) {
               return false;
             }
-            Iterables.addAll(queue, successors.apply(next));
+            pusher.accept(queue, next);
             action.accept(next);
             return true;
           }

@@ -365,13 +365,13 @@ public abstract class Expression extends CodeChunk {
   }
 
   private Stream<Statement> initialStatementsStream() {
-    return TreeStreams.<CodeChunk>breadthFirst(
+    return TreeStreams.<CodeChunk>breadthFirstWithStream(
             this,
             c -> {
               if (c instanceof Expression && !(c instanceof InitialStatementsScope)) {
-                return c.childrenStream().collect(toImmutableList());
+                return c.childrenStream();
               }
-              return ImmutableList.of();
+              return Stream.of();
             })
         .filter(HasInitialStatements.class::isInstance)
         .map(HasInitialStatements.class::cast)
