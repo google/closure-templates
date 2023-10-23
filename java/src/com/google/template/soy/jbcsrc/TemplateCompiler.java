@@ -41,6 +41,7 @@ import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
 import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.FieldRef;
+import com.google.template.soy.jbcsrc.restricted.LambdaFactory;
 import com.google.template.soy.jbcsrc.restricted.LocalVariable;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.MethodRefs;
@@ -66,7 +67,6 @@ import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.NullType;
 import com.google.template.soy.types.TemplateType;
 import com.google.template.soy.types.TemplateType.Parameter;
-import java.lang.invoke.LambdaMetafactory;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
@@ -153,18 +153,6 @@ final class TemplateCompiler {
     generateModifiableSelectMethod();
   }
 
-  private static final Handle METAFACTORY_HANDLE =
-      MethodRef.createPure(
-              LambdaMetafactory.class,
-              "metafactory",
-              MethodHandles.Lookup.class,
-              String.class,
-              MethodType.class,
-              MethodType.class,
-              MethodHandle.class,
-              MethodType.class)
-          .asHandle();
-
   private static final Handle DELEGATE_FACTORY_HANDLE =
       MethodRef.createPure(
               RecordToPositionalCallFactory.class,
@@ -175,9 +163,6 @@ final class TemplateCompiler {
               MethodHandle.class,
               String[].class)
           .asHandle();
-
-  private static final String COMPILED_TEMPLATE_INIT_DESCRIPTOR =
-      Type.getMethodDescriptor(BytecodeUtils.COMPILED_TEMPLATE_TYPE);
 
   private static final Type COMPILED_TEMPLATE_RENDER_DESCRIPTOR =
       Type.getMethodType(
@@ -203,18 +188,7 @@ final class TemplateCompiler {
     // assuming foo is the name of the template class.
     Statement methodBody =
         Statement.returnExpression(
-            new Expression(BytecodeUtils.COMPILED_TEMPLATE_TYPE) {
-              @Override
-              protected void doGen(CodeBuilder cb) {
-                cb.visitInvokeDynamicInsn(
-                    "render",
-                    COMPILED_TEMPLATE_INIT_DESCRIPTOR,
-                    METAFACTORY_HANDLE,
-                    COMPILED_TEMPLATE_RENDER_DESCRIPTOR,
-                    renderMethod.asHandle(),
-                    COMPILED_TEMPLATE_RENDER_DESCRIPTOR);
-              }
-            });
+            LambdaFactory.create(MethodRefs.COMPILED_TEMPLATE_RENDER, renderMethod).invoke());
     CodeBuilder methodWriter =
         new CodeBuilder(methodAccess(), templateMethod.method(), /* exceptions= */ null, writer);
     generateTemplateMetadata(methodWriter);

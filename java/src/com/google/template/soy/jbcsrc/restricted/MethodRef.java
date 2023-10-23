@@ -248,6 +248,10 @@ public abstract class MethodRef {
         owner().isInterface());
   }
 
+  boolean isInterfaceMethod() {
+    return owner().isInterface() && opcode() == Opcodes.INVOKEINTERFACE;
+  }
+
   // TODO(lukes): consider different names.  'invocation'? invoke() makes it sounds like we are
   // actually calling the method rather than generating an expression that will output code that
   // will invoke the method.
