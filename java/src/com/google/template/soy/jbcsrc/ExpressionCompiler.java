@@ -130,7 +130,9 @@ import com.google.template.soy.types.SoyTypes;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.Future;
 import javax.annotation.Nullable;
@@ -630,83 +632,24 @@ final class ExpressionCompiler {
           });
     }
 
-    private static final Handle CONSTANT_RECORD_HANDLE =
-        MethodRef.createPure(
-                ExtraConstantBootstraps.class,
-                "constantSoyRecord",
-                MethodHandles.Lookup.class,
-                String.class,
-                Class.class,
-                int.class,
-                Object[].class)
-            .asHandle();
 
-    private static final Handle CONSTANT_PARAM_STORE =
-        MethodRef.createPure(
-                ExtraConstantBootstraps.class,
-                "constantParamStore",
-                MethodHandles.Lookup.class,
-                String.class,
-                Class.class,
-                int.class,
-                Object[].class)
-            .asHandle();
+
 
     @Override
     protected SoyExpression visitRecordLiteralNode(RecordLiteralNode node) {
-      return SoyExpression.forSoyValue(
-          node.getType(), doVisitRecordLiteralNode(node, /* asParamStore= */ false));
+      SoyExpression record =
+          BytecodeUtils.newRecordImplFromParamStore(
+              node.getType(), node.getSourceLocation(), recordLiteralAsParamStore(node));
+      return isConstantContext ? record.toMaybeConstant() : record;
     }
 
-    private Expression doVisitRecordLiteralNode(RecordLiteralNode node, boolean asParamStore) {
-      int numItems = node.numChildren();
-      List<Expression> keys = new ArrayList<>(numItems);
-      List<Expression> values = new ArrayList<>(numItems);
-      for (int i = 0; i < numItems; i++) {
+    private Expression recordLiteralAsParamStore(RecordLiteralNode node) {
+      Map<String, Expression> recordMap = new LinkedHashMap<>();
+      for (int i = 0; i < node.numChildren(); i++) {
         // Keys are RecordProperty objects and values are SoyValue object.
-        keys.add(BytecodeUtils.constantRecordProperty(node.getKey(i).identifier()));
-        values.add(visit(node.getChild(i)).box());
+        recordMap.put(node.getKey(i).identifier(), visit(node.getChild(i)));
       }
-      Expression soyRecord = MethodRefs.PARAM_STORE_SIZE.invoke(constant(keys.size()));
-      for (int i = 0; i < numItems; i++) {
-        soyRecord = soyRecord.invoke(MethodRefs.PARAM_STORE_SET_FIELD, keys.get(i), values.get(i));
-      }
-      if (!asParamStore) {
-        soyRecord = MethodRefs.SOY_RECORD_IMPL.invoke(soyRecord);
-      }
-      if (isConstantContext && Expression.areAllConstant(values)) {
-        Object[] constantArgs = new Object[1 + node.numChildren() * 2];
-        // We store a hash of the source location so that each distinct list authored gets a unique
-        // value to preserve identity semantics even in constant settings
-        constantArgs[0] = node.getSourceLocation().hashCode();
-        for (int i = 0; i < values.size(); i++) {
-          // We could pass keys.get(i).constantBytecodeValue() but it is more efficient to invoke
-          // one bulk bootstrap method than a lot of little ones.  Caching within `RecordSymbol`
-          // itself ensures we don't construct duplicate keys.
-          constantArgs[2 * i + 1] = node.getKey(i).identifier();
-          constantArgs[2 * i + 2] = values.get(i).constantBytecodeValue();
-        }
-        soyRecord =
-            soyRecord.withConstantValue(
-                asParamStore
-                    ? Expression.ConstantValue.dynamic(
-                        new ConstantDynamic(
-                            "constantParamStore",
-                            BytecodeUtils.PARAM_STORE_TYPE.getDescriptor(),
-                            CONSTANT_PARAM_STORE,
-                            constantArgs),
-                        BytecodeUtils.PARAM_STORE_TYPE,
-                        /* isTrivialConstant= */ false)
-                    : Expression.ConstantValue.dynamic(
-                        new ConstantDynamic(
-                            "constantRecord",
-                            BytecodeUtils.SOY_RECORD_IMPL_TYPE.getDescriptor(),
-                            CONSTANT_RECORD_HANDLE,
-                            constantArgs),
-                        BytecodeUtils.SOY_RECORD_IMPL_TYPE,
-                        /* isTrivialConstant= */ false));
-      }
-      return soyRecord;
+      return BytecodeUtils.newParamStore(Optional.empty(), recordMap);
     }
 
     private static final Handle CONSTANT_MAP_HANDLE =
@@ -1572,8 +1515,7 @@ final class ExpressionCompiler {
                 node.getType(),
                 MethodRefs.RUNTIME_BIND_TEMPLATE_PARAMS.invoke(
                     baseExpr.checkedCast(BytecodeUtils.TEMPLATE_VALUE_TYPE),
-                    doVisitRecordLiteralNode(
-                        (RecordLiteralNode) node.getChild(1), /* asParamStore= */ true)));
+                    recordLiteralAsParamStore((RecordLiteralNode) node.getChild(1))));
         }
       } else if (function instanceof SoySourceFunctionMethod) {
         SoySourceFunctionMethod sourceMethod = (SoySourceFunctionMethod) function;

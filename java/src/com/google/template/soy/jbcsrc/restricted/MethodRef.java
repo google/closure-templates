@@ -235,7 +235,10 @@ public abstract class MethodRef {
         tag = Opcodes.H_INVOKEVIRTUAL;
         break;
       case Opcodes.INVOKESPECIAL:
-        tag = Opcodes.H_INVOKESPECIAL;
+        // We only support constructors, so assert that.  We could support other kinds of
+        // INVOKESPECIAL if needed in the future.
+        checkState(method().getName().equals("<init>"));
+        tag = Opcodes.H_NEWINVOKESPECIAL;
         break;
       default:
         throw new AssertionError("unsupported opcode: " + opcode());
@@ -294,6 +297,10 @@ public abstract class MethodRef {
           loc = loc.isKnown() ? loc.createSuperRangeWith(argLoc) : argLoc;
         }
       }
+      String name = method().getName();
+      if (name.equals("<init>")) {
+        name = "new";
+      }
       return new Expression(
           returnType(),
           features,
@@ -301,7 +308,7 @@ public abstract class MethodRef {
           Optional.of(
               Expression.ConstantValue.dynamic(
                   new ConstantDynamic(
-                      method().getName(),
+                      name,
                       returnType().getDescriptor(),
                       INVOKE_HANDLE,
                       params.toArray(new Object[0])),

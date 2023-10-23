@@ -63,7 +63,6 @@ import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
 import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.Expression.Feature;
-import com.google.template.soy.jbcsrc.restricted.FieldRef;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.MethodRefs;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
@@ -1728,25 +1727,6 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
               Identifier.create(Names.VARIANT_VAR_NAME, SourceLocation.UNKNOWN),
               callBasicNode.getVariantExpr().getRoot()));
     }
-    if (node.numChildren() == 0) {
-      if (!node.isPassingData()) {
-        return RecordOrPositional.create(
-            Suppliers.ofInstance(FieldRef.EMPTY_PARAMS.accessor()), Optional.of(ImmutableMap.of()));
-      } else if (!node.isPassingAllData()) {
-        Label reattachLabel = new Label();
-        return RecordOrPositional.create(
-            getDataRecordExpression(node, reattachLabel).labelStart(reattachLabel));
-      }
-
-      Expression paramsRecord = parameterLookup.getParamsRecord();
-      return RecordOrPositional.create(
-          maybeAddDefaultParams(
-                  node,
-                  MethodRefs.PARAM_STORE_AUGMENT.invoke(paramsRecord, constant(node.numChildren())),
-                  ImmutableMap.of())
-              .orElse(paramsRecord));
-    }
-
     ImmutableMap<String, Supplier<Expression>> explicitParams = compileExplicitParams(node);
     Supplier<Expression> recordExpression = () -> getParamStoreExpression(node, explicitParams);
     return RecordOrPositional.create(
@@ -1783,56 +1763,33 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
    */
   private Expression getParamStoreExpression(
       CallNode node, Map<String, Supplier<Expression>> params) {
-    Expression paramStoreExpression;
-    if (!node.isPassingData()) {
-      paramStoreExpression = MethodRefs.PARAM_STORE_SIZE.invoke(constant(params.size()));
-    } else {
-      Label reattachDataLabel = new Label();
-      Expression dataExpression;
-      if (node.isPassingAllData()) {
-        dataExpression = parameterLookup.getParamsRecord();
-      } else {
-        dataExpression = getDataRecordExpression(node, reattachDataLabel);
-      }
-      paramStoreExpression =
-          MethodRefs.PARAM_STORE_AUGMENT
-              .invoke(dataExpression, constant(params.size()))
-              .labelStart(reattachDataLabel);
-      if (node.isPassingAllData()) {
-        paramStoreExpression =
-            maybeAddDefaultParams(node, paramStoreExpression, params).orElse(paramStoreExpression);
-      }
+    Map<String, Expression> paramsMap = new LinkedHashMap<>();
+    params.forEach((k, v) -> paramsMap.put(k, v.get()));
+    if (node.isPassingAllData()) {
+      maybeAddDefaultParams(node, paramsMap);
     }
-    for (var entry : params.entrySet()) {
-      paramStoreExpression =
-          MethodRefs.PARAM_STORE_SET_FIELD.invoke(
-              paramStoreExpression,
-              BytecodeUtils.constantRecordProperty(entry.getKey()),
-              entry.getValue().get());
-    }
-    return paramStoreExpression;
+
+    Label reattachDataLabel = new Label();
+    Optional<Expression> baseRecord =
+        node.isPassingAllData()
+            ? Optional.of(parameterLookup.getParamsRecord())
+            : node.isPassingData()
+                ? Optional.of(getDataRecordExpression(node, reattachDataLabel))
+                : Optional.empty();
+
+    return BytecodeUtils.newParamStore(baseRecord, paramsMap).labelStart(reattachDataLabel);
   }
 
-  private Optional<Expression> maybeAddDefaultParams(
-      CallNode node,
-      Expression paramStoreExpression,
-      Map<String, Supplier<Expression>> explicitParams) {
-    boolean foundDefaultParams = false;
+  private void maybeAddDefaultParams(CallNode node, Map<String, Expression> paramsMap) {
     // If this is a data="all" call and the caller has default parameters we need to augment the
     // params record to make sure any unset default parameters are set to the default in the
     // params record. It's not worth it to determine if we're using the default value or not
     // here, so just augment all default parameters with whatever value they ended up with.
     for (TemplateParam param : node.getNearestAncestor(TemplateNode.class).getParams()) {
-      if (param.hasDefault() && !explicitParams.containsKey(param.name())) {
-        foundDefaultParams = true;
-        paramStoreExpression =
-            MethodRefs.PARAM_STORE_SET_FIELD.invoke(
-                paramStoreExpression,
-                BytecodeUtils.constantRecordProperty(param.name()),
-                parameterLookup.getParam(param));
+      if (param.hasDefault() && !paramsMap.containsKey(param.name())) {
+        paramsMap.put(param.name(), parameterLookup.getParam(param));
       }
     }
-    return foundDefaultParams ? Optional.of(paramStoreExpression) : Optional.empty();
   }
 
   private Expression getDataRecordExpression(CallNode node, Label reattachPoint) {
@@ -1841,7 +1798,8 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
             .compileSubExpression(
                 node.getDataExpr(), detachState.createExpressionDetacher(reattachPoint))
             .box()
-            .checkedCast(SoyRecord.class));
+            .checkedCast(SoyRecord.class)
+            .toMaybeConstant());
   }
 
   @Override

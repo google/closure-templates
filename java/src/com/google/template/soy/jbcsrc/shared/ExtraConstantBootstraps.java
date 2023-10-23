@@ -85,13 +85,22 @@ public final class ExtraConstantBootstraps {
 
   @Keep
   public static ParamStore constantParamStore(
-      MethodHandles.Lookup lookup, String name, Class<?> type, int salt, Object... keyValuePairs) {
+      MethodHandles.Lookup lookup, String name, Class<?> type, Object... keyValuePairs) {
     return asParams(keyValuePairs);
   }
 
   private static ParamStore asParams(Object... keyValuePairs) {
-    ParamStore params = new ParamStore(keyValuePairs.length / 2);
-    for (int i = 0; i < keyValuePairs.length; i += 2) {
+    ParamStore params;
+    int i = 0;
+    // If there are an odd number of kvps it is because the first one is actually a 'base'
+    // paramstore that we are extending.
+    if (keyValuePairs.length % 2 == 1) {
+      params = new ParamStore((ParamStore) keyValuePairs[0], (keyValuePairs.length - 1) / 2);
+      i = 1;
+    } else {
+      params = new ParamStore(keyValuePairs.length / 2);
+    }
+    for (; i < keyValuePairs.length; i += 2) {
       params.setField(
           RecordProperty.get((String) keyValuePairs[i]),
           SoyValueConverter.INSTANCE.convert(keyValuePairs[i + 1]).resolve());

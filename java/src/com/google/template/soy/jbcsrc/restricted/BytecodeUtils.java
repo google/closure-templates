@@ -17,6 +17,7 @@
 package com.google.template.soy.jbcsrc.restricted;
 
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkState;
 
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
@@ -32,6 +33,7 @@ import com.google.common.html.types.TrustedResourceUrl;
 import com.google.common.html.types.TrustedResourceUrlProto;
 import com.google.common.primitives.Ints;
 import com.google.protobuf.Message;
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.data.Dir;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
@@ -244,6 +246,27 @@ public final class BytecodeUtils {
               Class.class)
           .asHandle();
 
+  private static final Handle CONSTANT_PARAM_STORE =
+      MethodRef.createPure(
+              ExtraConstantBootstraps.class,
+              "constantParamStore",
+              MethodHandles.Lookup.class,
+              String.class,
+              Class.class,
+              Object[].class)
+          .asHandle();
+
+  private static final Handle CONSTANT_RECORD_HANDLE =
+      MethodRef.createPure(
+              ExtraConstantBootstraps.class,
+              "constantSoyRecord",
+              MethodHandles.Lookup.class,
+              String.class,
+              Class.class,
+              int.class,
+              Object[].class)
+          .asHandle();
+
   private static final LoadingCache<Type, Optional<Class<?>>> objectTypeToClassCache =
       CacheBuilder.newBuilder()
           .build(
@@ -385,6 +408,8 @@ public final class BytecodeUtils {
 
   /** Returns an {@link Expression} that can load the given constant. */
   public static Expression constant(Type type, ConstantDynamic value, Features features) {
+    checkArgument(!value.getName().equals("<init>"));
+
     return new Expression(
         type,
         // There is no benefit with transforming to an ldc command because we are already there.
@@ -917,6 +942,89 @@ public final class BytecodeUtils {
         asArray(OBJECT_ARRAY_TYPE, copy.subList(MethodRefs.IMMUTABLE_LIST_OF.size(), copy.size()));
     return MethodRefs.IMMUTABLE_LIST_OF_ARRAY.invoke(
         Iterables.concat(explicit, ImmutableList.of(remainder)));
+  }
+
+  public static SoyExpression newRecordImplFromParamStore(
+      SoyType soyType, SourceLocation location, Expression paramStore) {
+    var recordExp =
+        SoyExpression.forSoyValue(soyType, MethodRefs.SOY_RECORD_IMPL.invoke(paramStore));
+    if (paramStore.isConstant()) {
+      var paramCondy = (ConstantDynamic) paramStore.constantBytecodeValue();
+      checkState(paramCondy.getBootstrapMethod() == CONSTANT_PARAM_STORE); // sanity check
+      Object[] args = new Object[1 + paramCondy.getBootstrapMethodArgumentCount()];
+      // We store a hash of the source location so that each distinct list authored
+      // gets a unique value to preserve identity semantics even in constant settings
+      args[0] = location.hashCode();
+      for (int i = 0; i < paramCondy.getBootstrapMethodArgumentCount(); i++) {
+        args[i + 1] = paramCondy.getBootstrapMethodArgument(i);
+      }
+      // just attach the constant value, it may or may not be appropriate to use it depending
+      // on the context.
+      recordExp =
+          recordExp.withConstantValue(
+              Expression.ConstantValue.dynamic(
+                  new ConstantDynamic(
+                      "soyRecord",
+                      BytecodeUtils.SOY_RECORD_IMPL_TYPE.getDescriptor(),
+                      CONSTANT_RECORD_HANDLE,
+                      args),
+                  BytecodeUtils.SOY_RECORD_IMPL_TYPE,
+                  /* isTrivialConstant= */ false));
+    }
+    return recordExp;
+  }
+
+  /**
+   * Construct a ParamStore
+   *
+   * <p>The values in the params map must either be `SoyValueProvider` expressions or be
+   * SoyExpression instances that can be trivially coerced to SoyValueProvider
+   */
+  public static Expression newParamStore(
+      Optional<Expression> baseStore, Map<String, Expression> params) {
+    baseStore.ifPresent(e -> e.checkAssignableTo(BytecodeUtils.PARAM_STORE_TYPE));
+    if (params.isEmpty()) {
+      return baseStore.orElse(FieldRef.EMPTY_PARAMS.accessor());
+    }
+    // NOTE: we can always represent
+    if (Expression.areAllConstant(params.values())
+        && baseStore.map(Expression::isConstant).orElse(true)) {
+      Object[] constantArgs = new Object[params.size() * 2 + (baseStore.isPresent() ? 1 : 0)];
+      int i = 0;
+      if (baseStore.isPresent()) {
+        constantArgs[i++] = baseStore.get().constantBytecodeValue();
+      }
+      for (var entry : params.entrySet()) {
+        // We could pass constantRecordSymbol(entry.getKey()).constantBytecodeValue() but it is more
+        // efficient to invoke one bulk bootstrap method than a lot of little ones.  Caching within
+        // `RecordSymbol` itself ensures we don't construct duplicate keys.
+        constantArgs[i++] = entry.getKey();
+        constantArgs[i++] = entry.getValue().constantBytecodeValue();
+      }
+      return constant(
+          BytecodeUtils.PARAM_STORE_TYPE,
+          new ConstantDynamic(
+              "constantParamStore",
+              BytecodeUtils.PARAM_STORE_TYPE.getDescriptor(),
+              CONSTANT_PARAM_STORE,
+              constantArgs),
+          Features.of(Feature.NON_JAVA_NULLABLE, Feature.NON_SOY_NULLISH));
+    }
+    var paramStore =
+        baseStore.isPresent()
+            ? MethodRefs.PARAM_STORE_AUGMENT.invoke(baseStore.get(), constant(params.size()))
+            : MethodRefs.PARAM_STORE_SIZE.invoke(constant(params.size()));
+
+    for (var entry : params.entrySet()) {
+      var value = entry.getValue();
+      if (value instanceof SoyExpression) {
+        value = ((SoyExpression) value).box();
+      }
+      var key = constantRecordProperty(entry.getKey());
+      paramStore = paramStore.invoke(MethodRefs.PARAM_STORE_SET_FIELD, key, value);
+    }
+
+    return paramStore;
   }
 
   public static Expression newImmutableMap(
