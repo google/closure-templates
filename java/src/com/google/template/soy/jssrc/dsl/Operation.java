@@ -28,8 +28,10 @@ abstract class Operation extends Expression implements OperatorInterface {
       case NOT:
         return "!";
       case AND:
+      case AMP_AMP:
         return "&&";
       case OR:
+      case BAR_BAR:
         return "||";
       case NULL_COALESCING:
       case LEGACY_NULL_COALESCING:

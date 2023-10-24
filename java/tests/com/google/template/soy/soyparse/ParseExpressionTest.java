@@ -286,10 +286,10 @@ public final class ParseExpressionTest {
     assertThatExpression("-10 != $b").isValidExpression();
     // Level 3.
     assertThatExpression("true and $b").isValidExpression();
-    assertThatExpression("true && $b").isNotValidExpression();
+    assertThatExpression("true && $b").isValidExpression();
     // Level 2.
     assertThatExpression("$a or null").isValidExpression();
-    assertThatExpression("$a || null").isNotValidExpression();
+    assertThatExpression("$a || null").isValidExpression();
     // Level 1.
     assertThatExpression("$boo?:-1").isValidExpression();
     assertThatExpression("$a ?: $b ?: $c").isValidExpression();

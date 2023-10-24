@@ -1356,8 +1356,10 @@ TOKEN_MGR_DECLS: {
 | < COLON: ":" >          // Also used as part of part of map literal syntax
 | < QCOLON: "?:" >
 | < OR: "or" >            // Precedence 2 operators
+| < BAR_BAR: "||" >
 | < QQ: "??" >
 | < AND: "and" >          // Precedence 3 operators
+| < AMP_AMP: "&&" >
 //| < BITWISE_OR: "|" >   // Precedence 4 operators. Actually VBAR.
 | < BITWISE_XOR: "^" >    // Precedence 5 operators
 | < BITWISE_AND: "&" >    // Precedence 6 operators
@@ -1405,11 +1407,6 @@ TOKEN_MGR_DECLS: {
 
 // -------------------------------------------------------------------------------------------------
 // Legacy and unexpected tokens.
-
-<EXPR, EXPR_NO_DOUBLE_QUOTE, EXPR_NO_SINGLE_QUOTE> TOKEN: {
-  < LEGACY_AND : "&&" >
-| < LEGACY_OR : "||" >
-}
 
 <TEMPLATE_DEFAULT> TOKEN: {
   < UNEXPECTED_DOUBLE_BRACE : "{{" >
@@ -4094,7 +4091,7 @@ private ExprNode PrecExpr2(ExprState state) :
     { expr = Operator.NULL_COALESCING.createNode(
         createSrcLoc(expr, rightHand), createSrcLoc(op), expr, rightHand); }
   |
-    op = <OR>
+    (op = <OR> | op = <BAR_BAR>)
     rightHand = PrecExpr3(state)
 
     { expr = createOperatorNode(
@@ -4123,7 +4120,7 @@ private ExprNode PrecExpr3(ExprState state) :
 
   expr = PrecExpr4(state)
   (
-    op = <AND>
+    (op = <AND> | op = <AMP_AMP>)
     rightHand = PrecExpr4(state)
 
     { expr = createOperatorNode(

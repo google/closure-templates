@@ -405,6 +405,50 @@ public class OperatorNodes {
     }
   }
 
+  /** Node representing the '&&' operator. */
+  public static final class AmpAmpOpNode extends AbstractOperatorNode {
+
+    public AmpAmpOpNode(SourceLocation sourceLocation, SourceLocation operatorLocation) {
+      super(sourceLocation, Operator.AMP_AMP, operatorLocation);
+    }
+
+    private AmpAmpOpNode(AmpAmpOpNode orig, CopyState copyState) {
+      super(orig, copyState);
+    }
+
+    @Override
+    public Kind getKind() {
+      return Kind.AMP_AMP_OP_NODE;
+    }
+
+    @Override
+    public AmpAmpOpNode copy(CopyState copyState) {
+      return new AmpAmpOpNode(this, copyState);
+    }
+  }
+
+  /** Node representing the '||' operator. */
+  public static final class BarBarOpNode extends AbstractOperatorNode {
+
+    public BarBarOpNode(SourceLocation sourceLocation, SourceLocation operatorLocation) {
+      super(sourceLocation, Operator.BAR_BAR, operatorLocation);
+    }
+
+    private BarBarOpNode(BarBarOpNode orig, CopyState copyState) {
+      super(orig, copyState);
+    }
+
+    @Override
+    public Kind getKind() {
+      return Kind.BAR_BAR_OP_NODE;
+    }
+
+    @Override
+    public BarBarOpNode copy(CopyState copyState) {
+      return new BarBarOpNode(this, copyState);
+    }
+  }
+
   /** Node representing the '?:' (null-coalescing) operator. */
   public static final class NullCoalescingOpNode extends AbstractOperatorNode {
 

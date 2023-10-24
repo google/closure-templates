@@ -31,6 +31,7 @@ import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
+import com.google.template.soy.exprtree.AbstractOperatorNode;
 import com.google.template.soy.exprtree.BooleanNode;
 import com.google.template.soy.exprtree.DataAccessNode;
 import com.google.template.soy.exprtree.ExprEquivalence;
@@ -49,7 +50,9 @@ import com.google.template.soy.exprtree.MapLiteralNode;
 import com.google.template.soy.exprtree.MethodCallNode;
 import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.exprtree.NullSafeAccessNode;
+import com.google.template.soy.exprtree.OperatorNodes.AmpAmpOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.AndOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.BarBarOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ConditionalOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
@@ -117,6 +120,15 @@ final class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
 
   @Override
   protected void visitAndOpNode(AndOpNode node) {
+    processAnd(node);
+  }
+
+  @Override
+  protected void visitAmpAmpOpNode(AmpAmpOpNode node) {
+    processAnd(node);
+  }
+
+  private void processAnd(AbstractOperatorNode node) {
     // Recurse.
     visitChildren(node);
 
@@ -130,6 +142,15 @@ final class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
 
   @Override
   protected void visitOrOpNode(OrOpNode node) {
+    processOr(node);
+  }
+
+  @Override
+  protected void visitBarBarOpNode(BarBarOpNode node) {
+    processOr(node);
+  }
+
+  private void processOr(AbstractOperatorNode node) {
     // Recurse.
     visitChildren(node);
 

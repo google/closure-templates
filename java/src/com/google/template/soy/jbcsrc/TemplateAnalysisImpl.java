@@ -43,8 +43,10 @@ import com.google.template.soy.exprtree.ListLiteralNode;
 import com.google.template.soy.exprtree.MapLiteralFromListNode;
 import com.google.template.soy.exprtree.MapLiteralNode;
 import com.google.template.soy.exprtree.NullSafeAccessNode;
+import com.google.template.soy.exprtree.OperatorNodes.AmpAmpOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.AndOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.AssertNonNullOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.BarBarOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ConditionalOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
@@ -853,7 +855,19 @@ final class TemplateAnalysisImpl implements TemplateAnalysis {
     }
 
     @Override
+    protected void visitBarBarOpNode(BarBarOpNode node) {
+      visit(node.getChild(0));
+      executeInBranch(node.getChild(1));
+    }
+
+    @Override
     protected void visitAndOpNode(AndOpNode node) {
+      visit(node.getChild(0));
+      executeInBranch(node.getChild(1));
+    }
+
+    @Override
+    protected void visitAmpAmpOpNode(AmpAmpOpNode node) {
       visit(node.getChild(0));
       executeInBranch(node.getChild(1));
     }

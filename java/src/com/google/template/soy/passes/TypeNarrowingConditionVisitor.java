@@ -25,11 +25,14 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
+import com.google.template.soy.exprtree.AbstractOperatorNode;
 import com.google.template.soy.exprtree.ExprEquivalence;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.NullSafeAccessNode;
+import com.google.template.soy.exprtree.OperatorNodes.AmpAmpOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.AndOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.BarBarOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.EqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.GreaterThanOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.GreaterThanOrEqualOpNode;
@@ -246,7 +249,16 @@ final class TypeNarrowingConditionVisitor {
     }
 
     @Override
+    protected void visitAmpAmpOpNode(AmpAmpOpNode node) {
+      processAnd(node);
+    }
+
+    @Override
     protected void visitAndOpNode(AndOpNode node) {
+      processAnd(node);
+    }
+
+    private void processAnd(AbstractOperatorNode node) {
       Preconditions.checkArgument(node.numChildren() == 2);
       // Create two separate visitors to analyze each side of the expression.
       TypeNarrowingConditionVisitor leftVisitor = createTypeNarrowingConditionVisitor();
@@ -268,7 +280,16 @@ final class TypeNarrowingConditionVisitor {
     }
 
     @Override
+    protected void visitBarBarOpNode(BarBarOpNode node) {
+      processOr(node);
+    }
+
+    @Override
     protected void visitOrOpNode(OrOpNode node) {
+      processOr(node);
+    }
+
+    private void processOr(AbstractOperatorNode node) {
       Preconditions.checkArgument(node.numChildren() == 2);
       // Create two separate visitors to analyze each side of the expression.
       TypeNarrowingConditionVisitor leftVisitor = createTypeNarrowingConditionVisitor();

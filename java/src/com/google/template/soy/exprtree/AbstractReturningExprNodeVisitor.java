@@ -21,8 +21,10 @@ import com.google.template.soy.basetree.ParentNode;
 import com.google.template.soy.exprtree.ExprNode.OperatorNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
+import com.google.template.soy.exprtree.OperatorNodes.AmpAmpOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.AndOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.AssertNonNullOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.BarBarOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.BitwiseAndOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.BitwiseOrOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.BitwiseXorOpNode;
@@ -161,8 +163,12 @@ public abstract class AbstractReturningExprNodeVisitor<R>
         return visitTripleNotEqualOpNode((TripleNotEqualOpNode) node);
       case AND_OP_NODE:
         return visitAndOpNode((AndOpNode) node);
+      case AMP_AMP_OP_NODE:
+        return visitAmpAmpOpNode((AmpAmpOpNode) node);
       case OR_OP_NODE:
         return visitOrOpNode((OrOpNode) node);
+      case BAR_BAR_OP_NODE:
+        return visitBarBarOpNode((BarBarOpNode) node);
       case NULL_COALESCING_OP_NODE:
         return visitNullCoalescingOpNode((NullCoalescingOpNode) node);
       case CONDITIONAL_OP_NODE:
@@ -371,7 +377,15 @@ public abstract class AbstractReturningExprNodeVisitor<R>
     return visitOperatorNode(node);
   }
 
+  protected R visitAmpAmpOpNode(AmpAmpOpNode node) {
+    return visitOperatorNode(node);
+  }
+
   protected R visitOrOpNode(OrOpNode node) {
+    return visitOperatorNode(node);
+  }
+
+  protected R visitBarBarOpNode(BarBarOpNode node) {
     return visitOperatorNode(node);
   }
 

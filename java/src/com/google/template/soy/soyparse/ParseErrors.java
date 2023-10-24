@@ -40,10 +40,7 @@ final class ParseErrors {
 
   private static final SoyErrorKind FOUND_DOUBLE_BRACE =
       SoyErrorKind.of("Soy '{{command}}' syntax is no longer supported. Use single braces.");
-  private static final SoyErrorKind LEGACY_AND_ERROR =
-      SoyErrorKind.of("Found use of ''&&'' instead of the ''and'' operator.");
-  private static final SoyErrorKind LEGACY_OR_ERROR =
-      SoyErrorKind.of("Found use of ''||'' instead of the ''or'' operator.");
+  ;
   private static final SoyErrorKind UNEXPECTED_CLOSE_TAG =
       SoyErrorKind.of("Unexpected closing tag.");
   private static final SoyErrorKind UNEXPECTED_EOF =
@@ -123,12 +120,6 @@ final class ParseErrors {
                   + " is a reserved word in soy.";
         }
         break;
-      case SoyFileParserConstants.LEGACY_AND:
-        reporter.report(location, LEGACY_AND_ERROR);
-        return;
-      case SoyFileParserConstants.LEGACY_OR:
-        reporter.report(location, LEGACY_OR_ERROR);
-        return;
       case SoyFileParserConstants.UNEXPECTED_DOUBLE_BRACE:
         reporter.report(location, FOUND_DOUBLE_BRACE);
         return;

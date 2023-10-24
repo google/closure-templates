@@ -21,8 +21,10 @@ import com.google.template.soy.basetree.ParentNode;
 import com.google.template.soy.exprtree.ExprNode.OperatorNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
+import com.google.template.soy.exprtree.OperatorNodes.AmpAmpOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.AndOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.AssertNonNullOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.BarBarOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.BitwiseAndOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.BitwiseOrOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.BitwiseXorOpNode;
@@ -191,8 +193,14 @@ public abstract class AbstractExprNodeVisitor<R> extends AbstractNodeVisitor<Exp
       case AND_OP_NODE:
         visitAndOpNode((AndOpNode) node);
         break;
+      case AMP_AMP_OP_NODE:
+        visitAmpAmpOpNode((AmpAmpOpNode) node);
+        break;
       case OR_OP_NODE:
         visitOrOpNode((OrOpNode) node);
+        break;
+      case BAR_BAR_OP_NODE:
+        visitBarBarOpNode((BarBarOpNode) node);
         break;
       case NULL_COALESCING_OP_NODE:
         visitNullCoalescingOpNode((NullCoalescingOpNode) node);
@@ -427,7 +435,15 @@ public abstract class AbstractExprNodeVisitor<R> extends AbstractNodeVisitor<Exp
     visitOperatorNode(node);
   }
 
+  protected void visitAmpAmpOpNode(AmpAmpOpNode node) {
+    visitOperatorNode(node);
+  }
+
   protected void visitOrOpNode(OrOpNode node) {
+    visitOperatorNode(node);
+  }
+
+  protected void visitBarBarOpNode(BarBarOpNode node) {
     visitOperatorNode(node);
   }
 

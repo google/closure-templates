@@ -102,8 +102,10 @@ import com.google.template.soy.exprtree.MethodCallNode;
 import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.exprtree.NullSafeAccessNode;
 import com.google.template.soy.exprtree.Operator;
+import com.google.template.soy.exprtree.OperatorNodes.AmpAmpOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.AndOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.AssertNonNullOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.BarBarOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.BitwiseAndOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.BitwiseOrOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.BitwiseXorOpNode;
@@ -1838,6 +1840,17 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
 
     @Override
     protected void visitAndOpNode(AndOpNode node) {
+      processAnd(node);
+      node.setType(BoolType.getInstance());
+    }
+
+    @Override
+    protected void visitAmpAmpOpNode(AmpAmpOpNode node) {
+      processAnd(node);
+      node.setType(UnionType.of(node.getChild(0).getType(), node.getChild(1).getType()));
+    }
+
+    private void processAnd(AbstractOperatorNode node) {
       visit(node.getChild(0)); // Assign normal types to left child
 
       // Save the state of substitutions.
@@ -1854,12 +1867,21 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
 
       // Restore substitutions to previous state
       substitutions.restore(savedSubstitutionState);
-
-      node.setType(BoolType.getInstance());
     }
 
     @Override
     protected void visitOrOpNode(OrOpNode node) {
+      processOr(node);
+      node.setType(BoolType.getInstance());
+    }
+
+    @Override
+    protected void visitBarBarOpNode(BarBarOpNode node) {
+      processOr(node);
+      node.setType(UnionType.of(node.getChild(0).getType(), node.getChild(1).getType()));
+    }
+
+    private void processOr(AbstractOperatorNode node) {
       ExprNode lhs = node.getChild(0);
       if (SoyTreeUtils.isConstantExpr(lhs)) {
         errorReporter.warn(
@@ -1886,8 +1908,6 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
 
       // Restore substitutions to previous state
       substitutions.restore(savedSubstitutionState);
-
-      node.setType(BoolType.getInstance());
     }
 
     @Override

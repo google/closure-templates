@@ -57,8 +57,10 @@ import com.google.template.soy.exprtree.MapLiteralNode;
 import com.google.template.soy.exprtree.MethodCallNode;
 import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.exprtree.NullSafeAccessNode;
+import com.google.template.soy.exprtree.OperatorNodes.AmpAmpOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.AndOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.AssertNonNullOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.BarBarOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.BitwiseAndOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.BitwiseOrOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.BitwiseXorOpNode;
@@ -1087,11 +1089,33 @@ final class ExpressionCompiler {
     }
 
     @Override
+    protected SoyExpression visitAmpAmpOpNode(AmpAmpOpNode node) {
+      SoyExpression left = visit(node.getChild(0)).box();
+      SoyExpression right = visit(node.getChild(1)).box();
+      Branch condition = left.coerceToBoolean().compileToBranch();
+      return SoyExpression.forSoyValue(
+          node.getType(),
+          condition.ternary(
+              SoyRuntimeType.getBoxedType(node.getType()).runtimeType(), right, left));
+    }
+
+    @Override
     protected SoyExpression visitOrOpNode(OrOpNode node) {
       SoyExpression left = visit(node.getChild(0));
       SoyExpression right = visit(node.getChild(1));
       return SoyExpression.forBool(
           Branch.or(left.compileToBranch(), right.compileToBranch()).asBoolean());
+    }
+
+    @Override
+    protected SoyExpression visitBarBarOpNode(BarBarOpNode node) {
+      SoyExpression left = visit(node.getChild(0)).box();
+      SoyExpression right = visit(node.getChild(1)).box();
+      Branch condition = left.coerceToBoolean().compileToBranch();
+      return SoyExpression.forSoyValue(
+          node.getType(),
+          condition.ternary(
+              SoyRuntimeType.getBoxedType(node.getType()).runtimeType(), left, right));
     }
 
     // Null coalescing operator

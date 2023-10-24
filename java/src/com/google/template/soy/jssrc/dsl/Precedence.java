@@ -86,8 +86,10 @@ public enum Precedence {
       case BITWISE_OR:
         return P5;
       case AND:
+      case AMP_AMP:
         return P4;
       case OR:
+      case BAR_BAR:
       case NULL_COALESCING:
       case LEGACY_NULL_COALESCING:
         return P3;

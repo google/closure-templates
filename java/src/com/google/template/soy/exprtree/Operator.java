@@ -30,8 +30,10 @@ import com.google.common.collect.ImmutableTable;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.exprtree.ExprNode.OperatorNode;
+import com.google.template.soy.exprtree.OperatorNodes.AmpAmpOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.AndOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.AssertNonNullOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.BarBarOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.BitwiseAndOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.BitwiseOrOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.BitwiseXorOpNode;
@@ -229,12 +231,27 @@ public enum Operator {
     }
   },
 
+  AMP_AMP(ImmutableList.of(OPERAND_0, SP, new Token("&&"), SP, OPERAND_1), SoyPrecedence.P3, LEFT) {
+    @Override
+    public OperatorNode createNode(SourceLocation location, SourceLocation operatorLocation) {
+      return new AmpAmpOpNode(location, operatorLocation);
+    }
+  },
+
   OR(ImmutableList.of(OPERAND_0, SP, new Token("or"), SP, OPERAND_1), SoyPrecedence.P2, LEFT) {
     @Override
     public OperatorNode createNode(SourceLocation location, SourceLocation operatorLocation) {
       return new OrOpNode(location, operatorLocation);
     }
   },
+
+  BAR_BAR(ImmutableList.of(OPERAND_0, SP, new Token("||"), SP, OPERAND_1), SoyPrecedence.P2, LEFT) {
+    @Override
+    public OperatorNode createNode(SourceLocation location, SourceLocation operatorLocation) {
+      return new BarBarOpNode(location, operatorLocation);
+    }
+  },
+
   NULL_COALESCING(
       ImmutableList.of(OPERAND_0, SP, new Token("??"), SP, OPERAND_1), SoyPrecedence.P2, LEFT) {
     @Override

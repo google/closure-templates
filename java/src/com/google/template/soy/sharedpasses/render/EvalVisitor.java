@@ -87,8 +87,10 @@ import com.google.template.soy.exprtree.MapLiteralNode;
 import com.google.template.soy.exprtree.MethodCallNode;
 import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.exprtree.NullSafeAccessNode;
+import com.google.template.soy.exprtree.OperatorNodes.AmpAmpOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.AndOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.AssertNonNullOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.BarBarOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.BitwiseAndOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.BitwiseOrOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.BitwiseXorOpNode;
@@ -811,6 +813,30 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     } else {
       SoyValue operand1 = visit(node.getChild(1));
       return convertResult(operand1.coerceToBoolean());
+    }
+  }
+
+  @Override
+  protected SoyValue visitAmpAmpOpNode(AmpAmpOpNode node) {
+
+    // Note: Short-circuit evaluation.
+    SoyValue operand0 = visit(node.getChild(0));
+    if (!operand0.coerceToBoolean()) {
+      return operand0;
+    } else {
+      return visit(node.getChild(1));
+    }
+  }
+
+  @Override
+  protected SoyValue visitBarBarOpNode(BarBarOpNode node) {
+
+    // Note: Short-circuit evaluation.
+    SoyValue operand0 = visit(node.getChild(0));
+    if (operand0.coerceToBoolean()) {
+      return operand0;
+    } else {
+      return visit(node.getChild(1));
     }
   }
 

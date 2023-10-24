@@ -541,6 +541,24 @@ public final class ResolveExpressionTypesPassTest {
         "  {assertType('null|string', $pa)}",
         "{/if}",
         "");
+    assertTypes(
+        "{@param? pa: string|null}",
+        "{@param? pb: string|null}",
+        "{if $pa && $pb}",
+        "  {assertType('string', $pa)}",
+        "  {assertType('string', $pb)}",
+        "  {assertType('string', $pa && $pb)}",
+        "{/if}");
+    assertTypes(
+        "{@param? pa: string|null}",
+        "{if $pa && $pa.length > 0}",
+        "  {assertType('string', $pa)}",
+        "{/if}");
+    assertTypes(
+        "{@param? pa: string|null}",
+        "{@param? pb: int|null}",
+        "{assertType('int|null|string', $pa && $pb)}",
+        "{assertType('int|null|string', $pa || $pb)}");
   }
 
   @Test

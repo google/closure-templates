@@ -48,7 +48,9 @@ import com.google.template.soy.exprtree.NullSafeAccessNode;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.exprtree.Operator.Operand;
 import com.google.template.soy.exprtree.Operator.SyntaxElement;
+import com.google.template.soy.exprtree.OperatorNodes.AmpAmpOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.AssertNonNullOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.BarBarOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ConditionalOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.EqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NotEqualOpNode;
@@ -448,6 +450,16 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
   // Implementations for operators.
 
   @Override
+  protected PyExpr visitAmpAmpOpNode(AmpAmpOpNode node) {
+    return getPyExpr(node, "and");
+  }
+
+  @Override
+  protected PyExpr visitBarBarOpNode(BarBarOpNode node) {
+    return getPyExpr(node, "or");
+  }
+
+  @Override
   protected PyExpr visitOperatorNode(OperatorNode node) {
     return genPyExprUsingSoySyntax(node);
   }
@@ -816,8 +828,13 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
    * @return the generated Python expression
    */
   private PyExpr genPyExprUsingSoySyntax(OperatorNode opNode) {
+    return getPyExpr(opNode, null);
+  }
+
+  private PyExpr getPyExpr(OperatorNode opNode, String newToken) {
     List<PyExpr> operandPyExprs = visitChildren(opNode);
-    String newExpr = PyExprUtils.genExprWithNewToken(opNode.getOperator(), operandPyExprs, null);
+    String newExpr =
+        PyExprUtils.genExprWithNewToken(opNode.getOperator(), operandPyExprs, newToken);
 
     return new PyExpr(newExpr, PyExprUtils.pyPrecedenceForOperator(opNode.getOperator()));
   }
