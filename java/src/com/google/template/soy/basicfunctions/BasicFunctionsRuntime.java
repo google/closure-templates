@@ -488,4 +488,8 @@ public final class BasicFunctionsRuntime {
   public static boolean isFinite(SoyValue arg) {
     return arg instanceof NumberData && Double.isFinite(arg.numberValue());
   }
+
+  public static boolean booleanFunc(SoyValue value) {
+    return value != null && value.coerceToBoolean();
+  }
 }

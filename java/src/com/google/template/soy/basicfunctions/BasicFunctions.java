@@ -27,6 +27,7 @@ public class BasicFunctions {
   public static ImmutableList<SoySourceFunction> functions() {
     return ImmutableList.of(
         // go/keep-sorted start
+        new BooleanFunction(),
         new CeilingFunction(),
         new ConcatListsFunction(),
         new ConcatMapsMethod(),

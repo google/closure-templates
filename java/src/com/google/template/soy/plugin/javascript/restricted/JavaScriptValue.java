@@ -48,6 +48,10 @@ public interface JavaScriptValue extends SoySourceValue {
     return invokeMethod(ident, Iterables.toArray(args, JavaScriptValue.class));
   }
 
+  /** Generates a call on the symbol. */
+  JavaScriptValue invoke(JavaScriptValue... args);
+
   /** Accesses a property on the given object. */
   JavaScriptValue accessProperty(String ident);
+
 }

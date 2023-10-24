@@ -273,6 +273,11 @@ public final class JavaScriptValueFactoryImpl extends JavaScriptValueFactory {
     }
 
     @Override
+    public JavaScriptValueImpl invoke(JavaScriptValue... args) {
+      return new JavaScriptValueImpl(impl.call(unwrapParams(Arrays.asList(args))));
+    }
+
+    @Override
     public JavaScriptValueImpl accessProperty(String ident) {
       return new JavaScriptValueImpl(impl.dotAccess(ident));
     }
@@ -281,5 +286,6 @@ public final class JavaScriptValueFactoryImpl extends JavaScriptValueFactory {
     public String toString() {
       return impl.getCode(FormatOptions.JSSRC);
     }
+    
   }
 }

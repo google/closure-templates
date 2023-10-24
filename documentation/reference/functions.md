@@ -13,6 +13,10 @@ custom external functions, see
 
 ## Basic Functions
 
+### `Boolean(value)` {#Boolean}
+
+Explicitly coerces the argument to a boolean.
+
 ### `checkNotNull(value)` {#checkNotNull}
 
 Throws a runtime exception if the given value is `null` and returns the value

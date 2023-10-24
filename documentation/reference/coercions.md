@@ -36,6 +36,7 @@ There are a few ways to coerce a value to a boolean.
 
 *   use it in an [if-expression](control-flow#if)
 *   use it in a [ternary expression](expressions#ternary-operator)
+*   use the built-in function [`Boolean()`](functions#Boolean)
 
 All values have a boolean coercion (sometimes referred to as a 'truthiness'
 check), these mostly follow JavaScript semantics:
