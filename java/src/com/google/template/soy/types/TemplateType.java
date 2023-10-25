@@ -118,8 +118,14 @@ public abstract class TemplateType extends SoyType {
     return builder.build();
   }
 
-  public final ImmutableMap<String, SoyType> getParameterMap() {
-    return getParameters().stream().collect(toImmutableMap(Parameter::getName, Parameter::getType));
+  @Memoized
+  public ImmutableMap<String, Parameter> getParameterMap() {
+    return getParameters().stream().collect(toImmutableMap(Parameter::getName, p -> p));
+  }
+
+  @Nullable
+  public final Parameter getParameter(String name) {
+    return getParameterMap().get(name);
   }
 
   public abstract ImmutableList<DataAllCallSituation> getDataAllCallSituations();

@@ -21,6 +21,7 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
@@ -650,5 +651,46 @@ public final class SoyTreeUtils {
                 return Stream.of();
               }
             });
+  }
+
+  public static ExprNodeToHolderIndex buildExprNodeToHolderIndex(SoyNode root) {
+    return new ExprNodeToHolderIndex(root);
+  }
+
+  /** Index mapping an expression node to the soy node that holds it. */
+  public static class ExprNodeToHolderIndex {
+
+    private final ImmutableMap<ExprRootNode, ExprHolderNode> index;
+
+    ExprNodeToHolderIndex(SoyNode root) {
+      ImmutableMap.Builder<ExprRootNode, ExprHolderNode> index = ImmutableMap.builder();
+      allNodesOfType(root, ExprHolderNode.class)
+          .forEach(
+              holder -> {
+                for (ExprRootNode exprRoot : holder.getExprList()) {
+                  index.put(exprRoot, holder);
+                }
+              });
+      this.index = index.buildOrThrow();
+    }
+
+    ExprHolderNode getHolder(ExprRootNode root) {
+      return Preconditions.checkNotNull(index.get(root));
+    }
+
+    public ExprHolderNode getHolder(ExprNode node) {
+      while (node.getParent() != null) {
+        node = node.getParent();
+      }
+      return getHolder((ExprRootNode) node);
+    }
+
+    @Nullable
+    public ExprHolderNode getNullableHolder(ExprNode node) {
+      while (node.getParent() != null) {
+        node = node.getParent();
+      }
+      return index.get((ExprRootNode) node);
+    }
   }
 }

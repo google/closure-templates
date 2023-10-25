@@ -79,7 +79,7 @@ public final class TemplateBindingUtil {
     boolean reportedErrors = false;
     TemplateType.Builder builder = base.toBuilder();
     for (RecordType.Member member : parameters.getMembers()) {
-      if (!base.getParameterMap().containsKey(member.name())) {
+      if (base.getParameter(member.name()) == null) {
         if (member.name().equals(TemplateType.EXTRA_ROOT_ELEMENT_ATTRIBUTES)
             && base.getAllowExtraAttributes()) {
           builder.setAllowExtraAttributes(false);
@@ -91,12 +91,12 @@ public final class TemplateBindingUtil {
         reportedErrors = true;
         continue;
       }
-      if (!base.getParameterMap().get(member.name()).isAssignableFromLoose(member.checkedType())) {
+      if (!base.getParameter(member.name()).getType().isAssignableFromLoose(member.checkedType())) {
         errorReporter.report(
             PARAMETER_TYPE_MISMATCH,
             member.name(),
             base,
-            base.getParameterMap().get(member.name()),
+            base.getParameter(member.name()).getType(),
             member.checkedType());
         reportedErrors = true;
       }

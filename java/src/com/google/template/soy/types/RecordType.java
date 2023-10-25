@@ -26,6 +26,7 @@ import com.google.template.soy.soytree.SoyTypeP;
 import java.util.NavigableMap;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import javax.annotation.Nullable;
 
 /**
  * Dict type - classic dictionary type with string keys. Only works with field (dot) access.
@@ -56,13 +57,12 @@ public final class RecordType extends SoyType {
   }
 
   private final ImmutableList<Member> members;
-  private final ImmutableMap<String, SoyType> memberIndex;
+  private final ImmutableMap<String, Member> memberIndex;
 
   private RecordType(Iterable<Member> members) {
     this.members = ImmutableList.copyOf(members);
     this.memberIndex =
-        Streams.stream(members)
-            .collect(ImmutableMap.toImmutableMap(Member::name, Member::checkedType));
+        Streams.stream(members).collect(ImmutableMap.toImmutableMap(Member::name, m -> m));
   }
 
   /**
@@ -111,8 +111,15 @@ public final class RecordType extends SoyType {
     return members;
   }
 
-  public SoyType getMemberType(String fieldName) {
+  @Nullable
+  public Member getMember(String fieldName) {
     return memberIndex.get(fieldName);
+  }
+
+  @Nullable
+  public SoyType getMemberType(String fieldName) {
+    Member member = memberIndex.get(fieldName);
+    return member != null ? member.checkedType() : null;
   }
 
   public Iterable<String> getMemberNames() {

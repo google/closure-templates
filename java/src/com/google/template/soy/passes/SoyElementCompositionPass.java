@@ -270,7 +270,7 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
     call.setHtmlContext(HtmlContext.HTML_PCDATA);
     tagNode.getParent().replaceChild(tagNode, call);
 
-    ImmutableMap<String, SoyType> parameterMap = templateType.getParameterMap();
+    ImmutableMap<String, TemplateType.Parameter> parameterMap = templateType.getParameterMap();
 
     Set<String> seenAttr = new HashSet<>();
     tagNode.getChildren().stream()
@@ -340,7 +340,7 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
       CallBasicNode call,
       IdGenerator nodeIdGen,
       Set<String> seenAttr,
-      Map<String, SoyType> parameterMap,
+      Map<String, TemplateType.Parameter> parameterMap,
       Map<String, AttrParam> attrs,
       @Nullable CallParamContentNode attributesNode,
       Optional<ExprNode> conditional) {
@@ -445,7 +445,7 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
       HtmlAttributeNode attr,
       IdGenerator nodeIdGen,
       Set<String> seenAttr,
-      Map<String, SoyType> parameterMap,
+      Map<String, TemplateType.Parameter> parameterMap,
       Map<String, AttrParam> attrs,
       CallParamContentNode attributesNode,
       CallBasicNode call,
@@ -501,7 +501,7 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
               new CommandTagAttribute(
                   Identifier.create("kind", unknown),
                   QuoteStyle.SINGLE,
-                  getKind(parameterMap.get(paramName)),
+                  getKind(parameterMap.get(paramName).getType()),
                   unknown,
                   unknown),
               errorReporter);
@@ -529,7 +529,8 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
             "$__internal_call_" + paramName + nodeIdGen.genId(),
             unknown,
             parameterMap.containsKey(paramName)
-                ? SanitizedContentKind.fromAttributeValue(getKind(parameterMap.get(paramName)))
+                ? SanitizedContentKind.fromAttributeValue(
+                        getKind(parameterMap.get(paramName).getType()))
                     .get()
                 : SanitizedContentKind.TEXT);
     call.getParent().addChild(call.getParent().getChildIndex(call), letContentNode);
