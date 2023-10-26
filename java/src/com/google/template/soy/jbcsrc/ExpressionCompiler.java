@@ -1090,13 +1090,8 @@ final class ExpressionCompiler {
 
     @Override
     protected SoyExpression visitAmpAmpOpNode(AmpAmpOpNode node) {
-      SoyExpression left = visit(node.getChild(0)).box();
-      SoyExpression right = visit(node.getChild(1)).box();
-      Branch condition = left.coerceToBoolean().compileToBranch();
-      return SoyExpression.forSoyValue(
-          node.getType(),
-          condition.ternary(
-              SoyRuntimeType.getBoxedType(node.getType()).runtimeType(), right, left));
+      return processConditionalOp(
+          node.getChild(0), node.getChild(1), node.getChild(0), node.getType());
     }
 
     @Override
@@ -1109,13 +1104,8 @@ final class ExpressionCompiler {
 
     @Override
     protected SoyExpression visitBarBarOpNode(BarBarOpNode node) {
-      SoyExpression left = visit(node.getChild(0)).box();
-      SoyExpression right = visit(node.getChild(1)).box();
-      Branch condition = left.coerceToBoolean().compileToBranch();
-      return SoyExpression.forSoyValue(
-          node.getType(),
-          condition.ternary(
-              SoyRuntimeType.getBoxedType(node.getType()).runtimeType(), left, right));
+      return processConditionalOp(
+          node.getChild(0), node.getChild(0), node.getChild(1), node.getType());
     }
 
     // Null coalescing operator
@@ -1151,9 +1141,18 @@ final class ExpressionCompiler {
 
     @Override
     protected SoyExpression visitConditionalOpNode(ConditionalOpNode node) {
-      Branch condition = visit(node.getChild(0)).compileToBranch();
-      SoyExpression trueBranch = visit(node.getChild(1));
-      SoyExpression falseBranch = visit(node.getChild(2));
+      return processConditionalOp(
+          node.getChild(0), node.getChild(1), node.getChild(2), node.getType());
+    }
+
+    private SoyExpression processConditionalOp(
+        ExprNode conditionNode,
+        ExprNode trueBranchNode,
+        ExprNode falseBranchNode,
+        SoyType nodeType) {
+      Branch condition = visit(conditionNode).compileToBranch();
+      SoyExpression trueBranch = visit(trueBranchNode);
+      SoyExpression falseBranch = visit(falseBranchNode);
       // If types are == and they are both boxed (or both not boxed) then we can just use them
       // directly.
       // Otherwise we need to do boxing conversions.
@@ -1185,9 +1184,9 @@ final class ExpressionCompiler {
         SoyExpression boxedTrue = trueBranch.box();
         return boxedTrue.withSource(condition.ternary(type, boxedTrue, falseBranch.box()));
       }
-      Type boxedRuntimeType = SoyRuntimeType.getBoxedType(node.getType()).runtimeType();
+      Type boxedRuntimeType = SoyRuntimeType.getBoxedType(nodeType).runtimeType();
       return SoyExpression.forSoyValue(
-          node.getType(), condition.ternary(boxedRuntimeType, trueBranch.box(), falseBranch.box()));
+          nodeType, condition.ternary(boxedRuntimeType, trueBranch.box(), falseBranch.box()));
     }
 
     @Override
