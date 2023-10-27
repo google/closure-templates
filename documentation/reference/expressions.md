@@ -170,8 +170,8 @@ Here are the supported operators, listed in decreasing order of precedence
 8.  `&`
 9.  `^`
 10. `|`
-11. `and`
-12. `or` `??`
+11. `&&` `and`
+12. `||` `or` `??`
 13. `? :`(ternary)
 
 The Soy programming language respects the order of evaluation indicated
@@ -351,22 +351,34 @@ For example,
 *   `$foo == null`
 *   `2 == $bar`
 
-### Logical operators `and`, `or` {#logical-operators}
+### Logical operators `&&`, `||` {#logical-operators}
 
-Logical boolean operators.
+Logical boolean operators. Thee are short-circuiting and follow JavaScript
+semantics:
 
-The boolean operators are short-circuiting. When a non-boolean value is used in
-a boolean context, it is coerced to a boolean.
+*   `&&` The first operand is returned if it is falsey, otherwise the second is
+    returned;
+*   `||`` The first operand is returned if it is truthy, otherwise the second is
+    returned;
+
+When used with booleans, the result is boolean logic "and" and "or" operations.
+
+For example,
+
+*   `$foo > 2 && $foo < 5`
+*   `$foo <= 2 || $foo >= 5`
 
 NOTE: Each primitive type has exactly one falsy value: `null` is falsy, `false`
 is falsy for booleans, `0` is falsy for integers, `0.0` is falsy for floats, and
 `''` (empty string) is falsy for strings. All other primitive values are truthy.
 Maps and lists are always truthy even if they're empty.
 
-For example,
+### Deprecated logical operators `and`, `or` {#logical-operators-deprecated}
 
-*   `$foo > 2 and $foo < 5`
-*   `$foo <= 2 or $foo >= 5`
+WARNING: `and` and `or` are being deprecated in favor of `&&` and `||` in order
+to converge with JavaScript.
+
+When a non-boolean value is used, it is coerced to a boolean.
 
 Using a constant expression for the `or` operator produces a compiler warning.
 Using a boolean constant renders the `or` expression meaningless; using a
@@ -419,8 +431,8 @@ For example,
 
 *   `$foo ? 1 : 2`
 
-NOTE: The checks done by the binary operator `??` and the ternary operator `? :`
-are different. Specifically, `$a ?? $b` is not equivalent to `$a ? $a : $b`.
+NOTE: The checks done by the binary operator `?:` and the ternary operator `? :`
+are different. Specifically, `$a ?: $b` is not equivalent to `$a ? $a : $b`.
 Rather, the former expression is equivalent to `$a != null ? $a : $b`.
 
 ## List comprehensions
