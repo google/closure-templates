@@ -47,12 +47,12 @@ import static com.google.template.soy.jssrc.internal.JsRuntime.sanitizedContentO
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Streams;
 import com.google.errorprone.annotations.CheckReturnValue;
 import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
@@ -122,7 +122,10 @@ import javax.annotation.Nullable;
  */
 public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
-  /** Regex pattern to look for dots in a template name. */
+  private static final SoyErrorKind EXTERN_NO_JS_IMPL =
+      SoyErrorKind.of(
+          "Extern ''{0}'' does not have a JS implementation. Either add one or don''t compile this"
+              + " Soy to JS.");
 
   /** The options for generating JS source code. */
   protected final SoyJsSrcOptions jsSrcOptions;
@@ -402,10 +405,15 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       registerLocalConstant(constant);
     }
 
-    node.getExterns().stream()
-        .map(ExternNode::getJsImpl)
-        .flatMap(Streams::stream)
-        .forEach(this::visit);
+    for (ExternNode extern : node.getExterns()) {
+      Optional<JsImplNode> jsImpl = extern.getJsImpl();
+      if (jsImpl.isPresent()) {
+        visit(jsImpl.get());
+      } else {
+        errorReporter.report(
+            extern.getSourceLocation(), EXTERN_NO_JS_IMPL, extern.getIdentifier().identifier());
+      }
+    }
 
     // Add code for each template.
     for (TemplateNode template : node.getTemplates()) {
