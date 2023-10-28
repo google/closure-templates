@@ -128,11 +128,15 @@ final class CheckTemplateCallsPass implements CompilerFileSetPass {
   /** The error reporter that is used in this compiler pass. */
   private final ErrorReporter errorReporter;
 
+  private final boolean rewriteShortFormCalls;
   private final Supplier<FileSetMetadata> templateRegistryFull;
 
   CheckTemplateCallsPass(
-      ErrorReporter errorReporter, Supplier<FileSetMetadata> templateRegistryFull) {
+      ErrorReporter errorReporter,
+      boolean rewriteShortFormCalls,
+      Supplier<FileSetMetadata> templateRegistryFull) {
     this.errorReporter = errorReporter;
+    this.rewriteShortFormCalls = rewriteShortFormCalls;
     this.templateRegistryFull = templateRegistryFull;
   }
 
@@ -307,8 +311,12 @@ final class CheckTemplateCallsPass implements CompilerFileSetPass {
           } else {
             if (!(callParamContentNode.numChildren() == 1
                 && callParamContentNode.getChild(0) instanceof CallBasicNode)) {
-              errorReporter.report(
-                  callParamContentNode.getSourceLocation(), CAN_OMIT_KIND_ONLY_FOR_SINGLE_CALL);
+              if (rewriteShortFormCalls) {
+                // Be permissive when running fixer.
+                errorReporter.report(
+                    callParamContentNode.getSourceLocation(), CAN_OMIT_KIND_ONLY_FOR_SINGLE_CALL);
+              }
+
               // Avoid duplicate errors later.
               callParamContentNode.setContentKind(SanitizedContentKind.HTML);
               continue;

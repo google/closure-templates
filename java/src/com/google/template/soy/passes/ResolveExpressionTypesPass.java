@@ -403,6 +403,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
   private final ErrorReporter errorReporter;
 
   private final SoyMethod.Registry methodRegistry;
+  private final boolean rewriteShortFormCalls;
   private final Supplier<FileSetMetadata> templateRegistryFromDeps;
 
   /** Cached map that converts a string representation of types to actual soy types. */
@@ -430,12 +431,14 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
   ResolveExpressionTypesPass(
       ErrorReporter errorReporter,
       PluginResolver pluginResolver,
+      boolean rewriteShortFormCalls,
       Supplier<FileSetMetadata> templateRegistryFromDeps) {
     this.errorReporter = errorReporter;
     this.pluginResolutionMode =
         pluginResolver == null
             ? PluginResolver.Mode.REQUIRE_DEFINITIONS
             : pluginResolver.getPluginResolutionMode();
+    this.rewriteShortFormCalls = rewriteShortFormCalls;
     this.templateRegistryFromDeps = templateRegistryFromDeps;
     this.methodRegistry =
         new CompositeMethodRegistry(
@@ -729,7 +732,10 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
       visitSoyNode(node);
       if (node.isImplicitContentKind()) {
         if (!(node.numChildren() == 1 && node.getChild(0) instanceof CallBasicNode)) {
-          errorReporter.report(node.getSourceLocation(), CAN_OMIT_KIND_ONLY_FOR_SINGLE_CALL);
+          if (rewriteShortFormCalls) {
+            // Be permissive when running fixer.
+            errorReporter.report(node.getSourceLocation(), CAN_OMIT_KIND_ONLY_FOR_SINGLE_CALL);
+          }
           // Avoid duplicate errors later.
           node.setContentKind(SanitizedContentKind.HTML);
           return;

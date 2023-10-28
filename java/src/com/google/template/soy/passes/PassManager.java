@@ -583,7 +583,10 @@ public final class PassManager {
             .add(new NullSafeAccessPass())
             .add(
                 new ResolveExpressionTypesPass(
-                    errorReporter, pluginResolver, accumulatedState::registryFromDeps))
+                    errorReporter,
+                    pluginResolver,
+                    astRewrites.rewriteShortFormCalls(),
+                    accumulatedState::registryFromDeps))
             .add(new VeDefValidationPass(errorReporter));
         if (astRewrites.isAll()) {
           passes.add(new SimplifyAssertNonNullPass());
@@ -642,7 +645,11 @@ public final class PassManager {
         passes.add(
             new EnforceExperimentalFeaturesPass(options.getExperimentalFeatures(), errorReporter));
         passes
-            .add(new CheckTemplateCallsPass(errorReporter, accumulatedState::registryFull))
+            .add(
+                new CheckTemplateCallsPass(
+                    errorReporter,
+                    astRewrites.rewriteShortFormCalls(),
+                    accumulatedState::registryFull))
             .add(new ElementCheckCrossTemplatePass(errorReporter))
             .add(new CheckValidVarrefsPass(errorReporter))
             .add(new CheckTemplateVisibilityPass(errorReporter, accumulatedState::registryFull))
