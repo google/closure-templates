@@ -26,7 +26,6 @@
 
 goog.module('soy.converters');
 
-const Const = goog.require('goog.string.Const');
 const ReadonlySafeHtmlProto = goog.requireType('proto.html.ReadonlySafeHtmlProto');
 const ReadonlySafeScriptProto = goog.requireType('proto.html.ReadonlySafeScriptProto');
 const ReadonlySafeStyleProto = goog.requireType('proto.html.ReadonlySafeStyleProto');
@@ -50,10 +49,9 @@ const googDebug = goog.require('goog.debug');
 const googString = goog.require('goog.string');
 const jspbconversions = goog.require('security.html.jspbconversions');
 const soy = goog.require('soy');
-const uncheckedconversions = goog.require('goog.html.uncheckedconversions');
 const {ByteString} = goog.require('jspb.bytestring');
 const {SanitizedCss, SanitizedHtml, SanitizedJs, SanitizedTrustedResourceUri, SanitizedUri} = goog.require('goog.soy.data');
-const {htmlSafeByReview, scriptSafeByReview, styleSafeByReview, styleSheetSafeByReview, urlSafeByReview} = goog.require('safevalues.restricted.reviewed');
+const {htmlSafeByReview, resourceUrlSafeByReview, scriptSafeByReview, styleSafeByReview, styleSheetSafeByReview, urlSafeByReview} = goog.require('safevalues.restricted.reviewed');
 
 /**
  * Converts a CSS Sanitized Content object to a corresponding Safe Style Proto.
@@ -175,15 +173,13 @@ exports.packSanitizedTrustedResourceUriToProtoSoyRuntimeOnly = function(
         'expected SanitizedTrustedResourceUri, got ' +
         googDebug.runtimeType(sanitizedTrustedResourceUri));
   }
-  const trustedResourceUrl =
-      uncheckedconversions
-          .trustedResourceUrlFromStringKnownToSatisfyTypeContract(
-              Const.from('from Soy SanitizedTrustedResourceUri object'),
-              sanitizedTrustedResourceUri ?
-                  /** @type {!SanitizedTrustedResourceUri} */ (
-                      sanitizedTrustedResourceUri)
-                      .getContent() :
-                  '');
+  const trustedResourceUrl = resourceUrlSafeByReview(
+      sanitizedTrustedResourceUri ?
+          /** @type {!SanitizedTrustedResourceUri} */ (
+              sanitizedTrustedResourceUri)
+              .getContent() :
+          '',
+      'from Soy SanitizedTrustedResourceUri object');
   return jspbconversions.trustedResourceUrlToProto(trustedResourceUrl);
 };
 
