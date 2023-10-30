@@ -77,69 +77,68 @@ public final class JsTypeTest {
 
     // Sanitized types
     assertThatTypeExpr(HtmlType.getInstance())
-        .isEqualTo(
-            "!goog.html.SafeHtml|!goog.soy.data.SanitizedHtml|!soy.$$EMPTY_STRING_|string");
+        .isEqualTo("!goog.soy.data.SanitizedHtml|!safevalues.SafeHtml|!soy.$$EMPTY_STRING_|string");
     assertThatTypeExpr(makeNullable(HtmlType.getInstance()))
         .isEqualTo(
-            "!goog.html.SafeHtml|!goog.soy.data.SanitizedHtml|!soy.$$EMPTY_STRING_|null"
-                + "|string|undefined");
+            "!goog.soy.data.SanitizedHtml|!safevalues.SafeHtml|"
+                + "!soy.$$EMPTY_STRING_|null|string|undefined");
+
     assertThatTypeExpr(UnionType.of(HtmlType.getInstance(), UriType.getInstance()))
         .isEqualTo(
-            "!goog.Uri|!goog.html.SafeHtml|!goog.html.SafeUrl|!goog.html.TrustedResourceUrl"
-                + "|!goog.soy.data.SanitizedHtml|!goog.soy.data.SanitizedUri"
+            "!goog.Uri|!goog.soy.data.SanitizedHtml|!goog.soy.data.SanitizedUri"
+                + "|!safevalues.SafeHtml|!safevalues.SafeUrl|!safevalues.TrustedResourceUrl"
                 + "|!soy.$$EMPTY_STRING_|string");
 
     // Arrays
     assertThatTypeExpr(LIST_OF_HTML)
         .isEqualTo(
-            "(!Array<!goog.html.SafeHtml|!goog.soy.data.SanitizedHtml"
-                + "|!soy.$$EMPTY_STRING_|string>|"
-                + "!ReadonlyArray<!goog.html.SafeHtml|!goog.soy.data.SanitizedHtml"
-                + "|!soy.$$EMPTY_STRING_|string>)"
-                );
+            "(!Array<!goog.soy.data.SanitizedHtml|!safevalues.SafeHtml|"
+                + "!soy.$$EMPTY_STRING_|string>|"
+                + "!ReadonlyArray<!goog.soy.data.SanitizedHtml|!safevalues.SafeHtml|"
+                + "!soy.$$EMPTY_STRING_|string>)");
 
     // Nullable types
     assertThatTypeExpr(NULLABLE_STRING).isEqualTo("null|string|undefined");
 
     assertThatTypeExpr(NULLABLE_LIST_OF_HTML)
         .isEqualTo(
-            "(!Array<!goog.html.SafeHtml|!goog.soy.data.SanitizedHtml"
-                + "|!soy.$$EMPTY_STRING_|string>|"
-                + "!ReadonlyArray<!goog.html.SafeHtml|!goog.soy.data.SanitizedHtml"
-                + "|!soy.$$EMPTY_STRING_|string>)|null|undefined");
+            "(!Array<!goog.soy.data.SanitizedHtml|"
+                + "!safevalues.SafeHtml|!soy.$$EMPTY_STRING_|string>|"
+                + "!ReadonlyArray<!goog.soy.data.SanitizedHtml|"
+                + "!safevalues.SafeHtml|!soy.$$EMPTY_STRING_|string>)|null|undefined");
 
     // Records
     assertThatTypeExpr(
             RecordType.of(ImmutableMap.of("foo", IntType.getInstance(), "bar", LIST_OF_HTML)))
         .isEqualTo(
             "{foo: number, bar:"
-                + " (!Array<!goog.html.SafeHtml|!goog.soy.data.SanitizedHtml"
-                + "|!soy.$$EMPTY_STRING_|string>|"
-                + "!ReadonlyArray<!goog.html.SafeHtml|!goog.soy.data.SanitizedHtml"
-                + "|!soy.$$EMPTY_STRING_|string>),}");
+                + " (!Array<!goog.soy.data.SanitizedHtml|"
+                + "!safevalues.SafeHtml|!soy.$$EMPTY_STRING_|string>|"
+                + "!ReadonlyArray<!goog.soy.data.SanitizedHtml|"
+                + "!safevalues.SafeHtml|!soy.$$EMPTY_STRING_|string>),}");
     assertThatTypeExpr(
             RecordType.of(ImmutableMap.of("foo", IntType.getInstance(), "bar", LIST_OF_HTML)))
         .isEqualTo(
             "{foo: number, bar:"
-                + " (!Array<!goog.html.SafeHtml|!goog.soy.data.SanitizedHtml"
-                + "|!soy.$$EMPTY_STRING_|string>|"
-                + "!ReadonlyArray<!goog.html.SafeHtml|!goog.soy.data.SanitizedHtml"
-                + "|!soy.$$EMPTY_STRING_|string>),}"
-                );
+                + " (!Array<!goog.soy.data.SanitizedHtml|"
+                + "!safevalues.SafeHtml|!soy.$$EMPTY_STRING_|string>|"
+                + "!ReadonlyArray<!goog.soy.data.SanitizedHtml|"
+                + "!safevalues.SafeHtml|!soy.$$EMPTY_STRING_|string>),}");
+
     assertThatTypeExpr(
             RecordType.of(
                 ImmutableMap.of("foo", IntType.getInstance(), "bar", NULLABLE_LIST_OF_HTML)))
         .isEqualTo(
             "{foo: number, bar:"
-                + " ((!Array<!goog.html.SafeHtml|!goog.soy.data.SanitizedHtml"
-                + "|!soy.$$EMPTY_STRING_|string>|"
-                + "!ReadonlyArray<!goog.html.SafeHtml|!goog.soy.data.SanitizedHtml"
-                + "|!soy.$$EMPTY_STRING_|string>)|null|undefined),}");
+                + " ((!Array<!goog.soy.data.SanitizedHtml|"
+                + "!safevalues.SafeHtml|!soy.$$EMPTY_STRING_|string>|"
+                + "!ReadonlyArray<!goog.soy.data.SanitizedHtml|"
+                + "!safevalues.SafeHtml|!soy.$$EMPTY_STRING_|string>)|null|undefined),}");
 
     assertThatTypeExpr(MapType.of(StringType.getInstance(), HtmlType.getInstance()))
         .isEqualTo(
             "!soy.map.Map<"
-                + "string,!goog.html.SafeHtml|!goog.soy.data.SanitizedHtml"
+                + "string,!goog.soy.data.SanitizedHtml|!safevalues.SafeHtml"
                 + "|!soy.$$EMPTY_STRING_|string>");
   }
 
@@ -153,7 +152,7 @@ public final class JsTypeTest {
 
     assertThatTypeExprStrict(HtmlType.getInstance())
         .isEqualTo(
-            "!element_lib_idom.IdomFunction|!goog.html.SafeHtml|!goog.soy.data.SanitizedHtml"
+            "!element_lib_idom.IdomFunction|!goog.soy.data.SanitizedHtml|!safevalues.SafeHtml"
                 + "|function(!incrementaldomlib.IncrementalDomRenderer): undefined");
   }
 

@@ -56,8 +56,7 @@ template
 given
 
 ```js
-{ foo: soydata.SanitizedHtml.from(
-    new goog.html.sanitizer.HtmlSanitizer().sanitize("<b>Foo</b>")) }
+{ foo: soydata.SanitizedHtml.from(new safevalues.sanitizeHtml("<b>Foo</b>")) }
 ```
 
 produces output that is not re-escaped:
@@ -241,28 +240,24 @@ except that the value needs to be TrustedResourceUrl.
 
 Original entity: `<script src="{$x}">`
 
-Value                                                                                                    | Substitution
--------------------------------------------------------------------------------------------------------- | ------------
-`({ "x": "foo") })`                                                                                      | `<script src="about:invalid#zSoyz">`
-`({ "x": goog.html.TrustedResourceUrl.fromConstant(goog.string.Const.from( "https://foo.com/") })`       | `<script src="https://foo.com/">`
-`({ "x": goog.html.TrustedResourceUrl.fromConstant(goog.string.Const.from( "/foo?a=b&c=d") })`           | `<script src="/foo?a=b&amp;c=d">`
-`({ "x": goog.html.TrustedResourceUrl.fromConstant(goog.string.Const.from( "javascript:alert(1337)") })` | `<script src="javascript:alert(1337)">`
+Value                                                                | Substitution
+-------------------------------------------------------------------- | ------------
+`({ "x": "foo") })`                                                  | `<script src="about:invalid#zSoyz">`
+``({ "x": safevalues.trustedResourceUrl`https://foo.com/` })``       | `<script src="https://foo.com/">`
+``({ "x": safevalues.trustedResourceUrl`/foo?a=b&c=d` })``           | `<script src="/foo?a=b&amp;c=d">`
+``({ "x": safevalues.trustedResourceUrl`javascript:alert(1337)` })`` | `<script src="javascript:alert(1337)">`
 
 ##### Entity-escape and filter out non-TrustedResourceUri
 
 Original entity: `<script src="/foo/{$x}">`
 
-
-| Value                                | Substitution                          |
-| ------------------------------------ | ------------------------------------- |
-| `({ "x":                             | `<script src="/foo/bar">`             |
-: goog.html.TrustedResourceUrl.        :                                       :
-: fromConstant(goog.string.Const.from( :                                       :
-: "bar") })`                           :                                       :
-| `({ "x":                             | `<script src="/foo/bar&amp;baz/boo">` |
-: goog.html.TrustedResourceUrl.        :                                       :
-: fromConstant(goog.string.Const.from( :                                       :
-: "bar&baz/boo") })`                   :                                       :
+| Value                                      | Substitution                 |
+| ------------------------------------------ | ---------------------------- |
+| ``({ "x":                                  | `<script src="/foo/bar">`    |
+: safevalues.trustedResourceUrl`bar` })``    :                              :
+| ``({ "x":                                  | `<script                     |
+: safevalues.trustedResourceUrl`bar&baz/boo` : src="/foo/bar&amp;baz/boo">` :
+: })``                                       :                              :
 
 <table>
 <thead>
@@ -292,17 +287,13 @@ Original entity: `<script src="/foo/{$x}">`
 
 Original entity: `<script src="/foo?q={$x}">`
 
-
-| Value                                | Substitution                    |
-| ------------------------------------ | ------------------------------- |
-| `({ "x":                             | `<script                        |
-: goog.html.TrustedResourceUrl.        : src="/foo?q=bar&amp;baz=boo">`  :
-: fromConstant(goog.string.Const.from( :                                 :
-: "bar&baz=boo") })`                   :                                 :
-| `({ "x":                             | `<script src="/foo?q=A is #1">` |
-: goog.html.TrustedResourceUrl.        :                                 :
-: fromConstant(goog.string.Const.from( :                                 :
-: "A is #1") })`                       :                                 :
+| Value                                      | Substitution                    |
+| ------------------------------------------ | ------------------------------- |
+| ``({ "x":                                  | `<script                        |
+: safevalues.trustedResourceUrl`bar&baz=boo` : src="/foo?q=bar&amp;baz=boo">`  :
+: })``                                       :                                 :
+| ``({ "x": safevalues.trustedResourceUrl`A  | `<script src="/foo?q=A is #1">` |
+: is #1` })``                                :                                 :
 
 <table>
 <thead>
@@ -314,20 +305,14 @@ Original entity: `<script src="/foo?q={$x}">`
 
 <tbody>
 <tr>
-<td><code>({ "x":
-goog.html.TrustedResourceUrl.
-fromConstant(goog.string.Const.from(
-"bar&amp;baz=boo") })</code></td>
+<td><code>({ "x": safevalues.trustedResourceUrl`bar&amp;baz=boo` })</code></td>
 <td><code>&lt;script
 src="/foo?q=bar&amp;amp;baz=boo"&gt;</code>
 
 </td>
 </tr>
 <tr>
-<td><code>({ "x":
-goog.html.TrustedResourceUrl.
-fromConstant(goog.string.Const.from(
-"A is #1") })</code></td>
+<td><code>({ "x": safevalues.trustedResourceUrl`A is #1` })</code></td>
 <td><code>&lt;script src="/foo?q=A is #1"&gt;</code>
 
 

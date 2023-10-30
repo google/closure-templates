@@ -23,10 +23,10 @@ import static com.google.template.soy.jssrc.dsl.Expressions.stringLiteral;
 import static com.google.template.soy.jssrc.internal.JsRuntime.ARRAY_IS_ARRAY;
 import static com.google.template.soy.jssrc.internal.JsRuntime.ELEMENT_LIB_IDOM;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_HTML_SAFE_ATTRIBUTE;
-import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_HTML_SAFE_HTML;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_IS_FUNCTION;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_IS_OBJECT;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_SOY_DATA_SANITIZED_CONTENT;
+import static com.google.template.soy.jssrc.internal.JsRuntime.SAFEVALUES_SAFEHTML;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_ASSERT_PARAM_TYPE;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_MAP_IS_SOY_MAP;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_VELOG;
@@ -149,8 +149,8 @@ public final class JsType {
   private static final JsType IDOM_HTML =
       builder()
           .addType("!goog.soy.data.SanitizedHtml")
-          .addType("!goog.html.SafeHtml")
-          .addRequire(GoogRequire.createTypeRequire("goog.html.SafeHtml"))
+          .addType("!safevalues.SafeHtml")
+          .addRequire(GoogRequire.createTypeRequire("safevalues"))
           .addRequire(GoogRequire.createTypeRequire("goog.soy.data.SanitizedHtml"))
           .addType("!" + ELEMENT_LIB_IDOM.alias() + ".IdomFunction")
           .addRequire(ELEMENT_LIB_IDOM)
@@ -163,7 +163,7 @@ public final class JsType {
                   Optional.of(
                       IS_IDOM_FUNCTION_TYPE
                           .call(value, SANITIZED_CONTENT_KIND.dotAccess("HTML"))
-                          .or(value.instanceOf(GOOG_HTML_SAFE_HTML), codeGenerator)
+                          .or(value.instanceOf(SAFEVALUES_SAFEHTML), codeGenerator)
                           .or(value.instanceOf(GOOG_SOY_DATA_SANITIZED_CONTENT), codeGenerator)))
           .build();
 
@@ -818,31 +818,30 @@ public final class JsType {
     // content.  using these wide unions everywhere is confusing.
     switch (kind) {
       case CSS:
-        builder.addType("!goog.html.SafeStyle");
-        builder.addRequire(GoogRequire.createTypeRequire("goog.html.SafeStyle"));
+        builder.addType("!safevalues.SafeStyle");
+        builder.addRequire(GoogRequire.createTypeRequire("safevalues"));
         break;
       case HTML_ELEMENT:
       case HTML:
-        builder.addType("!goog.html.SafeHtml");
-        builder.addRequire(GoogRequire.createTypeRequire("goog.html.SafeHtml"));
+        builder.addType("!safevalues.SafeHtml");
+        builder.addRequire(GoogRequire.createTypeRequire("safevalues"));
         break;
       case JS:
-        builder.addType("!goog.html.SafeScript");
-        builder.addRequire(GoogRequire.createTypeRequire("goog.html.SafeScript"));
+        builder.addType("!safevalues.SafeScript");
+        builder.addRequire(GoogRequire.createTypeRequire("safevalues"));
         break;
       case ATTRIBUTES:
       case TEXT:
         // nothing extra
         break;
       case TRUSTED_RESOURCE_URI:
-        builder.addType("!goog.html.TrustedResourceUrl");
-        builder.addRequire(GoogRequire.createTypeRequire("goog.html.TrustedResourceUrl"));
+        builder.addType("!safevalues.TrustedResourceUrl");
+        builder.addRequire(GoogRequire.createTypeRequire("safevalues"));
         break;
       case URI:
-        builder.addType("!goog.html.TrustedResourceUrl");
-        builder.addRequire(GoogRequire.createTypeRequire("goog.html.TrustedResourceUrl"));
-        builder.addType("!goog.html.SafeUrl");
-        builder.addRequire(GoogRequire.createTypeRequire("goog.html.SafeUrl"));
+        builder.addType("!safevalues.TrustedResourceUrl");
+        builder.addType("!safevalues.SafeUrl");
+        builder.addRequire(GoogRequire.createTypeRequire("safevalues"));
         builder.addType("!goog.Uri");
         builder.addRequire(GoogRequire.createTypeRequire("goog.Uri"));
         break;

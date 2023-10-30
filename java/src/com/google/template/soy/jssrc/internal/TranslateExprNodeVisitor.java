@@ -171,7 +171,7 @@ import java.util.function.Function;
  *   <li>That the template contains enough information to determine types that need to be converted.
  *       <br>
  *       Pluggable {@link com.google.template.soy.types.SoyTypeRegistry SoyTypeRegistries} allow
- *       recognizing input coercion, for example between {@code goog.html.type.SafeHtml} and Soy's
+ *       recognizing input coercion, for example between {@code safevalues.SafeHtml} and Soy's
  *       {@code html} string sub-type. <br>
  *       When the converted type is a protocol-buffer type, we assume that the expression to be
  *       converted can be fully-typed by expressionTypesVisitor.

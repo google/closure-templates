@@ -150,7 +150,7 @@ The `{jsimpl}` command specifies the namespace and function name.
 ###### TypeScript {.pg-tab}
 
 ```typescript
-import SafeUrl from 'goog:goog.html.SafeUrl';
+import {SafeUrl} from 'safevalues';
 
 export function formatForSoyFromOptions(url: SafeUrl, options: ImageUrlOptionsProto) : SafeUrl {
   ...

@@ -941,8 +941,8 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
       outputVars.popOutputVar();
       Expression ordainer = id("soy").dotAccess("VERY_UNSAFE").dotAccess("ordainSanitizedJs");
       Expression safeScript = ordainer.call(id(scriptOutputVar)).dotAccess("toSafeScript").call();
-      GoogRequire require = GoogRequire.createWithAlias("goog.html.SafeScript", "SafeScript");
-      Expression unwrapped = require.dotAccess("unwrapTrustedScript").call(safeScript);
+      GoogRequire require = GoogRequire.create("safevalues");
+      Expression unwrapped = require.dotAccess("unwrapScript").call(safeScript);
       Expression currentElement = INCREMENTAL_DOM.dotAccess("currentElement").call();
       Expression textContentAssignment = currentElement.dotAccess("textContent").assign(unwrapped);
       ConditionalBuilder ifCurrentElementExists =

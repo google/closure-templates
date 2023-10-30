@@ -103,8 +103,8 @@ public final class JsRuntime {
   public static final Expression GOOG_SOY_DATA_SANITIZED_CONTENT =
       GoogRequire.create("goog.soy.data.SanitizedContent").reference();
 
-  public static final Expression GOOG_HTML_SAFE_HTML =
-      GoogRequire.create("goog.html.SafeHtml").reference();
+  public static final Expression SAFEVALUES_SAFEHTML =
+      GoogRequire.create("safevalues").dotAccess("SafeHtml");
 
   public static final Expression GOOG_HTML_SAFE_ATTRIBUTE =
       GoogRequire.create("goog.soy.data.SanitizedHtmlAttribute").reference();

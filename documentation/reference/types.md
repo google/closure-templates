@@ -136,7 +136,7 @@ string that comes from a trusted source, typically another Soy template.
 
 Backend    | type in host language
 ---------- | ---------------------------------------------------------
-JavaScript | `goog.soy.data.SanitizedJs`, `goog.html.SafeScript`
+JavaScript | `goog.soy.data.SanitizedJs`, `safevalues.SafeScript`
 SoySauce   | `string`, `com.google.template.soy.data.SanitizedContent`
 Tofu       | `com.google.template.soy.data.SanitizedContent`
 Python     | `sanitize.SanitizedJs`, `html_types.SafeScript`
@@ -159,8 +159,8 @@ Python     | `sanitize.SanitizedJs`, `html_types.SafeScript`
 
 </td>
 <td><code>goog.soy.data.SanitizedUri</code>, <code>goog.Uri</code>,
-<code>goog.html.SafeUrl</code>,
-<code>goog.html.TrustedResourceUrl</code></td>
+<code>safevalues.SafeUrl</code>,
+<code>safevalues.TrustedResourceUrl</code></td>
 </tr>
 <tr>
 <td>SoySauce
@@ -200,7 +200,7 @@ sensitive contexts.
 <td>JavaScript
 </td>
 <td><code>goog.soy.data.SanitizedTrustedResourceUri</code>,
-<code>goog.html.TrustedResourceUrl</code></td>
+<code>safevalues.TrustedResourceUrl</code></td>
 </tr>
 <tr>
 <td>SoySauce
@@ -245,7 +245,7 @@ change in the future.
 
 Backend    | type in host language
 ---------- | ---------------------------------------------------------
-JavaScript | `goog.soy.data.SanitizedCss`, `goog.html.SafeStyle`
+JavaScript | `goog.soy.data.SanitizedCss`, `safevalues.SafeStyle`
 SoySauce   | `string`, `com.google.template.soy.data.SanitizedContent`
 Tofu       | `com.google.template.soy.data.SanitizedContent`
 Python     | `sanitize.SanitizedCss`, `html_types.SafeStyleSheet`

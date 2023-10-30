@@ -560,7 +560,7 @@ final class RawTextContextUpdater {
           // - https://foo/  NOTYPO
           // - //foo/
           // - Absolute or relative path.
-          // This emulates the behavior of goog.html.TrustedResourceUrl.format
+          // This emulates the behavior of the safevalues.trustedResourceUrl tag template function
           // NOTE: In all cases we require that the fixed portion of the URL ends in path context.
           // This is important to make sure that neither scheme nor host are potentially attacker
           // controlled.
