@@ -7,7 +7,6 @@
 goog.module('security.html.jspbconversions');
 goog.module.declareLegacyNamespace();
 
-const Const = goog.require('goog.string.Const');
 const ReadonlySafeHtmlProto = goog.requireType('proto.html.ReadonlySafeHtmlProto');
 const ReadonlySafeScriptProto = goog.requireType('proto.html.ReadonlySafeScriptProto');
 const ReadonlySafeStyleProto = goog.requireType('proto.html.ReadonlySafeStyleProto');
@@ -26,8 +25,7 @@ const SafeUrl = goog.require('goog.html.SafeUrl');
 const SafeUrlProto = goog.require('proto.webutil.html.types.SafeUrlProto');
 const TrustedResourceUrl = goog.require('goog.html.TrustedResourceUrl');
 const TrustedResourceUrlProto = goog.require('proto.webutil.html.types.TrustedResourceUrlProto');
-const uncheckedconversions = goog.require('goog.html.uncheckedconversions');
-const {htmlSafeByReview, scriptSafeByReview, styleSafeByReview, urlSafeByReview} = goog.require('safevalues.restricted.reviewed');
+const {htmlSafeByReview, resourceUrlSafeByReview, scriptSafeByReview, styleSafeByReview, styleSheetSafeByReview, urlSafeByReview} = goog.require('safevalues.restricted.reviewed');
 
 /**
  * Converts a protocol-message form of a SafeHtml into a
@@ -193,10 +191,9 @@ function safeStyleToProto(style) {
  * @deprecated Use `safevalues.conversions.jspb` instead.
  */
 function safeStyleSheetFromProto(proto) {
-  return uncheckedconversions
-      .safeStyleSheetFromStringKnownToSatisfyTypeContract(
-          Const.from('From proto message. b/12014412'),
-          proto.getPrivateDoNotAccessOrElseSafeStyleSheetWrappedValue() || '');
+  return styleSheetSafeByReview(
+      proto.getPrivateDoNotAccessOrElseSafeStyleSheetWrappedValue() || '',
+      'From proto message. b/12014412');
 }
 
 /**
@@ -291,11 +288,9 @@ function safeUrlToProto(url) {
  * @deprecated Use `safevalues.conversions.jspb` instead.
  */
 function trustedResourceUrlFromProto(proto) {
-  return uncheckedconversions
-      .trustedResourceUrlFromStringKnownToSatisfyTypeContract(
-          Const.from('From proto message. b/12014412'),
-          proto.getPrivateDoNotAccessOrElseTrustedResourceUrlWrappedValue() ||
-              '');
+  return resourceUrlSafeByReview(
+      proto.getPrivateDoNotAccessOrElseTrustedResourceUrlWrappedValue() || '',
+      'From proto message. b/12014412');
 }
 
 /**
