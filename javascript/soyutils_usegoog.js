@@ -1850,6 +1850,57 @@ const $$insertWordBreaks = function(value, maxCharsBetweenWordBreaks) {
 };
 
 /**
+ * Joins items with a semicolon, filtering out falsey values.
+ * @param {...(string|SanitizedCss!|boolean|null|undefined)} values The
+ *     values to join.
+ * @return {string} The joined string.
+ */
+const $$buildAttrValue = function(...values) {
+  return values.filter((s) => s).join(';');
+};
+
+
+/**
+ * Joins items with a space, filtering out falsey values.
+ * @param {...(string|SanitizedCss!|boolean|null|undefined)} values The values
+ *     to join.
+ * @return {string} The joined string.
+ */
+const $$buildClassValue = function(...values) {
+  return values.filter((s) => s).join(' ');
+};
+
+
+/**
+ * Joins items with a semicolon, filtering out falsey values.
+ * @param {...(string|SanitizedCss!|boolean|null|undefined)} values The
+ *     values to join.
+ * @return {SanitizedCss!|$$EMPTY_STRING_!} The joined string.
+ */
+const $$buildStyleValue = function(...values) {
+  return VERY_UNSAFE.$$ordainSanitizedCssForInternalBlocks(
+      $$buildAttrValue(...values));
+};
+
+
+/**
+ * Joins items with the correct delimiter, filtering out falsey values and
+ * returns an attribute key/value pair.
+ * @param {string} attrName The name of the attribute.
+ * @param {...(string|SanitizedCss!|boolean|null|undefined)} values The
+ *     values to join.
+ * @return {SanitizedHtmlAttribute!} The joined string.
+ */
+const $$buildAttr = function(attrName, ...values) {
+  const joined = attrName === 'class' ? $$buildClassValue(...values) :
+                                        $$buildAttrValue(...values);
+  if (!joined) {
+    return VERY_UNSAFE.ordainSanitizedHtmlAttribute('');
+  }
+  return VERY_UNSAFE.ordainSanitizedHtmlAttribute(`${attrName}="${joined}"`);
+};
+
+/**
  * Conditionally concatenates two attribute values with a delimiter if they are
  * both non-empty.
  *
@@ -2626,6 +2677,10 @@ exports = {
   $$insertWordBreaks,
   $$concatAttributeValues,
   $$concatCssValues,
+  $$buildAttr,
+  $$buildAttrValue,
+  $$buildClassValue,
+  $$buildStyleValue,
   $$truncate,
   $$listContains,
   $$listIndexOf,

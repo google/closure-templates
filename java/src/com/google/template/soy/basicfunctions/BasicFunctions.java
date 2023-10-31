@@ -24,9 +24,18 @@ public class BasicFunctions {
 
   private BasicFunctions() {}
 
+  public static final SoySourceFunction BUILD_ATTR_FUNCTION = new BuildAttrFunction();
+  public static final SoySourceFunction BUILD_ATTR_VALUE_FUNCTION = new BuildAttrValueFunction();
+  public static final SoySourceFunction BUILD_CLASS_VALUE_FUNCTION = new BuildClassValueFunction();
+  public static final SoySourceFunction BUILD_STYLE_VALUE_FUNCTION = new BuildStyleValueFunction();
+
   public static ImmutableList<SoySourceFunction> functions() {
     return ImmutableList.of(
         // go/keep-sorted start
+        BUILD_ATTR_FUNCTION,
+        BUILD_ATTR_VALUE_FUNCTION,
+        BUILD_CLASS_VALUE_FUNCTION,
+        BUILD_STYLE_VALUE_FUNCTION,
         new BooleanFunction(),
         new CeilingFunction(),
         new ConcatListsFunction(),

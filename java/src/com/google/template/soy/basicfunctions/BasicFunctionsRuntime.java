@@ -492,4 +492,38 @@ public final class BasicFunctionsRuntime {
   public static boolean booleanFunc(SoyValue value) {
     return value != null && value.coerceToBoolean();
   }
+
+  private static String joinHelper(List<SoyValue> values, String delimiter) {
+    return values.stream()
+        .filter(v -> v != null)
+        .filter(SoyValue::coerceToBoolean)
+        .map(SoyValue::coerceToString)
+        .collect(joining(delimiter));
+  }
+
+  /** Joins items with a semicolon, filtering out falsey values. */
+  public static String buildAttrValue(List<SoyValue> values) {
+    return joinHelper(values, ";");
+  }
+
+  /** Joins items with a space, filtering out falsey values. */
+  public static String buildClassValue(List<SoyValue> values) {
+    return joinHelper(values, " ");
+  }
+
+  /** Joins items with a semicolon, filtering out falsey values. */
+  public static SanitizedContent buildStyleValue(List<SoyValue> values) {
+    return UnsafeSanitizedContentOrdainer.ordainAsSafe(buildAttrValue(values), ContentKind.CSS);
+  }
+
+  /**
+   * Joins items with the correct delimiter, filtering out falsey values and returns an attribute
+   * key/value pair.
+   */
+  public static SanitizedContent buildAttr(String attrName, List<SoyValue> values) {
+    String attrValue = attrName.equals("class") ? buildClassValue(values) : buildAttrValue(values);
+    return UnsafeSanitizedContentOrdainer.ordainAsSafe(
+        attrValue.isEmpty() ? "" : String.format("%s=\"%s\"", attrName, attrValue),
+        ContentKind.ATTRIBUTES);
+  }
 }

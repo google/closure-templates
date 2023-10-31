@@ -363,6 +363,25 @@ The RFC for sms: https://tools.ietf.org/html/rfc5724
 
 Returns a copy of a string with leading and trailing whitespace removed.
 
+### `buildAttrValue(...values)` {#buildAttrValue}
+
+Takes multiple arguments, all falsey values are first filtered out. Remaining
+values are then joined into a single string with the `;` character.
+
+### `buildClassValue(...values)` {#buildClassValue}
+
+Like `buildAttrValue()`, but joins with the space character instead.
+
+### `buildStyleValue(...values)` {#buildStyleValue}
+
+Like `buildAttrValue()`, but with return type `css`.
+
+### `buildAttr(attrName, ...values)` {#buildAttr}
+
+Constructs an attribute by first joining the values and emitting an attributes
+object with the specified attribute name. If the value is empty the attribute is
+omitted entirely.
+
 ## Proto methods
 
 ### `proto.isDefault()` {#Message_isDefault}

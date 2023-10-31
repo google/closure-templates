@@ -679,6 +679,71 @@ def soy_round(num, precision=0):
   return rounded_number
 
 
+def build_attr_value(*values):
+  """Joins items with a semicolon, filtering out falsey values.
+
+  Args:
+    *values: The values to join.
+
+  Returns:
+    The joined string.
+  """
+  return ';'.join([str(x) for x in values if x])
+
+
+def build_class_value(*values):
+  """Joins items with a space, filtering out falsey values.
+
+  Args:
+    *values: The values to join.
+
+  Returns:
+    The joined string.
+  """
+  return ' '.join([str(x) for x in values if x])
+
+
+def build_style_value(*values):
+  """Joins items with a semicolon, filtering out falsey values.
+
+  Args:
+    *values: The values to join.
+
+  Returns:
+    The joined css.
+  """
+  return sanitize.SanitizedCss(
+      build_attr_value(*values),
+      sanitize.IActuallyUnderstandSoyTypeSafetyAndHaveSecurityApproval(
+          """Internal framework code."""
+      ),
+  )
+
+
+def build_attr(attr_name, *values):
+  """Emits a joined attribute.
+
+  Args:
+    attr_name: The attribute key.
+    *values: The values to join.
+
+  Returns:
+    The joined attribute.
+  """
+  value = (
+      build_class_value(*values)
+      if attr_name == 'class'
+      else build_attr_value(*values)
+  )
+  content = attr_name + '="' + value + '"' if value else ''
+  return sanitize.SanitizedHtmlAttribute(
+      content,
+      sanitize.IActuallyUnderstandSoyTypeSafetyAndHaveSecurityApproval(
+          """Internal framework code."""
+      ),
+  )
+
+
 ######################
 # Utility functions. #
 ######################
