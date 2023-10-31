@@ -49,6 +49,7 @@ import com.google.template.soy.logging.SoyLogger;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.plugin.java.PluginInstances;
 import com.google.template.soy.shared.SoyCssRenamingMap;
+import com.google.template.soy.shared.SoyCssTracker;
 import com.google.template.soy.shared.SoyIdRenamingMap;
 import com.google.template.soy.shared.internal.SoyScopedData;
 import com.google.template.soy.shared.restricted.SoyFunction;
@@ -277,6 +278,13 @@ public final class SoySauceImpl implements SoySauce {
     @Override
     public RendererImpl setSoyLogger(SoyLogger logger) {
       contextBuilder.withLogger(logger);
+      return this;
+    }
+
+    @CanIgnoreReturnValue
+    @Override
+    public RendererImpl setCssTracker(SoyCssTracker cssTracker) {
+      contextBuilder.withCssTracker(cssTracker);
       return this;
     }
 

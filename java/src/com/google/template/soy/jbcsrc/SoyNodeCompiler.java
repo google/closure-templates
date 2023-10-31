@@ -18,7 +18,9 @@ package com.google.template.soy.jbcsrc;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
+import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.ImmutableMap.toImmutableMap;
+import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static com.google.template.soy.jbcsrc.PrintDirectives.applyStreamingEscapingDirectives;
 import static com.google.template.soy.jbcsrc.PrintDirectives.applyStreamingPrintDirectives;
 import static com.google.template.soy.jbcsrc.PrintDirectives.areAllPrintDirectivesStreamable;
@@ -34,12 +36,14 @@ import com.google.auto.value.AutoValue;
 import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.primitives.Ints;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.basetree.Node;
+import com.google.template.soy.basetree.ParentNode;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.exprtree.BooleanNode;
 import com.google.template.soy.exprtree.ExprNode;
@@ -103,6 +107,7 @@ import com.google.template.soy.soytree.PartialFileSetMetadata;
 import com.google.template.soy.soytree.PrintDirectiveNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
+import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.BlockNode;
 import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
@@ -112,8 +117,10 @@ import com.google.template.soy.soytree.SoyTreeUtils.VisitDirective;
 import com.google.template.soy.soytree.SwitchCaseNode;
 import com.google.template.soy.soytree.SwitchDefaultNode;
 import com.google.template.soy.soytree.SwitchNode;
+import com.google.template.soy.soytree.TemplateBasicNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.VeLogNode;
+import com.google.template.soy.soytree.Visibility;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.TemplateType;
 import java.lang.invoke.MethodHandles;
@@ -238,6 +245,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     if (shouldCheckForSoftLimit(node)) {
       statements.add(detachState.detachLimited(appendableExpression));
     }
+    trackRequiredCssPathStatements(node).ifPresent(statements::addAll);
     statements.add(doCompile(node, prefix, suffix));
     statements.add(
         // needs to go at the beginning but can only be generated after the whole method body.
@@ -250,6 +258,45 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     try (DetachState.NoNewDetaches noNewDetaches = detachState.expectNoNewDetaches()) {
       return doCompile(node, prefix, suffix);
     }
+  }
+
+  private Optional<List<Statement>> trackRequiredCssPathStatements(RenderUnitNode node) {
+    SoyFileNode fileNode = node.getNearestAncestor(SoyFileNode.class);
+    if (node instanceof TemplateNode
+        && (((TemplateNode) node).getVisibility() == Visibility.PUBLIC
+            || (node instanceof TemplateBasicNode
+                && ((TemplateBasicNode) node).getModifiesExpr() != null))
+        && !fileNode.getRequiredCssPaths().isEmpty()
+        && !definitelyCallsPublicTemplateInSameFile((TemplateNode) node)) {
+      return Optional.of(
+          fileNode.getRequiredCssPaths().stream()
+              .map(css -> css.resolvedPath().orElseThrow())
+              .map(cssPath -> parameterLookup.getRenderContext().trackRequiredCssPath(cssPath))
+              .collect(toImmutableList()));
+    }
+
+    return Optional.empty();
+  }
+
+  /**
+   * returns whether the node unconditionally calls another public template in the same file. When
+   * that's the case for a TemplateNode, we don't need to track that template's required CSS paths,
+   * as the same paths will already be reported by the inner template call.
+   */
+  private boolean definitelyCallsPublicTemplateInSameFile(TemplateNode node) {
+    ImmutableSet<String> publicTemplateNames =
+        node.getNearestAncestor(SoyFileNode.class).getTemplates().stream()
+            .filter(t -> t.getVisibility() == Visibility.PUBLIC)
+            .map(TemplateNode::getTemplateName)
+            .collect(toImmutableSet());
+
+    return ((ParentNode<? extends SoyNode>) node)
+        .getChildren().stream()
+            .anyMatch(
+                child ->
+                    child.getKind() == SoyNode.Kind.CALL_BASIC_NODE
+                        && ((CallBasicNode) child).isStaticCall()
+                        && publicTemplateNames.contains(((CallBasicNode) child).getCalleeName()));
   }
 
   private Statement doCompile(

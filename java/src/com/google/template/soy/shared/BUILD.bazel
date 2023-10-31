@@ -31,7 +31,7 @@ java_library(
     name = "shared",
     srcs = glob(
         ["*.java"],
-        exclude = RENAMING_MAPS + KYTHE,
+        exclude = RENAMING_MAPS + KYTHE + ["SoyCssTracker.java"],
     ),
     visibility = ["//visibility:public"],
     deps = [
@@ -65,4 +65,9 @@ java_library(
         "//java/src/com/google/template/soy/base",
         "//java/src/com/google/template/soy/soytree",
     ],
+)
+
+java_library(
+    name = "soy_css_tracker",
+    srcs = ["SoyCssTracker.java"],
 )

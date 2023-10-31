@@ -146,6 +146,9 @@ final class RenderContextExpression extends Expression implements JbcSrcPluginCo
   private static final MethodRef STORE_CONST =
       MethodRef.createNonPure(RenderContext.class, "storeConst", String.class, Object.class);
 
+  private static final MethodRef TRACK_REQUIRED_CSS_PATH =
+      MethodRef.createNonPure(RenderContext.class, "trackRequiredCssPath", String.class);
+
   private final Expression delegate;
 
   RenderContextExpression(Expression renderContext) {
@@ -241,6 +244,10 @@ final class RenderContextExpression extends Expression implements JbcSrcPluginCo
 
   Statement storeConst(String name, Expression value) {
     return delegate.invokeVoid(STORE_CONST, constant(name), value);
+  }
+
+  Statement trackRequiredCssPath(String cssPath) {
+    return delegate.invokeVoid(TRACK_REQUIRED_CSS_PATH, constant(cssPath));
   }
 
   SoyExpression applyPrintDirective(SoyPrintDirective directive, SoyExpression value) {

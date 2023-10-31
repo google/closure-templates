@@ -47,6 +47,7 @@ java_library(
         "//java/src/com/google/template/soy/plugin/java:extern_helpers",
         "//java/src/com/google/template/soy/plugin/java/restricted",
         "//java/src/com/google/template/soy/shared:interfaces",
+        "//java/src/com/google/template/soy/shared:soy_css_tracker",
         "//java/src/com/google/template/soy/shared/internal:deltemplate_selector",
         "//java/src/com/google/template/soy/shared/restricted",
         "//src/main/protobuf:ve_metadata_java_proto",

@@ -40,6 +40,7 @@ import com.google.template.soy.msgs.restricted.SoyMsgPart;
 import com.google.template.soy.plugin.java.PluginInstances;
 import com.google.template.soy.plugin.java.RenderCssHelper;
 import com.google.template.soy.shared.SoyCssRenamingMap;
+import com.google.template.soy.shared.SoyCssTracker;
 import com.google.template.soy.shared.SoyIdRenamingMap;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.ibm.icu.util.ULocale;
@@ -68,8 +69,11 @@ public final class RenderContext {
   private final SoyIdRenamingMap xidRenamingMap;
   private final PluginInstances pluginInstances;
   private final ImmutableMap<String, SoyJavaPrintDirective> soyJavaDirectivesMap;
+
   /** The bundle of translated messages */
   private final SoyMsgBundle msgBundle;
+
+  private final SoyCssTracker cssTracker;
 
   /**
    * Stores memoized {const} values, which in SSR are actually request-scoped values, not Java
@@ -96,7 +100,8 @@ public final class RenderContext {
       @Nullable SoyIdRenamingMap xidRenamingMap,
       @Nullable SoyMsgBundle msgBundle,
       boolean debugSoyTemplateInfo,
-      @Nullable SoyLogger logger) {
+      @Nullable SoyLogger logger,
+      @Nullable SoyCssTracker cssTracker) {
     this.templates = templates;
     this.soyJavaDirectivesMap = soyJavaDirectivesMap;
     this.pluginInstances = pluginInstances;
@@ -106,6 +111,7 @@ public final class RenderContext {
     this.msgBundle = msgBundle == null ? SoyMsgBundle.EMPTY : msgBundle;
     this.debugSoyTemplateInfo = debugSoyTemplateInfo;
     this.logger = logger == null ? SoyLogger.NO_OP : logger;
+    this.cssTracker = cssTracker;
   }
 
   @Nullable
@@ -378,6 +384,16 @@ public final class RenderContext {
   }
 
   /**
+   * Reports that a CSS path required by a file used during rendering (if a {@code
+   * SoyNamespaceWithCssTracker} was registered).
+   */
+  public void trackRequiredCssPath(String cssPath) {
+    if (cssTracker != null) {
+      cssTracker.trackRequiredCssPath(cssPath);
+    }
+  }
+
+  /**
    * Save the contents of the frame into the stack.
    *
    * <p>This method is called when detaching a render operation by our `invokedynamic`
@@ -425,6 +441,7 @@ public final class RenderContext {
     private SoyMsgBundle msgBundle;
     private boolean debugSoyTemplateInfo;
     private SoyLogger logger;
+    private SoyCssTracker cssTracker;
 
     public Builder(
         CompiledTemplates templates,
@@ -477,6 +494,12 @@ public final class RenderContext {
       return this;
     }
 
+    @CanIgnoreReturnValue
+    public Builder withCssTracker(SoyCssTracker cssTracker) {
+      this.cssTracker = cssTracker;
+      return this;
+    }
+
     public RenderContext build() {
       return new RenderContext(
           templates,
@@ -487,7 +510,8 @@ public final class RenderContext {
           xidRenamingMap,
           msgBundle,
           debugSoyTemplateInfo,
-          logger);
+          logger,
+          cssTracker);
     }
   }
 }

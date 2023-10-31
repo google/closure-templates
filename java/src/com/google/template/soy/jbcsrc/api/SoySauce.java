@@ -34,6 +34,7 @@ import com.google.template.soy.logging.SoyLogger;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.parseinfo.TemplateName;
 import com.google.template.soy.shared.SoyCssRenamingMap;
+import com.google.template.soy.shared.SoyCssTracker;
 import com.google.template.soy.shared.SoyIdRenamingMap;
 import java.io.IOException;
 import java.util.Map;
@@ -121,6 +122,7 @@ public interface SoySauce {
     return getAllRequiredCssPaths(
         template.getTemplateName(), enabledMods, collectCssFromDelvariants);
   }
+
   /**
    * Indicates whether the current {@link SoySauce} instance holds a given template.
    *
@@ -179,6 +181,10 @@ public interface SoySauce {
     /** Configures the {@link SoyLogger} to use. */
     @CanIgnoreReturnValue
     Renderer setSoyLogger(SoyLogger logger);
+
+    /** Configures the {@link SoyCssTracker} to use. */
+    @CanIgnoreReturnValue
+    Renderer setCssTracker(SoyCssTracker cssTracker);
 
     /**
      * Renders the configured html template to the given appendable, returning a continuation (more
