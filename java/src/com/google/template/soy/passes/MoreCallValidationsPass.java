@@ -119,7 +119,7 @@ final class MoreCallValidationsPass implements CompilerFileSetPass {
   private static final SoyErrorKind SLOTS_ONLY_ONE_CLOSE_TAG =
       SoyErrorKind.of("<parameter> elements cannot have more than one close tag.");
 
-  private static final SoyErrorKind SLOTS_ONLY_DIRECT_DESCENDENTS_OF_TEMPLATE_CALL =
+  private static final SoyErrorKind SLOTS_ONLY_DIRECT_DESCENDANTS_OF_TEMPLATE_CALL =
       SoyErrorKind.of("<parameter> elements can only be direct descendents of template calls.");
 
   private static final SoyErrorKind DUPLICATE_PARAM = SoyErrorKind.of("Duplicate param ''{0}''.");
@@ -239,7 +239,7 @@ final class MoreCallValidationsPass implements CompilerFileSetPass {
         .forEach(
             tagNode ->
                 errorReporter.report(
-                    tagNode.getSourceLocation(), SLOTS_ONLY_DIRECT_DESCENDENTS_OF_TEMPLATE_CALL));
+                    tagNode.getSourceLocation(), SLOTS_ONLY_DIRECT_DESCENDANTS_OF_TEMPLATE_CALL));
   }
 
   private void validateTemplateCall(HtmlOpenTagNode openTagNode, Consumer<HtmlTagNode> consumer) {
@@ -325,7 +325,7 @@ final class MoreCallValidationsPass implements CompilerFileSetPass {
       ImmutableMap<String, Parameter> allParamsByParamName,
       boolean hasAllAttributes,
       ImmutableSet<String> reservedAttributes) {
-    String name = attr.getStaticKey();
+    String name = ElementAttributePass.getStaticOrMergingKey(attr);
     SourceLocation loc = attr.getChild(0).getSourceLocation();
     if (name == null) {
       if (attr.numChildren() != 1) {

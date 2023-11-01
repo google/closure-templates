@@ -19,7 +19,6 @@ package com.google.template.soy.soytree;
 import static com.google.common.base.Preconditions.checkState;
 
 import com.google.common.base.Ascii;
-import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
@@ -34,10 +33,6 @@ import javax.annotation.Nullable;
  */
 public final class HtmlAttributeNode extends AbstractParentSoyNode<StandaloneNode>
     implements StandaloneNode {
-
-  private static final ImmutableMap<String, String> CONCATENATED_ATTRIBUTES =
-      ImmutableMap.of(
-          "@class", " ", "@style", ";", "@jsdata", ";", "@jsaction", ";", "@jsmodel", ";");
 
   /** Will be null if this attribute node doesn't have a value. */
   @Nullable private final SourceLocation.Point equalsSignLocation;
@@ -60,14 +55,6 @@ public final class HtmlAttributeNode extends AbstractParentSoyNode<StandaloneNod
   private HtmlAttributeNode(HtmlAttributeNode orig, CopyState copyState) {
     super(orig, copyState);
     this.equalsSignLocation = orig.equalsSignLocation;
-  }
-
-  @Nullable
-  public String getConcatenationDelimiter() {
-    if (getStaticKey() != null && CONCATENATED_ATTRIBUTES.containsKey(getStaticKey())) {
-      return CONCATENATED_ATTRIBUTES.get(this.getStaticKey());
-    }
-    return null;
   }
 
   public boolean hasValue() {
