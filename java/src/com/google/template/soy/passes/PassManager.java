@@ -199,7 +199,12 @@ public final class PassManager {
     },
 
     /** Enough AST rewrites for Kythe analysis to work. */
-    KYTHE,
+    KYTHE {
+      @Override
+      public boolean rewriteElementComposition() {
+        return true;
+      }
+    },
 
     /** Enough AST rewrites for Tricorder analysis to work. */
     TRICORDER {
@@ -546,9 +551,9 @@ public final class PassManager {
           .add(
               new ResolveDottedImportsPass(
                   errorReporter, registry, astRewrites.rewriteCssVariables()));
-      if (!astRewrites.isNone()) {
-        passes.add(new RewriteElementCompositionFunctionsPass(errorReporter));
-      }
+      passes.add(
+          new RewriteElementCompositionFunctionsPass(
+              errorReporter, astRewrites.rewriteElementComposition()));
       passes.add(new ResolveTemplateNamesPass(errorReporter));
 
       if (!disableAllTypeChecking) {

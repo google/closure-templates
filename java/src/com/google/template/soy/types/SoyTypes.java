@@ -794,4 +794,14 @@ public final class SoyTypes {
                 .map(t -> ((MapType) t).getValueType())
                 .collect(toImmutableSet()));
   }
+
+  @Nullable
+  public static TemplateType getTemplateType(SoyType type) {
+    if (type instanceof TemplateType) {
+      return (TemplateType) type;
+    } else if (type instanceof TemplateImportType) {
+      return ((TemplateImportType) type).getBasicTemplateType();
+    }
+    return null;
+  }
 }

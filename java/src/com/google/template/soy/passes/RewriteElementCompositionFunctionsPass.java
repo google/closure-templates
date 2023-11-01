@@ -50,9 +50,12 @@ import com.google.template.soy.types.SoyType;
 final class RewriteElementCompositionFunctionsPass implements CompilerFilePass {
 
   private final ErrorReporter errorReporter;
+  private final boolean rewriteElementComposition;
 
-  RewriteElementCompositionFunctionsPass(ErrorReporter errorReporter) {
+  RewriteElementCompositionFunctionsPass(
+      ErrorReporter errorReporter, boolean rewriteElementComposition) {
     this.errorReporter = errorReporter;
+    this.rewriteElementComposition = rewriteElementComposition;
   }
 
   @Override
@@ -82,11 +85,20 @@ final class RewriteElementCompositionFunctionsPass implements CompilerFilePass {
           fct.getSourceLocation(), RewriteShortFormCallsPass.EXPECTED_NAMED_PARAMETERS);
       return;
     }
-    ExprNode replacementExpr;
+
     VarRefNode varRefNode = (VarRefNode) fct.getNameExpr();
     if (varRefNode.hasType() && varRefNode.getType() instanceof ProtoImportType) {
+      // Ignore proto init.
       return;
     }
+
+    if (!rewriteElementComposition) {
+      // Soy Conformance runs in this mode. Prevent errors in ResolveExpressionTypesPass.
+      fct.setAllowedToInvokeAsFunction(true);
+      return;
+    }
+
+    ExprNode replacementExpr;
     if (varRefNode.hasType() && varRefNode.getType().getKind() == SoyType.Kind.TEMPLATE_TYPE) {
       // If the function is a template symbol modify AST like:
       // {tmp(...)} -> {template(tmp).bind(...)}

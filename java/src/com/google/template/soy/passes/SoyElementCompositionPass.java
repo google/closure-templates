@@ -475,13 +475,13 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
         return new CallParamValueNode(
             nodeIdGen.genId(),
             attr.getSourceLocation(),
-            Identifier.create(paramName, unknown),
+            Identifier.create(paramName, attr.getChild(0).getSourceLocation()),
             emptyToNull(val));
       } else {
         return new CallParamValueNode(
             nodeIdGen.genId(),
             attr.getSourceLocation(),
-            Identifier.create(paramName, unknown),
+            Identifier.create(paramName, attr.getChild(0).getSourceLocation()),
             val);
       }
     }
@@ -496,7 +496,7 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
               nodeIdGen.genId(),
               attr.getSourceLocation(),
               unknown,
-              Identifier.create(paramName, unknown),
+              Identifier.create(paramName, attr.getChild(0).getSourceLocation()),
               // TODO(tomnguyen) Verify that @attribute is only string or uri or string|uri.
               new CommandTagAttribute(
                   Identifier.create("kind", unknown),

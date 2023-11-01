@@ -29,8 +29,11 @@ import com.google.template.soy.base.internal.TemplateContentKind.ElementContentK
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprNode;
+import com.google.template.soy.exprtree.ExprNode.Kind;
+import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.MethodCallNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
+import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.FileSetMetadata;
 import com.google.template.soy.soytree.HtmlElementMetadataP;
@@ -49,6 +52,7 @@ import com.google.template.soy.soytree.TemplateElementNode;
 import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.VeLogNode;
+import com.google.template.soy.types.SoyType;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -313,6 +317,7 @@ final class SoyElementPass implements CompilerFileSetPass {
    * Returns the FQN template name of the template to which this element delegates, or null if this
    * template does not delegate.
    */
+  @Nullable
   private static String getStaticDelegateCall(HtmlOpenTagNode openTag) {
     // The normal TagName.isTemplateCall() doesn't work before ResolveExpressionTypesPass.
     TagName tagName = openTag.getTagName();
@@ -324,17 +329,32 @@ final class SoyElementPass implements CompilerFileSetPass {
     if (exprNode instanceof TemplateLiteralNode) {
       return ((TemplateLiteralNode) exprNode).getResolvedName();
     }
-    if (!(exprNode.getKind() == ExprNode.Kind.METHOD_CALL_NODE
-        && ((MethodCallNode) exprNode).getMethodName().identifier().equals("bind"))) {
-      return null;
+
+    if (exprNode.getKind() == ExprNode.Kind.METHOD_CALL_NODE
+        && ((MethodCallNode) exprNode).getMethodName().identifier().equals("bind")) {
+      // If RewriteElementCompositionFunctionsPass has run then we will see tmpl.bind(record(...))
+      MethodCallNode bind = (MethodCallNode) exprNode;
+      if (bind.getChild(0).getKind() != ExprNode.Kind.TEMPLATE_LITERAL_NODE) {
+        return null;
+      }
+
+      return ((TemplateLiteralNode) bind.getChild(0)).getResolvedName();
+    } else if (exprNode.getKind() == Kind.FUNCTION_NODE) {
+      // If RewriteElementCompositionFunctionsPass has not run we will see tmpl(...)
+      FunctionNode functionNode = (FunctionNode) exprNode;
+      if (!functionNode.hasStaticName()) {
+        ExprNode nameExpr = functionNode.getNameExpr();
+        if (nameExpr.getKind() == Kind.VAR_REF_NODE) {
+          VarRefNode varRefNode = (VarRefNode) nameExpr;
+          if (varRefNode.hasType()
+              && varRefNode.getType().getKind() == SoyType.Kind.TEMPLATE_TYPE) {
+            return TemplateLiteralNode.forVarRef(varRefNode).getResolvedName();
+          }
+        }
+      }
     }
 
-    MethodCallNode bind = (MethodCallNode) exprNode;
-    if (bind.getChild(0).getKind() != ExprNode.Kind.TEMPLATE_LITERAL_NODE) {
-      return null;
-    }
-
-    return ((TemplateLiteralNode) bind.getChild(0)).getResolvedName();
+    return null;
   }
 
   /**
