@@ -359,10 +359,11 @@ const $$stubsMap = goog.DEBUG ? {} : null;
  * @return {string}
  */
 const $$serializeKey = function(item) {
-  const stringified = String(item);
+  let stringified = String(item);
   let delimiter;
   if (item == null) {
     delimiter = '_';
+    stringified = 'null';  // handle null and undefined equivalently
   } else if (typeof item === 'number') {
     delimiter = '#';
   } else {
