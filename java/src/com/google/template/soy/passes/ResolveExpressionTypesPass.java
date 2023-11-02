@@ -1943,16 +1943,12 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
       // Restore substitutions to previous state
       substitutions.restore(savedSubstitutionState);
 
-      // If one side is of type attributes and the other is empty string, the empty string can be
+      // If the LHS is of type attributes and the RHS is empty string, the empty string can be
       // coerced to attributes so the node should have attributes type.
-      if (node.getChild(0) instanceof StringNode
-          && ((StringNode) node.getChild(0)).getValue().isEmpty()
-          && tryRemoveNullish(node.getChild(1).getType()).getKind() == Kind.ATTRIBUTES) {
-        node.setType(node.getChild(1).getType());
-      } else if (node.getChild(1) instanceof StringNode
+      if (node.getChild(1) instanceof StringNode
           && ((StringNode) node.getChild(1)).getValue().isEmpty()
           && tryRemoveNullish(node.getChild(0).getType()).getKind() == Kind.ATTRIBUTES) {
-        node.setType(node.getChild(0).getType());
+        node.setType(tryRemoveNullish(node.getChild(0).getType()));
       } else {
         SoyType resultType = node.getChild(1).getType();
         if (!isNullOrUndefined(node.getChild(0).getType())) {
