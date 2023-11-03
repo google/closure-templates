@@ -29,6 +29,7 @@ import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.QuoteStyle;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.basetree.CopyState;
+import com.google.template.soy.basicfunctions.BasicFunctions;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprNode;
@@ -64,6 +65,7 @@ import com.google.template.soy.soytree.TagName;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.AttrParam;
 import com.google.template.soy.soytree.defn.TemplateParam;
+import com.google.template.soy.types.BoolType;
 import com.google.template.soy.types.NullType;
 import com.google.template.soy.types.SanitizedType.AttributesType;
 import com.google.template.soy.types.SanitizedType.StyleType;
@@ -71,11 +73,14 @@ import com.google.template.soy.types.SanitizedType.TrustedResourceUriType;
 import com.google.template.soy.types.SanitizedType.UriType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypes;
+import com.google.template.soy.types.StringType;
 import com.google.template.soy.types.TemplateType;
 import com.google.template.soy.types.TemplateType.Parameter;
+import com.google.template.soy.types.UndefinedType;
 import com.google.template.soy.types.UnionType;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -346,7 +351,7 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
       Optional<ExprNode> conditional) {
     if (c.getKind() == SoyNode.Kind.HTML_ATTRIBUTE_NODE) {
       HtmlAttributeNode attrNode = (HtmlAttributeNode) c;
-      if (attrNode.getStaticKey() != null) {
+      if (ElementAttributePass.getStaticOrMergingKey(attrNode) != null) {
         CallParamNode param =
             consumeAttribute(
                 attrNode,
@@ -358,7 +363,7 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
                 call,
                 conditional);
         if (param != null) {
-          param.setOriginalName(attrNode.getStaticKey());
+          param.setOriginalName(ElementAttributePass.getStaticOrMergingKey(attrNode));
           call.addChild(param);
         }
         return;
@@ -452,7 +457,7 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
       Optional<ExprNode> condition) {
     SourceLocation unknown = attr.getSourceLocation().clearRange();
 
-    String attrName = attr.getStaticKey();
+    String attrName = ElementAttributePass.getStaticOrMergingKey(attr);
     boolean isSoyAttr = attrName.startsWith("@");
     if (isSoyAttr) {
       attrName = attrName.substring(1);
@@ -477,12 +482,27 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
             attr.getSourceLocation(),
             Identifier.create(paramName, attr.getChild(0).getSourceLocation()),
             emptyToNull(val));
-      } else {
+      } else if (ElementAttributePass.getMergingKey(attr) == null) {
         return new CallParamValueNode(
             nodeIdGen.genId(),
             attr.getSourceLocation(),
             Identifier.create(paramName, attr.getChild(0).getSourceLocation()),
             val);
+      } else {
+        // Element that calls another element.
+        //
+        // ElementAttributePass rewrites:
+        // @class="foo"
+        // as
+        // buildAttr('class', ['foo', param$foo])
+        //
+        // Now unpack it back to:
+        // {param class: buildClassValue('foo', param$foo) /}
+        return new CallParamValueNode(
+            nodeIdGen.genId(),
+            attr.getSourceLocation(),
+            Identifier.create(paramName, unknown),
+            getMergingValueExpr(attr));
       }
     }
     StandaloneNode value = attr.getChild(1);
@@ -574,5 +594,44 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
     } else {
       return "text";
     }
+  }
+
+  private FunctionNode getMergingValueExpr(HtmlAttributeNode attr) {
+    PrintNode printNode = (PrintNode) attr.getChild(0);
+    FunctionNode func = (FunctionNode) printNode.getExpr().getRoot();
+    FunctionNode newFunc =
+        ElementAttributePass.getMergingKey(attr).equals("@class")
+            ? FunctionNode.newPositional(
+                Identifier.create("buildClassValue", SourceLocation.UNKNOWN),
+                BasicFunctions.BUILD_CLASS_VALUE_FUNCTION,
+                SourceLocation.UNKNOWN)
+            : ElementAttributePass.getMergingKey(attr).equals("@style")
+                ? FunctionNode.newPositional(
+                    Identifier.create("buildStyleValue", SourceLocation.UNKNOWN),
+                    BasicFunctions.BUILD_STYLE_VALUE_FUNCTION,
+                    SourceLocation.UNKNOWN)
+                : FunctionNode.newPositional(
+                    Identifier.create("buildAttrValue", SourceLocation.UNKNOWN),
+                    BasicFunctions.BUILD_ATTR_VALUE_FUNCTION,
+                    SourceLocation.UNKNOWN);
+    ImmutableList.Builder<SoyType> allowedTypes = ImmutableList.builder();
+    Iterator<ExprNode> i = func.getChildren().iterator();
+    i.next(); // skip the attribute name
+    while (i.hasNext()) {
+      newFunc.addChild(i.next().copy(new CopyState()));
+      allowedTypes.add(
+          UnionType.of(
+              StringType.getInstance(),
+              StyleType.getInstance(),
+              BoolType.getInstance(),
+              NullType.getInstance(),
+              UndefinedType.getInstance()));
+    }
+    newFunc.setType(
+        ElementAttributePass.getMergingKey(attr).equals("@style")
+            ? StyleType.getInstance()
+            : StringType.getInstance());
+    newFunc.setAllowedParamTypes(allowedTypes.build());
+    return newFunc;
   }
 }
