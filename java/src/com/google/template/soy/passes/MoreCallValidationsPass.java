@@ -166,7 +166,7 @@ final class MoreCallValidationsPass implements CompilerFileSetPass {
                 roots =
                     roots.filter(r -> !r.equals(((TemplateBasicNode) expHolder).getModifiesExpr()));
               } else if (expHolder instanceof CallBasicNode) {
-                // Allow short form calls.
+                // Allow short form calls. (RewriteShortFormCallsPass has run)
                 roots = roots.filter(r -> !r.equals(((CallBasicNode) expHolder).getCalleeExpr()));
               }
               return roots;
@@ -178,25 +178,34 @@ final class MoreCallValidationsPass implements CompilerFileSetPass {
                     && !((TemplateLiteralNode) exprNode).isStaticCall())
         .map(TemplateLiteralNode.class::cast)
         .forEach(
-            templateNode ->
-                stream(SoyTypes.getTypeTraverser(templateNode.getType(), null))
-                    .filter(t -> t.getKind() == SoyType.Kind.TEMPLATE)
-                    .map(TemplateType.class::cast)
-                    .filter(
-                        templateType ->
-                            templateType.getContentKind().getSanitizedContentKind().isHtml()
-                                && !templateType.isStrictHtml())
-                    .forEach(
-                        templateType ->
-                            // Only report errors for template literal nodes, to avoid
-                            // reporting errors multiple times (ie., once for everywhere
-                            // the 'named' template type has propagated in the
-                            // expression tree).
-                            // TODO(b/180151169) Is this check necessary?
-                            errorReporter.report(
-                                templateNode.getSourceLocation(),
-                                ONLY_STRICT_HTML_TEMPLATES_ALLOWED,
-                                templateNode.getResolvedName())));
+            templateNode -> {
+              if (templateNode.getParent().getKind() == Kind.FUNCTION_NODE) {
+                FunctionNode functionNode = (FunctionNode) templateNode.getParent();
+                if (!functionNode.hasStaticName()
+                    && functionNode.getNameExpr().equals(templateNode)) {
+                  // Allow short form calls. (RewriteShortFormCallsPass has NOT run)
+                  return;
+                }
+              }
+              stream(SoyTypes.getTypeTraverser(templateNode.getType(), null))
+                  .filter(t -> t.getKind() == SoyType.Kind.TEMPLATE)
+                  .map(TemplateType.class::cast)
+                  .filter(
+                      templateType ->
+                          templateType.getContentKind().getSanitizedContentKind().isHtml()
+                              && !templateType.isStrictHtml())
+                  .forEach(
+                      templateType ->
+                          // Only report errors for template literal nodes, to avoid
+                          // reporting errors multiple times (ie., once for everywhere
+                          // the 'named' template type has propagated in the
+                          // expression tree).
+                          // TODO(b/180151169) Is this check necessary?
+                          errorReporter.report(
+                              templateNode.getSourceLocation(),
+                              ONLY_STRICT_HTML_TEMPLATES_ALLOWED,
+                              templateNode.getResolvedName()));
+            });
   }
 
   private void handleDynamicTagAndCheckForLegacyDynamicTags(SoyFileNode file) {
