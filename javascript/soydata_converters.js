@@ -32,26 +32,21 @@ const ReadonlySafeStyleProto = goog.requireType('proto.html.ReadonlySafeStylePro
 const ReadonlySafeStyleSheetProto = goog.requireType('proto.html.ReadonlySafeStyleSheetProto');
 const ReadonlySafeUrlProto = goog.requireType('proto.html.ReadonlySafeUrlProto');
 const ReadonlyTrustedResourceUrlProto = goog.requireType('proto.html.ReadonlyTrustedResourceUrlProto');
-const SafeHtml = goog.require('goog.html.SafeHtml');
 const SafeHtmlProto = goog.require('proto.webutil.html.types.SafeHtmlProto');
-const SafeScript = goog.require('goog.html.SafeScript');
 const SafeScriptProto = goog.require('proto.webutil.html.types.SafeScriptProto');
-const SafeStyle = goog.require('goog.html.SafeStyle');
 const SafeStyleProto = goog.require('proto.webutil.html.types.SafeStyleProto');
-const SafeStyleSheet = goog.require('goog.html.SafeStyleSheet');
 const SafeStyleSheetProto = goog.require('proto.webutil.html.types.SafeStyleSheetProto');
-const SafeUrl = goog.require('goog.html.SafeUrl');
 const SafeUrlProto = goog.require('proto.webutil.html.types.SafeUrlProto');
-const TrustedResourceUrl = goog.require('goog.html.TrustedResourceUrl');
 const TrustedResourceUrlProto = goog.require('proto.webutil.html.types.TrustedResourceUrlProto');
 const Uri = goog.require('goog.Uri');
 const googDebug = goog.require('goog.debug');
 const googString = goog.require('goog.string');
-const jspbconversions = goog.require('security.html.jspbconversions');
 const soy = goog.require('soy');
 const {ByteString} = goog.require('jspb.bytestring');
 const {SanitizedCss, SanitizedHtml, SanitizedJs, SanitizedTrustedResourceUri, SanitizedUri} = goog.require('goog.soy.data');
 const {htmlSafeByReview, resourceUrlSafeByReview, scriptSafeByReview, styleSafeByReview, styleSheetSafeByReview, urlSafeByReview} = goog.require('safevalues.restricted.reviewed');
+const {htmlToProto, protoToHtml, protoToResourceUrl, protoToScript, protoToStyle, protoToStyleSheet, protoToUrl, resourceUrlToProto, scriptToProto, styleSheetToProto, styleToProto, urlToProto} = goog.require('safevalues.conversions.jspb');
+const {unwrapHtml, unwrapResourceUrl, unwrapScript, unwrapStyle, unwrapStyleSheet, unwrapUrl} = goog.require('safevalues');
 
 /**
  * Converts a CSS Sanitized Content object to a corresponding Safe Style Proto.
@@ -82,7 +77,7 @@ exports.packSanitizedCssToSafeStyleProtoSoyRuntimeOnly = function(
           /** @type {!SanitizedCss} */ (sanitizedCss).getContent() :
           '',
       'from Soy SanitizedCss object');
-  return jspbconversions.safeStyleToProto(safeStyle);
+  return styleToProto(safeStyle);
 };
 
 
@@ -117,7 +112,7 @@ exports.packSanitizedCssToSafeStyleSheetProtoSoyRuntimeOnly = function(
           /** @type {!SanitizedCss} */ (sanitizedCss).getContent() :
           '',
       'from Soy SanitizedCss object');
-  return jspbconversions.safeStyleSheetToProto(safeStyleSheet);
+  return styleSheetToProto(safeStyleSheet);
 };
 
 
@@ -137,7 +132,7 @@ exports.packSanitizedHtmlToProtoSoyRuntimeOnly = function(sanitizedHtml) {
       /** @type {!SanitizedHtml} */ (sanitizedHtml).getContent() :
       '';
   const safeHtml = htmlSafeByReview(content, 'from Soy SanitizedHtml object');
-  return jspbconversions.safeHtmlToProto(safeHtml);
+  return htmlToProto(safeHtml);
 };
 
 
@@ -154,7 +149,7 @@ exports.packSanitizedJsToProtoSoyRuntimeOnly = function(sanitizedJs) {
   const safeScript = scriptSafeByReview(
       sanitizedJs ? /** @type {!SanitizedJs} */ (sanitizedJs).getContent() : '',
       'from Soy SanitizedJs object');
-  return jspbconversions.safeScriptToProto(safeScript);
+  return scriptToProto(safeScript);
 };
 
 
@@ -180,7 +175,7 @@ exports.packSanitizedTrustedResourceUriToProtoSoyRuntimeOnly = function(
               .getContent() :
           '',
       'from Soy SanitizedTrustedResourceUri object');
-  return jspbconversions.trustedResourceUrlToProto(trustedResourceUrl);
+  return resourceUrlToProto(trustedResourceUrl);
 };
 
 
@@ -201,14 +196,14 @@ exports.packSanitizedUriToProtoSoyRuntimeOnly = function(sanitizedUri) {
             /** @type {!Uri} */ (sanitizedUri).toString() :
             '',
         'from Soy Uri object');
-    return jspbconversions.safeUrlToProto(safeUrlForUri);
+    return urlToProto(safeUrlForUri);
   }
   const safeUrl = urlSafeByReview(
       sanitizedUri ?
           /** @type {!SanitizedUri} */ (sanitizedUri).getContent() :
           '',
       'from Soy SanitizedUri object');
-  return jspbconversions.safeUrlToProto(safeUrl);
+  return urlToProto(safeUrl);
 };
 
 
@@ -219,9 +214,9 @@ exports.packSanitizedUriToProtoSoyRuntimeOnly = function(sanitizedUri) {
  */
 exports.unpackProtoToSanitizedHtml = function(x) {
   if (x instanceof SafeHtmlProto) {
-    const safeHtml = jspbconversions.safeHtmlFromProto(x);
-    return soy.VERY_UNSAFE.ordainSanitizedHtml(
-        SafeHtml.unwrap(safeHtml));
+    let safeHtml = protoToHtml(x);
+    safeHtml = safeHtml ? unwrapHtml(safeHtml).toString() : '';
+    return soy.VERY_UNSAFE.ordainSanitizedHtml(safeHtml);
   }
   return null;
 };
@@ -236,11 +231,13 @@ exports.unpackProtoToSanitizedHtml = function(x) {
 exports.unpackProtoToSanitizedCss = function(x) {
   let safeCss;
   if (x instanceof SafeStyleProto) {
-    safeCss = jspbconversions.safeStyleFromProto(x);
-    return soy.VERY_UNSAFE.ordainSanitizedCss(SafeStyle.unwrap(safeCss));
+    safeCss = protoToStyle(x);
+    safeCss = safeCss ? unwrapStyle(safeCss) : '';
+    return soy.VERY_UNSAFE.ordainSanitizedCss(safeCss);
   } else if (x instanceof SafeStyleSheetProto) {
-    safeCss = jspbconversions.safeStyleSheetFromProto(x);
-    return soy.VERY_UNSAFE.ordainSanitizedCss(SafeStyleSheet.unwrap(safeCss));
+    safeCss = protoToStyleSheet(x);
+    safeCss = safeCss ? unwrapStyleSheet(safeCss) : '';
+    return soy.VERY_UNSAFE.ordainSanitizedCss(safeCss);
   }
   return null;
 };
@@ -253,8 +250,9 @@ exports.unpackProtoToSanitizedCss = function(x) {
  */
 exports.unpackProtoToSanitizedJs = function(x) {
   if (x instanceof SafeScriptProto) {
-    const safeJs = jspbconversions.safeScriptFromProto(x);
-    return soy.VERY_UNSAFE.ordainSanitizedJs(SafeScript.unwrap(safeJs));
+    let safeJs = protoToScript(x);
+    safeJs = safeJs ? unwrapScript(safeJs).toString() : '';
+    return soy.VERY_UNSAFE.ordainSanitizedJs(safeJs);
   }
   return null;
 };
@@ -269,8 +267,9 @@ exports.unpackProtoToSanitizedJs = function(x) {
  */
 exports.unpackProtoToSanitizedUri = function(x) {
   if (x instanceof SafeUrlProto) {
-    const safeUrl = jspbconversions.safeUrlFromProto(x);
-    return soy.VERY_UNSAFE.ordainSanitizedUri(SafeUrl.unwrap(safeUrl));
+    let safeUrl = protoToUrl(x);
+    safeUrl = safeUrl ? unwrapUrl(safeUrl) : '';
+    return soy.VERY_UNSAFE.ordainSanitizedUri(safeUrl);
   }
   return null;
 };
@@ -284,9 +283,9 @@ exports.unpackProtoToSanitizedUri = function(x) {
  */
 exports.unpackProtoToSanitizedTrustedResourceUri = function(x) {
   if (x instanceof TrustedResourceUrlProto) {
-    const safeUrl = jspbconversions.trustedResourceUrlFromProto(x);
-    return soy.VERY_UNSAFE.ordainSanitizedTrustedResourceUri(
-        TrustedResourceUrl.unwrap(safeUrl));
+    let safeUrl = protoToResourceUrl(x);
+    safeUrl = safeUrl ? unwrapResourceUrl(safeUrl).toString() : '';
+    return soy.VERY_UNSAFE.ordainSanitizedTrustedResourceUri(safeUrl);
   }
   return null;
 };

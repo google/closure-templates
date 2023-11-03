@@ -15,11 +15,11 @@ import {
   ElementMetadata,
   Logger,
 } from 'google3/javascript/template/soy/soyutils_velog';
-import {SafeHtml} from 'google3/third_party/javascript/closure/html/safehtml';
 import {SanitizedHtml} from 'google3/third_party/javascript/closure/soy/data';
 import * as googSoy from 'google3/third_party/javascript/closure/soy/soy';
 import {truncate} from 'google3/third_party/javascript/closure/string/string';
 import * as incrementaldom from 'incrementaldom'; // from //third_party/javascript/incremental_dom:incrementaldom
+import {SafeHtml, unwrapHtml} from 'safevalues';
 import {attributes} from './api_idom_attributes';
 import {IdomFunction, SoyElement} from './element_lib_idom';
 import {getSoyUntyped} from './global';
@@ -311,7 +311,7 @@ export class IncrementalDomRendererImpl implements IncrementalDomRenderer {
       expr instanceof SafeHtml
     ) {
       const content =
-        expr instanceof SafeHtml ? SafeHtml.unwrap(expr) : String(expr);
+        expr instanceof SafeHtml ? unwrapHtml(expr).toString() : String(expr);
       if (!/&|</.test(content)) {
         this.text(content);
         return;

@@ -11,8 +11,8 @@ import {
   assertExists,
 } from 'google3/third_party/javascript/closure/asserts/asserts';
 import {IDisposable} from 'google3/third_party/javascript/closure/disposable/idisposable';
-import {SafeHtml} from 'google3/third_party/javascript/closure/html/safehtml';
 import {SanitizedContentKind} from 'google3/third_party/javascript/closure/soy/data';
+import {SafeHtml} from 'safevalues';
 
 import {
   IncrementalDomRenderer,

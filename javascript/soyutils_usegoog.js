@@ -28,12 +28,6 @@ goog.module('soy');
 goog.module.declareLegacyNamespace();
 
 const BidiFormatter = goog.require('goog.i18n.BidiFormatter');
-const SafeHtml = goog.require('goog.html.SafeHtml');
-const SafeScript = goog.require('goog.html.SafeScript');
-const SafeStyle = goog.require('goog.html.SafeStyle');
-const SafeStyleSheet = goog.require('goog.html.SafeStyleSheet');
-const SafeUrl = goog.require('goog.html.SafeUrl');
-const TrustedResourceUrl = goog.require('goog.html.TrustedResourceUrl');
 const asserts = goog.require('goog.asserts');
 const bidi = goog.require('goog.i18n.bidi');
 const googArray = goog.require('goog.array');
@@ -43,7 +37,7 @@ const googSoy = goog.requireType('goog.soy');
 const googString = goog.require('goog.string');
 const soyChecks = goog.require('soy.checks');
 const {Message} = goog.requireType('jspb');
-const {SafeHtml: TsSafeHtml, SafeScript: TsSafeScript, SafeStyle: TsSafeStyle, SafeStyleSheet: TsSafeStyleSheet, SafeUrl: TsSafeUrl, TrustedResourceUrl: TsTrustedResourceUrl, unwrapHtml, unwrapResourceUrl, unwrapScript, unwrapStyle, unwrapStyleSheet, unwrapUrl} = goog.require('safevalues');
+const {SafeHtml, SafeScript, SafeStyle, SafeStyleSheet, SafeUrl, TrustedResourceUrl, unwrapHtml, unwrapResourceUrl, unwrapScript, unwrapStyle, unwrapStyleSheet, unwrapUrl} = goog.require('safevalues');
 const {SanitizedContent, SanitizedContentKind, SanitizedCss, SanitizedHtml, SanitizedHtmlAttribute, SanitizedJs, SanitizedTrustedResourceUri, SanitizedUri} = goog.require('goog.soy.data');
 const {defaultImmutableInstance} = goog.require('jspb.immutable_message');
 const {htmlSafeByReview} = goog.require('safevalues.restricted.reviewed');
@@ -129,8 +123,7 @@ const createSanitizedHtml = function(value) {
     return /** @type {!SanitizedHtml} */ (value);
   }
   if (value instanceof SafeHtml) {
-    return VERY_UNSAFE.ordainSanitizedHtml(
-        SafeHtml.unwrap(value));
+    return VERY_UNSAFE.ordainSanitizedHtml(unwrapHtml(value).toString());
   }
   return VERY_UNSAFE.ordainSanitizedHtml(
       $$escapeHtmlHelper(String(value)), getContentDir(value));
@@ -931,7 +924,7 @@ const $$htmlToText = function(value) {
   }
   let html;
   if (value instanceof SafeHtml) {
-    html = SafeHtml.unwrap(value);
+    html = unwrapHtml(value).toString();
   } else if (isContentKind_(value, SanitizedContentKind.HTML)) {
     html = value.toString();
   } else {
@@ -1525,7 +1518,7 @@ const $$escapeJsValue = function(value) {
     return value.getContent();
   }
   if (value instanceof SafeScript) {
-    return SafeScript.unwrap(value);
+    return unwrapScript(value).toString();
   }
   switch (typeof value) {
     case 'boolean':
@@ -1625,10 +1618,10 @@ const $$filterNormalizeUri = function(value) {
     return $$normalizeUri(value);
   }
   if (value instanceof SafeUrl) {
-    return $$normalizeUri(SafeUrl.unwrap(value));
+    return $$normalizeUri(unwrapUrl(value));
   }
   if (value instanceof TrustedResourceUrl) {
-    return $$normalizeUri(TrustedResourceUrl.unwrap(value));
+    return $$normalizeUri(unwrapResourceUrl(value).toString());
   }
   return $$filterNormalizeUriHelper(value);
 };
@@ -1652,10 +1645,10 @@ const $$filterNormalizeMediaUri = function(value) {
     return $$normalizeUri(value);
   }
   if (value instanceof SafeUrl) {
-    return $$normalizeUri(SafeUrl.unwrap(value));
+    return $$normalizeUri(unwrapUrl(value));
   }
   if (value instanceof TrustedResourceUrl) {
-    return $$normalizeUri(TrustedResourceUrl.unwrap(value));
+    return $$normalizeUri(unwrapResourceUrl(value).toString());
   }
   return $$filterNormalizeMediaUriHelper(value);
 };
@@ -1683,7 +1676,7 @@ const $$filterTrustedResourceUri = function(value) {
     return value.getContent();
   }
   if (value instanceof TrustedResourceUrl) {
-    return TrustedResourceUrl.unwrap(value);
+    return unwrapResourceUrl(value).toString();
   }
   asserts.fail('Bad value `%s` for |filterTrustedResourceUri', [String(value)]);
   return 'about:invalid#zSoyz';
@@ -1780,7 +1773,7 @@ const $$filterCssValue = function(value) {
     return '';
   }
   if (value instanceof SafeStyle) {
-    return $$embedCssIntoHtml_(SafeStyle.unwrap(value));
+    return $$embedCssIntoHtml_(unwrapStyle(value));
   }
   // Note: SoyToJsSrcCompiler uses $$filterCssValue both for the contents of
   // <style> (list of rules) and for the contents of style="" (one set of
@@ -1788,7 +1781,7 @@ const $$filterCssValue = function(value) {
   // it also wrongly allows it inside style="". We should instead change
   // SoyToJsSrcCompiler to use a different function inside <style>.
   if (value instanceof SafeStyleSheet) {
-    return $$embedCssIntoHtml_(SafeStyleSheet.unwrap(value));
+    return $$embedCssIntoHtml_(unwrapStyleSheet(value));
   }
   return $$filterCssValueHelper(value);
 };
@@ -2387,7 +2380,7 @@ const $$bidiSpanWrap = function(bidiGlobalDir, text) {
   // Like other directives whose Java class implements SanitizedContentOperator,
   // |bidiSpanWrap is called after the escaping (if any) has already been done,
   // and thus there is no need for it to produce actual SanitizedContent.
-  return SafeHtml.unwrap(wrappedHtml);
+  return unwrapHtml(wrappedHtml).toString();
 };
 
 
