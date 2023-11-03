@@ -134,7 +134,7 @@ final class SoyHeaderCompiler extends AbstractSoyCompiler {
     Set<String> cssClassNames = new LinkedHashSet<>();
     SoyTreeUtils.allFunctionInvocations(fileSet, BuiltinFunction.CSS)
         .forEach(
-            fn -> cssClassNames.add(((StringNode) Iterables.getLast(fn.getChildren())).getValue()));
+            fn -> cssClassNames.add(((StringNode) Iterables.getLast(fn.getParams())).getValue()));
     return CssMetadata.newBuilder()
         .addAllRequireCssNames(requiredCssNames)
         .addAllRequireCssNames(cssNamesFromPath)

@@ -427,6 +427,7 @@ public final class TypeNodeConverter
                   .setType(parameter.type().accept(this))
                   .setRequired(true)
                   .setImplicit(false)
+                  .setHasDefaultValue(false)
                   .build());
       if (oldParameter != null) {
         errorReporter.report(
