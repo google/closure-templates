@@ -39,6 +39,7 @@ import com.google.template.soy.exprtree.MethodCallNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.shared.internal.BuiltinMethod;
+import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.HtmlAttributeNode;
 import com.google.template.soy.soytree.HtmlOpenTagNode;
 import com.google.template.soy.soytree.HtmlTagNode;
@@ -46,7 +47,6 @@ import com.google.template.soy.soytree.IfCondNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
-import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TagName;
 import com.google.template.soy.soytree.TemplateBasicNode;
@@ -157,54 +157,46 @@ final class MoreCallValidationsPass implements CompilerFileSetPass {
     return Result.CONTINUE;
   }
 
-  // Returns all child ExprNodes, omitting the "modifies" expression of TemplateBasicNodes.
-  private static Stream<ExprNode> nonModifiesExprs(ExprHolderNode exprHolderNode) {
-    if (exprHolderNode instanceof TemplateBasicNode) {
-      TemplateBasicNode templateBasicNode = (TemplateBasicNode) exprHolderNode;
-      Stream<ExprNode> stream = Stream.<ExprNode>builder().build();
-      for (ExprRootNode rootNode : exprHolderNode.getExprList()) {
-        if (rootNode != templateBasicNode.getModifiesExpr()) {
-          stream = Stream.concat(stream, SoyTreeUtils.allNodesOfType(rootNode, ExprNode.class));
-        }
-      }
-      return stream;
-    }
-    return SoyTreeUtils.allNodesOfType(exprHolderNode, ExprNode.class);
-  }
-
   private void checkTemplateLiteralsUsedInExpr(SoyFileNode file) {
     SoyTreeUtils.allNodesOfType(file, SoyNode.ExprHolderNode.class)
+        .flatMap(
+            expHolder -> {
+              Stream<ExprRootNode> roots = expHolder.getExprList().stream();
+              if (expHolder instanceof TemplateBasicNode) {
+                roots =
+                    roots.filter(r -> !r.equals(((TemplateBasicNode) expHolder).getModifiesExpr()));
+              } else if (expHolder instanceof CallBasicNode) {
+                // Allow short form calls.
+                roots = roots.filter(r -> !r.equals(((CallBasicNode) expHolder).getCalleeExpr()));
+              }
+              return roots;
+            })
+        .flatMap(SoyTreeUtils::allNodes)
+        .filter(
+            exprNode ->
+                exprNode.getKind() == Kind.TEMPLATE_LITERAL_NODE
+                    && !((TemplateLiteralNode) exprNode).isStaticCall())
+        .map(TemplateLiteralNode.class::cast)
         .forEach(
-            exprHolder ->
-                nonModifiesExprs(exprHolder)
+            templateNode ->
+                stream(SoyTypes.getTypeTraverser(templateNode.getType(), null))
+                    .filter(t -> t.getKind() == SoyType.Kind.TEMPLATE)
+                    .map(TemplateType.class::cast)
                     .filter(
-                        exprNode ->
-                            exprNode.getKind() == Kind.TEMPLATE_LITERAL_NODE
-                                && !((TemplateLiteralNode) exprNode).isStaticCall())
-                    .map(TemplateLiteralNode.class::cast)
+                        templateType ->
+                            templateType.getContentKind().getSanitizedContentKind().isHtml()
+                                && !templateType.isStrictHtml())
                     .forEach(
-                        templateNode ->
-                            stream(SoyTypes.getTypeTraverser(templateNode.getType(), null))
-                                .filter(t -> t.getKind() == SoyType.Kind.TEMPLATE)
-                                .map(TemplateType.class::cast)
-                                .filter(
-                                    templateType ->
-                                        templateType
-                                                .getContentKind()
-                                                .getSanitizedContentKind()
-                                                .isHtml()
-                                            && !templateType.isStrictHtml())
-                                .forEach(
-                                    templateType ->
-                                        // Only report errors for template literal nodes, to avoid
-                                        // reporting errors multiple times (ie., once for everywhere
-                                        // the 'named' template type has propagated in the
-                                        // expression tree).
-                                        // TODO(b/180151169) Is this check necessary?
-                                        errorReporter.report(
-                                            templateNode.getSourceLocation(),
-                                            ONLY_STRICT_HTML_TEMPLATES_ALLOWED,
-                                            templateNode.getResolvedName()))));
+                        templateType ->
+                            // Only report errors for template literal nodes, to avoid
+                            // reporting errors multiple times (ie., once for everywhere
+                            // the 'named' template type has propagated in the
+                            // expression tree).
+                            // TODO(b/180151169) Is this check necessary?
+                            errorReporter.report(
+                                templateNode.getSourceLocation(),
+                                ONLY_STRICT_HTML_TEMPLATES_ALLOWED,
+                                templateNode.getResolvedName())));
   }
 
   private void handleDynamicTagAndCheckForLegacyDynamicTags(SoyFileNode file) {
@@ -311,9 +303,9 @@ final class MoreCallValidationsPass implements CompilerFileSetPass {
               } else if (!seenSlots.contains(p.getName())
                   && !seenAttributes.contains(p.getName())) {
                 // Note that <{tpl(a: 'foo')} /> is rewritten to <{tpl.bind(record(a: 'foo'))} />
-                // in ResolveTemplateFunctionsPass. So any params that are correctly set won't be
-                // in the resulting template type and won't need to be in `seenSlots` to validate
-                // correctly here.
+                // in RewriteElementCompositionFunctionsPass. So any params that are correctly set
+                // won't be in the resulting template type and won't need to be in `seenSlots` to
+                // validate correctly here.
                 errorReporter.report(openTagNode.getSourceLocation(), MISSING_PARAM, p.getName());
               }
             });
@@ -358,7 +350,7 @@ final class MoreCallValidationsPass implements CompilerFileSetPass {
                                 : e.getKey())
                     .collect(toImmutableList()),
                 name);
-          errorReporter.report(loc, NO_SUCH_ATTRIBUTE, didYouMeanMessage);
+        errorReporter.report(loc, NO_SUCH_ATTRIBUTE, didYouMeanMessage);
         return;
       }
       if (param.getKind() == ParameterKind.ATTRIBUTE && !Parameter.isValidAttrName(name)) {
@@ -438,9 +430,9 @@ final class MoreCallValidationsPass implements CompilerFileSetPass {
       if (((FunctionNode) exprNode).isResolved()
           && ((FunctionNode) exprNode).getSoyFunction() == BuiltinFunction.LEGACY_DYNAMIC_TAG) {
         FunctionNode functionNode = (FunctionNode) exprNode;
-        if (functionNode.numChildren() == 1) {
+        if (functionNode.numParams() == 1) {
           printNode.getExpr().clearChildren();
-          printNode.getExpr().addChild(functionNode.getChild(0));
+          printNode.getExpr().addChild(functionNode.getParam(0));
         }
         correctlyPlaced.add(functionNode);
       }

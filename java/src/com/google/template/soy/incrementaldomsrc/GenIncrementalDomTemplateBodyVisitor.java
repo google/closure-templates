@@ -640,7 +640,7 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
                         genJsExprsVisitor.exec(node.getChild(0)).get(0),
                         XID.call(Expressions.stringLiteral(func.getStaticFunctionName())),
                         Expressions.arrayLiteral(
-                            func.getChildren().stream()
+                            func.getParams().stream()
                                 .map(n -> getExprTranslator().exec(n))
                                 .collect(toImmutableList())),
                         Expressions.stringLiteral(loggingNode.getPlaceholder()))
@@ -752,7 +752,7 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
         if (n.getExpr().getRoot() instanceof FunctionNode) {
           FunctionNode fnNode = (FunctionNode) n.getExpr().getRoot();
           if (fnNode.getSoyFunction() != BuiltinFunction.XID
-              && (fnNode.getSoyFunction() != BuiltinFunction.CSS || fnNode.numChildren() != 1)) {
+              && (fnNode.getSoyFunction() != BuiltinFunction.CSS || fnNode.numParams() != 1)) {
             return null; // Function call was not xid or css
           }
         } else {

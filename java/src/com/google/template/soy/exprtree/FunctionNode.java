@@ -167,8 +167,8 @@ public final class FunctionNode extends AbstractParentExprNode implements ExprNo
   }
 
   private final Identifier name;
-  private final ExprNode nameExpr;
   private final ParamsStyle paramsStyle;
+
   /** When paramsStyle is NAMED this contains the list of named parameters. Otherwise empty. */
   private final ImmutableList<Identifier> paramNames;
 
@@ -188,7 +188,9 @@ public final class FunctionNode extends AbstractParentExprNode implements ExprNo
     Preconditions.checkArgument(paramNames.isEmpty() || paramsStyle == ParamsStyle.NAMED);
     Preconditions.checkArgument((name == null) != (nameExpr == null));
     this.name = name;
-    this.nameExpr = nameExpr;
+    if (nameExpr != null) {
+      this.addChild(nameExpr);
+    }
     this.paramsStyle = paramsStyle;
     this.paramNames = paramNames;
     this.commaLocations = commaLocations;
@@ -202,7 +204,6 @@ public final class FunctionNode extends AbstractParentExprNode implements ExprNo
   private FunctionNode(FunctionNode orig, CopyState copyState) {
     super(orig, copyState);
     this.name = orig.name;
-    this.nameExpr = orig.nameExpr != null ? orig.nameExpr.copy(copyState) : null;
     this.paramsStyle = orig.paramsStyle;
     this.paramNames = orig.paramNames;
     this.state.function = orig.state.function;
@@ -238,7 +239,8 @@ public final class FunctionNode extends AbstractParentExprNode implements ExprNo
 
   /** If this function does not have a static name then it has a name expression. */
   public ExprNode getNameExpr() {
-    return Preconditions.checkNotNull(nameExpr);
+    Preconditions.checkState(name == null);
+    return Preconditions.checkNotNull(getChild(0));
   }
 
   @Override
@@ -253,7 +255,7 @@ public final class FunctionNode extends AbstractParentExprNode implements ExprNo
 
   /** Returns the location of the function name. */
   public SourceLocation getFunctionNameLocation() {
-    return name != null ? name.location() : nameExpr.getSourceLocation();
+    return name != null ? name.location() : getNameExpr().getSourceLocation();
   }
 
   public boolean isResolved() {
@@ -290,19 +292,19 @@ public final class FunctionNode extends AbstractParentExprNode implements ExprNo
   }
 
   public void setAllowedParamTypes(List<SoyType> allowedParamTypes) {
-    checkState(paramsStyle == ParamsStyle.POSITIONAL || numChildren() == 0);
+    checkState(paramsStyle == ParamsStyle.POSITIONAL || numParams() == 0);
     checkState(
-        allowedParamTypes.size() == numChildren(),
-        "allowedParamTypes.size (%s) != numChildren (%s)",
+        allowedParamTypes.size() == numParams(),
+        "allowedParamTypes.size (%s) != numParams (%s)",
         allowedParamTypes.size(),
-        numChildren());
+        numParams());
     this.state.allowedParamTypes = ImmutableList.copyOf(allowedParamTypes);
   }
 
   /** Returns null if ResolveExpressionTypesPass has not run yet. */
   @Nullable
   public ImmutableList<SoyType> getAllowedParamTypes() {
-    checkState(paramsStyle == ParamsStyle.POSITIONAL || numChildren() == 0);
+    checkState(paramsStyle == ParamsStyle.POSITIONAL || numParams() == 0);
     return state.allowedParamTypes;
   }
 
@@ -313,7 +315,7 @@ public final class FunctionNode extends AbstractParentExprNode implements ExprNo
    */
   @Override
   public ImmutableList<Identifier> getParamNames() {
-    Preconditions.checkState(paramsStyle == ParamsStyle.NAMED || numChildren() == 0);
+    Preconditions.checkState(paramsStyle == ParamsStyle.NAMED || numParams() == 0);
     return paramNames;
   }
 
@@ -321,12 +323,13 @@ public final class FunctionNode extends AbstractParentExprNode implements ExprNo
   public String toSourceString() {
     StringBuilder sourceSb = new StringBuilder();
     sourceSb
-        .append(hasStaticName() ? getStaticFunctionName() : nameExpr.toSourceString())
+        .append(hasStaticName() ? getStaticFunctionName() : getNameExpr().toSourceString())
         .append('(');
 
+    List<ExprNode> params = getParams();
     if (paramsStyle == ParamsStyle.POSITIONAL) {
       boolean isFirst = true;
-      for (ExprNode child : getChildren()) {
+      for (ExprNode child : params) {
         if (isFirst) {
           isFirst = false;
         } else {
@@ -335,12 +338,12 @@ public final class FunctionNode extends AbstractParentExprNode implements ExprNo
         sourceSb.append(child.toSourceString());
       }
     } else if (paramsStyle == ParamsStyle.NAMED) {
-      for (int i = 0; i < numChildren(); i++) {
+      for (int i = 0; i < params.size(); i++) {
         if (i > 0) {
           sourceSb.append(", ");
         }
         sourceSb.append(paramNames.get(i)).append(": ");
-        sourceSb.append(getChild(i).toSourceString());
+        sourceSb.append(params.get(i).toSourceString());
       }
     }
 
@@ -370,11 +373,20 @@ public final class FunctionNode extends AbstractParentExprNode implements ExprNo
 
   @Override
   public List<ExprNode> getParams() {
-    return getChildren();
+    return name == null ? getChildren().subList(1, numChildren()) : getChildren();
+  }
+
+  @Override
+  public ExprNode getParam(int index) {
+    return name == null ? getChild(index + 1) : getChild(index);
   }
 
   @Override
   public int numParams() {
-    return numChildren();
+    return name == null ? numChildren() - 1 : numChildren();
+  }
+
+  public int getParamIndex(ExprNode node) {
+    return name == null ? getChildIndex(node) - 1 : getChildIndex(node);
   }
 }

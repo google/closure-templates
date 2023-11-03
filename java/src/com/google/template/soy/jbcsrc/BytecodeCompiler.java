@@ -153,7 +153,7 @@ public final class BytecodeCompiler {
               if (fnNode.getSoyFunction() instanceof SoyJavaSourceFunction) {
                 Set<String> instances =
                     PluginAnalyzer.analyze(
-                            (SoyJavaSourceFunction) fnNode.getSoyFunction(), fnNode.numChildren())
+                            (SoyJavaSourceFunction) fnNode.getSoyFunction(), fnNode.numParams())
                         .pluginInstanceNames();
                 if (!instances.isEmpty()) {
                   // We guarantee there's either 0 or 1 instances required for the plugin because

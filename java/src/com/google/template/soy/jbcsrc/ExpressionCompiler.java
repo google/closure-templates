@@ -36,6 +36,7 @@ import com.google.template.soy.exprtree.BooleanNode;
 import com.google.template.soy.exprtree.DataAccessNode;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.AccessChainComponentNode;
+import com.google.template.soy.exprtree.ExprNode.CallableExpr;
 import com.google.template.soy.exprtree.ExprNode.OperatorNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
@@ -1531,7 +1532,7 @@ final class ExpressionCompiler {
                 ProtoUtils.SingularFieldAccessMode.NULL_IF_UNSET,
                 varManager);
           case MAP_GET:
-            Expression expr = getMapGetExpression(baseExpr, node, visit(node.getParams().get(0)));
+            Expression expr = getMapGetExpression(baseExpr, node, visit(node.getParam(0)));
             return SoyExpression.forSoyValue(node.getType(), expr.checkedSoyCast(node.getType()));
           case BIND:
             return SoyExpression.forSoyValue(
@@ -1629,7 +1630,7 @@ final class ExpressionCompiler {
     @Override
     SoyExpression visitCheckNotNullFunction(FunctionNode node) {
       // there is only ever a single child
-      ExprNode childNode = Iterables.getOnlyElement(node.getChildren());
+      ExprNode childNode = Iterables.getOnlyElement(node.getParams());
       SoyExpression expr = visit(childNode);
       if (expr.isNonSoyNullish()) {
         return expr;
@@ -1652,13 +1653,13 @@ final class ExpressionCompiler {
 
     @Override
     SoyExpression visitCssFunction(FunctionNode node) {
-      StringNode selector = (StringNode) Iterables.getLast(node.getChildren());
+      StringNode selector = (StringNode) Iterables.getLast(node.getParams());
       Expression renamedSelector = parameters.getRenderContext().renameCss(selector.getValue());
 
-      if (node.numChildren() == 1) {
+      if (node.numParams() == 1) {
         return SoyExpression.forString(renamedSelector);
       } else {
-        SoyExpression base = visit(node.getChild(0)).coerceToString();
+        SoyExpression base = visit(node.getParam(0)).coerceToString();
         Expression fullSelector =
             base.invoke(MethodRefs.STRING_CONCAT, constant("-"))
                 .toMaybeConstant()
@@ -1669,14 +1670,14 @@ final class ExpressionCompiler {
 
     @Override
     SoyExpression visitXidFunction(FunctionNode node) {
-      StringNode xid = (StringNode) Iterables.getOnlyElement(node.getChildren());
+      StringNode xid = (StringNode) Iterables.getOnlyElement(node.getParams());
       Expression renamedXid = parameters.getRenderContext().renameXid(xid.getValue());
       return SoyExpression.forString(renamedXid);
     }
 
     @Override
     SoyExpression visitSoyServerKeyFunction(FunctionNode node) {
-      ExprNode child = Iterables.getOnlyElement(node.getChildren());
+      ExprNode child = Iterables.getOnlyElement(node.getParams());
       return SoyExpression.forString(MethodRefs.SOY_SERVER_KEY.invoke(visit(child).box()));
     }
 
@@ -1686,13 +1687,13 @@ final class ExpressionCompiler {
           parameters
               .getRenderContext()
               .usePrimaryMsgIfFallback(
-                  ((IntegerNode) node.getChild(1)).getValue(),
-                  ((IntegerNode) node.getChild(2)).getValue()));
+                  ((IntegerNode) node.getParam(1)).getValue(),
+                  ((IntegerNode) node.getParam(2)).getValue()));
     }
 
     @Override
     SoyExpression visitToFloatFunction(FunctionNode node) {
-      SoyExpression arg = visit(node.getChild(0));
+      SoyExpression arg = visit(node.getParam(0));
       return SoyExpression.forFloat(numericConversion(arg.unboxAsLong(), Type.DOUBLE_TYPE));
     }
 
@@ -1703,9 +1704,9 @@ final class ExpressionCompiler {
 
     @Override
     SoyExpression visitVeDataFunction(FunctionNode node) {
-      SoyExpression ve = visit(node.getChild(0));
+      SoyExpression ve = visit(node.getParam(0));
       Expression data =
-          visit(node.getChild(1)).unboxAsMessageOrJavaNull(BytecodeUtils.MESSAGE_TYPE);
+          visit(node.getParam(1)).unboxAsMessageOrJavaNull(BytecodeUtils.MESSAGE_TYPE);
       return SoyExpression.forSoyValue(
           node.getType(), MethodRefs.SOY_VISUAL_ELEMENT_DATA_CREATE.invoke(ve, data));
     }
@@ -1713,14 +1714,14 @@ final class ExpressionCompiler {
     @Override
     SoyExpression visitEmptyToNullFunction(FunctionNode node) {
       return SoyExpression.forSoyValue(
-          node.getType(), MethodRefs.RUNTIME_EMPTY_TO_NULL.invoke(visit(node.getChild(0)).box()));
+          node.getType(), MethodRefs.RUNTIME_EMPTY_TO_NULL.invoke(visit(node.getParam(0)).box()));
     }
 
     @Override
     SoyExpression visitUndefinedToNullFunction(FunctionNode node) {
       return SoyExpression.forSoyValue(
           SoyTypes.undefinedToNull(node.getType()),
-          MethodRefs.SOY_VALUE_NULLISH_TO_NULL.invoke(visit(node.getChild(0)).box()));
+          MethodRefs.SOY_VALUE_NULLISH_TO_NULL.invoke(visit(node.getParam(0)).box()));
     }
 
     // Non-builtin functions
@@ -1836,11 +1837,11 @@ final class ExpressionCompiler {
 
     @Override
     protected SoyExpression visitVeDefNode(FunctionNode node) {
-      Expression id = constant(((IntegerNode) node.getChild(1)).getValue());
-      Expression name = constant(((StringNode) node.getChild(0)).getValue());
+      Expression id = constant(((IntegerNode) node.getParam(1)).getValue());
+      Expression name = constant(((StringNode) node.getParam(0)).getValue());
       Expression visualElement;
-      if (node.numChildren() == 4) {
-        Expression metadata = visitProtoInitFunction((FunctionNode) node.getChild(3));
+      if (node.numParams() == 4) {
+        Expression metadata = visitProtoInitFunction((FunctionNode) node.getParam(3));
         visualElement =
             MethodRefs.SOY_VISUAL_ELEMENT_CREATE_WITH_METADATA.invoke(id, name, metadata);
       } else {
@@ -1945,8 +1946,9 @@ final class ExpressionCompiler {
           // For things like proto extensions and constructors we could allow references. But it
           // isn't clear that that is very useful. For cross file `const`s this isn't possible
           return false;
-        case TEMPLATE:
         case EXTERN:
+          return false;
+        case TEMPLATE:
           break;
       }
       throw new AssertionError(node.getDefnDecl().kind());
@@ -2028,11 +2030,11 @@ final class ExpressionCompiler {
       if (function == BuiltinFunction.VE_DEF) {
         // VE_DEF is a special case because we simply don't generate code for the third parameter
         // when present.
-        return visit(node.getChild(0))
-            && visit(node.getChild(1))
-            && (node.numChildren() != 4 || visit(node.getChild(3)));
+        return visit(node.getParam(0))
+            && visit(node.getParam(1))
+            && (node.numParams() != 4 || visit(node.getParam(3)));
       }
-      if (!areAllChildrenConstant(node)) {
+      if (!areAllParamsConstant(node)) {
         return false;
       }
       if (function == BuiltinFunction.PROTO_INIT
@@ -2072,6 +2074,15 @@ final class ExpressionCompiler {
     protected Boolean visitGroupNode(GroupNode node) {
       // We can get here due to null safe access expressions on template literals for bind calls.
       return areAllChildrenConstant(node);
+    }
+
+    private boolean areAllParamsConstant(CallableExpr node) {
+      for (ExprNode child : node.getParams()) {
+        if (!visit(child)) {
+          return false;
+        }
+      }
+      return true;
     }
 
     private boolean areAllChildrenConstant(ParentExprNode node) {
@@ -2184,7 +2195,7 @@ final class ExpressionCompiler {
           }
         }
       }
-      return visitExprNode(node);
+      return node.getParams().stream().anyMatch(this::visit);
     }
 
     @Override

@@ -92,11 +92,11 @@ final class MsgWithIdFunctionPass implements CompilerFilePass {
     for (FunctionNode fn :
         SoyTreeUtils.allFunctionInvocations(file, BuiltinFunction.MSG_WITH_ID)
             .collect(Collectors.toList())) {
-      if (fn.numChildren() != 1) {
+      if (fn.numParams() != 1) {
         // if it isn't == 1, then an error has already been reported
         continue;
       }
-      ExprNode msgVariable = fn.getChild(0);
+      ExprNode msgVariable = fn.getParam(0);
       if (!(msgVariable instanceof VarRefNode)) {
         badFunctionCall(fn, MSG_VARIABLE_NOT_IN_SCOPE, " It is not a variable.");
         continue;
@@ -142,7 +142,7 @@ final class MsgWithIdFunctionPass implements CompilerFilePass {
 
   private void badFunctionCall(FunctionNode fn, SoyErrorKind errorKind, String explanation) {
     errorReporter.report(
-        fn.getChild(0).getSourceLocation(), errorKind, fn.getStaticFunctionName(), explanation);
+        fn.getParam(0).getSourceLocation(), errorKind, fn.getStaticFunctionName(), explanation);
 
     // this way we don't trigger a cascade of errors about incorrect types
     RecordLiteralNode recordLiteral =
@@ -155,7 +155,7 @@ final class MsgWithIdFunctionPass implements CompilerFilePass {
     recordLiteral.addChildren(
         ImmutableList.of(
             new StringNode("error", QuoteStyle.SINGLE, fn.getSourceLocation()),
-            fn.getChild(0).copy(new CopyState())));
+            fn.getParam(0).copy(new CopyState())));
     fn.getParent().replaceChild(fn, recordLiteral);
   }
 
@@ -185,7 +185,7 @@ final class MsgWithIdFunctionPass implements CompilerFilePass {
       // code for these things.
       // We could formalize the hack by providing a way to stash arbitrary data in the FunctionNode
       // and then just pack this up in a non-AST datastructure.
-      isPrimaryMsgInUse.addChild(fn.getChild(0).copy(new CopyState()));
+      isPrimaryMsgInUse.addChild(fn.getParam(0).copy(new CopyState()));
       isPrimaryMsgInUse.addChild(new IntegerNode(primaryMsgId, fn.getSourceLocation()));
       isPrimaryMsgInUse.addChild(new IntegerNode(fallbackMsgId, fn.getSourceLocation()));
       condOpNode.addChild(isPrimaryMsgInUse);
@@ -202,7 +202,7 @@ final class MsgWithIdFunctionPass implements CompilerFilePass {
                 Identifier.create("id", fn.getSourceLocation()),
                 Identifier.create("msg", fn.getSourceLocation())),
             fn.getSourceLocation());
-    recordLiteral.addChildren(ImmutableList.of(msgIdNode, fn.getChild(0).copy(new CopyState())));
+    recordLiteral.addChildren(ImmutableList.of(msgIdNode, fn.getParam(0).copy(new CopyState())));
     fn.getParent().replaceChild(fn, recordLiteral);
   }
 

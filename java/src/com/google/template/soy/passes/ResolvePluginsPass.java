@@ -110,7 +110,7 @@ final class ResolvePluginsPass implements CompilerFilePass {
           private boolean trySetFunction(FunctionNode node) {
             Object impl =
                 resolver.lookupSoyFunction(
-                    node.getStaticFunctionName(), node.numChildren(), node.getSourceLocation());
+                    node.getStaticFunctionName(), node.numParams(), node.getSourceLocation());
             if (impl != null) {
               node.setSoyFunction(impl);
               return true;

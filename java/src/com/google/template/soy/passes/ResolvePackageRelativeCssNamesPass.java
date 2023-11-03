@@ -74,7 +74,7 @@ final class ResolvePackageRelativeCssNamesPass implements CompilerFilePass {
 
   private void resolveSelector(
       SoyNode templateOrConstant, FunctionNode node, @Nullable String packagePrefix) {
-    ExprNode lastChild = Iterables.getLast(node.getChildren(), null);
+    ExprNode lastChild = Iterables.getLast(node.getParams(), null);
     if (!(lastChild instanceof StringNode)) {
       // this will generate an error in CheckFunctionCallsVisitor
       return;
@@ -86,7 +86,7 @@ final class ResolvePackageRelativeCssNamesPass implements CompilerFilePass {
       return;
     }
 
-    if (node.numChildren() > 1) {
+    if (node.numParams() > 1) {
       errorReporter.report(
           selector.getSourceLocation(),
           PACKAGE_RELATIVE_CLASS_NAME_USED_WITH_COMPONENT_NAME,

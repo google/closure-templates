@@ -607,7 +607,7 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
   private PyExpr visitNonPluginFunction(FunctionNode node, BuiltinFunction nonpluginFn) {
     switch (nonpluginFn) {
       case CHECK_NOT_NULL:
-        return assertNotNull(node.getChild(0));
+        return assertNotNull(node.getParam(0));
       case CSS:
         return visitCssFunction(node);
       case XID:
@@ -620,12 +620,12 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
       case UNDEFINED_TO_NULL:
       case UNDEFINED_TO_NULL_SSR:
         // Python runtime does not distinguish between null and undefined.
-        return visit(node.getChild(0));
+        return visit(node.getParam(0));
       case EMPTY_TO_NULL:
         return new PyExpr(
             PyExprUtils.genExprWithNewToken(
                 Operator.OR,
-                ImmutableList.of(visit(node.getChild(0)), new PyExpr("None", Integer.MAX_VALUE)),
+                ImmutableList.of(visit(node.getParam(0)), new PyExpr("None", Integer.MAX_VALUE)),
                 "or"),
             PyExprUtils.pyPrecedenceForOperator(Operator.OR));
       case DEBUG_SOY_TEMPLATE_INFO:
@@ -668,17 +668,17 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
 
   private PyExpr visitXidFunction(FunctionNode node) {
     return new PyFunctionExprBuilder("runtime.get_xid_name")
-        .addArg(visit(node.getChild(0)))
+        .addArg(visit(node.getParam(0)))
         .asPyExpr();
   }
 
   private PyExpr visitSoyServerKeyFunction(FunctionNode node) {
-    return visit(node.getChild(0));
+    return visit(node.getParam(0));
   }
 
   private PyExpr visitIsPrimaryMsgInUseFunction(FunctionNode node) {
-    long primaryMsgId = ((IntegerNode) node.getChild(1)).getValue();
-    long fallbackMsgId = ((IntegerNode) node.getChild(2)).getValue();
+    long primaryMsgId = ((IntegerNode) node.getParam(1)).getValue();
+    long fallbackMsgId = ((IntegerNode) node.getParam(2)).getValue();
     return new PyExpr(
         PyExprUtils.TRANSLATOR_NAME
             + ".is_msg_available("
@@ -781,7 +781,7 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
               .asPyExpr()
               .getText();
         case MAP_GET:
-          PyExpr keyPyExpr = visit(methodCallNode.getParams().get(0));
+          PyExpr keyPyExpr = visit(methodCallNode.getParam(0));
           return genCodeForKeyAccess(containerExpr, keyPyExpr, NotFoundBehavior.returnNone());
         case GET_EXTENSION:
         case HAS_EXTENSION:

@@ -49,11 +49,11 @@ public final class XidPass implements CompilerFilePass {
     SoyTreeUtils.allFunctionInvocations(file, BuiltinFunction.XID)
         .forEach(
             fn -> {
-              if (fn.numChildren() != 1) {
+              if (fn.numParams() != 1) {
                 // if it isn't == 1, then an error has already been reported, move along.
                 return;
               }
-              ExprNode child = fn.getChild(0);
+              ExprNode child = fn.getParam(0);
               switch (child.getKind()) {
                 case GLOBAL_NODE:
                   GlobalNode global = (GlobalNode) child;

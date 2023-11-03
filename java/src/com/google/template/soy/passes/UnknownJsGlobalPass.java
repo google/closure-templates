@@ -53,8 +53,8 @@ final class UnknownJsGlobalPass implements CompilerFilePass {
               }
               // The ResolveFunctionsPass and ResolveExpressionTypesPass validate these 2 conditions
               // so we don't need to enforce them here.
-              if (fn.numChildren() == 1) {
-                ExprNode child = fn.getChild(0);
+              if (fn.numParams() == 1) {
+                ExprNode child = fn.getParam(0);
                 if (child instanceof StringNode) {
                   String parameter = ((StringNode) child).getValue();
                   if (!BaseUtils.isDottedIdentifier(parameter)) {

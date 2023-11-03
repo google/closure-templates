@@ -1573,10 +1573,10 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
           // list<list<X>>.flat() or list<list<X>>.flat(1) -> list<X>
           // list<list<list<X>>>.flat(2) etc -> list<X>
           int maxDepth;
-          if (node.getParams().size() == 1) {
+          if (node.numParams() == 1) {
             // This will only work for int literal in the source code.
-            if (node.getParams().get(0).getKind() == ExprNode.Kind.INTEGER_NODE) {
-              maxDepth = (int) ((IntegerNode) node.getParams().get(0)).getValue();
+            if (node.getParam(0).getKind() == ExprNode.Kind.INTEGER_NODE) {
+              maxDepth = (int) ((IntegerNode) node.getParam(0)).getValue();
             } else {
               maxDepth = 0;
             }
@@ -2182,8 +2182,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
 
       // If we didn't set the allowed types for params above, then set them to unknown types.
       if (node.getParamsStyle() == ParamsStyle.POSITIONAL && node.getAllowedParamTypes() == null) {
-        node.setAllowedParamTypes(
-            Collections.nCopies(node.numChildren(), UnknownType.getInstance()));
+        node.setAllowedParamTypes(Collections.nCopies(node.numParams(), UnknownType.getInstance()));
       }
     }
 
@@ -2196,7 +2195,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
       ResolvedSignature matchedSignature = null;
       // Found the matched signature for the current function call.
       for (Signature signature : fnSignature.value()) {
-        if (signature.parameterTypes().length == node.numChildren()) {
+        if (signature.parameterTypes().length == node.numParams()) {
           matchedSignature = getOrCreateFunctionSignature(signature, className, errorReporter);
           if (!signature.deprecatedWarning().isEmpty()) {
             errorReporter.warn(
@@ -2216,8 +2215,8 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
         errorReporter.report(node.getFunctionNameLocation(), INCORRECT_ARG_STYLE);
         return;
       }
-      for (int i = 0; i < node.numChildren(); ++i) {
-        checkArgType(node.getChild(i), matchedSignature.parameterTypes().get(i), node);
+      for (int i = 0; i < node.numParams(); ++i) {
+        checkArgType(node.getParam(i), matchedSignature.parameterTypes().get(i), node);
       }
       node.setAllowedParamTypes(matchedSignature.parameterTypes());
       node.setType(matchedSignature.returnType());
@@ -2225,7 +2224,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
 
     private void visitKeysFunction(FunctionNode node) {
       ListType listType;
-      SoyType argType = node.getChild(0).getType();
+      SoyType argType = node.getParam(0).getType();
       if (argType.equals(LegacyObjectMapType.EMPTY_MAP)) {
         listType = ListType.EMPTY_LIST;
       } else {
@@ -2246,7 +2245,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
     }
 
     private void visitLegacyObjectMapToMapFunction(FunctionNode node) {
-      SoyType argType = node.getChild(0).getType();
+      SoyType argType = node.getParam(0).getType();
       if (argType.equals(LegacyObjectMapType.EMPTY_MAP)) {
         node.setType(MapType.EMPTY_MAP);
       } else if (argType == UnknownType.getInstance()) {
@@ -2269,7 +2268,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
     }
 
     private void visitMapToLegacyObjectMapFunction(FunctionNode node) {
-      SoyType argType = node.getChild(0).getType();
+      SoyType argType = node.getParam(0).getType();
       if (argType.equals(MapType.EMPTY_MAP)) {
         node.setType(LegacyObjectMapType.EMPTY_MAP);
       } else {
@@ -2368,9 +2367,9 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
         }
       }
 
-      for (int i = 0; i < node.numChildren(); i++) {
+      for (int i = 0; i < node.numParams(); i++) {
         Identifier fieldName = node.getParamNames().get(i);
-        ExprNode expr = node.getChild(i);
+        ExprNode expr = node.getParam(i);
 
         // Check that each arg exists in the proto.
         if (!fields.contains(fieldName.identifier())) {
@@ -2768,7 +2767,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
     private void visitBuiltinFunction(BuiltinFunction builtinFunction, FunctionNode node) {
       switch (builtinFunction) {
         case CHECK_NOT_NULL:
-          SoyType type = node.getChild(0).getType();
+          SoyType type = node.getParam(0).getType();
           if (type.isNullOrUndefined()) {
             errorReporter.report(
                 node.getSourceLocation(), CHECK_NOT_NULL_ON_COMPILE_TIME_NULL, "call checkNotNull");
@@ -2782,7 +2781,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
           node.setType(BoolType.getInstance());
           break;
         case CSS:
-          checkArgIsStringLiteralWithNoSpaces(node, node.numChildren() - 1, builtinFunction);
+          checkArgIsStringLiteralWithNoSpaces(node, node.numParams() - 1, builtinFunction);
           node.setType(StringType.getInstance());
           break;
         case SOY_SERVER_KEY:
@@ -2802,8 +2801,8 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
           node.setType(VeDataType.getInstance());
           break;
         case VE_DEF:
-          if (node.numChildren() >= 3) {
-            node.setType(VeType.of(node.getChild(2).getType().toString()));
+          if (node.numParams() >= 3) {
+            node.setType(VeType.of(node.getParam(2).getType().toString()));
           } else {
             node.setType(VeType.NO_DATA);
           }
@@ -2820,8 +2819,8 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
                       RecordType.memberOf(
                           "msg",
                           false,
-                          node.numChildren() > 0
-                              ? node.getChild(0).getType()
+                          node.numParams() > 0
+                              ? node.getParam(0).getType()
                               : UnknownType.getInstance()))));
           break;
         case LEGACY_DYNAMIC_TAG:
@@ -2832,8 +2831,8 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
           break;
         case UNDEFINED_TO_NULL:
         case UNDEFINED_TO_NULL_SSR:
-          visit(node.getChild(0));
-          node.setType(SoyTypes.undefinedToNull(node.getChild(0).getType()));
+          visit(node.getParam(0));
+          node.setType(SoyTypes.undefinedToNull(node.getParam(0).getType()));
           break;
         case EMPTY_TO_NULL:
           throw new AssertionError("impossible, this is only used by desuraging passes: " + node);
@@ -2857,11 +2856,11 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
     @Nullable
     private StringNode checkArgIsStringLiteral(
         FunctionNode node, int childIndex, BuiltinFunction funcName) {
-      if (childIndex < 0 || childIndex >= node.numChildren()) {
+      if (childIndex < 0 || childIndex >= node.numParams()) {
         return null;
       }
 
-      ExprNode arg = node.getChild(childIndex);
+      ExprNode arg = node.getParam(childIndex);
       if (!(arg instanceof StringNode)) {
         errorReporter.report(arg.getSourceLocation(), STRING_LITERAL_REQUIRED, funcName.getName());
         return null;
@@ -2873,7 +2872,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
       ExternRef externRef = (ExternRef) node.getSoyFunction();
       if (externRef.path().path().endsWith("java/soy/plugins/functions.soy")
           && externRef.name().equals("unpackAny")) {
-        ExprNode secondParam = node.getChild(1);
+        ExprNode secondParam = node.getParam(1);
         node.setType(secondParam.getType());
       }
     }
@@ -2887,7 +2886,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
       if (fn instanceof LegacyObjectMapToMapFunction) {
         // If argument type is incorrect, do not try to create a return type. Instead, set the
         // return type to unknown.
-        if (checkArgType(node.getChild(0), LegacyObjectMapType.ANY_MAP, node)) {
+        if (checkArgType(node.getParam(0), LegacyObjectMapType.ANY_MAP, node)) {
           visitLegacyObjectMapToMapFunction(node);
         } else {
           node.setType(UnknownType.getInstance());
@@ -2896,7 +2895,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
         // If argument type is incorrect, do not try to create a return type. Instead, set the
         // return type to unknown.
         // We disallow unknown for this function in order to ensure that maps remain strongly typed
-        if (checkArgType(node.getChild(0), MapType.ANY_MAP, node, UnknownPolicy.DISALLOWED)) {
+        if (checkArgType(node.getParam(0), MapType.ANY_MAP, node, UnknownPolicy.DISALLOWED)) {
           visitMapToLegacyObjectMapFunction(node);
         } else {
           node.setType(UnknownType.getInstance());
@@ -2904,16 +2903,16 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
       } else if (fn instanceof KeysFunction) {
         visitKeysFunction(node);
       } else if (fn instanceof ConcatListsFunction) {
-        node.setType(getGenericListType(node.getChildren()));
+        node.setType(getGenericListType(node.getParams()));
       } else if (fn instanceof LoggingFunction) {
         // LoggingFunctions always return string.
         node.setType(StringType.getInstance());
       } else if (fn instanceof MaxFunction || fn instanceof MinFunction) {
         // Merge types of the two arguments.
-        if (node.getChildren().size() > 1) {
+        if (node.numParams() > 1) {
           node.setType(
               SoyTypes.computeLowestCommonType(
-                  typeRegistry, node.getChild(0).getType(), node.getChild(1).getType()));
+                  typeRegistry, node.getParam(0).getType(), node.getParam(1).getType()));
         }
       } else if (node.getType() == null) {
         // We have no way of knowing the return type of a function.

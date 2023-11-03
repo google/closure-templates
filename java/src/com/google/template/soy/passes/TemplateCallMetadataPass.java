@@ -54,7 +54,7 @@ import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.templatecall.TemplateCallMetadata;
 import com.google.template.soy.templatecall.TemplateCallMetadata.TemplateCall;
 import com.google.template.soy.types.SoyType;
-import com.google.template.soy.types.TemplateImportType;
+import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.TemplateType;
 import java.util.List;
 import java.util.Optional;
@@ -89,7 +89,7 @@ final class TemplateCallMetadataPass implements CompilerFileSetPass {
                 .flatMap(Streams::stream)
                 .collect(toImmutableList());
 
-        template.addTemplateCallMetadata(
+        template.setTemplateCallMetadata(
             TemplateCallMetadata.Template.newBuilder()
                 .setName(getTemplateName(template))
                 .setModname(nullToEmpty(template.getModName()))
@@ -139,23 +139,23 @@ final class TemplateCallMetadataPass implements CompilerFileSetPass {
           || fnNode.getParamsStyle() == ParamsStyle.POSITIONAL) {
         return Optional.empty();
       }
-      VarRefNode fnNameExpr = (VarRefNode) fnNode.getNameExpr();
-      SoyType possibleTemplateImportType = fnNameExpr.getDefnDecl().type();
-      SoyType.Kind templateImportKind = possibleTemplateImportType.getKind();
-      if (templateImportKind != SoyType.Kind.TEMPLATE_TYPE
-          && templateImportKind != SoyType.Kind.TEMPLATE) {
+      if (fnNode.getNameExpr() instanceof TemplateLiteralNode) {
+        TemplateLiteralNode templateLiteralNode = (TemplateLiteralNode) fnNode.getNameExpr();
+        TemplateCallMetadata.TemplateCall.Builder templateCall =
+            TemplateCallMetadata.TemplateCall.newBuilder()
+                .addAllParamArgs(getFunctionParams(fnNode.getParamNames(), fnNode.getParams()));
+        return Optional.of(
+            templateCall.setDestTemplateName(templateLiteralNode.getResolvedName()).build());
+      }
+
+      TemplateType templateType = SoyTypes.getTemplateType(fnNode.getNameExpr().getType());
+      if (templateType == null) {
         return Optional.empty();
       }
       TemplateCallMetadata.TemplateCall.Builder templateCall =
           TemplateCallMetadata.TemplateCall.newBuilder()
               .addAllParamArgs(getFunctionParams(fnNode.getParamNames(), fnNode.getParams()));
-      if (templateImportKind == SoyType.Kind.TEMPLATE) {
-        return resolveVarRefTemplateCall(fnNameExpr, templateCall);
-      }
-      return Optional.of(
-          templateCall
-              .setDestTemplateName(((TemplateImportType) possibleTemplateImportType).getName())
-              .build());
+      return resolveVarRefTemplateCall((VarRefNode) fnNode.getNameExpr(), templateCall);
     }
     return resolveTemplateReference(printNode.getExpr().getRoot());
   }
@@ -361,7 +361,7 @@ final class TemplateCallMetadataPass implements CompilerFileSetPass {
    */
   private static ImmutableList<TemplateCallMetadata.ParamArg> getBoundTemplateParams(
       MethodCallNode bind) {
-    ExprNode possibleBindParams = bind.getParams().get(0);
+    ExprNode possibleBindParams = bind.getParam(0);
     if (possibleBindParams.getKind() != Kind.RECORD_LITERAL_NODE) {
       return ImmutableList.of();
     }
@@ -407,7 +407,7 @@ final class TemplateCallMetadataPass implements CompilerFileSetPass {
     } else if (varExpr.getKind() == Kind.FUNCTION_NODE) {
       if ("checkNotNull".equals(((FunctionNode) varExpr).getFunctionName())) {
         // this function accepts 1 expr and does not meaningfully change its value
-        return resolveLocalVarRefToParamRef(((FunctionNode) varExpr).getChild(0), varRefInfo);
+        return resolveLocalVarRefToParamRef(((FunctionNode) varExpr).getParam(0), varRefInfo);
       }
     }
 

@@ -103,43 +103,43 @@ final class VeDefValidationPass implements CompilerFileSetPass {
   }
 
   private void buildVeDefAndValidate(FunctionNode func, List<VisualElement> vedefs) {
-    if (func.numChildren() < 2) {
+    if (func.numParams() < 2) {
       // Wrong # argument errors are already thrown.
       return;
     }
 
-    if (!(func.getChild(0) instanceof StringNode)) {
-      errorReporter.report(func.getChild(0).getSourceLocation(), BAD_VE_DEF_NAME);
+    if (!(func.getParam(0) instanceof StringNode)) {
+      errorReporter.report(func.getParam(0).getSourceLocation(), BAD_VE_DEF_NAME);
       return;
     }
-    String veName = ((StringNode) func.getChild(0)).getValue();
+    String veName = ((StringNode) func.getParam(0)).getValue();
 
-    if (!(func.getChild(1) instanceof IntegerNode)) {
-      errorReporter.report(func.getChild(1).getSourceLocation(), BAD_VE_DEF_ID);
+    if (!(func.getParam(1) instanceof IntegerNode)) {
+      errorReporter.report(func.getParam(1).getSourceLocation(), BAD_VE_DEF_ID);
       return;
     }
-    long id = ((IntegerNode) func.getChild(1)).getValue();
+    long id = ((IntegerNode) func.getParam(1)).getValue();
 
     Optional<String> dataProtoType;
-    if (func.getChildren().size() < 3 || func.getChild(2) instanceof NullNode) {
+    if (func.numParams() < 3 || func.getParam(2) instanceof NullNode) {
       dataProtoType = Optional.empty();
     } else {
-      if (!(func.getChild(2).getType() instanceof ProtoImportType)) {
-        errorReporter.report(func.getChild(2).getSourceLocation(), BAD_VE_DEF_DATA_PROTO_TYPE);
+      if (!(func.getParam(2).getType() instanceof ProtoImportType)) {
+        errorReporter.report(func.getParam(2).getSourceLocation(), BAD_VE_DEF_DATA_PROTO_TYPE);
         return;
       }
-      dataProtoType = Optional.of(func.getChild(2).getType().toString());
+      dataProtoType = Optional.of(func.getParam(2).getType().toString());
     }
 
     Optional<Object> staticMetadata;
-    if (func.getChildren().size() < 4) {
+    if (func.numParams() < 4) {
       staticMetadata = Optional.empty();
     } else {
-      if (!func.getChild(3).getType().toString().equals("soy.LoggableElementMetadata")) {
-        errorReporter.report(func.getChild(3).getSourceLocation(), BAD_VE_DEF_METADATA);
+      if (!func.getParam(3).getType().toString().equals("soy.LoggableElementMetadata")) {
+        errorReporter.report(func.getParam(3).getSourceLocation(), BAD_VE_DEF_METADATA);
         return;
       }
-      staticMetadata = Optional.of(exprEquivalence.wrap(func.getChild(3).copy(copyState)));
+      staticMetadata = Optional.of(exprEquivalence.wrap(func.getParam(3).copy(copyState)));
     }
 
     vedefs.add(

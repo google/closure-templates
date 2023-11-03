@@ -130,7 +130,7 @@ final class VeLogInstrumentationVisitor extends AbstractSoyNodeVisitor<Void> {
       funcNode.addChild(
           new StringNode(
               function.getStaticFunctionName(), QuoteStyle.SINGLE, SourceLocation.UNKNOWN));
-      funcNode.addChild(new ListLiteralNode(function.getChildren(), SourceLocation.UNKNOWN));
+      funcNode.addChild(new ListLiteralNode(function.getParams(), SourceLocation.UNKNOWN));
       funcNode.addChild(
           new StringNode(
               callParamContentNode.getOriginalName(), QuoteStyle.SINGLE, SourceLocation.UNKNOWN));
@@ -238,7 +238,7 @@ final class VeLogInstrumentationVisitor extends AbstractSoyNodeVisitor<Void> {
               insertionLocation);
       funcNode.addChild(
           new StringNode(function.getStaticFunctionName(), QuoteStyle.SINGLE, insertionLocation));
-      funcNode.addChild(new ListLiteralNode(function.getChildren(), insertionLocation));
+      funcNode.addChild(new ListLiteralNode(function.getParams(), insertionLocation));
       StandaloneNode attributeName = node.getChild(0);
       if (attributeName instanceof RawTextNode) {
         // If attribute name is a plain text, directly pass it as a function argument.

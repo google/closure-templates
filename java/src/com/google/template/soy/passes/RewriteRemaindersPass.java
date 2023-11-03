@@ -98,13 +98,13 @@ final class RewriteRemaindersPass implements CompilerFilePass {
         return;
       }
       // an error will have already been reported by the PluginResolver.  Just bail out
-      if (functionNode.numChildren() != 1) {
+      if (functionNode.numParams() != 1) {
         removeBadRemainder(functionNode);
         return;
       }
       // 'remainder' with a different expression than the enclosing 'plural'. Bad!
       if (!new ExprEquivalence()
-          .equivalent(functionNode.getChild(0), currPluralNode.getExpr().getRoot())) {
+          .equivalent(functionNode.getParam(0), currPluralNode.getExpr().getRoot())) {
         errorReporter.report(functionNode.getSourceLocation(), REMAINDER_PLURAL_EXPR_MISMATCH);
         removeBadRemainder(functionNode);
         return;

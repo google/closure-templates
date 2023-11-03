@@ -33,7 +33,6 @@ import com.google.template.soy.exprtree.ExprNode.Kind;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.MethodCallNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
-import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.FileSetMetadata;
 import com.google.template.soy.soytree.HtmlElementMetadataP;
@@ -52,7 +51,6 @@ import com.google.template.soy.soytree.TemplateElementNode;
 import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.VeLogNode;
-import com.google.template.soy.types.SoyType;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -201,7 +199,9 @@ final class SoyElementPass implements CompilerFileSetPass {
             child.getSourceLocation(),
             templatesInLibrary,
             visited);
-      } else if (openTag == null && child instanceof HtmlOpenTagNode) {
+      }
+
+      if (openTag == null && child instanceof HtmlOpenTagNode) {
         closeTag = checkHtmlOpenTag(template, (HtmlOpenTagNode) child, errorReporter, isSoyElement);
         if (closeTag == null) {
           break;
@@ -342,15 +342,9 @@ final class SoyElementPass implements CompilerFileSetPass {
     } else if (exprNode.getKind() == Kind.FUNCTION_NODE) {
       // If RewriteElementCompositionFunctionsPass has not run we will see tmpl(...)
       FunctionNode functionNode = (FunctionNode) exprNode;
-      if (!functionNode.hasStaticName()) {
-        ExprNode nameExpr = functionNode.getNameExpr();
-        if (nameExpr.getKind() == Kind.VAR_REF_NODE) {
-          VarRefNode varRefNode = (VarRefNode) nameExpr;
-          if (varRefNode.hasType()
-              && varRefNode.getType().getKind() == SoyType.Kind.TEMPLATE_TYPE) {
-            return TemplateLiteralNode.forVarRef(varRefNode).getResolvedName();
-          }
-        }
+      if (!functionNode.hasStaticName()
+          && functionNode.getNameExpr().getKind() == Kind.TEMPLATE_LITERAL_NODE) {
+        return ((TemplateLiteralNode) functionNode.getNameExpr()).getResolvedName();
       }
     }
 

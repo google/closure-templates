@@ -83,7 +83,7 @@ public class IncrementalDomTranslateExprNodeVisitor extends TranslateExprNodeVis
 
   @Override
   protected Expression visitEmptyToNullFunction(FunctionNode node) {
-    return SOY_IDOM_EMPTY_TO_NULL.call(visit(node.getChild(0)));
+    return SOY_IDOM_EMPTY_TO_NULL.call(visit(node.getParam(0)));
   }
 
   @Override

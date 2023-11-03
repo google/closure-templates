@@ -22,6 +22,7 @@ import static java.util.stream.Collectors.toList;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.Identifier;
+import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.CallableExpr.ParamsStyle;
@@ -74,7 +75,10 @@ final class RewriteElementCompositionFunctionsPass implements CompilerFilePass {
                             ? VisitDirective.SKIP_CHILDREN
                             : VisitDirective.CONTINUE))
         .filter(fct -> !fct.hasStaticName())
-        .filter(fct -> fct.getNameExpr().getKind() == Kind.VAR_REF_NODE)
+        .filter(
+            fct ->
+                fct.getNameExpr().getKind() == Kind.VAR_REF_NODE
+                    || fct.getNameExpr().getKind() == Kind.TEMPLATE_LITERAL_NODE)
         .collect(toList()) // Guard against concurrent modification.
         .forEach(this::convertToBind);
   }
@@ -86,27 +90,30 @@ final class RewriteElementCompositionFunctionsPass implements CompilerFilePass {
       return;
     }
 
-    VarRefNode varRefNode = (VarRefNode) fct.getNameExpr();
-    if (varRefNode.hasType() && varRefNode.getType() instanceof ProtoImportType) {
-      // Ignore proto init.
-      return;
-    }
-
     if (!rewriteElementComposition) {
       // Soy Conformance runs in this mode. Prevent errors in ResolveExpressionTypesPass.
       fct.setAllowedToInvokeAsFunction(true);
       return;
     }
 
-    ExprNode replacementExpr;
-    if (varRefNode.hasType() && varRefNode.getType().getKind() == SoyType.Kind.TEMPLATE_TYPE) {
-      // If the function is a template symbol modify AST like:
-      // {tmp(...)} -> {template(tmp).bind(...)}
-      replacementExpr = TemplateLiteralNode.forVarRef(varRefNode);
-    } else {
-      // Otherwise modify AST like:
-      // {$tmp(...)} -> {$tmp.bind(...)}
-      replacementExpr = varRefNode;
+    ExprNode replacementExpr = fct.getNameExpr();
+    if (replacementExpr instanceof VarRefNode) {
+      VarRefNode varRefNode = (VarRefNode) replacementExpr;
+
+      if (varRefNode.hasType() && varRefNode.getType() instanceof ProtoImportType) {
+        // Ignore proto init.
+        return;
+      }
+
+      if (varRefNode.hasType() && varRefNode.getType().getKind() == SoyType.Kind.TEMPLATE_TYPE) {
+        // If the function is a template symbol modify AST like:
+        // {tmp(...)} -> {template(tmp).bind(...)}
+        replacementExpr = TemplateLiteralNode.forVarRef(varRefNode.copy(new CopyState()));
+      } else {
+        // Otherwise modify AST like:
+        // {$tmp(...)} -> {$tmp.bind(...)}
+        replacementExpr = varRefNode;
+      }
     }
 
     if (fct.numParams() > 0) {
@@ -116,7 +123,7 @@ final class RewriteElementCompositionFunctionsPass implements CompilerFilePass {
               Identifier.create("record", fct.getSourceLocation()),
               fct.getParamNames(),
               fct.getSourceLocation());
-      record.addChildren(fct.getChildren());
+      record.addChildren(fct.getParams());
 
       // Bind and replace.
       replacementExpr =

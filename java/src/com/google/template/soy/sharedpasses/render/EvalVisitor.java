@@ -652,13 +652,12 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
           return ((SoyProtoValue) base)
               .getProtoFieldOrNull(BuiltinMethod.getProtoFieldNameFromMethodCall(methodNode));
         case MAP_GET:
-          SoyValue key = visit(methodNode.getParams().get(0));
+          SoyValue key = visit(methodNode.getParam(0));
           SoyValue value = ((SoyMap) base).get(key);
           return value != null ? value : NullData.INSTANCE;
         case BIND:
           TemplateValue template = (TemplateValue) base;
-          ParamStore params =
-              ParamStore.fromRecord((SoyRecord) visit(methodNode.getParams().get(0)));
+          ParamStore params = ParamStore.fromRecord((SoyRecord) visit(methodNode.getParam(0)));
           return TemplateValue.createWithBoundParameters(
               template.getTemplateName(),
               template.getBoundParameters().isPresent()
@@ -878,7 +877,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
       BuiltinFunction nonpluginFn = (BuiltinFunction) soyFunction;
       switch (nonpluginFn) {
         case CHECK_NOT_NULL:
-          return assertNotNull(node.getChild(0));
+          return assertNotNull(node.getParam(0));
         case CSS:
           return visitCssFunction(node);
         case XID:
@@ -905,12 +904,12 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
           return UNDEFINED_VE;
         case EMPTY_TO_NULL:
           {
-            var value = visit(node.getChild(0));
+            var value = visit(node.getParam(0));
             return value.stringValue().isEmpty() ? NullData.INSTANCE : value;
           }
         case UNDEFINED_TO_NULL:
         case UNDEFINED_TO_NULL_SSR:
-          return visit(node.getChild(0)).nullishToNull();
+          return visit(node.getParam(0)).nullishToNull();
         case MSG_WITH_ID:
         case REMAINDER:
           // should have been removed earlier in the compiler
@@ -1016,8 +1015,8 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     SoyProtoType soyProto = (SoyProtoType) node.getType();
     ImmutableList<Identifier> paramNames = node.getParamNames();
     SoyProtoValue.Builder builder = new SoyProtoValue.Builder(soyProto.getDescriptor());
-    for (int i = 0; i < node.numChildren(); i++) {
-      SoyValue visit = visit(node.getChild(i));
+    for (int i = 0; i < node.numParams(); i++) {
+      SoyValue visit = visit(node.getParam(i));
       // null means don't assign
       if (visit.isNullish()) {
         continue;
@@ -1084,7 +1083,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
       renamedSelector = selector;
     }
 
-    if (node.numChildren() == 1) {
+    if (node.numParams() == 1) {
       return StringData.forValue(renamedSelector);
     } else {
       String fullSelector = children.get(0).stringValue() + "-" + renamedSelector;
@@ -1093,13 +1092,13 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
   }
 
   private SoyValue visitXidFunction(FunctionNode node) {
-    String xid = visit(node.getChild(0)).stringValue();
+    String xid = visit(node.getParam(0)).stringValue();
     String renamed = xidRenamingMap.get(xid);
     return (renamed != null) ? StringData.forValue(renamed) : StringData.forValue(xid + "_");
   }
 
   private SoyValue visitSoyServerKeyFunction(FunctionNode node) {
-    SoyValue value = visit(node.getChild(0));
+    SoyValue value = visit(node.getParam(0));
     // map tofu null to soysauce null since that is what this function expects.
     return StringData.forValue(soyServerKey(value.isNullish() ? null : value));
   }
@@ -1110,16 +1109,16 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     }
     // if the primary message id is available or the fallback message is not available, then we
     // are using the primary message.
-    long primaryMsgId = ((IntegerNode) node.getChild(1)).getValue();
+    long primaryMsgId = ((IntegerNode) node.getParam(1)).getValue();
     if (!msgBundle.getMsgParts(primaryMsgId).isEmpty()) {
       return BooleanData.TRUE;
     }
-    long fallbackMsgId = ((IntegerNode) node.getChild(2)).getValue();
+    long fallbackMsgId = ((IntegerNode) node.getParam(2)).getValue();
     return BooleanData.forValue(msgBundle.getMsgParts(fallbackMsgId).isEmpty());
   }
 
   private SoyValue visitToFloatFunction(FunctionNode node) {
-    IntegerData v = (IntegerData) visit(node.getChild(0));
+    IntegerData v = (IntegerData) visit(node.getParam(0));
     return FloatData.forValue((double) v.longValue());
   }
 

@@ -749,7 +749,7 @@ public final class GenerateParseInfoVisitor
     SoyTreeUtils.allFunctionInvocations(node, BuiltinFunction.CSS)
         .forEach(
             fn -> {
-              String selector = ((StringNode) Iterables.getLast(fn.getChildren())).getValue();
+              String selector = ((StringNode) Iterables.getLast(fn.getParams())).getValue();
               cssNames.add(selector);
             });
 

@@ -182,6 +182,10 @@ public interface ExprNode extends Node {
     /** The ordered list of parameter values. */
     List<ExprNode> getParams();
 
+    default ExprNode getParam(int index) {
+      return getParams().get(index);
+    }
+
     /** The number of parameter values. */
     int numParams();
 

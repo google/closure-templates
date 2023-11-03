@@ -1011,7 +1011,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
             loggingFunction.getPlaceholder(),
             exprCompiler
                 .asBasicCompiler(detachState.createExpressionDetacher(reattachPoint))
-                .compileToList(fn.getChildren()),
+                .compileToList(fn.getParams()),
             printDirectives)
         .labelStart(reattachPoint)
         .toStatement();

@@ -222,8 +222,8 @@ public final class InsertMsgsVisitor {
     } else {
       // if the primary message id is available or the fallback message is not available, then we
       // are using the primary message.
-      long primaryMsgId = ((IntegerNode) node.getChild(1)).getValue();
-      long fallbackMsgId = ((IntegerNode) node.getChild(2)).getValue();
+      long primaryMsgId = ((IntegerNode) node.getParam(1)).getValue();
+      long fallbackMsgId = ((IntegerNode) node.getParam(2)).getValue();
       isPrimaryMsgInUse =
           !msgBundle.getMsgParts(primaryMsgId).isEmpty()
               || msgBundle.getMsgParts(fallbackMsgId).isEmpty();

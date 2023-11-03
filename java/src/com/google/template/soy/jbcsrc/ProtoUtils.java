@@ -909,9 +909,9 @@ final class ProtoUtils {
 
     private ImmutableList<Statement> getFieldSetters() {
       ImmutableList.Builder<Statement> setters = ImmutableList.builder();
-      for (int i = 0; i < node.numChildren(); i++) {
+      for (int i = 0; i < node.numParams(); i++) {
         FieldDescriptor field = protoType.getFieldDescriptor(node.getParamName(i).identifier());
-        ExprNode baseArg = node.getChild(i);
+        ExprNode baseArg = node.getParam(i);
         // Handle some special cases
         // baseArg nulls are not common, but we can trivially skip
         if (isNullishLiteral(baseArg)) {

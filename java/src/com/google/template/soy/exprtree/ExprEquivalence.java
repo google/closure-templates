@@ -392,9 +392,9 @@ public final class ExprEquivalence {
 
   private HashMap<String, Wrapper> namedParamsMap(FunctionNode node) {
     HashMap<String, Wrapper> map = new HashMap<>();
-    List<ExprNode> children = node.getChildren();
-    for (int i = 0; i < children.size(); i++) {
-      map.put(node.getParamName(i).identifier(), wrap(children.get(i)));
+    List<ExprNode> params = node.getParams();
+    for (int i = 0; i < params.size(); i++) {
+      map.put(node.getParamName(i).identifier(), wrap(params.get(i)));
     }
     return map;
   }

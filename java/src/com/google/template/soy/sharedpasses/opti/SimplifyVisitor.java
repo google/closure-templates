@@ -886,7 +886,7 @@ public final class SimplifyVisitor {
       if (methodCallNode.numParams() != 1) {
         return;
       }
-      RecordLiteralNode record = (RecordLiteralNode) methodCallNode.getParams().get(0);
+      RecordLiteralNode record = (RecordLiteralNode) methodCallNode.getParam(0);
       ExprNode bindCallee = methodCallNode.getBaseExprChild();
       node.getCalleeExpr().replaceChild(calleeRoot, bindCallee);
       node.getCalleeExpr().setType(bindCallee.getType());

@@ -285,7 +285,7 @@ final class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
         && node.isMethodResolved()
         && node.getSoyMethod() == BuiltinMethod.MAP_GET) {
       MapLiteralNode mapLiteral = (MapLiteralNode) baseExpr;
-      ExprNode keyExpr = node.getParams().get(0);
+      ExprNode keyExpr = node.getParam(0);
       boolean areAllKeysConstants = true;
       ExprEquivalence exprEquivalence = new ExprEquivalence();
       for (int i = 0; i < mapLiteral.numChildren(); i += 2) {

@@ -605,12 +605,12 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
     this.templateMetadata = metadata;
   }
 
-  public void addTemplateCallMetadata(TemplateCallMetadata.Template callMetadata) {
-    this.templateCallMetadata = callMetadata;
-  }
-
   public HtmlElementMetadataP getHtmlElementMetadata() {
     return templateMetadata;
+  }
+
+  public void setTemplateCallMetadata(TemplateCallMetadata.Template callMetadata) {
+    this.templateCallMetadata = callMetadata;
   }
 
   public TemplateCallMetadata.Template getTemplateCallMetadata() {

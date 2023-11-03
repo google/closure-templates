@@ -61,10 +61,10 @@ final class VeRewritePass implements CompilerFilePass {
   }
 
   private void maybeRewriteVeDataNode(FunctionNode node) {
-    if (node.numChildren() < 1 || node.numChildren() > 2) {
+    if (node.numParams() < 1 || node.numParams() > 2) {
       return; // an error has already been reported
     }
-    if (node.numChildren() < 2) {
+    if (node.numParams() < 2) {
       // For ve_data(MyVe) set the data parameter to null.
       node.addChild(new NullNode(node.getSourceLocation().getEndLocation()));
     }

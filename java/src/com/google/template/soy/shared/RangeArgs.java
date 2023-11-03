@@ -52,7 +52,7 @@ public abstract class RangeArgs {
     if (node.getExpr().getRoot() instanceof FunctionNode) {
       FunctionNode fn = (FunctionNode) node.getExpr().getRoot();
       if (fn.getSoyFunction() instanceof RangeFunction) {
-        return Optional.of(create(fn.getChildren()));
+        return Optional.of(create(fn.getParams()));
       }
     }
     return Optional.empty();

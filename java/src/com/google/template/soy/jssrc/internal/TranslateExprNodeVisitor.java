@@ -71,6 +71,7 @@ import com.google.template.soy.exprtree.BooleanNode;
 import com.google.template.soy.exprtree.DataAccessNode;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.AccessChainComponentNode;
+import com.google.template.soy.exprtree.ExprNode.CallableExpr;
 import com.google.template.soy.exprtree.ExprNode.OperatorNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FieldAccessNode;
@@ -725,12 +726,11 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
           // When adding new built-in methods it may be necessary to assert that the base expression
           // is not null in order to prevent a method call on a null instance from ever succeeding.
         case MAP_GET:
-          return base.mapGetAccess(visit(methodCallNode.getParams().get(0)), nullSafe);
+          return base.mapGetAccess(visit(methodCallNode.getParam(0)), nullSafe);
         case BIND:
           return base.functionCall(
               nullSafe,
-              (baseExpr) ->
-                  genCodeForBind(baseExpr, visit(methodCallNode.getParams().get(0)), baseType));
+              (baseExpr) -> genCodeForBind(baseExpr, visit(methodCallNode.getParam(0)), baseType));
       }
       throw new AssertionError(builtinMethod);
     } else if (soyMethod instanceof SoySourceFunctionMethod) {
@@ -941,15 +941,15 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
 
   protected Expression visitProtoInitFunction(FunctionNode node) {
     SoyProtoType type = (SoyProtoType) node.getType();
-    if (node.numChildren() == 0) {
+    if (node.numParams() == 0) {
       // special case
       return JsRuntime.emptyProto(type);
     }
     Expression proto = construct(protoConstructor(type));
-    for (int i = 0; i < node.numChildren(); i++) {
+    for (int i = 0; i < node.numParams(); i++) {
       String fieldName = node.getParamName(i).identifier();
       FieldDescriptor fieldDesc = type.getFieldDescriptor(fieldName);
-      ExprNode child = node.getChild(i);
+      ExprNode child = node.getParam(i);
       if (fieldDesc.isMapField() && child.getKind() == ExprNode.Kind.MAP_LITERAL_NODE) {
         // use .put-er functions
         // This saves allocating a map.
@@ -1048,7 +1048,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
           return visitIsPrimaryMsgInUseFunction(node);
         case TO_FLOAT:
           // this is a no-op in js
-          return visit(node.getChild(0));
+          return visit(node.getParam(0));
         case DEBUG_SOY_TEMPLATE_INFO:
           // TODO(lukes): does this need a goog.debug guard? it exists in the runtime
           return GOOG_DEBUG.and(
@@ -1060,11 +1060,11 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
         case EMPTY_TO_NULL:
           return visitEmptyToNullFunction(node);
         case UNDEFINED_TO_NULL:
-          return visit(node.getChild(0))
+          return visit(node.getParam(0))
               .nullishCoalesce(LITERAL_NULL, translationContext.codeGenerator());
         case UNDEFINED_TO_NULL_SSR:
           // CSR no-op
-          return visit(node.getChild(0));
+          return visit(node.getParam(0));
 
         case LEGACY_DYNAMIC_TAG:
         case REMAINDER:
@@ -1081,7 +1081,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
           node.getSourceLocation(),
           node.getStaticFunctionName(),
           (SoyJavaScriptSourceFunction) soyFunction,
-          visitChildren(node),
+          visitParams(node),
           translationContext.codeGenerator());
     } else if (soyFunction instanceof ExternRef) {
       ExternRef ref = (ExternRef) soyFunction;
@@ -1091,7 +1091,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
         // reported.
         return LITERAL_UNDEFINED;
       }
-      return translationContext.soyToJsVariableMappings().get(ref.name()).call(visitChildren(node));
+      return translationContext.soyToJsVariableMappings().get(ref.name()).call(visitParams(node));
     } else {
       if (!(soyFunction instanceof SoyJsSrcFunction)) {
         errorReporter.report(
@@ -1100,12 +1100,12 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
             node.getStaticFunctionName(),
             soyFunction == null ? "missing implementation" : soyFunction.getClass().getName());
         // use a fake function and keep going
-        soyFunction = getUnknownFunction(node.getStaticFunctionName(), node.numChildren());
+        soyFunction = getUnknownFunction(node.getStaticFunctionName(), node.numParams());
       }
 
       return SoyJsPluginUtils.applySoyFunction(
           (SoyJsSrcFunction) soyFunction,
-          visitChildren(node),
+          visitParams(node),
           node.getSourceLocation(),
           errorReporter);
     }
@@ -1120,7 +1120,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
   }
 
   private Expression visitCheckNotNullFunction(FunctionNode node) {
-    return assertNonNull(node.getChild(0));
+    return assertNonNull(node.getParam(0));
   }
 
   private Expression assertNonNull(ExprNode expr) {
@@ -1129,15 +1129,15 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
   }
 
   private Expression visitCssFunction(FunctionNode node) {
-    return GOOG_GET_CSS_NAME.call(visitChildren(node));
+    return GOOG_GET_CSS_NAME.call(visitParams(node));
   }
 
   private Expression visitXidFunction(FunctionNode node) {
-    return XID.call(visitChildren(node));
+    return XID.call(visitParams(node));
   }
 
   private Expression visitSoyServerKeyFunction(FunctionNode node) {
-    return SERIALIZE_KEY.call(visit(node.getChildren().get(0)));
+    return SERIALIZE_KEY.call(visit(node.getParam(0)));
   }
 
   private Expression visitIsPrimaryMsgInUseFunction(FunctionNode node) {
@@ -1147,14 +1147,14 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
     MsgFallbackGroupNode msgNode =
         (MsgFallbackGroupNode)
             ((LetContentNode)
-                    ((LocalVar) ((VarRefNode) node.getChild(0)).getDefnDecl()).declaringNode())
+                    ((LocalVar) ((VarRefNode) node.getParam(0)).getDefnDecl()).declaringNode())
                 .getChild(0);
 
     return translationContext.soyToJsVariableMappings().isPrimaryMsgInUse(msgNode);
   }
 
   private Expression visitUnknownJsGlobal(FunctionNode node) {
-    StringNode expr = (StringNode) node.getChild(0);
+    StringNode expr = (StringNode) node.getParam(0);
     return translationContext
         .codeGenerator()
         .declarationBuilder()
@@ -1165,31 +1165,31 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
   }
 
   private Expression visitVeDataFunction(FunctionNode node) {
-    return construct(SOY_VISUAL_ELEMENT_DATA, visit(node.getChild(0)), visit(node.getChild(1)));
+    return construct(SOY_VISUAL_ELEMENT_DATA, visit(node.getParam(0)), visit(node.getParam(1)));
   }
 
   private Expression visitVeDefFunction(FunctionNode node) {
-    Expression metadataExpr = node.numChildren() == 4 ? visit(node.getChild(3)) : LITERAL_UNDEFINED;
+    Expression metadataExpr = node.numParams() == 4 ? visit(node.getParam(3)) : LITERAL_UNDEFINED;
     Expression debugNameExpr =
-        Expressions.ifExpression(GOOG_DEBUG, visit(node.getChild(0)))
+        Expressions.ifExpression(GOOG_DEBUG, visit(node.getParam(0)))
             .setElse(Expressions.LITERAL_UNDEFINED)
             .build(translationContext.codeGenerator());
-    return construct(SOY_VISUAL_ELEMENT, visit(node.getChild(1)), metadataExpr, debugNameExpr);
+    return construct(SOY_VISUAL_ELEMENT, visit(node.getParam(1)), metadataExpr, debugNameExpr);
   }
 
   protected Expression visitEmptyToNullFunction(FunctionNode node) {
     // Child is either a string or a sanitized content block, but it is always pointing at a local
-    var childNode = node.getChild(0);
+    var childNode = node.getParam(0);
     checkState(
         childNode instanceof VarRefNode,
         "expected child %s @%s to be a varref",
         childNode,
         childNode.getSourceLocation());
-    var defn = ((VarRefNode) node.getChild(0)).getDefnDecl();
+    var defn = ((VarRefNode) node.getParam(0)).getDefnDecl();
     // check that we are pointing at a let, if we are then we can use `||` since internal blocks map
     // empty sanitized content to `''` so `||` works.
     checkState(((LocalVar) defn).declaringNode() instanceof LetNode);
-    Expression child = visit(node.getChild(0));
+    Expression child = visit(node.getParam(0));
     return child.or(LITERAL_NULL, translationContext.codeGenerator());
   }
 
@@ -1224,5 +1224,13 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
     Expression templateLiteral =
         Expressions.dottedIdNoRequire(templateAliases.get(node.getResolvedName()));
     return MARK_TEMPLATE.call(templateLiteral, Expressions.stringLiteral(node.getResolvedName()));
+  }
+
+  private List<Expression> visitParams(CallableExpr call) {
+    List<Expression> results = new ArrayList<>(call.numParams());
+    for (ExprNode child : call.getParams()) {
+      results.add(visit(child));
+    }
+    return results;
   }
 }

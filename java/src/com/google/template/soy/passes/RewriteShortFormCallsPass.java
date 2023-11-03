@@ -225,11 +225,8 @@ final class RewriteShortFormCallsPass implements CompilerFileSetPass {
       Identifier id = fnNode.getParamNames().get(i);
       CallParamValueNode valueNode =
           new CallParamValueNode(
-              nodeIdGen.genId(),
-              id.location(),
-              id,
-              fnNode.getParams().get(i).copy(new CopyState()));
-      valueNode.getExpr().setType(fnNode.getParams().get(i).getType());
+              nodeIdGen.genId(), id.location(), id, fnNode.getParam(i).copy(new CopyState()));
+      valueNode.getExpr().setType(fnNode.getParam(i).getType());
       call.addChild(valueNode);
     }
 

@@ -23,6 +23,7 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SourceLocation.Point;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.exprtree.ExprNode.CallableExpr.ParamsStyle;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -64,7 +65,7 @@ public final class CallableExprBuilder {
   private CallableExprBuilder fillFrom(ExprNode.CallableExpr from) {
     setSourceLocation(from.getSourceLocation());
     setIdentifier(from.getIdentifier());
-    setParamValues(from.getParams());
+    setParamValues(new ArrayList<>(from.getParams())); // subList needs defensive copy
     setCommaLocations(from.getCommaLocations().orElse(null));
     switch (from.getParamsStyle()) {
       case NAMED:
