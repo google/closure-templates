@@ -260,14 +260,6 @@ public enum Operator {
     }
   },
 
-  // TODO(b/297933058) Remove.
-  LEGACY_NULL_COALESCING(
-      ImmutableList.of(OPERAND_0, SP, new Token("?:"), SP, OPERAND_1), SoyPrecedence.P1, RIGHT) {
-    @Override
-    public OperatorNode createNode(SourceLocation location, SourceLocation operatorLocation) {
-      return new NullCoalescingOpNode(location, this, operatorLocation);
-    }
-  },
   CONDITIONAL(
       ImmutableList.of(
           OPERAND_0, SP, new Token("?"), SP, OPERAND_1, SP, new Token(":"), SP, OPERAND_2),

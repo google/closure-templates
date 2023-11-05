@@ -34,7 +34,6 @@ abstract class Operation extends Expression implements OperatorInterface {
       case BAR_BAR:
         return "||";
       case NULL_COALESCING:
-      case LEGACY_NULL_COALESCING:
         return "??";
       case ASSERT_NON_NULL:
       case NEGATIVE:

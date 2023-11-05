@@ -101,7 +101,6 @@ import com.google.template.soy.exprtree.MapLiteralNode;
 import com.google.template.soy.exprtree.MethodCallNode;
 import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.exprtree.NullSafeAccessNode;
-import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.exprtree.OperatorNodes.AmpAmpOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.AndOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.AssertNonNullOpNode;
@@ -1918,14 +1917,6 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
 
     @Override
     protected void visitNullCoalescingOpNode(NullCoalescingOpNode node) {
-      if (node.getOperator() == Operator.LEGACY_NULL_COALESCING) {
-        errorReporter.warn(
-            node.getOperatorLocation(),
-            PluginResolver.DEPRECATED_PLUGIN,
-            "The ?: operator",
-            "Use ?? instead.");
-      }
-
       visit(node.getChild(0));
 
       // Save the state of substitutions.

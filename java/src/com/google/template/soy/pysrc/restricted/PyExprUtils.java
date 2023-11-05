@@ -86,7 +86,6 @@ public final class PyExprUtils {
           .put(Operator.OR, 2)
           .put(Operator.BAR_BAR, 2)
           .put(Operator.NULL_COALESCING, 1)
-          .put(Operator.LEGACY_NULL_COALESCING, 1)
           .put(Operator.CONDITIONAL, 1)
           .build();
 

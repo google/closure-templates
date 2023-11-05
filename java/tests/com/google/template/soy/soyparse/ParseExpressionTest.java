@@ -291,8 +291,8 @@ public final class ParseExpressionTest {
     assertThatExpression("$a or null").isValidExpression();
     assertThatExpression("$a || null").isValidExpression();
     // Level 1.
-    assertThatExpression("$boo?:-1").isValidExpression();
-    assertThatExpression("$a ?: $b ?: $c").isValidExpression();
+    assertThatExpression("$boo??-1").isValidExpression();
+    assertThatExpression("$a ?? $b ?? $c").isValidExpression();
     assertThatExpression("false?4:-3").isValidExpression();
     assertThatExpression("$a ? $b : $c ? $d : $e").isValidExpression();
     // Parentheses.
@@ -490,8 +490,6 @@ public final class ParseExpressionTest {
     assertThat(precedenceString("1 + 2 + 3 + 4 + 5 + 6"))
         .isEqualTo("((((1 + 2) + 3) + 4) + 5) + 6");
 
-    // ?: is right associative
-    assertThat(precedenceString("$a ?: $b ?: $c")).isEqualTo("$a ?: ($b ?: $c)");
     // ?? is left associative
     assertThat(precedenceString("$a ?? $b ?? $c")).isEqualTo("($a ?? $b) ?? $c");
 
@@ -499,12 +497,12 @@ public final class ParseExpressionTest {
     assertThat(precedenceString("$a ? $b ? $c : $d : $e ? $f : $g"))
         .isEqualTo("$a ? ($b ? $c : $d) : ($e ? $f : $g)");
 
-    // unary negation ?: is right associative
+    // unary negation is right associative
     assertThat(precedenceString("- - $a")).isEqualTo("- (- $a)");
 
     // all together now!
-    assertThat(precedenceString("1 + - 2 * 3 + 4 % 2 ?: 3"))
-        .isEqualTo("((1 + (-2 * 3)) + (4 % 2)) ?: 3");
+    assertThat(precedenceString("1 + - 2 * 3 + 4 % 2 ?? 3"))
+        .isEqualTo("((1 + (-2 * 3)) + (4 % 2)) ?? 3");
 
     assertThat(precedenceString("-$a.b > 0 ? $c.d : $c")).isEqualTo("((- $a.b) > 0) ? $c.d : $c");
   }

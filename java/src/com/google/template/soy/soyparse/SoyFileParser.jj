@@ -417,8 +417,8 @@ import javax.annotation.Nullable;
  *       + Precedence 5:   <   >   <=   >=
  *       + Precedence 4:   ==   !=
  *       + Precedence 3:   and
- *       + Precedence 2:   or
- *       + Precedence 1:   ?: (binary)   ? : (ternary)
+ *       + Precedence 2:   ??   or
+ *       + Precedence 1:   ? : (ternary)
  *
  *    11. Function:
  *       + Function name, open parenthesis, optional expression list, close parenthesis.
@@ -4053,11 +4053,6 @@ private ExprNode PrecExpr1(ExprState state) :
   // These operators are right associative, the right recursion on PrecExpr1
   // accomplishes this
   [
-    op = <QCOLON>
-    expr1 = PrecExpr1(state)
-
-    { expr = Operator.LEGACY_NULL_COALESCING.createNode(createSrcLoc(expr, expr1), createSrcLoc(op), expr, expr1); }
-  |
     op = <QMARK>
     expr1 = PrecExpr1(state)
     op2 = <COLON>

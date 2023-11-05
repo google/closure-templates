@@ -16,7 +16,6 @@
 
 package com.google.template.soy.exprtree;
 
-import com.google.common.base.Preconditions;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.exprtree.ExprNode.AccessChainComponentNode;
@@ -449,15 +448,8 @@ public class OperatorNodes {
     }
   }
 
-  /** Node representing the '?:' (null-coalescing) operator. */
+  /** Node representing the '??' (null-coalescing) operator. */
   public static final class NullCoalescingOpNode extends AbstractOperatorNode {
-
-    public NullCoalescingOpNode(
-        SourceLocation sourceLocation, Operator operator, SourceLocation operatorLocation) {
-      super(sourceLocation, operator, operatorLocation);
-      Preconditions.checkArgument(
-          operator == Operator.LEGACY_NULL_COALESCING || operator == Operator.NULL_COALESCING);
-    }
 
     public NullCoalescingOpNode(SourceLocation sourceLocation, SourceLocation operatorLocation) {
       super(sourceLocation, Operator.NULL_COALESCING, operatorLocation);
