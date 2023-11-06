@@ -15,8 +15,6 @@
  */
 package com.google.template.soy.passes;
 
-import static com.google.template.soy.soytree.defn.TemplateParam.isAlreadyOptionalType;
-
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.TemplateContentKind;
@@ -34,6 +32,8 @@ import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.UnknownType;
+import com.google.template.soy.types.ast.NamedTypeNode;
+import com.google.template.soy.types.ast.TypeNode;
 import com.google.template.soy.types.ast.TypeNodeConverter;
 
 /** Resolve the TypeNode objects in TemplateParams to SoyTypes */
@@ -76,11 +76,10 @@ final class ResolveTemplateParamTypesPass implements CompilerFilePass {
           SoyType paramType = converter.getOrCreateType(param.getTypeNode());
           param.setType(paramType);
           // TODO(b/291132644): Remove this restriction.
-          if (param.getOriginalTypeNode() != null
+          if (param.getTypeNode() != null
               && !param.hasDefault()
               && !SoyTypes.containsKinds(paramType, ImmutableSet.of(Kind.ANY, Kind.UNKNOWN))
-              && param.isExplicitlyOptional()
-                  != isAlreadyOptionalType(param.getOriginalTypeNode())) {
+              && param.isExplicitlyOptional() != isAlreadyOptionalType(param.getTypeNode())) {
             errorReporter.warn(param.getSourceLocation(), OPTIONAL_AND_NULLABLE_DISAGREE);
           }
         } else if (disableAllTypeChecking) {
@@ -100,5 +99,14 @@ final class ResolveTemplateParamTypesPass implements CompilerFilePass {
         }
       }
     }
+  }
+
+  public static boolean isAlreadyOptionalType(TypeNode typeNode) {
+    return typeNode
+        .asStreamExpandingUnion()
+        .anyMatch(
+            tn ->
+                tn instanceof NamedTypeNode
+                    && ((NamedTypeNode) tn).name().identifier().equals("null"));
   }
 }

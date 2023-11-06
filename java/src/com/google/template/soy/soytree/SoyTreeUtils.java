@@ -643,7 +643,7 @@ public final class SoyTreeUtils {
               if (node instanceof TemplateNode) {
                 TemplateNode templateNode = (TemplateNode) node;
                 return templateNode.getHeaderParams().stream()
-                    .map(TemplateHeaderVarDefn::getOriginalTypeNode)
+                    .map(TemplateHeaderVarDefn::getTypeNode)
                     .filter(Objects::nonNull);
               } else if (node instanceof ExternNode) {
                 return Stream.of(((ExternNode) node).typeNode());

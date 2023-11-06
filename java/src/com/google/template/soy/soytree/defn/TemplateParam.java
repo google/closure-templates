@@ -19,16 +19,13 @@ package com.google.template.soy.soytree.defn;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
-import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.exprtree.AbstractVarDefn;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.types.SoyType;
-import com.google.template.soy.types.ast.NamedTypeNode;
 import com.google.template.soy.types.ast.TypeNode;
-import com.google.template.soy.types.ast.UnionTypeNode;
 import javax.annotation.Nullable;
 
 /**
@@ -37,11 +34,7 @@ import javax.annotation.Nullable;
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  */
 public class TemplateParam extends AbstractVarDefn implements TemplateHeaderVarDefn {
-  // TODO(b/291132644): Switch to "undefined".
-  private static final String TYPE_OF_OPTIONAL_PARAM = "null";
-
   private final TypeNode typeNode;
-  private final TypeNode originalTypeNode;
   private String desc;
   private final SourceLocation sourceLocation;
 
@@ -72,19 +65,14 @@ public class TemplateParam extends AbstractVarDefn implements TemplateHeaderVarD
       @Nullable String desc,
       @Nullable ExprNode defaultValue) {
     super(name, nameLocation, /* type= */ null);
-    this.originalTypeNode = typeNode;
     this.isInjected = isInjected;
     this.isImplicit = isImplicit;
     this.desc = desc;
     this.defaultValue = defaultValue == null ? null : new ExprRootNode(defaultValue);
     this.sourceLocation = sourceLocation;
     this.isExplicitlyOptional = optional;
-    boolean typeIsOptional = typeNode != null && isAlreadyOptionalType(typeNode);
-    if (optional && typeNode != null && !typeIsOptional) {
-      typeNode = getOptionalParamTypeNode(typeNode);
-    }
     this.typeNode = typeNode;
-    this.isRequired = defaultValue == null && !optional && !typeIsOptional;
+    this.isRequired = defaultValue == null && !optional;
   }
 
   protected TemplateParam(TemplateParam param, CopyState copyState) {
@@ -97,7 +85,6 @@ public class TemplateParam extends AbstractVarDefn implements TemplateHeaderVarD
     this.desc = param.desc;
     this.isExplicitlyOptional = param.isExplicitlyOptional;
     this.defaultValue = param.defaultValue == null ? null : param.defaultValue.copy(copyState);
-    this.originalTypeNode = param.originalTypeNode == null ? null : param.originalTypeNode.copy();
   }
 
   @Override
@@ -129,11 +116,6 @@ public class TemplateParam extends AbstractVarDefn implements TemplateHeaderVarD
   @Override
   public TypeNode getTypeNode() {
     return typeNode;
-  }
-
-  @Override
-  public TypeNode getOriginalTypeNode() {
-    return originalTypeNode;
   }
 
   /** Returns whether the param is an injected (declared with {@code @inject}) or not. */
@@ -191,26 +173,5 @@ public class TemplateParam extends AbstractVarDefn implements TemplateHeaderVarD
   @Override
   public TemplateParam copy(CopyState copyState) {
     return new TemplateParam(this, copyState);
-  }
-
-  public static boolean isAlreadyOptionalType(TypeNode typeNode) {
-    return typeNode
-        .asStreamExpandingUnion()
-        .anyMatch(
-            tn ->
-                tn instanceof NamedTypeNode
-                    && ((NamedTypeNode) tn).name().identifier().equals(TYPE_OF_OPTIONAL_PARAM));
-  }
-
-  static TypeNode getOptionalParamTypeNode(TypeNode typeNode) {
-    NamedTypeNode nullType =
-        NamedTypeNode.create(typeNode.sourceLocation(), TYPE_OF_OPTIONAL_PARAM);
-    return typeNode instanceof UnionTypeNode
-        ? UnionTypeNode.create(
-            ImmutableList.<TypeNode>builder()
-                .addAll(((UnionTypeNode) typeNode).candidates())
-                .add(nullType)
-                .build())
-        : UnionTypeNode.create(ImmutableList.of(typeNode, nullType));
   }
 }

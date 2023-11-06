@@ -201,7 +201,7 @@ public class TemplateNodeTest {
             "  {@param foo: ?}  /** Foo to print. */",
             "  {@param goo: ?}  /** Goo to print. */",
             "  {@param moo: bool}  /** Something milky. */",
-            "  {@param? too: string}",
+            "  {@param? too: string|null}",
             "{sp} {$foo}{$goo}{$moo ? 'moo' : ''}{$too}",
             "{/template}\n"),
         tn.toSourceString());
