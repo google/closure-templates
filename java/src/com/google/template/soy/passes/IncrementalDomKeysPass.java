@@ -115,7 +115,9 @@ final class IncrementalDomKeysPass implements CompilerFilePass {
       var isHtmlContextBlock =
           node instanceof HtmlContext.HtmlContextHolder
               && node instanceof ParentSoyNode
-              && ((HtmlContext.HtmlContextHolder) node).getHtmlContext() == HtmlContext.HTML_PCDATA;
+              && (disableAllTypeChecking
+                  || ((HtmlContext.HtmlContextHolder) node).getHtmlContext()
+                      == HtmlContext.HTML_PCDATA);
       if (isTemplateNode || isHtmlContextBlock) {
         visitBlockNode((ParentSoyNode) node);
         return;

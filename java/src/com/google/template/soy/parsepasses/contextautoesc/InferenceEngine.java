@@ -277,11 +277,18 @@ final class InferenceEngine {
 
     @Override
     protected void visitCallParamContentNode(CallParamContentNode node) {
+      // Skip if CheckTemplateCallsPass has not run (i.e. if type checking is off).
+      if (node.isImplicitContentKind()) {
+        return;
+      }
       visitRenderUnitNode(node);
     }
 
     @Override
     protected void visitLetContentNode(LetContentNode node) {
+      if (node.isImplicitContentKind()) {
+        return;
+      }
       visitRenderUnitNode(node);
     }
 
