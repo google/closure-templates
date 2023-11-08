@@ -41,7 +41,6 @@ import com.google.protobuf.Descriptors.FileDescriptor;
 import com.google.template.soy.CacheLoaders.CachedDescriptorSet;
 import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.internal.SoyFileKind;
-import com.google.template.soy.css.CssRegistry;
 import com.google.template.soy.error.SoyCompilationException;
 import com.google.template.soy.plugin.java.DelegatingMethodChecker;
 import com.google.template.soy.plugin.java.MethodChecker;
@@ -312,8 +311,6 @@ public abstract class AbstractSoyCompiler {
             .map(SoySourceFunction::getClass)
             .collect(toImmutableSet());
     Set<String> uniqueClasses = new HashSet<>();
-    sfsBuilder.setCssRegistry(
-        CssRegistry.create(ImmutableSet.of(), com.google.common.collect.ImmutableMap.of()));
 
     ImmutableList.Builder<MethodChecker> builder = ImmutableList.builder();
     for (File dep : javaDeps) {
