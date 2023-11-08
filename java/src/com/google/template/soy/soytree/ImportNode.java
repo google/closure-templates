@@ -53,9 +53,10 @@ public final class ImportNode extends AbstractSoyNode {
 
   private Optional<SoyFileNode.CssPath> requiredCssPath;
 
-  /** Only Proto and CSS are supported right now. */
+  /** Only Proto, CSS, and Toggle are supported right now. */
   public enum ImportType {
     CSS,
+    TOGGLE,
     PROTO,
     TEMPLATE,
     UNKNOWN
