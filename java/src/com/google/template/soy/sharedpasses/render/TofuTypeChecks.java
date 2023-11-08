@@ -181,6 +181,7 @@ public final class TofuTypeChecks {
         return CheckResult.fromBool(value == EvalVisitor.UNDEFINED_VE_DATA);
       case CSS_TYPE:
       case CSS_MODULE:
+      case TOGGLE_TYPE:
       case PROTO_TYPE:
       case PROTO_ENUM_TYPE:
       case PROTO_EXTENSION:

@@ -116,6 +116,7 @@ public abstract class SoyType {
     // Imported symbol types
     CSS_TYPE,
     CSS_MODULE,
+    TOGGLE_TYPE,
     PROTO_TYPE,
     PROTO_ENUM_TYPE,
     PROTO_EXTENSION,

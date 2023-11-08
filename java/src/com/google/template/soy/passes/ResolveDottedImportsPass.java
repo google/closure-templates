@@ -260,6 +260,8 @@ final class ResolveDottedImportsPass implements CompilerFilePass {
         return "css class";
       case CSS_MODULE:
         return "css module";
+      case TOGGLE_TYPE:
+        return "toggle type";
       case PROTO_TYPE:
         return "proto message";
       case PROTO_ENUM_TYPE:

@@ -421,6 +421,7 @@ final class ValidatorFactory extends JavaValueFactory {
       case TEMPLATE:
       case CSS_TYPE:
       case CSS_MODULE:
+      case TOGGLE_TYPE:
       case PROTO_TYPE:
       case PROTO_ENUM_TYPE:
       case PROTO_EXTENSION:

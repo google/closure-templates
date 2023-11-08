@@ -139,7 +139,7 @@ public final class ImportedVar extends AbstractVarDefn implements Copyable<Impor
     return parent != null ? parent.getSourceFilePath() : filePath;
   }
 
-  /** Returns a list of imported vars, fom the root imported symbol to the leaf symbol. */
+  /** Returns a list of imported vars, from the root imported symbol to the leaf symbol. */
   public ImmutableList<ImportedVar> getChain() {
     ImmutableList.Builder<ImportedVar> builder = ImmutableList.builder();
     ImportedVar var = this;
