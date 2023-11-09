@@ -21,6 +21,9 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.basetree.CopyState;
+import com.google.template.soy.exprtree.ExprNode;
+import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.exprtree.FunctionNode;
 
 /**
  * Abstract node representing a 'param'.
@@ -36,9 +39,16 @@ public abstract class CallParamNode extends AbstractCommandNode {
   // we need to reconstruct the original name.
   private String originalName = null;
 
+  // These will be filled in when the param is an element composition attribute and is also a
+  // logging function. They are copies of the original function and conditional nodes.
+  private ExprRootNode loggingFunction;
+  private ExprRootNode loggingConditional;
+
   protected CallParamNode(int id, SourceLocation sourceLocation, Identifier key) {
     super(id, sourceLocation, "param");
     this.key = checkNotNull(key);
+    this.loggingFunction = null;
+    this.loggingConditional = null;
   }
 
   /**
@@ -50,6 +60,22 @@ public abstract class CallParamNode extends AbstractCommandNode {
     super(orig, copyState);
     this.key = orig.key;
     this.originalName = orig.originalName;
+  }
+
+  public void setLoggingFunction(FunctionNode loggingFunction) {
+    this.loggingFunction = new ExprRootNode(loggingFunction);
+  }
+
+  public ExprRootNode getLoggingFunction() {
+    return loggingFunction;
+  }
+
+  public void setLoggingConditional(ExprNode loggingConditional) {
+    this.loggingConditional = new ExprRootNode(loggingConditional);
+  }
+
+  public ExprRootNode getLoggingConditional() {
+    return loggingConditional;
   }
 
   /** Returns the param key. */

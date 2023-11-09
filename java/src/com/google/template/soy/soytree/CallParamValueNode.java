@@ -71,7 +71,15 @@ public final class CallParamValueNode extends CallParamNode implements ExprHolde
 
   @Override
   public ImmutableList<ExprRootNode> getExprList() {
-    return ImmutableList.of(valueExpr);
+    ImmutableList.Builder<ExprRootNode> exprs = ImmutableList.builder();
+    exprs.add(valueExpr);
+    if (getLoggingFunction() != null) {
+      exprs.add(getLoggingFunction());
+    }
+    if (getLoggingConditional() != null) {
+      exprs.add(getLoggingConditional());
+    }
+    return exprs.build();
   }
 
   @Override

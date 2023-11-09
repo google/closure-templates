@@ -42,6 +42,8 @@ import com.google.template.soy.soytree.HtmlAttributeValueNode.Quotes;
 import com.google.template.soy.soytree.HtmlCloseTagNode;
 import com.google.template.soy.soytree.HtmlOpenTagNode;
 import com.google.template.soy.soytree.HtmlTagNode.TagExistence;
+import com.google.template.soy.soytree.IfCondNode;
+import com.google.template.soy.soytree.IfNode;
 import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
@@ -73,25 +75,6 @@ final class VeLogInstrumentationVisitor extends AbstractSoyNodeVisitor<Void> {
     new DesugarHtmlNodesPass().run(sourceFiles, nodeIdGen);
   }
 
-  private static FunctionNode getLoggingFunction(CallParamNode paramNode) {
-    if (!(paramNode instanceof CallParamContentNode)) {
-      return null;
-    }
-    CallParamContentNode callParamNode = (CallParamContentNode) paramNode;
-    if (callParamNode.numChildren() != 1 || !(callParamNode.getChild(0) instanceof PrintNode)) {
-      return null;
-    }
-    PrintNode printNode = (PrintNode) callParamNode.getChild(0);
-    if (!(printNode.getExpr().getRoot() instanceof FunctionNode)) {
-      return null;
-    }
-    FunctionNode fnNode = (FunctionNode) printNode.getExpr().getRoot();
-    if (fnNode.getSoyFunction() instanceof LoggingFunction) {
-      return fnNode;
-    }
-    return null;
-  }
-
   /**
    * Element composition calls are deconstructed into call nodes. However, some of the attributes
    * contain velogging functions. This takes those attributes and puts them on a wrapping `veAttr`
@@ -109,32 +92,31 @@ final class VeLogInstrumentationVisitor extends AbstractSoyNodeVisitor<Void> {
    */
   @Override
   protected void visitCallNode(CallNode node) {
-    ImmutableList<CallParamContentNode> paramsContainingVelogFunctions =
+    ImmutableList<CallParamNode> paramsContainingVelogFunctions =
         node.getChildren().stream()
-            .filter(c -> getLoggingFunction(c) != null)
-            .map(c -> (CallParamContentNode) c)
+            .filter(c -> c.getLoggingFunction() != null)
             .collect(toImmutableList());
     if (paramsContainingVelogFunctions.isEmpty()) {
       visitChildrenAllowingConcurrentModification(node);
       return;
     }
     HtmlOpenTagNode openTagNode = soyHtmlOpenTagNode(nodeIdGen);
-    for (CallParamContentNode callParamContentNode : paramsContainingVelogFunctions) {
+    for (CallParamNode callParamNode : paramsContainingVelogFunctions) {
       // Construct the data-loggingsoyfunction-{ATTR}() call below.
       FunctionNode funcNode =
           FunctionNode.newPositional(
               Identifier.create(VeLogJsSrcLoggingFunction.NAME, SourceLocation.UNKNOWN),
               VeLogJsSrcLoggingFunction.INSTANCE,
               SourceLocation.UNKNOWN);
-      FunctionNode function = getLoggingFunction(callParamContentNode);
+      FunctionNode function = (FunctionNode) callParamNode.getLoggingFunction().getRoot();
       funcNode.addChild(
           new StringNode(
               function.getStaticFunctionName(), QuoteStyle.SINGLE, SourceLocation.UNKNOWN));
       funcNode.addChild(new ListLiteralNode(function.getParams(), SourceLocation.UNKNOWN));
       funcNode.addChild(
           new StringNode(
-              callParamContentNode.getOriginalName(), QuoteStyle.SINGLE, SourceLocation.UNKNOWN));
-      PrintNode loggingFunctionAttribute =
+              callParamNode.getOriginalName(), QuoteStyle.SINGLE, SourceLocation.UNKNOWN));
+      StandaloneNode loggingFunctionAttribute =
           new PrintNode(
               nodeIdGen.genId(),
               SourceLocation.UNKNOWN,
@@ -142,21 +124,38 @@ final class VeLogInstrumentationVisitor extends AbstractSoyNodeVisitor<Void> {
               /* expr= */ funcNode,
               /* attributes= */ ImmutableList.of(),
               ErrorReporter.exploding());
+      if (callParamNode.getLoggingConditional() != null) {
+        IfNode ifNode = new IfNode(0, SourceLocation.UNKNOWN);
+        IfCondNode ifCondNode =
+            new IfCondNode(
+                0,
+                SourceLocation.UNKNOWN,
+                SourceLocation.UNKNOWN,
+                "if",
+                callParamNode.getLoggingConditional().getRoot().copy(new CopyState()));
+        ifCondNode.getExpr().setType(callParamNode.getLoggingConditional().getRoot().getType());
+        ifCondNode.addChild(loggingFunctionAttribute);
+        ifNode.addChild(ifCondNode);
+        loggingFunctionAttribute = ifNode;
+      }
       // Add the attribute to our synthetic tag
       openTagNode.addChild(loggingFunctionAttribute);
       // Replace the call param content with a placeholder
-      callParamContentNode.replaceChild(
-          0,
-          new PrintNode(
-              nodeIdGen.genId(),
-              SourceLocation.UNKNOWN,
-              /* isImplicit= */ true,
-              /* expr= */ new StringNode(
-                  ((LoggingFunction) function.getSoyFunction()).getPlaceholder(),
-                  QuoteStyle.SINGLE,
-                  SourceLocation.UNKNOWN),
-              /* attributes= */ ImmutableList.of(),
-              ErrorReporter.exploding()));
+      if (callParamNode instanceof CallParamContentNode) {
+        ((CallParamContentNode) callParamNode)
+            .replaceChild(
+                0,
+                new PrintNode(
+                    nodeIdGen.genId(),
+                    SourceLocation.UNKNOWN,
+                    /* isImplicit= */ true,
+                    /* expr= */ new StringNode(
+                        ((LoggingFunction) function.getSoyFunction()).getPlaceholder(),
+                        QuoteStyle.SINGLE,
+                        SourceLocation.UNKNOWN),
+                    /* attributes= */ ImmutableList.of(),
+                    ErrorReporter.exploding()));
+      }
     }
     node.getParent().addChild(node.getParent().getChildIndex(node), openTagNode);
     node.getParent()

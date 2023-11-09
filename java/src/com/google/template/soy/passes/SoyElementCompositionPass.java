@@ -35,7 +35,9 @@ import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.VarRefNode;
+import com.google.template.soy.logging.LoggingFunction;
 import com.google.template.soy.parsepasses.contextautoesc.ContextualAutoescaper;
+import com.google.template.soy.passes.CompilerFileSetPass.Result;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.CallBasicNode;
@@ -364,6 +366,10 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
                 conditional);
         if (param != null) {
           param.setOriginalName(ElementAttributePass.getStaticOrMergingKey(attrNode));
+          if (getLoggingFunction(attrNode) != null) {
+            param.setLoggingFunction(getLoggingFunction(attrNode).copy(new CopyState()));
+            conditional.ifPresent(ex -> param.setLoggingConditional(ex.copy(new CopyState())));
+          }
           call.addChild(param);
         }
         return;
@@ -443,6 +449,26 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
     SoyNode retNode = SoyTreeUtils.nextSibling(closeTag);
     closeTag.getParent().removeChild(closeTag);
     return (StandaloneNode) retNode;
+  }
+
+  @Nullable
+  private static FunctionNode getLoggingFunction(HtmlAttributeNode node) {
+    if (node.numChildren() != 2 || !(node.getChild(1) instanceof HtmlAttributeValueNode)) {
+      return null;
+    }
+    HtmlAttributeValueNode value = (HtmlAttributeValueNode) node.getChild(1);
+    if (value.numChildren() != 1 || !(value.getChild(0) instanceof PrintNode)) {
+      return null;
+    }
+    PrintNode printNode = (PrintNode) value.getChild(0);
+    if (!(printNode.getExpr().getRoot() instanceof FunctionNode)) {
+      return null;
+    }
+    FunctionNode fnNode = (FunctionNode) printNode.getExpr().getRoot();
+    if (fnNode.getSoyFunction() instanceof LoggingFunction) {
+      return fnNode;
+    }
+    return null;
   }
 
   @Nullable
