@@ -52,7 +52,6 @@ goog.require('proto.webutil.html.types.SafeStyleProto');
 goog.require('proto.webutil.html.types.SafeStyleSheetProto');
 goog.require('proto.webutil.html.types.SafeUrlProto');
 goog.require('proto.webutil.html.types.TrustedResourceUrlProto');
-goog.require('security.html.jspbconversions');
 goog.require('soydata.converters.idom');
 goog.require('xid');
 
@@ -118,7 +117,6 @@ goog.exportSymbol('proto.webutil.html.types.SafeStyleProto', proto.webutil.html.
 goog.exportSymbol('proto.webutil.html.types.SafeStyleSheetProto', proto.webutil.html.types.SafeStyleSheetProto);
 goog.exportSymbol('proto.webutil.html.types.SafeUrlProto', proto.webutil.html.types.SafeUrlProto);
 goog.exportSymbol('proto.webutil.html.types.TrustedResourceUrlProto', proto.webutil.html.types.TrustedResourceUrlProto);
-goog.exportSymbol('security.html.jspbconversions', security.html.jspbconversions);
 goog.exportSymbol('soydata.converters.idom', goog.module.get('soydata.converters.idom'));
 goog.exportSymbol('xid', xid);
 
