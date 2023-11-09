@@ -69,6 +69,9 @@ public final class SoyTypes {
               SanitizedType.TrustedResourceUriType.getInstance())
           .build();
 
+  public static final ImmutableSet<Kind> SANITIZED_TYPE_KINDS =
+      ImmutableSet.of(Kind.HTML, Kind.ELEMENT, Kind.ATTRIBUTES, Kind.JS, Kind.CSS);
+
   private static final ImmutableSet<Kind> ALWAYS_COMPARABLE_KINDS =
       Sets.immutableEnumSet(Kind.UNKNOWN, Kind.ANY, Kind.NULL, Kind.UNDEFINED);
 
@@ -477,6 +480,10 @@ public final class SoyTypes {
             return kindTest.test(type);
           }
         });
+  }
+
+  public static boolean isSanitizedType(SoyType type) {
+    return containsKinds(type, SANITIZED_TYPE_KINDS);
   }
 
   /**

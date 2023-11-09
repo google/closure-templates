@@ -89,8 +89,10 @@ import com.google.template.soy.exprtree.MethodCallNode;
 import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.exprtree.NullSafeAccessNode;
 import com.google.template.soy.exprtree.Operator;
+import com.google.template.soy.exprtree.OperatorNodes.AmpAmpOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.AndOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.AssertNonNullOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.BarBarOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ConditionalOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.EqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NotEqualOpNode;
@@ -827,6 +829,32 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
     Expression lhChunk = maybeCoerceToBoolean(lhOperand.getType(), visit(lhOperand), true);
     Expression rhChunk = maybeCoerceToBoolean(rhOperand.getType(), visit(rhOperand), true);
     return lhChunk.or(rhChunk, translationContext.codeGenerator());
+  }
+
+  @Override
+  protected Expression visitAmpAmpOpNode(AmpAmpOpNode node) {
+    if (SoyTypes.isSanitizedType(node.getChild(0).getType())) {
+      return translationContext
+          .codeGenerator()
+          .conditionalExpression(
+              maybeCoerceToBoolean(node.getChild(0).getType(), visit(node.getChild(0)), true),
+              visit(node.getChild(1)),
+              visit(node.getChild(0)));
+    }
+    return operation(node.getOperator(), visitChildren(node));
+  }
+
+  @Override
+  protected Expression visitBarBarOpNode(BarBarOpNode node) {
+    if (SoyTypes.isSanitizedType(node.getChild(0).getType())) {
+      return translationContext
+          .codeGenerator()
+          .conditionalExpression(
+              maybeCoerceToBoolean(node.getChild(0).getType(), visit(node.getChild(0)), true),
+              visit(node.getChild(0)),
+              visit(node.getChild(1)));
+    }
+    return operation(node.getOperator(), visitChildren(node));
   }
 
   @Override
