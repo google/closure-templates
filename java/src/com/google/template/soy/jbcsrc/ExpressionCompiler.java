@@ -1083,6 +1083,10 @@ final class ExpressionCompiler {
 
     @Override
     protected SoyExpression visitAndOpNode(AndOpNode node) {
+      return doSimpleAnd(node);
+    }
+
+    private SoyExpression doSimpleAnd(AbstractOperatorNode node) {
       SoyExpression left = visit(node.getChild(0));
       SoyExpression right = visit(node.getChild(1));
       return SoyExpression.forBool(
@@ -1091,12 +1095,20 @@ final class ExpressionCompiler {
 
     @Override
     protected SoyExpression visitAmpAmpOpNode(AmpAmpOpNode node) {
+      if (node.getChild(0).getType().getKind() == SoyType.Kind.BOOL
+          && node.getChild(1).getType().getKind() == SoyType.Kind.BOOL) {
+        return doSimpleAnd(node);
+      }
       return processConditionalOp(
           node.getChild(0), node.getChild(1), node.getChild(0), node.getType());
     }
 
     @Override
     protected SoyExpression visitOrOpNode(OrOpNode node) {
+      return doSimpleOr(node);
+    }
+
+    private SoyExpression doSimpleOr(AbstractOperatorNode node) {
       SoyExpression left = visit(node.getChild(0));
       SoyExpression right = visit(node.getChild(1));
       return SoyExpression.forBool(
@@ -1105,6 +1117,10 @@ final class ExpressionCompiler {
 
     @Override
     protected SoyExpression visitBarBarOpNode(BarBarOpNode node) {
+      if (node.getChild(0).getType().getKind() == SoyType.Kind.BOOL
+          && node.getChild(1).getType().getKind() == SoyType.Kind.BOOL) {
+        return doSimpleOr(node);
+      }
       return processConditionalOp(
           node.getChild(0), node.getChild(0), node.getChild(1), node.getType());
     }
