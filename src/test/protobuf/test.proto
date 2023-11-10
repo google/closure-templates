@@ -46,6 +46,8 @@ message Foo {
   optional string string_b_map = 26;
   optional MessageField message_field = 27;
   repeated InnerEnum some_repeated_enum = 28;
+
+  optional Foo foo = 31;
 }
 
 // These fields have the same names as fields in Foo to test accessing fields

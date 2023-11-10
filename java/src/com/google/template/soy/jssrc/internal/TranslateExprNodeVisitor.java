@@ -841,7 +841,8 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
               visit(node.getChild(1)),
               visit(node.getChild(0)));
     }
-    return operation(node.getOperator(), visitChildren(node));
+    return visit(node.getChild(0))
+        .ampAmp(visit(node.getChild(1)), translationContext.codeGenerator());
   }
 
   @Override
@@ -854,7 +855,8 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
               visit(node.getChild(0)),
               visit(node.getChild(1)));
     }
-    return operation(node.getOperator(), visitChildren(node));
+    return visit(node.getChild(0))
+        .barBar(visit(node.getChild(1)), translationContext.codeGenerator());
   }
 
   @Override
