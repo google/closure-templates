@@ -246,7 +246,8 @@ public final class SimplifyVisitor {
           }
         }
         Map<LetValueNode, RefAndHolder> possiblyInlinableRefs =
-            new TreeMap<>(comparing(LetValueNode::getSourceLocation));
+            new TreeMap<>(
+                comparing(LetValueNode::getSourceLocation).thenComparing(LetValueNode::getId));
         for (RefAndHolder refAndHolder : allRefs) {
           VarDefn defn = refAndHolder.ref.getDefnDecl();
           if (defn.kind() != VarDefn.Kind.LOCAL_VAR) {
@@ -349,7 +350,7 @@ public final class SimplifyVisitor {
       // paths to references.
 
       SetMultimap<LetNode, ExprHolderNode> letToReferences =
-          MultimapBuilder.hashKeys().linkedHashSetValues().build();
+          MultimapBuilder.linkedHashKeys().linkedHashSetValues().build();
       for (RefAndHolder refAndHolder : allRefs) {
         VarDefn defn = refAndHolder.ref.getDefnDecl();
         if (defn.kind() != VarDefn.Kind.LOCAL_VAR) {
