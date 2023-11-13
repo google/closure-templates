@@ -635,9 +635,6 @@ final class ExpressionCompiler {
           });
     }
 
-
-
-
     @Override
     protected SoyExpression visitRecordLiteralNode(RecordLiteralNode node) {
       SoyExpression record =
@@ -1429,7 +1426,8 @@ final class ExpressionCompiler {
             node.getFieldName(),
             node.getType(),
             ProtoUtils.SingularFieldAccessMode.NULL_IF_UNSET,
-            varManager);
+            varManager,
+            /* forceStringConversion= */ false);
       }
       // Otherwise this must be a vanilla SoyRecord.  Box, call getField or getFieldProvider
       // depending on the resolution status.
@@ -1532,21 +1530,24 @@ final class ExpressionCompiler {
                 BuiltinMethod.getProtoFieldNameFromMethodCall(node),
                 node.getType(),
                 ProtoUtils.SingularFieldAccessMode.DEFAULT_IF_UNSET,
-                varManager);
+                varManager,
+                /* forceStringConversion= */ false);
           case GET_PROTO_FIELD:
             return ProtoUtils.accessField(
                 baseExpr,
                 BuiltinMethod.getProtoFieldNameFromMethodCall(node),
                 node.getType(),
                 ProtoUtils.SingularFieldAccessMode.DEFAULT_IF_UNSET_UNLESS_MESSAGE_VALUED,
-                varManager);
+                varManager,
+                /* forceStringConversion= */ false);
           case GET_PROTO_FIELD_OR_UNDEFINED:
             return ProtoUtils.accessField(
                 baseExpr,
                 BuiltinMethod.getProtoFieldNameFromMethodCall(node),
                 node.getType(),
                 ProtoUtils.SingularFieldAccessMode.NULL_IF_UNSET,
-                varManager);
+                varManager,
+                /* forceStringConversion= */ false);
           case MAP_GET:
             Expression expr = getMapGetExpression(baseExpr, node, visit(node.getParam(0)));
             return SoyExpression.forSoyValue(node.getType(), expr.checkedSoyCast(node.getType()));

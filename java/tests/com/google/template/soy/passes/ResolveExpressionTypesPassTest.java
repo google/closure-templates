@@ -869,11 +869,12 @@ public final class ResolveExpressionTypesPassTest {
                     "{assertType('int|null', $proto.getSomeNumNoDefaultOrUndefined())}",
                     "{assertType('example.SomeEmbeddedMessage|null',"
                         + " $proto.getSomeEmbeddedMessage())}",
-                    "{assertType('list<int>', $proto.getRepeatedLongWithInt52JsTypeList())}",
                     "",
                     "{let $protoCorrect: Proto2ImplicitDefaults() /}",
                     "{assertType('string', $protoCorrect.getString())}",
-                    "{assertType('null|string', $protoCorrect.getStringOrUndefined())}"),
+                    "{assertType('null|string', $protoCorrect.getStringOrUndefined())}",
+                    "{assertType('int', $protoCorrect.getLongWithDefaultJsType())}"
+                    ),
                 ExampleExtendable.getDescriptor(),
                 Proto2ImplicitDefaults.getDescriptor())
             .addSoyFunction(ASSERT_TYPE_FUNCTION)

@@ -39,6 +39,7 @@ import com.google.template.soy.exprtree.MethodCallNode;
 import com.google.template.soy.internal.proto.ProtoUtils;
 import com.google.template.soy.shared.restricted.SoyMethod;
 import com.google.template.soy.types.BoolType;
+import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.MapType;
 import com.google.template.soy.types.NullType;
 import com.google.template.soy.types.ProtoExtensionImportType;
@@ -47,8 +48,10 @@ import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.SoyTypes;
+import com.google.template.soy.types.StringType;
 import com.google.template.soy.types.TemplateBindingUtil;
 import com.google.template.soy.types.UnknownType;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -475,6 +478,16 @@ public enum BuiltinMethod implements SoyMethod {
     return "get" + CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_CAMEL, fieldName);
   }
 
+  public static String protoFieldToGetAsStringMethodName(String fieldName) {
+    return "get" + CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_CAMEL, fieldName) + "_asString";
+  }
+
+  public static String protoFieldToGetAsLegacyNumberOrStringMethodName(String fieldName) {
+    return "get"
+        + CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_CAMEL, fieldName)
+        + "_asLegacyNumberOrString";
+  }
+
   public static String protoFieldToGetReadonlyMethodName(String fieldName) {
     return "getReadonly" + CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_CAMEL, fieldName);
   }
@@ -483,12 +496,28 @@ public enum BuiltinMethod implements SoyMethod {
     return "get" + CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_CAMEL, fieldName) + "OrUndefined";
   }
 
+  public static String fieldToGetOrUndefinedAsStringMethodName(String fieldName) {
+    return "get"
+        + CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_CAMEL, fieldName)
+        + "OrUndefined_asString";
+  }
+
+  public static String fieldToGetOrUndefinedAsLegacyNumberOrStringMethodName(String fieldName) {
+    return "get"
+        + CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_CAMEL, fieldName)
+        + "OrUndefined_asLegacyNumberOrString";
+  }
+
   private final String name;
   private final int argCount;
 
   BuiltinMethod(String name, int argCount) {
     this.name = name;
     this.argCount = argCount;
+  }
+
+  public String getMethodName() {
+    return this.name;
   }
 
   public boolean appliesTo(String methodName, SoyType baseType) {
@@ -592,6 +621,43 @@ public enum BuiltinMethod implements SoyMethod {
     return Optional.of(CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_CAMEL, suffix));
   }
 
+  private static Optional<String> getGetterAsStringFieldName(String methodName) {
+    if (methodName.length() <= 3) {
+      return Optional.empty();
+    }
+
+    if (!methodName.startsWith("get")
+        || !methodName.endsWith("_asString")
+        || methodName.endsWith("OrUndefined_asString")) {
+      return Optional.empty();
+    }
+
+    String middle = methodName.substring(3, methodName.length() - "_asString".length());
+    if (middle.length() > 0 && !Ascii.isUpperCase(middle.charAt(0))) {
+      return Optional.empty();
+    }
+    return Optional.of(CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_CAMEL, middle));
+  }
+
+  private static Optional<String> getGetterAsLegacyNumberOrStringFieldName(String methodName) {
+    if (methodName.length() <= 3) {
+      return Optional.empty();
+    }
+
+    if (!methodName.startsWith("get")
+        || !methodName.endsWith("_asLegacyNumberOrString")
+        || methodName.endsWith("OrUndefined_asLegacyNumberOrString")) {
+      return Optional.empty();
+    }
+
+    String middle =
+        methodName.substring(3, methodName.length() - "_asLegacyNumberOrString".length());
+    if (middle.length() > 0 && !Ascii.isUpperCase(middle.charAt(0))) {
+      return Optional.empty();
+    }
+    return Optional.of(CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_CAMEL, middle));
+  }
+
   private static Optional<String> getGetOrUndefinedFieldName(String methodName) {
     if (!methodName.startsWith("get") || !methodName.endsWith("OrUndefined")) {
       return Optional.empty();
@@ -603,12 +669,62 @@ public enum BuiltinMethod implements SoyMethod {
     return Optional.of(CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_CAMEL, middle));
   }
 
+  private static Optional<String> getGetOrUndefinedAsStringFieldName(String methodName) {
+    if (!methodName.startsWith("get") || !methodName.endsWith("OrUndefined_asString")) {
+      return Optional.empty();
+    }
+    String middle = methodName.substring(3, methodName.length() - "OrUndefined_asString".length());
+    if (middle.length() > 0 && !Ascii.isUpperCase(middle.charAt(0))) {
+      return Optional.empty();
+    }
+    return Optional.of(CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_CAMEL, middle));
+  }
+
+  private static Optional<String> getGetOrUndefinedAsLegacyNumberOrStringFieldName(
+      String methodName) {
+    if (!methodName.startsWith("get")
+        || !methodName.endsWith("OrUndefined_asLegacyNumberOrString")) {
+      return Optional.empty();
+    }
+    String middle =
+        methodName.substring(
+            3, methodName.length() - "OrUndefined_asLegacyNumberOrString".length());
+    if (middle.length() > 0 && !Ascii.isUpperCase(middle.charAt(0))) {
+      return Optional.empty();
+    }
+    return Optional.of(CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_CAMEL, middle));
+  }
+
   private static SoyType computeTypeForProtoFieldName(
       SoyType baseType, String fieldName, SoyTypeRegistry soyTypeRegistry) {
-    ImmutableList<SoyType> types =
-        SoyTypes.expandUnions(baseType).stream()
-            .map(type -> ((SoyProtoType) type).getFieldType(fieldName))
-            .collect(toImmutableList());
+    return computeTypeForProtoFieldName(
+        baseType, fieldName, soyTypeRegistry, /* is64BitIntStringType= */ false);
+  }
+
+  private static SoyType computeTypeForProtoFieldName(
+      SoyType baseType,
+      String fieldName,
+      SoyTypeRegistry soyTypeRegistry,
+      boolean is64BitIntStringType) {
+    var types = new ArrayList<SoyType>();
+    for (SoyType type : SoyTypes.expandUnions(baseType)) {
+      var defaultType = ((SoyProtoType) type).getFieldType(fieldName);
+
+      if (is64BitIntStringType) {
+        // When is64BitIntStringType is true, we are computing the type for the _asString alternate
+        // accessor of a 64-bit int field. These accessors are special in that they force the type
+        // to string, regardless of any jstype. For example, a field with JS_NUMBER will be forced
+        // to return a string value whenever the _asString accessor is used.
+        if ((defaultType instanceof ListType)) {
+          defaultType = soyTypeRegistry.getOrCreateListType(StringType.getInstance());
+        } else {
+          defaultType = StringType.getInstance();
+        }
+      }
+
+      types.add(defaultType);
+    }
+
     return SoyTypes.computeLowestCommonType(soyTypeRegistry, types);
   }
 

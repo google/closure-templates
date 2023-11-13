@@ -456,7 +456,10 @@ final class NullSafeAccumulator {
       Expression arg;
       Expression unpackFunction = null;
 
-      if (type == Type.GET || type == Type.GET_OR_UNDEFINED || type == Type.GET_READONLY) {
+      if (type == Type.GET
+          || type == Type.GET_OR_UNDEFINED
+          || type == Type.GET_READONLY
+      ) {
         unpackFunction = getUnpackFunction(desc);
       }
 

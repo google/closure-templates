@@ -200,7 +200,10 @@ final class ProtoUtils {
           .buildOrThrow();
 
   private static final RepeatedFieldInterpreter REPEATED_FIELD_INTERPRETER =
-      new RepeatedFieldInterpreter();
+      new RepeatedFieldInterpreter(/* forceStringConversion= */ false);
+
+  private static final RepeatedFieldInterpreter FORCE_STRING_REPEATED_FIELD_INTERPRETER =
+      new RepeatedFieldInterpreter(/* forceStringConversion= */ true);
 
   enum SingularFieldAccessMode {
     DEFAULT_IF_UNSET,
@@ -214,10 +217,12 @@ final class ProtoUtils {
       String fieldName,
       SoyType fieldType,
       SingularFieldAccessMode mode,
-      LocalVariableManager varManager) {
+      LocalVariableManager varManager,
+      boolean forceStringConversion) {
     SoyType type = baseExpr.soyType();
     if (type.getKind() == SoyType.Kind.PROTO) {
-      return accessField((SoyProtoType) type, baseExpr, fieldName, fieldType, mode);
+      return accessField(
+          (SoyProtoType) type, baseExpr, fieldName, fieldType, mode, forceStringConversion);
     } else {
       return accessProtoUnionField(
           baseExpr,
@@ -226,7 +231,13 @@ final class ProtoUtils {
           varManager,
           expr -> {
             SoyProtoType protoType = (SoyProtoType) expr.soyType();
-            return accessField(protoType, expr, fieldName, protoType.getFieldType(fieldName), mode);
+            return accessField(
+                protoType,
+                expr,
+                fieldName,
+                protoType.getFieldType(fieldName),
+                mode,
+                forceStringConversion);
           });
     }
   }
@@ -240,8 +251,11 @@ final class ProtoUtils {
       SoyExpression baseExpr,
       String fieldName,
       SoyType fieldType,
-      SingularFieldAccessMode mode) {
-    return new AccessorGenerator(protoType, baseExpr, fieldName, fieldType, mode).generate();
+      SingularFieldAccessMode mode,
+      boolean forceStringConversion) {
+    return new AccessorGenerator(
+            protoType, baseExpr, fieldName, fieldType, mode, forceStringConversion)
+        .generate();
   }
 
   static SoyExpression hasserField(
@@ -327,6 +341,7 @@ final class ProtoUtils {
     final SoyType fieldType;
     final FieldDescriptor descriptor;
     final boolean reinterpretAbsenceAsNullable;
+    final boolean forceStringConversion;
 
     AccessorGenerator(
         SoyProtoType protoType,
@@ -334,9 +349,20 @@ final class ProtoUtils {
         String fieldName,
         SoyType fieldType,
         SingularFieldAccessMode mode) {
+      this(protoType, baseExpr, fieldName, fieldType, mode, /* forceStringConversion= */ false);
+    }
+
+    AccessorGenerator(
+        SoyProtoType protoType,
+        SoyExpression baseExpr,
+        String fieldName,
+        SoyType fieldType,
+        SingularFieldAccessMode mode,
+        boolean forceStringConversion) {
       super(SoyRuntimeType.getUnboxedType(protoType).get(), baseExpr);
       this.fieldType = fieldType;
       this.descriptor = protoType.getFieldDescriptor(fieldName);
+      this.forceStringConversion = forceStringConversion;
       switch (mode) {
         case NULL_IF_UNSET:
           reinterpretAbsenceAsNullable = descriptor.hasPresence();
@@ -372,7 +398,11 @@ final class ProtoUtils {
             fieldType,
             MethodRefs.LAZY_PROTO_TO_SOY_VALUE_LIST_FOR_LIST.invoke(
                 typedBaseExpr.invoke(getMethodRef),
-                FieldVisitor.visitField(descriptor, REPEATED_FIELD_INTERPRETER)));
+                FieldVisitor.visitField(
+                    descriptor,
+                    forceStringConversion
+                        ? FORCE_STRING_REPEATED_FIELD_INTERPRETER
+                        : REPEATED_FIELD_INTERPRETER)));
       }
 
       // To implement jspb semantics for proto nullability we need to call has<Field>() methods for
@@ -381,7 +411,7 @@ final class ProtoUtils {
       // support for protos in our integration tests.
       if (!reinterpretAbsenceAsNullable) {
         // Simple case, just call .get and interpret the result
-        return interpretField(typedBaseExpr.invoke(getMethodRef));
+        return interpretField(typedBaseExpr.invoke(getMethodRef), forceStringConversion);
       } else {
         Label hasFieldLabel = new Label();
         BytecodeProducer hasCheck;
@@ -430,7 +460,8 @@ final class ProtoUtils {
                   protected void doGen(CodeBuilder adapter) {
                     // adapter.dup();
                   }
-                });
+                },
+                forceStringConversion);
 
         Label endLabel = new Label();
         return SoyExpression.forSoyValue(
@@ -502,7 +533,7 @@ final class ProtoUtils {
       }
     }
 
-    private SoyExpression interpretField(Expression field) {
+    private SoyExpression interpretField(Expression field, boolean forceStringConversion) {
       // Depending on types we may need to do a trivial conversion
       // (e.g. int->long, float->double, enum->int)
       switch (descriptor.getJavaType()) {
@@ -527,7 +558,7 @@ final class ProtoUtils {
             return SoyExpression.forInt(numericConversion(field, Type.LONG_TYPE));
           }
         case LONG:
-          if (shouldConvertBetweenStringAndLong(descriptor)) {
+          if (shouldConvertBetweenStringAndLong(descriptor, forceStringConversion)) {
             if (isUnsigned(descriptor)) {
               return SoyExpression.forString(MethodRefs.UNSIGNED_LONGS_TO_STRING.invoke(field));
             } else {
@@ -636,7 +667,7 @@ final class ProtoUtils {
                 field.checkedCast(Integer.class).invoke(MethodRefs.NUMBER_LONG_VALUE));
           }
         case LONG:
-          if (shouldConvertBetweenStringAndLong(descriptor)) {
+          if (shouldConvertBetweenStringAndLong(descriptor, /* forceStringConversion= */ false)) {
             if (isUnsigned(descriptor)) {
               return SoyExpression.forString(
                   MethodRefs.UNSIGNED_LONGS_TO_STRING.invoke(
@@ -1452,7 +1483,9 @@ final class ProtoUtils {
         case ENUM:
           return long.class;
         case LONG:
-          return shouldConvertBetweenStringAndLong(field) ? String.class : long.class;
+          return shouldConvertBetweenStringAndLong(field, /* forceStringConversion= */ false)
+              ? String.class
+              : long.class;
         case STRING:
         case BYTE_STRING:
           return String.class;
@@ -1492,7 +1525,7 @@ final class ProtoUtils {
           }
           break;
         case LONG:
-          if (shouldConvertBetweenStringAndLong(field)) {
+          if (shouldConvertBetweenStringAndLong(field, /* forceStringConversion= */ false)) {
             if (isUnsigned(field)) {
               MethodRefs.UNSIGNED_LONGS_PARSE_UNSIGNED_LONG.invokeUnchecked(cb);
             } else {
@@ -1548,7 +1581,11 @@ final class ProtoUtils {
     }
   }
 
-  private static boolean shouldConvertBetweenStringAndLong(FieldDescriptor descriptor) {
+  private static boolean shouldConvertBetweenStringAndLong(
+      FieldDescriptor descriptor, boolean forceStringConversion) {
+    if (forceStringConversion) {
+      return true;
+    }
     if (hasJsType(descriptor)) {
       JSType jsType = getJsType(descriptor);
       if (jsType == JSType.JS_STRING) {
@@ -1839,6 +1876,12 @@ final class ProtoUtils {
     private static final FieldRef ENUM_FROM_PROTO =
         FieldRef.staticFieldReference(ProtoFieldInterpreter.class, "ENUM_FROM_PROTO");
 
+    private final boolean forceStringConversion;
+
+    RepeatedFieldInterpreter(boolean forceStringConversion) {
+      this.forceStringConversion = forceStringConversion;
+    }
+
     @Override
     protected Expression visitMap(
         FieldDescriptor mapField, Expression keyInterpreter, Expression valueInterpreter) {
@@ -1852,12 +1895,12 @@ final class ProtoUtils {
 
     @Override
     protected Expression visitLongAsInt() {
-      return LONG_AS_INT.accessor();
+      return forceStringConversion ? LONG_AS_STRING.accessor() : LONG_AS_INT.accessor();
     }
 
     @Override
     protected Expression visitUnsignedInt() {
-      return UNSIGNED_INT.accessor();
+      return forceStringConversion ? UNSIGNEDLONG_AS_STRING.accessor() : UNSIGNED_INT.accessor();
     }
 
     @Override

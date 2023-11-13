@@ -55,115 +55,128 @@ import java.util.Map;
  */
 public abstract class ProtoFieldInterpreter {
   private static final FieldVisitor<ProtoFieldInterpreter> VISITOR =
-      new FieldVisitor<>() {
-        @Override
-        protected ProtoFieldInterpreter visitLongAsInt() {
-          return LONG_AS_INT;
-        }
+      new Visitor(/* forceStringConversion= */ false);
 
-        @Override
-        protected ProtoFieldInterpreter visitUnsignedInt() {
-          return UNSIGNED_INT;
-        }
+  private static final FieldVisitor<ProtoFieldInterpreter> FORCE_STRING_VISITOR =
+      new Visitor(/* forceStringConversion= */ true);
 
-        @Override
-        protected ProtoFieldInterpreter visitUnsignedLongAsString() {
-          return UNSIGNEDLONG_AS_STRING;
-        }
+  private static final class Visitor extends FieldVisitor<ProtoFieldInterpreter> {
+    private final boolean forceStringConversion;
 
-        @Override
-        protected ProtoFieldInterpreter visitLongAsString() {
-          return LONG_AS_STRING;
-        }
+    Visitor(boolean forceStringConversion) {
+      super();
+      this.forceStringConversion = forceStringConversion;
+    }
 
-        @Override
-        protected ProtoFieldInterpreter visitBool() {
-          return BOOL;
-        }
+    @Override
+    protected ProtoFieldInterpreter visitLongAsInt() {
+      return forceStringConversion ? LONG_AS_STRING : LONG_AS_INT;
+    }
 
-        @Override
-        protected ProtoFieldInterpreter visitBytes() {
-          return BYTES;
-        }
+    @Override
+    protected ProtoFieldInterpreter visitUnsignedInt() {
+      return forceStringConversion ? UNSIGNEDLONG_AS_STRING : UNSIGNED_INT;
+    }
 
-        @Override
-        protected ProtoFieldInterpreter visitString() {
-          return STRING;
-        }
+    @Override
+    protected ProtoFieldInterpreter visitUnsignedLongAsString() {
+      return UNSIGNEDLONG_AS_STRING;
+    }
 
-        @Override
-        protected ProtoFieldInterpreter visitDoubleAsFloat() {
-          return DOUBLE_AS_FLOAT;
-        }
+    @Override
+    protected ProtoFieldInterpreter visitLongAsString() {
+      return LONG_AS_STRING;
+    }
 
-        @Override
-        protected ProtoFieldInterpreter visitFloat() {
-          return FLOAT;
-        }
+    @Override
+    protected ProtoFieldInterpreter visitBool() {
+      return BOOL;
+    }
 
-        @Override
-        protected ProtoFieldInterpreter visitInt() {
-          return INT;
-        }
+    @Override
+    protected ProtoFieldInterpreter visitBytes() {
+      return BYTES;
+    }
 
-        @Override
-        protected ProtoFieldInterpreter visitSafeHtml() {
-          return SAFE_HTML_PROTO;
-        }
+    @Override
+    protected ProtoFieldInterpreter visitString() {
+      return STRING;
+    }
 
-        @Override
-        protected ProtoFieldInterpreter visitSafeScript() {
-          return SAFE_SCRIPT_PROTO;
-        }
+    @Override
+    protected ProtoFieldInterpreter visitDoubleAsFloat() {
+      return DOUBLE_AS_FLOAT;
+    }
 
-        @Override
-        protected ProtoFieldInterpreter visitSafeStyle() {
-          return SAFE_STYLE_PROTO;
-        }
+    @Override
+    protected ProtoFieldInterpreter visitFloat() {
+      return FLOAT;
+    }
 
-        @Override
-        protected ProtoFieldInterpreter visitSafeStyleSheet() {
-          return SAFE_STYLE_SHEET_PROTO;
-        }
+    @Override
+    protected ProtoFieldInterpreter visitInt() {
+      return INT;
+    }
 
-        @Override
-        protected ProtoFieldInterpreter visitSafeUrl() {
-          return SAFE_URL_PROTO;
-        }
+    @Override
+    protected ProtoFieldInterpreter visitSafeHtml() {
+      return SAFE_HTML_PROTO;
+    }
 
-        @Override
-        protected ProtoFieldInterpreter visitTrustedResourceUrl() {
-          return TRUSTED_RESOURCE_URI_PROTO;
-        }
+    @Override
+    protected ProtoFieldInterpreter visitSafeScript() {
+      return SAFE_SCRIPT_PROTO;
+    }
 
-        @Override
-        protected ProtoFieldInterpreter visitMessage(Descriptor messageType) {
-          return PROTO_MESSAGE;
-        }
+    @Override
+    protected ProtoFieldInterpreter visitSafeStyle() {
+      return SAFE_STYLE_PROTO;
+    }
 
-        @Override
-        protected ProtoFieldInterpreter visitEnum(
-            EnumDescriptor enumType, FieldDescriptor fieldType) {
-          return enumTypeField(enumType);
-        }
+    @Override
+    protected ProtoFieldInterpreter visitSafeStyleSheet() {
+      return SAFE_STYLE_SHEET_PROTO;
+    }
 
-        @Override
-        protected ProtoFieldInterpreter visitMap(
-            FieldDescriptor mapField,
-            ProtoFieldInterpreter keyValue,
-            ProtoFieldInterpreter valueValue) {
-          return getMapType(mapField, keyValue, valueValue);
-        }
+    @Override
+    protected ProtoFieldInterpreter visitSafeUrl() {
+      return SAFE_URL_PROTO;
+    }
 
-        @Override
-        protected ProtoFieldInterpreter visitRepeated(ProtoFieldInterpreter value) {
-          return getListType(value);
-        }
-      };
+    @Override
+    protected ProtoFieldInterpreter visitTrustedResourceUrl() {
+      return TRUSTED_RESOURCE_URI_PROTO;
+    }
+
+    @Override
+    protected ProtoFieldInterpreter visitMessage(Descriptor messageType) {
+      return PROTO_MESSAGE;
+    }
+
+    @Override
+    protected ProtoFieldInterpreter visitEnum(EnumDescriptor enumType, FieldDescriptor fieldType) {
+      return enumTypeField(enumType);
+    }
+
+    @Override
+    protected ProtoFieldInterpreter visitMap(
+        FieldDescriptor mapField,
+        ProtoFieldInterpreter keyValue,
+        ProtoFieldInterpreter valueValue) {
+      return getMapType(mapField, keyValue, valueValue);
+    }
+
+    @Override
+    protected ProtoFieldInterpreter visitRepeated(ProtoFieldInterpreter value) {
+      return getListType(value);
+    }
+  }
 
   /** Creates a {@link ProtoFieldInterpreter} for the given field. */
-  static ProtoFieldInterpreter create(FieldDescriptor fieldDescriptor) {
-    return FieldVisitor.visitField(fieldDescriptor, VISITOR);
+  static ProtoFieldInterpreter create(
+      FieldDescriptor fieldDescriptor, boolean forceStringConversion) {
+    return FieldVisitor.visitField(
+        fieldDescriptor, forceStringConversion ? FORCE_STRING_VISITOR : VISITOR);
   }
 
   private static ProtoFieldInterpreter getListType(ProtoFieldInterpreter local) {

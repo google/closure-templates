@@ -85,20 +85,25 @@ public final class SoyProtoValue extends SoyAbstractValue implements SoyLegacyOb
       super(fieldDesc);
     }
 
-    private ProtoFieldInterpreter impl() {
+    private ProtoFieldInterpreter impl(boolean forceStringConversion) {
       ProtoFieldInterpreter local = interpreter;
       if (local == null) {
-        local = ProtoFieldInterpreter.create(getDescriptor());
+        local = ProtoFieldInterpreter.create(getDescriptor(), forceStringConversion);
       }
       return local;
     }
 
     public SoyValue interpretField(Message message) {
-      return impl().soyFromProto(message.getField(getDescriptor()));
+      return interpretField(message, /* forceStringConversion= */ false);
+    }
+
+    private SoyValue interpretField(Message message, boolean forceStringConversion) {
+      return impl(forceStringConversion).soyFromProto(message.getField(getDescriptor()));
     }
 
     public void assignField(Message.Builder builder, SoyValue value) {
-      builder.setField(getDescriptor(), impl().protoFromSoy(value));
+      builder.setField(
+          getDescriptor(), impl(/* forceStringConversion= */ false).protoFromSoy(value));
     }
   }
 
@@ -166,6 +171,10 @@ public final class SoyProtoValue extends SoyAbstractValue implements SoyLegacyOb
   }
 
   public SoyValue getProtoField(String name) {
+    return getProtoField(name, /* forceStringConversion= */ false);
+  }
+
+  public SoyValue getProtoField(String name, boolean forceStringConversion) {
     FieldWithInterpreter field = clazz().fields.get(name);
     if (field == null) {
       throw new IllegalArgumentException(
@@ -176,7 +185,7 @@ public final class SoyProtoValue extends SoyAbstractValue implements SoyLegacyOb
       // Unset singular message fields are always null to match JSPB semantics.
       return NullData.INSTANCE;
     }
-    return field.interpretField(proto);
+    return field.interpretField(proto, forceStringConversion);
   }
 
   public SoyValue getReadonlyProtoField(String name) {
@@ -198,6 +207,15 @@ public final class SoyProtoValue extends SoyAbstractValue implements SoyLegacyOb
    * null.
    */
   public SoyValue getProtoFieldOrNull(String name) {
+    return getProtoFieldOrNull(name, /* forceStringConversion= */ false);
+  }
+
+  /**
+   * Returns the value of the field, or null only if the field has presence semantics and is unset.
+   * For fields with no presence semantics (i.e., there's no hasser method), the value is never
+   * null.
+   */
+  public SoyValue getProtoFieldOrNull(String name, boolean forceStringConversion) {
     FieldWithInterpreter field = clazz().fields.get(name);
     if (field == null) {
       throw new IllegalArgumentException(
@@ -207,7 +225,7 @@ public final class SoyProtoValue extends SoyAbstractValue implements SoyLegacyOb
     if (fd.hasPresence() && !proto.hasField(fd)) {
       return NullData.INSTANCE;
     }
-    return field.interpretField(proto);
+    return field.interpretField(proto, forceStringConversion);
   }
 
   public boolean hasProtoField(String name) {
