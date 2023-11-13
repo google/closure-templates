@@ -37,6 +37,7 @@ import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.types.SoyTypeRegistry;
+import com.google.template.soy.types.ToggleRegistry;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.Optional;
@@ -88,14 +89,14 @@ public abstract class SoyFileSetParser {
     public final CssRegistry cssRegistry() {
       return cssRegistry;
     }
-
+    
     public final boolean hasRegistry() {
       return registry.isPresent();
     }
   }
 
   public static Builder newBuilder() {
-    return new AutoValue_SoyFileSetParser.Builder();
+    return new AutoValue_SoyFileSetParser.Builder().setToggleRegistry(ToggleRegistry.EMPTY);
   }
 
   /** Optional file cache. */
@@ -113,6 +114,8 @@ public abstract class SoyFileSetParser {
   public abstract SoyTypeRegistry typeRegistry();
 
   public abstract CssRegistry cssRegistry();
+
+  public abstract ToggleRegistry toggleRegistry();
 
   /** Builder for {@link SoyFileSetParser}. */
   @AutoValue.Builder
@@ -132,6 +135,8 @@ public abstract class SoyFileSetParser {
     public abstract Builder setTypeRegistry(SoyTypeRegistry typeRegistry);
 
     public abstract Builder setCssRegistry(CssRegistry cssRegistry);
+
+    public abstract Builder setToggleRegistry(ToggleRegistry toggleRegistry);
 
     public abstract SoyFileSetParser build();
   }

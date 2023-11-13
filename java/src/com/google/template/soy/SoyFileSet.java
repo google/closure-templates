@@ -92,6 +92,7 @@ import com.google.template.soy.tofu.SoyTofu;
 import com.google.template.soy.tofu.internal.BaseTofu;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.SoyTypeRegistryBuilder;
+import com.google.template.soy.types.ToggleRegistry;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
@@ -161,6 +162,8 @@ public final class SoyFileSet {
     private ImmutableList<File> pluginRuntimeJars = ImmutableList.of();
 
     private CssRegistry cssRegistry = CssRegistry.EMPTY;
+
+    private ToggleRegistry toggleRegistry = ToggleRegistry.EMPTY;
 
     private boolean skipPluginValidation = false;
 
@@ -249,6 +252,7 @@ public final class SoyFileSet {
           optimize,
           generatedPathsToCheck,
           cssRegistry,
+          toggleRegistry,
           javaPluginValidator);
     }
 
@@ -572,6 +576,12 @@ public final class SoyFileSet {
       return this;
     }
 
+    @CanIgnoreReturnValue
+    public Builder setToggleRegistry(ToggleRegistry toggleRegistry) {
+      this.toggleRegistry = checkNotNull(toggleRegistry);
+      return this;
+    }
+
     /**
      * Sets whether or not to skip plugin validation. Defaults to false. This should usually not be
      * set unless you're doing something real funky.
@@ -597,6 +607,7 @@ public final class SoyFileSet {
   private final ValidatedConformanceConfig conformanceConfig;
   private final ImmutableList<File> pluginRuntimeJars;
   private final CssRegistry cssRegistry;
+  private final ToggleRegistry toggleRegistry;
 
   private final ImmutableList<SoyFunction> soyFunctions;
   private final ImmutableList<SoyPrintDirective> printDirectives;
@@ -632,6 +643,7 @@ public final class SoyFileSet {
       boolean optimize,
       Set<SourceFilePath> generatedPathsToCheck,
       CssRegistry cssRegistry,
+      ToggleRegistry toggleRegistry,
       MethodChecker javaMethodChecker) {
     this.scopedData = apiCallScopeProvider;
     this.typeRegistry = typeRegistry;
@@ -650,6 +662,7 @@ public final class SoyFileSet {
     this.optimize = optimize;
     this.generatedPathsToCheck = ImmutableSet.copyOf(generatedPathsToCheck);
     this.cssRegistry = cssRegistry;
+    this.toggleRegistry = toggleRegistry;
     this.javaMethodChecker = javaMethodChecker;
   }
 
@@ -1249,6 +1262,7 @@ public final class SoyFileSet {
         .setSoyFileSuppliers(soyFileSuppliers)
         .setCompilationUnits(compilationUnits)
         .setCssRegistry(cssRegistry)
+        .setToggleRegistry(toggleRegistry)
         .setTypeRegistry(typeRegistry)
         .setPassManager(builder.setTypeRegistry(typeRegistry).build())
         .setErrorReporter(errorReporter)
@@ -1267,6 +1281,7 @@ public final class SoyFileSet {
         .setGeneratedPathsToCheck(generatedPathsToCheck)
         .setSoyPrintDirectives(printDirectives)
         .setCssRegistry(cssRegistry)
+        .setToggleRegistry(toggleRegistry)
         .setErrorReporter(errorReporter)
         .setJavaPluginValidator(javaMethodChecker)
         .setConformanceConfig(conformanceConfig)

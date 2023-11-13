@@ -41,6 +41,7 @@ import com.google.template.soy.soytree.FileSetMetadata;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.types.SoyTypeRegistry;
+import com.google.template.soy.types.ToggleRegistry;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Map;
@@ -286,6 +287,7 @@ public final class PassManager {
     private ErrorReporter errorReporter;
     private SoyGeneralOptions options;
     private CssRegistry cssRegistry = CssRegistry.EMPTY;
+    private ToggleRegistry toggleRegistry = ToggleRegistry.EMPTY;
     private boolean allowUnknownGlobals;
     private boolean allowUnknownJsGlobals;
     private boolean disableAllTypeChecking;
@@ -332,6 +334,12 @@ public final class PassManager {
     @CanIgnoreReturnValue
     public Builder setCssRegistry(CssRegistry registry) {
       this.cssRegistry = registry;
+      return this;
+    }
+
+    @CanIgnoreReturnValue
+    public Builder setToggleRegistry(ToggleRegistry registry) {
+      this.toggleRegistry = registry;
       return this;
     }
 

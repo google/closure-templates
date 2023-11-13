@@ -56,6 +56,7 @@ import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.Metadata.CompilationUnitAndKind;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.SoyTypeRegistryBuilder;
+import com.google.template.soy.types.ToggleRegistry;
 import java.util.Arrays;
 import java.util.List;
 import javax.annotation.Nullable;
@@ -82,6 +83,7 @@ public final class SoyFileSetParserBuilder {
   private boolean desugarHtmlNodes = true;
   private boolean desugarIdomFeatures = true;
   private CssRegistry cssRegistry = CssRegistry.EMPTY;
+  private ToggleRegistry toggleRegistry = ToggleRegistry.EMPTY;
   // TODO(lukes): disabled for compatibility with unit tests.  Fix tests relying on the
   // escaper not running and enable by default.  This configuration bit only really exists
   // for incrementaldomsrc, not tests.
@@ -291,6 +293,12 @@ public final class SoyFileSetParserBuilder {
   }
 
   @CanIgnoreReturnValue
+  public SoyFileSetParserBuilder toggleRegistry(ToggleRegistry toggleRegistry) {
+    this.toggleRegistry = toggleRegistry;
+    return this;
+  }
+
+  @CanIgnoreReturnValue
   public SoyFileSetParserBuilder allowUnboundGlobals(boolean allowUnboundGlobals) {
     this.allowUnboundGlobals = allowUnboundGlobals;
     return this;
@@ -403,6 +411,7 @@ public final class SoyFileSetParserBuilder {
         .setGeneralOptions(options)
         .setConformanceConfig(conformanceConfig)
         .setCssRegistry(cssRegistry)
+        .setToggleRegistry(toggleRegistry)
         .setPluginResolver(
             new PluginResolver(
                 disableAllTypeChecking
@@ -433,6 +442,7 @@ public final class SoyFileSetParserBuilder {
         .setPassManager(passManager.build())
         .setErrorReporter(errorReporter)
         .setCssRegistry(cssRegistry)
+        .setToggleRegistry(toggleRegistry)
         .build();
   }
 }
