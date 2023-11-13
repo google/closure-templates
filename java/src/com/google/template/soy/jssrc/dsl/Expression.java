@@ -217,10 +217,6 @@ public abstract class Expression extends CodeChunk {
     return shortCircuiting(rhs, codeGenerator, AND, e -> e);
   }
 
-  public final Expression ampAmp(Expression rhs, Generator codeGenerator) {
-    return shortCircuiting(rhs, codeGenerator, Operator.AMP_AMP, e -> e);
-  }
-
   /**
    * Returns a code chunk representing the logical or ({@code ||}) of this chunk with the given
    * chunk.
@@ -231,10 +227,6 @@ public abstract class Expression extends CodeChunk {
    */
   public final Expression or(Expression rhs, Generator codeGenerator) {
     return shortCircuiting(rhs, codeGenerator, OR, Expressions::not);
-  }
-
-  public final Expression barBar(Expression rhs, Generator codeGenerator) {
-    return shortCircuiting(rhs, codeGenerator, Operator.BAR_BAR, Expressions::not);
   }
 
   private Expression shortCircuiting(
