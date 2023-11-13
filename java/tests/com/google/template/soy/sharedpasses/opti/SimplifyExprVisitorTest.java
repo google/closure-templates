@@ -50,7 +50,7 @@ public final class SimplifyExprVisitorTest {
     assertThat(new ExpressionParser("-99+-111").parseForParentNode()).simplifiesTo("-210");
     assertThat(new ExpressionParser("-99 + '-111'").parseForParentNode()).simplifiesTo("-99-111");
     assertThat(new ExpressionParser("false or 0 or 0.0 or ''").parseForParentNode())
-        .simplifiesTo("");
+        .simplifiesTo("false");
     assertThat(new ExpressionParser("0 <= 0").parseForParentNode()).simplifiesTo("true");
     assertThat(new ExpressionParser("'22' == 22").parseForParentNode()).simplifiesTo("true");
     assertThat(new ExpressionParser("'22' == '' + 22").parseForParentNode()).simplifiesTo("true");
@@ -359,7 +359,7 @@ public final class SimplifyExprVisitorTest {
     assertThat(
             new ExpressionParser("$boo and true").withParam("boo", "number").parseForParentNode())
         .simplifiesTo("$boo and true"); // Can't simplify
-    assertThat(new ExpressionParser("true and 1").parseForParentNode()).simplifiesTo("1");
+    assertThat(new ExpressionParser("true and 1").parseForParentNode()).simplifiesTo("true");
     assertThat(new ExpressionParser("1 and true").parseForParentNode()).simplifiesTo("true");
     assertThat(new ExpressionParser("false and 1").parseForParentNode()).simplifiesTo("false");
     assertThat(new ExpressionParser("1 and false").parseForParentNode()).simplifiesTo("false");
@@ -383,10 +383,10 @@ public final class SimplifyExprVisitorTest {
     assertThat(
             new ExpressionParser("$boo or false").withParam("boo", "string").parseForParentNode())
         .simplifiesTo("$boo or false");
-    assertThat(new ExpressionParser("false or 1").parseForParentNode()).simplifiesTo("1");
-    assertThat(new ExpressionParser("1 or false").parseForParentNode()).simplifiesTo("1");
+    assertThat(new ExpressionParser("false or 1").parseForParentNode()).simplifiesTo("true");
+    assertThat(new ExpressionParser("1 or false").parseForParentNode()).simplifiesTo("true");
     assertThat(new ExpressionParser("true or 1").parseForParentNode()).simplifiesTo("true");
-    assertThat(new ExpressionParser("1 or true").parseForParentNode()).simplifiesTo("1");
+    assertThat(new ExpressionParser("1 or true").parseForParentNode()).simplifiesTo("true");
   }
 
   @Test

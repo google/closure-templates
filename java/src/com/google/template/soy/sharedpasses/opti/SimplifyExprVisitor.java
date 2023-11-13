@@ -18,6 +18,9 @@ package com.google.template.soy.sharedpasses.opti;
 
 import static com.google.template.soy.exprtree.ExprNodes.isNullishLiteral;
 
+import com.google.common.collect.ImmutableList;
+import com.google.template.soy.base.internal.Identifier;
+import com.google.template.soy.basicfunctions.BasicFunctions;
 import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.internalutils.InternalValueUtils;
@@ -64,6 +67,9 @@ import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.shared.internal.BuiltinMethod;
 import com.google.template.soy.sharedpasses.render.Environment;
 import com.google.template.soy.sharedpasses.render.RenderException;
+import com.google.template.soy.types.AnyType;
+import com.google.template.soy.types.BoolType;
+import com.google.template.soy.types.SoyType;
 import java.util.function.BiFunction;
 import javax.annotation.Nullable;
 
@@ -120,15 +126,15 @@ final class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
 
   @Override
   protected void visitAndOpNode(AndOpNode node) {
-    processAnd(node);
+    processAnd(node, /* booleanCoerce= */ true);
   }
 
   @Override
   protected void visitAmpAmpOpNode(AmpAmpOpNode node) {
-    processAnd(node);
+    processAnd(node, /* booleanCoerce= */ false);
   }
 
-  private void processAnd(AbstractOperatorNode node) {
+  private void processAnd(AbstractOperatorNode node, boolean booleanCoerce) {
     // Recurse.
     visitChildren(node);
 
@@ -136,21 +142,26 @@ final class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
     SoyValue operand0 = getConstantOrNull(node.getChild(0));
     if (operand0 != null) {
       ExprNode replacementNode = operand0.coerceToBoolean() ? node.getChild(1) : node.getChild(0);
-      node.getParent().replaceChild(node, replacementNode);
+      node.getParent()
+          .replaceChild(
+              node,
+              booleanCoerce && replacementNode.getType().getKind() != SoyType.Kind.BOOL
+                  ? booleanCoerce(replacementNode)
+                  : replacementNode);
     }
   }
 
   @Override
   protected void visitOrOpNode(OrOpNode node) {
-    processOr(node);
+    processOr(node, /* booleanCoerce= */ true);
   }
 
   @Override
   protected void visitBarBarOpNode(BarBarOpNode node) {
-    processOr(node);
+    processOr(node, /* booleanCoerce= */ false);
   }
 
-  private void processOr(AbstractOperatorNode node) {
+  private void processOr(AbstractOperatorNode node, boolean booleanCoerce) {
     // Recurse.
     visitChildren(node);
 
@@ -158,8 +169,29 @@ final class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
     SoyValue operand0 = getConstantOrNull(node.getChild(0));
     if (operand0 != null) {
       ExprNode replacementNode = operand0.coerceToBoolean() ? node.getChild(0) : node.getChild(1);
-      node.getParent().replaceChild(node, replacementNode);
+      node.getParent()
+          .replaceChild(
+              node,
+              booleanCoerce && replacementNode.getType().getKind() != SoyType.Kind.BOOL
+                  ? booleanCoerce(replacementNode)
+                  : replacementNode);
     }
+  }
+
+  static ExprNode booleanCoerce(ExprNode expr) {
+    SoyValue operand = getConstantOrNull(expr);
+    if (operand != null) {
+      return new BooleanNode(operand.coerceToBoolean(), expr.getSourceLocation());
+    }
+    FunctionNode func =
+        FunctionNode.newPositional(
+            Identifier.create("Boolean", expr.getSourceLocation()),
+            BasicFunctions.BOOLEAN_FUNCTION,
+            expr.getSourceLocation());
+    func.addChild(expr);
+    func.setType(BoolType.getInstance());
+    func.setAllowedParamTypes(ImmutableList.of(AnyType.getInstance()));
+    return func;
   }
 
   @Override
@@ -532,6 +564,15 @@ final class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
         return StringData.forValue(((StringNode) expr).getValue());
       case PROTO_ENUM_VALUE_NODE:
         return IntegerData.forValue(((ProtoEnumValueNode) expr).getValue());
+      case FUNCTION_NODE:
+        FunctionNode func = (FunctionNode) expr;
+        if (func.getFunctionName().equals("Boolean")) {
+          SoyValue b = getConstantOrNull(func.getChild(0));
+          if (b != null) {
+            return BooleanData.forValue(b.coerceToBoolean());
+          }
+        }
+        return null;
       default:
         return null;
     }
