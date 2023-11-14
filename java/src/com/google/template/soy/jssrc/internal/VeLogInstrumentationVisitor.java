@@ -144,19 +144,6 @@ final class VeLogInstrumentationVisitor extends AbstractSoyNodeVisitor<Void> {
               ErrorReporter.exploding());
       // Add the attribute to our synthetic tag
       openTagNode.addChild(loggingFunctionAttribute);
-      // Replace the call param content with a placeholder
-      callParamContentNode.replaceChild(
-          0,
-          new PrintNode(
-              nodeIdGen.genId(),
-              SourceLocation.UNKNOWN,
-              /* isImplicit= */ true,
-              /* expr= */ new StringNode(
-                  ((LoggingFunction) function.getSoyFunction()).getPlaceholder(),
-                  QuoteStyle.SINGLE,
-                  SourceLocation.UNKNOWN),
-              /* attributes= */ ImmutableList.of(),
-              ErrorReporter.exploding()));
     }
     node.getParent().addChild(node.getParent().getChildIndex(node), openTagNode);
     node.getParent()
