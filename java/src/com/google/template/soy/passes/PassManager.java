@@ -514,7 +514,8 @@ public final class PassManager {
                   disableAllTypeChecking,
                   new ProtoImportProcessor(registry, errorReporter, disableAllTypeChecking),
                   new TemplateImportProcessor(errorReporter, accumulatedState::registryFromDeps),
-                  new CssImportProcessor(cssRegistry, errorReporter)))
+                  new CssImportProcessor(cssRegistry, errorReporter),
+                  new ToggleImportProcessor(toggleRegistry, errorReporter)))
           .add(new ResolveUseVariantTypePass(errorReporter))
           .add(
               new FileDependencyOrderPass(
