@@ -16,6 +16,7 @@
 package com.google.template.soy.types;
 
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
 
 import com.google.common.collect.ImmutableList;
@@ -130,6 +131,7 @@ public final class SoyTypes {
   }
 
   public static SoyType removeNull(SoyType type) {
+    checkNotNull(type);
     checkArgument(!NullType.getInstance().equals(type), "Can't remove null from null");
     if (type.getKind() == Kind.UNION) {
       return ((UnionType) type).filter(t -> t != NullType.getInstance());
@@ -138,6 +140,7 @@ public final class SoyTypes {
   }
 
   private static SoyType removeUndefined(SoyType type) {
+    checkNotNull(type);
     if (type.getKind() == Kind.UNION) {
       return ((UnionType) type).filter(t -> t != UndefinedType.getInstance());
     }
@@ -145,6 +148,7 @@ public final class SoyTypes {
   }
 
   private static SoyType removeNullish(SoyType type) {
+    checkNotNull(type);
     if (type.getKind() == Kind.UNION) {
       return ((UnionType) type).filter(t -> !NULLISH_KINDS.contains(t.getKind()));
     }
@@ -152,6 +156,7 @@ public final class SoyTypes {
   }
 
   private static SoyType keepNullish(SoyType type) {
+    checkNotNull(type);
     if (type.getKind() == Kind.UNION) {
       return ((UnionType) type).filter(t -> NULLISH_KINDS.contains(t.getKind()));
     }
@@ -163,39 +168,41 @@ public final class SoyTypes {
    *
    * <p>If the type is the null type, then it returns the null type.
    */
-  public static SoyType tryRemoveNull(SoyType soyType) {
-    if (soyType == NullType.getInstance()) {
-      return soyType;
+  public static SoyType tryRemoveNull(SoyType type) {
+    if (type == NullType.getInstance()) {
+      return type;
     }
-    return removeNull(soyType);
+    return removeNull(type);
   }
 
-  public static SoyType tryRemoveUndefined(SoyType soyType) {
-    if (soyType == UndefinedType.getInstance()) {
-      return soyType;
+  public static SoyType tryRemoveUndefined(SoyType type) {
+    if (type == UndefinedType.getInstance()) {
+      return type;
     }
-    return removeUndefined(soyType);
+    return removeUndefined(type);
   }
 
-  public static SoyType tryRemoveNullish(SoyType soyType) {
-    if (isNullOrUndefined(soyType)) {
-      return soyType;
+  public static SoyType tryRemoveNullish(SoyType type) {
+    if (isNullOrUndefined(type)) {
+      return type;
     }
-    return removeNullish(soyType);
+    return removeNullish(type);
   }
 
-  public static SoyType tryKeepNullish(SoyType soyType) {
-    if (isNullOrUndefined(soyType)) {
-      return soyType;
+  public static SoyType tryKeepNullish(SoyType type) {
+    if (isNullOrUndefined(type)) {
+      return type;
     }
-    return keepNullish(soyType);
+    return keepNullish(type);
   }
 
   public static SoyType makeNullish(SoyType type) {
+    checkNotNull(type);
     return UnionType.of(type, NullType.getInstance(), UndefinedType.getInstance());
   }
 
   public static SoyType makeNullable(SoyType type) {
+    checkNotNull(type);
     return isNullable(type) ? type : UnionType.of(type, NullType.getInstance());
   }
 
@@ -348,7 +355,7 @@ public final class SoyTypes {
    * that all match the given kind.
    */
   public static boolean isKindOrUnionOfKind(SoyType type, Kind kind) {
-    return isKindOrUnionOfKinds(type, ImmutableSet.of(kind));
+    return expandUnions(type).stream().allMatch((t) -> kind == t.getKind());
   }
 
   /**
@@ -364,6 +371,7 @@ public final class SoyTypes {
    * single element containing the type.
    */
   public static ImmutableList<SoyType> expandUnions(SoyType type) {
+    checkNotNull(type);
     if (type.getKind() == Kind.UNION) {
       return ImmutableList.copyOf(((UnionType) type).getMembers());
     } else {
