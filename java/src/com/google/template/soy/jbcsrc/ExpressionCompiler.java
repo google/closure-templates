@@ -1096,8 +1096,7 @@ final class ExpressionCompiler {
           && node.getChild(1).getType().getKind() == SoyType.Kind.BOOL) {
         return doSimpleAnd(node);
       }
-      return processConditionalOp(
-          node.getChild(0), node.getChild(1), node.getChild(0), node.getType());
+      return rewriteAsConditional(node);
     }
 
     @Override
@@ -1118,8 +1117,43 @@ final class ExpressionCompiler {
           && node.getChild(1).getType().getKind() == SoyType.Kind.BOOL) {
         return doSimpleOr(node);
       }
-      return processConditionalOp(
-          node.getChild(0), node.getChild(0), node.getChild(1), node.getType());
+      return rewriteAsConditional(node);
+    }
+
+    private SoyExpression rewriteAsConditional(AbstractOperatorNode node) {
+      // TODO(b/309826585): Use custom bytecode to optimize, see firstSoyNonNullish().
+      SoyExpression lhsExpr = visit(node.getChild(0));
+      SoyExpression rhsExpr = visit(node.getChild(1));
+
+      if (node.getChild(0) instanceof VarRefNode) {
+        return node instanceof AmpAmpOpNode
+            ? processConditionalOp(lhsExpr.compileToBranch(), rhsExpr, lhsExpr, node.getType())
+            : processConditionalOp(lhsExpr.compileToBranch(), lhsExpr, rhsExpr, node.getType());
+      }
+
+      LocalVariableManager.Scope scope = varManager.enterScope();
+      LocalVariable lhsTmpVar = scope.createTemporary("lhs_temp", lhsExpr.box().resultType());
+      Statement lhsTmpVarInit = lhsTmpVar.initialize(lhsExpr.box());
+      SoyExpression lhsTempVarRef = SoyExpression.forSoyValue(lhsExpr.soyType(), lhsTmpVar);
+
+      SoyExpression condExpr =
+          node instanceof AmpAmpOpNode
+              ? processConditionalOp(
+                  lhsTempVarRef.compileToBranch(), rhsExpr, lhsTempVarRef, node.getType())
+              : processConditionalOp(
+                  lhsTempVarRef.compileToBranch(), lhsTempVarRef, rhsExpr, node.getType());
+      Statement exitScope = scope.exitScope();
+
+      return SoyExpression.forSoyValue(
+          node.getType(),
+          new Expression(SoyRuntimeType.getBoxedType(node.getType()).runtimeType()) {
+            @Override
+            protected void doGen(CodeBuilder adapter) {
+              lhsTmpVarInit.gen(adapter);
+              condExpr.gen(adapter);
+              exitScope.gen(adapter);
+            }
+          });
     }
 
     // Null coalescing operator
@@ -1156,17 +1190,14 @@ final class ExpressionCompiler {
     @Override
     protected SoyExpression visitConditionalOpNode(ConditionalOpNode node) {
       return processConditionalOp(
-          node.getChild(0), node.getChild(1), node.getChild(2), node.getType());
+          visit(node.getChild(0)).compileToBranch(),
+          visit(node.getChild(1)),
+          visit(node.getChild(2)),
+          node.getType());
     }
 
     private SoyExpression processConditionalOp(
-        ExprNode conditionNode,
-        ExprNode trueBranchNode,
-        ExprNode falseBranchNode,
-        SoyType nodeType) {
-      Branch condition = visit(conditionNode).compileToBranch();
-      SoyExpression trueBranch = visit(trueBranchNode);
-      SoyExpression falseBranch = visit(falseBranchNode);
+        Branch condition, SoyExpression trueBranch, SoyExpression falseBranch, SoyType nodeType) {
       // If types are == and they are both boxed (or both not boxed) then we can just use them
       // directly.
       // Otherwise we need to do boxing conversions.
