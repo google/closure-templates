@@ -1121,37 +1121,22 @@ final class ExpressionCompiler {
     }
 
     private SoyExpression rewriteAsConditional(AbstractOperatorNode node) {
-      // TODO(b/309826585): Use custom bytecode to optimize, see firstSoyNonNullish().
-      SoyExpression lhsExpr = visit(node.getChild(0));
-      SoyExpression rhsExpr = visit(node.getChild(1));
-
-      if (node.getChild(0) instanceof VarRefNode) {
-        return node instanceof AmpAmpOpNode
-            ? processConditionalOp(lhsExpr.compileToBranch(), rhsExpr, lhsExpr, node.getType())
-            : processConditionalOp(lhsExpr.compileToBranch(), lhsExpr, rhsExpr, node.getType());
-      }
-
-      LocalVariableManager.Scope scope = varManager.enterScope();
-      LocalVariable lhsTmpVar = scope.createTemporary("lhs_temp", lhsExpr.box().resultType());
-      Statement lhsTmpVarInit = lhsTmpVar.initialize(lhsExpr.box());
-      SoyExpression lhsTempVarRef = SoyExpression.forSoyValue(lhsExpr.soyType(), lhsTmpVar);
-
-      SoyExpression condExpr =
-          node instanceof AmpAmpOpNode
-              ? processConditionalOp(
-                  lhsTempVarRef.compileToBranch(), rhsExpr, lhsTempVarRef, node.getType())
-              : processConditionalOp(
-                  lhsTempVarRef.compileToBranch(), lhsTempVarRef, rhsExpr, node.getType());
-      Statement exitScope = scope.exitScope();
+      SoyExpression lhsExpr = visit(node.getChild(0)).box();
+      SoyExpression rhsExpr = visit(node.getChild(1)).box();
 
       return SoyExpression.forSoyValue(
           node.getType(),
           new Expression(SoyRuntimeType.getBoxedType(node.getType()).runtimeType()) {
             @Override
             protected void doGen(CodeBuilder adapter) {
-              lhsTmpVarInit.gen(adapter);
-              condExpr.gen(adapter);
-              exitScope.gen(adapter);
+              Label trueLabel = new Label();
+              lhsExpr.gen(adapter); // Stack: L
+              adapter.dup(); // Stack: L, L
+              MethodRefs.RUNTIME_COERCE_TO_BOOLEAN.invokeUnchecked(adapter); // Stack: L Z
+              adapter.ifZCmp(node instanceof BarBarOpNode ? Opcodes.IFNE : Opcodes.IFEQ, trueLabel);
+              adapter.pop(); // Stack:
+              rhsExpr.gen(adapter); // Stack: R
+              adapter.mark(trueLabel);
             }
           });
     }
