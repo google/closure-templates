@@ -2370,11 +2370,7 @@ const $$bidiSpanWrap = function(bidiGlobalDir, text) {
   // HTML SanitizedContent.
   const html = htmlSafeByReview(
       String(text), 'Soy |bidiSpanWrap is applied on an autoescaped text.');
-  let dir = getContentDir(text);
-  if (dir == null) {
-    dir = bidi.estimateDirection(text + '', true);
-    cacheContentDir_(text, dir);
-  }
+  const dir = $$bidiTextDir(text, /** isHtml= */ true);
   const wrappedHtml = formatter.spanWrapSafeHtmlWithKnownDir(dir, html);
 
   // Like other directives whose Java class implements SanitizedContentOperator,
@@ -2405,11 +2401,7 @@ const $$bidiUnicodeWrap = function(bidiGlobalDir, text) {
 
   // We treat the value as HTML if and only if it says it's HTML.
   const isHtml = isContentKind_(text, SanitizedContentKind.HTML);
-  let dir = getContentDir(text);
-  if (dir == null) {
-    dir = bidi.estimateDirection(text + '', isHtml);
-    cacheContentDir_(text, dir);
-  }
+  const dir = $$bidiTextDir(text, isHtml);
   const wrappedText = formatter.unicodeWrapWithKnownDir(dir, text + '', isHtml);
 
   // Bidi-wrapping a value converts it to the context directionality. Since it
