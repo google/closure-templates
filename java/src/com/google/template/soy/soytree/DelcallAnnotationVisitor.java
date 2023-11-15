@@ -22,73 +22,88 @@ import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import com.google.template.soy.exprtree.OperatorNodes.ConditionalOpNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
+import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.types.TemplateType;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 /** A visitor that finds all mod template literals that eventually make their way into a call. */
 public class DelcallAnnotationVisitor extends AbstractSoyNodeVisitor<ImmutableSet<String>> {
 
-  /** Collects final output. */
-  private final ImmutableSet.Builder<String> output;
+  /** Collects final output, a set of legacydeltemplatenamespace values of referenced templates. */
+  private final ImmutableSet.Builder<String> legacyNamespaces;
 
-  /** Map of variable to mod templates that are referenced in its delcaration. */
-  private final Map<String, ImmutableSet<String>> modTemplateRefs;
+  /**
+   * Map of variable to legacydeltemplatenamespace values for all templates referenced in its
+   * declaration.
+   */
+  private final Map<VarDefn, ImmutableSet<String>> varToLegacyNamespacesMap;
 
-  /** Map of variable to other variables that are referenced in its delcaration. */
-  private final Map<String, ImmutableSet<String>> varRefs;
+  /** Map of variable to other variables that are referenced in its declaration. */
+  private final Map<VarDefn, ImmutableSet<VarDefn>> varToDepVarsMap;
 
   public DelcallAnnotationVisitor() {
-    this.output = ImmutableSet.builder();
-    this.modTemplateRefs = new HashMap<>();
-    this.varRefs = new HashMap<>();
+    this.legacyNamespaces = ImmutableSet.builder();
+    this.varToLegacyNamespacesMap = new HashMap<>();
+    this.varToDepVarsMap = new HashMap<>();
   }
 
   @Override
   public ImmutableSet<String> exec(SoyNode node) {
     visit(node);
-    return output.build();
+    return legacyNamespaces.build();
   }
 
   @Override
   protected void visitLetValueNode(LetValueNode node) {
     FindModTemplatesAndVars visitor = new FindModTemplatesAndVars();
     visitor.exec(node.getExpr());
-    modTemplateRefs.put(node.getVarName(), visitor.getModTemplates());
-    varRefs.put(node.getVarName(), visitor.getVarRefs());
+    varToLegacyNamespacesMap.put(node.getVar(), visitor.getLegacyNamespaces());
+    varToDepVarsMap.put(node.getVar(), visitor.getReferencedVars());
   }
 
   @Override
   protected void visitCallBasicNode(CallBasicNode node) {
-    findReferencedModTemplates(node.getCalleeExpr());
+    findReferencesLegacyNamespaces(node.getCalleeExpr());
     visitChildren(node);
   }
 
   @Override
   protected void visitCallParamValueNode(CallParamValueNode node) {
-    findReferencedModTemplates(node.getExpr());
+    findReferencesLegacyNamespaces(node.getExpr());
   }
 
   /** Add all mod templates transitively referenced in exprNode to the output. */
-  private void findReferencedModTemplates(ExprNode exprNode) {
+  private void findReferencesLegacyNamespaces(ExprNode exprNode) {
     FindModTemplatesAndVars visitor = new FindModTemplatesAndVars();
     visitor.exec(exprNode);
-    output.addAll(visitor.getModTemplates());
-    visitor.getVarRefs().forEach(this::collectVarTemplateRefs);
+    legacyNamespaces.addAll(visitor.getLegacyNamespaces());
+    visitor.getReferencedVars().forEach(this::collectVarTemplateRefs);
   }
 
   /**
    * For the given variable, search all transitive assignments and add referenced mod templates to
    * the output set.
    */
-  private void collectVarTemplateRefs(String varName) {
-    if (modTemplateRefs.containsKey(varName)) {
-      output.addAll(modTemplateRefs.get(varName));
+  private void collectVarTemplateRefs(VarDefn varName) {
+    collectVarTemplateRefs(varName, new HashSet<>());
+  }
+
+  private void collectVarTemplateRefs(VarDefn varName, Set<VarDefn> visited) {
+    if (!visited.add(varName)) {
+      // Guard against circular references.
+      return;
     }
-    if (varRefs.containsKey(varName)) {
-      varRefs.get(varName).forEach(this::collectVarTemplateRefs);
+
+    if (varToLegacyNamespacesMap.containsKey(varName)) {
+      legacyNamespaces.addAll(varToLegacyNamespacesMap.get(varName));
+    }
+    if (varToDepVarsMap.containsKey(varName)) {
+      varToDepVarsMap.get(varName).forEach(var -> collectVarTemplateRefs(var, visited));
     }
   }
 
@@ -102,20 +117,22 @@ public class DelcallAnnotationVisitor extends AbstractSoyNodeVisitor<ImmutableSe
   /** Finds all mod template literals and variables contained in an expression. */
   private static class FindModTemplatesAndVars extends AbstractExprNodeVisitor<Void> {
 
-    private final ImmutableSet.Builder<String> modTemplates;
-    private final ImmutableSet.Builder<String> varRefs;
+    // The legacydeltemplatenamespace values of all templates referenced.
+    private final ImmutableSet.Builder<String> legacyNamespaces;
+    // Defns of all variable references.
+    private final ImmutableSet.Builder<VarDefn> referencedVars;
 
     FindModTemplatesAndVars() {
-      this.modTemplates = ImmutableSet.builder();
-      this.varRefs = ImmutableSet.builder();
+      this.legacyNamespaces = ImmutableSet.builder();
+      this.referencedVars = ImmutableSet.builder();
     }
 
-    ImmutableSet<String> getModTemplates() {
-      return modTemplates.build();
+    ImmutableSet<String> getLegacyNamespaces() {
+      return legacyNamespaces.build();
     }
 
-    ImmutableSet<String> getVarRefs() {
-      return varRefs.build();
+    ImmutableSet<VarDefn> getReferencedVars() {
+      return referencedVars.build();
     }
 
     @Override
@@ -125,7 +142,7 @@ public class DelcallAnnotationVisitor extends AbstractSoyNodeVisitor<ImmutableSe
         String legacyDeltemplateNamespace =
             ((TemplateType) node.getType()).getLegacyDeltemplateNamespace();
         if (!legacyDeltemplateNamespace.isEmpty()) {
-          modTemplates.add(legacyDeltemplateNamespace);
+          legacyNamespaces.add(legacyDeltemplateNamespace);
         }
       }
     }
@@ -139,7 +156,7 @@ public class DelcallAnnotationVisitor extends AbstractSoyNodeVisitor<ImmutableSe
 
     @Override
     protected void visitVarRefNode(VarRefNode node) {
-      varRefs.add(node.getName());
+      referencedVars.add(node.getDefnDecl());
     }
 
     @Override
