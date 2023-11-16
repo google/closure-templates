@@ -35,6 +35,7 @@ import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.VarRefNode;
+import com.google.template.soy.logging.LoggingFunction;
 import com.google.template.soy.parsepasses.contextautoesc.ContextualAutoescaper;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
@@ -59,6 +60,7 @@ import com.google.template.soy.soytree.SkipNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.Kind;
+import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TagName;
@@ -445,6 +447,11 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
     return (StandaloneNode) retNode;
   }
 
+  private static boolean hasLoggingFunction(HtmlAttributeNode node) {
+    return SoyTreeUtils.allNodesOfType(node, FunctionNode.class)
+        .anyMatch(fnNode -> fnNode.getSoyFunction() instanceof LoggingFunction);
+  }
+
   @Nullable
   private CallParamNode consumeAttribute(
       HtmlAttributeNode attr,
@@ -510,7 +517,12 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
       return null;
     }
     HtmlAttributeValueNode attrValue = (HtmlAttributeValueNode) value;
-    if (!condition.isPresent()) {
+
+    // Create a new CallParamContentNode and copy the HtmlAttributeValue children into it, if:
+    // 1) there is no condition, or 2) the value is a logging function, which can't go into a
+    // CallParamValueNode.
+    if (!condition.isPresent() || hasLoggingFunction(attr)) {
+      CopyState copyState = new CopyState();
       CallParamContentNode contentNode =
           new CallParamContentNode(
               nodeIdGen.genId(),
@@ -525,15 +537,43 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
                   unknown,
                   unknown),
               errorReporter);
-      CopyState copyState = new CopyState();
+
+      // The node to copy HtmlAttributeValue children into.
+      ParentSoyNode<StandaloneNode> valueParent = contentNode;
+
+      if (condition.isPresent()) {
+        // There is a condition so this value is a logging function. When the condition evaluates to
+        // false, the content node will evaluate to empty string. But the callee only elides the
+        // entire attriubte when it gets null, which a content node cannot produce, so when the
+        // condition is false we'll get an empty attribute like `data-ved=""`. We could fix this by
+        // using a sentinel value i.e.:
+        // `{if $cond}{loggingFunction()}{else}__OMIT_SENTINEL__{/if}` -- but we'd need to check
+        // for it it at every attribute. We could also possibly change the semantics of attribute
+        // merging such that sending an empty string also elisde the entire attribute.
+        IfNode ifNode = new IfNode(nodeIdGen.genId(), attrValue.getSourceLocation());
+        ifNode.setHtmlContext(HtmlContext.HTML_TAG);
+        contentNode.addChild(ifNode);
+        IfCondNode ifCondNode =
+            new IfCondNode(
+                nodeIdGen.genId(),
+                attrValue.getSourceLocation(),
+                attrValue.getSourceLocation(),
+                "if",
+                condition.get().copy(new CopyState()));
+        ifNode.addChild(ifCondNode);
+        ifCondNode.getExpr().setType(condition.get().getType());
+        valueParent = ifCondNode;
+      }
       for (StandaloneNode node : attrValue.getChildren()) {
-        contentNode.addChild(node.copy(copyState));
+        valueParent.addChild(node.copy(copyState));
       }
       return contentNode;
     }
 
     /*
-     * Otherwise, construct a {let} for each attribute and pass them as values in the map
+     * Otherwise, construct a {let} for each attribute and pass them as values in the map. We need
+     * to assign to a variable first so we can turn empty string into a null. Note that we can't do
+     * this for logging functions since they won't survive being placed in the let.
      *
      * <pre>
      *   {let $__internal_call_someAttr_0 kind="text"}{if $cond}...{/if}{/let}

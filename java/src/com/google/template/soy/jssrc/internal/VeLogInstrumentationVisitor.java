@@ -18,6 +18,7 @@ package com.google.template.soy.jssrc.internal;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
 
+import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
@@ -26,6 +27,7 @@ import com.google.template.soy.base.internal.QuoteStyle;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.ListLiteralNode;
 import com.google.template.soy.exprtree.StringNode;
@@ -42,6 +44,8 @@ import com.google.template.soy.soytree.HtmlAttributeValueNode.Quotes;
 import com.google.template.soy.soytree.HtmlCloseTagNode;
 import com.google.template.soy.soytree.HtmlOpenTagNode;
 import com.google.template.soy.soytree.HtmlTagNode.TagExistence;
+import com.google.template.soy.soytree.IfCondNode;
+import com.google.template.soy.soytree.IfNode;
 import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
@@ -52,6 +56,7 @@ import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.VeLogNode;
+import javax.annotation.Nullable;
 
 /**
  * Instruments {velog} commands and adds necessary data attributes to the top-level DOM node and
@@ -73,21 +78,46 @@ final class VeLogInstrumentationVisitor extends AbstractSoyNodeVisitor<Void> {
     new DesugarHtmlNodesPass().run(sourceFiles, nodeIdGen);
   }
 
-  private static FunctionNode getLoggingFunction(CallParamNode paramNode) {
+  @AutoValue
+  abstract static class LoggingFunctionInfo {
+    @Nullable
+    abstract FunctionNode loggingFunction();
+
+    // The {if} condition surrounding the logging function, if it exists.
+    @Nullable
+    abstract ExprNode condition();
+  }
+
+  /** Look for a print of a logging function, with or without a single wrapping if. */
+  @Nullable
+  private static LoggingFunctionInfo getLoggingFunctionInfo(CallParamNode paramNode) {
     if (!(paramNode instanceof CallParamContentNode)) {
       return null;
     }
     CallParamContentNode callParamNode = (CallParamContentNode) paramNode;
-    if (callParamNode.numChildren() != 1 || !(callParamNode.getChild(0) instanceof PrintNode)) {
+    if (callParamNode.numChildren() != 1) {
       return null;
     }
-    PrintNode printNode = (PrintNode) callParamNode.getChild(0);
-    if (!(printNode.getExpr().getRoot() instanceof FunctionNode)) {
+    PrintNode printNode = null;
+    ExprNode condition = null;
+    if (callParamNode.getChild(0) instanceof PrintNode) {
+      printNode = (PrintNode) callParamNode.getChild(0);
+    } else if (callParamNode.getChild(0) instanceof IfNode) {
+      IfNode ifNode = (IfNode) callParamNode.getChild(0);
+      IfCondNode ifCondNode = (IfCondNode) ifNode.getChild(0);
+      condition = ifCondNode.getExpr().getRoot();
+      if (ifCondNode.numChildren() == 1 && ifCondNode.getChild(0) instanceof PrintNode) {
+        printNode = (PrintNode) ifCondNode.getChild(0);
+      }
+    }
+    if (printNode == null || !(printNode.getExpr().getRoot() instanceof FunctionNode)) {
       return null;
     }
     FunctionNode fnNode = (FunctionNode) printNode.getExpr().getRoot();
     if (fnNode.getSoyFunction() instanceof LoggingFunction) {
-      return fnNode;
+      CopyState copyState = new CopyState();
+      return new AutoValue_VeLogInstrumentationVisitor_LoggingFunctionInfo(
+          fnNode.copy(copyState), condition == null ? null : condition.copy(copyState));
     }
     return null;
   }
@@ -111,7 +141,7 @@ final class VeLogInstrumentationVisitor extends AbstractSoyNodeVisitor<Void> {
   protected void visitCallNode(CallNode node) {
     ImmutableList<CallParamContentNode> paramsContainingVelogFunctions =
         node.getChildren().stream()
-            .filter(c -> getLoggingFunction(c) != null)
+            .filter(c -> getLoggingFunctionInfo(c) != null)
             .map(c -> (CallParamContentNode) c)
             .collect(toImmutableList());
     if (paramsContainingVelogFunctions.isEmpty()) {
@@ -126,15 +156,18 @@ final class VeLogInstrumentationVisitor extends AbstractSoyNodeVisitor<Void> {
               Identifier.create(VeLogJsSrcLoggingFunction.NAME, SourceLocation.UNKNOWN),
               VeLogJsSrcLoggingFunction.INSTANCE,
               SourceLocation.UNKNOWN);
-      FunctionNode function = getLoggingFunction(callParamContentNode);
+      LoggingFunctionInfo info = getLoggingFunctionInfo(callParamContentNode);
       funcNode.addChild(
           new StringNode(
-              function.getStaticFunctionName(), QuoteStyle.SINGLE, SourceLocation.UNKNOWN));
-      funcNode.addChild(new ListLiteralNode(function.getParams(), SourceLocation.UNKNOWN));
+              info.loggingFunction().getStaticFunctionName(),
+              QuoteStyle.SINGLE,
+              SourceLocation.UNKNOWN));
+      funcNode.addChild(
+          new ListLiteralNode(info.loggingFunction().getParams(), SourceLocation.UNKNOWN));
       funcNode.addChild(
           new StringNode(
               callParamContentNode.getOriginalName(), QuoteStyle.SINGLE, SourceLocation.UNKNOWN));
-      PrintNode loggingFunctionAttribute =
+      StandaloneNode loggingFunctionAttribute =
           new PrintNode(
               nodeIdGen.genId(),
               SourceLocation.UNKNOWN,
@@ -142,6 +175,20 @@ final class VeLogInstrumentationVisitor extends AbstractSoyNodeVisitor<Void> {
               /* expr= */ funcNode,
               /* attributes= */ ImmutableList.of(),
               ErrorReporter.exploding());
+      if (info.condition() != null) {
+        IfNode ifNode = new IfNode(0, callParamContentNode.getSourceLocation());
+        IfCondNode ifCondNode =
+            new IfCondNode(
+                nodeIdGen.genId(),
+                callParamContentNode.getSourceLocation(),
+                callParamContentNode.getSourceLocation(),
+                "if",
+                info.condition());
+        ifCondNode.getExpr().setType(info.condition().getType());
+        ifCondNode.addChild(loggingFunctionAttribute);
+        ifNode.addChild(ifCondNode);
+        loggingFunctionAttribute = ifNode;
+      }
       // Add the attribute to our synthetic tag
       openTagNode.addChild(loggingFunctionAttribute);
     }
