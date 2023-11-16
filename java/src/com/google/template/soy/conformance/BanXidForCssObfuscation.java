@@ -31,7 +31,6 @@ import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.soytree.CallParamNode;
 import com.google.template.soy.soytree.HtmlAttributeNode;
 import com.google.template.soy.soytree.LetNode;
-import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.TemplateNode;
@@ -101,29 +100,21 @@ final class BanXidForCssObfuscation extends Rule<TemplateNode> {
         for (ExprRootNode expr : ((ExprHolderNode) node).getExprList()) {
           visitAndBanXidInExpressionValue(expr);
         }
-      } else if (node instanceof ParentNode) {
+      }
+      if (node instanceof ParentNode) {
         for (Node child : ((ParentNode<?>) node).getChildren()) {
           if (child instanceof SoyNode) {
             visitAndBanXidInPrintedValue((SoyNode) child);
           }
         }
-      } else {
-        visitAndBanXidInPrintedValue(node);
       }
+      visitAndBanXidInPrintedValue(node);
     }
 
     private void visitAndBanXidInPrintedValue(SoyNode node) {
       if (node instanceof LetNode) {
         // We will come back to these if they are actually printed.
         localVars.put(((LetNode) node).getVarRefName(), (LetNode) node);
-      } else if (node instanceof PrintNode) {
-        visitAndBanXidInExpressionValue(((PrintNode) node).getExpr());
-      } else if (node instanceof ParentNode) {
-        for (Node child : ((ParentNode<?>) node).getChildren()) {
-          if (child instanceof SoyNode) {
-            visitAndBanXidInPrintedValue((SoyNode) child);
-          }
-        }
       }
     }
 
