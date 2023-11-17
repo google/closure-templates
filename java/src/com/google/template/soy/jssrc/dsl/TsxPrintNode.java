@@ -113,11 +113,17 @@ public abstract class TsxPrintNode extends Expression {
 
     @Override
     void doFormatOutputExpr(FormattingContext ctx) {
+      String literalValue = ((StringLiteral) expr().get()).literalValue();
+      if (ctx.getCurrentLexicalState() == LexicalState.TTL && literalValue.equals(" ")) {
+        // FormattingContext already respects whitespace inside of TTLs.
+        ctx.append(literalValue);
+        return;
+      }
       String open = ctx.getInterpolationOpenString();
       String close = ctx.getInterpolationCloseString();
       String value = "";
       if (expr().isPresent()) {
-        value = "'" + ((StringLiteral) expr().get()).literalValue() + "'";
+        value = "'" + literalValue + "'";
       }
 
       ctx.append(open + value + close);

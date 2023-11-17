@@ -98,7 +98,7 @@ class FormattingContext implements AutoCloseable {
     lexicalStateStack.pop();
   }
 
-  private LexicalState getCurrentLexicalState() {
+  LexicalState getCurrentLexicalState() {
     return lexicalStateStack.peek();
   }
 
