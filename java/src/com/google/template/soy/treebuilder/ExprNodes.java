@@ -48,8 +48,8 @@ import javax.annotation.Nullable;
 
 /** Utility methods for constructing synthetic ExprNodes. */
 public final class ExprNodes {
-  public static OperatorNode and(ExprNode left, ExprNode right) {
-    return operator(Operator.AND, left, right);
+  public static OperatorNode ampAmp(ExprNode left, ExprNode right) {
+    return operator(Operator.AMP_AMP, left, right);
   }
 
   public static BooleanNode booleanLiteral(boolean value) {
@@ -184,8 +184,8 @@ public final class ExprNodes {
     return op.createNode(SourceLocation.UNKNOWN, SourceLocation.UNKNOWN, maybeCopyNodes(children));
   }
 
-  public static OperatorNode or(ExprNode left, ExprNode right) {
-    return operator(Operator.OR, left, right);
+  public static OperatorNode barBar(ExprNode left, ExprNode right) {
+    return operator(Operator.BAR_BAR, left, right);
   }
 
   public static OperatorNode plus(ExprNode left, ExprNode right) {
