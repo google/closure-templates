@@ -255,7 +255,7 @@ public final class SimplifyExprVisitorTest {
     // accesses are on a constant.
     assertThat(
             new ExpressionParser("$p?.a.b?.c.d?.e.f")
-                .withParam("p", "null|[a: [b: null|[c: [d: [e: null|[f: int]]]]]]")
+                .withOptionalParam("p", "null|[a: [b: null|[c: [d: [e: null|[f: int]]]]]]")
                 .parseForParentNode())
         .simplifiesTo("$p?.a.b?.c.d?.e.f");
     assertThat(
@@ -266,7 +266,7 @@ public final class SimplifyExprVisitorTest {
         .simplifiesTo("$p.b?.c.d?.e.f");
     assertThat(
             new ExpressionParser("$r?.a.b?.c.d?.e.f")
-                .withParam("p", "null|[c: [d: [e: null|[f: int]]]]")
+                .withOptionalParam("p", "null|[c: [d: [e: null|[f: int]]]]")
                 .withVar("r", "true ? record(a: record(b: $p)) : null")
                 .parseForParentNode())
         .simplifiesTo("$p?.c.d?.e.f");
@@ -315,21 +315,21 @@ public final class SimplifyExprVisitorTest {
 
     assertThat(
             new ExpressionParser("$r?.a!")
-                .withParam("p", "int|null")
+                .withOptionalParam("p", "int|null")
                 .withVar("r", "true ? record(a: $p) : null")
                 .parseForParentNode())
         .simplifiesTo("record(a: $p)?.a!");
 
     assertThat(
             new ExpressionParser("$r!.a?.b")
-                .withParam("p", "int|null")
+                .withOptionalParam("p", "int|null")
                 .withVar("r", "true ? record(a: true ? record(b: $p) : null) : null")
                 .parseForParentNode())
         .simplifiesTo("$p");
 
     assertThat(
             new ExpressionParser("$r?.a?.b!")
-                .withParam("p", "int|null")
+                .withOptionalParam("p", "int|null")
                 .withVar("r", "true ? record(a: true ? record(b: $p) : null) : null")
                 .parseForParentNode())
         .simplifiesTo("record(b: $p)?.b!");

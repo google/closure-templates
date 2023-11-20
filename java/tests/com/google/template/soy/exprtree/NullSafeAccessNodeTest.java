@@ -50,7 +50,7 @@ public class NullSafeAccessNodeTest {
 
     assertThat(
             new ExpressionParser("$list?[$index]")
-                .withParam("list", "list<int>|null")
+                .withOptionalParam("list", "list<int>|null")
                 .withParam("index", "int")
                 .parse()
                 .toSourceString())
@@ -90,7 +90,7 @@ public class NullSafeAccessNodeTest {
   public void testListAccessChain() {
     assertThat(
             new ExpressionParser("$list?[0]?[1]?[2]")
-                .withParam("list", "list<list<list<bool>|null>|null>|null")
+                .withOptionalParam("list", "list<list<list<bool>|null>|null>|null")
                 .parse()
                 .toSourceString())
         .isEqualTo("$list?[0]?[1]?[2]");

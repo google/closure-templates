@@ -73,6 +73,12 @@ public final class ExpressionParser {
     return this;
   }
 
+  @CanIgnoreReturnValue
+  public ExpressionParser withOptionalParam(String name, String type) {
+    params.add(String.format("{@param? %s: %s}", name, type));
+    return this;
+  }
+
   /**
    * Configures the expression to be parsed with a let variable with the given name and expression
    * value.

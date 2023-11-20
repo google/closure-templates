@@ -30,7 +30,7 @@ public final class SimplifyAssertNonNullPassTest {
   public void shouldRemoveNonNullAssertions() {
     assertThat(
             new ExpressionParser("$r!.a!.b!.c")
-                .withParam("r", "null|[a: null|[b: null|[c: null|string]]]")
+                .withOptionalParam("r", "null|[a: null|[b: null|[c: null|string]]]")
                 .parse()
                 .toSourceString())
         .isEqualTo("$r.a.b.c");
@@ -40,7 +40,7 @@ public final class SimplifyAssertNonNullPassTest {
   public void shouldLeaveFinalNonNullAssertion() {
     assertThat(
             new ExpressionParser("$r!.a!")
-                .withParam("r", "null|[a: null|string]")
+                .withOptionalParam("r", "null|[a: null|string]")
                 .parse()
                 .toSourceString())
         .isEqualTo("$r.a!");
@@ -50,7 +50,7 @@ public final class SimplifyAssertNonNullPassTest {
   public void shouldRemoveIfFollowedByNullSafeAccess() {
     assertThat(
             new ExpressionParser("$r!.a?.b.c")
-                .withParam("r", "null|[a: null|[b: null|[c: null|string]]]")
+                .withOptionalParam("r", "null|[a: null|[b: null|[c: null|string]]]")
                 .parse()
                 .toSourceString())
         .isEqualTo("$r.a?.b.c");
@@ -60,7 +60,7 @@ public final class SimplifyAssertNonNullPassTest {
   public void shouldRemoveIfPrecededByNullSafeAccess() {
     assertThat(
             new ExpressionParser("$r.a?.b!.c")
-                .withParam("r", "null|[a: null|[b: null|[c: null|string]]]")
+                .withOptionalParam("r", "null|[a: null|[b: null|[c: null|string]]]")
                 .parse()
                 .toSourceString())
         .isEqualTo("$r.a?.b.c");
@@ -70,7 +70,7 @@ public final class SimplifyAssertNonNullPassTest {
   public void shouldLeaveFinalNonNullAssertionAfterNullSafeAccess() {
     assertThat(
             new ExpressionParser("$r?.a.b.c!")
-                .withParam("r", "null|[a: null|[b: null|[c: null|string]]]")
+                .withOptionalParam("r", "null|[a: null|[b: null|[c: null|string]]]")
                 .parse()
                 .toSourceString())
         .isEqualTo("$r?.a.b.c!");
@@ -80,7 +80,7 @@ public final class SimplifyAssertNonNullPassTest {
   public void shouldLeaveFinalAndRemoveOthersAfterNullSafeAccess() {
     assertThat(
             new ExpressionParser("$r?.a.b!.c!")
-                .withParam("r", "null|[a: null|[b: null|[c: null|string]]]")
+                .withOptionalParam("r", "null|[a: null|[b: null|[c: null|string]]]")
                 .parse()
                 .toSourceString())
         .isEqualTo("$r?.a.b.c!");
@@ -90,7 +90,7 @@ public final class SimplifyAssertNonNullPassTest {
   public void shouldRemoveWithParentheses() {
     assertThat(
             new ExpressionParser("($r.a.b)!.c!")
-                .withParam("r", "null|[a: null|[b: null|[c: null|string]]]")
+                .withOptionalParam("r", "null|[a: null|[b: null|[c: null|string]]]")
                 .parse()
                 .toSourceString())
         .isEqualTo("$r.a.b.c!");

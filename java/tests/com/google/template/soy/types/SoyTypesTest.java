@@ -353,11 +353,11 @@ public class SoyTypesTest {
     assertThatSoyType("[a:int, b:any]").isNotAssignableFromStrict("[a:string, c:any]");
 
     // Optional
-    assertThatSoyType("[a:int, b?:string]").isAssignableFromStrict("[a:int]");
-    assertThatSoyType("[a:int, b?:string]").isAssignableFromStrict("[a:int, b?:string]");
-    assertThatSoyType("[a:int, b?:string]").isAssignableFromStrict("[a:int, b:string]");
-    assertThatSoyType("[a:int, b?:string]").isNotAssignableFromStrict("[a:int, b:int]");
-    assertThatSoyType("[a:int]").isAssignableFromStrict("[a:int, b?:string]");
+    assertThatSoyType("[a:int, b?:string|null]").isAssignableFromStrict("[a:int]");
+    assertThatSoyType("[a:int, b?:string|null]").isAssignableFromStrict("[a:int, b?:string|null]");
+    assertThatSoyType("[a:int, b?:string|null]").isAssignableFromStrict("[a:int, b:string]");
+    assertThatSoyType("[a:int, b?:string|null]").isNotAssignableFromStrict("[a:int, b:int]");
+    assertThatSoyType("[a:int]").isAssignableFromStrict("[a:int, b?:string|null" + "]");
   }
 
   @Test
@@ -969,10 +969,15 @@ public class SoyTypesTest {
     }
 
     private SoyType parseType(String input) {
+      String opt = "";
+      // Does not handle all possible nullable inputs.
+      if (input.equals("null") || input.endsWith("|null")) {
+        opt = "?";
+      }
       TemplateNode template =
           (TemplateNode)
               SoyFileSetParserBuilder.forTemplateContents(
-                      "{@param p : " + input + "|string}\n{$p ? 't' : 'f'}")
+                      "{@param" + opt + " p: " + input + "|string}\n{$p ? 't' : 'f'}")
                   .typeRegistry(registry)
                   .errorReporter(
                       ErrorReporter

@@ -418,7 +418,10 @@ class ValidateExternsPass implements CompilerFilePass {
       case RECORD:
         RecordType recordType = (RecordType) soyType;
         if (!recordType.getMembers().stream()
-            .map(m -> m.declaredType().getKind())
+            .map(
+                m ->
+                    (m.optional() ? SoyTypes.tryRemoveNull(m.declaredType()) : m.declaredType())
+                        .getKind())
             .allMatch(ALLOWED_RECORD_MEMBERS::contains)) {
           return false;
         }

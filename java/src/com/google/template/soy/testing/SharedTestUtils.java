@@ -154,7 +154,14 @@ public final class SharedTestUtils {
       if (type == null) {
         type = UnknownType.getInstance();
       }
-      templateBody.append("{@param ").append(varName).append(": ").append(type).append("}\n");
+      templateBody
+          .append("{@param")
+          .append(SoyTypes.isNullable(type) ? "?" : "")
+          .append(" ")
+          .append(varName)
+          .append(": ")
+          .append(type)
+          .append("}\n");
     }
     String contents = "{" + soyExpr + "}\n";
     for (String loopVar : loopVarNames) {

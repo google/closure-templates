@@ -405,7 +405,7 @@ public final class TypeNodeConverter
       }
       // TODO(b/291132644): Remove this restriction.
       if (property.optional() && !propertyType.isAssignableFromStrict(NullType.getInstance())) {
-        errorReporter.warn(
+        errorReporter.report(
             property.type().sourceLocation(), OPTIONAL_RECORD_PROPERTY_MUST_BE_NULLABLE);
       }
     }
