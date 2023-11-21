@@ -23,6 +23,7 @@ import com.google.auto.value.AutoOneOf;
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SourceLocation.Point;
@@ -66,6 +67,14 @@ public final class FunctionNode extends AbstractParentExprNode implements ExprNo
     public abstract String name();
 
     public abstract FunctionType signature();
+
+    /** Returns true if this function is a deferral sink. */
+    public boolean isHtmlDeferralFunction() {
+      var parameters = signature().getParameters();
+      // You are a deferral sink if you have a single deferred_html param in the terminal position.
+      return !parameters.isEmpty()
+          && Iterables.getLast(parameters).getType().getKind() == SoyType.Kind.DEFERRED_HTML;
+    }
   }
 
   /**

@@ -579,7 +579,8 @@ final class LazyClosureCompiler {
               fields,
               constantCompiler,
               parent.javaSourceFunctionCompiler,
-              parent.fileSetMetadata);
+              parent.fileSetMetadata,
+              parent.errorReporter);
       Statement nodeBody = soyNodeCompiler.compile(renderUnit, prefix, suffix);
       Statement returnDone = returnExpression(MethodRefs.RENDER_RESULT_DONE.invoke());
       Statement fullMethodBody =

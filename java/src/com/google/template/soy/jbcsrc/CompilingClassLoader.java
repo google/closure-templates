@@ -97,7 +97,10 @@ final class CompilingClassLoader extends AbstractMemoryClassLoader {
     ErrorReporter reporter = ErrorReporter.create(filePathsToSuppliers);
     for (ClassData clazz :
         new SoyFileCompiler(
-                node, new JavaSourceFunctionCompiler(typeRegistry, reporter), fileSetMetadata)
+                node,
+                new JavaSourceFunctionCompiler(typeRegistry, reporter),
+                fileSetMetadata,
+                reporter)
             .compile()) {
       String className = clazz.type().className();
       if (className.equals(name)) {

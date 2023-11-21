@@ -216,6 +216,17 @@ public final class Sanitizers {
     }
 
     @Override
+    public LoggingAdvisingAppendable append(DeferredText supplier) throws IOException {
+      if (isInHtml()) {
+        delegate.append(supplier);
+        return this;
+      } else {
+        throw new AssertionError(
+            "Logging statements should've already been removed as they're only allowed in HTML");
+      }
+    }
+
+    @Override
     public void flushBuffers(int depth) throws IOException {
       if (!isInHtml()) {
         StringBuilder buffer = (StringBuilder) activeAppendable;
@@ -287,6 +298,11 @@ public final class Sanitizers {
     @Override
     public LoggingAdvisingAppendable exitLoggableElement() {
       return this;
+    }
+
+    @Override
+    public LoggingAdvisingAppendable append(DeferredText supplier) throws IOException {
+      return append(supplier.getStringForCoercion());
     }
   }
 
@@ -934,6 +950,13 @@ public final class Sanitizers {
 
     @CanIgnoreReturnValue
     @Override
+    public LoggingAdvisingAppendable append(DeferredText supplier) throws IOException {
+      getActiveAppendable().append(supplier.getStringForCoercion());
+      return this;
+    }
+
+    @CanIgnoreReturnValue
+    @Override
     public LoggingAdvisingAppendable enterLoggableElement(LogStatement statement) {
       logger.atWarning().withStackTrace(MEDIUM).log(
           "Visual element logging behavior is undefined when used with the |filterHtmlAttributes "
@@ -1091,6 +1114,12 @@ public final class Sanitizers {
       }
       getActiveAppendable().append(c);
       return this;
+    }
+
+    @CanIgnoreReturnValue
+    @Override
+    public LoggingAdvisingAppendable append(DeferredText supplier) throws IOException {
+      return append(supplier.getStringForCoercion());
     }
 
     @CanIgnoreReturnValue

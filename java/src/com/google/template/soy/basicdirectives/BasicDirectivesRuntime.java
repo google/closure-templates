@@ -115,6 +115,13 @@ public final class BasicDirectivesRuntime {
 
     @CanIgnoreReturnValue
     @Override
+    public LoggingAdvisingAppendable append(DeferredText supplier) {
+      buffer.append(supplier.getStringForCoercion());
+      return this;
+    }
+
+    @CanIgnoreReturnValue
+    @Override
     public LoggingAdvisingAppendable enterLoggableElement(LogStatement statement) {
       logger.log(
           Level.WARNING,

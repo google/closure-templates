@@ -31,6 +31,7 @@ import java.util.function.Function;
  * logic to untrusted content.
  */
 public final class StreamingEscaper extends LoggingAdvisingAppendable {
+
   /**
    * Creates a streaming escaper, or returns the delegate if it is already escaping with the same
    * settings.
@@ -78,6 +79,13 @@ public final class StreamingEscaper extends LoggingAdvisingAppendable {
   @Override
   public LoggingAdvisingAppendable append(char c) throws IOException {
     escapedAppendable.append(c);
+    return this;
+  }
+
+  @CanIgnoreReturnValue
+  @Override
+  public LoggingAdvisingAppendable append(DeferredText supplier) throws IOException {
+    escapedAppendable.append(supplier.getStringForCoercion());
     return this;
   }
 

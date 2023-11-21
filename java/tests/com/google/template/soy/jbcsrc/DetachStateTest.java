@@ -65,6 +65,11 @@ public final class DetachStateTest {
     }
 
     @Override
+    protected final void doAppend(DeferredText supplier) {
+      delegate.append(supplier);
+    }
+
+    @Override
     public boolean softLimitReached() {
       return softLimitReached;
     }
@@ -355,7 +360,7 @@ public final class DetachStateTest {
     TemplateRenderer renderer =
         () -> template.render(params, ParamStore.EMPTY_INSTANCE, output, context);
     assertThat(renderer.render()).isEqualTo(RenderResult.continueAfter(param));
-    assertThat(output.toString()).isEqualTo("");
+    assertThat(output.toString()).isEmpty();
     param.set(2);
     assertThat(renderer.render()).isEqualTo(RenderResult.done());
     assertThat(output.toString()).isEqualTo("2 items in cart");

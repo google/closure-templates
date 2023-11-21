@@ -168,6 +168,7 @@ public final class JavaTypeUtils {
       case TEMPLATE_TYPE:
       case TEMPLATE_MODULE:
       case FUNCTION:
+      case DEFERRED_HTML:
         throw new UnsupportedOperationException();
       case NULL:
       case UNDEFINED:

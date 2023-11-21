@@ -391,6 +391,7 @@ public final class JsType {
         }
         // fall through
       case HTML:
+      case DEFERRED_HTML:
       case ELEMENT:
         if (kind == JsTypeKind.IDOMSRC) {
           // idom has a different strategy for handling these

@@ -18,11 +18,12 @@ package com.google.template.soy.jbcsrc.restricted;
 
 /** Holds flags controlling compiler behavior. */
 public final class Flags {
+  // DO NOT SUBMIT
   /**
    * Controls extra debug checks in the compiler that are generally redundant with bytecode
    * verification. Currently only enabled in tests.
    */
-  public static final boolean DEBUG = Boolean.getBoolean("soy_jbcsrc_debug_mode");
+  public static final boolean DEBUG = true; // Boolean.getBoolean("soy_jbcsrc_debug_mode");
 
   private Flags() {}
 }

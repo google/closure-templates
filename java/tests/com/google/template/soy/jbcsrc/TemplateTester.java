@@ -393,7 +393,8 @@ public final class TemplateTester {
             new SoyFileCompiler(
                     fileNode,
                     new JavaSourceFunctionCompiler(typeRegistry, ErrorReporter.exploding()),
-                    registry)
+                    registry,
+                    ErrorReporter.exploding())
                 .compile();
         checkClasses(classData);
         CompiledTemplates compiledTemplates =

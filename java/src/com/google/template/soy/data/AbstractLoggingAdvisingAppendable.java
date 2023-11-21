@@ -72,6 +72,16 @@ public abstract class AbstractLoggingAdvisingAppendable extends LoggingAdvisingA
     return this;
   }
 
+  @CanIgnoreReturnValue
+  @Override
+  public LoggingAdvisingAppendable append(LoggingAdvisingAppendable.DeferredText value)
+      throws IOException {
+    if (!isLogOnly()) {
+      doAppend(value);
+    }
+    return this;
+  }
+
   /** Called whenever a logging function is being rendered. */
   @CanIgnoreReturnValue
   @Override
@@ -121,6 +131,9 @@ public abstract class AbstractLoggingAdvisingAppendable extends LoggingAdvisingA
 
   @ForOverride
   protected abstract void doAppend(char c) throws IOException;
+
+  @ForOverride
+  protected abstract void doAppend(DeferredText value) throws IOException;
 
   @ForOverride
   protected abstract void doEnterLoggableElement(LogStatement statement);

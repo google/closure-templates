@@ -45,11 +45,14 @@ import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.basetree.Node;
 import com.google.template.soy.basetree.ParentNode;
 import com.google.template.soy.data.SoyRecord;
+import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.BooleanNode;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FloatNode;
 import com.google.template.soy.exprtree.FunctionNode;
+import com.google.template.soy.exprtree.FunctionNode.ExternRef;
 import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.exprtree.ProtoEnumValueNode;
@@ -92,6 +95,7 @@ import com.google.template.soy.soytree.ConstNode;
 import com.google.template.soy.soytree.DebuggerNode;
 import com.google.template.soy.soytree.ForNode;
 import com.google.template.soy.soytree.ForNonemptyNode;
+import com.google.template.soy.soytree.HtmlContext;
 import com.google.template.soy.soytree.IfCondNode;
 import com.google.template.soy.soytree.IfElseNode;
 import com.google.template.soy.soytree.IfNode;
@@ -149,6 +153,9 @@ import org.objectweb.asm.Type;
  * stack be <em>empty</em> prior to any of the code produced.
  */
 final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
+  private static final SoyErrorKind INVALID_DEFERRED_HTML_FUNCTION_LOCATION =
+      SoyErrorKind.of("Html deferral functions can only be called in pcdata context.");
+
   // TODO(lukes): consider introducing a Builder or a non-static Factory.
 
   /**
@@ -170,7 +177,8 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       FieldManager fields,
       BasicExpressionCompiler constantCompiler,
       JavaSourceFunctionCompiler javaSourceFunctionCompiler,
-      PartialFileSetMetadata fileSetMetadata) {
+      PartialFileSetMetadata fileSetMetadata,
+      ErrorReporter errorReporter) {
     // We pass a lazy supplier of render context so that lazy closure compiler classes that don't
     // generate detach logic don't trigger capturing this value into a field.
     DetachState detachState = new DetachState(variables, parameterLookup::getRenderContext);
@@ -196,7 +204,8 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
         soyValueProviderCompiler,
         constantCompiler,
         javaSourceFunctionCompiler,
-        fileSetMetadata);
+        fileSetMetadata,
+        errorReporter);
   }
 
   final TemplateAnalysis analysis;
@@ -211,6 +220,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   final BasicExpressionCompiler constantCompiler;
   final JavaSourceFunctionCompiler javaSourceFunctionCompiler;
   final PartialFileSetMetadata fileSetMetadata;
+  final ErrorReporter errorReporter;
   private Scope currentScope;
 
   SoyNodeCompiler(
@@ -225,7 +235,8 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       ExpressionToSoyValueProviderCompiler expressionToSoyValueProviderCompiler,
       BasicExpressionCompiler constantCompiler,
       JavaSourceFunctionCompiler javaSourceFunctionCompiler,
-      PartialFileSetMetadata fileSetMetadata) {
+      PartialFileSetMetadata fileSetMetadata,
+      ErrorReporter errorReporter) {
     this.analysis = checkNotNull(analysis);
     this.innerClasses = innerClasses;
     this.detachState = checkNotNull(detachState);
@@ -238,6 +249,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     this.constantCompiler = constantCompiler;
     this.javaSourceFunctionCompiler = javaSourceFunctionCompiler;
     this.fileSetMetadata = fileSetMetadata;
+    this.errorReporter = errorReporter;
   }
 
   Statement compile(RenderUnitNode node, ExtraCodeCompiler prefix, ExtraCodeCompiler suffix) {
@@ -609,7 +621,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
               asSwitchableInt(switchExpr, casesByKey.navigableKeySet()), casesByKey, defaultBlock));
 
     } else {
-      // Otherwise we need more complex matching logic that we outsource to an invoke dyanmic
+      // Otherwise we need more complex matching logic that we outsource to an invoke dynamic
       // bootstrap.  Create a fake key for each case and then rely on the bootstrap to figure it
       // out.
       // update the map with the pseudo keys, so that the loops below can find them
@@ -959,6 +971,13 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       if (fn.getSoyFunction() instanceof LoggingFunction) {
         return visitLoggingFunction(node, fn, (LoggingFunction) fn.getSoyFunction());
       }
+      if (fn.getSoyFunction() instanceof ExternRef
+          && ((ExternRef) fn.getSoyFunction()).isHtmlDeferralFunction()) {
+        if (node.getHtmlContext() != HtmlContext.HTML_PCDATA) {
+          errorReporter.report(node.getSourceLocation(), INVALID_DEFERRED_HTML_FUNCTION_LOCATION);
+        }
+        return visitDeferredHtmlFunction(fn);
+      }
     }
     // First check our special case where all print directives are streamable and an expression that
     // evaluates to a SoyValueProvider.  This will allow us to render incrementally.
@@ -1017,10 +1036,24 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
         .toStatement();
   }
 
+  private Statement visitDeferredHtmlFunction(FunctionNode fn) {
+    Label reattachPoint = new Label();
+    BasicExpressionCompiler basic =
+        exprCompiler.asBasicCompiler(detachState.createExpressionDetacher(reattachPoint));
+    return basic
+        .compileHtmlDeferralExtern(fn, (ExternRef) fn.getSoyFunction(), appendableExpression)
+        .labelStart(reattachPoint);
+  }
+
   private SoyExpression compilePrintNodeAsExpression(PrintNode node, Label reattachPoint) {
     BasicExpressionCompiler basic =
         exprCompiler.asBasicCompiler(detachState.createExpressionDetacher(reattachPoint));
     SoyExpression value = basic.compile(node.getExpr());
+    return applyPrintDirectives(node, value, basic);
+  }
+
+  private SoyExpression applyPrintDirectives(
+      PrintNode node, SoyExpression value, BasicExpressionCompiler basic) {
     // We may have print directives, that means we need to pass the render value through a bunch of
     // SoyJavaPrintDirective.apply methods.  This means lots and lots of boxing.
     for (PrintDirectiveNode printDirective : node.getChildren()) {
@@ -1961,6 +1994,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
         expressionToSoyValueProviderCompiler,
         constantCompiler,
         javaSourceFunctionCompiler,
-        fileSetMetadata);
+        fileSetMetadata,
+        errorReporter);
   }
 }

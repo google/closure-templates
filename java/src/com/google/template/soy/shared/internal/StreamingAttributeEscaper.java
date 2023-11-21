@@ -35,6 +35,7 @@ import java.util.function.Function;
  * implementation. TODO: Consider dropping this feature and having users call htmlToText explicitly.
  */
 public final class StreamingAttributeEscaper extends LoggingAdvisingAppendable {
+
   /**
    * Creates a streaming escaper, or returns the delegate if it is already escaping with the same
    * settings.
@@ -91,6 +92,13 @@ public final class StreamingAttributeEscaper extends LoggingAdvisingAppendable {
   @Override
   public LoggingAdvisingAppendable append(char c) throws IOException {
     getAppendable().append(c);
+    return this;
+  }
+
+  @CanIgnoreReturnValue
+  @Override
+  public LoggingAdvisingAppendable append(DeferredText supplier) throws IOException {
+    getAppendable().append(supplier.getStringForCoercion());
     return this;
   }
 

@@ -404,7 +404,7 @@ public final class StreamingPrintDirectivesTest {
     }
 
     @Override
-    public Set<Integer> getValidArgsSizes() {
+    public ImmutableSet<Integer> getValidArgsSizes() {
       return ImmutableSet.of(0);
     }
   }
@@ -449,6 +449,11 @@ public final class StreamingPrintDirectivesTest {
       return append("" + c);
     }
 
+    @Override
+    public LoggingAdvisingAppendable append(DeferredText supplier) throws IOException {
+      return delegate.append((isOutput) -> wrap(supplier.get(isOutput)));
+    }
+
     @CanIgnoreReturnValue
     @Override
     public LoggingAdvisingAppendable enterLoggableElement(LogStatement statement) {
@@ -490,7 +495,7 @@ public final class StreamingPrintDirectivesTest {
     }
 
     @Override
-    public Set<Integer> getValidArgsSizes() {
+    public ImmutableSet<Integer> getValidArgsSizes() {
       return ImmutableSet.of(1);
     }
 

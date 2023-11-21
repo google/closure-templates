@@ -108,6 +108,45 @@ public abstract class SanitizedType extends PrimitiveType {
     }
   }
 
+  /** Type produced by templates whose kind is "html". */
+  public static final class DeferredHtmlType extends SanitizedType {
+    public static final String NAME = "deferred_html";
+    private static final DeferredHtmlType INSTANCE = new DeferredHtmlType();
+
+    // Not constructible - use getInstance().
+    private DeferredHtmlType() {}
+
+    @Override
+    public Kind getKind() {
+      return Kind.DEFERRED_HTML;
+    }
+
+    @Override
+    public SanitizedContentKind getContentKind() {
+      return SanitizedContentKind.HTML;
+    }
+
+    @Override
+    void doToProto(SoyTypeP.Builder builder) {
+      builder.setHtml(SoyTypeP.HtmlTypeP.newBuilder().setIsDeferred(true));
+    }
+
+    @Override
+    boolean doIsAssignableFromNonUnionType(SoyType srcType) {
+      return (srcType instanceof ElementType || srcType instanceof HtmlType);
+    }
+
+    /** Return the single instance of this type. */
+    public static DeferredHtmlType getInstance() {
+      return INSTANCE;
+    }
+
+    @Override
+    public String toString() {
+      return NAME;
+    }
+  }
+
   /** Type produced by templates whose kind is "html<?>". */
   public static final class ElementType extends SanitizedType {
 

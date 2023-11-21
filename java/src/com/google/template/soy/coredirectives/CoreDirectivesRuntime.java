@@ -94,6 +94,16 @@ public final class CoreDirectivesRuntime {
       return this;
     }
 
+    @Override
+    public LoggingAdvisingAppendable append(DeferredText supplier) throws IOException {
+      if (isInHtml()) {
+        delegate.append(supplier);
+      } else {
+        activeAppendable.append(supplier.getStringForCoercion());
+      }
+      return this;
+    }
+
     // TODO(lukes): We only pass these through if we are in HTML.  This is sort
     // of confusing and may require revisiting in the future once we have more examples of how
     // logging and print directives will interact.

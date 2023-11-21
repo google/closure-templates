@@ -135,7 +135,6 @@ public final class PassManagerTest {
             UnknownJsGlobalPass.class,
             ValidateAliasesPass.class,
             VeLogRewritePass.class,
-            VeLogValidationPass.class,
             VeRewritePass.class);
     assertWithMessage("Passes with annotations should be removed from the allowlist")
         .that(passesWithoutAnnotations)

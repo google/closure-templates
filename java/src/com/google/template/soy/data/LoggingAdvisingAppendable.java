@@ -40,6 +40,25 @@ import javax.annotation.Nullable;
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  */
 public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
+  /** A closure that represents some text whose evaluation has been deferred */
+  @FunctionalInterface
+  public interface DeferredText {
+    default String getStringForCoercion() {
+      return get(false);
+    }
+
+    default String getStringForOutput() {
+      return get(true);
+    }
+
+    /**
+     * Returns the text
+     *
+     * @param isOutputAppendable Whether this is being evaluated directly for the output or for some
+     *     other purpose because the data is being escaped. o
+     */
+    String get(boolean isOutputAppendable);
+  }
 
   /** The kind of the content appended to this appendable. */
   @Nullable private ContentKind kind;
@@ -91,6 +110,12 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
         throws IOException {
       return append(escapePlaceholder(funCall.placeholderValue(), escapers));
     }
+
+    @Override
+    public LoggingAdvisingAppendable append(LoggingAdvisingAppendable.DeferredText value)
+        throws IOException {
+      return append(value.getStringForOutput());
+    }
   }
 
   // covariant overrides
@@ -107,6 +132,13 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
   @Override
   @Nonnull
   public abstract LoggingAdvisingAppendable append(char c) throws IOException;
+
+  /**
+   * An append function that will only evaluate the supplier when appending to the output directly.
+   * If there are buffers then invoking the supplier will be delayed.
+   */
+  @CanIgnoreReturnValue
+  public abstract LoggingAdvisingAppendable append(DeferredText value) throws IOException;
 
   /** Called whenever a loggable element is entered. */
   @Nonnull
@@ -234,6 +266,11 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
     }
 
     @Override
+    protected void doAppend(LoggingAdvisingAppendable.DeferredText value) throws IOException {
+      delegate.append(value.getStringForCoercion());
+    }
+
+    @Override
     protected void doAppendLoggingFunctionInvocation(
         LoggingFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers) {
       escapePlaceholder(funCall.placeholderValue(), escapers);
@@ -269,6 +306,7 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
     // - Dir -> corresponds to setSanitizedContentDirectionality
     // - SET_SANITIZED_CONTENT_DIRECTIONALITY_NULL_MARKER -> corresponds to
     //   setSanitizedContentDirectionality with a null parameter
+    // - DeferredText-> corresponds to append(DeferredText)
     private List<Object> commands;
 
     BufferingAppendable() {
@@ -309,6 +347,11 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
       getCommandsAndAddPendingStringData().add(LoggingFunctionCommand.create(funCall, escapers));
     }
 
+    @Override
+    protected void doAppend(DeferredText value) {
+      getCommandsAndAddPendingStringData().add(value);
+    }
+
     public void replayOn(LoggingAdvisingAppendable appendable) throws IOException {
       if (getSanitizedContentKind() != null) {
         appendable.setKindAndDirectionality(
@@ -324,6 +367,8 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
             appendable.exitLoggableElement();
           } else if (o instanceof LogStatement) {
             appendable.enterLoggableElement((LogStatement) o);
+          } else if (o instanceof DeferredText) {
+            appendable.append((DeferredText) o);
           } else {
             throw new AssertionError("unexpected command object: " + o);
           }

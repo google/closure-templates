@@ -116,6 +116,7 @@ public abstract class SoyRuntimeType {
       case URI:
       case ELEMENT:
       case HTML:
+      case DEFERRED_HTML:
       case JS:
       case TRUSTED_RESOURCE_URI:
       case LEGACY_OBJECT_MAP:

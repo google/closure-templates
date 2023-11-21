@@ -644,6 +644,16 @@ public final class MethodRefs {
   public static final MethodRef AS_SWITCHABLE_VALUE_SOY_VALUE =
       createPure(JbcSrcRuntime.class, "asSwitchableValue", SoyValue.class, int.class);
 
+  public static final MethodRef DEFERRED_HTML_FACTORY_INVOKE =
+      createNonPure(JbcSrcRuntime.DeferredHtmlFactory.class, "invoke", SoyValue.class);
+  public static final MethodRef RUNTIME_APPEND_AS_DEFERRED_TEXT =
+      createNonPure(
+          JbcSrcRuntime.class,
+          "appendAsDeferredText",
+          LoggingAdvisingAppendable.class,
+          RenderContext.class,
+          JbcSrcRuntime.DeferredHtmlFactory.class,
+          SoyValueProvider.class);
   // Constructors
 
   public static final MethodRef ARRAY_LIST = createNonPureConstructor(ArrayList.class);
