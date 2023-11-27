@@ -39,6 +39,7 @@ import com.google.template.soy.types.SanitizedType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypeRegistry;
+import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.TemplateType;
 import com.google.template.soy.types.TypeInterner;
 import com.google.template.soy.types.TypeRegistries;
@@ -95,6 +96,9 @@ public final class TypeNodeConverter
 
   public static final SoyErrorKind OPTIONAL_RECORD_PROPERTY_MUST_BE_NULLABLE =
       SoyErrorKind.of("Optional record property should be typed as ''|null''.");
+
+  public static final SoyErrorKind OPTIONAL_TEMPLATE_TYPE_PARAM_MUST_BE_NULLABLE =
+      SoyErrorKind.of("Template type parameter optionality should match nullability.");
 
   private static final ImmutableSet<Kind> ALLOWED_TEMPLATE_RETURN_TYPES =
       Sets.immutableEnumSet(
@@ -418,17 +422,23 @@ public final class TypeNodeConverter
   public SoyType visit(TemplateTypeNode node) {
     Map<String, TemplateType.Parameter> map = new LinkedHashMap<>();
     for (TemplateTypeNode.Parameter parameter : node.parameters()) {
-      TemplateType.Parameter oldParameter =
-          map.put(
-              parameter.name(),
-              TemplateType.Parameter.builder()
-                  .setName(parameter.name())
-                  .setKind(parameter.kind())
-                  .setType(parameter.type().accept(this))
-                  .setRequired(true)
-                  .setImplicit(false)
-                  .setHasDefaultValue(false)
-                  .build());
+      TemplateType.Parameter newParameter =
+          TemplateType.Parameter.builder()
+              .setName(parameter.name())
+              .setKind(parameter.kind())
+              .setType(parameter.type().accept(this))
+              .setRequired(parameter.required())
+              .setImplicit(false)
+              .setHasDefaultValue(false)
+              .build();
+      // TODO(b/291132644): Remove this restriction.
+      if ((parameter.required() && SoyTypes.isNullable(newParameter.getType()))
+          || (!parameter.required()
+              && !newParameter.getType().isAssignableFromStrict(NullType.getInstance()))) {
+        errorReporter.warn(
+            parameter.type().sourceLocation(), OPTIONAL_TEMPLATE_TYPE_PARAM_MUST_BE_NULLABLE);
+      }
+      TemplateType.Parameter oldParameter = map.put(parameter.name(), newParameter);
       if (oldParameter != null) {
         errorReporter.report(
             parameter.nameLocation(), DUPLICATE_TEMPLATE_ARGUMENT, parameter.name());

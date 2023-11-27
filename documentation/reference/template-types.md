@@ -154,9 +154,22 @@ import {foo} from '<PATH>';
 
 </section>
 
-A template can be bound to a template type so long as all of its required
-parameters appear in the type. In short the following templates can be bound to
-`(content: html) => html`.
+A template can be bound to a template type so long as a call on the template
+type represents a legal call on the template.
+
+*   All required parameters of the template must appear in the template type.
+*   All parameters appearing in the template type must exist in the template.
+*   A parameter with a looser type in the template, e.g. `@param p:
+    string|number`, can satisfy a more strictly typed parameter in the template
+    type, e.g. `(p: string) => html`, but not the other way around.
+*   A required parameter in the template type, `(p: string) => html`, can be
+    satisfied by either an optional or a required parameter in the template.
+*   An optional parameter in the template type, `(p?: string) => html`, can only
+    be satisfied by an optional parameter in the template, `{@param? p:
+    string}`.
+
+As an example, the following templates can be bound to `(content: html) =>
+html`.
 
 ```soy
 {template <TEMPLATE_NAME>}
