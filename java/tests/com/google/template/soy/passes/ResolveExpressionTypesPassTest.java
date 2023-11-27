@@ -777,6 +777,34 @@ public final class ResolveExpressionTypesPassTest {
   }
 
   @Test
+  public void testDataFlowTypeNarrowing_ignoredFunctions() {
+    assertTypes(
+        "{@param? param: string|null}",
+        "{if Boolean($param)}",
+        "  {assertType('string', $param)}",
+        "{/if}",
+        "{if undefinedToNullForMigration($param)}",
+        "  {assertType('string', $param)}",
+        "{/if}",
+        "{if undefinedToNullForSsrMigration($param)}",
+        "  {assertType('string', $param)}",
+        "{/if}",
+        "{if checkNotNull($param)}",
+        "  {assertType('string', $param)}",
+        "{/if}",
+        "{if Boolean($param) != null}", // Boolean() ignored only in truthy narrowing.
+        "  {assertType('null|string', $param)}",
+        "{/if}",
+        "{if undefinedToNullForMigration($param) != null}",
+        "  {assertType('string', $param)}",
+        "{/if}",
+        "{if round($param)}", // non-special function takes a ? param.
+        "  {assertType('null|string', $param)}",
+        "{/if}",
+        "");
+  }
+
+  @Test
   public void testDataFlowTypeNarrowingFailure() {
     // Test for places where type narrowing shouldn't work
     assertTypes(

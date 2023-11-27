@@ -29,6 +29,7 @@ import com.google.template.soy.exprtree.AbstractOperatorNode;
 import com.google.template.soy.exprtree.ExprEquivalence;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.NullSafeAccessNode;
 import com.google.template.soy.exprtree.OperatorNodes.AmpAmpOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.AndOpNode;
@@ -43,6 +44,7 @@ import com.google.template.soy.exprtree.OperatorNodes.NotOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TripleEqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TripleNotEqualOpNode;
+import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.types.NullType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypeRegistry;
@@ -164,6 +166,15 @@ final class TypeNarrowingConditionVisitor {
     }
 
     @Override
+    protected void visitFunctionNode(FunctionNode node) {
+      if (isNullishNonTransform(node)) {
+        visit(node.getParam(0));
+        return;
+      }
+      visitExprNode(node);
+    }
+
+    @Override
     protected void visitExprNode(ExprNode node) {
       ExprEquivalence.Wrapper wrapped = exprEquivalence.wrap(node);
       if (nullish) {
@@ -246,6 +257,15 @@ final class TypeNarrowingConditionVisitor {
     protected void visitExprRootNode(ExprRootNode node) {
       visit(node.getRoot());
       super.visitExprRootNode(node);
+    }
+
+    @Override
+    protected void visitFunctionNode(FunctionNode node) {
+      if (isTruthyNonTransform(node)) {
+        visit(node.getParam(0));
+        return;
+      }
+      visitExprNode(node);
     }
 
     @Override
@@ -479,5 +499,35 @@ final class TypeNarrowingConditionVisitor {
               // Thus "((a instanceof any) OR (a instanceof bool)) == (a instanceof any)"
               into.put(key, lct);
             });
+  }
+
+  /**
+   * Returns true if the function is a single-argument function that returns a value that has the
+   * same nullishness as the argument value.
+   */
+  private static boolean isNullishNonTransform(FunctionNode node) {
+    if (node.isResolved()) {
+      Object soyFunction = node.getSoyFunction();
+      if (soyFunction == BuiltinFunction.UNDEFINED_TO_NULL
+          || soyFunction == BuiltinFunction.UNDEFINED_TO_NULL_SSR
+          || soyFunction == BuiltinFunction.CHECK_NOT_NULL) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Returns true if the function is a single-argument function that returns a value that has the
+   * same truthiness as the argument value.
+   */
+  private static boolean isTruthyNonTransform(FunctionNode node) {
+    if (isNullishNonTransform(node)) {
+      return true;
+    }
+    if (node.hasStaticName() && "Boolean".equals(node.getFunctionName())) {
+      return true;
+    }
+    return false;
   }
 }
