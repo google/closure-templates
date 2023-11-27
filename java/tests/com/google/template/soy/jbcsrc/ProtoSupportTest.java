@@ -32,6 +32,7 @@ import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.LoggingAdvisingAppendable.BufferingAppendable;
 import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.data.internal.ParamStore;
+import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.jbcsrc.TemplateTester.CompiledTemplateSubject;
 import com.google.template.soy.jbcsrc.api.RenderResult;
@@ -87,6 +88,15 @@ public final class ProtoSupportTest {
             ImmutableMap.of(
                 "proto",
                 KvPair.newBuilder().setKey("key").setValue("value").setAnotherValue(3).build()));
+  }
+
+  @Test
+  public void testNullSafe() {
+    assertThatTemplateBody(
+            "{@param? p1 : KvPair|null}",
+            "{@param p2 : KvPair|undefined}",
+            "{$p1?.hasKey()}-{$p2?.hasKey()}")
+        .rendersAs("null-null", ImmutableMap.of("p2", UndefinedData.INSTANCE));
   }
 
   @Test
