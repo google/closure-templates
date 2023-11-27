@@ -56,7 +56,7 @@ import com.google.template.soy.types.SanitizedType;
 import com.google.template.soy.types.SoyProtoEnumType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
-import com.google.template.soy.types.SoyType.Kind;
+import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.TemplateType;
 import com.google.template.soy.types.UnionType;
 import java.util.EnumMap;
@@ -544,14 +544,14 @@ public final class JsType {
           UnionType unionType = (UnionType) soyType;
           Builder builder = builder();
           Set<JsType> types = new LinkedHashSet<>();
-          boolean isNullable = unionType.isNullable();
+          boolean isNullable = SoyTypes.isNullish(unionType);
           // handle null first so that if other type tests dereference the param they won't fail
           if (isNullable) {
             builder.addTypes(NULL_OR_UNDEFINED_TYPE.typeExpressions);
             types.add(NULL_OR_UNDEFINED_TYPE);
           }
           for (SoyType member : unionType.getMembers()) {
-            if (member.getKind() == Kind.NULL) {
+            if (member.isNullOrUndefined()) {
               continue; // handled above
             }
             JsType memberType =

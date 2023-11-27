@@ -427,7 +427,7 @@ final class CheckTemplateCallsPass implements CompilerFileSetPass {
 
       // Store all of the explicitly declared param types
       for (TemplateType.Parameter param : callee.getParameters()) {
-        paramTypes.params.put(param.getName(), param.getType());
+        paramTypes.params.put(param.getName(), param.getCheckedType());
       }
 
       // Store indirect params where there's no conflict with explicit params.

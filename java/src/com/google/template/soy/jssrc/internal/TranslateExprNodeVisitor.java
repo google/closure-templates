@@ -762,13 +762,13 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
       String fieldName,
       SourceLocation sourceLocation,
       Function<SoyType, FieldAccess> memberGenerator) {
-    if (baseType.getKind() == SoyType.Kind.NULL) {
+    if (baseType.isNullOrUndefined()) {
       // This is a special edge case since the loop below would be a no-op.
       return memberGenerator.apply(baseType);
     }
     FieldAccess fieldAccess = null;
     for (SoyType type : SoyTypes.expandUnions(baseType)) {
-      if (type.getKind() == SoyType.Kind.NULL) {
+      if (type.isNullOrUndefined()) {
         continue;
       }
       FieldAccess fieldAccessForType = memberGenerator.apply(type);
@@ -908,7 +908,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
 
     for (ExprNode c : node.getChildren()) {
       SoyType type = c.getType();
-      if (type.getKind() == SoyType.Kind.NULL) {
+      if (type.isNullOrUndefined()) {
         // If either operand is null always use ==.
         neverSoyEquals = true;
       } else if (!SoyTypes.isKindOrUnionOfKinds(type, CAN_USE_EQUALS)) {

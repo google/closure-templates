@@ -93,7 +93,11 @@ public class EvalVisitorTest {
         "longNumber",
         1000000000000000001L,
         "floatNumber",
-        1.5);
+        1.5,
+        "aNull",
+        NullData.INSTANCE,
+        "anUndef",
+        UndefinedData.INSTANCE);
   }
 
   /**

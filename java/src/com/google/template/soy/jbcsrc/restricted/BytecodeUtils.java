@@ -1107,7 +1107,14 @@ public final class BytecodeUtils {
 
   public static void coalesceSoyNullishToSoyUndefined(
       CodeBuilder builder, Type argType, Label nullExit) {
-    nullCoalesce(builder, nullExit, argType, cb -> soyUndefined().gen(cb), /* ish= */ true);
+    if (argType.equals(SOY_VALUE_TYPE)) {
+      MethodRefs.SOY_VALUE_NULLISH_TO_UNDEFINED.invokeUnchecked(builder);
+      builder.dup();
+      MethodRefs.SOY_VALUE_IS_NULLISH.invokeUnchecked(builder);
+      builder.ifZCmp(Opcodes.IFNE, nullExit);
+    } else {
+      nullCoalesce(builder, nullExit, argType, cb -> soyUndefined().gen(cb), /* ish= */ true);
+    }
   }
 
   /**

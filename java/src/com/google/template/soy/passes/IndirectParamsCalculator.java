@@ -259,7 +259,7 @@ public final class IndirectParamsCalculator {
       if (!allCallParamKeys.contains(p.getName())) {
         // For some reason we only record the first one.
         indirectParams.putIfAbsent(p.getName(), p);
-        indirectParamTypes.put(p.getName(), p.getType());
+        indirectParamTypes.put(p.getName(), p.getCheckedType());
         paramKeyToCalleesMultimap.put(p.getName(), callee);
       }
     }

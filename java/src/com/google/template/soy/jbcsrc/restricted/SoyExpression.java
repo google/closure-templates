@@ -843,6 +843,10 @@ public final class SoyExpression extends Expression {
     return new SoyExpression(soyRuntimeType.asNonSoyNullish(), delegate.asNonSoyNullish());
   }
 
+  public SoyExpression asSoyUndefinable() {
+    return new SoyExpression(soyRuntimeType.asSoyUndefinable(), delegate.asSoyNullish());
+  }
+
   @Override
   public SoyExpression asSoyNullish() {
     return new SoyExpression(soyRuntimeType.asSoyNullish(), delegate.asSoyNullish());

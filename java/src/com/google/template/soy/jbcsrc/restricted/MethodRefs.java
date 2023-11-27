@@ -505,6 +505,9 @@ public final class MethodRefs {
   public static final MethodRef SOY_VALUE_NULLISH_TO_NULL =
       createPure(SoyValue.class, "nullishToNull").asCheap().asNonJavaNullable();
 
+  public static final MethodRef SOY_VALUE_NULLISH_TO_UNDEFINED =
+      createPure(SoyValue.class, "nullishToUndefined").asCheap().asNonJavaNullable();
+
   public static final MethodRef SOY_VALUE_JAVA_NUMBER_VALUE =
       createPure(NumberData.class, "javaNumberValue");
 

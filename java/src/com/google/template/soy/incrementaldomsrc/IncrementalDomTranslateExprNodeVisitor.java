@@ -106,7 +106,7 @@ public class IncrementalDomTranslateExprNodeVisitor extends TranslateExprNodeVis
   @Override
   protected Expression visitProtoEnumValueNode(ProtoEnumValueNode node) {
     // TODO(b/128869068) Ensure that a hard require is added for this type.
-    JsType type = JsType.forJsSrcStrict(SoyTypes.removeNull(node.getType()));
+    JsType type = JsType.forJsSrcStrict(SoyTypes.tryRemoveNullish(node.getType()));
     return number(node.getValue()).castAs(type.typeExpr(), type.getGoogRequires());
   }
 

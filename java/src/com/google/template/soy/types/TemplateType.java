@@ -274,19 +274,14 @@ public abstract class TemplateType extends SoyType {
       return getTypeWrapper().getType();
     }
 
-    SoyType getDeclaredType() {
-      SoyType type = getType();
-      if (!isRequired()) {
-        // Not totally true because you could have had a redundant declaration:
-        //   {@param? f: null|string}
-        // TODO(b/291132644): Switch to "tryRemoveUndefined".
-        type = SoyTypes.tryRemoveNull(type);
-      }
-      return type;
+    public SoyType getCheckedType() {
+      // Currently other parts of the compiler enforce that `!isRequired() IFF type is nullable`.
+      // TODO(b/291132644): Make type |undefined if param not required.
+      return getType();
     }
 
     String getTypeStringRepresentation() {
-      return getDeclaredType().toString();
+      return getType().toString();
     }
 
     abstract LazyTypeWrapper getTypeWrapper();

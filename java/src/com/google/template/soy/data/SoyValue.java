@@ -165,6 +165,11 @@ public interface SoyValue extends SoyValueProvider {
     return this == UndefinedData.INSTANCE ? NullData.INSTANCE : this;
   }
 
+  /** Returns this value, coalescing NullData to UndefinedData. */
+  default SoyValue nullishToUndefined() {
+    return this == NullData.INSTANCE ? UndefinedData.INSTANCE : this;
+  }
+
   @Nonnull
   default Message getProto() {
     throw new SoyDataException(
