@@ -99,7 +99,7 @@ public final class TypeNodeTest {
                         Property.create(SOURCE_LOCATION, "z", false, TYPE_GHI),
                         Property.create(SOURCE_LOCATION, "w", true, TYPE_JKL)))
                 .toString())
-        .isEqualTo("[x: abc, y: def, z: ghi, w?: jkl]");
+        .isEqualTo("[\n  x: abc,\n  y: def,\n  z: ghi,\n  w?: jkl\n]");
   }
 
   @Test
@@ -117,19 +117,19 @@ public final class TypeNodeTest {
                     SOURCE_LOCATION,
                     ImmutableList.of(
                         TemplateTypeNode.Parameter.create(
-                            SOURCE_LOCATION, "x", "x", PARAM, TYPE_ABC, false)),
+                            SOURCE_LOCATION, "x", "x", PARAM, TYPE_ABC)),
                     NamedTypeNode.create(SOURCE_LOCATION, "attributes"))
                 .toString())
-        .isEqualTo("(x?: abc) => attributes");
+        .isEqualTo("(x: abc) => attributes");
 
     assertThat(
             TemplateTypeNode.create(
                     SOURCE_LOCATION,
                     ImmutableList.of(
                         TemplateTypeNode.Parameter.create(
-                            SOURCE_LOCATION, "x", "x", PARAM, TYPE_ABC, true),
+                            SOURCE_LOCATION, "x", "x", PARAM, TYPE_ABC),
                         TemplateTypeNode.Parameter.create(
-                            SOURCE_LOCATION, "y", "y", PARAM, TYPE_DEF, true)),
+                            SOURCE_LOCATION, "y", "y", PARAM, TYPE_DEF)),
                     NamedTypeNode.create(SOURCE_LOCATION, "css"))
                 .toString())
         .isEqualTo("(x: abc, y: def) => css");
@@ -139,16 +139,16 @@ public final class TypeNodeTest {
                     SOURCE_LOCATION,
                     ImmutableList.of(
                         TemplateTypeNode.Parameter.create(
-                            SOURCE_LOCATION, "x", "x", PARAM, TYPE_ABC, true),
+                            SOURCE_LOCATION, "x", "x", PARAM, TYPE_ABC),
                         TemplateTypeNode.Parameter.create(
-                            SOURCE_LOCATION, "y", "y", PARAM, TYPE_DEF, true),
+                            SOURCE_LOCATION, "y", "y", PARAM, TYPE_DEF),
                         TemplateTypeNode.Parameter.create(
-                            SOURCE_LOCATION, "z", "z", PARAM, TYPE_GHI, true),
+                            SOURCE_LOCATION, "z", "z", PARAM, TYPE_GHI),
                         TemplateTypeNode.Parameter.create(
-                            SOURCE_LOCATION, "w", "@w", ATTRIBUTE, TYPE_JKL, true)),
+                            SOURCE_LOCATION, "w", "@w", ATTRIBUTE, TYPE_JKL)),
                     NamedTypeNode.create(SOURCE_LOCATION, "uri"))
                 .toString())
-        .isEqualTo("(x: abc, y: def, z: ghi, @w: jkl) => uri");
+        .isEqualTo("(\n  x: abc,\n  y: def,\n  z: ghi,\n  @w: jkl\n) => uri");
   }
 
   @Test

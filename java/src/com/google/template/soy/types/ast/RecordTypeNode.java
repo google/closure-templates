@@ -64,7 +64,10 @@ public abstract class RecordTypeNode extends TypeNode {
 
   @Override
   public final String toString() {
-    return "[" + Joiner.on(", ").join(properties()) + "]";
+    if (properties().size() < 3) {
+      return "[" + Joiner.on(", ").join(properties()) + "]";
+    }
+    return "[\n  " + Joiner.on(",\n  ").join(properties()) + "\n]";
   }
 
   @Override
