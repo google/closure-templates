@@ -38,6 +38,9 @@ public class TemplateParam extends AbstractVarDefn implements TemplateHeaderVarD
   private String desc;
   private final SourceLocation sourceLocation;
 
+  /** Whether the param is required. */
+  private final boolean isRequired;
+
   /** Whether the param is an injected param. */
   private final boolean isInjected;
 
@@ -47,7 +50,6 @@ public class TemplateParam extends AbstractVarDefn implements TemplateHeaderVarD
    */
   private final boolean isImplicit;
 
-  /** Whether the param is declared with ?. */
   private final boolean isExplicitlyOptional;
 
   @Nullable private ExprRootNode defaultValue;
@@ -70,11 +72,13 @@ public class TemplateParam extends AbstractVarDefn implements TemplateHeaderVarD
     this.sourceLocation = sourceLocation;
     this.isExplicitlyOptional = optional;
     this.typeNode = typeNode;
+    this.isRequired = defaultValue == null && !optional;
   }
 
   protected TemplateParam(TemplateParam param, CopyState copyState) {
     super(param);
     this.typeNode = param.typeNode == null ? null : param.typeNode.copy();
+    this.isRequired = param.isRequired;
     this.isInjected = param.isInjected;
     this.isImplicit = param.isImplicit;
     this.sourceLocation = param.sourceLocation;
@@ -127,7 +131,7 @@ public class TemplateParam extends AbstractVarDefn implements TemplateHeaderVarD
 
   @Override
   public boolean isRequired() {
-    return defaultValue == null && !isExplicitlyOptional;
+    return isRequired;
   }
 
   @Override

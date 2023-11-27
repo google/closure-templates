@@ -33,6 +33,7 @@ import com.google.template.soy.base.internal.TemplateContentKind.ElementContentK
 import com.google.template.soy.soytree.ParameterP;
 import com.google.template.soy.soytree.SoyTypeP;
 import com.google.template.soy.types.SanitizedType.ElementType;
+import java.util.Map;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import javax.annotation.Nullable;
@@ -273,8 +274,19 @@ public abstract class TemplateType extends SoyType {
       return getTypeWrapper().getType();
     }
 
+    SoyType getDeclaredType() {
+      SoyType type = getType();
+      if (!isRequired()) {
+        // Not totally true because you could have had a redundant declaration:
+        //   {@param? f: null|string}
+        // TODO(b/291132644): Switch to "tryRemoveUndefined".
+        type = SoyTypes.tryRemoveNull(type);
+      }
+      return type;
+    }
+
     String getTypeStringRepresentation() {
-      return getType().toString();
+      return getDeclaredType().toString();
     }
 
     abstract LazyTypeWrapper getTypeWrapper();
@@ -420,9 +432,9 @@ public abstract class TemplateType extends SoyType {
 
     TemplateType srcTemplate = (TemplateType) srcType;
 
-    ImmutableMap<String, Parameter> thisParams =
+    Map<String, Parameter> thisParams =
         getParameters().stream().collect(toImmutableMap(Parameter::getName, identity()));
-    ImmutableMap<String, Parameter> srcParams =
+    Map<String, Parameter> srcParams =
         srcTemplate.getParameters().stream()
             .collect(toImmutableMap(Parameter::getName, identity()));
 
@@ -441,10 +453,6 @@ public abstract class TemplateType extends SoyType {
           return false;
         }
       } else {
-        if (srcParam.isRequired() && !thisParam.isRequired()) {
-          return false;
-        }
-
         // Check that each argument of the source type is assignable FROM the corresponding
         // argument of this type. This is because the parameter types are constraints; assignability
         // of a template type is only possible when the constraints of the from-type are narrower.
