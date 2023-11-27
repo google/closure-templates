@@ -33,7 +33,6 @@ import com.google.template.soy.base.internal.TemplateContentKind.ElementContentK
 import com.google.template.soy.soytree.ParameterP;
 import com.google.template.soy.soytree.SoyTypeP;
 import com.google.template.soy.types.SanitizedType.ElementType;
-import java.util.Map;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import javax.annotation.Nullable;
@@ -274,19 +273,8 @@ public abstract class TemplateType extends SoyType {
       return getTypeWrapper().getType();
     }
 
-    SoyType getDeclaredType() {
-      SoyType type = getType();
-      if (!isRequired()) {
-        // Not totally true because you could have had a redundant declaration:
-        //   {@param? f: null|string}
-        // TODO(b/291132644): Switch to "tryRemoveUndefined".
-        type = SoyTypes.tryRemoveNull(type);
-      }
-      return type;
-    }
-
     String getTypeStringRepresentation() {
-      return getDeclaredType().toString();
+      return getType().toString();
     }
 
     abstract LazyTypeWrapper getTypeWrapper();
@@ -432,9 +420,9 @@ public abstract class TemplateType extends SoyType {
 
     TemplateType srcTemplate = (TemplateType) srcType;
 
-    Map<String, Parameter> thisParams =
+    ImmutableMap<String, Parameter> thisParams =
         getParameters().stream().collect(toImmutableMap(Parameter::getName, identity()));
-    Map<String, Parameter> srcParams =
+    ImmutableMap<String, Parameter> srcParams =
         srcTemplate.getParameters().stream()
             .collect(toImmutableMap(Parameter::getName, identity()));
 
