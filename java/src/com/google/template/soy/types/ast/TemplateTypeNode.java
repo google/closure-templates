@@ -39,8 +39,10 @@ public abstract class TemplateTypeNode extends TypeNode {
         String name,
         String sourceName,
         ParameterKind kind,
-        TypeNode type) {
-      return new AutoValue_TemplateTypeNode_Parameter(nameLocation, name, sourceName, kind, type);
+        TypeNode type,
+        boolean required) {
+      return new AutoValue_TemplateTypeNode_Parameter(
+          nameLocation, name, sourceName, kind, type, required);
     }
 
     public abstract SourceLocation nameLocation();
@@ -53,13 +55,15 @@ public abstract class TemplateTypeNode extends TypeNode {
 
     public abstract TypeNode type();
 
+    public abstract boolean required();
+
     @Override
     public final String toString() {
-      return sourceName() + ": " + type();
+      return sourceName() + (required() ? "" : "?") + ": " + type();
     }
 
     Parameter copy() {
-      return create(nameLocation(), name(), sourceName(), kind(), type().copy());
+      return create(nameLocation(), name(), sourceName(), kind(), type().copy(), required());
     }
   }
 
@@ -69,10 +73,7 @@ public abstract class TemplateTypeNode extends TypeNode {
 
   @Override
   public final String toString() {
-    if (parameters().size() < 3) {
-      return "(" + Joiner.on(", ").join(parameters()) + ") => " + returnType();
-    }
-    return "(\n  " + Joiner.on(",\n  ").join(parameters()) + "\n) => " + returnType();
+    return "(" + Joiner.on(", ").join(parameters()) + ") => " + returnType();
   }
 
   @Override

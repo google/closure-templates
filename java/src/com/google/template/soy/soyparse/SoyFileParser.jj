@@ -5085,7 +5085,7 @@ private TypeNode PrimaryType() :
 }
 
 /**
- * TemplateType -> "("  ( TemplateArgument ( "," TemplateArgument )* )? ")" "=>" TypeExpr
+ * TemplateType -> "("  ( TemplateParameter ( "," TemplateParameter )* )? ")" "=>" TypeExpr
  */
 private TypeNode TemplateType() :
 {
@@ -5125,11 +5125,12 @@ private TypeNode TemplateType() :
 }
 
 /**
- * TemplateArgument -> IDENT ":" TypeExpr
+ * TemplateArgument -> IDENT ("?")? ":" TypeExpr
  */
 private TemplateTypeNode.Parameter TemplateParameter() :
 {
   Token parameterName;
+  Token colon;
   TypeNode parameterType;
 }
 {
@@ -5139,7 +5140,11 @@ private TemplateTypeNode.Parameter TemplateParameter() :
     parameterName = <ATTR_IDENT>
   )
 
-  <COLON>
+  (
+    colon = <QCOLON>
+  |
+    colon = <COLON>
+  )
   parameterType = TypeExpr()
 
   {
@@ -5149,7 +5154,9 @@ private TemplateTypeNode.Parameter TemplateParameter() :
       kind = ParameterKind.ATTRIBUTE;
       paramName = TemplateType.Parameter.attrToParamName(paramName.substring(1));
     }
-    return TemplateTypeNode.Parameter.create(createSrcLoc(parameterName), paramName, parameterName.image, kind, parameterType);
+    return TemplateTypeNode.Parameter.create(
+        createSrcLoc(parameterName), paramName, parameterName.image, kind,
+        parameterType, colon.image.equals(":"));
   }
 }
 
