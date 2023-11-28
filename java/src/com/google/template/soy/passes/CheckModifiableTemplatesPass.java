@@ -28,6 +28,8 @@ import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.TemplateType;
+import com.google.template.soy.types.TemplateType.Parameter;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -102,22 +104,57 @@ final class CheckModifiableTemplatesPass implements CompilerFilePass {
           templateBasicNode.getModifiesExpr().getSourceLocation(), UNRESOLVED_MODIFIES_EXPR);
       return;
     }
-    TemplateType modifiedTemplateType =
-        (TemplateType) templateBasicNode.getModifiesExpr().getRoot().getType();
-    if (!modifiedTemplateType.isModifiable()) {
+    TemplateType baseType = (TemplateType) templateBasicNode.getModifiesExpr().getRoot().getType();
+    if (!baseType.isModifiable()) {
       errorReporter.report(
           templateBasicNode.getModifiesExpr().getSourceLocation(), MODIFIES_NON_MODIFIABLE);
       return;
     }
-    SoyType modifyingType = TemplateMetadata.buildTemplateType(templateBasicNode);
-    if (!modifyingType.isAssignableFromStrict(modifiedTemplateType)) {
+    TemplateType overrideType = TemplateMetadata.buildTemplateType(templateBasicNode);
+    if (!mayOverride(baseType, overrideType)) {
       errorReporter.report(
-          templateBasicNode.getSourceLocation(),
-          INCOMPATIBLE_SIGNATURE,
-          modifiedTemplateType.toString(),
-          modifyingType.toString());
+          templateBasicNode.getSourceLocation(), INCOMPATIBLE_SIGNATURE, baseType, overrideType);
     }
     validateSingleFileIsModded(templateBasicNode, file, modifiedNamespaces);
+  }
+
+  private static boolean mayOverride(TemplateType baseType, TemplateType overrideType) {
+    // This is not the same as baseType.isAssignableFromStrict(overrideType) because we allow
+    // optional params in baseType to be omitted from overrideType.
+
+    // Content type must be compatible.
+    if (!baseType.getContentKind().isAssignableFrom(overrideType.getContentKind())) {
+      return false;
+    }
+
+    // Any required parameters is base template must be present in override template.
+    for (Entry<String, Parameter> entry : baseType.getParameterMap().entrySet()) {
+      if (entry.getValue().isRequired() && overrideType.getParameter(entry.getKey()) == null) {
+        return false;
+      }
+    }
+
+    // All parameters in override template must exist in the base template and have a compatible
+    // type.
+    for (Parameter overrideParam : overrideType.getParameters()) {
+      Parameter baseParam = baseType.getParameter(overrideParam.getName());
+      if (baseParam == null) {
+        return false;
+      }
+      if (!baseParam.isRequired() && overrideParam.isRequired()) {
+        // TODO(b/313530249): uncomment this.
+        // return false;
+      }
+
+      if (!baseParam.getType().isAssignableFromStrict(overrideParam.getType())) {
+        // TODO(b/313530249): delete the next check and return false here.
+        if (!overrideParam.getType().isAssignableFromStrict(baseParam.getType())) {
+          return false;
+        }
+      }
+    }
+
+    return true;
   }
 
   private void validateVariantExpr(TemplateBasicNode templateBasicNode) {

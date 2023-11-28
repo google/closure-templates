@@ -33,7 +33,6 @@ import com.google.template.soy.base.internal.TemplateContentKind.ElementContentK
 import com.google.template.soy.soytree.ParameterP;
 import com.google.template.soy.soytree.SoyTypeP;
 import com.google.template.soy.types.SanitizedType.ElementType;
-import java.util.Map;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import javax.annotation.Nullable;
@@ -284,6 +283,13 @@ public abstract class TemplateType extends SoyType {
       return getType().toString();
     }
 
+    public boolean isAssignableFromStrict(Parameter other) {
+      if (!isRequired() && other.isRequired()) {
+        return false;
+      }
+      return getType().isAssignableFromStrict(other.getType());
+    }
+
     abstract LazyTypeWrapper getTypeWrapper();
 
     public abstract boolean isRequired();
@@ -427,9 +433,9 @@ public abstract class TemplateType extends SoyType {
 
     TemplateType srcTemplate = (TemplateType) srcType;
 
-    Map<String, Parameter> thisParams =
+    ImmutableMap<String, Parameter> thisParams =
         getParameters().stream().collect(toImmutableMap(Parameter::getName, identity()));
-    Map<String, Parameter> srcParams =
+    ImmutableMap<String, Parameter> srcParams =
         srcTemplate.getParameters().stream()
             .collect(toImmutableMap(Parameter::getName, identity()));
 
@@ -448,6 +454,10 @@ public abstract class TemplateType extends SoyType {
           return false;
         }
       } else {
+        if (srcParam.isRequired() && !thisParam.isRequired()) {
+          return false;
+        }
+
         // Check that each argument of the source type is assignable FROM the corresponding
         // argument of this type. This is because the parameter types are constraints; assignability
         // of a template type is only possible when the constraints of the from-type are narrower.

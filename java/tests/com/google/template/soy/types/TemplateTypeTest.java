@@ -17,6 +17,7 @@
 package com.google.template.soy.types;
 
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.template.soy.types.SoyTypesTest.assertThatSoyType;
 
 import com.google.template.soy.types.TemplateType.Parameter;
 import org.junit.Test;
@@ -40,5 +41,37 @@ public class TemplateTypeTest {
     assertThat(Parameter.isValidAttrName("anAttr")).isFalse();
     assertThat(Parameter.isValidAttrName("an-attr-")).isFalse();
     assertThat(Parameter.isValidAttrName("-an-attr")).isFalse();
+  }
+
+  @Test
+  public void testAssignability() {
+    // equality
+    assertThatSoyType("() => html").isAssignableFromStrict("() => html");
+
+    // disjoint params
+    assertThatSoyType("() => html").isAssignableFromStrict("(p?: string) => html");
+    assertThatSoyType("() => html").isNotAssignableFromStrict("(p: string) => html");
+    assertThatSoyType("(p?: string) => html").isNotAssignableFromStrict("() => html");
+    assertThatSoyType("(p: string) => html").isNotAssignableFromStrict("() => html");
+
+    // param types mismatch
+    assertThatSoyType("(p: int) => html").isNotAssignableFromStrict("(p: string) => html");
+    assertThatSoyType("(p: int|string) => html").isNotAssignableFromStrict("(p: string) => html");
+
+    // return type mismatch
+    assertThatSoyType("() => html").isNotAssignableFromStrict("() => uri");
+
+    // expanded unions
+    assertThatSoyType("(p: int) => html").isAssignableFromStrict("(p: int|string) => html");
+    assertThatSoyType("(p: int) => html").isAssignableFromStrict("(p: int|null) => html");
+    assertThatSoyType("(p: int) => html").isAssignableFromStrict("(p?: int|null) => html");
+
+    // optional
+    assertThatSoyType("(p: int) => html").isAssignableFromStrict("(p?: int) => html");
+    assertThatSoyType("(p?: int) => html").isAssignableFromStrict("(p?: int) => html");
+    assertThatSoyType("(p?: int) => html").isNotAssignableFromStrict("(p: int) => html");
+    assertThatSoyType("(isDynastyGame: bool, isWarning: bool, classes?: null|string) => string")
+        .isAssignableFromStrict(
+            "(isWarning: bool, isDynastyGame?: bool, classes?: null|string) => string");
   }
 }
