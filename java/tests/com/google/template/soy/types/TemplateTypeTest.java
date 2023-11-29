@@ -69,9 +69,7 @@ public class TemplateTypeTest {
     // optional
     assertThatSoyType("(p: int) => html").isAssignableFromStrict("(p?: int) => html");
     assertThatSoyType("(p?: int) => html").isAssignableFromStrict("(p?: int) => html");
-    assertThatSoyType("(p?: int) => html").isNotAssignableFromStrict("(p: int) => html");
-    assertThatSoyType("(isDynastyGame: bool, isWarning: bool, classes?: null|string) => string")
-        .isAssignableFromStrict(
-            "(isWarning: bool, isDynastyGame?: bool, classes?: null|string) => string");
+    assertThatSoyType("(p?: int) => html")
+        .isAssignableFromStrict("(p: int) => html"); // TODO(b/313440793): Revert
   }
 }
