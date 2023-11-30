@@ -1113,18 +1113,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
       } else if (listExprType.getKind() == SoyType.Kind.UNKNOWN) {
         node.getListIterVar().setType(UnknownType.getInstance());
       } else {
-        SoyType listElementType;
-        if (listExprType.getKind() == SoyType.Kind.LIST) {
-          listElementType = ((ListType) listExprType).getElementType();
-        } else {
-          UnionType union = (UnionType) listExprType;
-          listElementType =
-              UnionType.of(
-                  union.getMembers().stream()
-                      .map(member -> ((ListType) member).getElementType())
-                      .collect(toImmutableList()));
-        }
-
+        SoyType listElementType = SoyTypes.getListElementType(listExprType);
         if (listElementType == null) {
           // Report an error if listExpr was the empty list
           errorReporter.report(node.getListExpr().getSourceLocation(), EMPTY_LIST_COMPREHENSION);

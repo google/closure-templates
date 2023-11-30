@@ -42,8 +42,6 @@ import com.google.template.soy.soytree.ExternNode;
 import com.google.template.soy.soytree.JavaImplNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.types.FunctionType;
-import com.google.template.soy.types.ListType;
-import com.google.template.soy.types.MapType;
 import com.google.template.soy.types.SoyProtoEnumType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
@@ -326,7 +324,7 @@ public final class ExternCompiler {
       return actualParam.unboxAsStringOrJavaNull();
     } else if (!isObject
         && BytecodeUtils.isDefinitelyAssignableFrom(javaType, BytecodeUtils.IMMUTABLE_LIST_TYPE)) {
-      SoyType elmType = ((ListType) soyType).getElementType();
+      SoyType elmType = SoyTypes.getListElementType(nonNullableSoyType);
       SoyExpression unboxedList =
           actualParam.isBoxed() ? actualParam.unboxAsListOrJavaNull() : actualParam;
       switch (elmType.getKind()) {
@@ -358,8 +356,8 @@ public final class ExternCompiler {
       if (nonNullableSoyType.getKind() == Kind.RECORD) {
         return JbcSrcExternRuntime.UNBOX_RECORD.invoke(actualParam);
       }
-      SoyType keyType = ((MapType) soyType).getKeyType();
-      SoyType valueType = ((MapType) soyType).getValueType();
+      SoyType keyType = SoyTypes.getMapKeysType(nonNullableSoyType);
+      SoyType valueType = SoyTypes.getMapValuesType(nonNullableSoyType);
       return JbcSrcExternRuntime.UNBOX_MAP.invoke(
           actualParam,
           BytecodeUtils.constant(BytecodeUtils.getTypeForSoyType(keyType)),
