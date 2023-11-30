@@ -20,7 +20,6 @@ import static com.google.template.soy.exprtree.ExprNodes.isNullishLiteral;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.internal.Identifier;
-import com.google.template.soy.basicfunctions.BasicFunctions;
 import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.internalutils.InternalValueUtils;
@@ -186,7 +185,7 @@ final class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
     FunctionNode func =
         FunctionNode.newPositional(
             Identifier.create("Boolean", expr.getSourceLocation()),
-            BasicFunctions.BOOLEAN_FUNCTION,
+            BuiltinFunction.BOOLEAN,
             expr.getSourceLocation());
     func.addChild(expr);
     func.setType(BoolType.getInstance());
@@ -450,6 +449,7 @@ final class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
     // TODO(user): we can actually simplify checkNotNull.
     if (node.getSoyFunction() instanceof BuiltinFunction) {
       switch ((BuiltinFunction) node.getSoyFunction()) {
+        case BOOLEAN:
         case EMPTY_TO_NULL:
         case UNDEFINED_TO_NULL:
         case UNDEFINED_TO_NULL_SSR:

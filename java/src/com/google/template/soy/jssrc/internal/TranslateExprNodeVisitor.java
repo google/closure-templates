@@ -128,6 +128,7 @@ import com.google.template.soy.soytree.MsgFallbackGroupNode;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.soytree.defn.TemplateStateVar;
+import com.google.template.soy.types.AnyType;
 import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.MapType;
 import com.google.template.soy.types.SoyProtoType;
@@ -1093,7 +1094,10 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
         case UNDEFINED_TO_NULL_SSR:
           // CSR no-op
           return visit(node.getParam(0));
-
+        case BOOLEAN:
+          return maybeCoerceToBoolean(
+              // Always coerce regardless of the argument type.
+              AnyType.getInstance(), visit(node.getParam(0)), /* force= */ true);
         case LEGACY_DYNAMIC_TAG:
         case REMAINDER:
         case MSG_WITH_ID:

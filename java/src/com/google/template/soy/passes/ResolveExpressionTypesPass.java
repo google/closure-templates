@@ -2826,6 +2826,9 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
           visit(node.getParam(0));
           node.setType(SoyTypes.undefinedToNull(node.getParam(0).getType()));
           break;
+        case BOOLEAN:
+          node.setType(BoolType.getInstance());
+          break;
         case EMPTY_TO_NULL:
           throw new AssertionError("impossible, this is only used by desuraging passes: " + node);
       }

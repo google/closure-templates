@@ -804,6 +804,7 @@ final class TemplateAnalysisImpl implements TemplateAnalysis {
           case EMPTY_TO_NULL:
           case UNDEFINED_TO_NULL:
           case UNDEFINED_TO_NULL_SSR:
+          case BOOLEAN:
             // visit children normally
             break;
           case UNKNOWN_JS_GLOBAL:

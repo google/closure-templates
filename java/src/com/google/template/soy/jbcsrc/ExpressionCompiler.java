@@ -1757,6 +1757,12 @@ final class ExpressionCompiler {
           MethodRefs.SOY_VALUE_NULLISH_TO_NULL.invoke(visit(node.getParam(0)).box()));
     }
 
+    @Override
+    SoyExpression visitBooleanFunction(FunctionNode node) {
+      return SoyExpression.forBool(
+          MethodRefs.RUNTIME_COERCE_TO_BOOLEAN.invoke(visit(node.getParam(0)).box()));
+    }
+
     // Non-builtin functions
 
     @Override

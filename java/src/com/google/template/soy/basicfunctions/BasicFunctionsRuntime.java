@@ -489,10 +489,6 @@ public final class BasicFunctionsRuntime {
     return arg instanceof NumberData && Double.isFinite(arg.numberValue());
   }
 
-  public static boolean booleanFunc(SoyValue value) {
-    return value != null && value.coerceToBoolean();
-  }
-
   private static String joinHelper(List<SoyValue> values, String delimiter) {
     return values.stream()
         .filter(v -> v != null)
