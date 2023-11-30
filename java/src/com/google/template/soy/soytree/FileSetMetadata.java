@@ -17,7 +17,7 @@
 package com.google.template.soy.soytree;
 
 import com.google.common.base.Preconditions;
-import com.google.template.soy.base.SourceFilePath;
+import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.shared.internal.DelTemplateSelector;
 import com.google.template.soy.types.TemplateType.TemplateKind;
 import java.util.Collection;
@@ -37,7 +37,7 @@ public interface FileSetMetadata extends PartialFileSetMetadata {
   DelTemplateSelector<TemplateMetadata> getDelTemplateSelector();
 
   @Override
-  default PartialFileMetadata getPartialFile(SourceFilePath path) {
+  default PartialFileMetadata getPartialFile(SourceLogicalPath path) {
     return getFile(path);
   }
 
@@ -47,7 +47,7 @@ public interface FileSetMetadata extends PartialFileSetMetadata {
   }
 
   @Nullable
-  FileMetadata getFile(SourceFilePath path);
+  FileMetadata getFile(SourceLogicalPath path);
 
   Collection<? extends FileMetadata> getAllFiles();
 

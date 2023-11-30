@@ -40,7 +40,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableTable;
 import com.google.common.collect.Iterables;
 import com.google.errorprone.annotations.ForOverride;
-import com.google.template.soy.base.SourceFilePath;
+import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.data.Dir;
 import com.google.template.soy.data.RecordProperty;
@@ -202,7 +202,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
         @Nullable SoyMsgBundle msgBundle,
         boolean debugSoyTemplateInfo,
         PluginInstances pluginInstances,
-        ImmutableTable<SourceFilePath, String, ImmutableList<ExternNode>> externs,
+        ImmutableTable<SourceLogicalPath, String, ImmutableList<ExternNode>> externs,
         DelTemplateSelector<TemplateNode> deltemplates,
         Predicate<String> activeModSelector);
   }
@@ -233,7 +233,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
   /** How to manage old data handling bugs. */
   private final UndefinedDataHandlingMode undefinedDataHandlingMode;
 
-  private final ImmutableTable<SourceFilePath, String, ImmutableList<ExternNode>> externs;
+  private final ImmutableTable<SourceLogicalPath, String, ImmutableList<ExternNode>> externs;
   private final DelTemplateSelector<TemplateNode> deltemplates;
   private final Predicate<String> activeModSelector;
 
@@ -249,7 +249,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
       boolean debugSoyTemplateInfo,
       PluginInstances pluginInstances,
       UndefinedDataHandlingMode undefinedDataHandlingMode,
-      ImmutableTable<SourceFilePath, String, ImmutableList<ExternNode>> externs,
+      ImmutableTable<SourceLogicalPath, String, ImmutableList<ExternNode>> externs,
       DelTemplateSelector<TemplateNode> deltemplates,
       Predicate<String> activeModSelector) {
     this.env = checkNotNull(env);

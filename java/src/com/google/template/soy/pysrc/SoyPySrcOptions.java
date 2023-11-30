@@ -17,7 +17,7 @@
 package com.google.template.soy.pysrc;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.template.soy.base.SourceFilePath;
+import com.google.template.soy.base.SourceLogicalPath;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.Optional;
@@ -42,7 +42,7 @@ public final class SoyPySrcOptions implements Cloneable {
   /** A namespace manifest mapping soy namespaces to their python path. */
   private final ImmutableMap<String, String> namespaceManifest;
 
-  private final ImmutableMap<SourceFilePath, Path> inputToOutputFilePaths;
+  private final ImmutableMap<SourceLogicalPath, Path> inputToOutputFilePaths;
 
   private final Optional<Path> outputDirectoryFlag;
 
@@ -55,7 +55,7 @@ public final class SoyPySrcOptions implements Cloneable {
       String bidiIsRtlFn,
       String translationClass,
       ImmutableMap<String, String> namespaceManifest,
-      ImmutableMap<SourceFilePath, Path> inputToOutputFilePaths,
+      ImmutableMap<SourceLogicalPath, Path> inputToOutputFilePaths,
       Optional<Path> outputDirectoryFlag,
       String namespaceManifestFile) {
     this.runtimePath = runtimePath;
@@ -104,7 +104,7 @@ public final class SoyPySrcOptions implements Cloneable {
     return namespaceManifestFile;
   }
 
-  public ImmutableMap<SourceFilePath, Path> getInputToOutputFilePaths() {
+  public ImmutableMap<SourceLogicalPath, Path> getInputToOutputFilePaths() {
     return inputToOutputFilePaths;
   }
 

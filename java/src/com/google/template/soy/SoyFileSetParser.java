@@ -20,7 +20,7 @@ package com.google.template.soy;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.template.soy.base.SourceFilePath;
+import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.base.internal.FixedIdGenerator;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.IncrementingIdGenerator;
@@ -102,8 +102,9 @@ public abstract class SoyFileSetParser {
   /** Optional file cache. */
   @Nullable
   abstract SoyAstCache cache();
+
   /** Files to parse. Each must have a unique file name. */
-  public abstract ImmutableMap<SourceFilePath, SoyFileSupplier> soyFileSuppliers();
+  public abstract ImmutableMap<SourceLogicalPath, SoyFileSupplier> soyFileSuppliers();
 
   abstract ImmutableList<CompilationUnitAndKind> compilationUnits();
 
@@ -123,7 +124,7 @@ public abstract class SoyFileSetParser {
     public abstract Builder setCache(SoyAstCache cache);
 
     public abstract Builder setSoyFileSuppliers(
-        ImmutableMap<SourceFilePath, SoyFileSupplier> soyFileSuppliers);
+        ImmutableMap<SourceLogicalPath, SoyFileSupplier> soyFileSuppliers);
 
     public abstract Builder setCompilationUnits(
         ImmutableList<CompilationUnitAndKind> compilationUnits);
@@ -231,7 +232,7 @@ public abstract class SoyFileSetParser {
       // Currently the only parameters are the id generator, the file, and the errorReporter.
       // This ensures that the file be cached without worrying about other compiler inputs.
       return new SoyFileParser(
-              nodeIdGen, soyFileReader, SourceFilePath.create(filePath), errorReporter())
+              nodeIdGen, soyFileReader, SourceLogicalPath.create(filePath), errorReporter())
           .parseSoyFile();
     }
   }

@@ -36,7 +36,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.template.soy.SoyFileSetParser;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
-import com.google.template.soy.base.SourceFilePath;
+import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.css.CssRegistry;
@@ -116,7 +116,7 @@ public class BytecodeCompilerTest {
                     "  default",
                     "{/template}",
                     ""),
-            SourceFilePath.create("ns1.soy"));
+            SourceLogicalPath.create("ns1.soy"));
 
     SoyFileSupplier soyFileContent2 =
         SoyFileSupplier.Factory.create(
@@ -133,7 +133,7 @@ public class BytecodeCompilerTest {
                     "  SecretFeature {$boo}",
                     "{/template}",
                     ""),
-            SourceFilePath.create("ns2-dp.soy"));
+            SourceLogicalPath.create("ns2-dp.soy"));
 
     SoyFileSupplier soyFileContent3 =
         SoyFileSupplier.Factory.create(
@@ -151,7 +151,7 @@ public class BytecodeCompilerTest {
                     "  AlternateSecretFeature {call helper data=\"all\" /}",
                     "{/template}",
                     ""),
-            SourceFilePath.create("ns3-dp.soy"));
+            SourceLogicalPath.create("ns3-dp.soy"));
 
     SoyFileSupplier soyFileContent4 =
         SoyFileSupplier.Factory.create(
@@ -165,7 +165,7 @@ public class BytecodeCompilerTest {
                     "  {$boo}",
                     "{/template}",
                     ""),
-            SourceFilePath.create("ns4.soy"));
+            SourceLogicalPath.create("ns4.soy"));
     SoyFileSetParser parser =
         SoyFileSetParserBuilder.forSuppliers(
                 soyFileContent1, soyFileContent2, soyFileContent3, soyFileContent4)
@@ -1403,7 +1403,8 @@ public class BytecodeCompilerTest {
         soyFileContents.entrySet().stream()
             .map(
                 e ->
-                    SoyFileSupplier.Factory.create(e.getValue(), SourceFilePath.create(e.getKey())))
+                    SoyFileSupplier.Factory.create(
+                        e.getValue(), SourceLogicalPath.create(e.getKey())))
             .collect(toImmutableList());
     return SoyFileSetParserBuilder.forSuppliers(files).addCompilationUnits(dependencies).build();
   }

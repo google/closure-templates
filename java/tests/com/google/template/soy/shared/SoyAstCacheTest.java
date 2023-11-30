@@ -20,8 +20,8 @@ import static com.google.common.truth.Truth.assertThat;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
-import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.SoyFileSupplier.Version;
 import com.google.template.soy.error.ErrorReporter;
@@ -65,8 +65,8 @@ public final class SoyAstCacheTest {
   @Test
   public void testGetSet() {
     // Matching version.
-    SourceFilePath foo = SourceFilePath.create("foo");
-    SourceFilePath bar = SourceFilePath.create("bar");
+    SourceLogicalPath foo = SourceLogicalPath.create("foo");
+    SourceLogicalPath bar = SourceLogicalPath.create("bar");
     cache.put(foo, version2, fileNode1);
     SoyFileNode file = cache.get(foo, version2);
     // ids aren't modified

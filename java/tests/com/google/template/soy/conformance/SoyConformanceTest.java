@@ -23,7 +23,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.io.CharSource;
 import com.google.protobuf.TextFormat;
 import com.google.protobuf.TextFormat.ParseException;
-import com.google.template.soy.base.SourceFilePath;
+import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.base.internal.StableSoyFileSupplier;
 import com.google.template.soy.error.ErrorReporter;
@@ -171,7 +171,7 @@ public class SoyConformanceTest {
                     + "{template foo}\n"
                     + "{checkNotNull(['xxx', 'bar', 'yyy', 'baz'])}\n"
                     + "{/template}"),
-            SourceFilePath.create("foo/bar/baz.soy")));
+            SourceLogicalPath.create("foo/bar/baz.soy")));
   }
 
   @Test
@@ -190,7 +190,7 @@ public class SoyConformanceTest {
                     + "{template foo}\n"
                     + "{checkNotNull(['xxx', 'bar', 'yyy', 'baz'])}\n"
                     + "{/template}"),
-            SourceFilePath.create("a/b/c/foo/bar/baz.soy")));
+            SourceLogicalPath.create("a/b/c/foo/bar/baz.soy")));
   }
 
   @Test
@@ -209,7 +209,7 @@ public class SoyConformanceTest {
                     + "{template foo}\n"
                     + "{checkNotNull(['xxx', 'bar', 'yyy', 'baz'])}\n"
                     + "{/template}"),
-            SourceFilePath.create("a/b/c/foo/bar/baz.soy")));
+            SourceLogicalPath.create("a/b/c/foo/bar/baz.soy")));
   }
 
   @Test
@@ -598,7 +598,7 @@ public class SoyConformanceTest {
                     + "{template foo}\n"
                     + "<script onload='foo();'></script>\n"
                     + "{/template}"),
-            SourceFilePath.create("foo/bar/baz.soy")));
+            SourceLogicalPath.create("foo/bar/baz.soy")));
   }
 
   // Regression test for a bug where we used to essentially ignore exemptions if there were
@@ -619,10 +619,10 @@ public class SoyConformanceTest {
                     + "{template foo}\n"
                     + "<script onload='foo();'></script>\n"
                     + "{/template}"),
-            SourceFilePath.create("foo/bar/baz.soy")),
+            SourceLogicalPath.create("foo/bar/baz.soy")),
         new StableSoyFileSupplier(
             CharSource.wrap("{namespace ns2}\n" + "{template noViolation}{/template}"),
-            SourceFilePath.create("foo/bar/quux.soy")));
+            SourceLogicalPath.create("foo/bar/quux.soy")));
   }
 
   @Test

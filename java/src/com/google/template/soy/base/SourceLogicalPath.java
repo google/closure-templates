@@ -21,20 +21,22 @@ import com.google.auto.value.AutoValue;
 import com.google.common.base.CharMatcher;
 import com.google.errorprone.annotations.Immutable;
 
-/** Representation of a path in the Soy compiler. */
+/**
+ * Representation of a logical path in the Soy compiler, i.e. independent of any bin/genfile prefix.
+ */
 @Immutable
 @AutoValue
-public abstract class SourceFilePath implements Comparable<SourceFilePath> {
+public abstract class SourceLogicalPath implements Comparable<SourceLogicalPath> {
   // TODO(b/162524005): Add support for different 'logical/import paths' vs 'real paths'. Consider
   // modelling file types, there is a limited number and recording it might be useful
   // Consider modeling paths that are purely synthetic (such as the ones we use for plugins).
 
-  public static SourceFilePath create(String path) {
+  public static SourceLogicalPath create(String path) {
     checkArgument(!path.isEmpty());
-    return new AutoValue_SourceFilePath(path);
+    return new AutoValue_SourceLogicalPath(path);
   }
 
-  SourceFilePath() {}
+  SourceLogicalPath() {}
 
   public abstract String path();
 
@@ -48,7 +50,7 @@ public abstract class SourceFilePath implements Comparable<SourceFilePath> {
   }
 
   @Override
-  public int compareTo(SourceFilePath o) {
+  public int compareTo(SourceLogicalPath o) {
     return this.path().compareTo(o.path());
   }
 }

@@ -17,21 +17,20 @@
 package com.google.template.soy.types;
 
 import com.google.auto.value.AutoValue;
-import com.google.template.soy.base.SourceFilePath;
-import com.google.template.soy.types.SoyType.Kind;
+import com.google.template.soy.base.SourceLogicalPath;
 
 /** Wrapper class around Kind.TOGGLE_TYPE that inherits from SoyType. */
 @AutoValue
 public abstract class ToggleImportType extends ImportType {
 
   // Keep track of toggle name and toggle file path (needed in jssrc)
-  public static ToggleImportType create(String name, SourceFilePath path) {
+  public static ToggleImportType create(String name, SourceLogicalPath path) {
     return new AutoValue_ToggleImportType(name, path);
   }
 
   public abstract String getName();
 
-  public abstract SourceFilePath getPath();
+  public abstract SourceLogicalPath getPath();
 
   @Override
   public final String toString() {

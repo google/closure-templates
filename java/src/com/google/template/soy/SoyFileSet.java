@@ -31,7 +31,7 @@ import com.google.common.io.CharSource;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.protobuf.Descriptors.GenericDescriptor;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
-import com.google.template.soy.base.SourceFilePath;
+import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.conformance.ValidatedConformanceConfig;
@@ -141,7 +141,7 @@ public final class SoyFileSet {
    */
   public static final class Builder {
     /** The SoyFileSuppliers collected so far in added order, as a set to prevent dupes. */
-    private final Map<SourceFilePath, SoyFileSupplier> filesBuilder = new LinkedHashMap<>();
+    private final Map<SourceLogicalPath, SoyFileSupplier> filesBuilder = new LinkedHashMap<>();
 
     private final ImmutableList.Builder<CompilationUnitAndKind> compilationUnitsBuilder =
         ImmutableList.builder();
@@ -172,7 +172,7 @@ public final class SoyFileSet {
     private MethodChecker javaPluginValidator =
         (className, methodName, returnType, arguments) -> Response.error(Code.NO_SUCH_CLASS);
 
-    private Set<SourceFilePath> generatedPathsToCheck = ImmutableSet.of();
+    private Set<SourceLogicalPath> generatedPathsToCheck = ImmutableSet.of();
 
     private final ImmutableSet.Builder<SoyFunction> soyFunctions = ImmutableSet.builder();
     private final ImmutableSet.Builder<SoyPrintDirective> soyPrintDirectives =
@@ -366,7 +366,7 @@ public final class SoyFileSet {
     @CanIgnoreReturnValue
     public Builder add(CharSource contentSource, String filePath) {
       return addFile(
-          SoyFileSupplier.Factory.create(contentSource, SourceFilePath.create(filePath)));
+          SoyFileSupplier.Factory.create(contentSource, SourceLogicalPath.create(filePath)));
     }
 
     /**
@@ -379,7 +379,8 @@ public final class SoyFileSet {
      */
     @CanIgnoreReturnValue
     public Builder add(URL inputFileUrl, String filePath) {
-      return addFile(SoyFileSupplier.Factory.create(inputFileUrl, SourceFilePath.create(filePath)));
+      return addFile(
+          SoyFileSupplier.Factory.create(inputFileUrl, SourceLogicalPath.create(filePath)));
     }
 
     /**
@@ -412,7 +413,7 @@ public final class SoyFileSet {
      */
     @CanIgnoreReturnValue
     public Builder add(CharSequence content, String filePath) {
-      return addFile(SoyFileSupplier.Factory.create(content, SourceFilePath.create(filePath)));
+      return addFile(SoyFileSupplier.Factory.create(content, SourceLogicalPath.create(filePath)));
     }
 
     /**
@@ -480,7 +481,7 @@ public final class SoyFileSet {
     }
 
     @CanIgnoreReturnValue
-    public Builder setGeneratedPathsToCheck(Set<SourceFilePath> generatedPaths) {
+    public Builder setGeneratedPathsToCheck(Set<SourceLogicalPath> generatedPaths) {
       this.generatedPathsToCheck = generatedPaths;
       return this;
     }
@@ -596,7 +597,7 @@ public final class SoyFileSet {
   private final SoyScopedData scopedData;
 
   private final SoyTypeRegistry typeRegistry;
-  private final ImmutableMap<SourceFilePath, SoyFileSupplier> soyFileSuppliers;
+  private final ImmutableMap<SourceLogicalPath, SoyFileSupplier> soyFileSuppliers;
   private final ImmutableList<CompilationUnitAndKind> compilationUnits;
 
   /** Optional soy tree cache for faster recompile times. */
@@ -617,7 +618,7 @@ public final class SoyFileSet {
   private final boolean skipPluginValidation;
 
   private final boolean optimize;
-  private final ImmutableSet<SourceFilePath> generatedPathsToCheck;
+  private final ImmutableSet<SourceLogicalPath> generatedPathsToCheck;
   private final MethodChecker javaMethodChecker;
 
   /** For reporting errors during parsing. */
@@ -632,7 +633,7 @@ public final class SoyFileSet {
       ImmutableList<SoyPrintDirective> printDirectives,
       ImmutableList<SoySourceFunctionDescriptor> soySourceFunctions,
       ImmutableList<SoySourceFunction> soyMethods,
-      ImmutableMap<SourceFilePath, SoyFileSupplier> soyFileSuppliers,
+      ImmutableMap<SourceLogicalPath, SoyFileSupplier> soyFileSuppliers,
       ImmutableList<CompilationUnitAndKind> compilationUnits,
       SoyGeneralOptions generalOptions,
       @Nullable SoyAstCache cache,
@@ -641,7 +642,7 @@ public final class SoyFileSet {
       ImmutableList<File> pluginRuntimeJars,
       boolean skipPluginValidation,
       boolean optimize,
-      Set<SourceFilePath> generatedPathsToCheck,
+      Set<SourceLogicalPath> generatedPathsToCheck,
       CssRegistry cssRegistry,
       ToggleRegistry toggleRegistry,
       MethodChecker javaMethodChecker) {
@@ -668,11 +669,11 @@ public final class SoyFileSet {
 
   /** Returns the list of suppliers for the input Soy files. For testing use only! */
   @VisibleForTesting
-  ImmutableMap<SourceFilePath, SoyFileSupplier> getSoyFileSuppliersForTesting() {
+  ImmutableMap<SourceLogicalPath, SoyFileSupplier> getSoyFileSuppliersForTesting() {
     return soyFileSuppliers;
   }
 
-  ImmutableList<SourceFilePath> getSourceFilePaths() {
+  ImmutableList<SourceLogicalPath> getSourceFilePaths() {
     return soyFileSuppliers.keySet().asList();
   }
 

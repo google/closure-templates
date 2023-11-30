@@ -31,7 +31,7 @@ import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.errorprone.annotations.concurrent.LazyInit;
-import com.google.template.soy.base.SourceFilePath;
+import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.error.ErrorReporter;
@@ -183,8 +183,8 @@ public final class Metadata {
     abstract ParseContext context();
 
     @Memoized
-    protected ImmutableMap<SourceFilePath, FileMetadata> fileIndex() {
-      ImmutableMap.Builder<SourceFilePath, FileMetadata> builder = ImmutableMap.builder();
+    protected ImmutableMap<SourceLogicalPath, FileMetadata> fileIndex() {
+      ImmutableMap.Builder<SourceLogicalPath, FileMetadata> builder = ImmutableMap.builder();
       units()
           .forEach(
               u ->
@@ -193,7 +193,7 @@ public final class Metadata {
                       .forEach(
                           f ->
                               builder.put(
-                                  SourceFilePath.create(f.getFilePath()),
+                                  SourceLogicalPath.create(f.getFilePath()),
                                   new AutoValue_Metadata_DepsFileMetadata(
                                       f, u.fileKind(), context()))));
       return builder.buildOrThrow();
@@ -223,7 +223,7 @@ public final class Metadata {
     }
 
     @Override
-    public FileMetadata getFile(SourceFilePath path) {
+    public FileMetadata getFile(SourceLogicalPath path) {
       return fileIndex().get(path);
     }
 
@@ -244,11 +244,11 @@ public final class Metadata {
   /** PartialFileSetMetadata for AST under compilation. */
   private static class AstPartialFileSetMetadata implements PartialFileSetMetadata {
 
-    private final ImmutableMap<SourceFilePath, PartialFileMetadata> fullFileIndex;
+    private final ImmutableMap<SourceLogicalPath, PartialFileMetadata> fullFileIndex;
 
     /** ASTs are mutable so we need to copy all data in the constructor. */
     public AstPartialFileSetMetadata(PartialFileSetMetadata deps, List<SoyFileNode> ast) {
-      Map<SourceFilePath, PartialFileMetadata> fullFileIndexBuilder = new LinkedHashMap<>();
+      Map<SourceLogicalPath, PartialFileMetadata> fullFileIndexBuilder = new LinkedHashMap<>();
       for (PartialFileMetadata depFile : deps.getAllPartialFiles()) {
         fullFileIndexBuilder.put(depFile.getPath(), depFile);
       }
@@ -257,7 +257,7 @@ public final class Metadata {
     }
 
     @Override
-    public PartialFileMetadata getPartialFile(SourceFilePath path) {
+    public PartialFileMetadata getPartialFile(SourceLogicalPath path) {
       return fullFileIndex.get(path);
     }
 
@@ -272,7 +272,7 @@ public final class Metadata {
 
     private final ParseContext context;
     // The following three fields contain all files/templates from both AST and deps.
-    private final ImmutableMap<SourceFilePath, FileMetadata> fullFileIndex;
+    private final ImmutableMap<SourceLogicalPath, FileMetadata> fullFileIndex;
     @LazyInit private ImmutableMap<String, TemplateMetadata> lazyFullTemplateIndex;
     @LazyInit private ImmutableList<TemplateMetadata> lazyAllTemplatesWithCollisions;
     @LazyInit private DelTemplateSelector<TemplateMetadata> delTemplateSelector;
@@ -281,7 +281,7 @@ public final class Metadata {
     public AstFileSetMetadata(FileSetMetadata deps, List<SoyFileNode> ast, ParseContext context) {
       this.context = context;
 
-      Map<SourceFilePath, FileMetadata> fullFileIndexBuilder = new LinkedHashMap<>();
+      Map<SourceLogicalPath, FileMetadata> fullFileIndexBuilder = new LinkedHashMap<>();
       for (FileMetadata depFile : deps.getAllFiles()) {
         fullFileIndexBuilder.put(depFile.getPath(), depFile);
       }
@@ -343,7 +343,7 @@ public final class Metadata {
     }
 
     @Override
-    public FileMetadata getFile(SourceFilePath path) {
+    public FileMetadata getFile(SourceLogicalPath path) {
       return fullFileIndex.get(path);
     }
 
@@ -420,8 +420,8 @@ public final class Metadata {
 
     @Override
     @Memoized
-    public SourceFilePath getPath() {
-      return SourceFilePath.create(proto().getFilePath());
+    public SourceLogicalPath getPath() {
+      return SourceLogicalPath.create(proto().getFilePath());
     }
 
     @Memoized
@@ -505,7 +505,7 @@ public final class Metadata {
   /** PartialFileMetadata for AST under compilation. */
   private static final class AstPartialFileMetadata implements PartialFileMetadata {
 
-    private final SourceFilePath path;
+    private final SourceLogicalPath path;
     private final String namespace;
     private final ImmutableSet<String> templateNames;
     private final ImmutableSet<String> constantNames;
@@ -532,7 +532,7 @@ public final class Metadata {
     }
 
     @Override
-    public SourceFilePath getPath() {
+    public SourceLogicalPath getPath() {
       return path;
     }
 
@@ -560,7 +560,7 @@ public final class Metadata {
   /** FileMetadata for AST under compilation. */
   private static final class AstFileMetadata extends AbstractFileMetadata {
 
-    private final SourceFilePath path;
+    private final SourceLogicalPath path;
     private final String namespace;
     private final ImmutableMap<String, ConstantImpl> constantIndex;
     private final ImmutableList<TemplateMetadata> allTemplates;
@@ -626,7 +626,7 @@ public final class Metadata {
     }
 
     @Override
-    public SourceFilePath getPath() {
+    public SourceLogicalPath getPath() {
       return path;
     }
 
@@ -719,7 +719,7 @@ public final class Metadata {
     }
 
     @Override
-    public SourceFilePath getPath() {
+    public SourceLogicalPath getPath() {
       return primary.getPath();
     }
 

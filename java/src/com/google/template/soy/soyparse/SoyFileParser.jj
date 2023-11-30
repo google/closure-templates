@@ -51,7 +51,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 import com.google.errorprone.annotations.CheckReturnValue;
-import com.google.template.soy.base.SourceFilePath;
+import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.base.SourceLocation.Point;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
@@ -528,7 +528,7 @@ public class SoyFileParser {
   @Nullable
   public static ExprNode parseExpression(
       String exprText, ErrorReporter errorReporter) {
-    SourceFilePath filePath = SourceFilePath.create("expression parser");
+    SourceLogicalPath filePath = SourceLogicalPath.create("expression parser");
     SoyFileParser parser = new SoyFileParser(exprText, filePath, errorReporter);
     try {
       return parser.ExprInput();
@@ -543,7 +543,7 @@ public class SoyFileParser {
   @Nullable
   public static TypeNode parseType(
       String typeText,
-      SourceFilePath filePath,
+      SourceLogicalPath filePath,
       ErrorReporter errorReporter) {
     SoyFileParser parser = new SoyFileParser(typeText, filePath, errorReporter);
     try {
@@ -559,7 +559,7 @@ public class SoyFileParser {
   private IdGenerator nodeIdGen;
 
   /** Path of source being parsed. This is descriptive, not a means to refetch source. */
-  public SourceFilePath filePath;
+  public SourceLogicalPath filePath;
 
   /** Controls how to handle whitespaces (e.g. whether to join lines or preserve whitespace). */
   private WhitespaceMode whitespaceMode = WhitespaceMode.JOIN;
@@ -585,7 +585,7 @@ public class SoyFileParser {
   public SoyFileParser(
       IdGenerator nodeIdGen,
       Reader input,
-      SourceFilePath filePath,
+      SourceLogicalPath filePath,
       ErrorReporter errorReporter) {
     this(new SoyFileParserTokenManager(new SoySimpleCharStream(input)));
     this.nodeIdGen = checkNotNull(nodeIdGen);
@@ -597,7 +597,7 @@ public class SoyFileParser {
   /** Constructor for use by parseExpression() and parseType() only. */
   private SoyFileParser(
       String input,
-      SourceFilePath filePath,
+      SourceLogicalPath filePath,
       ErrorReporter errorReporter) {
     // this starts the lexer in a particular state instead of DEFAULT
     this(new SoyFileParserTokenManager(

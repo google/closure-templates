@@ -48,8 +48,8 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.errorprone.annotations.CheckReturnValue;
-import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
@@ -1627,7 +1627,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     return false;
   }
 
-  private String namespaceForPath(SourceFilePath path) {
+  private String namespaceForPath(SourceLogicalPath path) {
     return fileSetMetadata.getNamespaceForPath(path);
   }
 }

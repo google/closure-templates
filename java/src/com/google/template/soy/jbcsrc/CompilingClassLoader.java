@@ -18,7 +18,7 @@ package com.google.template.soy.jbcsrc;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
-import com.google.template.soy.base.SourceFilePath;
+import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyCompilationException;
@@ -43,14 +43,14 @@ final class CompilingClassLoader extends AbstractMemoryClassLoader {
   // would just use more memory.
   private final Map<String, ClassData> classesByName = Collections.synchronizedMap(new HashMap<>());
 
-  private final ImmutableMap<SourceFilePath, SoyFileSupplier> filePathsToSuppliers;
+  private final ImmutableMap<SourceLogicalPath, SoyFileSupplier> filePathsToSuppliers;
   private final ImmutableMap<String, SoyFileNode> javaClassNameToFile;
   private final SoyTypeRegistry typeRegistry;
   private final PartialFileSetMetadata fileSetMetadata;
 
   CompilingClassLoader(
       SoyFileSetNode fileSet,
-      ImmutableMap<SourceFilePath, SoyFileSupplier> filePathsToSuppliers,
+      ImmutableMap<SourceLogicalPath, SoyFileSupplier> filePathsToSuppliers,
       SoyTypeRegistry typeRegistry,
       PartialFileSetMetadata fileSetMetadata) {
     Map<String, SoyFileNode> javaClassNameToFile = new LinkedHashMap<>();

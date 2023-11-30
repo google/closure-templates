@@ -24,8 +24,8 @@ import static java.util.Arrays.stream;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
-import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SoyDict;
@@ -212,7 +212,7 @@ public class SoyJavaSourceFunctionTester {
   private SoyType parseType(String type) {
     TypeNode parsed =
         SoyFileParser.parseType(
-            type, SourceFilePath.create(fn.getClass().getName()), ErrorReporter.exploding());
+            type, SourceLogicalPath.create(fn.getClass().getName()), ErrorReporter.exploding());
     return TypeNodeConverter.builder(ErrorReporter.exploding())
         .setTypeRegistry(SoyTypeRegistryBuilder.create())
         .build()

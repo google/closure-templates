@@ -24,9 +24,9 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
-import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SourceLocation.Point;
+import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.soytree.RawTextNode.SourceOffsets.Reason;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
@@ -670,7 +670,7 @@ public final class RawTextNode extends AbstractSoyNode
     }
 
     /** Returns the sourcelocation for the whole span. */
-    public SourceLocation getSourceLocation(SourceFilePath filePath) {
+    public SourceLocation getSourceLocation(SourceLogicalPath filePath) {
       return new SourceLocation(
           filePath, lines[0], columns[0], lines[lines.length - 1], columns[columns.length - 1]);
     }

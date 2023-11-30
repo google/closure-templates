@@ -17,7 +17,7 @@ package com.google.template.soy.passes;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.template.soy.base.SourceFilePath;
+import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
@@ -41,10 +41,10 @@ public class CheckGeneratedSourcesPass implements CompilerFileSetPass {
   private static final Pattern BLESS_COMMENT = Pattern.compile("@SoySourceGenerator=[\\w\\-/]+\\b");
 
   private final ErrorReporter errorReporter;
-  private final ImmutableSet<SourceFilePath> generatedPaths;
+  private final ImmutableSet<SourceLogicalPath> generatedPaths;
 
   public CheckGeneratedSourcesPass(
-      ErrorReporter errorReporter, ImmutableSet<SourceFilePath> generatedPaths) {
+      ErrorReporter errorReporter, ImmutableSet<SourceLogicalPath> generatedPaths) {
     this.errorReporter = errorReporter;
     this.generatedPaths = generatedPaths;
   }

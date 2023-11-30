@@ -18,7 +18,7 @@ package com.google.template.soy;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-import com.google.template.soy.base.SourceFilePath;
+import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.shared.SoyAstCache;
 import java.io.File;
@@ -51,7 +51,7 @@ public interface SoyInputCache {
 
         @Override
         public SoyFileSupplier createFileSupplier(
-            File file, SourceFilePath pathToUse, SoyCompilerFileReader reader)
+            File file, SourceLogicalPath pathToUse, SoyCompilerFileReader reader)
             throws FileNotFoundException {
           return SoyFileSupplier.Factory.create(reader.read(file).asCharSource(UTF_8), pathToUse);
         }
@@ -106,6 +106,6 @@ public interface SoyInputCache {
    * <p>This supplier will use versioning information supplied by the cache implementation
    */
   SoyFileSupplier createFileSupplier(
-      File file, SourceFilePath pathToUse, SoyCompilerFileReader reader)
+      File file, SourceLogicalPath pathToUse, SoyCompilerFileReader reader)
       throws FileNotFoundException;
 }

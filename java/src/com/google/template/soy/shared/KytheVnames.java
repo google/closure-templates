@@ -16,8 +16,8 @@
 
 package com.google.template.soy.shared;
 
-import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.TemplateNode;
 
@@ -31,7 +31,7 @@ public class KytheVnames {
 
   public static final String LANG = "soy";
 
-  public static String getPath(SourceFilePath path) {
+  public static String getPath(SourceLogicalPath path) {
     return path.path();
   }
 

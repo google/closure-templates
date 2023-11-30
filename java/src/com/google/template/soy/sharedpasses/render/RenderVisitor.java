@@ -22,7 +22,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableTable;
 import com.google.common.collect.Lists;
-import com.google.template.soy.base.SourceFilePath;
+import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.data.RecordProperty;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
@@ -118,7 +118,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
 
   protected final ImmutableMap<String, TemplateNode> basicTemplates;
   protected final DelTemplateSelector<TemplateNode> deltemplates;
-  protected final ImmutableTable<SourceFilePath, String, ConstNode> constants;
+  protected final ImmutableTable<SourceLogicalPath, String, ConstNode> constants;
 
   /** The current template data. */
   protected final ParamStore data;
@@ -126,7 +126,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
   /** The current injected data. */
   protected final ParamStore ijData;
 
-  private final ImmutableTable<SourceFilePath, String, ImmutableList<ExternNode>> externs;
+  private final ImmutableTable<SourceLogicalPath, String, ImmutableList<ExternNode>> externs;
 
   /** The current environment. */
   protected Environment env;
@@ -190,8 +190,8 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
       Appendable outputBuf,
       ImmutableMap<String, TemplateNode> basicTemplates,
       DelTemplateSelector<TemplateNode> deltemplates,
-      ImmutableTable<SourceFilePath, String, ConstNode> constants,
-      ImmutableTable<SourceFilePath, String, ImmutableList<ExternNode>> externs,
+      ImmutableTable<SourceLogicalPath, String, ConstNode> constants,
+      ImmutableTable<SourceLogicalPath, String, ImmutableList<ExternNode>> externs,
       ParamStore data,
       @Nullable ParamStore ijData,
       @Nullable Predicate<String> activeModSelector,
@@ -334,7 +334,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
                     // file.
                     () -> {
                       ConstNode constNode =
-                          constants.get(SourceFilePath.create(node.getPath()), var.getSymbol());
+                          constants.get(SourceLogicalPath.create(node.getPath()), var.getSymbol());
                       return eval(constNode.getExpr(), constNode);
                     }));
           }

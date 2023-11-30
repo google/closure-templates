@@ -18,18 +18,18 @@ package com.google.template.soy.types;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableMap;
-import com.google.template.soy.base.SourceFilePath;
+import com.google.template.soy.base.SourceLogicalPath;
 
 /** Representing imported classes from a CSS file. */
 @AutoValue
 public abstract class CssImportType extends ImportType {
 
   public static CssImportType create(
-      SourceFilePath path, ImmutableMap<String, String> shortClassMap) {
+      SourceLogicalPath path, ImmutableMap<String, String> shortClassMap) {
     return new AutoValue_CssImportType(path, shortClassMap);
   }
 
-  public abstract SourceFilePath getPath();
+  public abstract SourceLogicalPath getPath();
 
   /**
    * Maps short class names to full class names, as defined in the CssRegistry.

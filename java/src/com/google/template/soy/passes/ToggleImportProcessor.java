@@ -21,7 +21,7 @@ import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.template.soy.base.SourceFilePath;
+import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.soytree.ImportNode;
@@ -50,12 +50,14 @@ final class ToggleImportProcessor implements ImportsPass.ImportProcessor {
 
   @Override
   public boolean handlesPath(String path) {
-    return this.toggleRegistry.getPaths().contains(SourceFilePath.create(path));
+    return this.toggleRegistry.getPaths().contains(SourceLogicalPath.create(path));
   }
 
   @Override
   public ImmutableSet<String> getAllPaths() {
-    return toggleRegistry.getPaths().stream().map(SourceFilePath::path).collect(toImmutableSet());
+    return toggleRegistry.getPaths().stream()
+        .map(SourceLogicalPath::path)
+        .collect(toImmutableSet());
   }
 
   @Override
@@ -81,7 +83,7 @@ final class ToggleImportProcessor implements ImportsPass.ImportProcessor {
   public void processImportedSymbols(ImportNode node) {
     for (ImportedVar symbol : node.getIdentifiers()) {
       String name = symbol.getSymbol();
-      SourceFilePath path = node.getSourceFilePath();
+      SourceLogicalPath path = node.getSourceFilePath();
 
       // Toggle name doesn't exist in registry
       if (!toggleRegistry.getToggles(path).contains(name)) {

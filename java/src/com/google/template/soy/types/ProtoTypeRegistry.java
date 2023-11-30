@@ -16,7 +16,7 @@
 
 package com.google.template.soy.types;
 
-import com.google.template.soy.base.SourceFilePath;
+import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.base.internal.SoyFileKind;
 import javax.annotation.Nullable;
 
@@ -25,7 +25,7 @@ public interface ProtoTypeRegistry {
   @Nullable
   SoyType getProtoType(String protoFqn);
 
-  default SoyFileKind getDepKind(SourceFilePath importPath) {
+  default SoyFileKind getDepKind(SourceLogicalPath importPath) {
     throw new UnsupportedOperationException();
   }
 }

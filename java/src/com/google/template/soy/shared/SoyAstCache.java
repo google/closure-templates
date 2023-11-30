@@ -16,7 +16,7 @@
 
 package com.google.template.soy.shared;
 
-import com.google.template.soy.base.SourceFilePath;
+import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.base.internal.SoyFileSupplier.Version;
 import com.google.template.soy.soytree.SoyFileNode;
 import java.util.HashMap;
@@ -49,7 +49,7 @@ public final class SoyAstCache {
 
   /** Cache mapping file path to the result of the last parse. */
   @GuardedBy("this")
-  private final Map<SourceFilePath, VersionedFile> cache = new HashMap<>();
+  private final Map<SourceLogicalPath, VersionedFile> cache = new HashMap<>();
 
   @Inject
   public SoyAstCache() {}
@@ -64,7 +64,7 @@ public final class SoyAstCache {
    * @param file The parsed file. Caution this is stored as is, callers should take care to make
    *     defensive copies.
    */
-  public synchronized void put(SourceFilePath fileName, Version version, SoyFileNode file) {
+  public synchronized void put(SourceLogicalPath fileName, Version version, SoyFileNode file) {
     cache.put(fileName, new VersionedFile(file, version));
   }
 
@@ -78,7 +78,7 @@ public final class SoyAstCache {
    * @return The stored version of the tree. Callers should take care to make copies to avoid
    *     corrupting data in the cache.
    */
-  public synchronized SoyFileNode get(SourceFilePath fileName, Version version) {
+  public synchronized SoyFileNode get(SourceLogicalPath fileName, Version version) {
     VersionedFile entry = cache.get(fileName);
     if (entry != null) {
       if (entry.version.equals(version)) {
@@ -95,7 +95,7 @@ public final class SoyAstCache {
    * Evicts a file from the cache, normally this is not necessary but it can be used to limit memory
    * consumption.
    */
-  public synchronized boolean evict(SourceFilePath fileName) {
+  public synchronized boolean evict(SourceLogicalPath fileName) {
     VersionedFile entry = cache.remove(fileName);
     return entry != null;
   }

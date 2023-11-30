@@ -26,9 +26,9 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import com.google.common.base.Joiner;
-import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SourceLocation.Point;
+import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.base.internal.IncrementingIdGenerator;
 import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.basetree.Node;
@@ -58,7 +58,7 @@ import org.junit.runners.JUnit4;
 public final class SourceLocationTest {
 
   private static final Joiner JOINER = Joiner.on('\n');
-  private static final SourceFilePath FAKE_FILE_PATH = SourceFilePath.create("fakefile.soy");
+  private static final SourceLogicalPath FAKE_FILE_PATH = SourceLogicalPath.create("fakefile.soy");
 
   @Test
   public void testLocationsInParsedContent() throws Exception {
@@ -688,7 +688,7 @@ public final class SourceLocationTest {
     ErrorReporter reporter = ErrorReporter.createForTest();
     SoyFileSetParserBuilder.forSuppliers(
             SoyFileSupplier.Factory.create(
-                "{template t}\nHello, World!\n", SourceFilePath.create("broken.soy")))
+                "{template t}\nHello, World!\n", SourceLogicalPath.create("broken.soy")))
         .errorReporter(reporter)
         .parse();
     assertThat(reporter.getErrors()).isNotEmpty();
@@ -1160,7 +1160,7 @@ public final class SourceLocationTest {
         new SoyFileParser(
                 new IncrementingIdGenerator(),
                 new StringReader(soySourceCode),
-                SourceFilePath.create("/example/file.soy"),
+                SourceLogicalPath.create("/example/file.soy"),
                 ErrorReporter.createForTest())
             .parseSoyFile();
 

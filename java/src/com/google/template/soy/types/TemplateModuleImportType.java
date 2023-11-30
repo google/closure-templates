@@ -18,7 +18,7 @@ package com.google.template.soy.types;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableSet;
-import com.google.template.soy.base.SourceFilePath;
+import com.google.template.soy.base.SourceLogicalPath;
 
 /** Representing an imported template module/file type, i.e. "import * as p from 'p.soy'; */
 @AutoValue
@@ -26,7 +26,7 @@ public abstract class TemplateModuleImportType extends ImportType {
 
   public static TemplateModuleImportType create(
       String namespace,
-      SourceFilePath path,
+      SourceLogicalPath path,
       ImmutableSet<String> constantNames,
       ImmutableSet<String> externNames,
       ImmutableSet<String> templateNames) {
@@ -45,7 +45,7 @@ public abstract class TemplateModuleImportType extends ImportType {
 
   public abstract String getNamespace();
 
-  public abstract SourceFilePath getPath();
+  public abstract SourceLogicalPath getPath();
 
   public abstract ImmutableSet<String> getSymbols();
 

@@ -20,7 +20,7 @@ import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.template.soy.base.SourceFilePath;
+import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.css.CssRegistry;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
@@ -75,7 +75,7 @@ final class CssImportProcessor implements ImportsPass.ImportProcessor {
 
   private void processImportedSymbols(ImportNode node) {
     String path = node.getPath();
-    CssModuleImportType moduleType = CssModuleImportType.create(SourceFilePath.create(path));
+    CssModuleImportType moduleType = CssModuleImportType.create(SourceLogicalPath.create(path));
     node.setModuleType(moduleType);
 
     for (ImportedVar symbol : node.getIdentifiers()) {

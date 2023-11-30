@@ -21,8 +21,8 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Files;
-import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
@@ -147,13 +147,13 @@ public final class PySrcMain {
    * import format.
    */
   private static ImmutableMap<String, String> generateManifest(
-      Map<SourceFilePath, String> soyNamespaces,
-      Map<SourceFilePath, Path> inputToOutputPaths,
+      Map<SourceLogicalPath, String> soyNamespaces,
+      Map<SourceLogicalPath, Path> inputToOutputPaths,
       Optional<Path> outputDirectoryFlag,
       ErrorReporter errorReporter) {
     Map<String, String> manifest = new HashMap<>();
 
-    for (SourceFilePath inputFilePath : inputToOutputPaths.keySet()) {
+    for (SourceLogicalPath inputFilePath : inputToOutputPaths.keySet()) {
       String outputFilePath = inputToOutputPaths.get(inputFilePath).toString();
       String pythonPath = outputFilePath.replace(".py", "").replace('/', '.');
 
@@ -168,8 +168,8 @@ public final class PySrcMain {
     return ImmutableMap.copyOf(manifest);
   }
 
-  private static ImmutableMap<SourceFilePath, String> getSoyNamespaces(SoyFileSetNode soyTree) {
-    ImmutableMap.Builder<SourceFilePath, String> namespaces = new ImmutableMap.Builder<>();
+  private static ImmutableMap<SourceLogicalPath, String> getSoyNamespaces(SoyFileSetNode soyTree) {
+    ImmutableMap.Builder<SourceLogicalPath, String> namespaces = new ImmutableMap.Builder<>();
     for (SoyFileNode soyFile : soyTree.getChildren()) {
       namespaces.put(soyFile.getFilePath(), soyFile.getNamespace());
     }

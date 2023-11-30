@@ -23,9 +23,9 @@ import com.google.auto.value.AutoOneOf;
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SourceLocation.Point;
+import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
@@ -57,11 +57,11 @@ public final class FunctionNode extends AbstractParentExprNode implements ExprNo
   /** All the information a runtime needs to execute a call to an extern. */
   @AutoValue
   public abstract static class ExternRef {
-    public static ExternRef of(SourceFilePath path, String name, FunctionType signature) {
+    public static ExternRef of(SourceLogicalPath path, String name, FunctionType signature) {
       return new AutoValue_FunctionNode_ExternRef(path, name, signature);
     }
 
-    public abstract SourceFilePath path();
+    public abstract SourceLogicalPath path();
 
     public abstract String name();
 

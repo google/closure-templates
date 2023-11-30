@@ -23,8 +23,8 @@ import static com.google.template.soy.soytree.TemplateRegistrySubject.assertThat
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
-import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.base.internal.SoyFileKind;
@@ -44,7 +44,7 @@ import org.junit.runners.JUnit4;
 @RunWith(JUnit4.class)
 public final class FileSetMetadataTest {
 
-  private static final SourceFilePath FILE_PATH = SourceFilePath.create("example.soy");
+  private static final SourceLogicalPath FILE_PATH = SourceLogicalPath.create("example.soy");
 
   private static final ImmutableList<CommandTagAttribute> NO_ATTRS = ImmutableList.of();
   private static final ErrorReporter FAIL = ErrorReporter.exploding();
@@ -143,22 +143,22 @@ public final class FileSetMetadataTest {
                         + "/** Template. */\n"
                         + "{template foo}\n"
                         + "{/template}\n",
-                    SourceFilePath.create("bar.soy")),
+                    SourceLogicalPath.create("bar.soy")),
                 SoyFileSupplier.Factory.create(
                     "{namespace ns2}\n"
                         + "/** Template. */\n"
                         + "{template foo}\n"
                         + "{/template}\n",
-                    SourceFilePath.create("baz.soy")))
+                    SourceLogicalPath.create("baz.soy")))
             .parse()
             .registry();
 
     assertThatRegistry(registry)
         .containsBasicTemplate("ns.foo")
-        .definedAt(new SourceLocation(SourceFilePath.create("bar.soy"), 3, 1, 4, 11));
+        .definedAt(new SourceLocation(SourceLogicalPath.create("bar.soy"), 3, 1, 4, 11));
     assertThatRegistry(registry)
         .containsBasicTemplate("ns2.foo")
-        .definedAt(new SourceLocation(SourceFilePath.create("baz.soy"), 3, 1, 4, 11));
+        .definedAt(new SourceLocation(SourceLogicalPath.create("baz.soy"), 3, 1, 4, 11));
   }
 
   @Test
@@ -170,7 +170,7 @@ public final class FileSetMetadataTest {
                         + "/** Modifiable. */\n"
                         + "{template foo modifiable='true'}\n"
                         + "{/template}",
-                    SourceFilePath.create("foo.soy")),
+                    SourceLogicalPath.create("foo.soy")),
                 SoyFileSupplier.Factory.create(
                     "{modname foo}\n"
                         + "{namespace ns2}\n"
@@ -178,16 +178,16 @@ public final class FileSetMetadataTest {
                         + "/** Modifiable. */\n"
                         + "{template bar visibility='private' modifies='foo'}\n"
                         + "{/template}",
-                    SourceFilePath.create("bar.soy")))
+                    SourceLogicalPath.create("bar.soy")))
             .parse()
             .registry();
 
     assertThatRegistry(registry)
         .containsDelTemplate("ns.foo")
-        .definedAt(new SourceLocation(SourceFilePath.create("foo.soy"), 3, 1, 4, 11));
+        .definedAt(new SourceLocation(SourceLogicalPath.create("foo.soy"), 3, 1, 4, 11));
     assertThatRegistry(registry)
         .containsDelTemplate("ns.foo")
-        .definedAt(new SourceLocation(SourceFilePath.create("bar.soy"), 5, 1, 6, 11));
+        .definedAt(new SourceLocation(SourceLogicalPath.create("bar.soy"), 5, 1, 6, 11));
   }
 
   @Test
@@ -258,8 +258,8 @@ public final class FileSetMetadataTest {
     ErrorReporter errorReporter = ErrorReporter.createForTest();
     ParseResult parseResult =
         SoyFileSetParserBuilder.forSuppliers(
-                SoyFileSupplier.Factory.create(fileContents, SourceFilePath.create("foo.soy")),
-                SoyFileSupplier.Factory.create(file2Contents, SourceFilePath.create("foo2.soy")))
+                SoyFileSupplier.Factory.create(fileContents, SourceLogicalPath.create("foo.soy")),
+                SoyFileSupplier.Factory.create(file2Contents, SourceLogicalPath.create("foo2.soy")))
             .errorReporter(errorReporter)
             .parse();
     FileSetMetadata registry = parseResult.registry();
@@ -306,9 +306,9 @@ public final class FileSetMetadataTest {
     ErrorReporter errorReporter = ErrorReporter.createForTest();
     ParseResult parseResult =
         SoyFileSetParserBuilder.forSuppliers(
-                SoyFileSupplier.Factory.create(file1Contents, SourceFilePath.create("foo.soy")),
-                SoyFileSupplier.Factory.create(file2Contents, SourceFilePath.create("foo2.soy")),
-                SoyFileSupplier.Factory.create(file3Contents, SourceFilePath.create("foo3.soy")))
+                SoyFileSupplier.Factory.create(file1Contents, SourceLogicalPath.create("foo.soy")),
+                SoyFileSupplier.Factory.create(file2Contents, SourceLogicalPath.create("foo2.soy")),
+                SoyFileSupplier.Factory.create(file3Contents, SourceLogicalPath.create("foo3.soy")))
             .errorReporter(errorReporter)
             .parse();
 
@@ -393,8 +393,8 @@ public final class FileSetMetadataTest {
             + "{/template}\n";
     ErrorReporter errorReporter = ErrorReporter.createForTest();
     SoyFileSetParserBuilder.forSuppliers(
-            SoyFileSupplier.Factory.create(file1, SourceFilePath.create("foo.soy")),
-            SoyFileSupplier.Factory.create(file2, SourceFilePath.create("foo2.soy")))
+            SoyFileSupplier.Factory.create(file1, SourceLogicalPath.create("foo.soy")),
+            SoyFileSupplier.Factory.create(file2, SourceLogicalPath.create("foo2.soy")))
         .errorReporter(errorReporter)
         .parse();
     assertThat(errorReporter.getErrors()).hasSize(1);
@@ -423,9 +423,9 @@ public final class FileSetMetadataTest {
             + "{/template}\n";
     ErrorReporter errorReporter = ErrorReporter.createForTest();
     SoyFileSetParserBuilder.forSuppliers(
-            SoyFileSupplier.Factory.create(file1, SourceFilePath.create("foo.soy")),
-            SoyFileSupplier.Factory.create(file2, SourceFilePath.create("foo2.soy")),
-            SoyFileSupplier.Factory.create(file3, SourceFilePath.create("foo3.soy")))
+            SoyFileSupplier.Factory.create(file1, SourceLogicalPath.create("foo.soy")),
+            SoyFileSupplier.Factory.create(file2, SourceLogicalPath.create("foo2.soy")),
+            SoyFileSupplier.Factory.create(file3, SourceLogicalPath.create("foo3.soy")))
         .errorReporter(errorReporter)
         .parse();
     assertThat(errorReporter.getErrors()).hasSize(1);

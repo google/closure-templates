@@ -19,8 +19,8 @@ import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.base.internal.FixedIdGenerator;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.Identifier;
@@ -38,8 +38,8 @@ import org.junit.runners.JUnit4;
 @RunWith(JUnit4.class)
 public final class CheckGeneratedSourcesPassTest {
 
-  private static final SourceFilePath PATH1 = SourceFilePath.create("file1.soy");
-  private static final SourceFilePath PATH2 = SourceFilePath.create("file2.soy");
+  private static final SourceLogicalPath PATH1 = SourceLogicalPath.create("file1.soy");
+  private static final SourceLogicalPath PATH2 = SourceLogicalPath.create("file2.soy");
 
   private final ErrorReporter errorReporter = ErrorReporter.createForTest();
   private final IdGenerator idGenerator = new FixedIdGenerator(-1);
@@ -96,7 +96,7 @@ public final class CheckGeneratedSourcesPassTest {
     assertThat(errorReporter.getErrors()).hasSize(1);
   }
 
-  private static SoyFileNode withComments(String comment, SourceFilePath path) {
+  private static SoyFileNode withComments(String comment, SourceLogicalPath path) {
     return new SoyFileNode(
         1,
         new SourceLocation(path, 1, 1, 2, 1),

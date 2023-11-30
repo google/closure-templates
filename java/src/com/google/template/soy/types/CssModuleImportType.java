@@ -18,18 +18,18 @@ package com.google.template.soy.types;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableSet;
-import com.google.template.soy.base.SourceFilePath;
+import com.google.template.soy.base.SourceLogicalPath;
 
 /** Representing an imported CSS file type, i.e. "import {classes} from 'foo.css'";" */
 @AutoValue
 public abstract class CssModuleImportType extends ImportType {
   public static final String CLASSES = "classes";
 
-  public static CssModuleImportType create(SourceFilePath path) {
+  public static CssModuleImportType create(SourceLogicalPath path) {
     return new AutoValue_CssModuleImportType(path);
   }
 
-  abstract SourceFilePath getPath();
+  abstract SourceLogicalPath getPath();
 
   @Override
   public final String toString() {

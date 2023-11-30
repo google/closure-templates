@@ -17,7 +17,7 @@
 package com.google.template.soy.types;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.template.soy.base.SourceFilePath;
+import com.google.template.soy.base.SourceLogicalPath;
 
 /**
  * Registry of known toggles provided by the --toggle compiler flag (feature has NOT been added
@@ -26,20 +26,20 @@ import com.google.template.soy.base.SourceFilePath;
 public interface ToggleRegistry {
 
   /** Get all toggles for given file path in toggle registry. */
-  ImmutableSet<String> getToggles(SourceFilePath path);
+  ImmutableSet<String> getToggles(SourceLogicalPath path);
 
   /** Get all file paths in toggle registry. */
-  ImmutableSet<SourceFilePath> getPaths();
+  ImmutableSet<SourceLogicalPath> getPaths();
 
   ToggleRegistry EMPTY =
       new ToggleRegistry() {
         @Override
-        public ImmutableSet<SourceFilePath> getPaths() {
+        public ImmutableSet<SourceLogicalPath> getPaths() {
           return ImmutableSet.of();
         }
 
         @Override
-        public ImmutableSet<String> getToggles(SourceFilePath path) {
+        public ImmutableSet<String> getToggles(SourceLogicalPath path) {
           return ImmutableSet.of();
         }
       };

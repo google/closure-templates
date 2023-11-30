@@ -36,7 +36,7 @@ import javax.annotation.ParametersAreNonnullByDefault;
 @CheckReturnValue
 public final class SourceLocation implements Comparable<SourceLocation> {
   /** A file path or URI useful for error messages. */
-  @Nonnull private final SourceFilePath filePath;
+  @Nonnull private final SourceLogicalPath filePath;
 
   private final Point begin;
   private final Point end;
@@ -48,7 +48,8 @@ public final class SourceLocation implements Comparable<SourceLocation> {
    * when you may or may not have a location. Obviously, associating real locations is always
    * preferred when possible.
    */
-  public static final SourceLocation UNKNOWN = new SourceLocation(SourceFilePath.create("unknown"));
+  public static final SourceLocation UNKNOWN =
+      new SourceLocation(SourceLogicalPath.create("unknown"));
 
   /**
    * @param filePath A file path or URI useful for error messages.
@@ -62,15 +63,15 @@ public final class SourceLocation implements Comparable<SourceLocation> {
    *     if associated with the entire file instead of a line.
    */
   public SourceLocation(
-      SourceFilePath filePath, int beginLine, int beginColumn, int endLine, int endColumn) {
+      SourceLogicalPath filePath, int beginLine, int beginColumn, int endLine, int endColumn) {
     this(filePath, Point.create(beginLine, beginColumn), Point.create(endLine, endColumn));
   }
 
-  public SourceLocation(SourceFilePath filePath) {
+  public SourceLocation(SourceLogicalPath filePath) {
     this(filePath, -1, -1, -1, -1);
   }
 
-  public SourceLocation(SourceFilePath filePath, Point begin, Point end) {
+  public SourceLocation(SourceLogicalPath filePath, Point begin, Point end) {
     checkNotNull(filePath, "filePath is null");
     checkNotNull(begin, "begin is null");
     checkNotNull(end, "end is null");
@@ -96,7 +97,7 @@ public final class SourceLocation implements Comparable<SourceLocation> {
    * from the file system.
    */
   @Nonnull
-  public SourceFilePath getFilePath() {
+  public SourceLogicalPath getFilePath() {
     return filePath;
   }
 
@@ -402,7 +403,7 @@ public final class SourceLocation implements Comparable<SourceLocation> {
       return Point.create(line() + byLines, column() + byColumns);
     }
 
-    public final SourceLocation asLocation(SourceFilePath filePath) {
+    public final SourceLocation asLocation(SourceLogicalPath filePath) {
       return new SourceLocation(filePath, this, this);
     }
 

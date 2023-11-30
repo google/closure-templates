@@ -18,7 +18,7 @@ package com.google.template.soy.sharedpasses.render;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableTable;
-import com.google.template.soy.base.SourceFilePath;
+import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.plugin.java.PluginInstances;
 import com.google.template.soy.shared.SoyCssRenamingMap;
@@ -45,7 +45,7 @@ public final class EvalVisitorFactoryImpl implements EvalVisitorFactory {
       @Nullable SoyMsgBundle msgBundle,
       boolean debugSoyTemplateInfo,
       PluginInstances pluginInstances,
-      ImmutableTable<SourceFilePath, String, ImmutableList<ExternNode>> externs,
+      ImmutableTable<SourceLogicalPath, String, ImmutableList<ExternNode>> externs,
       DelTemplateSelector<TemplateNode> deltemplates,
       Predicate<String> activeModSelector) {
     return new EvalVisitor(

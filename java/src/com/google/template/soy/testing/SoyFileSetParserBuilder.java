@@ -30,7 +30,7 @@ import com.google.protobuf.Descriptors.FileDescriptor;
 import com.google.protobuf.Descriptors.GenericDescriptor;
 import com.google.template.soy.SoyFileSetParser;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
-import com.google.template.soy.base.SourceFilePath;
+import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.conformance.ValidatedConformanceConfig;
@@ -64,7 +64,7 @@ import javax.annotation.Nullable;
 /** Fluent builder for configuring {@link com.google.template.soy.SoyFileSetParser}s in tests. */
 public final class SoyFileSetParserBuilder {
 
-  private final ImmutableMap<SourceFilePath, SoyFileSupplier> soyFileSuppliers;
+  private final ImmutableMap<SourceLogicalPath, SoyFileSupplier> soyFileSuppliers;
   private SoyTypeRegistry typeRegistry = SoyTypeRegistryBuilder.create();
   @Nullable private SoyAstCache astCache = null;
   private ErrorReporter errorReporter = ErrorReporter.exploding(); // See #parse for discussion.
@@ -170,7 +170,7 @@ public final class SoyFileSetParserBuilder {
   }
 
   private SoyFileSetParserBuilder(Iterable<SoyFileSupplier> suppliers) {
-    ImmutableMap.Builder<SourceFilePath, SoyFileSupplier> builder = ImmutableMap.builder();
+    ImmutableMap.Builder<SourceLogicalPath, SoyFileSupplier> builder = ImmutableMap.builder();
     for (SoyFileSupplier supplier : suppliers) {
       builder.put(supplier.getFilePath(), supplier);
     }
@@ -358,7 +358,7 @@ public final class SoyFileSetParserBuilder {
     return this;
   }
 
-  public static final SourceFilePath FILE_PATH = SourceFilePath.create("no-path");
+  public static final SourceLogicalPath FILE_PATH = SourceLogicalPath.create("no-path");
 
   private static List<SoyFileSupplier> buildTestSoyFileSuppliers(String... soyFileContents) {
 
@@ -366,8 +366,8 @@ public final class SoyFileSetParserBuilder {
     for (int i = 0; i < soyFileContents.length; i++) {
       String soyFileContent = soyFileContents[i];
       // Names are now required to be unique in a SoyFileSet. Use one-based indexing.
-      SourceFilePath filePath =
-          i == 0 ? FILE_PATH : SourceFilePath.create(FILE_PATH.path() + "-" + (i + 1));
+      SourceLogicalPath filePath =
+          i == 0 ? FILE_PATH : SourceLogicalPath.create(FILE_PATH.path() + "-" + (i + 1));
       soyFileSuppliers.add(SoyFileSupplier.Factory.create(soyFileContent, filePath));
     }
     return soyFileSuppliers;

@@ -27,7 +27,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
-import com.google.template.soy.base.SourceFilePath;
+import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.conformance.ValidatedConformanceConfig;
 import com.google.template.soy.css.CssRegistry;
@@ -295,7 +295,7 @@ public final class PassManager {
     private boolean desugarHtmlNodes = true;
     private boolean desugarIdomFeatures = true;
     private boolean optimize = true;
-    private ImmutableSet<SourceFilePath> generatedPathsToCheck = ImmutableSet.of();
+    private ImmutableSet<SourceLogicalPath> generatedPathsToCheck = ImmutableSet.of();
     private ValidatedConformanceConfig conformanceConfig = ValidatedConformanceConfig.EMPTY;
     private boolean insertEscapingDirectives = true;
     private boolean addHtmlAttributesForDebugging = true;
@@ -434,7 +434,7 @@ public final class PassManager {
     }
 
     @CanIgnoreReturnValue
-    public Builder setGeneratedPathsToCheck(ImmutableSet<SourceFilePath> generatedPaths) {
+    public Builder setGeneratedPathsToCheck(ImmutableSet<SourceLogicalPath> generatedPaths) {
       this.generatedPathsToCheck = generatedPaths;
       return this;
     }

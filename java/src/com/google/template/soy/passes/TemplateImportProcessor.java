@@ -22,7 +22,7 @@ import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
-import com.google.template.soy.base.SourceFilePath;
+import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.soytree.FileSetMetadata;
 import com.google.template.soy.soytree.ImportNode;
@@ -82,7 +82,7 @@ public final class TemplateImportProcessor implements ImportsPass.ImportProcesso
    */
   private void processImportedSymbols(ImportNode node) {
     PartialFileMetadata fileMetadata =
-        fileSetMetadata.getPartialFile(SourceFilePath.create(node.getPath()));
+        fileSetMetadata.getPartialFile(SourceLogicalPath.create(node.getPath()));
     node.setModuleType(buildModuleType(node));
     for (ImportedVar symbol : node.getIdentifiers()) {
       String name = symbol.getSymbol();
@@ -125,7 +125,7 @@ public final class TemplateImportProcessor implements ImportsPass.ImportProcesso
   }
 
   private TemplateModuleImportType buildModuleType(ImportNode node) {
-    SourceFilePath path = SourceFilePath.create(node.getPath());
+    SourceLogicalPath path = SourceLogicalPath.create(node.getPath());
     PartialFileMetadata templatesPerFile = fileSetMetadata.getPartialFile(path);
     return typeRegistry.intern(
         TemplateModuleImportType.create(
@@ -138,7 +138,7 @@ public final class TemplateImportProcessor implements ImportsPass.ImportProcesso
 
   @Override
   public boolean handlesPath(String path) {
-    return fileSetMetadata.getPartialFile(SourceFilePath.create(path)) != null;
+    return fileSetMetadata.getPartialFile(SourceLogicalPath.create(path)) != null;
   }
 
   @Override

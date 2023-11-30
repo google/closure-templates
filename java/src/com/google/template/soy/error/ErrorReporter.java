@@ -22,8 +22,8 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.errorprone.annotations.ForOverride;
-import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.base.internal.SoyFileSupplier;
 import java.util.Map;
 
@@ -41,7 +41,7 @@ public abstract class ErrorReporter {
   }
 
   /** Creates a new ErrorReporter which can create source snippets from the given files. */
-  public static ErrorReporter create(Map<SourceFilePath, SoyFileSupplier> filePathsToSuppliers) {
+  public static ErrorReporter create(Map<SourceLogicalPath, SoyFileSupplier> filePathsToSuppliers) {
     return new ErrorReporterImpl(ImmutableMap.copyOf(filePathsToSuppliers));
   }
 

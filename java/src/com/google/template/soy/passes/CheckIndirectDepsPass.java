@@ -17,7 +17,7 @@
 package com.google.template.soy.passes;
 
 import com.google.common.collect.ImmutableList;
-import com.google.template.soy.base.SourceFilePath;
+import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.error.ErrorReporter;
@@ -60,7 +60,7 @@ final class CheckIndirectDepsPass implements CompilerFileSetPass {
             i -> i.getImportType() == ImportType.TEMPLATE || i.getImportType() == ImportType.PROTO)
         .forEach(
             i -> {
-              SourceFilePath importPath = i.getSourceFilePath();
+              SourceLogicalPath importPath = i.getSourceFilePath();
               String callerFilePath = i.getSourceLocation().getFilePath().path();
               String calleeFilePath = importPath.path();
 

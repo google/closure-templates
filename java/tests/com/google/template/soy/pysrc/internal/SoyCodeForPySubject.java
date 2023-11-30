@@ -27,7 +27,7 @@ import com.google.common.truth.FailureMetadata;
 import com.google.common.truth.Subject;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
-import com.google.template.soy.base.SourceFilePath;
+import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.pysrc.SoyPySrcOptions;
@@ -55,7 +55,7 @@ public final class SoyCodeForPySubject extends Subject {
 
   private String translationClass = "";
 
-  ImmutableMap<SourceFilePath, Path> inputToOutputFilePaths = ImmutableMap.of();
+  ImmutableMap<SourceLogicalPath, Path> inputToOutputFilePaths = ImmutableMap.of();
 
   private ImmutableMap<String, String> namespaceManifest = ImmutableMap.of();
 
@@ -97,7 +97,7 @@ public final class SoyCodeForPySubject extends Subject {
 
   @CanIgnoreReturnValue
   public SoyCodeForPySubject withOutputFilePaths(
-      ImmutableMap<SourceFilePath, Path> inputToOutputFilePaths) {
+      ImmutableMap<SourceLogicalPath, Path> inputToOutputFilePaths) {
     this.inputToOutputFilePaths = inputToOutputFilePaths;
     return this;
   }

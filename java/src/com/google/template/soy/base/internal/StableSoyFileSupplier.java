@@ -17,7 +17,7 @@
 package com.google.template.soy.base.internal;
 
 import com.google.common.io.CharSource;
-import com.google.template.soy.base.SourceFilePath;
+import com.google.template.soy.base.SourceLogicalPath;
 import java.io.IOException;
 import java.io.Reader;
 
@@ -39,7 +39,7 @@ public final class StableSoyFileSupplier extends AbstractSoyFileSupplier {
    * @param contentSource Source for the Soy file content.
    * @param filePath The path to the Soy file, used for as a unique map/set key and for messages.
    */
-  public StableSoyFileSupplier(CharSource contentSource, SourceFilePath filePath) {
+  public StableSoyFileSupplier(CharSource contentSource, SourceLogicalPath filePath) {
     super(filePath);
     this.contentSource = contentSource;
   }

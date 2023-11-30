@@ -23,8 +23,8 @@ import static com.google.template.soy.types.TemplateType.ParameterKind.PARAM;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.soyparse.SoyFileParser;
@@ -261,7 +261,7 @@ public final class TypeNodeTest {
   private TypeNode parse(String typeString) {
     TypeNode typeNode =
         SoyFileParser.parseType(
-            typeString, SourceFilePath.create("fake-file.soy"), ErrorReporter.exploding());
+            typeString, SourceLogicalPath.create("fake-file.soy"), ErrorReporter.exploding());
     // sanity, make sure copies work
     assertThat(typeNode).isEqualTo(typeNode.copy());
     return typeNode;

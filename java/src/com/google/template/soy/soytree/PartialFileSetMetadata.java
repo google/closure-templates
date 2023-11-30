@@ -16,7 +16,7 @@
 
 package com.google.template.soy.soytree;
 
-import com.google.template.soy.base.SourceFilePath;
+import com.google.template.soy.base.SourceLogicalPath;
 import java.util.Collection;
 import javax.annotation.Nullable;
 
@@ -24,7 +24,7 @@ import javax.annotation.Nullable;
 public interface PartialFileSetMetadata {
 
   @Nullable
-  PartialFileMetadata getPartialFile(SourceFilePath path);
+  PartialFileMetadata getPartialFile(SourceLogicalPath path);
 
   Collection<? extends PartialFileMetadata> getAllPartialFiles();
 
@@ -33,7 +33,7 @@ public interface PartialFileSetMetadata {
    *
    * @throws NullPointerException if {@code path} is not registered in metadata.
    */
-  default String getNamespaceForPath(SourceFilePath path) {
+  default String getNamespaceForPath(SourceLogicalPath path) {
     return getPartialFile(path).getNamespace();
   }
 }

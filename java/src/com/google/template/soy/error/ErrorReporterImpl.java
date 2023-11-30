@@ -22,8 +22,8 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.base.internal.SoyFileSupplier;
 import java.util.ArrayList;
 import java.util.List;
@@ -36,9 +36,9 @@ final class ErrorReporterImpl extends ErrorReporter {
 
   private final List<RecordedError> reports = new ArrayList<>();
   private int errorCount;
-  private final ImmutableMap<SourceFilePath, SoyFileSupplier> filePathsToSuppliers;
+  private final ImmutableMap<SourceLogicalPath, SoyFileSupplier> filePathsToSuppliers;
 
-  ErrorReporterImpl(ImmutableMap<SourceFilePath, SoyFileSupplier> filePathsToSuppliers) {
+  ErrorReporterImpl(ImmutableMap<SourceLogicalPath, SoyFileSupplier> filePathsToSuppliers) {
     this.filePathsToSuppliers = filePathsToSuppliers;
   }
 
@@ -129,7 +129,7 @@ final class ErrorReporterImpl extends ErrorReporter {
       }
     }
 
-    SoyError asSoyError(ImmutableMap<SourceFilePath, SoyFileSupplier> filePathsToSuppliers) {
+    SoyError asSoyError(ImmutableMap<SourceLogicalPath, SoyFileSupplier> filePathsToSuppliers) {
       Optional<String> snippet =
           Optional
               // Sometimes we report errors against things like plugins, in which case we won't have

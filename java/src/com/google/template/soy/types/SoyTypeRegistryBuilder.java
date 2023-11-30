@@ -32,8 +32,8 @@ import com.google.protobuf.Descriptors.EnumDescriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.Descriptors.FileDescriptor;
 import com.google.protobuf.Descriptors.GenericDescriptor;
-import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
@@ -310,7 +310,7 @@ public final class SoyTypeRegistryBuilder {
     }
 
     @Override
-    public SoyFileKind getDepKind(SourceFilePath importPath) {
+    public SoyFileKind getDepKind(SourceLogicalPath importPath) {
       SoyFileKind kind = importPathToDepKind.get(importPath.path());
       Preconditions.checkArgument(kind != null, "Invalid path %s", importPath.path());
       return kind;

@@ -27,7 +27,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.MultimapBuilder;
 import com.google.common.io.MoreFiles;
-import com.google.template.soy.base.SourceFilePath;
+import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.shared.internal.MainEntryPointUtils;
 import java.io.File;
 import java.io.IOException;
@@ -185,7 +185,7 @@ final class PerInputOutputFiles {
     }
   }
 
-  ImmutableMap<SourceFilePath, Path> getOutputFilePathsForInputs(List<SourceFilePath> srcs) {
+  ImmutableMap<SourceLogicalPath, Path> getOutputFilePathsForInputs(List<SourceLogicalPath> srcs) {
     return srcs.stream()
         .collect(
             toImmutableMap(

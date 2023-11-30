@@ -28,7 +28,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Sets;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
-import com.google.template.soy.base.SourceFilePath;
+import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.data.RecordProperty;
 import com.google.template.soy.data.SanitizedContent;
@@ -86,8 +86,8 @@ public final class BaseTofu implements SoyTofu {
 
   private final ImmutableMap<String, TemplateNode> basicTemplates;
   private final DelTemplateSelector<TemplateNode> delTemplates;
-  private final ImmutableTable<SourceFilePath, String, ConstNode> constants;
-  private final ImmutableTable<SourceFilePath, String, ImmutableList<ExternNode>> externs;
+  private final ImmutableTable<SourceLogicalPath, String, ConstNode> constants;
+  private final ImmutableTable<SourceLogicalPath, String, ImmutableList<ExternNode>> externs;
 
   private final ImmutableMap<String, ImmutableSortedSet<String>> templateToIjParamsInfoMap;
 
@@ -101,8 +101,9 @@ public final class BaseTofu implements SoyTofu {
     this.apiCallScope = apiCallScope;
     ImmutableMap.Builder<String, TemplateNode> basicTemplates = ImmutableMap.builder();
     DelTemplateSelector.Builder<TemplateNode> delTemplates = new DelTemplateSelector.Builder<>();
-    ImmutableTable.Builder<SourceFilePath, String, ConstNode> constants = ImmutableTable.builder();
-    ImmutableTable.Builder<SourceFilePath, String, ImmutableList<ExternNode>> externs =
+    ImmutableTable.Builder<SourceLogicalPath, String, ConstNode> constants =
+        ImmutableTable.builder();
+    ImmutableTable.Builder<SourceLogicalPath, String, ImmutableList<ExternNode>> externs =
         ImmutableTable.builder();
     for (SoyFileNode fileNode : fileSet.getChildren()) {
       for (ConstNode constNode : fileNode.getConstants()) {
