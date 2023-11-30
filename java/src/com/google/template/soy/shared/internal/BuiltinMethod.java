@@ -434,6 +434,15 @@ public enum BuiltinMethod implements SoyMethod {
     throw new AssertionError("not a proto getter: " + node.getSoyMethod());
   }
 
+  public static String getProtoArgNameFromMethodCall(MethodCallNode node) {
+    SoyMethod method = node.getSoyMethod();
+    return method == BuiltinMethod.GET_EXTENSION
+            || method == BuiltinMethod.GET_READONLY_EXTENSION
+            || method == BuiltinMethod.HAS_EXTENSION
+        ? getProtoExtensionIdFromMethodCall(node)
+        : getProtoFieldNameFromMethodCall(node);
+  }
+
   public static String getProtoExtensionIdFromMethodCall(MethodCallNode node) {
     ExprNode arg = node.getChild(1);
     return ((ProtoExtensionImportType) arg.getType()).getFieldName();
