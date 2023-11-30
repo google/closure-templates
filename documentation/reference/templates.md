@@ -145,8 +145,11 @@ NOTE: Default parameters don't support content kind types like `html`, `uri` or
 ### Optional params
 
 The `@param?` syntax declares an optional parameter, which does not always have
-to be provided. Within a template, an optional parameter declared as `{@param?
-<PARAM_NAME>: <PARAM_TYPE>}` has a type of `<PARAM_TYPE>|null`.
+to be provided. Within a template, an optional parameter should be declared as
+`{@param? <PARAM_NAME>: <PARAM_TYPE>|null}` , i.e. , it should have a type of
+`<PARAM_TYPE>` if it was provided and `null` otherwise.
+
+Optional params should be declared with both a '?' and '|null'
 
 Default parameters are usually better than optional parameters, except when you
 need a `null` value if the parameter is unset.
