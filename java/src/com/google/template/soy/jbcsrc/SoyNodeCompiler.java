@@ -266,10 +266,10 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
         && (((TemplateNode) node).getVisibility() == Visibility.PUBLIC
             || (node instanceof TemplateBasicNode
                 && ((TemplateBasicNode) node).getModifiesExpr() != null))
-        && !fileNode.getRequiredCssPaths().isEmpty()
+        && !fileNode.getAllRequiredCssPaths().isEmpty()
         && !definitelyCallsPublicTemplateInSameFile((TemplateNode) node)) {
       return Optional.of(
-          fileNode.getRequiredCssPaths().stream()
+          fileNode.getAllRequiredCssPaths().stream()
               .map(css -> css.resolvedPath().orElseThrow())
               .map(cssPath -> parameterLookup.getRenderContext().trackRequiredCssPath(cssPath))
               .collect(toImmutableList()));

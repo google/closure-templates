@@ -93,11 +93,18 @@ public abstract class CssRegistry {
 
   public static CssRegistry createForLocalDevelopment(
       ImmutableSet<String> providedSymbols, ImmutableMap<String, String> filePathToSymbol) {
+    return createForLocalDevelopment(providedSymbols, filePathToSymbol, ImmutableMap.of());
+  }
+
+  public static CssRegistry createForLocalDevelopment(
+      ImmutableSet<String> providedSymbols,
+      ImmutableMap<String, String> filePathToSymbol,
+      ImmutableMap<String, ImmutableMap<String, String>> filePathToShortClassMap) {
     return new AutoValue_CssRegistry(
         providedSymbols,
         filePathToSymbol,
         Optional.empty(),
-        ImmutableMap.of(),
+        filePathToShortClassMap,
         ImmutableMap.of(),
         ImmutableMap.of(),
         /* skipCssReferenceCheck= */ true);
