@@ -384,12 +384,22 @@ public final class RenderContext {
   }
 
   /**
-   * Reports that a CSS path required by a file used during rendering (if a {@code
-   * SoyNamespaceWithCssTracker} was registered).
+   * Reports that a CSS path was required by a file used during rendering (if a {@code
+   * SoyCssTracker} was registered).
    */
   public void trackRequiredCssPath(String cssPath) {
     if (cssTracker != null) {
       cssTracker.trackRequiredCssPath(cssPath);
+    }
+  }
+
+  /**
+   * Reports that a CSS namespace was required by a file used during rendering (if a {@code
+   * SoyCssTracker} was registered).
+   */
+  public void trackRequiredCssNamespace(String cssNamespace) {
+    if (cssTracker != null) {
+      cssTracker.trackRequiredCssNamespace(cssNamespace);
     }
   }
 

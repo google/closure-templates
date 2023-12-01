@@ -136,6 +136,7 @@ import java.util.NavigableSet;
 import java.util.Optional;
 import java.util.TreeMap;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 import org.objectweb.asm.Handle;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
@@ -245,7 +246,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     if (shouldCheckForSoftLimit(node)) {
       statements.add(detachState.detachLimited(appendableExpression));
     }
-    trackRequiredCssPathStatements(node).ifPresent(statements::addAll);
+    statements.add(trackRequiredCssPathStatements(node));
     statements.add(doCompile(node, prefix, suffix));
     statements.add(
         // needs to go at the beginning but can only be generated after the whole method body.
@@ -260,22 +261,32 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     }
   }
 
-  private Optional<List<Statement>> trackRequiredCssPathStatements(RenderUnitNode node) {
+  private Statement trackRequiredCssPathStatements(RenderUnitNode node) {
     SoyFileNode fileNode = node.getNearestAncestor(SoyFileNode.class);
     if (node instanceof TemplateNode
         && (((TemplateNode) node).getVisibility() == Visibility.PUBLIC
             || (node instanceof TemplateBasicNode
                 && ((TemplateBasicNode) node).getModifiesExpr() != null))
-        && !fileNode.getAllRequiredCssPaths().isEmpty()
+        && !(fileNode.getAllRequiredCssPaths().isEmpty()
+            && fileNode.getRequiredCssNamespaces().isEmpty())
         && !definitelyCallsPublicTemplateInSameFile((TemplateNode) node)) {
-      return Optional.of(
-          fileNode.getAllRequiredCssPaths().stream()
-              .map(css -> css.resolvedPath().orElseThrow())
-              .map(cssPath -> parameterLookup.getRenderContext().trackRequiredCssPath(cssPath))
+      return Statement.concat(
+          Stream.concat(
+                  fileNode.getAllRequiredCssPaths().stream()
+                      .map(css -> css.resolvedPath().orElseThrow())
+                      .map(
+                          cssPath ->
+                              parameterLookup.getRenderContext().trackRequiredCssPath(cssPath)),
+                  fileNode.getRequiredCssNamespaces().stream()
+                      .map(
+                          cssNamespace ->
+                              parameterLookup
+                                  .getRenderContext()
+                                  .trackRequiredCssNamespace(cssNamespace)))
               .collect(toImmutableList()));
     }
 
-    return Optional.empty();
+    return Statement.NULL_STATEMENT;
   }
 
   /**

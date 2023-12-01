@@ -149,6 +149,9 @@ final class RenderContextExpression extends Expression implements JbcSrcPluginCo
   private static final MethodRef TRACK_REQUIRED_CSS_PATH =
       MethodRef.createNonPure(RenderContext.class, "trackRequiredCssPath", String.class);
 
+  private static final MethodRef TRACK_REQUIRED_CSS_NAMESPACE =
+      MethodRef.createNonPure(RenderContext.class, "trackRequiredCssNamespace", String.class);
+
   private final Expression delegate;
 
   RenderContextExpression(Expression renderContext) {
@@ -248,6 +251,10 @@ final class RenderContextExpression extends Expression implements JbcSrcPluginCo
 
   Statement trackRequiredCssPath(String cssPath) {
     return delegate.invokeVoid(TRACK_REQUIRED_CSS_PATH, constant(cssPath));
+  }
+
+  Statement trackRequiredCssNamespace(String cssNamespace) {
+    return delegate.invokeVoid(TRACK_REQUIRED_CSS_NAMESPACE, constant(cssNamespace));
   }
 
   SoyExpression applyPrintDirective(SoyPrintDirective directive, SoyExpression value) {

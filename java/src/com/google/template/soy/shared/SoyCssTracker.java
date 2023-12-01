@@ -22,7 +22,8 @@ package com.google.template.soy.shared;
  * that the same CSS path may be reported more than once, and that there is no guaranteed order in
  * which the CSS paths will be reported.
  */
-@FunctionalInterface
 public interface SoyCssTracker {
   void trackRequiredCssPath(String path);
+
+  void trackRequiredCssNamespace(String namespace);
 }
