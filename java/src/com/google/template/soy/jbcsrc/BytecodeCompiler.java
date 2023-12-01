@@ -229,7 +229,7 @@ public final class BytecodeCompiler {
         String fileName = file.getFileName();
         writer.writeEntry(
             Names.javaFileName(namespace, fileName),
-            files.get(file.getFilePath()).asCharSource().asByteSource(UTF_8));
+            files.get(file.getFilePath().asLogicalPath()).asCharSource().asByteSource(UTF_8));
       }
     }
   }

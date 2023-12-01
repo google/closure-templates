@@ -25,8 +25,8 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.javagencode.javatypes.JavaType;
 import com.google.template.soy.javagencode.javatypes.JavaTypeUtils;
@@ -76,7 +76,7 @@ public class SoyFileNodeTransformer {
 
     abstract SoyFileNode fileNode();
 
-    abstract SourceLogicalPath soyFilePath();
+    abstract SourceFilePath soyFilePath();
 
     /**
      * Returns the fully qualified name of the outer class created to hold the SoyTemplate

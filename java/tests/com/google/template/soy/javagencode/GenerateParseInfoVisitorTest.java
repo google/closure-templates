@@ -25,8 +25,8 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.protobuf.Descriptors.GenericDescriptor;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
+import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.shared.internal.gencode.GeneratedFile;
@@ -55,42 +55,40 @@ public final class GenerateParseInfoVisitorTest {
   @Test
   public void testJavaClassNameSource() {
     SoyFileNode soyFileNode =
-        forFilePathAndNamespace(SourceLogicalPath.create("BooFoo.soy"), "aaa.bbb.cccDdd");
+        forFilePathAndNamespace(SourceFilePath.forTest("BooFoo.soy"), "aaa.bbb.cccDdd");
     assertThat(SOY_FILE_NAME.generateBaseClassName(soyFileNode)).isEqualTo("BooFoo");
 
     soyFileNode =
-        forFilePathAndNamespace(
-            SourceLogicalPath.create("blah/bleh/boo_foo.soy"), "aaa.bbb.cccDdd");
+        forFilePathAndNamespace(SourceFilePath.forTest("blah/bleh/boo_foo.soy"), "aaa.bbb.cccDdd");
+    assertThat(SOY_FILE_NAME.generateBaseClassName(soyFileNode)).isEqualTo("BooFoo");
+
+    soyFileNode = forFilePathAndNamespace(SourceFilePath.forTest("boo-FOO.soy"), "aaa.bbb.cccDdd");
     assertThat(SOY_FILE_NAME.generateBaseClassName(soyFileNode)).isEqualTo("BooFoo");
 
     soyFileNode =
-        forFilePathAndNamespace(SourceLogicalPath.create("boo-FOO.soy"), "aaa.bbb.cccDdd");
+        forFilePathAndNamespace(SourceFilePath.forTest("\\BLAH\\BOO_FOO.SOY"), "aaa.bbb.cccDdd");
     assertThat(SOY_FILE_NAME.generateBaseClassName(soyFileNode)).isEqualTo("BooFoo");
 
-    soyFileNode =
-        forFilePathAndNamespace(SourceLogicalPath.create("\\BLAH\\BOO_FOO.SOY"), "aaa.bbb.cccDdd");
-    assertThat(SOY_FILE_NAME.generateBaseClassName(soyFileNode)).isEqualTo("BooFoo");
-
-    soyFileNode = forFilePathAndNamespace(SourceLogicalPath.create("test.soy"), "cccDdd");
+    soyFileNode = forFilePathAndNamespace(SourceFilePath.forTest("test.soy"), "cccDdd");
     assertThat(SOY_NAMESPACE_LAST_PART.generateBaseClassName(soyFileNode)).isEqualTo("CccDdd");
 
-    soyFileNode = forFilePathAndNamespace(SourceLogicalPath.create("test.soy"), "aaa.bbb.cccDdd");
+    soyFileNode = forFilePathAndNamespace(SourceFilePath.forTest("test.soy"), "aaa.bbb.cccDdd");
     assertThat(SOY_NAMESPACE_LAST_PART.generateBaseClassName(soyFileNode)).isEqualTo("CccDdd");
 
-    soyFileNode = forFilePathAndNamespace(SourceLogicalPath.create("test.soy"), "aaa_bbb.ccc_ddd");
+    soyFileNode = forFilePathAndNamespace(SourceFilePath.forTest("test.soy"), "aaa_bbb.ccc_ddd");
     assertThat(SOY_NAMESPACE_LAST_PART.generateBaseClassName(soyFileNode)).isEqualTo("CccDdd");
 
-    soyFileNode = forFilePathAndNamespace(SourceLogicalPath.create("test.soy"), "CccDdd");
+    soyFileNode = forFilePathAndNamespace(SourceFilePath.forTest("test.soy"), "CccDdd");
     assertThat(SOY_NAMESPACE_LAST_PART.generateBaseClassName(soyFileNode)).isEqualTo("CccDdd");
 
-    soyFileNode = forFilePathAndNamespace(SourceLogicalPath.create("test.soy"), "aaa.bbb.ccc_DDD");
+    soyFileNode = forFilePathAndNamespace(SourceFilePath.forTest("test.soy"), "aaa.bbb.ccc_DDD");
     assertThat(SOY_NAMESPACE_LAST_PART.generateBaseClassName(soyFileNode)).isEqualTo("CccDdd");
 
-    soyFileNode = forFilePathAndNamespace(SourceLogicalPath.create("BooFoo.soy"), "aaa.bbb.cccDdd");
+    soyFileNode = forFilePathAndNamespace(SourceFilePath.forTest("BooFoo.soy"), "aaa.bbb.cccDdd");
     assertThat(GENERIC.generateBaseClassName(soyFileNode)).isEqualTo("File");
 
     soyFileNode =
-        forFilePathAndNamespace(SourceLogicalPath.create("blah/bleh/boo-foo.soy"), "ccc_ddd");
+        forFilePathAndNamespace(SourceFilePath.forTest("blah/bleh/boo-foo.soy"), "ccc_ddd");
     assertThat(GENERIC.generateBaseClassName(soyFileNode)).isEqualTo("File");
   }
 
@@ -200,7 +198,7 @@ public final class GenerateParseInfoVisitorTest {
     assertThat(parseInfoContent).doesNotContain("@deprecated");
   }
 
-  private static SoyFileNode forFilePathAndNamespace(SourceLogicalPath filePath, String namespace) {
+  private static SoyFileNode forFilePathAndNamespace(SourceFilePath filePath, String namespace) {
     return new SoyFileNode(
         0,
         new SourceLocation(filePath),

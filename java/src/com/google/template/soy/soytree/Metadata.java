@@ -31,6 +31,7 @@ import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.errorprone.annotations.concurrent.LazyInit;
+import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.base.internal.SoyFileKind;
@@ -252,7 +253,10 @@ public final class Metadata {
       for (PartialFileMetadata depFile : deps.getAllPartialFiles()) {
         fullFileIndexBuilder.put(depFile.getPath(), depFile);
       }
-      ast.forEach(f -> fullFileIndexBuilder.put(f.getFilePath(), new AstPartialFileMetadata(f)));
+      ast.forEach(
+          f ->
+              fullFileIndexBuilder.put(
+                  f.getFilePath().asLogicalPath(), new AstPartialFileMetadata(f)));
       fullFileIndex = ImmutableMap.copyOf(fullFileIndexBuilder);
     }
 
@@ -289,13 +293,15 @@ public final class Metadata {
           f -> {
             FileMetadata astMetadata = new AstFileMetadata(f);
             // Put AST file at end of iteration order.
-            FileMetadata protoMetadata = fullFileIndexBuilder.remove(f.getFilePath());
-            fullFileIndexBuilder.put(f.getFilePath(), astMetadata);
+            FileMetadata protoMetadata =
+                fullFileIndexBuilder.remove(f.getFilePath().asLogicalPath());
+            fullFileIndexBuilder.put(f.getFilePath().asLogicalPath(), astMetadata);
             // Several unit tests require this behavior. It might be needed by some direct users
             // of SoyFileSet.
             if (protoMetadata != null
                 && protoMetadata.getNamespace().equals(astMetadata.getNamespace())) {
-              fullFileIndexBuilder.put(f.getFilePath(), merge(astMetadata, protoMetadata));
+              fullFileIndexBuilder.put(
+                  f.getFilePath().asLogicalPath(), merge(astMetadata, protoMetadata));
             }
           });
       fullFileIndex = ImmutableMap.copyOf(fullFileIndexBuilder);
@@ -437,7 +443,7 @@ public final class Metadata {
                           TemplateMetadataSerializer.fromProto(
                               c.getType(),
                               context().typeRegistry(),
-                              getPath(),
+                              SourceFilePath.create(getPath()),
                               context().errorReporter())),
                   (t1, t2) -> t1) /* Will be reported as error elsewhere. */);
     }
@@ -453,7 +459,7 @@ public final class Metadata {
                       t,
                       kind(),
                       context().typeRegistry(),
-                      getPath(),
+                      SourceFilePath.create(getPath()),
                       context().errorReporter()))
           .collect(toImmutableList());
     }
@@ -472,7 +478,7 @@ public final class Metadata {
                               TemplateMetadataSerializer.fromProto(
                                   SoyTypeP.newBuilder().setFunction(e.getSignature()).build(),
                                   context().typeRegistry(),
-                                  getPath(),
+                                  SourceFilePath.create(getPath()),
                                   context().errorReporter()))));
     }
 
@@ -505,7 +511,7 @@ public final class Metadata {
   /** PartialFileMetadata for AST under compilation. */
   private static final class AstPartialFileMetadata implements PartialFileMetadata {
 
-    private final SourceLogicalPath path;
+    private final SourceFilePath path;
     private final String namespace;
     private final ImmutableSet<String> templateNames;
     private final ImmutableSet<String> constantNames;
@@ -533,7 +539,7 @@ public final class Metadata {
 
     @Override
     public SourceLogicalPath getPath() {
-      return path;
+      return path.asLogicalPath();
     }
 
     @Override
@@ -560,7 +566,7 @@ public final class Metadata {
   /** FileMetadata for AST under compilation. */
   private static final class AstFileMetadata extends AbstractFileMetadata {
 
-    private final SourceLogicalPath path;
+    private final SourceFilePath path;
     private final String namespace;
     private final ImmutableMap<String, ConstantImpl> constantIndex;
     private final ImmutableList<TemplateMetadata> allTemplates;
@@ -627,7 +633,7 @@ public final class Metadata {
 
     @Override
     public SourceLogicalPath getPath() {
-      return path;
+      return path.asLogicalPath();
     }
 
     @Override

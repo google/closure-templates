@@ -19,8 +19,8 @@ package com.google.template.soy.soyparse;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.soytree.CommandChar;
 import com.google.template.soy.soytree.RawTextNode;
@@ -60,7 +60,7 @@ final class RawTextBuilder {
 
   private final RawTextNode.SourceOffsets.Builder offsets = new RawTextNode.SourceOffsets.Builder();
   private final StringBuilder buffer = new StringBuilder();
-  private final SourceLogicalPath fileName;
+  private final SourceFilePath fileName;
   private final IdGenerator nodeIdGen;
   private final WhitespaceMode whitespaceMode;
 
@@ -85,7 +85,7 @@ final class RawTextBuilder {
    * @param nodeIdGen An object that generates Ids for new tokens.
    * @param whitespaceMode Indicates how to handle whitespace in the output.
    */
-  RawTextBuilder(SourceLogicalPath fileName, IdGenerator nodeIdGen, WhitespaceMode whitespaceMode) {
+  RawTextBuilder(SourceFilePath fileName, IdGenerator nodeIdGen, WhitespaceMode whitespaceMode) {
     this.fileName = checkNotNull(fileName);
     this.nodeIdGen = checkNotNull(nodeIdGen);
     this.whitespaceMode = checkNotNull(whitespaceMode);
@@ -130,7 +130,7 @@ final class RawTextBuilder {
    * "{sp}" or "{nil}").
    */
   static RawTextNode buildCommandCharNode(
-      Token token, SourceLogicalPath fileName, IdGenerator nodeIdGen) {
+      Token token, SourceFilePath fileName, IdGenerator nodeIdGen) {
     CommandChar commandChar = rawTextCmdToCommandCharType(token);
     return RawTextNode.newCommandCharNode(
         nodeIdGen.genId(), commandChar, Tokens.createSrcLoc(fileName, token));

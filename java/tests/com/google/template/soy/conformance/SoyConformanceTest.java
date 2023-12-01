@@ -23,7 +23,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.io.CharSource;
 import com.google.protobuf.TextFormat;
 import com.google.protobuf.TextFormat.ParseException;
-import com.google.template.soy.base.SourceLogicalPath;
+import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.base.internal.StableSoyFileSupplier;
 import com.google.template.soy.error.ErrorReporter;
@@ -36,9 +36,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-/**
- * Test case for {@link SoyConformance}.
- */
+/** Test case for {@link SoyConformance}. */
 @RunWith(JUnit4.class)
 public class SoyConformanceTest {
 
@@ -171,7 +169,7 @@ public class SoyConformanceTest {
                     + "{template foo}\n"
                     + "{checkNotNull(['xxx', 'bar', 'yyy', 'baz'])}\n"
                     + "{/template}"),
-            SourceLogicalPath.create("foo/bar/baz.soy")));
+            SourceFilePath.forTest("foo/bar/baz.soy")));
   }
 
   @Test
@@ -190,7 +188,7 @@ public class SoyConformanceTest {
                     + "{template foo}\n"
                     + "{checkNotNull(['xxx', 'bar', 'yyy', 'baz'])}\n"
                     + "{/template}"),
-            SourceLogicalPath.create("a/b/c/foo/bar/baz.soy")));
+            SourceFilePath.forTest("a/b/c/foo/bar/baz.soy")));
   }
 
   @Test
@@ -209,7 +207,7 @@ public class SoyConformanceTest {
                     + "{template foo}\n"
                     + "{checkNotNull(['xxx', 'bar', 'yyy', 'baz'])}\n"
                     + "{/template}"),
-            SourceLogicalPath.create("a/b/c/foo/bar/baz.soy")));
+            SourceFilePath.forTest("a/b/c/foo/bar/baz.soy")));
   }
 
   @Test
@@ -598,7 +596,7 @@ public class SoyConformanceTest {
                     + "{template foo}\n"
                     + "<script onload='foo();'></script>\n"
                     + "{/template}"),
-            SourceLogicalPath.create("foo/bar/baz.soy")));
+            SourceFilePath.forTest("foo/bar/baz.soy")));
   }
 
   // Regression test for a bug where we used to essentially ignore exemptions if there were
@@ -619,10 +617,10 @@ public class SoyConformanceTest {
                     + "{template foo}\n"
                     + "<script onload='foo();'></script>\n"
                     + "{/template}"),
-            SourceLogicalPath.create("foo/bar/baz.soy")),
+            SourceFilePath.forTest("foo/bar/baz.soy")),
         new StableSoyFileSupplier(
             CharSource.wrap("{namespace ns2}\n" + "{template noViolation}{/template}"),
-            SourceLogicalPath.create("foo/bar/quux.soy")));
+            SourceFilePath.forTest("foo/bar/quux.soy")));
   }
 
   @Test

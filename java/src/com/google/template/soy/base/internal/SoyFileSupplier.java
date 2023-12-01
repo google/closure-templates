@@ -21,7 +21,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import com.google.common.io.CharSource;
 import com.google.common.io.Files;
 import com.google.common.io.Resources;
-import com.google.template.soy.base.SourceLogicalPath;
+import com.google.template.soy.base.SourceFilePath;
 import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
@@ -75,7 +75,7 @@ public interface SoyFileSupplier {
   Reader open() throws IOException;
 
   /** Returns the path to the Soy file, used for as a unique map/set key and for messages. */
-  SourceLogicalPath getFilePath();
+  SourceFilePath getFilePath();
 
   /** Returns the version of the Soy file read. */
   Version getVersion();
@@ -95,7 +95,7 @@ public interface SoyFileSupplier {
      * @param soyFileKind The kind of this input Soy file.
      * @param filePath The path to the Soy file, used for as a unique map/set key and for messages.
      */
-    public static SoyFileSupplier create(CharSource contentSource, SourceLogicalPath filePath) {
+    public static SoyFileSupplier create(CharSource contentSource, SourceFilePath filePath) {
       return new StableSoyFileSupplier(contentSource, filePath);
     }
 
@@ -107,7 +107,8 @@ public interface SoyFileSupplier {
      */
     public static SoyFileSupplier create(File inputFile) {
       return create(
-          Files.asCharSource(inputFile, UTF_8), SourceLogicalPath.create(inputFile.getPath()));
+          Files.asCharSource(inputFile, UTF_8),
+          SourceFilePath.create(inputFile.getPath(), inputFile.getPath()));
     }
 
     /**
@@ -118,7 +119,7 @@ public interface SoyFileSupplier {
      * @param soyFileKind The kind of this input Soy file.
      * @param filePath The path to the Soy file, used for as a unique map/set key and for messages.
      */
-    public static SoyFileSupplier create(URL inputFileUrl, SourceLogicalPath filePath) {
+    public static SoyFileSupplier create(URL inputFileUrl, SourceFilePath filePath) {
       return create(Resources.asCharSource(inputFileUrl, UTF_8), filePath);
     }
 
@@ -130,7 +131,7 @@ public interface SoyFileSupplier {
      * @param soyFileKind The kind of this input Soy file.
      * @param filePath The path to the Soy file, used for as a unique map/set key and for messages.
      */
-    public static SoyFileSupplier create(CharSequence content, SourceLogicalPath filePath) {
+    public static SoyFileSupplier create(CharSequence content, SourceFilePath filePath) {
       return create(CharSource.wrap(content), filePath);
     }
 

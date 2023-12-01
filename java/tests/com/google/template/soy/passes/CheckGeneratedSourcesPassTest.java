@@ -19,8 +19,8 @@ import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.base.internal.FixedIdGenerator;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.Identifier;
@@ -38,8 +38,8 @@ import org.junit.runners.JUnit4;
 @RunWith(JUnit4.class)
 public final class CheckGeneratedSourcesPassTest {
 
-  private static final SourceLogicalPath PATH1 = SourceLogicalPath.create("file1.soy");
-  private static final SourceLogicalPath PATH2 = SourceLogicalPath.create("file2.soy");
+  private static final SourceFilePath PATH1 = SourceFilePath.forTest("file1.soy");
+  private static final SourceFilePath PATH2 = SourceFilePath.forTest("file2.soy");
 
   private final ErrorReporter errorReporter = ErrorReporter.createForTest();
   private final IdGenerator idGenerator = new FixedIdGenerator(-1);
@@ -64,7 +64,7 @@ public final class CheckGeneratedSourcesPassTest {
   @Test
   public void noCommentGenerated() throws Exception {
     CheckGeneratedSourcesPass pass =
-        new CheckGeneratedSourcesPass(errorReporter, ImmutableSet.of(PATH1));
+        new CheckGeneratedSourcesPass(errorReporter, ImmutableSet.of(PATH1.asLogicalPath()));
     assertThat(pass.run(ImmutableList.of(withComments("", PATH1)), idGenerator))
         .isEqualTo(Result.STOP);
     assertThat(errorReporter.getErrors()).hasSize(1);
@@ -74,19 +74,19 @@ public final class CheckGeneratedSourcesPassTest {
   public void commentGenerated() throws Exception {
     // Matching comment.
     CheckGeneratedSourcesPass pass =
-        new CheckGeneratedSourcesPass(errorReporter, ImmutableSet.of(PATH1));
+        new CheckGeneratedSourcesPass(errorReporter, ImmutableSet.of(PATH1.asLogicalPath()));
     assertThat(
             pass.run(ImmutableList.of(withComments("@SoySourceGenerator=Foo", PATH1)), idGenerator))
         .isEqualTo(Result.CONTINUE);
 
     // Don't fail if generated file is not in parse set (shouldn't be possible).
-    pass = new CheckGeneratedSourcesPass(errorReporter, ImmutableSet.of(PATH2));
+    pass = new CheckGeneratedSourcesPass(errorReporter, ImmutableSet.of(PATH2.asLogicalPath()));
     assertThat(
             pass.run(ImmutableList.of(withComments("@SoySourceGenerator=Foo", PATH1)), idGenerator))
         .isEqualTo(Result.CONTINUE);
 
     // Comment in one file can't save some other file.
-    pass = new CheckGeneratedSourcesPass(errorReporter, ImmutableSet.of(PATH2));
+    pass = new CheckGeneratedSourcesPass(errorReporter, ImmutableSet.of(PATH2.asLogicalPath()));
     assertThat(
             pass.run(
                 ImmutableList.of(
@@ -96,7 +96,7 @@ public final class CheckGeneratedSourcesPassTest {
     assertThat(errorReporter.getErrors()).hasSize(1);
   }
 
-  private static SoyFileNode withComments(String comment, SourceLogicalPath path) {
+  private static SoyFileNode withComments(String comment, SourceFilePath path) {
     return new SoyFileNode(
         1,
         new SourceLocation(path, 1, 1, 2, 1),

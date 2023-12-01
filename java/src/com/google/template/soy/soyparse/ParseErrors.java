@@ -18,8 +18,8 @@ package com.google.template.soy.soyparse;
 
 import com.google.common.base.CharMatcher;
 import com.google.common.collect.ImmutableSet;
+import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
@@ -67,10 +67,7 @@ final class ParseErrors {
 
   /** Reports a generic parsing exception (such as: "Error at '}': expected number, string..."). */
   static void reportSoyFileParseException(
-      ErrorReporter reporter,
-      SourceLogicalPath filePath,
-      ParseException e,
-      int currentLexicalState) {
+      ErrorReporter reporter, SourceFilePath filePath, ParseException e, int currentLexicalState) {
     reportSoyFileParseException(reporter, filePath, e, currentLexicalState, "");
   }
 
@@ -84,7 +81,7 @@ final class ParseErrors {
    */
   static void reportSoyFileParseException(
       ErrorReporter reporter,
-      SourceLogicalPath filePath,
+      SourceFilePath filePath,
       ParseException e,
       int currentLexicalState,
       String optionalAdvice) {
@@ -164,7 +161,7 @@ final class ParseErrors {
   }
 
   static void reportTokenMgrError(
-      ErrorReporter reporter, SourceLogicalPath filePath, TokenMgrError exception) {
+      ErrorReporter reporter, SourceFilePath filePath, TokenMgrError exception) {
     int errorCode = exception.errorCode;
     String message = exception.getMessage();
 

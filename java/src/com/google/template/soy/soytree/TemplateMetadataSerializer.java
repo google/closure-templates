@@ -22,8 +22,8 @@ import com.google.common.base.Converter;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.TemplateContentKind;
@@ -110,7 +110,7 @@ public final class TemplateMetadataSerializer {
       SoyFileP fileProto,
       SoyFileKind fileKind,
       SoyTypeRegistry typeRegistry,
-      SourceLogicalPath headerFilePath,
+      SourceFilePath headerFilePath,
       ErrorReporter errorReporter) {
     ImmutableList.Builder<TemplateMetadata> templates = ImmutableList.builder();
     for (TemplateMetadataP templateProto : fileProto.getTemplateList()) {
@@ -174,7 +174,7 @@ public final class TemplateMetadataSerializer {
       TemplateMetadataP templateProto,
       SoyFileKind fileKind,
       SoyTypeRegistry typeRegistry,
-      SourceLogicalPath filePath,
+      SourceFilePath filePath,
       ErrorReporter errorReporter) {
     TemplateMetadata.Builder builder = TemplateMetadata.builder();
     TemplateType.TemplateKind templateKind =
@@ -253,7 +253,9 @@ public final class TemplateMetadataSerializer {
                 .setLegacyDeltemplateNamespace(
                     templateProto.getTemplateType().getLegacyDeltemplateNamespace())
                 .build())
-        .setSourceLocation(new SourceLocation(SourceLogicalPath.create(fileProto.getFilePath())))
+        .setSourceLocation(
+            new SourceLocation(
+                SourceFilePath.create(fileProto.getFilePath(), fileProto.getFilePath())))
         .setVisibility(VISIBILITY_CONVERTER.convert(templateProto.getVisibility()))
         .setComponent(templateProto.getComponent())
         .build();
@@ -262,7 +264,7 @@ public final class TemplateMetadataSerializer {
   private static ImmutableList<Parameter> parametersFromProto(
       List<ParameterP> parameterList,
       SoyTypeRegistry typeRegistry,
-      SourceLogicalPath filePath,
+      SourceFilePath filePath,
       ErrorReporter errorReporter) {
     ImmutableList.Builder<Parameter> builder =
         ImmutableList.builderWithExpectedSize(parameterList.size());
@@ -291,13 +293,13 @@ public final class TemplateMetadataSerializer {
   private static final class SoyTypeSupplier implements Supplier<SoyType> {
     final SoyTypeP typeProto;
     final SoyTypeRegistry typeRegistry;
-    final SourceLogicalPath filePath;
+    final SourceFilePath filePath;
     final ErrorReporter errorReporter;
 
     SoyTypeSupplier(
         SoyTypeP type,
         SoyTypeRegistry typeRegistry,
-        SourceLogicalPath filePath,
+        SourceFilePath filePath,
         ErrorReporter errorReporter) {
       this.typeProto = type;
       this.typeRegistry = typeRegistry;
@@ -314,7 +316,7 @@ public final class TemplateMetadataSerializer {
   static SoyType fromProto(
       SoyTypeP proto,
       SoyTypeRegistry typeRegistry,
-      SourceLogicalPath filePath,
+      SourceFilePath filePath,
       ErrorReporter errorReporter) {
     switch (proto.getTypeKindCase()) {
       case PRIMITIVE:

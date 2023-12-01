@@ -20,8 +20,8 @@ import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.assertEquals;
 
 import com.google.common.base.Joiner;
+import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.base.internal.IncrementingIdGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.soyparse.SoyFileParser;
@@ -126,7 +126,7 @@ public final class RawTextNodeTest {
         new SoyFileParser(
                 new IncrementingIdGenerator(),
                 new StringReader(soyFile),
-                SourceLogicalPath.create("test.soy"),
+                SourceFilePath.forTest("test.soy"),
                 ErrorReporter.exploding())
             .parseSoyFile();
     if (node != null) {

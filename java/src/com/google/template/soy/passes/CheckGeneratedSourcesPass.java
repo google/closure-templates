@@ -62,7 +62,7 @@ public class CheckGeneratedSourcesPass implements CompilerFileSetPass {
   }
 
   private boolean check(SoyFileNode sourceFile) {
-    if (!generatedPaths.contains(sourceFile.getFilePath())) {
+    if (!generatedPaths.contains(sourceFile.getFilePath().asLogicalPath())) {
       return true;
     }
     if (sourceFile.getNamespace().equals(SoyFileHeaderInfo.EMPTY.getNamespace())) {

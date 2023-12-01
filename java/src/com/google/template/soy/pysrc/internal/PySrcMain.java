@@ -171,7 +171,7 @@ public final class PySrcMain {
   private static ImmutableMap<SourceLogicalPath, String> getSoyNamespaces(SoyFileSetNode soyTree) {
     ImmutableMap.Builder<SourceLogicalPath, String> namespaces = new ImmutableMap.Builder<>();
     for (SoyFileNode soyFile : soyTree.getChildren()) {
-      namespaces.put(soyFile.getFilePath(), soyFile.getNamespace());
+      namespaces.put(soyFile.getFilePath().asLogicalPath(), soyFile.getNamespace());
     }
     return namespaces.build();
   }

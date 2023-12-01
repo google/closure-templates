@@ -39,6 +39,7 @@ import com.google.inject.Module;
 import com.google.protobuf.Descriptors.DescriptorValidationException;
 import com.google.protobuf.Descriptors.FileDescriptor;
 import com.google.template.soy.CacheLoaders.CachedDescriptorSet;
+import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.error.SoyCompilationException;
@@ -352,10 +353,10 @@ public abstract class AbstractSoyCompiler {
     // add sources
     for (File src : srcs) {
       try {
+        String logicalPath = generatedFiles.getOrDefault(src.getPath(), src.getPath());
         // TODO(b/162524005): model genfiles directly.
-        SourceLogicalPath normalizedPath =
-            SourceLogicalPath.create(generatedFiles.getOrDefault(src.getPath(), src.getPath()));
-        sfsBuilder.add(cache.createFileSupplier(src, normalizedPath, soyCompilerFileReader));
+        SourceFilePath filePath = SourceFilePath.create(logicalPath, src.getPath());
+        sfsBuilder.add(cache.createFileSupplier(src, filePath, soyCompilerFileReader));
       } catch (FileNotFoundException fnfe) {
         throw new CommandLineError(
             "File: " + src.getPath() + " passed to --srcs does not exist", fnfe);

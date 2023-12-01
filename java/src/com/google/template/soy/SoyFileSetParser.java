@@ -16,10 +16,10 @@
 
 package com.google.template.soy;
 
-
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.base.internal.FixedIdGenerator;
 import com.google.template.soy.base.internal.IdGenerator;
@@ -89,7 +89,7 @@ public abstract class SoyFileSetParser {
     public final CssRegistry cssRegistry() {
       return cssRegistry;
     }
-    
+
     public final boolean hasRegistry() {
       return registry.isPresent();
     }
@@ -169,7 +169,8 @@ public abstract class SoyFileSetParser {
     FixedIdGenerator fixedIdGenerator = new FixedIdGenerator(-1);
     for (SoyFileSupplier fileSupplier : soyFileSuppliers().values()) {
       SoyFileSupplier.Version version = fileSupplier.getVersion();
-      SoyFileNode node = cache() != null ? cache().get(fileSupplier.getFilePath(), version) : null;
+      SoyFileNode node =
+          cache() != null ? cache().get(fileSupplier.getFilePath().asLogicalPath(), version) : null;
       if (node == null) {
         node = parseSoyFileHelper(fileSupplier, fixedIdGenerator);
         // TODO(b/19269289): implement error recovery and keep on trucking in order to display
@@ -183,7 +184,7 @@ public abstract class SoyFileSetParser {
         passManager().runParsePasses(node, fixedIdGenerator);
         // Run passes that check the tree.
         if (cache() != null) {
-          cache().put(fileSupplier.getFilePath(), version, node);
+          cache().put(fileSupplier.getFilePath().asLogicalPath(), version, node);
         }
       }
       // Make a copy here and assign ids.
@@ -232,7 +233,10 @@ public abstract class SoyFileSetParser {
       // Currently the only parameters are the id generator, the file, and the errorReporter.
       // This ensures that the file be cached without worrying about other compiler inputs.
       return new SoyFileParser(
-              nodeIdGen, soyFileReader, SourceLogicalPath.create(filePath), errorReporter())
+              nodeIdGen,
+              soyFileReader,
+              SourceFilePath.create(filePath, soyFileSupplier.getFilePath().realPath()),
+              errorReporter())
           .parseSoyFile();
     }
   }

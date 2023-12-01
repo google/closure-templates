@@ -26,8 +26,8 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
+import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.base.internal.TemplateContentKind;
@@ -248,10 +248,11 @@ final class CheckTemplateCallsPass implements CompilerFileSetPass {
           errorReporter.report(
               node.getSourceLocation(), NO_DEFAULT_DELTEMPLATE, node.getDelCalleeName());
         } else {
-          SourceLogicalPath defaultLocation = defaultImpl.get(0).getSourceLocation().getFilePath();
+          SourceFilePath defaultLocation = defaultImpl.get(0).getSourceLocation().getFilePath();
           if (!defaultLocation.equals(file.getSourceLocation().getFilePath())
               && SoyTreeUtils.getAllNodesOfType(file, ImportNode.class).stream()
-                  .noneMatch(imp -> imp.getSourceFilePath().equals(defaultLocation))) {
+                  .noneMatch(
+                      imp -> imp.getSourceFilePath().equals(defaultLocation.asLogicalPath()))) {
             errorReporter.report(
                 node.getSourceLocation(),
                 NO_IMPORT_DEFAULT_DELTEMPLATE,

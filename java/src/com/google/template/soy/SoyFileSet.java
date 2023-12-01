@@ -31,6 +31,7 @@ import com.google.common.io.CharSource;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.protobuf.Descriptors.GenericDescriptor;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
+import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.SoyFileSupplier;
@@ -366,7 +367,7 @@ public final class SoyFileSet {
     @CanIgnoreReturnValue
     public Builder add(CharSource contentSource, String filePath) {
       return addFile(
-          SoyFileSupplier.Factory.create(contentSource, SourceLogicalPath.create(filePath)));
+          SoyFileSupplier.Factory.create(contentSource, SourceFilePath.create(filePath, filePath)));
     }
 
     /**
@@ -380,7 +381,8 @@ public final class SoyFileSet {
     @CanIgnoreReturnValue
     public Builder add(URL inputFileUrl, String filePath) {
       return addFile(
-          SoyFileSupplier.Factory.create(inputFileUrl, SourceLogicalPath.create(filePath)));
+          SoyFileSupplier.Factory.create(
+              inputFileUrl, SourceFilePath.create(filePath, inputFileUrl.toString())));
     }
 
     /**
@@ -413,7 +415,8 @@ public final class SoyFileSet {
      */
     @CanIgnoreReturnValue
     public Builder add(CharSequence content, String filePath) {
-      return addFile(SoyFileSupplier.Factory.create(content, SourceLogicalPath.create(filePath)));
+      return addFile(
+          SoyFileSupplier.Factory.create(content, SourceFilePath.create(filePath, filePath)));
     }
 
     /**
@@ -432,7 +435,7 @@ public final class SoyFileSet {
      */
     @CanIgnoreReturnValue
     public SoyFileSupplier clobberFile(SoyFileSupplier contents) {
-      SoyFileSupplier previous = filesBuilder.put(contents.getFilePath(), contents);
+      SoyFileSupplier previous = filesBuilder.put(contents.getFilePath().asLogicalPath(), contents);
       return Preconditions.checkNotNull(previous);
     }
 
@@ -542,7 +545,7 @@ public final class SoyFileSet {
 
     @CanIgnoreReturnValue
     private Builder addFile(SoyFileSupplier supplier) {
-      SoyFileSupplier previous = filesBuilder.put(supplier.getFilePath(), supplier);
+      SoyFileSupplier previous = filesBuilder.put(supplier.getFilePath().asLogicalPath(), supplier);
       if (previous != null) {
         throw new IllegalArgumentException("Duplicate path " + supplier.getFilePath());
       }

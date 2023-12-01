@@ -107,7 +107,7 @@ public final class BaseTofu implements SoyTofu {
         ImmutableTable.builder();
     for (SoyFileNode fileNode : fileSet.getChildren()) {
       for (ConstNode constNode : fileNode.getConstants()) {
-        constants.put(fileNode.getFilePath(), constNode.getVar().name(), constNode);
+        constants.put(fileNode.getFilePath().asLogicalPath(), constNode.getVar().name(), constNode);
       }
       ListMultimap<String, ExternNode> externMap = ArrayListMultimap.create();
       for (ExternNode externNode : fileNode.getExterns()) {
@@ -115,7 +115,9 @@ public final class BaseTofu implements SoyTofu {
       }
       for (String externName : externMap.keySet()) {
         externs.put(
-            fileNode.getFilePath(), externName, ImmutableList.copyOf(externMap.get(externName)));
+            fileNode.getFilePath().asLogicalPath(),
+            externName,
+            ImmutableList.copyOf(externMap.get(externName)));
       }
       for (TemplateNode template : fileNode.getTemplates()) {
         if (template instanceof TemplateDelegateNode) {

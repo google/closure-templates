@@ -18,7 +18,6 @@ package com.google.template.soy.base;
 import static com.google.common.base.Preconditions.checkArgument;
 
 import com.google.auto.value.AutoValue;
-import com.google.common.base.CharMatcher;
 import com.google.errorprone.annotations.Immutable;
 
 /**
@@ -40,17 +39,13 @@ public abstract class SourceLogicalPath implements Comparable<SourceLogicalPath>
 
   public abstract String path();
 
-  public final String fileName() {
-    String path = path();
-    int lastSlashIndex = CharMatcher.anyOf("/\\").lastIndexIn(path);
-    if (lastSlashIndex != -1 && lastSlashIndex != path.length() - 1) {
-      return path.substring(lastSlashIndex + 1);
-    }
-    return path;
-  }
-
   @Override
   public int compareTo(SourceLogicalPath o) {
     return this.path().compareTo(o.path());
+  }
+
+  @Override
+  public final String toString() {
+    return path();
   }
 }

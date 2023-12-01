@@ -30,6 +30,7 @@ import com.google.protobuf.Descriptors.FileDescriptor;
 import com.google.protobuf.Descriptors.GenericDescriptor;
 import com.google.template.soy.SoyFileSetParser;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
+import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.SoyFileSupplier;
@@ -172,7 +173,7 @@ public final class SoyFileSetParserBuilder {
   private SoyFileSetParserBuilder(Iterable<SoyFileSupplier> suppliers) {
     ImmutableMap.Builder<SourceLogicalPath, SoyFileSupplier> builder = ImmutableMap.builder();
     for (SoyFileSupplier supplier : suppliers) {
-      builder.put(supplier.getFilePath(), supplier);
+      builder.put(supplier.getFilePath().asLogicalPath(), supplier);
     }
     this.soyFileSuppliers = builder.build();
     this.scopedData = new SoySimpleScope();
@@ -358,7 +359,7 @@ public final class SoyFileSetParserBuilder {
     return this;
   }
 
-  public static final SourceLogicalPath FILE_PATH = SourceLogicalPath.create("no-path");
+  public static final SourceFilePath FILE_PATH = SourceFilePath.create("no-path", "no-path");
 
   private static List<SoyFileSupplier> buildTestSoyFileSuppliers(String... soyFileContents) {
 
@@ -366,8 +367,11 @@ public final class SoyFileSetParserBuilder {
     for (int i = 0; i < soyFileContents.length; i++) {
       String soyFileContent = soyFileContents[i];
       // Names are now required to be unique in a SoyFileSet. Use one-based indexing.
-      SourceLogicalPath filePath =
-          i == 0 ? FILE_PATH : SourceLogicalPath.create(FILE_PATH.path() + "-" + (i + 1));
+      SourceFilePath filePath =
+          i == 0
+              ? FILE_PATH
+              : SourceFilePath.create(
+                  FILE_PATH.path() + "-" + (i + 1), FILE_PATH.path() + "-" + (i + 1));
       soyFileSuppliers.add(SoyFileSupplier.Factory.create(soyFileContent, filePath));
     }
     return soyFileSuppliers;

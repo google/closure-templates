@@ -134,7 +134,7 @@ final class ErrorReporterImpl extends ErrorReporter {
           Optional
               // Sometimes we report errors against things like plugins, in which case we won't have
               // a file.
-              .ofNullable(filePathsToSuppliers.get(location.getFilePath()))
+              .ofNullable(filePathsToSuppliers.get(location.getFilePath().asLogicalPath()))
               .flatMap(supplier -> snippetPrinter.getSnippet(supplier, location));
       return SoyError.create(location, kind, kind.format(args), snippet, isWarning);
     }

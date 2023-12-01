@@ -28,7 +28,7 @@ import com.google.common.collect.ImmutableTable;
 import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.AbstractFuture;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
-import com.google.template.soy.base.SourceLogicalPath;
+import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SanitizedContent;
@@ -1091,14 +1091,10 @@ public class RenderVisitorTest {
 
     ParseResult parseResult =
         SoyFileSetParserBuilder.forSuppliers(
-                SoyFileSupplier.Factory.create(
-                    soyFileContent1, SourceLogicalPath.create("ns1.soy")),
-                SoyFileSupplier.Factory.create(
-                    soyFileContent2, SourceLogicalPath.create("ns2.soy")),
-                SoyFileSupplier.Factory.create(
-                    soyFileContent3, SourceLogicalPath.create("ns3.soy")),
-                SoyFileSupplier.Factory.create(
-                    soyFileContent4, SourceLogicalPath.create("ns4.soy")))
+                SoyFileSupplier.Factory.create(soyFileContent1, SourceFilePath.forTest("ns1.soy")),
+                SoyFileSupplier.Factory.create(soyFileContent2, SourceFilePath.forTest("ns2.soy")),
+                SoyFileSupplier.Factory.create(soyFileContent3, SourceFilePath.forTest("ns3.soy")),
+                SoyFileSupplier.Factory.create(soyFileContent4, SourceFilePath.forTest("ns4.soy")))
             .errorReporter(FAIL)
             .parse();
     ParamStore data = SoyValueConverterUtility.newParams();
@@ -1240,12 +1236,9 @@ public class RenderVisitorTest {
     SoyGeneralOptions options = new SoyGeneralOptions();
     ParseResult result =
         SoyFileSetParserBuilder.forSuppliers(
-                SoyFileSupplier.Factory.create(
-                    soyFileContent1, SourceLogicalPath.create("ns1.soy")),
-                SoyFileSupplier.Factory.create(
-                    soyFileContent2, SourceLogicalPath.create("ns2.soy")),
-                SoyFileSupplier.Factory.create(
-                    soyFileContent3, SourceLogicalPath.create("ns3.soy")))
+                SoyFileSupplier.Factory.create(soyFileContent1, SourceFilePath.forTest("ns1.soy")),
+                SoyFileSupplier.Factory.create(soyFileContent2, SourceFilePath.forTest("ns2.soy")),
+                SoyFileSupplier.Factory.create(soyFileContent3, SourceFilePath.forTest("ns3.soy")))
             .options(options)
             .runOptimizer(true)
             .errorReporter(FAIL)

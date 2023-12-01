@@ -23,7 +23,7 @@ import static com.google.common.truth.Truth.assertWithMessage;
 import com.google.common.base.Joiner;
 import com.google.common.collect.Iterables;
 import com.google.common.truth.StringSubject;
-import com.google.template.soy.base.SourceLogicalPath;
+import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.internal.IncrementingIdGenerator;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
@@ -786,7 +786,7 @@ public final class HtmlRewriterTest {
         new SoyFileParser(
                 new IncrementingIdGenerator(),
                 new StringReader(soyFile),
-                SourceLogicalPath.create("test.soy"),
+                SourceFilePath.forTest("test.soy"),
                 errorReporter)
             .parseSoyFile();
     if (node != null) {

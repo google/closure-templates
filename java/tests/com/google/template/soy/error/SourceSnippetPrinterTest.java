@@ -20,9 +20,9 @@ import static com.google.common.truth.Truth8.assertThat;
 import static org.junit.Assert.assertThrows;
 
 import com.google.common.base.Joiner;
+import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SourceLocation.Point;
-import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.base.internal.SoyFileSupplier;
 import org.junit.Before;
 import org.junit.Test;
@@ -33,8 +33,7 @@ import org.junit.runners.JUnit4;
 public final class SourceSnippetPrinterTest {
   private static final Joiner JOINER = Joiner.on('\n');
 
-  private static final SourceLogicalPath SOY_FILE_PATH =
-      SourceLogicalPath.create("/example/file.soy");
+  private static final SourceFilePath SOY_FILE_PATH = SourceFilePath.forTest("/example/file.soy");
 
   /**
    * Fake file content to be used by the SourceSnippetPrinter. This is not a valid soy file content,

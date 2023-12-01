@@ -48,6 +48,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Table;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
+import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.base.internal.BaseUtils;
@@ -2003,7 +2004,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
         return resolvedSignature;
       }
       ImmutableList.Builder<SoyType> paramTypes = ImmutableList.builder();
-      SourceLogicalPath classFilePath = SourceLogicalPath.create(className);
+      SourceFilePath classFilePath = SourceFilePath.create(className, className);
       for (String paramTypeString : signature.parameterTypes()) {
         TypeNode paramType = SoyFileParser.parseType(paramTypeString, classFilePath, errorReporter);
         if (paramType == null) {
@@ -2101,7 +2102,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
             node.setSoyFunction(FunctionNode.UNRESOLVED);
           } else {
             String functionName = ((VarRefNode) node.getNameExpr()).getName();
-            SourceLogicalPath filePath = currentFile.getFilePath();
+            SourceLogicalPath filePath = currentFile.getFilePath().asLogicalPath();
             VarDefn defn = ((VarRefNode) node.getNameExpr()).getDefnDecl();
             if (defn.kind() == VarDefn.Kind.IMPORT_VAR) {
               filePath = ((ImportedVar) defn).getSourceFilePath();
@@ -3098,8 +3099,9 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
                             function -> {
                               SoyMethodSignature methodSig =
                                   function.getClass().getAnnotation(SoyMethodSignature.class);
-                              SourceLogicalPath fakeFunctionPath =
-                                  SourceLogicalPath.create(function.getClass().getName());
+                              SourceFilePath fakeFunctionPath =
+                                  SourceFilePath.create(
+                                      function.getClass().getName(), function.getClass().getName());
                               SoyType baseType = parseType(methodSig.baseType(), fakeFunctionPath);
                               return Arrays.stream(methodSig.value())
                                   .map(
@@ -3154,7 +3156,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
     }
   }
 
-  private SoyType parseType(String t, SourceLogicalPath path) {
+  private SoyType parseType(String t, SourceFilePath path) {
     TypeNode typeNode = SoyFileParser.parseType(t, path, errorReporter);
     return typeNode != null
         ? pluginTypeConverter.getOrCreateType(typeNode)
@@ -3175,8 +3177,9 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
                             f -> {
                               SoyFieldSignature fieldSig =
                                   f.getClass().getAnnotation(SoyFieldSignature.class);
-                              SourceLogicalPath fakeFunctionPath =
-                                  SourceLogicalPath.create(f.getClass().getName());
+                              SourceFilePath fakeFunctionPath =
+                                  SourceFilePath.create(
+                                      f.getClass().getName(), f.getClass().getName());
                               SoyType baseType = parseType(fieldSig.baseType(), fakeFunctionPath);
                               SoyType returnType =
                                   parseType(fieldSig.returnType(), fakeFunctionPath);
@@ -3235,7 +3238,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
 
     void put(ConstNode node) {
       SoyFileNode file = node.getNearestAncestor(SoyFileNode.class);
-      sources.put(file.getFilePath(), node.getVar().name(), node);
+      sources.put(file.getFilePath().asLogicalPath(), node.getVar().name(), node);
     }
   }
 
@@ -3266,7 +3269,8 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
     }
 
     void put(ExternNode node) {
-      SourceLogicalPath path = node.getNearestAncestor(SoyFileNode.class).getFilePath();
+      SourceLogicalPath path =
+          node.getNearestAncestor(SoyFileNode.class).getFilePath().asLogicalPath();
       String name = node.getVar().name();
       List<ExternNode> nodes = sources.get(path, name);
       if (nodes != null) {
