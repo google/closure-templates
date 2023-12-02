@@ -435,8 +435,9 @@ public final class TypeNodeConverter
       if ((parameter.required() && SoyTypes.isNullable(newParameter.getType()))
           || (!parameter.required()
               && !newParameter.getType().isAssignableFromStrict(NullType.getInstance()))) {
-        errorReporter.warn(
-            parameter.type().sourceLocation(), OPTIONAL_TEMPLATE_TYPE_PARAM_MUST_BE_NULLABLE);
+        errorReporter.report(
+            parameter.nameLocation().extend(parameter.type().sourceLocation()),
+            OPTIONAL_TEMPLATE_TYPE_PARAM_MUST_BE_NULLABLE);
       }
       TemplateType.Parameter oldParameter = map.put(parameter.name(), newParameter);
       if (oldParameter != null) {

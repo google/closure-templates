@@ -454,10 +454,9 @@ public abstract class TemplateType extends SoyType {
           return false;
         }
       } else {
-        // TODO(b/313440793): Uncomment. Temporarily disabled while adding ? to existing types.
-        // if (srcParam.isRequired() && !thisParam.isRequired()) {
-        //   return false;
-        // }
+        if (srcParam.isRequired() && !thisParam.isRequired()) {
+          return false;
+        }
 
         // Check that each argument of the source type is assignable FROM the corresponding
         // argument of this type. This is because the parameter types are constraints; assignability

@@ -49,9 +49,9 @@ public class TemplateTypeTest {
     assertThatSoyType("() => html").isAssignableFromStrict("() => html");
 
     // disjoint params
-    assertThatSoyType("() => html").isAssignableFromStrict("(p?: string) => html");
+    assertThatSoyType("() => html").isAssignableFromStrict("(p?: string|null) => html");
     assertThatSoyType("() => html").isNotAssignableFromStrict("(p: string) => html");
-    assertThatSoyType("(p?: string) => html").isNotAssignableFromStrict("() => html");
+    assertThatSoyType("(p?: string|null) => html").isNotAssignableFromStrict("() => html");
     assertThatSoyType("(p: string) => html").isNotAssignableFromStrict("() => html");
 
     // param types mismatch
@@ -63,13 +63,12 @@ public class TemplateTypeTest {
 
     // expanded unions
     assertThatSoyType("(p: int) => html").isAssignableFromStrict("(p: int|string) => html");
-    assertThatSoyType("(p: int) => html").isAssignableFromStrict("(p: int|null) => html");
+    assertThatSoyType("(p: int) => html").isAssignableFromStrict("(p?: int|null) => html");
     assertThatSoyType("(p: int) => html").isAssignableFromStrict("(p?: int|null) => html");
 
     // optional
-    assertThatSoyType("(p: int) => html").isAssignableFromStrict("(p?: int) => html");
-    assertThatSoyType("(p?: int) => html").isAssignableFromStrict("(p?: int) => html");
-    assertThatSoyType("(p?: int) => html")
-        .isAssignableFromStrict("(p: int) => html"); // TODO(b/313440793): Revert
+    assertThatSoyType("(p: int) => html").isAssignableFromStrict("(p?: int|null) => html");
+    assertThatSoyType("(p?: int|null) => html").isAssignableFromStrict("(p?: int|null) => html");
+    assertThatSoyType("(p?: int|null) => html").isNotAssignableFromStrict("(p: int) => html");
   }
 }
