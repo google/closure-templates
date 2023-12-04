@@ -464,8 +464,8 @@ function isTruthy(expr: unknown): boolean {
   return true;
 }
 
-function emptyToNull<T>(expr: T): T | null {
-  return isTruthy(expr) ? expr : null;
+function emptyToNull<T>(expr: T): T | undefined {
+  return isTruthy(expr) ? expr : undefined;
 }
 
 let uidCounter = 0;
