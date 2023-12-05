@@ -366,6 +366,8 @@ class ValidateExternsPass implements CompilerFilePass {
       ImmutableSet.<SoyType.Kind>builder()
           .addAll(ALLOWED_UNION_MEMBERS)
           .add(SoyType.Kind.CSS)
+          .add(SoyType.Kind.ANY)
+          .add(SoyType.Kind.UNKNOWN)
           .build();
 
   private static boolean typesAreCompatible(
