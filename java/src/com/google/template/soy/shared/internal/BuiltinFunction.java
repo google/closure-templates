@@ -55,6 +55,7 @@ public enum BuiltinFunction implements SoyFunction {
   UNDEFINED_TO_NULL("undefinedToNullForMigration"),
   UNDEFINED_TO_NULL_SSR("undefinedToNullForSsrMigration"),
   BOOLEAN("Boolean"),
+  IS_EMPTY("isEmpty"),
   ;
 
   /** The function name. */
@@ -92,6 +93,7 @@ public enum BuiltinFunction implements SoyFunction {
       case UNDEFINED_TO_NULL:
       case UNDEFINED_TO_NULL_SSR:
       case BOOLEAN:
+      case IS_EMPTY:
         return ImmutableSet.of(1);
       case PROTO_INIT:
         throw new UnsupportedOperationException();
@@ -121,6 +123,7 @@ public enum BuiltinFunction implements SoyFunction {
       case UNDEFINED_TO_NULL:
       case UNDEFINED_TO_NULL_SSR:
       case BOOLEAN:
+      case IS_EMPTY:
         return true;
       case CSS: // implicitly depends on a renaming map or js compiler flag
       case EVAL_TOGGLE:

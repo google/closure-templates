@@ -464,6 +464,10 @@ function isTruthy(expr: unknown): boolean {
   return true;
 }
 
+function isEmpty(expr: unknown): boolean {
+  return !isTruthy(expr);
+}
+
 function emptyToNull<T>(expr: T): T | undefined {
   return isTruthy(expr) ? expr : undefined;
 }
@@ -572,6 +576,7 @@ export {
   defaultIdomRenderer as $$defaultIdomRenderer,
   emptyToNull as $$emptyToNull,
   htmlToString as $$htmlToString,
+  isEmpty as $$isEmpty,
   isIdom as $$isIdom,
   isTruthy as $$isTruthy,
   makeAttributes as $$makeAttributes,

@@ -647,6 +647,10 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
         return NONE;
       case BOOLEAN:
         return new PyFunctionExprBuilder("bool").addArg(visit(node.getParam(0))).asPyExpr();
+      case IS_EMPTY:
+        return new PyFunctionExprBuilder("not")
+            .addArg(new PyFunctionExprBuilder("bool").addArg(visit(node.getParam(0))).asPyExpr())
+            .asPyExpr();
       case MSG_WITH_ID:
       case REMAINDER:
         // should have been removed earlier in the compiler
