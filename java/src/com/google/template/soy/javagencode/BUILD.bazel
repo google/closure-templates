@@ -28,7 +28,6 @@ java_library(
         "//java/src/com/google/template/soy/exprtree",
         "//java/src/com/google/template/soy/javagencode/javatypes",
         "//java/src/com/google/template/soy/passes",
-        "//java/src/com/google/template/soy/shared:kythe",
         "//java/src/com/google/template/soy/shared/internal:builtin_function",
         "//java/src/com/google/template/soy/shared/internal/gencode",
         "//java/src/com/google/template/soy/soytree",

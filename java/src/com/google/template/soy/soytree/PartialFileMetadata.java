@@ -16,13 +16,13 @@
 
 package com.google.template.soy.soytree;
 
-import com.google.template.soy.base.SourceLogicalPath;
+import com.google.template.soy.base.SourceFilePath;
 import java.util.Set;
 
 /** Metadata about a soy file that is available as soon as its AST is parsed. */
 public interface PartialFileMetadata {
 
-  SourceLogicalPath getPath();
+  SourceFilePath getPath();
 
   String getNamespace();
 

@@ -23,15 +23,11 @@ RENAMING_MAPS = [
     "SoyIdRenamingMap.java",
 ]
 
-KYTHE = [
-    "KytheVnames.java",
-]
-
 java_library(
     name = "shared",
     srcs = glob(
         ["*.java"],
-        exclude = RENAMING_MAPS + KYTHE + ["SoyCssTracker.java"],
+        exclude = RENAMING_MAPS + ["SoyCssTracker.java"],
     ),
     visibility = ["//visibility:public"],
     deps = [
@@ -55,15 +51,6 @@ java_library(
     visibility = ["//visibility:public"],
     deps = [
         "@maven//:com_google_code_findbugs_jsr305",
-    ],
-)
-
-java_library(
-    name = "kythe",
-    srcs = KYTHE,
-    deps = [
-        "//java/src/com/google/template/soy/base",
-        "//java/src/com/google/template/soy/soytree",
     ],
 )
 

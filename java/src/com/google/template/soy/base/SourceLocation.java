@@ -185,8 +185,8 @@ public final class SourceLocation implements Comparable<SourceLocation> {
   public String toString() {
     String lineColumnString = toLineColumnString();
     return (lineColumnString == null)
-        ? filePath.path()
-        : String.format("%s:%s", filePath.path(), lineColumnString);
+        ? filePath.realPath()
+        : String.format("%s:%s", filePath.realPath(), lineColumnString);
   }
 
   /**
