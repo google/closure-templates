@@ -194,7 +194,7 @@ public final class Metadata {
                       .forEach(
                           f ->
                               builder.put(
-                                  SourceLogicalPath.create(f.getFilePath()),
+                                  SourceFilePath.create(f).asLogicalPath(),
                                   new AutoValue_Metadata_DepsFileMetadata(
                                       f, u.fileKind(), context()))));
       return builder.buildOrThrow();
@@ -251,7 +251,7 @@ public final class Metadata {
     public AstPartialFileSetMetadata(PartialFileSetMetadata deps, List<SoyFileNode> ast) {
       Map<SourceLogicalPath, PartialFileMetadata> fullFileIndexBuilder = new LinkedHashMap<>();
       for (PartialFileMetadata depFile : deps.getAllPartialFiles()) {
-        fullFileIndexBuilder.put(depFile.getPath(), depFile);
+        fullFileIndexBuilder.put(depFile.getPath().asLogicalPath(), depFile);
       }
       ast.forEach(
           f ->
@@ -287,7 +287,7 @@ public final class Metadata {
 
       Map<SourceLogicalPath, FileMetadata> fullFileIndexBuilder = new LinkedHashMap<>();
       for (FileMetadata depFile : deps.getAllFiles()) {
-        fullFileIndexBuilder.put(depFile.getPath(), depFile);
+        fullFileIndexBuilder.put(depFile.getPath().asLogicalPath(), depFile);
       }
       ast.forEach(
           f -> {
@@ -426,8 +426,8 @@ public final class Metadata {
 
     @Override
     @Memoized
-    public SourceLogicalPath getPath() {
-      return SourceLogicalPath.create(proto().getFilePath());
+    public SourceFilePath getPath() {
+      return SourceFilePath.create(proto());
     }
 
     @Memoized
@@ -443,7 +443,7 @@ public final class Metadata {
                           TemplateMetadataSerializer.fromProto(
                               c.getType(),
                               context().typeRegistry(),
-                              SourceFilePath.create(getPath()),
+                              getPath(),
                               context().errorReporter())),
                   (t1, t2) -> t1) /* Will be reported as error elsewhere. */);
     }
@@ -459,7 +459,7 @@ public final class Metadata {
                       t,
                       kind(),
                       context().typeRegistry(),
-                      SourceFilePath.create(getPath()),
+                      getPath(),
                       context().errorReporter()))
           .collect(toImmutableList());
     }
@@ -478,7 +478,7 @@ public final class Metadata {
                               TemplateMetadataSerializer.fromProto(
                                   SoyTypeP.newBuilder().setFunction(e.getSignature()).build(),
                                   context().typeRegistry(),
-                                  SourceFilePath.create(getPath()),
+                                  getPath(),
                                   context().errorReporter()))));
     }
 
@@ -538,8 +538,8 @@ public final class Metadata {
     }
 
     @Override
-    public SourceLogicalPath getPath() {
-      return path.asLogicalPath();
+    public SourceFilePath getPath() {
+      return path;
     }
 
     @Override
@@ -632,8 +632,8 @@ public final class Metadata {
     }
 
     @Override
-    public SourceLogicalPath getPath() {
-      return path.asLogicalPath();
+    public SourceFilePath getPath() {
+      return path;
     }
 
     @Override
@@ -725,7 +725,7 @@ public final class Metadata {
     }
 
     @Override
-    public SourceLogicalPath getPath() {
+    public SourceFilePath getPath() {
       return primary.getPath();
     }
 

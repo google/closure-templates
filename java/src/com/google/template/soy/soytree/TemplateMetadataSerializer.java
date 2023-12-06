@@ -89,7 +89,8 @@ public final class TemplateMetadataSerializer {
           SoyFileP.newBuilder()
               .setNamespace(file.getNamespace())
               .setModName(Strings.nullToEmpty(file.getModName()))
-              .setFilePath(file.getFilePath().path());
+              .setFilePath(file.getFilePath().path())
+              .setFileRoot(file.getFilePath().getRoot());
       file.getConstants().stream()
           .filter(ConstNode::isExported)
           .forEach(c -> fileBuilder.addConstants(protoFromConstant(c)));
@@ -123,7 +124,7 @@ public final class TemplateMetadataSerializer {
             new SourceLocation(headerFilePath),
             UNABLE_TO_PARSE_TEMPLATE_HEADER,
             templateProto.getTemplateName(),
-            fileProto.getFilePath(),
+            SourceFilePath.getRealPath(fileProto),
             iae.getMessage());
       }
     }
@@ -253,9 +254,7 @@ public final class TemplateMetadataSerializer {
                 .setLegacyDeltemplateNamespace(
                     templateProto.getTemplateType().getLegacyDeltemplateNamespace())
                 .build())
-        .setSourceLocation(
-            new SourceLocation(
-                SourceFilePath.create(fileProto.getFilePath(), fileProto.getFilePath())))
+        .setSourceLocation(new SourceLocation(SourceFilePath.create(fileProto)))
         .setVisibility(VISIBILITY_CONVERTER.convert(templateProto.getVisibility()))
         .setComponent(templateProto.getComponent())
         .build();

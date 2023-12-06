@@ -21,6 +21,7 @@ import com.google.auto.value.AutoValue;
 import com.google.auto.value.extension.memoized.Memoized;
 import com.google.common.base.CharMatcher;
 import com.google.errorprone.annotations.Immutable;
+import com.google.template.soy.soytree.SoyFileP;
 
 /** Representation of a path in the Soy compiler. */
 @Immutable
@@ -41,6 +42,16 @@ public abstract class SourceFilePath implements Comparable<SourceFilePath> {
     return create(path.path(), path.path());
   }
 
+  public static SourceFilePath create(SoyFileP fileP) {
+    return create(fileP.getFilePath(), getRealPath(fileP));
+  }
+
+  public static String getRealPath(SoyFileP fileP) {
+    String path = fileP.getFilePath();
+    String root = fileP.getFileRoot();
+    return root.isEmpty() ? path : root + "/" + path;
+  }
+
   /** Single-arg convenience factory for testing. */
   public static SourceFilePath forTest(String path) {
     return create(path, path);
@@ -53,6 +64,14 @@ public abstract class SourceFilePath implements Comparable<SourceFilePath> {
 
   /** The "real" path, e.g. including bin/genfiles prefix. */
   public abstract String realPath();
+
+  public String getRoot() {
+    int diff = realPath().length() - path().length();
+    if (diff < 1 || !realPath().endsWith("/" + path())) {
+      return "";
+    }
+    return realPath().substring(0, diff - 1);
+  }
 
   @Memoized
   public SourceLogicalPath asLogicalPath() {
