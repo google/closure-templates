@@ -2369,7 +2369,8 @@ const $$bidiSpanWrap = function(bidiGlobalDir, text) {
   // SanitizedContentOperator, but this does not mean that the input has to be
   // HTML SanitizedContent.
   const html = htmlSafeByReview(
-      String(text), 'Soy |bidiSpanWrap is applied on an autoescaped text.');
+      String(text),
+      {justification: 'Soy |bidiSpanWrap is applied on an autoescaped text.'});
   const dir = $$bidiTextDir(text, /** isHtml= */ true);
   const wrappedHtml = formatter.spanWrapSafeHtmlWithKnownDir(dir, html);
 

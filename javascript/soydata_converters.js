@@ -76,7 +76,7 @@ exports.packSanitizedCssToSafeStyleProtoSoyRuntimeOnly = function(
       sanitizedCss ?
           /** @type {!SanitizedCss} */ (sanitizedCss).getContent() :
           '',
-      'from Soy SanitizedCss object');
+      {justification: 'from Soy SanitizedCss object'});
   return styleToProto(safeStyle);
 };
 
@@ -111,7 +111,7 @@ exports.packSanitizedCssToSafeStyleSheetProtoSoyRuntimeOnly = function(
       sanitizedCss ?
           /** @type {!SanitizedCss} */ (sanitizedCss).getContent() :
           '',
-      'from Soy SanitizedCss object');
+      {justification: 'from Soy SanitizedCss object'});
   return styleSheetToProto(safeStyleSheet);
 };
 
@@ -131,7 +131,8 @@ exports.packSanitizedHtmlToProtoSoyRuntimeOnly = function(sanitizedHtml) {
   const content = sanitizedHtml ?
       /** @type {!SanitizedHtml} */ (sanitizedHtml).getContent() :
       '';
-  const safeHtml = htmlSafeByReview(content, 'from Soy SanitizedHtml object');
+  const safeHtml = htmlSafeByReview(
+      content, {justification: 'from Soy SanitizedHtml object'});
   return htmlToProto(safeHtml);
 };
 
@@ -148,7 +149,7 @@ exports.packSanitizedJsToProtoSoyRuntimeOnly = function(sanitizedJs) {
   }
   const safeScript = scriptSafeByReview(
       sanitizedJs ? /** @type {!SanitizedJs} */ (sanitizedJs).getContent() : '',
-      'from Soy SanitizedJs object');
+      {justification: 'from Soy SanitizedJs object'});
   return scriptToProto(safeScript);
 };
 
@@ -174,7 +175,7 @@ exports.packSanitizedTrustedResourceUriToProtoSoyRuntimeOnly = function(
               sanitizedTrustedResourceUri)
               .getContent() :
           '',
-      'from Soy SanitizedTrustedResourceUri object');
+      {justification: 'from Soy SanitizedTrustedResourceUri object'});
   return resourceUrlToProto(trustedResourceUrl);
 };
 
@@ -195,14 +196,14 @@ exports.packSanitizedUriToProtoSoyRuntimeOnly = function(sanitizedUri) {
         sanitizedUri ?
             /** @type {!Uri} */ (sanitizedUri).toString() :
             '',
-        'from Soy Uri object');
+        {justification: 'from Soy Uri object'});
     return urlToProto(safeUrlForUri);
   }
   const safeUrl = urlSafeByReview(
       sanitizedUri ?
           /** @type {!SanitizedUri} */ (sanitizedUri).getContent() :
           '',
-      'from Soy SanitizedUri object');
+      {justification: 'from Soy SanitizedUri object'});
   return urlToProto(safeUrl);
 };
 
