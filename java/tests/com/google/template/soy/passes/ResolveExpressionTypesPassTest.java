@@ -295,12 +295,12 @@ public final class ResolveExpressionTypesPassTest {
         "{@param pa: ?}",
         "{@param pi: int}",
         "{@param pf: float}",
-        "{assertType('bool', $pa and $pa)}",
-        "{assertType('bool', $pi and $pi)}",
-        "{assertType('bool', $pf and $pf)}",
-        "{assertType('bool', $pa or $pa)}",
-        "{assertType('bool', $pi or $pi)}",
-        "{assertType('bool', $pf or $pf)}",
+        "{assertType('?', $pa && $pa)}",
+        "{assertType('int', $pi && $pi)}",
+        "{assertType('float', $pf && $pf)}",
+        "{assertType('?', $pa || $pa)}",
+        "{assertType('int', $pi || $pi)}",
+        "{assertType('float', $pf || $pf)}",
         "{assertType('bool', not $pa)}",
         "{assertType('bool', not $pi)}",
         "{assertType('bool', not $pf)}");
@@ -435,12 +435,12 @@ public final class ResolveExpressionTypesPassTest {
     assertTypes(
         "{@param? pa: bool|null}",
         "{@param pb: bool}",
-        "{if $pa == null or $pb}",
+        "{if $pa == null || $pb}",
         "  {assertType('bool|null', $pa)}", // #3 don't know
         "{else}",
         "  {assertType('bool', $pa)}", // #4 must be non-null
         "{/if}",
-        "{if $pa == null and $pb}",
+        "{if $pa == null && $pb}",
         "  {assertType('null', $pa)}", // #5 must be null
         "{else}",
         "  {assertType('bool|null', $pa)}", // #6 don't know
@@ -457,7 +457,7 @@ public final class ResolveExpressionTypesPassTest {
         "{if $pa}", // Implicit != null
         "  {assertType('bool', $pa)}", // #9 must be non-null
         "{/if}",
-        "{if $pa and $pb}", // Implicit != null
+        "{if $pa && $pb}", // Implicit != null
         "  {assertType('bool', $pa)}", // #10 must be non-null
         "{/if}");
     assertTypes(
@@ -496,7 +496,7 @@ public final class ResolveExpressionTypesPassTest {
     assertTypes(
         "{@param? pa: bool|null}",
         "{@param pb: bool}",
-        "{if $pb or $pa == null}",
+        "{if $pb || $pa == null}",
         "  {assertType('bool|null', $pa)}", // #18 don't know
         "{else}",
         "  {assertType('bool', $pa)}", // #19 must be non-null
@@ -505,7 +505,7 @@ public final class ResolveExpressionTypesPassTest {
         "{@param? pa: bool|null}",
         "{@param pb: bool}",
         "{let $null: null /}",
-        "{if $null == null or $null != null}",
+        "{if $null == null || $null != null}",
         "  {assertType('null', $null)}", // #20  null type
         "{/if}",
         "{if $null}",
@@ -515,7 +515,7 @@ public final class ResolveExpressionTypesPassTest {
     assertTypes(
         "{@param? pa: string|null}",
         "{@param? pb: string|null}",
-        "{if $pa != null and $pb != null}",
+        "{if $pa != null && $pb != null}",
         "  {assertType('string', $pa)}",
         "  {assertType('string', $pb)}",
         "{else}",
@@ -523,7 +523,7 @@ public final class ResolveExpressionTypesPassTest {
         "  {assertType('null|string', $pb)}",
         "{/if}",
         "",
-        "{if $pa != null or $pb != null}",
+        "{if $pa != null || $pb != null}",
         "  {assertType('null|string', $pa)}",
         "  {assertType('null|string', $pb)}",
         "{else}",
@@ -533,11 +533,11 @@ public final class ResolveExpressionTypesPassTest {
         "");
     assertTypes(
         "{@param? pa: string|null}",
-        "{if $pa != null and $pa.length > 0}",
+        "{if $pa != null && $pa.length > 0}",
         "  {assertType('string', $pa)}",
         "{/if}",
         "",
-        "{if ($pa == null or $pa.length != 1) or $pa.substring(1) == 'a'}",
+        "{if ($pa == null || $pa.length != 1) || $pa.substring(1) == 'a'}",
         "  {assertType('null|string', $pa)}",
         "{/if}",
         "");
@@ -740,7 +740,7 @@ public final class ResolveExpressionTypesPassTest {
     // Don't add |null to types for checks like this.
     assertTypes(
         "{@param s: string}",
-        "{if $s == null or $s == 'a'}",
+        "{if $s == null || $s == 'a'}",
         "  {assertType('string', $s)}",
         "{else}",
         "  {assertType('string', $s)}",
@@ -768,9 +768,9 @@ public final class ResolveExpressionTypesPassTest {
     assertTypes(
         "{@param? record: [active : bool|null]|null}",
         "{@param? selected: map<string,bool>|null}",
-        "{assertType('bool', $selected and $selected.get('a'))}",
-        "{assertType('bool', $selected == null or $selected.get('a'))}",
-        "{if ($record.active != null) and (not $record.active)}",
+        "{assertType('bool|map<string,bool>|null', $selected && $selected.get('a'))}",
+        "{assertType('bool|null', $selected == null || $selected.get('a'))}",
+        "{if ($record.active != null) && (not $record.active)}",
         "  {assertType('bool', $record.active)}",
         "{/if}",
         "");

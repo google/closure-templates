@@ -725,7 +725,7 @@ public class RenderVisitorTest {
             + "  {if ''}-{else}+{/if}\n"
             + "  {if $f ?? 0.0}\n"
             + "    Blah\n"
-            + "  {elseif $goo[2] > 2 and $ijBool}\n"
+            + "  {elseif $goo[2] > 2 && $ijBool}\n"
             + "    {$moo}\n"
             + "  {else}\n"
             + "    Blah {$moo}\n"

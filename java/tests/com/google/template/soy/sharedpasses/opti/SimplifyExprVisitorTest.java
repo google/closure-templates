@@ -49,8 +49,8 @@ public final class SimplifyExprVisitorTest {
   public void testSimplifyFullySimplifiableExpr() {
     assertThat(new ExpressionParser("-99+-111").parseForParentNode()).simplifiesTo("-210");
     assertThat(new ExpressionParser("-99 + '-111'").parseForParentNode()).simplifiesTo("-99-111");
-    assertThat(new ExpressionParser("false or 0 or 0.0 or ''").parseForParentNode())
-        .simplifiesTo("false");
+    assertThat(new ExpressionParser("false || 0 || 0.0 || ''").parseForParentNode())
+        .simplifiesTo("");
     assertThat(new ExpressionParser("0 <= 0").parseForParentNode()).simplifiesTo("true");
     assertThat(new ExpressionParser("'22' == 22").parseForParentNode()).simplifiesTo("true");
     assertThat(new ExpressionParser("'22' == '' + 22").parseForParentNode()).simplifiesTo("true");
@@ -83,7 +83,7 @@ public final class SimplifyExprVisitorTest {
     assertThat(new ExpressionParser("3 * 5 % $boo").withParam("boo", "int").parseForParentNode())
         .simplifiesTo("15 % $boo");
     assertThat(
-            new ExpressionParser("not false and not $boo")
+            new ExpressionParser("not false && not $boo")
                 .withParam("boo", "html")
                 .parseForParentNode())
         .simplifiesTo("not $boo");
@@ -350,43 +350,42 @@ public final class SimplifyExprVisitorTest {
   @Test
   public void testSimplifyBinaryLogicalOps() {
     // 'and'
-    assertThat(new ExpressionParser("true and true").parseForParentNode()).simplifiesTo("true");
-    assertThat(new ExpressionParser("true and false").parseForParentNode()).simplifiesTo("false");
-    assertThat(new ExpressionParser("false and true").parseForParentNode()).simplifiesTo("false");
-    assertThat(new ExpressionParser("false and false").parseForParentNode()).simplifiesTo("false");
-    assertThat(new ExpressionParser("true and $boo").withParam("boo", "bool").parseForParentNode())
+    assertThat(new ExpressionParser("true && true").parseForParentNode()).simplifiesTo("true");
+    assertThat(new ExpressionParser("true && false").parseForParentNode()).simplifiesTo("false");
+    assertThat(new ExpressionParser("false && true").parseForParentNode()).simplifiesTo("false");
+    assertThat(new ExpressionParser("false && false").parseForParentNode()).simplifiesTo("false");
+    assertThat(new ExpressionParser("true && $boo").withParam("boo", "bool").parseForParentNode())
         .simplifiesTo("$boo");
-    assertThat(
-            new ExpressionParser("$boo and true").withParam("boo", "number").parseForParentNode())
-        .simplifiesTo("$boo and true"); // Can't simplify
-    assertThat(new ExpressionParser("true and 1").parseForParentNode()).simplifiesTo("true");
-    assertThat(new ExpressionParser("1 and true").parseForParentNode()).simplifiesTo("true");
-    assertThat(new ExpressionParser("false and 1").parseForParentNode()).simplifiesTo("false");
-    assertThat(new ExpressionParser("1 and false").parseForParentNode()).simplifiesTo("false");
-    assertThat(new ExpressionParser("false and $boo").withParam("boo", "css").parseForParentNode())
+    assertThat(new ExpressionParser("$boo && true").withParam("boo", "number").parseForParentNode())
+        .simplifiesTo("$boo && true"); // Can't simplify
+    assertThat(new ExpressionParser("true && 1").parseForParentNode()).simplifiesTo("1");
+    assertThat(new ExpressionParser("1 && true").parseForParentNode()).simplifiesTo("true");
+    assertThat(new ExpressionParser("false && 1").parseForParentNode()).simplifiesTo("false");
+    assertThat(new ExpressionParser("1 && false").parseForParentNode()).simplifiesTo("false");
+    assertThat(new ExpressionParser("false && $boo").withParam("boo", "css").parseForParentNode())
         .simplifiesTo("false");
     assertThat(
-            new ExpressionParser("$boo and false").withParam("boo", "string").parseForParentNode())
-        .simplifiesTo("$boo and false"); // Can't simplify
+            new ExpressionParser("$boo && false").withParam("boo", "string").parseForParentNode())
+        .simplifiesTo("$boo && false"); // Can't simplify
 
     // 'or'
-    assertThat(new ExpressionParser("true or true").parseForParentNode()).simplifiesTo("true");
-    assertThat(new ExpressionParser("true or false").parseForParentNode()).simplifiesTo("true");
-    assertThat(new ExpressionParser("false or true").parseForParentNode()).simplifiesTo("true");
-    assertThat(new ExpressionParser("false or false").parseForParentNode()).simplifiesTo("false");
-    assertThat(new ExpressionParser("true or $boo").withParam("boo", "int").parseForParentNode())
+    assertThat(new ExpressionParser("true || true").parseForParentNode()).simplifiesTo("true");
+    assertThat(new ExpressionParser("true || false").parseForParentNode()).simplifiesTo("true");
+    assertThat(new ExpressionParser("false || true").parseForParentNode()).simplifiesTo("true");
+    assertThat(new ExpressionParser("false || false").parseForParentNode()).simplifiesTo("false");
+    assertThat(new ExpressionParser("true || $boo").withParam("boo", "int").parseForParentNode())
         .simplifiesTo("true");
-    assertThat(new ExpressionParser("$boo or true").withParam("boo", "string").parseForParentNode())
-        .simplifiesTo("$boo or true"); // Can't simplify
-    assertThat(new ExpressionParser("false or $boo").withParam("boo", "bool").parseForParentNode())
+    assertThat(new ExpressionParser("$boo || true").withParam("boo", "string").parseForParentNode())
+        .simplifiesTo("$boo || true"); // Can't simplify
+    assertThat(new ExpressionParser("false || $boo").withParam("boo", "bool").parseForParentNode())
         .simplifiesTo("$boo");
     assertThat(
-            new ExpressionParser("$boo or false").withParam("boo", "string").parseForParentNode())
-        .simplifiesTo("$boo or false");
-    assertThat(new ExpressionParser("false or 1").parseForParentNode()).simplifiesTo("true");
-    assertThat(new ExpressionParser("1 or false").parseForParentNode()).simplifiesTo("true");
-    assertThat(new ExpressionParser("true or 1").parseForParentNode()).simplifiesTo("true");
-    assertThat(new ExpressionParser("1 or true").parseForParentNode()).simplifiesTo("true");
+            new ExpressionParser("$boo || false").withParam("boo", "string").parseForParentNode())
+        .simplifiesTo("$boo || false");
+    assertThat(new ExpressionParser("false || 1").parseForParentNode()).simplifiesTo("1");
+    assertThat(new ExpressionParser("1 || false").parseForParentNode()).simplifiesTo("1");
+    assertThat(new ExpressionParser("true || 1").parseForParentNode()).simplifiesTo("true");
+    assertThat(new ExpressionParser("1 || true").parseForParentNode()).simplifiesTo("1");
   }
 
   @Test
@@ -404,10 +403,10 @@ public final class SimplifyExprVisitorTest {
                 .parseForParentNode())
         .simplifiesTo("222");
     assertThat(
-            new ExpressionParser("$boo or true ? $boo and false : true")
+            new ExpressionParser("$boo || true ? $boo && false : true")
                 .withParam("boo", "bool")
                 .parseForParentNode())
-        .simplifiesTo("$boo or true ? $boo and false : true"); // Can't simplify
+        .simplifiesTo("$boo || true ? $boo && false : true"); // Can't simplify
   }
 
   @Test

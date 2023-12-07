@@ -383,8 +383,8 @@ public class EvalVisitorTest {
     assertEval("not $goo", false);
     assertEval("not $list0", false);
 
-    assertEval("false and $undefinedName", false); // short-circuit evaluation
-    assertEval("$t and -1 and $goo and $foo.bar", true);
+    assertEval("false && $undefinedName", false); // short-circuit evaluation
+    assertEval("$t && -1 && $goo && $foo.bar", "baz");
   }
 
   @Test
@@ -468,7 +468,7 @@ public class EvalVisitorTest {
   @Test
   public void testEvalConditionalOperator() throws Exception {
 
-    assertEval("($f and 0)?4 : '4'", "4");
+    assertEval("($f && 0)?4 : '4'", "4");
     assertEval("$goo ? $goo[1]:1", 3);
   }
 

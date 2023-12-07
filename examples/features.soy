@@ -414,7 +414,8 @@ import * as simple from 'examples/simple.soy';
     {if $studentIndex % 2 == 1} Even.
     {/if}
     {sp}{$student.major}.
-    {if $student.major == 'Physics' or $student.major == 'Biology'} Scientist.{/if}
+    {if $student.major == 'Physics' || $student.major == 'Biology'} Scientist.
+    {/if}
     {if $currentYear - $student.year < 10} Young.{/if}
 
     // The following print statement prints "70s", "80s", "90s", or "00s". Note that "00s" is a

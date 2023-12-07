@@ -594,7 +594,7 @@ public class BytecodeCompilerTest {
         assertThatTemplateBody(
             "{@param? cond1 : bool|null}",
             "{@param cond2 : bool}",
-            "{if $cond2 or $cond1}",
+            "{if $cond2 || $cond1}",
             "  hello",
             "{else}",
             "  goodbye",

@@ -120,8 +120,7 @@ public class SimplifyVisitorTest {
   @Test
   public void testSimplifyIfNode() throws Exception {
 
-    assertSimplification(
-            "{if not false}", "  111", "{/if}", "{if true and false}", "  222", "{/if}")
+    assertSimplification("{if not false}", "  111", "{/if}", "{if true && false}", "  222", "{/if}")
         .isEqualTo("111");
 
     assertSimplification("{if ''}", "  111", "{elseif not 1}", "  222", "{else}", "  333", "{/if}")
@@ -191,7 +190,7 @@ public class SimplifyVisitorTest {
             "{elseif $qoo}",
             "  hello",
             "{/if}")
-        .isEqualTo("{@param boo: ?}\n  {@param qoo: ?}\n{if not $boo and $qoo}hello{/if}");
+        .isEqualTo("{@param boo: ?}\n  {@param qoo: ?}\n{if not $boo && $qoo}hello{/if}");
   }
 
   @Test
@@ -229,7 +228,7 @@ public class SimplifyVisitorTest {
             "{@param boo: ?}\n"
                 + "  {@param qoo: ?}\n"
                 + "  {@param soo: ?}\n"
-                + "{if $boo}hello{elseif not $qoo and $soo}goodbye{/if}");
+                + "{if $boo}hello{elseif not $qoo && $soo}goodbye{/if}");
 
     // If it is in the middle, we need to introduce an ele-if
     assertSimplification(

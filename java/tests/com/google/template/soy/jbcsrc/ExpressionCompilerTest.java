@@ -52,6 +52,7 @@ import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.testing.SharedTestUtils;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
+import com.google.template.soy.types.BoolType;
 import com.google.template.soy.types.FloatType;
 import com.google.template.soy.types.IntType;
 import com.google.template.soy.types.LegacyObjectMapType;
@@ -279,19 +280,21 @@ public class ExpressionCompilerTest {
 
   @Test
   public void testConditionalOperators() {
-    variables.put("true", untypedBoxedSoyExpression(SoyExpression.TRUE));
-    variables.put("false", untypedBoxedSoyExpression(SoyExpression.FALSE));
+    variables.put(
+        "true", SoyExpression.forSoyValue(BoolType.getInstance(), SoyExpression.TRUE.box()));
+    variables.put(
+        "false", SoyExpression.forSoyValue(BoolType.getInstance(), SoyExpression.FALSE.box()));
     String trueExpr = "$true";
     String falseExpr = "$false";
-    assertExpression(falseExpr + " or " + falseExpr).evaluatesTo(false);
-    assertExpression(falseExpr + " or " + trueExpr).evaluatesTo(true);
-    assertExpression(trueExpr + " or " + falseExpr).evaluatesTo(true);
-    assertExpression(trueExpr + " or " + trueExpr).evaluatesTo(true);
+    assertExpression(falseExpr + " || " + falseExpr).evaluatesTo(false);
+    assertExpression(falseExpr + " || " + trueExpr).evaluatesTo(true);
+    assertExpression(trueExpr + " || " + falseExpr).evaluatesTo(true);
+    assertExpression(trueExpr + " || " + trueExpr).evaluatesTo(true);
 
-    assertExpression(falseExpr + " and " + falseExpr).evaluatesTo(false);
-    assertExpression(falseExpr + " and " + trueExpr).evaluatesTo(false);
-    assertExpression(trueExpr + " and " + falseExpr).evaluatesTo(false);
-    assertExpression(trueExpr + " and " + trueExpr).evaluatesTo(true);
+    assertExpression(falseExpr + " && " + falseExpr).evaluatesTo(false);
+    assertExpression(falseExpr + " && " + trueExpr).evaluatesTo(false);
+    assertExpression(trueExpr + " && " + falseExpr).evaluatesTo(false);
+    assertExpression(trueExpr + " && " + trueExpr).evaluatesTo(true);
   }
 
   // The arithmetic types are handled by testComparisonOperators, the == and != operators have

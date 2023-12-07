@@ -38,13 +38,13 @@ import com.google.template.soy.exprtree.MethodCallNode;
 import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.exprtree.OperatorNodes.AssertNonNullOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.BarBarOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ConditionalOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.LessThanOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.MinusOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NegativeOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NotOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
-import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TimesOpNode;
 import com.google.template.soy.exprtree.RecordLiteralNode;
@@ -285,10 +285,10 @@ public final class ParseExpressionTest {
     assertThatExpression("$a==0").isValidExpression();
     assertThatExpression("-10 != $b").isValidExpression();
     // Level 3.
-    assertThatExpression("true and $b").isValidExpression();
+    assertThatExpression("true && $b").isValidExpression();
     assertThatExpression("true && $b").isValidExpression();
     // Level 2.
-    assertThatExpression("$a or null").isValidExpression();
+    assertThatExpression("$a || null").isValidExpression();
     assertThatExpression("$a || null").isValidExpression();
     // Level 1.
     assertThatExpression("$boo??-1").isValidExpression();
@@ -304,9 +304,8 @@ public final class ParseExpressionTest {
   public void testRecognizeAdditional() {
     assertThatExpression("1+2*3-4/5<6==7>=-8%9+10").isValidExpression();
     assertThatExpression("((1+2)*((3)-4))/5<6==7>=-8%(9+10)").isValidExpression();
-    assertThatExpression("$a and true or $b or $c and false and $d or $e").isValidExpression();
-    assertThatExpression("$a and (true or $b) or ($c and false and ($d or $e))")
-        .isValidExpression();
+    assertThatExpression("$a && true || $b || $c && false && $d || $e").isValidExpression();
+    assertThatExpression("$a && (true || $b) || ($c && false && ($d || $e))").isValidExpression();
     assertThatExpression("$a != 0 ? 33 : $b <= 4 ? 55 : $c ? 77 : $d").isValidExpression();
     assertThatExpression("( ( $a != 0 ? 33 : $b <= 4 ) ? 55 : $c ) ? 77 : $d").isValidExpression();
     assertThatExpression("round(3.14 + length($boo.foo)) != null").isValidExpression();
@@ -463,8 +462,8 @@ public final class ParseExpressionTest {
     assertThat(((IntegerNode) minusOp.getChild(0)).getValue()).isEqualTo(90);
     assertThat(((FloatNode) minusOp.getChild(1)).getValue()).isEqualTo(14.75);
 
-    expr = assertThatExpression("$a or true").isValidExpression();
-    OrOpNode orOp = (OrOpNode) expr;
+    expr = assertThatExpression("$a || true").isValidExpression();
+    BarBarOpNode orOp = (BarBarOpNode) expr;
     assertThat(orOp.getChild(0).toSourceString()).isEqualTo("$a");
     assertThat(((BooleanNode) orOp.getChild(1)).getValue()).isTrue();
 
@@ -536,7 +535,7 @@ public final class ParseExpressionTest {
     assertThat(fieldAccess.isNullSafe()).isTrue();
     assertThat(fieldAccess.getBaseExprChild()).isInstanceOf(MethodCallNode.class);
 
-    expr = assertThatExpression("-$a! + $b * $c! < ($d or $e)!").isValidExpression();
+    expr = assertThatExpression("-$a! + $b * $c! < ($d || $e)!").isValidExpression();
     LessThanOpNode lessThan = (LessThanOpNode) expr;
 
     PlusOpNode plus = (PlusOpNode) lessThan.getChild(0);

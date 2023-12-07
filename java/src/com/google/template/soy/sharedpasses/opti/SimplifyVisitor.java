@@ -44,7 +44,7 @@ import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.ListComprehensionNode;
 import com.google.template.soy.exprtree.MethodCallNode;
-import com.google.template.soy.exprtree.OperatorNodes.AndOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.AmpAmpOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NotOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
 import com.google.template.soy.exprtree.RecordLiteralNode;
@@ -586,7 +586,7 @@ public final class SimplifyVisitor {
                   if (next instanceof IfCondNode) {
                     IfCondNode nextCondNode = (IfCondNode) next;
                     var rootCondition = nextCondNode.getExpr();
-                    var andNode = new AndOpNode(SourceLocation.UNKNOWN, SourceLocation.UNKNOWN);
+                    var andNode = new AmpAmpOpNode(SourceLocation.UNKNOWN, SourceLocation.UNKNOWN);
                     andNode.addChild(negation);
                     andNode.addChild(rootCondition.getRoot());
                     andNode.setType(BoolType.getInstance());
