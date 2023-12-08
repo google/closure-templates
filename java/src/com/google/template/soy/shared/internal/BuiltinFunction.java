@@ -34,6 +34,11 @@ public enum BuiltinFunction implements SoyFunction {
    * a string literal selector name.
    */
   CSS("css"),
+  /**
+   * Function for rewriting toggle import in Java / JS. Server side, we query activeModSelector in
+   * RenderContext and client side we use ts_toggle_library output.
+   */
+  EVAL_TOGGLE("$evalToggle"),
   XID("xid"),
   SOY_SERVER_KEY("$soyServerKey"),
   UNKNOWN_JS_GLOBAL("unknownJsGlobal"),
@@ -68,6 +73,7 @@ public enum BuiltinFunction implements SoyFunction {
   public Set<Integer> getValidArgsSizes() {
     switch (this) {
       case CSS:
+      case EVAL_TOGGLE:
       case VE_DATA:
         return ImmutableSet.of(1, 2);
       case IS_PRIMARY_MSG_IN_USE:
@@ -117,6 +123,7 @@ public enum BuiltinFunction implements SoyFunction {
       case BOOLEAN:
         return true;
       case CSS: // implicitly depends on a renaming map or js compiler flag
+      case EVAL_TOGGLE:
       case XID: // implicitly depends on a renaming map or js compiler flag
       case SOY_SERVER_KEY: // Relies on call stack dependent on rendering
       case UNKNOWN_JS_GLOBAL: // this is a black box from the compiler perspective

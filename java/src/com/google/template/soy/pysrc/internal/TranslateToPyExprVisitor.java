@@ -149,6 +149,8 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
       SoyErrorKind.of("Proto accessors are not supported in pysrc.");
   private static final SoyErrorKind PROTO_INIT_NOT_SUPPORTED =
       SoyErrorKind.of("Proto init is not supported in pysrc.");
+  private static final SoyErrorKind TOGGLE_IMPORT_NOT_SUPPORTED =
+      SoyErrorKind.of("Toggle imports are not supported in pysrc.");
   private static final SoyErrorKind SOY_PY_SRC_FUNCTION_NOT_FOUND =
       SoyErrorKind.of("Failed to find SoyPySrcFunction ''{0}''.");
   private static final SoyErrorKind SOY_PY_SRC_METHOD_NOT_FOUND =
@@ -610,6 +612,8 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
         return assertNotNull(node.getParam(0));
       case CSS:
         return visitCssFunction(node);
+      case EVAL_TOGGLE:
+        return visitToggleFunction(node);
       case XID:
         return visitXidFunction(node);
       case SOY_SERVER_KEY:
@@ -666,6 +670,11 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
     return new PyFunctionExprBuilder("runtime.get_css_name")
         .addArgs(visitChildren(node))
         .asPyExpr();
+  }
+
+  private PyExpr visitToggleFunction(FunctionNode node) {
+    errorReporter.report(node.getSourceLocation(), TOGGLE_IMPORT_NOT_SUPPORTED);
+    return ERROR;
   }
 
   private PyExpr visitXidFunction(FunctionNode node) {

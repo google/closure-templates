@@ -91,6 +91,8 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
           return visitCheckNotNullFunction(node);
         case CSS:
           return visitCssFunction(node);
+        case EVAL_TOGGLE:
+          return visitToggleFunction(node);
         case XID:
           return visitXidFunction(node);
         case IS_PRIMARY_MSG_IN_USE:
@@ -157,6 +159,10 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
   }
 
   T visitCssFunction(FunctionNode node) {
+    return visitExprNode(node);
+  }
+
+  T visitToggleFunction(FunctionNode node) {
     return visitExprNode(node);
   }
 

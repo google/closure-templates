@@ -1065,6 +1065,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
           return visitCheckNotNullFunction(node);
         case CSS:
           return visitCssFunction(node);
+        case EVAL_TOGGLE:
         case XID:
           return visitXidFunction(node);
         case SOY_SERVER_KEY:
