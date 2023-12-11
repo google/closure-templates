@@ -72,7 +72,14 @@ public final class SoyTypes {
           .build();
 
   public static final ImmutableSet<Kind> SANITIZED_TYPE_KINDS =
-      ImmutableSet.of(Kind.HTML, Kind.ELEMENT, Kind.ATTRIBUTES, Kind.JS, Kind.CSS);
+      ImmutableSet.of(
+          Kind.HTML,
+          Kind.ELEMENT,
+          Kind.ATTRIBUTES,
+          Kind.JS,
+          Kind.CSS,
+          Kind.URI,
+          Kind.TRUSTED_RESOURCE_URI);
 
   private static final ImmutableSet<Kind> ALWAYS_COMPARABLE_KINDS =
       Sets.immutableEnumSet(Kind.UNKNOWN, Kind.ANY, Kind.NULL, Kind.UNDEFINED);
