@@ -43,7 +43,6 @@ import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.exprtree.OperatorNodes.NotEqualOpNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VarRefNode;
-import com.google.template.soy.passes.CompilerFileSetPass.Result;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.FileSetMetadata;
@@ -330,12 +329,14 @@ final class ElementAttributePass implements CompilerFileSetPass {
             });
     // This param is added unconditionally because TemplateType expects it to be populated. However,
     // outside of IDOM this is unused.
+    NamedTypeNode typeNode = NamedTypeNode.create(unknown, "string");
+    typeNode.setResolvedType(StringType.getInstance());
     TemplateParam keyParam =
         new TemplateParam(
             TemplateType.KEY_HIDDEN_ATTRIBUTE_NAME,
-            SourceLocation.UNKNOWN,
-            SourceLocation.UNKNOWN,
-            NamedTypeNode.create(SourceLocation.UNKNOWN, TemplateType.KEY_HIDDEN_ATTRIBUTE_NAME),
+            unknown,
+            unknown,
+            typeNode,
             /* isInjected= */ false,
             /* isImplicit= */ true,
             /* optional= */ true,
@@ -431,20 +432,21 @@ final class ElementAttributePass implements CompilerFileSetPass {
        * {/template}
        * </pre>
        */
+      SourceLocation loc = templateNode.getAllowExtraAttributesLoc();
+      typeNode = NamedTypeNode.create(loc, "attributes");
+      typeNode.setResolvedType(SanitizedType.AttributesType.getInstance());
       TemplateParam attrsParam =
           new TemplateParam(
               TemplateType.EXTRA_ROOT_ELEMENT_ATTRIBUTES,
-              SourceLocation.UNKNOWN,
-              SourceLocation.UNKNOWN,
-              NamedTypeNode.create(
-                  SourceLocation.UNKNOWN, TemplateType.EXTRA_ROOT_ELEMENT_ATTRIBUTES),
+              loc,
+              loc,
+              typeNode,
               /* isInjected= */ false,
               /* isImplicit= */ true,
               /* optional= */ true,
               /* desc= */ "Created by ElementAttributePass.",
               /* defaultValue= */ null);
-      VarRefNode extraAttributesRef =
-          new VarRefNode("$" + attrsParam.name(), SourceLocation.UNKNOWN, attrsParam);
+      VarRefNode extraAttributesRef = new VarRefNode("$" + attrsParam.name(), loc, attrsParam);
       templateNode.addParam(attrsParam);
       attrsParam.setType(SoyTypes.makeNullable(SanitizedType.AttributesType.getInstance()));
       // This requires a different handling than SoyTreeUtils.printIfNotNull because we need to

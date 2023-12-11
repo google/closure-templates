@@ -22,6 +22,7 @@ import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.StringData;
+import com.google.template.soy.data.restricted.UndefinedData;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.Function;
@@ -36,6 +37,7 @@ public final class SoyValueUnconverter {
 
   static {
     CONVERTERS.put(NullData.class, v -> null);
+    CONVERTERS.put(UndefinedData.class, v -> null);
     CONVERTERS.put(BooleanData.class, BooleanData::getValue);
     CONVERTERS.put(IntegerData.class, IntegerData::getValue);
     CONVERTERS.put(FloatData.class, FloatData::getValue);
