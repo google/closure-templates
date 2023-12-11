@@ -17,6 +17,15 @@ custom external functions, see
 
 Explicitly coerces the argument to a boolean.
 
+IMPORTANT: Sanitized content types (e.g. `html`) that are empty currently coerce
+to `true`, but this will be changed soon. See
+go/soy-sanitized-types-boolean-coercion for more info.
+
+### `isEmpty(value)` {#isEmpty}
+
+Returns true if the value coerces to `false`, or if it is a sanitized content
+type (e.g. `html`) that has empty content.
+
 ### `checkNotNull(value)` {#checkNotNull}
 
 Throws a runtime exception if the given value is `null` and returns the value

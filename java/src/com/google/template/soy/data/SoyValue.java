@@ -60,6 +60,15 @@ public interface SoyValue extends SoyValueProvider {
   String coerceToString();
 
   /**
+   * Returns whether this value is empty. For SanitizedContent, this checks if the content is empty.
+   *
+   * @return This value coerced into a boolean.
+   */
+  default boolean isEmpty() {
+    return !coerceToBoolean();
+  }
+
+  /**
    * Renders this value to the given appendable.
    *
    * <p>This should behave identically to {@code appendable.append(coerceToString())} but is

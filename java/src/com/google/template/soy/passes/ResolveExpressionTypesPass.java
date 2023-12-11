@@ -2820,6 +2820,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
           node.setType(SoyTypes.undefinedToNull(node.getParam(0).getType()));
           break;
         case BOOLEAN:
+        case IS_EMPTY:
           node.setType(BoolType.getInstance());
           break;
         case EMPTY_TO_NULL:
