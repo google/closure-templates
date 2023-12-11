@@ -376,6 +376,11 @@ public final class ExprEquivalence {
     }
 
     @Override
+    protected Boolean visitUndefinedNode(UndefinedNode node) {
+      return true;
+    }
+
+    @Override
     protected Boolean visitGroupNode(GroupNode node) {
       return compareChildren(node);
     }

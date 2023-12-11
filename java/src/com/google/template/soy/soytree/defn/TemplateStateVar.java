@@ -21,7 +21,6 @@ import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.exprtree.AbstractVarDefn;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
-import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.ast.TypeNode;
 import javax.annotation.Nullable;
@@ -81,7 +80,7 @@ public final class TemplateStateVar extends AbstractVarDefn implements TemplateH
   }
 
   public boolean hasExplicitDefaultValue() {
-    return !(initialValue.getRoot() instanceof NullNode);
+    return true;
   }
 
   @Override

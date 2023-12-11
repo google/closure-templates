@@ -28,7 +28,6 @@ import com.google.template.soy.types.AbstractMapType;
 import com.google.template.soy.types.FloatType;
 import com.google.template.soy.types.IntType;
 import com.google.template.soy.types.ListType;
-import com.google.template.soy.types.NullType;
 import com.google.template.soy.types.RecordType;
 import com.google.template.soy.types.SoyProtoEnumType;
 import com.google.template.soy.types.SoyProtoType;
@@ -233,12 +232,11 @@ public final class JavaTypeUtils {
     if (allTypes.size() == 2) {
       Iterator<SoyType> i = allTypes.iterator();
       SoyType first = i.next();
+      SoyType firstNotNullish = SoyTypes.tryRemoveNullish(first);
       SoyType second = i.next();
-      if (first.equals(UnionType.of(NullType.getInstance(), second))) {
-        return Optional.of(first);
-      }
-      if (second.equals(UnionType.of(NullType.getInstance(), first))) {
-        return Optional.of(second);
+      SoyType secondNotNullish = SoyTypes.tryRemoveNullish(second);
+      if (firstNotNullish.equals(secondNotNullish)) {
+        return Optional.of(UnionType.of(first, second));
       }
     }
 
@@ -258,8 +256,8 @@ public final class JavaTypeUtils {
    */
   private static ImmutableList<JavaType> convertSoyUnionTypeToJavaTypes(
       UnionType unionType, Set<SoyType.Kind> skipSoyTypes) {
-    if (unionType.equals(
-        UnionType.of(NullType.getInstance(), IntType.getInstance(), FloatType.getInstance()))) {
+    if (SoyTypes.isNullish(unionType)
+        && SoyTypes.tryRemoveNullish(unionType).equals(SoyTypes.NUMBER_TYPE)) {
       return ImmutableList.of(SimpleJavaType.NUMBER.asNullable());
     }
 
@@ -269,13 +267,12 @@ public final class JavaTypeUtils {
 
     // Figure out if the union contains the {@link NullType}, which tells us if the param setters
     // should be nullable.
-    boolean unionAllowsNull =
-        unionType.getMembers().stream().anyMatch(member -> member instanceof NullType);
+    boolean unionAllowsNull = unionType.getMembers().stream().anyMatch(SoyType::isNullOrUndefined);
 
     // Collect a list of the Java types for each of the union member types.
     ImmutableList.Builder<JavaType> javaTypeListBuilder = new ImmutableList.Builder<>();
     for (SoyType soyUnionMemberType : unionType.getMembers()) {
-      if (soyUnionMemberType instanceof NullType) {
+      if (soyUnionMemberType.isNullOrUndefined()) {
         continue;
       }
       ImmutableList<JavaType> javaTypesForUnionMember =
