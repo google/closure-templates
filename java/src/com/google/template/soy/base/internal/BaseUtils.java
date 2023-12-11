@@ -47,9 +47,6 @@ public final class BaseUtils {
   /** Pattern for an identifier. */
   private static final Pattern IDENT_PATTERN = Pattern.compile(IDENT_RE);
 
-  /** Pattern for an identifier with leading dot. */
-  private static final Pattern IDENT_WITH_LEADING_DOT_PATTERN = Pattern.compile("[.]" + IDENT_RE);
-
   /** Regular expression for a dotted identifier. */
   public static final String DOTTED_IDENT_RE = IDENT_RE + "(?:[.]" + IDENT_RE + ")*";
 
@@ -117,16 +114,6 @@ public final class BaseUtils {
    */
   public static boolean isIdentifier(String s) {
     return IDENT_PATTERN.matcher(s).matches();
-  }
-
-  /**
-   * Determines whether the given string is a dot followed by an identifier.
-   *
-   * @param s The string to check.
-   * @return True if the given string is a dot followed by an identifier.
-   */
-  public static boolean isIdentifierWithLeadingDot(String s) {
-    return IDENT_WITH_LEADING_DOT_PATTERN.matcher(s).matches();
   }
 
   /**

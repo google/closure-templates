@@ -44,20 +44,6 @@ public final class BaseUtilsTest {
   }
 
   @Test
-  public void testIsIdentifierWithLeadingDot() {
-
-    assertThat(BaseUtils.isIdentifierWithLeadingDot(".boo")).isTrue();
-    assertThat(BaseUtils.isIdentifierWithLeadingDot("._8")).isTrue();
-    assertThat(BaseUtils.isIdentifierWithLeadingDot(".BOO_FOO")).isTrue();
-    assertThat(BaseUtils.isIdentifierWithLeadingDot("")).isFalse();
-    assertThat(BaseUtils.isIdentifierWithLeadingDot("boo.")).isFalse();
-    assertThat(BaseUtils.isIdentifierWithLeadingDot("boo")).isFalse();
-    assertThat(BaseUtils.isIdentifierWithLeadingDot("boo.foo")).isFalse();
-    assertThat(BaseUtils.isIdentifierWithLeadingDot(".boo-foo")).isFalse();
-    assertThat(BaseUtils.isIdentifierWithLeadingDot(".8boo")).isFalse();
-  }
-
-  @Test
   public void testIsDottedIdentifier() {
 
     assertThat(BaseUtils.isDottedIdentifier("boo")).isTrue();
