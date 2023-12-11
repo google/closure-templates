@@ -752,11 +752,6 @@ public final class JbcSrcRuntime {
   }
 
   @Keep
-  public static boolean isEmpty(SoyValue v) {
-    return v.isEmpty();
-  }
-
-  @Keep
   public static boolean coerceToBoolean(@Nullable String v) {
     return v != null && !v.isEmpty();
   }

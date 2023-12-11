@@ -44,7 +44,6 @@ import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_CHECK_NOT_NUL
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_COERCE_TO_BOOLEAN;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_EQUALS;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_FILTER_AND_MAP;
-import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_IS_EMPTY;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_MAKE_ARRAY;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_NEWMAPS_TRANSFORM_VALUES;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_VISUAL_ELEMENT;
@@ -895,10 +894,6 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
     return chunk;
   }
 
-  protected Expression isEmpty(Expression chunk) {
-    return SOY_IS_EMPTY.call(chunk);
-  }
-
   @Override
   protected Expression visitOperatorNode(OperatorNode node) {
     return operation(node.getOperator(), visitChildren(node));
@@ -1104,8 +1099,6 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
           return maybeCoerceToBoolean(
               // Always coerce regardless of the argument type.
               AnyType.getInstance(), visit(node.getParam(0)), /* force= */ true);
-        case IS_EMPTY:
-          return isEmpty(visit(node.getParam(0)));
         case LEGACY_DYNAMIC_TAG:
         case REMAINDER:
         case MSG_WITH_ID:

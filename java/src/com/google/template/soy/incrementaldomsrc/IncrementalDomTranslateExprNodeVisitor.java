@@ -18,7 +18,6 @@ package com.google.template.soy.incrementaldomsrc;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_EVAL_LOG_FN;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_EMPTY_TO_NULL;
-import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_IS_EMPTY;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_IS_TRUTHY;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.STATE_PREFIX;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.STATE_VAR_PREFIX;
@@ -122,11 +121,6 @@ public class IncrementalDomTranslateExprNodeVisitor extends TranslateExprNodeVis
     }
 
     return super.maybeCoerceToBoolean(type, chunk, force);
-  }
-
-  @Override
-  protected Expression isEmpty(Expression chunk) {
-    return SOY_IDOM_IS_EMPTY.call(chunk);
   }
 
   @Override

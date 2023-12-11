@@ -1763,12 +1763,6 @@ final class ExpressionCompiler {
           MethodRefs.RUNTIME_COERCE_TO_BOOLEAN.invoke(visit(node.getParam(0)).box()));
     }
 
-    @Override
-    SoyExpression visitIsEmptyFunction(FunctionNode node) {
-      return SoyExpression.forBool(
-          MethodRefs.RUNTIME_IS_EMPTY.invoke(visit(node.getParam(0)).box()));
-    }
-
     // Non-builtin functions
 
     @Override
