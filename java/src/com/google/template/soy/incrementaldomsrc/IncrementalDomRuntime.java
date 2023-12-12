@@ -120,6 +120,8 @@ final class IncrementalDomRuntime {
       SOY_IDOM.dotAccess("$$printDynamicAttr");
 
   public static final Expression SOY_IDOM_IS_TRUTHY = SOY_IDOM.dotAccess("$$isTruthy");
+  public static final Expression SOY_IDOM_IS_FALSEY_OR_EMPTY =
+      SOY_IDOM.dotAccess("$$isFalseyOrEmpty");
   public static final Expression SOY_IDOM_EMPTY_TO_NULL = SOY_IDOM.dotAccess("$$emptyToNull");
 
   public static final Expression SOY_IDOM_PRINT_WITH_NODE_PARTS =

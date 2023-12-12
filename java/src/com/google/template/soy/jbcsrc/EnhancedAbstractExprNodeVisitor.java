@@ -116,6 +116,8 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
           return visitUndefinedToNullFunction(node);
         case BOOLEAN:
           return visitBooleanFunction(node);
+        case IS_FALSEY_OR_EMPTY:
+          return visitIsFalseyOrEmptyFunction(node);
         case MSG_WITH_ID:
         case REMAINDER:
           // should have been removed earlier in the compiler
@@ -211,6 +213,10 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
   }
 
   T visitBooleanFunction(FunctionNode node) {
+    return visitExprNode(node);
+  }
+
+  T visitIsFalseyOrEmptyFunction(FunctionNode node) {
     return visitExprNode(node);
   }
 }
