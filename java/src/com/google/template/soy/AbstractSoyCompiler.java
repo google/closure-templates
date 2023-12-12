@@ -25,6 +25,7 @@ import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.Multimaps;
@@ -48,6 +49,7 @@ import com.google.template.soy.plugin.java.MethodChecker;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
+import com.google.template.soy.types.ToggleRegistry;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -65,6 +67,7 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.kohsuke.args4j.Argument;
 import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.Option;
@@ -150,12 +153,17 @@ public abstract class AbstractSoyCompiler {
 
   @Option(
       name = "--cssMetadata",
-      aliases = "--cssMetadata",
       usage =
           "List of css metadata files used to check strict deps against css dependencies and css()"
               + " calls.",
       handler = SoyCmdLineParser.FileListOptionHandler.class)
   private List<File> cssMetadata = new ArrayList<>();
+
+  @Option(
+      name = "--togglesFiles",
+      usage = "List of toggles provider files.",
+      handler = SoyCmdLineParser.FileListOptionHandler.class)
+  private List<File> togglesFiles = new ArrayList<>();
 
   @Option(
       name = "--skip_css_reference_check",
@@ -312,6 +320,17 @@ public abstract class AbstractSoyCompiler {
             .map(SoySourceFunction::getClass)
             .collect(toImmutableSet());
     Set<String> uniqueClasses = new HashSet<>();
+
+    ImmutableSetMultimap.Builder<SourceLogicalPath, String> togglesBuilder =
+        ImmutableSetMultimap.builder();
+    for (File toggle : togglesFiles) {
+      SourceLogicalPath path =
+          SourceLogicalPath.create(generatedFiles.getOrDefault(toggle.getPath(), toggle.getPath()));
+      Stream<String> toggleNames =
+          cache.read(toggle, CacheLoaders.CACHED_TOGGLE_NAMES, soyCompilerFileReader);
+      toggleNames.map(s -> s.trim()).forEach(s -> togglesBuilder.put(path, s));
+    }
+    sfsBuilder.setToggleRegistry(new ImmutableSetMultimapToggleRegistry(togglesBuilder.build()));
 
     ImmutableList.Builder<MethodChecker> builder = ImmutableList.builder();
     for (File dep : javaDeps) {
@@ -512,5 +531,25 @@ public abstract class AbstractSoyCompiler {
    */
   protected static RuntimeException exitWithError(String errorMsg) {
     throw new CommandLineError(errorMsg);
+  }
+
+  private static final class ImmutableSetMultimapToggleRegistry implements ToggleRegistry {
+
+    private final ImmutableSetMultimap<SourceLogicalPath, String> source;
+
+    public ImmutableSetMultimapToggleRegistry(
+        ImmutableSetMultimap<SourceLogicalPath, String> source) {
+      this.source = source;
+    }
+
+    @Override
+    public ImmutableSet<String> getToggles(SourceLogicalPath path) {
+      return source.get(path);
+    }
+
+    @Override
+    public ImmutableSet<SourceLogicalPath> getPaths() {
+      return source.keySet();
+    }
   }
 }

@@ -17,6 +17,7 @@
 package com.google.template.soy;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -37,6 +38,7 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Stream;
 import java.util.zip.GZIPInputStream;
 
 /** Implementations of {@link SoyInputCache.CacheLoader} for common compiler inputs. */
@@ -178,6 +180,11 @@ final class CacheLoaders {
           return new CachedDescriptorSet(
               file, FileDescriptorSet.parseFrom(stream, ProtoUtils.REGISTRY));
         }
+      };
+
+  static final SoyInputCache.CacheLoader<Stream<String>> CACHED_TOGGLE_NAMES =
+      (file, reader, cache) -> {
+        return reader.read(file).asCharSource(UTF_8).lines();
       };
 
   static final SoyInputCache.CacheLoader<CompiledJarsPluginSignatureReader> JAVA_DEPS =
