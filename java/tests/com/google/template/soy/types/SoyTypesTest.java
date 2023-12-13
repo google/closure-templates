@@ -969,9 +969,12 @@ public class SoyTypesTest {
     }
 
     private SoyType parseType(String input) {
+      if (input.equals("null")) {
+        return NullType.getInstance();
+      }
       String opt = "";
       // Does not handle all possible nullable inputs.
-      if (input.equals("null") || input.endsWith("|null")) {
+      if (input.endsWith("|null")) {
         opt = "?";
       }
       TemplateNode template =

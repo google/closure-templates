@@ -74,6 +74,9 @@ final class ResolveTemplateParamTypesPass implements CompilerFilePass {
         }
         if (param.getTypeNode() != null) {
           SoyType paramType = converter.getOrCreateType(param.getTypeNode());
+          if (param.isExplicitlyOptional()) {
+            paramType = SoyTypes.makeUndefinable(paramType);
+          }
           param.setType(paramType);
           // TODO(b/291132644): Remove this restriction.
           if (param.getTypeNode() != null

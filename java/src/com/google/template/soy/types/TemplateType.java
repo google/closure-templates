@@ -274,20 +274,15 @@ public abstract class TemplateType extends SoyType {
     }
 
     public SoyType getCheckedType() {
-      // Currently other parts of the compiler enforce that `!isRequired() IFF type is nullable`.
-      // TODO(b/291132644): Make type |undefined if param not required.
-      return getType();
+      SoyType type = getType();
+      if (!isRequired()) {
+        type = SoyTypes.makeUndefinable(type);
+      }
+      return type;
     }
 
     String getTypeStringRepresentation() {
       return getType().toString();
-    }
-
-    public boolean isAssignableFromStrict(Parameter other) {
-      if (!isRequired() && other.isRequired()) {
-        return false;
-      }
-      return getType().isAssignableFromStrict(other.getType());
     }
 
     abstract LazyTypeWrapper getTypeWrapper();
@@ -461,7 +456,9 @@ public abstract class TemplateType extends SoyType {
         // Check that each argument of the source type is assignable FROM the corresponding
         // argument of this type. This is because the parameter types are constraints; assignability
         // of a template type is only possible when the constraints of the from-type are narrower.
-        if (!srcParam.getType().isAssignableFromInternal(thisParam.getType(), unknownPolicy)) {
+        if (!srcParam
+            .getCheckedType()
+            .isAssignableFromInternal(thisParam.getCheckedType(), unknownPolicy)) {
           return false;
         }
       }

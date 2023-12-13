@@ -41,7 +41,6 @@ import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.data.internal.Converters;
 import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.data.restricted.IntegerData;
-import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.exprtree.ExprNode;
@@ -989,7 +988,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
       return;
     }
     if (paramValue == null) {
-      paramValue = NullData.INSTANCE;
+      paramValue = UndefinedData.INSTANCE;
     } else if (paramValue instanceof SoyAbstractCachingValueProvider) {
       SoyAbstractCachingValueProvider typedValue = (SoyAbstractCachingValueProvider) paramValue;
       if (!typedValue.isComputed()) {

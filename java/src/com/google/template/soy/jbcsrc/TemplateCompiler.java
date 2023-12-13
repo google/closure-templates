@@ -67,6 +67,7 @@ import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.NullType;
 import com.google.template.soy.types.TemplateType;
 import com.google.template.soy.types.TemplateType.Parameter;
+import com.google.template.soy.types.UndefinedType;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
@@ -522,6 +523,8 @@ final class TemplateCompiler {
     if (defaultValueNode.getType() == NullType.getInstance()) {
       // a special case for null to avoid poor handling elsewhere in the compiler.
       return SoyExpression.SOY_NULL;
+    } else if (defaultValueNode.getType() == UndefinedType.getInstance()) {
+      return SoyExpression.SOY_UNDEFINED;
     } else {
       if (ExpressionCompiler.canCompileToConstant(templateNode, defaultValueNode)) {
         SoyExpression defaultValue =

@@ -62,8 +62,7 @@ public final class SoyProtoType extends SoyType {
     @Override
     protected SoyType visitMessage(Descriptor messageType) {
       // Message fields are nullable.
-      return interner.getOrCreateUnionType(
-          registry.getProtoType(messageType.getFullName()), NullType.getInstance());
+      return interner.getOrCreateNullishType(registry.getProtoType(messageType.getFullName()));
     }
 
     @Override
@@ -123,32 +122,32 @@ public final class SoyProtoType extends SoyType {
 
     @Override
     protected SoyType visitSafeHtml() {
-      return interner.getOrCreateNullableType(SanitizedType.HtmlType.getInstance());
+      return interner.getOrCreateNullishType(SanitizedType.HtmlType.getInstance());
     }
 
     @Override
     protected SoyType visitSafeScript() {
-      return interner.getOrCreateNullableType(SanitizedType.JsType.getInstance());
+      return interner.getOrCreateNullishType(SanitizedType.JsType.getInstance());
     }
 
     @Override
     protected SoyType visitSafeStyle() {
-      return interner.getOrCreateNullableType(SanitizedType.StyleType.getInstance());
+      return interner.getOrCreateNullishType(SanitizedType.StyleType.getInstance());
     }
 
     @Override
     protected SoyType visitSafeStyleSheet() {
-      return interner.getOrCreateNullableType(SanitizedType.StyleType.getInstance());
+      return interner.getOrCreateNullishType(SanitizedType.StyleType.getInstance());
     }
 
     @Override
     protected SoyType visitSafeUrl() {
-      return interner.getOrCreateNullableType(SanitizedType.UriType.getInstance());
+      return interner.getOrCreateNullishType(SanitizedType.UriType.getInstance());
     }
 
     @Override
     protected SoyType visitTrustedResourceUrl() {
-      return interner.getOrCreateNullableType(SanitizedType.TrustedResourceUriType.getInstance());
+      return interner.getOrCreateNullishType(SanitizedType.TrustedResourceUriType.getInstance());
     }
   }
 

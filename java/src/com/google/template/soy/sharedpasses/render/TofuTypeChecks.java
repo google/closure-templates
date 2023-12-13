@@ -138,8 +138,7 @@ public final class TofuTypeChecks {
       case LEGACY_OBJECT_MAP:
         return CheckResult.fromBool(value instanceof SoyLegacyObjectMap);
       case NULL:
-        // TODO(b/291132644): Make exclusively null.
-        return CheckResult.fromBool(value.isNullish());
+        return CheckResult.fromBool(value.isNull());
       case UNDEFINED:
         return CheckResult.fromBool(value.isUndefined());
       case MESSAGE:

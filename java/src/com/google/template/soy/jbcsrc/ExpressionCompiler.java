@@ -125,7 +125,6 @@ import com.google.template.soy.soytree.defn.ImportedVar;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.ListType;
-import com.google.template.soy.types.NullType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
@@ -1353,7 +1352,7 @@ final class ExpressionCompiler {
           // null safety checks to the unboxing code.  So we just mark non nullable. In otherwords,
           // if we are going to hit an NPE while dereferencing this expression, it makes no
           // difference if it is due to the unboxing or the actual dereference.
-          if (baseExpr.soyType() != NullType.getInstance()) {
+          if (!SoyTypes.isNullOrUndefined(baseExpr.soyType())) {
             baseExpr = baseExpr.asNonJavaNullable().asNonSoyNullish();
           } else {
             // Unless, the type actually is 'null'.  In this case the code is bugged, but this
@@ -1602,7 +1601,7 @@ final class ExpressionCompiler {
       accumulator =
           accumulateNullSafeDataAccessTail(
               (AccessChainComponentNode) dataAccess, accumulator, nullSafeExit);
-      return accumulator.box().labelEnd(nullSafeExit).asSoyNullish();
+      return accumulator.box().labelEnd(nullSafeExit).asSoyUndefinable();
     }
 
     private static SoyExpression addNullSafetyCheck(SoyExpression baseExpr, Label nullSafeExit) {
@@ -1613,7 +1612,7 @@ final class ExpressionCompiler {
                 @Override
                 protected void doGen(CodeBuilder adapter) {
                   baseExpr.gen(adapter);
-                  BytecodeUtils.coalesceSoyNullishToSoyNull(
+                  BytecodeUtils.coalesceSoyNullishToSoyUndefined(
                       adapter, baseExpr.resultType(), nullSafeExit);
                 }
               })

@@ -81,8 +81,8 @@ public final class ResolveExpressionTypesPassTest {
     assertTypes(
         "{@param? pa: bool|null}",
         "{@param? pb: list<int>|null}",
-        "{assertType('bool|null', $pa)}",
-        "{assertType('list<int>|null', $pb)}");
+        "{assertType('bool|null|undefined', $pa)}",
+        "{assertType('list<int>|null|undefined', $pb)}");
   }
 
   @Test
@@ -232,7 +232,7 @@ public final class ResolveExpressionTypesPassTest {
                 constructTemplateSource(
                     "{@param proto: ExampleExtendable}",
                     "{assertType('bool', $proto.getExtension(someBoolExtension))}",
-                    "{assertType('int|null', $proto.getExtension("
+                    "{assertType('int|undefined', $proto.getExtension("
                         + "SomeExtension.someExtensionField).getSomeExtensionNumOrUndefined())}"),
                 ExampleExtendable.getDescriptor(),
                 SomeExtension.getDescriptor(),
@@ -428,7 +428,7 @@ public final class ResolveExpressionTypesPassTest {
         "  {assertType('bool', $pa)}", // #0 must be non-null
         "{/if}",
         "{if $pa == null}",
-        "  {assertType('null', $pa)}", // #1 must be null
+        "  {assertType('null|undefined', $pa)}", // #1 must be null
         "{else}",
         "  {assertType('bool', $pa)}", // #2 must be non-null
         "{/if}");
@@ -436,14 +436,14 @@ public final class ResolveExpressionTypesPassTest {
         "{@param? pa: bool|null}",
         "{@param pb: bool}",
         "{if $pa == null || $pb}",
-        "  {assertType('bool|null', $pa)}", // #3 don't know
+        "  {assertType('bool|null|undefined', $pa)}", // #3 don't know
         "{else}",
         "  {assertType('bool', $pa)}", // #4 must be non-null
         "{/if}",
         "{if $pa == null && $pb}",
-        "  {assertType('null', $pa)}", // #5 must be null
+        "  {assertType('null|undefined', $pa)}", // #5 must be null
         "{else}",
-        "  {assertType('bool|null', $pa)}", // #6 don't know
+        "  {assertType('bool|null|undefined', $pa)}", // #6 don't know
         "{/if}");
     assertTypes(
         "{@param? pa: bool|null}",
@@ -465,9 +465,9 @@ public final class ResolveExpressionTypesPassTest {
         "{@param pb: bool}",
         "{if $pa}", // Chained conditions
         "{elseif $pb}",
-        "  {assertType('bool|null', $pa)}", // #11 must be falsy
+        "  {assertType('bool|null|undefined', $pa)}", // #11 must be falsy
         "{else}",
-        "  {assertType('bool|null', $pa)}", // #12 must be falsy
+        "  {assertType('bool|null|undefined', $pa)}", // #12 must be falsy
         "{/if}");
     assertTypes(
         "{@param? pa: bool|null}",
@@ -483,27 +483,25 @@ public final class ResolveExpressionTypesPassTest {
         "{if $pa != null}", // != null
         "  {assertType('bool', $pa)}", // #14 must be non-null
         "{else}",
-        "  {assertType('null', $pa)}", // #15 must be null
+        "  {assertType('null|undefined', $pa)}", // #15 must be null
         "{/if}");
     assertTypes(
         "{@param? pa: bool|null}",
         "{@param pb: bool}",
         "{if $pa == null}", // == null
-        "  {assertType('null', $pa)}", // #16 must be null
+        "  {assertType('null|undefined', $pa)}", // #16 must be null
         "{else}",
         "  {assertType('bool', $pa)}", // #17 must be non-null
         "{/if}");
     assertTypes(
         "{@param? pa: bool|null}",
         "{@param pb: bool}",
-        "{if $pb || $pa == null}",
-        "  {assertType('bool|null', $pa)}", // #18 don't know
+        "{if $pb || $pa == undefined}",
+        "  {assertType('bool|null|undefined', $pa)}", // #18 don't know
         "{else}",
         "  {assertType('bool', $pa)}", // #19 must be non-null
         "{/if}");
     assertTypes(
-        "{@param? pa: bool|null}",
-        "{@param pb: bool}",
         "{let $null: null /}",
         "{if $null == null || $null != null}",
         "  {assertType('null', $null)}", // #20  null type
@@ -519,16 +517,16 @@ public final class ResolveExpressionTypesPassTest {
         "  {assertType('string', $pa)}",
         "  {assertType('string', $pb)}",
         "{else}",
-        "  {assertType('null|string', $pa)}",
-        "  {assertType('null|string', $pb)}",
+        "  {assertType('null|string|undefined', $pa)}",
+        "  {assertType('null|string|undefined', $pb)}",
         "{/if}",
         "",
         "{if $pa != null || $pb != null}",
-        "  {assertType('null|string', $pa)}",
-        "  {assertType('null|string', $pb)}",
+        "  {assertType('null|string|undefined', $pa)}",
+        "  {assertType('null|string|undefined', $pb)}",
         "{else}",
-        "  {assertType('null', $pa)}",
-        "  {assertType('null', $pb)}",
+        "  {assertType('null|undefined', $pa)}",
+        "  {assertType('null|undefined', $pb)}",
         "{/if}",
         "");
     assertTypes(
@@ -537,8 +535,8 @@ public final class ResolveExpressionTypesPassTest {
         "  {assertType('string', $pa)}",
         "{/if}",
         "",
-        "{if ($pa == null || $pa.length != 1) || $pa.substring(1) == 'a'}",
-        "  {assertType('null|string', $pa)}",
+        "{if ($pa == null || $pa.length != 1) or $pa.substring(1) == 'a'}",
+        "  {assertType('null|string|undefined', $pa)}",
         "{/if}",
         "");
     assertTypes(
@@ -557,8 +555,8 @@ public final class ResolveExpressionTypesPassTest {
     assertTypes(
         "{@param? pa: string|null}",
         "{@param? pb: int|null}",
-        "{assertType('int|null|string', $pa && $pb)}",
-        "{assertType('int|null|string', $pa || $pb)}");
+        "{assertType('int|null|string|undefined', $pa && $pb)}",
+        "{assertType('int|null|string|undefined', $pa || $pb)}");
   }
 
   @Test
@@ -588,10 +586,10 @@ public final class ResolveExpressionTypesPassTest {
         "{/if}",
         "",
         "{if $r.a?.b !== null}",
-        "  {assertType('[b: null|string]', $r.a)}",
+        "  {assertType('[b: null|string]|null', $r.a)}",
         "  {assertType('string', $r.a.b)}",
         "{else}",
-        "  {assertType('[b: null|string]|null', $r.a)}",
+        "  {assertType('[b: null|string]', $r.a)}",
         "{/if}",
         "");
     assertTypes(
@@ -601,29 +599,29 @@ public final class ResolveExpressionTypesPassTest {
         "  {assertType('string', $m?.get('a'))}",
         "  {assertType('string', $m.get('a'))}",
         "{else}",
-        "  {assertType('map<string,string>|null', $m)}",
-        "  {assertType('null|string', $m?.get('a'))}",
+        "  {assertType('map<string,string>|null|undefined', $m)}",
+        "  {assertType('string|undefined', $m?.get('a'))}",
         "{/if}",
         "",
         "{if $m?.get('a') == 'b'}",
         "  {assertType('map<string,string>', $m)}",
         "  {assertType('string', $m.get('a'))}",
         "{else}",
-        "  {assertType('map<string,string>|null', $m)}",
-        "  {assertType('null|string', $m?.get('a'))}",
+        "  {assertType('map<string,string>|null|undefined', $m)}",
+        "  {assertType('string|undefined', $m?.get('a'))}",
         "{/if}",
         "",
         "{if $m?.get('a') != 'b'}",
-        "  {assertType('null|string', $m?.get('a'))}",
-        "  {assertType('map<string,string>|null', $m)}",
+        "  {assertType('string|undefined', $m?.get('a'))}",
+        "  {assertType('map<string,string>|null|undefined', $m)}",
         "{else}",
-        "  {assertType('null|string', $m?.get('a'))}",
-        "  {assertType('map<string,string>|null', $m)}",
+        "  {assertType('string|undefined', $m?.get('a'))}",
+        "  {assertType('map<string,string>|null|undefined', $m)}",
         "{/if}",
         "",
         "{if $m?.get('a') == null}",
-        "  {assertType('null', $m?.get('a'))}",
-        "  {assertType('map<string,string>|null', $m)}",
+        "  {assertType('undefined', $m?.get('a'))}",
+        "  {assertType('map<string,string>|null|undefined', $m)}",
         "{else}",
         "  {assertType('string', $m.get('a'))}",
         "  {assertType('map<string,string>', $m)}",
@@ -633,8 +631,8 @@ public final class ResolveExpressionTypesPassTest {
         "  {assertType('string', $m.get('a'))}",
         "  {assertType('map<string,string>', $m)}",
         "{else}",
-        "  {assertType('null', $m?.get('a'))}",
-        "  {assertType('map<string,string>|null', $m)}",
+        "  {assertType('undefined', $m?.get('a'))}",
+        "  {assertType('map<string,string>|null|undefined', $m)}",
         "{/if}",
         "");
     assertTypes(
@@ -644,10 +642,10 @@ public final class ResolveExpressionTypesPassTest {
         "  {assertType('string', $m.get('a').get('b'))}",
         // We aren't quite sure why you can call `get` on $m?.get('a') since the base's type hasn't
         // been narrowed according to assertType.
-        "  {assertType('map<string,null|string>|null', $m?.get('a'))}",
-        "  {assertType('null|string', $m?.get('a').get('b'))}",
+        "  {assertType('map<string,null|string>|null|undefined', $m?.get('a'))}",
+        "  {assertType('null|string|undefined', $m?.get('a').get('b'))}",
         "{else}",
-        "  {assertType('null|string', $m?.get('a')?.get('b'))}",
+        "  {assertType('null|string|undefined', $m?.get('a')?.get('b'))}",
         "{/if}",
         "");
   }
@@ -664,9 +662,9 @@ public final class ResolveExpressionTypesPassTest {
         "  {assertType('null|string', $r?.a.b.c)}",
         "  {assertType('null|string', $r.a?.b.c)}",
         "  {assertType('null|string', $r.a.b?.c)}",
-        "  {assertType('null|string', $r?.a?.b.c)}",
-        "  {assertType('null|string', $r?.a.b?.c)}",
-        "  {assertType('null|string', $r?.a?.b?.c)}",
+        "  {assertType('null|string|undefined', $r?.a?.b.c)}",
+        "  {assertType('null|string|undefined', $r?.a.b?.c)}",
+        "  {assertType('null|string|undefined', $r?.a?.b?.c)}",
         "{/if}",
         "");
   }
@@ -675,30 +673,28 @@ public final class ResolveExpressionTypesPassTest {
   public void testDataFlowTypeNarrowing_tripleEq() {
     assertTypes(
         "{@param? m: map<string, string|undefined>|null}",
-        "{assertType('null|string|undefined', $m?.get('a'))}",
+        "{assertType('string|undefined', $m?.get('a'))}",
         "{if $m?.get('a') === undefined}",
         "  {assertType('undefined', $m?.get('a'))}",
-        "  {assertType('undefined', $m.get('a'))}", // Only true while ?. coalesces to null.
-        "  {assertType('map<string,string|undefined>', $m)}",
+        "  {assertType('map<string,string|undefined>|null|undefined', $m)}",
         "{else}",
-        "  {assertType('null|string', $m?.get('a'))}",
-        "  {assertType('map<string,string|undefined>|null', $m)}",
+        "  {assertType('string', $m?.get('a'))}",
+        "  {assertType('map<string,string|undefined>', $m)}",
         "{/if}",
         "",
         "{if $m?.get('a') !== undefined}",
-        "  {assertType('null|string', $m?.get('a'))}",
-        "  {assertType('map<string,string|undefined>|null', $m)}",
+        "  {assertType('string', $m?.get('a'))}",
+        "  {assertType('map<string,string|undefined>', $m)}",
         "{else}",
         "  {assertType('undefined', $m?.get('a'))}",
-        "  {assertType('undefined', $m.get('a'))}",
-        "  {assertType('map<string,string|undefined>', $m)}",
+        "  {assertType('map<string,string|undefined>|null|undefined', $m)}",
         "{/if}",
         "");
     assertTypes(
         "{@param? m: map<string, string>|null}",
-        "{if $m?.get('a') === null}",
-        "  {assertType('null', $m?.get('a'))}",
-        "  {assertType('map<string,string>|null', $m)}",
+        "{if $m?.get('a') === undefined}",
+        "  {assertType('undefined', $m?.get('a'))}",
+        "  {assertType('map<string,string>|null|undefined', $m)}",
         "{else}",
         "  {assertType('string', $m?.get('a'))}",
         "  {assertType('map<string,string>', $m)}",
@@ -717,10 +713,10 @@ public final class ResolveExpressionTypesPassTest {
         "  {assertType('string', $r.a)}",
         "{/if}",
         "{if $r?.a?.length >= 0}",
-        "  {assertType('null|string', $r.a)}",
+        "  {assertType('null|string|undefined', $r.a)}",
         "{/if}",
         "{if $r?.a?.length <= 0}",
-        "  {assertType('null|string', $r.a)}",
+        "  {assertType('null|string|undefined', $r.a)}",
         "{/if}",
         "");
   }
@@ -768,8 +764,8 @@ public final class ResolveExpressionTypesPassTest {
     assertTypes(
         "{@param? record: [active : bool|null]|null}",
         "{@param? selected: map<string,bool>|null}",
-        "{assertType('bool|map<string,bool>|null', $selected && $selected.get('a'))}",
-        "{assertType('bool|null', $selected == null || $selected.get('a'))}",
+        "{assertType('bool|map<string,bool>|null|undefined', $selected && $selected.get('a'))}",
+        "{assertType('bool|undefined', $selected == null || $selected.get('a'))}",
         "{if ($record.active != null) && (not $record.active)}",
         "  {assertType('bool', $record.active)}",
         "{/if}",
@@ -793,13 +789,13 @@ public final class ResolveExpressionTypesPassTest {
         "  {assertType('string', $param)}",
         "{/if}",
         "{if Boolean($param) != null}", // Boolean() ignored only in truthy narrowing.
-        "  {assertType('null|string', $param)}",
+        "  {assertType('null|string|undefined', $param)}",
         "{/if}",
         "{if undefinedToNullForMigration($param) != null}",
         "  {assertType('string', $param)}",
         "{/if}",
         "{if round($param)}", // non-special function takes a ? param.
-        "  {assertType('null|string', $param)}",
+        "  {assertType('null|string|undefined', $param)}",
         "{/if}",
         "");
   }
@@ -811,15 +807,15 @@ public final class ResolveExpressionTypesPassTest {
         "{@param? pa: bool|null}",
         "{@param pb: bool}",
         "{if ($pa != null) != ($pb != null)}",
-        "  {assertType('bool|null', $pa)}", // #0 don't know
+        "  {assertType('bool|null|undefined', $pa)}", // #0 don't know
         "{else}",
-        "  {assertType('bool|null', $pa)}", // #1 don't know
+        "  {assertType('bool|null|undefined', $pa)}", // #1 don't know
         "{/if}",
         "{if $pa ?? $pb}",
-        "  {assertType('bool|null', $pa)}", // #2 don't know
+        "  {assertType('bool|null|undefined', $pa)}", // #2 don't know
         "{/if}",
         "{if $pb ? $pa : false}",
-        "  {assertType('bool|null', $pa)}", // #3 don't know
+        "  {assertType('bool|null|undefined', $pa)}", // #3 don't know
         "{/if}");
   }
 
@@ -837,10 +833,10 @@ public final class ResolveExpressionTypesPassTest {
         "  {case 'str', 8675309}",
         "    {assertType('int|string', $p)}",
         "  {default}",
-        "    {assertType('bool|int|null|string', $p)}",
+        "    {assertType('bool|int|null|string|undefined', $p)}",
         "{/switch}");
     assertTypes(
-        "{@param? p: string|bool|int|null|undefined}",
+        "{@param? p: string|bool|int|null}",
         "{switch $p}",
         "  {case null}",
         "    {assertType('null', $p)}",
@@ -848,7 +844,7 @@ public final class ResolveExpressionTypesPassTest {
         "    {assertType('bool|int|string|undefined', $p)}",
         "{/switch}");
     assertTypes(
-        "{@param? p: string|bool|int|null|undefined}",
+        "{@param? p: string|bool|int|null}",
         "{switch $p}",
         "  {case 'str', null}",
         "    {assertType('null|string', $p)}",
@@ -893,14 +889,14 @@ public final class ResolveExpressionTypesPassTest {
                     "{let $proto: ExampleExtendable() /}",
                     "{assertType('example.ExampleExtendable', $proto)}",
                     "{assertType('string', $proto.getSomeString())}",
-                    "{assertType('null|string', $proto.getSomeStringOrUndefined())}",
-                    "{assertType('int|null', $proto.getSomeNumNoDefaultOrUndefined())}",
-                    "{assertType('example.SomeEmbeddedMessage|null',"
+                    "{assertType('string|undefined', $proto.getSomeStringOrUndefined())}",
+                    "{assertType('int|undefined', $proto.getSomeNumNoDefaultOrUndefined())}",
+                    "{assertType('example.SomeEmbeddedMessage|undefined',"
                         + " $proto.getSomeEmbeddedMessage())}",
                     "",
                     "{let $protoCorrect: Proto2ImplicitDefaults() /}",
                     "{assertType('string', $protoCorrect.getString())}",
-                    "{assertType('null|string', $protoCorrect.getStringOrUndefined())}",
+                    "{assertType('string|undefined', $protoCorrect.getStringOrUndefined())}",
                     "{assertType('int', $protoCorrect.getLongWithDefaultJsType())}"
                     ),
                 ExampleExtendable.getDescriptor(),
@@ -930,7 +926,7 @@ public final class ResolveExpressionTypesPassTest {
         "{@inject pa: bool}",
         "{@inject? pb: list<int>|null}",
         "{assertType('bool', $pa)}",
-        "{assertType('list<int>|null', $pb)}");
+        "{assertType('list<int>|null|undefined', $pb)}");
   }
 
   @Test
@@ -1044,8 +1040,8 @@ public final class ResolveExpressionTypesPassTest {
         "{assertType('[c: null|string]', $r.a.b!)}",
         "{assertType('int', $i ?? $n!)}",
         "{assertType('int', ($b ? $i : $n)!)}",
-        "{assertType('int|null', $b ? $i : $n!)}",
-        "{assertType('[c: null|string]|null', $r!.a?.b)}",
+        "{assertType('int|null|undefined', $b ? $i : $n!)}",
+        "{assertType('[c: null|string]|null|undefined', $r!.a?.b)}",
         "{assertType('[c: null|string]|null', $r?.a!.b)}",
         "{assertType('string', $r?.a.b.c!)}",
         "{assertType('null|string', $r!.a!.b!.c)}");

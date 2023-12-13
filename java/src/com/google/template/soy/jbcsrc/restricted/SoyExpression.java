@@ -494,7 +494,7 @@ public final class SoyExpression extends Expression {
             "resultType(): " + resultType() + " is not a valid type for a SoyExpression");
       }
     }
-    if (soyType().equals(NullType.getInstance())) {
+    if (SoyTypes.isNullOrUndefined(soyType())) {
       return Branch.never();
     }
     if (isBoxed()) {
@@ -845,11 +845,6 @@ public final class SoyExpression extends Expression {
 
   public SoyExpression asSoyUndefinable() {
     return new SoyExpression(soyRuntimeType.asSoyUndefinable(), delegate.asSoyNullish());
-  }
-
-  @Override
-  public SoyExpression asSoyNullish() {
-    return new SoyExpression(soyRuntimeType.asSoyNullish(), delegate.asSoyNullish());
   }
 
   @Override

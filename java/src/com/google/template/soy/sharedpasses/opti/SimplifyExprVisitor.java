@@ -50,7 +50,6 @@ import com.google.template.soy.exprtree.ItemAccessNode;
 import com.google.template.soy.exprtree.ListLiteralNode;
 import com.google.template.soy.exprtree.MapLiteralNode;
 import com.google.template.soy.exprtree.MethodCallNode;
-import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.exprtree.NullSafeAccessNode;
 import com.google.template.soy.exprtree.OperatorNodes.AmpAmpOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.AndOpNode;
@@ -61,6 +60,7 @@ import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
 import com.google.template.soy.exprtree.ProtoEnumValueNode;
 import com.google.template.soy.exprtree.RecordLiteralNode;
 import com.google.template.soy.exprtree.StringNode;
+import com.google.template.soy.exprtree.UndefinedNode;
 import com.google.template.soy.logging.LoggingFunction;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.shared.internal.BuiltinMethod;
@@ -299,7 +299,7 @@ final class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
         return listLiteral.getChild((int) index);
       } else {
         // out of range
-        return new NullNode(node.getSourceLocation());
+        return new UndefinedNode(node.getSourceLocation());
       }
     }
     return null;
@@ -330,7 +330,7 @@ final class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
       if (isConstant(keyExpr) && areAllKeysConstants) {
         // no matching key, and since everything was a bunch of constants, it should have matched.
         // in this case we can evaluate at compile time.
-        return new NullNode(node.getSourceLocation());
+        return new UndefinedNode(node.getSourceLocation());
       }
     }
     return null;

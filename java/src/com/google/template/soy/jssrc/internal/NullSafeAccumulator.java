@@ -18,7 +18,7 @@ package com.google.template.soy.jssrc.internal;
 
 import static com.google.common.base.CaseFormat.LOWER_CAMEL;
 import static com.google.common.base.CaseFormat.UPPER_CAMEL;
-import static com.google.template.soy.jssrc.dsl.Expressions.LITERAL_NULL;
+import static com.google.template.soy.jssrc.dsl.Expressions.LITERAL_UNDEFINED;
 import static com.google.template.soy.jssrc.dsl.Expressions.ifExpression;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_ARRAY_MAP;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_CHECK_NOT_NULL;
@@ -156,7 +156,7 @@ final class NullSafeAccumulator {
     unpackBuffer.addFirst(link);
     if (link.nullSafe) {
       result =
-          ifExpression(base.doubleEqualsNull(), LITERAL_NULL)
+          ifExpression(base.doubleEqualsNull(), LITERAL_UNDEFINED)
               .setElse(buildAccessChain(newBase, generator, chain, unpackBuffer))
               .build(generator);
     } else {

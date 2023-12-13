@@ -151,7 +151,7 @@ public final class JbcSrcRuntime {
       throw new NullPointerException("Attempted to access field '" + field.getName() + "' of null");
     }
     SoyValue value = ((SoyRecord) record).getField(field);
-    return value != null ? value : NullData.INSTANCE;
+    return value != null ? value : UndefinedData.INSTANCE;
   }
 
   @Keep
@@ -161,7 +161,7 @@ public final class JbcSrcRuntime {
       throw new NullPointerException("Attempted to access field '" + field.getName() + "' of null");
     }
     return paramOrDefault(
-        ((SoyRecord) record).getFieldProvider(field), /* defaultValue= */ NullData.INSTANCE);
+        ((SoyRecord) record).getFieldProvider(field), /* defaultValue= */ UndefinedData.INSTANCE);
   }
 
   @Keep
@@ -175,7 +175,7 @@ public final class JbcSrcRuntime {
   @Nonnull
   public static SoyValueProvider getParameter(ParamStore paramStore, RecordProperty field) {
     return paramOrDefault(
-        paramStore.getFieldProvider(field), /* defaultValue= */ NullData.INSTANCE);
+        paramStore.getFieldProvider(field), /* defaultValue= */ UndefinedData.INSTANCE);
   }
 
   /**
@@ -184,7 +184,7 @@ public final class JbcSrcRuntime {
   @Keep
   @Nonnull
   public static SoyValueProvider param(SoyValueProvider provider) {
-    return paramOrDefault(provider, NullData.INSTANCE);
+    return paramOrDefault(provider, UndefinedData.INSTANCE);
   }
 
   /**
@@ -196,7 +196,6 @@ public final class JbcSrcRuntime {
   @Nonnull
   public static SoyValueProvider paramOrDefault(
       @Nullable SoyValueProvider provider, SoyValue defaultValue) {
-
     return provider == null || provider == UndefinedData.INSTANCE ? defaultValue : provider;
   }
 
@@ -264,9 +263,9 @@ public final class JbcSrcRuntime {
     // use & instead of && to avoid a branch
     if (index < size & index >= 0) {
       SoyValueProvider soyValueProvider = list.get((int) index);
-      return soyValueProvider == null ? NullData.INSTANCE : soyValueProvider;
+      return soyValueProvider == null ? UndefinedData.INSTANCE : soyValueProvider;
     }
-    return NullData.INSTANCE;
+    return UndefinedData.INSTANCE;
   }
 
   public static RenderResult getListStatus(List<? extends SoyValueProvider> soyValueProviders) {
@@ -304,7 +303,7 @@ public final class JbcSrcRuntime {
       throw new NullPointerException("Attempted to access map item '" + key + "' of null");
     }
     SoyValueProvider soyValueProvider = ((SoyMap) soyMap).getProvider(key);
-    return soyValueProvider == null ? NullData.INSTANCE : soyValueProvider;
+    return soyValueProvider == null ? UndefinedData.INSTANCE : soyValueProvider;
   }
 
   @Keep
@@ -320,7 +319,7 @@ public final class JbcSrcRuntime {
       throw new NullPointerException("Attempted to access map item '" + key + "' of null");
     }
     SoyValueProvider soyValueProvider = ((SoyLegacyObjectMap) legacyObjectMap).getItemProvider(key);
-    return soyValueProvider == null ? NullData.INSTANCE : soyValueProvider;
+    return soyValueProvider == null ? UndefinedData.INSTANCE : soyValueProvider;
   }
 
   @Keep
@@ -1100,7 +1099,7 @@ public final class JbcSrcRuntime {
   }
 
   public static SoyValue emptyToNull(SoyValue value) {
-    return value.stringValue().isEmpty() ? NullData.INSTANCE : value;
+    return value.stringValue().isEmpty() ? UndefinedData.INSTANCE : value;
   }
 
   /**

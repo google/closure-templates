@@ -30,12 +30,12 @@ import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.soytree.SoyNode.Kind;
 import com.google.template.soy.soytree.defn.AttrParam;
 import com.google.template.soy.soytree.defn.TemplateParam;
-import com.google.template.soy.types.NullType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.TemplateType;
 import com.google.template.soy.types.TemplateType.DataAllCallSituation;
 import com.google.template.soy.types.TemplateType.Parameter;
 import com.google.template.soy.types.TemplateType.ParameterKind;
+import com.google.template.soy.types.UndefinedType;
 import com.google.template.soy.types.UnknownType;
 import javax.annotation.Nullable;
 
@@ -123,7 +123,7 @@ public abstract class TemplateMetadata {
       builder.setModifying(templateBasicNode.getModifiesExpr() != null);
       builder.setLegacyDeltemplateNamespace(templateBasicNode.getLegacyDeltemplateNamespace());
     } else {
-      builder.setUseVariantType(NullType.getInstance());
+      builder.setUseVariantType(UndefinedType.getInstance());
     }
     return builder.build();
   }

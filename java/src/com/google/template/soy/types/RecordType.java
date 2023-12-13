@@ -47,8 +47,7 @@ public final class RecordType extends SoyType {
     /** Returns the member type, but made nullable if the member is optional. */
     @Memoized
     public SoyType checkedType() {
-      // TODO(b/291132644): Switch to "makeUndefinable".
-      return optional() ? SoyTypes.makeNullable(declaredType()) : declaredType();
+      return optional() ? SoyTypes.makeUndefinable(declaredType()) : declaredType();
     }
   }
 

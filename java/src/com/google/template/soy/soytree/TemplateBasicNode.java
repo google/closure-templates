@@ -24,12 +24,12 @@ import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
-import com.google.template.soy.types.NullType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.StringType;
 import com.google.template.soy.types.TemplateType;
+import com.google.template.soy.types.UndefinedType;
 import java.util.Optional;
 import javax.annotation.Nullable;
 
@@ -150,7 +150,7 @@ public final class TemplateBasicNode extends TemplateNode {
   public void resolveUseVariantType(SoyTypeRegistry registry, ErrorReporter errorReporter) {
     Preconditions.checkState(useVariantType == null);
     if (useVariantTypeAttr == null) {
-      useVariantType = NullType.getInstance();
+      useVariantType = UndefinedType.getInstance();
       return;
     }
     SoyType resolvedType = registry.getType(useVariantTypeAttr.getValue());
@@ -161,7 +161,7 @@ public final class TemplateBasicNode extends TemplateNode {
               .orElse(getSourceLocation()),
           INVALID_USEVARIANTTYPE,
           useVariantTypeAttr.getValue());
-      useVariantType = NullType.getInstance();
+      useVariantType = UndefinedType.getInstance();
     } else {
       useVariantType = resolvedType;
     }

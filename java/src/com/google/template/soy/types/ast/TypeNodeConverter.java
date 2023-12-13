@@ -44,6 +44,7 @@ import com.google.template.soy.types.TemplateType;
 import com.google.template.soy.types.TypeInterner;
 import com.google.template.soy.types.TypeRegistries;
 import com.google.template.soy.types.TypeRegistry;
+import com.google.template.soy.types.UndefinedType;
 import com.google.template.soy.types.UnknownType;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -460,7 +461,7 @@ public final class TypeNodeConverter
     SoyType type =
         interner.internTemplateType(
             TemplateType.declaredTypeOf(
-                map.values(), returnType, NullType.getInstance(), false, false, ""));
+                map.values(), returnType, UndefinedType.getInstance(), false, false, ""));
     node.setResolvedType(type);
     return type;
   }

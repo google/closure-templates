@@ -35,7 +35,8 @@ public final class VeType extends SoyType {
 
   public static VeType of(String dataType) {
     Preconditions.checkNotNull(dataType);
-    if (NullType.getInstance().toString().equals(dataType)) {
+    if (NullType.getInstance().toString().equals(dataType)
+        || UndefinedType.getInstance().toString().equals(dataType)) {
       return NO_DATA;
     }
     return new VeType(Optional.of(dataType));
