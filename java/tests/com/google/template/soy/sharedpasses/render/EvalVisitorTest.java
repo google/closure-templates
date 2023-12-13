@@ -320,14 +320,15 @@ public class EvalVisitorTest {
     // wrong type.
     assertRenderException(
         "$foo?.bar?.moo.tar", "encountered non-record just before accessing \".moo\"");
-    assertThat(eval("$foo?.baz?.moo.tar")).isInstanceOf(NullData.class);
+    assertThat(eval("$foo?.baz?.moo.tar")).isInstanceOf(UndefinedData.class);
+    assertThat(eval("$aNull?.baz?.moo.tar")).isInstanceOf(UndefinedData.class);
     assertDataException(
         "$foo[2]",
         "SoyDict accessed with non-string key (got key type"
             + " com.google.template.soy.data.restricted.IntegerData).");
     assertRenderException("$moo?.too", "encountered non-record just before accessing \".too\"");
-    assertThat(eval("$roo?.too")).isInstanceOf(NullData.class);
-    assertThat(eval("$roo?[2]")).isInstanceOf(NullData.class);
+    assertThat(eval("$roo?.too")).isInstanceOf(UndefinedData.class);
+    assertThat(eval("$roo?[2]")).isInstanceOf(UndefinedData.class);
   }
 
   @Test

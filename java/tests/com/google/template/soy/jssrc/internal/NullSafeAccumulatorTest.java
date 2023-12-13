@@ -39,30 +39,30 @@ public final class NullSafeAccumulatorTest {
     NullSafeAccumulator accum = new NullSafeAccumulator(id("a"));
     assertThat(accum).generates("a;");
     assertThat(accum.dotAccess(FieldAccess.id("b"), /* nullSafe= */ true))
-        .generates("a == null ? null : a.b;");
+        .generates("a == null ? undefined : a.b;");
     assertThat(accum.bracketAccess(id("c"), /* nullSafe= */ true))
         .generates(
             "let $tmp$$1;\n"
                 + "if (a == null) {\n"
-                + "  $tmp$$1 = null;\n"
+                + "  $tmp$$1 = undefined;\n"
                 + "} else {\n"
                 + "  const $tmp = a.b;\n"
-                + "  $tmp$$1 = $tmp == null ? null : $tmp[c];\n"
+                + "  $tmp$$1 = $tmp == null ? undefined : $tmp[c];\n"
                 + "}\n"
                 + "$tmp$$1;");
     assertThat(accum.dotAccess(FieldAccess.id("d"), /* nullSafe= */ true))
         .generates(
             "let $tmp$$3;\n"
                 + "if (a == null) {\n"
-                + "  $tmp$$3 = null;\n"
+                + "  $tmp$$3 = undefined;\n"
                 + "} else {\n"
                 + "  let $tmp$$2;\n"
                 + "  const $tmp = a.b;\n"
                 + "  if ($tmp == null) {\n"
-                + "    $tmp$$2 = null;\n"
+                + "    $tmp$$2 = undefined;\n"
                 + "  } else {\n"
                 + "    const $tmp$$1 = $tmp[c];\n"
-                + "    $tmp$$2 = $tmp$$1 == null ? null : $tmp$$1.d;\n"
+                + "    $tmp$$2 = $tmp$$1 == null ? undefined : $tmp$$1.d;\n"
                 + "  }\n"
                 + "  $tmp$$3 = $tmp$$2;\n"
                 + "}\n"
@@ -71,20 +71,20 @@ public final class NullSafeAccumulatorTest {
         .generates(
             "let $tmp$$5;\n"
                 + "if (a == null) {\n"
-                + "  $tmp$$5 = null;\n"
+                + "  $tmp$$5 = undefined;\n"
                 + "} else {\n"
                 + "  let $tmp$$4;\n"
                 + "  const $tmp = a.b;\n"
                 + "  if ($tmp == null) {\n"
-                + "    $tmp$$4 = null;\n"
+                + "    $tmp$$4 = undefined;\n"
                 + "  } else {\n"
                 + "    let $tmp$$3;\n"
                 + "    const $tmp$$1 = $tmp[c];\n"
                 + "    if ($tmp$$1 == null) {\n"
-                + "      $tmp$$3 = null;\n"
+                + "      $tmp$$3 = undefined;\n"
                 + "    } else {\n"
                 + "      const $tmp$$2 = $tmp$$1.d;\n"
-                + "      $tmp$$3 = $tmp$$2 == null ? null : $tmp$$2[e];\n"
+                + "      $tmp$$3 = $tmp$$2 == null ? undefined : $tmp$$2[e];\n"
                 + "    }\n"
                 + "    $tmp$$4 = $tmp$$3;\n"
                 + "  }\n"
@@ -109,27 +109,27 @@ public final class NullSafeAccumulatorTest {
     NullSafeAccumulator accum = new NullSafeAccumulator(id("a"));
     assertThat(accum).generates("a;");
     assertThat(accum.dotAccess(FieldAccess.id("b"), /* nullSafe= */ true))
-        .generates("a == null ? null : a.b;");
+        .generates("a == null ? undefined : a.b;");
     assertThat(accum.bracketAccess(id("c"), /* nullSafe= */ false))
-        .generates("a == null ? null : a.b[c];");
+        .generates("a == null ? undefined : a.b[c];");
     assertThat(accum.dotAccess(FieldAccess.id("d"), /* nullSafe= */ true))
         .generates(
             "let $tmp$$1;\n"
                 + "if (a == null) {\n"
-                + "  $tmp$$1 = null;\n"
+                + "  $tmp$$1 = undefined;\n"
                 + "} else {\n"
                 + "  const $tmp = a.b[c];\n"
-                + "  $tmp$$1 = $tmp == null ? null : $tmp.d;\n"
+                + "  $tmp$$1 = $tmp == null ? undefined : $tmp.d;\n"
                 + "}\n"
                 + "$tmp$$1;");
     assertThat(accum.bracketAccess(id("e"), /* nullSafe= */ false))
         .generates(
             "let $tmp$$1;\n"
                 + "if (a == null) {\n"
-                + "  $tmp$$1 = null;\n"
+                + "  $tmp$$1 = undefined;\n"
                 + "} else {\n"
                 + "  const $tmp = a.b[c];\n"
-                + "  $tmp$$1 = $tmp == null ? null : $tmp.d[e];\n"
+                + "  $tmp$$1 = $tmp == null ? undefined : $tmp.d[e];\n"
                 + "}\n"
                 + "$tmp$$1;");
   }
@@ -140,7 +140,7 @@ public final class NullSafeAccumulatorTest {
     assertThat(accum.dotAccess(FieldAccess.call("b", id("c")), /* nullSafe= */ false))
         .generates("a.b(c);");
     assertThat(accum.dotAccess(FieldAccess.call("d", id("e")), /* nullSafe= */ true))
-        .generates("const $tmp = a.b(c);\n$tmp == null ? null : $tmp.d(e);");
+        .generates("const $tmp = a.b(c);\n$tmp == null ? undefined : $tmp.d(e);");
   }
 
   @Test
@@ -169,7 +169,7 @@ public final class NullSafeAccumulatorTest {
             accum
                 .dotAccess(FieldAccess.id("b"), /* nullSafe= */ true)
                 .mapGetAccess(id("key"), /* nullSafe= */ false))
-        .generates("a == null ? null : a.b.get(key);");
+        .generates("a == null ? undefined : a.b.get(key);");
   }
 
   @Test
@@ -179,7 +179,7 @@ public final class NullSafeAccumulatorTest {
             accum
                 .dotAccess(FieldAccess.id("b"), /* nullSafe= */ true)
                 .bracketAccess(id("c"), /* nullSafe= */ false))
-        .generates("a == null ? null : a.b[c];");
+        .generates("a == null ? undefined : a.b[c];");
   }
 
   private static AccumulatorSubject assertThat(NullSafeAccumulator accumulator) {

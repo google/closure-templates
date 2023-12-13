@@ -969,15 +969,10 @@ public class SoyTypesTest {
     }
 
     private SoyType parseType(String input) {
-      String opt = "";
-      // Does not handle all possible nullable inputs.
-      if (input.equals("null") || input.endsWith("|null")) {
-        opt = "?";
-      }
       TemplateNode template =
           (TemplateNode)
               SoyFileSetParserBuilder.forTemplateContents(
-                      "{@param" + opt + " p: " + input + "|string}\n{$p ? 't' : 'f'}")
+                      "{@param p: " + input + "|string}\n{$p ? 't' : 'f'}")
                   .typeRegistry(registry)
                   .errorReporter(
                       ErrorReporter

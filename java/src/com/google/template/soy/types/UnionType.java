@@ -111,11 +111,6 @@ public final class UnionType extends SoyType {
     return false;
   }
 
-  /** Returns true if the union includes the null type. */
-  public boolean isNullable() {
-    return members.contains(NullType.getInstance());
-  }
-
   /** Returns a Soy type that is equivalent to this one but with 'null' removed. */
   public SoyType filter(Predicate<SoyType> filter) {
     ImmutableSortedSet<SoyType> filtered =

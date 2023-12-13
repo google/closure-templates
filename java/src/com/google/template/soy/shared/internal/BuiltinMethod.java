@@ -41,7 +41,6 @@ import com.google.template.soy.shared.restricted.SoyMethod;
 import com.google.template.soy.types.BoolType;
 import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.MapType;
-import com.google.template.soy.types.NullType;
 import com.google.template.soy.types.ProtoExtensionImportType;
 import com.google.template.soy.types.RecordType;
 import com.google.template.soy.types.SoyProtoType;
@@ -50,6 +49,7 @@ import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.StringType;
 import com.google.template.soy.types.TemplateBindingUtil;
+import com.google.template.soy.types.UndefinedType;
 import com.google.template.soy.types.UnknownType;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -253,7 +253,7 @@ public enum BuiltinMethod implements SoyMethod {
         List<ExprNode> params,
         SoyTypeRegistry soyTypeRegistry,
         ErrorReporter errorReporter) {
-      return SoyTypes.makeNullable(
+      return SoyTypes.makeUndefinable(
           computeTypeForProtoFieldName(
               baseType, getGetOrUndefinedFieldName(methodName).get(), soyTypeRegistry));
     }
@@ -334,9 +334,9 @@ public enum BuiltinMethod implements SoyMethod {
       }
 
       if (baseType.equals(MapType.EMPTY_MAP)) {
-        return NullType.getInstance();
+        return UndefinedType.getInstance();
       }
-      return SoyTypes.makeNullable(SoyTypes.getMapValuesType(baseType));
+      return SoyTypes.makeUndefinable(SoyTypes.getMapValuesType(baseType));
     }
   },
 

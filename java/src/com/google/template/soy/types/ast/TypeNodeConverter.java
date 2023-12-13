@@ -32,18 +32,17 @@ import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.error.SoyErrors;
 import com.google.template.soy.types.FunctionType;
-import com.google.template.soy.types.NullType;
 import com.google.template.soy.types.ProtoTypeRegistry;
 import com.google.template.soy.types.RecordType;
 import com.google.template.soy.types.SanitizedType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypeRegistry;
-import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.TemplateType;
 import com.google.template.soy.types.TypeInterner;
 import com.google.template.soy.types.TypeRegistries;
 import com.google.template.soy.types.TypeRegistry;
+import com.google.template.soy.types.UndefinedType;
 import com.google.template.soy.types.UnknownType;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -93,12 +92,6 @@ public final class TypeNodeConverter
           "parse error at ''-'': expected identifier",
           StyleAllowance.NO_CAPS,
           StyleAllowance.NO_PUNCTUATION);
-
-  public static final SoyErrorKind OPTIONAL_RECORD_PROPERTY_MUST_BE_NULLABLE =
-      SoyErrorKind.of("Optional record property should be typed as ''|null''.");
-
-  public static final SoyErrorKind OPTIONAL_TEMPLATE_TYPE_PARAM_MUST_BE_NULLABLE =
-      SoyErrorKind.of("Template type parameter optionality should match nullability.");
 
   private static final ImmutableSet<Kind> ALLOWED_TEMPLATE_RETURN_TYPES =
       Sets.immutableEnumSet(
@@ -407,11 +400,6 @@ public final class TypeNodeConverter
         // restore old mapping and keep going
         map.put(property.name(), duplicatePropertyNameMember);
       }
-      // TODO(b/291132644): Remove this restriction.
-      if (property.optional() && !propertyType.isAssignableFromStrict(NullType.getInstance())) {
-        errorReporter.report(
-            property.type().sourceLocation(), OPTIONAL_RECORD_PROPERTY_MUST_BE_NULLABLE);
-      }
     }
     SoyType type = interner.getOrCreateRecordType(map.values());
     node.setResolvedType(type);
@@ -431,14 +419,6 @@ public final class TypeNodeConverter
               .setImplicit(false)
               .setHasDefaultValue(false)
               .build();
-      // TODO(b/291132644): Remove this restriction.
-      if ((parameter.required() && SoyTypes.isNullable(newParameter.getType()))
-          || (!parameter.required()
-              && !newParameter.getType().isAssignableFromStrict(NullType.getInstance()))) {
-        errorReporter.report(
-            parameter.nameLocation().extend(parameter.type().sourceLocation()),
-            OPTIONAL_TEMPLATE_TYPE_PARAM_MUST_BE_NULLABLE);
-      }
       TemplateType.Parameter oldParameter = map.put(parameter.name(), newParameter);
       if (oldParameter != null) {
         errorReporter.report(
@@ -460,7 +440,7 @@ public final class TypeNodeConverter
     SoyType type =
         interner.internTemplateType(
             TemplateType.declaredTypeOf(
-                map.values(), returnType, NullType.getInstance(), false, false, ""));
+                map.values(), returnType, UndefinedType.getInstance(), false, false, ""));
     node.setResolvedType(type);
     return type;
   }

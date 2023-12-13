@@ -292,13 +292,6 @@ public abstract class SoyRuntimeType {
     return withNewSoyType(SoyTypes.tryRemoveNullish(soyType));
   }
 
-  public final SoyRuntimeType asSoyNullish() {
-    // Use tryRemoveNull instead of removeNull because there are times where the jbcsrc backend
-    // infers stronger types than Soy proper (e.g. for `@state` params initialized to `null` but
-    // declared with a different type)
-    return withNewSoyType(SoyTypes.makeNullable(soyType));
-  }
-
   public final SoyRuntimeType asSoyUndefinable() {
     return withNewSoyType(SoyTypes.makeUndefinable(soyType));
   }

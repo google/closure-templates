@@ -91,7 +91,6 @@ import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.Visibility;
 import com.google.template.soy.soytree.defn.ConstVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
-import com.google.template.soy.types.NullType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypeRegistry;
@@ -724,7 +723,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
   protected static boolean isModifiableWithUseVariantType(TemplateNode node) {
     return isModifiable(node)
-        && !((TemplateBasicNode) node).getUseVariantType().equals(NullType.getInstance());
+        && !SoyTypes.isNullOrUndefined(((TemplateBasicNode) node).getUseVariantType());
   }
 
   protected static boolean isModTemplate(TemplateNode node) {
@@ -1493,12 +1492,9 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
         // template with the param. This matches what do for the Java builders.
         continue;
       }
-      // Note that Union folds duplicate types and flattens unions, so if
-      // the combinedType is already a union this will do the right thing.
       // TODO: detect cases where nullable is not needed (requires flow
       // analysis to determine if the template is always called.)
-      SoyType indirectParamType =
-          typeRegistry.getOrCreateUnionType(combinedType, NullType.getInstance());
+      SoyType indirectParamType = SoyTypes.makeNullable(combinedType);
       JsType jsType = getJsTypeForParamForDeclaration(indirectParamType);
       jsCodeBuilder.addGoogRequires(
           jsType.getGoogRequires().stream()

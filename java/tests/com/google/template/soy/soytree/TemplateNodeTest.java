@@ -189,7 +189,7 @@ public class TemplateNodeTest {
                 "  {@param goo : ?}",
                 "  /** Something milky. */",
                 "  {@param moo : bool}",
-                "  {@param? too : string|null}",
+                "  {@param? too : string}",
                 "{sp}{sp}{$foo}{$goo}{$moo ? 'moo' : ''}{$too}\n",
                 "{/template}"));
     assertEquals(
@@ -201,7 +201,7 @@ public class TemplateNodeTest {
             "  {@param foo: ?}  /** Foo to print. */",
             "  {@param goo: ?}  /** Goo to print. */",
             "  {@param moo: bool}  /** Something milky. */",
-            "  {@param? too: string|null}",
+            "  {@param? too: string}",
             "{sp} {$foo}{$goo}{$moo ? 'moo' : ''}{$too}",
             "{/template}\n"),
         tn.toSourceString());

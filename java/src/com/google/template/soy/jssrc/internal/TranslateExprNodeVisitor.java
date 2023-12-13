@@ -1232,7 +1232,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
     // empty sanitized content to `''` so `||` works.
     checkState(((LocalVar) defn).declaringNode() instanceof LetNode);
     Expression child = visit(node.getParam(0));
-    return child.or(LITERAL_NULL, translationContext.codeGenerator());
+    return child.or(LITERAL_UNDEFINED, translationContext.codeGenerator());
   }
 
   private static SoyJsSrcFunction getUnknownFunction(String name, int argSize) {

@@ -489,7 +489,7 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
             nodeIdGen.genId(),
             attr.getSourceLocation(),
             Identifier.create(paramName, attr.getChild(0).getSourceLocation()),
-            emptyToNull(val));
+            emptyToUndefined(val));
       } else if (ElementAttributePass.getMergingKey(attr) == null) {
         return new CallParamValueNode(
             nodeIdGen.genId(),
@@ -610,16 +610,19 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
     VarRefNode varRef =
         new VarRefNode("$" + letContentNode.getVar().name(), unknown, letContentNode.getVar());
     return new CallParamValueNode(
-        nodeIdGen.genId(), unknown, Identifier.create(paramName, unknown), emptyToNull(varRef));
+        nodeIdGen.genId(),
+        unknown,
+        Identifier.create(paramName, unknown),
+        emptyToUndefined(varRef));
   }
 
-  private static ExprNode emptyToNull(ExprNode val) {
+  private static ExprNode emptyToUndefined(ExprNode val) {
     var functionNode =
         FunctionNode.newPositional(
             Identifier.create(BuiltinFunction.EMPTY_TO_NULL.getName(), val.getSourceLocation()),
             BuiltinFunction.EMPTY_TO_NULL,
             val.getSourceLocation());
-    functionNode.setType(UnionType.of(NullType.getInstance(), val.getType()));
+    functionNode.setType(UnionType.of(UndefinedType.getInstance(), val.getType()));
     functionNode.addChild(val);
     return functionNode;
   }

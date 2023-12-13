@@ -33,8 +33,8 @@ import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
-import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.StringData;
+import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.AbstractLocalVarDefn;
 import com.google.template.soy.exprtree.FunctionNode;
@@ -367,7 +367,7 @@ public class ExpressionCompilerTest {
     tester =
         assertThatTemplateBody(
             "{@param b : bool}", "{@param v : list<int>}", "{$b ? $v[0] : $v[1] + 1}");
-    tester.rendersAs("null", ImmutableMap.of("b", true, "v", Arrays.asList()));
+    tester.rendersAs("undefined", ImmutableMap.of("b", true, "v", Arrays.asList()));
     tester.rendersAs("3", ImmutableMap.of("b", false, "v", Arrays.asList(1, 2)));
   }
 
@@ -405,7 +405,7 @@ public class ExpressionCompilerTest {
   public void testNullCoalescingOpNode_advanced() {
     CompiledTemplateSubject tester =
         assertThatTemplateBody("{@param v : list<string>}", "{$v[0] ?? $v[1] }");
-    tester.rendersAs("null", ImmutableMap.<String, Object>of("v", Arrays.asList()));
+    tester.rendersAs("undefined", ImmutableMap.<String, Object>of("v", Arrays.asList()));
     tester.rendersAs("b", ImmutableMap.<String, Object>of("v", Arrays.asList(null, "b")));
     tester.rendersAs("a", ImmutableMap.<String, Object>of("v", Arrays.asList("a", "b")));
   }
@@ -429,7 +429,7 @@ public class ExpressionCompilerTest {
     assertExpression("$list[0] + 1").evaluatesTo(1L);
 
     // null, not IndexOutOfBoundsException
-    assertExpression("$list[3]").evaluatesTo(NullData.INSTANCE);
+    assertExpression("$list[3]").evaluatesTo(UndefinedData.INSTANCE);
     assertExpression("$list[3] + 1").throwsException(SoyDataException.class);
 
     // even if the index type is not known, it still works
@@ -438,7 +438,7 @@ public class ExpressionCompilerTest {
     // And we can still unbox the return value
     assertExpression("$list[$anInt] + 1").evaluatesTo(2L);
     variables.put("anInt", untypedBoxedSoyExpression(SoyExpression.forInt(constant(3L))));
-    assertExpression("$list[$anInt]").evaluatesTo(NullData.INSTANCE);
+    assertExpression("$list[$anInt]").evaluatesTo(UndefinedData.INSTANCE);
   }
 
   @Test
@@ -449,7 +449,7 @@ public class ExpressionCompilerTest {
     assertExpression("$map['a']").evaluatesTo(IntegerData.forValue(0));
     assertExpression("$map['b']").evaluatesTo(IntegerData.forValue(1));
     assertExpression("$map['c']").evaluatesTo(IntegerData.forValue(2));
-    assertExpression("$map['not valid']").evaluatesTo(NullData.INSTANCE);
+    assertExpression("$map['not valid']").evaluatesTo(UndefinedData.INSTANCE);
   }
 
   @Test
@@ -461,7 +461,7 @@ public class ExpressionCompilerTest {
         SoyExpression.forSoyValue(
             LegacyObjectMapType.of(StringType.getInstance(), IntType.getInstance()), soyNull()));
     assertExpression("$nullMap['a']").throwsException(NullPointerException.class);
-    assertExpression("$nullMap?['a']").evaluatesTo(NullData.INSTANCE);
+    assertExpression("$nullMap?['a']").evaluatesTo(UndefinedData.INSTANCE);
   }
 
   @Test
@@ -472,7 +472,7 @@ public class ExpressionCompilerTest {
         .doesNotContainCode("IFNULL")
         .doesNotContainCode("IFNNONULL") // no null checks
         .throwsException(SoyDataException.class);
-    assertExpression("$nullList?[1]").evaluatesTo(NullData.INSTANCE);
+    assertExpression("$nullList?[1]").evaluatesTo(UndefinedData.INSTANCE);
   }
 
   @Test
@@ -495,7 +495,7 @@ public class ExpressionCompilerTest {
             SoyTypes.makeNullable(RecordType.of(ImmutableMap.of("a", StringType.getInstance()))),
             soyNull()));
     assertExpression("$nullRecord.a").throwsException(NullPointerException.class);
-    assertExpression("$nullRecord?.a").evaluatesTo(NullData.INSTANCE);
+    assertExpression("$nullRecord?.a").evaluatesTo(UndefinedData.INSTANCE);
   }
 
   @Test

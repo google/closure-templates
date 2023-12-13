@@ -156,7 +156,7 @@ public class LazyClosureCompilerTest {
             "{@param? param2 : string|null}",
             "{let $paramWithDefault : $param ?? $param2 /}",
             "{$paramWithDefault}");
-    tester.rendersAs("null", ImmutableMap.of());
+    tester.rendersAs("undefined", ImmutableMap.of());
     tester.rendersAs("1", ImmutableMap.<String, Object>of("param", "1"));
     tester.rendersAs("1", ImmutableMap.<String, Object>of("param", "1", "param2", "2"));
     tester.rendersAs("2", ImmutableMap.<String, Object>of("param2", "2"));

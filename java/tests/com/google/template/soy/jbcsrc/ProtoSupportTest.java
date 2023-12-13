@@ -96,7 +96,7 @@ public final class ProtoSupportTest {
             "{@param? p1 : KvPair|null}",
             "{@param p2 : KvPair|undefined}",
             "{$p1?.hasKey()}-{$p2?.hasKey()}")
-        .rendersAs("null-null", ImmutableMap.of("p2", UndefinedData.INSTANCE));
+        .rendersAs("undefined-undefined", ImmutableMap.of("p2", UndefinedData.INSTANCE));
   }
 
   @Test
@@ -126,7 +126,7 @@ public final class ProtoSupportTest {
             "{@param? proto : KvPair|null}",
             "{@param? proto2 : KvPair|null}",
             "{$proto?.getValueOrUndefined() ?? $proto2?.getValueOrUndefined()}")
-        .rendersAs("null");
+        .rendersAs("undefined");
   }
 
   // The null safe accessor syntax introduces some complication for primitive proto accessors since
@@ -136,7 +136,7 @@ public final class ProtoSupportTest {
   public void testSimpleProto_nullSafePrimitive() {
     assertThatTemplateBody(
             "{@param? proto : KvPair|null}", "{$proto?.getAnotherValueOrUndefined()}")
-        .rendersAs("null");
+        .rendersAs("undefined");
     assertThatTemplateBody(
             "{@param? proto : ExampleExtendable|null}",
             "{if not $proto?.getBoolFieldOrUndefined()}",
@@ -187,8 +187,8 @@ public final class ProtoSupportTest {
             "{@param? proto : ExampleExtendable|null}",
             "{let $foo : $proto?.getSomeEmbeddedMessage()?.getSomeEmbeddedStringOrUndefined() /}",
             "{$foo}");
-    tester.rendersAs("null", ImmutableMap.of());
-    tester.rendersAs("null", ImmutableMap.of("proto", ExampleExtendable.getDefaultInstance()));
+    tester.rendersAs("undefined", ImmutableMap.of());
+    tester.rendersAs("undefined", ImmutableMap.of("proto", ExampleExtendable.getDefaultInstance()));
     tester.rendersAs(
         "foo",
         ImmutableMap.of(
@@ -205,8 +205,8 @@ public final class ProtoSupportTest {
             "{@param? proto : ExampleExtendable|null}",
             "{let $foo : $proto?.getSomeEmbeddedMessage()?.getSomeEmbeddedStringOrUndefined() /}",
             "{$foo}");
-    tester.rendersAs("null", ImmutableMap.of());
-    tester.rendersAs("null", ImmutableMap.of("proto", ExampleExtendable.getDefaultInstance()));
+    tester.rendersAs("undefined", ImmutableMap.of());
+    tester.rendersAs("undefined", ImmutableMap.of("proto", ExampleExtendable.getDefaultInstance()));
     tester.rendersAs(
         "foo",
         ImmutableMap.of(

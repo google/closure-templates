@@ -277,7 +277,7 @@ final class MoreCallValidationsPass implements CompilerFileSetPass {
               .filter(
                   p ->
                       SoyTypes.makeNullish(SanitizedType.HtmlType.getInstance())
-                          .isAssignableFromStrict(p.getType()))
+                          .isAssignableFromStrict(p.getCheckedType()))
               .collect(toImmutableList());
       boolean childIsSlot = next instanceof HtmlOpenTagNode && ((HtmlOpenTagNode) next).isSlot();
       if (!childIsSlot && htmlTypeParams.size() == 1) {

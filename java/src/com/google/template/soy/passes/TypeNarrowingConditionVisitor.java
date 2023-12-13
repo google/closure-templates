@@ -199,8 +199,7 @@ final class TypeNarrowingConditionVisitor {
 
     @Override
     protected void visitNullSafeAccessNode(NullSafeAccessNode node) {
-      // TODO(b/291132644): swap NULL for UNDEFINED here.
-      boolean nonNullConstant = mode == NullishMode.UNDEFINED || !nullish;
+      boolean nonNullConstant = mode == NullishMode.NULL || !nullish;
       Map<ExprEquivalence.Wrapper, SoyType> chainConstraints;
       if (neq) {
         if (nonNullConstant) {

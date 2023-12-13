@@ -91,12 +91,14 @@ public final class TemplateBindingUtil {
         reportedErrors = true;
         continue;
       }
-      if (!base.getParameter(member.name()).getType().isAssignableFromLoose(member.checkedType())) {
+      if (!base.getParameter(member.name())
+          .getCheckedType()
+          .isAssignableFromLoose(member.checkedType())) {
         errorReporter.report(
             PARAMETER_TYPE_MISMATCH,
             member.name(),
             base,
-            base.getParameter(member.name()).getType(),
+            base.getParameter(member.name()).getCheckedType(),
             member.checkedType());
         reportedErrors = true;
       }

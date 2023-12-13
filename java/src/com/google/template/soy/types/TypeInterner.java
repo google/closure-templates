@@ -88,8 +88,8 @@ public interface TypeInterner {
   }
 
   /** Factory function which creates a nullable type. */
-  default SoyType getOrCreateNullableType(SoyType type) {
-    return getOrCreateUnionType(ImmutableList.of(type, NullType.getInstance()));
+  default SoyType getOrCreateNullishType(SoyType type) {
+    return getOrCreateUnionType(ImmutableList.of(type, UndefinedType.getInstance()));
   }
 
   /**

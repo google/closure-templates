@@ -342,7 +342,7 @@ final class ElementAttributePass implements CompilerFileSetPass {
             /* optional= */ true,
             /* desc= */ "Created by ElementAttributePass.",
             /* defaultValue= */ null);
-    keyParam.setType(SoyTypes.makeNullable(StringType.getInstance()));
+    keyParam.setType(SoyTypes.makeUndefinable(StringType.getInstance()));
     templateNode.addParam(keyParam);
 
     if (desugarIdomPasses && openTagNode.getTagName().isStatic()) {
@@ -448,7 +448,7 @@ final class ElementAttributePass implements CompilerFileSetPass {
               /* defaultValue= */ null);
       VarRefNode extraAttributesRef = new VarRefNode("$" + attrsParam.name(), loc, attrsParam);
       templateNode.addParam(attrsParam);
-      attrsParam.setType(SoyTypes.makeNullable(SanitizedType.AttributesType.getInstance()));
+      attrsParam.setType(SoyTypes.makeUndefinable(SanitizedType.AttributesType.getInstance()));
       // This requires a different handling than SoyTreeUtils.printIfNotNull because we need to
       // put an HTMLAttributeNode inside it so that we can concatenate using a whitespace.
       IfNode ifNode = new IfNode(id.get(), unknown);

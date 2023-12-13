@@ -125,9 +125,9 @@ public class NullSafeAccessNodeTest {
             NEWLINE.join(
                 "NULL_SAFE_ACCESS_NODE: string: $foo?.getStringField()",
                 "  VAR_REF_NODE: *.Foo: $foo",
-                "  METHOD_CALL_NODE: string: (null).getStringField()",
-                "    GROUP_NODE: *.Foo: (null)",
-                "      NULL_NODE: null: null",
+                "  METHOD_CALL_NODE: string: (undefined).getStringField()",
+                "    GROUP_NODE: *.Foo: (undefined)",
+                "      UNDEFINED_NODE: undefined: undefined",
                 ""));
     assertThat(buildAstStringWithPreview(((NullSafeAccessNode) expr).asAccessChain()))
         .isEqualTo(
@@ -147,30 +147,30 @@ public class NullSafeAccessNodeTest {
     assertThat(buildAstStringWithPreview(expr))
         .isEqualTo(
             NEWLINE.join(
-                "NULL_SAFE_ACCESS_NODE: null|*.MessageField:"
+                "NULL_SAFE_ACCESS_NODE: *.MessageField|undefined:"
                     + " $foo?.getMessageField()?.getFoo()?.getMessageField()",
                 "  VAR_REF_NODE: *.Foo: $foo",
-                "  NULL_SAFE_ACCESS_NODE: null|*.MessageField:"
-                    + " (null).getMessageField()?.getFoo()?.getMessageField()",
-                "    METHOD_CALL_NODE: null|*.MessageField: (null).getMessageField()",
-                "      GROUP_NODE: *.Foo: (null)",
-                "        NULL_NODE: null: null",
-                "    NULL_SAFE_ACCESS_NODE: null|*.MessageField:"
-                    + " (null).getFoo()?.getMessageField()",
-                "      METHOD_CALL_NODE: null|*.Foo: (null).getFoo()",
-                "        GROUP_NODE: null|*.MessageField: (null)",
-                "          NULL_NODE: null: null",
-                "      METHOD_CALL_NODE: null|*.MessageField: (null).getMessageField()",
-                "        GROUP_NODE: null|*.Foo: (null)",
-                "          NULL_NODE: null: null",
+                "  NULL_SAFE_ACCESS_NODE: *.MessageField|undefined:"
+                    + " (undefined).getMessageField()?.getFoo()?.getMessageField()",
+                "    METHOD_CALL_NODE: *.MessageField|undefined: (undefined).getMessageField()",
+                "      GROUP_NODE: *.Foo: (undefined)",
+                "        UNDEFINED_NODE: undefined: undefined",
+                "    NULL_SAFE_ACCESS_NODE: *.MessageField|undefined:"
+                    + " (undefined).getFoo()?.getMessageField()",
+                "      METHOD_CALL_NODE: *.Foo|undefined: (undefined).getFoo()",
+                "        GROUP_NODE: *.MessageField|undefined: (undefined)",
+                "          UNDEFINED_NODE: undefined: undefined",
+                "      METHOD_CALL_NODE: *.MessageField|undefined: (undefined).getMessageField()",
+                "        GROUP_NODE: *.Foo|undefined: (undefined)",
+                "          UNDEFINED_NODE: undefined: undefined",
                 ""));
     assertThat(buildAstStringWithPreview(((NullSafeAccessNode) expr).asAccessChain()))
         .isEqualTo(
             NEWLINE.join(
-                "METHOD_CALL_NODE: null|*.MessageField:"
+                "METHOD_CALL_NODE: *.MessageField|undefined:"
                     + " $foo?.getMessageField()?.getFoo()?.getMessageField()",
-                "  METHOD_CALL_NODE: null|*.Foo: $foo?.getMessageField()?.getFoo()",
-                "    METHOD_CALL_NODE: null|*.MessageField: $foo?.getMessageField()",
+                "  METHOD_CALL_NODE: *.Foo|undefined: $foo?.getMessageField()?.getFoo()",
+                "    METHOD_CALL_NODE: *.MessageField|undefined: $foo?.getMessageField()",
                 "      VAR_REF_NODE: *.Foo: $foo",
                 ""));
 
@@ -182,15 +182,16 @@ public class NullSafeAccessNodeTest {
     assertThat(buildAstStringWithPreview(expr))
         .isEqualTo(
             NEWLINE.join(
-                "NULL_SAFE_ACCESS_NODE: null|*.MessageField:"
+                "NULL_SAFE_ACCESS_NODE: *.MessageField|undefined:"
                     + " $foo?.getReadonlyMessageField().getReadonlyFoo().getMessageField()",
                 "  VAR_REF_NODE: *.Foo: $foo",
-                "  METHOD_CALL_NODE: null|*.MessageField:"
-                    + " (null).getReadonlyMessageField().getReadonlyFoo().getMessageField()",
-                "    METHOD_CALL_NODE: *.Foo: (null).getReadonlyMessageField().getReadonlyFoo()",
-                "      METHOD_CALL_NODE: *.MessageField: (null).getReadonlyMessageField()",
-                "        GROUP_NODE: *.Foo: (null)",
-                "          NULL_NODE: null: null",
+                "  METHOD_CALL_NODE: *.MessageField|undefined:"
+                    + " (undefined).getReadonlyMessageField().getReadonlyFoo().getMessageField()",
+                "    METHOD_CALL_NODE: *.Foo:"
+                    + " (undefined).getReadonlyMessageField().getReadonlyFoo()",
+                "      METHOD_CALL_NODE: *.MessageField: (undefined).getReadonlyMessageField()",
+                "        GROUP_NODE: *.Foo: (undefined)",
+                "          UNDEFINED_NODE: undefined: undefined",
                 ""));
 
     expr =
@@ -201,23 +202,24 @@ public class NullSafeAccessNodeTest {
     assertThat(buildAstStringWithPreview(expr))
         .isEqualTo(
             NEWLINE.join(
-                "NULL_SAFE_ACCESS_NODE: null|*.MessageField:"
+                "NULL_SAFE_ACCESS_NODE: *.MessageField|undefined"
+                    + ":"
                     + " $foo.getMessageField()?.getReadonlyFoo().getMessageField()",
-                "  METHOD_CALL_NODE: null|*.MessageField: $foo.getMessageField()",
+                "  METHOD_CALL_NODE: *.MessageField|undefined: $foo.getMessageField()",
                 "    VAR_REF_NODE: *.Foo: $foo",
-                "  METHOD_CALL_NODE: null|*.MessageField:"
-                    + " (null).getReadonlyFoo().getMessageField()",
-                "    METHOD_CALL_NODE: *.Foo: (null).getReadonlyFoo()",
-                "      GROUP_NODE: null|*.MessageField: (null)",
-                "        NULL_NODE: null: null",
+                "  METHOD_CALL_NODE: *.MessageField|undefined:"
+                    + " (undefined).getReadonlyFoo().getMessageField()",
+                "    METHOD_CALL_NODE: *.Foo: (undefined).getReadonlyFoo()",
+                "      GROUP_NODE: *.MessageField|undefined: (undefined)",
+                "        UNDEFINED_NODE: undefined: undefined",
                 ""));
     assertThat(buildAstStringWithPreview(((NullSafeAccessNode) expr).asAccessChain()))
         .isEqualTo(
             NEWLINE.join(
-                "METHOD_CALL_NODE: null|*.MessageField:"
+                "METHOD_CALL_NODE: *.MessageField|undefined:"
                     + " $foo.getMessageField()?.getReadonlyFoo().getMessageField()",
                 "  METHOD_CALL_NODE: *.Foo: $foo.getMessageField()?.getReadonlyFoo()",
-                "    METHOD_CALL_NODE: null|*.MessageField: $foo.getMessageField()",
+                "    METHOD_CALL_NODE: *.MessageField|undefined: $foo.getMessageField()",
                 "      VAR_REF_NODE: *.Foo: $foo",
                 ""));
   }
@@ -234,10 +236,10 @@ public class NullSafeAccessNodeTest {
             NEWLINE.join(
                 "NULL_SAFE_ACCESS_NODE: *.MessageField: $foo?.getMessageField()!",
                 "  VAR_REF_NODE: *.Foo: $foo",
-                "  ASSERT_NON_NULL_OP_NODE: *.MessageField: (null).getMessageField()!",
-                "    METHOD_CALL_NODE: null|*.MessageField: (null).getMessageField()",
-                "      GROUP_NODE: *.Foo: (null)",
-                "        NULL_NODE: null: null",
+                "  ASSERT_NON_NULL_OP_NODE: *.MessageField: (undefined).getMessageField()!",
+                "    METHOD_CALL_NODE: *.MessageField|undefined: (undefined).getMessageField()",
+                "      GROUP_NODE: *.Foo: (undefined)",
+                "        UNDEFINED_NODE: undefined: undefined",
                 ""));
 
     expr =
@@ -248,12 +250,12 @@ public class NullSafeAccessNodeTest {
     assertThat(buildAstStringWithPreview(expr))
         .isEqualTo(
             NEWLINE.join(
-                "NULL_SAFE_ACCESS_NODE: null|*.Foo: $foo.getMessageField()?.getFoo()",
-                "  METHOD_CALL_NODE: null|*.MessageField: $foo.getMessageField()",
+                "NULL_SAFE_ACCESS_NODE: *.Foo|undefined: $foo.getMessageField()?.getFoo()",
+                "  METHOD_CALL_NODE: *.MessageField|undefined: $foo.getMessageField()",
                 "    VAR_REF_NODE: *.Foo: $foo",
-                "  METHOD_CALL_NODE: null|*.Foo: (null).getFoo()",
-                "    GROUP_NODE: null|*.MessageField: (null)",
-                "      NULL_NODE: null: null",
+                "  METHOD_CALL_NODE: *.Foo|undefined: (undefined).getFoo()",
+                "    GROUP_NODE: *.MessageField|undefined: (undefined)",
+                "      UNDEFINED_NODE: undefined: undefined",
                 ""));
   }
 

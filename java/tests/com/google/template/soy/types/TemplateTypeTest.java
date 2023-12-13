@@ -67,10 +67,9 @@ public class TemplateTypeTest {
     assertThatSoyType("(p: int) => html").isAssignableFromStrict("(p?: int|null) => html");
 
     // optional
-    assertThatSoyType("(p: int) => html").isAssignableFromStrict("(p?: int|null) => html");
-    assertThatSoyType("(p?: int|null) => html").isAssignableFromStrict("(p?: int|null) => html");
-    assertThatSoyType("(p?: int|null) => html").isNotAssignableFromStrict("(p: int) => html");
-    assertThatSoyType("(p?: int|null) => html").isAssignableFromStrict("(p?: any) => html");
+    assertThatSoyType("(p: int) => html").isAssignableFromStrict("(p?: int) => html");
+    assertThatSoyType("(p?: int) => html").isAssignableFromStrict("(p?: int) => html");
+    assertThatSoyType("(p?: int) => html").isNotAssignableFromStrict("(p: int) => html");
     assertThatSoyType("(p: ?) => html").isAssignableFromStrict("(p: ?) => html");
     assertThatSoyType("(p: any) => html").isAssignableFromStrict("(p: any) => html");
   }

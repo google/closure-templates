@@ -144,7 +144,7 @@ final class CheckModifiableTemplatesPass implements CompilerFilePass {
       if (!baseParam.isRequired() && overrideParam.isRequired()) {
         return false;
       }
-      if (!overrideParam.getType().isAssignableFromStrict(baseParam.getType())) {
+      if (!overrideParam.getCheckedType().isAssignableFromStrict(baseParam.getCheckedType())) {
         return false;
       }
     }

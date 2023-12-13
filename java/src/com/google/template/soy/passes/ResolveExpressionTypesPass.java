@@ -1342,7 +1342,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
       SoyType type = nullSafeAccessNode.getDataAccess().getType();
       if (isNullish(nullSafeAccessNode.getBase().getType())
           && !hasNonNullAssertion(nullSafeAccessNode.getDataAccess())) {
-        type = SoyTypes.makeNullable(type);
+        type = SoyTypes.makeUndefinable(type);
       }
       nullSafeAccessNode.setType(type);
       tryApplySubstitution(nullSafeAccessNode);
@@ -1423,7 +1423,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
       if (NullSafeAccessNode.isPlaceholder(base)) {
         GroupNode node =
             new GroupNode(
-                new NullNode(base.getSourceLocation()),
+                new UndefinedNode(base.getSourceLocation()),
                 base.getSourceLocation(),
                 /* nullSafePlaceholder= */ true);
         node.setType(baseType);
@@ -2396,7 +2396,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
           errorReporter.report(
               expr.getSourceLocation(),
               ARGUMENT_TYPE_MISMATCH,
-              fieldName.identifier(),
+              fieldName.identifier() + "-c",
               expectedType,
               argType);
         }
