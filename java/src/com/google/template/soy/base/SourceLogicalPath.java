@@ -39,6 +39,10 @@ public abstract class SourceLogicalPath implements Comparable<SourceLogicalPath>
 
   public abstract String path();
 
+  public String getFileName() {
+    return path().substring(path().lastIndexOf('/') + 1);
+  }
+
   @Override
   public int compareTo(SourceLogicalPath o) {
     return this.path().compareTo(o.path());
