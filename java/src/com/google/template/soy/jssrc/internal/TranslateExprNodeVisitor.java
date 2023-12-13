@@ -835,7 +835,8 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
 
   @Override
   protected Expression visitAmpAmpOpNode(AmpAmpOpNode node) {
-    if (SoyTypes.isSanitizedType(node.getChild(0).getType())) {
+    // TODO(b/314786364): Remove this once sanitized content truthiness is fixed.
+    if (SoyTypes.isSanitizedTypeBroken(node.getChild(0).getType())) {
       return translationContext
           .codeGenerator()
           .conditionalExpression(
@@ -848,7 +849,8 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
 
   @Override
   protected Expression visitBarBarOpNode(BarBarOpNode node) {
-    if (SoyTypes.isSanitizedType(node.getChild(0).getType())) {
+    // TODO(b/314786364): Remove this once sanitized content truthiness is fixed.
+    if (SoyTypes.isSanitizedTypeBroken(node.getChild(0).getType())) {
       return translationContext
           .codeGenerator()
           .conditionalExpression(
