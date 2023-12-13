@@ -80,6 +80,16 @@ public final class SoyTypes {
   public static final ImmutableSet<Kind> SANITIZED_TYPE_KINDS_BROKEN =
       ImmutableSet.of(Kind.HTML, Kind.ELEMENT, Kind.ATTRIBUTES, Kind.JS, Kind.CSS);
 
+  public static final ImmutableSet<Kind> SANITIZED_TYPE_KINDS =
+      ImmutableSet.of(
+          Kind.HTML,
+          Kind.ELEMENT,
+          Kind.ATTRIBUTES,
+          Kind.JS,
+          Kind.CSS,
+          Kind.URI,
+          Kind.TRUSTED_RESOURCE_URI);
+
   private static final ImmutableSet<Kind> ALWAYS_COMPARABLE_KINDS =
       Sets.immutableEnumSet(Kind.UNKNOWN, Kind.ANY, Kind.NULL, Kind.UNDEFINED);
 
@@ -499,6 +509,10 @@ public final class SoyTypes {
 
   public static boolean isSanitizedTypeBroken(SoyType type) {
     return containsKinds(type, SANITIZED_TYPE_KINDS_BROKEN);
+  }
+
+  public static boolean isSanitizedType(SoyType type) {
+    return containsKinds(type, SANITIZED_TYPE_KINDS);
   }
 
   /**
