@@ -99,9 +99,9 @@ class KytheHelper {
 
     List<Span> spans = new ArrayList<>(parts.length);
     for (String part : parts) {
-      int partEnd = partStart + Utf8.encodedLength(part) - 1;
+      int partEnd = partStart + Utf8.encodedLength(part); // end is exclusive
       spans.add(new Span(partStart, partEnd));
-      partStart = partEnd + 1;
+      partStart = partEnd;
     }
     return spans;
   }
