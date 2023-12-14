@@ -477,7 +477,7 @@ final class ProtoUtils {
 
                 // The field is missing, substitute null.
                 adapter.pop();
-                BytecodeUtils.soyNull().gen(adapter);
+                BytecodeUtils.soyUndefined().gen(adapter);
                 adapter.goTo(endLabel);
 
                 // The field exists, call .get<Field>().
@@ -625,7 +625,7 @@ final class ProtoUtils {
 
                 // The field is missing, substitute null.
                 adapter.pop();
-                BytecodeUtils.soyNull().gen(adapter);
+                BytecodeUtils.soyUndefined().gen(adapter);
                 adapter.goTo(endLabel);
 
                 // The field exists, call getExtension()

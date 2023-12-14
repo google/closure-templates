@@ -30,7 +30,7 @@ import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor.JavaType;
 import com.google.protobuf.Message;
 import com.google.protobuf.TextFormat;
-import com.google.template.soy.data.restricted.NullData;
+import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.internal.proto.Field;
 import com.google.template.soy.internal.proto.JavaQualifiedNames;
 import com.google.template.soy.jbcsrc.shared.Names;
@@ -183,7 +183,7 @@ public final class SoyProtoValue extends SoyAbstractValue implements SoyLegacyOb
     FieldDescriptor fd = field.getDescriptor();
     if (!fd.isRepeated() && fd.getJavaType() == JavaType.MESSAGE && !proto.hasField(fd)) {
       // Unset singular message fields are always null to match JSPB semantics.
-      return NullData.INSTANCE;
+      return UndefinedData.INSTANCE;
     }
     return field.interpretField(proto, forceStringConversion);
   }
@@ -223,7 +223,7 @@ public final class SoyProtoValue extends SoyAbstractValue implements SoyLegacyOb
     }
     FieldDescriptor fd = field.getDescriptor();
     if (fd.hasPresence() && !proto.hasField(fd)) {
-      return NullData.INSTANCE;
+      return UndefinedData.INSTANCE;
     }
     return field.interpretField(proto, forceStringConversion);
   }
