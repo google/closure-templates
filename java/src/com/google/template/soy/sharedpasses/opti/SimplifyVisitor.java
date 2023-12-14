@@ -61,6 +61,7 @@ import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamValueNode;
 import com.google.template.soy.soytree.ForNode;
 import com.google.template.soy.soytree.ForNonemptyNode;
+import com.google.template.soy.soytree.HtmlAttributeNode;
 import com.google.template.soy.soytree.HtmlOpenTagNode;
 import com.google.template.soy.soytree.IfCondNode;
 import com.google.template.soy.soytree.IfElseNode;
@@ -515,6 +516,11 @@ public final class SimplifyVisitor {
       // Replace this node with a RawTextNode.
       String string = prerenderOutputSb.toString();
       if (string.isEmpty()) {
+        if (parent instanceof HtmlAttributeNode) {
+          // We assume HtmlAttributeNodes has at least one child node in many places. A RawTextNode
+          // with empty content will also get removed by CombineConsecutiveRawTextNodesPass.
+          return;
+        }
         parent.removeChild(node);
       } else {
         parent.replaceChild(
