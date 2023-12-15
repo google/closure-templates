@@ -211,7 +211,7 @@ exports.packSanitizedUriToProtoSoyRuntimeOnly = function(sanitizedUri) {
 /**
  * Converts a Safe String Proto to HTML Sanitized Content.
  * @param {?ReadonlySafeHtmlProto|undefined} x null or a safe string proto.
- * @return {?SanitizedHtml}
+ * @return {?SanitizedHtml|undefined}
  */
 exports.unpackProtoToSanitizedHtml = function(x) {
   if (x instanceof SafeHtmlProto) {
@@ -219,7 +219,7 @@ exports.unpackProtoToSanitizedHtml = function(x) {
     safeHtml = safeHtml ? unwrapHtml(safeHtml).toString() : '';
     return soy.VERY_UNSAFE.ordainSanitizedHtml(safeHtml);
   }
-  return null;
+  return x == null ? x : null;  // preserve undefined v. null
 };
 
 
@@ -227,7 +227,7 @@ exports.unpackProtoToSanitizedHtml = function(x) {
  * Converts a Safe String Proto to CSS Sanitized Content.
  * @param {?ReadonlySafeStyleProto | ?ReadonlySafeStyleSheetProto | undefined} x
  *   null or a safe string proto.
- * @return {?SanitizedCss}
+ * @return {?SanitizedCss|undefined}
  */
 exports.unpackProtoToSanitizedCss = function(x) {
   let safeCss;
@@ -240,14 +240,14 @@ exports.unpackProtoToSanitizedCss = function(x) {
     safeCss = safeCss ? unwrapStyleSheet(safeCss) : '';
     return soy.VERY_UNSAFE.ordainSanitizedCss(safeCss);
   }
-  return null;
+  return x == null ? x : null;  // preserve undefined v. null
 };
 
 
 /**
  * Converts a Safe String Proto to JS Sanitized Content.
  * @param {?ReadonlySafeScriptProto | undefined} x null or a safe string proto.
- * @return {?SanitizedJs}
+ * @return {?SanitizedJs|undefined}
  */
 exports.unpackProtoToSanitizedJs = function(x) {
   if (x instanceof SafeScriptProto) {
@@ -255,7 +255,7 @@ exports.unpackProtoToSanitizedJs = function(x) {
     safeJs = safeJs ? unwrapScript(safeJs).toString() : '';
     return soy.VERY_UNSAFE.ordainSanitizedJs(safeJs);
   }
-  return null;
+  return x == null ? x : null;  // preserve undefined v. null
 };
 
 
@@ -264,7 +264,7 @@ exports.unpackProtoToSanitizedJs = function(x) {
  * @param {?ReadonlySafeUrlProto | ?ReadonlyTrustedResourceUrlProto | undefined}
  *     x
  *   null or a safe string proto.
- * @return {?SanitizedUri}
+ * @return {?SanitizedUri|undefined}
  */
 exports.unpackProtoToSanitizedUri = function(x) {
   if (x instanceof SafeUrlProto) {
@@ -272,7 +272,7 @@ exports.unpackProtoToSanitizedUri = function(x) {
     safeUrl = safeUrl ? unwrapUrl(safeUrl) : '';
     return soy.VERY_UNSAFE.ordainSanitizedUri(safeUrl);
   }
-  return null;
+  return x == null ? x : null;  // preserve undefined v. null
 };
 
 
@@ -280,7 +280,7 @@ exports.unpackProtoToSanitizedUri = function(x) {
  * Converts a Safe String Proto to a Trusted Resource URI Sanitized Content.
  * @param {?ReadonlyTrustedResourceUrlProto | undefined} x
  *   null or a safe string proto.
- * @return {?SanitizedTrustedResourceUri}
+ * @return {?SanitizedTrustedResourceUri|undefined}
  */
 exports.unpackProtoToSanitizedTrustedResourceUri = function(x) {
   if (x instanceof TrustedResourceUrlProto) {
@@ -288,7 +288,7 @@ exports.unpackProtoToSanitizedTrustedResourceUri = function(x) {
     safeUrl = safeUrl ? unwrapResourceUrl(safeUrl).toString() : '';
     return soy.VERY_UNSAFE.ordainSanitizedTrustedResourceUri(safeUrl);
   }
-  return null;
+  return x == null ? x : null;  // preserve undefined v. null
 };
 
 /**
