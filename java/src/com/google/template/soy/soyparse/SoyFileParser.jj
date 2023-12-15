@@ -463,8 +463,6 @@ public class SoyFileParser {
           + "'''{@param ...}'''?");
   private static final SoyErrorKind STATE_IN_TEMPLATE =
       SoyErrorKind.of("@state declarations are only allowed in elements.");
-  private static final SoyErrorKind STATE_REQUIRES_VALUE =
-      SoyErrorKind.of("@state declarations require an initial value.");
 
   // Expression errors:
   static final SoyErrorKind DUPLICATE_KEY_NAME =
@@ -2438,10 +2436,6 @@ private TemplateHeaderVarDefn ParamDecl(@Nullable String desc) :
       desc = desc.substring(3, desc.length() - 2).trim();
     }
     if (stateVar) {
-      if (value == null && !optional) {
-        errorReporter.report(createSrcLoc(tagBegin), STATE_REQUIRES_VALUE);
-        value = errorExpr(name);
-      }
       return new TemplateStateVar(
           name.image,
           paramTypeNode,
