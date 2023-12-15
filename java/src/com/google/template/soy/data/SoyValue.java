@@ -36,6 +36,11 @@ import javax.annotation.ParametersAreNonnullByDefault;
 @ParametersAreNonnullByDefault
 public interface SoyValue extends SoyValueProvider {
 
+  /** Convenience method for testing nullishness. */
+  static boolean isNullish(@Nullable SoyValue value) {
+    return value == null || value.isNullish();
+  }
+
   /**
    * Compares this value against another for equality in the sense of the '==' operator of Soy.
    *
