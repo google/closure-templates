@@ -16,8 +16,17 @@
 
 package com.google.template.soy.shared.internal;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.shared.restricted.SoyFunction;
+import com.google.template.soy.types.NullType;
+import com.google.template.soy.types.SanitizedType;
+import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.StringType;
+import com.google.template.soy.types.UndefinedType;
+import com.google.template.soy.types.UnionType;
+import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -56,6 +65,7 @@ public enum BuiltinFunction implements SoyFunction {
   UNDEFINED_TO_NULL_SSR("undefinedToNullForSsrMigration"),
   BOOLEAN("Boolean"),
   IS_FALSEY_OR_EMPTY("isFalseyOrEmpty"),
+  HAS_CONTENT("hasContent"),
   ;
 
   /** The function name. */
@@ -94,6 +104,7 @@ public enum BuiltinFunction implements SoyFunction {
       case UNDEFINED_TO_NULL_SSR:
       case BOOLEAN:
       case IS_FALSEY_OR_EMPTY:
+      case HAS_CONTENT:
         return ImmutableSet.of(1);
       case PROTO_INIT:
         throw new UnsupportedOperationException();
@@ -101,6 +112,27 @@ public enum BuiltinFunction implements SoyFunction {
         return ImmutableSet.of(2, 3, 4);
     }
     throw new AssertionError(this);
+  }
+
+  public Optional<List<SoyType>> getValidArgTypes() {
+    switch (this) {
+      case HAS_CONTENT:
+        return Optional.of(
+            ImmutableList.of(
+                UnionType.of(
+                    SanitizedType.AttributesType.getInstance(),
+                    SanitizedType.ElementType.getInstance("?"),
+                    SanitizedType.HtmlType.getInstance(),
+                    SanitizedType.JsType.getInstance(),
+                    SanitizedType.StyleType.getInstance(),
+                    SanitizedType.TrustedResourceUriType.getInstance(),
+                    SanitizedType.UriType.getInstance(),
+                    StringType.getInstance(),
+                    NullType.getInstance(),
+                    UndefinedType.getInstance())));
+      default:
+        return Optional.empty();
+    }
   }
 
   /**
@@ -124,6 +156,7 @@ public enum BuiltinFunction implements SoyFunction {
       case UNDEFINED_TO_NULL_SSR:
       case BOOLEAN:
       case IS_FALSEY_OR_EMPTY:
+      case HAS_CONTENT:
         return true;
       case CSS: // implicitly depends on a renaming map or js compiler flag
       case EVAL_TOGGLE:

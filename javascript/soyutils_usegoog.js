@@ -556,6 +556,18 @@ const $$isFalseyOrEmpty = function(arg) {
 
 
 /**
+ * For sanitized types, returns true if content it not empty. Otherwise returns
+ * standard boolean coercion.
+ *
+ * @param {*} arg The argument to coerce.
+ * @return {boolean}
+ */
+const $$hasContent = function(arg) {
+  return $$coerceToBoolean(arg);
+};
+
+
+/**
  * Gets a consistent unique id for the given delegate template name. Two calls
  * to this function will return the same id if and only if the input names are
  * the same.
@@ -2637,6 +2649,7 @@ exports = {
   $$strContains,
   $$coerceToBoolean,
   $$isFalseyOrEmpty,
+  $$hasContent,
   $$makeEmptyTemplateFn,
   $$registerDelegateFn,
   $$getDelTemplateId,

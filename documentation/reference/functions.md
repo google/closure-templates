@@ -17,15 +17,23 @@ custom external functions, see
 
 Explicitly coerces the argument to a boolean.
 
-IMPORTANT: Sanitized content types (e.g. `html`) that are empty currently 
+IMPORTANT: Sanitized content types (e.g. `html`) that are empty currently
 implicitly coerce to `true`, but this will be changed soon. If you want to check
-if the contents are non-empty, use `isFalseyOrEmpty()`. See
+if the contents are non-empty, use `hasContent()` or `isFalseyOrEmpty()`. See
 go/soy-sanitized-types-boolean-coercion for more info.
+
+### `hasContent(value)` {#hasContent}
+
+Value must be one of the sanitized content types (`html`, `attributes`, `uri`,
+`trusted_resource_uri`, `css`, `js`) or `string`. Returns `true` if it is
+non-null and has content which is not empty string.
 
 ### `isFalseyOrEmpty(value)` {#isFalseyOrEmpty}
 
-Returns true if the value is falsey, or if it is a sanitized content
-type (e.g. `html`) that has empty content.
+For strings and sanitized types, equivalent to `not hasContent(value)`. Any
+other type is allowed, in which case standard
+[boolean coercion](go/soy/reference/coercions?polyglot=call-command#boolean-coercions)
+is used.
 
 ### `checkNotNull(value)` {#checkNotNull}
 

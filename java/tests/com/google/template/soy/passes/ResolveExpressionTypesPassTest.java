@@ -787,6 +787,17 @@ public final class ResolveExpressionTypesPassTest {
   }
 
   @Test
+  public void testDataFlowTypeNarrowing_hasContent() {
+    assertTypes(
+        "{@param? h: html|null}",
+        "{if hasContent($h)}",
+        "  {assertType('html', $h)}",
+        "{else}",
+        "  {assertType('html|null|undefined', $h)}",
+        "{/if}");
+  }
+
+  @Test
   public void testDataFlowTypeNarrowing_logicalExpressions() {
     assertTypes(
         "{@param? record: [active : bool|null]|null}",

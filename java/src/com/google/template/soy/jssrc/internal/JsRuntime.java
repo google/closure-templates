@@ -127,6 +127,8 @@ public final class JsRuntime {
 
   public static final Expression SOY_IS_FALSEY_OR_EMPTY = SOY.dotAccess("$$isFalseyOrEmpty");
 
+  public static final Expression SOY_HAS_CONTENT = SOY.dotAccess("$$hasContent");
+
   public static final Expression SOY_ESCAPE_HTML = SOY.dotAccess("$$escapeHtml");
 
   public static final Expression SOY_GET_DELEGATE_FN = SOY.dotAccess("$$getDelegateFn");

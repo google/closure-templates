@@ -646,6 +646,7 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
       case VE_DEF:
         return NONE;
       case BOOLEAN:
+      case HAS_CONTENT:
         return new PyFunctionExprBuilder("bool").addArg(visit(node.getParam(0))).asPyExpr();
       case IS_FALSEY_OR_EMPTY:
         return new PyFunctionExprBuilder("not")

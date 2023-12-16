@@ -756,6 +756,11 @@ public final class JbcSrcRuntime {
   }
 
   @Keep
+  public static boolean hasContent(SoyValue v) {
+    return v.hasContent();
+  }
+
+  @Keep
   public static boolean coerceToBoolean(@Nullable String v) {
     return v != null && !v.isEmpty();
   }

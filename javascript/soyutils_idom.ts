@@ -468,6 +468,10 @@ function isFalseyOrEmpty(expr: unknown): boolean {
   return !isTruthy(expr);
 }
 
+function hasContent(expr: unknown): boolean {
+  return isTruthy(expr);
+}
+
 function emptyToNull<T>(expr: T): T | undefined {
   return isTruthy(expr) ? expr : undefined;
 }
@@ -575,6 +579,7 @@ export {
   callDynamicText as $$callDynamicText,
   defaultIdomRenderer as $$defaultIdomRenderer,
   emptyToNull as $$emptyToNull,
+  hasContent as $$hasContent,
   htmlToString as $$htmlToString,
   isFalseyOrEmpty as $$isFalseyOrEmpty,
   isIdom as $$isIdom,

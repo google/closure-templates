@@ -2742,11 +2742,31 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
       }
     }
 
+    private void validateBuiltinArgTypes(BuiltinFunction builtinFunction, FunctionNode node) {
+      builtinFunction
+          .getValidArgTypes()
+          .ifPresent(
+              typeList -> {
+                node.setAllowedParamTypes(typeList);
+                for (int i = 0; i < typeList.size(); i++) {
+                  if (!typeList.get(i).isAssignableFromStrict(node.getParam(i).getType())) {
+                    errorReporter.report(
+                        node.getParam(i).getSourceLocation(),
+                        INCORRECT_ARG_TYPE,
+                        builtinFunction.getName(),
+                        node.getParam(i).getType(),
+                        typeList.get(i));
+                  }
+                }
+              });
+    }
+
     /**
      * Private helper that checks types of the arguments and tries to set the return type for some
      * built-in functions.
      */
     private void visitBuiltinFunction(BuiltinFunction builtinFunction, FunctionNode node) {
+      validateBuiltinArgTypes(builtinFunction, node);
       switch (builtinFunction) {
         case CHECK_NOT_NULL:
           SoyType type = node.getParam(0).getType();
@@ -2821,6 +2841,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
           break;
         case BOOLEAN:
         case IS_FALSEY_OR_EMPTY:
+        case HAS_CONTENT:
           node.setType(BoolType.getInstance());
           break;
         case EMPTY_TO_NULL:

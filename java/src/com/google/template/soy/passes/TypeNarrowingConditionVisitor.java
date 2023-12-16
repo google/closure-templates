@@ -268,6 +268,10 @@ final class TypeNarrowingConditionVisitor {
         TypeNarrowingConditionVisitor childVisitor = createTypeNarrowingConditionVisitor();
         childVisitor.ifTruthy(node.getChild(0));
         negativeTypeConstraints.putAll(childVisitor.positiveTypeConstraints);
+      } else if (node.getFunctionName().equals("hasContent")) {
+        TypeNarrowingConditionVisitor childVisitor = createTypeNarrowingConditionVisitor();
+        childVisitor.ifTruthy(node.getChild(0));
+        positiveTypeConstraints.putAll(childVisitor.positiveTypeConstraints);
       }
       visitExprNode(node);
     }
