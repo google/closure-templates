@@ -143,6 +143,7 @@ public class SoyFileNodeTransformer {
 
     protected abstract TemplateNode template();
 
+    /** The template name location. */
     public abstract SourceLocation sourceLocation();
 
     public boolean complete() {
