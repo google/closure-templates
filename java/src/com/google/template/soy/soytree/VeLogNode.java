@@ -97,22 +97,7 @@ public final class VeLogNode extends AbstractBlockCommandNode
     this.veDataExpr = new ExprRootNode(checkNotNull(veDataExpr));
     ExprRootNode logonlyExpr = null;
     this.attributes = attributes;
-    for (CommandTagAttribute attr : attributes) {
-      switch (attr.getName().identifier()) {
-        case "logonly":
-          logonlyExpr = attr.valueAsExpr(errorReporter);
-          break;
-        default:
-          errorReporter.report(
-              attr.getName().location(),
-              CommandTagAttribute.UNSUPPORTED_ATTRIBUTE_KEY,
-              attr.getName().identifier(),
-              "velog",
-              ImmutableList.of("logonly"));
-          break;
-      }
-    }
-    this.logonlyExpr = logonlyExpr;
+    this.logonlyExpr = getLogonlyExpr(attributes, errorReporter);
   }
 
   private VeLogNode(VeLogNode orig, CopyState copyState) {
@@ -120,10 +105,29 @@ public final class VeLogNode extends AbstractBlockCommandNode
     this.veDataExpr = orig.veDataExpr.copy(copyState);
     this.attributes =
         orig.attributes.stream().map(c -> c.copy(copyState)).collect(toImmutableList());
-    this.logonlyExpr = orig.logonlyExpr == null ? null : orig.logonlyExpr.copy(copyState);
+    this.logonlyExpr = getLogonlyExpr(this.attributes, ErrorReporter.exploding());
     this.needsSyntheticVelogNode = orig.needsSyntheticVelogNode;
     // See SamenessKey copy constructor
     copyState.updateRefs(orig, this);
+  }
+
+  @Nullable
+  private static final ExprRootNode getLogonlyExpr(
+      List<CommandTagAttribute> attributes, ErrorReporter errorReporter) {
+    for (CommandTagAttribute attr : attributes) {
+      switch (attr.getName().identifier()) {
+        case "logonly":
+          return attr.valueAsExpr(errorReporter);
+        default:
+          errorReporter.report(
+              attr.getName().location(),
+              CommandTagAttribute.UNSUPPORTED_ATTRIBUTE_KEY,
+              attr.getName().identifier(),
+              "velog",
+              ImmutableList.of("logonly"));
+      }
+    }
+    return null;
   }
 
   @Override
