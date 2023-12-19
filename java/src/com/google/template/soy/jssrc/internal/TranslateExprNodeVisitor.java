@@ -46,6 +46,7 @@ import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_EQUALS;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_FILTER_AND_MAP;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_HAS_CONTENT;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_IS_FALSEY_OR_EMPTY;
+import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_IS_TRUTHY_NON_EMPTY;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_MAKE_ARRAY;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_NEWMAPS_TRANSFORM_VALUES;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_VISUAL_ELEMENT;
@@ -906,6 +907,10 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
     return SOY_HAS_CONTENT.call(chunk);
   }
 
+  protected Expression isTruthyNonEmpty(Expression chunk) {
+    return SOY_IS_TRUTHY_NON_EMPTY.call(chunk);
+  }
+
   @Override
   protected Expression visitOperatorNode(OperatorNode node) {
     return operation(node.getOperator(), visitChildren(node));
@@ -1113,6 +1118,8 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
               AnyType.getInstance(), visit(node.getParam(0)), /* force= */ true);
         case IS_FALSEY_OR_EMPTY:
           return isFalseyOrEmpty(visit(node.getParam(0)));
+        case IS_TRUTHY_NON_EMPTY:
+          return isTruthyNonEmpty(visit(node.getParam(0)));
         case HAS_CONTENT:
           return hasContent(visit(node.getParam(0)));
         case LEGACY_DYNAMIC_TAG:

@@ -2842,6 +2842,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
         case BOOLEAN:
         case IS_FALSEY_OR_EMPTY:
         case HAS_CONTENT:
+        case IS_TRUTHY_NON_EMPTY:
           node.setType(BoolType.getInstance());
           break;
         case EMPTY_TO_NULL:

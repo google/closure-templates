@@ -807,6 +807,7 @@ final class TemplateAnalysisImpl implements TemplateAnalysis {
           case BOOLEAN:
           case IS_FALSEY_OR_EMPTY:
           case HAS_CONTENT:
+          case IS_TRUTHY_NON_EMPTY:
             // visit children normally
             break;
           case UNKNOWN_JS_GLOBAL:

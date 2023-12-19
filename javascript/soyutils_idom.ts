@@ -468,6 +468,10 @@ function isFalseyOrEmpty(expr: unknown): boolean {
   return !isTruthy(expr);
 }
 
+function isTruthyNonEmpty(expr: unknown): boolean {
+  return isTruthy(expr);
+}
+
 function hasContent(expr: unknown): boolean {
   return isTruthy(expr);
 }
@@ -584,6 +588,7 @@ export {
   isFalseyOrEmpty as $$isFalseyOrEmpty,
   isIdom as $$isIdom,
   isTruthy as $$isTruthy,
+  isTruthyNonEmpty as $$isTruthyNonEmpty,
   makeAttributes as $$makeAttributes,
   makeHtml as $$makeHtml,
   printDynamicAttr as $$printDynamicAttr,

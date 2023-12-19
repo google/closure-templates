@@ -1774,6 +1774,12 @@ final class ExpressionCompiler {
           MethodRefs.RUNTIME_HAS_CONTENT.invoke(visit(node.getParam(0)).box()));
     }
 
+    @Override
+    SoyExpression visitIsTruthyNonEmptyFunction(FunctionNode node) {
+      return SoyExpression.forBool(
+          MethodRefs.RUNTIME_IS_TRUTHY_NON_EMPTY.invoke(visit(node.getParam(0)).box()));
+    }
+
     // Non-builtin functions
 
     @Override

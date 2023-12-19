@@ -21,6 +21,7 @@ import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SO
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_HAS_CONTENT;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_IS_FALSEY_OR_EMPTY;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_IS_TRUTHY;
+import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_IS_TRUTHY_NON_EMPTY;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.STATE_PREFIX;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.STATE_VAR_PREFIX;
 import static com.google.template.soy.jssrc.dsl.Expressions.id;
@@ -128,6 +129,11 @@ public class IncrementalDomTranslateExprNodeVisitor extends TranslateExprNodeVis
   @Override
   protected Expression isFalseyOrEmpty(Expression chunk) {
     return SOY_IDOM_IS_FALSEY_OR_EMPTY.call(chunk);
+  }
+
+  @Override
+  protected Expression isTruthyNonEmpty(Expression chunk) {
+    return SOY_IDOM_IS_TRUTHY_NON_EMPTY.call(chunk);
   }
 
   @Override

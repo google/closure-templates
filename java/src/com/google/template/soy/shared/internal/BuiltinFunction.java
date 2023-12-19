@@ -66,6 +66,7 @@ public enum BuiltinFunction implements SoyFunction {
   BOOLEAN("Boolean"),
   IS_FALSEY_OR_EMPTY("isFalseyOrEmpty"),
   HAS_CONTENT("hasContent"),
+  IS_TRUTHY_NON_EMPTY("isTruthyNonEmpty"),
   ;
 
   /** The function name. */
@@ -104,6 +105,7 @@ public enum BuiltinFunction implements SoyFunction {
       case UNDEFINED_TO_NULL_SSR:
       case BOOLEAN:
       case IS_FALSEY_OR_EMPTY:
+      case IS_TRUTHY_NON_EMPTY:
       case HAS_CONTENT:
         return ImmutableSet.of(1);
       case PROTO_INIT:
@@ -157,6 +159,7 @@ public enum BuiltinFunction implements SoyFunction {
       case BOOLEAN:
       case IS_FALSEY_OR_EMPTY:
       case HAS_CONTENT:
+      case IS_TRUTHY_NON_EMPTY:
         return true;
       case CSS: // implicitly depends on a renaming map or js compiler flag
       case EVAL_TOGGLE:

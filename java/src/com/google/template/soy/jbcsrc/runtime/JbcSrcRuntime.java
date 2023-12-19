@@ -756,6 +756,11 @@ public final class JbcSrcRuntime {
   }
 
   @Keep
+  public static boolean isTruthyNonEmpty(SoyValue v) {
+    return v.isTruthyNonEmpty();
+  }
+
+  @Keep
   public static boolean hasContent(SoyValue v) {
     return v.hasContent();
   }

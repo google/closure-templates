@@ -73,6 +73,10 @@ public interface SoyValue extends SoyValueProvider {
     return !coerceToBoolean();
   }
 
+  default boolean isTruthyNonEmpty() {
+    return coerceToBoolean();
+  }
+
   /**
    * Returns whether this value is truthy. For SanitizedContent, this checks if the content is not
    * empty.

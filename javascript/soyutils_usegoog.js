@@ -556,6 +556,17 @@ const $$isFalseyOrEmpty = function(arg) {
 
 
 /**
+ * Returns if the value is truthy or is a sanitized content with content.
+ *
+ * @param {*} arg The argument to coerce.
+ * @return {boolean}
+ */
+const $$isTruthyNonEmpty = function(arg) {
+  return $$coerceToBoolean(arg);
+};
+
+
+/**
  * For sanitized types, returns true if content it not empty. Otherwise returns
  * standard boolean coercion.
  *
@@ -2649,6 +2660,7 @@ exports = {
   $$strContains,
   $$coerceToBoolean,
   $$isFalseyOrEmpty,
+  $$isTruthyNonEmpty,
   $$hasContent,
   $$makeEmptyTemplateFn,
   $$registerDelegateFn,
