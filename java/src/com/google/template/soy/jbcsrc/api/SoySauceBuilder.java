@@ -25,8 +25,7 @@ import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
 import com.google.template.soy.jbcsrc.shared.Names;
 import com.google.template.soy.plugin.java.PluginInstances;
 import com.google.template.soy.shared.internal.InternalPlugins;
-import com.google.template.soy.shared.internal.SoyScopedData;
-import com.google.template.soy.shared.internal.SoySimpleScope;
+import com.google.template.soy.shared.internal.NoOpScopedData;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import java.io.BufferedReader;
@@ -112,18 +111,16 @@ public final class SoySauceBuilder {
 
   /** Creates a SoySauce. */
   public SoySauce build() {
-    SoyScopedData scopedData = new SoySimpleScope();
     if (loader == null) {
       loader = SoySauceBuilder.class.getClassLoader();
     }
     return new SoySauceImpl(
         compiledTemplatesFactory.create(readDelTemplatesFromMetaInf(loader), loader),
-        scopedData.enterable(),
         userFunctions, // We don't need internal functions because they only matter at compile time
         ImmutableList.<SoyPrintDirective>builder()
             // but internal directives are still required at render time.
             // in order to handle escaping logging function invocations.
-            .addAll(InternalPlugins.internalDirectives(scopedData))
+            .addAll(InternalPlugins.internalDirectives(NoOpScopedData.INSTANCE))
             .addAll(userDirectives)
             .build(),
         userPluginInstances);

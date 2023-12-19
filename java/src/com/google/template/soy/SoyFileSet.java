@@ -1004,8 +1004,7 @@ public final class SoyFileSet {
 
     throwIfErrorsPresent();
 
-    return new SoySauceImpl(
-        templates.get(), scopedData.enterable(), soyFunctions, printDirectives, pluginInstances);
+    return new SoySauceImpl(templates.get(), soyFunctions, printDirectives, pluginInstances);
   }
 
   /**

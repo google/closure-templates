@@ -21,7 +21,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.jbcsrc.api.SoySauce.Continuation;
 import com.google.template.soy.jbcsrc.api.SoySauce.WriteContinuation;
-import java.io.IOException;
 
 /** A collection of simple {@link Continuation} and {@link WriteContinuation} implementations. */
 public final class Continuations {
@@ -38,56 +37,6 @@ public final class Continuations {
 
   public static Continuation<SanitizedContent> done(SanitizedContent value) {
     return new ResultContinuation<>(value);
-  }
-
-  @FunctionalInterface
-  interface ValueSupplier< T> {
-    T get();
-  }
-
-  /**
-   * Return a {@link SanitizedContent} valued continuation. Rendering logic is delegated to the
-   * {@link WriteContinuation}, but it is assumed that the builder is the render target.
-   */
-  static <
-          T>
-      Continuation<T> valueContinuation(WriteContinuation delegate, ValueSupplier<T> suppler) {
-    if (delegate.result().isDone()) {
-      return new ResultContinuation<>(suppler.get());
-    }
-    return new PendingValueContinuation<>(delegate, suppler);
-  }
-
-  /** Implementation of a partially evaluated continuation for {@link #valueContinuation}. */
-  private static final class PendingValueContinuation<
-          T>
-      implements Continuation<T> {
-    final WriteContinuation delegate;
-    final ValueSupplier<T> supplier;
-
-    PendingValueContinuation(WriteContinuation delegate, ValueSupplier<T> supplier) {
-      this.delegate = delegate;
-      this.supplier = supplier;
-    }
-
-    @Override
-    public RenderResult result() {
-      return delegate.result();
-    }
-
-    @Override
-    public T get() {
-      throw new IllegalStateException("Rendering is not complete: " + delegate.result());
-    }
-
-    @Override
-    public Continuation<T> continueRender() {
-      try {
-        return valueContinuation(delegate.continueRender(), supplier);
-      } catch (IOException e) {
-        throw new AssertionError("impossible", e);
-      }
-    }
   }
 
   private enum FinalContinuation implements WriteContinuation {

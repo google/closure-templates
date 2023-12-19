@@ -23,6 +23,10 @@ import com.google.template.soy.msgs.SoyMsgBundle;
 public final class NoOpScopedData
     implements SoyScopedData, SoyScopedData.Enterable, SoyScopedData.InScope {
 
+  public static final NoOpScopedData INSTANCE = new NoOpScopedData();
+
+  private NoOpScopedData() {}
+
   @Override
   public void close() {}
 

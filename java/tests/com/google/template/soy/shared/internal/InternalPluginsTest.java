@@ -32,7 +32,6 @@ import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.google.template.soy.shared.restricted.SoyMethodSignature;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -40,16 +39,10 @@ import org.junit.runners.JUnit4;
 @RunWith(JUnit4.class)
 public final class InternalPluginsTest {
 
-  private SoyScopedData data;
-
-  @Before
-  public void setUp() {
-    data = new NoOpScopedData();
-  }
-
   @Test
   public void testBuiltinPluginsSupportAllBackends() throws Exception {
-    for (SoyPrintDirective directive : InternalPlugins.internalDirectives(data)) {
+    for (SoyPrintDirective directive :
+        InternalPlugins.internalDirectives(NoOpScopedData.INSTANCE)) {
       assertThat(directive).isInstanceOf(SoyJsSrcPrintDirective.class);
       assertThat(directive).isInstanceOf(SoyJavaPrintDirective.class);
       assertThat(directive).isInstanceOf(SoyJbcSrcPrintDirective.class);
@@ -94,7 +87,8 @@ public final class InternalPluginsTest {
   public void testStreamingPrintDirectives() throws Exception {
     ImmutableSet.Builder<String> streamingPrintDirectives = ImmutableSet.builder();
     ImmutableSet.Builder<String> nonStreamingPrintDirectives = ImmutableSet.builder();
-    for (SoyPrintDirective directive : InternalPlugins.internalDirectives(data)) {
+    for (SoyPrintDirective directive :
+        InternalPlugins.internalDirectives(NoOpScopedData.INSTANCE)) {
       if (directive instanceof SoyJbcSrcPrintDirective.Streamable) {
         streamingPrintDirectives.add(directive.getName());
       } else {

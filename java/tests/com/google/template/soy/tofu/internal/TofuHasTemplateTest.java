@@ -47,7 +47,7 @@ public class TofuHasTemplateTest {
   public void setUp() throws Exception {
     tofu =
         new BaseTofu(
-            new NoOpScopedData(),
+            NoOpScopedData.INSTANCE,
             SoyFileSetParserBuilder.forFileContents(SOY_FILE).parse().fileSet(),
             PluginInstances.empty());
   }

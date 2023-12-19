@@ -305,7 +305,7 @@ public final class TransitiveIjParamsTest {
       SoyFileSetParser parser = SoyFileSetParserBuilder.forFileContents(fileContent).build();
       ParseResult result = parser.parse();
       // parserBuilder.
-      tofu = new BaseTofu(new NoOpScopedData(), result.fileSet(), PluginInstances.empty());
+      tofu = new BaseTofu(NoOpScopedData.INSTANCE, result.fileSet(), PluginInstances.empty());
       compiledTemplates =
           BytecodeCompiler.compile(
                   result.registry(),

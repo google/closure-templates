@@ -19,7 +19,6 @@ package com.google.template.soy.jbcsrc.api;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
-import static com.google.template.soy.jbcsrc.api.AppendableAsAdvisingAppendable.asAdvisingAppendable;
 import static com.google.template.soy.jbcsrc.shared.Names.rewriteStackTrace;
 
 import com.google.common.base.Ascii;
@@ -29,7 +28,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
-import com.google.errorprone.annotations.concurrent.GuardedBy;
 import com.google.template.soy.data.RecordProperty;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
@@ -40,7 +38,6 @@ import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.TemplateValue;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.data.internal.ParamStore;
-import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
 import com.google.template.soy.jbcsrc.shared.LegacyFunctionAdapter;
@@ -51,15 +48,15 @@ import com.google.template.soy.plugin.java.PluginInstances;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyCssTracker;
 import com.google.template.soy.shared.SoyIdRenamingMap;
-import com.google.template.soy.shared.internal.SoyScopedData;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.VarHandle;
 import java.util.Collection;
 import java.util.Map;
-import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
@@ -67,18 +64,15 @@ import javax.annotation.Nullable;
 /** Main entry point for rendering Soy templates on the server. */
 public final class SoySauceImpl implements SoySauce {
   private final CompiledTemplates templates;
-  private final SoyScopedData.Enterable apiCallScope;
   private final PluginInstances pluginInstances;
   private final ImmutableMap<String, SoyJavaPrintDirective> printDirectives;
 
   public SoySauceImpl(
       CompiledTemplates templates,
-      SoyScopedData.Enterable apiCallScope,
       ImmutableList<? extends SoyFunction> functions,
       ImmutableList<? extends SoyPrintDirective> printDirectives,
       PluginInstances pluginInstances) {
     this.templates = checkNotNull(templates);
-    this.apiCallScope = checkNotNull(apiCallScope);
     ImmutableMap.Builder<String, Supplier<Object>> pluginInstanceBuilder = ImmutableMap.builder();
 
     for (SoyFunction fn : functions) {
@@ -295,7 +289,7 @@ public final class SoySauceImpl implements SoySauce {
 
     @Override
     public Continuation<SanitizedContent> renderHtml() {
-      return renderToSanitizedContent(ContentKind.HTML);
+      return startRenderToSanitizedContent(ContentKind.HTML);
     }
 
     @Override
@@ -305,7 +299,7 @@ public final class SoySauceImpl implements SoySauce {
 
     @Override
     public Continuation<SanitizedContent> renderJs() {
-      return renderToSanitizedContent(ContentKind.JS);
+      return startRenderToSanitizedContent(ContentKind.JS);
     }
 
     @Override
@@ -315,7 +309,7 @@ public final class SoySauceImpl implements SoySauce {
 
     @Override
     public Continuation<SanitizedContent> renderUri() {
-      return renderToSanitizedContent(ContentKind.URI);
+      return startRenderToSanitizedContent(ContentKind.URI);
     }
 
     @Override
@@ -325,7 +319,7 @@ public final class SoySauceImpl implements SoySauce {
 
     @Override
     public Continuation<SanitizedContent> renderTrustedResourceUri() {
-      return renderToSanitizedContent(ContentKind.TRUSTED_RESOURCE_URI);
+      return startRenderToSanitizedContent(ContentKind.TRUSTED_RESOURCE_URI);
     }
 
     @Override
@@ -335,7 +329,7 @@ public final class SoySauceImpl implements SoySauce {
 
     @Override
     public Continuation<SanitizedContent> renderAttributes() {
-      return renderToSanitizedContent(ContentKind.ATTRIBUTES);
+      return startRenderToSanitizedContent(ContentKind.ATTRIBUTES);
     }
 
     @Override
@@ -345,7 +339,7 @@ public final class SoySauceImpl implements SoySauce {
 
     @Override
     public Continuation<SanitizedContent> renderCss() {
-      return renderToSanitizedContent(ContentKind.CSS);
+      return startRenderToSanitizedContent(ContentKind.CSS);
     }
 
     @Override
@@ -355,23 +349,22 @@ public final class SoySauceImpl implements SoySauce {
 
     @Override
     public Continuation<String> renderText() {
-      return renderToValue(Function.identity());
+      return startRenderToValue(ContentKind.TEXT);
     }
 
-    private Continuation<SanitizedContent> renderToSanitizedContent(ContentKind kind) {
+    private Continuation<SanitizedContent> startRenderToSanitizedContent(ContentKind kind) {
       enforceContentKind(kind);
-      return renderToValue(s -> UnsafeSanitizedContentOrdainer.ordainAsSafe(s, kind));
+      return startRenderToValue(kind);
     }
 
     private < T>
-        Continuation<T> renderToValue(Function<String, T> factory) {
+        Continuation<T> startRenderToValue(ContentKind contentKind) {
       StringBuilder sb = new StringBuilder();
-      try {
-        return Continuations.valueContinuation(
-            startRender(asAdvisingAppendable(sb), contentKind), () -> factory.apply(sb.toString()));
-      } catch (IOException e) {
-        throw new AssertionError("impossible", e);
-      }
+      ParamStore params = data == null ? ParamStore.EMPTY_INSTANCE : data;
+      ParamStore injectedParams = ij == null ? ParamStore.EMPTY_INSTANCE : ij;
+      RenderContext context = contextBuilder.build();
+      OutputAppendable output = OutputAppendable.create(sb, context.getLogger());
+      return doRenderToValue(contentKind, sb, template, params, injectedParams, output, context);
     }
 
     private WriteContinuation startRender(AdvisingAppendable out, ContentKind contentKind)
@@ -382,9 +375,7 @@ public final class SoySauceImpl implements SoySauce {
       ParamStore injectedParams = ij == null ? ParamStore.EMPTY_INSTANCE : ij;
       RenderContext context = contextBuilder.build();
       OutputAppendable output = OutputAppendable.create(out, context.getLogger());
-      RendererClosure renderer = () -> template.render(params, injectedParams, output, context);
-
-      return doRender(renderer, new Scoper(apiCallScope, context.getBidiGlobalDir()));
+      return doRender(template, params, injectedParams, output, context);
     }
 
     private void enforceContentKind(ContentKind expectedContentKind) {
@@ -405,16 +396,16 @@ public final class SoySauceImpl implements SoySauce {
     }
   }
 
-  @FunctionalInterface
-  private interface RendererClosure {
-    RenderResult render() throws IOException;
-  }
-
-  private static WriteContinuation doRender(RendererClosure renderer, Scoper scoper)
+  private static WriteContinuation doRender(
+      CompiledTemplate template,
+      ParamStore params,
+      ParamStore injectedParams,
+      OutputAppendable output,
+      RenderContext context)
       throws IOException {
     RenderResult result;
-    try (SoyScopedData.InScope scope = scoper.enter()) {
-      result = renderer.render();
+    try {
+      result = template.render(params, injectedParams, output, context);
     } catch (Throwable t) {
       rewriteStackTrace(t);
       Throwables.throwIfInstanceOf(t, IOException.class);
@@ -423,57 +414,149 @@ public final class SoySauceImpl implements SoySauce {
     if (result.isDone()) {
       return Continuations.done();
     }
-    return new WriteContinuationImpl(result, renderer, scoper);
+    return new WriteContinuationImpl(result, template, params, injectedParams, output, context);
   }
 
-  private static final class WriteContinuationImpl implements WriteContinuation {
-    final RenderResult result;
-    final Object lock = new Object();
+  abstract static class ContinuationImpl {
+    static final VarHandle HAS_CONTINUE_CALLED_HANDLE;
 
-    @GuardedBy("lock")
-    final Scoper scoper;
-
-    @GuardedBy("lock")
-    final RendererClosure renderer;
-
-    @GuardedBy("lock")
-    boolean hasContinueBeenCalled;
-
-    WriteContinuationImpl(RenderResult result, RendererClosure renderer, Scoper scoper) {
-      checkArgument(!result.isDone());
-      this.result = checkNotNull(result);
-      this.renderer = checkNotNull(renderer);
-      this.scoper = checkNotNull(scoper);
+    static {
+      try {
+        HAS_CONTINUE_CALLED_HANDLE =
+            MethodHandles.lookup()
+                .findVarHandle(ContinuationImpl.class, "hasContinueBeenCalled", boolean.class);
+      } catch (ReflectiveOperationException e) {
+        throw new LinkageError("impossible", e);
+      }
     }
 
-    @Override
+    final RenderResult result;
+
+    // ThreadSafety guaranteed by the guarded write on hasContinueBeenCalled
+    final CompiledTemplate template;
+    final ParamStore params;
+    final ParamStore injectedParams;
+    final OutputAppendable output;
+    final RenderContext context;
+
+    boolean hasContinueBeenCalled;
+
     public RenderResult result() {
       return result;
     }
 
-    @Override
-    public WriteContinuation continueRender() throws IOException {
-      synchronized (lock) {
-        if (hasContinueBeenCalled) {
-          throw new IllegalStateException("continueRender() has already been called.");
-        }
-        hasContinueBeenCalled = true;
-        return doRender(renderer, scoper);
+    ContinuationImpl(
+        RenderResult result,
+        CompiledTemplate template,
+        ParamStore params,
+        ParamStore injectedParams,
+        OutputAppendable output,
+        RenderContext context) {
+      checkArgument(!result.isDone());
+      this.result = checkNotNull(result);
+      this.template = checkNotNull(template);
+      this.params = checkNotNull(params);
+      this.injectedParams = checkNotNull(injectedParams);
+      this.output = checkNotNull(output);
+      this.context = checkNotNull(context);
+    }
+
+    void doContinue() {
+      if (!HAS_CONTINUE_CALLED_HANDLE.compareAndSet(this, false, true)) {
+        throw new IllegalStateException("continueRender() has already been called.");
       }
     }
   }
 
-  private static final class Scoper {
-    final SoyScopedData.Enterable scope;
-    final BidiGlobalDir dir;
+  private static final class WriteContinuationImpl extends ContinuationImpl
+      implements WriteContinuation {
 
-    Scoper(SoyScopedData.Enterable scope, BidiGlobalDir dir) {
-      this.scope = scope;
-      this.dir = dir;
+    WriteContinuationImpl(
+        RenderResult result,
+        CompiledTemplate template,
+        ParamStore params,
+        ParamStore injectedParams,
+        OutputAppendable output,
+        RenderContext context) {
+      super(result, template, params, injectedParams, output, context);
     }
 
-    SoyScopedData.InScope enter() {
-      return scope.enter(dir);
+    @Override
+    public WriteContinuation continueRender() throws IOException {
+      doContinue();
+      return doRender(template, params, injectedParams, output, context);
+    }
+  }
+
+  private static < T>
+      Continuation<T> doRenderToValue(
+          ContentKind targetKind,
+          StringBuilder underlying,
+          CompiledTemplate template,
+          ParamStore params,
+          ParamStore injectedParams,
+          OutputAppendable output,
+          RenderContext context) {
+    RenderResult result;
+    try {
+      result = template.render(params, injectedParams, output, context);
+    } catch (IOException t) {
+      throw new AssertionError("impossible", t);
+    } catch (Throwable t) {
+      rewriteStackTrace(t);
+      throw t;
+    }
+    if (result.isDone()) {
+      String content = underlying.toString();
+      if (targetKind == ContentKind.TEXT) {
+        // these casts are lame, the way to resolve is simply to fork this method
+        // based on String vs SanitizedContent
+        @SuppressWarnings("unchecked")
+        Continuation<T> c = (Continuation) Continuations.done(content);
+        return c;
+      }
+      @SuppressWarnings("unchecked")
+      Continuation<T> c =
+          (Continuation)
+              Continuations.done(UnsafeSanitizedContentOrdainer.ordainAsSafe(content, targetKind));
+      return c;
+    }
+    return new ValueContinuationImpl<T>(
+        targetKind, underlying, result, template, params, injectedParams, output, context);
+  }
+
+  private static final class ValueContinuationImpl<
+          T>
+      extends ContinuationImpl implements Continuation<T> {
+
+    final ContentKind targetKind;
+
+    final StringBuilder underlying;
+
+    ValueContinuationImpl(
+        ContentKind targetKind,
+        StringBuilder underlying,
+        RenderResult result,
+        CompiledTemplate template,
+        ParamStore params,
+        ParamStore injectedParams,
+        OutputAppendable output,
+        RenderContext context) {
+      super(result, template, params, injectedParams, output, context);
+      this.targetKind = checkNotNull(targetKind);
+      this.underlying = checkNotNull(underlying);
+    }
+
+    @Override
+    public T get() {
+      throw new IllegalStateException("Rendering is not complete: " + result);
+    }
+
+    @Override
+    public Continuation<T> continueRender() {
+      doContinue();
+      return doRenderToValue(
+          targetKind, underlying, template, params, injectedParams, output, context);
     }
   }
 }

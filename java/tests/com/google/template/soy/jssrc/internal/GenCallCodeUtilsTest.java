@@ -156,7 +156,7 @@ public final class GenCallCodeUtilsTest {
         (CallNode) SoyTreeUtils.getAllNodesOfType(soyTree, TemplateNode.class).get(0).getChild(0);
     // Manually setting the escaping directives.
     callNode.setEscapingDirectives(
-        InternalPlugins.internalDirectives(new NoOpScopedData()).stream()
+        InternalPlugins.internalDirectives(NoOpScopedData.INSTANCE).stream()
             .filter(d -> escapingDirectives.contains(d.getName()))
             .collect(toImmutableList()));
 
