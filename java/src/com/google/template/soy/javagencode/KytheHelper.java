@@ -19,10 +19,13 @@ package com.google.template.soy.javagencode;
 import com.google.common.base.Joiner;
 import com.google.common.base.Utf8;
 import com.google.protobuf.Message;
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IndentedLinesBuilder;
 import com.google.template.soy.javagencode.SoyFileNodeTransformer.ParamInfo;
 import com.google.template.soy.javagencode.SoyFileNodeTransformer.TemplateInfo;
 import com.google.template.soy.soytree.SoyFileNode;
+import com.google.template.soy.soytree.TemplateNode;
+import com.google.template.soy.soytree.defn.TemplateParam;
 import java.util.ArrayList;
 import java.util.List;
 import javax.annotation.Nullable;
@@ -53,13 +56,32 @@ class KytheHelper {
     }
   }
 
-  public void addKytheLinkTo(Span classNameSpan, TemplateInfo template) {
+  public void addKytheLinkTo(Span templateNameSpan, TemplateInfo template) {
+    addKytheLinkTo(templateNameSpan, template.sourceLocation(), template.template());
+  }
+
+  public void addKytheLinkTo(Span templateNameSpan, TemplateNode template) {
+    addKytheLinkTo(templateNameSpan, template.getTemplateNameLocation(), template);
+  }
+
+  private void addKytheLinkTo(
+      Span templateNameSpan, SourceLocation sourceLocation, TemplateNode template) {
     if (!isEnabled()) {
       return;
     }
   }
 
-  public void addKytheLinkTo(Span methodNameSpan, ParamInfo paramInfo, TemplateInfo template) {
+  public void addKytheLinkTo(Span paramSpan, ParamInfo paramInfo, TemplateInfo template) {
+    addKytheLinkTo(
+        paramSpan, template.sourceLocation(), template.template(), paramInfo.param().getName());
+  }
+
+  public void addKytheLinkTo(Span paramSpan, TemplateNode template, TemplateParam param) {
+    addKytheLinkTo(paramSpan, param.nameLocation(), template, param.name());
+  }
+
+  private void addKytheLinkTo(
+      Span paramSpan, SourceLocation location, TemplateNode template, String paramName) {
     if (!isEnabled()) {
       return;
     }
