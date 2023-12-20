@@ -51,7 +51,7 @@ public final class StrLenFunction
   @Override
   public JavaScriptValue applyForJavaScriptSource(
       JavaScriptValueFactory factory, List<JavaScriptValue> args, JavaScriptPluginContext context) {
-    return args.get(0).coerceToString().accessProperty("length");
+    return args.get(0).accessProperty("length");
   }
 
   @Override

@@ -64,7 +64,7 @@ public final class StrSubFunction
   @Override
   public JavaScriptValue applyForJavaScriptSource(
       JavaScriptValueFactory factory, List<JavaScriptValue> args, JavaScriptPluginContext context) {
-    return args.get(0).coerceToString().invokeMethod("substring", args.subList(1, args.size()));
+    return args.get(0).invokeMethod("substring", args.subList(1, args.size()));
   }
 
   @Override

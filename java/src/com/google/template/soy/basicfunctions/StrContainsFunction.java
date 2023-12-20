@@ -53,8 +53,7 @@ public final class StrContainsFunction
   @Override
   public JavaScriptValue applyForJavaScriptSource(
       JavaScriptValueFactory factory, List<JavaScriptValue> args, JavaScriptPluginContext context) {
-    return factory.callNamespaceFunction(
-        "soy", "soy.$$strContains", args.get(0).coerceToString(), args.get(1).coerceToString());
+    return factory.callNamespaceFunction("soy", "soy.$$strContains", args.get(0), args.get(1));
   }
 
   @Override

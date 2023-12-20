@@ -47,8 +47,7 @@ public final class StrToAsciiUpperCaseFunction
   @Override
   public JavaScriptValue applyForJavaScriptSource(
       JavaScriptValueFactory factory, List<JavaScriptValue> args, JavaScriptPluginContext context) {
-    return factory.callNamespaceFunction(
-        "soy", "soy.$$strToAsciiUpperCase", args.get(0).coerceToString());
+    return factory.callNamespaceFunction("soy", "soy.$$strToAsciiUpperCase", args.get(0));
   }
 
   @Override

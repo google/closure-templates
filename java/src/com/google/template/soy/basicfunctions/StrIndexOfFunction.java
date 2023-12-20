@@ -64,11 +64,11 @@ public final class StrIndexOfFunction
   public JavaScriptValue applyForJavaScriptSource(
       JavaScriptValueFactory factory, List<JavaScriptValue> args, JavaScriptPluginContext context) {
     List<JavaScriptValue> transformedArgs = new ArrayList<>();
-    transformedArgs.add(args.get(1).coerceToString());
+    transformedArgs.add(args.get(1));
     if (args.size() == 3) {
       transformedArgs.add(args.get(2));
     }
-    return args.get(0).coerceToString().invokeMethod("indexOf", transformedArgs);
+    return args.get(0).invokeMethod("indexOf", transformedArgs);
   }
 
   @Override
