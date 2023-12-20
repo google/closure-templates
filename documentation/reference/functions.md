@@ -37,7 +37,9 @@ is used.
 
 ### `isFalseyOrEmpty(value)` {#isFalseyOrEmpty}
 
-Convenience method equivalent to `not isTruthyNonEmpty()`.
+WARNING: Do not use, will be removed. use `isTruthyNonEmpty()` instead.
+
+Equivalent to `not isTruthyNonEmpty()`.
 
 ### `checkNotNull(value)` {#checkNotNull}
 
