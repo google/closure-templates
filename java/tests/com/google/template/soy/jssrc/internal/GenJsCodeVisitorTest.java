@@ -379,7 +379,7 @@ public final class GenJsCodeVisitorTest {
             "let $tmp;",
             "if (opt_data.boo) {",
             "  $tmp = 'Blah';",
-            "} else if (!soy.$$strContains(soy.$$checkNotNull(gooData8), 'goo')) {",
+            "} else if (!soy.$$strContains(gooData8, 'goo')) {",
             "  $tmp = 'Bleh';",
             "} else {",
             "  $tmp = 'Bluh';",
@@ -409,7 +409,7 @@ public final class GenJsCodeVisitorTest {
             + "    const i5Data = 0 + i5Index * 1;\n"
             + "    output += i5Data + 1 + '<br>';\n"
             + "  }\n"
-            + "} else if (!soy.$$strContains(soy.$$checkNotNull(gooData8), 'goo')) {\n"
+            + "} else if (!soy.$$strContains(gooData8, 'goo')) {\n"
             + "  output += 'Bleh';\n"
             + "} else {\n"
             + "  output += 'Bluh';\n"

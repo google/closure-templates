@@ -18,6 +18,7 @@ package com.google.template.soy.jssrc.internal;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import com.google.auto.value.AutoValue;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Splitter;
 import com.google.common.base.Throwables;
@@ -291,6 +292,38 @@ public final class JavaScriptValueFactoryImpl extends JavaScriptValueFactory {
     public String toString() {
       return impl.getCode(FormatOptions.JSSRC);
     }
-    
+  }
+
+  SoyJavaScriptSourceFunctionInvocation invocation(
+      SourceLocation location,
+      String name,
+      SoyJavaScriptSourceFunction fn,
+      List<Expression> args,
+      CodeChunk.Generator codeGenerator) {
+    return new AutoValue_JavaScriptValueFactoryImpl_SoyJavaScriptSourceFunctionInvocation(
+        this, location, name, fn, ImmutableList.copyOf(args), codeGenerator);
+  }
+
+  @AutoValue
+  abstract static class SoyJavaScriptSourceFunctionInvocation {
+    abstract JavaScriptValueFactoryImpl factory();
+
+    abstract SourceLocation location();
+
+    abstract String functionName();
+
+    public abstract SoyJavaScriptSourceFunction impl();
+
+    public abstract ImmutableList<Expression> args();
+
+    abstract CodeChunk.Generator generator();
+
+    public Expression invoke(Expression receiver) {
+      ImmutableList<Expression> functArgs =
+          args().isEmpty()
+              ? ImmutableList.of(receiver)
+              : ImmutableList.<Expression>builder().add(receiver).addAll(args()).build();
+      return factory().applyFunction(location(), functionName(), impl(), functArgs, generator());
+    }
   }
 }

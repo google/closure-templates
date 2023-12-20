@@ -160,6 +160,10 @@ public final class JsRuntime {
 
   public static final Expression SOY_NEWMAPS_TRANSFORM_VALUES =
       SOY_NEWMAPS.googModuleGet().dotAccess("$$transformValues");
+  public static final Expression SOY_NEWMAPS_NULL_SAFE_TRANSFORM_VALUES =
+      SOY_NEWMAPS.googModuleGet().dotAccess("$$nullSafeTransformValues");
+  public static final Expression SOY_NEWMAPS_NULL_SAFE_ARRAY_MAP =
+      SOY_NEWMAPS.googModuleGet().dotAccess("$$nullSafeArrayMap");
 
   // Explicitly group() these calls because they return constructors and the new operator has
   // curious precedence semantics if the constructor expression contains parens.

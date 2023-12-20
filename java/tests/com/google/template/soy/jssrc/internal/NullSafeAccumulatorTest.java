@@ -18,6 +18,7 @@ package com.google.template.soy.jssrc.internal;
 
 import static com.google.template.soy.jssrc.dsl.Expressions.id;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.truth.FailureMetadata;
 import com.google.common.truth.Subject;
 import com.google.common.truth.Truth;
@@ -38,59 +39,11 @@ public final class NullSafeAccumulatorTest {
   public void testNullSafeChain() {
     NullSafeAccumulator accum = new NullSafeAccumulator(id("a"));
     assertThat(accum).generates("a;");
-    assertThat(accum.dotAccess(FieldAccess.id("b"), /* nullSafe= */ true))
-        .generates("a == null ? undefined : a.b;");
-    assertThat(accum.bracketAccess(id("c"), /* nullSafe= */ true))
-        .generates(
-            "let $tmp$$1;\n"
-                + "if (a == null) {\n"
-                + "  $tmp$$1 = undefined;\n"
-                + "} else {\n"
-                + "  const $tmp = a.b;\n"
-                + "  $tmp$$1 = $tmp == null ? undefined : $tmp[c];\n"
-                + "}\n"
-                + "$tmp$$1;");
+    assertThat(accum.dotAccess(FieldAccess.id("b"), /* nullSafe= */ true)).generates("a?.b;");
+    assertThat(accum.bracketAccess(id("c"), /* nullSafe= */ true)).generates("a?.b?.[c];");
     assertThat(accum.dotAccess(FieldAccess.id("d"), /* nullSafe= */ true))
-        .generates(
-            "let $tmp$$3;\n"
-                + "if (a == null) {\n"
-                + "  $tmp$$3 = undefined;\n"
-                + "} else {\n"
-                + "  let $tmp$$2;\n"
-                + "  const $tmp = a.b;\n"
-                + "  if ($tmp == null) {\n"
-                + "    $tmp$$2 = undefined;\n"
-                + "  } else {\n"
-                + "    const $tmp$$1 = $tmp[c];\n"
-                + "    $tmp$$2 = $tmp$$1 == null ? undefined : $tmp$$1.d;\n"
-                + "  }\n"
-                + "  $tmp$$3 = $tmp$$2;\n"
-                + "}\n"
-                + "$tmp$$3;");
-    assertThat(accum.bracketAccess(id("e"), /* nullSafe= */ true))
-        .generates(
-            "let $tmp$$5;\n"
-                + "if (a == null) {\n"
-                + "  $tmp$$5 = undefined;\n"
-                + "} else {\n"
-                + "  let $tmp$$4;\n"
-                + "  const $tmp = a.b;\n"
-                + "  if ($tmp == null) {\n"
-                + "    $tmp$$4 = undefined;\n"
-                + "  } else {\n"
-                + "    let $tmp$$3;\n"
-                + "    const $tmp$$1 = $tmp[c];\n"
-                + "    if ($tmp$$1 == null) {\n"
-                + "      $tmp$$3 = undefined;\n"
-                + "    } else {\n"
-                + "      const $tmp$$2 = $tmp$$1.d;\n"
-                + "      $tmp$$3 = $tmp$$2 == null ? undefined : $tmp$$2[e];\n"
-                + "    }\n"
-                + "    $tmp$$4 = $tmp$$3;\n"
-                + "  }\n"
-                + "  $tmp$$5 = $tmp$$4;\n"
-                + "}\n"
-                + "$tmp$$5;");
+        .generates("a?.b?.[c]?.d;");
+    assertThat(accum.bracketAccess(id("e"), /* nullSafe= */ true)).generates("a?.b?.[c]?.d?.[e];");
   }
 
   @Test
@@ -108,39 +61,22 @@ public final class NullSafeAccumulatorTest {
   public void testMixedChains() {
     NullSafeAccumulator accum = new NullSafeAccumulator(id("a"));
     assertThat(accum).generates("a;");
-    assertThat(accum.dotAccess(FieldAccess.id("b"), /* nullSafe= */ true))
-        .generates("a == null ? undefined : a.b;");
-    assertThat(accum.bracketAccess(id("c"), /* nullSafe= */ false))
-        .generates("a == null ? undefined : a.b[c];");
-    assertThat(accum.dotAccess(FieldAccess.id("d"), /* nullSafe= */ true))
-        .generates(
-            "let $tmp$$1;\n"
-                + "if (a == null) {\n"
-                + "  $tmp$$1 = undefined;\n"
-                + "} else {\n"
-                + "  const $tmp = a.b[c];\n"
-                + "  $tmp$$1 = $tmp == null ? undefined : $tmp.d;\n"
-                + "}\n"
-                + "$tmp$$1;");
-    assertThat(accum.bracketAccess(id("e"), /* nullSafe= */ false))
-        .generates(
-            "let $tmp$$1;\n"
-                + "if (a == null) {\n"
-                + "  $tmp$$1 = undefined;\n"
-                + "} else {\n"
-                + "  const $tmp = a.b[c];\n"
-                + "  $tmp$$1 = $tmp == null ? undefined : $tmp.d[e];\n"
-                + "}\n"
-                + "$tmp$$1;");
+    assertThat(accum.dotAccess(FieldAccess.id("b"), /* nullSafe= */ true)).generates("a?.b;");
+    assertThat(accum.bracketAccess(id("c"), /* nullSafe= */ false)).generates("a?.b[c];");
+    assertThat(accum.dotAccess(FieldAccess.id("d"), /* nullSafe= */ true)).generates("a?.b[c]?.d;");
+    assertThat(accum.bracketAccess(id("e"), /* nullSafe= */ false)).generates("a?.b[c]?.d[e];");
   }
 
   @Test
   public void testCallPreservesChain() {
     NullSafeAccumulator accum = new NullSafeAccumulator(id("a"));
-    assertThat(accum.dotAccess(FieldAccess.call("b", id("c")), /* nullSafe= */ false))
+    assertThat(
+            accum.dotAccess(
+                FieldAccess.call("b", ImmutableList.of(id("c"))), /* nullSafe= */ false))
         .generates("a.b(c);");
-    assertThat(accum.dotAccess(FieldAccess.call("d", id("e")), /* nullSafe= */ true))
-        .generates("const $tmp = a.b(c);\n$tmp == null ? undefined : $tmp.d(e);");
+    assertThat(
+            accum.dotAccess(FieldAccess.call("d", ImmutableList.of(id("e"))), /* nullSafe= */ true))
+        .generates("a.b(c)?.d(e);");
   }
 
   @Test
@@ -169,7 +105,7 @@ public final class NullSafeAccumulatorTest {
             accum
                 .dotAccess(FieldAccess.id("b"), /* nullSafe= */ true)
                 .mapGetAccess(id("key"), /* nullSafe= */ false))
-        .generates("a == null ? undefined : a.b.get(key);");
+        .generates("a?.b.get(key);");
   }
 
   @Test
@@ -179,7 +115,7 @@ public final class NullSafeAccumulatorTest {
             accum
                 .dotAccess(FieldAccess.id("b"), /* nullSafe= */ true)
                 .bracketAccess(id("c"), /* nullSafe= */ false))
-        .generates("a == null ? undefined : a.b[c];");
+        .generates("a?.b[c];");
   }
 
   private static AccumulatorSubject assertThat(NullSafeAccumulator accumulator) {

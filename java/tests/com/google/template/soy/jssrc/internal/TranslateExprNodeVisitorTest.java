@@ -21,6 +21,7 @@ import static com.google.template.soy.exprtree.Operator.OR;
 import static com.google.template.soy.exprtree.Operator.PLUS;
 import static com.google.template.soy.jssrc.dsl.Expressions.id;
 import static com.google.template.soy.jssrc.internal.JsSrcSubject.assertThatSoyExpr;
+import static com.google.template.soy.jssrc.internal.JsSrcSubject.expr;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.jssrc.dsl.Expression;
@@ -81,6 +82,52 @@ public final class TranslateExprNodeVisitorTest {
             "opt_data.boo[/** @type {?} */ (opt_data.foo)][/** @type {?} */ (gooData8 + 1)];");
     assertThatSoyExpr("$class").generatesCode("opt_data.class;");
     assertThatSoyExpr("$boo.yield").generatesCode("opt_data.boo.yield;");
+  }
+
+  @Test
+  public void testDataRef_nullSafe() {
+    // ?. is short-circuiting so make sure we don't execute code that shouldn't execute
+    assertThatSoyExpr("$p?.a.b?.c").generatesCode("opt_data.p?.a.b?.c;");
+
+    assertThatSoyExpr("$p?.a.b").generatesCode("opt_data.p?.a.b;");
+
+    assertThatSoyExpr("$p?.a.b!").generatesCode("opt_data.p?.a.b;");
+
+    // LengthFunction hasNativeNullSafe=true
+    assertThatSoyExpr(expr("$l?.length").withParam("l", "list<?>"))
+        .generatesCode("opt_data.l?.length;");
+    assertThatSoyExpr(expr("$l.length").withParam("l", "list<?>"))
+        .generatesCode("opt_data.l.length;");
+    assertThatSoyExpr(expr("$s?.trim().length").withParam("s", "string"))
+        .generatesCode("opt_data.s?.trim().length;");
+
+    // ListReverseMethod hasNativeNullSafe=false
+    assertThatSoyExpr(expr("$l?.reverse().length").withParam("l", "list<?>"))
+        .generatesCode(
+            "const $tmp = opt_data.l;",
+            "$tmp == null ? undefined : soy.$$listReverse($tmp).length;");
+    assertThatSoyExpr(expr("$s?.split(',').reverse()").withParam("s", "string"))
+        .generatesCode(
+            "const $tmp = opt_data.s?.split(',');",
+            "$tmp == null ? undefined : soy.$$listReverse($tmp);");
+
+    assertThatSoyExpr("$p?[$k]").generatesCode("opt_data.p?.[/** @type {?} */ (opt_data.k)];");
+
+    assertThatSoyExpr(
+            expr("$p?[$l?.reverse().length > 0 ? 1 : 0]")
+                .withParam("p", "list<?>")
+                .withParam("l", "list<?>"))
+        .generatesCode(
+            "let $tmp$$2;",
+            "const $tmp$$1 = opt_data.p;",
+            "if ($tmp$$1 == null) {",
+            "  $tmp$$2 = undefined;",
+            "} else {",
+            "  const $tmp = opt_data.l;",
+            "  $tmp$$2 = $tmp$$1?.[/** @type {?} */ (($tmp == null ? undefined :"
+                + " soy.$$listReverse($tmp).length) > 0 ? 1 : 0)];",
+            "}",
+            "$tmp$$2;");
   }
 
   @Test

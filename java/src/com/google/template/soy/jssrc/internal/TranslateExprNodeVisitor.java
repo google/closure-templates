@@ -21,6 +21,7 @@ import static com.google.common.base.CaseFormat.UPPER_CAMEL;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
+import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.template.soy.jssrc.dsl.Expressions.LITERAL_FALSE;
 import static com.google.template.soy.jssrc.dsl.Expressions.LITERAL_NULL;
 import static com.google.template.soy.jssrc.dsl.Expressions.LITERAL_TRUE;
@@ -595,13 +596,12 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
         if (sourceMethod != null) {
           return accumulator.functionCall(
               nullSafe,
-              baseExpr ->
-                  javascriptValueFactory.applyFunction(
-                      fieldAccess.getSourceLocation(),
-                      fieldAccess.getFieldName(),
-                      (SoyJavaScriptSourceFunction) sourceMethod.getImpl(),
-                      ImmutableList.of(baseExpr),
-                      translationContext.codeGenerator()));
+              javascriptValueFactory.invocation(
+                  fieldAccess.getSourceLocation(),
+                  fieldAccess.getFieldName(),
+                  (SoyJavaScriptSourceFunction) sourceMethod.getImpl(),
+                  ImmutableList.of(),
+                  translationContext.codeGenerator()));
         }
 
         FieldAccess access =
@@ -734,7 +734,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
         case MAP_GET:
           return base.mapGetAccess(visit(methodCallNode.getParam(0)), nullSafe);
         case BIND:
-          return base.functionCall(
+          return base.transform(
               nullSafe,
               (baseExpr) -> genCodeForBind(baseExpr, visit(methodCallNode.getParam(0)), baseType));
       }
@@ -744,17 +744,12 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
 
       return base.functionCall(
           nullSafe,
-          baseExpr -> {
-            List<Expression> args = new ArrayList<>();
-            args.add(baseExpr);
-            methodCallNode.getParams().forEach(n -> args.add(visit(n)));
-            return javascriptValueFactory.applyFunction(
-                methodCallNode.getSourceLocation(),
-                methodCallNode.getMethodName().identifier(),
-                (SoyJavaScriptSourceFunction) sourceMethod.getImpl(),
-                args,
-                translationContext.codeGenerator());
-          });
+          javascriptValueFactory.invocation(
+              methodCallNode.getSourceLocation(),
+              methodCallNode.getMethodName().identifier(),
+              (SoyJavaScriptSourceFunction) sourceMethod.getImpl(),
+              methodCallNode.getParams().stream().map(this::visit).collect(toImmutableList()),
+              translationContext.codeGenerator()));
     } else {
       throw new AssertionError(soyMethod.getClass());
     }

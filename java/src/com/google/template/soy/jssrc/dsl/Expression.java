@@ -382,7 +382,7 @@ public abstract class Expression extends CodeChunk {
     return initialStatementsStream().iterator().hasNext();
   }
 
-  final boolean hasEquivalentInitialStatements(Expression other) {
+  public final boolean hasEquivalentInitialStatements(Expression other) {
     ImmutableList<Statement> s1 = allInitialStatementsInTopScope();
     ImmutableList<Statement> s2 = other.allInitialStatementsInTopScope();
     return s1.containsAll(s2);

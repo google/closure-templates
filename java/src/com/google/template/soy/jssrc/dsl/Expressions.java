@@ -502,44 +502,44 @@ public final class Expressions {
     }
   }
 
-  public static Expression nullSafeAccumulatorReceiver(
-      Expression delegate, Expression nullSafeCheck) {
-    return new NullSafeAccumulatorReceiver(delegate, nullSafeCheck);
+  public static NullSafeAccumulatorReceiver nullSafeAccumulatorReceiver(
+      Expression delegate, boolean nullSafe) {
+    return new NullSafeAccumulatorReceiver(delegate, nullSafe);
   }
 
   /**
    * @see com.google.template.soy.jssrc.internal.NullSafeAccumulator.FunctionCall
    */
   @SuppressWarnings("Immutable")
-  private static class NullSafeAccumulatorReceiver extends DelegatingExpression {
+  public static class NullSafeAccumulatorReceiver extends DelegatingExpression {
 
-    private final Expression nullSafeCheck;
+    private final boolean nullSafe;
     private boolean dereferenced = false;
 
-    public NullSafeAccumulatorReceiver(Expression delegate, Expression nullSafeCheck) {
+    public NullSafeAccumulatorReceiver(Expression delegate, boolean nullSafe) {
       super(delegate);
-      this.nullSafeCheck = nullSafeCheck;
+      this.nullSafe = nullSafe;
     }
 
     @Override
     public Expression dotAccess(String identifier, boolean nullSafe) {
       dereferenced = true;
-      return delegate.dotAccess(identifier, nullSafe);
+      return delegate.dotAccess(identifier, this.nullSafe || nullSafe);
     }
 
     @Override
     public Expression bracketAccess(Expression arg, boolean nullSafe) {
       dereferenced = true;
-      return delegate.bracketAccess(arg, nullSafe);
+      return delegate.bracketAccess(arg, this.nullSafe || nullSafe);
     }
 
     @Override
     void doFormatOutputExpr(FormattingContext ctx) {
-      if (dereferenced) {
-        delegate.doFormatOutputExpr(ctx);
-      } else {
-        ctx.appendOutputExpression(nullSafeCheck.call(delegate));
-      }
+      delegate.doFormatOutputExpr(ctx);
+    }
+
+    public boolean wasDereferenced() {
+      return dereferenced;
     }
   }
 }

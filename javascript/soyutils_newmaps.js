@@ -25,6 +25,7 @@
 // that they are DCE'd by AJD instead of JSCompiler.
 goog.module('soy.newmaps');
 
+const googArray = goog.require('goog.array');
 const {Map: SoyMap} = goog.requireType('soy.map');
 
 /**
@@ -60,7 +61,42 @@ function $$transformValues(map, f) {
   return m;
 }
 
+
+/**
+ * Null-safe version of $$transformValues.
+ *
+ * @param {?SoyMap<K, VIn>|null|undefined} map
+ * @param {function((VIn|null|undefined)):VOut|function(VIn):VOut} f
+ * @return {?Map<K, VOut>|null|undefined}
+ * @template K, VIn, VOut
+ */
+function $$nullSafeTransformValues(map, f) {
+  if (map == null) {
+    return map;
+  }
+  return $$transformValues(map, f);
+}
+
+
+/**
+ * Null-safe version of goog.array.map.
+ *
+ * @param {?ReadonlyArray<IN>|null|undefined} arr
+ * @param {function(IN, OUT)} f
+ * @return {?Array<OUT>|null|undefined}
+ * @template IN, OUT
+ */
+function $$nullSafeArrayMap(arr, f) {
+  if (arr == null) {
+    return arr;
+  }
+  return googArray.map(arr, f);
+}
+
+
 exports = {
   $$legacyObjectMapToMap,
   $$transformValues,
+  $$nullSafeTransformValues,
+  $$nullSafeArrayMap,
 };
