@@ -54,4 +54,6 @@ public interface JavaScriptValue extends SoySourceValue {
   /** Accesses a property on the given object. */
   JavaScriptValue accessProperty(String ident);
 
+  /** Returns a new value that is the result of the binary operator '+' on this value and `rhs`. */
+  JavaScriptValue plus(JavaScriptValue rhs);
 }

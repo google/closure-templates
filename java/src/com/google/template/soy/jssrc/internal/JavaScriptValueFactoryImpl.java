@@ -283,6 +283,11 @@ public final class JavaScriptValueFactoryImpl extends JavaScriptValueFactory {
     }
 
     @Override
+    public JavaScriptValue plus(JavaScriptValue rhs) {
+      return new JavaScriptValueImpl(impl.plus(((JavaScriptValueImpl) rhs).impl));
+    }
+
+    @Override
     public String toString() {
       return impl.getCode(FormatOptions.JSSRC);
     }
