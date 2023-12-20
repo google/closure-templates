@@ -139,9 +139,7 @@ public final class ConcatListsFunction
   @Override
   public JavaScriptValue applyForJavaScriptSource(
       JavaScriptValueFactory factory, List<JavaScriptValue> args, JavaScriptPluginContext context) {
-    return factory
-        .global("Array.prototype")
-        .invokeMethod("concat", args.toArray(new JavaScriptValue[0]));
+    return args.get(0).invokeMethod("concat", args.subList(1, args.size()));
   }
 
   @Override
