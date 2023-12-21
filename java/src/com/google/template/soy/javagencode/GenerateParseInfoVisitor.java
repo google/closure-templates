@@ -403,8 +403,8 @@ public final class GenerateParseInfoVisitor
               .appendLineAndGetSpans(
                   ilb,
                   "public static final com.google.template.soy.parseinfo.TemplateName ",
-                  templateEntry.getKey(),
-                  "__NAME = com.google.template.soy.parseinfo.TemplateName.of(",
+                  templateEntry.getKey() + "__NAME",
+                  " = com.google.template.soy.parseinfo.TemplateName.of(",
                   templateEntry.getKey(),
                   ");")
               .get(1);
@@ -607,7 +607,7 @@ public final class GenerateParseInfoVisitor
               .appendLineAndGetSpans(
                   ilb,
                   "public static final String ",
-                  convertToUpperUnderscore(param.name()),
+                  fieldName,
                   " = ",
                   (paramFields.contains(fieldName)
                       ? "Param." + fieldName
