@@ -19,6 +19,7 @@ package com.google.template.soy.msgs;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
+import com.google.template.soy.msgs.restricted.RenderOnlySoyMsgBundleImpl;
 import com.google.template.soy.msgs.restricted.SoyMsg;
 import com.google.template.soy.msgs.restricted.SoyMsgPart;
 import com.ibm.icu.util.ULocale;
@@ -54,7 +55,10 @@ public final class SoyMsgBundleWithFullLocale extends SoyMsgBundle {
     // avoid wrapping the original bundle when its language code isn't preserved.
     ULocale ulocale = new ULocale(locale.toLanguageTag());
     return ulocale.getLanguage().equals(bundle.getLocale().getLanguage())
-        ? new SoyMsgBundleWithFullLocale(bundle, ulocale, ulocale.toLanguageTag())
+        ? bundle instanceof RenderOnlySoyMsgBundleImpl
+            ? new RenderOnlySoyMsgBundleImpl(
+                locale.toLanguageTag(), (RenderOnlySoyMsgBundleImpl) bundle)
+            : new SoyMsgBundleWithFullLocale(bundle, ulocale, ulocale.toLanguageTag())
         : bundle;
   }
 
@@ -98,6 +102,16 @@ public final class SoyMsgBundleWithFullLocale extends SoyMsgBundle {
   @Override
   public ImmutableList<SoyMsgPart> getMsgParts(long msgId) {
     return delegate.getMsgParts(msgId);
+  }
+
+  @Override
+  public boolean hasMsg(long msgId) {
+    return delegate.hasMsg(msgId);
+  }
+
+  @Override
+  public String getBasicTranslation(long msgId) {
+    return delegate.getBasicTranslation(msgId);
   }
 
   @Override

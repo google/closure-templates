@@ -20,6 +20,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.msgs.restricted.SoyMsg;
 import com.google.template.soy.msgs.restricted.SoyMsgPart;
+import com.google.template.soy.msgs.restricted.SoyMsgRawTextPart;
 import com.ibm.icu.util.ULocale;
 import java.util.Iterator;
 import javax.annotation.Nullable;
@@ -63,6 +64,18 @@ public abstract class SoyMsgBundle implements Iterable<SoyMsg> {
   public ImmutableList<SoyMsgPart> getMsgParts(long msgId) {
     SoyMsg msg = getMsg(msgId);
     return msg == null ? ImmutableList.of() : msg.getParts();
+  }
+
+  /** Returns the plain translated text of a message with no placeholders. */
+  @Nullable
+  public String getBasicTranslation(long msgId) {
+    SoyMsg msg = getMsg(msgId);
+    return msg == null ? null : ((SoyMsgRawTextPart) msg.getParts().get(0)).getRawText();
+  }
+
+  /** Returns {@code true} if the message with the given id exists. */
+  public boolean hasMsg(long msgId) {
+    return getMsg(msgId) != null;
   }
 
   /**
@@ -120,7 +133,7 @@ public abstract class SoyMsgBundle implements Iterable<SoyMsg> {
 
       @Override
       public boolean isRtl() {
-        return false;
+        return locale.isRightToLeft();
       }
 
       @Override

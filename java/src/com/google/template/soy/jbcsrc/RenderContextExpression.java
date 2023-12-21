@@ -60,28 +60,55 @@ final class RenderContextExpression extends Expression implements JbcSrcPluginCo
 
   private static final MethodRef GET_SOY_MSG_PARTS =
       MethodRef.createNonPure(
-          RenderContext.class, "getSoyMsgParts", long.class, ImmutableList.class);
+              RenderContext.class, "getSoyMsgParts", long.class, ImmutableList.class)
+          .asNonJavaNullable();
 
   private static final MethodRef GET_SOY_MSG_PARTS_NO_DEFAULT =
-      MethodRef.createNonPure(RenderContext.class, "getSoyMsgParts", long.class);
+      MethodRef.createNonPure(RenderContext.class, "getSoyMsgParts", long.class)
+          .asNonJavaNullable();
 
   private static final MethodRef GET_SOY_MSG_PARTS_WITH_ALTERNATE_ID =
       MethodRef.createNonPure(
-          RenderContext.class,
-          "getSoyMsgPartsWithAlternateId",
-          long.class,
-          ImmutableList.class,
-          long.class);
+              RenderContext.class,
+              "getSoyMsgPartsWithAlternateId",
+              long.class,
+              ImmutableList.class,
+              long.class)
+          .asNonJavaNullable();
 
   private static final MethodRef GET_SOY_MSG_PARTS_WITH_ALTERNATE_ID_NO_DEFAULT =
       MethodRef.createNonPure(
-          RenderContext.class, "getSoyMsgPartsWithAlternateId", long.class, long.class);
+              RenderContext.class, "getSoyMsgPartsWithAlternateId", long.class, long.class)
+          .asNonJavaNullable();
+
+  private static final MethodRef GET_BASIC_SOY_MSG_PART =
+      MethodRef.createNonPure(RenderContext.class, "getBasicSoyMsgPart", long.class, String.class)
+          .asNonJavaNullable();
+
+  private static final MethodRef GET_BASIC_SOY_MSG_PART_NO_DEFAULT =
+      MethodRef.createNonPure(RenderContext.class, "getBasicSoyMsgPart", long.class)
+          .asNonJavaNullable();
+
+  private static final MethodRef GET_BASIC_SOY_MSG_PART_WITH_ALTERNATE_ID =
+      MethodRef.createNonPure(
+              RenderContext.class,
+              "getBasicSoyMsgPartWithAlternateId",
+              long.class,
+              String.class,
+              long.class)
+          .asNonJavaNullable();
+
+  private static final MethodRef GET_BASIC_SOY_MSG_PART_NO_DEFAULT_WITH_ALTERNATE_ID =
+      MethodRef.createNonPure(
+              RenderContext.class, "getBasicSoyMsgPartWithAlternateId", long.class, long.class)
+          .asNonJavaNullable();
 
   private static final MethodRef RENAME_CSS_SELECTOR =
-      MethodRef.createNonPure(RenderContext.class, "renameCssSelector", String.class);
+      MethodRef.createNonPure(RenderContext.class, "renameCssSelector", String.class)
+          .asNonJavaNullable();
 
   private static final MethodRef RENAME_XID =
-      MethodRef.createNonPure(RenderContext.class, "renameXid", String.class);
+      MethodRef.createNonPure(RenderContext.class, "renameXid", String.class).asNonJavaNullable();
 
   private static final MethodRef USE_PRIMARY_MSG_IF_FALLBACK =
       MethodRef.createNonPure(
@@ -231,6 +258,26 @@ final class RenderContextExpression extends Expression implements JbcSrcPluginCo
             GET_SOY_MSG_PARTS_WITH_ALTERNATE_ID_NO_DEFAULT, constant(id), constant(alternateId))
         : delegate.invoke(
             GET_SOY_MSG_PARTS_WITH_ALTERNATE_ID, constant(id), defaultParts, constant(alternateId));
+  }
+
+  Expression getBasicSoyMsgPart(long id, @Nullable Expression defaultPart) {
+    return defaultPart == null
+        ? delegate.invoke(GET_BASIC_SOY_MSG_PART_NO_DEFAULT, constant(id))
+        : delegate.invoke(GET_BASIC_SOY_MSG_PART, constant(id), defaultPart);
+  }
+
+  Expression getBasicSoyMsgPartWithAlternateId(
+      long id, @Nullable Expression defaultPart, long alternateId) {
+    return defaultPart == null
+        ? delegate.invoke(
+            GET_BASIC_SOY_MSG_PART_NO_DEFAULT_WITH_ALTERNATE_ID,
+            constant(id),
+            constant(alternateId))
+        : delegate.invoke(
+            GET_BASIC_SOY_MSG_PART_WITH_ALTERNATE_ID,
+            constant(id),
+            defaultPart,
+            constant(alternateId));
   }
 
   Expression getPrintDirective(String name) {

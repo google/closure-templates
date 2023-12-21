@@ -35,7 +35,6 @@ import com.google.template.soy.jbcsrc.shared.CompiledTemplates.TemplateData;
 import com.google.template.soy.logging.LoggableElementMetadata;
 import com.google.template.soy.logging.SoyLogger;
 import com.google.template.soy.msgs.SoyMsgBundle;
-import com.google.template.soy.msgs.restricted.SoyMsg;
 import com.google.template.soy.msgs.restricted.SoyMsgPart;
 import com.google.template.soy.plugin.java.PluginInstances;
 import com.google.template.soy.plugin.java.RenderCssHelper;
@@ -253,9 +252,9 @@ public final class RenderContext {
   /** Returns {@code true} if the primary msg should be used instead of the fallback. */
   public boolean usePrimaryMsgIfFallback(long msgId, long fallbackId) {
     // Note: we need to make sure the fallback msg is actually present if we are going to fallback.
-    // use getMsgParts() since if the bundle is a RenderOnlySoyMsgBundleImpl then this will be
+    // use hasMsg() since if the bundle is a RenderOnlySoyMsgBundleImpl then this will be
     // allocation free.
-    return !msgBundle.getMsgParts(msgId).isEmpty() || msgBundle.getMsgParts(fallbackId).isEmpty();
+    return msgBundle.hasMsg(msgId) || !msgBundle.hasMsg(fallbackId);
   }
 
   /**
@@ -263,11 +262,11 @@ public final class RenderContext {
    */
   public boolean usePrimaryOrAlternateIfFallback(long msgId, long alternateId, long fallbackId) {
     // Note: we need to make sure the fallback msg is actually present if we are going to fallback.
-    // use getMsgParts() since if the bundle is a RenderOnlySoyMsgBundleImpl then this will be
+    // use hasMsg() since if the bundle is a RenderOnlySoyMsgBundleImpl then this will be
     // allocation free.
-    return !msgBundle.getMsgParts(msgId).isEmpty()
-        || !msgBundle.getMsgParts(alternateId).isEmpty()
-        || msgBundle.getMsgParts(fallbackId).isEmpty();
+    return msgBundle.hasMsg(msgId)
+        || msgBundle.hasMsg(alternateId)
+        || !msgBundle.hasMsg(fallbackId);
   }
 
   /**
@@ -277,11 +276,10 @@ public final class RenderContext {
   public boolean usePrimaryIfFallbackOrFallbackAlternate(
       long msgId, long fallbackId, long fallbackAlternateId) {
     // Note: we need to make sure the fallback msg is actually present if we are going to fallback.
-    // use getMsgParts() since if the bundle is a RenderOnlySoyMsgBundleImpl then this will be
+    // use hasMsg() since if the bundle is a RenderOnlySoyMsgBundleImpl then this will be
     // allocation free.
-    return !msgBundle.getMsgParts(msgId).isEmpty()
-        || (msgBundle.getMsgParts(fallbackId).isEmpty()
-            && msgBundle.getMsgParts(fallbackAlternateId).isEmpty());
+    return msgBundle.hasMsg(msgId)
+        || (!msgBundle.hasMsg(fallbackId) && !msgBundle.hasMsg(fallbackAlternateId));
   }
 
   /**
@@ -291,12 +289,11 @@ public final class RenderContext {
   public boolean usePrimaryOrAlternateIfFallbackOrFallbackAlternate(
       long msgId, long alternateId, long fallbackId, long fallbackAlternateId) {
     // Note: we need to make sure the fallback msg is actually present if we are going to fallback.
-    // use getMsgParts() since if the bundle is a RenderOnlySoyMsgBundleImpl then this will be
+    // use hasMsg() since if the bundle is a RenderOnlySoyMsgBundleImpl then this will be
     // allocation free.
-    return !msgBundle.getMsgParts(msgId).isEmpty()
-        || !msgBundle.getMsgParts(alternateId).isEmpty()
-        || (msgBundle.getMsgParts(fallbackId).isEmpty()
-            && msgBundle.getMsgParts(fallbackAlternateId).isEmpty());
+    return msgBundle.hasMsg(msgId)
+        || msgBundle.hasMsg(alternateId)
+        || (!msgBundle.hasMsg(fallbackId) && !msgBundle.hasMsg(fallbackAlternateId));
   }
 
   /**
@@ -355,6 +352,38 @@ public final class RenderContext {
       return msgPartsByAlternateId;
     }
     return msgParts;
+  }
+
+  public String getBasicSoyMsgPart(long msgId, String defaultPart) {
+    String translation = msgBundle.getBasicTranslation(msgId);
+    return translation == null ? defaultPart : translation;
+  }
+
+  public String getBasicSoyMsgPart(long msgId) {
+    return msgBundle.getBasicTranslation(msgId);
+  }
+
+  public String getBasicSoyMsgPartWithAlternateId(
+      long msgId, String defaultPart, long alternateId) {
+    String translation = msgBundle.getBasicTranslation(msgId);
+    if (translation == null) {
+      translation = msgBundle.getBasicTranslation(alternateId);
+      if (translation == null) {
+        return defaultPart;
+      }
+    }
+    return translation;
+  }
+
+  public String getBasicSoyMsgPartWithAlternateId(long msgId, long alternateId) {
+    String translation = msgBundle.getBasicTranslation(msgId);
+    if (translation == null) {
+      translation = msgBundle.getBasicTranslation(alternateId);
+      if (translation == null) {
+        throw new AssertionError();
+      }
+    }
+    return translation;
   }
 
   /**

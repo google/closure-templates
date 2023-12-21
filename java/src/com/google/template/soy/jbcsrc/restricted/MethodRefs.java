@@ -457,10 +457,8 @@ public final class MethodRefs {
           SoyValueProvider.class,
           String.class);
 
-  public static final MethodRef HANDLE_BASIC_TRANSLATION =
-      createPure(JbcSrcRuntime.class, "handleBasicTranslation", List.class);
   public static final MethodRef HANDLE_BASIC_TRANSLATION_AND_ESCAPE_HTML =
-      createPure(JbcSrcRuntime.class, "handleBasicTranslationAndEscapeHtml", List.class);
+      createPure(JbcSrcRuntime.class, "handleBasicTranslationAndEscapeHtml", String.class);
 
   public static final MethodRef RUNTIME_STRING_EQUALS_AS_NUMBER =
       createPure(JbcSrcRuntime.class, "stringEqualsAsNumber", String.class, double.class);

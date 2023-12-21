@@ -26,6 +26,7 @@ import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.Expression;
@@ -38,6 +39,7 @@ import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.Statement;
 import com.google.template.soy.jbcsrc.shared.MsgDefaultConstantFactory;
 import com.google.template.soy.msgs.internal.MsgUtils.MsgPartsAndIds;
+import com.google.template.soy.msgs.restricted.SoyMsgRawTextPart;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.EscapingMode;
 import com.google.template.soy.soytree.MsgHtmlTagNode;
@@ -148,20 +150,37 @@ final class MsgCompiler {
       MsgNode msg,
       ImmutableList<SoyPrintDirective> escapingDirectives,
       boolean isFallback) {
-    Expression soyMsgDefaultParts =
-        isFallback ? null : compileDefaultMessagePartsConstant(partsAndId);
-    Expression soyMsgParts =
-        msg.getAlternateId().isPresent()
-            ? parameterLookup
-                .getRenderContext()
-                .getSoyMsgPartsWithAlternateId(
-                    partsAndId.id, soyMsgDefaultParts, msg.getAlternateId().getAsLong())
-            : parameterLookup.getRenderContext().getSoyMsgParts(partsAndId.id, soyMsgDefaultParts);
+
     Statement printMsg;
     if (msg.isRawTextMsg()) {
+      Expression soyMsgDefaultText =
+          isFallback
+              ? null
+              : constant(
+                  ((SoyMsgRawTextPart) Iterables.getOnlyElement(partsAndId.parts)).getRawText());
+      Expression soyMsgPart =
+          msg.getAlternateId().isPresent()
+              ? parameterLookup
+                  .getRenderContext()
+                  .getBasicSoyMsgPartWithAlternateId(
+                      partsAndId.id, soyMsgDefaultText, msg.getAlternateId().getAsLong())
+              : parameterLookup
+                  .getRenderContext()
+                  .getBasicSoyMsgPart(partsAndId.id, soyMsgDefaultText);
       // Simplest case, just a static string translation
-      printMsg = handleBasicTranslation(msg, escapingDirectives, soyMsgParts);
+      printMsg = handleBasicTranslation(msg, escapingDirectives, soyMsgPart);
     } else {
+      Expression soyMsgDefaultParts =
+          isFallback ? null : compileDefaultMessagePartsConstant(partsAndId);
+      Expression soyMsgParts =
+          msg.getAlternateId().isPresent()
+              ? parameterLookup
+                  .getRenderContext()
+                  .getSoyMsgPartsWithAlternateId(
+                      partsAndId.id, soyMsgDefaultParts, msg.getAlternateId().getAsLong())
+              : parameterLookup
+                  .getRenderContext()
+                  .getSoyMsgParts(partsAndId.id, soyMsgDefaultParts);
       // String translation + placeholders
       printMsg =
           handleTranslationWithPlaceholders(
@@ -198,15 +217,14 @@ final class MsgCompiler {
 
   /** Handles a translation consisting of a single raw text node. */
   private Statement handleBasicTranslation(
-      MsgNode msg, ImmutableList<SoyPrintDirective> escapingDirectives, Expression soyMsgParts) {
+      MsgNode msg, ImmutableList<SoyPrintDirective> escapingDirectives, Expression soyMsgPart) {
     // optimize for simple constant translations (very common)
     // this becomes: renderContext.getSoyMessge(<id>).getParts().get(0).getRawText()
     SoyExpression text =
         SoyExpression.forString(
-            (msg.getEscapingMode() == EscapingMode.ESCAPE_HTML
-                    ? MethodRefs.HANDLE_BASIC_TRANSLATION_AND_ESCAPE_HTML
-                    : MethodRefs.HANDLE_BASIC_TRANSLATION)
-                .invoke(soyMsgParts));
+            msg.getEscapingMode() == EscapingMode.ESCAPE_HTML
+                ? MethodRefs.HANDLE_BASIC_TRANSLATION_AND_ESCAPE_HTML.invoke(soyMsgPart)
+                : soyMsgPart);
     // Note: there is no point in trying to stream here, since we are starting with a constant
     // string.
     for (SoyPrintDirective directive : escapingDirectives) {

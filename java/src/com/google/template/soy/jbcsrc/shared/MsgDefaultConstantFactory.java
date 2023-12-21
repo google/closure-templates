@@ -85,7 +85,7 @@ public final class MsgDefaultConstantFactory {
 
   /**
    * Transforms a list of message parts into a list of objects that can be encoded as bootstrap
-   * methods argumetns for {@link #bootstrapMsgConstant}.
+   * methods arguments for {@link #bootstrapMsgConstant}.
    */
   public static ImmutableList<Object> msgToPartsList(ImmutableList<SoyMsgPart> parts) {
     ImmutableList<Object> constantParts = partsToConstantPartsList(parts);

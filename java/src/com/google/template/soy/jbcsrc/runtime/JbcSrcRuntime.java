@@ -324,14 +324,8 @@ public final class JbcSrcRuntime {
 
   @Keep
   @Nonnull
-  public static String handleBasicTranslation(List<SoyMsgPart> parts) {
-    return ((SoyMsgRawTextPart) parts.get(0)).getRawText();
-  }
-
-  @Keep
-  @Nonnull
-  public static String handleBasicTranslationAndEscapeHtml(List<SoyMsgPart> parts) {
-    return MsgRenderer.escapeHtml(handleBasicTranslation(parts));
+  public static String handleBasicTranslationAndEscapeHtml(String text) {
+    return MsgRenderer.escapeHtml(text);
   }
 
   /**
@@ -395,7 +389,18 @@ public final class JbcSrcRuntime {
 
     static String escapeHtml(String s) {
       // Note that "&" is not replaced because the translation can contain HTML entities.
-      return s.replace("<", "&lt;");
+      int ltIndex = s.indexOf('<');
+      if (ltIndex < 0) {
+        return s;
+      }
+      int length = s.length();
+      StringBuilder sb = new StringBuilder(length + 3);
+      int i = 0;
+      do {
+        sb.append(s, i, ltIndex).append("&lt;");
+        i = ltIndex + 1;
+      } while (ltIndex < length && (ltIndex = s.indexOf('<', ltIndex + 1)) > 0);
+      return sb.append(s, i, length).toString();
     }
 
     /**

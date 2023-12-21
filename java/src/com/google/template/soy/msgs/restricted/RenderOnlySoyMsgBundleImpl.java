@@ -233,6 +233,7 @@ public final class RenderOnlySoyMsgBundleImpl extends SoyMsgBundle {
     return values.subList(startInclusive, endExclusive);
   }
 
+  @Nullable
   @Override
   public SoyMsg getMsg(long msgId) {
     int index = binarySearch(msgId);
@@ -240,9 +241,26 @@ public final class RenderOnlySoyMsgBundleImpl extends SoyMsgBundle {
   }
 
   @Override
+  public boolean hasMsg(long msgId) {
+    return binarySearch(msgId) >= 0;
+  }
+
+  @Override
   public ImmutableList<SoyMsgPart> getMsgParts(long msgId) {
     int index = binarySearch(msgId);
     return index >= 0 ? partsForIndex(index) : ImmutableList.of();
+  }
+
+  @Override
+  @Nullable
+  public String getBasicTranslation(long msgId) {
+    int index = binarySearch(msgId);
+    if (index < 0) {
+      return null;
+    }
+    int startInclusive = partRanges[index];
+    checkArgument(startInclusive + 1 == partRanges[index + 1]);
+    return ((SoyMsgRawTextPart) values.get(startInclusive)).getRawText();
   }
 
   private int binarySearch(long key) {
