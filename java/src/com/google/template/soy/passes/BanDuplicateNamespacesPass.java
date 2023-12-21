@@ -27,9 +27,11 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.internal.exemptions.NamespaceExemptions;
 import com.google.template.soy.passes.CompilerFileSetPass.Result;
+import com.google.template.soy.soytree.FileMetadata;
 import com.google.template.soy.soytree.FileSetMetadata;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.TemplateMetadata;
+import com.google.template.soy.soytree.TemplateNode;
 import java.util.TreeSet;
 import java.util.function.Supplier;
 
@@ -62,11 +64,10 @@ final class BanDuplicateNamespacesPass implements CompilerFileSetPass {
   @Override
   public Result run(ImmutableList<SoyFileNode> sourceFiles, IdGenerator nodeIdGen) {
     ImmutableSetMultimap<String, String> namespaceToFiles =
-        fileSetTemplateRegistry.get().getAllTemplates().stream()
-            .collect(
-                toImmutableSetMultimap(
-                    BanDuplicateNamespacesPass::namespace,
-                    t -> t.getSourceLocation().getFilePath().path()));
+        fileSetTemplateRegistry.get().getAllFiles().stream()
+            .filter(
+                f -> !f.getNamespace().equals(TemplateNode.SoyFileHeaderInfo.EMPTY.getNamespace()))
+            .collect(toImmutableSetMultimap(FileMetadata::getNamespace, f -> f.getPath().path()));
     for (SoyFileNode sourceFile : sourceFiles) {
       ImmutableSet<String> filePaths = namespaceToFiles.get(sourceFile.getNamespace());
       if (filePaths.size() > 1) {
