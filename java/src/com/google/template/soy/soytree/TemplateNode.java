@@ -109,7 +109,8 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
    */
   public static class SoyFileHeaderInfo {
     /** A header with no aliases, used for parsing non-files. */
-    public static final SoyFileHeaderInfo EMPTY = new SoyFileHeaderInfo("sample.ns");
+    public static final SoyFileHeaderInfo EMPTY =
+        new SoyFileHeaderInfo("empty.file.ns.DO_NOT_USE_OR_ELSE.FOR_SOY_INTERNAL_USE_ONLY");
 
     /** Map from aliases to namespaces for this file. */
     private final ImmutableMap<String, String> aliasToNamespaceMap;
