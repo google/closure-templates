@@ -75,7 +75,7 @@ public final class SoyTypes {
   // cl/581043728 wasn't a correct fix: `{if $html && foo}...{/if}` in the JavaScript backend,
   // and when the block body is computable as an expression turns into
   // ((coerceToBoolean(html) ? foo : html) ? ... : '')
-  // Unfortunately some templates are relying on this. Fix forward to use isFalseyOrEmpty()
+  // Unfortunately some templates are relying on this. Fix forward to use hasContent()
   // everywhere in go/soy-sanitized-types-boolean-coercion
   public static final ImmutableSet<Kind> SANITIZED_TYPE_KINDS_BROKEN =
       ImmutableSet.of(Kind.HTML, Kind.ELEMENT, Kind.ATTRIBUTES, Kind.JS, Kind.CSS);

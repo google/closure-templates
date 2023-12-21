@@ -8,7 +8,7 @@
  *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
+ * d`tributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
@@ -46,7 +46,6 @@ import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_COERCE_TO_BOO
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_EQUALS;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_FILTER_AND_MAP;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_HAS_CONTENT;
-import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_IS_FALSEY_OR_EMPTY;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_IS_TRUTHY_NON_EMPTY;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_MAKE_ARRAY;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_NEWMAPS_TRANSFORM_VALUES;
@@ -894,10 +893,6 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
     return chunk;
   }
 
-  protected Expression isFalseyOrEmpty(Expression chunk) {
-    return SOY_IS_FALSEY_OR_EMPTY.call(chunk);
-  }
-
   protected Expression hasContent(Expression chunk) {
     return SOY_HAS_CONTENT.call(chunk);
   }
@@ -1111,8 +1106,6 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
           return maybeCoerceToBoolean(
               // Always coerce regardless of the argument type.
               AnyType.getInstance(), visit(node.getParam(0)), /* force= */ true);
-        case IS_FALSEY_OR_EMPTY:
-          return isFalseyOrEmpty(visit(node.getParam(0)));
         case IS_TRUTHY_NON_EMPTY:
           return isTruthyNonEmpty(visit(node.getParam(0)));
         case HAS_CONTENT:

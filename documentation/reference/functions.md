@@ -35,12 +35,6 @@ type is allowed, in which case standard
 [boolean coercion](go/soy/reference/coercions?polyglot=call-command#boolean-coercions)
 is used.
 
-### `isFalseyOrEmpty(value)` {#isFalseyOrEmpty}
-
-WARNING: Do not use, will be removed. use `isTruthyNonEmpty()` instead.
-
-Equivalent to `not isTruthyNonEmpty()`.
-
 ### `checkNotNull(value)` {#checkNotNull}
 
 Throws a runtime exception if the given value is `null` and returns the value

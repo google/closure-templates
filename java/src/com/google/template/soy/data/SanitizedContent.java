@@ -192,11 +192,6 @@ public class SanitizedContent extends SoyAbstractValue {
   }
 
   @Override
-  public boolean isFalseyOrEmpty() {
-    return getContent().length() == 0;
-  }
-
-  @Override
   public boolean isTruthyNonEmpty() {
     return getContent().length() > 0;
   }

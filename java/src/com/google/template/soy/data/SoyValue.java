@@ -65,14 +65,11 @@ public interface SoyValue extends SoyValueProvider {
   String coerceToString();
 
   /**
-   * Returns whether this value is empty. For SanitizedContent, this checks if the content is empty.
+   * Returns whether this value is truthy. For SanitizedContent, this checks if the content is
+   * empty.
    *
    * @return This value coerced into a boolean.
    */
-  default boolean isFalseyOrEmpty() {
-    return !coerceToBoolean();
-  }
-
   default boolean isTruthyNonEmpty() {
     return coerceToBoolean();
   }

@@ -776,17 +776,6 @@ public final class ResolveExpressionTypesPassTest {
   }
 
   @Test
-  public void testDataFlowTypeNarrowing_isFalseyOrEmpty() {
-    assertTypes(
-        "{@param? h: html|null}",
-        "{if not isFalseyOrEmpty($h)}",
-        "  {assertType('html', $h)}",
-        "{else}",
-        "  {assertType('html|null|undefined', $h)}",
-        "{/if}");
-  }
-
-  @Test
   public void testDataFlowTypeNarrowing_hasContent() {
     assertTypes(
         "{@param? h: html|null}",

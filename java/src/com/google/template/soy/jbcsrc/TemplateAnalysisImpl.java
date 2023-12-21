@@ -805,7 +805,6 @@ final class TemplateAnalysisImpl implements TemplateAnalysis {
           case UNDEFINED_TO_NULL:
           case UNDEFINED_TO_NULL_SSR:
           case BOOLEAN:
-          case IS_FALSEY_OR_EMPTY:
           case HAS_CONTENT:
           case IS_TRUTHY_NON_EMPTY:
             // visit children normally

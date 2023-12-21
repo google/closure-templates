@@ -121,8 +121,6 @@ final class IncrementalDomRuntime {
 
   public static final Expression SOY_IDOM_IS_TRUTHY = SOY_IDOM.dotAccess("$$isTruthy");
   public static final Expression SOY_IDOM_HAS_CONTENT = SOY_IDOM.dotAccess("$$hasContent");
-  public static final Expression SOY_IDOM_IS_FALSEY_OR_EMPTY =
-      SOY_IDOM.dotAccess("$$isFalseyOrEmpty");
   public static final Expression SOY_IDOM_IS_TRUTHY_NON_EMPTY =
       SOY_IDOM.dotAccess("$$isTruthyNonEmpty");
   public static final Expression SOY_IDOM_EMPTY_TO_NULL = SOY_IDOM.dotAccess("$$emptyToNull");

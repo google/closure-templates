@@ -1763,12 +1763,6 @@ final class ExpressionCompiler {
     }
 
     @Override
-    SoyExpression visitIsFalseyOrEmptyFunction(FunctionNode node) {
-      return SoyExpression.forBool(
-          MethodRefs.RUNTIME_IS_FALSEY_OR_EMPTY.invoke(visit(node.getParam(0)).box()));
-    }
-
-    @Override
     SoyExpression visitHasContentFunction(FunctionNode node) {
       return SoyExpression.forBool(
           MethodRefs.RUNTIME_HAS_CONTENT.invoke(visit(node.getParam(0)).box()));

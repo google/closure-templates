@@ -323,9 +323,6 @@ public final class MethodRefs {
   public static final MethodRef RUNTIME_EQUAL =
       createPure(SharedRuntime.class, "equal", SoyValue.class, SoyValue.class);
 
-  public static final MethodRef RUNTIME_IS_FALSEY_OR_EMPTY =
-      createPure(JbcSrcRuntime.class, "isFalseyOrEmpty", SoyValue.class);
-
   public static final MethodRef RUNTIME_IS_TRUTHY_NON_EMPTY =
       createPure(JbcSrcRuntime.class, "isTruthyNonEmpty", SoyValue.class);
 

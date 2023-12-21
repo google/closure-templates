@@ -464,10 +464,6 @@ function isTruthy(expr: unknown): boolean {
   return true;
 }
 
-function isFalseyOrEmpty(expr: unknown): boolean {
-  return !isTruthy(expr);
-}
-
 function isTruthyNonEmpty(expr: unknown): boolean {
   return isTruthy(expr);
 }
@@ -585,7 +581,6 @@ export {
   emptyToNull as $$emptyToNull,
   hasContent as $$hasContent,
   htmlToString as $$htmlToString,
-  isFalseyOrEmpty as $$isFalseyOrEmpty,
   isIdom as $$isIdom,
   isTruthy as $$isTruthy,
   isTruthyNonEmpty as $$isTruthyNonEmpty,

@@ -545,17 +545,6 @@ const $$coerceToBoolean = function(arg) {
 
 
 /**
- * Returns if the value is falsey or is a sanitized content with empty content.
- * 
- * @param {*} arg The argument to coerce.
- * @return {boolean}
- */
-const $$isFalseyOrEmpty = function(arg) {
-  return !$$coerceToBoolean(arg);
-};
-
-
-/**
  * Returns if the value is truthy or is a sanitized content with content.
  *
  * @param {*} arg The argument to coerce.
@@ -2659,7 +2648,6 @@ exports = {
   $$round,
   $$strContains,
   $$coerceToBoolean,
-  $$isFalseyOrEmpty,
   $$isTruthyNonEmpty,
   $$hasContent,
   $$makeEmptyTemplateFn,
