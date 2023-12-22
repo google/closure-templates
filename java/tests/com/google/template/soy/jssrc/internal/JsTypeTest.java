@@ -81,7 +81,7 @@ public final class JsTypeTest {
     assertThatTypeExpr(makeNullable(HtmlType.getInstance()))
         .isEqualTo(
             "!goog.soy.data.SanitizedHtml|!safevalues.SafeHtml|"
-                + "!soy.$$EMPTY_STRING_|null|string|undefined");
+                + "!soy.$$EMPTY_STRING_|null|string");
 
     assertThatTypeExpr(UnionType.of(HtmlType.getInstance(), UriType.getInstance()))
         .isEqualTo(
@@ -98,14 +98,14 @@ public final class JsTypeTest {
                 + "!soy.$$EMPTY_STRING_|string>)");
 
     // Nullable types
-    assertThatTypeExpr(NULLABLE_STRING).isEqualTo("null|string|undefined");
+    assertThatTypeExpr(NULLABLE_STRING).isEqualTo("null|string");
 
     assertThatTypeExpr(NULLABLE_LIST_OF_HTML)
         .isEqualTo(
             "(!Array<!goog.soy.data.SanitizedHtml|"
                 + "!safevalues.SafeHtml|!soy.$$EMPTY_STRING_|string>|"
                 + "!ReadonlyArray<!goog.soy.data.SanitizedHtml|"
-                + "!safevalues.SafeHtml|!soy.$$EMPTY_STRING_|string>)|null|undefined");
+                + "!safevalues.SafeHtml|!soy.$$EMPTY_STRING_|string>)|null");
 
     // Records
     assertThatTypeExpr(
@@ -133,7 +133,7 @@ public final class JsTypeTest {
                 + " ((!Array<!goog.soy.data.SanitizedHtml|"
                 + "!safevalues.SafeHtml|!soy.$$EMPTY_STRING_|string>|"
                 + "!ReadonlyArray<!goog.soy.data.SanitizedHtml|"
-                + "!safevalues.SafeHtml|!soy.$$EMPTY_STRING_|string>)|null|undefined),}");
+                + "!safevalues.SafeHtml|!soy.$$EMPTY_STRING_|string>)|null),}");
 
     assertThatTypeExpr(MapType.of(StringType.getInstance(), HtmlType.getInstance()))
         .isEqualTo(
@@ -162,15 +162,19 @@ public final class JsTypeTest {
     assertThat(getTypeAssertion(IntType.getInstance(), "x")).isEqualTo("typeof x === 'number'");
     assertThat(getTypeAssertion(BoolType.getInstance(), "x")).isEqualTo("typeof x === 'boolean'");
 
-    assertThat(getTypeAssertion(SoyTypes.makeNullable(BoolType.getInstance()), "x"))
+    assertThat(getTypeAssertion(SoyTypes.makeNullish(BoolType.getInstance()), "x"))
         .isEqualTo("x == null || typeof x === 'boolean'");
+    assertThat(getTypeAssertion(SoyTypes.makeNullable(BoolType.getInstance()), "x"))
+        .isEqualTo("x === null || typeof x === 'boolean'");
+    assertThat(getTypeAssertion(SoyTypes.makeUndefinable(BoolType.getInstance()), "x"))
+        .isEqualTo("x === undefined || typeof x === 'boolean'");
     assertThat(getTypeAssertion(HtmlType.getInstance(), "x"))
         .isEqualTo("goog.soy.data.SanitizedHtml.isCompatibleWith(x)");
 
     assertThat(getTypeAssertion(LIST_OF_HTML, "x")).isEqualTo("Array.isArray(x)");
 
     assertThat(getTypeAssertion(NULLABLE_LIST_OF_HTML, "x"))
-        .isEqualTo("x == null || Array.isArray(x)");
+        .isEqualTo("x === null || Array.isArray(x)");
 
     assertThat(
             getTypeAssertion(

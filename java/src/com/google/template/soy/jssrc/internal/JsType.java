@@ -119,6 +119,21 @@ public final class JsType {
           .setPredicate((value, codeGenerator) -> Optional.of(value.doubleEqualsNull()))
           .build();
 
+  private static final JsType NULL_TYPE =
+      builder()
+          .addType("null")
+          .setPredicate(
+              (value, codeGenerator) -> Optional.of(value.tripleEquals(Expressions.LITERAL_NULL)))
+          .build();
+
+  private static final JsType UNDEFINED_TYPE =
+      builder()
+          .addType("undefined")
+          .setPredicate(
+              (value, codeGenerator) ->
+                  Optional.of(value.tripleEquals(Expressions.LITERAL_UNDEFINED)))
+          .build();
+
   private static final ImmutableMap<SanitizedContentKind, JsType> SANITIZED_TYPES;
   private static final ImmutableMap<SanitizedContentKind, JsType> SANITIZED_TYPES_STRICT;
 
@@ -351,8 +366,9 @@ public final class JsType {
       boolean includeNullForMessages) {
     switch (soyType.getKind()) {
       case NULL:
+        return NULL_TYPE;
       case UNDEFINED:
-        return NULL_OR_UNDEFINED_TYPE;
+        return UNDEFINED_TYPE;
 
       case ANY:
         return ANY_TYPE;
@@ -544,11 +560,20 @@ public final class JsType {
           UnionType unionType = (UnionType) soyType;
           Builder builder = builder();
           Set<JsType> types = new LinkedHashSet<>();
-          boolean isNullable = SoyTypes.isNullish(unionType);
+          boolean isNullable = SoyTypes.isNullable(unionType);
+          boolean isUndefinable = SoyTypes.isUndefinable(unionType);
           // handle null first so that if other type tests dereference the param they won't fail
           if (isNullable) {
-            builder.addTypes(NULL_OR_UNDEFINED_TYPE.typeExpressions);
-            types.add(NULL_OR_UNDEFINED_TYPE);
+            if (isUndefinable) {
+              builder.addTypes(NULL_OR_UNDEFINED_TYPE.typeExpressions);
+              types.add(NULL_OR_UNDEFINED_TYPE);
+            } else {
+              builder.addTypes(NULL_TYPE.typeExpressions);
+              types.add(NULL_TYPE);
+            }
+          } else if (isUndefinable) {
+            builder.addTypes(UNDEFINED_TYPE.typeExpressions);
+            types.add(UNDEFINED_TYPE);
           }
           for (SoyType member : unionType.getMembers()) {
             if (member.isNullOrUndefined()) {
@@ -740,7 +765,8 @@ public final class JsType {
    */
   public String typeExprForRecordMember(boolean isOptional) {
     if (typeExpressions.size() > 1 || isOptional) {
-      // needs parens
+      // Needs parens. Optional fields not supported:
+      // https://github.com/google/closure-compiler/issues/126
       return "("
           + typeExpr()
           + (isOptional && !typeExpressions.contains("undefined") ? "|undefined" : "")
