@@ -67,7 +67,6 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.kohsuke.args4j.Argument;
 import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.Option;
@@ -326,9 +325,9 @@ public abstract class AbstractSoyCompiler {
     for (File toggle : togglesFiles) {
       SourceLogicalPath path =
           SourceLogicalPath.create(generatedFiles.getOrDefault(toggle.getPath(), toggle.getPath()));
-      Stream<String> toggleNames =
+      ImmutableList<String> toggleNames =
           cache.read(toggle, CacheLoaders.CACHED_TOGGLE_NAMES, soyCompilerFileReader);
-      toggleNames.map(s -> s.trim()).forEach(s -> togglesBuilder.put(path, s));
+      togglesBuilder.putAll(path, toggleNames);
     }
     sfsBuilder.setToggleRegistry(new ImmutableSetMultimapToggleRegistry(togglesBuilder.build()));
 

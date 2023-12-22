@@ -38,7 +38,6 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Stream;
 import java.util.zip.GZIPInputStream;
 
 /** Implementations of {@link SoyInputCache.CacheLoader} for common compiler inputs. */
@@ -182,10 +181,8 @@ final class CacheLoaders {
         }
       };
 
-  static final SoyInputCache.CacheLoader<Stream<String>> CACHED_TOGGLE_NAMES =
-      (file, reader, cache) -> {
-        return reader.read(file).asCharSource(UTF_8).lines();
-      };
+  static final SoyInputCache.CacheLoader<ImmutableList<String>> CACHED_TOGGLE_NAMES =
+      (file, reader, cache) -> reader.read(file).asCharSource(UTF_8).readLines();
 
   static final SoyInputCache.CacheLoader<CompiledJarsPluginSignatureReader> JAVA_DEPS =
       (file, reader, cache) -> new CompiledJarsPluginSignatureReader(ImmutableList.of(file), false);
