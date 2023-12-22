@@ -47,9 +47,9 @@ import com.google.template.soy.error.SoyCompilationException;
 import com.google.template.soy.plugin.java.DelegatingMethodChecker;
 import com.google.template.soy.plugin.java.MethodChecker;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
+import com.google.template.soy.shared.internal.ImmutableSetMultimapToggleRegistry;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
-import com.google.template.soy.types.ToggleRegistry;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -531,25 +531,5 @@ public abstract class AbstractSoyCompiler {
    */
   protected static RuntimeException exitWithError(String errorMsg) {
     throw new CommandLineError(errorMsg);
-  }
-
-  private static final class ImmutableSetMultimapToggleRegistry implements ToggleRegistry {
-
-    private final ImmutableSetMultimap<SourceLogicalPath, String> source;
-
-    public ImmutableSetMultimapToggleRegistry(
-        ImmutableSetMultimap<SourceLogicalPath, String> source) {
-      this.source = source;
-    }
-
-    @Override
-    public ImmutableSet<String> getToggles(SourceLogicalPath path) {
-      return source.get(path);
-    }
-
-    @Override
-    public ImmutableSet<SourceLogicalPath> getPaths() {
-      return source.keySet();
-    }
   }
 }

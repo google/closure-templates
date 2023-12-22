@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.types;
+package com.google.template.soy.shared;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.SourceLogicalPath;

@@ -39,6 +39,7 @@ java_library(
         "//java/src/com/google/template/soy/passes",
         "//java/src/com/google/template/soy/passes/htmlmatcher",
         "//java/src/com/google/template/soy/shared",
+        "//java/src/com/google/template/soy/shared/internal",
         "//java/src/com/google/template/soy/shared/restricted",
         "//java/src/com/google/template/soy/soyparse",
         "//java/src/com/google/template/soy/soytree",

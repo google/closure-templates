@@ -36,12 +36,12 @@ import com.google.template.soy.passes.CompilerFileSetPass.Result;
 import com.google.template.soy.passes.CompilerFileSetPass.TopologicallyOrdered;
 import com.google.template.soy.plugin.java.MethodChecker;
 import com.google.template.soy.shared.SoyGeneralOptions;
+import com.google.template.soy.shared.ToggleRegistry;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.FileSetMetadata;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.types.SoyTypeRegistry;
-import com.google.template.soy.types.ToggleRegistry;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Map;
@@ -559,8 +559,10 @@ public final class PassManager {
           .add(new ResolveNamesPass(errorReporter))
           .add(
               new ResolveDottedImportsPass(
-                  errorReporter, registry, astRewrites.rewriteCssVariables()))
-          .add(new RewriteToggleImportsPass());
+                  errorReporter, registry, astRewrites.rewriteCssVariables()));
+      if (astRewrites.isAll()) {
+        passes.add(new RewriteToggleImportsPass());
+      }
       passes.add(
           new RewriteElementCompositionFunctionsPass(
               errorReporter, astRewrites.rewriteElementComposition()));

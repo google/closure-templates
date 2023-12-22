@@ -201,6 +201,7 @@ public final class JsRuntime {
 
   private static final Expression SOY_CONVERTERS =
       GoogRequire.create("soy.converters").googModuleGet();
+
   /** The JavaScript method to pack a sanitized object into a safe proto. */
   public static final ImmutableMap<String, Expression> JS_TO_PROTO_PACK_FN_BASE =
       ImmutableMap.<String, Expression>builder()
@@ -240,6 +241,7 @@ public final class JsRuntime {
   public static Expression protoToSanitizedContentConverterFunction(Descriptor messageType) {
     return SOY_CONVERTERS.dotAccess(NodeContentKinds.toJsUnpackFunction(messageType));
   }
+
   /**
    * Returns a function that ensure that proto bytes fields are consistently converted oot base64.
    */
@@ -292,6 +294,7 @@ public final class JsRuntime {
     return expr.castAs(
         "!" + readonlyName, ImmutableSet.of(GoogRequire.createTypeRequire(readonlyName)));
   }
+
   /**
    * Returns the js type for the sanitized content object corresponding to the given ContentKind.
    */

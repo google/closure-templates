@@ -24,12 +24,12 @@ import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
+import com.google.template.soy.shared.ToggleRegistry;
 import com.google.template.soy.soytree.ImportNode;
 import com.google.template.soy.soytree.ImportNode.ImportType;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.defn.ImportedVar;
 import com.google.template.soy.types.ToggleImportType;
-import com.google.template.soy.types.ToggleRegistry;
 
 /**
  * Resolves Soy toggle imports; verifies that the imports are valid and populates a local type

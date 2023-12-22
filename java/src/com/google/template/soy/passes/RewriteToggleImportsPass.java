@@ -61,7 +61,7 @@ final class RewriteToggleImportsPass implements CompilerFilePass {
     ToggleImportType toggleType = (ToggleImportType) defn.type();
     FunctionNode funcNode =
         FunctionNode.newPositional(
-            Identifier.create(BuiltinFunction.EVAL_TOGGLE.getName(), SourceLocation.UNKNOWN),
+            Identifier.create(BuiltinFunction.EVAL_TOGGLE.getName(), fullLocation),
             BuiltinFunction.EVAL_TOGGLE,
             fullLocation);
 

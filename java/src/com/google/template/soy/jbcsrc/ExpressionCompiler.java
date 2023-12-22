@@ -1680,7 +1680,7 @@ final class ExpressionCompiler {
     // as an optimization... this should just be an immutable map lookup keyed off of a constant
     // string. If we cared a lot, we could employ a simpler (and more compact) optimization by
     // assigning each selector a unique integer id and then instead of hashing we can just reference
-    // an array (aka perfect hashing).  This could be part of our runtime library and ids could be
+    // an array (aka perfect hashing). This could be part of our runtime library and ids could be
     // assigned at startup.
 
     @Override
@@ -1698,6 +1698,13 @@ final class ExpressionCompiler {
                 .invoke(MethodRefs.STRING_CONCAT, renamedSelector);
         return SoyExpression.forString(fullSelector);
       }
+    }
+
+    @Override
+    SoyExpression visitToggleFunction(FunctionNode node) {
+      String toggleName = ((StringNode) node.getChild(1)).getValue();
+      Expression toggleRewrite = parameters.getRenderContext().evalToggle(toggleName);
+      return SoyExpression.forBool(toggleRewrite);
     }
 
     @Override

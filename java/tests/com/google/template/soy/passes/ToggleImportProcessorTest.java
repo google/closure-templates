@@ -19,7 +19,6 @@ package com.google.template.soy.passes;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.base.SourceLocation;
@@ -28,13 +27,13 @@ import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.QuoteStyle;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.StringNode;
+import com.google.template.soy.shared.internal.ImmutableSetMultimapToggleRegistry;
 import com.google.template.soy.soytree.ImportNode;
 import com.google.template.soy.soytree.NamespaceDeclaration;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.ImportedVar;
 import com.google.template.soy.types.ToggleImportType;
-import com.google.template.soy.types.ToggleRegistry;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -42,26 +41,6 @@ import org.junit.runners.JUnit4;
 
 @RunWith(JUnit4.class)
 public final class ToggleImportProcessorTest {
-
-  static class ImmutableSetMultimapToggleRegistry implements ToggleRegistry {
-    private final ImmutableSetMultimap<SourceLogicalPath, String> filePathToToggleMap;
-
-    public ImmutableSetMultimapToggleRegistry(
-        ImmutableSetMultimap<SourceLogicalPath, String> filePathToToggleMap) {
-      this.filePathToToggleMap = filePathToToggleMap;
-    }
-
-    @Override
-    public ImmutableSet<String> getToggles(SourceLogicalPath path) {
-      return filePathToToggleMap.get(path);
-    }
-
-    @Override
-    public ImmutableSet<SourceLogicalPath> getPaths() {
-      return filePathToToggleMap.keySet();
-    }
-  }
-
   private static final SoyFileNode EMPTY_SOY_FILE_NODE =
       new SoyFileNode(
           0,

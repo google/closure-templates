@@ -80,6 +80,7 @@ java_library(
         "//java/src/com/google/template/soy/msgs",
         "//java/src/com/google/template/soy/plugin/internal",
         "//java/src/com/google/template/soy/plugin/restricted",
+        "//java/src/com/google/template/soy/shared:interfaces",
         "//java/src/com/google/template/soy/shared/restricted",
         "//java/src/com/google/template/soy/shared/restricted:method_annotation",
         "//java/src/com/google/template/soy/soytree",

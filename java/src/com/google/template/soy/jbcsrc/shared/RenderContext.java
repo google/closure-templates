@@ -148,6 +148,10 @@ public final class RenderContext {
     return string == null ? Preconditions.checkNotNull(selector) : string;
   }
 
+  public boolean evalToggle(String toggleName) {
+    return activeModSelector.test(toggleName);
+  }
+
   @Nonnull
   public String renameXid(String id) {
     String string = xidRenamingMap.get(id);
