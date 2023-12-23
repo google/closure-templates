@@ -17,6 +17,7 @@
 package com.google.template.soy.data;
 
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.errorprone.annotations.ThreadSafe;
 
 /**
  * An invocation of a Soy template, encapsulating both the template name and all the data parameters
@@ -74,6 +75,7 @@ public interface SoyTemplate extends TemplateInterface {
    * Wraps a {@link SoyTemplate} but grants synchronous access to {@link #getTemplateName()}. This
    * method should only be called by generated implementations of TemplateParameters.
    */
+  @ThreadSafe
   final class AsyncWrapper<T extends SoyTemplate> {
 
     private final String templateName;
