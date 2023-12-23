@@ -101,6 +101,10 @@ public final class SoyIncrementalDomSrcOptions {
     jsSrcOptions.setBidiGlobalDir(0);
     jsSrcOptions.setUseGoogIsRtlForBidiGlobalDir(true);
     jsSrcOptions.setDependOnCssHeader(dependOnCssHeader);
+    // MOE: begin_strip
+    jsSrcOptions.setGenerateMaybeRequireForControllerAndModelXids(
+        generateMaybeRequireForControllerAndModelXids);
+    // MOE: end_strip
     return jsSrcOptions;
   }
 
