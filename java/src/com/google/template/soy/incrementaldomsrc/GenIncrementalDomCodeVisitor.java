@@ -619,14 +619,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
       if (param.isImplicit()) {
         continue;
       }
-      methods.add(
-          this.generateGetParamMethodForSoyElementClass(
-              param, /* isAbstract= */ false, /* isInjected= */ false));
-    }
-    for (TemplateParam injectedParam : node.getInjectedParams()) {
-      methods.add(
-          this.generateGetParamMethodForSoyElementClass(
-              injectedParam, /* isAbstract= */ false, /* isInjected= */ true));
+      methods.add(this.generateGetParamMethodForSoyElementClass(param, /* isAbstract= */ false));
     }
 
     ClassExpression soyElementClass =
@@ -652,22 +645,10 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
         continue;
       }
       parameterMethods.add(
-          this.generateGetParamMethodForSoyElementClass(
-              param, /* isAbstract= */ true, /* isInjected= */ false));
-    }
-    ImmutableList.Builder<MethodDeclaration> injectedParameterMethods = ImmutableList.builder();
-    for (TemplateParam injectedParam : node.getInjectedParams()) {
-      injectedParameterMethods.add(
-          this.generateGetParamMethodForSoyElementClass(
-              injectedParam, /* isAbstract= */ true, /* isInjected= */ true));
+          this.generateGetParamMethodForSoyElementClass(param, /* isAbstract= */ true));
     }
 
-    ClassExpression soyElementClass =
-        ClassExpression.create(
-            ImmutableList.<MethodDeclaration>builder()
-                .addAll(parameterMethods.build())
-                .addAll(injectedParameterMethods.build())
-                .build());
+    ClassExpression soyElementClass = ClassExpression.create(parameterMethods.build());
     return VariableDeclaration.builder(className)
         .setJsDoc(JsDoc.builder().addAnnotation("interface").build())
         .setRhs(soyElementClass)
@@ -742,7 +723,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
 
   /** Generates `get[X]` for a given parameter value. */
   private MethodDeclaration generateGetParamMethodForSoyElementClass(
-      TemplateParam param, boolean isAbstract, boolean isInjected) {
+      TemplateParam param, boolean isAbstract) {
     JsType jsType = JsType.forIncrementalDomGetters(param.type());
     String accessorSuffix =
         Ascii.toUpperCase(param.name().substring(0, 1)) + param.name().substring(1);
@@ -760,7 +741,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
       // TODO(b/230911572): remove this cast when types are always aligned.
       Expression value =
           maybeCastAs(
-              id("this").dotAccess(isInjected ? "ijData" : "data").dotAccess(param.name()),
+              id("this").dotAccess("data").dotAccess(param.name()),
               JsType.forIncrementalDomState(param.type()),
               jsType);
       if (param.hasDefault()) {
@@ -776,20 +757,10 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
             value.withInitialStatement(
                 genParamDefault(param, value, jsType, templateTranslationContext.codeGenerator()));
       }
-      // Injected params are marked as optional to account for unused templates, see:
-      // We can assert the presence of the injected param if it being called.
-      Optional<Expression> typeAssertion =
-          isInjected
-              ? jsType.getSoyParamTypeAssertion(
-                  value,
-                  param.name(),
-                  /* paramKind= */ "@inject",
-                  templateTranslationContext.codeGenerator())
-              : Optional.empty();
       return MethodDeclaration.create(
           "get" + accessorSuffix,
           JsDoc.builder().addAnnotation("override").addAnnotation("public").build(),
-          Statements.returnValue(typeAssertion.orElse(value)));
+          Statements.returnValue(value));
     }
   }
 
