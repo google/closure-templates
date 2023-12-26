@@ -577,7 +577,7 @@ public final class GenerateParseInfoVisitor
 
     ilb.appendLine();
     ilb.appendLine("/** This template's full name. */");
-    ilb.appendLine("public static final String __NAME__ = TemplateName.", templateFieldName, ";");
+    ilb.appendLine("private static final String __NAME__ = TemplateName.", templateFieldName, ";");
     ilb.appendLine(
         "private static final com.google.template.soy.parseinfo.TemplateName __TEMPLATE_NAME__ =",
         " TemplateName.",
@@ -711,7 +711,12 @@ public final class GenerateParseInfoVisitor
     ilb.appendLine();
     ilb.appendLine("/** Same as ", templateInfoClassName, ".getInstance(). */");
     deprecatedAnnotation(ilb, isDeprecated);
-    ilb.appendLine("public static final ", templateInfoClassName, " ", upperUnderscoreName, " =");
+    templateSpan =
+        kytheHelper
+            .appendLineAndGetSpans(
+                ilb, "public static final ", templateInfoClassName, " ", upperUnderscoreName, " =")
+            .get(3);
+    kytheHelper.addKytheLinkTo(templateSpan, node);
     ilb.increaseIndent(2);
     ilb.appendLine(templateInfoClassName, ".getInstance();");
     ilb.decreaseIndent(2);
