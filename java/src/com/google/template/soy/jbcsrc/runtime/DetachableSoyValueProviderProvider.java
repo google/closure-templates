@@ -16,7 +16,6 @@
 
 package com.google.template.soy.jbcsrc.runtime;
 
-
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
@@ -55,11 +54,13 @@ public abstract class DetachableSoyValueProviderProvider implements SoyValueProv
 
   @Override
   public RenderResult renderAndResolve(LoggingAdvisingAppendable appendable) throws IOException {
-    RenderResult result = status();
-    // This means we have not made enough progress to even begin delegating, keep calling status()
-    // until we have.
     if (resolvedValueProvider == null) {
-      return result;
+      RenderResult subResult = doResolveDelegate();
+      if (!subResult.isDone()) {
+        // This means we have not made enough progress to even begin delegating, keep checking until
+        // we have.
+        return subResult;
+      }
     }
     return resolvedValueProvider.renderAndResolve(appendable);
   }
