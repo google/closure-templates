@@ -230,6 +230,26 @@ public final class JsRuntime {
           .putAll(JS_TO_PROTO_PACK_FN_BASE)
           .buildOrThrow();
 
+  /** Create and reference toggle for given path, name. */
+  public static Expression getToggleRef(String path, String name, boolean googModuleSyntax) {
+    // Translate './path/to/my.toggles' to 'google3.path.to.my$2etoggles' for ts_toggle_lib
+    int extensionIndex = path.lastIndexOf(".toggles");
+    if (extensionIndex != -1) {
+      path = path.substring(0, extensionIndex);
+    }
+    String togglePathSymbol = "google3." + path.replace('/', '.') + "$2etoggles";
+    if (googModuleSyntax) {
+      // Map toggle path to unique string for toggle references
+      String uniqueTogglePathSymbol = togglePathSymbol.replace('.', '_');
+      GoogRequire ref = GoogRequire.createWithAlias(togglePathSymbol, uniqueTogglePathSymbol);
+      // Prepend 'TOGGLE_' to toggle name for ts_toggle_lib naming requirement
+      return ref.reference().dotAccess("TOGGLE_" + name);
+    } else {
+      GoogRequire ref = GoogRequire.create(togglePathSymbol);
+      return ref.googModuleGet().dotAccess("TOGGLE_" + name);
+    }
+  }
+
   /** Returns the field containing the extension object for the given field descriptor. */
   public static Expression extensionField(FieldDescriptor desc) {
     String jsExtensionImport = ProtoUtils.getJsExtensionImport(desc);

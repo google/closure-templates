@@ -53,6 +53,7 @@ import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_VISUAL_ELEMEN
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_VISUAL_ELEMENT_DATA;
 import static com.google.template.soy.jssrc.internal.JsRuntime.XID;
 import static com.google.template.soy.jssrc.internal.JsRuntime.extensionField;
+import static com.google.template.soy.jssrc.internal.JsRuntime.getToggleRef;
 import static com.google.template.soy.jssrc.internal.JsRuntime.protoBytesPackToByteStringFunction;
 import static com.google.template.soy.jssrc.internal.JsRuntime.protoConstructor;
 import static com.google.template.soy.passes.ContentSecurityPolicyNonceInjectionPass.CSP_NONCE_VARIABLE_NAME;
@@ -1073,6 +1074,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
         case CSS:
           return visitCssFunction(node);
         case EVAL_TOGGLE:
+          return visitToggleFunction(node, /* useGoogModuleSyntax= */ false);
         case XID:
           return visitXidFunction(node);
         case SOY_SERVER_KEY:
@@ -1174,6 +1176,13 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
 
   private Expression visitCssFunction(FunctionNode node) {
     return GOOG_GET_CSS_NAME.call(visitParams(node));
+  }
+
+  /** Built-in function for generating JS code to import toggles. */
+  protected Expression visitToggleFunction(FunctionNode node, boolean useGoogModuleSyntax) {
+    StringNode pathName = (StringNode) node.getChild(0);
+    StringNode toggleName = (StringNode) node.getChild(1);
+    return getToggleRef(pathName.getValue(), toggleName.getValue(), useGoogModuleSyntax);
   }
 
   private Expression visitXidFunction(FunctionNode node) {
