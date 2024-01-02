@@ -417,7 +417,6 @@ public final class TypeNodeConverter
               .setType(parameter.type().accept(this))
               .setRequired(parameter.required())
               .setImplicit(false)
-              .setHasDefaultValue(false)
               .build();
       TemplateType.Parameter oldParameter = map.put(parameter.name(), newParameter);
       if (oldParameter != null) {

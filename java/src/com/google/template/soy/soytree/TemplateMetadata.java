@@ -155,7 +155,6 @@ public abstract class TemplateMetadata {
         .setType(param.typeOrDefault(UnknownType.getInstance()))
         .setRequired(param.isRequired())
         .setImplicit(param.isImplicit())
-        .setHasDefaultValue(param.hasDefault())
         .setDescription(param.desc())
         .build();
   }

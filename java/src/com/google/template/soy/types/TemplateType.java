@@ -50,7 +50,6 @@ public abstract class TemplateType extends SoyType {
           .setKind(ParameterKind.PARAM)
           .setRequired(false)
           .setImplicit(true)
-          .setHasDefaultValue(false)
           .build();
   private static final Parameter KEY_HIDDEN_ATTRIBUTE =
       Parameter.builder()
@@ -59,7 +58,6 @@ public abstract class TemplateType extends SoyType {
           .setKind(ParameterKind.ATTRIBUTE)
           .setRequired(false)
           .setImplicit(true)
-          .setHasDefaultValue(false)
           .build();
 
   /** The kind of template. */
@@ -291,8 +289,6 @@ public abstract class TemplateType extends SoyType {
 
     public abstract boolean isImplicit();
 
-    public abstract boolean getHasDefaultValue();
-
     /**
      * Note that description is not serialized by TemplateMetadataSerializer so this field will be
      * null if this instance is created via deserialization.
@@ -327,8 +323,6 @@ public abstract class TemplateType extends SoyType {
       public abstract Builder setRequired(boolean isRequired);
 
       public abstract Builder setImplicit(boolean isImplicit);
-
-      public abstract Builder setHasDefaultValue(boolean hasDefaultValue);
 
       public abstract Builder setDescription(String description);
 
@@ -519,7 +513,6 @@ public abstract class TemplateType extends SoyType {
               .setType(parameter.getType().toProto())
               .setRequired(parameter.isRequired())
               .setImplicit(parameter.isImplicit())
-              .setHasDefault(parameter.getHasDefaultValue())
               .build());
     }
     SoyTypeP returnType = templateContentKindToType(getContentKind()).toProto();

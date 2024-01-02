@@ -148,9 +148,6 @@ message ParameterP {
   KindP kind = 4;
   // Whether or not the parameter is implicitly added by the Soy framework.
   bool implicit = 5;
-  // Temporarily add whether this parameter has a default value to the header
-  // spec to help with the `undefined` rollout.
-  bool has_default = 6;
 }
 
 message FunctionTypeP {

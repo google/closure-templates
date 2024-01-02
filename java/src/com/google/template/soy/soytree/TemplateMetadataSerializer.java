@@ -274,7 +274,6 @@ public final class TemplateMetadataSerializer {
               .setKind(ParameterKind.fromProto(parameter.getKind()))
               .setRequired(parameter.getRequired())
               .setImplicit(parameter.getImplicit())
-              .setHasDefaultValue(parameter.getHasDefault())
               .setTypeLazily(
                   new SoyTypeSupplier(parameter.getType(), typeRegistry, filePath, errorReporter))
               .build());
@@ -440,7 +439,6 @@ public final class TemplateMetadataSerializer {
                     .setType(fromProto(parameter.getType(), typeRegistry, filePath, errorReporter))
                     .setRequired(parameter.getRequired())
                     .setImplicit(parameter.getImplicit())
-                    .setHasDefaultValue(parameter.getHasDefault())
                     .build());
           }
           return typeRegistry.internTemplateType(
