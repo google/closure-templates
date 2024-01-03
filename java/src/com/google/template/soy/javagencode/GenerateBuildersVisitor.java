@@ -375,7 +375,9 @@ public final class GenerateBuildersVisitor
    */
   private void appendParamsBuilderClass(TemplateInfo template, String templateParamsClassname) {
     appendJavadoc(ilb, "Creates a new Builder instance.", false, true);
-    ilb.appendLine("public static Builder builder() {");
+    Span methodNameSpan =
+        kytheHelper.appendLineAndGetSpans(ilb, "public static Builder ", "builder", "() {").get(1);
+    kytheHelper.addKytheLinkTo(methodNameSpan, template);
     ilb.increaseIndent();
     ilb.appendLine("return new Builder();");
     ilb.decreaseIndent();
@@ -421,7 +423,7 @@ public final class GenerateBuildersVisitor
                 })
             .collect(toList());
 
-    appendParamConstants(ilb, combinedParams);
+    appendParamConstants(ilb, template, combinedParams);
 
     List<ParamInfo> nonInjectedParams =
         combinedParams.stream().filter(p -> !p.injected()).collect(toList());
@@ -447,7 +449,15 @@ public final class GenerateBuildersVisitor
               + " parameters are optional.",
           false,
           true);
-      ilb.appendLine("public static " + templateParamsClassname + " getDefaultInstance() {");
+      methodNameSpan =
+          kytheHelper
+              .appendLineAndGetSpans(
+                  ilb,
+                  "public static " + templateParamsClassname + " ",
+                  "getDefaultInstance",
+                  "() {")
+              .get(1);
+      kytheHelper.addKytheLinkTo(methodNameSpan, template);
       ilb.increaseIndent();
       ilb.appendLine("return " + DEFAULT_INSTANCE_FIELD + ";");
       ilb.decreaseIndent();
@@ -462,15 +472,21 @@ public final class GenerateBuildersVisitor
                 javaType ->
                     javaType instanceof RecordJavaType && ((RecordJavaType) javaType).isList());
     // Start of Foo.Builder class.
-    ilb.appendLine(
-        "public static final class Builder extends"
-            + " com.google.template.soy.data.BaseSoyTemplateImpl."
-            + (anyAccumulatorParameters
-                ? "AbstractBuilderWithAccumulatorParameters"
-                : "AbstractBuilder")
-            + "<Builder, "
-            + templateParamsClassname
-            + "> {");
+    Span classNameSpan =
+        kytheHelper
+            .appendLineAndGetSpans(
+                ilb,
+                "public static final class ",
+                "Builder",
+                " extends com.google.template.soy.data.BaseSoyTemplateImpl."
+                    + (anyAccumulatorParameters
+                        ? "AbstractBuilderWithAccumulatorParameters"
+                        : "AbstractBuilder")
+                    + "<Builder, "
+                    + templateParamsClassname
+                    + "> {")
+            .get(1);
+    kytheHelper.addKytheLinkTo(classNameSpan, template);
     ilb.appendLine();
     ilb.increaseIndent();
 
@@ -515,7 +531,8 @@ public final class GenerateBuildersVisitor
     ilb.appendLine("}");
   }
 
-  private static void appendParamConstants(IndentedLinesBuilder ilb, List<ParamInfo> params) {
+  private void appendParamConstants(
+      IndentedLinesBuilder ilb, TemplateInfo template, List<ParamInfo> params) {
     Set<String> usedNames = new HashSet<>();
     List<String> nonInjected = new ArrayList<>();
     for (ParamInfo param : params) {
@@ -575,7 +592,8 @@ public final class GenerateBuildersVisitor
               "%s static final com.google.template.soy.data.SoyTemplateParam<%s>",
               visibility, genericType));
       ilb.increaseIndent(2);
-      ilb.appendLine(fieldName, " =");
+      Span fieldNameSpan = kytheHelper.appendLineAndGetSpans(ilb, fieldName, " =").get(0);
+      kytheHelper.addKytheLinkTo(fieldNameSpan, param, template);
       ilb.increaseIndent(2);
       ilb.appendLine(factory, "(");
       ilb.increaseIndent(2);
