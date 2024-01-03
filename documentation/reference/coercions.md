@@ -25,7 +25,7 @@ all the backends.
 These mostly do what you expect, but for numbers consider using a number
 formatting library to make I18n appropriate text.
 
-### list, record, map, proto, null, ve, ve_data
+### list, record, map, proto, null, undefined, ve, ve_data
 
 These mostly _do not do what you expect_. Avoid doing this other than for
 debugging purposes.

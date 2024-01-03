@@ -120,7 +120,8 @@ be provided whenever you call the template.
 
 Default parameters declare a parameter which does not always have to be
 provided. When not provided, a default parameter's value is set to the given
-default value.
+default value. Passing `undefined` as its value is equivalent to omitting the
+parameter from the call site.
 
 A default parameter can either infer its type from the type of the default value
 or use an explicitly declared type (this improves readability if the type of the
@@ -129,10 +130,10 @@ explicit type can also be used to widen the type inferred from the default value
 to allow a broader set of values. For example:
 
 ```soy
-{@param name: string|null = null}
+{@param name: string|int = 1}
 ```
 
-The inferred type is `null` but this also allows the parameter to accept
+The inferred type is `int` but this also allows the parameter to accept
 `string`s.
 
 The default value can only be a compile-time constant expression. It cannot
@@ -146,13 +147,12 @@ NOTE: Default parameters don't support content kind types like `html`, `uri` or
 
 The `@param?` syntax declares an optional parameter, which does not always have
 to be provided. Within a template, an optional parameter should be declared as
-`{@param? <PARAM_NAME>: <PARAM_TYPE>|null}` , i.e. , it should have a type of
-`<PARAM_TYPE>` if it was provided and `null` otherwise.
+`{@param? <PARAM_NAME>: <PARAM_TYPE>}` . The effective type of the optional
+param within the template is `<PARAM_TYPE>|undefined`. Callers may omit the
+optional parameter or pass a value of `undefined`; both are equivalent.
 
-Optional params should be declared with both a '?' and '|null'
-
-Default parameters are usually better than optional parameters, except when you
-need a `null` value if the parameter is unset.
+Default parameters are usually better than optional parameters, because you
+don't have to guard against `undefined` values.
 
 ## @inject {#inject}
 
@@ -167,7 +167,9 @@ Syntax:
 
 `{@inject}` declares an [injected template parameter](../concepts/ij-data.md).
 The syntax is identical to the [required param](#param) syntax with the
-exception of the keyword. The injected parameter may be optional (`{@inject?}`).
+exception of the keyword. The injected parameter may be optional (`{@inject?}`),
+in which case its effective type inside the template is
+`<PARAM_TYPE>|undefined`.
 
 See the [types reference](types) for instructions on how to declare types.
 

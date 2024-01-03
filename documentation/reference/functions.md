@@ -37,8 +37,8 @@ is used.
 
 ### `checkNotNull(value)` {#checkNotNull}
 
-Throws a runtime exception if the given value is `null` and returns the value
-otherwise.
+Throws a runtime exception if the given value is `null` or `undefined` and
+returns the value otherwise.
 
 This function is integrated into the type system, so if `value` is typed as a
 nullable value, the return value of `checkNotNull` will no longer be nullable.
@@ -193,7 +193,8 @@ list passed is not modified.
 
 NOTE: We do not test for deep equality in the implementation. Hence, this
 function does not remove duplicate records or protobufs. Only primitive types
-(null, bool, int, float, number, string) are successfully deduplicated.
+(null, undefined, bool, int, float, number, string) are successfully
+deduplicated.
 
 <span id="list-string|number_join"></span>
 

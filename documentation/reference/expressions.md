@@ -186,22 +186,23 @@ Parenthesis have no affect other than to manipulate the order of evaluation.
 The dot operator and question-dot operator are for accessing fields of a
 `record` or a `proto`, or to make method calls.
 
-The question-dot operator is for null safe access. If the value of the preceding
-operand is `null` then the access will return `null` rather than failing. This
-is useful for traversing optional proto fields.
+The question-dot operator is for nullish safe access. If the value of the
+preceding operand is `null` or `undefined` then the access will return
+`undefined` rather than failing. This is useful for traversing optional proto
+fields.
 
 For example,
 
 *   `$foo.bar` accesses the `bar` field of the variable `$foo`
-*   `$foo?.bar` accesses the `bar` field of `$foo` only if `$foo` is non-`null`
+*   `$foo?.bar` accesses the `bar` field of `$foo` only if `$foo` is non-nullish
 *   `$foo?.bar?.baz()` accesses the `bar` field of `$foo` only if `$foo` is
-    non-`null`, and invokes the `baz()` method of `$foo.bar` only if both `$foo`
-    *and* `$foo.bar` are non-`null`
+    non-nullish, and invokes the `baz()` method of `$foo.bar` only if both
+    `$foo` *and* `$foo.bar` are non-nullish
 
 Note: The "short-circuiting" behavior of `?.` only applies to the sequence of
 field accesses and method calls that immediately follow it. If the result of
 this sequence is used as part of a larger expression, the larger expression
-still will be invoked even if the sequence returns a null value.
+still will be invoked even if the sequence returns `undefined`.
 
 Warning: This can result in dangerously different client- and server-side
 rendering behavior. For example, if `$foo == null`, then the expression
@@ -213,18 +214,18 @@ throws a NullPointerException in Java.
 Indexed access operators, used for accessing elements of `list` and
 `legacy_object_map`.
 
-The question-bracket operator is for null safe access. If the value of the
-preceding operand is `null` then the access will return `null` rather than
-failing.
+The question-bracket operator is for nullish safe access. If the value of the
+preceding operand is `null` or `undefined` then the access will return
+`undefined` rather than failing.
 
 For example,
 
 *   `$foo[$bar]` accesses the `$bar` index of the `legacy_object_map` `$foo`
 *   `$foo?[$bar]` accesses the `$bar` field of `$foo` only if `$foo` is
-    non-`null`
+    non-nullish
 
-NOTE: if the index being accessed doesn't exist, `null` will be returned. There
-is no 'index out of bounds' error for lists.
+NOTE: if the index being accessed doesn't exist, `undefined` will be returned.
+There is no 'index out of bounds' error for lists.
 
 Warning: The "short-circuiting" caveat described above (for `?.`) applies here
 as well. For example, the expression `$foo?[$bar] > 0` is *not* safe.
@@ -232,7 +233,7 @@ as well. For example, the expression `$foo?[$bar] > 0` is *not* safe.
 ### Non-null assertion operator `!` {#nonnull-assertion}
 
 A post-fix operator to assert that the operand is non-null. This removes `null`
-from the type of the operand.
+and `undefined` from the type of the operand.
 
 NOTE: This does NOT insert a runtime check, so could allow `null` to sneak into
 variables that are typed as non-nullable. Use the
@@ -390,7 +391,7 @@ equivalently in all backends. It is therefore safe to use a string as the first
 argument of a ternary statement but not safe to compare strings to booleans.
 
 Rather than using the short-circuit property of the `or` operator, you should
-use `??`, the [nullish coalescing operator](#null-coalescing-operator). This
+use `??`, the [nullish coalescing operator](#nullish-coalescing-operator). This
 more clearly expresses your intent.
 
 For example, these expressions will produce a warning:
@@ -409,13 +410,13 @@ Simplify or use `??` for all new Soy code.
 {param isEnabled: $optBoolVar ?? false /}
 ```
 
-### Nullish coalescing operator `??` {#null-coalescing-operator}
+### Nullish coalescing operator `??` {#nullish-coalescing-operator}
 
 The nullish coalescing operator (also known as the 'elvis operator') returns the
-left side if it is non-`null`, and the right side otherwise. This is often
+left side if it is non-nullish, and the right side otherwise. This is often
 useful for supplying default values.
 
-This operator is short circuiting &mdash; if the left side is non-`null` the
+This operator is short circuiting &mdash; if the left side is non-nullish the
 right side will not be evaluated.
 
 For example,
@@ -506,7 +507,7 @@ For example:
 
 *   `$foo.bar($baz)` calls the `bar` method on `$foo` with an argument of `$baz`
 *   `$foo?.bar(1, 2)` calls the `bar` method on `$foo` with the arguments `1`
-    and `2` only if `$foo` is non-`null`
+    and `2` only if `$foo` is non-nullish
 
 See the [methods reference](functions.md) for a list of all methods that are
 available.

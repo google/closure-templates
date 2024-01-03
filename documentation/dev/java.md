@@ -101,6 +101,7 @@ types:
 Template Type             | Java Type
 ------------------------- | ---------------------
 `null`                    | `null`
+`undefined`                    | `null`
 `bool`                    | `boolean`
 `int`                     | `int`
 `float`                   | `double`

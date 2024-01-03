@@ -28,10 +28,22 @@ The `null` type is not very useful on its own, but can be as part of
 [composite types](#composite).
 
 Backend    | type in host language
----------- | ----------------------------------------------------------
-JavaScript | `null`, `undefined`
-SoySauce   | `com.google.template.soy.data.restricted.NullData`, `null`
+---------- | --------------------------------------------------
+JavaScript | `null`
+SoySauce   | `com.google.template.soy.data.restricted.NullData`
 Tofu       | `com.google.template.soy.data.restricted.NullData`
+Python     | `NoneType`
+
+### `undefined` {#undefined}
+
+Mirroring JavaScript, Soy has two types to represent the absence of a value --
+`null` and `undefined`.
+
+Backend    | type in host language
+---------- | -------------------------------------------------------
+JavaScript | `undefined`
+SoySauce   | `com.google.template.soy.data.restricted.UndefinedData`
+Tofu       | `com.google.template.soy.data.restricted.UndefinedData`
 Python     | `NoneType`
 
 ### `bool` {#bool}

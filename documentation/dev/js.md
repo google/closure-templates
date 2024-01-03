@@ -113,6 +113,7 @@ The JavaScript implementations of the template data types are:
 Template Type             | JavaScript Type
 ------------------------- | -----------------
 `null`                    | `null`
+`undefined`               | `undefined`
 `bool`                    | `boolean`
 `int`                     | `number`
 `float`                   | `number`

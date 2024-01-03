@@ -1,33 +1,33 @@
 # Dealing with nullable types
 
 In Soy it is common to have optional
-[parameters](../reference/templates.md#param) and other [nullable
-types](../reference/types#null). This is useful since the compiler will prevent
-you from accidentally dereferencing potentially null values and it provides
-additional information to callers. However, for these same reasons they can be
-difficult to work with. This page shows a few strategies for dealling with
-`null` in your templates.
+[parameters](../reference/templates.md#param) and other
+[nullable types](../reference/types#null). This is useful since the compiler
+will prevent you from accidentally dereferencing potentially nullish values and
+it provides additional information to callers. However, for these same reasons
+they can be difficult to work with. This page shows a few strategies for dealing
+with `null` and `undefined` in your templates.
 
 [TOC]
 
 ## Static type narrowing in conditional blocks
 
 When a template contains an optional parameter (`@param?`), if the compiler can
-prove the parameter cannot be null it will change the expression type to be
-non-optional. For example:
+prove the parameter cannot be `undefined` it will change the expression type to
+be non-optional. For example:
 
 ```soy
 import {Person} from 'foo/bar.proto';
 
 {template main}
-  /** Optional parameter of type (Person|null). */
+  /** Optional parameter of type (Person|undefined). */
   {@param? person: Person}
   {if $person}
     // Within this if-block, $person can never be null, so its type
-    // is now ‘Person’, not ‘(Person|null)’
+    // is now ‘Person’, not ‘(Person|undefined)’
     {$person.getName()}
   {else}
-    // Compile-time error: $person can only be null at this point.
+    // Compile-time error: $person can only be undefined at this point.
     {$person.getName()}
   {/if}
 {/template}
@@ -37,11 +37,11 @@ This type narrowing feature is triggered by the various control flow mechanisms:
 
 *   [if statements](../reference/control-flow#if)
 *   [and/or operators](../reference/expressions#logical-operators)
-*   [nullish coalescing operator](../reference/expressions#null-coalescing-operator)
+*   [nullish coalescing operator](../reference/expressions#nullish-coalescing-operator)
 *   [ternary operator](../reference/expressions#ternary)
 
-When the predicate of the conditional is a comparison with `null` the compiler
-is able to narrow the type on each side of the branch.
+When the predicate of the conditional is a comparison with `null` or `undefined`
+the compiler is able to narrow the type on each side of the branch.
 
 For example consider these expressions, `$foo ? A : B`, `$foo != null ? A : B`.
 In each example, the variable `$foo` is compared with `null` either implicitly
@@ -54,5 +54,5 @@ Furthermore within the `B` branch we know that `$foo` is `null` or at least is
 
 The [`checkNotNull`](../reference/functions#checkNotNull) function will either
 return its parameter or throw an unspecified exception if the provided value is
-`null`. Additionally the type checker understands this behavior and so this can
+nullish. Additionally the type checker understands this behavior and so this can
 be used a cast operator to turn nullable types into non-nullable types.

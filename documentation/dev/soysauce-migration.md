@@ -129,7 +129,7 @@ SoySauce uses 'native' exception types, for example:
     wrapping a `SoyDataException`, in `SoySauce` you will get a
     `ClassCastException`
 *   When you dereference a `null` value in Tofu you will get a
-    `SoyTofuException`, in SoySauce you will get a `NullPointerException`
+    `SoyTofuException`, in SoySauce you will get a `SoyDataException`
 
 ### Stricter runtime type checking
 
@@ -147,7 +147,7 @@ SoySauce has somewhat stricter runtime type checking. For example,
 
 ### Stricter `null` handling {#null-handling}
 
-SoySauce is stricter about dereferencing null objects. For example, given the
+SoySauce is stricter about dereferencing nullish objects. For example, given the
 expression `$foo.bar.baz != null` if `bar` is `null` then accessing `.baz` on it
 should cause an error, and it does in SoySauce and the JS backend, however, in
 Tofu this doesn’t happen (though there is a TODO), instead it only causes an
@@ -175,8 +175,8 @@ happen:
 
 *   If it is a top level call (Java code calling `foo`), then you will get a
     SoyTofuException saying that a required parameter is missing.
-*   If it is a Soy->Soy call then you will get null for `$p`
+*   If it is a Soy->Soy call then you will get `undefined` for `$p`
 
-In SoySauce you always get `null`. We chose this option because it is more
+In SoySauce you always get `undefined`. We chose this option because it is more
 internally consistent (Soy->Soy and java->Soy calls are treated equivalently)
 and it is more consistent with the behavior of the JavaScript backend.

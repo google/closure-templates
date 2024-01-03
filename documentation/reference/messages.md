@@ -395,4 +395,4 @@ To fix this you can use null safe access patterns:
 ```
 
 Now, if the list has too few people in it, the later placeholders will just
-evaluate to `null` instead of throwing an error.
+evaluate to `undefined` instead of throwing an error.
