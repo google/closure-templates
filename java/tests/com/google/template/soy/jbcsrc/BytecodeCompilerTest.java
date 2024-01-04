@@ -170,8 +170,7 @@ public class BytecodeCompilerTest {
         SoyFileSetParserBuilder.forSuppliers(
                 soyFileContent1, soyFileContent2, soyFileContent3, soyFileContent4)
             .cssRegistry(
-                CssRegistry.create(
-                    ImmutableSet.of("ns.bar", "ns.foo", "ns.default"), ImmutableMap.of()))
+                CssRegistry.createForTest(ImmutableSet.of("ns.bar", "ns.foo", "ns.default")))
             .build();
     ParseResult parseResult = parser.parse();
     CompiledTemplates templates =
@@ -276,7 +275,7 @@ public class BytecodeCompilerTest {
   public void testCallBasicNode() throws IOException {
     CompiledTemplates templates =
         TemplateTester.compileFileWithCss(
-            CssRegistry.create(ImmutableSet.of("ns.foo", "ns.bar"), ImmutableMap.of()),
+            CssRegistry.createForTest(ImmutableSet.of("ns.foo", "ns.bar")),
             "{namespace ns requirecss=\"ns.foo\"}",
             "",
             "{template callerDataAll requirecss=\"ns.bar\"}",
@@ -359,7 +358,7 @@ public class BytecodeCompilerTest {
   public void testRequireCss() throws IOException {
     CompiledTemplates templates =
         TemplateTester.compileFileWithCss(
-            CssRegistry.create(ImmutableSet.of("ns.foo", "ns.bar"), ImmutableMap.of()),
+            CssRegistry.createForTest(ImmutableSet.of("ns.foo", "ns.bar")),
             "{namespace ns requirecss=\"ns.foo\"}",
             "",
             "/** */",

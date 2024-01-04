@@ -16,7 +16,6 @@
 
 package com.google.template.soy.passes;
 
-import static com.google.common.collect.ImmutableSet.toImmutableSet;
 
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
@@ -49,15 +48,13 @@ final class ToggleImportProcessor implements ImportsPass.ImportProcessor {
   }
 
   @Override
-  public boolean handlesPath(String path) {
-    return this.toggleRegistry.getPaths().contains(SourceLogicalPath.create(path));
+  public boolean handlesPath(SourceLogicalPath path) {
+    return this.toggleRegistry.getPaths().contains(path);
   }
 
   @Override
-  public ImmutableSet<String> getAllPaths() {
-    return toggleRegistry.getPaths().stream()
-        .map(SourceLogicalPath::path)
-        .collect(toImmutableSet());
+  public ImmutableSet<SourceLogicalPath> getAllPaths() {
+    return toggleRegistry.getPaths();
   }
 
   @Override

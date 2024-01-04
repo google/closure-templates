@@ -52,13 +52,13 @@ final class CssImportProcessor implements ImportsPass.ImportProcessor {
   public void init(ImmutableList<SoyFileNode> sourceFiles) {}
 
   @Override
-  public boolean handlesPath(String path) {
-    return cssRegistry.filePathToShortClassMap().containsKey(path);
+  public boolean handlesPath(SourceLogicalPath path) {
+    return cssRegistry.containsLogicalPath(path);
   }
 
   @Override
-  public ImmutableSet<String> getAllPaths() {
-    return cssRegistry.filePathToShortClassMap().keySet();
+  public ImmutableSet<SourceLogicalPath> getAllPaths() {
+    return cssRegistry.getAllLogicalPaths();
   }
 
   @Override
@@ -74,8 +74,7 @@ final class CssImportProcessor implements ImportsPass.ImportProcessor {
   }
 
   private void processImportedSymbols(ImportNode node) {
-    String path = node.getPath();
-    CssModuleImportType moduleType = CssModuleImportType.create(SourceLogicalPath.create(path));
+    CssModuleImportType moduleType = CssModuleImportType.create(node.getSourceFilePath());
     node.setModuleType(moduleType);
 
     for (ImportedVar symbol : node.getIdentifiers()) {
@@ -89,7 +88,8 @@ final class CssImportProcessor implements ImportsPass.ImportProcessor {
             moduleType.getNestedSymbolNames());
       }
 
-      ImmutableMap<String, String> shortClassMap = cssRegistry.filePathToShortClassMap().get(path);
+      ImmutableMap<String, String> shortClassMap =
+          cssRegistry.getShortClassNameMapForLogicalPath(node.getSourceFilePath());
       symbol.setType(CssImportType.create(node.getSourceFilePath(), shortClassMap));
     }
   }

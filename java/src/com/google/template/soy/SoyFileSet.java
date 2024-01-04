@@ -1194,6 +1194,8 @@ public final class SoyFileSet {
 
     public abstract CssRegistry cssRegistry();
 
+    public abstract ToggleRegistry toggleRegistry();
+
     /** Compiler warnings. This will include errors if {@code treatErrorsAsWarnings} was set. */
     public abstract ImmutableList<SoyError> warnings();
   }
@@ -1220,6 +1222,7 @@ public final class SoyFileSet {
               result.hasRegistry() ? Optional.of(result.registry()) : Optional.empty(),
               result.fileSet(),
               result.cssRegistry(),
+              toggleRegistry,
               warnings);
         });
   }

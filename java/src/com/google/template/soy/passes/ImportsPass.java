@@ -17,12 +17,14 @@
 package com.google.template.soy.passes;
 
 import static com.google.common.base.Preconditions.checkState;
+import static com.google.common.collect.ImmutableList.toImmutableList;
 import static java.util.stream.Collectors.toCollection;
 
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
@@ -71,11 +73,11 @@ final class ImportsPass implements CompilerFileSetPass {
       SoyErrorKind.of("Importing from the same file is not allowed.");
 
   interface ImportProcessor {
-    boolean handlesPath(String path);
+    boolean handlesPath(SourceLogicalPath path);
 
     void handle(SoyFileNode file, ImmutableCollection<ImportNode> imports);
 
-    ImmutableCollection<String> getAllPaths();
+    ImmutableCollection<SourceLogicalPath> getAllPaths();
 
     void init(ImmutableList<SoyFileNode> sourceFiles);
   }
@@ -117,7 +119,7 @@ final class ImportsPass implements CompilerFileSetPass {
       boolean foundSymbolErrors = false;
       for (ImportedVar symbol : importNode.getIdentifiers()) {
         // Import naming collisions. Report errors but continue checking the other symbols so we
-        // can report all of the errors at once.
+        // can report all the errors at once.
         if (reportErrorIfSymbolInvalid(file, symbol.name(), symbol.nameLocation())) {
           foundSymbolErrors = true;
         }
@@ -127,7 +129,7 @@ final class ImportsPass implements CompilerFileSetPass {
       }
 
       for (ImportProcessor processor : processors) {
-        if (processor.handlesPath(importNode.getPath())) {
+        if (processor.handlesPath(importNode.getSourceFilePath())) {
           builder.put(processor, importNode);
           continue OUTER;
         }
@@ -192,19 +194,23 @@ final class ImportsPass implements CompilerFileSetPass {
       return;
     }
     String nodePath = node.getPath();
-    Set<String> allPaths =
+    if (nodePath.startsWith(".")) {
+      errorReporter.report(node.getPathSourceLocation(), RELATIVE_IMPORT);
+      return;
+    }
+
+    Set<SourceLogicalPath> allPaths =
         processors.stream()
             .flatMap(p -> p.getAllPaths().stream())
             .collect(toCollection(TreeSet::new));
-    allPaths.remove(file.getFilePath().path());
-    if (nodePath.startsWith(".")) {
-      errorReporter.report(node.getPathSourceLocation(), RELATIVE_IMPORT);
-    } else {
-      errorReporter.report(
-          node.getPathSourceLocation(),
-          IMPORT_NOT_IN_DEPS,
-          nodePath,
-          SoyErrors.getDidYouMeanMessage(allPaths, nodePath) );
-    }
+    allPaths.remove(file.getFilePath().asLogicalPath());
+
+    errorReporter.report(
+        node.getPathSourceLocation(),
+        IMPORT_NOT_IN_DEPS,
+        nodePath,
+        SoyErrors.getDidYouMeanMessage(
+            allPaths.stream().map(SourceLogicalPath::path).collect(toImmutableList()),
+            nodePath) );
   }
 }

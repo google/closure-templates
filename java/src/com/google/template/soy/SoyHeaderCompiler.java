@@ -141,7 +141,7 @@ final class SoyHeaderCompiler extends AbstractSoyCompiler {
         .addAllRequireCssPaths(requiredCssPaths)
         .addAllRequireCssPathsFromNamespaces(
             requiredCssNames.stream()
-                .map(namespace -> cssRegistry.symbolToFilePath().get(namespace))
+                .map(cssRegistry::getLfpmeForSymbol)
                 // This shouldn't really happen due to the ValidateRequiredCssPass but that pass
                 // doesn't run in the open source build
                 .filter(Objects::nonNull)

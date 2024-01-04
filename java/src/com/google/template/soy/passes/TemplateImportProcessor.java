@@ -137,14 +137,14 @@ public final class TemplateImportProcessor implements ImportsPass.ImportProcesso
   }
 
   @Override
-  public boolean handlesPath(String path) {
-    return fileSetMetadata.getPartialFile(SourceLogicalPath.create(path)) != null;
+  public boolean handlesPath(SourceLogicalPath path) {
+    return fileSetMetadata.getPartialFile(path) != null;
   }
 
   @Override
-  public ImmutableCollection<String> getAllPaths() {
+  public ImmutableCollection<SourceLogicalPath> getAllPaths() {
     return fileSetMetadata.getAllPartialFiles().stream()
-        .map(f -> f.getPath().path())
+        .map(f -> f.getPath().asLogicalPath())
         .collect(toImmutableSet());
   }
 }

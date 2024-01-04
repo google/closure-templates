@@ -86,8 +86,7 @@ public final class GenJsCodeVisitorTest {
     ParseResult parseResult =
         SoyFileSetParserBuilder.forFileContents(testFileContent)
             .cssRegistry(
-                CssRegistry.create(
-                    ImmutableSet.of("ddd.eee.fff.ggg", "aaa.bbb.ccc"), ImmutableMap.of()))
+                CssRegistry.createForTest(ImmutableSet.of("ddd.eee.fff.ggg", "aaa.bbb.ccc")))
             .parse();
 
     String expectedJsFileContentStart =

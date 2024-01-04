@@ -320,16 +320,15 @@ public abstract class AbstractSoyCompiler {
             .collect(toImmutableSet());
     Set<String> uniqueClasses = new HashSet<>();
 
-    ImmutableSetMultimap.Builder<SourceLogicalPath, String> togglesBuilder =
+    ImmutableSetMultimap.Builder<SourceFilePath, String> togglesBuilder =
         ImmutableSetMultimap.builder();
     for (File toggle : togglesFiles) {
-      SourceLogicalPath path =
-          SourceLogicalPath.create(generatedFiles.getOrDefault(toggle.getPath(), toggle.getPath()));
+      SourceFilePath toggleFile = getFilePath(toggle);
       ImmutableList<String> toggleNames =
           cache.read(toggle, CacheLoaders.CACHED_TOGGLE_NAMES, soyCompilerFileReader);
-      togglesBuilder.putAll(path, toggleNames);
+      togglesBuilder.putAll(toggleFile, toggleNames);
     }
-    sfsBuilder.setToggleRegistry(new ImmutableSetMultimapToggleRegistry(togglesBuilder.build()));
+    sfsBuilder.setToggleRegistry(ImmutableSetMultimapToggleRegistry.create(togglesBuilder.build()));
 
     ImmutableList.Builder<MethodChecker> builder = ImmutableList.builder();
     for (File dep : javaDeps) {
@@ -371,9 +370,7 @@ public abstract class AbstractSoyCompiler {
     // add sources
     for (File src : srcs) {
       try {
-        String logicalPath = generatedFiles.getOrDefault(src.getPath(), src.getPath());
-        // TODO(b/162524005): model genfiles directly.
-        SourceFilePath filePath = SourceFilePath.create(logicalPath, src.getPath());
+        SourceFilePath filePath = getFilePath(src);
         sfsBuilder.add(cache.createFileSupplier(src, filePath, soyCompilerFileReader));
       } catch (FileNotFoundException fnfe) {
         throw new CommandLineError(
@@ -403,6 +400,11 @@ public abstract class AbstractSoyCompiler {
               + "compiler performance."
           );
     }
+  }
+
+  private SourceFilePath getFilePath(File src) {
+    String logicalPath = generatedFiles.getOrDefault(src.getPath(), src.getPath());
+    return SourceFilePath.create(logicalPath, src.getPath());
   }
 
   @VisibleForTesting

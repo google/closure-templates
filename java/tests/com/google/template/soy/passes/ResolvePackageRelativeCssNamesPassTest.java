@@ -18,7 +18,6 @@ package com.google.template.soy.passes;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.css.CssRegistry;
@@ -169,8 +168,8 @@ public final class ResolvePackageRelativeCssNamesPassTest {
         SoyFileSetParserBuilder.forFileContents(templateText)
             .errorReporter(errorReporter)
             .cssRegistry(
-                CssRegistry.create(
-                    ImmutableSet.of("some.test.package", "some.other.package"), ImmutableMap.of()))
+                CssRegistry.createForTest(
+                    ImmutableSet.of("some.test.package", "some.other.package")))
             .parse()
             .fileSet();
     return (TemplateNode) SharedTestUtils.getNode(soyTree);

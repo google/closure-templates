@@ -63,36 +63,38 @@ public final class ToggleImportProcessorTest {
   @Test
   public void testHandlesPaths() {
     ImmutableSetMultimapToggleRegistry registry =
-        new ImmutableSetMultimapToggleRegistry(
+        ImmutableSetMultimapToggleRegistry.createForTest(
             ImmutableSetMultimap.of(
-                SourceLogicalPath.create("foo.css"), "toggle1",
-                SourceLogicalPath.create("bar.css"), "toggle2"));
+                SourceLogicalPath.create("foo.toggles"), "toggle1",
+                SourceLogicalPath.create("bar.toggles"), "toggle2"));
 
     ToggleImportProcessor processor = new ToggleImportProcessor(registry, errorReporter);
-    assertThat(processor.handlesPath("foo.css")).isTrue();
-    assertThat(processor.handlesPath("bar.css")).isTrue();
-    assertThat(processor.handlesPath("baz.css")).isFalse();
+    assertThat(processor.handlesPath(SourceLogicalPath.create("foo.toggles"))).isTrue();
+    assertThat(processor.handlesPath(SourceLogicalPath.create("bar.toggles"))).isTrue();
+    assertThat(processor.handlesPath(SourceLogicalPath.create("baz.toggles"))).isFalse();
   }
 
   @Test
   public void testGetAllPaths() {
     ImmutableSetMultimapToggleRegistry registry =
-        new ImmutableSetMultimapToggleRegistry(
+        ImmutableSetMultimapToggleRegistry.createForTest(
             ImmutableSetMultimap.of(
-                SourceLogicalPath.create("foo.css"), "toggle1",
-                SourceLogicalPath.create("bar.css"), "toggle2"));
+                SourceLogicalPath.create("foo.toggles"), "toggle1",
+                SourceLogicalPath.create("bar.toggles"), "toggle2"));
     ToggleImportProcessor processor = new ToggleImportProcessor(registry, errorReporter);
-    assertThat(processor.getAllPaths()).containsExactly("foo.css", "bar.css");
+    assertThat(processor.getAllPaths())
+        .containsExactly(
+            SourceLogicalPath.create("foo.toggles"), SourceLogicalPath.create("bar.toggles"));
   }
 
   @Test
   public void testHandlesImports() {
     ImmutableSetMultimapToggleRegistry registry =
-        new ImmutableSetMultimapToggleRegistry(
-            ImmutableSetMultimap.of(SourceLogicalPath.create("foo.css"), "toggle1"));
+        ImmutableSetMultimapToggleRegistry.createForTest(
+            ImmutableSetMultimap.of(SourceLogicalPath.create("foo.toggles"), "toggle1"));
 
     ImportedVar importedVar = forSymbol("toggle1");
-    ImportNode importNode = forPath("foo.css", ImmutableList.of(importedVar));
+    ImportNode importNode = forPath("foo.toggles", ImmutableList.of(importedVar));
 
     ToggleImportProcessor processor = new ToggleImportProcessor(registry, errorReporter);
     processor.handle(EMPTY_SOY_FILE_NODE, ImmutableList.of(importNode));
@@ -102,7 +104,7 @@ public final class ToggleImportProcessorTest {
     assertThat(importedVar.type()).isInstanceOf(ToggleImportType.class);
     ToggleImportType importType = (ToggleImportType) importedVar.type();
     assertThat(importType.getKind()).isEqualTo(ToggleImportType.Kind.TOGGLE_TYPE);
-    assertThat(importType.toString()).isEqualTo("toggle1 from foo.css");
+    assertThat(importType.toString()).isEqualTo("toggle1 from foo.toggles");
   }
 
   @Test
@@ -110,13 +112,13 @@ public final class ToggleImportProcessorTest {
   we should be able to import toggleNameA as toggleNameB but not toggleNameB as toggleName A. */
   public void testHandlesImportsWithAlias() {
     ImmutableSetMultimapToggleRegistry registry =
-        new ImmutableSetMultimapToggleRegistry(
-            ImmutableSetMultimap.of(SourceLogicalPath.create("foo.css"), "toggle1"));
+        ImmutableSetMultimapToggleRegistry.createForTest(
+            ImmutableSetMultimap.of(SourceLogicalPath.create("foo.toggles"), "toggle1"));
 
     ImportedVar importedVarCorrect = withAlias("toggle1", "firstToggle");
     ImportedVar importedVarBad = withAlias("firstToggle", "toggle1");
-    ImportNode importNodeCorrect = forPath("foo.css", ImmutableList.of(importedVarCorrect));
-    ImportNode importNodeBad = forPath("foo.css", ImmutableList.of(importedVarBad));
+    ImportNode importNodeCorrect = forPath("foo.toggles", ImmutableList.of(importedVarCorrect));
+    ImportNode importNodeBad = forPath("foo.toggles", ImmutableList.of(importedVarBad));
 
     ToggleImportProcessor processor = new ToggleImportProcessor(registry, errorReporter);
     processor.handle(EMPTY_SOY_FILE_NODE, ImmutableList.of(importNodeCorrect));
@@ -125,16 +127,16 @@ public final class ToggleImportProcessorTest {
     processor.handle(EMPTY_SOY_FILE_NODE, ImmutableList.of(importNodeBad));
     assertThat(errorReporter.getErrors()).hasSize(1);
     assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
-        .contains("Unknown symbol firstToggle in foo.css.");
+        .contains("Unknown symbol firstToggle in foo.toggles.");
   }
 
   @Test
   public void testRejectsModuleImports() {
     ImmutableSetMultimapToggleRegistry registry =
-        new ImmutableSetMultimapToggleRegistry(
-            ImmutableSetMultimap.of(SourceLogicalPath.create("foo.css"), "toggle1"));
+        ImmutableSetMultimapToggleRegistry.createForTest(
+            ImmutableSetMultimap.of(SourceLogicalPath.create("foo.toggles"), "toggle1"));
     ImportedVar importedVar = forSymbol(ImportedVar.MODULE_IMPORT);
-    ImportNode importNode = forPath("foo.css", ImmutableList.of(importedVar));
+    ImportNode importNode = forPath("foo.toggles", ImmutableList.of(importedVar));
 
     ToggleImportProcessor processor = new ToggleImportProcessor(registry, errorReporter);
     processor.handle(EMPTY_SOY_FILE_NODE, ImmutableList.of(importNode));
@@ -147,22 +149,22 @@ public final class ToggleImportProcessorTest {
   @Test
   public void testRejectsImportingUnknownSymbols() {
     ImmutableSetMultimapToggleRegistry registry =
-        new ImmutableSetMultimapToggleRegistry(
-            ImmutableSetMultimap.of(SourceLogicalPath.create("foo.css"), "toggle1"));
+        ImmutableSetMultimapToggleRegistry.createForTest(
+            ImmutableSetMultimap.of(SourceLogicalPath.create("foo.toggles"), "toggle1"));
     ImportedVar importedVarA = forSymbol("unknownToggle");
-    ImportNode importNodeA = forPath("foo.css", ImmutableList.of(importedVarA));
+    ImportNode importNodeA = forPath("foo.toggles", ImmutableList.of(importedVarA));
 
     ImportedVar importedVarB = forSymbol("toggle1");
-    ImportNode importNodeB = forPath("bar.css", ImmutableList.of(importedVarB));
+    ImportNode importNodeB = forPath("bar.toggles", ImmutableList.of(importedVarB));
 
     ToggleImportProcessor processor = new ToggleImportProcessor(registry, errorReporter);
     processor.handle(EMPTY_SOY_FILE_NODE, ImmutableList.of(importNodeA, importNodeB));
 
     assertThat(errorReporter.getErrors()).hasSize(2);
     assertThat(errorReporter.getErrors().get(0).message())
-        .contains("Unknown symbol unknownToggle in foo.css");
+        .contains("Unknown symbol unknownToggle in foo.toggles");
     assertThat(errorReporter.getErrors().get(1).message())
-        .contains("Unknown symbol toggle1 in bar.css");
+        .contains("Unknown symbol toggle1 in bar.toggles");
   }
 
   private ImportedVar forSymbol(String symbol) {

@@ -23,7 +23,6 @@ import static org.junit.Assert.assertTrue;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.base.internal.SanitizedContentKind;
@@ -221,8 +220,7 @@ public class TemplateNodeTest {
             .errorReporter(errorReporter)
             .allowUnboundGlobals(true) // for the delvariant tests
             .cssRegistry(
-                CssRegistry.create(
-                    ImmutableSet.of("foo", "bar", "foo.boo", "foo.moo"), ImmutableMap.of()))
+                CssRegistry.createForTest(ImmutableSet.of("foo", "bar", "foo.boo", "foo.moo")))
             .parse()
             .fileSet();
     // if parsing fails, templates/files will be missing.  just return null in that case.

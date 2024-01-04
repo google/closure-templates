@@ -27,6 +27,7 @@ import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.EnumDescriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.Descriptors.FileDescriptor;
+import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.internal.proto.Field;
@@ -48,7 +49,7 @@ final class ProtoImportProcessor implements ImportsPass.ImportProcessor {
   private final SoyTypeRegistry typeRegistry;
   private final ErrorReporter errorReporter;
   private final boolean disableAllTypeChecking;
-  private final ImmutableMap<String, FileDescriptor> pathToDescriptor;
+  private final ImmutableMap<SourceLogicalPath, FileDescriptor> pathToDescriptor;
   private Map<String, String> msgAndEnumLocalToFqn;
   private Map<String, String> extLocalToFqn;
 
@@ -62,16 +63,16 @@ final class ProtoImportProcessor implements ImportsPass.ImportProcessor {
     this.disableAllTypeChecking = disableAllTypeChecking;
     this.pathToDescriptor =
         typeRegistry.getProtoDescriptors().stream()
-            .collect(toImmutableMap(FileDescriptor::getName, d -> d));
+            .collect(toImmutableMap(d -> SourceLogicalPath.create(d.getName()), d -> d));
   }
 
   @Override
-  public boolean handlesPath(String path) {
+  public boolean handlesPath(SourceLogicalPath path) {
     return pathToDescriptor.containsKey(path);
   }
 
   @Override
-  public ImmutableCollection<String> getAllPaths() {
+  public ImmutableCollection<SourceLogicalPath> getAllPaths() {
     return pathToDescriptor.keySet();
   }
 
@@ -98,7 +99,7 @@ final class ProtoImportProcessor implements ImportsPass.ImportProcessor {
     if (disableAllTypeChecking) {
       return;
     }
-    FileDescriptor fd = pathToDescriptor.get(node.getPath());
+    FileDescriptor fd = pathToDescriptor.get(node.getSourceFilePath());
     node.setModuleType(typeRegistry.getProtoImportType(fd));
 
     ImmutableMap<String, Descriptor> messages =
