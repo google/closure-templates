@@ -80,8 +80,8 @@ function bidiUnicodeWrap(
 }
 
 export {
-  filterHtmlAttributes as $$filterHtmlAttributes,
-  escapeHtml as $$escapeHtml,
   bidiUnicodeWrap as $$bidiUnicodeWrap,
+  escapeHtml as $$escapeHtml,
+  filterHtmlAttributes as $$filterHtmlAttributes,
   isIdomFunctionType as $$isIdomFunctionType,
 };
