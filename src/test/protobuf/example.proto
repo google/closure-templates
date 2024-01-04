@@ -11,7 +11,8 @@ message ExampleExtendable {
   message InnerMessage {
     optional int32 field = 1;
   }
-  extensions 1000 to max;
+  extensions 1000 to max
+  [verification = UNVERIFIED];
 
   optional int32 some_num_with_default = 1 [default = 31337];
   optional int32 some_num_no_default = 2;
@@ -81,7 +82,8 @@ message SomeExtension {
   }
   optional int32 some_extension_num = 1;
 
-  extensions 1000 to max;
+  extensions 1000 to max
+  [verification = UNVERIFIED];
 }
 
 message SomeNestedExtension {

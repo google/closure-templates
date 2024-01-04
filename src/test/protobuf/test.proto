@@ -71,7 +71,8 @@ message SixtyFourBitIntFieldsAsStrings {
   optional uint64 uint64 = 3 [jstype = JS_STRING];
   optional fixed64 fixed64 = 4 [jstype = JS_STRING];
   optional sfixed64 sfixed64 = 5 [jstype = JS_STRING];
-  extensions 1000 to max;
+  extensions 1000 to max
+  [verification = UNVERIFIED];
 }
 
 extend SixtyFourBitIntFieldsAsStrings {
@@ -88,7 +89,8 @@ message ThirtyTwoBitIntFields {
   optional uint32 uint32 = 3;
   optional fixed32 fixed32 = 4;
   optional fixed32 sfixed32 = 5;
-  extensions 1000 to max;
+  extensions 1000 to max
+  [verification = UNVERIFIED];
 }
 extend ThirtyTwoBitIntFields {
   optional int32 ext_int32 = 1001;
@@ -176,7 +178,8 @@ message Extendable {
   optional int32 unscoped_collision = 1;
   optional int32 scoped_collision = 2;
 
-  extensions 1000 to max;
+  extensions 1000 to max
+  [verification = UNVERIFIED];
 }
 
 extend Extendable {
