@@ -19,10 +19,7 @@ package com.google.template.soy.shared;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.SourceLogicalPath;
 
-/**
- * Registry of known toggles provided by the --toggle compiler flag (feature has NOT been added
- * yet).
- */
+/** Registry of known toggles provided by the --toggle compiler flag. */
 public interface ToggleRegistry {
 
   /** Get all toggles for given file path in toggle registry. */
