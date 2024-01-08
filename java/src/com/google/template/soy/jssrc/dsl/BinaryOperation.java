@@ -28,9 +28,9 @@ import java.util.stream.Stream;
 public abstract class BinaryOperation extends Operation {
   public abstract String operator();
 
-  abstract Expression arg1();
+  public abstract Expression arg1();
 
-  abstract Expression arg2();
+  public abstract Expression arg2();
 
   static Expression create(Operator operator, Expression arg1, Expression arg2) {
     return create(

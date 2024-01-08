@@ -29,9 +29,9 @@ public abstract class TsCast extends Expression {
     return new AutoValue_TsCast(expr, type);
   }
 
-  abstract Expression expr();
+  public abstract Expression expr();
 
-  abstract Expression type();
+  public abstract Expression type();
 
   @Override
   Stream<? extends CodeChunk> childrenStream() {
