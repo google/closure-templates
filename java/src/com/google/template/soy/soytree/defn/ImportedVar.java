@@ -160,6 +160,17 @@ public final class ImportedVar extends AbstractVarDefn implements Copyable<Impor
     }
   }
 
+  /** Returns the location of the alias without the beginning "* as". */
+  public SourceLocation localNameLocation() {
+    SourceLocation full = nameLocation();
+    if (isAliased() && full.isSingleLine()) {
+      int length = full.getLength();
+      return full.substring(length - name().length(), length);
+    } else {
+      return nameLocation();
+    }
+  }
+
   private static boolean isProtoImport(ImportedVar var) {
     return var.type().getKind() == SoyType.Kind.PROTO_TYPE
         || var.type().getKind() == SoyType.Kind.PROTO_ENUM_TYPE;
