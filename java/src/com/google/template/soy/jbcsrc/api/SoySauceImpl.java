@@ -161,14 +161,8 @@ public final class SoySauceImpl implements SoySauce {
     private final String templateName;
     private final CompiledTemplate template;
     private final ContentKind contentKind;
-    private Predicate<String> activeModSelector;
-    private SoyCssRenamingMap cssRenamingMap;
-    private SoyIdRenamingMap xidRenamingMap;
-    private PluginInstances pluginInstances = SoySauceImpl.this.pluginInstances;
-    private SoyMsgBundle msgBundle;
-    private boolean debugSoyTemplateInfo;
-    private SoyLogger logger;
-    private SoyCssTracker cssTracker;
+    private final RenderContext.Builder contextBuilder =
+        new RenderContext.Builder(templates, printDirectives, SoySauceImpl.this.pluginInstances);
 
     private ParamStore data;
     private ParamStore ij;
@@ -187,20 +181,6 @@ public final class SoySauceImpl implements SoySauce {
         // TODO(lukes): eliminate this and just use the nullness of data to enforce this.
         this.dataSetInConstructor = true;
       }
-    }
-
-    private RenderContext makeContext() {
-      return new RenderContext(
-          templates,
-          printDirectives,
-          pluginInstances,
-          activeModSelector,
-          cssRenamingMap,
-          xidRenamingMap,
-          msgBundle,
-          debugSoyTemplateInfo,
-          logger,
-          cssTracker);
     }
 
     private ParamStore mapAsParamStore(Map<String, ?> source) {
@@ -237,7 +217,8 @@ public final class SoySauceImpl implements SoySauce {
     @Override
     public RendererImpl setPluginInstances(
         Map<String, ? extends Supplier<Object>> pluginInstances) {
-      this.pluginInstances = SoySauceImpl.this.pluginInstances.combine(pluginInstances);
+      contextBuilder.withPluginInstances(
+          SoySauceImpl.this.pluginInstances.combine(pluginInstances));
       return this;
     }
 
@@ -255,49 +236,49 @@ public final class SoySauceImpl implements SoySauce {
     @CanIgnoreReturnValue
     @Override
     public RendererImpl setActiveModSelector(Predicate<String> active) {
-      this.activeModSelector = checkNotNull(active);
+      contextBuilder.withActiveModSelector(checkNotNull(active));
       return this;
     }
 
     @CanIgnoreReturnValue
     @Override
     public RendererImpl setCssRenamingMap(SoyCssRenamingMap cssRenamingMap) {
-      this.cssRenamingMap = checkNotNull(cssRenamingMap);
+      contextBuilder.withCssRenamingMap(cssRenamingMap);
       return this;
     }
 
     @CanIgnoreReturnValue
     @Override
     public RendererImpl setXidRenamingMap(SoyIdRenamingMap xidRenamingMap) {
-      this.xidRenamingMap = checkNotNull(xidRenamingMap);
+      contextBuilder.withXidRenamingMap(xidRenamingMap);
       return this;
     }
 
     @CanIgnoreReturnValue
     @Override
     public RendererImpl setMsgBundle(SoyMsgBundle msgs) {
-      this.msgBundle = checkNotNull(msgs);
+      contextBuilder.withMessageBundle(msgs);
       return this;
     }
 
     @CanIgnoreReturnValue
     @Override
     public RendererImpl setDebugSoyTemplateInfo(boolean debugSoyTemplateInfo) {
-      this.debugSoyTemplateInfo = debugSoyTemplateInfo;
+      contextBuilder.withDebugSoyTemplateInfo(debugSoyTemplateInfo);
       return this;
     }
 
     @CanIgnoreReturnValue
     @Override
     public RendererImpl setSoyLogger(SoyLogger logger) {
-      this.logger = checkNotNull(logger);
+      contextBuilder.withLogger(logger);
       return this;
     }
 
     @CanIgnoreReturnValue
     @Override
     public RendererImpl setCssTracker(SoyCssTracker cssTracker) {
-      this.cssTracker = checkNotNull(cssTracker);
+      contextBuilder.withCssTracker(cssTracker);
       return this;
     }
 
@@ -381,7 +362,7 @@ public final class SoySauceImpl implements SoySauce {
       StringBuilder sb = new StringBuilder();
       ParamStore params = data == null ? ParamStore.EMPTY_INSTANCE : data;
       ParamStore injectedParams = ij == null ? ParamStore.EMPTY_INSTANCE : ij;
-      RenderContext context = makeContext();
+      RenderContext context = contextBuilder.build();
       OutputAppendable output = OutputAppendable.create(sb, context.getLogger());
       return doRenderToValue(contentKind, sb, template, params, injectedParams, output, context);
     }
@@ -392,7 +373,7 @@ public final class SoySauceImpl implements SoySauce {
 
       ParamStore params = data == null ? ParamStore.EMPTY_INSTANCE : data;
       ParamStore injectedParams = ij == null ? ParamStore.EMPTY_INSTANCE : ij;
-      RenderContext context = makeContext();
+      RenderContext context = contextBuilder.build();
       OutputAppendable output = OutputAppendable.create(out, context.getLogger());
       return doRender(template, params, injectedParams, output, context);
     }
