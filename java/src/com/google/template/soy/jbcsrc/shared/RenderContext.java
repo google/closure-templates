@@ -77,8 +77,10 @@ public final class RenderContext {
   /**
    * Stores memoized {const} values, which in SSR are actually request-scoped values, not Java
    * static values.
+   *
+   * <p>Lazily initialized when setting the first const variable
    */
-  private final IdentityHashMap<String, Object> constValues = new IdentityHashMap<>();
+  private IdentityHashMap<String, Object> constValues;
 
   private final boolean debugSoyTemplateInfo;
   private final SoyLogger logger;
@@ -90,7 +92,7 @@ public final class RenderContext {
   // as such doesn't appear to be an improvement over using our 'god object'.
   private StackFrame topFrame = StackFrame.INIT;
 
-  private RenderContext(
+  public RenderContext(
       CompiledTemplates templates,
       ImmutableMap<String, SoyJavaPrintDirective> soyJavaDirectivesMap,
       PluginInstances pluginInstances,
@@ -401,18 +403,24 @@ public final class RenderContext {
               .getMethod("getMetadata", long.class)
               .invoke(null, veId);
     } catch (ReflectiveOperationException e) {
-      throw new AssertionError(e);
+      throw new LinkageError(e.getMessage(), e);
     }
   }
 
   @Nullable
   public Object getConst(String key) {
-    return constValues.get(key);
+    var local = constValues;
+    return local == null ? null : local.get(key);
   }
 
   public void storeConst(String key, Object value) {
     Preconditions.checkNotNull(value);
-    Object lastValue = constValues.put(key, value);
+    var local = constValues;
+    if (local == null) {
+      local = new IdentityHashMap<>();
+      constValues = local;
+    }
+    Object lastValue = local.put(key, value);
     Preconditions.checkArgument(lastValue == null, "Cannot overwrite value %s", key);
   }
 
@@ -474,6 +482,7 @@ public final class RenderContext {
   }
 
   /** A builder for configuring the context. */
+  @VisibleForTesting
   public static final class Builder {
     private final CompiledTemplates templates;
     private final ImmutableMap<String, SoyJavaPrintDirective> soyJavaDirectivesMap;
