@@ -253,11 +253,6 @@ final class ExpressionCompiler {
               }
 
               @Override
-              public Expression getIjRecord() {
-                throw unsupported();
-              }
-
-              @Override
               public Expression getLocal(AbstractLocalVarDefn<?> local) {
                 return varManager.getVariable(local.name());
               }

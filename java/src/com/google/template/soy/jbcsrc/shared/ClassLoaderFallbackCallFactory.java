@@ -105,7 +105,6 @@ public final class ClassLoaderFallbackCallFactory {
                 SoyCallSite.class,
                 String.class,
                 ParamStore.class,
-                ParamStore.class,
                 LoggingAdvisingAppendable.class,
                 RenderContext.class));
 
@@ -117,7 +116,6 @@ public final class ClassLoaderFallbackCallFactory {
                 SoyCallSite.class,
                 String.class,
                 SoyValueProvider[].class,
-                ParamStore.class,
                 LoggingAdvisingAppendable.class,
                 RenderContext.class));
 
@@ -152,7 +150,6 @@ public final class ClassLoaderFallbackCallFactory {
     private static final MethodType RENDER_TYPE =
         methodType(
             RenderResult.class,
-            ParamStore.class,
             ParamStore.class,
             LoggingAdvisingAppendable.class,
             RenderContext.class);
@@ -304,8 +301,7 @@ public final class ClassLoaderFallbackCallFactory {
       // target type has a signature like (SVP,SVP,...SVP,ParamStore,Appendable,RenderContext)
       // we want to collect the leading SVPs into an array at the end of the slowpath
       int numParams = type.parameterCount();
-      int numPositionalParams =
-          numParams - 3; // 4 for the CallSite,ij params, appenable and context
+      int numPositionalParams = numParams - 2; // 3 for the CallSite, appenable and context
 
       // Turn slowPath from accepting a SoyValueProvider[] to a fixed number of
       // SoyValueProvider arguments at position 1
@@ -484,7 +480,6 @@ public final class ClassLoaderFallbackCallFactory {
       SoyCallSite callSite,
       String templateName,
       SoyValueProvider[] params,
-      ParamStore ij,
       LoggingAdvisingAppendable appendable,
       RenderContext context)
       throws Throwable {
@@ -494,8 +489,7 @@ public final class ClassLoaderFallbackCallFactory {
     callSite.update(templates, renderMethod);
     // NOTE: we don't need to handle any state since if we are detaching on the next re-attach we
     // will call back into the same function directly
-    Object[] args =
-        ObjectArrays.concat(params, new Object[] {ij, appendable, context}, Object.class);
+    Object[] args = ObjectArrays.concat(params, new Object[] {appendable, context}, Object.class);
     // This call style involves some boxing and should be equivalent to a reflective call in terms
     // of speed.
     return (RenderResult) renderMethod.invokeWithArguments(args);
@@ -506,7 +500,6 @@ public final class ClassLoaderFallbackCallFactory {
       SoyCallSite callSite,
       String templateName,
       ParamStore params,
-      ParamStore ij,
       LoggingAdvisingAppendable appendable,
       RenderContext context)
       throws Throwable {
@@ -518,7 +511,7 @@ public final class ClassLoaderFallbackCallFactory {
         renderMethod);
     // NOTE: we don't need to handle any state since if we are detaching on the next re-attach we
     // will call back into the same function directly
-    return (RenderResult) renderMethod.invoke(params, ij, appendable, context);
+    return (RenderResult) renderMethod.invoke(params, appendable, context);
   }
 
   /**

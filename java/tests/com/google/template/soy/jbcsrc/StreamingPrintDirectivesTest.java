@@ -115,8 +115,7 @@ public final class StreamingPrintDirectivesTest {
         new ParamStore(2)
             .setField(RecordProperty.get("future1"), SoyValueConverter.INSTANCE.convert(future1))
             .setField(RecordProperty.get("future2"), SoyValueConverter.INSTANCE.convert(future2));
-    Callable<RenderResult> renderer =
-        () -> template.render(params, ParamStore.EMPTY_INSTANCE, output, context);
+    Callable<RenderResult> renderer = () -> template.render(params, output, context);
 
     RenderResult result = renderer.call();
     // rendering paused because it found our future
@@ -175,20 +174,14 @@ public final class StreamingPrintDirectivesTest {
     RenderContext context = getDefaultContext(templates);
     ParamStore badParam = SoyValueConverterUtility.newParams("i", "notAnInt");
     BufferingAppendable output = BufferingAppendable.buffering();
-    assertThat(
-            templates
-                .getTemplate("ns.streamable")
-                .render(badParam, ParamStore.EMPTY_INSTANCE, output, context))
+    assertThat(templates.getTemplate("ns.streamable").render(badParam, output, context))
         .isEqualTo(RenderResult.done());
     assertThat(output.getAndClearBuffer()).isEqualTo("(stream: notAnInt)");
 
     ClassCastException cce =
         assertThrows(
             ClassCastException.class,
-            () ->
-                templates
-                    .getTemplate("ns.nonstreamable")
-                    .render(badParam, ParamStore.EMPTY_INSTANCE, output, context));
+            () -> templates.getTemplate("ns.nonstreamable").render(badParam, output, context));
     assertThat(cce).hasMessageThat().contains("StringData cannot be cast to");
     assertThat(cce).hasMessageThat().contains("IntegerData");
   }
@@ -211,10 +204,7 @@ public final class StreamingPrintDirectivesTest {
             "{/template}");
     RenderContext context = getDefaultContext(templates);
     BufferingAppendable output = BufferingAppendable.buffering();
-    assertThat(
-            templates
-                .getTemplate("ns.tag")
-                .render(ParamStore.EMPTY_INSTANCE, ParamStore.EMPTY_INSTANCE, output, context))
+    assertThat(templates.getTemplate("ns.tag").render(ParamStore.EMPTY_INSTANCE, output, context))
         .isEqualTo(RenderResult.done());
     assertThat(output.getAndClearBuffer()).isEqualTo("<div class=\"foo\"></div>");
   }
@@ -248,7 +238,7 @@ public final class StreamingPrintDirectivesTest {
         () ->
             template.render(
                 SoyValueConverterUtility.newParams("future", future),
-                ParamStore.EMPTY_INSTANCE,
+               
                 output,
                 context);
     renderer.call();
@@ -278,7 +268,7 @@ public final class StreamingPrintDirectivesTest {
                 .getTemplate("ns.foo")
                 .render(
                     SoyValueConverterUtility.newParams("s", "hello"),
-                    ParamStore.EMPTY_INSTANCE,
+                   
                     output,
                     context))
         .isEqualTo(RenderResult.done());
@@ -332,7 +322,7 @@ public final class StreamingPrintDirectivesTest {
             .getTemplate(name)
             .render(
                 ParamStore.fromRecord((SoyRecord) SoyValueConverter.INSTANCE.convert(params)),
-                ParamStore.EMPTY_INSTANCE,
+               
                 output,
                 context);
     assertThat(result.isDone()).isTrue();

@@ -194,6 +194,7 @@ public final class SoySauceImpl implements SoySauce {
           templates,
           printDirectives,
           pluginInstances,
+          ij,
           activeModSelector,
           cssRenamingMap,
           xidRenamingMap,
@@ -380,10 +381,9 @@ public final class SoySauceImpl implements SoySauce {
         Continuation<T> startRenderToValue(ContentKind contentKind) {
       StringBuilder sb = new StringBuilder();
       ParamStore params = data == null ? ParamStore.EMPTY_INSTANCE : data;
-      ParamStore injectedParams = ij == null ? ParamStore.EMPTY_INSTANCE : ij;
       RenderContext context = makeContext();
       OutputAppendable output = OutputAppendable.create(sb, context.getLogger());
-      return doRenderToValue(contentKind, sb, template, params, injectedParams, output, context);
+      return doRenderToValue(contentKind, sb, template, params, output, context);
     }
 
     private WriteContinuation startRender(AdvisingAppendable out, ContentKind contentKind)
@@ -391,10 +391,9 @@ public final class SoySauceImpl implements SoySauce {
       enforceContentKind(contentKind);
 
       ParamStore params = data == null ? ParamStore.EMPTY_INSTANCE : data;
-      ParamStore injectedParams = ij == null ? ParamStore.EMPTY_INSTANCE : ij;
       RenderContext context = makeContext();
       OutputAppendable output = OutputAppendable.create(out, context.getLogger());
-      return doRender(template, params, injectedParams, output, context);
+      return doRender(template, params, output, context);
     }
 
     private void enforceContentKind(ContentKind expectedContentKind) {
@@ -416,15 +415,11 @@ public final class SoySauceImpl implements SoySauce {
   }
 
   private static WriteContinuation doRender(
-      CompiledTemplate template,
-      ParamStore params,
-      ParamStore injectedParams,
-      OutputAppendable output,
-      RenderContext context)
+      CompiledTemplate template, ParamStore params, OutputAppendable output, RenderContext context)
       throws IOException {
     RenderResult result;
     try {
-      result = template.render(params, injectedParams, output, context);
+      result = template.render(params, output, context);
     } catch (Throwable t) {
       rewriteStackTrace(t);
       Throwables.throwIfInstanceOf(t, IOException.class);
@@ -433,7 +428,7 @@ public final class SoySauceImpl implements SoySauce {
     if (result.isDone()) {
       return Continuations.done();
     }
-    return new WriteContinuationImpl(result, template, params, injectedParams, output, context);
+    return new WriteContinuationImpl(result, template, params, output, context);
   }
 
   abstract static class ContinuationImpl {
@@ -454,7 +449,6 @@ public final class SoySauceImpl implements SoySauce {
     // ThreadSafety guaranteed by the guarded write on hasContinueBeenCalled
     final CompiledTemplate template;
     final ParamStore params;
-    final ParamStore injectedParams;
     final OutputAppendable output;
     final RenderContext context;
 
@@ -468,14 +462,12 @@ public final class SoySauceImpl implements SoySauce {
         RenderResult result,
         CompiledTemplate template,
         ParamStore params,
-        ParamStore injectedParams,
         OutputAppendable output,
         RenderContext context) {
       checkArgument(!result.isDone());
       this.result = checkNotNull(result);
       this.template = checkNotNull(template);
       this.params = checkNotNull(params);
-      this.injectedParams = checkNotNull(injectedParams);
       this.output = checkNotNull(output);
       this.context = checkNotNull(context);
     }
@@ -494,16 +486,15 @@ public final class SoySauceImpl implements SoySauce {
         RenderResult result,
         CompiledTemplate template,
         ParamStore params,
-        ParamStore injectedParams,
         OutputAppendable output,
         RenderContext context) {
-      super(result, template, params, injectedParams, output, context);
+      super(result, template, params, output, context);
     }
 
     @Override
     public WriteContinuation continueRender() throws IOException {
       doContinue();
-      return doRender(template, params, injectedParams, output, context);
+      return doRender(template, params, output, context);
     }
   }
 
@@ -513,12 +504,11 @@ public final class SoySauceImpl implements SoySauce {
           StringBuilder underlying,
           CompiledTemplate template,
           ParamStore params,
-          ParamStore injectedParams,
           OutputAppendable output,
           RenderContext context) {
     RenderResult result;
     try {
-      result = template.render(params, injectedParams, output, context);
+      result = template.render(params, output, context);
     } catch (IOException t) {
       throw new AssertionError("impossible", t);
     } catch (Throwable t) {
@@ -541,7 +531,7 @@ public final class SoySauceImpl implements SoySauce {
       return c;
     }
     return new ValueContinuationImpl<T>(
-        targetKind, underlying, result, template, params, injectedParams, output, context);
+        targetKind, underlying, result, template, params, output, context);
   }
 
   private static final class ValueContinuationImpl<
@@ -558,10 +548,9 @@ public final class SoySauceImpl implements SoySauce {
         RenderResult result,
         CompiledTemplate template,
         ParamStore params,
-        ParamStore injectedParams,
         OutputAppendable output,
         RenderContext context) {
-      super(result, template, params, injectedParams, output, context);
+      super(result, template, params, output, context);
       this.targetKind = checkNotNull(targetKind);
       this.underlying = checkNotNull(underlying);
     }
@@ -574,8 +563,7 @@ public final class SoySauceImpl implements SoySauce {
     @Override
     public Continuation<T> continueRender() {
       doContinue();
-      return doRenderToValue(
-          targetKind, underlying, template, params, injectedParams, output, context);
+      return doRenderToValue(targetKind, underlying, template, params, output, context);
     }
   }
 }

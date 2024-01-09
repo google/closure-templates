@@ -169,7 +169,6 @@ final class TemplateCompiler {
       Type.getMethodType(
           BytecodeUtils.RENDER_RESULT_TYPE,
           BytecodeUtils.PARAM_STORE_TYPE,
-          BytecodeUtils.PARAM_STORE_TYPE,
           BytecodeUtils.LOGGING_ADVISING_APPENDABLE_TYPE,
           BytecodeUtils.RENDER_CONTEXT_TYPE);
 
@@ -419,7 +418,6 @@ final class TemplateCompiler {
     } else {
       paramNames.add(StandardNames.PARAMS);
     }
-    paramNames.add(StandardNames.IJ);
     paramNames.add(StandardNames.APPENDABLE);
     paramNames.add(StandardNames.RENDER_CONTEXT);
     Method method = template.positionalRenderMethod().orElse(template.renderMethod()).method();
@@ -435,13 +433,10 @@ final class TemplateCompiler {
         template.hasPositionalSignature()
             ? Optional.empty()
             : Optional.of(variableSet.getVariable(StandardNames.PARAMS));
-    Expression ijVar = variableSet.getVariable(StandardNames.IJ);
-    TemplateVariables variables =
-        new TemplateVariables(
-            variableSet,
-            paramsVar,
-            ijVar,
-            new RenderContextExpression(variableSet.getVariable(StandardNames.RENDER_CONTEXT)));
+
+    var renderContext =
+        new RenderContextExpression(variableSet.getVariable(StandardNames.RENDER_CONTEXT));
+    TemplateVariables variables = new TemplateVariables(variableSet, paramsVar, renderContext);
     AppendableExpression appendable =
         AppendableExpression.forExpression(
             variableSet.getVariable(StandardNames.APPENDABLE).asNonJavaNullable());
@@ -472,7 +467,7 @@ final class TemplateCompiler {
       Expression initialValue;
       LocalVariable localVariable;
       if (param.isInjected()) {
-        initialValue = getFieldProviderOrDefault(param.name(), ijVar, defaultValue);
+        initialValue = renderContext.getInjectedValue(param.name(), defaultValue);
         localVariable = templateScope.createNamedLocal(param.name(), initialValue.resultType());
         paramInitStatements.add(localVariable.initialize(initialValue));
       } else if (paramsVar.isPresent()) {
@@ -590,7 +585,6 @@ final class TemplateCompiler {
 
     ImmutableList.Builder<String> paramNames = ImmutableList.builder();
     paramNames.add(StandardNames.PARAMS);
-    paramNames.add(StandardNames.IJ);
     paramNames.add(StandardNames.APPENDABLE);
     paramNames.add(StandardNames.RENDER_CONTEXT);
 
@@ -603,7 +597,6 @@ final class TemplateCompiler {
             end,
             /* isStatic= */ true);
     Expression paramsVar = variableSet.getVariable(StandardNames.PARAMS);
-    Expression ijVar = variableSet.getVariable(StandardNames.IJ);
     Expression appendableVar = variableSet.getVariable(StandardNames.APPENDABLE);
     RenderContextExpression context =
         new RenderContextExpression(variableSet.getVariable(StandardNames.RENDER_CONTEXT));
@@ -611,7 +604,7 @@ final class TemplateCompiler {
     TemplateBasicNode templateBasicNode = (TemplateBasicNode) templateNode;
     Expression renderExpression =
         context.renderModifiable(
-            modifiableImplsMapKey(templateBasicNode), paramsVar, ijVar, appendableVar);
+            modifiableImplsMapKey(templateBasicNode), paramsVar, appendableVar);
 
     Statement returnExpression = Statement.returnExpression(renderExpression);
 
@@ -630,17 +623,14 @@ final class TemplateCompiler {
   private static final class TemplateVariables implements TemplateParameterLookup {
     private final TemplateVariableManager variableSet;
     private final Optional<? extends Expression> paramsRecord;
-    private final Expression ijRecord;
     private final RenderContextExpression renderContext;
 
     TemplateVariables(
         TemplateVariableManager variableSet,
         Optional<? extends Expression> paramsRecord,
-        Expression ijRecord,
         RenderContextExpression renderContext) {
       this.variableSet = variableSet;
       this.paramsRecord = paramsRecord;
-      this.ijRecord = ijRecord;
       this.renderContext = renderContext;
     }
 
@@ -652,11 +642,6 @@ final class TemplateCompiler {
     @Override
     public Expression getParamsRecord() {
       return paramsRecord.get();
-    }
-
-    @Override
-    public Expression getIjRecord() {
-      return ijRecord;
     }
 
     @Override

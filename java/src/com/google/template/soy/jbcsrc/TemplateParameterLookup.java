@@ -88,10 +88,4 @@ interface TemplateParameterLookup {
    * Expression#resultType()} of {@link SoyRecord}.
    */
   Expression getParamsRecord();
-
-  /**
-   * Returns the current template's ij dictionary. The returned expression will have a {@link
-   * Expression#resultType()} of {@link SoyRecord}.
-   */
-  Expression getIjRecord();
 }

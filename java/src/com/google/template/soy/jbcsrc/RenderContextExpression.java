@@ -19,7 +19,10 @@ import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
+import com.google.template.soy.data.RecordProperty;
+import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.internal.ParamStore;
+import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
 import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
@@ -45,7 +48,6 @@ final class RenderContextExpression extends Expression implements JbcSrcPluginCo
           RenderContext.class,
           "renderModifiable",
           String.class,
-          ParamStore.class,
           ParamStore.class,
           LoggingAdvisingAppendable.class);
 
@@ -182,6 +184,13 @@ final class RenderContextExpression extends Expression implements JbcSrcPluginCo
   private static final MethodRef TRACK_REQUIRED_CSS_NAMESPACE =
       MethodRef.createNonPure(RenderContext.class, "trackRequiredCssNamespace", String.class);
 
+  private static final MethodRef GET_INJECTED_PARAMETER =
+      MethodRef.createPure(RenderContext.class, "getInjectedValue", RecordProperty.class);
+
+  private static final MethodRef GET_INJECTED_PARAMETER_DEFAULT =
+      MethodRef.createPure(
+          RenderContext.class, "getInjectedValue", RecordProperty.class, SoyValue.class);
+
   private final Expression delegate;
 
   RenderContextExpression(Expression renderContext) {
@@ -242,9 +251,9 @@ final class RenderContextExpression extends Expression implements JbcSrcPluginCo
   }
 
   Expression renderModifiable(
-      String delCalleeName, Expression params, Expression ijData, Expression appendableExpression) {
+      String delCalleeName, Expression params, Expression appendableExpression) {
     return delegate.invoke(
-        RENDER_MODIFIABLE, constant(delCalleeName), params, ijData, appendableExpression);
+        RENDER_MODIFIABLE, constant(delCalleeName), params, appendableExpression);
   }
 
   @Override
@@ -372,5 +381,13 @@ final class RenderContextExpression extends Expression implements JbcSrcPluginCo
 
   public Expression popFrame() {
     return delegate.invoke(POP_FRAME);
+  }
+
+  public Expression getInjectedValue(String property, @Nullable SoyExpression value) {
+    var prop = BytecodeUtils.constantRecordProperty(property);
+    if (value == null) {
+      return delegate.invoke(GET_INJECTED_PARAMETER, prop);
+    }
+    return delegate.invoke(GET_INJECTED_PARAMETER_DEFAULT, prop, value);
   }
 }

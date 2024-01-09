@@ -732,16 +732,6 @@ final class LazyClosureCompiler {
       return capturedField.field().accessor(thisVar);
     }
 
-    @Override
-    public Expression getIjRecord() {
-      if (ijCapture == null) {
-        ijCapture =
-            ParentCapture.create(
-                params.fields.addFinalField(StandardNames.IJ, BytecodeUtils.PARAM_STORE_TYPE),
-                parentParameterLookup.getIjRecord());
-      }
-      return ijCapture.field().accessor(thisVar);
-    }
 
     @Override
     public Expression getParamsRecord() {

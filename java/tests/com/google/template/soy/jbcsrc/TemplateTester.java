@@ -217,25 +217,23 @@ public final class TemplateTester {
 
     CompiledTemplateSubject logsOutput(String expected) {
       compile();
-      return rendersAndLogs(
-          "", expected, ParamStore.EMPTY_INSTANCE, ParamStore.EMPTY_INSTANCE, defaultContext);
+      return rendersAndLogs("", expected, ParamStore.EMPTY_INSTANCE, defaultContext);
     }
 
     CompiledTemplateSubject rendersAs(String expected) {
       compile();
-      return rendersAndLogs(
-          expected, "", ParamStore.EMPTY_INSTANCE, ParamStore.EMPTY_INSTANCE, defaultContext);
+      return rendersAndLogs(expected, "", ParamStore.EMPTY_INSTANCE, defaultContext);
     }
 
     CompiledTemplateSubject rendersAs(String expected, Map<String, ?> params) {
       compile();
-      return rendersAndLogs(
-          expected, "", asParams(params), ParamStore.EMPTY_INSTANCE, defaultContext);
+      return rendersAndLogs(expected, "", asParams(params), defaultContext);
     }
 
     CompiledTemplateSubject rendersAs(String expected, Map<String, ?> params, Map<String, ?> ij) {
       compile();
-      return rendersAndLogs(expected, "", asParams(params), asParams(ij), defaultContext);
+      return rendersAndLogs(
+          expected, "", asParams(params), defaultContext.toBuilder().withIj(asParams(ij)).build());
     }
 
     CompiledTemplateSubject failsToRenderWith(Class<? extends Throwable> expected) {
@@ -248,8 +246,7 @@ public final class TemplateTester {
       BufferingAppendable builder = LoggingAdvisingAppendable.buffering();
       compile();
       try {
-        var unused =
-            template.render(asParams(params), ParamStore.EMPTY_INSTANCE, builder, defaultContext);
+        var unused = template.render(asParams(params), builder, defaultContext);
         failWithoutActual(
             simpleFact(
                 String.format(
@@ -271,8 +268,7 @@ public final class TemplateTester {
       BufferingAppendable builder = LoggingAdvisingAppendable.buffering();
       compile();
       try {
-        var unused =
-            template.render(asParams(params), ParamStore.EMPTY_INSTANCE, builder, defaultContext);
+        var unused = template.render(asParams(params), builder, defaultContext);
         failWithoutActual(
             simpleFact(
                 String.format(
@@ -321,16 +317,12 @@ public final class TemplateTester {
 
     @CanIgnoreReturnValue
     private CompiledTemplateSubject rendersAndLogs(
-        String expectedOutput,
-        String expectedLogged,
-        ParamStore params,
-        ParamStore ij,
-        RenderContext context) {
+        String expectedOutput, String expectedLogged, ParamStore params, RenderContext context) {
       BufferingAppendable builder = LoggingAdvisingAppendable.buffering();
       LogCapturer logOutput = new LogCapturer();
       RenderResult result;
       try (SystemOutRestorer restorer = logOutput.enter()) {
-        result = template.render(params, ij, builder, context);
+        result = template.render(params, builder, context);
       } catch (Throwable e) {
         // TODO(lukes): the fact that we are catching an exception means we have structured
         // this subject poorly.  The subject should be responsible for asserting, not actually

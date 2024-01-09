@@ -66,7 +66,6 @@ public class CompiledTemplates {
       methodType(
           RenderResult.class,
           ParamStore.class,
-          ParamStore.class,
           LoggingAdvisingAppendable.class,
           RenderContext.class);
 
@@ -531,9 +530,8 @@ public class CompiledTemplates {
       var positionalRenderMethod = this.positionalRenderMethod;
       if (positionalRenderMethod == null) {
         String templateMethodName = Names.renderMethodNameFromSoyTemplateName(soyTemplateName);
-        Class<?>[] paramTypes = new Class<?>[arity + 3];
+        Class<?>[] paramTypes = new Class<?>[arity + 2];
         Arrays.fill(paramTypes, 0, arity, SoyValueProvider.class);
-        paramTypes[paramTypes.length - 3] = ParamStore.class; // ij
         paramTypes[paramTypes.length - 2] = LoggingAdvisingAppendable.class;
         paramTypes[paramTypes.length - 1] = RenderContext.class;
         try {

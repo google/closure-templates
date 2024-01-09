@@ -25,10 +25,12 @@ import com.google.common.collect.ImmutableMap;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.data.Dir;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
+import com.google.template.soy.data.RecordProperty;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.data.restricted.StringData;
+import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplates.TemplateData;
@@ -68,6 +70,7 @@ public final class RenderContext {
   private final SoyIdRenamingMap xidRenamingMap;
   private final PluginInstances pluginInstances;
   private final ImmutableMap<String, SoyJavaPrintDirective> soyJavaDirectivesMap;
+  private final ParamStore ijData;
 
   /** The bundle of translated messages */
   private final SoyMsgBundle msgBundle;
@@ -96,6 +99,7 @@ public final class RenderContext {
       CompiledTemplates templates,
       ImmutableMap<String, SoyJavaPrintDirective> soyJavaDirectivesMap,
       PluginInstances pluginInstances,
+      ParamStore ijData,
       @Nullable Predicate<String> activeModSelector,
       @Nullable SoyCssRenamingMap cssRenamingMap,
       @Nullable SoyIdRenamingMap xidRenamingMap,
@@ -106,6 +110,7 @@ public final class RenderContext {
     this.templates = templates;
     this.soyJavaDirectivesMap = soyJavaDirectivesMap;
     this.pluginInstances = pluginInstances;
+    this.ijData = ijData == null ? ParamStore.EMPTY_INSTANCE : ijData;
     this.activeModSelector = activeModSelector != null ? activeModSelector : mod -> false;
     this.cssRenamingMap = cssRenamingMap == null ? SoyCssRenamingMap.EMPTY : cssRenamingMap;
     this.xidRenamingMap = xidRenamingMap == null ? SoyCssRenamingMap.EMPTY : xidRenamingMap;
@@ -234,10 +239,7 @@ public final class RenderContext {
   }
 
   public RenderResult renderModifiable(
-      String delCalleeName,
-      ParamStore params,
-      ParamStore ijData,
-      LoggingAdvisingAppendable appendable)
+      String delCalleeName, ParamStore params, LoggingAdvisingAppendable appendable)
       throws IOException {
     SoyValueProvider variantProvider = params.getFieldProvider(Names.VARIANT_VAR_PROPERTY);
     String variant;
@@ -252,7 +254,7 @@ public final class RenderContext {
       variant = value == null ? "null" : value.coerceToString();
     }
     CompiledTemplate template = getDelTemplate(delCalleeName, variant);
-    return template.render(params, ijData, appendable, this);
+    return template.render(params, appendable, this);
   }
 
   /** Returns {@code true} if the primary msg should be used instead of the fallback. */
@@ -471,6 +473,18 @@ public final class RenderContext {
     return next;
   }
 
+  /** Retrieves an injected parameter. */
+  public SoyValueProvider getInjectedValue(RecordProperty key) {
+    var value = ijData.getFieldProvider(key);
+    return value == null ? UndefinedData.INSTANCE : value;
+  }
+
+  /** Retrieves an injected parameter with a default if unset. */
+  public SoyValueProvider getInjectedValue(RecordProperty key, SoyValue defaultValue) {
+    var value = ijData.getFieldProvider(key);
+    return value == null ? defaultValue : value;
+  }
+
   @VisibleForTesting
   public Builder toBuilder() {
     return new Builder(templates, soyJavaDirectivesMap, pluginInstances)
@@ -478,7 +492,8 @@ public final class RenderContext {
         .withPluginInstances(pluginInstances)
         .withCssRenamingMap(cssRenamingMap)
         .withXidRenamingMap(xidRenamingMap)
-        .withMessageBundle(msgBundle);
+        .withMessageBundle(msgBundle)
+        .withIj(ijData);
   }
 
   /** A builder for configuring the context. */
@@ -494,6 +509,7 @@ public final class RenderContext {
     private boolean debugSoyTemplateInfo;
     private SoyLogger logger;
     private SoyCssTracker cssTracker;
+    private ParamStore ijData;
 
     public Builder(
         CompiledTemplates templates,
@@ -552,11 +568,18 @@ public final class RenderContext {
       return this;
     }
 
+    @CanIgnoreReturnValue
+    public Builder withIj(ParamStore ijData) {
+      this.ijData = checkNotNull(ijData);
+      return this;
+    }
+
     public RenderContext build() {
       return new RenderContext(
           templates,
           soyJavaDirectivesMap,
           pluginInstances,
+          ijData,
           activeModSelector,
           cssRenamingMap,
           xidRenamingMap,

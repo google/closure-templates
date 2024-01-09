@@ -857,10 +857,7 @@ public final class JbcSrcRuntime {
 
     @Override
     public RenderResult render(
-        ParamStore params,
-        ParamStore ij,
-        LoggingAdvisingAppendable appendable,
-        RenderContext context)
+        ParamStore params, LoggingAdvisingAppendable appendable, RenderContext context)
         throws IOException {
       StackFrame frame = context.popFrame();
       BufferingAppendable buffer;
@@ -883,7 +880,7 @@ public final class JbcSrcRuntime {
       }
       RenderResult result;
       try {
-        result = delegate.render(params, ij, buffer, context);
+        result = delegate.render(params, buffer, context);
       } catch (RuntimeException e) {
         if (ignoreExceptions) {
           return RenderResult.done();
@@ -989,12 +986,9 @@ public final class JbcSrcRuntime {
 
     @Override
     public RenderResult render(
-        ParamStore params,
-        ParamStore ij,
-        LoggingAdvisingAppendable appendable,
-        RenderContext context)
+        ParamStore params, LoggingAdvisingAppendable appendable, RenderContext context)
         throws IOException {
-      return delegate.render(ParamStore.merge(boundParams, params), ij, appendable, context);
+      return delegate.render(ParamStore.merge(boundParams, params), appendable, context);
     }
   }
 

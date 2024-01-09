@@ -1329,25 +1329,18 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
 
   @FunctionalInterface
   private interface BoundCallGenerator {
-    Expression call(
-        Expression ijParams,
-        AppendableExpression appendable,
-        RenderContextExpression renderContext);
+    Expression call(AppendableExpression appendable, RenderContextExpression renderContext);
   }
 
   @FunctionalInterface
   private interface DirectCallGenerator {
     Expression call(
-        Expression params,
-        Expression ijParams,
-        AppendableExpression appendable,
-        RenderContextExpression renderContext);
+        Expression params, AppendableExpression appendable, RenderContextExpression renderContext);
   }
 
   private interface DirectPositionalCallGenerator {
     Expression call(
         List<Expression> params,
-        Expression ijParams,
         AppendableExpression appendable,
         RenderContextExpression renderContext);
 
@@ -1470,19 +1463,17 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
                       @Override
                       public Expression call(
                           List<Expression> params,
-                          Expression ij,
                           AppendableExpression appendable,
                           RenderContextExpression renderContext) {
                         if (isPrivateCall) {
                           return positionalRenderMethod.invoke(
                               Iterables.concat(
-                                  params, ImmutableList.of(ij, appendable, renderContext)));
+                                  params, ImmutableList.of(appendable, renderContext)));
                         }
                         return new Expression(RENDER_RESULT_TYPE) {
                           @Override
                           protected void doGen(CodeBuilder adapter) {
                             params.forEach(p -> p.gen(adapter));
-                            ij.gen(adapter);
                             appendable.gen(adapter);
                             renderContext.gen(adapter);
                             adapter.visitInvokeDynamicInsn(
@@ -1501,15 +1492,14 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
             @Override
             public Optional<DirectCallGenerator> asDirectCall() {
               return Optional.of(
-                  (params, ij, appendable, renderContext) -> {
+                  (params, appendable, renderContext) -> {
                     if (isPrivateCall) {
-                      return metadata.renderMethod().invoke(params, ij, appendable, renderContext);
+                      return metadata.renderMethod().invoke(params, appendable, renderContext);
                     }
                     return new Expression(RENDER_RESULT_TYPE) {
                       @Override
                       protected void doGen(CodeBuilder adapter) {
                         params.gen(adapter);
-                        ij.gen(adapter);
                         appendable.gen(adapter);
                         renderContext.gen(adapter);
                         adapter.visitInvokeDynamicInsn(
@@ -1536,9 +1526,9 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
 
   private static DirectCallGenerator directCallFromTemplateExpression(
       Expression compiledTemplateExpression) {
-    return (params, ij, output, context) ->
+    return (params, output, context) ->
         compiledTemplateExpression.invoke(
-            MethodRefs.COMPILED_TEMPLATE_RENDER, params, ij, output, context);
+            MethodRefs.COMPILED_TEMPLATE_RENDER, params, output, context);
   }
 
   private static BoundCallGenerator simpleCall(
@@ -1548,7 +1538,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
 
   private static BoundCallGenerator simpleCall(
       DirectCallGenerator callGenerator, Expression params) {
-    return (ij, output, context) -> callGenerator.call(params, ij, output, context);
+    return (output, context) -> callGenerator.call(params, output, context);
   }
 
   /**
@@ -1614,10 +1604,10 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
               .isPresent()) {
         initParams = explicitParams.get().initializer();
         boundCall =
-            (ij, output, context) ->
+            (output, context) ->
                 asDirectPositionalCall
                     .get()
-                    .call(explicitParams.get().expressions(), ij, output, context);
+                    .call(explicitParams.get().expressions(), output, context);
       } else {
         Optional<DirectCallGenerator> asDirectCall = callGenerator.asDirectCall();
         ExpressionAndInitializer expressionAndInitializer = paramsExpression.asRecord(renderScope);
@@ -1655,7 +1645,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
 
     Expression callRender =
         boundCall
-            .call(parameterLookup.getIjRecord(), appendable, parameterLookup.getRenderContext())
+            .call(appendable, parameterLookup.getRenderContext())
             // make sure to tag this expression with the source location to ensure stack traces are
             // accurate.
             .withSourceLocation(node.getSourceLocation());

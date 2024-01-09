@@ -35,7 +35,6 @@ import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.LoggingAdvisingAppendable.BufferingAppendable;
 import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.jbcsrc.TemplateTester.CompiledTemplateSubject;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
@@ -101,9 +100,7 @@ public class LazyClosureCompilerTest {
     RenderContext context = getDefaultContext(templates);
     BufferingAppendable output = LoggingAdvisingAppendable.buffering();
     TemplateRenderer renderer =
-        () ->
-            template.render(
-                asParams(ImmutableMap.of("bar", bar)), ParamStore.EMPTY_INSTANCE, output, context);
+        () -> template.render(asParams(ImmutableMap.of("bar", bar)), output, context);
     RenderResult result = renderer.render();
     assertThat(result.type()).isEqualTo(RenderResult.Type.DETACH);
     assertThat(result.future()).isSameInstanceAs(bar); // we found bar!
@@ -206,9 +203,7 @@ public class LazyClosureCompilerTest {
     RenderContext context = getDefaultContext(templates);
     BufferingAppendable output = LoggingAdvisingAppendable.buffering();
     TemplateRenderer renderer =
-        () ->
-            template.render(
-                asParams(ImmutableMap.of("bar", bar)), ParamStore.EMPTY_INSTANCE, output, context);
+        () -> template.render(asParams(ImmutableMap.of("bar", bar)), output, context);
     RenderResult result = renderer.render();
     assertThat(result.type()).isEqualTo(RenderResult.Type.DETACH);
     assertThat(result.future()).isSameInstanceAs(bar); // we found bar!

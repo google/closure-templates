@@ -31,7 +31,6 @@ public interface CompiledTemplate {
    * Renders the template.
    *
    * @param params the explicit params of the template
-   * @param ij the explicit injected params of the template
    * @param appendable The output target
    * @param context The rendering context
    * @return {@link RenderResult#done()} if rendering has completed successfully, {@link
@@ -44,6 +43,6 @@ public interface CompiledTemplate {
    */
   @Nonnull
   RenderResult render(
-      ParamStore params, ParamStore ij, LoggingAdvisingAppendable appendable, RenderContext context)
+      ParamStore params, LoggingAdvisingAppendable appendable, RenderContext context)
       throws IOException;
 }

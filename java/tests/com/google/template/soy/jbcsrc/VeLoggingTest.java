@@ -25,7 +25,6 @@ import com.google.template.soy.SoyFileSetParser;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.data.LogStatement;
 import com.google.template.soy.data.LoggingFunctionInvocation;
-import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.jbcsrc.api.OutputAppendable;
 import com.google.template.soy.jbcsrc.api.RenderResult;
@@ -324,9 +323,7 @@ public final class VeLoggingTest {
     RenderContext ctx =
         TemplateTester.getDefaultContext(templates).toBuilder().withLogger(logger).build();
     RenderResult result =
-        templates
-            .getTemplate("ns.foo")
-            .render(TemplateTester.asParams(params), ParamStore.EMPTY_INSTANCE, output, ctx);
+        templates.getTemplate("ns.foo").render(TemplateTester.asParams(params), output, ctx);
     assertThat(result).isEqualTo(RenderResult.done());
   }
 }

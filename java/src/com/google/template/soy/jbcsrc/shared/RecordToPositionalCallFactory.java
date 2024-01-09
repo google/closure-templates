@@ -47,7 +47,7 @@ public final class RecordToPositionalCallFactory {
    * <p>This roughly generates code that looks like
    *
    * <pre>{@code
-   * render(data.getFieldProvider("p1")...data.getFieldProvider("pN"), ij, appendable, ctx)
+   * render(data.getFieldProvider("p1")...data.getFieldProvider("pN"), appendable, ctx)
    * }</pre>
    *
    * where {@code p1...pN} are the param names passed to this template and {@code render} is the

@@ -248,10 +248,6 @@ public final class ConstantsCompiler {
       throw unsupported();
     }
 
-    @Override
-    public Expression getIjRecord() {
-      throw unsupported();
-    }
 
     @Override
     public Expression getLocal(AbstractLocalVarDefn<?> local) {

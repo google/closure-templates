@@ -62,7 +62,6 @@ abstract class CompiledTemplateMetadata {
         Type.getMethodDescriptor(
             BytecodeUtils.RENDER_RESULT_TYPE,
             BytecodeUtils.PARAM_STORE_TYPE,
-            BytecodeUtils.PARAM_STORE_TYPE,
             BytecodeUtils.LOGGING_ADVISING_APPENDABLE_TYPE,
             BytecodeUtils.RENDER_CONTEXT_TYPE));
   }
@@ -77,7 +76,6 @@ abstract class CompiledTemplateMetadata {
                     templateType.getActualParameters().stream()
                         .map(i -> BytecodeUtils.SOY_VALUE_PROVIDER_TYPE),
                     Stream.of(
-                        BytecodeUtils.PARAM_STORE_TYPE,
                         BytecodeUtils.LOGGING_ADVISING_APPENDABLE_TYPE,
                         BytecodeUtils.RENDER_CONTEXT_TYPE))
                 .toArray(Type[]::new)));

@@ -265,8 +265,7 @@ public class BytecodeCompilerTest {
   private static String renderWithContext(CompiledTemplate template, RenderContext context)
       throws IOException {
     BufferingAppendable builder = LoggingAdvisingAppendable.buffering();
-    assertThat(
-            template.render(ParamStore.EMPTY_INSTANCE, ParamStore.EMPTY_INSTANCE, builder, context))
+    assertThat(template.render(ParamStore.EMPTY_INSTANCE, builder, context))
         .isEqualTo(RenderResult.done());
     return builder.toString();
   }
@@ -436,8 +435,7 @@ public class BytecodeCompilerTest {
       throws IOException {
     CompiledTemplate caller = templates.getTemplate(name);
     BufferingAppendable builder = LoggingAdvisingAppendable.buffering();
-    assertThat(
-            caller.render(params, ParamStore.EMPTY_INSTANCE, builder, getDefaultContext(templates)))
+    assertThat(caller.render(params, builder, getDefaultContext(templates)))
         .isEqualTo(RenderResult.done());
     return builder.toString();
   }
@@ -803,13 +801,10 @@ public class BytecodeCompilerTest {
     BufferingAppendable builder = LoggingAdvisingAppendable.buffering();
 
     ParamStore params = SoyValueConverterUtility.newParams("foo", IntegerData.forValue(1));
-    assertThat(singleParam.render(params, ParamStore.EMPTY_INSTANCE, builder, context))
-        .isEqualTo(RenderResult.done());
+    assertThat(singleParam.render(params, builder, context)).isEqualTo(RenderResult.done());
     assertThat(builder.getAndClearBuffer()).isEqualTo("1");
 
-    assertThat(
-            singleParam.render(
-                ParamStore.EMPTY_INSTANCE, ParamStore.EMPTY_INSTANCE, builder, context))
+    assertThat(singleParam.render(ParamStore.EMPTY_INSTANCE, builder, context))
         .isEqualTo(RenderResult.done());
     assertThat(builder.getAndClearBuffer()).isEqualTo("-1");
 
@@ -818,12 +813,13 @@ public class BytecodeCompilerTest {
     context = getDefaultContext(templates);
 
     params = SoyValueConverterUtility.newParams("foo", IntegerData.forValue(1));
-    assertThat(singleIj.render(ParamStore.EMPTY_INSTANCE, params, builder, context))
+    assertThat(
+            singleIj.render(
+                ParamStore.EMPTY_INSTANCE, builder, context.toBuilder().withIj(params).build()))
         .isEqualTo(RenderResult.done());
     assertThat(builder.getAndClearBuffer()).isEqualTo("1");
 
-    assertThat(
-            singleIj.render(ParamStore.EMPTY_INSTANCE, ParamStore.EMPTY_INSTANCE, builder, context))
+    assertThat(singleIj.render(ParamStore.EMPTY_INSTANCE, builder, context))
         .isEqualTo(RenderResult.done());
     assertThat(builder.getAndClearBuffer()).isEqualTo("undefined");
   }

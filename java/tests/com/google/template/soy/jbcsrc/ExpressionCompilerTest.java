@@ -595,10 +595,6 @@ public class ExpressionCompilerTest {
                 throw new UnsupportedOperationException();
               }
 
-              @Override
-              public Expression getIjRecord() {
-                throw new UnsupportedOperationException();
-              }
             },
             new TemplateVariableManager(
                 BytecodeUtils.OBJECT.type(),

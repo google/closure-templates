@@ -489,7 +489,7 @@ public final class ProtoSupportTest {
     CompiledTemplate caller = templates.getTemplate(name);
     BufferingAppendable sb = LoggingAdvisingAppendable.buffering();
     try {
-      assertThat(caller.render(params, ParamStore.EMPTY_INSTANCE, sb, getDefaultContext(templates)))
+      assertThat(caller.render(params, sb, getDefaultContext(templates)))
           .isEqualTo(RenderResult.done());
     } catch (IOException e) {
       throw new RuntimeException(e);

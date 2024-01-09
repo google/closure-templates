@@ -420,7 +420,7 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
       ImmutableMap.Builder<SoyValue, SoyValueProvider> builder =
           ImmutableMap.builderWithExpectedSize(map.size());
       map.forEach((k, v) -> builder.put(keyMapper.apply(k), valueMapper.apply(v)));
-      return SoyMapImpl.forProviderMap(builder.build());
+      return SoyMapImpl.forProviderMap(builder.buildOrThrow());
     }
 
     protected static <K, V> SoyValue asNullableMap(
@@ -438,7 +438,7 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
         // coerce key to a string, legacy object maps always coerce keys to strings.
         builder.put(entry.getKey().toString(), valueMapper.apply(entry.getValue()));
       }
-      return new SoyLegacyObjectMapImpl(builder.build());
+      return new SoyLegacyObjectMapImpl(builder.buildOrThrow());
     }
 
     protected static <V> SoyValue asNullableLegacyObjectMap(
@@ -458,7 +458,6 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
             @Override
             public RenderResult render(
                 ParamStore params,
-                ParamStore ij,
                 LoggingAdvisingAppendable appendable,
                 RenderContext context)
                 throws IOException {
@@ -466,7 +465,6 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
                   .getTemplate(template.getTemplateName())
                   .render(
                       ParamStore.merge(params, (ParamStore) template.getParamsAsRecord()),
-                      ij,
                       appendable,
                       context);
             }

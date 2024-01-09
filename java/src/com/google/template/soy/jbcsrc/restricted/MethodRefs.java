@@ -99,7 +99,6 @@ public final class MethodRefs {
           CompiledTemplate.class,
           "render",
           ParamStore.class,
-          ParamStore.class,
           LoggingAdvisingAppendable.class,
           RenderContext.class);
 
