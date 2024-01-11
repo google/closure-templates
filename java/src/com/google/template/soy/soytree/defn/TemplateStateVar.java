@@ -37,14 +37,19 @@ public final class TemplateStateVar extends AbstractVarDefn implements TemplateH
   @Nullable private final TypeNode typeNode;
   private final ExprRootNode initialValue;
 
+  /** Whether the param is declared with ?. */
+  private final boolean isExplicitlyOptional;
+
   public TemplateStateVar(
       String name,
       @Nullable TypeNode typeNode,
+      boolean optional,
       @Nullable ExprNode initialValue,
       @Nullable String desc,
       @Nullable SourceLocation nameLocation,
       SourceLocation sourceLocation) {
     super(name, nameLocation, /* type= */ null);
+    this.isExplicitlyOptional = optional;
     this.desc = desc;
     this.initialValue =
         initialValue == null
@@ -57,6 +62,7 @@ public final class TemplateStateVar extends AbstractVarDefn implements TemplateH
 
   private TemplateStateVar(TemplateStateVar old, CopyState copyState) {
     super(old);
+    this.isExplicitlyOptional = old.isExplicitlyOptional;
     this.typeNode = old.typeNode == null ? null : old.typeNode.copy();
     this.desc = old.desc;
     this.initialValue = old.initialValue.copy(copyState);
@@ -114,7 +120,7 @@ public final class TemplateStateVar extends AbstractVarDefn implements TemplateH
 
   @Override
   public boolean isExplicitlyOptional() {
-    return false;
+    return isExplicitlyOptional;
   }
 
   @Override

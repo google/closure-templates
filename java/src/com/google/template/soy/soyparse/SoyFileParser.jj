@@ -1177,6 +1177,7 @@ TOKEN_MGR_DECLS: {
 | < DECL_BEGIN_OPT_INJECT_PARAM  : "{@inject?"      > : IN_CMD_TAG
 
 | < DECL_BEGIN_STATE_VAR         : "{@state"        > : IN_CMD_TAG
+| < DECL_BEGIN_OPT_STATE_VAR     : "{@state?"       > : IN_CMD_TAG
 
 | < XXX_BRACE_INVALID            : "}"              >  // catch and die on an unexpected right brace
 | < CMD_FULL_SP                  : "{sp}"           >
@@ -2404,6 +2405,7 @@ private TemplateHeaderVarDefn ParamDecl(@Nullable String desc) :
   | tagBegin = <DECL_BEGIN_INJECT_PARAM>  { inject = true; }
   | tagBegin = <DECL_BEGIN_OPT_INJECT_PARAM> { inject = true; optional = true; }
   | tagBegin = <DECL_BEGIN_STATE_VAR> { stateVar = true; }
+  | tagBegin = <DECL_BEGIN_OPT_STATE_VAR> { stateVar = true; optional = true; }
   )
   // If there is a special token directly attached to the {@param, use that instead of whatever
   // was passed to us.
@@ -2439,6 +2441,7 @@ private TemplateHeaderVarDefn ParamDecl(@Nullable String desc) :
       return new TemplateStateVar(
           name.image,
           paramTypeNode,
+          optional,
           value,
           desc,
           createSrcLoc(name),
