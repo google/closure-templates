@@ -29,6 +29,7 @@ import com.google.template.soy.data.LogStatement;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.LoggingAdvisingAppendable.BufferingAppendable;
 import com.google.template.soy.data.LoggingFunctionInvocation;
+import com.google.template.soy.data.SoyInjector;
 import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
@@ -433,7 +434,7 @@ public final class DetachStateTest {
     BufferingAppendable output = LoggingAdvisingAppendable.buffering();
     RenderContext context =
         getDefaultContext(templates).toBuilder()
-            .withIj(asParams(ImmutableMap.of("p", pending)))
+            .withIj(SoyInjector.fromStringMap(ImmutableMap.of("p", pending)))
             .build();
     TemplateRenderer renderer = () -> template.render(ParamStore.EMPTY_INSTANCE, output, context);
     assertThat(renderer.render()).isEqualTo(RenderResult.continueAfter(pending));
@@ -502,7 +503,7 @@ public final class DetachStateTest {
     SettableFuture<String> pending = SettableFuture.create();
     RenderContext context =
         getDefaultContext(templates).toBuilder()
-            .withIj(asParams(ImmutableMap.of("p", pending)))
+            .withIj(SoyInjector.fromStringMap(ImmutableMap.of("p", pending)))
             .build();
     BufferingAppendable output = LoggingAdvisingAppendable.buffering();
     TemplateRenderer renderer = () -> template.render(ParamStore.EMPTY_INSTANCE, output, context);

@@ -34,6 +34,7 @@ import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SoyAbstractValue;
 import com.google.template.soy.data.SoyDict;
+import com.google.template.soy.data.SoyInjector;
 import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueConverterUtility;
@@ -137,8 +138,8 @@ public class RenderVisitorTest {
                 createToStringTestValue()));
   }
 
-  private static final ParamStore TEST_IJ_DATA =
-      ParamStore.fromRecord(
+  private static final SoyInjector TEST_IJ_DATA =
+      SoyInjector.fromRecord(
           SoyValueConverterUtility.newDict("ijBool", true, "ijInt", 26, "ijStr", "injected"));
 
   private static final SoyIdRenamingMap TEST_XID_RENAMING_MAP =
@@ -312,7 +313,7 @@ public class RenderVisitorTest {
       String soyFileContent,
       String templateName,
       ParamStore data,
-      ParamStore ijData,
+      SoyInjector ijData,
       Predicate<String> activeModNames) {
     return renderTemplateInFile(
         SoyFileSetParserBuilder.forFileContents(soyFileContent).errorReporter(FAIL).parse(),
@@ -326,7 +327,7 @@ public class RenderVisitorTest {
       ParseResult parseResult,
       String templateName,
       ParamStore data,
-      ParamStore ijData,
+      SoyInjector ijData,
       Predicate<String> activeModNames) {
     return renderTemplateInFile(
         parseResult, templateName, data, ijData, activeModNames, new StringBuilder());
@@ -336,7 +337,7 @@ public class RenderVisitorTest {
       ParseResult parseResult,
       String templateName,
       ParamStore data,
-      ParamStore ijData,
+      SoyInjector ijData,
       Predicate<String> activeModNames,
       StringBuilder outputSb) {
     ImmutableMap<String, TemplateNode> basicTemplates = getBasicTemplates(parseResult.fileSet());
@@ -1002,8 +1003,8 @@ public class RenderVisitorTest {
             "goo",
             SoyValueConverterUtility.newList(1, 2, 3));
 
-    ParamStore testIj =
-        SoyValueConverterUtility.newParams("future", new TestFuture("ij", progress));
+    SoyInjector testIj =
+        SoyInjector.fromStringMap(ImmutableMap.of("future", new TestFuture("ij", progress)));
 
     StringBuilder outputSb = new StringBuilder();
     CountingFlushableAppendable output = new CountingFlushableAppendable(outputSb, flushable);

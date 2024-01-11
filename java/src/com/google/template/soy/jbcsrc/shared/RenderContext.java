@@ -26,6 +26,7 @@ import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.data.Dir;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.RecordProperty;
+import com.google.template.soy.data.SoyInjector;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.internal.ParamStore;
@@ -70,7 +71,7 @@ public final class RenderContext {
   private final SoyIdRenamingMap xidRenamingMap;
   private final PluginInstances pluginInstances;
   private final ImmutableMap<String, SoyJavaPrintDirective> soyJavaDirectivesMap;
-  private final ParamStore ijData;
+  private final SoyInjector ijData;
 
   /** The bundle of translated messages */
   private final SoyMsgBundle msgBundle;
@@ -99,7 +100,7 @@ public final class RenderContext {
       CompiledTemplates templates,
       ImmutableMap<String, SoyJavaPrintDirective> soyJavaDirectivesMap,
       PluginInstances pluginInstances,
-      ParamStore ijData,
+      SoyInjector ijData,
       @Nullable Predicate<String> activeModSelector,
       @Nullable SoyCssRenamingMap cssRenamingMap,
       @Nullable SoyIdRenamingMap xidRenamingMap,
@@ -110,7 +111,7 @@ public final class RenderContext {
     this.templates = templates;
     this.soyJavaDirectivesMap = soyJavaDirectivesMap;
     this.pluginInstances = pluginInstances;
-    this.ijData = ijData == null ? ParamStore.EMPTY_INSTANCE : ijData;
+    this.ijData = ijData == null ? SoyInjector.EMPTY : ijData;
     this.activeModSelector = activeModSelector != null ? activeModSelector : mod -> false;
     this.cssRenamingMap = cssRenamingMap == null ? SoyCssRenamingMap.EMPTY : cssRenamingMap;
     this.xidRenamingMap = xidRenamingMap == null ? SoyCssRenamingMap.EMPTY : xidRenamingMap;
@@ -475,13 +476,13 @@ public final class RenderContext {
 
   /** Retrieves an injected parameter. */
   public SoyValueProvider getInjectedValue(RecordProperty key) {
-    var value = ijData.getFieldProvider(key);
+    var value = ijData.get(key);
     return value == null ? UndefinedData.INSTANCE : value;
   }
 
   /** Retrieves an injected parameter with a default if unset. */
   public SoyValueProvider getInjectedValue(RecordProperty key, SoyValue defaultValue) {
-    var value = ijData.getFieldProvider(key);
+    var value = ijData.get(key);
     return value == null ? defaultValue : value;
   }
 
@@ -509,7 +510,7 @@ public final class RenderContext {
     private boolean debugSoyTemplateInfo;
     private SoyLogger logger;
     private SoyCssTracker cssTracker;
-    private ParamStore ijData;
+    private SoyInjector ijData;
 
     public Builder(
         CompiledTemplates templates,
@@ -569,7 +570,7 @@ public final class RenderContext {
     }
 
     @CanIgnoreReturnValue
-    public Builder withIj(ParamStore ijData) {
+    public Builder withIj(SoyInjector ijData) {
       this.ijData = checkNotNull(ijData);
       return this;
     }

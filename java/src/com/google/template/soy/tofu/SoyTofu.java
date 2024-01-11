@@ -20,9 +20,11 @@ import com.google.common.annotations.Beta;
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.data.SanitizedContent;
+import com.google.template.soy.data.SoyInjector;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyTemplate;
 import com.google.template.soy.data.SoyTemplateData;
+import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.parseinfo.SoyTemplateInfo;
 import com.google.template.soy.parseinfo.TemplateName;
@@ -147,12 +149,17 @@ public interface SoyTofu {
 
     /** Sets the injected data to call the template with. Can be null if not used. */
     @CanIgnoreReturnValue
-    Renderer setIjData(Map<String, ?> ijData);
+    default Renderer setIjData(Map<String, ?> record) {
+      return setIjData(record == null ? null : SoyInjector.fromStringMap(record));
+    }
 
     @CanIgnoreReturnValue
-    default Renderer setIjData(SoyTemplateData ijData) {
-      return setIjData(ijData.getParamsAsMap());
+    default Renderer setIjData(SoyTemplateData data) {
+      return setIjData(SoyInjector.fromParamStore((ParamStore) data.getParamsAsRecord()));
     }
+
+    @CanIgnoreReturnValue
+    Renderer setIjData(SoyInjector data);
 
     /**
      * Sets the injected data to call the template with. Can be null if not used.
@@ -162,7 +169,9 @@ public interface SoyTofu {
      */
     @Deprecated
     @CanIgnoreReturnValue
-    Renderer setIjData(SoyRecord ijData);
+    default Renderer setIjData(SoyRecord ijData) {
+      return setIjData(SoyInjector.fromRecord(ijData));
+    }
 
     /**
      * Sets the plugin instances that will be used to for method calls from {@code

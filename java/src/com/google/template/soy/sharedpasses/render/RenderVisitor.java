@@ -31,6 +31,7 @@ import com.google.template.soy.data.SoyAbstractCachingValueProvider.ValueAsserti
 import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.data.SoyFutureValueProvider;
 import com.google.template.soy.data.SoyFutureValueProvider.FutureBlockCallback;
+import com.google.template.soy.data.SoyInjector;
 import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
@@ -123,7 +124,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
   protected final ParamStore data;
 
   /** The current injected data. */
-  protected final ParamStore ijData;
+  protected final SoyInjector ijData;
 
   private final ImmutableTable<SourceLogicalPath, String, ImmutableList<ExternNode>> externs;
 
@@ -192,7 +193,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
       ImmutableTable<SourceLogicalPath, String, ConstNode> constants,
       ImmutableTable<SourceLogicalPath, String, ImmutableList<ExternNode>> externs,
       ParamStore data,
-      @Nullable ParamStore ijData,
+      @Nullable SoyInjector ijData,
       @Nullable Predicate<String> activeModSelector,
       @Nullable SoyMsgBundle msgBundle,
       @Nullable SoyIdRenamingMap xidRenamingMap,

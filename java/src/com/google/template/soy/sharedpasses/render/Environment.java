@@ -18,6 +18,7 @@ package com.google.template.soy.sharedpasses.render;
 
 import com.google.common.base.Preconditions;
 import com.google.template.soy.data.RecordProperty;
+import com.google.template.soy.data.SoyInjector;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.internal.ParamStore;
@@ -48,7 +49,7 @@ public abstract class Environment {
    * <p>Allocates the local variable table for the template and prepopulates it with data from the
    * given SoyRecords.
    */
-  static Environment create(TemplateNode template, ParamStore data, ParamStore ijData) {
+  static Environment create(TemplateNode template, ParamStore data, SoyInjector ijData) {
     return new Impl(template, data, ijData);
   }
 
@@ -86,11 +87,12 @@ public abstract class Environment {
     final IdentityHashMap<VarDefn, Object> localVariables = new IdentityHashMap<>();
     final ParamStore data;
 
-    Impl(TemplateNode template, ParamStore data, ParamStore ijData) {
+    Impl(TemplateNode template, ParamStore data, SoyInjector ijData) {
       this.data = data;
       for (TemplateParam param : template.getAllParams()) {
+        var property = RecordProperty.get(param.name());
         SoyValueProvider provider =
-            (param.isInjected() ? ijData : data).getFieldProvider(RecordProperty.get(param.name()));
+            param.isInjected() ? ijData.get(property) : data.getFieldProvider(property);
         if (provider == null) {
           provider = UndefinedData.INSTANCE;
         }

@@ -31,8 +31,8 @@ import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.data.RecordProperty;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
+import com.google.template.soy.data.SoyInjector;
 import com.google.template.soy.data.SoyTemplate;
-import com.google.template.soy.data.SoyTemplateData;
 import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.TemplateValue;
@@ -171,7 +171,7 @@ public final class SoySauceImpl implements SoySauce {
     private SoyCssTracker cssTracker;
 
     private ParamStore data;
-    private ParamStore ij;
+    private SoyInjector ij;
     private boolean dataSetInConstructor;
 
     RendererImpl(
@@ -211,7 +211,7 @@ public final class SoySauceImpl implements SoySauce {
         SoyValueProvider value;
         try {
           value = SoyValueConverter.INSTANCE.convert(entry.getValue());
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
           throw new IllegalArgumentException(
               "Unable to convert param " + key + " to a SoyValue", e);
         }
@@ -222,15 +222,8 @@ public final class SoySauceImpl implements SoySauce {
 
     @CanIgnoreReturnValue
     @Override
-    public RendererImpl setIj(Map<String, ?> record) {
-      this.ij = mapAsParamStore(record);
-      return this;
-    }
-
-    @CanIgnoreReturnValue
-    @Override
-    public RendererImpl setIj(SoyTemplateData templateData) {
-      this.ij = (ParamStore) templateData.getParamsAsRecord();
+    public RendererImpl setIj(SoyInjector ij) {
+      this.ij = checkNotNull(ij);
       return this;
     }
 

@@ -28,8 +28,10 @@ import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.errorprone.annotations.CheckReturnValue;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
+import com.google.template.soy.data.SoyInjector;
 import com.google.template.soy.data.SoyTemplate;
 import com.google.template.soy.data.SoyTemplateData;
+import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.logging.SoyLogger;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.parseinfo.TemplateName;
@@ -138,12 +140,17 @@ public interface SoySauce {
 
     /** Configures the {@code $ij} to pass to the template. */
     @CanIgnoreReturnValue
-    Renderer setIj(Map<String, ?> record);
+    default Renderer setIj(Map<String, ?> record) {
+      return setIj(SoyInjector.fromStringMap(record));
+    }
 
     @CanIgnoreReturnValue
     default Renderer setIj(SoyTemplateData data) {
-      return setIj(data.getParamsAsMap());
+      return setIj(SoyInjector.fromParamStore((ParamStore) data.getParamsAsRecord()));
     }
+
+    @CanIgnoreReturnValue
+    Renderer setIj(SoyInjector data);
 
     /**
      * Sets the plugin instances that will be used to for plugins that are implemented with {@code

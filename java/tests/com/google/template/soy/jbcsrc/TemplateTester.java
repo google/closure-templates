@@ -40,6 +40,7 @@ import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.css.CssRegistry;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.LoggingAdvisingAppendable.BufferingAppendable;
+import com.google.template.soy.data.SoyInjector;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.internal.ParamStore;
@@ -233,7 +234,10 @@ public final class TemplateTester {
     CompiledTemplateSubject rendersAs(String expected, Map<String, ?> params, Map<String, ?> ij) {
       compile();
       return rendersAndLogs(
-          expected, "", asParams(params), defaultContext.toBuilder().withIj(asParams(ij)).build());
+          expected,
+          "",
+          asParams(params),
+          defaultContext.toBuilder().withIj(SoyInjector.fromStringMap(ij)).build());
     }
 
     CompiledTemplateSubject failsToRenderWith(Class<? extends Throwable> expected) {

@@ -45,6 +45,7 @@ import com.google.template.soy.data.LoggingAdvisingAppendable.BufferingAppendabl
 import com.google.template.soy.data.RecordProperty;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SanitizedContents;
+import com.google.template.soy.data.SoyInjector;
 import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueConverter;
@@ -815,7 +816,9 @@ public class BytecodeCompilerTest {
     params = SoyValueConverterUtility.newParams("foo", IntegerData.forValue(1));
     assertThat(
             singleIj.render(
-                ParamStore.EMPTY_INSTANCE, builder, context.toBuilder().withIj(params).build()))
+                ParamStore.EMPTY_INSTANCE,
+                builder,
+                context.toBuilder().withIj(SoyInjector.fromParamStore(params)).build()))
         .isEqualTo(RenderResult.done());
     assertThat(builder.getAndClearBuffer()).isEqualTo("1");
 

@@ -33,6 +33,7 @@ import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.data.RecordProperty;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
+import com.google.template.soy.data.SoyInjector;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyTemplate;
 import com.google.template.soy.data.SoyValueConverter;
@@ -314,7 +315,7 @@ public final class BaseTofu implements SoyTofu {
       Appendable outputBuf,
       String templateName,
       @Nullable ParamStore data,
-      @Nullable ParamStore ijData,
+      @Nullable SoyInjector ijData,
       @Nullable Predicate<String> activeModNames,
       @Nullable SoyMsgBundle msgBundle,
       @Nullable SoyIdRenamingMap idRenamingMap,
@@ -359,7 +360,7 @@ public final class BaseTofu implements SoyTofu {
       Appendable outputBuf,
       String templateName,
       @Nullable ParamStore data,
-      @Nullable ParamStore ijData,
+      @Nullable SoyInjector ijData,
       Predicate<String> activeModNames,
       @Nullable SoyMsgBundle msgBundle,
       @Nullable SoyIdRenamingMap idRenamingMap,
@@ -380,7 +381,7 @@ public final class BaseTofu implements SoyTofu {
       data = ParamStore.EMPTY_INSTANCE;
     }
     if (ijData == null) {
-      ijData = ParamStore.EMPTY_INSTANCE;
+      ijData = SoyInjector.EMPTY;
     }
 
     try {
@@ -419,7 +420,7 @@ public final class BaseTofu implements SoyTofu {
     private final BaseTofu baseTofu;
     private final String templateName;
     private ParamStore data;
-    private ParamStore ijData;
+    private SoyInjector ijData;
     private SoyMsgBundle msgBundle;
     private SoyIdRenamingMap idRenamingMap;
     private SoyCssRenamingMap cssRenamingMap;
@@ -485,15 +486,8 @@ public final class BaseTofu implements SoyTofu {
 
     @CanIgnoreReturnValue
     @Override
-    public RendererImpl setIjData(Map<String, ?> ijData) {
-      this.ijData = (ijData == null) ? null : mapAsParamStore(ijData);
-      return this;
-    }
-
-    @CanIgnoreReturnValue
-    @Override
-    public RendererImpl setIjData(SoyRecord ijData) {
-      this.ijData = ParamStore.fromRecord(ijData);
+    public RendererImpl setIjData(SoyInjector ijData) {
+      this.ijData = ijData;
       return this;
     }
 
