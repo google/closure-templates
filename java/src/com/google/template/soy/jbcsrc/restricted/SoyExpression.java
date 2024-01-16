@@ -499,8 +499,13 @@ public final class SoyExpression extends Expression {
     }
     if (isBoxed()) {
       // If we are boxed, just call the SoyValue method
-      return Branch.ifTrue(
-          delegate.invoke(MethodRefs.SOY_VALUE_COERCE_TO_BOOLEAN).toMaybeConstant());
+      if (delegate.isNonJavaNullable()) {
+        return Branch.ifTrue(
+            delegate.invoke(MethodRefs.SOY_VALUE_COERCE_TO_BOOLEAN).toMaybeConstant());
+      } else {
+        return Branch.ifTrue(
+            MethodRefs.RUNTIME_COERCE_TO_BOOLEAN.invoke(delegate).toMaybeConstant());
+      }
     }
     // unboxed non-primitive types.  This would be strings, protos or lists
     if (resultType().equals(STRING_TYPE)) {

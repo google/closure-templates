@@ -313,16 +313,20 @@ public final class MethodRefs {
   public static final MethodRef RUNTIME_COERCE_TO_STRING =
       createPure(JbcSrcRuntime.class, "coerceToString", SoyValue.class);
 
+  public static final MethodRef RUNTIME_COERCE_TO_BOOLEAN =
+      createPure(JbcSrcRuntime.class, "coerceToBoolean", SoyValue.class);
+
   public static final MethodRef RUNTIME_COERCE_STRING_TO_BOOLEAN =
       createPure(JbcSrcRuntime.class, "coerceToBoolean", String.class);
 
   public static final MethodRef RUNTIME_EQUAL =
       createPure(SharedRuntime.class, "equal", SoyValue.class, SoyValue.class);
 
-  public static final MethodRef SOY_VALUE_IS_TRUTHY_NON_EMPTY =
-      createPure(SoyValue.class, "isTruthyNonEmpty");
+  public static final MethodRef RUNTIME_IS_TRUTHY_NON_EMPTY =
+      createPure(JbcSrcRuntime.class, "isTruthyNonEmpty", SoyValue.class);
 
-  public static final MethodRef SOY_VALUE_HAS_CONTENT = createPure(SoyValue.class, "hasContent");
+  public static final MethodRef RUNTIME_HAS_CONTENT =
+      createPure(JbcSrcRuntime.class, "hasContent", SoyValue.class);
 
   public static final MethodRef RUNTIME_TRIPLE_EQUAL =
       createPure(SharedRuntime.class, "tripleEqual", SoyValue.class, SoyValue.class);
