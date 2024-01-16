@@ -1126,7 +1126,7 @@ final class ExpressionCompiler {
               Label trueLabel = new Label();
               lhsExpr.gen(adapter); // Stack: L
               adapter.dup(); // Stack: L, L
-              MethodRefs.RUNTIME_COERCE_TO_BOOLEAN.invokeUnchecked(adapter); // Stack: L Z
+              MethodRefs.SOY_VALUE_COERCE_TO_BOOLEAN.invokeUnchecked(adapter); // Stack: L Z
               adapter.ifZCmp(node instanceof BarBarOpNode ? Opcodes.IFNE : Opcodes.IFEQ, trueLabel);
               adapter.pop(); // Stack:
               rhsExpr.gen(adapter); // Stack: R
@@ -1761,19 +1761,19 @@ final class ExpressionCompiler {
     @Override
     SoyExpression visitBooleanFunction(FunctionNode node) {
       return SoyExpression.forBool(
-          MethodRefs.RUNTIME_COERCE_TO_BOOLEAN.invoke(visit(node.getParam(0)).box()));
+          MethodRefs.SOY_VALUE_COERCE_TO_BOOLEAN.invoke(visit(node.getParam(0)).box()));
     }
 
     @Override
     SoyExpression visitHasContentFunction(FunctionNode node) {
       return SoyExpression.forBool(
-          MethodRefs.RUNTIME_HAS_CONTENT.invoke(visit(node.getParam(0)).box()));
+          MethodRefs.SOY_VALUE_HAS_CONTENT.invoke(visit(node.getParam(0)).box()));
     }
 
     @Override
     SoyExpression visitIsTruthyNonEmptyFunction(FunctionNode node) {
       return SoyExpression.forBool(
-          MethodRefs.RUNTIME_IS_TRUTHY_NON_EMPTY.invoke(visit(node.getParam(0)).box()));
+          MethodRefs.SOY_VALUE_IS_TRUTHY_NON_EMPTY.invoke(visit(node.getParam(0)).box()));
     }
 
     // Non-builtin functions
