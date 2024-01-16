@@ -84,7 +84,7 @@ public abstract class AbstractSoyCompiler {
           + getClass().getName()
           + " \\\n"
           + "     [<flag1> <flag2> ...] --java_extern_defn_jars <jarName>  \\\n"
-          + "     --srcs <soyFilePath>,... [--deps <soyFilePath>,...]\n";
+          + "     --srcs <soyFilePath>,... [--depHeaders <filePath>,...]\n";
 
   @Option(
       name = "--srcs",
