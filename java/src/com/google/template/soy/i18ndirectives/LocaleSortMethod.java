@@ -16,7 +16,6 @@
 
 package com.google.template.soy.i18ndirectives;
 
-import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
 import com.google.template.soy.plugin.java.restricted.JavaValue;
@@ -79,11 +78,7 @@ public final class LocaleSortMethod
   private static final class Methods {
     static final Method LIST_SORT_FN =
         JavaValueFactory.createMethod(
-            I18NDirectivesRuntime.class,
-            "localeSort",
-            ULocale.class,
-            SoyList.class,
-            SoyRecord.class);
+            I18NDirectivesRuntime.class, "localeSort", List.class, SoyRecord.class, ULocale.class);
   }
 
   @Override
@@ -91,8 +86,8 @@ public final class LocaleSortMethod
       JavaValueFactory factory, List<JavaValue> args, JavaPluginContext context) {
     return factory.callStaticMethod(
         Methods.LIST_SORT_FN,
-        context.getULocale(),
         args.get(0),
-        args.size() > 1 ? args.get(1) : factory.constantNull());
+        args.size() > 1 ? args.get(1) : factory.constantNull(),
+        context.getULocale());
   }
 }

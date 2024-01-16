@@ -49,11 +49,12 @@ import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.data.restricted.StringData;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 /** static functions for implementing the basic functions for java. */
 public final class BasicFunctionsRuntime {
@@ -77,6 +78,7 @@ public final class BasicFunctionsRuntime {
   }
 
   /** Concatenates its arguments. */
+  @Nonnull
   public static ImmutableList<SoyValueProvider> concatLists(List<SoyList> args) {
     ImmutableList.Builder<SoyValueProvider> flattened = ImmutableList.builder();
     for (SoyList soyList : args) {
@@ -85,6 +87,7 @@ public final class BasicFunctionsRuntime {
     return flattened.build();
   }
 
+  @Nonnull
   public static SoyMap concatMaps(SoyMap map, SoyMap mapTwo) {
     LinkedHashMap<SoyValue, SoyValueProvider> mapBuilder = new LinkedHashMap<>();
     mapBuilder.putAll(map.asJavaMap());
@@ -93,28 +96,33 @@ public final class BasicFunctionsRuntime {
   }
 
   /** Checks if list contains a value. */
-  public static boolean listContains(SoyList list, SoyValue value) {
-    return list.asResolvedJavaList().contains(value);
+  public static boolean listContains(List<? extends SoyValueProvider> list, SoyValue value) {
+    for (SoyValueProvider valueProvider : list) {
+      if (valueProvider.resolve().equals(value)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   /** Checks if list contains a value. */
-  public static int listIndexOf(SoyList list, SoyValue value, NumberData startIndex) {
-    List<? extends SoyValue> javaList = list.asResolvedJavaList();
-    int clampedStartIndex = clampListIndex(javaList, startIndex);
-    if (clampedStartIndex >= list.length()) {
+  public static int listIndexOf(
+      List<? extends SoyValueProvider> list, SoyValue value, NumberData startIndex) {
+    int clampedStartIndex = clampListIndex(list, startIndex);
+    if (clampedStartIndex >= list.size()) {
       return -1;
     }
-    int indexInSubList = javaList.subList(clampedStartIndex, list.length()).indexOf(value);
+    int indexInSubList = list.subList(clampedStartIndex, list.size()).indexOf(value);
     return indexInSubList == -1 ? -1 : indexInSubList + clampedStartIndex;
   }
 
   /** Joins the list elements by a separator. */
-  public static String join(SoyList list, String separator) {
-    return list.asResolvedJavaList().stream()
-        .map(SoyValue::coerceToString)
-        .collect(joining(separator));
+  @Nonnull
+  public static String join(List<? extends SoyValueProvider> list, String separator) {
+    return list.stream().map(v -> v.resolve().coerceToString()).collect(joining(separator));
   }
 
+  @Nonnull
   public static String concatAttributeValues(SoyValue l, SoyValue r, String delimiter) {
     boolean lnull = l == null || l.isNullish();
     boolean rnull = r == null || r.isNullish();
@@ -139,6 +147,7 @@ public final class BasicFunctionsRuntime {
     return lValue + delimiter + rValue;
   }
 
+  @Nonnull
   public static SanitizedContent concatCssValues(SoyValue l, SoyValue r) {
     return UnsafeSanitizedContentOrdainer.ordainAsSafe(
         concatAttributeValues(l, r, ";"), ContentKind.CSS);
@@ -148,53 +157,62 @@ public final class BasicFunctionsRuntime {
    * Implements JavaScript-like Array slice. Negative and out-of-bounds indexes emulate the JS
    * behavior.
    */
-  public static List<? extends SoyValueProvider> listSlice(
-      SoyList list, NumberData from, NumberData optionalTo) {
-    int length = list.length();
-    List<? extends SoyValueProvider> javaList = list.asJavaList();
-    int intFrom = clampListIndex(javaList, from);
+  @Nonnull
+  public static ImmutableList<? extends SoyValueProvider> listSlice(
+      List<? extends SoyValueProvider> list, NumberData from, NumberData optionalTo) {
+    int length = list.size();
+    int intFrom = clampListIndex(list, from);
     if (optionalTo == null) {
-      return ImmutableList.copyOf(javaList.subList(intFrom, length));
+      return ImmutableList.copyOf(list.subList(intFrom, length));
     }
-    int to = clampListIndex(javaList, optionalTo);
+    int to = clampListIndex(list, optionalTo);
     if (to < intFrom) {
       return ImmutableList.of();
     }
-    return ImmutableList.copyOf(javaList.subList(intFrom, to));
+    return ImmutableList.copyOf(list.subList(intFrom, to));
   }
 
   /** Reverses an array. The original list passed is not modified. */
-  public static List<? extends SoyValueProvider> listReverse(SoyList list) {
-    List<? extends SoyValueProvider> javaList = new ArrayList<>(list.asJavaList());
-    Collections.reverse(javaList);
-    return javaList;
+  @Nonnull
+  public static ImmutableList<? extends SoyValueProvider> listReverse(
+      List<? extends SoyValueProvider> list) {
+    return ImmutableList.copyOf(list).reverse();
   }
 
   /** Removes all duplicates from a list. The original list passed is not modified. */
-  public static ImmutableList<? extends SoyValueProvider> listUniq(SoyList list) {
-    return list.asJavaList().stream().distinct().collect(toImmutableList());
+  @Nonnull
+  public static ImmutableList<? extends SoyValueProvider> listUniq(
+      List<? extends SoyValueProvider> list) {
+    return list.stream().distinct().collect(toImmutableList());
   }
 
-  public static ImmutableList<? extends SoyValueProvider> listFlat(SoyList list) {
+  @Nonnull
+  public static ImmutableList<? extends SoyValueProvider> listFlat(
+      List<? extends SoyValueProvider> list) {
     return listFlatImpl(list, 1);
   }
 
-  public static ImmutableList<? extends SoyValueProvider> listFlat(SoyList list, IntegerData data) {
+  @Nonnull
+  public static ImmutableList<? extends SoyValueProvider> listFlat(
+      List<? extends SoyValueProvider> list, IntegerData data) {
     return listFlatImpl(list, (int) data.getValue());
   }
 
+  @Nonnull
   private static ImmutableList<? extends SoyValueProvider> listFlatImpl(
-      SoyList list, int maxDepth) {
+      List<? extends SoyValueProvider> list, int maxDepth) {
     ImmutableList.Builder<SoyValueProvider> builder = ImmutableList.builder();
     listFlatImpl(list, builder, maxDepth);
     return builder.build();
   }
 
   private static void listFlatImpl(
-      SoyList list, ImmutableList.Builder<SoyValueProvider> builder, int maxDepth) {
-    for (SoyValueProvider value : list.asJavaList()) {
+      List<? extends SoyValueProvider> list,
+      ImmutableList.Builder<SoyValueProvider> builder,
+      int maxDepth) {
+    for (SoyValueProvider value : list) {
       if (maxDepth > 0 && value.resolve() instanceof SoyList) {
-        listFlatImpl((SoyList) value.resolve(), builder, maxDepth - 1);
+        listFlatImpl(((SoyList) value.resolve()).asResolvedJavaList(), builder, maxDepth - 1);
       } else {
         builder.add(value);
       }
@@ -206,6 +224,7 @@ public final class BasicFunctionsRuntime {
    *
    * <p>This should only be called for a list of numbers.
    */
+  @Nonnull
   public static ImmutableList<SoyValueProvider> numberListSort(
       List<? extends SoyValueProvider> list) {
     return ImmutableList.sortedCopyOf(
@@ -217,6 +236,7 @@ public final class BasicFunctionsRuntime {
    *
    * <p>This should only be called for a list of strings.
    */
+  @Nonnull
   public static ImmutableList<SoyValueProvider> stringListSort(
       List<? extends SoyValueProvider> list) {
     return ImmutableList.sortedCopyOf(
@@ -239,6 +259,7 @@ public final class BasicFunctionsRuntime {
    * Returns a list of all the keys in the given map. For the JavaSource variant, while the function
    * signature is ? instead of legacy_object_map.
    */
+  @Nonnull
   public static List<SoyValue> keys(SoyValue sv) {
     SoyLegacyObjectMap map = (SoyLegacyObjectMap) sv;
     List<SoyValue> list = new ArrayList<>(map.getItemCnt());
@@ -247,14 +268,17 @@ public final class BasicFunctionsRuntime {
   }
 
   /** Returns a list of all the keys in the given map. */
+  @Nonnull
   public static ImmutableList<SoyValue> mapKeys(SoyMap map) {
     return ImmutableList.copyOf(map.keys());
   }
 
+  @Nonnull
   public static ImmutableList<SoyValueProvider> mapValues(SoyMap map) {
     return ImmutableList.copyOf(map.values());
   }
 
+  @Nonnull
   public static ImmutableList<SoyValueProvider> mapEntries(SoyMap map) {
     return map.entrySet().stream()
         .map(
@@ -270,6 +294,7 @@ public final class BasicFunctionsRuntime {
     return map.size();
   }
 
+  @Nonnull
   public static SoyDict mapToLegacyObjectMap(SoyMap map) {
     Map<String, SoyValueProvider> keysCoercedToStrings = new HashMap<>();
     for (Map.Entry<? extends SoyValue, ? extends SoyValueProvider> entry :
@@ -297,11 +322,13 @@ public final class BasicFunctionsRuntime {
     }
   }
 
+  @Nullable
   public static FloatData parseFloat(String str) {
     Double d = Doubles.tryParse(str);
     return (d == null || d.isNaN()) ? null : FloatData.forValue(d);
   }
 
+  @Nullable
   public static IntegerData parseInt(String str, int radix) {
     if (radix < 2 || radix > 36) {
       return null;
@@ -319,6 +346,7 @@ public final class BasicFunctionsRuntime {
    * Rounds the given value to the closest decimal point left (negative numbers) or right (positive
    * numbers) of the decimal point
    */
+  @Nonnull
   public static NumberData round(SoyValue value, int numDigitsAfterPoint) {
     // NOTE: for more accurate rounding, this should really be using BigDecimal which can do correct
     // decimal arithmetic.  However, for compatibility with js, that probably isn't an option.
@@ -344,6 +372,7 @@ public final class BasicFunctionsRuntime {
     }
   }
 
+  @Nonnull
   public static ImmutableList<IntegerData> range(int start, int end, int step) {
     if (step == 0) {
       throw new IllegalArgumentException(String.format("step must be non-zero: %d", step));
@@ -425,6 +454,7 @@ public final class BasicFunctionsRuntime {
     return str.substring(0, clampedLength).endsWith(arg);
   }
 
+  @Nonnull
   public static ImmutableList<StringData> strSplit(String str, String sep, NumberData limit) {
     ImmutableList.Builder<StringData> builder = ImmutableList.builder();
     int truncLimit = -1;
@@ -445,10 +475,12 @@ public final class BasicFunctionsRuntime {
     return builder.build();
   }
 
+  @Nonnull
   public static String strReplaceAll(String str, String match, String token) {
     return str.replace(match, token);
   }
 
+  @Nonnull
   public static String strTrim(String str) {
     return str.trim();
   }
@@ -457,7 +489,8 @@ public final class BasicFunctionsRuntime {
     return list.size();
   }
 
-  @SuppressWarnings("deprecation")
+  @SuppressWarnings("deprecation") // we cannot do anything so go away
+  @Nonnull
   public static SoyMap legacyObjectMapToMap(SoyValue value) {
     return SoyMaps.legacyObjectMapToMap((SoyLegacyObjectMap) value);
   }
@@ -498,16 +531,19 @@ public final class BasicFunctionsRuntime {
   }
 
   /** Joins items with a semicolon, filtering out falsey values. */
+  @Nonnull
   public static String buildAttrValue(List<SoyValue> values) {
     return joinHelper(values, ";");
   }
 
   /** Joins items with a space, filtering out falsey values. */
+  @Nonnull
   public static String buildClassValue(List<SoyValue> values) {
     return joinHelper(values, " ");
   }
 
   /** Joins items with a semicolon, filtering out falsey values. */
+  @Nonnull
   public static SanitizedContent buildStyleValue(List<SoyValue> values) {
     return UnsafeSanitizedContentOrdainer.ordainAsSafe(buildAttrValue(values), ContentKind.CSS);
   }
@@ -516,6 +552,7 @@ public final class BasicFunctionsRuntime {
    * Joins items with the correct delimiter, filtering out falsey values and returns an attribute
    * key/value pair.
    */
+  @Nonnull
   public static SanitizedContent buildAttr(String attrName, List<SoyValue> values) {
     String attrValue = attrName.equals("class") ? buildClassValue(values) : buildAttrValue(values);
     return UnsafeSanitizedContentOrdainer.ordainAsSafe(

@@ -16,7 +16,6 @@
 
 package com.google.template.soy.basicfunctions;
 
-import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
 import com.google.template.soy.plugin.java.restricted.JavaValue;
@@ -70,7 +69,7 @@ public class ListContainsFunction
   private static final class Methods {
     static final Method LIST_CONTAINS_FN =
         JavaValueFactory.createMethod(
-            BasicFunctionsRuntime.class, "listContains", SoyList.class, SoyValue.class);
+            BasicFunctionsRuntime.class, "listContains", List.class, SoyValue.class);
   }
 
   @Override

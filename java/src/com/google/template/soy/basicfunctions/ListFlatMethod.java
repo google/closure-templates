@@ -16,7 +16,6 @@
 
 package com.google.template.soy.basicfunctions;
 
-import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
 import com.google.template.soy.plugin.java.restricted.JavaValue;
@@ -76,10 +75,10 @@ public class ListFlatMethod
   // lazy singleton pattern, allows other backends to avoid the work.
   private static final class Methods {
     static final Method LIST_FLAT_FN =
-        JavaValueFactory.createMethod(BasicFunctionsRuntime.class, "listFlat", SoyList.class);
+        JavaValueFactory.createMethod(BasicFunctionsRuntime.class, "listFlat", List.class);
     static final Method LIST_FLAT_ARG1_FN =
         JavaValueFactory.createMethod(
-            BasicFunctionsRuntime.class, "listFlat", SoyList.class, IntegerData.class);
+            BasicFunctionsRuntime.class, "listFlat", List.class, IntegerData.class);
   }
 
   @Override

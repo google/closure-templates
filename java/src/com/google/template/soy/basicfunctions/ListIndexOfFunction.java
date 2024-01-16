@@ -16,7 +16,6 @@
 
 package com.google.template.soy.basicfunctions;
 
-import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
@@ -78,7 +77,7 @@ public class ListIndexOfFunction
         JavaValueFactory.createMethod(
             BasicFunctionsRuntime.class,
             "listIndexOf",
-            SoyList.class,
+            List.class,
             SoyValue.class,
             NumberData.class);
   }

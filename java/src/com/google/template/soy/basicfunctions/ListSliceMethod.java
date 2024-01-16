@@ -16,7 +16,6 @@
 
 package com.google.template.soy.basicfunctions;
 
-import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
 import com.google.template.soy.plugin.java.restricted.JavaValue;
@@ -78,7 +77,7 @@ public class ListSliceMethod
         JavaValueFactory.createMethod(
             BasicFunctionsRuntime.class,
             "listSlice",
-            SoyList.class,
+            List.class,
             NumberData.class,
             NumberData.class);
   }

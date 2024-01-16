@@ -16,7 +16,6 @@
 
 package com.google.template.soy.basicfunctions;
 
-import com.google.template.soy.data.SoyList;
 import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
 import com.google.template.soy.plugin.java.restricted.JavaValue;
 import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
@@ -70,7 +69,7 @@ public final class JoinFunction
   private static final class Methods {
     static final Method JOIN =
         JavaValueFactory.createMethod(
-            BasicFunctionsRuntime.class, "join", SoyList.class, String.class);
+            BasicFunctionsRuntime.class, "join", List.class, String.class);
   }
 
   @Override

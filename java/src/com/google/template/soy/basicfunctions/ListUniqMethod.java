@@ -16,7 +16,6 @@
 
 package com.google.template.soy.basicfunctions;
 
-import com.google.template.soy.data.SoyList;
 import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
 import com.google.template.soy.plugin.java.restricted.JavaValue;
 import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
@@ -63,7 +62,7 @@ public class ListUniqMethod
   // lazy singleton pattern, allows other backends to avoid the work.
   private static final class Methods {
     static final Method LIST_UNIQ_FN =
-        JavaValueFactory.createMethod(BasicFunctionsRuntime.class, "listUniq", SoyList.class);
+        JavaValueFactory.createMethod(BasicFunctionsRuntime.class, "listUniq", List.class);
   }
 
   @Override

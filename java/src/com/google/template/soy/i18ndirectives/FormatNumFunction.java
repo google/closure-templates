@@ -121,12 +121,12 @@ class FormatNumFunction
         JavaValueFactory.createMethod(
             I18NDirectivesRuntime.class,
             "formatNum",
-            ULocale.class,
             SoyValue.class,
             String.class,
             String.class,
             NumberData.class,
-            NumberData.class);
+            NumberData.class,
+            ULocale.class);
   }
 
   @Override
@@ -134,12 +134,12 @@ class FormatNumFunction
       JavaValueFactory factory, List<JavaValue> args, JavaPluginContext context) {
     return factory.callStaticMethod(
         Methods.FORMAT_NUM,
-        context.getULocale(),
         args.get(0),
         getArgOrDefault(args, 1, factory.constant(DEFAULT_FORMAT)),
         getArgOrDefault(args, 2, factory.constant("local")),
         getArgOrDefault(args, 3, factory.constantNull()),
-        getArgOrDefault(args, 4, factory.constantNull()));
+        getArgOrDefault(args, 4, factory.constantNull()),
+        context.getULocale());
   }
 
   @Override

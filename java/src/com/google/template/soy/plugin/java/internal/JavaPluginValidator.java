@@ -54,6 +54,8 @@ public class JavaPluginValidator {
     this.baseReporter = reporter;
   }
 
+  // TODO(lukes): validation should enforce that context params like ULocale come last.  Otherwise
+  // we generate bad code for null safe access chains.
   public void validate(
       String fnName,
       SoyJavaSourceFunction fn,

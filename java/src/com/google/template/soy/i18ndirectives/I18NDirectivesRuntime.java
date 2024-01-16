@@ -20,7 +20,6 @@ import static java.util.Comparator.comparing;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.data.RecordProperty;
-import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
@@ -31,6 +30,8 @@ import com.ibm.icu.text.CompactDecimalFormat.CompactStyle;
 import com.ibm.icu.text.NumberFormat;
 import com.ibm.icu.text.RuleBasedCollator;
 import com.ibm.icu.util.ULocale;
+import java.util.List;
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 /** Java implementations of the i18n directives. */
@@ -38,13 +39,14 @@ public final class I18NDirectivesRuntime {
 
   private I18NDirectivesRuntime() {}
 
+  @Nonnull
   public static String formatNum(
-      ULocale uLocale,
       @Nullable SoyValue number,
       String formatType,
       String numbersKeyword,
       @Nullable NumberData minFractionDigits,
-      @Nullable NumberData maxFractionDigits) {
+      @Nullable NumberData maxFractionDigits,
+      ULocale uLocale) {
     if (number == null) {
       return "";
     } else if (number instanceof NumberData) {
@@ -60,19 +62,23 @@ public final class I18NDirectivesRuntime {
     }
   }
 
+  @Nonnull
   public static String format(Object number, ULocale uLocale) {
     return format(number, "decimal", null, null, null, uLocale);
   }
 
+  @Nonnull
   public static String format(Object number, String formatType, ULocale uLocale) {
     return format(number, formatType, null, null, null, uLocale);
   }
 
+  @Nonnull
   public static String format(
       Object number, String formatType, String numbersKeyword, ULocale uLocale) {
     return format(number, formatType, numbersKeyword, null, null, uLocale);
   }
 
+  @Nonnull
   public static String format(
       Object number,
       String formatType,
@@ -82,6 +88,7 @@ public final class I18NDirectivesRuntime {
     return format(number, formatType, numbersKeyword, minFractionDigits, null, uLocale);
   }
 
+  @Nonnull
   public static String format(
       Object number,
       String formatType,
@@ -167,8 +174,9 @@ public final class I18NDirectivesRuntime {
   private static final RecordProperty CASE_FIRST = RecordProperty.get("caseFirst");
   private static final RecordProperty SENSITIVITY = RecordProperty.get("sensitivity");
 
+  @Nonnull
   public static ImmutableList<SoyValueProvider> localeSort(
-      ULocale uLocale, SoyList list, @Nullable SoyRecord options) {
+      List<? extends SoyValueProvider> list, @Nullable SoyRecord options, ULocale uLocale) {
     RuleBasedCollator collator = (RuleBasedCollator) Collator.getInstance(uLocale);
     if (options != null) {
       if (options.hasField(NUMERIC)) {
@@ -176,9 +184,9 @@ public final class I18NDirectivesRuntime {
       }
       if (options.hasField(CASE_FIRST)) {
         String caseFirst = options.getField(CASE_FIRST).stringValue();
-        if ("upper".equals(caseFirst)) {
+        if (caseFirst.equals("upper")) {
           collator.setUpperCaseFirst(true);
-        } else if ("lower".equals(caseFirst)) {
+        } else if (caseFirst.equals("lower")) {
           collator.setLowerCaseFirst(true);
         }
       }
@@ -206,7 +214,6 @@ public final class I18NDirectivesRuntime {
       }
     }
     return ImmutableList.sortedCopyOf(
-        comparing((SoyValueProvider arg) -> arg.resolve().stringValue(), collator),
-        list.asJavaList());
+        comparing((SoyValueProvider arg) -> arg.resolve().stringValue(), collator), list);
   }
 }
