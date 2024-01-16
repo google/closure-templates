@@ -160,8 +160,7 @@ public final class JbcSrcRuntime {
     if (record.isNullish()) {
       throw new NullPointerException("Attempted to access field '" + field.getName() + "' of null");
     }
-    return paramOrDefault(
-        ((SoyRecord) record).getFieldProvider(field), /* defaultValue= */ UndefinedData.INSTANCE);
+    return param(((SoyRecord) record).getFieldProvider(field));
   }
 
   @Keep
@@ -174,8 +173,7 @@ public final class JbcSrcRuntime {
   @Keep
   @Nonnull
   public static SoyValueProvider getParameter(ParamStore paramStore, RecordProperty field) {
-    return paramOrDefault(
-        paramStore.getFieldProvider(field), /* defaultValue= */ UndefinedData.INSTANCE);
+    return param(paramStore.getFieldProvider(field));
   }
 
   /**
@@ -184,7 +182,7 @@ public final class JbcSrcRuntime {
   @Keep
   @Nonnull
   public static SoyValueProvider param(SoyValueProvider provider) {
-    return paramOrDefault(provider, UndefinedData.INSTANCE);
+    return provider == null ? UndefinedData.INSTANCE : provider;
   }
 
   /**
@@ -209,11 +207,7 @@ public final class JbcSrcRuntime {
   @Keep
   public static SoyValue callLegacySoyFunction(
       LegacyFunctionAdapter fnAdapter, List<SoyValue> args) {
-    for (int i = 0; i < args.size(); i++) {
-      if (args.get(i) == null) {
-        args.set(i, NullData.INSTANCE);
-      }
-    }
+    args.replaceAll(v -> v == null ? NullData.INSTANCE : v);
     return fnAdapter.computeForJava(args);
   }
 
@@ -226,11 +220,7 @@ public final class JbcSrcRuntime {
   public static SoyValue applyPrintDirective(
       SoyJavaPrintDirective directive, SoyValue value, List<SoyValue> args) {
     value = value == null ? NullData.INSTANCE : value;
-    for (int i = 0; i < args.size(); i++) {
-      if (args.get(i) == null) {
-        args.set(i, NullData.INSTANCE);
-      }
-    }
+    args.replaceAll(v -> v == null ? NullData.INSTANCE : v);
     return Preconditions.checkNotNull(directive.applyForJava(value, args));
   }
 
@@ -750,20 +740,6 @@ public final class JbcSrcRuntime {
     return v != 0.0 & !Double.isNaN(v);
   }
 
-  @Keep
-  public static boolean coerceToBoolean(SoyValue v) {
-    return v.coerceToBoolean();
-  }
-
-  @Keep
-  public static boolean isTruthyNonEmpty(SoyValue v) {
-    return v.isTruthyNonEmpty();
-  }
-
-  @Keep
-  public static boolean hasContent(SoyValue v) {
-    return v.hasContent();
-  }
 
   @Keep
   public static boolean coerceToBoolean(@Nullable String v) {
