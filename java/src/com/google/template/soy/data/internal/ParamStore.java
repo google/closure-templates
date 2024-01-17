@@ -24,6 +24,7 @@ import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.errorprone.annotations.DoNotCall;
 import com.google.template.soy.data.RecordProperty;
 import com.google.template.soy.data.SoyRecord;
+import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.restricted.UndefinedData;
 import java.util.Collection;
@@ -119,9 +120,14 @@ public final class ParamStore extends IdentityHashMap<RecordProperty, SoyValuePr
     return super.get(name);
   }
 
-  public SoyValueProvider getPositionalParam(RecordProperty name) {
+  public SoyValueProvider getParameter(RecordProperty name) {
     SoyValueProvider provider = super.get(name);
     return provider != null ? provider : UndefinedData.INSTANCE;
+  }
+
+  public SoyValueProvider getParameter(RecordProperty name, SoyValue defaultValue) {
+    SoyValueProvider provider = super.get(name);
+    return provider != null ? provider : defaultValue;
   }
 
   public ImmutableMap<String, SoyValueProvider> asStringMap() {

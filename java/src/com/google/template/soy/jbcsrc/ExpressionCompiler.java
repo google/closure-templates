@@ -108,13 +108,13 @@ import com.google.template.soy.jbcsrc.restricted.Statement;
 import com.google.template.soy.jbcsrc.restricted.TypeInfo;
 import com.google.template.soy.jbcsrc.shared.ClassLoaderFallbackCallFactory;
 import com.google.template.soy.jbcsrc.shared.ExtraConstantBootstraps;
-import com.google.template.soy.jbcsrc.shared.LegacyFunctionAdapter;
 import com.google.template.soy.jbcsrc.shared.Names;
 import com.google.template.soy.plugin.java.internal.PluginAnalyzer;
 import com.google.template.soy.plugin.java.restricted.MethodSignature;
 import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.shared.internal.BuiltinMethod;
+import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyMethod;
 import com.google.template.soy.shared.restricted.SoySourceFunctionMethod;
 import com.google.template.soy.soytree.PartialFileSetMetadata;
@@ -1789,18 +1789,16 @@ final class ExpressionCompiler {
       }
 
       // Functions that are not a SoyJavaSourceFunction
-      // are registered with a LegacyFunctionAdapter by SoySauceImpl.
-      Expression legacyFunctionRuntimeExpr =
+      return SoyExpression.forSoyValue(
+          node.getType(),
           parameters
               .getRenderContext()
               .getPluginInstance(node.getStaticFunctionName())
-              .checkedCast(LegacyFunctionAdapter.class);
-      Expression list = SoyExpression.boxListWithSoyNullAsJavaNull(visitChildren(node));
-      // Most soy functions don't have return types, but if they do we should enforce it
-      return SoyExpression.forSoyValue(
-          node.getType(),
-          MethodRefs.RUNTIME_CALL_LEGACY_FUNCTION
-              .invoke(legacyFunctionRuntimeExpr, list)
+              .checkedCast(SoyJavaFunction.class)
+              .invoke(
+                  MethodRefs.SOY_JAVA_FUNCTION_COMPUTE_FOR_JAVA,
+                  SoyExpression.asBoxedValueProviderList(visitChildren(node)))
+              // Most soy functions don't have return types, but if they do we should enforce it
               .checkedSoyCast(node.getType()));
     }
 

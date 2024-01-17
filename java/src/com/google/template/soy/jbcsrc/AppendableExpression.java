@@ -174,6 +174,8 @@ final class AppendableExpression extends Expression {
             LOGGING_FUNCTION_INVOCATION_CREATE.invoke(
                 constant(functionName),
                 constant(placeholderValue),
+                // TODO(lukes): nearly all implementations don't want `null`, change them to accept
+                // NullData and perform a regular boxing conversion here.
                 SoyExpression.boxListWithSoyNullishAsJavaNull(args)),
             BytecodeUtils.asImmutableList(escapingDirectives)),
         true);

@@ -67,6 +67,7 @@ import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
 import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.Expression.Feature;
+import com.google.template.soy.jbcsrc.restricted.FieldRef;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.MethodRefs;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
@@ -1733,8 +1734,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       ImmutableMap<String, CallParamNode> keyToParam = null;
       for (TemplateType.Parameter param : calleeType.getActualParameters()) {
         Supplier<Expression> supplier = explicit.remove(param.getName());
-        Expression value =
-            supplier == null ? BytecodeUtils.constantNull(SOY_VALUE_PROVIDER_TYPE) : supplier.get();
+        Expression value = supplier == null ? FieldRef.UNDEFINED_DATA.accessor() : supplier.get();
         if (!value.isCheap()) {
           if (keyToParam == null) {
             keyToParam =

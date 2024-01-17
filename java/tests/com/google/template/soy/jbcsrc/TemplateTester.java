@@ -52,7 +52,6 @@ import com.google.template.soy.jbcsrc.internal.ClassData;
 import com.google.template.soy.jbcsrc.internal.MemoryClassLoader;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
-import com.google.template.soy.jbcsrc.shared.LegacyFunctionAdapter;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
 import com.google.template.soy.plugin.java.PluginInstances;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
@@ -373,9 +372,7 @@ public final class TemplateTester {
         for (FunctionNode fnNode : SoyTreeUtils.getAllNodesOfType(fileSet, FunctionNode.class)) {
           if (fnNode.getSoyFunction() instanceof SoyJavaFunction) {
             pluginInstances.put(
-                fnNode.getFunctionName(),
-                Suppliers.ofInstance(
-                    new LegacyFunctionAdapter((SoyJavaFunction) fnNode.getSoyFunction())));
+                fnNode.getFunctionName(), Suppliers.ofInstance(fnNode.getSoyFunction()));
           }
         }
 

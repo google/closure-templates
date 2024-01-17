@@ -21,7 +21,6 @@ import static com.google.common.base.Preconditions.checkState;
 import static java.lang.invoke.MethodType.methodType;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Preconditions;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.ImmutableList;
@@ -54,13 +53,11 @@ import com.google.template.soy.data.SoyVisualElementData;
 import com.google.template.soy.data.TemplateValue;
 import com.google.template.soy.data.internal.LazyProtoToSoyValueList;
 import com.google.template.soy.data.internal.ParamStore;
-import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
-import com.google.template.soy.jbcsrc.shared.LegacyFunctionAdapter;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
 import com.google.template.soy.jbcsrc.shared.SaveStateMetaFactory;
 import com.google.template.soy.jbcsrc.shared.StackFrame;
@@ -150,8 +147,7 @@ public final class JbcSrcRuntime {
     if (record.isNullish()) {
       throw new NullPointerException("Attempted to access field '" + field.getName() + "' of null");
     }
-    SoyValue value = ((SoyRecord) record).getField(field);
-    return value != null ? value : UndefinedData.INSTANCE;
+    return ((SoyRecord) record).getPositionalParam(field).resolve();
   }
 
   @Keep
@@ -160,76 +156,18 @@ public final class JbcSrcRuntime {
     if (record.isNullish()) {
       throw new NullPointerException("Attempted to access field '" + field.getName() + "' of null");
     }
-    return param(((SoyRecord) record).getFieldProvider(field));
-  }
-
-  @Keep
-  @Nonnull
-  public static SoyValueProvider getParameter(
-      ParamStore paramStore, RecordProperty field, SoyValue defaultValue) {
-    return paramOrDefault(paramStore.getFieldProvider(field), defaultValue);
-  }
-
-  @Keep
-  @Nonnull
-  public static SoyValueProvider getParameter(ParamStore paramStore, RecordProperty field) {
-    return param(paramStore.getFieldProvider(field));
-  }
-
-  /**
-   * Interprets a passed parameter. Handling tofu null and reinterpreting null as MISSING_PARAMETER
-   */
-  @Keep
-  @Nonnull
-  public static SoyValueProvider param(SoyValueProvider provider) {
-    return provider == null ? UndefinedData.INSTANCE : provider;
+    return ((SoyRecord) record).getPositionalParam(field);
   }
 
   /**
    * Returns a passed parameter or its default value if no such parameter exists. Pass {@link
    * UndefinedData} for {@code provider} to indicate no such parameter exists and the default should
-   * be applied. This behavior is coupled to {@link SoyRecord#getPositionalParam(String)}.
+   * be applied. This behavior is coupled to {@link ParamStore#getParameter(RecordProperty)}.
    */
   @Keep
   @Nonnull
-  public static SoyValueProvider paramOrDefault(
-      @Nullable SoyValueProvider provider, SoyValue defaultValue) {
-    return provider == null || provider == UndefinedData.INSTANCE ? defaultValue : provider;
-  }
-
-  /**
-   * Helper function to translate null -> NullData when calling LegacyFunctionAdapters that may
-   * expect it.
-   *
-   * <p>In the long run we should either fix ToFu (and all SoyJavaFunctions) to not use NullData or
-   * we should introduce custom SoyFunction implementations for have come from SoyValueProvider.
-   */
-  @Keep
-  public static SoyValue callLegacySoyFunction(
-      LegacyFunctionAdapter fnAdapter, List<SoyValue> args) {
-    for (int i = 0; i < args.size(); i++) {
-      if (args.get(i) == null) {
-        args.set(i, NullData.INSTANCE);
-      }
-    }
-    return fnAdapter.computeForJava(args);
-  }
-
-  /**
-   * Helper function to translate null -> NullData when calling SoyJavaPrintDirectives that may
-   * expect it.
-   */
-  @Keep
-  @Nonnull
-  public static SoyValue applyPrintDirective(
-      SoyJavaPrintDirective directive, SoyValue value, List<SoyValue> args) {
-    value = value == null ? NullData.INSTANCE : value;
-    for (int i = 0; i < args.size(); i++) {
-      if (args.get(i) == null) {
-        args.set(i, NullData.INSTANCE);
-      }
-    }
-    return Preconditions.checkNotNull(directive.applyForJava(value, args));
+  public static SoyValueProvider paramOrDefault(SoyValueProvider provider, SoyValue defaultValue) {
+    return provider == UndefinedData.INSTANCE ? defaultValue : provider;
   }
 
   /**
@@ -604,8 +542,7 @@ public final class JbcSrcRuntime {
             SoyValueProvider selectPlaceholder = placeholders.get(selectPart.getSelectVarName());
             caseSelectionResult = selectPlaceholder.status();
             if (caseSelectionResult.isDone()) {
-              // Handle null results by coercing to 'null' for compatibility with javascript
-              parts = selectPart.lookupCase(coerceToString(selectPlaceholder.resolve()));
+              parts = selectPart.lookupCase(selectPlaceholder.resolve().coerceToString());
             } else {
               break;
             }
@@ -754,11 +691,6 @@ public final class JbcSrcRuntime {
     return v != null && !v.isEmpty();
   }
 
-  @Keep
-  @Nonnull
-  public static String coerceToString(@Nullable SoyValue v) {
-    return v == null ? "null" : v.coerceToString();
-  }
 
   /** Function to execute after rendering of a section of buffered template is done. */
   @Immutable

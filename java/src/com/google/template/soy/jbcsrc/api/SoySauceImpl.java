@@ -40,7 +40,6 @@ import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
-import com.google.template.soy.jbcsrc.shared.LegacyFunctionAdapter;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
 import com.google.template.soy.logging.SoyLogger;
 import com.google.template.soy.msgs.SoyMsgBundle;
@@ -77,8 +76,7 @@ public final class SoySauceImpl implements SoySauce {
 
     for (SoyFunction fn : functions) {
       if (fn instanceof SoyJavaFunction) {
-        pluginInstanceBuilder.put(
-            fn.getName(), Suppliers.ofInstance(new LegacyFunctionAdapter((SoyJavaFunction) fn)));
+        pluginInstanceBuilder.put(fn.getName(), Suppliers.ofInstance(fn));
       }
     }
 

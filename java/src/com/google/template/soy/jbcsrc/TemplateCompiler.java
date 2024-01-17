@@ -466,6 +466,7 @@ final class TemplateCompiler {
               : null;
       Expression initialValue;
       LocalVariable localVariable;
+      // When pulling params out of ParamStores we need to allocate locals for them
       if (param.isInjected()) {
         initialValue = renderContext.getInjectedValue(param.name(), defaultValue);
         localVariable = templateScope.createNamedLocal(param.name(), initialValue.resultType());
@@ -475,14 +476,13 @@ final class TemplateCompiler {
         localVariable = templateScope.createNamedLocal(param.name(), initialValue.resultType());
         paramInitStatements.add(localVariable.initialize(initialValue));
       } else {
-        // positional parameter
-        localVariable = (LocalVariable) variableSet.getVariable(param.name());
-        paramInitStatements.add(
-            localVariable.store(
-                defaultValue == null
-                    ? MethodRefs.RUNTIME_PARAM.invoke(localVariable)
-                    : MethodRefs.RUNTIME_PARAM_OR_DEFAULT.invoke(
-                        localVariable, defaultValue.box())));
+        // positional parameters just need defaults to be managed
+        if (defaultValue != null) {
+          localVariable = (LocalVariable) variableSet.getVariable(param.name());
+          paramInitStatements.add(
+              localVariable.store(
+                  MethodRefs.RUNTIME_PARAM_OR_DEFAULT.invoke(localVariable, defaultValue.box())));
+        }
       }
     }
     Statement methodBody =
@@ -548,12 +548,12 @@ final class TemplateCompiler {
   private static Expression getFieldProviderOrDefault(
       String name, Expression record, @Nullable SoyExpression defaultValue) {
     // NOTE: for compatibility with Tofu and jssrc we do not check for missing required parameters
-    // here instead they will just turn into null.  Existing templates depend on this.
+    // here instead they will just turn into UndefinedData.  Existing templates depend on this.
     if (defaultValue == null) {
-      return MethodRefs.RUNTIME_GET_PARAMETER.invoke(
+      return MethodRefs.PARAM_STORE_GET_PARAMETER.invoke(
           record, BytecodeUtils.constantRecordProperty(name));
     } else {
-      return MethodRefs.RUNTIME_GET_PARAMETER_DEFAULT.invoke(
+      return MethodRefs.PARAM_STORE_GET_PARAMETER_DEFAULT.invoke(
           record, BytecodeUtils.constantRecordProperty(name), defaultValue.box());
     }
   }

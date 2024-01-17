@@ -332,10 +332,10 @@ final class RenderContextExpression extends Expression implements JbcSrcPluginCo
       value =
           SoyExpression.forSoyValue(
               UnknownType.getInstance(),
-              MethodRefs.RUNTIME_APPLY_PRINT_DIRECTIVE.invoke(
+              MethodRefs.SOY_JAVA_PRINT_DIRECTIVE_APPLY_FOR_JAVA.invoke(
                   getPrintDirective(directive.getName()),
                   value.box(),
-                  SoyExpression.boxListWithSoyNullishAsJavaNull(args)));
+                  SoyExpression.asBoxedValueProviderList(args)));
     }
     return value;
   }

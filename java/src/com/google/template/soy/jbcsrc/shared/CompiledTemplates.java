@@ -34,6 +34,7 @@ import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.TemplateValue;
 import com.google.template.soy.data.internal.ParamStore;
+import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.shared.TemplateMetadata.DelTemplateMetadata;
 import com.google.template.soy.shared.internal.DelTemplateSelector;
@@ -645,7 +646,7 @@ public class CompiledTemplates {
         ImmutableList<RecordProperty> names, SoyValueProvider[] values) {
       ParamStore paramStore = new ParamStore(names.size());
       for (int i = 0; i < names.size(); i++) {
-        if (values[i] != null) {
+        if (values[i] != UndefinedData.INSTANCE) {
           paramStore.setField(names.get(i), values[i]);
         }
       }

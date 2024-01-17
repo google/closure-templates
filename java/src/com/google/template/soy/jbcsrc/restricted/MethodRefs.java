@@ -63,11 +63,11 @@ import com.google.template.soy.jbcsrc.restricted.MethodRef.MethodPureness;
 import com.google.template.soy.jbcsrc.runtime.BufferedSoyValueProvider;
 import com.google.template.soy.jbcsrc.runtime.JbcSrcRuntime;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
-import com.google.template.soy.jbcsrc.shared.LegacyFunctionAdapter;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
 import com.google.template.soy.jbcsrc.shared.StackFrame;
 import com.google.template.soy.logging.LoggableElementMetadata;
 import com.google.template.soy.shared.internal.SharedRuntime;
+import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.ibm.icu.util.ULocale;
 import java.io.Closeable;
@@ -292,26 +292,17 @@ public final class MethodRefs {
   public static final MethodRef RUNTIME_RANGE_LOOP_LENGTH =
       createPure(JbcSrcRuntime.class, "rangeLoopLength", int.class, int.class, int.class).asCheap();
 
-  public static final MethodRef RUNTIME_APPLY_PRINT_DIRECTIVE =
-      createNonPure(
-          JbcSrcRuntime.class,
-          "applyPrintDirective",
-          SoyJavaPrintDirective.class,
-          SoyValue.class,
-          List.class);
+  public static final MethodRef SOY_JAVA_PRINT_DIRECTIVE_APPLY_FOR_JAVA =
+      createNonPure(SoyJavaPrintDirective.class, "applyForJava", SoyValue.class, List.class);
 
   public static final MethodRef RUNTIME_BIND_TEMPLATE_PARAMS =
       createPure(JbcSrcRuntime.class, "bindTemplateParams", TemplateValue.class, ParamStore.class);
 
-  public static final MethodRef RUNTIME_CALL_LEGACY_FUNCTION =
-      createNonPure(
-          JbcSrcRuntime.class, "callLegacySoyFunction", LegacyFunctionAdapter.class, List.class);
+  public static final MethodRef SOY_JAVA_FUNCTION_COMPUTE_FOR_JAVA =
+      createNonPure(SoyJavaFunction.class, "computeForJava", List.class);
 
   public static final MethodRef RUNTIME_COERCE_DOUBLE_TO_BOOLEAN =
       createPure(JbcSrcRuntime.class, "coerceToBoolean", double.class);
-
-  public static final MethodRef RUNTIME_COERCE_TO_STRING =
-      createPure(JbcSrcRuntime.class, "coerceToString", SoyValue.class);
 
   public static final MethodRef RUNTIME_COERCE_STRING_TO_BOOLEAN =
       createPure(JbcSrcRuntime.class, "coerceToBoolean", String.class);
@@ -350,22 +341,15 @@ public final class MethodRefs {
   public static final MethodRef RUNTIME_GET_FIELD_PROVIDER =
       createPure(JbcSrcRuntime.class, "getFieldProvider", SoyValue.class, RecordProperty.class);
 
-  public static final MethodRef RUNTIME_GET_PARAMETER =
-      createPure(JbcSrcRuntime.class, "getParameter", ParamStore.class, RecordProperty.class);
+  public static final MethodRef PARAM_STORE_GET_PARAMETER =
+      createPure(ParamStore.class, "getParameter", RecordProperty.class);
 
-  public static final MethodRef RUNTIME_GET_PARAMETER_DEFAULT =
-      createPure(
-          JbcSrcRuntime.class,
-          "getParameter",
-          ParamStore.class,
-          RecordProperty.class,
-          SoyValue.class);
+  public static final MethodRef PARAM_STORE_GET_PARAMETER_DEFAULT =
+      createPure(ParamStore.class, "getParameter", RecordProperty.class, SoyValue.class);
 
   public static final MethodRef RUNTIME_PARAM_OR_DEFAULT =
       createPure(JbcSrcRuntime.class, "paramOrDefault", SoyValueProvider.class, SoyValue.class)
           .asCheap();
-  public static final MethodRef RUNTIME_PARAM =
-      createPure(JbcSrcRuntime.class, "param", SoyValueProvider.class).asCheap();
 
   public static final MethodRef RUNTIME_GET_LIST_ITEM =
       createPure(JbcSrcRuntime.class, "getSoyListItem", List.class, long.class);

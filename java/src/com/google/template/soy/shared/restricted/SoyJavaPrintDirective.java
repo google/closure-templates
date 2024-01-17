@@ -18,6 +18,7 @@ package com.google.template.soy.shared.restricted;
 
 import com.google.template.soy.data.SoyValue;
 import java.util.List;
+import javax.annotation.Nonnull;
 
 /**
  * Interface for a Soy print directive implemented for Java runtime rendering. Directives
@@ -41,5 +42,6 @@ public interface SoyJavaPrintDirective extends SoyPrintDirective {
    * @param args The directive's arguments, if any (often none).
    * @return The resulting value. Must be either {@code StringData} or {@code SanitizedContent}.
    */
+  @Nonnull
   SoyValue applyForJava(SoyValue value, List<SoyValue> args);
 }

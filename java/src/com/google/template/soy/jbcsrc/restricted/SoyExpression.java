@@ -544,10 +544,7 @@ public final class SoyExpression extends Expression {
       // implicitly
       return forString(MethodRefs.STRING_VALUE_OF.invoke(delegate).toMaybeConstant());
     }
-    if (isNonJavaNullable()) {
-      return forString(MethodRefs.SOY_VALUE_COERCE_TO_STRING.invoke(delegate).toMaybeConstant());
-    }
-    return forString(MethodRefs.RUNTIME_COERCE_TO_STRING.invoke(delegate).toMaybeConstant());
+    return forString(MethodRefs.SOY_VALUE_COERCE_TO_STRING.invoke(delegate).toMaybeConstant());
   }
 
   /** Coerce this expression to a double value. Useful for float-int comparisons. */
