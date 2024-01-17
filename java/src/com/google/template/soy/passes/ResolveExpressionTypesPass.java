@@ -738,11 +738,17 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
           }
           // Avoid duplicate errors later.
           node.setContentKind(SanitizedContentKind.HTML);
-          return;
+        } else {
+          CallBasicNode callNode = (CallBasicNode) node.getChild(0);
+          SoyType templateType = callNode.getCalleeExpr().getType();
+          if (templateType instanceof TemplateType) {
+            node.setContentKind(
+                ((TemplateType) templateType).getContentKind().getSanitizedContentKind());
+          } else {
+            // Avoid duplicate errors later.
+            node.setContentKind(SanitizedContentKind.HTML);
+          }
         }
-        CallBasicNode callNode = (CallBasicNode) node.getChild(0);
-        TemplateType templateType = (TemplateType) callNode.getCalleeExpr().getType();
-        node.setContentKind(templateType.getContentKind().getSanitizedContentKind());
       }
       node.getVar()
           .setType(
