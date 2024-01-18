@@ -183,6 +183,10 @@ public final class SoyTreeUtils {
         exploreExpressions ? SoyTreeUtils::visitAll : SoyTreeUtils::visitNonExpr);
   }
 
+  public static Stream<ExprRootNode> allExprRootNodes(SoyNode root) {
+    return allNodesOfType(root, ExprHolderNode.class).flatMap(n -> n.getExprList().stream());
+  }
+
   /**
    * Returns all nodes in the AST tree starting at {@code rootSoyNode} that are an instance of
    * {@code classObject}. {@code visitor} can return {@link VisitDirective#SKIP_CHILDREN} to skip
