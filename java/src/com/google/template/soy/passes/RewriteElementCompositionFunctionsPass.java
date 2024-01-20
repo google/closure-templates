@@ -130,7 +130,7 @@ final class RewriteElementCompositionFunctionsPass implements CompilerFilePass {
           MethodCallNode.newWithPositionalArgs(
               replacementExpr,
               ImmutableList.of(record),
-              Identifier.create("bind", UNKNOWN),
+              Identifier.create("bind", UNKNOWN), // Must be UNKNOWN for Kythe.
               UNKNOWN,
               false);
     }
