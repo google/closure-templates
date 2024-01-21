@@ -123,12 +123,12 @@ public final class JspbTest {
             expr("$proto.getExtension(someIntExtension)")
                 .withParam("{@param proto: ExampleExtendable}"))
         .withProtoImports(DESCRIPTORS)
-        .generatesCode("opt_data.proto.getExtension(proto.example.someIntExtension);");
+        .generatesCode("opt_data.proto.getExtension($proto$example$someIntExtension);");
     assertThatSoyExpr(
             expr("$proto.getExtension(listExtensionList)")
                 .withParam("{@param proto: ExampleExtendable}"))
         .withProtoImports(DESCRIPTORS)
-        .generatesCode("opt_data.proto.getExtension(proto.example.listExtensionList);");
+        .generatesCode("opt_data.proto.getExtension($proto$example$listExtensionList);");
   }
 
   // Proto initialization tests

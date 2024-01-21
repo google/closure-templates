@@ -44,7 +44,6 @@ import com.google.template.soy.jssrc.internal.TemplateAliases;
 import com.google.template.soy.jssrc.internal.TranslateExprNodeVisitor;
 import com.google.template.soy.jssrc.internal.TranslationContext;
 import com.google.template.soy.logging.LoggingFunction;
-import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.soytree.defn.TemplateStateVar;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
@@ -82,12 +81,6 @@ public class IncrementalDomTranslateExprNodeVisitor extends TranslateExprNodeVis
           XID.call(Expressions.stringLiteral(node.getStaticFunctionName())),
           Expressions.arrayLiteral(visitChildren(node)),
           Expressions.stringLiteral(loggingNode.getPlaceholder()));
-    }
-    // Use module syntax when generating toggle code for IDOM
-    if (soyFunction instanceof BuiltinFunction) {
-      if ((BuiltinFunction) soyFunction == BuiltinFunction.EVAL_TOGGLE) {
-        return super.visitToggleFunction(node, true);
-      }
     }
     return super.visitFunctionNode(node);
   }

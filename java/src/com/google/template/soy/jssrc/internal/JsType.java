@@ -26,11 +26,11 @@ import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_HTML_SAFE_AT
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_IS_FUNCTION;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_IS_OBJECT;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_SOY_DATA_SANITIZED_CONTENT;
+import static com.google.template.soy.jssrc.internal.JsRuntime.SAFEVALUES;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SAFEVALUES_SAFEHTML;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_ASSERT_PARAM_TYPE;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_MAP_IS_SOY_MAP;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_VELOG;
-import static com.google.template.soy.jssrc.internal.JsRuntime.sanitizedContentType;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
@@ -39,11 +39,9 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Maps;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
-import com.google.template.soy.base.SoyBackendKind;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.base.internal.TemplateContentKind;
 import com.google.template.soy.data.internalutils.NodeContentKinds;
-import com.google.template.soy.internal.proto.ProtoUtils;
 import com.google.template.soy.jssrc.dsl.CodeChunk.Generator;
 import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.jssrc.dsl.Expressions;
@@ -100,11 +98,11 @@ public final class JsType {
 
   private static final JsType MESSAGE_TYPE =
       builder()
-          .addType("!jspb.Message")
+          .addType("!" + JsRuntime.JSPB_MESSAGE.alias())
           .setPredicate(
               (value, codeGenerator) ->
-                  Optional.of(value.instanceOf(GoogRequire.create("jspb.Message").reference())))
-          .addRequire(GoogRequire.create("jspb.Message"))
+                  Optional.of(value.instanceOf(JsRuntime.JSPB_MESSAGE.reference())))
+          .addRequire(JsRuntime.JSPB_MESSAGE.toRequireType())
           .build();
   private static final JsType RAW_ARRAY_TYPE =
       builder().addType("!Array").setPredicate(ARRAY_IS_ARRAY).build();
@@ -141,9 +139,9 @@ public final class JsType {
       builder()
           .addType("function()")
           .addType("!" + ELEMENT_LIB_IDOM.alias() + ".IdomFunction")
-          .addType("!goog.soy.data.SanitizedHtmlAttribute")
-          .addRequire(ELEMENT_LIB_IDOM)
-          .addRequire(GoogRequire.createTypeRequire("goog.soy.data.SanitizedHtmlAttribute"))
+          .addType("!" + JsRuntime.GOOG_HTML_SAFE_ATTRIBUTE_REQUIRE.alias())
+          .addRequire(ELEMENT_LIB_IDOM.toRequireType())
+          .addRequire(JsRuntime.GOOG_HTML_SAFE_ATTRIBUTE_REQUIRE.toRequireType())
           .setPredicate(
               (value, codeGenerator) ->
                   Optional.of(
@@ -157,21 +155,22 @@ public final class JsType {
   // This cannot use a goog.require() alias to avoid conflicts with legacy
   // FilterHtmlAttributesDirective
   private static final Expression IS_IDOM_FUNCTION_TYPE =
-      GoogRequire.create("google3.javascript.template.soy.soyutils_directives")
-          .googModuleGet()
+      GoogRequire.createWithAlias(
+              "google3.javascript.template.soy.soyutils_directives", "$soyutilsDirectives")
+          .reference()
           .dotAccess("$$isIdomFunctionType");
 
   private static final JsType IDOM_HTML =
       builder()
-          .addType("!goog.soy.data.SanitizedHtml")
-          .addType("!safevalues.SafeHtml")
-          .addRequire(GoogRequire.createTypeRequire("safevalues"))
-          .addRequire(GoogRequire.createTypeRequire("goog.soy.data.SanitizedHtml"))
+          .addType("!" + JsRuntime.GOOG_SOY_DATA_HTML.alias())
+          .addType("!" + SAFEVALUES.alias() + ".SafeHtml")
+          .addRequire(SAFEVALUES.toRequireType())
+          .addRequire(JsRuntime.GOOG_SOY_DATA_HTML.toRequireType())
           .addType("!" + ELEMENT_LIB_IDOM.alias() + ".IdomFunction")
-          .addRequire(ELEMENT_LIB_IDOM)
+          .addRequire(ELEMENT_LIB_IDOM.toRequireType())
           .addType("function(!incrementaldomlib.IncrementalDomRenderer): undefined")
           .addRequire(
-              GoogRequire.createWithAlias(
+              GoogRequire.createTypeRequireWithAlias(
                   "google3.javascript.template.soy.api_idom", "incrementaldomlib"))
           .setPredicate(
               (value, codeGenerator) ->
@@ -184,16 +183,16 @@ public final class JsType {
 
   private static final JsType VE_TYPE =
       builder()
-          .addType("!soy.velog.$$VisualElement")
-          .addRequire(SOY_VELOG)
+          .addType("!" + SOY_VELOG.alias() + ".$$VisualElement")
+          .addRequire(SOY_VELOG.toRequireType())
           .setPredicate(
               (value, codeGenerator) -> Optional.of(value.instanceOf(JsRuntime.SOY_VISUAL_ELEMENT)))
           .build();
 
   private static final JsType VE_DATA_TYPE =
       builder()
-          .addType("!soy.velog.$$VisualElementData")
-          .addRequire(SOY_VELOG)
+          .addType("!" + SOY_VELOG.alias() + ".$$VisualElementData")
+          .addRequire(SOY_VELOG.toRequireType())
           .setPredicate(
               (value, codeGenerator) ->
                   Optional.of(value.instanceOf(JsRuntime.SOY_VISUAL_ELEMENT_DATA)))
@@ -217,7 +216,6 @@ public final class JsType {
         JsTypeKind.JSSRC,
         /* isStrict= */ false,
         ArrayTypeMode.ARRAY_OR_READONLY_ARRAY,
-        MessageTypeMode.READONLY,
         /* includeNullForMessages= */ true);
   }
 
@@ -228,7 +226,6 @@ public final class JsType {
         JsTypeKind.JSSRC,
         /* isStrict= */ false,
         ArrayTypeMode.READONLY_ARRAY,
-        MessageTypeMode.READONLY,
         /* includeNullForMessages= */ false);
   }
 
@@ -239,7 +236,6 @@ public final class JsType {
         JsTypeKind.JSSRC,
         /* isStrict= */ true,
         ArrayTypeMode.ARRAY_OR_READONLY_ARRAY,
-        MessageTypeMode.READONLY,
         /* includeNullForMessages= */ false);
   }
 
@@ -250,7 +246,6 @@ public final class JsType {
         JsTypeKind.IDOMSRC,
         /* isStrict= */ false,
         ArrayTypeMode.ARRAY_OR_READONLY_ARRAY,
-        MessageTypeMode.READONLY,
         /* includeNullForMessages= */ true);
   }
 
@@ -261,7 +256,6 @@ public final class JsType {
         JsTypeKind.IDOMSRC,
         /* isStrict= */ false,
         ArrayTypeMode.READONLY_ARRAY,
-        MessageTypeMode.READONLY,
         /* includeNullForMessages= */ false);
   }
 
@@ -272,7 +266,6 @@ public final class JsType {
         JsTypeKind.IDOMSRC,
         /* isStrict= */ true,
         ArrayTypeMode.READONLY_ARRAY,
-        MessageTypeMode.READONLY,
         /* includeNullForMessages= */ false);
   }
 
@@ -283,7 +276,6 @@ public final class JsType {
         JsTypeKind.IDOMSRC,
         /* isStrict= */ true,
         ArrayTypeMode.ARRAY_OR_READONLY_ARRAY,
-        MessageTypeMode.READONLY,
         /* includeNullForMessages= */ false);
   }
 
@@ -294,7 +286,6 @@ public final class JsType {
         JsTypeKind.IDOMSRC,
         /* isStrict= */ true,
         ArrayTypeMode.ARRAY_OR_READONLY_ARRAY,
-        MessageTypeMode.READONLY,
         /* includeNullForMessages= */ false);
   }
 
@@ -305,19 +296,12 @@ public final class JsType {
         JsTypeKind.IDOMSRC,
         /* isStrict= */ true,
         ArrayTypeMode.READONLY_ARRAY,
-        MessageTypeMode.READONLY,
         /* includeNullForMessages= */ false);
   }
 
   private enum JsTypeKind {
     JSSRC,
     IDOMSRC,
-  }
-
-  /** How we should type-annotate proto messages, as readonly or just mutable. */
-  private enum MessageTypeMode {
-    ONLY_MUTABLE,
-    READONLY,
   }
 
   /**
@@ -362,7 +346,6 @@ public final class JsType {
       JsTypeKind kind,
       boolean isStrict,
       ArrayTypeMode arrayTypeMode,
-      MessageTypeMode messageTypeMode,
       boolean includeNullForMessages) {
     switch (soyType.getKind()) {
       case NULL:
@@ -380,12 +363,11 @@ public final class JsType {
         return BOOLEAN_TYPE;
 
       case PROTO_ENUM:
-        SoyProtoEnumType enumType = (SoyProtoEnumType) soyType;
-        String enumTypeName = enumType.getNameForBackend(SoyBackendKind.JS_SRC);
+        GoogRequire enumRequire = JsRuntime.protoEnum(((SoyProtoEnumType) soyType));
         JsType.Builder enumBuilder =
             builder()
-                .addType("!" + enumTypeName)
-                .addRequire(GoogRequire.createTypeRequire(enumTypeName))
+                .addType("!" + enumRequire.alias())
+                .addRequire(enumRequire.toRequireType())
                 .setPredicate(typeofTypePredicate("number"));
         if (!isStrict) {
           // TODO(lukes): stop allowing number?, just allow the enum
@@ -429,12 +411,7 @@ public final class JsType {
         }
         JsType element =
             forSoyType(
-                listType.getElementType(),
-                kind,
-                isStrict,
-                arrayTypeMode,
-                messageTypeMode,
-                includeNullForMessages);
+                listType.getElementType(), kind, isStrict, arrayTypeMode, includeNullForMessages);
 
         return builder()
             .addType(ArrayTypeMode.formatArrayType(arrayTypeMode, element.typeExpr()))
@@ -451,20 +428,10 @@ public final class JsType {
           }
           JsType keyTypeName =
               forSoyType(
-                  mapType.getKeyType(),
-                  kind,
-                  isStrict,
-                  arrayTypeMode,
-                  messageTypeMode,
-                  includeNullForMessages);
+                  mapType.getKeyType(), kind, isStrict, arrayTypeMode, includeNullForMessages);
           JsType valueTypeName =
               forSoyType(
-                  mapType.getValueType(),
-                  kind,
-                  isStrict,
-                  arrayTypeMode,
-                  messageTypeMode,
-                  includeNullForMessages);
+                  mapType.getValueType(), kind, isStrict, arrayTypeMode, includeNullForMessages);
           return builder()
               .addType(
                   String.format("!Object<%s,%s>", keyTypeName.typeExpr(), valueTypeName.typeExpr()))
@@ -488,43 +455,30 @@ public final class JsType {
           JsType keyTypeName =
               keyKind == SoyType.Kind.STRING
                   ? STRING_TYPE
-                  : forSoyType(
-                      keyType,
-                      kind,
-                      isStrict,
-                      arrayTypeMode,
-                      messageTypeMode,
-                      includeNullForMessages);
+                  : forSoyType(keyType, kind, isStrict, arrayTypeMode, includeNullForMessages);
           JsType valueTypeName =
               forSoyType(
-                  mapType.getValueType(),
-                  kind,
-                  isStrict,
-                  arrayTypeMode,
-                  messageTypeMode,
-                  includeNullForMessages);
+                  mapType.getValueType(), kind, isStrict, arrayTypeMode, includeNullForMessages);
           return builder()
               .addType(
                   String.format(
-                      "!soy.map.Map<%s,%s>", keyTypeName.typeExpr(), valueTypeName.typeExpr()))
+                      "!" + JsRuntime.SOY_MAP.alias() + ".Map<%s,%s>",
+                      keyTypeName.typeExpr(),
+                      valueTypeName.typeExpr()))
               .addRequires(keyTypeName.getGoogRequires())
               .addRequires(valueTypeName.getGoogRequires())
-              .addRequire(GoogRequire.create("soy.map"))
+              .addRequire(JsRuntime.SOY_MAP.toRequireType())
               .setPredicate(SOY_MAP_IS_SOY_MAP)
               .build();
         }
       case MESSAGE:
         return MESSAGE_TYPE;
       case PROTO:
-        SoyProtoType protoType = (SoyProtoType) soyType;
-        String protoTypeName =
-            protoType.getJsName(
-                /* mutabilityMode= */ messageTypeMode == MessageTypeMode.READONLY
-                    ? ProtoUtils.MutabilityMode.READONLY
-                    : ProtoUtils.MutabilityMode.MUTABLE);
+        var protoType = (SoyProtoType) soyType;
+        var protoRequire = JsRuntime.readonlyProtoType(protoType);
         return builder()
-            .addType((isStrict || !includeNullForMessages ? "!" : "?") + protoTypeName)
-            .addRequire(GoogRequire.createTypeRequire(protoTypeName))
+            .addType((isStrict || !includeNullForMessages ? "!" : "?") + protoRequire.alias())
+            .addRequire(protoRequire)
             .setPredicate(
                 (value, codeGenerator) ->
                     Optional.of(value.instanceOf(JsRuntime.protoConstructor(protoType))))
@@ -539,12 +493,7 @@ public final class JsType {
           for (RecordType.Member member : recordType.getMembers()) {
             JsType forSoyType =
                 forSoyType(
-                    member.checkedType(),
-                    kind,
-                    isStrict,
-                    arrayTypeMode,
-                    messageTypeMode,
-                    includeNullForMessages);
+                    member.checkedType(), kind, isStrict, arrayTypeMode, includeNullForMessages);
             builder.addRequires(forSoyType.getGoogRequires());
             members.put(member.name(), forSoyType.typeExprForRecordMember(/* isOptional= */ false));
           }
@@ -580,8 +529,7 @@ public final class JsType {
               continue; // handled above
             }
             JsType memberType =
-                forSoyType(
-                    member, kind, isStrict, arrayTypeMode, messageTypeMode, includeNullForMessages);
+                forSoyType(member, kind, isStrict, arrayTypeMode, includeNullForMessages);
             builder.addRequires(memberType.extraRequires);
             builder.addTypes(memberType.typeExpressions);
             types.add(memberType);
@@ -625,7 +573,6 @@ public final class JsType {
                     kind,
                     isStrict,
                     ArrayTypeMode.ARRAY_OR_READONLY_ARRAY,
-                    MessageTypeMode.READONLY,
                     includeNullForMessages);
             builder.addRequires(forSoyType.getGoogRequires());
             parameters.put(
@@ -644,7 +591,7 @@ public final class JsType {
               && templateType.getContentKind().getSanitizedContentKind()
                   != SanitizedContentKind.TEXT) {
             builder.addRequire(
-                GoogRequire.createWithAlias(
+                GoogRequire.createTypeRequireWithAlias(
                     "google3.javascript.template.soy.api_idom", "incrementaldomlib"));
             builder.addType(
                 String.format(
@@ -708,13 +655,13 @@ public final class JsType {
       case URI:
       case TRUSTED_RESOURCE_URI:
         Builder builder = builder();
-        String type = NodeContentKinds.toJsSanitizedContentCtorName(contentKind);
+        var require = getSanitizedContentConstructorRequire(contentKind);
         if (kind == JsTypeKind.IDOMSRC
             && (contentKind.isHtml() || contentKind == SanitizedContentKind.ATTRIBUTES)) {
           builder.addType("void");
         } else {
-          builder.addType("!" + type);
-          builder.addRequire(GoogRequire.createTypeRequire(type));
+          builder.addType("!" + require.alias());
+          builder.addRequire(require.toRequireType());
         }
         // Type predicate is not used for template return types.
         builder.setPredicate(TypePredicate.NO_OP);
@@ -816,20 +763,26 @@ public final class JsType {
             stringLiteral(typeExpr())));
   }
 
+  private static GoogRequire getSanitizedContentConstructorRequire(SanitizedContentKind kind) {
+    String type = NodeContentKinds.toJsSanitizedContentCtorName(kind);
+    return GoogRequire.createTypeRequireWithAlias(
+        type, "$" + type.substring(type.lastIndexOf('.') + 1));
+  }
+
   private static JsType createSanitized(SanitizedContentKind kind, boolean isStrict) {
     if (kind == SanitizedContentKind.TEXT) {
       return STRING_TYPE;
     }
-    String type = NodeContentKinds.toJsSanitizedContentCtorName(kind);
+    var require = getSanitizedContentConstructorRequire(kind);
     // NOTE: we don't add goog.requires for all these alias types.  This is 'ok' since we never
     // invoke a method on them directly (instead they just get passed around and eventually get
     // consumed by an escaper function.
     // TODO(lukes): maybe we should define typedefs for these?
     Builder builder = builder();
-    builder.addType("!soy.$$EMPTY_STRING_");
-    builder.addRequire(JsRuntime.SOY);
-    builder.addType("!" + type);
-    builder.addRequire(GoogRequire.createTypeRequire(type));
+    builder.addType("!" + JsRuntime.SOY.alias() + ".$$EMPTY_STRING_");
+    builder.addRequire(JsRuntime.SOY.toRequireType());
+    builder.addType("!" + require.alias());
+    builder.addRequire(require.toRequireType());
     if (!isStrict) {
       // All the sanitized types have an .isCompatibleWith method for testing for allowed types
       // NOTE: this actually allows 'string' to be passed, which is inconsistent with other backends
@@ -838,39 +791,40 @@ public final class JsType {
       // be escaped.
       builder.addType("string");
     } else {
-      builder.addType("!soy.$$EMPTY_STRING_");
+      builder.addType("!" + JsRuntime.SOY.alias() + ".$$EMPTY_STRING_");
+      builder.addRequire(JsRuntime.SOY.toRequireType());
     }
     // add extra alternate types
     // TODO(lukes): instead of accepting alternates we should probably just coerce to sanitized
     // content.  using these wide unions everywhere is confusing.
     switch (kind) {
       case CSS:
-        builder.addType("!safevalues.SafeStyle");
-        builder.addRequire(GoogRequire.createTypeRequire("safevalues"));
+        builder.addType("!" + SAFEVALUES.alias() + ".SafeStyle");
+        builder.addRequire(SAFEVALUES.toRequireType());
         break;
       case HTML_ELEMENT:
       case HTML:
-        builder.addType("!safevalues.SafeHtml");
-        builder.addRequire(GoogRequire.createTypeRequire("safevalues"));
+        builder.addType("!" + SAFEVALUES.alias() + ".SafeHtml");
+        builder.addRequire(SAFEVALUES.toRequireType());
         break;
       case JS:
-        builder.addType("!safevalues.SafeScript");
-        builder.addRequire(GoogRequire.createTypeRequire("safevalues"));
+        builder.addType("!" + SAFEVALUES.alias() + ".SafeScript");
+        builder.addRequire(SAFEVALUES.toRequireType());
         break;
       case ATTRIBUTES:
       case TEXT:
         // nothing extra
         break;
       case TRUSTED_RESOURCE_URI:
-        builder.addType("!safevalues.TrustedResourceUrl");
-        builder.addRequire(GoogRequire.createTypeRequire("safevalues"));
+        builder.addType("!" + SAFEVALUES.alias() + ".TrustedResourceUrl");
+        builder.addRequire(SAFEVALUES.toRequireType());
         break;
       case URI:
-        builder.addType("!safevalues.TrustedResourceUrl");
-        builder.addType("!safevalues.SafeUrl");
-        builder.addRequire(GoogRequire.createTypeRequire("safevalues"));
-        builder.addType("!goog.Uri");
-        builder.addRequire(GoogRequire.createTypeRequire("goog.Uri"));
+        builder.addType("!" + SAFEVALUES.alias() + ".TrustedResourceUrl");
+        builder.addType("!" + SAFEVALUES.alias() + ".SafeUrl");
+        builder.addRequire(SAFEVALUES.toRequireType());
+        builder.addType("!$GoogUri");
+        builder.addRequire(GoogRequire.createTypeRequireWithAlias("goog.Uri", "$GoogUri"));
         break;
     }
 
@@ -880,7 +834,12 @@ public final class JsType {
     return builder
         .setPredicate(
             (value, codeGenerator) ->
-                Optional.of(sanitizedContentType(kind).dotAccess(compatibleWithString).call(value)))
+                Optional.of(
+                    require
+                        .toRequireValue()
+                        .reference()
+                        .dotAccess(compatibleWithString)
+                        .call(value)))
         .build();
   }
 
@@ -908,13 +867,16 @@ public final class JsType {
 
     @CanIgnoreReturnValue
     Builder addRequire(GoogRequire symbol) {
+      checkState(symbol.isTypeRequire());
       extraRequires.add(symbol);
       return this;
     }
 
     @CanIgnoreReturnValue
     Builder addRequires(Iterable<GoogRequire> symbols) {
-      extraRequires.addAll(symbols);
+      for (GoogRequire symbol : symbols) {
+        addRequire(symbol);
+      }
       return this;
     }
 

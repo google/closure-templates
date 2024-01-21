@@ -1074,7 +1074,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
         case CSS:
           return visitCssFunction(node);
         case EVAL_TOGGLE:
-          return visitToggleFunction(node, /* useGoogModuleSyntax= */ false);
+          return visitToggleFunction(node);
         case XID:
           return visitXidFunction(node);
         case SOY_SERVER_KEY:
@@ -1179,10 +1179,10 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
   }
 
   /** Built-in function for generating JS code to import toggles. */
-  protected Expression visitToggleFunction(FunctionNode node, boolean useGoogModuleSyntax) {
+  protected Expression visitToggleFunction(FunctionNode node) {
     StringNode pathName = (StringNode) node.getChild(0);
     StringNode toggleName = (StringNode) node.getChild(1);
-    return getToggleRef(pathName.getValue(), toggleName.getValue(), useGoogModuleSyntax);
+    return getToggleRef(pathName.getValue(), toggleName.getValue());
   }
 
   private Expression visitXidFunction(FunctionNode node) {

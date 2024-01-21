@@ -24,15 +24,6 @@ import com.google.common.base.Preconditions;
  */
 public final class SoyJsSrcOptions implements Cloneable {
 
-  private enum JsDepsStrategy {
-    /** Whether we should generate code to provide/require Soy namespaces. */
-    NAMESPACES,
-    /** Whether we should generate code to declare/require goog.modules. */
-    MODULE
-  }
-
-  private JsDepsStrategy depsStrategy;
-
   /** Whether we should generate Closure Library message definitions (i.e. goog.getMsg). */
   private boolean shouldGenerateGoogMsgDefs;
 
@@ -59,9 +50,10 @@ public final class SoyJsSrcOptions implements Cloneable {
 
   private boolean generateMaybeRequireForControllerAndModelXids; // MOE: strip_line
 
-  public SoyJsSrcOptions() {
-    depsStrategy = JsDepsStrategy.NAMESPACES;
+  private boolean declareLegacyNamespace;
 
+  public SoyJsSrcOptions() {
+    declareLegacyNamespace = true;
     dependOnCssHeader = false;
     shouldGenerateGoogMsgDefs = false;
     googMsgsAreExternal = false;
@@ -71,7 +63,7 @@ public final class SoyJsSrcOptions implements Cloneable {
   }
 
   private SoyJsSrcOptions(SoyJsSrcOptions orig) {
-    this.depsStrategy = orig.depsStrategy;
+    this.declareLegacyNamespace = orig.declareLegacyNamespace;
     this.dependOnCssHeader = orig.dependOnCssHeader;
     this.shouldGenerateGoogMsgDefs = orig.shouldGenerateGoogMsgDefs;
     this.googMsgsAreExternal = orig.googMsgsAreExternal;
@@ -84,35 +76,17 @@ public final class SoyJsSrcOptions implements Cloneable {
   }
 
   /**
-   * Sets whether we should generate code to provide/require Soy namespaces.
+   * Sets whether goog.module.declareLegacyNamespace() should be generated.
    *
-   * @param shouldProvideRequireSoyNamespaces The value to set.
+   * @param declareLegacyNamespace The value to set.
    */
-  public void setShouldProvideRequireSoyNamespaces(boolean shouldProvideRequireSoyNamespaces) {
-    if (shouldProvideRequireSoyNamespaces) {
-      depsStrategy = JsDepsStrategy.NAMESPACES;
-    }
+  public void setDeclareLegacyNamespace(boolean declareLegacyNamespace) {
+    this.declareLegacyNamespace = declareLegacyNamespace;
   }
 
-  /** Returns whether we're set to generate code to provide/require Soy namespaces. */
-  public boolean shouldProvideRequireSoyNamespaces() {
-    return depsStrategy == JsDepsStrategy.NAMESPACES;
-  }
-
-  /**
-   * Sets whether goog.modules should be generated.
-   *
-   * @param shouldGenerateGoogModules The value to set.
-   */
-  public void setShouldGenerateGoogModules(boolean shouldGenerateGoogModules) {
-    if (shouldGenerateGoogModules) {
-      depsStrategy = JsDepsStrategy.MODULE;
-    }
-  }
-
-  /** Returns whether goog.modules should be generated. */
-  public boolean shouldGenerateGoogModules() {
-    return depsStrategy == JsDepsStrategy.MODULE;
+  /** Returns whether goog.module.declareLegacyNamespace() should be generated. */
+  public boolean shouldDeclareLegacyNamespace() {
+    return declareLegacyNamespace;
   }
 
   /**
@@ -250,10 +224,9 @@ public final class SoyJsSrcOptions implements Cloneable {
   @Override
   public String toString() {
     return MoreObjects.toStringHelper(this)
-        .add("shouldProvideRequireSoyNamespaces", shouldProvideRequireSoyNamespaces())
+        .add("declareLegacyNamespace", declareLegacyNamespace)
         .add("dependOnCssHeader", dependOnCssHeader)
         .add("shouldGenerateGoogMsgDefs", shouldGenerateGoogMsgDefs)
-        .add("shouldGenerateGoogModules", shouldGenerateGoogModules())
         .add("googMsgsAreExternal", googMsgsAreExternal)
         .add("bidiGlobalDir", bidiGlobalDir)
         .add("useGoogIsRtlForBidiGlobalDir", useGoogIsRtlForBidiGlobalDir)

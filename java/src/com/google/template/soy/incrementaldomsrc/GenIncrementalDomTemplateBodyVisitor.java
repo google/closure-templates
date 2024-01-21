@@ -70,7 +70,6 @@ import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.dsl.ConditionalBuilder;
 import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.jssrc.dsl.Expressions;
-import com.google.template.soy.jssrc.dsl.GoogRequire;
 import com.google.template.soy.jssrc.dsl.JsArrowFunction;
 import com.google.template.soy.jssrc.dsl.JsDoc;
 import com.google.template.soy.jssrc.dsl.LineComment;
@@ -518,8 +517,7 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
 
   @Override
   protected Statement visitForNode(ForNode node) {
-    var ret = super.visitForNode(node);
-    return ret;
+    return super.visitForNode(node);
   }
 
   @Override
@@ -939,10 +937,9 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
     String tagName = node.getTagName().getTagString();
     if (tagName != null && Ascii.equalsIgnoreCase(tagName, "script")) {
       outputVars.popOutputVar();
-      Expression ordainer = id("soy").dotAccess("VERY_UNSAFE").dotAccess("ordainSanitizedJs");
+      Expression ordainer = JsRuntime.SOY.dotAccess("VERY_UNSAFE").dotAccess("ordainSanitizedJs");
       Expression safeScript = ordainer.call(id(scriptOutputVar)).dotAccess("toSafeScript").call();
-      GoogRequire require = GoogRequire.create("safevalues");
-      Expression unwrapped = require.dotAccess("unwrapScript").call(safeScript);
+      Expression unwrapped = JsRuntime.SAFEVALUES.dotAccess("unwrapScript").call(safeScript);
       Expression currentElement = INCREMENTAL_DOM.dotAccess("currentElement").call();
       Expression textContentAssignment = currentElement.dotAccess("textContent").assign(unwrapped);
       ConditionalBuilder ifCurrentElementExists =

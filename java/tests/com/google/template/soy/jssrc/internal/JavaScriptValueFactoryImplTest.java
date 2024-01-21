@@ -66,7 +66,7 @@ public final class JavaScriptValueFactoryImplTest {
             (factory, args, context) -> factory.callNamespaceFunction("foo.bar", "foo.bar"));
 
     assertThat(getRequires(expr)).isEqualTo("goog.require('foo.bar');\n");
-    assertThat(expr.getCode(FormatOptions.JSSRC)).isEqualTo("foo.bar();");
+    assertThat(expr.getCode(FormatOptions.JSSRC)).isEqualTo("goog.module.get('foo.bar')();");
   }
 
   @Test
@@ -76,7 +76,7 @@ public final class JavaScriptValueFactoryImplTest {
             (factory, args, context) -> factory.callNamespaceFunction("foo.bar", "foo.bar.baz"));
 
     assertThat(getRequires(expr)).isEqualTo("goog.require('foo.bar');\n");
-    assertThat(expr.getCode(FormatOptions.JSSRC)).isEqualTo("foo.bar.baz();");
+    assertThat(expr.getCode(FormatOptions.JSSRC)).isEqualTo("goog.module.get('foo.bar').baz();");
   }
 
   @Test

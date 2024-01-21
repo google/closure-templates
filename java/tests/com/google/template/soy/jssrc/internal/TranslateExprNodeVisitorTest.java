@@ -105,11 +105,11 @@ public final class TranslateExprNodeVisitorTest {
     assertThatSoyExpr(expr("$l?.reverse().length").withParam("l", "list<?>"))
         .generatesCode(
             "const $tmp = opt_data.l;",
-            "$tmp == null ? undefined : soy.$$listReverse($tmp).length;");
+            "$tmp == null ? undefined : goog.module.get('soy').$$listReverse($tmp).length;");
     assertThatSoyExpr(expr("$s?.split(',').reverse()").withParam("s", "string"))
         .generatesCode(
             "const $tmp = opt_data.s?.split(',');",
-            "$tmp == null ? undefined : soy.$$listReverse($tmp);");
+            "$tmp == null ? undefined : goog.module.get('soy').$$listReverse($tmp);");
 
     assertThatSoyExpr("$p?[$k]").generatesCode("opt_data.p?.[/** @type {?} */ (opt_data.k)];");
 
@@ -125,7 +125,7 @@ public final class TranslateExprNodeVisitorTest {
             "} else {",
             "  const $tmp = opt_data.l;",
             "  $tmp$$2 = $tmp$$1?.[/** @type {?} */ (($tmp == null ? undefined :"
-                + " soy.$$listReverse($tmp).length) > 0 ? 1 : 0)];",
+                + " goog.module.get('soy').$$listReverse($tmp).length) > 0 ? 1 : 0)];",
             "}",
             "$tmp$$2;");
   }

@@ -15,7 +15,7 @@
  */
 package com.google.template.soy.incrementaldomsrc;
 
-import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_SOY_ALIAS;
+import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_SOY;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.internal.SanitizedContentKind;
@@ -54,7 +54,7 @@ public final class GenIncrementalDomInteropVisitor extends GenJsCodeVisitor {
   private JsCodeBuilder codeBuilder;
   private GoogRequire idomGoogRequire;
   private GoogRequire soyJsGoogRequire;
-  private final Expression shouldStub = GOOG_SOY_ALIAS.dotAccess("shouldStub");
+  private final Expression shouldStub = GOOG_SOY.dotAccess("shouldStub");
 
   GenIncrementalDomInteropVisitor(
       SoyJsSrcOptions jsSrcOptions,
@@ -113,8 +113,9 @@ public final class GenIncrementalDomInteropVisitor extends GenJsCodeVisitor {
           Statements.ifStatement(
                   shouldStub,
                   Statements.assign(
-                      soyJsGoogRequire.dotAccess(
-                          node.getPartialTemplateName() + "_" + StandardNames.SOY_STUB),
+                      soyJsGoogRequire
+                          .dotAccess(node.getPartialTemplateName())
+                          .dotAccess(StandardNames.SOY_STUB),
                       Expressions.arrowFunction(
                           JsDoc.builder()
                               .addParam(StandardNames.DOLLAR_DATA, "?")

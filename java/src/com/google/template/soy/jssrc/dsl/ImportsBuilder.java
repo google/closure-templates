@@ -206,15 +206,14 @@ public class ImportsBuilder {
         hasFragmentImport = true;
       } else if (require == TsxFragmentElement.ELEMENT) {
         hasElementImport = true;
-      } else if (require.chunk() instanceof Import) {
-        Import i = (Import) require.chunk();
+      } else if (require.type() == GoogRequire.Type.IMPORT) {
+        Import i = (Import) require.type().getChunk(require);
         ImportList list = imports.computeIfAbsent(i.path(), k -> new ImportList());
         for (String symbol : i.symbols()) {
           list.addSymbolRaw(symbol);
         }
       } else {
-        throw new IllegalArgumentException(
-            "Not an import: " + require.chunk().getCode(FormatOptions.JSSRC));
+        throw new IllegalArgumentException("Not an import: " + require);
       }
     }
   }
