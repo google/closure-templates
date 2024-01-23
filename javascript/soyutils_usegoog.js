@@ -1891,28 +1891,12 @@ const $$buildClassValue = function(...values) {
 /**
  * Joins items with a semicolon, filtering out falsey values.
  * @param {...(string|SanitizedCss!|boolean|null|undefined)} values The
- *     values to join. If passing a raw string, it must be a single CSS
- *     declaration.
+ *     values to join.
  * @return {SanitizedCss!|$$EMPTY_STRING_!} The joined string.
  */
 const $$buildStyleValue = function(...values) {
   return VERY_UNSAFE.$$ordainSanitizedCssForInternalBlocks(
-      values
-      .filter((s) => s)
-      .map((s) => {
-        if (typeof s === 'string') {
-          const firstColonPos = s.indexOf(':');
-          if (firstColonPos != -1) {
-            const name = s.substr(0, firstColonPos);
-            if (name.match(/^\s*[\w-]+\s*$/)) {
-              const value = s.substr(firstColonPos + 1);
-              return name + ':' + $$filterCssValue(value);
-            }
-          }
-        }
-        return $$filterCssValue(s);
-      })
-      .join(';'));
+      $$buildAttrValue(...values));
 };
 
 

@@ -393,17 +393,7 @@ Like `buildAttrValue()`, but joins with the space character instead.
 
 ### `buildStyleValue(...values)` {#buildStyleValue}
 
-Like `buildAttrValue()`, but with return type `css`. Note that when using raw
-strings, each string must contain a single CSS declaration to avoid a runtime
-error:
-
-```soy {.good}
-buildStyleValue('color:red', 'padding:10px', $moreStyles)
-```
-
-```soy {.bad}
-buildStyleValue('color:red; padding:10px', $moreStyles)
-```
+Like `buildAttrValue()`, but with return type `css`.
 
 ### `buildAttr(attrName, ...values)` {#buildAttr}
 
