@@ -165,7 +165,7 @@ public final class ImportedVar extends AbstractVarDefn implements Copyable<Impor
     SourceLocation full = nameLocation();
     if (isAliased() && full.isSingleLine()) {
       int length = full.getLength();
-      return full.substring(length - name().length(), length);
+      return full.substring(length - name().length());
     } else {
       return nameLocation();
     }
