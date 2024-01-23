@@ -48,11 +48,13 @@ import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.data.restricted.StringData;
+import com.google.template.soy.shared.internal.Sanitizers;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
@@ -542,10 +544,31 @@ public final class BasicFunctionsRuntime {
     return joinHelper(values, " ");
   }
 
+  private static final Pattern CSS_NAME_REGEX = Pattern.compile("^\\s*[\\w-]+\\s*$");
+
   /** Joins items with a semicolon, filtering out falsey values. */
   @Nonnull
   public static SanitizedContent buildStyleValue(List<SoyValue> values) {
-    return UnsafeSanitizedContentOrdainer.ordainAsSafe(buildAttrValue(values), ContentKind.CSS);
+    return UnsafeSanitizedContentOrdainer.ordainAsSafe(
+        values.stream()
+            .filter(v -> v != null)
+            .filter(SoyValue::coerceToBoolean)
+            .map(
+                v -> {
+                  if (v instanceof StringData) {
+                    String str = v.coerceToString();
+                    if (str.indexOf(':') != -1) {
+                      String name = str.substring(0, str.indexOf(':'));
+                      if (CSS_NAME_REGEX.matcher(name).matches()) {
+                        String value = str.substring(str.indexOf(':') + 1);
+                        return String.format("%s:%s", name, Sanitizers.filterCssValue(value));
+                      }
+                    }
+                  }
+                  return Sanitizers.filterCssValue(v);
+                })
+            .collect(joining(";")),
+        ContentKind.CSS);
   }
 
   /**

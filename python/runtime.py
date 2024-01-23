@@ -713,11 +713,20 @@ def build_style_value(*values):
     The joined css.
   """
   return sanitize.SanitizedCss(
-      build_attr_value(*values),
+      ';'.join([filter_style_part(x) for x in values if x]),
       sanitize.IActuallyUnderstandSoyTypeSafetyAndHaveSecurityApproval(
           """Internal framework code."""
       ),
   )
+
+
+def filter_style_part(part):
+  """filters each css declaration."""
+  if isinstance(part, str) and part.find(':') != 1:
+    name, value = part.split(':', 1)
+    if re.search(r'^\s*[\w-]+\s*$', name):
+      return name + ':' + sanitize.filter_css_value(value)
+  return sanitize.filter_css_value(part)
 
 
 def build_attr(attr_name, *values):
