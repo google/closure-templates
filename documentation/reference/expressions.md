@@ -160,8 +160,8 @@ For example: `$foo`
 Here are the supported operators, listed in decreasing order of precedence
 (highest precedence at the top):
 
-1.  `( <expr> )` `.` `?.` `[]`, `?[]`, `!`
-2.  `-`(unary) `not`
+1.  `( <expr> )` `.` `?.` `[]`, `?[]`, `!` (non-null assertion)
+2.  `-`(unary) `!` (not)
 3.  `*` `/` `%`
 4.  `+` `-`(binary)
 5.  `>>` `<<`
@@ -254,15 +254,15 @@ For example,
 *   `-$foo`
 *   `-(3 + $bar)`
 
-### Not operator `not`
+### Not operator `!`
 
-The `not` operator, performs logical negation (i.e. `not true == false` and `not
-false == true`)
+The `!` operator, performs logical negation (i.e. `!true == false` and
+`!false == true`)
 
 For example,
 
-*   `not $bar`
-*   `not $foo.contains('x')`
+*   `!$bar`
+*   `!$foo.contains('x')`
 
 ### Times operator `*`
 

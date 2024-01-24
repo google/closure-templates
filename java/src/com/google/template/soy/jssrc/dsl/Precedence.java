@@ -57,6 +57,7 @@ public enum Precedence {
       case ASSERT_NON_NULL:
         return P17;
       case NEGATIVE:
+      case NOT_LEGACY:
       case NOT:
         return P14;
       case TIMES:

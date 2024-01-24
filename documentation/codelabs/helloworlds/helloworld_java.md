@@ -146,7 +146,7 @@ Follow these steps to create a simple Hello World template and use it in Java:
                                       * Optional greeting word to use
                                       * instead of "Hello".
                                       */
-      {if not $greetingWord}
+      {if !$greetingWord}
         Hello {$name}!
       {else}
         {$greetingWord} {$name}!

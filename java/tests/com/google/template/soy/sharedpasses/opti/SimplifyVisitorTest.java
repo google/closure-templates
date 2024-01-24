@@ -177,7 +177,7 @@ public class SimplifyVisitorTest {
   public void simplifyIfWithEmptyChildren_elseToIf() {
     assertSimplification(
             "{@param boo: ?}", "{if $boo}", "  {let $baz:2/}", "{else}", "hello", "{/if}")
-        .isEqualTo("{@param boo: ?}\n{if not $boo}hello{/if}");
+        .isEqualTo("{@param boo: ?}\n{if !$boo}hello{/if}");
   }
 
   @Test
@@ -190,7 +190,7 @@ public class SimplifyVisitorTest {
             "{elseif $qoo}",
             "  hello",
             "{/if}")
-        .isEqualTo("{@param boo: ?}\n  {@param qoo: ?}\n{if not $boo && $qoo}hello{/if}");
+        .isEqualTo("{@param boo: ?}\n  {@param qoo: ?}\n{if !$boo && $qoo}hello{/if}");
   }
 
   @Test
@@ -211,7 +211,7 @@ public class SimplifyVisitorTest {
             "{@param boo: ?}\n"
                 + "  {@param qoo: ?}\n"
                 + "  {@param soo: ?}\n"
-                + "{if not $boo}{if $qoo}hello{elseif $soo}goodbye{/if}{/if}");
+                + "{if !$boo}{if $qoo}hello{elseif $soo}goodbye{/if}{/if}");
 
     assertSimplification(
             "{@param boo: ?}",
@@ -228,7 +228,7 @@ public class SimplifyVisitorTest {
             "{@param boo: ?}\n"
                 + "  {@param qoo: ?}\n"
                 + "  {@param soo: ?}\n"
-                + "{if $boo}hello{elseif not $qoo && $soo}goodbye{/if}");
+                + "{if $boo}hello{elseif !$qoo && $soo}goodbye{/if}");
 
     // If it is in the middle, we need to introduce an ele-if
     assertSimplification(
@@ -248,7 +248,7 @@ public class SimplifyVisitorTest {
             "{@param boo: ?}\n"
                 + "  {@param qoo: ?}\n"
                 + "  {@param soo: ?}\n"
-                + "{if $boo}hello{elseif not $qoo}{if $soo}goodbye{else}still here?{/if}{/if}");
+                + "{if $boo}hello{elseif !$qoo}{if $soo}goodbye{else}still here?{/if}{/if}");
 
     // If there are multipole we need to handle them all.
     assertSimplification(
@@ -273,8 +273,8 @@ public class SimplifyVisitorTest {
                 + "  {@param soo: ?}\n"
                 + "  {@param foo: ?}\n"
                 + "{if $boo}hello"
-                + "{elseif not $qoo}"
-                + "{if $soo}goodbye{elseif not $foo}still here?{/if}"
+                + "{elseif !$qoo}"
+                + "{if $soo}goodbye{elseif !$foo}still here?{/if}"
                 + "{/if}");
   }
 

@@ -484,8 +484,6 @@ public class SoyFileParser {
       SoyErrorKind.of("Record literals require named parameters.");
   private static final SoyErrorKind EMPTY_RECORD_TYPE =
       SoyErrorKind.of("Empty record type.");
-  private static final SoyErrorKind LEGACY_NOT_ERROR =
-      SoyErrorKind.of("Found use of ''!'' instead of the ''not'' operator.");
 
   // Extern errors:
   private static final SoyErrorKind MULTIPLE_IMPLS =
@@ -1391,7 +1389,7 @@ TOKEN_MGR_DECLS: {
 | < VBAR: "|" >           // an operator for type unions
 | < EQ: "=" >             // For state assignments and attribute value pairs in EXPR
 | < FORWARD_ARROW: "=>" > // Part of template type syntax.
-| < ASSERT_NON_NULL: "!" >
+| < BANG: "!" >
 }
 
 // -------------------------------------------------------------------------------------------------
@@ -4432,13 +4430,7 @@ private ExprNode PrecExpr12(ExprState state) :
     |
       op = <MINUS>
     |
-      op = <ASSERT_NON_NULL>
-      {
-        errorReporter.report(createSrcLoc(op), LEGACY_NOT_ERROR);
-        // Compilation will fail because we reported an error, but keep going the best we can,
-        // treating "!$expr" as "not $expr"
-        op.image = "not";
-      }
+      op = <BANG>
     )
     expr = PrecExpr12(state)
 
@@ -4527,14 +4519,12 @@ private ExprNode PrecExpr13(ExprState state) :
       }
     )
   |
-    op = <ASSERT_NON_NULL>
+    op = <BANG>
     {
       SourceLocation opLocation = createSrcLoc(op);
-      expr = createOperatorNode(
+      expr = Operator.ASSERT_NON_NULL.createNode(
           expr.getSourceLocation().extend(opLocation),
-          op.image,
           opLocation,
-          SoyPrecedence.P13,
           expr);
     }
   )*

@@ -93,7 +93,7 @@ public class TranslateToPyExprVisitorTest {
 
   @Test
   public void testBasicOperators() {
-    assertThatSoyExpr("not $boo || true && $foo")
+    assertThatSoyExpr("!$boo || true && $foo")
         .translatesTo("not data.get('boo') or True and data.get('foo')", Operator.OR);
   }
 
@@ -107,7 +107,8 @@ public class TranslateToPyExprVisitorTest {
 
   @Test
   public void testNotEqualOperator() {
-    assertThatSoyExpr("'5' != 5").translatesTo("not runtime.type_safe_eq('5', 5)", Operator.NOT);
+    assertThatSoyExpr("'5' != 5")
+        .translatesTo("not runtime.type_safe_eq('5', 5)", Operator.NOT_LEGACY);
   }
 
   @Test

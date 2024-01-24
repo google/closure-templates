@@ -70,7 +70,11 @@ public enum Operator {
   // Precedence borrowed at least in part from JavaScript:
   // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Operator_Precedence
 
-  ASSERT_NON_NULL(ImmutableList.of(OPERAND_0, new Token("!")), SoyPrecedence.P13, NA) {
+  ASSERT_NON_NULL(
+      ImmutableList.of(OPERAND_0, new Token("!")),
+      SoyPrecedence.P13,
+      NA,
+      "! (non-null assertion)") {
     @Override
     public OperatorNode createNode(SourceLocation location, SourceLocation operatorLocation) {
       return new AssertNonNullOpNode(location, operatorLocation);
@@ -83,10 +87,17 @@ public enum Operator {
       return new NegativeOpNode(location, operatorLocation);
     }
   },
-  NOT(ImmutableList.of(new Token("not"), SP, OPERAND_0), SoyPrecedence.P12, NA) {
+  @Deprecated
+  NOT_LEGACY(ImmutableList.of(new Token("not"), SP, OPERAND_0), SoyPrecedence.P12, NA) {
     @Override
     public OperatorNode createNode(SourceLocation location, SourceLocation operatorLocation) {
-      return new NotOpNode(location, operatorLocation);
+      return new NotOpNode(location, operatorLocation, this);
+    }
+  },
+  NOT(ImmutableList.of(new Token("!"), OPERAND_0), SoyPrecedence.P12, NA, "! (not)") {
+    @Override
+    public OperatorNode createNode(SourceLocation location, SourceLocation operatorLocation) {
+      return new NotOpNode(location, operatorLocation, this);
     }
   },
 
@@ -288,7 +299,9 @@ public enum Operator {
   static {
     ImmutableTable.Builder<String, Integer, Operator> builder = ImmutableTable.builder();
     for (Operator op : Operator.values()) {
-      builder.put(op.getTokenString(), op.getNumOperands(), op);
+      if (op != ASSERT_NON_NULL) {
+        builder.put(op.getTokenString(), op.getNumOperands(), op);
+      }
     }
     OPERATOR_TABLE = builder.buildOrThrow();
   }

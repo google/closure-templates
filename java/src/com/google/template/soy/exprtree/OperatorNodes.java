@@ -16,6 +16,7 @@
 
 package com.google.template.soy.exprtree;
 
+import com.google.common.base.Preconditions;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.exprtree.ExprNode.AccessChainComponentNode;
@@ -54,8 +55,9 @@ public class OperatorNodes {
   /** Node representing the 'not' operator. */
   public static final class NotOpNode extends AbstractOperatorNode {
 
-    public NotOpNode(SourceLocation sourceLocation, SourceLocation operatorLocation) {
-      super(sourceLocation, Operator.NOT, operatorLocation);
+    public NotOpNode(SourceLocation sourceLocation, SourceLocation operatorLocation, Operator op) {
+      super(sourceLocation, op, operatorLocation);
+      Preconditions.checkArgument(op == Operator.NOT || op == Operator.NOT_LEGACY);
     }
 
     private NotOpNode(NotOpNode orig, CopyState copyState) {

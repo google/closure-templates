@@ -240,7 +240,7 @@ treated as an error.
   {else}
     <{$tag}>  // Condition: not $foo and not $bar
   {/if}
-  {if not $foo and not $bar}
+  {if !$foo and !$bar}
     </{$tag}> // Condition: not $foo and not $bar
   {elseif $foo}
     </b>      // Condition: $foo

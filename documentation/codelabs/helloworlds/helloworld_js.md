@@ -106,7 +106,7 @@ template, just as long as it's after the `namespace` declaration.
  * @param? greetingWord Optional greeting word to use instead of "Hello".
  */
 {template helloName}
-  {if not $greetingWord}
+  {if !$greetingWord}
     Hello {$name}!
   {else}
     {$greetingWord} {$name}!

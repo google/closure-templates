@@ -54,6 +54,7 @@ import com.google.template.soy.exprtree.OperatorNodes.BarBarOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ConditionalOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.EqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NotEqualOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.NotOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TripleEqualOpNode;
@@ -499,6 +500,15 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
             + operandPyExprs.get(1).getText()
             + ")",
         Integer.MAX_VALUE);
+  }
+
+  @Override
+  protected PyExpr visitNotOpNode(NotOpNode node) {
+    if (node.getOperator() == Operator.NOT_LEGACY) {
+      return super.visitNotOpNode(node);
+    } else {
+      return getPyExpr(node, "not ");
+    }
   }
 
   @Override

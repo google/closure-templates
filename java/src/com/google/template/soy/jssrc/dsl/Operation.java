@@ -25,36 +25,37 @@ abstract class Operation extends Expression implements OperatorInterface {
 
   public static String getOperatorToken(Operator soyOperator) {
     switch (soyOperator) {
-      case NOT:
+      case NOT_LEGACY:
         return "!";
       case AND:
       case AMP_AMP:
         return "&&";
-      case OR:
       case BAR_BAR:
+      case OR:
         return "||";
       case NULL_COALESCING:
         return "??";
       case ASSERT_NON_NULL:
-      case NEGATIVE:
-      case TIMES:
+      case BITWISE_AND:
+      case BITWISE_OR:
+      case BITWISE_XOR:
       case DIVIDE_BY:
-      case MOD:
-      case PLUS:
+      case EQUAL:
+      case GREATER_THAN:
+      case GREATER_THAN_OR_EQUAL:
+      case LESS_THAN:
+      case LESS_THAN_OR_EQUAL:
       case MINUS:
+      case MOD:
+      case NEGATIVE:
+      case NOT:
+      case NOT_EQUAL:
+      case PLUS:
       case SHIFT_LEFT:
       case SHIFT_RIGHT:
-      case LESS_THAN:
-      case GREATER_THAN:
-      case LESS_THAN_OR_EQUAL:
-      case GREATER_THAN_OR_EQUAL:
-      case EQUAL:
-      case NOT_EQUAL:
+      case TIMES:
       case TRIPLE_EQUAL:
       case TRIPLE_NOT_EQUAL:
-      case BITWISE_AND:
-      case BITWISE_XOR:
-      case BITWISE_OR:
         return soyOperator.getTokenString();
       case CONDITIONAL:
         throw new IllegalArgumentException("Not a single token.");

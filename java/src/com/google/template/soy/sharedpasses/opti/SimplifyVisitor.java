@@ -44,6 +44,7 @@ import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.ListComprehensionNode;
 import com.google.template.soy.exprtree.MethodCallNode;
+import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.exprtree.OperatorNodes.AmpAmpOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NotOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
@@ -581,7 +582,8 @@ public final class SimplifyVisitor {
               int nextNodeIndex = condIndex;
               condIndex--;
               if (nextNodeIndex < children.size()) {
-                var negation = new NotOpNode(SourceLocation.UNKNOWN, SourceLocation.UNKNOWN);
+                var negation =
+                    new NotOpNode(SourceLocation.UNKNOWN, SourceLocation.UNKNOWN, Operator.NOT);
                 negation.addChild(condNode.getExpr().getRoot());
                 negation.setType(BoolType.getInstance());
                 if (nextNodeIndex == children.size() - 1) {

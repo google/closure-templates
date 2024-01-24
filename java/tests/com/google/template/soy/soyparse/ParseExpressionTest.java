@@ -266,7 +266,8 @@ public final class ParseExpressionTest {
     assertThatExpression("not true").isValidExpression();
     assertThatExpression("not$a").isValidExpression();
     assertThatExpression("+1").isNotValidExpression();
-    assertThatExpression("!$a").isNotValidExpression();
+    assertThatExpression("!$a").isValidExpression();
+    assertThatExpression("!!$a").isValidExpression();
     // Level 7.
     assertThatExpression("$a * $b").isValidExpression();
     assertThatExpression("5/3").isValidExpression();
@@ -571,9 +572,11 @@ public final class ParseExpressionTest {
     Operator op = opNode.getOperator();
     switch (op) {
       case NEGATIVE:
-      case NOT:
+      case NOT_LEGACY:
         // unary
         return op.getTokenString() + " " + formatNode(opNode.getChild(0), false);
+      case NOT:
+        return op.getTokenString() + formatNode(opNode.getChild(0), false);
       case CONDITIONAL:
         return formatNode(opNode.getChild(0), false)
             + " ? "

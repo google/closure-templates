@@ -35,10 +35,10 @@ improves the readability of your code.
 Example:
 
 ```soy
-{let $isEnabled: $isAaa and not $isBbb and $ccc == $ddd + $eee /}
+{let $isEnabled: $isAaa and !$isBbb and $ccc == $ddd + $eee /}
 {if $isEnabled and $isXxx}
   ...
-{elseif not $isEnabled and $isYyy}
+{elseif !$isEnabled and $isYyy}
   ...
 {/if}
 ```
