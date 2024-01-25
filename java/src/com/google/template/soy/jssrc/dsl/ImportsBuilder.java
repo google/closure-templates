@@ -37,6 +37,29 @@ import java.util.TreeSet;
  */
 public class ImportsBuilder {
 
+  /** JSPB API flavor. */
+  public enum JspbApi {
+    MUTABLE,
+    IMMUTABLE {
+      @Override
+      String transform(String fqn) {
+        int i = fqn.lastIndexOf(".") + 1;
+        return fqn.substring(0, i) + "Immutable" + fqn.substring(i);
+      }
+    },
+    READONLY {
+      @Override
+      String transform(String fqn) {
+        int i = fqn.lastIndexOf(".") + 1;
+        return fqn.substring(0, i) + "Readonly" + fqn.substring(i);
+      }
+    };
+
+    String transform(String s) {
+      throw new RuntimeException();
+    }
+  }
+
   public static final String NO_ALIAS = "";
 
   // A map of imported file to imported symbol(s).
@@ -123,17 +146,12 @@ public class ImportsBuilder {
     protoImportData.put(fqn, ProtoImportData.create(file, symbol, alias));
   }
 
-  private String makeImmutable(String fqn) {
-    int immutableIndex = fqn.lastIndexOf(".") + 1;
-    return fqn.substring(0, immutableIndex) + "Immutable" + fqn.substring(immutableIndex);
-  }
-
   /**
    * Given the proto type, return the file local name (the imported symbol, plus any additional
    * parts for nested protos, possibly the immutable version) that should be used in Tsx, and mark
    * the symbol as referenced.
    */
-  public String useImportedProtoSymbol(String fqn, boolean makeImmutable) {
+  public String useImportedProtoSymbol(String fqn, JspbApi api) {
     String topLevelMsg = fqn;
     String dotPlusNestedSymbol = "";
 
@@ -157,7 +175,7 @@ public class ImportsBuilder {
       throw new IllegalArgumentException("Unexpected proto: " + fqn);
     }
 
-    if (!makeImmutable) {
+    if (api == JspbApi.MUTABLE) {
       importSymbol(data);
       // import {Foo} -> Foo, Foo.Nested
       // import {Foo as FooAlias} -> FooAlias, FooAlias.Nested
@@ -168,18 +186,18 @@ public class ImportsBuilder {
       // import {Foo} -> Foo.ImmutableNested
       // import {Foo as FooAlias} -> FooAlias.ImmutableNested
       importSymbol(data);
-      return data.aliasOrSymbol() + makeImmutable(dotPlusNestedSymbol);
+      return data.aliasOrSymbol() + api.transform(dotPlusNestedSymbol);
     }
 
     if (data.alias().isEmpty()) {
       // import {Foo} -> ImmutableFoo
-      importSymbol(data.file(), makeImmutable(data.symbol()));
-      return makeImmutable(data.symbol());
+      importSymbol(data.file(), api.transform(data.symbol()));
+      return api.transform(data.symbol());
     }
 
     // import {Foo as FooAlias} -> ImmutableFooAlias
-    importSymbolAlias(data.file(), makeImmutable(data.symbol()), makeImmutable(data.alias()));
-    return makeImmutable(data.alias());
+    importSymbolAlias(data.file(), api.transform(data.symbol()), api.transform(data.alias()));
+    return api.transform(data.alias());
   }
 
   public CodeChunk build() {
