@@ -332,7 +332,7 @@ public final class GenJsCodeVisitorTest {
             + "  }\n"
             + "  let delta__soy13 = 'Boop!';\n"
             + "  const delta__wrapped13 = soy.VERY_UNSAFE"
-            + ".$$ordainSanitizedHtmlForInternalBlocks(delta__soy13);\n"
+            + ".ordainSanitizedHtml(delta__soy13);\n"
             + "  output += alpha__soy5 + beta__soy6 + gamma__soy8 + delta__wrapped13;\n"
             + "}\n";
     assertGeneratedJsCode(soyNodeCode, expectedJsCode);

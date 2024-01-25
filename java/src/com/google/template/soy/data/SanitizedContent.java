@@ -188,7 +188,7 @@ public class SanitizedContent extends SoyAbstractValue {
 
   @Override
   public boolean coerceToBoolean() {
-    return getContent().length() > 0; // Consistent with StringData
+    return true;
   }
 
   @Override

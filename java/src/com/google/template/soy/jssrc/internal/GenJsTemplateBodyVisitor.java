@@ -26,7 +26,7 @@ import static com.google.template.soy.jssrc.dsl.Statements.switchValue;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_IS_OBJECT;
 import static com.google.template.soy.jssrc.internal.JsRuntime.OPT_DATA;
 import static com.google.template.soy.jssrc.internal.JsRuntime.WINDOW_CONSOLE_LOG;
-import static com.google.template.soy.jssrc.internal.JsRuntime.sanitizedContentOrdainerFunctionForInternalBlocks;
+import static com.google.template.soy.jssrc.internal.JsRuntime.sanitizedContentOrdainerFunction;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.internal.Identifier;
@@ -326,9 +326,7 @@ public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<St
       String wrappedVarName = node.getVarName() + "__wrapped" + node.getId();
       statements.add(
           VariableDeclaration.builder(wrappedVarName)
-              .setRhs(
-                  sanitizedContentOrdainerFunctionForInternalBlocks(node.getContentKind())
-                      .call(generatedVar))
+              .setRhs(sanitizedContentOrdainerFunction(node.getContentKind()).call(generatedVar))
               .build());
       generatedVar = id(wrappedVarName);
     }

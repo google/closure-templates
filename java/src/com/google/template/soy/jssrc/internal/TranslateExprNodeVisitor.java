@@ -43,6 +43,7 @@ import static com.google.template.soy.jssrc.internal.JsRuntime.MARK_TEMPLATE;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SERIALIZE_KEY;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_CHECK_NOT_NULL;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_COERCE_TO_BOOLEAN;
+import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_EMPTY_TO_NULL;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_EQUALS;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_FILTER_AND_MAP;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_HAS_CONTENT;
@@ -127,7 +128,6 @@ import com.google.template.soy.shared.internal.BuiltinMethod;
 import com.google.template.soy.shared.restricted.SoyMethod;
 import com.google.template.soy.shared.restricted.SoySourceFunctionMethod;
 import com.google.template.soy.soytree.LetContentNode;
-import com.google.template.soy.soytree.LetNode;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
@@ -832,29 +832,11 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
 
   @Override
   protected Expression visitAmpAmpOpNode(AmpAmpOpNode node) {
-    // TODO(b/314786364): Remove this once sanitized content truthiness is fixed.
-    if (SoyTypes.isSanitizedTypeBroken(node.getChild(0).getType())) {
-      return translationContext
-          .codeGenerator()
-          .conditionalExpression(
-              maybeCoerceToBoolean(node.getChild(0).getType(), visit(node.getChild(0)), true),
-              visit(node.getChild(1)),
-              visit(node.getChild(0)));
-    }
     return visit(node.getChild(0)).and(visit(node.getChild(1)), translationContext.codeGenerator());
   }
 
   @Override
   protected Expression visitBarBarOpNode(BarBarOpNode node) {
-    // TODO(b/314786364): Remove this once sanitized content truthiness is fixed.
-    if (SoyTypes.isSanitizedTypeBroken(node.getChild(0).getType())) {
-      return translationContext
-          .codeGenerator()
-          .conditionalExpression(
-              maybeCoerceToBoolean(node.getChild(0).getType(), visit(node.getChild(0)), true),
-              visit(node.getChild(0)),
-              visit(node.getChild(1)));
-    }
     return visit(node.getChild(0)).or(visit(node.getChild(1)), translationContext.codeGenerator());
   }
 
@@ -1231,19 +1213,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
   }
 
   protected Expression visitEmptyToNullFunction(FunctionNode node) {
-    // Child is either a string or a sanitized content block, but it is always pointing at a local
-    var childNode = node.getParam(0);
-    checkState(
-        childNode instanceof VarRefNode,
-        "expected child %s @%s to be a varref",
-        childNode,
-        childNode.getSourceLocation());
-    var defn = ((VarRefNode) node.getParam(0)).getDefnDecl();
-    // check that we are pointing at a let, if we are then we can use `||` since internal blocks map
-    // empty sanitized content to `''` so `||` works.
-    checkState(((LocalVar) defn).declaringNode() instanceof LetNode);
-    Expression child = visit(node.getParam(0));
-    return child.or(LITERAL_UNDEFINED, translationContext.codeGenerator());
+    return SOY_EMPTY_TO_NULL.call(visit(node.getParam(0)));
   }
 
   private static SoyJsSrcFunction getUnknownFunction(String name, int argSize) {

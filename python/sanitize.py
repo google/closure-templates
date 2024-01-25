@@ -734,7 +734,9 @@ class SanitizedContent(object):
     return len(self.content)
 
   def __nonzero__(self):
-    return bool(self.content)
+    return True
+
+  __bool__ = __nonzero__
 
   def __str__(self):
     return str(self.content)

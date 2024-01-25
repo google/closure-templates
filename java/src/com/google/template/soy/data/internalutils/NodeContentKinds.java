@@ -70,34 +70,6 @@ public final class NodeContentKinds {
           .put(SanitizedContentKind.TEXT, "")
           .build();
 
-  /**
-   * The specialized ordainers used for param and let blocks. These ones do not wrap if the input is
-   * empty string, in order that empty strings can still be truth-tested. This is an incomplete
-   * solution to the truth testing problem, but dramatically simplifies migration.
-   */
-  private static final ImmutableMap<SanitizedContentKind, String>
-      KIND_TO_JS_ORDAINER_NAME_FOR_INTERNAL_BLOCKS =
-          ImmutableMap.<SanitizedContentKind, String>builder()
-              .put(
-                  SanitizedContentKind.HTML,
-                  "soy.VERY_UNSAFE.$$ordainSanitizedHtmlForInternalBlocks")
-              .put(
-                  SanitizedContentKind.HTML_ELEMENT,
-                  "soy.VERY_UNSAFE.$$ordainSanitizedHtmlForInternalBlocks")
-              .put(
-                  SanitizedContentKind.ATTRIBUTES,
-                  "soy.VERY_UNSAFE.$$ordainSanitizedAttributesForInternalBlocks")
-              .put(SanitizedContentKind.JS, "soy.VERY_UNSAFE.$$ordainSanitizedJsForInternalBlocks")
-              .put(
-                  SanitizedContentKind.URI, "soy.VERY_UNSAFE.$$ordainSanitizedUriForInternalBlocks")
-              .put(
-                  SanitizedContentKind.CSS, "soy.VERY_UNSAFE.$$ordainSanitizedCssForInternalBlocks")
-              .put(
-                  SanitizedContentKind.TRUSTED_RESOURCE_URI,
-                  "soy.VERY_UNSAFE.$$ordainSanitizedTrustedResourceUriForInternalBlocks")
-              .put(SanitizedContentKind.TEXT, "")
-              .build();
-
   /** The JavaScript method to unpack a safe proto to sanitized object. */
   private static final ImmutableMap<String, String> PROTO_TO_JS_UNPACK_FN =
       ImmutableMap.<String, String>builder()
@@ -134,9 +106,6 @@ public final class NodeContentKinds {
     if (!KIND_TO_JS_ORDAINER_NAME.keySet().containsAll(allKinds)) {
       throw new AssertionError("Not all Soy-accessible ContentKind enums have a JS ordainer");
     }
-    if (!KIND_TO_JS_ORDAINER_NAME_FOR_INTERNAL_BLOCKS.keySet().containsAll(allKinds)) {
-      throw new AssertionError("Not all Soy-accessible ContentKind enums have a JS ordainer");
-    }
     if (!KIND_TO_PY_SANITIZED_NAME.keySet().containsAll(allKinds)) {
       throw new AssertionError("Not all Soy-accessible ContentKind enums have a Python sanitizer");
     }
@@ -162,17 +131,6 @@ public final class NodeContentKinds {
   public static String toJsSanitizedContentOrdainer(SanitizedContentKind contentKind) {
     // soydata.VERY_UNSAFE.ordainSanitizedHtml etc are defined in soyutils{,_usegoog}.js.
     return Preconditions.checkNotNull(KIND_TO_JS_ORDAINER_NAME.get(contentKind));
-  }
-
-  /**
-   * Returns the ordainer function for param and let blocks, which behaves subtly differently than
-   * the normal ordainers to ease migration.
-   */
-  public static String toJsSanitizedContentOrdainerForInternalBlocks(
-      SanitizedContentKind contentKind) {
-    // Functions are defined in soyutils{,_usegoog}.js.
-    return Preconditions.checkNotNull(
-        KIND_TO_JS_ORDAINER_NAME_FOR_INTERNAL_BLOCKS.get(contentKind));
   }
 
   /**

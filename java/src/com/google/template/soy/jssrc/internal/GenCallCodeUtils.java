@@ -25,7 +25,7 @@ import static com.google.template.soy.jssrc.dsl.Expressions.id;
 import static com.google.template.soy.jssrc.dsl.Expressions.stringLiteral;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_ASSIGN_DEFAULTS;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_GET_DELEGATE_FN;
-import static com.google.template.soy.jssrc.internal.JsRuntime.sanitizedContentOrdainerFunctionForInternalBlocks;
+import static com.google.template.soy.jssrc.internal.JsRuntime.sanitizedContentOrdainerFunction;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
@@ -505,7 +505,6 @@ public class GenCallCodeUtils {
       return content;
     }
 
-    // Use the internal blocks wrapper, to maintain falsiness of empty string
-    return sanitizedContentOrdainerFunctionForInternalBlocks(node.getContentKind()).call(content);
+    return sanitizedContentOrdainerFunction(node.getContentKind()).call(content);
   }
 }

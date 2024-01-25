@@ -94,7 +94,7 @@ public final class GenCallCodeUtilsTest {
                 "{/call}"))
         .isEqualTo(
             "ns.someFunc(soy.$$assignDefaults("
-                + "{goo: soy.VERY_UNSAFE.$$ordainSanitizedHtmlForInternalBlocks('Blah')}, "
+                + "{goo: soy.VERY_UNSAFE.ordainSanitizedHtml('Blah')}, "
                 + "boo), $ijData);");
 
     String callExprText =
@@ -110,7 +110,7 @@ public final class GenCallCodeUtilsTest {
         .matches(
             Pattern.quote(
                     "ns.someFunc$(soy.$$internalCallMarkerDoNotUse, $ijData,"
-                        + " soy.VERY_UNSAFE.$$ordainSanitizedHtmlForInternalBlocks(param")
+                        + " soy.VERY_UNSAFE.ordainSanitizedHtml(param")
                 + "[0-9]+"
                 + Pattern.quote("));"));
   }

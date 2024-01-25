@@ -71,15 +71,6 @@ public final class SoyTypes {
               SanitizedType.TrustedResourceUriType.getInstance())
           .build();
 
-  // TODO(b/314786364): Remove this once sanitized content truthiness is fixed.
-  // cl/581043728 wasn't a correct fix: `{if $html && foo}...{/if}` in the JavaScript backend,
-  // and when the block body is computable as an expression turns into
-  // ((coerceToBoolean(html) ? foo : html) ? ... : '')
-  // Unfortunately some templates are relying on this. Fix forward to use hasContent()
-  // everywhere in go/soy-sanitized-types-boolean-coercion
-  public static final ImmutableSet<Kind> SANITIZED_TYPE_KINDS_BROKEN =
-      ImmutableSet.of(Kind.HTML, Kind.ELEMENT, Kind.ATTRIBUTES, Kind.JS, Kind.CSS);
-
   public static final ImmutableSet<Kind> SANITIZED_TYPE_KINDS =
       ImmutableSet.of(
           Kind.HTML,
@@ -506,10 +497,6 @@ public final class SoyTypes {
             return kindTest.test(type);
           }
         });
-  }
-
-  public static boolean isSanitizedTypeBroken(SoyType type) {
-    return containsKinds(type, SANITIZED_TYPE_KINDS_BROKEN);
   }
 
   public static boolean isSanitizedType(SoyType type) {

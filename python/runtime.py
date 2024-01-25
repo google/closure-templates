@@ -879,3 +879,13 @@ class _TemplateWrapper:
 
   def __str__(self):
     return '** FOR DEBUGGING ONLY: %s **' % self.name
+
+
+def is_truthy_non_empty(val):
+  if isinstance(val, sanitize.SanitizedContent):
+    return bool(val.content)
+  return bool(val)
+
+
+def empty_to_null(val):
+  return val if is_truthy_non_empty(val) else None

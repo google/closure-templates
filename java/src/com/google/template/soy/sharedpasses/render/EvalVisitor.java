@@ -902,9 +902,11 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
         case UNDEFINED_TO_NULL_SSR:
           return visit(node.getParam(0)).nullishToNull();
         case BOOLEAN:
-        case HAS_CONTENT:
-        case IS_TRUTHY_NON_EMPTY:
           return BooleanData.forValue(visit(node.getParam(0)).coerceToBoolean());
+        case HAS_CONTENT:
+          return BooleanData.forValue(visit(node.getParam(0)).hasContent());
+        case IS_TRUTHY_NON_EMPTY:
+          return BooleanData.forValue(visit(node.getParam(0)).isTruthyNonEmpty());
         case MSG_WITH_ID:
         case REMAINDER:
           // should have been removed earlier in the compiler

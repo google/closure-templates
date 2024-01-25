@@ -529,17 +529,10 @@ const $$strContains = function(/** string */ haystack, /** string */ needle) {
 /**
  * Coerce the given value into a bool.
  *
- * For objects of type `SanitizedContent`, the contents are used to determine
- * the boolean value; this is because the outer `SanitizedContent` object
- * instance is always truthy (unless it's null).
- *
  * @param {*} arg The argument to coerce.
  * @return {boolean}
  */
 const $$coerceToBoolean = function(arg) {
-  if (arg instanceof SanitizedContent) {
-    return !!arg.getContent();
-  }
   return !!arg;
 };
 
@@ -551,7 +544,10 @@ const $$coerceToBoolean = function(arg) {
  * @return {boolean}
  */
 const $$isTruthyNonEmpty = function(arg) {
-  return $$coerceToBoolean(arg);
+  if (arg instanceof SanitizedContent) {
+    return !!arg.getContent();
+  }
+  return !!arg;
 };
 
 
@@ -563,7 +559,18 @@ const $$isTruthyNonEmpty = function(arg) {
  * @return {boolean}
  */
 const $$hasContent = function(arg) {
-  return $$coerceToBoolean(arg);
+  return $$isTruthyNonEmpty(arg);
+};
+
+
+/**
+ * Changes empty string/sanitized content to null.
+ *
+ * @param {*} arg The argument to coerce.
+ * @return {*}
+ */
+const $$emptyToNull = function(arg) {
+  return $$isTruthyNonEmpty(arg) ? arg : undefined;
 };
 
 
@@ -699,189 +706,6 @@ const $$getDelegateFn = function(delTemplateId, delTemplateVariant) {
 const $$EMPTY_TEMPLATE_FN_ = function() {
   return '';
 };
-
-
-// -----------------------------------------------------------------------------
-// Internal sanitized content wrappers.
-
-
-/**
- * Creates a SanitizedContent factory for SanitizedContent types for internal
- * Soy let and param blocks.
- *
- * This is a hack within Soy so that SanitizedContent objects created via let
- * and param blocks will truth-test as false if they are empty string.
- * Tricking the Javascript runtime to treat empty SanitizedContent as falsey is
- * not possible, and changing the Soy compiler to wrap every boolean statement
- * for just this purpose is impractical.  Instead, we just avoid wrapping empty
- * string as SanitizedContent, since it's a no-op for empty strings anyways.
- *
- * @param {function(new: T)} ctor A constructor.
- * @return {function(*, ?bidi.Dir=): (T|!$$EMPTY_STRING_)}
- *     A factory that takes content and an optional content direction and
- *     returns a new instance, or an empty string. If the content direction is
- *     undefined, ctor.prototype.contentDir is used.
- * @template T
- */
-const $$makeSanitizedContentFactoryForInternalBlocks_ = function(ctor) {
-  /**
-   * @param {string} content
-   * @constructor
-   * @extends {SanitizedContent}
-   */
-  function InstantiableCtor(content) {
-    /** @override */
-    this.content = content;
-  }
-  InstantiableCtor.prototype = ctor.prototype;
-  /**
-   * Creates a ctor-type SanitizedContent instance.
-   *
-   * @param {?} content The content to put in the instance.
-   * @param {?bidi.Dir=} contentDir The content direction. If
-   *     undefined, ctor.prototype.contentDir is used.
-   * @return {!SanitizedContent|!$$EMPTY_STRING_} The new
-   *     instance, or an empty string. A new instance is actually of type T
-   *     above (ctor's type, a descendant of SanitizedContent), but there's no
-   *     way to express that here.
-   */
-  function sanitizedContentFactory(content, contentDir) {
-    const contentString = String(content);
-    if (!contentString) {
-      return $$EMPTY_STRING_.VALUE;
-    }
-    const result = new InstantiableCtor(contentString);
-    if (contentDir !== undefined) {
-      result.contentDir = contentDir;
-    }
-    return result;
-  }
-  return sanitizedContentFactory;
-};
-
-
-/**
- * Creates a SanitizedContent factory for SanitizedContent types that should
- * always have their default directionality for internal Soy let and param
- * blocks.
- *
- * This is a hack within Soy so that SanitizedContent objects created via let
- * and param blocks will truth-test as false if they are empty string.
- * Tricking the Javascript runtime to treat empty SanitizedContent as falsey is
- * not possible, and changing the Soy compiler to wrap every boolean statement
- * for just this purpose is impractical.  Instead, we just avoid wrapping empty
- * string as SanitizedContent, since it's a no-op for empty strings anyways.
- *
- * @param {function(new: T)} ctor A constructor.
- * @return {function(*): (T|!$$EMPTY_STRING_)} A
- *     factory that takes content and returns a
- *     new instance (with default directionality, i.e.
- *     ctor.prototype.contentDir), or an empty string.
- * @template T
- */
-const $$makeSanitizedContentFactoryWithDefaultDirOnlyForInternalBlocks_ =
-    function(ctor) {
-  /**
-   * @param {string} content
-   * @constructor
-   * @extends {SanitizedContent}
-   */
-  function InstantiableCtor(content) {
-    /** @override */
-    this.content = content;
-  }
-  InstantiableCtor.prototype = ctor.prototype;
-  /**
-   * Creates a ctor-type SanitizedContent instance.
-   *
-   * @param {?} content The content to put in the instance.
-   * @return {!SanitizedContent|!$$EMPTY_STRING_} The new
-   *     instance, or an empty string. A new instance is actually of type T
-   *     above (ctor's type, a descendant of SanitizedContent), but there's no
-   *     way to express that here.
-   */
-  function sanitizedContentFactory(content) {
-    const contentString = String(content);
-    if (!contentString) {
-      return $$EMPTY_STRING_.VALUE;
-    }
-    const result = new InstantiableCtor(contentString);
-    return result;
-  }
-  return sanitizedContentFactory;
-};
-
-
-/**
- * Creates kind="html" block contents (internal use only).
- *
- * @param {?} content Text.
- * @param {?bidi.Dir=} contentDir The content direction; null if
- *     unknown and thus to be estimated when necessary. Default: null.
- * @return {!SanitizedHtml|!$$EMPTY_STRING_} Wrapped
- *     result.
- */
-VERY_UNSAFE.$$ordainSanitizedHtmlForInternalBlocks =
-    $$makeSanitizedContentFactoryForInternalBlocks_(SanitizedHtml);
-
-
-/**
- * Creates kind="js" block contents (internal use only).
- *
- * @param {?} content Text.
- * @return {!SanitizedJs|!$$EMPTY_STRING_} Wrapped result.
- */
-VERY_UNSAFE.$$ordainSanitizedJsForInternalBlocks =
-    $$makeSanitizedContentFactoryWithDefaultDirOnlyForInternalBlocks_(
-        SanitizedJs);
-
-
-/**
- * Creates kind="trustedResourceUri" block contents (internal use only).
- *
- * @param {?} content Text.
- * @return {!SanitizedTrustedResourceUri|!$$EMPTY_STRING_}
- *     Wrapped result.
- */
-VERY_UNSAFE.$$ordainSanitizedTrustedResourceUriForInternalBlocks =
-    $$makeSanitizedContentFactoryWithDefaultDirOnlyForInternalBlocks_(
-        SanitizedTrustedResourceUri);
-
-
-/**
- * Creates kind="uri" block contents (internal use only).
- *
- * @param {?} content Text.
- * @return {!SanitizedUri|!$$EMPTY_STRING_} Wrapped
- *     result.
- */
-VERY_UNSAFE.$$ordainSanitizedUriForInternalBlocks =
-    $$makeSanitizedContentFactoryWithDefaultDirOnlyForInternalBlocks_(
-        SanitizedUri);
-
-
-/**
- * Creates kind="attributes" block contents (internal use only).
- *
- * @param {?} content Text.
- * @return {!SanitizedHtmlAttribute|!$$EMPTY_STRING_}
- *     Wrapped result.
- */
-VERY_UNSAFE.$$ordainSanitizedAttributesForInternalBlocks =
-    $$makeSanitizedContentFactoryWithDefaultDirOnlyForInternalBlocks_(
-        SanitizedHtmlAttribute);
-
-
-/**
- * Creates kind="css" block contents (internal use only).
- *
- * @param {?} content Text.
- * @return {!SanitizedCss|!$$EMPTY_STRING_} Wrapped
- *     result.
- */
-VERY_UNSAFE.$$ordainSanitizedCssForInternalBlocks =
-    $$makeSanitizedContentFactoryWithDefaultDirOnlyForInternalBlocks_(
-        SanitizedCss);
 
 
 // -----------------------------------------------------------------------------
@@ -1873,7 +1697,7 @@ const $$insertWordBreaks = function(value, maxCharsBetweenWordBreaks) {
  * @return {string} The joined string.
  */
 const $$buildAttrValue = function(...values) {
-  return values.filter((s) => s).join(';');
+  return values.filter((s) => $$isTruthyNonEmpty(s)).join(';');
 };
 
 
@@ -1896,8 +1720,7 @@ const $$buildClassValue = function(...values) {
  * @return {SanitizedCss!|$$EMPTY_STRING_!} The joined string.
  */
 const $$buildStyleValue = function(...values) {
-  return VERY_UNSAFE.$$ordainSanitizedCssForInternalBlocks(
-      values.filter((s) => s)
+  return VERY_UNSAFE.ordainSanitizedCss(values.filter((s) => s)
           .map((s) => {
             if (typeof s === 'string') {
               const firstColonPos = s.indexOf(':');
@@ -1972,7 +1795,7 @@ const $$concatCssValues = function(l, r) {
   if (r.getContent() !== $$EMPTY_STRING_.VALUE) {
     asserts.assertInstanceof(r, SanitizedCss);
   }
-  return VERY_UNSAFE.$$ordainSanitizedCssForInternalBlocks(
+  return VERY_UNSAFE.ordainSanitizedCss(
       $$concatAttributeValues(l.getContent(), r.getContent(), ';'));
 };
 
@@ -2451,7 +2274,6 @@ const $$bidiUnicodeWrap = function(bidiGlobalDir, text) {
   const wrappedTextDir = formatter.getContextDir();
 
   // Unicode-wrapping safe HTML string data gives valid, safe HTML string data.
-  // ATTENTION: Do these need to be ...ForInternalBlocks()?
   if (isHtml) {
     return VERY_UNSAFE.ordainSanitizedHtml(wrappedText, wrappedTextDir);
   }
@@ -2666,6 +2488,7 @@ exports = {
   $$coerceToBoolean,
   $$isTruthyNonEmpty,
   $$hasContent,
+  $$emptyToNull,
   $$makeEmptyTemplateFn,
   $$registerDelegateFn,
   $$getDelTemplateId,

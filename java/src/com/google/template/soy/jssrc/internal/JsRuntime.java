@@ -129,6 +129,8 @@ public final class JsRuntime {
 
   public static final Expression SOY_HAS_CONTENT = SOY.dotAccess("$$hasContent");
 
+  public static final Expression SOY_EMPTY_TO_NULL = SOY.dotAccess("$$emptyToNull");
+
   public static final Expression SOY_ESCAPE_HTML = SOY.dotAccess("$$escapeHtml");
 
   public static final Expression SOY_GET_DELEGATE_FN = SOY.dotAccess("$$getDelegateFn");
@@ -282,17 +284,6 @@ public final class JsRuntime {
     return symbolWithNamespace(
         NodeContentKinds.getJsImportForOrdainersFunctions(kind),
         NodeContentKinds.toJsSanitizedContentOrdainer(kind));
-  }
-
-  /**
-   * Returns an 'ordainer' function that can be used wrap a {@code string} in a {@code
-   * SanitizedContent} object with no escaping.
-   */
-  public static Expression sanitizedContentOrdainerFunctionForInternalBlocks(
-      SanitizedContentKind kind) {
-    return symbolWithNamespace(
-        NodeContentKinds.getJsImportForOrdainersFunctions(kind),
-        NodeContentKinds.toJsSanitizedContentOrdainerForInternalBlocks(kind));
   }
 
   /** Returns the constructor for the proto. */

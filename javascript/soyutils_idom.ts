@@ -444,6 +444,10 @@ function getOriginalSanitizedContent(el: Element) {
 }
 
 function isTruthy(expr: unknown): boolean {
+  return !!expr;
+}
+
+function isTruthyNonEmpty(expr: unknown): boolean {
   if (!expr) return false;
 
   // idom callbacks.
@@ -464,16 +468,12 @@ function isTruthy(expr: unknown): boolean {
   return true;
 }
 
-function isTruthyNonEmpty(expr: unknown): boolean {
-  return isTruthy(expr);
-}
-
 function hasContent(expr: unknown): boolean {
-  return isTruthy(expr);
+  return isTruthyNonEmpty(expr);
 }
 
 function emptyToNull<T>(expr: T): T | undefined {
-  return isTruthy(expr) ? expr : undefined;
+  return isTruthyNonEmpty(expr) ? expr : undefined;
 }
 
 let uidCounter = 0;

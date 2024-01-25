@@ -636,12 +636,9 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
         // Python runtime does not distinguish between null and undefined.
         return visit(node.getParam(0));
       case EMPTY_TO_NULL:
-        return new PyExpr(
-            PyExprUtils.genExprWithNewToken(
-                Operator.OR,
-                ImmutableList.of(visit(node.getParam(0)), new PyExpr("None", Integer.MAX_VALUE)),
-                "or"),
-            PyExprUtils.pyPrecedenceForOperator(Operator.OR));
+        return new PyFunctionExprBuilder("runtime.empty_to_null")
+            .addArg(visit(node.getParam(0)))
+            .asPyExpr();
       case DEBUG_SOY_TEMPLATE_INFO:
         // 'debugSoyTemplateInfo' is used for inpsecting soy template info from rendered pages.
         // Always resolve to false since there is no plan to support this feature in PySrc.
@@ -656,9 +653,12 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
       case VE_DEF:
         return NONE;
       case BOOLEAN:
+        return new PyFunctionExprBuilder("bool").addArg(visit(node.getParam(0))).asPyExpr();
       case HAS_CONTENT:
       case IS_TRUTHY_NON_EMPTY:
-        return new PyFunctionExprBuilder("bool").addArg(visit(node.getParam(0))).asPyExpr();
+        return new PyFunctionExprBuilder("runtime.is_truthy_non_empty")
+            .addArg(visit(node.getParam(0)))
+            .asPyExpr();
       case MSG_WITH_ID:
       case REMAINDER:
         // should have been removed earlier in the compiler

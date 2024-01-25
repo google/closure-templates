@@ -269,8 +269,7 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
                   .setRhs(
                       kind == SanitizedContentKind.TEXT
                           ? id(outputVarName)
-                          : JsRuntime.sanitizedContentOrdainerFunctionForInternalBlocks(
-                                  node.getContentKind())
+                          : JsRuntime.sanitizedContentOrdainerFunction(node.getContentKind())
                               .call(id(outputVarName)))
                   .build());
       outputVars.popOutputVar();
