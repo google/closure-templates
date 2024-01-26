@@ -52,50 +52,54 @@ means templates are recursively guaranteed not to under-escape the output.
 
 Soy supports the following basic content kinds:
 
-*   `html` - HTML markup
+*   `html` - HTML markup {#kind_html}
 
     ```html
     <div>Hello!</div>
     ```
 
-*   `attributes` - HTML attribute-value pairs. Represents the combination of
-    both attribute names and attribute values, and must include the quotation
-    marks around the attribute value. If the template output is intended to be
-    just an attribute value alone (the part inside the quotes) then use either
-    the text or html content kind.
+*   `attributes` - HTML attribute-value pairs. {#kind_attributes}
+
+    Represents the combination of both attribute names and attribute values, and
+    must include the quotation marks around the attribute value. If the template
+    output is intended to be just an attribute value alone (the part inside the
+    quotes) then use either the text or html content kind.
 
     ```
     class="foo" width="100%"
     ```
 
-*   `text` - Plain text, not yet escaped
+*   `text` - Plain text, not yet escaped {#kind_text}
 
     ```
     Hello!
     ```
 
-*   `uri` - URIs
+*   `uri` - URIs {#kind_uri}
 
     ```
     http://www.google.com/search?q=android
     ```
 
-*   `css` - Stylesheet text
+*   `css` - Stylesheet or `style` attribute text {#kind_css}
 
     ```css
     .myClass{ color: red; display: block; }
     ```
 
-*   `js` - JavaScript or JSON
+*   `js` - JavaScript or JSON {#kind_js}
 
     ```js
     {"a": 1, "b": 2}
     ```
 
-*   `trusted_resource_uri` - A URL which is under application control and from
-    which script, CSS, and other resources that represent executable code can be
-    fetched. Currently Soy requires trusted_resource_uri for script srcs. In the
-    future, this may apply to other kinds of resources, such as stylesheets.
+*   `trusted_resource_uri` - A trusted URL. {#kind_trusted_resource_uri}
+
+    Compared to `uri`, this kind represents a URL that is under application
+    control and from which script, CSS, and other resources that represent
+    executable code can be fetched. Currently Soy requires trusted_resource_uri
+    for script srcs. In the future, this may apply to other kinds of resources,
+    such as stylesheets.
 
     ```
     https://www.google.com/test.js
