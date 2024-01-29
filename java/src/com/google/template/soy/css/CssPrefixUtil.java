@@ -17,8 +17,11 @@
 package com.google.template.soy.css;
 
 import com.google.common.base.CaseFormat;
+import com.google.common.collect.Streams;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.TemplateNode;
+import java.util.Objects;
+import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
 /** Utilities related to resolving the '%' prefix in the built-in css() function. */
@@ -44,6 +47,27 @@ public class CssPrefixUtil {
       return toCamelCase(template.getCssBaseNamespace());
     }
     return namespacePrefix;
+  }
+
+  public static String getTemplatePrefix(TemplateNode template) {
+    return getTemplatePrefix(
+        template, getNamespacePrefix(template.getNearestAncestor(SoyFileNode.class)));
+  }
+
+  public static Stream<String> getRequiredCssSymbols(TemplateNode template) {
+    SoyFileNode fileNode = template.getNearestAncestor(SoyFileNode.class);
+    return Streams.concat(
+        template.getRequiredCssNamespaces().stream(),
+        fileNode.getRequiredCssNamespaces().stream(),
+        fileNode.getRequiredCssPaths().stream()
+            .map(
+                cssPath -> {
+                  if (cssPath.resolvedPath().isPresent()) {
+                    return cssPath.resolvedPath().get();
+                  }
+                  return null;
+                })
+            .filter(Objects::nonNull));
   }
 
   private static String toCamelCase(String packageName) {

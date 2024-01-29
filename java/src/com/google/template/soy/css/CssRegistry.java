@@ -20,10 +20,9 @@ import static com.google.common.collect.ImmutableMap.toImmutableMap;
 
 import com.google.auto.value.AutoValue;
 import com.google.auto.value.extension.memoized.Memoized;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableSetMultimap;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLogicalPath;
@@ -40,19 +39,24 @@ public abstract class CssRegistry {
   // LFPME = logical file path minus extension
 
   /** Set of all top-level symbols, i.e. all CSS namespaces and all LFPMEs. */
-  public abstract ImmutableSet<String> providedSymbols();
+  public ImmutableSet<String> providedSymbols() {
+    return symbolToPath().keySet();
+  }
 
   /** Maps LFPME to the CSS namespace. */
   abstract ImmutableMap<String, String> lfpmeToNamespace();
 
   /** Maps all keys in {@link #providedSymbols} to the list of classes contained therein. */
-  abstract Optional<ImmutableListMultimap<String, String>> symbolToClasses();
+  abstract Optional<ImmutableSetMultimap<String, String>> symbolToClasses();
 
   /** Maps the logic file path (not LFPME) to a map of {short class name -> full class name}. */
   abstract ImmutableMap<SourceLogicalPath, ImmutableMap<String, String>> filePathToShortClassMap();
 
   /** Maps logical file path to the path of the CSS metadata file passed to the compiler. */
   abstract ImmutableMap<SourceLogicalPath, SourceFilePath> logicalToRealMap();
+
+  /** Maps all top-level symbols to file path. */
+  abstract ImmutableMap<String, SourceLogicalPath> symbolToPath();
 
   public abstract boolean skipCssReferenceCheck();
 
@@ -74,7 +78,7 @@ public abstract class CssRegistry {
     return lfpmeToNamespace().get(filePath);
   }
 
-  public ImmutableList<String> allowedSymbolsToUse(String nsOrPath) {
+  public ImmutableSet<String> allowedSymbolsToUse(String nsOrPath) {
     return symbolToClasses().get().get(nsOrPath);
   }
 
@@ -99,11 +103,12 @@ public abstract class CssRegistry {
       ImmutableSet<String> providedSymbols,
       ImmutableMap<SourceLogicalPath, ImmutableMap<String, String>> filePathToShortClassMap) {
     return new AutoValue_CssRegistry(
-        providedSymbols,
         ImmutableMap.of(),
         Optional.empty(),
         filePathToShortClassMap,
         ImmutableMap.of(),
+        providedSymbols.stream()
+            .collect(toImmutableMap(s -> s, s -> SourceLogicalPath.create("not-used"))),
         /* skipCssReferenceCheck= */ false);
   }
 
@@ -114,16 +119,21 @@ public abstract class CssRegistry {
   public static CssRegistry createForTest(
       ImmutableSet<String> providedSymbols, ImmutableMap<String, String> filePathToSymbol) {
     return new AutoValue_CssRegistry(
-        providedSymbols,
         filePathToSymbol,
         Optional.empty(),
         ImmutableMap.of(),
         ImmutableMap.of(),
+        providedSymbols.stream()
+            .collect(toImmutableMap(s -> s, s -> SourceLogicalPath.create("not-used"))),
         /* skipCssReferenceCheck= */ false);
   }
 
   @Nullable
   public SourceFilePath getFilePathForLogicalPath(SourceLogicalPath path) {
     return logicalToRealMap().get(path);
+  }
+
+  public SourceLogicalPath getFilePathForSymbol(String s) {
+    return symbolToPath().get(s);
   }
 }
