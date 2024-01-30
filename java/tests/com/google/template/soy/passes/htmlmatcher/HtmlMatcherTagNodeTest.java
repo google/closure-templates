@@ -17,9 +17,9 @@
 package com.google.template.soy.passes.htmlmatcher;
 
 import static com.google.common.truth.Truth.assertThat;
-import static com.google.common.truth.Truth8.assertThat;
 import static org.junit.Assert.assertThrows;
 
+import com.google.common.truth.Truth8;
 import com.google.template.soy.passes.htmlmatcher.HtmlMatcherGraphNode.EdgeKind;
 import com.google.template.soy.passes.htmlmatcher.HtmlMatcherTagNode.TagKind;
 import com.google.template.soy.soytree.HtmlOpenTagNode;
@@ -35,7 +35,7 @@ public final class HtmlMatcherTagNodeTest {
     HtmlOpenTagNode soyNode = TestUtils.soyHtmlOpenTagNode();
     HtmlMatcherTagNode testOpenTagNode = TestUtils.htmlMatcherOpenTagNode(soyNode);
 
-    assertThat(testOpenTagNode.getSoyNode()).hasValue(soyNode);
+    Truth8.assertThat(testOpenTagNode.getSoyNode()).hasValue(soyNode);
   }
 
   @Test
@@ -76,7 +76,7 @@ public final class HtmlMatcherTagNodeTest {
     HtmlMatcherTagNode testMatcherTagNode =
         TestUtils.htmlMatcherOpenTagNode(TestUtils.soyHtmlOpenTagNode());
 
-    assertThat(testMatcherTagNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE)).isEmpty();
+    Truth8.assertThat(testMatcherTagNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE)).isEmpty();
   }
 
   @Test
@@ -84,7 +84,7 @@ public final class HtmlMatcherTagNodeTest {
     HtmlMatcherTagNode testMatcherTagNode =
         TestUtils.htmlMatcherOpenTagNode(TestUtils.soyHtmlOpenTagNode());
 
-    assertThat(testMatcherTagNode.getNodeForEdgeKind(EdgeKind.FALSE_EDGE)).isEmpty();
+    Truth8.assertThat(testMatcherTagNode.getNodeForEdgeKind(EdgeKind.FALSE_EDGE)).isEmpty();
   }
 
   @Test
@@ -96,7 +96,8 @@ public final class HtmlMatcherTagNodeTest {
 
     testOpenTagNode.linkActiveEdgeToNode(testCloseTagNode);
 
-    assertThat(testOpenTagNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE)).hasValue(testCloseTagNode);
+    Truth8.assertThat(testOpenTagNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE))
+        .hasValue(testCloseTagNode);
   }
 
   @Test
@@ -108,7 +109,8 @@ public final class HtmlMatcherTagNodeTest {
 
     testOpenTagNode.linkEdgeToNode(EdgeKind.TRUE_EDGE, testCloseTagNode);
 
-    assertThat(testOpenTagNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE)).hasValue(testCloseTagNode);
+    Truth8.assertThat(testOpenTagNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE))
+        .hasValue(testCloseTagNode);
   }
 
   @Test

@@ -17,8 +17,8 @@
 package com.google.template.soy.base.internal;
 
 import static com.google.common.truth.Truth.assertThat;
-import static com.google.common.truth.Truth8.assertThat;
 
+import com.google.common.truth.Truth8;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.internal.Converters;
 import java.util.Set;
@@ -44,9 +44,11 @@ public final class SanitizedContentKindTest {
 
   @Test
   public void testForAttributeValue() {
-    assertThat(SanitizedContentKind.fromAttributeValue("html")).hasValue(SanitizedContentKind.HTML);
-    assertThat(SanitizedContentKind.fromAttributeValue("text")).hasValue(SanitizedContentKind.TEXT);
-    assertThat(SanitizedContentKind.fromAttributeValue("blarg")).isEmpty();
+    Truth8.assertThat(SanitizedContentKind.fromAttributeValue("html"))
+        .hasValue(SanitizedContentKind.HTML);
+    Truth8.assertThat(SanitizedContentKind.fromAttributeValue("text"))
+        .hasValue(SanitizedContentKind.TEXT);
+    Truth8.assertThat(SanitizedContentKind.fromAttributeValue("blarg")).isEmpty();
   }
 
   @Test

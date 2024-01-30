@@ -17,10 +17,10 @@
 package com.google.template.soy.passes;
 
 import static com.google.common.truth.Truth.assertThat;
-import static com.google.common.truth.Truth8.assertThat;
 import static java.util.stream.Collectors.joining;
 
 import com.google.common.base.Joiner;
+import com.google.common.truth.Truth8;
 import com.google.template.soy.base.internal.IncrementingIdGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprRootNode;
@@ -57,8 +57,8 @@ public final class StrictHtmlValidationPassTest {
     Optional<HtmlMatcherGraph> matcherGraph = matcherPass.getHtmlMatcherGraph();
 
     // Assert.
-    assertThat(matcherGraph).isPresent();
-    assertThat(matcherGraph.get().getRootNode()).isEmpty();
+    Truth8.assertThat(matcherGraph).isPresent();
+    Truth8.assertThat(matcherGraph.get().getRootNode()).isEmpty();
   }
 
   @Test
@@ -124,7 +124,7 @@ public final class StrictHtmlValidationPassTest {
     TestUtils.assertNodeIsCloseTagWithName(node, "span");
 
     // Follow the graph along the false edge from the if condition node.
-    assertThat(ifCondNode.getNodeForEdgeKind(EdgeKind.FALSE_EDGE)).hasValue(accNode);
+    Truth8.assertThat(ifCondNode.getNodeForEdgeKind(EdgeKind.FALSE_EDGE)).hasValue(accNode);
   }
 
   /**
@@ -174,14 +174,14 @@ public final class StrictHtmlValidationPassTest {
 
     // Follow the false branch of the initial {if $cond1} node. This should link directly to the
     // accumulator node.
-    assertThat(ifConditionNode.getNodeForEdgeKind(EdgeKind.FALSE_EDGE)).hasValue(accNode);
+    Truth8.assertThat(ifConditionNode.getNodeForEdgeKind(EdgeKind.FALSE_EDGE)).hasValue(accNode);
 
     // The next node should be the final </div>.
     nextNode = accNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE).get();
     TestUtils.assertNodeIsCloseTagWithName(nextNode, "div");
 
     // Verify that the graph ends here.
-    assertThat(nextNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE)).isEmpty();
+    Truth8.assertThat(nextNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE)).isEmpty();
   }
 
   /**
@@ -255,7 +255,7 @@ public final class StrictHtmlValidationPassTest {
     TestUtils.assertNodeIsCloseTagWithName(nextNode, "div");
 
     // Verify that the graph ends here.
-    assertThat(nextNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE)).isEmpty();
+    Truth8.assertThat(nextNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE)).isEmpty();
   }
 
   /**
@@ -331,7 +331,7 @@ public final class StrictHtmlValidationPassTest {
     TestUtils.assertNodeIsCloseTagWithName(nextNode, "li");
 
     // Verify that the graph ends here.
-    assertThat(nextNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE)).isEmpty();
+    Truth8.assertThat(nextNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE)).isEmpty();
   }
 
   /**
@@ -394,7 +394,7 @@ public final class StrictHtmlValidationPassTest {
     TestUtils.assertNodeIsCloseTagWithName(nextNode, "span");
 
     // Verify that the graph ends here.
-    assertThat(nextNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE)).isEmpty();
+    Truth8.assertThat(nextNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE)).isEmpty();
   }
 
   /**
@@ -479,7 +479,7 @@ public final class StrictHtmlValidationPassTest {
     TestUtils.assertNodeIsCloseTagWithName(nextNode, "span");
 
     // Verify that the graph ends here.
-    assertThat(nextNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE)).isEmpty();
+    Truth8.assertThat(nextNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE)).isEmpty();
   }
 
   /**
@@ -556,7 +556,7 @@ public final class StrictHtmlValidationPassTest {
     TestUtils.assertNodeIsCloseTagWithName(nextNode, "li");
 
     // Verify that the graph ends here.
-    assertThat(nextNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE)).isEmpty();
+    Truth8.assertThat(nextNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE)).isEmpty();
   }
 
   /**
@@ -659,7 +659,7 @@ public final class StrictHtmlValidationPassTest {
     TestUtils.assertNodeIsCloseTagWithName(nextNode, "span");
 
     // Verify that the graph ends here.
-    assertThat(nextNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE)).isEmpty();
+    Truth8.assertThat(nextNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE)).isEmpty();
   }
 
   private static void assertThatIfExpressionEqualTo(HtmlMatcherGraphNode node, String exprString) {

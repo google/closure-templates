@@ -17,8 +17,8 @@
 package com.google.template.soy.passes.htmlmatcher;
 
 import static com.google.common.truth.Truth.assertThat;
-import static com.google.common.truth.Truth8.assertThat;
 
+import com.google.common.truth.Truth8;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -40,60 +40,60 @@ public final class HtmlMatcherGraphTest {
   public void testAddNodeToEmptyGraph_udatesRootNode() {
     HtmlMatcherGraph matcherGraph = new HtmlMatcherGraph();
 
-    assertThat(matcherGraph.getRootNode()).isEmpty();
+    Truth8.assertThat(matcherGraph.getRootNode()).isEmpty();
 
     HtmlMatcherGraphNode openNode =
         TestUtils.htmlMatcherOpenTagNode(TestUtils.soyHtmlOpenTagNode());
     matcherGraph.addNode(openNode);
 
-    assertThat(matcherGraph.getRootNode()).hasValue(openNode);
+    Truth8.assertThat(matcherGraph.getRootNode()).hasValue(openNode);
   }
 
   @Test
   public void testAddNode_updatesCursor() {
     HtmlMatcherGraph matcherGraph = new HtmlMatcherGraph();
 
-    assertThat(matcherGraph.getNodeAtCursor()).isEmpty();
+    Truth8.assertThat(matcherGraph.getNodeAtCursor()).isEmpty();
 
     HtmlMatcherGraphNode openNode =
         TestUtils.htmlMatcherOpenTagNode(TestUtils.soyHtmlOpenTagNode());
     matcherGraph.addNode(openNode);
 
-    assertThat(matcherGraph.getNodeAtCursor()).hasValue(openNode);
+    Truth8.assertThat(matcherGraph.getNodeAtCursor()).hasValue(openNode);
   }
 
   @Test
   public void testSaveGraphCursor_doesntChangeCursor() {
     HtmlMatcherGraph matcherGraph = simpleMatcherGraph();
 
-    assertThat(matcherGraph.getNodeAtCursor()).isPresent();
+    Truth8.assertThat(matcherGraph.getNodeAtCursor()).isPresent();
 
     HtmlMatcherGraphNode nodeAtCursor = matcherGraph.getNodeAtCursor().get();
     matcherGraph.saveCursor();
 
-    assertThat(matcherGraph.getNodeAtCursor()).hasValue(nodeAtCursor);
+    Truth8.assertThat(matcherGraph.getNodeAtCursor()).hasValue(nodeAtCursor);
   }
 
   @Test
   public void testSaveRestoreEmptyGraph() {
     HtmlMatcherGraph emptyGraph = new HtmlMatcherGraph();
 
-    assertThat(emptyGraph.getRootNode()).isEmpty();
+    Truth8.assertThat(emptyGraph.getRootNode()).isEmpty();
 
     emptyGraph.saveCursor();
 
-    assertThat(emptyGraph.getNodeAtCursor()).isEmpty();
+    Truth8.assertThat(emptyGraph.getNodeAtCursor()).isEmpty();
 
     emptyGraph.restoreCursor();
 
-    assertThat(emptyGraph.getNodeAtCursor()).isEmpty();
+    Truth8.assertThat(emptyGraph.getNodeAtCursor()).isEmpty();
   }
 
   @Test
   public void testSaveRestoreCursor() {
     HtmlMatcherGraph matcherGraph = simpleMatcherGraph();
 
-    assertThat(matcherGraph.getNodeAtCursor()).isPresent();
+    Truth8.assertThat(matcherGraph.getNodeAtCursor()).isPresent();
 
     HtmlMatcherGraphNode savedNode = matcherGraph.getNodeAtCursor().get();
     matcherGraph.saveCursor();
@@ -103,14 +103,14 @@ public final class HtmlMatcherGraphTest {
 
     matcherGraph.restoreCursor();
 
-    assertThat(matcherGraph.getNodeAtCursor()).hasValue(savedNode);
+    Truth8.assertThat(matcherGraph.getNodeAtCursor()).hasValue(savedNode);
   }
 
   @Test
   public void testRestoreCursor_underflowsSimpleGraph() {
     HtmlMatcherGraph matcherGraph = simpleMatcherGraph();
 
-    assertThat(matcherGraph.getNodeAtCursor()).isPresent();
+    Truth8.assertThat(matcherGraph.getNodeAtCursor()).isPresent();
     exceptionPolicy.expect(IllegalStateException.class);
     matcherGraph.restoreCursor();
   }
