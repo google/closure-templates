@@ -35,6 +35,7 @@ final class IsComputableAsIncrementalDomExprsVisitor extends IsComputableAsJsExp
   protected Boolean visitCallParamContentNode(CallParamContentNode node) {
     switch (node.getContentKind()) {
       case HTML:
+      case HTML_ELEMENT:
       case ATTRIBUTES:
         return false;
       default:
