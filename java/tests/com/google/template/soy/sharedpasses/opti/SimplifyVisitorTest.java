@@ -120,10 +120,10 @@ public class SimplifyVisitorTest {
   @Test
   public void testSimplifyIfNode() throws Exception {
 
-    assertSimplification("{if not false}", "  111", "{/if}", "{if true && false}", "  222", "{/if}")
+    assertSimplification("{if !false}", "  111", "{/if}", "{if true && false}", "  222", "{/if}")
         .isEqualTo("111");
 
-    assertSimplification("{if ''}", "  111", "{elseif not 1}", "  222", "{else}", "  333", "{/if}")
+    assertSimplification("{if ''}", "  111", "{elseif !1}", "  222", "{else}", "  333", "{/if}")
         .isEqualTo("333");
 
     assertSimplification(

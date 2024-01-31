@@ -145,7 +145,7 @@ public final class ResolveNamesPassTest {
         constructTemplateSource("{let $la: 1 /}", "{let $la: $la /}"));
     assertResolveNamesFails(
         "Local variable '$pa' conflicts with symbol defined at 4:11-4:12.",
-        constructTemplateSource("{@param pa: bool}", "{let $pa: not $pa /}"));
+        constructTemplateSource("{@param pa: bool}", "{let $pa: !$pa /}"));
     assertResolveNamesFails(
         "Local variable '$la' conflicts with symbol defined at 4:8-4:10.",
         constructTemplateSource(

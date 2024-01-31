@@ -138,7 +138,7 @@ public final class TranslateExprNodeVisitorTest {
 
   @Test
   public void testOperators() {
-    assertThatSoyExpr("not $boo || true && $goo")
+    assertThatSoyExpr("!$boo || true && $goo")
         .withInitialLocalVarTranslations(LOCAL_VAR_TRANSLATIONS)
         .generatesCode("!opt_data.boo || true && gooData8;")
         .withPrecedence(OR);

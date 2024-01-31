@@ -1066,7 +1066,7 @@ public class BytecodeCompilerTest {
                     "{template foo}",
                     "  {@param list : ?}",
                     "  {@param? opt : ?}",
-                    "{if not $opt}",
+                    "{if !$opt}",
                     // failures on the foreach loop used to get assigned the line number of the
                     // if statement.
                     "  {for $foo in $list}",

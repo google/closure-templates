@@ -89,7 +89,7 @@ public final class AbstractOperatorNodeTest {
   @Test
   public void testToSourceString2() {
 
-    // Test expression: not $x ? $x != $x : $x * $x
+    // Test expression: !$x ? $x != $x : $x * $x
     //
     // The expression tree looks like this:
     // [ConditionalOpNode] n0
@@ -105,7 +105,7 @@ public final class AbstractOperatorNodeTest {
     // Root n0.
     ConditionalOpNode n0 = new ConditionalOpNode(X, X);
     // Children of n0.
-    NotOpNode n1 = new NotOpNode(X, X, Operator.NOT_LEGACY);
+    NotOpNode n1 = new NotOpNode(X, X, Operator.NOT);
     NotEqualOpNode n2 = new NotEqualOpNode(X, X);
     TimesOpNode n3 = new TimesOpNode(X, X);
     n0.addChild(n1);
@@ -120,6 +120,6 @@ public final class AbstractOperatorNodeTest {
     n3.addChild(x.copy(new CopyState()));
     n3.addChild(x.copy(new CopyState()));
 
-    assertThat(n0.toSourceString()).isEqualTo("not $x ? $x != $x : $x * $x");
+    assertThat(n0.toSourceString()).isEqualTo("!$x ? $x != $x : $x * $x");
   }
 }

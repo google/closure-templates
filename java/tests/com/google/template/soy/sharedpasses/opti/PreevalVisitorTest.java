@@ -68,7 +68,7 @@ public final class PreevalVisitorTest {
 
     assertThat(preeval("$boo", "boo").integerValue()).isEqualTo(8);
     assertThat(preeval("$boo % 3", "boo").integerValue()).isEqualTo(2);
-    assertThat(preeval("not $boo ? 1 : 2", "boo").integerValue()).isEqualTo(2);
+    assertThat(preeval("!$boo ? 1 : 2", "boo").integerValue()).isEqualTo(2);
     assertThat(preeval("$boo + ''", "boo").stringValue()).isEqualTo("8");
 
     // With functions.

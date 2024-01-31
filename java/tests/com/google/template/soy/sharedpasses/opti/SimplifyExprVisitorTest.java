@@ -64,8 +64,8 @@ public final class SimplifyExprVisitorTest {
         .simplifiesTo("$boo");
     assertThat(new ExpressionParser("$boo % 3").withParam("boo", "int").parseForParentNode())
         .simplifiesTo("$boo % 3");
-    assertThat(new ExpressionParser("not $boo").withParam("boo", "bool").parseForParentNode())
-        .simplifiesTo("not $boo");
+    assertThat(new ExpressionParser("!$boo").withParam("boo", "bool").parseForParentNode())
+        .simplifiesTo("!$boo");
     assertThat(new ExpressionParser("$boo + ''").withParam("boo", "string").parseForParentNode())
         .simplifiesTo("$boo + ''");
 
@@ -81,10 +81,8 @@ public final class SimplifyExprVisitorTest {
     assertThat(new ExpressionParser("3 * 5 % $boo").withParam("boo", "int").parseForParentNode())
         .simplifiesTo("15 % $boo");
     assertThat(
-            new ExpressionParser("not false && not $boo")
-                .withParam("boo", "html")
-                .parseForParentNode())
-        .simplifiesTo("not $boo");
+            new ExpressionParser("!false && !$boo").withParam("boo", "html").parseForParentNode())
+        .simplifiesTo("!$boo");
     assertThat(
             new ExpressionParser("'a' + 'b' + $boo")
                 .withParam("boo", "string")

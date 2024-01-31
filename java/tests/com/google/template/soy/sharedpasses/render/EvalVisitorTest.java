@@ -373,16 +373,16 @@ public class EvalVisitorTest {
   @Test
   public void testEvalBooleanOperators() throws Exception {
 
-    assertEval("not $t", false);
-    assertEval("not null", true);
-    assertEval("not $boo", false);
-    assertEval("not 0.0", true);
-    assertEval("not $foo.bar", false);
-    assertEval("not ''", true);
-    assertEval("not $foo", false);
-    assertEval("not $map0", false);
-    assertEval("not $goo", false);
-    assertEval("not $list0", false);
+    assertEval("!$t", false);
+    assertEval("!null", true);
+    assertEval("!$boo", false);
+    assertEval("!0.0", true);
+    assertEval("!$foo.bar", false);
+    assertEval("!''", true);
+    assertEval("!$foo", false);
+    assertEval("!$map0", false);
+    assertEval("!$goo", false);
+    assertEval("!$list0", false);
 
     assertEval("false && $undefinedName", false); // short-circuit evaluation
     assertEval("$t && -1 && $goo && $foo.bar", "baz");

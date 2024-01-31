@@ -201,14 +201,14 @@ public class ExpressionCompilerTest {
 
   @Test
   public void testNotOpNode() {
-    assertExpression("not false").evaluatesTo(true);
-    assertExpression("not true").evaluatesTo(false);
+    assertExpression("!false").evaluatesTo(true);
+    assertExpression("!true").evaluatesTo(false);
 
     variables.put("foo", untypedBoxedSoyExpression(SoyExpression.forString(constant("foo"))));
-    assertExpression("not $foo").evaluatesTo(false);
+    assertExpression("!$foo").evaluatesTo(false);
 
     variables.put("foo", untypedBoxedSoyExpression(SoyExpression.forString(constant(""))));
-    assertExpression("not $foo").evaluatesTo(true); // empty string is falsy
+    assertExpression("!$foo").evaluatesTo(true); // empty string is falsy
   }
 
   @Test

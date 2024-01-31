@@ -301,9 +301,9 @@ public final class ResolveExpressionTypesPassTest {
         "{assertType('?', $pa || $pa)}",
         "{assertType('int', $pi || $pi)}",
         "{assertType('float', $pf || $pf)}",
-        "{assertType('bool', not $pa)}",
-        "{assertType('bool', not $pi)}",
-        "{assertType('bool', not $pf)}");
+        "{assertType('bool', !$pa)}",
+        "{assertType('bool', !$pi)}",
+        "{assertType('bool', !$pf)}");
   }
 
   @Test
@@ -451,7 +451,7 @@ public final class ResolveExpressionTypesPassTest {
         "{if null != $pa}", // Reverse order
         "  {assertType('bool', $pa)}", // #7 must be non-null
         "{/if}",
-        "{if not ($pa == null)}", // Not operator
+        "{if !($pa == null)}", // Not operator
         "  {assertType('bool', $pa)}", // #8 must be non-null
         "{/if}",
         "{if $pa}", // Implicit != null
@@ -804,7 +804,7 @@ public final class ResolveExpressionTypesPassTest {
         "{@param? selected: map<string,bool>|null}",
         "{assertType('bool|map<string,bool>|null|undefined', $selected && $selected.get('a'))}",
         "{assertType('bool|undefined', $selected == null || $selected.get('a'))}",
-        "{if ($record.active != null) && (not $record.active)}",
+        "{if ($record.active != null) && (!$record.active)}",
         "  {assertType('bool', $record.active)}",
         "{/if}",
         "");
@@ -904,7 +904,7 @@ public final class ResolveExpressionTypesPassTest {
         "{assertType('bool', $pa ?? $pb)}", // #2 must be non-null (re-written to ($pa != null ? $pa
         // : $pb))
         "{assertType('int', $pc.a ? $pc.a : 0)}",
-        "{if not $pc.a}{assertType('int|null', $pc.a)}{/if}");
+        "{if !$pc.a}{assertType('int|null', $pc.a)}{/if}");
   }
 
   @Test

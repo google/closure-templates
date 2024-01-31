@@ -139,7 +139,7 @@ public final class ProtoSupportTest {
         .rendersAs("undefined");
     assertThatTemplateBody(
             "{@param? proto : ExampleExtendable|null}",
-            "{if not $proto?.getBoolFieldOrUndefined()}",
+            "{if !$proto?.getBoolFieldOrUndefined()}",
             "  foo",
             "{/if}")
         .rendersAs("foo");

@@ -263,7 +263,7 @@ public final class ParseExpressionTest {
 
     // Level 8.
     assertThatExpression("- $a").isValidExpression();
-    assertThatExpression("not true").isValidExpression();
+    assertThatExpression("!true").isValidExpression();
     assertThatExpression("not$a").isValidExpression();
     assertThatExpression("+1").isNotValidExpression();
     assertThatExpression("!$a").isValidExpression();
@@ -454,7 +454,7 @@ public final class ParseExpressionTest {
     IntegerNode negInt = (IntegerNode) expr;
     assertThat(negInt.getValue()).isEqualTo(-11);
 
-    expr = assertThatExpression("not false").isValidExpression();
+    expr = assertThatExpression("!false").isValidExpression();
     NotOpNode notOp = (NotOpNode) expr;
     assertThat(((BooleanNode) notOp.getChild(0)).getValue()).isFalse();
 

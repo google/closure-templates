@@ -751,7 +751,7 @@ public class RenderVisitorTest {
             + "      Bloh\n"
             + "  {/switch}{sp}\n"
             + "  {switch $foo.bar}{case 'baz',$boo}baz{default}zab{/switch}\n"
-            + "  {switch true}{case not $t}daz{default}zad{/switch}\n";
+            + "  {switch true}{case !$t}daz{default}zad{/switch}\n";
 
     assertRender(templateBody, "Bluh bazzad");
   }
