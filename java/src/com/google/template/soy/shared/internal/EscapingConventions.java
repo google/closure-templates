@@ -839,6 +839,15 @@ public final class EscapingConventions {
     private static final String ALLOWED_IN_FUNCTIONS = "[- \t,+.!#%_0-9a-zA-Z]";
 
     /**
+     * Matches a forward slash that is not followed by another forward slash and an asterisk that is
+     * not preceded or followed by a forward slash.
+     *
+     * <p>Note, this is more verbose than necessary in order to support JavaScript conversion.
+     */
+    private static final String ALLOW_MULTIPLICATION_AND_DIVISION =
+        "(?:(?:\\/(?![\\/\\*]))|(?:\\*(?!\\/)))";
+
+    /**
      * Matches a CSS token that can appear unquoted as part of an ID, class, font-family-name, or
      * CSS keyword value.
      */
@@ -852,22 +861,28 @@ public final class EscapingConventions {
                 + // A latin class name or ID, CSS identifier, hex color or unicode range.
                 "[.#]?-?(?:[_a-z0-9-]+)(?:-[_a-z0-9-]+)*-?|"
                 + // A CSS function call. This allows the same characters as
-                // except for / and *, because those can make comments which we want to exclude, but
-                // don't have an easy way of doing that in this regex.
                 "(?:"
                 + Joiner.on('|').join(ALLOWED_CSS_FUNCTIONS)
-                + ")\\((?:"
+                + ")\\((?:(?:"
+                + ALLOW_MULTIPLICATION_AND_DIVISION
+                + "?"
                 + ALLOWED_IN_FUNCTIONS
+                + "+)*"
                 + "|(?:"
                 // Allow function call in a function call (1 layer)
                 // e.g. linear-gradient(... rgb(...) ...)
                 + Joiner.on('|').join(ALLOWED_CSS_FUNCTIONS)
-                + ")\\("
+                + ")\\((?:"
+                + ALLOW_MULTIPLICATION_AND_DIVISION
+                + "?"
                 + ALLOWED_IN_FUNCTIONS
-                + "+\\))+\\)|"
+                + "+)*"
+                + "\\))+\\)|"
                 + // A quantity, with an optional unit
                 // Note that this matches "1." even though that is not valid per the spec.
                 "[-+]?(?:[0-9]+(?:\\.[0-9]*)?|\\.[0-9]+)(?:e-?[0-9]+)?(?:[a-z]{1,4}|%)?|"
+                + ALLOW_MULTIPLICATION_AND_DIVISION
+                + "|"
                 + // The special value !important.
                 "!important)"
                 + // Spaces and commas (for property value lists).
