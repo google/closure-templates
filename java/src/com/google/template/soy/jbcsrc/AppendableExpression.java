@@ -17,8 +17,8 @@
 package com.google.template.soy.jbcsrc;
 
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.BUFFERING_APPENDABLE_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.LOGGING_ADVISING_APPENDABLE_TYPE;
-import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.LOGGING_ADVISING_BUILDER_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
 
 import com.google.common.collect.ImmutableList;
@@ -84,9 +84,9 @@ final class AppendableExpression extends Expression {
   }
 
   static AppendableExpression forStringBuilder(Expression delegate) {
-    checkArgument(delegate.resultType().equals(LOGGING_ADVISING_BUILDER_TYPE));
+    checkArgument(delegate.resultType().equals(BUFFERING_APPENDABLE_TYPE));
     return new AppendableExpression(
-        BytecodeUtils.LOGGING_ADVISING_BUILDER_TYPE,
+        BytecodeUtils.BUFFERING_APPENDABLE_TYPE,
         delegate,
         /* hasSideEffects= */ false,
         /* supportsSoftLimiting= */ false);

@@ -38,7 +38,17 @@ import javax.annotation.Nullable;
  * jbcsrc} implementations of the generated {@code LetContentNode} and {@code CallParamContentNode}
  * implementations.
  */
-public abstract class DetachableContentProvider implements SoyValueProvider {
+public final class DetachableContentProvider implements SoyValueProvider {
+
+  /** A lambda-able interface for implementing a lazy content block. */
+  @FunctionalInterface
+  public interface Impl {
+    RenderResult render(LoggingAdvisingAppendable appendable) throws IOException;
+  }
+
+  public static DetachableContentProvider create(Impl impl) {
+    return new DetachableContentProvider(impl);
+  }
 
   // Will be either a SanitizedContent or a StringData.
   private SoyValue resolvedValue;
@@ -47,6 +57,12 @@ public abstract class DetachableContentProvider implements SoyValueProvider {
   // Will be either an LoggingAdvisingAppendable.BufferingAppendable or a TeeAdvisingAppendable
   // depending on whether we are being resolved via 'status()' or via 'renderAndResolve()'
   private LoggingAdvisingAppendable builder;
+
+  private Impl impl;
+
+  private DetachableContentProvider(Impl impl) {
+    this.impl = impl;
+  }
 
   @Override
   public final SoyValue resolve() {
@@ -66,13 +82,14 @@ public abstract class DetachableContentProvider implements SoyValueProvider {
     }
     RenderResult result;
     try {
-      result = doRender(currentBuilder);
+      result = impl.render(currentBuilder);
     } catch (IOException ioe) {
       throw new AssertionError("impossible", ioe);
     }
     if (result.isDone()) {
       buffer = currentBuilder;
       builder = null;
+      impl = null;
     }
     return result;
   }
@@ -88,10 +105,11 @@ public abstract class DetachableContentProvider implements SoyValueProvider {
     if (currentBuilder == null) {
       builder = currentBuilder = new TeeAdvisingAppendable(appendable);
     }
-    RenderResult result = doRender(currentBuilder);
+    RenderResult result = impl.render(currentBuilder);
     if (result.isDone()) {
       buffer = currentBuilder.buffer;
       builder = null;
+      impl = null;
     }
     return result;
   }
@@ -114,9 +132,6 @@ public abstract class DetachableContentProvider implements SoyValueProvider {
     }
     return local;
   }
-
-  /** Overridden by generated subclasses to implement lazy detachable resolution. */
-  protected abstract RenderResult doRender(LoggingAdvisingAppendable appendable) throws IOException;
 
   /**
    * An {@link AdvisingAppendable} that forwards to a delegate appendable but also saves all the

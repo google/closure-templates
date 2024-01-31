@@ -30,12 +30,10 @@ import com.google.template.soy.SoyFileSet;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
-import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.jbcsrc.api.SoySauce.Continuation;
 import com.google.template.soy.jbcsrc.api.SoySauce.WriteContinuation;
-import com.google.template.soy.jbcsrc.runtime.DetachableSoyValueProvider;
 import com.google.template.soy.testing.Foo;
 import java.io.IOException;
 import org.junit.Before;
@@ -343,17 +341,8 @@ public class SoySauceTest {
   public void testExceptionRewriting() {
     SoySauce.Renderer tmpl = sauce.renderTemplate("strict_test.callsItself");
 
-    SoyValueProvider intProvider =
-        new DetachableSoyValueProvider() {
-          @Override
-          protected RenderResult doResolve() {
-            resolvedValue = IntegerData.ZERO;
-            return RenderResult.done();
-          }
-        };
-
     try {
-      tmpl.setData(ImmutableMap.of("depth", 10, "p", intProvider)).renderHtml();
+      tmpl.setData(ImmutableMap.of("depth", 10, "p", IntegerData.ZERO)).renderHtml();
       fail();
     } catch (ClassCastException cce) {
       // we get a CCE because we passed an int but it expected a string

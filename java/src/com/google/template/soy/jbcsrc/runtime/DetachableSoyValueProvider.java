@@ -16,7 +16,6 @@
 
 package com.google.template.soy.jbcsrc.runtime;
 
-import static com.google.common.base.Preconditions.checkState;
 
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SoyValue;
@@ -33,23 +32,42 @@ import java.io.IOException;
  * resolve to a {@link SoyValueProvider} to call {@link SoyValueProvider#renderAndResolve}, use
  * {@link DetachableSoyValueProviderProvider} instead.
  */
-public abstract class DetachableSoyValueProvider implements SoyValueProvider {
-  protected SoyValue resolvedValue;
+public final class DetachableSoyValueProvider implements SoyValueProvider {
+  /** A lambda-able interface for implementing a lazy value block. */
+  @FunctionalInterface
+  public interface Impl {
+    /** Returns either a RenderResult meaning we aren't done or a SoyValue for our final value. */
+    Object evaluate();
+  }
+
+  public static DetachableSoyValueProvider create(Impl impl) {
+    return new DetachableSoyValueProvider(impl);
+  }
+
+  private Object implOrValue;
+
+  private DetachableSoyValueProvider(Impl impl) {
+    this.implOrValue = impl;
+  }
 
   @Override
   public final SoyValue resolve() {
     JbcSrcRuntime.awaitProvider(this);
-    SoyValue local = resolvedValue;
-    checkState(local != null, "doResolve didn't replace tombstone");
-    return local;
+    return (SoyValue) implOrValue;
   }
 
   @Override
   public final RenderResult status() {
-    if (resolvedValue != null) {
+    var local = implOrValue;
+    if (local instanceof SoyValue) {
       return RenderResult.done();
     }
-    return doResolve();
+    var result = ((Impl) local).evaluate();
+    if (result instanceof RenderResult) {
+      return (RenderResult) result;
+    }
+    implOrValue = (SoyValue) result;
+    return RenderResult.done();
   }
 
   @Override
@@ -65,7 +83,4 @@ public abstract class DetachableSoyValueProvider implements SoyValueProvider {
     }
     return result;
   }
-
-  /** Overridden by generated subclasses to implement lazy detachable resolution. */
-  protected abstract RenderResult doResolve();
 }

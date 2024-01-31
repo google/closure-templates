@@ -357,6 +357,11 @@ public abstract class MethodRef {
    * the Expression api.
    */
   public void invokeUnchecked(CodeBuilder cb) {
+    checkState(opcode() != Opcodes.INVOKESPECIAL, "cannot invokeUnchecked a constructor");
+    doInvokeUnchecked(cb);
+  }
+
+  private void doInvokeUnchecked(CodeBuilder cb) {
     cb.visitMethodInsn(
         opcode(),
         owner().internalName(),
@@ -369,7 +374,7 @@ public abstract class MethodRef {
   }
 
   private void doInvoke(CodeBuilder mv, Iterable<? extends Expression> args) {
-    if (method().getName().equals("<init>")) {
+    if (method().getName().equals("<init>") && opcode() == Opcodes.INVOKESPECIAL) {
       mv.newInstance(returnType());
       // push a second reference onto the stack so there is still a reference to the new object
       // after invoking the constructor (constructors are void methods)
@@ -378,6 +383,6 @@ public abstract class MethodRef {
     for (Expression arg : args) {
       arg.gen(mv);
     }
-    invokeUnchecked(mv);
+    doInvokeUnchecked(mv);
   }
 }

@@ -28,43 +28,60 @@ import java.io.IOException;
  * implementations.
  *
  * <p>This class resolves to a {@link SoyValueProvider} and calls {@link
- * SoyValueProvider#renderAndResolve}. If you don't neeed to box as a value provider, use {@link
+ * SoyValueProvider#renderAndResolve}. If you don't need to box as a value provider, use {@link
  * DetachableSoyValueProvider} instead, which resolves to a {@link SoyValue} and calls {@link
  * SoyValue#render}.
  */
-public abstract class DetachableSoyValueProviderProvider implements SoyValueProvider {
-  protected SoyValueProvider resolvedValueProvider = null;
+public final class DetachableSoyValueProviderProvider implements SoyValueProvider {
+  /** A lambda-able interface for implementing a lazy value block. */
+  @FunctionalInterface
+  public interface Impl {
+    /**
+     * Returns either a RenderResult meaning we aren't done or a SoyValueProvider for our final
+     * value.
+     */
+    Object evaluate();
+  }
+
+  public static DetachableSoyValueProviderProvider create(Impl impl) {
+    return new DetachableSoyValueProviderProvider(impl);
+  }
+
+  private Object implOrValueProvider;
+
+  private DetachableSoyValueProviderProvider(Impl impl) {
+    this.implOrValueProvider = impl;
+  }
 
   @Override
   public final SoyValue resolve() {
     JbcSrcRuntime.awaitProvider(this);
-    return resolvedValueProvider.resolve();
+    return ((SoyValueProvider) implOrValueProvider).resolve();
   }
 
   @Override
   public final RenderResult status() {
-    if (resolvedValueProvider == null) {
-      RenderResult subResult = doResolveDelegate();
-      if (!subResult.isDone()) {
-        return subResult;
+    var local = implOrValueProvider;
+    if (local instanceof Impl) {
+      var subResult = ((Impl) local).evaluate();
+      if (subResult instanceof RenderResult) {
+        return (RenderResult) subResult;
       }
+      implOrValueProvider = local = subResult;
     }
-    return resolvedValueProvider.status();
+    return ((SoyValueProvider) local).status();
   }
 
   @Override
   public RenderResult renderAndResolve(LoggingAdvisingAppendable appendable) throws IOException {
-    if (resolvedValueProvider == null) {
-      RenderResult subResult = doResolveDelegate();
-      if (!subResult.isDone()) {
-        // This means we have not made enough progress to even begin delegating, keep checking until
-        // we have.
-        return subResult;
+    var local = implOrValueProvider;
+    if (local instanceof Impl) {
+      var subResult = ((Impl) local).evaluate();
+      if (subResult instanceof RenderResult) {
+        return (RenderResult) subResult;
       }
+      implOrValueProvider = local = subResult;
     }
-    return resolvedValueProvider.renderAndResolve(appendable);
+    return ((SoyValueProvider) local).renderAndResolve(appendable);
   }
-
-  /** Overridden by generated subclasses to implement lazy detachable resolution. */
-  protected abstract RenderResult doResolveDelegate();
 }

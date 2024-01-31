@@ -19,6 +19,7 @@ package com.google.template.soy.jbcsrc.internal;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.OBJECT;
 
+import com.google.common.base.VerifyException;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.protobuf.GeneratedMessage;
 import com.google.template.soy.jbcsrc.restricted.Flags;
@@ -46,11 +47,12 @@ public final class SoyClassWriter extends ClassVisitor {
     return new Builder(type);
   }
 
+  /** Builder for {@link SoyClassWriter}. */
   public static final class Builder {
     private final TypeInfo type;
     private int access = Opcodes.ACC_FINAL | Opcodes.ACC_SUPER;
     private TypeInfo baseClass = OBJECT;
-    private List<String> interfaces = new ArrayList<>();
+    private final List<String> interfaces = new ArrayList<>();
     private String fileName; // optional
 
     private Builder(TypeInfo type) {
@@ -113,7 +115,7 @@ public final class SoyClassWriter extends ClassVisitor {
         builder.type.internalName(),
         null /* not generic */,
         builder.baseClass.internalName(),
-        builder.interfaces.toArray(new String[builder.interfaces.size()]));
+        builder.interfaces.toArray(new String[0]));
     if (builder.fileName != null) {
       super.visitSource(
           builder.fileName,
@@ -152,7 +154,7 @@ public final class SoyClassWriter extends ClassVisitor {
     } catch (ClassTooLargeException classTooLargeException) {
       // This error is unrecoverable and either implies that we need to improve compiler
       // optimizations or that the user needs to refactor their template.
-      throw new RuntimeException(
+      throw new VerifyException(
           "Attempted to generate a method of class with too many constants: "
               + classTooLargeException.getConstantPoolCount()
               + " constants (max is 65536, delta is "
@@ -163,7 +165,7 @@ public final class SoyClassWriter extends ClassVisitor {
     } catch (MethodTooLargeException methodTooLargeException) {
       // This error is unrecoverable and either implies that we need to improve compiler
       // optimizations or that the user needs to refactor their template.
-      throw new RuntimeException(
+      throw new VerifyException(
           "Attempted to generate a method of size: "
               + methodTooLargeException.getCodeSize()
               + " bytes (max is 65536), numFields: "
@@ -186,10 +188,10 @@ public final class SoyClassWriter extends ClassVisitor {
 
     @Override
     protected String getCommonSuperClass(String left, String right) {
-      if ("java/lang/Object".equals(left)) {
+      if (left.equals("java/lang/Object")) {
         return left;
       }
-      if ("java/lang/Object".equals(right)) {
+      if (right.equals("java/lang/Object")) {
         return right;
       }
       // TODO(lukes): we know the names and superclasses of all the classes we generate prior to
@@ -210,7 +212,7 @@ public final class SoyClassWriter extends ClassVisitor {
         try {
           return super.getCommonSuperClass(left, right);
         } catch (RuntimeException re) {
-          throw new RuntimeException(
+          throw new VerifyException(
               "unable to calculate common base class of: " + left + " and " + right, re);
         }
       }

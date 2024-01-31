@@ -37,6 +37,14 @@ public final class JbcSrcNameGenerators {
   }
 
   /**
+   * Returns a {@link UniqueNameGenerator} that is suitable for managing names used for methods in a
+   * class.
+   */
+  public static UniqueNameGenerator forMethodNames() {
+    return new UniqueNameGenerator(DANGEROUS_CHARACTERS, "%");
+  }
+
+  /**
    * Returns a {@link UniqueNameGenerator} that is suitable for managing simple names used for
    * classes.
    *

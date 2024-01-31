@@ -68,7 +68,7 @@ public final class LambdaFactoryTest {
   }
 
   @Test
-  public void testOneBundParameter() throws ReflectiveOperationException {
+  public void testOneBoundParameter() throws ReflectiveOperationException {
     @SuppressWarnings("unchecked")
     Supplier<Object> supplier =
         (Supplier)
