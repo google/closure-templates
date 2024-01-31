@@ -56,24 +56,24 @@ maven_install(
         "com.google.flogger:flogger:0.7.4",
         "com.google.flogger:flogger-system-backend:0.7.4",
         "com.google.flogger:google-extensions:0.7.4",
-        "com.google.guava:guava:32.1.1-jre",
+        "com.google.guava:guava:33.0.0-jre",
         maven.artifact(
             "com.google.guava",
             "guava-testlib",
-            "31.1-jre",
+            "33.0.0-jre",
             testonly = True
         ),
         "com.google.inject:guice:7.0.0",
         maven.artifact(
             "com.google.truth",
             "truth",
-            "1.1.5",
+            "1.3.0",
             testonly = True,
         ),
         maven.artifact(
             "com.google.truth.extensions",
             "truth-java8-extension",
-            "1.1.5",
+            "1.3.0",
             testonly = True
         ),
         "com.ibm.icu:icu4j:73.2",
