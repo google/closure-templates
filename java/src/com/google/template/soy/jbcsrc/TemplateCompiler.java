@@ -21,6 +21,7 @@ import static com.google.common.base.Strings.nullToEmpty;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static com.google.template.soy.soytree.SoyTreeUtils.allNodesOfType;
+import static java.util.stream.Collectors.toCollection;
 
 import com.google.auto.value.AutoAnnotation;
 import com.google.common.collect.ImmutableList;
@@ -31,7 +32,6 @@ import com.google.template.soy.data.internal.Converters;
 import com.google.template.soy.exprtree.AbstractLocalVarDefn;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
-import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.jbcsrc.ExpressionCompiler.BasicExpressionCompiler;
 import com.google.template.soy.jbcsrc.internal.InnerClasses;
@@ -51,6 +51,7 @@ import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.RecordToPositionalCallFactory;
 import com.google.template.soy.jbcsrc.shared.TemplateMetadata;
 import com.google.template.soy.soytree.CallDelegateNode;
+import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamValueNode;
 import com.google.template.soy.soytree.LetContentNode;
@@ -58,6 +59,7 @@ import com.google.template.soy.soytree.LetValueNode;
 import com.google.template.soy.soytree.PartialFileSetMetadata;
 import com.google.template.soy.soytree.SoyFileNode.CssPath;
 import com.google.template.soy.soytree.SoyNode;
+import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateBasicNode;
 import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateNode;
@@ -72,6 +74,8 @@ import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -220,7 +224,7 @@ final class TemplateCompiler {
                 .collect(toImmutableList())
             : ImmutableList.of();
 
-    // using linked hash sets below for determinism
+    // using immutable sets below for deterministic ordering
     ImmutableSet<String> uniqueIjs =
         allNodesOfType(templateNode, VarRefNode.class)
             .filter(VarRefNode::isInjected)
@@ -452,14 +456,19 @@ final class TemplateCompiler {
             constantCompiler,
             javaSourceFunctionCompiler,
             fileSetMetadata);
-    // Allocate local variables for all declared parameters.
+    // Allocate local variables for all _used_ parameters.  Unused params issue a warning but
+    // especially in the case of element templates things may be just unused server side.
     // NOTE: we initialize the parameters prior to where the jump table is initialized, this means
     // that all variables will be re-initialized ever time we re-enter the template.
     // TODO(lukes): move into SoyNodeCompiler.compile?  The fact that we construct SoyNodeCompiler
     // and then pull stuff out of it to initialize params is awkward
     TemplateVariableManager.Scope templateScope = variableSet.enterScope();
     List<Statement> paramInitStatements = new ArrayList<>();
+    var referencedParams = getReferencedParams(templateNode);
     for (TemplateParam param : templateNode.getAllParams()) {
+      if (!referencedParams.contains(param)) {
+        continue;
+      }
       SoyExpression defaultValue =
           param.hasDefault()
               ? getDefaultValue(param, nodeCompiler.exprCompiler, constantCompiler)
@@ -509,6 +518,38 @@ final class TemplateCompiler {
     }.writeIOExceptionMethod(methodAccess(), method, writer);
   }
 
+  /**
+   * Returns the TemplateParams that are referenced in the template.
+   *
+   * <p>This is simply all the params that are referenced by variables or have defaults and are
+   * passed by {@code data="all"} callsites.
+   */
+  private static Set<TemplateParam> getReferencedParams(TemplateNode templateNode) {
+    Set<TemplateParam> referencedVars =
+        SoyTreeUtils.allNodesOfType(templateNode, VarRefNode.class)
+            .map(v -> v.getDefnDecl())
+            .filter(d -> d instanceof TemplateParam)
+            .map(d -> (TemplateParam) d)
+            .collect(toCollection(() -> Collections.newSetFromMap(new IdentityHashMap<>())));
+    if (referencedVars.size() == templateNode.getParams().size()) {
+      // early return data=all doesn't matter if all params are trivially referenced
+      return referencedVars;
+    }
+
+    for (CallNode call : SoyTreeUtils.getAllNodesOfType(templateNode, CallNode.class)) {
+      if (call.isPassingAllData()) {
+        ImmutableSet<String> explicitParams =
+            call.getChildren().stream().map(c -> c.getKey().identifier()).collect(toImmutableSet());
+        for (TemplateParam param : templateNode.getParams()) {
+          if (param.hasDefault() && !explicitParams.contains(param.name())) {
+            referencedVars.add(param);
+          }
+        }
+      }
+    }
+    return referencedVars;
+  }
+
   // TODO(lukes): it seems like this should actually compile params to SoyValueProvider instances
   private SoyExpression getDefaultValue(
       TemplateHeaderVarDefn headerVar,
@@ -525,13 +566,7 @@ final class TemplateCompiler {
         SoyExpression defaultValue =
             constantCompiler.compile(defaultValueNode).box().toMaybeConstant();
         if (!defaultValue.isCheap()) {
-          FieldRef ref;
-          if (headerVar.kind() == VarDefn.Kind.STATE) {
-            // State fields are package private so that lazy closures can access them directly.
-            ref = fields.addPackagePrivateStaticField(headerVar.name(), defaultValue);
-          } else {
-            ref = fields.addStaticField("default$" + headerVar.name(), defaultValue);
-          }
+          FieldRef ref = fields.addStaticField("default$" + headerVar.name(), defaultValue);
           defaultValue = defaultValue.withSource(ref.accessor());
         }
         return defaultValue;

@@ -986,7 +986,7 @@ public final class BytecodeUtils {
     if (params.isEmpty()) {
       return baseStore.orElse(FieldRef.EMPTY_PARAMS.accessor());
     }
-    // NOTE: we can always represent
+    // NOTE: we can always represent ParamStores as a constant
     if (Expression.areAllConstant(params.values())
         && baseStore.map(Expression::isConstant).orElse(true)) {
       Object[] constantArgs = new Object[params.size() * 2 + (baseStore.isPresent() ? 1 : 0)];
