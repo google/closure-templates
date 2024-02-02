@@ -531,17 +531,16 @@ final class TemplateCompiler {
             .filter(d -> d instanceof TemplateParam)
             .map(d -> (TemplateParam) d)
             .collect(toCollection(() -> Collections.newSetFromMap(new IdentityHashMap<>())));
-    if (referencedVars.size() == templateNode.getParams().size()) {
-      // early return data=all doesn't matter if all params are trivially referenced
+    if (referencedVars.size() == templateNode.getHeaderParams().size()) {
       return referencedVars;
     }
 
     for (CallNode call : SoyTreeUtils.getAllNodesOfType(templateNode, CallNode.class)) {
       if (call.isPassingAllData()) {
-        ImmutableSet<String> explicitParams =
+        ImmutableSet<String> explicitCallParams =
             call.getChildren().stream().map(c -> c.getKey().identifier()).collect(toImmutableSet());
         for (TemplateParam param : templateNode.getParams()) {
-          if (param.hasDefault() && !explicitParams.contains(param.name())) {
+          if (param.hasDefault() && !explicitCallParams.contains(param.name())) {
             referencedVars.add(param);
           }
         }
