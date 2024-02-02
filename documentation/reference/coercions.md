@@ -42,7 +42,11 @@ All values have a boolean coercion (sometimes referred to as a 'truthiness'
 check), these mostly follow JavaScript semantics:
 
 *   '0' values are falsy, e.g. `null`, `""`, `0`
-*   all other values are truthy
+*   all other values are truthy. This include the sanitized content types
+    (`html`, `attributes`, `uri`, `trusted_resource_uri`, `css`, `js`), even
+    when the content is empty string. Use the
+    [`hasContent()`](go/soy-functions#hasContent) function if you need to check
+    if the contents are empty.
 
 NOTE: there are some inconsistencies in how these work across backends. For
 example, in Python, the empty list, empty record, and empty maps are all

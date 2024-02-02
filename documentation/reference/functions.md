@@ -15,12 +15,9 @@ custom external functions, see
 
 ### `Boolean(value)` {#Boolean}
 
-Explicitly coerces the argument to a boolean.
-
-IMPORTANT: Sanitized content types (e.g. `html`) that are empty currently
-implicitly coerce to `true`, but this will be changed soon. If you want to check
-if the contents are non-empty, use `hasContent()` or `isTruthyNonEmpty()`. See
-go/soy-sanitized-types-boolean-coercion for more info.
+Explicitly
+[coerces](go/soy/reference/coercions?polyglot=call-command#boolean-coercions)
+the argument to a boolean.
 
 ### `hasContent(value)` {#hasContent}
 
