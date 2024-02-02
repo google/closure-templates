@@ -182,7 +182,13 @@ public abstract class TemplateNodeBuilder<T extends TemplateNodeBuilder<T>> {
   public abstract T setCommandValues(Identifier name, List<CommandTagAttribute> attrs);
 
   protected static final ImmutableSet<String> COMMON_ATTRIBUTE_NAMES =
-      ImmutableSet.of("kind", "requirecss", "cssbase", "stricthtml", "whitespace", "component");
+      ImmutableSet.of(
+          TemplateNode.ATTRKIND,
+          TemplateNode.ATTR_REQUIRECSS,
+          TemplateNode.ATTR_CSSBASE,
+          TemplateNode.ATTR_STRICTHTML,
+          TemplateNode.ATTR_WHITESPACE,
+          TemplateNode.ATTR_COMPONENT);
 
   protected void setCommonCommandValues(List<CommandTagAttribute> attrs) {
     this.attributes = attrs;
@@ -190,31 +196,31 @@ public abstract class TemplateNodeBuilder<T extends TemplateNodeBuilder<T>> {
     for (CommandTagAttribute attribute : attrs) {
       Identifier name = attribute.getName();
       switch (name.identifier()) {
-        case "kind":
+        case TemplateNode.ATTRKIND:
           Optional<TemplateContentKind> parsedKind =
               attribute.valueAsTemplateContentKind(errorReporter);
           if (parsedKind.orElse(null) == TemplateContentKind.DEFAULT) {
             errorReporter.report(
                 attribute.getValueLocation(),
                 CommandTagAttribute.EXPLICIT_DEFAULT_ATTRIBUTE,
-                "kind",
+                TemplateNode.ATTRKIND,
                 "html");
           }
           kind = parsedKind.orElse(TemplateContentKind.DEFAULT);
           break;
-        case "requirecss":
+        case TemplateNode.ATTR_REQUIRECSS:
           setRequiredCssNamespaces(attribute.valueAsRequireCss(errorReporter));
           break;
-        case "cssbase":
+        case TemplateNode.ATTR_CSSBASE:
           setCssBaseNamespace(attribute.valueAsCssBase(errorReporter));
           break;
-        case "stricthtml":
+        case TemplateNode.ATTR_STRICTHTML:
           strictHtmlDisabled = attribute.valueAsDisabled(errorReporter);
           break;
-        case "whitespace":
+        case TemplateNode.ATTR_WHITESPACE:
           whitespaceMode = attribute.valueAsWhitespaceMode(errorReporter);
           break;
-        case "component":
+        case TemplateNode.ATTR_COMPONENT:
           setComponent(attribute.valueAsEnabled(errorReporter));
           break;
         default:

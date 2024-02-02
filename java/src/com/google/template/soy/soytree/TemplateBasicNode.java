@@ -44,6 +44,9 @@ public final class TemplateBasicNode extends TemplateNode {
       SoyErrorKind.of(
           "Invalid type name \"{0}\" for attribute \"usevarianttype\". Must be \"number\", "
               + "\"string\", or a proto enum.");
+  public static final String ATTR_USEVARIANTTYPE = "usevarianttype";
+  public static final String ATTR_VARIANT = "variant";
+  public static final String ATTR_MODIFIES = "modifies";
 
   /** The "modifiable" attribute. */
   private final boolean modifiable;
@@ -129,7 +132,9 @@ public final class TemplateBasicNode extends TemplateNode {
 
   @Nullable
   public ExprRootNode getModifiesExpr() {
-    return getCommandTagAttributeExpr("modifies").map(a -> a.valueAsExprList().get(0)).orElse(null);
+    return getCommandTagAttributeExpr(ATTR_MODIFIES)
+        .map(a -> a.valueAsExprList().get(0))
+        .orElse(null);
   }
 
   public String getLegacyDeltemplateNamespace() {
@@ -138,7 +143,9 @@ public final class TemplateBasicNode extends TemplateNode {
 
   @Nullable
   public ExprRootNode getVariantExpr() {
-    return getCommandTagAttributeExpr("variant").map(a -> a.valueAsExprList().get(0)).orElse(null);
+    return getCommandTagAttributeExpr(ATTR_VARIANT)
+        .map(a -> a.valueAsExprList().get(0))
+        .orElse(null);
   }
 
   private static boolean isValidVariantType(SoyType type) {
@@ -156,7 +163,7 @@ public final class TemplateBasicNode extends TemplateNode {
     SoyType resolvedType = registry.getType(useVariantTypeAttr.getValue());
     if (resolvedType == null || !isValidVariantType(resolvedType)) {
       errorReporter.report(
-          getCommandTagAttribute("usevarianttype")
+          getCommandTagAttribute(ATTR_USEVARIANTTYPE)
               .map(CommandTagAttribute::getSourceLocation)
               .orElse(getSourceLocation()),
           INVALID_USEVARIANTTYPE,

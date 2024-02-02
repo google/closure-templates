@@ -137,6 +137,7 @@ public abstract class CssRegistry {
     return logicalToRealMap().get(path);
   }
 
+  @Nullable
   public SourceLogicalPath getFilePathForSymbol(String s) {
     return symbolToPath().get(s);
   }

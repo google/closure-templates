@@ -64,6 +64,13 @@ import javax.annotation.Nullable;
 public abstract class TemplateNode extends AbstractBlockCommandNode
     implements RenderUnitNode, ExprHolderNode, CommandTagAttributesHolder {
 
+  public static final String ATTRKIND = "kind";
+  public static final String ATTR_REQUIRECSS = "requirecss";
+  public static final String ATTR_CSSBASE = "cssbase";
+  public static final String ATTR_STRICTHTML = "stricthtml";
+  public static final String ATTR_WHITESPACE = "whitespace";
+  public static final String ATTR_COMPONENT = "component";
+
   /** Priority for delegate templates. */
   public enum Priority {
     STANDARD(0),

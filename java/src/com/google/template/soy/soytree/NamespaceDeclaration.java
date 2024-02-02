@@ -38,6 +38,11 @@ public final class NamespaceDeclaration implements Copyable<NamespaceDeclaration
           ImmutableList.of(),
           null,
           UNKNOWN);
+  public static final String ATTR_REQUIRECSS = "requirecss";
+  public static final String ATTR_REQUIRECSSPATH = "requirecsspath";
+  public static final String ATTR_CSSPREFIX = "cssprefix";
+  public static final String ATTR_CSSBASE = "cssbase";
+  public static final String ATTR_STRICTHTML = "stricthtml";
 
   private final Identifier namespace;
   private final ImmutableList<String> requiredCssNamespaces;
@@ -59,27 +64,27 @@ public final class NamespaceDeclaration implements Copyable<NamespaceDeclaration
     String cssPrefix = null;
     for (CommandTagAttribute attr : attrs) {
       switch (attr.getName().identifier()) {
-        case "requirecss":
+        case ATTR_REQUIRECSS:
           requiredCssNamespaces = attr.valueAsRequireCss(errorReporter);
           break;
-        case "requirecsspath":
+        case ATTR_REQUIRECSSPATH:
           requiredCssPaths = attr.valueAsRequireCssPath();
           break;
-        case "cssprefix":
+        case ATTR_CSSPREFIX:
           cssPrefix = attr.getValue();
           if (cssBaseNamespace != null) {
             errorReporter.report(
                 attr.getSourceLocation(), CommandTagAttribute.CSS_PREFIX_AND_CSS_BASE);
           }
           break;
-        case "cssbase":
+        case ATTR_CSSBASE:
           cssBaseNamespace = attr.getValue();
           if (cssPrefix != null) {
             errorReporter.report(
                 attr.getSourceLocation(), CommandTagAttribute.CSS_PREFIX_AND_CSS_BASE);
           }
           break;
-        case "stricthtml":
+        case ATTR_STRICTHTML:
           errorReporter.report(
               attr.getName().location(), CommandTagAttribute.NAMESPACE_STRICTHTML_ATTRIBUTE);
           break;
@@ -89,7 +94,7 @@ public final class NamespaceDeclaration implements Copyable<NamespaceDeclaration
               CommandTagAttribute.UNSUPPORTED_ATTRIBUTE_KEY,
               attr.getName().identifier(),
               "namespace",
-              ImmutableList.of("cssbase", "requirecss", "requirecsspath", "cssprefix"));
+              ImmutableList.of(ATTR_CSSBASE, ATTR_REQUIRECSS, ATTR_REQUIRECSSPATH, ATTR_CSSPREFIX));
           break;
       }
     }
