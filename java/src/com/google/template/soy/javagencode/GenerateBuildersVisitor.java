@@ -26,8 +26,6 @@ import static com.google.template.soy.javagencode.javatypes.CodeGenUtils.INJECTE
 import static com.google.template.soy.javagencode.javatypes.CodeGenUtils.SET_PARAM_INTERNAL;
 import static com.google.template.soy.javagencode.javatypes.CodeGenUtils.STANDARD_P;
 import static com.google.template.soy.shared.internal.gencode.JavaGenerationUtils.appendFunctionCallWithParamsOnNewLines;
-import static com.google.template.soy.shared.internal.gencode.JavaGenerationUtils.appendImmutableList;
-import static com.google.template.soy.shared.internal.gencode.JavaGenerationUtils.appendImmutableMap;
 import static com.google.template.soy.shared.internal.gencode.JavaGenerationUtils.appendJavadoc;
 import static com.google.template.soy.shared.internal.gencode.JavaGenerationUtils.isReservedKeyword;
 import static com.google.template.soy.shared.internal.gencode.JavaGenerationUtils.makeLowerCamelCase;
@@ -37,7 +35,6 @@ import static java.util.stream.Collectors.toList;
 
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Streams;
 import com.google.template.soy.base.internal.IndentedLinesBuilder;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
@@ -57,7 +54,6 @@ import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -77,8 +73,6 @@ public final class GenerateBuildersVisitor
 
   private static final String TEMPLATE_NAME_FIELD = "__NAME__";
   private static final String PARAMS_FIELD = "__PARAMS__";
-  private static final String CSS_PROVIDES_FIELD = "__PROVIDED_CSS__";
-  private static final String CSS_MAP_FIELD = "__PROVIDED_CSS_MAP__";
   private static final String DEFAULT_INSTANCE_FIELD = "__DEFAULT_INSTANCE__";
 
   private static final SoyErrorKind TYPE_COLLISION =
@@ -192,52 +186,6 @@ public final class GenerateBuildersVisitor
 
     ilb.increaseIndent();
 
-    HashMap<String, String> filePathToNamespace = new HashMap<>();
-    fileInfo
-        .fileNode()
-        .getAllRequiredCssPaths()
-        .forEach(
-            cssPath -> {
-              if (cssPath.getNamespace() != null
-                  && !filePathToNamespace.containsKey(cssPath.resolvedPath().get())) {
-                filePathToNamespace.put(
-                    String.format("\"%s\"", cssPath.resolvedPath().get()),
-                    String.format("\"%s\"", cssPath.getNamespace()));
-              }
-            });
-    ilb.appendLine();
-    appendJavadoc(
-        ilb,
-        "A map of filepath to symbol used for CSS resolution on server edit-refresh.",
-        false,
-        true);
-    ilb.appendLineStart(
-        "private static final com.google.common.collect.ImmutableMap<java.lang.String,"
-            + " java.lang.String> "
-            + CSS_MAP_FIELD
-            + " = ");
-    appendImmutableMap(ilb, "<java.lang.String, java.lang.String>", filePathToNamespace);
-    ilb.appendLineEnd(";");
-    ImmutableList<String> namespaces =
-        Streams.concat(
-                fileInfo.fileNode().getRequiredCssNamespaces().stream(),
-                fileInfo.fileNode().getAllRequiredCssPaths().stream()
-                    .map(p -> p.resolvedPath().get()),
-                fileInfo.templates().stream()
-                    .flatMap(
-                        templateInfo ->
-                            templateInfo.template().getRequiredCssNamespaces().stream()))
-            .map(ns -> String.format("\"%s\"", ns))
-            .collect(toImmutableList());
-    ilb.appendLine();
-    appendJavadoc(
-        ilb, "A list of provided symbols used for css validation on edit refresh.", false, true);
-    ilb.appendLineStart(
-        "private static final com.google.common.collect.ImmutableList<java.lang.String> "
-            + CSS_PROVIDES_FIELD
-            + " = ");
-    appendImmutableList(ilb, "<java.lang.String>", namespaces);
-    ilb.appendLineEnd(";");
     // Add FooParams subclasses for the templates in this file.
     generateParamsClassesForEachTemplate(fileInfo);
 
