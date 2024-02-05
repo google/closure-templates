@@ -71,6 +71,32 @@ public class SoyConformanceTest {
   }
 
   @Test
+  public void testBannedExtern() {
+    assertViolation(
+        "requirement: {\n"
+            + "  banned_function {\n"
+            + "    function: \"{ext} from 'path/to/externs.soy'\"\n"
+            + "  }\n"
+            + "  error_message: 'foo'"
+            + "}",
+        new StableSoyFileSupplier(
+            CharSource.wrap(
+                "{namespace ns}\n"
+                    + "import {ext} from 'path/to/externs.soy';\n"
+                    + "{template foo}\n"
+                    + "  {ext()}\n"
+                    + "{/template}"),
+            SourceFilePath.forTest("foo/bar/baz.soy")),
+        new StableSoyFileSupplier(
+            CharSource.wrap(
+                "{namespace ns.externs}\n"
+                    + "{export extern ext: () => ?}\n"
+                    + "  {jsimpl namespace=\"ns.functions\" function=\"fn2\" /}\n"
+                    + "{/extern}"),
+            SourceFilePath.forTest("path/to/externs.soy")));
+  }
+
+  @Test
   public void testBannedPrintDirective() {
     assertViolation(
         "requirement: {\n"

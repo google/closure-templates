@@ -20,9 +20,12 @@ import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.FunctionNode;
+import com.google.template.soy.exprtree.FunctionNode.ExternRef;
 
 /**
- * Conformance rule banning particular Soy functions (plausible example: {@code hasData}).
+ * Conformance rule banning particular Soy functions. For built-in functions and plug-in functions
+ * the string representation is the global name of the function, e.g. `parseInt`. For an extern the
+ * string representation is `{name} from 'path/to/file.soy'` (like an import statement).
  */
 final class BannedFunction extends Rule<FunctionNode> {
 
@@ -35,8 +38,22 @@ final class BannedFunction extends Rule<FunctionNode> {
 
   @Override
   protected void doCheckConformance(FunctionNode node, ErrorReporter errorReporter) {
-    if (bannedFunctions.contains(node.getFunctionName())) {
+    String functionStr = node.getFunctionName();
+    if (functionStr.isEmpty()) {
+      if (node.isResolved()) {
+        Object functImpl = node.getSoyFunction();
+        if (functImpl instanceof ExternRef) {
+          functionStr = externStringRepresentation((ExternRef) functImpl);
+        }
+      }
+    }
+
+    if (!functionStr.isEmpty() && bannedFunctions.contains(functionStr)) {
       errorReporter.report(node.getSourceLocation(), error);
     }
+  }
+
+  static String externStringRepresentation(ExternRef ref) {
+    return String.format("{%s} from '%s'", ref.name(), ref.path().path());
   }
 }
