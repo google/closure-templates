@@ -25,7 +25,6 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import com.google.common.base.Joiner;
-import com.google.common.truth.Truth8;
 import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SourceLocation.Point;
@@ -830,8 +829,8 @@ public final class SourceLocationTest {
         new SourceLocation(FAKE_FILE_PATH, Point.create(1, 3), Point.create(2, 3));
     SourceLocation range2 =
         new SourceLocation(FAKE_FILE_PATH, Point.create(2, 4), Point.create(5, 7));
-    Truth8.assertThat(range1.getOverlapWith(range2)).isEmpty();
-    Truth8.assertThat(range2.getOverlapWith(range1)).isEmpty();
+    assertThat(range1.getOverlapWith(range2)).isEmpty();
+    assertThat(range2.getOverlapWith(range1)).isEmpty();
   }
 
   @Test

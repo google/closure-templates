@@ -18,7 +18,6 @@ package com.google.template.soy.base.internal;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import com.google.common.truth.Truth8;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -30,7 +29,7 @@ public final class TemplateContentKindTest {
   public void testForAttributeValue_simpleTypes() {
     assertThat(of("html").getSanitizedContentKind()).isEqualTo(SanitizedContentKind.HTML);
     assertThat(of("text").getSanitizedContentKind()).isEqualTo(SanitizedContentKind.TEXT);
-    Truth8.assertThat(TemplateContentKind.fromAttributeValue("blarg")).isEmpty();
+    assertThat(TemplateContentKind.fromAttributeValue("blarg")).isEmpty();
   }
 
   @Test
