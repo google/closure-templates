@@ -53,7 +53,6 @@ import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor.JavaType;
 import com.google.protobuf.Descriptors.FileDescriptor.Syntax;
 import com.google.protobuf.Descriptors.OneofDescriptor;
-import com.google.protobuf.Extension;
 import com.google.protobuf.ExtensionLite;
 import com.google.protobuf.GeneratedMessage.ExtendableBuilder;
 import com.google.protobuf.GeneratedMessage.ExtendableMessage;
@@ -514,23 +513,7 @@ final class ProtoUtils {
           MethodRefs.LAZY_PROTO_TO_SOY_VALUE_MAP_FOR_MAP.invoke(
               typedBaseExpr.invoke(getMethodRef),
               FieldVisitor.visitField(keyDescriptor, REPEATED_FIELD_INTERPRETER),
-              FieldVisitor.visitField(valueDescriptor, REPEATED_FIELD_INTERPRETER),
-              BytecodeUtils.constant(getKeyType(keyDescriptor))));
-    }
-
-    private static Type getKeyType(FieldDescriptor keyDescriptor) {
-      switch (keyDescriptor.getJavaType()) {
-        case INT:
-          return BytecodeUtils.BOXED_INTEGER_TYPE;
-        case LONG:
-          return BytecodeUtils.BOXED_LONG_TYPE;
-        case BOOLEAN:
-          return BytecodeUtils.BOXED_BOOLEAN_TYPE;
-        case STRING:
-          return STRING_TYPE;
-        default:
-          throw new AssertionError("Invalid proto map key type: " + keyDescriptor);
-      }
+              FieldVisitor.visitField(valueDescriptor, REPEATED_FIELD_INTERPRETER)));
     }
 
     private SoyExpression interpretField(Expression field, boolean forceStringConversion) {

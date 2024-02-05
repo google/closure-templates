@@ -56,7 +56,9 @@ public interface SoyMap extends SoyValue {
    * @return An iterable over all item keys.
    */
   @Nonnull
-  Iterable<? extends SoyValue> keys();
+  default Iterable<? extends SoyValue> keys() {
+    return asJavaMap().keySet();
+  }
 
   default Collection<? extends SoyValueProvider> values() {
     return asJavaMap().values();

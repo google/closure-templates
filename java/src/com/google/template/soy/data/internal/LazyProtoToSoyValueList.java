@@ -16,10 +16,10 @@
 
 package com.google.template.soy.data.internal;
 
-import com.google.common.collect.ImmutableList;
 import com.google.template.soy.data.ProtoFieldInterpreter;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
+import java.util.Arrays;
 import java.util.List;
 import javax.annotation.Nonnull;
 
@@ -29,7 +29,7 @@ import javax.annotation.Nonnull;
  */
 public final class LazyProtoToSoyValueList<E> extends AbstractSoyList {
 
-  private final ImmutableList<E> rawValues;
+  private final List<E> rawValues;
   private final ProtoFieldInterpreter valueInterpreter;
   /**
    * A cache of the values after they're converted to SoyValues. The values are in the same indices
@@ -37,6 +37,8 @@ public final class LazyProtoToSoyValueList<E> extends AbstractSoyList {
    * a SoyValue yet.
    */
   private final SoyValue[] wrappedValues;
+
+  private boolean isFullyResolved;
 
   /** Uses {@code valueInterpreter} to lazily convert the native values to {@link SoyValue}s. */
   @Nonnull
@@ -46,7 +48,7 @@ public final class LazyProtoToSoyValueList<E> extends AbstractSoyList {
   }
 
   private LazyProtoToSoyValueList(List<E> list, ProtoFieldInterpreter valueInterpreter) {
-    rawValues = ImmutableList.copyOf(list);
+    rawValues = list;
     this.valueInterpreter = valueInterpreter;
     wrappedValues = new SoyValue[rawValues.size()];
   }
@@ -57,17 +59,19 @@ public final class LazyProtoToSoyValueList<E> extends AbstractSoyList {
   }
 
   @Override
-  public ImmutableList<SoyValue> asJavaList() {
+  public List<SoyValue> asJavaList() {
     return asResolvedJavaList();
   }
 
   @Override
-  public ImmutableList<SoyValue> asResolvedJavaList() {
-    ImmutableList.Builder<SoyValue> list = ImmutableList.builder();
-    for (int i = 0; i < length(); i++) {
-      list.add(get(i));
+  public List<SoyValue> asResolvedJavaList() {
+    if (!isFullyResolved) {
+      for (int i = 0; i < length(); i++) {
+        var unused = get(i);
+      }
+      isFullyResolved = true;
     }
-    return list.build();
+    return Arrays.asList(wrappedValues);
   }
 
   @Override

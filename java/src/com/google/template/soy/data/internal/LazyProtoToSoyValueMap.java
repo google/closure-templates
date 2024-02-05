@@ -16,16 +16,13 @@
 
 package com.google.template.soy.data.internal;
 
-import com.google.common.collect.BiMap;
-import com.google.common.collect.HashBiMap;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import com.google.common.collect.Maps;
 import com.google.template.soy.data.ProtoFieldInterpreter;
 import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.data.restricted.NullData;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import javax.annotation.Nonnull;
 
 /**
@@ -34,50 +31,34 @@ import javax.annotation.Nonnull;
  */
 public final class LazyProtoToSoyValueMap<K, V> extends AbstractSoyMap {
 
-  private final ImmutableMap<K, V> rawMap;
+  private final Map<K, V> rawMap;
 
   /**
    * A cache of wrapped keys to wrapped values. If a value is missing from this map it means it
    * hasn't been accessed yet.
    */
   private final Map<SoyValue, SoyValue> wrappedValues;
-  /**
-   * A cached of wrapped keys to their raw key value. If a wrapped key is missing from this map it
-   * means it hasn't been accessed yet.
-   */
-  private final Map<SoyValue, K> rawKeys;
-  /**
-   * A cached of raw keys to their wrapped key value. If a wrapped key is missing from this map it
-   * means it hasn't been accessed yet.
-   */
-  private final Map<K, SoyValue> wrappedKeys;
 
   private final ProtoFieldInterpreter keyFieldInterpreter;
   private final ProtoFieldInterpreter valueFieldInterpreter;
-  private final Class<K> keyClass;
+  private boolean fullyResolved;
 
   @Nonnull
   public static <K, V> LazyProtoToSoyValueMap<K, V> forMap(
       Map<K, V> map,
       ProtoFieldInterpreter keyFieldInterpreter,
-      ProtoFieldInterpreter valueFieldInterpreter,
-      Class<K> keyClass) {
-    return new LazyProtoToSoyValueMap<>(map, keyFieldInterpreter, valueFieldInterpreter, keyClass);
+      ProtoFieldInterpreter valueFieldInterpreter) {
+    return new LazyProtoToSoyValueMap<>(map, keyFieldInterpreter, valueFieldInterpreter);
   }
 
   private LazyProtoToSoyValueMap(
       Map<K, V> map,
       ProtoFieldInterpreter keyFieldInterpreter,
-      ProtoFieldInterpreter valueFieldInterpreter,
-      Class<K> keyClass) {
-    rawMap = ImmutableMap.copyOf(map);
-    wrappedValues = new HashMap<>();
-    BiMap<SoyValue, K> keys = Maps.synchronizedBiMap(HashBiMap.create());
-    rawKeys = keys;
-    wrappedKeys = keys.inverse();
+      ProtoFieldInterpreter valueFieldInterpreter) {
+    rawMap = checkNotNull(map);
+    wrappedValues = Maps.newLinkedHashMapWithExpectedSize(rawMap.size());
     this.keyFieldInterpreter = keyFieldInterpreter;
     this.valueFieldInterpreter = valueFieldInterpreter;
-    this.keyClass = keyClass;
   }
 
   @Override
@@ -85,23 +66,27 @@ public final class LazyProtoToSoyValueMap<K, V> extends AbstractSoyMap {
     return rawMap.size();
   }
 
+  @Nonnull
   @Override
-  public ImmutableSet<SoyValue> keys() {
-    ImmutableSet.Builder<SoyValue> keys = ImmutableSet.builder();
-    for (K key : rawMap.keySet()) {
-      SoyValue wrappedKey = wrappedKeys.computeIfAbsent(key, keyFieldInterpreter::soyFromProto);
-      keys.add(wrappedKey);
-    }
-    return keys.build();
+  public Set<SoyValue> keys() {
+    return asJavaMap().keySet();
   }
 
   @Override
   public boolean containsKey(SoyValue key) {
-    if (rawKeys.containsKey(key)) {
+    if (wrappedValues.containsKey(key)) {
       return true;
     }
-    return rawMap.containsKey(soyValueToKey(key));
+    Object value = rawMap.get(soyValueToKey(key));
+    if (value == null) {
+      return false;
+    }
+    // The most likely case for a containsKey test is just to follow it up with a get, so pre-cache
+    // now.
+    wrappedValues.put(key, valueFieldInterpreter.soyFromProto(value));
+    return true;
   }
+
 
   @Override
   public SoyValue get(SoyValue key) {
@@ -123,19 +108,20 @@ public final class LazyProtoToSoyValueMap<K, V> extends AbstractSoyMap {
 
   @Override
   @Nonnull
-  public ImmutableMap<SoyValue, SoyValue> asJavaMap() {
-    ImmutableMap.Builder<SoyValue, SoyValue> map = ImmutableMap.builder();
-    for (SoyValue key : keys()) {
-      map.put(key, get(key));
+  public Map<SoyValue, SoyValue> asJavaMap() {
+    if (!fullyResolved) {
+      for (K key : rawMap.keySet()) {
+        var unused = get(keyFieldInterpreter.soyFromProto(key));
+      }
+      fullyResolved = true;
     }
-    return map.build();
+    return wrappedValues;
   }
 
-  private K soyValueToKey(SoyValue soyValue) {
-    if (NullData.INSTANCE.equals(soyValue)) {
+  private Object soyValueToKey(SoyValue soyValue) {
+    if (soyValue.isNullish()) {
       return null;
     }
-    return rawKeys.computeIfAbsent(
-        soyValue, k -> keyClass.cast(keyFieldInterpreter.protoFromSoy(k)));
+    return keyFieldInterpreter.protoFromSoy(soyValue);
   }
 }

@@ -20,7 +20,6 @@ import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.fail;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.data.ProtoFieldInterpreter;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.BooleanData;
@@ -29,6 +28,7 @@ import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.StringData;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -40,10 +40,7 @@ public final class LazyProtoToSoyValueMapTest {
   public void size_empty_isZero() {
     LazyProtoToSoyValueMap<String, Integer> map =
         LazyProtoToSoyValueMap.forMap(
-            ImmutableMap.of(),
-            ProtoFieldInterpreter.STRING,
-            ProtoFieldInterpreter.INT,
-            String.class);
+            ImmutableMap.of(), ProtoFieldInterpreter.STRING, ProtoFieldInterpreter.INT);
 
     assertThat(map.size()).isEqualTo(0);
   }
@@ -57,7 +54,7 @@ public final class LazyProtoToSoyValueMapTest {
 
     LazyProtoToSoyValueMap<Integer, String> map =
         LazyProtoToSoyValueMap.forMap(
-            contents, ProtoFieldInterpreter.INT, ProtoFieldInterpreter.STRING, Integer.class);
+            contents, ProtoFieldInterpreter.INT, ProtoFieldInterpreter.STRING);
 
     assertThat(map.size()).isEqualTo(3);
   }
@@ -66,10 +63,7 @@ public final class LazyProtoToSoyValueMapTest {
   public void keys_empty() {
     LazyProtoToSoyValueMap<String, Integer> map =
         LazyProtoToSoyValueMap.forMap(
-            ImmutableMap.of(),
-            ProtoFieldInterpreter.STRING,
-            ProtoFieldInterpreter.INT,
-            String.class);
+            ImmutableMap.of(), ProtoFieldInterpreter.STRING, ProtoFieldInterpreter.INT);
 
     assertThat(map.keys()).isEmpty();
   }
@@ -80,8 +74,7 @@ public final class LazyProtoToSoyValueMapTest {
         LazyProtoToSoyValueMap.forMap(
             ImmutableMap.of("cats", 4, "dogs", 8),
             ProtoFieldInterpreter.STRING,
-            ProtoFieldInterpreter.INT,
-            String.class);
+            ProtoFieldInterpreter.INT);
 
     assertThat(map.keys())
         .containsExactly(StringData.forValue("cats"), StringData.forValue("dogs"));
@@ -93,8 +86,7 @@ public final class LazyProtoToSoyValueMapTest {
         LazyProtoToSoyValueMap.forMap(
             ImmutableMap.of("cats", 4, "dogs", 8),
             ProtoFieldInterpreter.STRING,
-            ProtoFieldInterpreter.INT,
-            String.class);
+            ProtoFieldInterpreter.INT);
 
     assertThat(map.containsKey(StringData.forValue("cats"))).isTrue();
     assertThat(map.containsKey(StringData.forValue("cows"))).isFalse();
@@ -106,8 +98,7 @@ public final class LazyProtoToSoyValueMapTest {
         LazyProtoToSoyValueMap.forMap(
             ImmutableMap.of(18, "blue", 23, "purple", 19, "green", -72, "yellow"),
             ProtoFieldInterpreter.INT,
-            ProtoFieldInterpreter.STRING,
-            Integer.class);
+            ProtoFieldInterpreter.STRING);
 
     assertThat(map.get(IntegerData.forValue(18))).isEqualTo(StringData.forValue("blue"));
     assertThat(map.get(IntegerData.forValue(-72))).isEqualTo(StringData.forValue("yellow"));
@@ -123,8 +114,7 @@ public final class LazyProtoToSoyValueMapTest {
         LazyProtoToSoyValueMap.forMap(
             ImmutableMap.of(18, "purple", 19, "yellow"),
             ProtoFieldInterpreter.INT,
-            ProtoFieldInterpreter.STRING,
-            Integer.class);
+            ProtoFieldInterpreter.STRING);
 
     assertThat(map.get(NullData.INSTANCE)).isNull();
     assertThat(map.getProvider(NullData.INSTANCE)).isNull();
@@ -136,8 +126,7 @@ public final class LazyProtoToSoyValueMapTest {
         LazyProtoToSoyValueMap.forMap(
             ImmutableMap.of(true, "blue", false, "purple"),
             ProtoFieldInterpreter.BOOL,
-            ProtoFieldInterpreter.STRING,
-            Boolean.class);
+            ProtoFieldInterpreter.STRING);
 
     assertThat(map.asJavaMap())
         .containsExactly(
@@ -153,8 +142,7 @@ public final class LazyProtoToSoyValueMapTest {
         LazyProtoToSoyValueMap.forMap(
             ImmutableMap.of(true, "blue", false, "purple"),
             ProtoFieldInterpreter.BOOL,
-            ProtoFieldInterpreter.STRING,
-            Boolean.class);
+            ProtoFieldInterpreter.STRING);
 
     SoyValue purple = map.get(BooleanData.FALSE);
 
@@ -168,17 +156,16 @@ public final class LazyProtoToSoyValueMapTest {
         LazyProtoToSoyValueMap.forMap(
             ImmutableMap.of("cats", 4, "dogs", 8),
             ProtoFieldInterpreter.STRING,
-            ProtoFieldInterpreter.INT,
-            String.class);
+            ProtoFieldInterpreter.INT);
 
-    ImmutableSet<SoyValue> keys = map.keys();
-    ImmutableSet<SoyValue> keysAgain = map.keys();
+    Set<SoyValue> keys = map.keys();
+    Set<SoyValue> keysAgain = map.keys();
 
     for (SoyValue key : keys) {
       assertContainsSameInstance(keysAgain, key);
     }
 
-    ImmutableMap<SoyValue, SoyValue> javaMap = map.asJavaMap();
+    Map<SoyValue, SoyValue> javaMap = map.asJavaMap();
     for (SoyValue javaMapKey : javaMap.keySet()) {
       assertContainsSameInstance(keys, javaMapKey);
     }
@@ -190,8 +177,7 @@ public final class LazyProtoToSoyValueMapTest {
         LazyProtoToSoyValueMap.forMap(
             ImmutableMap.of(234L, "small", 32387L, "bigger", -23472L, "negative"),
             ProtoFieldInterpreter.LONG_AS_INT,
-            ProtoFieldInterpreter.STRING,
-            Long.class);
+            ProtoFieldInterpreter.STRING);
 
     SoyValue key1 = IntegerData.forValue(32387);
     SoyValue key2 = IntegerData.forValue(-23472);
@@ -209,8 +195,7 @@ public final class LazyProtoToSoyValueMapTest {
         LazyProtoToSoyValueMap.forMap(
             ImmutableMap.of("hermione", "granger", "ginny", "weasley"),
             ProtoFieldInterpreter.STRING,
-            ProtoFieldInterpreter.STRING,
-            String.class);
+            ProtoFieldInterpreter.STRING);
 
     SoyValue key = StringData.forValue("hermione");
 
@@ -225,10 +210,9 @@ public final class LazyProtoToSoyValueMapTest {
         LazyProtoToSoyValueMap.forMap(
             ImmutableMap.of("blue", 83927, "yellow", 28347),
             ProtoFieldInterpreter.STRING,
-            ProtoFieldInterpreter.INT,
-            String.class);
+            ProtoFieldInterpreter.INT);
 
-    ImmutableMap<SoyValue, SoyValue> javaMap = map.asJavaMap();
+    Map<SoyValue, SoyValue> javaMap = map.asJavaMap();
 
     for (SoyValue key : map.keys()) {
       assertContainsSameInstance(javaMap.keySet(), key);
@@ -236,7 +220,7 @@ public final class LazyProtoToSoyValueMapTest {
   }
 
   /** Asserts that {@code keys} contains {@code key} and that they're the same instance. */
-  private static void assertContainsSameInstance(ImmutableSet<SoyValue> keys, SoyValue key) {
+  private static void assertContainsSameInstance(Iterable<SoyValue> keys, SoyValue key) {
     for (SoyValue keyToCheck : keys) {
       if (keyToCheck.equals(key)) {
         assertThat(key).isSameInstanceAs(keyToCheck);

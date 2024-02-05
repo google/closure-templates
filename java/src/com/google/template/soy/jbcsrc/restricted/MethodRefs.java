@@ -611,8 +611,7 @@ public final class MethodRefs {
           "forMap",
           Map.class,
           ProtoFieldInterpreter.class,
-          ProtoFieldInterpreter.class,
-          Class.class);
+          ProtoFieldInterpreter.class);
 
   public static final MethodRef GET_EXTENSION_LIST =
       createPure(

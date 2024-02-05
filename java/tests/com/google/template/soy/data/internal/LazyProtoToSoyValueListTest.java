@@ -147,8 +147,8 @@ public final class LazyProtoToSoyValueListTest {
 
     SoyValueProvider red = list.getProvider(2);
 
-    ImmutableList<SoyValue> javaList = list.asJavaList();
-    ImmutableList<SoyValue> resolvedJavaList = list.asResolvedJavaList();
+    List<SoyValue> javaList = list.asJavaList();
+    List<SoyValue> resolvedJavaList = list.asResolvedJavaList();
 
     assertThat(javaList.get(2)).isSameInstanceAs(red);
     assertThat(list.asResolvedJavaList().get(2)).isSameInstanceAs(red);
