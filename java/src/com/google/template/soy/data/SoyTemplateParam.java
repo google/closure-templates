@@ -48,7 +48,7 @@ public abstract class SoyTemplateParam<T> {
     return getSymbol().getName();
   }
 
-  public abstract RecordProperty getSymbol();
+  abstract RecordProperty getSymbol();
 
   /**
    * Returns whether the parameter is declared as required. All required, non-indirect parameters

@@ -76,7 +76,7 @@ public final class SoyTemplatesRestrictedApi {
    * Returns the set of params of the Soy template that {@code type} renders. This list will not
    * include params unsupported by the type-safe API, like indirect proto params.
    */
-  public static ImmutableSet<SoyTemplateParam<?>> getParams(Class<? extends SoyTemplate> type) {
+  static ImmutableSet<SoyTemplateParam<?>> getParams(Class<? extends SoyTemplate> type) {
     return templateParamsValue.get(type);
   }
 
