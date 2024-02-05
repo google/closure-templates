@@ -30,7 +30,6 @@ import com.google.common.collect.Sets;
 import com.google.common.truth.FailureMetadata;
 import com.google.common.truth.Subject;
 import com.google.common.truth.Truth;
-import com.google.common.truth.Truth8;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.soytree.TemplateNode;
@@ -417,11 +416,11 @@ public class SoyTypesTest {
 
   @Test
   public void testComputeStricterType() {
-    Truth8.assertThat(SoyTypes.computeStricterType(INT_TYPE, ANY_TYPE)).hasValue(INT_TYPE);
-    Truth8.assertThat(SoyTypes.computeStricterType(NUMBER_TYPE, INT_TYPE)).hasValue(INT_TYPE);
-    Truth8.assertThat(SoyTypes.computeStricterType(makeNullable(STRING_TYPE), STRING_TYPE))
+    assertThat(SoyTypes.computeStricterType(INT_TYPE, ANY_TYPE)).hasValue(INT_TYPE);
+    assertThat(SoyTypes.computeStricterType(NUMBER_TYPE, INT_TYPE)).hasValue(INT_TYPE);
+    assertThat(SoyTypes.computeStricterType(makeNullable(STRING_TYPE), STRING_TYPE))
         .hasValue(STRING_TYPE);
-    Truth8.assertThat(SoyTypes.computeStricterType(INT_TYPE, STRING_TYPE)).isEmpty();
+    assertThat(SoyTypes.computeStricterType(INT_TYPE, STRING_TYPE)).isEmpty();
   }
 
   @Test
@@ -448,54 +447,53 @@ public class SoyTypesTest {
 
   @Test
   public void testLowestCommonTypeArithmetic() {
-    Truth8.assertThat(SoyTypes.computeLowestCommonTypeArithmetic(INT_TYPE, ANY_TYPE)).isEmpty();
-    Truth8.assertThat(SoyTypes.computeLowestCommonTypeArithmetic(ANY_TYPE, INT_TYPE)).isEmpty();
-    Truth8.assertThat(SoyTypes.computeLowestCommonTypeArithmetic(STRING_TYPE, HTML_TYPE)).isEmpty();
-    Truth8.assertThat(SoyTypes.computeLowestCommonTypeArithmetic(HTML_TYPE, STRING_TYPE)).isEmpty();
-    Truth8.assertThat(SoyTypes.computeLowestCommonTypeArithmetic(ListType.of(INT_TYPE), INT_TYPE))
+    assertThat(SoyTypes.computeLowestCommonTypeArithmetic(INT_TYPE, ANY_TYPE)).isEmpty();
+    assertThat(SoyTypes.computeLowestCommonTypeArithmetic(ANY_TYPE, INT_TYPE)).isEmpty();
+    assertThat(SoyTypes.computeLowestCommonTypeArithmetic(STRING_TYPE, HTML_TYPE)).isEmpty();
+    assertThat(SoyTypes.computeLowestCommonTypeArithmetic(HTML_TYPE, STRING_TYPE)).isEmpty();
+    assertThat(SoyTypes.computeLowestCommonTypeArithmetic(ListType.of(INT_TYPE), INT_TYPE))
         .isEmpty();
-    Truth8.assertThat(
+    assertThat(
             SoyTypes.computeLowestCommonTypeArithmetic(
                 LegacyObjectMapType.of(INT_TYPE, STRING_TYPE), INT_TYPE))
         .isEmpty();
-    Truth8.assertThat(
+    assertThat(
             SoyTypes.computeLowestCommonTypeArithmetic(
                 RecordType.of(ImmutableMap.of("a", INT_TYPE, "b", FLOAT_TYPE)), INT_TYPE))
         .isEmpty();
-    Truth8.assertThat(
+    assertThat(
             SoyTypes.computeLowestCommonTypeArithmetic(
                 UnionType.of(LegacyObjectMapType.of(FLOAT_TYPE, STRING_TYPE), INT_TYPE),
                 FLOAT_TYPE))
         .isEmpty();
-    Truth8.assertThat(
+    assertThat(
             SoyTypes.computeLowestCommonTypeArithmetic(
                 UnionType.of(BOOL_TYPE, INT_TYPE, STRING_TYPE), NUMBER_TYPE))
         .isEmpty();
-    Truth8.assertThat(
+    assertThat(
             SoyTypes.computeLowestCommonTypeArithmetic(UnionType.of(BOOL_TYPE, INT_TYPE), INT_TYPE))
         .isEmpty();
-    Truth8.assertThat(
+    assertThat(
             SoyTypes.computeLowestCommonTypeArithmetic(
                 UnionType.of(STRING_TYPE, FLOAT_TYPE), INT_TYPE))
         .isEmpty();
 
-    Truth8.assertThat(SoyTypes.computeLowestCommonTypeArithmetic(INT_TYPE, FLOAT_TYPE))
+    assertThat(SoyTypes.computeLowestCommonTypeArithmetic(INT_TYPE, FLOAT_TYPE))
         .hasValue(FLOAT_TYPE);
-    Truth8.assertThat(SoyTypes.computeLowestCommonTypeArithmetic(FLOAT_TYPE, INT_TYPE))
+    assertThat(SoyTypes.computeLowestCommonTypeArithmetic(FLOAT_TYPE, INT_TYPE))
         .hasValue(FLOAT_TYPE);
-    Truth8.assertThat(SoyTypes.computeLowestCommonTypeArithmetic(FLOAT_TYPE, UNKNOWN_TYPE))
+    assertThat(SoyTypes.computeLowestCommonTypeArithmetic(FLOAT_TYPE, UNKNOWN_TYPE))
         .hasValue(UNKNOWN_TYPE);
-    Truth8.assertThat(SoyTypes.computeLowestCommonTypeArithmetic(UNKNOWN_TYPE, FLOAT_TYPE))
+    assertThat(SoyTypes.computeLowestCommonTypeArithmetic(UNKNOWN_TYPE, FLOAT_TYPE))
         .hasValue(UNKNOWN_TYPE);
-    Truth8.assertThat(SoyTypes.computeLowestCommonTypeArithmetic(INT_TYPE, INT_TYPE))
-        .hasValue(INT_TYPE);
-    Truth8.assertThat(SoyTypes.computeLowestCommonTypeArithmetic(FLOAT_TYPE, FLOAT_TYPE))
+    assertThat(SoyTypes.computeLowestCommonTypeArithmetic(INT_TYPE, INT_TYPE)).hasValue(INT_TYPE);
+    assertThat(SoyTypes.computeLowestCommonTypeArithmetic(FLOAT_TYPE, FLOAT_TYPE))
         .hasValue(FLOAT_TYPE);
-    Truth8.assertThat(SoyTypes.computeLowestCommonTypeArithmetic(FLOAT_TYPE, NUMBER_TYPE))
+    assertThat(SoyTypes.computeLowestCommonTypeArithmetic(FLOAT_TYPE, NUMBER_TYPE))
         .hasValue(NUMBER_TYPE);
-    Truth8.assertThat(SoyTypes.computeLowestCommonTypeArithmetic(INT_TYPE, NUMBER_TYPE))
+    assertThat(SoyTypes.computeLowestCommonTypeArithmetic(INT_TYPE, NUMBER_TYPE))
         .hasValue(NUMBER_TYPE);
-    Truth8.assertThat(SoyTypes.computeLowestCommonTypeArithmetic(NUMBER_TYPE, NUMBER_TYPE))
+    assertThat(SoyTypes.computeLowestCommonTypeArithmetic(NUMBER_TYPE, NUMBER_TYPE))
         .hasValue(NUMBER_TYPE);
   }
 

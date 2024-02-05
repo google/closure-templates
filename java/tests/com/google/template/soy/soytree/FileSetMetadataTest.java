@@ -21,7 +21,6 @@ import static com.google.template.soy.soytree.TemplateRegistrySubject.assertThat
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
-import com.google.common.truth.Truth8;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
@@ -456,7 +455,7 @@ public final class FileSetMetadataTest {
             false,
             FAIL);
     node.getCalleeExpr().setType(registry.getBasicTemplateOrElement("ns.foo").getTemplateType());
-    Truth8.assertThat(Metadata.getCallContentKind(registry, node))
+    assertThat(Metadata.getCallContentKind(registry, node))
         .hasValue(SanitizedContentKind.ATTRIBUTES);
   }
 
@@ -481,7 +480,7 @@ public final class FileSetMetadataTest {
             NO_ATTRS,
             false,
             FAIL);
-    Truth8.assertThat(Metadata.getCallContentKind(registry, node)).isEmpty();
+    assertThat(Metadata.getCallContentKind(registry, node)).isEmpty();
   }
 
   @Test
@@ -505,7 +504,7 @@ public final class FileSetMetadataTest {
             NO_ATTRS,
             false,
             FAIL);
-    Truth8.assertThat(Metadata.getCallContentKind(registry, node))
+    assertThat(Metadata.getCallContentKind(registry, node))
         .hasValue(SanitizedContentKind.ATTRIBUTES);
   }
 
@@ -530,6 +529,6 @@ public final class FileSetMetadataTest {
             NO_ATTRS,
             false,
             FAIL);
-    Truth8.assertThat(Metadata.getCallContentKind(registry, node)).isEmpty();
+    assertThat(Metadata.getCallContentKind(registry, node)).isEmpty();
   }
 }
