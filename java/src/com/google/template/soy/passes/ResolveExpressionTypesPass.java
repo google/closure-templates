@@ -2402,7 +2402,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
           errorReporter.report(
               expr.getSourceLocation(),
               ARGUMENT_TYPE_MISMATCH,
-              fieldName.identifier() + "-c",
+              fieldName.identifier(),
               expectedType,
               argType);
         }
