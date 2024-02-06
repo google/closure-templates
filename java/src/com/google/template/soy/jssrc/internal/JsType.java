@@ -210,15 +210,14 @@ public final class JsType {
     SANITIZED_TYPES_STRICT = Maps.immutableEnumMap(typesStrict);
   }
 
-  /** Returns a JS type with looser rules, allowing 1/0 for bools or nullable protos. */
+  /** Returns a JS type with looser rules, allowing 1/0 for bools. */
   public static JsType forJsSrc(SoyType soyType) {
     return forSoyType(
         soyType,
         JsTypeKind.JSSRC,
         /* isStrict= */ false,
         ArrayTypeMode.ARRAY_OR_READONLY_ARRAY,
-        MessageTypeMode.READONLY,
-        /* includeNullForMessages= */ true);
+        MessageTypeMode.READONLY);
   }
 
   /** Returns a JS type for internal type checks and assertions. */
@@ -228,8 +227,7 @@ public final class JsType {
         JsTypeKind.JSSRC,
         /* isStrict= */ false,
         ArrayTypeMode.READONLY_ARRAY,
-        MessageTypeMode.READONLY,
-        /* includeNullForMessages= */ false);
+        MessageTypeMode.READONLY);
   }
 
   /** Returns a JS type with strict rules. */
@@ -239,30 +237,27 @@ public final class JsType {
         JsTypeKind.JSSRC,
         /* isStrict= */ true,
         ArrayTypeMode.ARRAY_OR_READONLY_ARRAY,
-        MessageTypeMode.READONLY,
-        /* includeNullForMessages= */ false);
+        MessageTypeMode.READONLY);
   }
 
-  /** Returns a JS type for idom with looser rules, allowing 1/0 for bools or nullable protos. */
+  /** Returns a JS type for idom with looser rules, allowing 1/0 for bools. */
   public static JsType forIncrementalDom(SoyType soyType) {
     return forSoyType(
         soyType,
         JsTypeKind.IDOMSRC,
         /* isStrict= */ false,
         ArrayTypeMode.ARRAY_OR_READONLY_ARRAY,
-        MessageTypeMode.READONLY,
-        /* includeNullForMessages= */ true);
+        MessageTypeMode.READONLY);
   }
 
-  /** Returns a JS type for idom with looser rules, allowing 1/0 for bools or nullable protos. */
+  /** Returns a JS type for idom with looser rules, allowing 1/0 for bools. */
   public static JsType forIncrementalDomTypeChecks(SoyType soyType) {
     return forSoyType(
         soyType,
         JsTypeKind.IDOMSRC,
         /* isStrict= */ false,
         ArrayTypeMode.READONLY_ARRAY,
-        MessageTypeMode.READONLY,
-        /* includeNullForMessages= */ false);
+        MessageTypeMode.READONLY);
   }
 
   /** Returns a JS type for idom with strict rules. */
@@ -272,8 +267,7 @@ public final class JsType {
         JsTypeKind.IDOMSRC,
         /* isStrict= */ true,
         ArrayTypeMode.READONLY_ARRAY,
-        MessageTypeMode.READONLY,
-        /* includeNullForMessages= */ false);
+        MessageTypeMode.READONLY);
   }
 
   /** Returns a JS type for idom with strict rules. */
@@ -283,8 +277,7 @@ public final class JsType {
         JsTypeKind.IDOMSRC,
         /* isStrict= */ true,
         ArrayTypeMode.ARRAY_OR_READONLY_ARRAY,
-        MessageTypeMode.READONLY,
-        /* includeNullForMessages= */ false);
+        MessageTypeMode.READONLY);
   }
 
   /** Returns a JS type for idom template type decls. */
@@ -294,8 +287,7 @@ public final class JsType {
         JsTypeKind.IDOMSRC,
         /* isStrict= */ true,
         ArrayTypeMode.ARRAY_OR_READONLY_ARRAY,
-        MessageTypeMode.READONLY,
-        /* includeNullForMessages= */ false);
+        MessageTypeMode.READONLY);
   }
 
   /** Returns a JS type for idom with strict rules. */
@@ -305,8 +297,7 @@ public final class JsType {
         JsTypeKind.IDOMSRC,
         /* isStrict= */ true,
         ArrayTypeMode.READONLY_ARRAY,
-        MessageTypeMode.READONLY,
-        /* includeNullForMessages= */ false);
+        MessageTypeMode.READONLY);
   }
 
   private enum JsTypeKind {
@@ -362,8 +353,7 @@ public final class JsType {
       JsTypeKind kind,
       boolean isStrict,
       ArrayTypeMode arrayTypeMode,
-      MessageTypeMode messageTypeMode,
-      boolean includeNullForMessages) {
+      MessageTypeMode messageTypeMode) {
     switch (soyType.getKind()) {
       case NULL:
         return NULL_TYPE;
@@ -428,13 +418,7 @@ public final class JsType {
           return RAW_ARRAY_TYPE;
         }
         JsType element =
-            forSoyType(
-                listType.getElementType(),
-                kind,
-                isStrict,
-                arrayTypeMode,
-                messageTypeMode,
-                includeNullForMessages);
+            forSoyType(listType.getElementType(), kind, isStrict, arrayTypeMode, messageTypeMode);
 
         return builder()
             .addType(ArrayTypeMode.formatArrayType(arrayTypeMode, element.typeExpr()))
@@ -450,21 +434,9 @@ public final class JsType {
             return RAW_OBJECT_TYPE;
           }
           JsType keyTypeName =
-              forSoyType(
-                  mapType.getKeyType(),
-                  kind,
-                  isStrict,
-                  arrayTypeMode,
-                  messageTypeMode,
-                  includeNullForMessages);
+              forSoyType(mapType.getKeyType(), kind, isStrict, arrayTypeMode, messageTypeMode);
           JsType valueTypeName =
-              forSoyType(
-                  mapType.getValueType(),
-                  kind,
-                  isStrict,
-                  arrayTypeMode,
-                  messageTypeMode,
-                  includeNullForMessages);
+              forSoyType(mapType.getValueType(), kind, isStrict, arrayTypeMode, messageTypeMode);
           return builder()
               .addType(
                   String.format("!Object<%s,%s>", keyTypeName.typeExpr(), valueTypeName.typeExpr()))
@@ -488,21 +460,9 @@ public final class JsType {
           JsType keyTypeName =
               keyKind == SoyType.Kind.STRING
                   ? STRING_TYPE
-                  : forSoyType(
-                      keyType,
-                      kind,
-                      isStrict,
-                      arrayTypeMode,
-                      messageTypeMode,
-                      includeNullForMessages);
+                  : forSoyType(keyType, kind, isStrict, arrayTypeMode, messageTypeMode);
           JsType valueTypeName =
-              forSoyType(
-                  mapType.getValueType(),
-                  kind,
-                  isStrict,
-                  arrayTypeMode,
-                  messageTypeMode,
-                  includeNullForMessages);
+              forSoyType(mapType.getValueType(), kind, isStrict, arrayTypeMode, messageTypeMode);
           return builder()
               .addType(
                   String.format(
@@ -523,7 +483,7 @@ public final class JsType {
                     ? ProtoUtils.MutabilityMode.READONLY
                     : ProtoUtils.MutabilityMode.MUTABLE);
         return builder()
-            .addType((isStrict || !includeNullForMessages ? "!" : "?") + protoTypeName)
+            .addType("!" + protoTypeName)
             .addRequire(GoogRequire.createTypeRequire(protoTypeName))
             .setPredicate(
                 (value, codeGenerator) ->
@@ -538,13 +498,7 @@ public final class JsType {
           Map<String, String> members = new LinkedHashMap<>();
           for (RecordType.Member member : recordType.getMembers()) {
             JsType forSoyType =
-                forSoyType(
-                    member.checkedType(),
-                    kind,
-                    isStrict,
-                    arrayTypeMode,
-                    messageTypeMode,
-                    includeNullForMessages);
+                forSoyType(member.checkedType(), kind, isStrict, arrayTypeMode, messageTypeMode);
             builder.addRequires(forSoyType.getGoogRequires());
             members.put(member.name(), forSoyType.typeExprForRecordMember(/* isOptional= */ false));
           }
@@ -579,9 +533,7 @@ public final class JsType {
             if (member.isNullOrUndefined()) {
               continue; // handled above
             }
-            JsType memberType =
-                forSoyType(
-                    member, kind, isStrict, arrayTypeMode, messageTypeMode, includeNullForMessages);
+            JsType memberType = forSoyType(member, kind, isStrict, arrayTypeMode, messageTypeMode);
             builder.addRequires(memberType.extraRequires);
             builder.addTypes(memberType.typeExpressions);
             types.add(memberType);
@@ -625,8 +577,7 @@ public final class JsType {
                     kind,
                     isStrict,
                     ArrayTypeMode.ARRAY_OR_READONLY_ARRAY,
-                    MessageTypeMode.READONLY,
-                    includeNullForMessages);
+                    MessageTypeMode.READONLY);
             builder.addRequires(forSoyType.getGoogRequires());
             parameters.put(
                 parameter.getName(),
