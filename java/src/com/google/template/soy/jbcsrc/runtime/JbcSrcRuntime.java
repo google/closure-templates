@@ -167,7 +167,7 @@ public final class JbcSrcRuntime {
   @Keep
   @Nonnull
   public static SoyValueProvider paramOrDefault(SoyValueProvider provider, SoyValue defaultValue) {
-    return provider == UndefinedData.INSTANCE ? defaultValue : provider;
+    return SoyValueProvider.withDefault(provider, defaultValue);
   }
 
   /**
