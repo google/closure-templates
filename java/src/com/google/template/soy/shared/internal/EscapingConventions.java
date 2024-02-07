@@ -1458,6 +1458,15 @@ public final class EscapingConventions {
           // terminated by a right angle bracket.
           "<(?:!|/?([a-zA-Z][a-zA-Z0-9:\\-]*))(?:[^>'\"]|\"[^\"]*\"|'[^']*')*>");
 
+  public static final com.google.common.regex.Pattern HTML_TAG_CONTENT_V2 =
+      com.google.common.regex.Pattern.compile(
+          // Matches a left angle bracket followed by either
+          // (1) a "!" which indicates a doctype or comment, or
+          // (2) an optional solidus (/, indicating an end tag) and an HTML tag name.
+          // followed by any number of quoted strings (found in tags and doctypes) or other content
+          // terminated by a right angle bracket.
+          "<(?:!|/?([a-zA-Z][a-zA-Z0-9:\\-]*))(?:[^>'\"]|\"[^\"]*\"|'[^']*')*>");
+
   /**
    * Convert an ASCII string to full-width. Full-width characters are in Unicode page U+FFxx and are
    * used to allow ASCII characters to be embedded in written Chinese without breaking alignment --

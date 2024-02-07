@@ -1163,7 +1163,8 @@ public final class Sanitizers {
             ? EscapingConventions.NormalizeHtml.INSTANCE
             : EscapingConventions.NormalizeHtmlNospace.INSTANCE;
 
-    Matcher matcher = EscapingConventions.HTML_TAG_CONTENT.matcher(value);
+    // try use google-regex
+    com.google.common.regex.Matcher matcher = EscapingConventions.HTML_TAG_CONTENT_V2.matcher(value);
     if (!matcher.find()) {
       // Normalize so that the output can be embedded in an HTML attribute.
       return normalizer.escape(value);
