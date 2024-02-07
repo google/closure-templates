@@ -482,7 +482,8 @@ public final class RenderContext {
 
   /** Retrieves an injected parameter with a default if unset. */
   public SoyValueProvider getInjectedValue(RecordProperty key, SoyValue defaultValue) {
-    return SoyValueProvider.withDefault(ijData.get(key), defaultValue);
+    var value = ijData.get(key);
+    return value == null ? defaultValue : value;
   }
 
   @VisibleForTesting

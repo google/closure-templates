@@ -1020,12 +1020,6 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
 
   /** Check that the value matches the given param type. */
   private void checkValueType(TemplateParam param, SoyValue value, TemplateNode node) {
-    // If the param has a default the caller is allowed to pass `undefined`. The default value
-    // will be applied inside the template.
-    if (param.hasDefault() && value.isUndefined()) {
-      return;
-    }
-
     if (!TofuTypeChecks.isInstance(param.type(), value, param.nameLocation())) {
       // should this be a soydataexception?
       throw RenderException.createWithSource(

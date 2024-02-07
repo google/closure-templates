@@ -16,11 +16,9 @@
 
 package com.google.template.soy.data;
 
-import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import java.io.IOException;
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 
 /**
@@ -75,34 +73,4 @@ public interface SoyValueProvider {
    */
   @Nonnull
   RenderResult renderAndResolve(LoggingAdvisingAppendable appendable) throws IOException;
-
-  /**
-   * Returns a SoyValueProvider whose resolved value will be {@code defaultValue} if {@code
-   * delegate} is `null` or resolves to {@link UndefinedData}.
-   */
-  static SoyValueProvider withDefault(@Nullable SoyValueProvider delegate, SoyValue defaultValue) {
-    // Allow null so callers don't have to check if, e.g., they get delegate out of a map.
-    if (delegate == null) {
-      return defaultValue;
-    }
-
-    if (delegate.status().isDone()) {
-      SoyValue value = delegate.resolve();
-      return value == UndefinedData.INSTANCE ? defaultValue : value;
-    }
-
-    return new SoyAbstractCachingValueProvider() {
-      @Override
-      protected SoyValue compute() {
-        SoyValue value = delegate.resolve();
-        return value == UndefinedData.INSTANCE ? defaultValue : value;
-      }
-
-      @Nonnull
-      @Override
-      public RenderResult status() {
-        return delegate.status();
-      }
-    };
-  }
 }
