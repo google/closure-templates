@@ -38,6 +38,11 @@ public abstract class NumberData extends PrimitiveData {
   public abstract double toFloat();
 
   @Override
+  public long coerceToLong() {
+    return javaNumberValue().longValue();
+  }
+
+  @Override
   public double numberValue() {
     return toFloat();
   }

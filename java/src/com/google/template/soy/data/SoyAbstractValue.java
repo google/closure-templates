@@ -62,6 +62,11 @@ public abstract class SoyAbstractValue implements SoyValue {
   public abstract int hashCode();
 
   @Override
+  public long coerceToLong() {
+    throw new SoyDataException("'" + this + "' cannot be coerced to long");
+  }
+
+  @Override
   public boolean booleanValue() {
     throw new SoyDataException(
         "Expecting boolean value but instead encountered type " + getClass().getSimpleName());

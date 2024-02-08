@@ -248,6 +248,15 @@ public final class SoyProtoType extends SoyType {
     return field != null ? field.getType() : null;
   }
 
+  /** Setter methods may take types that are looser than the type of the corresponding getter. */
+  public SoyType getFieldSetterType(String fieldName) {
+    SoyType type = getFieldType(fieldName);
+    if (type == IntType.getInstance() || type == FloatType.getInstance()) {
+      type = SoyTypes.NUMBER_TYPE;
+    }
+    return type;
+  }
+
   /** Returns all the field names of this proto. */
   public ImmutableSet<String> getFieldNames() {
     return fields.keySet();

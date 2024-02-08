@@ -298,17 +298,6 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
   private static final SoyErrorKind PROTO_FIELD_DOES_NOT_EXIST =
       SoyErrorKind.of(
           "Proto field ''{0}'' does not exist in {1}.{2}", StyleAllowance.NO_PUNCTUATION);
-  private static final SoyErrorKind DID_YOU_MEAN_GETTER_ONLY_FIELD_FOR_PROTO_TYPE =
-      SoyErrorKind.of(
-          "Did you mean ''{0}''? Proto field ''{0}'' for proto type {1} can only be accessed "
-              + "via ''{2}''. See http://go/soy/dev/protos.md#accessing-proto-fields for more "
-              + "info.",
-          StyleAllowance.NO_PUNCTUATION);
-  private static final SoyErrorKind GETTER_ONLY_FIELD_FOR_PROTO_TYPE =
-      SoyErrorKind.of(
-          "Proto field ''{0}'' for proto type {1} can only be accessed via ''{2}''. "
-              + "See http://go/soy/dev/protos.md#accessing-proto-fields for more info.",
-          StyleAllowance.NO_PUNCTUATION);
   private static final SoyErrorKind PROTO_MISSING_REQUIRED_FIELD =
       SoyErrorKind.of("Missing required proto field ''{0}''.");
   private static final SoyErrorKind PROTO_NULL_ARG_TYPE =
@@ -2379,7 +2368,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
               expr.getSourceLocation(), PROTO_NULL_ARG_TYPE, fieldName.identifier());
         }
 
-        SoyType fieldType = protoType.getFieldType(fieldName.identifier());
+        SoyType fieldType = protoType.getFieldSetterType(fieldName.identifier());
 
         // Same for List<?>, for repeated fields
         if (fieldType.getKind() == Kind.LIST && argType.getKind() == Kind.LIST) {
@@ -2528,29 +2517,6 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
             }
           }
 
-          // TODO(b/291166619): Delete the PROTO block sometime around EOY 2023.
-        case PROTO:
-          {
-            SoyProtoType protoType = (SoyProtoType) baseType;
-            SoyType fieldType = protoType.getFieldType(fieldName);
-            if (fieldType != null) {
-              emitProtoFieldError(
-                  protoType, fieldName, sourceLocation, /* isSuggestedFieldName= */ false);
-            } else {
-              String suggestedName = getSuggestedProtoFieldName(protoType, fieldName);
-              if (suggestedName != null) {
-                fieldType = protoType.getFieldType(suggestedName);
-                emitProtoFieldError(
-                    protoType, suggestedName, sourceLocation, /* isSuggestedFieldName= */ true);
-              } else {
-                // no matches are close enough.
-                emitDefaultFieldNotFoundError(baseType, fieldName, sourceLocation);
-                fieldType = UnknownType.getInstance();
-              }
-            }
-            return tryRemoveNullish(fieldType);
-          }
-
         case LEGACY_OBJECT_MAP:
           {
             errorReporter.report(
@@ -2595,28 +2561,12 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
       }
     }
 
-    private String getSuggestedProtoFieldName(SoyProtoType protoType, String fieldName) {
-      if (protoType.getFieldNames().contains(fieldName + "List")) {
-        return fieldName + "List";
-      } else if (protoType.getFieldNames().contains(fieldName + "Map")) {
-        return fieldName + "Map";
-      }
-      return SoyErrors.getClosest(protoType.getFieldNames(), fieldName);
-    }
-
     private void emitDefaultFieldNotFoundError(
         SoyType baseType, String fieldName, SourceLocation sourceLocation) {
       ImmutableSet<String> allFields = fieldRegistry.getAllFieldNames(tryRemoveNullish(baseType));
       String didYouMean =
           allFields.isEmpty() ? "" : SoyErrors.getDidYouMeanMessage(allFields, fieldName);
       errorReporter.report(sourceLocation, NO_SUCH_FIELD, fieldName, baseType, didYouMean);
-    }
-
-    private void emitProtoFieldError(
-        SoyProtoType baseType,
-        String fieldName,
-        SourceLocation sourceLocation,
-        boolean isSuggestedFieldName) {
     }
 
     /** Given a base type and an item key type, compute the item value type. */

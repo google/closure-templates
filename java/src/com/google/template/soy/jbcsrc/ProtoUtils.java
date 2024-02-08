@@ -31,7 +31,6 @@ import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.STRING_TYP
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.isPrimitive;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.numericConversion;
-import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.unboxUnchecked;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -62,6 +61,7 @@ import com.google.protobuf.ProtocolMessageEnum;
 import com.google.template.soy.data.ProtoFieldInterpreter;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContents;
+import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.FloatNode;
 import com.google.template.soy.exprtree.FunctionNode;
@@ -1797,6 +1797,66 @@ final class ProtoUtils {
             + JavaQualifiedNames.getOuterClassname(descriptor.getFile());
     return FieldRef.createPublicStaticField(
         TypeInfo.createClass(containingClass), extensionFieldName, EXTENSION_TYPE);
+  }
+
+  /**
+   * Outputs bytecode that unboxes the current top element of the stack as {@code asType}. Top of
+   * stack must not be null.
+   *
+   * <p>Always prefer using {@link SoyExpression#unboxAs} over this method, whenever possible.
+   *
+   * <p>Guarantees: * Bytecode output will not change stack height * Output will only change the top
+   * element, and nothing below that
+   *
+   * @return the type of the result of the unbox operation
+   */
+  private static Type unboxUnchecked(CodeBuilder cb, SoyRuntimeType soyType, Class<?> asType) {
+    checkArgument(soyType.isBoxed(), "Expected %s to be a boxed type", soyType);
+    Type fromType = soyType.runtimeType();
+    checkArgument(
+        !SoyValue.class.isAssignableFrom(asType),
+        "Can't use unboxUnchecked() to convert from %s to a SoyValue: %s.",
+        fromType,
+        asType);
+
+    // No-op conversion
+    if (BytecodeUtils.isDefinitelyAssignableFrom(Type.getType(asType), fromType)) {
+      return fromType;
+    }
+
+    if (asType.equals(boolean.class)) {
+      MethodRefs.SOY_VALUE_BOOLEAN_VALUE.invokeUnchecked(cb);
+      return Type.BOOLEAN_TYPE;
+    }
+
+    if (asType.equals(long.class)) {
+      MethodRefs.SOY_VALUE_COERCE_TO_LONG.invokeUnchecked(cb);
+      return Type.LONG_TYPE;
+    }
+
+    if (asType.equals(double.class)) {
+      MethodRefs.SOY_VALUE_NUMBER_VALUE.invokeUnchecked(cb);
+      return Type.DOUBLE_TYPE;
+    }
+
+    if (asType.equals(String.class)) {
+      MethodRefs.SOY_VALUE_STRING_VALUE.invokeUnchecked(cb);
+      return STRING_TYPE;
+    }
+
+    if (asType.equals(List.class)) {
+      cb.checkCast(BytecodeUtils.SOY_LIST_TYPE);
+      MethodRefs.SOY_VALUE_AS_JAVA_LIST.invokeUnchecked(cb);
+      return BytecodeUtils.LIST_TYPE;
+    }
+
+    if (asType.equals(Message.class)) {
+      MethodRefs.SOY_VALUE_GET_PROTO.invokeUnchecked(cb);
+      return BytecodeUtils.MESSAGE_TYPE;
+    }
+
+    throw new UnsupportedOperationException(
+        "Can't unbox top of stack from " + fromType + " to " + asType);
   }
 
   /**

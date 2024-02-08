@@ -475,6 +475,8 @@ public final class MethodRefs {
       createPure(SoyValue.class, "integerValue").asCheap();
 
   public static final MethodRef SOY_VALUE_NUMBER_VALUE = createPure(SoyValue.class, "numberValue");
+  public static final MethodRef SOY_VALUE_COERCE_TO_LONG =
+      createPure(SoyValue.class, "coerceToLong");
 
   public static final MethodRef SOY_VALUE_IS_NULLISH =
       createPure(SoyValue.class, "isNullish").asCheap().asNonJavaNullable();

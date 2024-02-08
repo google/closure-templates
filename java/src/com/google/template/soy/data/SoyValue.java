@@ -41,6 +41,11 @@ public interface SoyValue extends SoyValueProvider {
     return value == null || value.isNullish();
   }
 
+  /** If this is Soy null or Soy undefined. */
+  default boolean isNullish() {
+    return isNull() || isUndefined();
+  }
+
   /**
    * Compares this value against another for equality in the sense of the '==' operator of Soy.
    *
@@ -63,6 +68,13 @@ public interface SoyValue extends SoyValueProvider {
    * @return This value coerced into a string.
    */
   String coerceToString();
+
+  /**
+   * Performs a Java number to `long` coercion on the wrapped value. Compared with {@link
+   * #longValue()} this method is expected to succeed for any {@link
+   * com.google.template.soy.data.restricted.NumberData}.
+   */
+  long coerceToLong();
 
   /**
    * Returns whether this value is truthy. For SanitizedContent, this checks if the content is
@@ -178,11 +190,6 @@ public interface SoyValue extends SoyValueProvider {
   /** If this is Soy undefined (UndefinedData). */
   default boolean isUndefined() {
     return this == UndefinedData.INSTANCE;
-  }
-
-  /** If this is Soy null or Soy undefined. */
-  default boolean isNullish() {
-    return isNull() || isUndefined();
   }
 
   /** Returns this value, coalescing UndefinedData to NullData. */
