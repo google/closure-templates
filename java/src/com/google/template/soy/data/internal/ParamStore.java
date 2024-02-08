@@ -126,8 +126,7 @@ public final class ParamStore extends IdentityHashMap<RecordProperty, SoyValuePr
   }
 
   public SoyValueProvider getParameter(RecordProperty name, SoyValue defaultValue) {
-    SoyValueProvider provider = super.get(name);
-    return provider != null ? provider : defaultValue;
+    return SoyValueProvider.withDefault(super.get(name), defaultValue);
   }
 
   public ImmutableMap<String, SoyValueProvider> asStringMap() {
