@@ -417,7 +417,7 @@ def list_indexof(l, item, start_index=0):
   """Equivalent getting the index of `item in l` but using soy's equality algorithm."""
   clamped_start_index = clamp_list_start_index(l, start_index)
   for i in range(clamped_start_index, len(l)):
-    if l[i] is item:
+    if type_safe_eq(l[i], item):
       return i
   return -1
 

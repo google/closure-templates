@@ -1885,7 +1885,7 @@ const $$listContains = function(list, val) {
 const $$listIndexOf = function(list, val, startIndex = 0) {
   const clampedStartIndex = clampArrayStartIndex(list, startIndex);
   const indexInSublist = googArray.findIndex(
-      list.slice(clampedStartIndex), (el) => val === el);
+      list.slice(clampedStartIndex), (el) => $$equals(val, el));
   return indexInSublist === -1 ? -1 : indexInSublist + clampedStartIndex;
 };
 
