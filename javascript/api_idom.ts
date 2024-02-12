@@ -537,7 +537,6 @@ export class IncrementalDomRendererImpl implements IncrementalDomRenderer {
     const soyElementKey = firstElementKey + this.getCurrentKeyStack();
     let soyElement: SoyElement<{}, {}> =
       new elementClassCtor() as unknown as SoyElement<{}, {}>;
-    soyElement = new elementClassCtor() as unknown as SoyElement<{}, {}>;
     soyElement.data = data;
     soyElement.ijData = ijData;
     soyElement.key = soyElementKey;
@@ -569,7 +568,7 @@ export class IncrementalDomRendererImpl implements IncrementalDomRenderer {
       return element!;
     };
 
-    if (ijData && (ijData as {[key: string]: unknown})['inTemplateCloning']) {
+    if (isTemplateCloning) {
       soyElement.syncStateFromData(data);
       soyElement.renderInternal(this, data);
       return;
@@ -580,8 +579,9 @@ export class IncrementalDomRendererImpl implements IncrementalDomRenderer {
       template.call(soyElement, this, data, ijData);
       return;
     }
-    if (getSoyUntyped(element) instanceof elementClassCtor) {
-      soyElement = getSoyUntyped(element)!;
+    const untypedElement = getSoyUntyped(element);
+    if (untypedElement instanceof elementClassCtor) {
+      soyElement = untypedElement;
     }
     const maybeSkip = soyElement.handleSoyElementRuntime(element, data);
     soyElement.template = template.bind(soyElement);
