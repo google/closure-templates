@@ -153,7 +153,13 @@ public final class RenderContext {
   @Nonnull
   public String renameCssSelector(String selector) {
     String string = cssRenamingMap.get(selector);
-    return string == null ? Preconditions.checkNotNull(selector) : string;
+    if (string == null) {
+      string = Preconditions.checkNotNull(selector);
+    }
+    if (cssTracker != null) {
+      cssTracker.trackRequiredCssSelector(string);
+    }
+    return string;
   }
 
   public boolean evalToggle(String toggleName) {
