@@ -336,6 +336,9 @@ public final class NullSafeAccessNode extends AbstractParentExprNode {
           curr = ((DataAccessNode) curr).getBaseExprChild();
         } else if (curr instanceof AssertNonNullOpNode) {
           curr = ((AssertNonNullOpNode) curr).getChild(0);
+        } else if (curr instanceof GlobalNode) {
+          // Ignore upstream error condition.
+          return copy;
         } else {
           throw new AssertionError("Found unexpected node " + curr.getKind());
         }
