@@ -26,4 +26,10 @@ public interface SoyCssTracker {
   void trackRequiredCssPath(String path);
 
   void trackRequiredCssNamespace(String namespace);
+
+  /**
+   * Is called for every selector that is passed to the `css` function or is imported and used at
+   * runtime.
+   */
+  void trackRequiredCssSelector(String selector);
 }
