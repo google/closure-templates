@@ -36,13 +36,7 @@ import com.google.template.soy.shared.restricted.SoyPureFunction;
 import java.lang.reflect.Method;
 import java.util.List;
 
-/**
- * A function that determines if a given string contains another given string.
- *
- * <p>Duplicate functionality as StrContainsFunction but given includes name to allow for automatic
- * translation of TSX includes method. This method should only be used by TSX and not be hand
- * written.
- */
+/** A function that determines if a given string contains another given string. */
 @SoyMethodSignature(
     name = "includes",
     baseType = "string",

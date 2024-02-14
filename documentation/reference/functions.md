@@ -147,13 +147,19 @@ Also callable as deprecated global function `length(list)`.
 
 Joins two or more lists together.
 
+<span id="list-any_includes"></span>
+
+### `list.includes(value)` {#listIncludes}
+
+Checks if the given value is inside the list. This method uses the equivalent of
+JS/TS script equality.
+
 <span id="list-any_contains"></span>
 
 ### `list.contains(value)` {#listContains}
 
-Checks if the given value is inside the list. This method implements JavaScript
-semantics, comparing elements with `==`. Therefore it only works on lists of
-primitive values.
+Legacy name for `list.includes()`. Will be deprecated for consistency with
+JS/TS.
 
 <span id="list-any_flat"></span>
 
@@ -297,11 +303,17 @@ aware and may do bad things if used naively. For example, consider calling
 `.substring()` on text containing emoji, without being extremely careful you are
 likely to break the emoji and subvert user intention.
 
+<span id="string_includes"></span>
+
+### `str.includes(subStr)` {#strIncludes}
+
+Checks whether a string contains a particular substring.
+
 <span id="string_contains"></span>
 
 ### `str.contains(subStr)` {#strContains}
 
-Checks whether a string contains a particular substring.
+Legacy name for `str.includes()`. Will be deprecated for consistency with JS/TS.
 
 ### `str.endsWith(subStr[, length])` {#string_endsWith}
 

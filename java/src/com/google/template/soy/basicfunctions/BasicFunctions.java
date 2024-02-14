@@ -48,6 +48,7 @@ public class BasicFunctions {
         new LengthFunction(),
         new ListContainsFunction(),
         new ListFlatMethod(),
+        new ListIncludesFunction(),
         new ListIndexOfFunction(),
         new ListReverseMethod(),
         new ListSliceMethod(),

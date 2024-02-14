@@ -1,5 +1,5 @@
 /*
- * Copyright 2012 Google Inc.
+ * Copyright 2018 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,41 +36,45 @@ import java.lang.reflect.Method;
 import java.util.List;
 
 /**
- * A function that determines if a given string contains another given string.
+ * Soy function for checking if an item is contained in a list.
  *
- * <p>Legacy name for StrIncludesFunction, will be deleted after migrating usages.
+ * <p>Usage: {@code list.includes(item)}
+ *
+ * <ul>
+ *   <li>list: The list in which to look for the item.
+ *   <li>item: The item to search for in the list.
+ * </ul>
  */
 @SoyMethodSignature(
-    name = "contains",
-    baseType = "string",
-    value = @Signature(parameterTypes = "string", returnType = "bool"))
+    name = "includes",
+    baseType = "list<any>",
+    value = @Signature(parameterTypes = "any", returnType = "bool"))
 @SoyPureFunction
-public final class StrContainsFunction
+public class ListIncludesFunction
     implements SoyJavaSourceFunction, SoyJavaScriptSourceFunction, SoyPythonSourceFunction {
 
   @Override
   public JavaScriptValue applyForJavaScriptSource(
       JavaScriptValueFactory factory, List<JavaScriptValue> args, JavaScriptPluginContext context) {
-    return factory.callNamespaceFunction("soy", "soy.$$strContains", args.get(0), args.get(1));
+    return factory.callNamespaceFunction("soy", "soy.$$listContains", args.get(0), args.get(1));
   }
 
   @Override
   public PythonValue applyForPythonSource(
       PythonValueFactory factory, List<PythonValue> args, PythonPluginContext context) {
-    return args.get(1).coerceToString().in(args.get(0).coerceToString());
+    return factory.global("runtime.list_contains").call(args.get(0), args.get(1));
   }
 
   // lazy singleton pattern, allows other backends to avoid the work.
   private static final class Methods {
-    static final Method STR_CONTAINS =
+    static final Method LIST_CONTAINS_FN =
         JavaValueFactory.createMethod(
-            BasicFunctionsRuntime.class, "strContains", SoyValue.class, String.class);
+            BasicFunctionsRuntime.class, "listContains", List.class, SoyValue.class);
   }
 
   @Override
   public JavaValue applyForJavaSource(
       JavaValueFactory factory, List<JavaValue> args, JavaPluginContext context) {
-    return factory.callStaticMethod(
-        Methods.STR_CONTAINS, args.get(0), args.get(1).coerceToSoyString());
+    return factory.callStaticMethod(Methods.LIST_CONTAINS_FN, args.get(0), args.get(1));
   }
 }

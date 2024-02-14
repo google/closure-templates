@@ -38,12 +38,7 @@ import java.util.List;
 /**
  * Soy function for checking if an item is contained in a list.
  *
- * <p>Usage: {@code list.contains(item)}
- *
- * <ul>
- *   <li>list: The list in which to look for the item.
- *   <li>item: The item to search for in the list.
- * </ul>
+ * <p>Legacy name for ListIncludesFunction, will be deleted after migrating usages.
  */
 @SoyMethodSignature(
     name = "contains",
