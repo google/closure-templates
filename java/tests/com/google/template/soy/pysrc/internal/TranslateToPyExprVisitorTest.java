@@ -107,8 +107,7 @@ public class TranslateToPyExprVisitorTest {
 
   @Test
   public void testNotEqualOperator() {
-    assertThatSoyExpr("'5' != 5")
-        .translatesTo("not runtime.type_safe_eq('5', 5)", Operator.NOT_LEGACY);
+    assertThatSoyExpr("'5' != 5").translatesTo("not runtime.type_safe_eq('5', 5)", Operator.NOT);
   }
 
   @Test

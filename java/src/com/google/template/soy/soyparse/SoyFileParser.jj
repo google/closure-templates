@@ -496,9 +496,6 @@ public class SoyFileParser {
           StyleAllowance.NO_CAPS,
           StyleAllowance.NO_PUNCTUATION);
 
-  private static final SoyErrorKind NOT_DEPRECATED =
-      SoyErrorKind.of("''not'' is deprecated. Use operator ''!'' instead.");
-
   /** Names of attributes whose values should be parsed as expressions. */
   private static final ImmutableSet<String> EXPR_ATTR_NAMES =
       ImmutableSet.of("data", "genders", "key", "logonly", "variant", "modifies");
@@ -1377,7 +1374,6 @@ TOKEN_MGR_DECLS: {
 | < TIMES: "*">           // Precedence 11 operators
 | < DIV: "/">
 | < MOD: "%">
-| < NOT: "not" >          // Precedence 12 as a unary operator (along with MINUS)
 | < QDOT: "?." >
 | < DOT: "." >            // Precedence 13 operators
 | < LBRACKET: "[" >       // Precedence 13 data access operators and part of legacy map literal syntax
@@ -4429,11 +4425,6 @@ private ExprNode PrecExpr12(ExprState state) :
     expr = PrecExpr13(state)
   |
     (
-      op = <NOT>
-      {
-        errorReporter.warn(createSrcLoc(op), NOT_DEPRECATED);
-      }
-    |
       op = <MINUS>
     |
       op = <BANG>

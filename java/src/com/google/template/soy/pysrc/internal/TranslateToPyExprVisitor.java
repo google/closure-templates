@@ -504,11 +504,7 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
 
   @Override
   protected PyExpr visitNotOpNode(NotOpNode node) {
-    if (node.getOperator() == Operator.NOT_LEGACY) {
-      return super.visitNotOpNode(node);
-    } else {
-      return getPyExpr(node, "not ");
-    }
+    return getPyExpr(node, "not ");
   }
 
   @Override

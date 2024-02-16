@@ -105,7 +105,7 @@ public final class AbstractOperatorNodeTest {
     // Root n0.
     ConditionalOpNode n0 = new ConditionalOpNode(X, X);
     // Children of n0.
-    NotOpNode n1 = new NotOpNode(X, X, Operator.NOT);
+    NotOpNode n1 = new NotOpNode(X, X);
     NotEqualOpNode n2 = new NotEqualOpNode(X, X);
     TimesOpNode n3 = new TimesOpNode(X, X);
     n0.addChild(n1);

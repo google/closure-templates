@@ -87,17 +87,10 @@ public enum Operator {
       return new NegativeOpNode(location, operatorLocation);
     }
   },
-  @Deprecated
-  NOT_LEGACY(ImmutableList.of(new Token("not"), SP, OPERAND_0), SoyPrecedence.P12, NA) {
-    @Override
-    public OperatorNode createNode(SourceLocation location, SourceLocation operatorLocation) {
-      return new NotOpNode(location, operatorLocation, this);
-    }
-  },
   NOT(ImmutableList.of(new Token("!"), OPERAND_0), SoyPrecedence.P12, NA, "! (not)") {
     @Override
     public OperatorNode createNode(SourceLocation location, SourceLocation operatorLocation) {
-      return new NotOpNode(location, operatorLocation, this);
+      return new NotOpNode(location, operatorLocation);
     }
   },
 

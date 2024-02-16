@@ -80,7 +80,6 @@ public final class PyExprUtils {
           .put(Operator.NOT_EQUAL, 5)
           .put(Operator.TRIPLE_EQUAL, 5)
           .put(Operator.TRIPLE_NOT_EQUAL, 5)
-          .put(Operator.NOT_LEGACY, 4)
           .put(Operator.NOT, 4)
           .put(Operator.AND, 3)
           .put(Operator.AMP_AMP, 3)

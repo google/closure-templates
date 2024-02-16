@@ -25,8 +25,6 @@ abstract class Operation extends Expression implements OperatorInterface {
 
   public static String getOperatorToken(Operator soyOperator) {
     switch (soyOperator) {
-      case NOT_LEGACY:
-        return "!";
       case AND:
       case AMP_AMP:
         return "&&";
