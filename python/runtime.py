@@ -417,9 +417,23 @@ def list_indexof(l, item, start_index=0):
   """Equivalent getting the index of `item in l` but using soy's equality algorithm."""
   clamped_start_index = clamp_list_start_index(l, start_index)
   for i in range(clamped_start_index, len(l)):
-    if l[i] is item:
+    if strict_eq(l[i], item):
       return i
   return -1
+
+
+def strict_eq(first, second):
+  """An equality function that handles JS primitive types as primitives."""
+  if (
+      (isinstance(first, _NUMBER_TYPES) and isinstance(second, _NUMBER_TYPES))
+      or (
+          isinstance(first, six.string_types)
+          and isinstance(second, six.string_types)
+      )
+      or (isinstance(first, bool) and isinstance(second, bool))
+  ):
+    return first == second
+  return first is second
 
 
 def concat_maps(d1, d2):
