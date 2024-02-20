@@ -1490,29 +1490,44 @@ final class ProtoUtils {
       // running comparisons between currentType to getRuntimeType(field).
       switch (field.getJavaType()) {
         case BOOLEAN:
-        case DOUBLE:
         case STRING:
           break; // no coercion necessary
+        case DOUBLE:
+          // Accept int/long/float -> double (possibly lossy)
+          if (!currentType.equals(Type.DOUBLE_TYPE)) {
+            cb.cast(currentType, Type.DOUBLE_TYPE);
+          }
+          break;
         case FLOAT:
+          // Accept int/long/double -> float (lossy)
           if (!currentType.equals(Type.FLOAT_TYPE)) {
             cb.cast(currentType, Type.FLOAT_TYPE);
           }
           break;
         case INT:
-          checkState(currentType.equals(Type.LONG_TYPE));
           if (isUnsigned(field)) {
+            // UNSIGNED_INTS_SATURATED_CAST requires a long arg
+            if (!currentType.equals(Type.LONG_TYPE)) {
+              cb.cast(currentType, Type.LONG_TYPE);
+            }
             MethodRefs.UNSIGNED_INTS_SATURATED_CAST.invokeUnchecked(cb);
           } else {
-            // lossy!
+            // Accept long/float/double -> int (truncation and lossy)
             cb.cast(currentType, Type.INT_TYPE);
           }
           break;
         case LONG:
           if (shouldConvertBetweenStringAndLong(field, /* forceStringConversion= */ false)) {
+            // These methods require a String arg
             if (isUnsigned(field)) {
               MethodRefs.UNSIGNED_LONGS_PARSE_UNSIGNED_LONG.invokeUnchecked(cb);
             } else {
               MethodRefs.LONG_PARSE_LONG.invokeUnchecked(cb);
+            }
+          } else {
+            // Accept int/float/double -> long (truncation)
+            if (!currentType.equals(Type.LONG_TYPE)) {
+              cb.cast(currentType, Type.LONG_TYPE);
             }
           }
           break;

@@ -18,6 +18,7 @@ package com.google.template.soy.types;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
+import static com.google.template.soy.types.SoyTypes.NUMBER_TYPE;
 
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableMap;
@@ -35,13 +36,16 @@ import javax.annotation.concurrent.GuardedBy;
 
 /** A {@link SoyType} subclass which describes a protocol buffer type. */
 public final class SoyProtoType extends SoyType {
+
   private static final class TypeVisitor extends FieldVisitor<SoyType> {
     private final TypeInterner interner;
     private final ProtoTypeRegistry registry;
+    private final boolean setterField;
 
-    TypeVisitor(TypeInterner interner, ProtoTypeRegistry registry) {
+    TypeVisitor(TypeInterner interner, ProtoTypeRegistry registry, boolean setterField) {
       this.interner = interner;
       this.registry = registry;
+      this.setterField = setterField;
     }
 
     @Override
@@ -72,12 +76,12 @@ public final class SoyProtoType extends SoyType {
 
     @Override
     protected SoyType visitLongAsInt() {
-      return IntType.getInstance();
+      return setterField ? NUMBER_TYPE : IntType.getInstance();
     }
 
     @Override
     protected SoyType visitUnsignedInt() {
-      return IntType.getInstance();
+      return setterField ? NUMBER_TYPE : IntType.getInstance();
     }
 
     @Override
@@ -97,7 +101,7 @@ public final class SoyProtoType extends SoyType {
 
     @Override
     protected SoyType visitInt() {
-      return IntType.getInstance();
+      return setterField ? NUMBER_TYPE : IntType.getInstance();
     }
 
     @Override
@@ -112,12 +116,12 @@ public final class SoyProtoType extends SoyType {
 
     @Override
     protected SoyType visitDoubleAsFloat() {
-      return FloatType.getInstance();
+      return setterField ? NUMBER_TYPE : FloatType.getInstance();
     }
 
     @Override
     protected SoyType visitFloat() {
-      return FloatType.getInstance();
+      return setterField ? NUMBER_TYPE : FloatType.getInstance();
     }
 
     @Override
@@ -157,20 +161,34 @@ public final class SoyProtoType extends SoyType {
     SoyType type;
 
     @GuardedBy("this")
-    TypeVisitor visitor;
+    SoyType setterType;
 
-    FieldWithType(FieldDescriptor fieldDesc, TypeVisitor visitor) {
+    @GuardedBy("this")
+    private final TypeInterner interner;
+
+    private final ProtoTypeRegistry registry;
+
+    FieldWithType(FieldDescriptor fieldDesc, TypeInterner interner, ProtoTypeRegistry registry) {
       super(fieldDesc);
-      this.visitor = visitor;
+      this.interner = interner;
+      this.registry = registry;
     }
 
     synchronized SoyType getType() {
       if (type == null) {
-        type = FieldVisitor.visitField(getDescriptor(), visitor);
+        type = FieldVisitor.visitField(getDescriptor(), new TypeVisitor(interner, registry, false));
         checkNotNull(type, "Couldn't find a type for: %s", getDescriptor());
-        visitor = null;
       }
       return type;
+    }
+
+    synchronized SoyType getSetterType() {
+      if (setterType == null) {
+        setterType =
+            FieldVisitor.visitField(getDescriptor(), new TypeVisitor(interner, registry, true));
+        checkNotNull(setterType, "Couldn't find a setter type for: %s", getDescriptor());
+      }
+      return setterType;
     }
   }
 
@@ -188,16 +206,13 @@ public final class SoyProtoType extends SoyType {
       ProtoTypeRegistry registry,
       Descriptor descriptor,
       Set<FieldDescriptor> extensions) {
-    this(interner, new TypeVisitor(interner, registry), descriptor, extensions);
-  }
-
-  private SoyProtoType(
-      Object scope, TypeVisitor visitor, Descriptor descriptor, Set<FieldDescriptor> extensions) {
-    this.scope = scope;
+    this.scope = interner;
     this.typeDescriptor = descriptor;
     this.fields =
         Field.getFieldsForType(
-            descriptor, extensions, fieldDescriptor -> new FieldWithType(fieldDescriptor, visitor));
+            descriptor,
+            extensions,
+            fieldDescriptor -> new FieldWithType(fieldDescriptor, interner, registry));
     this.extensionFieldNames =
         extensions.stream()
             .map(Field::computeSoyFullyQualifiedName)
@@ -249,12 +264,10 @@ public final class SoyProtoType extends SoyType {
   }
 
   /** Setter methods may take types that are looser than the type of the corresponding getter. */
+  @Nullable
   public SoyType getFieldSetterType(String fieldName) {
-    SoyType type = getFieldType(fieldName);
-    if (type == IntType.getInstance() || type == FloatType.getInstance()) {
-      type = SoyTypes.NUMBER_TYPE;
-    }
-    return type;
+    FieldWithType field = fields.get(fieldName);
+    return field != null ? field.getSetterType() : null;
   }
 
   /** Returns all the field names of this proto. */

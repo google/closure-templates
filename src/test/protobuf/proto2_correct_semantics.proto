@@ -19,6 +19,10 @@ message Proto2ImplicitDefaults {
   }
 
   repeated string strings = 9;
+  repeated int32 ints = 21;
+  repeated int64 longs = 22;
+  repeated float floats = 23;
+  repeated double doubles = 24;
   map<string, string> colors = 10;
 
   optional int64 long_with_default_js_type = 11;
