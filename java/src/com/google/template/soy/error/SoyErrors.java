@@ -97,6 +97,10 @@ public final class SoyErrors {
       if (otherName.equals(wrongName)) {
         throw new IllegalArgumentException("'" + wrongName + "' is contained in " + allNames);
       }
+      // Special case proto getters
+      if (otherName.equals(wrongName + "OrUndefined")) {
+        return otherName;
+      }
       int distance = distance(otherName, wrongName, shortest);
       if (distance < shortest) {
         shortest = distance;
