@@ -113,9 +113,9 @@ public abstract class CodeChunk {
       FormattingContext outputExprs = new FormattingContext(formatOptions);
       outputExprs.appendOutputExpression((Expression) this);
       outputExprs.append(';').endLine();
-      return initialStatements.concat(outputExprs).toString();
+      return initialStatements.concat(outputExprs).toStringWithMetaDataSuffix();
     } else {
-      return initialStatements.toString();
+      return initialStatements.toStringWithMetaDataSuffix();
     }
   }
 

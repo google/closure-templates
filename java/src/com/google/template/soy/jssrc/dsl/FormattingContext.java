@@ -16,11 +16,17 @@
 
 package com.google.template.soy.jssrc.dsl;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import com.google.common.base.Preconditions;
+import com.google.common.base.Utf8;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
+import com.google.protobuf.TextFormat;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.base.internal.QuoteStyle;
+import com.google.template.soy.javagencode.KytheHelper;
 import java.util.ArrayDeque;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.Set;
@@ -42,6 +48,9 @@ class FormattingContext implements AutoCloseable {
   private boolean nextAppendShouldStartNewLine = false;
   private boolean nextAppendShouldNeverStartNewLine = false;
   private final ArrayDeque<LexicalState> lexicalStateStack;
+  private int currentByteOffset = 0;
+  private final String kytheMode;
+  private KytheHelper kytheHelper;
 
   public enum LexicalState {
     JS,
@@ -58,6 +67,8 @@ class FormattingContext implements AutoCloseable {
     initialSize = 0;
     lexicalStateStack = new ArrayDeque<>();
     lexicalStateStack.push(LexicalState.JS);
+    kytheMode = formatOptions.kytheMode();
+    kytheHelper = formatOptions.kytheHelper();
   }
 
   public FormatOptions getFormatOptions() {
@@ -200,12 +211,27 @@ class FormattingContext implements AutoCloseable {
   }
 
   @CanIgnoreReturnValue
+  FormattingContext appendImputee(String stuff, @Nullable KytheHelper.Span soyOffsetSpan) {
+    if (soyOffsetSpan == null) {
+      append(stuff);
+      return this;
+    }
+    int targetStart = currentByteOffset;
+    append(stuff);
+    int targetEnd = currentByteOffset;
+
+    kytheHelper.addKytheLinkTo(
+        soyOffsetSpan.getStart(), soyOffsetSpan.getEnd(), targetStart, targetEnd);
+    return this;
+  }
+
+  @CanIgnoreReturnValue
   FormattingContext append(String stuff) {
     if (!whitespaceIsSignificant()) {
       maybeBreakLineInsideTsxElement(stuff);
       maybeIndent(stuff.isEmpty() ? '\0' : stuff.charAt(0));
     }
-    buf.append(stuff);
+    appendToBuffer(stuff);
     return this;
   }
 
@@ -215,8 +241,18 @@ class FormattingContext implements AutoCloseable {
       maybeBreakLineInsideTsxElement(Character.toString(c));
       maybeIndent(c);
     }
-    buf.append(c);
+    appendToBuffer(c);
     return this;
+  }
+
+  private void appendToBuffer(String stuff) {
+    buf.append(stuff);
+    currentByteOffset += Utf8.encodedLength(stuff);
+  }
+
+  private void appendToBuffer(char c) {
+    buf.append(c);
+    currentByteOffset += Utf8.encodedLength(String.valueOf(c));
   }
 
   @CanIgnoreReturnValue
@@ -298,7 +334,7 @@ class FormattingContext implements AutoCloseable {
   @CanIgnoreReturnValue
   FormattingContext enterBlock() {
     maybeIndent('{');
-    buf.append('{');
+    appendToBuffer('{');
     increaseIndent();
     endLine();
     curScope = new Scope(curScope, /* emitClosingBrace= */ true);
@@ -391,10 +427,10 @@ class FormattingContext implements AutoCloseable {
 
     if (nextAppendShouldStartNewLine) {
       if (lastChar != '\n') {
-        buf.append('\n');
+        appendToBuffer('\n');
       }
       if (nextChar != '\n') {
-        buf.append(curIndent);
+        appendToBuffer(curIndent);
       }
       nextAppendShouldStartNewLine = false;
     }
@@ -427,6 +463,33 @@ class FormattingContext implements AutoCloseable {
     return isEmpty() ? "" : buf.toString();
   }
 
+  public String toStringWithMetaDataSuffix() {
+    return toString() + getMetadataSuffix();
+  }
+
+  private String getMetadataSuffix() {
+    if (kytheHelper != null) {
+      if (kytheMode.equals("text")) {
+        // this mode is primary used for debugging and not intended to generate imputations linkages
+
+        String genCodeInfoMessage =
+            TextFormat.printer().printToString(kytheHelper.getGeneratedCodeInfo());
+        // JsonFormat.printer().print(kytheHelper.getGeneratedCodeInfo());
+
+        return "\n/**\nKythe inline metadata pretty printed for testing:\n\n"
+            + genCodeInfoMessage
+            + "\n*/";
+
+      } else if (kytheMode.equals("base64")) {
+        return "\n// kythe-inline-metadata: "
+            + new String(
+                Base64.getEncoder().encode(kytheHelper.getGeneratedCodeInfo().toByteArray()), UTF_8)
+            + "\n";
+      }
+    }
+    return "";
+  }
+
   boolean isEmpty() {
     return buf.length() == initialSize;
   }
@@ -453,10 +516,14 @@ class FormattingContext implements AutoCloseable {
       return this;
     } else {
       curIndent = ""; // don't serialize trailing whitespace in front of the next FormattingContext.
+      if (this.kytheHelper != null) {
+        this.kytheHelper.concat(other.kytheHelper);
+      }
+      other.kytheHelper = null;
       return append(other.toString());
     }
   }
-
+  
   /**
    * {@link FormattingContext} needs to keep track of the conditional nesting structure in order to
    * avoid, for example, formatting the initial statements of a code chunk in one branch and

@@ -21,6 +21,7 @@ import com.google.auto.value.extension.memoized.Memoized;
 import com.google.common.collect.ImmutableSet;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.errorprone.annotations.Immutable;
+import com.google.template.soy.javagencode.KytheHelper;
 import java.util.Objects;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
@@ -37,7 +38,8 @@ public abstract class VariableDeclaration extends Statement implements CodeChunk
         // All variables should be const by default
         .setIsMutable(false)
         .setIsExported(false)
-        .setIsDeclaration(false);
+        .setIsDeclaration(false)
+        .setSoySpan(null);
   }
 
   public abstract String varName();
@@ -58,6 +60,9 @@ public abstract class VariableDeclaration extends Statement implements CodeChunk
 
   @Nullable
   abstract Expression type();
+
+  @Nullable
+  abstract KytheHelper.Span soySpan();
 
   /** Returns an {@link Expression} representing a reference to this declared variable. */
   public Expression ref() {
@@ -84,7 +89,8 @@ public abstract class VariableDeclaration extends Statement implements CodeChunk
     if (!varName().contains(".")) {
       ctx.append((isMutable() || (rhs() == null && !isDeclaration())) ? "let " : "const ");
     }
-    ctx.append(varName());
+    ctx.appendImputee(varName(), soySpan());
+
     if (type() != null) {
       ctx.noBreak().append(": ").appendOutputExpression(type());
     }
@@ -148,6 +154,8 @@ public abstract class VariableDeclaration extends Statement implements CodeChunk
     public abstract Builder setIsDeclaration(boolean isDeclaration);
 
     public abstract Builder setType(Expression type);
+
+    public abstract Builder setSoySpan(KytheHelper.Span soySpan);
 
     public abstract VariableDeclaration build();
   }

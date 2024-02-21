@@ -17,11 +17,11 @@
 package com.google.template.soy.jssrc.dsl;
 
 import com.google.auto.value.AutoValue;
-import com.google.errorprone.annotations.Immutable;
+import com.google.template.soy.javagencode.KytheHelper;
+import javax.annotation.Nullable;
 
 /** Options for code formatting in {@link CodeChunk#getCode} et al. */
 @AutoValue
-@Immutable
 public abstract class FormatOptions {
 
   public static final FormatOptions JSSRC = builder().build();
@@ -29,7 +29,9 @@ public abstract class FormatOptions {
   public static Builder builder() {
     return new AutoValue_FormatOptions.Builder()
         .setHtmlEscapeStrings(true)
-        .setUseTsxLineBreaks(false);
+        .setUseTsxLineBreaks(false)
+        .setKytheMode("disabled")
+        .setKytheHelper(null);
   }
 
   /**
@@ -47,12 +49,21 @@ public abstract class FormatOptions {
 
   public abstract Builder toBuilder();
 
+  public abstract String kytheMode();
+
+  @Nullable
+  public abstract KytheHelper kytheHelper();
+
   /** Builder. */
   @AutoValue.Builder
   public abstract static class Builder {
     public abstract Builder setUseTsxLineBreaks(boolean useTsxLineBreaks);
 
     public abstract Builder setHtmlEscapeStrings(boolean htmlEscapeStrings);
+
+    public abstract Builder setKytheMode(String kytheMode);
+
+    public abstract Builder setKytheHelper(KytheHelper kytheHelper);
 
     public abstract FormatOptions build();
   }

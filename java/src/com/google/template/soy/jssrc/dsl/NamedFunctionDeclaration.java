@@ -18,7 +18,7 @@ package com.google.template.soy.jssrc.dsl;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Streams;
-import java.util.List;
+import com.google.template.soy.javagencode.KytheHelper;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -51,55 +51,32 @@ public abstract class NamedFunctionDeclaration extends Statement {
 
   abstract boolean isDeclaration();
 
-  public static NamedFunctionDeclaration create(
-      String name,
-      ParamDecls params,
-      Expression returnType,
-      JsDoc jsDoc,
-      List<Statement> bodyStmts,
-      boolean isExported) {
-    return new AutoValue_NamedFunctionDeclaration(
-        name,
-        params,
-        returnType,
-        Optional.of(jsDoc),
-        ImmutableList.copyOf(bodyStmts),
-        isExported,
-        false);
+  @Nullable
+  abstract KytheHelper.Span soySpan();
+
+  public static Builder builder(String name, ParamDecls params, Expression returnType) {
+    return new AutoValue_NamedFunctionDeclaration.Builder()
+        .setName(name)
+        .setParams(params)
+        .setReturnType(returnType)
+        .setJsDoc(Optional.empty())
+        .setBodyStmts(null)
+        .setIsExported(false)
+        .setIsDeclaration(false)
+        .setSoySpan(null);
   }
 
-  public static NamedFunctionDeclaration create(
-      String name,
-      ParamDecls params,
-      Expression returnType,
-      List<Statement> bodyStmts,
-      boolean isExported) {
-    return new AutoValue_NamedFunctionDeclaration(
-        name,
-        params,
-        returnType,
-        /* jsDoc= */ Optional.empty(),
-        ImmutableList.copyOf(bodyStmts),
-        isExported,
-        false);
-  }
-
-  public static NamedFunctionDeclaration overload(
-      String name, ParamDecls params, Expression returnType, boolean isExported) {
-    return new AutoValue_NamedFunctionDeclaration(
-        name, params, returnType, Optional.empty(), null, isExported, false);
-  }
-
-  public static NamedFunctionDeclaration declaration(
-      String name, ParamDecls params, Expression returnType, @Nullable JsDoc jsDoc) {
-    return new AutoValue_NamedFunctionDeclaration(
-        name, params, returnType, Optional.ofNullable(jsDoc), null, true, true);
-  }
-
-  public static NamedFunctionDeclaration privateDeclaration(
-      String name, ParamDecls params, Expression returnType) {
-    return new AutoValue_NamedFunctionDeclaration(
-        name, params, returnType, Optional.empty(), ImmutableList.of(), false, true);
+  public static Builder builder(
+      String name, ParamDecls params, Expression returnType, JsDoc jsDoc) {
+    return new AutoValue_NamedFunctionDeclaration.Builder()
+        .setName(name)
+        .setParams(params)
+        .setReturnType(returnType)
+        .setJsDoc(Optional.ofNullable(jsDoc))
+        .setBodyStmts(null)
+        .setIsExported(false)
+        .setIsDeclaration(false)
+        .setSoySpan(null);
   }
 
   @Override
@@ -114,7 +91,9 @@ public abstract class NamedFunctionDeclaration extends Statement {
     if (isDeclaration()) {
       ctx.append("declare ");
     }
-    ctx.append("function " + name() + "(");
+    ctx.append("function ");
+    ctx.appendImputee(name(), soySpan());
+    ctx.append("(");
     ctx.appendOutputExpression(params());
     ctx.append("): ").appendOutputExpression(returnType());
     if (bodyStmts() != null) {
@@ -136,5 +115,28 @@ public abstract class NamedFunctionDeclaration extends Statement {
     return Streams.concat(
         bodyStmts() != null ? bodyStmts().stream() : Stream.of(),
         Stream.of(params(), returnType(), jsDoc().orElse(null)).filter(Objects::nonNull));
+  }
+
+  /** A builder for a {@link NamedFunctionDeclaration}. */
+  @AutoValue.Builder
+  public abstract static class Builder {
+
+    public abstract Builder setName(String name);
+
+    public abstract Builder setParams(ParamDecls params);
+
+    public abstract Builder setReturnType(Expression returnType);
+
+    public abstract Builder setJsDoc(Optional<JsDoc> jsDoc);
+
+    public abstract Builder setBodyStmts(ImmutableList<Statement> bodyStmts);
+
+    public abstract Builder setIsExported(boolean isExported);
+
+    public abstract Builder setIsDeclaration(boolean isDeclaration);
+
+    public abstract Builder setSoySpan(KytheHelper.Span soySpan);
+
+    public abstract NamedFunctionDeclaration build();
   }
 }

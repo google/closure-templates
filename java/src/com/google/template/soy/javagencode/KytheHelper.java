@@ -16,10 +16,15 @@
 
 package com.google.template.soy.javagencode;
 
+import static com.google.common.base.Utf8.encodedLength;
+
 import com.google.common.base.Joiner;
 import com.google.common.base.Utf8;
+import com.google.errorprone.annotations.Immutable;
 import com.google.protobuf.Message;
+import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.SourceLocation.Point;
 import com.google.template.soy.base.internal.IndentedLinesBuilder;
 import com.google.template.soy.javagencode.SoyFileNodeTransformer.ParamInfo;
 import com.google.template.soy.javagencode.SoyFileNodeTransformer.TemplateInfo;
@@ -30,9 +35,16 @@ import java.util.ArrayList;
 import java.util.List;
 import javax.annotation.Nullable;
 
-class KytheHelper {
+/** Helper for constructing GeneratedCodeInfo proto */
+public class KytheHelper {
 
   private final String kytheCorpus;
+  private SourceFilePath sourceFilePath;
+
+  public KytheHelper(String kytheCorpus, SourceFilePath sourceFilePath) {
+    this.kytheCorpus = kytheCorpus;
+    this.sourceFilePath = sourceFilePath;
+  }
 
   public KytheHelper(String kytheCorpus) {
     this.kytheCorpus = kytheCorpus;
@@ -40,6 +52,13 @@ class KytheHelper {
 
   public boolean isEnabled() {
     return !kytheCorpus.isEmpty();
+  }
+
+  public void concat(KytheHelper kytheHelper) {
+    Message otherGeneratedCodeInfo =
+        kytheHelper != null ? kytheHelper.getGeneratedCodeInfo() : null;
+    if (otherGeneratedCodeInfo != null) {
+    }
   }
 
   @Nullable
@@ -78,6 +97,9 @@ class KytheHelper {
 
   public void addKytheLinkTo(Span paramSpan, TemplateNode template, TemplateParam param) {
     addKytheLinkTo(paramSpan, param.nameLocation(), template, param.name());
+  }
+
+  public void addKytheLinkTo(int sourceStart, int sourceEnd, int targetStart, int targetEnd) {
   }
 
   private void addKytheLinkTo(
@@ -128,7 +150,39 @@ class KytheHelper {
     return spans;
   }
 
-  static final class Span {
+  public static Span convertToSpan(SourceLocation loc, IndexedLines lines) {
+    Point begin = loc.getBeginPoint();
+    Point end = loc.getEndPoint();
+
+    // We want to calculate the begin/end byte index values, which are put in the begin and end
+    // variables below. Note these need to be 0-based.
+
+    String firstLine = lines.getLine(begin.line());
+
+    // Figure out where the begin column is. Note the -1 for column values are 1-based.
+    int beginOffset =
+        lines.getOffset(begin.line()) + encodedLength(firstLine.substring(0, begin.column() - 1));
+
+    if (begin.line() == end.line()) {
+      return new Span(
+          beginOffset,
+          beginOffset + encodedLength(firstLine.substring(begin.column() - 1, end.column())));
+    }
+
+    int endOffset = beginOffset + encodedLength(firstLine.substring(begin.column() - 1));
+    for (int i = begin.line() + 1; i < end.line(); i++) {
+      endOffset++; // new line
+      endOffset += encodedLength(lines.getLine(i));
+    }
+    endOffset++; // new line
+    endOffset += encodedLength(lines.getLine(end.line()).substring(0, end.column()));
+
+    return new Span(beginOffset, endOffset);
+  }
+
+  /** Used to catalog byte offset for symbols */
+  @Immutable
+  public static final class Span {
     private final int start;
     private final int end;
 
