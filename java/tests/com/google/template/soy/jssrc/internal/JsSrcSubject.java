@@ -61,7 +61,7 @@ abstract class JsSrcSubject<T extends Subject> extends Subject {
   private static final Joiner JOINER = Joiner.on('\n');
 
   private final String actual;
-  SoyJsSrcOptions jsSrcOptions = new SoyJsSrcOptions();
+  SoyJsSrcOptions jsSrcOptions = SoyJsSrcOptions.getDefault();
   private GenericDescriptor[] protoDescriptors = new GenericDescriptor[0];
   private ImmutableList<String> experimentalFeatures = ImmutableList.of();
   ErrorReporter errorReporter = ErrorReporter.exploding();

@@ -40,9 +40,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-/**
- * Unit tests for {@link GenJsCodeVisitor}.
- */
+/** Unit tests for {@link GenJsCodeVisitor}. */
 @RunWith(JUnit4.class)
 public final class GenJsCodeVisitorTest {
   private static final Joiner JOINER = Joiner.on('\n');
@@ -58,7 +56,7 @@ public final class GenJsCodeVisitorTest {
 
   @Before
   public void setUp() {
-    jsSrcOptions = new SoyJsSrcOptions();
+    jsSrcOptions = SoyJsSrcOptions.getDefault();
     genJsCodeVisitor =
         JsSrcMain.createVisitor(
             jsSrcOptions,
@@ -111,7 +109,6 @@ public final class GenJsCodeVisitorTest {
             parseResult.fileSet(), parseResult.registry(), ErrorReporter.exploding());
     assertThat(jsFilesContents.get(0)).startsWith(expectedJsFileContentStart);
   }
-
 
   @Test
   public void testRawText() {
@@ -342,7 +339,7 @@ public final class GenJsCodeVisitorTest {
   // propagate the necessary requires for the ordainer functions.
   @Test
   public void testStrictLetAddsAppropriateRequires() {
-    jsSrcOptions.setShouldProvideRequireSoyNamespaces(true);
+    jsSrcOptions = SoyJsSrcOptions.builder().setShouldProvideRequireSoyNamespaces(true).build();
     String soyNodeCode = "{let $text kind=\"text\"}foo{/let}{let $html kind=\"html\"}foo{/let}\n";
     ParseResult parseResult = SoyFileSetParserBuilder.forTemplateContents(soyNodeCode).parse();
     String jsFilesContents =
@@ -477,7 +474,7 @@ public final class GenJsCodeVisitorTest {
 
     ParseResult parseResult = SoyFileSetParserBuilder.forFileContents(testFileContent).parse();
 
-    jsSrcOptions.setShouldProvideRequireSoyNamespaces(true);
+    jsSrcOptions = SoyJsSrcOptions.builder().setShouldProvideRequireSoyNamespaces(true).build();
     List<String> jsFilesContents =
         genJsCodeVisitor.gen(
             parseResult.fileSet(), parseResult.registry(), ErrorReporter.exploding());

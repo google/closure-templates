@@ -146,12 +146,14 @@ public final class SoyToJsSrcCompiler extends AbstractSoyCompiler {
     SoyFileSet sfs = sfsBuilder.build();
 
     // Create SoyJsSrcOptions.
-    SoyJsSrcOptions jsSrcOptions = new SoyJsSrcOptions();
-    jsSrcOptions.setDependOnCssHeader(dependOnCssHeader);
-    jsSrcOptions.setShouldGenerateGoogMsgDefs(shouldGenerateGoogMsgDefs);
-    jsSrcOptions.setGoogMsgsAreExternal(googMsgsAreExternal);
-    jsSrcOptions.setBidiGlobalDir(bidiGlobalDir);
-    jsSrcOptions.setUseGoogIsRtlForBidiGlobalDir(useGoogIsRtlForBidiGlobalDir);
+    SoyJsSrcOptions jsSrcOptions =
+        SoyJsSrcOptions.builder()
+            .setDependOnCssHeader(dependOnCssHeader)
+            .setShouldGenerateGoogMsgDefs(shouldGenerateGoogMsgDefs)
+            .setGoogMsgsAreExternal(googMsgsAreExternal)
+            .setBidiGlobalDir(bidiGlobalDir)
+            .setUseGoogIsRtlForBidiGlobalDir(useGoogIsRtlForBidiGlobalDir)
+            .build();
 
     // Compile.
     boolean generateLocalizedJs = !locales.isEmpty();
@@ -159,7 +161,7 @@ public final class SoyToJsSrcCompiler extends AbstractSoyCompiler {
       for (String locale : locales) {
         String msgFilePath =
             MainEntryPointUtils.buildFilePath(
-                messageFilePathFormat, locale, /*inputFilePath=*/ null);
+                messageFilePathFormat, locale, /* inputFilePath= */ null);
 
         SoyMsgBundle msgBundle =
             new SoyMsgBundleHandler(messagePlugin).createFromFile(new File(msgFilePath));
@@ -175,7 +177,9 @@ public final class SoyToJsSrcCompiler extends AbstractSoyCompiler {
       }
     } else {
       outputFiles.writeFiles(
-          srcs, sfs.compileToJsSrcInternal(jsSrcOptions, /*msgBundle=*/ null), /*locale=*/ null);
+          srcs,
+          sfs.compileToJsSrcInternal(jsSrcOptions, /* msgBundle= */ null),
+          /* locale= */ null);
     }
   }
 }

@@ -23,6 +23,7 @@ import java.util.List;
 /** Important: Do not use outside of Soy code (treat as superpackage-private). */
 public class IncrementalDomInteropSrcMain {
   public IncrementalDomInteropSrcMain() {}
+
   /**
    * Generates code that, when in a mod, will modify a SoyJS template to use an IDOM one instead.
    *
@@ -32,8 +33,7 @@ public class IncrementalDomInteropSrcMain {
    *     JS file. The generated JS files correspond one-to-one to the original Soy source files.
    */
   public List<String> genJsSrc(SoyFileSetNode soyTree, ErrorReporter errorReporter) {
-    SoyJsSrcOptions options = new SoyJsSrcOptions();
-    options.setShouldGenerateGoogModules(true);
+    SoyJsSrcOptions options = SoyJsSrcOptions.builder().setShouldGenerateGoogModules(true).build();
     return new GenIncrementalDomInteropVisitor(options, null, null, null, null, null, null, null)
         .gen(soyTree, errorReporter);
   }

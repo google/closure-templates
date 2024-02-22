@@ -16,76 +16,45 @@
 
 package com.google.template.soy.incrementaldomsrc;
 
+import com.google.auto.value.AutoValue;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 
-/**
- * Compilation options for incrementaldomsrc.
- *
- * <p>Currently there are no options, this object exists for future expansion.
- */
-public final class SoyIncrementalDomSrcOptions {
-
-  /** Whether we should add a requirecss annotation for the generated GSS header file. */
-  private boolean dependOnCssHeader;
-
-  private boolean googMsgsAreExternal;
-
-  private boolean generateMaybeRequireForControllerAndModelXids; // MOE: strip_line
-
-  public SoyIncrementalDomSrcOptions() {
-    dependOnCssHeader = false;
-    googMsgsAreExternal = true;
-    generateMaybeRequireForControllerAndModelXids = false; // MOE: strip_line
-  }
-
-  private SoyIncrementalDomSrcOptions(SoyIncrementalDomSrcOptions orig) {
-    this.dependOnCssHeader = orig.dependOnCssHeader;
-    this.googMsgsAreExternal = orig.googMsgsAreExternal;
-    // MOE: begin_strip
-    this.generateMaybeRequireForControllerAndModelXids =
-        orig.generateMaybeRequireForControllerAndModelXids;
-    // MOE: end_strip
-  }
-
-  /**
-   * Sets whether we should add a requirecss annotation for the generated GSS header file.
-   *
-   * @param dependOnCssHeader The value to set.
-   */
-  public void setDependOnCssHeader(boolean dependOnCssHeader) {
-    this.dependOnCssHeader = dependOnCssHeader;
-  }
+/** Compilation options for incrementaldomsrc. */
+@AutoValue
+public abstract class SoyIncrementalDomSrcOptions {
 
   /** Returns whether we should add a requirecss annotation for the generated GSS header file. */
-  public boolean dependOnCssHeader() {
-    return dependOnCssHeader;
-  }
-
-  // MOE: begin_strip
-  public void setGenerateMaybeRequireForControllerAndModelXids(
-      boolean generateMaybeRequireForControllerAndModelXids) {
-    this.generateMaybeRequireForControllerAndModelXids =
-        generateMaybeRequireForControllerAndModelXids;
-  }
-
-  public boolean generateMaybeRequireForControllerAndModelXids() {
-    return generateMaybeRequireForControllerAndModelXids;
-  }
-
-  // MOE: end_strip
-
-  /**
-   * Sets whether we should add a requirecss annotation for the generated GSS header file.
-   *
-   * @param dependOnCssHeader The value to set.
-   */
-  public void setGoogMsgsAreExternal(boolean googMsgsAreExternal) {
-    this.googMsgsAreExternal = googMsgsAreExternal;
-  }
+  public abstract boolean dependOnCssHeader();
 
   /** Returns whether we should add a requirecss annotation for the generated GSS header file. */
-  public boolean googMsgsAreExternal() {
-    return googMsgsAreExternal;
+  public abstract boolean googMsgsAreExternal();
+
+  public static Builder builder() {
+    return new AutoValue_SoyIncrementalDomSrcOptions.Builder()
+        .setDependOnCssHeader(false)
+        .setGoogMsgsAreExternal(true);
+  }
+
+  public abstract Builder toBuilder();
+
+  public static SoyIncrementalDomSrcOptions getDefault() {
+    return builder().build();
+  }
+
+  /** Builder. */
+  @AutoValue.Builder
+  public abstract static class Builder {
+    /**
+     * Sets whether we should add a requirecss annotation for the generated GSS header file.
+     *
+     * @param dependOnCssHeader The value to set.
+     */
+    public abstract Builder setDependOnCssHeader(boolean dependOnCssHeader);
+
+    /** Sets whether we should add a requirecss annotation for the generated GSS header file. */
+    public abstract Builder setGoogMsgsAreExternal(boolean googMsgsAreExternal);
+
+    public abstract SoyIncrementalDomSrcOptions build();
   }
 
   /**
@@ -93,19 +62,14 @@ public final class SoyIncrementalDomSrcOptions {
    * lots of {@code jssrc} which needs to interact with this object.
    */
   SoyJsSrcOptions toJsSrcOptions() {
-    SoyJsSrcOptions jsSrcOptions = new SoyJsSrcOptions();
-    // Only goog.module generation supported
-    jsSrcOptions.setShouldGenerateGoogModules(true);
-    jsSrcOptions.setShouldGenerateGoogMsgDefs(true);
-    jsSrcOptions.setGoogMsgsAreExternal(googMsgsAreExternal);
-    jsSrcOptions.setBidiGlobalDir(0);
-    jsSrcOptions.setUseGoogIsRtlForBidiGlobalDir(true);
-    jsSrcOptions.setDependOnCssHeader(dependOnCssHeader);
-    return jsSrcOptions;
-  }
-
-  @Override
-  public SoyIncrementalDomSrcOptions clone() {
-    return new SoyIncrementalDomSrcOptions(this);
+    return SoyJsSrcOptions.builder()
+        // Only goog.module generation supported
+        .setShouldGenerateGoogModules(true)
+        .setShouldGenerateGoogMsgDefs(true)
+        .setGoogMsgsAreExternal(googMsgsAreExternal())
+        .setBidiGlobalDir(0)
+        .setUseGoogIsRtlForBidiGlobalDir(true)
+        .setDependOnCssHeader(dependOnCssHeader())
+        .build();
   }
 }

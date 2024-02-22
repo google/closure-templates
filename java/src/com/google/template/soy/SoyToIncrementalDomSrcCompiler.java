@@ -90,9 +90,11 @@ public final class SoyToIncrementalDomSrcCompiler extends AbstractSoyCompiler {
   @Override
   protected void compile(SoyFileSet.Builder sfsBuilder) {
     SoyFileSet sfs = sfsBuilder.build();
-    SoyIncrementalDomSrcOptions options = new SoyIncrementalDomSrcOptions();
-    options.setDependOnCssHeader(dependOnCssHeader);
-    options.setGoogMsgsAreExternal(googMsgsAreExternal);
+    SoyIncrementalDomSrcOptions options =
+        SoyIncrementalDomSrcOptions.builder()
+            .setDependOnCssHeader(dependOnCssHeader)
+            .setGoogMsgsAreExternal(googMsgsAreExternal)
+            .build();
     outputFiles.writeFiles(
         srcs, sfs.compileToIncrementalDomSrcInternal(options), /* locale= */ null);
   }
