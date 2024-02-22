@@ -586,7 +586,7 @@ public final class RawTextNode extends AbstractSoyNode
           column++;
         }
       }
-      return Point.create(line, column, bytes + encodedLength(text.substring(start, i)));
+      return Point.create(line, column, bytes + encodedLength(text.substring(start, i - 1)));
     }
 
     /** Returns a new SourceOffsets object for the given subrange of the text. */
