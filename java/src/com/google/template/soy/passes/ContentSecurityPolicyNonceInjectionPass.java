@@ -138,7 +138,7 @@ public final class ContentSecurityPolicyNonceInjectionPass implements CompilerFi
               openTag
                   .getSourceLocation()
                   .getEndPoint()
-                  .offset(0, openTag.isSelfClosing() ? -2 : -1)
+                  .offsetCols(openTag.isSelfClosing() ? -2 : -1)
                   .asLocation(openTag.getSourceLocation().getFilePath());
           openTag.addChild(createCspInjection(insertionLocation, nodeIdGen, defn));
         }

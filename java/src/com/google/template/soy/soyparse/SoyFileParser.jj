@@ -764,7 +764,7 @@ public class SoyFileParser {
         && exprList.get(0).toSourceString().equals("all")) {
       SourceLocation valueLoc = exprList.get(0).getSourceLocation();
       SourceLocation withQuotes = new SourceLocation(
-          valueLoc.getFilePath(), valueLoc.getBeginPoint().offset(0, -1), valueLoc.getEndPoint().offset(0, 1));
+          valueLoc.getFilePath(), valueLoc.getBeginPoint().offsetCols(-1), valueLoc.getEndPoint().offsetCols(1));
       return new CommandTagAttribute(id, quoteStyle, "all", withQuotes, loc);
     }
     return new CommandTagAttribute(id, quoteStyle, exprList, loc);
@@ -1467,7 +1467,7 @@ private SoyFileNode EmptySoyFile() :
     return new SoyFileNode(
         nodeIdGen.genId(),
         new SourceLocation(filePath,
-            SourceLocation.Point.create(1, 1),
+            SourceLocation.Point.FIRST_POINT,
             SourceLocation.Point.create(Math.max(1, eof.beginLine), Math.max(1, eof.beginColumn))),
             NamespaceDeclaration.EMPTY,
             SoyFileHeaderInfo.EMPTY,
@@ -1549,7 +1549,7 @@ private SoyFileNode NonEmptySoyFile() :
   {
     SoyFileNode sfn = new SoyFileNode(
         nodeIdGen.genId(),
-        new SourceLocation(filePath, SourceLocation.Point.create(1, 1),
+        new SourceLocation(filePath, SourceLocation.Point.FIRST_POINT,
             SourceLocation.Point.create(eof.beginLine, eof.beginColumn)),
             namespace, headerInfo, buildComments(token_source));
     sfn.addChildren(imports.build());

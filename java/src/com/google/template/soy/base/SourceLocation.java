@@ -68,7 +68,7 @@ public final class SourceLocation implements Comparable<SourceLocation> {
   }
 
   public SourceLocation(SourceFilePath filePath) {
-    this(filePath, -1, -1, -1, -1);
+    this(filePath, Point.UNKNOWN_POINT, Point.UNKNOWN_POINT);
   }
 
   public SourceLocation(SourceFilePath filePath, Point begin, Point end) {
@@ -201,15 +201,11 @@ public final class SourceLocation implements Comparable<SourceLocation> {
   }
 
   public SourceLocation offsetStartCol(int offset) {
-    return new SourceLocation(filePath, begin.offset(0, offset), end);
+    return new SourceLocation(filePath, begin.offsetCols(offset), end);
   }
 
   public SourceLocation offsetEndCol(int offset) {
-    return new SourceLocation(filePath, begin, end.offset(0, offset));
-  }
-
-  public SourceLocation offsetCols(int beginOffset, int endOffset) {
-    return new SourceLocation(filePath, begin.offset(0, beginOffset), end.offset(0, endOffset));
+    return new SourceLocation(filePath, begin, end.offsetCols(offset));
   }
 
   public boolean isSingleLine() {
@@ -246,14 +242,6 @@ public final class SourceLocation implements Comparable<SourceLocation> {
       return UNKNOWN;
     }
     return new SourceLocation(filePath, begin, other);
-  }
-
-  /**
-   * Returns a new SourceLocation that starts where this SourceLocation starts and ends {@code
-   * lines} and {@code cols} further than where it ends.
-   */
-  public SourceLocation extend(int lines, int cols) {
-    return new SourceLocation(filePath, begin, end.offset(lines, cols));
   }
 
   /**
@@ -366,6 +354,7 @@ public final class SourceLocation implements Comparable<SourceLocation> {
   @Immutable
   public abstract static class Point implements Comparable<Point> {
     public static final Point UNKNOWN_POINT = new AutoValue_SourceLocation_Point(-1, -1);
+    public static final Point FIRST_POINT = create(1, 1);
 
     public static Point create(int line, int column) {
       if (line == -1 && column == -1) {
@@ -384,11 +373,11 @@ public final class SourceLocation implements Comparable<SourceLocation> {
       return !this.equals(UNKNOWN_POINT);
     }
 
-    public final Point offset(int byLines, int byColumns) {
+    public final Point offsetCols(int byColumns) {
       if (!isKnown()) {
         return this;
       }
-      return Point.create(line() + byLines, column() + byColumns);
+      return Point.create(line(), column() + byColumns);
     }
 
     public final SourceLocation asLocation(SourceFilePath filePath) {
