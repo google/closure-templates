@@ -74,23 +74,6 @@ public final class IndexedLines {
     return new ByteSpan(beginOffset, endOffset);
   }
 
-  public String getContents(SourceLocation loc) {
-    return getContents(loc.getBeginPoint(), loc.getEndPoint());
-  }
-
-  public String getContents(Point begin, Point endInc) {
-    if (begin.line() == endInc.line()) {
-      return lines[begin.line() - 1].substring(begin.column() - 1, endInc.column());
-    }
-    StringBuilder sb = new StringBuilder();
-    sb.append(lines[begin.line() - 1].substring(begin.column() - 1));
-    for (int i = begin.line() + 1; i < endInc.line(); i++) {
-      sb.append('\n').append(lines[i - 1]);
-    }
-    sb.append('\n').append(lines[endInc.line() - 1].substring(0, endInc.column()));
-    return sb.toString();
-  }
-
   /** Returns the line at 1-based index {@code oneBased}. */
   public String getLine(int oneBased) {
     return lines[oneBased - 1];
