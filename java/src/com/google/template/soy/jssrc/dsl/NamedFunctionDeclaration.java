@@ -18,7 +18,7 @@ package com.google.template.soy.jssrc.dsl;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Streams;
-import com.google.template.soy.javagencode.KytheHelper;
+import com.google.template.soy.javagencode.ByteSpan;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -52,7 +52,7 @@ public abstract class NamedFunctionDeclaration extends Statement {
   abstract boolean isDeclaration();
 
   @Nullable
-  abstract KytheHelper.Span soySpan();
+  abstract ByteSpan soySpan();
 
   public static Builder builder(String name, ParamDecls params, Expression returnType) {
     return new AutoValue_NamedFunctionDeclaration.Builder()
@@ -135,7 +135,7 @@ public abstract class NamedFunctionDeclaration extends Statement {
 
     public abstract Builder setIsDeclaration(boolean isDeclaration);
 
-    public abstract Builder setSoySpan(KytheHelper.Span soySpan);
+    public abstract Builder setSoySpan(ByteSpan soySpan);
 
     public abstract NamedFunctionDeclaration build();
   }

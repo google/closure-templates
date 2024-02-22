@@ -18,6 +18,7 @@ package com.google.template.soy.jssrc.dsl;
 
 import com.google.common.collect.Iterables;
 import com.google.template.soy.internal.util.TreeStreams;
+import com.google.template.soy.javagencode.KytheHelper;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -40,6 +41,29 @@ public final class CodeChunks {
   private static final Pattern ID = Pattern.compile("[A-Za-z_$][\\w$]*");
 
   private CodeChunks() {}
+
+  public static String getCode(CodeChunk chunk, FormatOptions formatOptions) {
+    return getCode(chunk, new FormattingContext(formatOptions));
+  }
+
+  public static String getCode(
+      CodeChunk chunk, FormatOptions formatOptions, KytheHelper kytheHelper) {
+    FormattingContext context = new FormattingContext(formatOptions);
+    context.setKytheHelper(kytheHelper);
+    return getCode(chunk, context);
+  }
+
+  private static String getCode(CodeChunk chunk, FormattingContext context) {
+    context.appendInitialStatements(chunk);
+
+    if (chunk instanceof Expression) {
+      context.clearIndent(); // Don't add unnecessary space before expression.
+      context.appendOutputExpression((Expression) chunk);
+      context.append(';').endLine();
+    }
+
+    return context.toString();
+  }
 
   /** Validates that the given string is a valid javascript identifier. */
   static void checkId(String id) {

@@ -42,6 +42,7 @@ import com.google.protobuf.Descriptors.FileDescriptor;
 import com.google.template.soy.CacheLoaders.CachedDescriptorSet;
 import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLogicalPath;
+import com.google.template.soy.base.internal.KytheMode;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.error.SoyCompilationException;
 import com.google.template.soy.plugin.java.DelegatingMethodChecker;
@@ -207,6 +208,11 @@ public abstract class AbstractSoyCompiler {
           "The Java package name used for generated Java classes associated with these"
               + " Soy sources. Required by some compilers.")
   protected String javaPackage = "";
+
+  @Option(
+      name = "--kythe_mode",
+      usage = "The kythe mode for generating kythe imputation metadata. Used by some compilers.")
+  protected KytheMode kytheMode = KytheMode.DISABLED;
 
   /** The remaining arguments after parsing command-line flags. */
   @Argument private List<String> arguments = new ArrayList<>();

@@ -16,6 +16,8 @@
 
 package com.google.template.soy.javagencode;
 
+import static com.google.common.base.Utf8.encodedLength;
+
 import com.google.common.base.Utf8;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SourceLocation.Point;
@@ -40,6 +42,36 @@ public final class IndexedLines {
     }
 
     startOffsets[startOffsets.length - 1] = currIndex;
+  }
+
+  public ByteSpan convertToSpan(SourceLocation loc) {
+    Point begin = loc.getBeginPoint();
+    Point end = loc.getEndPoint();
+
+    // We want to calculate the begin/end byte index values, which are put in the begin and end
+    // variables below. Note these need to be 0-based.
+
+    String firstLine = getLine(begin.line());
+
+    // Figure out where the begin column is. Note the -1 for column values are 1-based.
+    int beginOffset =
+        getOffset(begin.line()) + encodedLength(firstLine.substring(0, begin.column() - 1));
+
+    if (begin.line() == end.line()) {
+      return new ByteSpan(
+          beginOffset,
+          beginOffset + encodedLength(firstLine.substring(begin.column() - 1, end.column())));
+    }
+
+    int endOffset = beginOffset + encodedLength(firstLine.substring(begin.column() - 1));
+    for (int i = begin.line() + 1; i < end.line(); i++) {
+      endOffset++; // new line
+      endOffset += encodedLength(getLine(i));
+    }
+    endOffset++; // new line
+    endOffset += encodedLength(getLine(end.line()).substring(0, end.column()));
+
+    return new ByteSpan(beginOffset, endOffset);
   }
 
   public String getContents(SourceLocation loc) {

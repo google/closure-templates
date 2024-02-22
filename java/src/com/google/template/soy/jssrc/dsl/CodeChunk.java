@@ -106,17 +106,7 @@ public abstract class CodeChunk {
    * newline.
    */
   public final String getCode(FormatOptions formatOptions) {
-    FormattingContext initialStatements = new FormattingContext(formatOptions);
-    initialStatements.appendInitialStatements(this);
-
-    if (this instanceof Expression) {
-      FormattingContext outputExprs = new FormattingContext(formatOptions);
-      outputExprs.appendOutputExpression((Expression) this);
-      outputExprs.append(';').endLine();
-      return initialStatements.concat(outputExprs).toStringWithMetaDataSuffix();
-    } else {
-      return initialStatements.toStringWithMetaDataSuffix();
-    }
+    return CodeChunks.getCode(this, formatOptions);
   }
 
   /**

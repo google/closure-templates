@@ -23,7 +23,9 @@ import com.google.common.base.Utf8;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.protobuf.TextFormat;
 import com.google.template.soy.base.internal.BaseUtils;
+import com.google.template.soy.base.internal.KytheMode;
 import com.google.template.soy.base.internal.QuoteStyle;
+import com.google.template.soy.javagencode.ByteSpan;
 import com.google.template.soy.javagencode.KytheHelper;
 import java.util.ArrayDeque;
 import java.util.Base64;
@@ -33,9 +35,8 @@ import java.util.Set;
 import javax.annotation.Nullable;
 
 /**
- * Helper class to keep track of state during a single call to {@link CodeChunk#getCode()},
- * including the initial statements that have already been formatted and the current indentation
- * level.
+ * Helper class to keep track of state during a single call to {@link CodeChunk#getCode}, including
+ * the initial statements that have already been formatted and the current indentation level.
  */
 class FormattingContext implements AutoCloseable {
   private static final int MAX_LINE_LENGTH = 80;
@@ -43,14 +44,13 @@ class FormattingContext implements AutoCloseable {
   private final int initialSize;
 
   private final FormatOptions formatOptions;
+  @Nullable private KytheHelper kytheHelper;
   private Scope curScope = new Scope(/* parent= */ null, /* emitClosingBrace= */ false);
   private String curIndent;
   private boolean nextAppendShouldStartNewLine = false;
   private boolean nextAppendShouldNeverStartNewLine = false;
   private final ArrayDeque<LexicalState> lexicalStateStack;
   private int currentByteOffset = 0;
-  private final String kytheMode;
-  private KytheHelper kytheHelper;
 
   public enum LexicalState {
     JS,
@@ -67,16 +67,10 @@ class FormattingContext implements AutoCloseable {
     initialSize = 0;
     lexicalStateStack = new ArrayDeque<>();
     lexicalStateStack.push(LexicalState.JS);
-    kytheMode = formatOptions.kytheMode();
-    kytheHelper = formatOptions.kytheHelper();
   }
 
-  public FormatOptions getFormatOptions() {
-    return formatOptions;
-  }
-
-  public FormattingContext copyWithSameOptions() {
-    return new FormattingContext(formatOptions);
+  public void setKytheHelper(@Nullable KytheHelper kytheHelper) {
+    this.kytheHelper = kytheHelper;
   }
 
   /**
@@ -86,9 +80,10 @@ class FormattingContext implements AutoCloseable {
   FormattingContext buffer() {
     FormattingContext parent = this;
     FormatOptions bufferOptions =
-        formatOptions.useTsxLineBreaks()
-            ? formatOptions.toBuilder().setUseTsxLineBreaks(false).build()
-            : formatOptions;
+        formatOptions.toBuilder()
+            .setUseTsxLineBreaks(false)
+            .setKytheMode(KytheMode.DISABLED)
+            .build();
     FormattingContext context =
         new FormattingContext(bufferOptions) {
           @Override
@@ -97,6 +92,9 @@ class FormattingContext implements AutoCloseable {
             parent.append(buffer);
           }
         };
+    // Propagate the Kythe builder but set kytheMode=DISABLED so that toString() doesn't include
+    // the kythe comment.
+    context.setKytheHelper(kytheHelper);
     context.lexicalStateStack.push(this.lexicalStateStack.peek());
     return context;
   }
@@ -211,8 +209,8 @@ class FormattingContext implements AutoCloseable {
   }
 
   @CanIgnoreReturnValue
-  FormattingContext appendImputee(String stuff, @Nullable KytheHelper.Span soyOffsetSpan) {
-    if (soyOffsetSpan == null) {
+  FormattingContext appendImputee(String stuff, @Nullable ByteSpan soyOffsetSpan) {
+    if (soyOffsetSpan == null || kytheHelper == null) {
       append(stuff);
       return this;
     }
@@ -458,18 +456,20 @@ class FormattingContext implements AutoCloseable {
     return this;
   }
 
-  @Override
-  public String toString() {
-    return isEmpty() ? "" : buf.toString();
+  @CanIgnoreReturnValue
+  FormattingContext clearIndent() {
+    curIndent = "";
+    return this;
   }
 
-  public String toStringWithMetaDataSuffix() {
-    return toString() + getMetadataSuffix();
+  @Override
+  public String toString() {
+    return isEmpty() ? "" : buf.toString() + getMetadataSuffix();
   }
 
   private String getMetadataSuffix() {
     if (kytheHelper != null) {
-      if (kytheMode.equals("text")) {
+      if (formatOptions.kytheMode() == KytheMode.TEXT) {
         // this mode is primary used for debugging and not intended to generate imputations linkages
 
         String genCodeInfoMessage =
@@ -480,7 +480,7 @@ class FormattingContext implements AutoCloseable {
             + genCodeInfoMessage
             + "\n*/";
 
-      } else if (kytheMode.equals("base64")) {
+      } else if (formatOptions.kytheMode() == KytheMode.BASE64) {
         return "\n// kythe-inline-metadata: "
             + new String(
                 Base64.getEncoder().encode(kytheHelper.getGeneratedCodeInfo().toByteArray()), UTF_8)
@@ -505,25 +505,6 @@ class FormattingContext implements AutoCloseable {
     }
   }
 
-  /**
-   * Returns a FormattingContext representing the concatenation of this FormattingContext with
-   * {@code other}. For use only by {@link CodeChunk#getCode(int, OutputContext)}.
-   */
-  FormattingContext concat(FormattingContext other) {
-    if (isEmpty()) {
-      return other;
-    } else if (other.isEmpty()) {
-      return this;
-    } else {
-      curIndent = ""; // don't serialize trailing whitespace in front of the next FormattingContext.
-      if (this.kytheHelper != null) {
-        this.kytheHelper.concat(other.kytheHelper);
-      }
-      other.kytheHelper = null;
-      return append(other.toString());
-    }
-  }
-  
   /**
    * {@link FormattingContext} needs to keep track of the conditional nesting structure in order to
    * avoid, for example, formatting the initial statements of a code chunk in one branch and

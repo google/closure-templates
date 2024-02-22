@@ -21,7 +21,7 @@ import com.google.auto.value.extension.memoized.Memoized;
 import com.google.common.collect.ImmutableSet;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.errorprone.annotations.Immutable;
-import com.google.template.soy.javagencode.KytheHelper;
+import com.google.template.soy.javagencode.ByteSpan;
 import java.util.Objects;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
@@ -62,7 +62,7 @@ public abstract class VariableDeclaration extends Statement implements CodeChunk
   abstract Expression type();
 
   @Nullable
-  abstract KytheHelper.Span soySpan();
+  abstract ByteSpan soySpan();
 
   /** Returns an {@link Expression} representing a reference to this declared variable. */
   public Expression ref() {
@@ -155,7 +155,7 @@ public abstract class VariableDeclaration extends Statement implements CodeChunk
 
     public abstract Builder setType(Expression type);
 
-    public abstract Builder setSoySpan(KytheHelper.Span soySpan);
+    public abstract Builder setSoySpan(ByteSpan soySpan);
 
     public abstract VariableDeclaration build();
   }

@@ -17,8 +17,7 @@
 package com.google.template.soy.jssrc.dsl;
 
 import com.google.auto.value.AutoValue;
-import com.google.template.soy.javagencode.KytheHelper;
-import javax.annotation.Nullable;
+import com.google.template.soy.base.internal.KytheMode;
 
 /** Options for code formatting in {@link CodeChunk#getCode} et al. */
 @AutoValue
@@ -30,8 +29,7 @@ public abstract class FormatOptions {
     return new AutoValue_FormatOptions.Builder()
         .setHtmlEscapeStrings(true)
         .setUseTsxLineBreaks(false)
-        .setKytheMode("disabled")
-        .setKytheHelper(null);
+        .setKytheMode(KytheMode.DISABLED);
   }
 
   /**
@@ -49,10 +47,7 @@ public abstract class FormatOptions {
 
   public abstract Builder toBuilder();
 
-  public abstract String kytheMode();
-
-  @Nullable
-  public abstract KytheHelper kytheHelper();
+  public abstract KytheMode kytheMode();
 
   /** Builder. */
   @AutoValue.Builder
@@ -61,9 +56,7 @@ public abstract class FormatOptions {
 
     public abstract Builder setHtmlEscapeStrings(boolean htmlEscapeStrings);
 
-    public abstract Builder setKytheMode(String kytheMode);
-
-    public abstract Builder setKytheHelper(KytheHelper kytheHelper);
+    public abstract Builder setKytheMode(KytheMode kytheMode);
 
     public abstract FormatOptions build();
   }

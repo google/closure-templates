@@ -42,7 +42,6 @@ import com.google.common.collect.Sets;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.base.internal.IndentedLinesBuilder;
 import com.google.template.soy.exprtree.StringNode;
-import com.google.template.soy.javagencode.KytheHelper.Span;
 import com.google.template.soy.passes.IndirectParamsCalculator;
 import com.google.template.soy.passes.IndirectParamsCalculator.IndirectParamsInfo;
 import com.google.template.soy.shared.internal.BuiltinFunction;
@@ -339,7 +338,7 @@ public final class GenerateParseInfoVisitor
                 ? ",\n    comments = \"kythe-inline-metadata:GeneratedCodeInfo\""
                 : "")
             + ")");
-    Span classSpan =
+    ByteSpan classSpan =
         kytheHelper
             .appendLineAndGetSpans(
                 ilb, "public final class ", javaClassName, " extends SoyFileInfo {")
@@ -386,7 +385,7 @@ public final class GenerateParseInfoVisitor
               + templateEntry.getValue().getPartialTemplateName()
               + " template.";
       appendJavadoc(ilb, javadocSb, false, true);
-      Span templateSpan =
+      ByteSpan templateSpan =
           kytheHelper
               .appendLineAndGetSpans(
                   ilb,
@@ -446,7 +445,7 @@ public final class GenerateParseInfoVisitor
       appendJavadoc(ilb, javadocSb.toString(), false, true);
 
       paramFields.add(upperUnderscoreKey);
-      Span paramSpan =
+      ByteSpan paramSpan =
           kytheHelper
               .appendLineAndGetSpans(
                   ilb, "public static final String ", upperUnderscoreKey, " = \"", key, "\";")
@@ -561,7 +560,7 @@ public final class GenerateParseInfoVisitor
         true,
         false);
     deprecatedAnnotation(ilb, isDeprecated);
-    Span templateSpan =
+    ByteSpan templateSpan =
         kytheHelper
             .appendLineAndGetSpans(
                 ilb,
@@ -602,7 +601,7 @@ public final class GenerateParseInfoVisitor
       }
       // The actual param field.
       String fieldName = convertToUpperUnderscore(param.name());
-      Span paramSpan =
+      ByteSpan paramSpan =
           kytheHelper
               .appendLineAndGetSpans(
                   ilb,
