@@ -19,6 +19,7 @@ package com.google.template.soy.soyparse;
 import com.google.common.base.MoreObjects;
 import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.SourceLocation.Point;
 
 /** Helpers for dealing with {@link Token tokens} */
 final class Tokens {
@@ -31,8 +32,10 @@ final class Tokens {
   static SourceLocation createSrcLoc(SourceFilePath filePath, Token first, Token... rest) {
     int beginLine = first.beginLine;
     int beginColumn = first.beginColumn;
+    int beginByte = first.byteOffsetStart;
     int endLine = first.endLine;
     int endColumn = first.endColumn;
+    int endByte = first.byteOffsetEnd;
 
     for (Token next : rest) {
       if (!startsLaterThan(next, beginLine, beginColumn)) {
@@ -49,12 +52,16 @@ final class Tokens {
       }
       endLine = next.endLine;
       endColumn = next.endColumn;
+      endByte = next.byteOffsetEnd;
     }
     // this special case happens for completely empty files.
     if (beginLine == 0 && endLine == 0 && beginColumn == 0 && endColumn == 0) {
       return new SourceLocation(filePath);
     }
-    return new SourceLocation(filePath, beginLine, beginColumn, endLine, endColumn);
+    return new SourceLocation(
+        filePath,
+        Point.create(beginLine, beginColumn, beginByte),
+        Point.create(endLine, endColumn, endByte));
   }
 
   private static boolean startsLaterThan(Token tok, int beginLine, int beginCol) {
@@ -79,8 +86,10 @@ final class Tokens {
         .add("image", token.image)
         .add("beginLine", token.beginLine)
         .add("beginColumn", token.beginColumn)
+        .add("beginByte", token.byteOffsetStart)
         .add("endLine", token.endLine)
         .add("endColumn", token.endColumn)
+        .add("endByte", token.byteOffsetEnd)
         .toString();
   }
 

@@ -26,6 +26,8 @@ options {
   STATIC = false;
   UNICODE_INPUT = true;
   SUPPORT_CLASS_VISIBILITY_PUBLIC = false;
+  TOKEN_EXTENDS = "SoySimpleToken";
+  COMMON_TOKEN_ACTION = true;
 
   DEBUG_PARSER = false;
   DEBUG_TOKEN_MANAGER = false;
@@ -817,6 +819,12 @@ TOKEN_MGR_DECLS: {
     this.parser = parser;
   }
 
+  public void CommonTokenAction(Token t) {
+    SoySimpleCharStream s = (SoySimpleCharStream) input_stream;
+    t.byteOffsetStart = s.tokenBeginByteOffset;
+    t.byteOffsetEnd = s.getCurrentByteOffset();
+  }
+
   /**
    * Saves the current lexical state and switch to a new one.  To switch back call
    * {@link #popState()}.
@@ -1468,7 +1476,7 @@ private SoyFileNode EmptySoyFile() :
         nodeIdGen.genId(),
         new SourceLocation(filePath,
             SourceLocation.Point.FIRST_POINT,
-            SourceLocation.Point.create(Math.max(1, eof.beginLine), Math.max(1, eof.beginColumn))),
+            SourceLocation.Point.create(Math.max(1, eof.beginLine), Math.max(1, eof.beginColumn), eof.byteOffsetStart)),
             NamespaceDeclaration.EMPTY,
             SoyFileHeaderInfo.EMPTY,
             buildComments(token_source));
@@ -1550,7 +1558,7 @@ private SoyFileNode NonEmptySoyFile() :
     SoyFileNode sfn = new SoyFileNode(
         nodeIdGen.genId(),
         new SourceLocation(filePath, SourceLocation.Point.FIRST_POINT,
-            SourceLocation.Point.create(eof.beginLine, eof.beginColumn)),
+            SourceLocation.Point.create(eof.beginLine, eof.beginColumn, eof.byteOffsetStart)),
             namespace, headerInfo, buildComments(token_source));
     sfn.addChildren(imports.build());
     sfn.addChildren(constants.build());

@@ -52,6 +52,10 @@ public final class SourceLocation implements Comparable<SourceLocation> {
       new SourceLocation(SourceFilePath.create("unknown", "unknown"));
 
   /**
+   * This method ignores byte offsets and should only be used in contexts where byte offset is not
+   * used (e.g. Formatter, tests). Prefer {@link SourceLocation#SourceLocation(SourceFilePath,
+   * Point, Point)}.
+   *
    * @param filePath A file path or URI useful for error messages.
    * @param beginLine The line number in the source file where this location begins (1-based), or -1
    *     if associated with the entire file instead of a line.
@@ -131,6 +135,10 @@ public final class SourceLocation implements Comparable<SourceLocation> {
     return end.column();
   }
 
+  public ByteSpan getByteSpan() {
+    return ByteSpan.create(this);
+  }
+
   /** Returns true if this location ends one character before the other location starts. */
   public boolean isJustBefore(SourceLocation that) {
     if (!this.filePath.equals(that.filePath)) {
@@ -200,10 +208,12 @@ public final class SourceLocation implements Comparable<SourceLocation> {
         : String.format("%s:%s-%s:%s", begin.line(), begin.column(), end.line(), end.column());
   }
 
+  /** See {@link Point#offsetCols(int)} for a warning about this method. */
   public SourceLocation offsetStartCol(int offset) {
     return new SourceLocation(filePath, begin.offsetCols(offset), end);
   }
 
+  /** See {@link Point#offsetCols(int)} for a warning about this method. */
   public SourceLocation offsetEndCol(int offset) {
     return new SourceLocation(filePath, begin, end.offsetCols(offset));
   }
@@ -353,31 +363,51 @@ public final class SourceLocation implements Comparable<SourceLocation> {
   @AutoValue
   @Immutable
   public abstract static class Point implements Comparable<Point> {
-    public static final Point UNKNOWN_POINT = new AutoValue_SourceLocation_Point(-1, -1);
-    public static final Point FIRST_POINT = create(1, 1);
+    public static final int UNKNOWN_OFFSET = -1;
 
+    public static final Point UNKNOWN_POINT =
+        new AutoValue_SourceLocation_Point(-1, -1, UNKNOWN_OFFSET);
+    public static final Point FIRST_POINT = create(1, 1, 0);
+
+    /** Ignores byte offset. Prefer {@link #create(int, int, int)}. */
     public static Point create(int line, int column) {
+      return create(line, column, UNKNOWN_OFFSET);
+    }
+
+    public static Point create(int line, int column, int byteOffset) {
       if (line == -1 && column == -1) {
         return UNKNOWN_POINT;
       }
       checkArgument(line > 0, "line must be positive: %s", line);
       checkArgument(column > 0, "column must be positive: %s", column);
-      return new AutoValue_SourceLocation_Point(line, column);
+      return new AutoValue_SourceLocation_Point(line, column, byteOffset);
     }
 
     public abstract int line();
 
     public abstract int column();
 
+    public abstract int byteOffset();
+
     public final boolean isKnown() {
       return !this.equals(UNKNOWN_POINT);
     }
 
+    /**
+     * Note that this assumes any characters in the offset span are single byte UTF8 characters.
+     * This is a safe assumption assuming you are offsetting over Soy grammer characters, e.g.
+     * expanding or contracting around quotation marks.
+     */
     public final Point offsetCols(int byColumns) {
       if (!isKnown()) {
         return this;
       }
-      return Point.create(line(), column() + byColumns);
+      int newByteOffset = byteOffset();
+      if (newByteOffset != UNKNOWN_OFFSET) {
+        // Assumes we are only ever offsetting across Soy grammar characters like ".
+        newByteOffset += byColumns;
+      }
+      return Point.create(line(), column() + byColumns, newByteOffset);
     }
 
     public final SourceLocation asLocation(SourceFilePath filePath) {
@@ -396,16 +426,8 @@ public final class SourceLocation implements Comparable<SourceLocation> {
       return compareTo(o) < 0;
     }
 
-    public final boolean isBefore(SourceLocation o) {
-      return isBefore(o.getBeginPoint());
-    }
-
     public final boolean isAfter(Point o) {
       return compareTo(o) > 0;
-    }
-
-    public final boolean isAfter(SourceLocation o) {
-      return isAfter(o.getEndPoint());
     }
 
     @Override
@@ -427,21 +449,26 @@ public final class SourceLocation implements Comparable<SourceLocation> {
   @Immutable
   public abstract static class ByteSpan {
 
-    private static final ByteSpan UNKNOWN = new AutoValue_SourceLocation_ByteSpan(-1, -1);
+    private static final ByteSpan UNKNOWN =
+        new AutoValue_SourceLocation_ByteSpan(Point.UNKNOWN_OFFSET, Point.UNKNOWN_OFFSET);
 
     public static ByteSpan create(int start, int end) {
-      if (start == -1 || end == -1) {
+      if (start == Point.UNKNOWN_OFFSET || end == Point.UNKNOWN_OFFSET) {
         return UNKNOWN;
       }
       return new AutoValue_SourceLocation_ByteSpan(start, end);
+    }
+
+    static ByteSpan create(SourceLocation loc) {
+      return create(loc.getBeginPoint().byteOffset(), loc.getEndPoint().byteOffset());
     }
 
     public abstract int getStart();
 
     public abstract int getEnd();
 
-    public boolean isUnknown() {
-      return this == UNKNOWN;
+    public boolean isKnown() {
+      return this != UNKNOWN;
     }
   }
 }

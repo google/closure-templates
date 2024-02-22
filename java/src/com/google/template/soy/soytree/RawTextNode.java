@@ -19,6 +19,7 @@ package com.google.template.soy.soytree;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkElementIndex;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Utf8.encodedLength;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
@@ -564,6 +565,7 @@ public final class RawTextNode extends AbstractSoyNode
       Point point = points[startLocation];
       int line = point.line();
       int column = point.column();
+      int bytes = point.byteOffset();
 
       int start = indexes[startLocation];
       int i = start;
@@ -584,7 +586,7 @@ public final class RawTextNode extends AbstractSoyNode
           column++;
         }
       }
-      return Point.create(line, column);
+      return Point.create(line, column, bytes + encodedLength(text.substring(start, i)));
     }
 
     /** Returns a new SourceOffsets object for the given subrange of the text. */

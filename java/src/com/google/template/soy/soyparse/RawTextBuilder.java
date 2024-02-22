@@ -201,10 +201,12 @@ final class RawTextBuilder {
     }
     if (addOffset) {
       offsets.add(
-          buffer.length(), Point.create(token.beginLine, token.beginColumn), discontinuityReason);
+          buffer.length(),
+          Point.create(token.beginLine, token.beginColumn, token.byteOffsetStart),
+          discontinuityReason);
       discontinuityReason = Reason.NONE;
     }
-    offsets.setEndLocation(Point.create(token.endLine, token.endColumn));
+    offsets.setEndLocation(Point.create(token.endLine, token.endColumn, token.byteOffsetEnd));
     buffer.append(content);
   }
 

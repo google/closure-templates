@@ -16,7 +16,11 @@
 
 package com.google.template.soy.soyparse;
 
+import com.google.common.base.Utf8;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.base.SourceLocation.Point;
+import java.io.IOException;
+import java.nio.CharBuffer;
 import java.util.Arrays;
 
 /**
@@ -28,11 +32,74 @@ final class SoySimpleCharStream extends SimpleCharStream {
   // lengths).
   int[] lineLengths = new int[2048];
 
+  // Current utf8 byte offset.
+  private int currentByteOffset = 0;
+  // Buffered chars waiting to be used for calculating encodedLength.
+  private final char[] utf8Buffer = new char[2048];
+  // Buffer index.
+  private int utf8BufferIdx = 0;
+  // Byte offset of last token start.
+  int tokenBeginByteOffset = -1;
+
   @Override
-  public char readChar() throws java.io.IOException {
+  public char readChar() throws IOException {
     char c = super.readChar();
     updateLineLengthsForNewChar();
+    utf8Buffer[utf8BufferIdx++] = c;
+    if (utf8BufferIdx == utf8Buffer.length) {
+      flushUtf8Buffer();
+    }
     return c;
+  }
+
+  private void flushUtf8Buffer() {
+    int limit = 16;
+    int badTrailingBytes = 0;
+    while (badTrailingBytes < limit) {
+      try {
+        currentByteOffset +=
+            Utf8.encodedLength(CharBuffer.wrap(utf8Buffer, 0, utf8BufferIdx - badTrailingBytes));
+        break;
+      } catch (RuntimeException e) {
+        // Ignore error when the last few bytes are non-terminated sequences.
+        if (badTrailingBytes == limit - 1) {
+          throw e;
+        }
+      }
+      badTrailingBytes++;
+    }
+    if (badTrailingBytes > 0) {
+      System.arraycopy(
+          utf8Buffer, utf8Buffer.length - badTrailingBytes, utf8Buffer, 0, badTrailingBytes);
+    }
+    utf8BufferIdx = badTrailingBytes;
+  }
+
+  public int getCurrentByteOffset() {
+    if (utf8BufferIdx > 0) {
+      currentByteOffset += Utf8.encodedLength(CharBuffer.wrap(utf8Buffer, 0, utf8BufferIdx));
+      utf8BufferIdx = 0;
+    }
+    return currentByteOffset;
+  }
+
+  @Override
+  public void backup(int amount) {
+    if (utf8BufferIdx >= amount) {
+      utf8BufferIdx -= amount;
+    } else if (utf8BufferIdx > 0) {
+      int approxBytes = amount - utf8BufferIdx;
+      utf8BufferIdx = 0;
+      currentByteOffset -= approxBytes; // Won't work backing up over emoji.
+    }
+    super.backup(amount);
+  }
+
+  @Override
+  @CanIgnoreReturnValue
+  public char BeginToken() throws IOException {
+    tokenBeginByteOffset = getCurrentByteOffset();
+    return super.BeginToken();
   }
 
   /** Update line lengths for the current char. */
@@ -53,6 +120,10 @@ final class SoySimpleCharStream extends SimpleCharStream {
    * foo.
    */
   Point getPointJustBeforeNextToken() {
+    // Point constructors here are ok to omit byteOffset because this utility method is only
+    // used for calculating source locations of {if}, {else}, {case}, and {default}, none of which
+    // are used in Kythe indexing, which is what uses the byte offsets.
+
     if (bufline[tokenBegin] <= 1 && bufcolumn[tokenBegin] <= 1) {
       throw new IllegalStateException("Can't get point before beginning of file");
     }
