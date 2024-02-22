@@ -158,12 +158,10 @@ public final class RawTextNode extends AbstractSoyNode
   public static RawTextNode newLiteral(int id, String rawText, SourceLocation loc) {
     SourceOffsets.Builder builder = new SourceOffsets.Builder();
     if (rawText.length() > 0) {
-      builder.add(0, loc.getBeginLine(), loc.getBeginColumn(), Reason.NONE);
+      builder.add(0, loc.getBeginPoint(), Reason.NONE);
     }
     SourceOffsets offsets =
-        builder
-            .setEndLocation(loc.getEndLine(), loc.getEndColumn())
-            .build(rawText.length(), Reason.LITERAL);
+        builder.setEndLocation(loc.getEndPoint()).build(rawText.length(), Reason.LITERAL);
     return new RawTextNode(id, rawText, loc, offsets, Provenance.LITERAL);
   }
 
@@ -172,11 +170,11 @@ public final class RawTextNode extends AbstractSoyNode
     SourceOffsets.Builder offsetsBuilder = new SourceOffsets.Builder();
     if (!commandChar.equals(CommandChar.NIL)) {
       // {nil} has length 0, so we only need one index (the "end" index below).
-      offsetsBuilder.add(0, loc.getBeginLine(), loc.getBeginColumn(), Reason.NONE);
+      offsetsBuilder.add(0, loc.getBeginPoint(), Reason.NONE);
     }
     SourceOffsets offsets =
         offsetsBuilder
-            .setEndLocation(loc.getEndLine(), loc.getEndColumn())
+            .setEndLocation(loc.getEndPoint())
             .build(commandChar.processedString().length(), Reason.COMMAND);
 
     return new RawTextNode(
@@ -371,8 +369,7 @@ public final class RawTextNode extends AbstractSoyNode
     int charsIndex = 0;
 
     int[] indexes = null;
-    int[] lines = null;
-    int[] columns = null;
+    Point[] points = null;
     Reason[] reasons = null;
     // the current index into the offsets arrays
     int offsetsIndex = 0;
@@ -381,8 +378,7 @@ public final class RawTextNode extends AbstractSoyNode
     if (numOffsets > 0) {
       // +1 because we want to preserve the end location of the last node.
       indexes = new int[numOffsets + 1];
-      lines = new int[numOffsets + 1];
-      columns = new int[numOffsets + 1];
+      points = new Point[numOffsets + 1];
       reasons = new Reason[numOffsets + 1];
     }
 
@@ -401,8 +397,7 @@ public final class RawTextNode extends AbstractSoyNode
         if (i < nodes.size() - 1) {
           amountToCopy--;
         }
-        System.arraycopy(offsets.lines, 0, lines, offsetsIndex, amountToCopy);
-        System.arraycopy(offsets.columns, 0, columns, offsetsIndex, amountToCopy);
+        System.arraycopy(offsets.points, 0, points, offsetsIndex, amountToCopy);
         System.arraycopy(offsets.reasons, 0, reasons, offsetsIndex, amountToCopy);
 
         // do some special handling for the 'reason' of the join point.
@@ -426,7 +421,7 @@ public final class RawTextNode extends AbstractSoyNode
         id,
         text,
         location,
-        indexes == null ? null : new SourceOffsets(indexes, lines, columns, reasons),
+        indexes == null ? null : new SourceOffsets(indexes, points, reasons),
         Provenance.CONCATENATED);
   }
 
@@ -500,11 +495,9 @@ public final class RawTextNode extends AbstractSoyNode
       }
       Builder builder = new Builder();
       if (length > 0) {
-        builder.add(0, location.getBeginLine(), location.getBeginColumn(), Reason.NONE);
+        builder.add(0, location.getBeginPoint(), Reason.NONE);
       }
-      return builder
-          .setEndLocation(location.getEndLine(), location.getEndColumn())
-          .build(length, Reason.NONE);
+      return builder.setEndLocation(location.getEndPoint()).build(length, Reason.NONE);
     }
 
     // These arrays are parallel.
@@ -512,16 +505,13 @@ public final class RawTextNode extends AbstractSoyNode
     /** The indexes into the raw text. */
     private final int[] indexes;
 
-    /** The source column associated with the corresponding index in indexes. */
-    private final int[] columns;
-
-    /** The source line numbers associated with the corresponding index in indexes. */
-    private final int[] lines;
+    /** The source points associated with the corresponding index in indexes. */
+    private final Point[] points;
 
     /** Records the reason why there is a discontinuity in the line numbers at this offset. */
     private final Reason[] reasons;
 
-    private SourceOffsets(int[] indexes, int[] lines, int[] columns, Reason[] reasons) {
+    private SourceOffsets(int[] indexes, Point[] points, Reason[] reasons) {
       this.indexes = checkNotNull(indexes);
       int prev = -1;
       for (int index : indexes) {
@@ -531,8 +521,7 @@ public final class RawTextNode extends AbstractSoyNode
         }
         prev = index;
       }
-      this.lines = checkNotNull(lines);
-      this.columns = checkNotNull(columns);
+      this.points = checkNotNull(points);
       this.reasons = checkNotNull(reasons);
     }
 
@@ -548,7 +537,7 @@ public final class RawTextNode extends AbstractSoyNode
       }
       if (indexes[location] == textIndex) {
         // direct hit!
-        return Point.create(lines[location], columns[location]);
+        return points[location];
       }
       // if it isn't a direct hit, we start at the previous item and walk forward through the array
       // counting character and newlines.
@@ -572,10 +561,13 @@ public final class RawTextNode extends AbstractSoyNode
      * starts from {@code lines[startLocation]} which is guaranteed to be < textIndex.
      */
     private Point getLocationOf(String text, int startLocation, int textIndex) {
-      int line = lines[startLocation];
-      int column = columns[startLocation];
+      Point point = points[startLocation];
+      int line = point.line();
+      int column = point.column();
+
       int start = indexes[startLocation];
-      for (int i = start; i < textIndex; i++) {
+      int i = start;
+      for (; i < textIndex; i++) {
         char c = text.charAt(i);
         if (c == '\n') {
           line++;
@@ -614,33 +606,29 @@ public final class RawTextNode extends AbstractSoyNode
 
       // calculate the initial point
       SourceOffsets.Builder builder = new SourceOffsets.Builder();
-      int startLine;
-      int startColumn;
+      Point startPoint;
       Reason startReason;
       // if the index of the startlocation is the start index, set the startLine and startColumn
       // appropriately
       if (indexes[startLocation] == startTextIndex) {
-        startLine = lines[startLocation];
-        startColumn = columns[startLocation];
+        startPoint = points[startLocation];
         startReason = reasons[startLocation];
       } else {
         // otherwise scan from the previous location forward to 'start'
         startLocation--;
-        Point startPoint = getLocationOf(text, startLocation, startTextIndex);
-        startLine = startPoint.line();
-        startColumn = startPoint.column();
+        startPoint = getLocationOf(text, startLocation, startTextIndex);
         startReason = Reason.NONE;
       }
-      builder.doAdd(0, startLine, startColumn, startReason);
+      builder.doAdd(0, startPoint, startReason);
 
       if (startTextIndex == endTextIndex) {
         // special case
-        builder.setEndLocation(startLine, startColumn);
+        builder.setEndLocation(startPoint);
 
         Reason afterLastCharacter =
             endTextIndex + 1 == text.length() ? getReasonAt(text.length()) : startReason;
 
-        return builder.build(substringLength, /*reason=*/ afterLastCharacter);
+        return builder.build(substringLength, /* reason= */ afterLastCharacter);
       }
 
       // copy over all offsets, taking care to modify the indexes
@@ -649,15 +637,15 @@ public final class RawTextNode extends AbstractSoyNode
       while (true) {
         int index = indexes[i];
         if (index < endTextIndex) {
-          builder.doAdd(index - startTextIndex, lines[i], columns[i], reasons[i]);
+          builder.doAdd(index - startTextIndex, points[i], reasons[i]);
         } else if (index == endTextIndex) {
-          builder.setEndLocation(lines[i], columns[i]);
+          builder.setEndLocation(points[i]);
           endReason = reasons[i];
           break;
         } else if (index > endTextIndex) {
           // to find the end location we need to scan from the previous index
           Point endPoint = getLocationOf(text, i - 1, endTextIndex);
-          builder.setEndLocation(endPoint.line(), endPoint.column());
+          builder.setEndLocation(endPoint);
           break;
         }
         i++;
@@ -671,49 +659,43 @@ public final class RawTextNode extends AbstractSoyNode
 
     /** Returns the sourcelocation for the whole span. */
     public SourceLocation getSourceLocation(SourceFilePath filePath) {
-      return new SourceLocation(
-          filePath, lines[0], columns[0], lines[lines.length - 1], columns[columns.length - 1]);
+      return new SourceLocation(filePath, points[0], points[points.length - 1]);
     }
 
     @Override
     public String toString() {
       return String.format(
-          "SourceOffsets{\n  index:\t%s\n  lines:\t%s\n   cols:\t%s\n}",
-          Arrays.toString(indexes), Arrays.toString(lines), Arrays.toString(columns));
+          "SourceOffsets{\n  index:\t%s\n  points:\t%s\n}",
+          Arrays.toString(indexes), Arrays.toString(points));
     }
 
     /** Builder for SourceOffsets. */
     public static final class Builder {
       private int size;
       private int[] indexes = new int[16];
-      private int[] lines = new int[16];
-      private int[] columns = new int[16];
+      private Point[] points = new Point[16];
       private Reason[] reasons = new Reason[16];
-      private int endLine = -1;
-      private int endCol = -1;
+      private Point endPoint = Point.UNKNOWN_POINT;
 
       @CanIgnoreReturnValue
-      public Builder add(int index, int startLine, int startCol, Reason reason) {
+      public Builder add(int index, Point point, Reason reason) {
         checkArgument(index >= 0, "expected index to be non-negative: %s", index);
-        checkArgument(startLine > 0, "expected startLine to be positive: %s", startLine);
-        checkArgument(startCol > 0, "expected startCol to be positive: %s", startCol);
+        checkArgument(point.isKnown(), "expected point to be known: %s", point);
         if (size != 0 && index <= indexes[size - 1]) {
           throw new IllegalArgumentException(
               String.format(
-                  "expected indexes to be added in increasing order: %d vs %d at %d:%d - %d:%d",
-                  index, indexes[size - 1], startLine, startCol, endLine, endCol));
+                  "expected indexes to be added in increasing order: %d vs %d at %s - %s",
+                  index, indexes[size - 1], point, endPoint));
         }
-        doAdd(index, startLine, startCol, reason);
+        doAdd(index, point, reason);
         return this;
       }
 
       /** Update the end location only. */
       @CanIgnoreReturnValue
-      public Builder setEndLocation(int endLine, int endCol) {
-        checkArgument(endLine > 0, "expected endLine to be positive: %s", endLine);
-        checkArgument(endCol > 0, "expected endCol to be positive: %s", endCol);
-        this.endLine = endLine;
-        this.endCol = endCol;
+      public Builder setEndLocation(Point endPoint) {
+        checkArgument(endPoint.isKnown(), "expected endPoint to be known: %s", endPoint);
+        this.endPoint = endPoint;
         return this;
       }
 
@@ -736,28 +718,21 @@ public final class RawTextNode extends AbstractSoyNode
         return size == 0;
       }
 
-      /** Returns the ending line number or {@code -1} if it hasn't been set yet. */
-      public int endLine() {
-        return endLine;
+      /** Returns the ending point or {@code Point.UNKNOWN_POINT} if it hasn't been set yet. */
+      public Point endPoint() {
+        return endPoint;
       }
 
-      /** Returns the ending column number or {@code -1} if it hasn't been set yet. */
-      public int endColumn() {
-        return endCol;
-      }
-
-      private void doAdd(int index, int line, int col, Reason reason) {
+      private void doAdd(int index, Point point, Reason reason) {
         if (size == indexes.length) {
           // expand by 1.5x each time
           int newCapacity = size + (size >> 1);
           indexes = Arrays.copyOf(indexes, newCapacity);
-          lines = Arrays.copyOf(lines, newCapacity);
-          columns = Arrays.copyOf(columns, newCapacity);
+          points = Arrays.copyOf(points, newCapacity);
           reasons = Arrays.copyOf(reasons, newCapacity);
         }
         indexes[size] = index;
-        lines[size] = line;
-        columns[size] = col;
+        points[size] = point;
         reasons[size] = reason;
         size++;
       }
@@ -771,15 +746,14 @@ public final class RawTextNode extends AbstractSoyNode
         // Set the last index as the length of the string and put the endLine/endCol there.
         // This simplifies some of the logic in SourceOffsets since it allows us to avoid
         // considering the end of the string as a special case.
-        doAdd(length, endLine, endCol, reason);
+        doAdd(length, endPoint, reason);
 
         checkArgument(size > 0, "The builder should be non-empty");
         checkArgument(indexes[0] == 0, "expected first index to be zero, got: %s", indexes[0]);
         SourceOffsets built =
             new SourceOffsets(
                 Arrays.copyOf(indexes, size),
-                Arrays.copyOf(lines, size),
-                Arrays.copyOf(columns, size),
+                Arrays.copyOf(points, size),
                 Arrays.copyOf(reasons, size));
         // by resetting size by 1 we undo the 'doAdd' of the endLine and endCol above and thus this
         // method becomes safe to call multiple times.

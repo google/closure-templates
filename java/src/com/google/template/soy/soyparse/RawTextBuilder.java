@@ -21,6 +21,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.SourceLocation.Point;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.soytree.CommandChar;
 import com.google.template.soy.soytree.RawTextNode;
@@ -70,8 +71,7 @@ final class RawTextBuilder {
   private int basicStartOfWhitespace = -1;
   // The ending line and column at the start of the current sequence of whitespace.  May be -1 if
   // the current whitespace is leading whitespace.
-  private int endLineAtStartOfWhitespace;
-  private int endColumnAtStartOfWhitespace;
+  private Point endPointAtStartOfWhitespace;
   // tracks whether the current sequence of whitespace contains a newline
   private boolean basicHasNewline = false;
   // this will be set to non {@code NONE} if the previous sequence of text added isn't a basic
@@ -105,8 +105,7 @@ final class RawTextBuilder {
         }
         if (basicStartOfWhitespace == -1 && whitespaceMode == WhitespaceMode.JOIN) {
           basicStartOfWhitespace = buffer.length();
-          endLineAtStartOfWhitespace = offsets.endLine();
-          endColumnAtStartOfWhitespace = offsets.endColumn();
+          endPointAtStartOfWhitespace = offsets.endPoint();
         }
         break;
       case SoyFileParserConstants.TOKEN_NOT_WS:
@@ -190,21 +189,22 @@ final class RawTextBuilder {
     } else {
       // are the two tokens not adjacent? We don't actually record comments in the AST or token
       // stream so this is kind of a guess, but all known cases are due to comments.
-      if (offsets.endLine() == token.beginLine) {
-        if (offsets.endColumn() + 1 != token.beginColumn) {
+      if (offsets.endPoint().line() == token.beginLine) {
+        if (offsets.endPoint().column() + 1 != token.beginColumn) {
           addOffset = true;
           discontinuityReason = Reason.COMMENT;
         }
-      } else if (offsets.endLine() + 1 == token.beginLine && token.beginColumn != 1) {
+      } else if (offsets.endPoint().line() + 1 == token.beginLine && token.beginColumn != 1) {
         addOffset = true;
         discontinuityReason = Reason.COMMENT;
       }
     }
     if (addOffset) {
-      offsets.add(buffer.length(), token.beginLine, token.beginColumn, discontinuityReason);
+      offsets.add(
+          buffer.length(), Point.create(token.beginLine, token.beginColumn), discontinuityReason);
       discontinuityReason = Reason.NONE;
     }
-    offsets.setEndLocation(token.endLine, token.endColumn);
+    offsets.setEndLocation(Point.create(token.endLine, token.endColumn));
     buffer.append(content);
   }
 
@@ -237,10 +237,10 @@ final class RawTextBuilder {
         if (basicStart == basicStartOfWhitespace || next == null) {
           // leading or trailing whitespace, remove it all
           buffer.setLength(basicStartOfWhitespace);
-          if (next == null && endColumnAtStartOfWhitespace != -1) {
+          if (next == null && endPointAtStartOfWhitespace.isKnown()) {
             // if this is trailing whitespace, then our end location will be wrong, so restore it to
             // what it was when we started accumulating whitespace (assuming we had one).
-            offsets.setEndLocation(endLineAtStartOfWhitespace, endColumnAtStartOfWhitespace);
+            offsets.setEndLocation(endPointAtStartOfWhitespace);
           }
         } else {
           // We are in the middle, we either remove the whole segment or replace it with a single
