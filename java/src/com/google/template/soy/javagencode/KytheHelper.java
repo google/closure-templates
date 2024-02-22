@@ -21,6 +21,7 @@ import com.google.common.base.Utf8;
 import com.google.protobuf.Message;
 import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.SourceLocation.ByteSpan;
 import com.google.template.soy.base.internal.IndentedLinesBuilder;
 import com.google.template.soy.javagencode.SoyFileNodeTransformer.ParamInfo;
 import com.google.template.soy.javagencode.SoyFileNodeTransformer.TemplateInfo;
@@ -134,10 +135,9 @@ public class KytheHelper {
     List<ByteSpan> spans = new ArrayList<>(parts.length);
     for (String part : parts) {
       int partEnd = partStart + Utf8.encodedLength(part); // end is exclusive
-      spans.add(new ByteSpan(partStart, partEnd));
+      spans.add(ByteSpan.create(partStart, partEnd));
       partStart = partEnd;
     }
     return spans;
   }
-
 }

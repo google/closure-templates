@@ -35,6 +35,7 @@ import static java.util.stream.Collectors.toList;
 
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
+import com.google.template.soy.base.SourceLocation.ByteSpan;
 import com.google.template.soy.base.internal.IndentedLinesBuilder;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;

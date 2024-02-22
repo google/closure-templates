@@ -20,6 +20,7 @@ import static com.google.common.base.Utf8.encodedLength;
 
 import com.google.common.base.Utf8;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.SourceLocation.ByteSpan;
 import com.google.template.soy.base.SourceLocation.Point;
 
 /**
@@ -58,7 +59,7 @@ public final class IndexedLines {
         getOffset(begin.line()) + encodedLength(firstLine.substring(0, begin.column() - 1));
 
     if (begin.line() == end.line()) {
-      return new ByteSpan(
+      return ByteSpan.create(
           beginOffset,
           beginOffset + encodedLength(firstLine.substring(begin.column() - 1, end.column())));
     }
@@ -71,7 +72,7 @@ public final class IndexedLines {
     endOffset++; // new line
     endOffset += encodedLength(getLine(end.line()).substring(0, end.column()));
 
-    return new ByteSpan(beginOffset, endOffset);
+    return ByteSpan.create(beginOffset, endOffset);
   }
 
   /** Returns the line at 1-based index {@code oneBased}. */

@@ -18,7 +18,7 @@ package com.google.template.soy.jssrc.dsl;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Streams;
-import com.google.template.soy.javagencode.ByteSpan;
+import com.google.template.soy.base.SourceLocation.ByteSpan;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;

@@ -21,7 +21,7 @@ import com.google.auto.value.extension.memoized.Memoized;
 import com.google.common.collect.ImmutableSet;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.errorprone.annotations.Immutable;
-import com.google.template.soy.javagencode.ByteSpan;
+import com.google.template.soy.base.SourceLocation.ByteSpan;
 import java.util.Objects;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;

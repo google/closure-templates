@@ -421,4 +421,27 @@ public final class SourceLocation implements Comparable<SourceLocation> {
       return (line() * 31 * 31) + (column() * 31);
     }
   }
+
+  /** A span of byte offsets in a file. */
+  @AutoValue
+  @Immutable
+  public abstract static class ByteSpan {
+
+    private static final ByteSpan UNKNOWN = new AutoValue_SourceLocation_ByteSpan(-1, -1);
+
+    public static ByteSpan create(int start, int end) {
+      if (start == -1 || end == -1) {
+        return UNKNOWN;
+      }
+      return new AutoValue_SourceLocation_ByteSpan(start, end);
+    }
+
+    public abstract int getStart();
+
+    public abstract int getEnd();
+
+    public boolean isUnknown() {
+      return this == UNKNOWN;
+    }
+  }
 }
