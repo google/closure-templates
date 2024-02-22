@@ -76,7 +76,7 @@ public final class IndexedLines {
   }
 
   /** Returns the line at 1-based index {@code oneBased}. */
-  String getLine(int oneBased) {
+  public String getLine(int oneBased) {
     return lines[oneBased - 1];
   }
 
@@ -84,7 +84,12 @@ public final class IndexedLines {
    * Returns the utf8 encoded length of all the lines up to the line at 1-based index {@code
    * oneBased}.
    */
-  int getOffset(int oneBased) {
+  public int getOffset(int oneBased) {
     return startOffsets[oneBased - 1];
+  }
+
+  /** Returns the utf8 encoded length of the line at 1-based index {@code oneBased}. */
+  public int getLength(int oneBased) {
+    return startOffsets[oneBased] - startOffsets[oneBased - 1] - /* new line char */ 1;
   }
 }

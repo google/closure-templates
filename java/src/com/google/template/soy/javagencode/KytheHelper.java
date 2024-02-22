@@ -17,17 +17,17 @@
 package com.google.template.soy.javagencode;
 
 import com.google.common.base.Joiner;
-import com.google.common.base.Preconditions;
 import com.google.common.base.Utf8;
 import com.google.protobuf.Message;
 import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SourceLocation.ByteSpan;
 import com.google.template.soy.base.internal.IndentedLinesBuilder;
+import com.google.template.soy.javagencode.SoyFileNodeTransformer.ParamInfo;
+import com.google.template.soy.javagencode.SoyFileNodeTransformer.TemplateInfo;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.TemplateParam;
-import com.google.template.soy.types.TemplateType.Parameter;
 import java.util.ArrayList;
 import java.util.List;
 import javax.annotation.Nullable;
@@ -38,21 +38,36 @@ public class KytheHelper {
   private final String kytheCorpus;
   private final SourceFilePath sourceFilePath;
 
-  public KytheHelper(SourceFilePath sourceFilePath) {
-    this("", sourceFilePath);
-  }
-
   public KytheHelper(String kytheCorpus, SourceFilePath sourceFilePath) {
     this.kytheCorpus = kytheCorpus;
-    this.sourceFilePath = Preconditions.checkNotNull(sourceFilePath);
+    this.sourceFilePath = sourceFilePath;
+  }
+
+  public KytheHelper(String kytheCorpus) {
+    this.kytheCorpus = kytheCorpus;
+    this.sourceFilePath = null;
+  }
+
+  public boolean isEnabled() {
+    return !kytheCorpus.isEmpty();
   }
 
   @Nullable
   public Message getGeneratedCodeInfo() {
+    if (!isEnabled()) {
+      return null;
+    }
     return null;
   }
 
   public void addKytheLinkTo(ByteSpan classNameSpan, SoyFileNode file) {
+    if (!isEnabled()) {
+      return;
+    }
+  }
+
+  public void addKytheLinkTo(ByteSpan templateNameSpan, TemplateInfo template) {
+    addKytheLinkTo(templateNameSpan, template.sourceLocation(), template.template());
   }
 
   public void addKytheLinkTo(ByteSpan templateNameSpan, TemplateNode template) {
@@ -61,10 +76,14 @@ public class KytheHelper {
 
   private void addKytheLinkTo(
       ByteSpan templateNameSpan, SourceLocation sourceLocation, TemplateNode template) {
+    if (!isEnabled()) {
+      return;
+    }
   }
 
-  public void addKytheLinkTo(ByteSpan paramSpan, Parameter paramInfo, TemplateNode template) {
-    addKytheLinkTo(paramSpan, template.getTemplateNameLocation(), template, paramInfo.getName());
+  public void addKytheLinkTo(ByteSpan paramSpan, ParamInfo paramInfo, TemplateInfo template) {
+    addKytheLinkTo(
+        paramSpan, template.sourceLocation(), template.template(), paramInfo.param().getName());
   }
 
   public void addKytheLinkTo(ByteSpan paramSpan, TemplateNode template, TemplateParam param) {
@@ -76,6 +95,9 @@ public class KytheHelper {
 
   private void addKytheLinkTo(
       ByteSpan paramSpan, SourceLocation location, TemplateNode template, String paramName) {
+    if (!isEnabled()) {
+      return;
+    }
   }
 
   /**

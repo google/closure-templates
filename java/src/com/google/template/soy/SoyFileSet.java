@@ -33,7 +33,6 @@ import com.google.protobuf.Descriptors.GenericDescriptor;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLogicalPath;
-import com.google.template.soy.base.internal.KytheMode;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.conformance.ValidatedConformanceConfig;
@@ -740,7 +739,7 @@ public final class SoyFileSet {
    * @return A list of generated files to write (of the form "<*>FooSoyTemplates.java").
    * @throws SoyCompilationException If compilation fails.
    */
-  ImmutableList<GeneratedFile> generateBuilders(String javaPackage, KytheMode kytheMode) {
+  ImmutableList<GeneratedFile> generateBuilders(String javaPackage, String kytheCorpus) {
     return entryPoint(
         () -> {
           ParseResult result = parseWithoutOptimizingOrDesugaringHtml();
@@ -749,7 +748,7 @@ public final class SoyFileSet {
 
           // Generate template invocation builders for the soy tree.
           return new GenerateBuildersVisitor(
-                  errorReporter, javaPackage, kytheMode, result.registry())
+                  errorReporter, javaPackage, kytheCorpus, result.registry())
               .exec(soyTree);
         });
   }
@@ -759,14 +758,14 @@ public final class SoyFileSet {
    * will be one Java class per Soy file.
    *
    * @param javaPackage The Java package for the generated classes.
-   * @param kytheMode The Kythe output mode.
+   * @param kytheCorpus
    * @param javaClassNameSource Source of the generated class names. Must be one of "filename",
    *     "namespace", or "generic".
    * @return A list of generated files to write (of the form "<*>SoyInfo.java").
    * @throws SoyCompilationException If compilation fails.
    */
   ImmutableList<GeneratedFile> generateParseInfo(
-      String javaPackage, KytheMode kytheMode, String javaClassNameSource) {
+      String javaPackage, String kytheCorpus, String javaClassNameSource) {
     return entryPoint(
         () -> {
           ParseResult result = parseWithoutOptimizingOrDesugaringHtml();
@@ -776,7 +775,8 @@ public final class SoyFileSet {
           FileSetMetadata registry = result.registry();
 
           // Do renaming of package-relative class names.
-          return new GenerateParseInfoVisitor(javaPackage, kytheMode, javaClassNameSource, registry)
+          return new GenerateParseInfoVisitor(
+                  javaPackage, kytheCorpus, javaClassNameSource, registry)
               .exec(soyTree);
         });
   }

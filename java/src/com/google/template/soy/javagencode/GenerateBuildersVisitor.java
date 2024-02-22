@@ -29,18 +29,14 @@ import static com.google.template.soy.shared.internal.gencode.JavaGenerationUtil
 import static com.google.template.soy.shared.internal.gencode.JavaGenerationUtils.appendJavadoc;
 import static com.google.template.soy.shared.internal.gencode.JavaGenerationUtils.isReservedKeyword;
 import static com.google.template.soy.shared.internal.gencode.JavaGenerationUtils.makeLowerCamelCase;
-import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.stream.Collectors.counting;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toList;
 
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
-import com.google.protobuf.Message;
-import com.google.protobuf.TextFormat;
 import com.google.template.soy.base.SourceLocation.ByteSpan;
 import com.google.template.soy.base.internal.IndentedLinesBuilder;
-import com.google.template.soy.base.internal.KytheMode;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.javagencode.SoyFileNodeTransformer.FileInfo;
@@ -58,7 +54,6 @@ import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -121,7 +116,7 @@ public final class GenerateBuildersVisitor
               + " parameter.");
 
   private final ErrorReporter errorReporter;
-  private final KytheMode kytheMode;
+  private final String kytheCorpus;
   private final SoyFileNodeTransformer transformer;
 
   private IndentedLinesBuilder ilb; // Line formatter for the generated code.
@@ -131,10 +126,10 @@ public final class GenerateBuildersVisitor
   public GenerateBuildersVisitor(
       ErrorReporter errorReporter,
       String javaPackage,
-      KytheMode kytheMode,
+      String kytheCorpus,
       FileSetMetadata registry) {
     this.errorReporter = errorReporter;
-    this.kytheMode = kytheMode;
+    this.kytheCorpus = kytheCorpus;
     this.transformer = new SoyFileNodeTransformer(javaPackage, registry);
   }
 
@@ -161,7 +156,7 @@ public final class GenerateBuildersVisitor
   protected void visitSoyFileNode(SoyFileNode soyFile) {
     FileInfo fileInfo = transformer.transform(soyFile);
     ilb = new IndentedLinesBuilder(2);
-    kytheHelper = new KytheHelper(soyFile.getFilePath());
+    kytheHelper = new KytheHelper(kytheCorpus);
     appendFileHeaderAndImports(fileInfo);
 
     String javaClassNameForSoyFile = fileInfo.className();
@@ -178,7 +173,7 @@ public final class GenerateBuildersVisitor
     ilb.appendLine(
         "@javax.annotation.Generated(\n"
             + "    value = \"com.google.template.soy.SoyParseInfoGenerator\""
-            + (kytheMode.isEnabled()
+            + (kytheHelper.isEnabled()
                 ? ",\n    comments = \"kythe-inline-metadata:GeneratedCodeInfo\""
                 : "")
             + ")");
@@ -198,30 +193,11 @@ public final class GenerateBuildersVisitor
     ilb.decreaseIndent();
     ilb.appendLine("}");
 
-    String kytheComment = getKytheComment(kytheMode, kytheHelper);
-
     // Add the file name and contents to the list of generated files to write.
     String fileName = javaClassNameForSoyFile + ".java";
-    generatedFiles.add(GeneratedFile.create("", fileName, ilb.toString() + kytheComment));
+    generatedFiles.add(
+        GeneratedFile.create("", fileName, ilb.toString(), kytheHelper.getGeneratedCodeInfo()));
     ilb = null;
-  }
-
-  static String getKytheComment(KytheMode kytheMode, KytheHelper kytheHelper) {
-    Message proto = kytheHelper.getGeneratedCodeInfo();
-    if (proto == null) {
-      return "";
-    }
-    if (kytheMode == KytheMode.TEXT) {
-      String genCodeInfoMessage = TextFormat.printer().printToString(proto);
-      return "\n/**\nKythe inline metadata pretty printed for testing:\n\n"
-          + genCodeInfoMessage
-          + "\n*/";
-    } else if (kytheMode == KytheMode.BASE64) {
-      return "\n// GeneratedCodeInfo:"
-          + new String(Base64.getEncoder().encode(proto.toByteArray()), UTF_8)
-          + "\n";
-    }
-    return "";
   }
 
   /** For each public, non-delegate template in the given soy file, generates a Foo inner class. */
@@ -269,7 +245,7 @@ public final class GenerateBuildersVisitor
                 templateClass,
                 " extends com.google.template.soy.data.BaseSoyTemplateImpl {")
             .get(1);
-    kytheHelper.addKytheLinkTo(classNameSpan, template.template());
+    kytheHelper.addKytheLinkTo(classNameSpan, template);
 
     ilb.increaseIndent();
     ilb.appendLine();
@@ -349,7 +325,7 @@ public final class GenerateBuildersVisitor
     appendJavadoc(ilb, "Creates a new Builder instance.", false, true);
     ByteSpan methodNameSpan =
         kytheHelper.appendLineAndGetSpans(ilb, "public static Builder ", "builder", "() {").get(1);
-    kytheHelper.addKytheLinkTo(methodNameSpan, template.template());
+    kytheHelper.addKytheLinkTo(methodNameSpan, template);
     ilb.increaseIndent();
     ilb.appendLine("return new Builder();");
     ilb.decreaseIndent();
@@ -429,7 +405,7 @@ public final class GenerateBuildersVisitor
                   "getDefaultInstance",
                   "() {")
               .get(1);
-      kytheHelper.addKytheLinkTo(methodNameSpan, template.template());
+      kytheHelper.addKytheLinkTo(methodNameSpan, template);
       ilb.increaseIndent();
       ilb.appendLine("return " + DEFAULT_INSTANCE_FIELD + ";");
       ilb.decreaseIndent();
@@ -458,7 +434,7 @@ public final class GenerateBuildersVisitor
                     + templateParamsClassname
                     + "> {")
             .get(1);
-    kytheHelper.addKytheLinkTo(classNameSpan, template.template());
+    kytheHelper.addKytheLinkTo(classNameSpan, template);
     ilb.appendLine();
     ilb.increaseIndent();
 
@@ -565,7 +541,7 @@ public final class GenerateBuildersVisitor
               visibility, genericType));
       ilb.increaseIndent(2);
       ByteSpan fieldNameSpan = kytheHelper.appendLineAndGetSpans(ilb, fieldName, " =").get(0);
-      kytheHelper.addKytheLinkTo(fieldNameSpan, param.param(), template.template());
+      kytheHelper.addKytheLinkTo(fieldNameSpan, param, template);
       ilb.increaseIndent(2);
       ilb.appendLine(factory, "(");
       ilb.increaseIndent(2);
@@ -676,7 +652,7 @@ public final class GenerateBuildersVisitor
                       + javaTypeString
                       + " value) {")
               .get(1);
-      kytheHelper.addKytheLinkTo(paramSpan, param.param(), template.template());
+      kytheHelper.addKytheLinkTo(paramSpan, param, template);
       ilb.increaseIndent();
 
       String newVariableName = javaType.asInlineCast("value");
@@ -699,7 +675,7 @@ public final class GenerateBuildersVisitor
             .appendLineStartAndGetSpans(
                 ilb, "public Builder ", type.isList() ? param.adderName() : param.setterName(), "(")
             .get(1);
-    kytheHelper.addKytheLinkTo(paramSpan, param.param(), template.template());
+    kytheHelper.addKytheLinkTo(paramSpan, param, template);
 
     List<String> paramNames = type.getJavaTypeMap().keySet().asList();
     List<String> javaParamNames = new ArrayList<>();
@@ -766,7 +742,7 @@ public final class GenerateBuildersVisitor
                 param.futureSetterName(),
                 "(" + javaType.toJavaTypeString() + " future) {")
             .get(1);
-    kytheHelper.addKytheLinkTo(paramSpan, param.param(), template.template());
+    kytheHelper.addKytheLinkTo(paramSpan, param, template);
 
     ilb.increaseIndent();
 

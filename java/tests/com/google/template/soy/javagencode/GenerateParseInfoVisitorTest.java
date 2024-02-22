@@ -28,7 +28,6 @@ import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.Identifier;
-import com.google.template.soy.base.internal.KytheMode;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.shared.internal.gencode.GeneratedFile;
 import com.google.template.soy.soytree.FileSetMetadata;
@@ -225,7 +224,7 @@ public final class GenerateParseInfoVisitorTest {
     FileSetMetadata registry = parseResult.registry();
 
     ImmutableList<GeneratedFile> parseInfos =
-        new GenerateParseInfoVisitor("com.google.gpivtest", KytheMode.TEXT, "filename", registry)
+        new GenerateParseInfoVisitor("com.google.gpivtest", "corpus", "filename", registry)
             .exec(parseResult.fileSet());
 
     // Verify that exactly one generated file has the name "NoPathSoyInfo.java", and return it.

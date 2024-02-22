@@ -19,16 +19,20 @@ package com.google.template.soy;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.io.BaseEncoding;
 import com.google.common.io.CharSink;
 import com.google.common.io.CharSource;
 import com.google.common.io.Files;
+import com.google.protobuf.Message;
+import com.google.protobuf.TextFormat;
 import com.google.template.soy.base.internal.BaseUtils;
-import com.google.template.soy.base.internal.KytheMode;
 import com.google.template.soy.base.internal.SoyJarFileWriter;
 import com.google.template.soy.shared.internal.gencode.GeneratedFile;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import org.kohsuke.args4j.Option;
 
 /**
@@ -47,7 +51,6 @@ public final class SoyParseInfoGenerator extends AbstractSoyCompiler {
               + " instead.")
   private boolean generateBuilders = false;
 
-  // TODO(jcg): Remove here and from rules.bzl.
   @Option(
       name = "--kytheCorpus",
       usage =
@@ -124,15 +127,15 @@ public final class SoyParseInfoGenerator extends AbstractSoyCompiler {
 
     ImmutableList<GeneratedFile> genFiles =
         generateBuilders
-            ? sfs.generateBuilders(javaPackage, KytheMode.BASE64)
-            : sfs.generateParseInfo(javaPackage, KytheMode.BASE64, javaClassNameSource);
+            ? sfs.generateBuilders(javaPackage, kytheCorpus)
+            : sfs.generateParseInfo(javaPackage, kytheCorpus, javaClassNameSource);
 
     if (outputSrcJar == null) {
       for (GeneratedFile genFile : genFiles) {
         File outputFile = new File(outputDirectory, genFile.fileName());
         BaseUtils.ensureDirsExistInPath(outputFile.getPath());
         CharSink fileSink = Files.asCharSink(outputFile, UTF_8);
-        CharSource.wrap(genFile.contents()).copyTo(fileSink);
+        writeContentsWithKytheComment(genFile, fileSink);
       }
     } else {
       String resourcePath = javaPackage.replace('.', '/') + "/";
@@ -140,9 +143,46 @@ public final class SoyParseInfoGenerator extends AbstractSoyCompiler {
         for (GeneratedFile genFile : genFiles) {
           writer.writeEntry(
               resourcePath + genFile.fileName(),
-              CharSource.wrap(genFile.contents()).asByteSource(UTF_8));
+              contentsWithKytheComment(genFile, false).asByteSource(UTF_8));
         }
       }
     }
+  }
+
+  static void writeContentsWithKytheComment(GeneratedFile file, CharSink sink) throws IOException {
+    contentsWithKytheComment(file, false).copyTo(sink);
+  }
+
+  static String getFullContentsForGolden(GeneratedFile file) {
+    try {
+      return contentsWithKytheComment(file, true).read();
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  private static CharSource contentsWithKytheComment(GeneratedFile file, boolean withTestOutput) {
+    List<CharSource> parts = new ArrayList<>();
+    parts.add(CharSource.wrap((file.contents())));
+    Message generatedCodeInfo = file.generatedCodeInfo();
+    if (generatedCodeInfo != null) {
+      if (!file.contents().endsWith("\n")) {
+        parts.add(CharSource.wrap(("\n")));
+      }
+      parts.add(CharSource.wrap(("// GeneratedCodeInfo:")));
+      if (withTestOutput) {
+        parts.add(CharSource.wrap(("--base64 encoding of the proto below--")));
+      } else {
+        parts.add(CharSource.wrap((BaseEncoding.base64().encode(generatedCodeInfo.toByteArray()))));
+      }
+      parts.add(CharSource.wrap(("\n")));
+
+      if (withTestOutput) {
+        parts.add(CharSource.wrap(("/**\n\nHuman-readable test-only output:\n\n")));
+        parts.add(CharSource.wrap(TextFormat.printer().printToString(generatedCodeInfo)));
+        parts.add(CharSource.wrap(("\n*/\n")));
+      }
+    }
+    return CharSource.concat(parts);
   }
 }
