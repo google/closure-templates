@@ -484,6 +484,11 @@ public class SoyFileParser {
       SoyErrorKind.of("Record literals require named parameters.");
   private static final SoyErrorKind EMPTY_RECORD_TYPE =
       SoyErrorKind.of("Empty record type.");
+  // TODO(b/314845158): Remove legacy and/or from parser.
+  private static final SoyErrorKind LEGACY_AND_ERROR =
+      SoyErrorKind.of("Found use of deprecated ''and'', use the ''&&'' operator instead.");
+  private static final SoyErrorKind LEGACY_OR_ERROR =
+      SoyErrorKind.of("Found use of deprecated ''or'', use the ''||'' operator instead.");
 
   // Extern errors:
   private static final SoyErrorKind MULTIPLE_IMPLS =
@@ -4077,7 +4082,13 @@ private ExprNode PrecExpr2(ExprState state) :
     { expr = Operator.NULL_COALESCING.createNode(
         createSrcLoc(expr, rightHand), createSrcLoc(op), expr, rightHand); }
   |
-    (op = <OR> | op = <BAR_BAR>)
+    ( op = <BAR_BAR> 
+    | op = <OR>
+      {
+        errorReporter.report(createSrcLoc(op), LEGACY_OR_ERROR);
+        op.image = "||";
+      }
+    )
     rightHand = PrecExpr3(state)
 
     { expr = createOperatorNode(
@@ -4106,7 +4117,13 @@ private ExprNode PrecExpr3(ExprState state) :
 
   expr = PrecExpr4(state)
   (
-    (op = <AND> | op = <AMP_AMP>)
+    ( op = <AMP_AMP>
+    | op = <AND>
+      {
+        errorReporter.report(createSrcLoc(op), LEGACY_AND_ERROR);
+        op.image = "&&";
+      }
+    )
     rightHand = PrecExpr4(state)
 
     { expr = createOperatorNode(

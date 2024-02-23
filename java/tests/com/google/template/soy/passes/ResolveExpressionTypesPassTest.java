@@ -535,7 +535,7 @@ public final class ResolveExpressionTypesPassTest {
         "  {assertType('string', $pa)}",
         "{/if}",
         "",
-        "{if ($pa == null || $pa.length != 1) or $pa.substring(1) == 'a'}",
+        "{if ($pa == null || $pa.length != 1) || $pa.substring(1) == 'a'}",
         "  {assertType('string|undefined', $pa)}",
         "{/if}",
         "");
