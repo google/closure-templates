@@ -16,23 +16,16 @@
 package com.google.template.soy.shared.internal.gencode;
 
 import com.google.auto.value.AutoValue;
-import com.google.protobuf.Message;
-import javax.annotation.Nullable;
 
 /** Wrapper for a generated file to write. Holds the file name and contents. */
 @AutoValue
 public abstract class GeneratedFile {
   public static GeneratedFile create(String fileName, String contents) {
-    return create("", fileName, contents, null);
+    return create("", fileName, contents);
   }
 
   public static GeneratedFile create(String resourcePath, String fileName, String contents) {
-    return new AutoValue_GeneratedFile(resourcePath, fileName, contents, null);
-  }
-
-  public static GeneratedFile create(
-      String resourcePath, String fileName, String contents, Message generatedCodeInfo) {
-    return new AutoValue_GeneratedFile(resourcePath, fileName, contents, generatedCodeInfo);
+    return new AutoValue_GeneratedFile(resourcePath, fileName, contents);
   }
 
   public abstract String resourcePath(); // Resource path.
@@ -40,7 +33,4 @@ public abstract class GeneratedFile {
   public abstract String fileName(); // File name (without path).
 
   public abstract String contents(); // File contents.
-
-  @Nullable
-  public abstract Message generatedCodeInfo();
 }

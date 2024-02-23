@@ -474,14 +474,11 @@ class FormattingContext implements AutoCloseable {
 
         String genCodeInfoMessage =
             TextFormat.printer().printToString(kytheHelper.getGeneratedCodeInfo());
-        // JsonFormat.printer().print(kytheHelper.getGeneratedCodeInfo());
-
         return "\n/**\nKythe inline metadata pretty printed for testing:\n\n"
             + genCodeInfoMessage
             + "\n*/";
-
       } else if (formatOptions.kytheMode() == KytheMode.BASE64) {
-        return "\n// kythe-inline-metadata: "
+        return "\n// kythe-inline-metadata:"
             + new String(
                 Base64.getEncoder().encode(kytheHelper.getGeneratedCodeInfo().toByteArray()), UTF_8)
             + "\n";

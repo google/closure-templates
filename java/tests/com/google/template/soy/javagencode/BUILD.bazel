@@ -31,6 +31,7 @@ java_library(
         "//java/src/com/google/template/soy/base/internal",
         "//java/src/com/google/template/soy/error:error_reporter",
         "//java/src/com/google/template/soy/javagencode",
+        "//java/src/com/google/template/soy/javagencode:kythe",
         "//java/src/com/google/template/soy/shared/internal/gencode",
         "//java/src/com/google/template/soy/soytree",
         "//java/src/com/google/template/soy/testing:shared_test_utils",

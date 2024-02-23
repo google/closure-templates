@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 /** Utility methods for working with CodeChunks. */
 public final class CodeChunks {
@@ -47,7 +48,7 @@ public final class CodeChunks {
   }
 
   public static String getCode(
-      CodeChunk chunk, FormatOptions formatOptions, KytheHelper kytheHelper) {
+      CodeChunk chunk, FormatOptions formatOptions, @Nullable KytheHelper kytheHelper) {
     FormattingContext context = new FormattingContext(formatOptions);
     context.setKytheHelper(kytheHelper);
     return getCode(chunk, context);
