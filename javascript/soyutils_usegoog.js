@@ -3169,7 +3169,7 @@ const $$filterCspNonceValueHelper = function(value) {
  *
  * @type {!RegExp}
  */
-const $$HTML_TAG_REGEX_ = /<(?:!|\/?([a-zA-Z][a-zA-Z0-9:\-]*))(?:[^>'"]+|"[^"]*"|'[^']*')*>/g;
+const $$HTML_TAG_REGEX_ = /<(?:!|\/?([a-zA-Z][a-zA-Z0-9:\-]*))(?:[^>'"]|"[^"]*"|'[^']*')*>/g;
 
 /**
  * Matches all occurrences of '<'.

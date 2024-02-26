@@ -372,7 +372,7 @@ def filter_csp_nonce_value_helper(value):
 
   return value
 
-_HTML_TAG_REGEX = re.compile(r"""<(?:!|/?([a-zA-Z][a-zA-Z0-9:\-]*))(?:[^>'"]+|"[^"]*"|'[^']*')*>""", re.U)
+_HTML_TAG_REGEX = re.compile(r"""<(?:!|/?([a-zA-Z][a-zA-Z0-9:\-]*))(?:[^>'"]|"[^"]*"|'[^']*')*>""", re.U)
 
 _LT_REGEX = re.compile('<')
 

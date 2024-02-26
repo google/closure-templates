@@ -1251,7 +1251,7 @@ public final class EscapingConventions {
 
   /**
    * Implements the {@code |escapeUri} directive which allows arbitrary content to be included in a
-   * URI regardless of the string delimiters of the surrounding language.
+   * URI regardless of the string delimiters of the the surrounding language.
    */
   public static final class EscapeUri extends CrossLanguageStringXform {
     /** Implements the {@code |escapeUri} directive. */
@@ -1456,7 +1456,7 @@ public final class EscapingConventions {
           // (2) an optional solidus (/, indicating an end tag) and an HTML tag name.
           // followed by any number of quoted strings (found in tags and doctypes) or other content
           // terminated by a right angle bracket.
-          "<(?:!|/?([a-zA-Z][a-zA-Z0-9:\\-]*))(?:[^>'\"]+|\"[^\"]*\"|'[^']*')*>");
+          "<(?:!|/?([a-zA-Z][a-zA-Z0-9:\\-]*))(?:[^>'\"]|\"[^\"]*\"|'[^']*')*>");
 
   /**
    * Convert an ASCII string to full-width. Full-width characters are in Unicode page U+FFxx and are
