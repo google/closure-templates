@@ -365,7 +365,7 @@ public final class GenJsCodeVisitorTest {
             "{@param goo : string}",
             "{if $boo}",
             "  Blah",
-            "{elseif !$goo.contains('goo')}",
+            "{elseif !$goo.includes('goo')}",
             "  Bleh",
             "{else}",
             "  Bluh",
@@ -375,7 +375,7 @@ public final class GenJsCodeVisitorTest {
             "let $tmp;",
             "if (opt_data.boo) {",
             "  $tmp = 'Blah';",
-            "} else if (!soy.$$strContains(gooData8, 'goo')) {",
+            "} else if (!gooData8.includes('goo')) {",
             "  $tmp = 'Bleh';",
             "} else {",
             "  $tmp = 'Bluh';",
@@ -392,7 +392,7 @@ public final class GenJsCodeVisitorTest {
             "  {for $i in range(4)}",
             "    {$i+1}<br>",
             "  {/for}",
-            "{elseif !$goo.contains('goo')}",
+            "{elseif !$goo.includes('goo')}",
             "  Bleh",
             "{else}",
             "  Bluh",
@@ -405,7 +405,7 @@ public final class GenJsCodeVisitorTest {
             + "    const i5Data = 0 + i5Index * 1;\n"
             + "    output += i5Data + 1 + '<br>';\n"
             + "  }\n"
-            + "} else if (!soy.$$strContains(gooData8, 'goo')) {\n"
+            + "} else if (!gooData8.includes('goo')) {\n"
             + "  output += 'Bleh';\n"
             + "} else {\n"
             + "  output += 'Bluh';\n"

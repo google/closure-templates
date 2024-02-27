@@ -154,13 +154,6 @@ Joins two or more lists together.
 Checks if the given value is inside the list. This method uses the equivalent of
 JS/TS script equality.
 
-<span id="list-any_contains"></span>
-
-### `list.contains(value)` {#listContains}
-
-Legacy name for `list.includes()`. Will be deprecated for consistency with
-JS/TS.
-
 <span id="list-any_flat"></span>
 
 ### `list.flat([depth])` {#listFlat}
@@ -308,12 +301,6 @@ likely to break the emoji and subvert user intention.
 ### `str.includes(subStr)` {#strIncludes}
 
 Checks whether a string contains a particular substring.
-
-<span id="string_contains"></span>
-
-### `str.contains(subStr)` {#strContains}
-
-Legacy name for `str.includes()`. Will be deprecated for consistency with JS/TS.
 
 ### `str.endsWith(subStr[, length])` {#string_endsWith}
 
