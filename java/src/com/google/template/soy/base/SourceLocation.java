@@ -40,6 +40,7 @@ public final class SourceLocation implements Comparable<SourceLocation> {
 
   private final Point begin;
   private final Point end;
+  private final ByteSpan byteSpan;
 
   /**
    * A nullish source location.
@@ -52,6 +53,10 @@ public final class SourceLocation implements Comparable<SourceLocation> {
       new SourceLocation(SourceFilePath.create("unknown", "unknown"));
 
   /**
+   * This method ignores byte offsets and should only be used in contexts where byte offset is not
+   * used (e.g. Formatter, tests). Prefer {@link SourceLocation#SourceLocation(SourceFilePath,
+   * Point, Point)}.
+   *
    * @param filePath A file path or URI useful for error messages.
    * @param beginLine The line number in the source file where this location begins (1-based), or -1
    *     if associated with the entire file instead of a line.
@@ -72,9 +77,14 @@ public final class SourceLocation implements Comparable<SourceLocation> {
   }
 
   public SourceLocation(SourceFilePath filePath, Point begin, Point end) {
-    checkNotNull(filePath, "filePath is null");
-    checkNotNull(begin, "begin is null");
-    checkNotNull(end, "end is null");
+    this(filePath, begin, end, ByteSpan.UNKNOWN);
+  }
+
+  public SourceLocation(SourceFilePath filePath, Point begin, Point end, ByteSpan byteSpan) {
+    this.filePath = checkNotNull(filePath);
+    this.begin = checkNotNull(begin);
+    this.end = checkNotNull(end);
+    this.byteSpan = checkNotNull(byteSpan);
     checkArgument(
         begin.isKnown() == end.isKnown(),
         "Either both the begin and end locations should be known, or neither should be. Got [%s,"
@@ -87,9 +97,6 @@ public final class SourceLocation implements Comparable<SourceLocation> {
         begin,
         end,
         filePath);
-    this.filePath = filePath;
-    this.begin = begin;
-    this.end = end;
   }
 
   /**
@@ -129,6 +136,10 @@ public final class SourceLocation implements Comparable<SourceLocation> {
   /** Returns the column number in the source file where this location ends (1-based). */
   public int getEndColumn() {
     return end.column();
+  }
+
+  public ByteSpan getByteSpan() {
+    return byteSpan;
   }
 
   /** Returns true if this location ends one character before the other location starts. */
@@ -200,12 +211,15 @@ public final class SourceLocation implements Comparable<SourceLocation> {
         : String.format("%s:%s-%s:%s", begin.line(), begin.column(), end.line(), end.column());
   }
 
+  /** See {@link Point#offsetCols(int)} for a warning about this method. */
   public SourceLocation offsetStartCol(int offset) {
-    return new SourceLocation(filePath, begin.offsetCols(offset), end);
+    return new SourceLocation(
+        filePath, begin.offsetCols(offset), end, byteSpan.offsetStart(offset));
   }
 
+  /** See {@link Point#offsetCols(int)} for a warning about this method. */
   public SourceLocation offsetEndCol(int offset) {
-    return new SourceLocation(filePath, begin, end.offsetCols(offset));
+    return new SourceLocation(filePath, begin, end.offsetCols(offset), byteSpan.offsetEnd(offset));
   }
 
   public boolean isSingleLine() {
@@ -230,7 +244,8 @@ public final class SourceLocation implements Comparable<SourceLocation> {
         "Mismatched files paths: %s and %s",
         filePath,
         other.filePath);
-    return new SourceLocation(filePath, begin, other.end);
+    return new SourceLocation(
+        filePath, begin, other.end, ByteSpan.create(byteSpan.getStart(), other.byteSpan.getEnd()));
   }
 
   /**
@@ -241,7 +256,7 @@ public final class SourceLocation implements Comparable<SourceLocation> {
     if (!isKnown() || !other.isKnown()) {
       return UNKNOWN;
     }
-    return new SourceLocation(filePath, begin, other);
+    return new SourceLocation(filePath, begin, other, ByteSpan.UNKNOWN);
   }
 
   /**
@@ -252,7 +267,7 @@ public final class SourceLocation implements Comparable<SourceLocation> {
   public SourceLocation createSuperRangeWith(SourceLocation other) {
     Point begin = this.begin.isBefore(other.begin) ? this.begin : other.begin;
     Point end = this.end.isAfter(other.end) ? this.end : other.end;
-    return new SourceLocation(filePath, begin, end);
+    return new SourceLocation(filePath, begin, end, byteSpan.union(other.byteSpan));
   }
 
   /**
@@ -277,7 +292,7 @@ public final class SourceLocation implements Comparable<SourceLocation> {
 
     Point newBegin = begin.isBefore(other.getBeginPoint()) ? begin : other.getBeginPoint();
     Point newEnd = end.isAfter(other.getEndPoint()) ? end : other.getEndPoint();
-    return new SourceLocation(filePath, newBegin, newEnd);
+    return new SourceLocation(filePath, newBegin, newEnd, byteSpan.union(other.byteSpan));
   }
 
   /** Returns whether the two source locations are adjacent or overlapping. */
@@ -299,10 +314,10 @@ public final class SourceLocation implements Comparable<SourceLocation> {
 
   /** Returns a new location that points to the first character of this location. */
   public SourceLocation getBeginLocation() {
-    return new SourceLocation(filePath, begin, begin);
+    return begin.asLocation(filePath);
   }
 
-  public SourceLocation.Point getBeginPoint() {
+  public Point getBeginPoint() {
     return begin;
   }
 
@@ -333,10 +348,10 @@ public final class SourceLocation implements Comparable<SourceLocation> {
 
   /** Returns a new location that points to the last character of this location. */
   public SourceLocation getEndLocation() {
-    return new SourceLocation(filePath, end, end);
+    return end.asLocation(filePath);
   }
 
-  public SourceLocation.Point getEndPoint() {
+  public Point getEndPoint() {
     return end;
   }
 
@@ -396,16 +411,8 @@ public final class SourceLocation implements Comparable<SourceLocation> {
       return compareTo(o) < 0;
     }
 
-    public final boolean isBefore(SourceLocation o) {
-      return isBefore(o.getBeginPoint());
-    }
-
     public final boolean isAfter(Point o) {
       return compareTo(o) > 0;
-    }
-
-    public final boolean isAfter(SourceLocation o) {
-      return isAfter(o.getEndPoint());
     }
 
     @Override
@@ -427,7 +434,7 @@ public final class SourceLocation implements Comparable<SourceLocation> {
   @Immutable
   public abstract static class ByteSpan {
 
-    private static final ByteSpan UNKNOWN = new AutoValue_SourceLocation_ByteSpan(-1, -1);
+    public static final ByteSpan UNKNOWN = new AutoValue_SourceLocation_ByteSpan(-1, -1);
 
     public static ByteSpan create(int start, int end) {
       if (start == -1 || end == -1) {
@@ -440,8 +447,29 @@ public final class SourceLocation implements Comparable<SourceLocation> {
 
     public abstract int getEnd();
 
-    public boolean isUnknown() {
-      return this == UNKNOWN;
+    public boolean isKnown() {
+      return this != UNKNOWN;
+    }
+
+    public ByteSpan offsetStart(int offset) {
+      if (!isKnown()) {
+        return UNKNOWN;
+      }
+      return create(getStart() + offset, getEnd());
+    }
+
+    public ByteSpan offsetEnd(int offset) {
+      if (!isKnown()) {
+        return UNKNOWN;
+      }
+      return create(getStart(), getEnd() + offset);
+    }
+
+    public ByteSpan union(ByteSpan o) {
+      if (!isKnown() || !o.isKnown()) {
+        return UNKNOWN;
+      }
+      return create(Math.min(getStart(), o.getStart()), Math.max(getEnd(), o.getEnd()));
     }
   }
 }

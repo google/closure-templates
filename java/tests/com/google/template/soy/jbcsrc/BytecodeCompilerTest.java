@@ -632,6 +632,16 @@ public class BytecodeCompilerTest {
   }
 
   @Test
+  public void testRawTextNode_largeTextUnicode() {
+    // Should test SoySimpleCharStream byte offset buffering.
+    String toRepeat = "xx👌xxx👌🏿";
+    String largeString = toRepeat.repeat((1 << 17) / toRepeat.length());
+    assertThatTemplateBody(largeString).rendersAs(largeString);
+    assertThatTemplateBody("{@param foo:?}\n{'" + largeString + "' + $foo}")
+        .rendersAs(largeString + "hello", ImmutableMap.of("foo", "hello"));
+  }
+
+  @Test
   public void testCssFunction() {
     FakeRenamingMap renamingMap = new FakeRenamingMap(ImmutableMap.of("foo", "bar"));
     assertThatTemplateBody("{css('foo')}").withCssRenamingMap(renamingMap).rendersAs("bar");

@@ -17,7 +17,6 @@
 package com.google.template.soy.passes;
 
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.base.SourceLocation.Point;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.exprtree.CallableExprBuilder;
@@ -114,11 +113,6 @@ public final class RestoreGlobalsPass implements CompilerFilePass {
   }
 
   private static SourceLocation union(SourceLocation l1, SourceLocation l2) {
-    Point b1 = l1.getBeginPoint();
-    Point b2 = l2.getBeginPoint();
-    Point e1 = l1.getEndPoint();
-    Point e2 = l2.getEndPoint();
-    return new SourceLocation(
-        l1.getFilePath(), b1.isBefore(b2) ? b1 : b2, e1.isBefore(e2) ? e2 : e1);
+    return l1.createSuperRangeWith(l2);
   }
 }

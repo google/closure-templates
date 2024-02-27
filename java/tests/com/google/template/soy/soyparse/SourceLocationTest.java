@@ -25,8 +25,10 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import com.google.common.base.Joiner;
+import com.google.common.base.Utf8;
 import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.SourceLocation.ByteSpan;
 import com.google.template.soy.base.SourceLocation.Point;
 import com.google.template.soy.base.internal.IncrementingIdGenerator;
 import com.google.template.soy.base.internal.SoyFileSupplier;
@@ -45,6 +47,7 @@ import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateNode;
+import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import java.io.StringReader;
 import java.util.List;
@@ -957,6 +960,73 @@ public final class SourceLocationTest {
 
     assertThat(outerRange.unionWith(innerRange)).isEqualTo(outerRange);
     assertThat(innerRange.unionWith(outerRange)).isEqualTo(outerRange);
+  }
+
+  @Test
+  public void testByteOffset() {
+    String template =
+        JOINER.join(
+            "{namespace ns}", // 14 + 1
+            "{template t}", // 12 + 1
+            "  {@param foo: ?}",
+            "  // 👌", // 4 bytes for unicode (+ 5 + 1)
+            "  {@param bar: ?}",
+            "  // 👌🏿", // 8 bytes for unicode (+ 5 + 1)
+            "  {@param baz: ?}",
+            "{/template}");
+    TemplateNode templateNode =
+        (TemplateNode)
+            SoyFileSetParserBuilder.forFileContents(template)
+                .parse()
+                .fileSet()
+                .getChild(0)
+                .getChild(0);
+
+    assertThat(templateNode.getSourceLocation().getByteSpan())
+        .isEqualTo(ByteSpan.create(15, Utf8.encodedLength(template)));
+
+    TemplateParam foo = templateNode.getParams().get(0);
+    TemplateParam bar = templateNode.getParams().get(1);
+    TemplateParam baz = templateNode.getParams().get(2);
+
+    int start = 14 + 1 + 12 + 1 + 2;
+    int paramLength = "{@param foo: ?}".length();
+
+    assertThat(foo.getSourceLocation().getByteSpan())
+        .isEqualTo(ByteSpan.create(start, start + paramLength));
+
+    start = start + paramLength + 1 + 9 + 1 + 2;
+
+    assertThat(bar.getSourceLocation().getByteSpan())
+        .isEqualTo(ByteSpan.create(start, start + paramLength));
+
+    start = start + paramLength + 1 + 13 + 1 + 2;
+
+    assertThat(baz.getSourceLocation().getByteSpan())
+        .isEqualTo(ByteSpan.create(start, start + paramLength));
+  }
+
+  @Test
+  public void testUnicodeCols() {
+    String template =
+        JOINER.join(
+            "{namespace ns}",
+            "{template t}",
+            "  /*👌*/{@param foo: ?}", // for JavaCC this is 2 cols
+            "  /*👌🏿*/{@param bar: ?}", // for JavaCC this is 4 cols
+            "{/template}");
+    TemplateNode templateNode =
+        (TemplateNode)
+            SoyFileSetParserBuilder.forFileContents(template)
+                .parse()
+                .fileSet()
+                .getChild(0)
+                .getChild(0);
+    TemplateParam foo = templateNode.getParams().get(0);
+    TemplateParam bar = templateNode.getParams().get(1);
+
+    assertThat(foo.getSourceLocation().getBeginColumn()).isEqualTo(9);
+    assertThat(bar.getSourceLocation().getBeginColumn()).isEqualTo(11);
   }
 
   @Test
