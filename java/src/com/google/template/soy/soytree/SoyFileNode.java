@@ -88,13 +88,10 @@ public final class SoyFileNode extends AbstractParentSoyNode<SoyNode>
   private final NamespaceDeclaration namespaceDeclaration;
 
   private final ImmutableList<AliasDeclaration> aliasDeclarations;
-
   private final TemplateNode.SoyFileHeaderInfo headerInfo;
-
+  private final ByteOffsetIndex byteOffsetIndex;
   private final ImmutableList<Comment> comments;
-
   private final ImportsContext importsContext;
-
   private final ImmutableList<CssPath> requiredCssPaths;
 
   /**
@@ -109,12 +106,14 @@ public final class SoyFileNode extends AbstractParentSoyNode<SoyNode>
       SourceLocation sourceLocation,
       NamespaceDeclaration namespaceDeclaration,
       SoyFileHeaderInfo headerInfo,
+      ByteOffsetIndex byteOffsetIndex,
       ImmutableList<Comment> comments) {
     super(id, sourceLocation);
     this.headerInfo = headerInfo;
     this.modName = headerInfo.getModNameDeclaration();
     this.namespaceDeclaration = namespaceDeclaration; // Immutable
     this.aliasDeclarations = headerInfo.getAliases(); // immutable
+    this.byteOffsetIndex = checkNotNull(byteOffsetIndex);
     this.comments = comments;
     this.importsContext = new ImportsContext();
     this.requiredCssPaths =
@@ -134,6 +133,7 @@ public final class SoyFileNode extends AbstractParentSoyNode<SoyNode>
     this.namespaceDeclaration = orig.namespaceDeclaration.copy(copyState);
     this.aliasDeclarations = orig.aliasDeclarations; // immutable
     this.headerInfo = orig.headerInfo.copy();
+    this.byteOffsetIndex = orig.byteOffsetIndex;
     this.comments = orig.comments;
     // Imports context must be reset during edit-refresh (can't be set/cached in single file
     // passes).
@@ -260,6 +260,10 @@ public final class SoyFileNode extends AbstractParentSoyNode<SoyNode>
   @Nullable
   public String getFileName() {
     return getSourceLocation().getFileName();
+  }
+
+  public ByteOffsetIndex getByteOffsetIndex() {
+    return byteOffsetIndex;
   }
 
   /** Returns all comments in the entire Soy file (not just doc-level comments). */

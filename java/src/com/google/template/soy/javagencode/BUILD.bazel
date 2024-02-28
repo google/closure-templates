@@ -19,7 +19,6 @@ load("@rules_java//java:defs.bzl", "java_library")
 package(default_visibility = ["//:soy_internal"])
 
 KYTHE_SRCS = [
-    "IndexedLines.java",
     "KytheHelper.java",
 ]
 

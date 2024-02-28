@@ -25,6 +25,8 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
+import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.SourceLocation.ByteSpan;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.basetree.AbstractNodeVisitor;
 import com.google.template.soy.basetree.CopyState;
@@ -696,5 +698,13 @@ public final class SoyTreeUtils {
       }
       return index.get((ExprRootNode) node);
     }
+  }
+
+  public static ByteSpan getByteSpan(SoyNode node) {
+    return getByteSpan(node, node.getSourceLocation());
+  }
+
+  public static ByteSpan getByteSpan(SoyNode node, SourceLocation location) {
+    return node.getNearestAncestor(SoyFileNode.class).getByteOffsetIndex().getByteSpan(location);
   }
 }

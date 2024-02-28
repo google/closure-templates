@@ -28,6 +28,7 @@ import com.google.template.soy.base.internal.QuoteStyle;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.shared.internal.ImmutableSetMultimapToggleRegistry;
+import com.google.template.soy.soytree.ByteOffsetIndex;
 import com.google.template.soy.soytree.ImportNode;
 import com.google.template.soy.soytree.NamespaceDeclaration;
 import com.google.template.soy.soytree.SoyFileNode;
@@ -51,6 +52,7 @@ public final class ToggleImportProcessorTest {
               ErrorReporter.exploding(),
               SourceLocation.UNKNOWN),
           TemplateNode.SoyFileHeaderInfo.EMPTY,
+          ByteOffsetIndex.EMPTY,
           ImmutableList.of());
 
   ErrorReporter errorReporter = ErrorReporter.createForTest();

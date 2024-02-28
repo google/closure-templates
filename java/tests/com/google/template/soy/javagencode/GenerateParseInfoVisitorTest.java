@@ -31,6 +31,7 @@ import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.KytheMode;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.shared.internal.gencode.GeneratedFile;
+import com.google.template.soy.soytree.ByteOffsetIndex;
 import com.google.template.soy.soytree.FileSetMetadata;
 import com.google.template.soy.soytree.NamespaceDeclaration;
 import com.google.template.soy.soytree.SoyFileNode;
@@ -209,6 +210,7 @@ public final class GenerateParseInfoVisitorTest {
             ErrorReporter.exploding(),
             SourceLocation.UNKNOWN),
         new TemplateNode.SoyFileHeaderInfo(namespace),
+        ByteOffsetIndex.EMPTY,
         ImmutableList.of());
   }
 

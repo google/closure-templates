@@ -20,6 +20,7 @@ import com.google.common.base.Utf8;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.base.SourceLocation.Point;
 import java.io.IOException;
+import java.io.Reader;
 import java.nio.CharBuffer;
 import java.util.Arrays;
 
@@ -40,6 +41,11 @@ final class SoySimpleCharStream extends SimpleCharStream {
   private int utf8BufferIdx = 0;
   // Byte offset of last token start.
   int tokenBeginByteOffset = -1;
+
+  /** Returns the full contents of the file read so far. Only call this after encountering EOF. */
+  String getFullFile() {
+    return ((FullBuffer) inputStream).buffer.toString();
+  }
 
   @Override
   public char readChar() throws IOException {
@@ -147,7 +153,7 @@ final class SoySimpleCharStream extends SimpleCharStream {
   /** Constructor. */
   public SoySimpleCharStream(
       java.io.Reader dstream, int startline, int startcolumn, int buffersize) {
-    super(dstream, startline, startcolumn, buffersize);
+    super(new FullBuffer(dstream), startline, startcolumn, buffersize);
   }
 
   /** Constructor. */
@@ -158,5 +164,28 @@ final class SoySimpleCharStream extends SimpleCharStream {
   /** Constructor. */
   public SoySimpleCharStream(java.io.Reader dstream) {
     this(dstream, 1, 1, 4096);
+  }
+
+  private static class FullBuffer extends Reader {
+    private final Reader delegate;
+    private final StringBuilder buffer = new StringBuilder();
+
+    public FullBuffer(Reader delegate) {
+      this.delegate = delegate;
+    }
+
+    @Override
+    public int read(char[] cbuf, int off, int len) throws IOException {
+      int nRead = delegate.read(cbuf, off, len);
+      if (nRead != -1) {
+        buffer.append(cbuf, off, nRead);
+      }
+      return nRead;
+    }
+
+    @Override
+    public void close() throws IOException {
+      delegate.close();
+    }
   }
 }

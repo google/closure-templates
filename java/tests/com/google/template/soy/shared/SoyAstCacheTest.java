@@ -25,6 +25,7 @@ import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.SoyFileSupplier.Version;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.soytree.ByteOffsetIndex;
 import com.google.template.soy.soytree.NamespaceDeclaration;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.TemplateNode;
@@ -60,6 +61,7 @@ public final class SoyAstCacheTest {
               ErrorReporter.exploding(),
               SourceLocation.UNKNOWN),
           new TemplateNode.SoyFileHeaderInfo("fake.namespace"),
+          ByteOffsetIndex.EMPTY,
           ImmutableList.of());
 
   @Test

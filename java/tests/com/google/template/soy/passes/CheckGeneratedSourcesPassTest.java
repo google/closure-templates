@@ -26,6 +26,7 @@ import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.passes.CompilerFileSetPass.Result;
+import com.google.template.soy.soytree.ByteOffsetIndex;
 import com.google.template.soy.soytree.Comment;
 import com.google.template.soy.soytree.NamespaceDeclaration;
 import com.google.template.soy.soytree.SoyFileNode;
@@ -106,6 +107,7 @@ public final class CheckGeneratedSourcesPassTest {
             null,
             SourceLocation.UNKNOWN),
         SoyFileHeaderInfo.EMPTY,
+        ByteOffsetIndex.EMPTY,
         ImmutableList.of(Comment.create(Comment.Type.LINE, comment, SourceLocation.UNKNOWN)));
   }
 }

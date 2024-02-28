@@ -94,6 +94,7 @@ import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.soytree.AbstractSoyNode;
 import com.google.template.soy.soytree.AliasDeclaration;
+import com.google.template.soy.soytree.ByteOffsetIndex;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallDelegateNode;
 import com.google.template.soy.soytree.CallNode;
@@ -762,6 +763,10 @@ public class SoyFileParser {
       comments.add(comment);
     }
     return comments.build();
+  }
+
+  private ByteOffsetIndex buildByteOffsetIndex(SoyFileParserTokenManager manager) {
+    return ByteOffsetIndex.parse(((SoySimpleCharStream) manager.input_stream).getFullFile());
   }
 
   private CommandTagAttribute newTag(
@@ -1485,6 +1490,7 @@ private SoyFileNode EmptySoyFile() :
             SourceLocation.ByteSpan.create(0, eof.beginColumn)),
         NamespaceDeclaration.EMPTY,
         SoyFileHeaderInfo.EMPTY,
+        buildByteOffsetIndex(token_source),
         buildComments(token_source));
   }
 }
@@ -1568,7 +1574,7 @@ private SoyFileNode NonEmptySoyFile() :
             SourceLocation.Point.FIRST_POINT,
             SourceLocation.Point.create(eof.beginLine, eof.beginColumn),
             SourceLocation.ByteSpan.create(0, eof.beginColumn)),
-        namespace, headerInfo, buildComments(token_source));
+        namespace, headerInfo, buildByteOffsetIndex(token_source), buildComments(token_source));
     sfn.addChildren(imports.build());
     sfn.addChildren(constants.build());
      sfn.addChildren(externs.build());
