@@ -146,8 +146,9 @@ the gender of the target.
 
 The `genders` attribute is metadata used by translators to provide different
 translations of the same English message for different genders. The `genders`
-attribute value may contain one or more expressions (though using three or more
-gender expressions in one message is strongly discouraged). Each gender
+attribute value may contain one or more expressions (though using more than
+three gender expressions in one message is not
+allowed). Each gender
 expression should evaluate to a string. There are three recognized cases:
 'female', 'male', and any other
 string, which is treated as
