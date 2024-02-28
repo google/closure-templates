@@ -17,6 +17,7 @@
 package com.google.template.soy.shared.internal;
 
 import static com.google.common.flogger.StackSize.MEDIUM;
+import static com.google.template.soy.shared.internal.EscapingConventions.HTML_TAG_FIRST_TOKEN;
 import static java.lang.Math.min;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -47,6 +48,9 @@ import com.google.template.soy.shared.internal.TagWhitelist.OptionalSafeTag;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -1163,79 +1167,67 @@ public final class Sanitizers {
             ? EscapingConventions.NormalizeHtml.INSTANCE
             : EscapingConventions.NormalizeHtmlNospace.INSTANCE;
 
-    Matcher matcher = EscapingConventions.HTML_TAG_CONTENT.matcher(value);
-    if (!matcher.find()) {
-      // Normalize so that the output can be embedded in an HTML attribute.
-      return normalizer.escape(value);
-    }
-
-    StringBuilder out = new StringBuilder(value.length() - matcher.end() + matcher.start());
-    Appendable normalizedOut = normalizer.escape(out);
     // We do some very simple tag balancing by dropping any close tags for unopened tags and at the
     // end emitting close tags for any still open tags.
     // This is sufficient (in HTML) to prevent embedded content with safe tags from breaking layout
     // when, for example, stripHtmlTags("</table>") is embedded in a page that uses tables for
     // formatting.
-    List<String> openTags = null;
-    int openListTagCount = 0;
-    try {
-      int pos = 0; // Such that value[:pos] has been sanitized onto out.
-      do {
-        int start = matcher.start();
+    AtomicReference<List<String>> openTags = new AtomicReference<>(null);
+    AtomicInteger openListTagCount = new AtomicInteger(0);
 
-        if (pos < start) {
-          normalizedOut.append(value, pos, start);
+    CharSequence replaced =
+        replaceHtmlTags(
+            value,
+            (tag, tagName) -> {
+              if (safeTags == null || tagName == null) {
+                return "";
+              }
+              tagName = Ascii.toLowerCase(tagName);
+              if (!safeTags.isSafeTag(tagName)) {
+                return "";
+              }
 
-          // More aggressively normalize ampersands at the end of a chunk so that
-          //   "&<b>amp;</b>" -> "&amp;amp;" instead of "&amp;".
-          if (value.charAt(start - 1) == '&') {
-            out.append("amp;");
-          }
-        }
-
-        if (safeTags != null) {
-          String tagName = matcher.group(1);
-          if (tagName != null) {
-            // Use locale so that <I> works when the default locale is Turkish
-            tagName = Ascii.toLowerCase(tagName);
-            if (safeTags.isSafeTag(tagName)) {
-              boolean isClose = value.charAt(start + 1) == '/';
+              StringBuilder out = new StringBuilder();
+              // Use locale so that <I> works when the default locale is Turkish
+              boolean isClose = tag.charAt(1) == '/';
               if (isClose) {
-                if (openTags != null) {
-                  int lastIdx = openTags.lastIndexOf(tagName);
+                if (openTags.get() != null) {
+                  int lastIdx = openTags.get().lastIndexOf(tagName);
                   if (lastIdx >= 0) {
-                    // Close contained tags as well.
-                    // If we didn't, then we would convert "<ul><li></ul>" to "<ul><li></ul></li>"
-                    // which could lead to broken layout for embedding HTML that uses lists for
-                    // formatting.
-                    // This leads to observably different behavior for adoption-agency dependent
-                    // tag combinations like "<b><i>Foo</b> Bar</b>" but fails safe.
+                    // Close contained tags as well. If we didn't, then we would convert
+                    // "<ul><li></ul>" to "<ul><li></ul></li>" which could lead to broken layout for
+                    // embedding HTML that uses lists for formatting. This leads to observably
+                    // different behavior for adoption-agency dependent tag combinations like
+                    // "<b><i>Foo</b> Bar</b>" but fails safe.
                     // http://www.whatwg.org/specs/web-apps/current-work/multipage/the-end.html#misnested-tags:-b-i-/b-/i
-                    List<String> tagsToClose = openTags.subList(lastIdx, openTags.size());
+                    List<String> tagsToClose =
+                        openTags.get().subList(lastIdx, openTags.get().size());
                     for (String tagToClose : tagsToClose) {
                       if (isListTag(tagToClose)) {
-                        openListTagCount--;
+                        openListTagCount.decrementAndGet();
                       }
                     }
-                    closeTags(tagsToClose, out);
+                    out.append(closeTags(tagsToClose));
                   }
                 }
               } else {
-                // Only allow whitelisted <li> through if it is nested in a parent <ol> or <ul>.
-                if (openListTagCount > 0 || !"li".equals(tagName)) {
+                // Only allow whitelisted <li> through if it is nested in a parent <ol> or
+                // <ul>.
+                if (openListTagCount.get() > 0 || !"li".equals(tagName)) {
                   if (isListTag(tagName)) {
-                    openListTagCount++;
+                    openListTagCount.incrementAndGet();
                   }
 
-                  // Emit beginning of the opening tag and tag name on the un-normalized channel.
+                  // Emit beginning of the opening tag and tag name on the un-normalized
+                  // channel.
                   out.append('<').append(tagName);
 
                   // Most attributes are dropped, but the dir attribute is preserved if it exists.
-                  // The attribute matching could be made more generic if more attributes need to be
-                  // whitelisted in the future. There are also probably other utilities in common to
-                  // do such parsing of HTML, but this seemed simple enough and keeps with the
-                  // current spirit of this function of doing custom parsing.
-                  Matcher attributeMatcher = HTML_ATTRIBUTE_PATTERN.matcher(matcher.group());
+                  // The attribute matching could be made more generic if more attributes need
+                  // to be whitelisted in the future. There are also probably other utilities in
+                  // common to do such parsing of HTML, but this seemed simple enough and keeps with
+                  // the current spirit of this function of doing custom parsing.
+                  Matcher attributeMatcher = HTML_ATTRIBUTE_PATTERN.matcher(tag);
                   while (attributeMatcher.find()) {
                     String attributeName = attributeMatcher.group(1);
                     if (!Strings.isNullOrEmpty(attributeName)
@@ -1260,36 +1252,140 @@ public final class Sanitizers {
 
                   // Keep track of tags that need closing.
                   if (!HTML5_VOID_ELEMENTS.contains(tagName)) {
-                    if (openTags == null) {
-                      openTags = Lists.newArrayList();
+                    if (openTags.get() == null) {
+                      openTags.set(Lists.newArrayList());
                     }
-                    openTags.add(tagName);
+                    openTags.get().add(tagName);
                   }
                 }
               }
-            }
-          }
-        }
-        pos = matcher.end();
-      } while (matcher.find());
-      normalizedOut.append(value, pos, value.length());
-      // Emit close tags, so that safeTags("<table>") can't break the layout of embedding HTML that
-      // uses tables for layout.
-      if (openTags != null) {
-        closeTags(openTags, out);
-      }
-    } catch (IOException ex) {
-      // Writing to a StringBuilder should not throw.
-      throw new AssertionError(ex);
+              return out.toString();
+            },
+            (token, isLast) -> {
+              // More aggressively normalize ampersands at the end of a chunk so that
+              //   "&<b>amp;</b>" -> "&amp;amp;" instead of "&amp;".
+              token = normalizer.escape(token);
+              if (!isLast && token.endsWith("&")) {
+                token = token.substring(0, token.length() - 1) + "&amp;";
+              }
+              return token;
+            });
+
+    // Emit close tags, so that safeTags("<table>") can't break the layout of embedding HTML that
+    // uses tables for layout.
+    if (openTags.get() != null) {
+      replaced += closeTags(openTags.get());
     }
-    return out.toString();
+    return replaced.toString();
   }
 
-  private static void closeTags(List<String> openTags, StringBuilder out) {
+  private enum State {
+    DEFAULT,
+    TAG;
+  }
+
+  private static CharSequence replaceHtmlTags(
+      String s,
+      BiFunction<String, String, String> callback,
+      BiFunction<String, Boolean, String> escaper) {
+    StringBuilder buffer = new StringBuilder();
+    int l = s.length();
+
+    State state = State.DEFAULT;
+    StringBuilder tagBuffer = null;
+    String tagName = null;
+    int tagStartIdx = -1;
+
+    int i = 0;
+    while (i < l) {
+      switch (state) {
+        case DEFAULT:
+          int nextLt = s.indexOf('<', i);
+          if (nextLt < 0) {
+            // No more < found, push remaining string on buffer and exit.
+            if (buffer.length() == 0) {
+              return escaper.apply(s, true);
+            }
+            buffer.append(escaper.apply(s.substring(i), true));
+            i = l;
+          } else {
+            // Push up to < onto buffer.
+            buffer.append(escaper.apply(s.substring(i, nextLt), false));
+            tagStartIdx = nextLt;
+            i = nextLt + 1;
+            // Search for required token after <
+            Matcher m = HTML_TAG_FIRST_TOKEN.matcher(s).region(i, s.length());
+            if (m.find()) {
+              tagBuffer = new StringBuilder().append('<').append(m.group(0));
+              tagName = m.group(1);
+              state = State.TAG;
+              i = m.end();
+            } else {
+              // Otherwise push < to the buffer and continue.
+              buffer.append(escaper.apply("<", false));
+            }
+          }
+          break;
+
+        case TAG:
+          char c = s.charAt(i++);
+          switch (c) {
+            case '\'':
+            case '"':
+              // Find the corresponding closing quote.
+              int nextQuote = s.indexOf(c, i);
+              if (nextQuote < 0) {
+                // If non closing we will have to backtrack.
+                i = l;
+              } else {
+                // Push full quote token onto tag buffer.
+                tagBuffer.append(c).append(s.substring(i, nextQuote + 1));
+                i = nextQuote + 1;
+              }
+              break;
+
+            case '>':
+              // We found the end of the tag!
+              tagBuffer.append(c);
+              buffer.append(callback.apply(tagBuffer.toString(), tagName));
+              state = State.DEFAULT;
+              tagBuffer = new StringBuilder();
+              tagName = null;
+              tagStartIdx = -1;
+              break;
+
+            default:
+              tagBuffer.append(c);
+          }
+          break;
+      }
+
+      // Check if we exhausted the input without completing the tag. In this case
+      // we need to backtrack because we may have skipped over fully formed tags
+      // while we thought we were in a tag. e.g.: <b'<b>
+      if (state == State.TAG && i >= l) {
+        // Push the < that started the incomplete tag and backtrack to the next
+        // character.
+        i = tagStartIdx + 1;
+        buffer.append(escaper.apply("<", false));
+        state = State.DEFAULT;
+        tagBuffer = new StringBuilder();
+        tagName = null;
+        tagStartIdx = -1;
+      }
+    }
+
+    return buffer;
+  }
+
+
+  private static String closeTags(List<String> openTags) {
+    StringBuilder out = new StringBuilder();
     for (int i = openTags.size(); --i >= 0; ) {
       out.append("</").append(openTags.get(i)).append('>');
     }
     openTags.clear();
+    return out.toString();
   }
 
   private static boolean isListTag(String tagName) {
