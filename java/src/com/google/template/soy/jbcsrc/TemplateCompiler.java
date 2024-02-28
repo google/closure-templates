@@ -48,7 +48,6 @@ import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.MethodRefs;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.Statement;
-import com.google.template.soy.jbcsrc.shared.RecordToPositionalCallFactory;
 import com.google.template.soy.jbcsrc.shared.TemplateMetadata;
 import com.google.template.soy.soytree.CallDelegateNode;
 import com.google.template.soy.soytree.CallNode;
@@ -70,9 +69,6 @@ import com.google.template.soy.types.NullType;
 import com.google.template.soy.types.TemplateType;
 import com.google.template.soy.types.TemplateType.Parameter;
 import com.google.template.soy.types.UndefinedType;
-import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodHandles;
-import java.lang.invoke.MethodType;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.IdentityHashMap;
@@ -80,12 +76,9 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Stream;
 import javax.annotation.Nullable;
-import org.objectweb.asm.Handle;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.Method;
 
 /**
@@ -157,24 +150,6 @@ final class TemplateCompiler {
     generateRenderMethod();
     generateModifiableSelectMethod();
   }
-
-  private static final Handle DELEGATE_FACTORY_HANDLE =
-      MethodRef.createPure(
-              RecordToPositionalCallFactory.class,
-              "bootstrapDelegate",
-              MethodHandles.Lookup.class,
-              String.class,
-              MethodType.class,
-              MethodHandle.class,
-              String[].class)
-          .asHandle();
-
-  private static final Type COMPILED_TEMPLATE_RENDER_DESCRIPTOR =
-      Type.getMethodType(
-          BytecodeUtils.RENDER_RESULT_TYPE,
-          BytecodeUtils.PARAM_STORE_TYPE,
-          BytecodeUtils.LOGGING_ADVISING_APPENDABLE_TYPE,
-          BytecodeUtils.RENDER_CONTEXT_TYPE);
 
   /** Write the function "templateMethod", which returns a reference to "renderMethod". */
   private void generateTemplateMethod(MethodRef templateMethod, MethodRef renderMethod) {
@@ -386,24 +361,47 @@ final class TemplateCompiler {
     if (!template.hasPositionalSignature()) {
       return;
     }
-    Handle renderHandle = template.positionalRenderMethod().get().asHandle();
-    Statement.returnExpression(
-            new Expression(BytecodeUtils.COMPILED_TEMPLATE_TYPE) {
-              @Override
-              protected void doGen(CodeBuilder cb) {
-                cb.loadArgs();
-                cb.visitInvokeDynamicInsn(
-                    "delegate",
-                    COMPILED_TEMPLATE_RENDER_DESCRIPTOR.getDescriptor(),
-                    DELEGATE_FACTORY_HANDLE,
-                    Stream.concat(
-                            Stream.of(renderHandle),
-                            template.templateType().getActualParameters().stream()
-                                .map(TemplateType.Parameter::getName))
-                        .toArray(Object[]::new));
-              }
-            })
-        .writeMethod(methodAccess(), template.renderMethod().method(), writer);
+    MethodRef renderMethod = template.positionalRenderMethod().get();
+    Label start = new Label();
+    Label end = new Label();
+    LocalVariable data =
+        LocalVariable.createLocal(
+            StandardNames.PARAMS, 0, BytecodeUtils.PARAM_STORE_TYPE, start, end);
+    LocalVariable output =
+        LocalVariable.createLocal(
+            StandardNames.APPENDABLE,
+            1,
+            BytecodeUtils.LOGGING_ADVISING_APPENDABLE_TYPE,
+            start,
+            end);
+    LocalVariable context =
+        LocalVariable.createLocal(
+            StandardNames.RENDER_CONTEXT, 2, BytecodeUtils.RENDER_CONTEXT_TYPE, start, end);
+    List<Expression> renderMethodArgs = new ArrayList<>();
+    for (var param : template.templateType().getActualParameters()) {
+      renderMethodArgs.add(
+          data.invoke(
+              MethodRefs.PARAM_STORE_GET_PARAMETER,
+              BytecodeUtils.constantRecordProperty(param.getName())));
+    }
+    renderMethodArgs.add(output);
+    renderMethodArgs.add(context);
+    Expression invokePositional = renderMethod.invoke(renderMethodArgs);
+    Statement methodBody =
+        new Statement() {
+          @Override
+          protected void doGen(CodeBuilder cb) {
+            cb.mark(start);
+            invokePositional.gen(cb);
+            cb.returnValue();
+            cb.mark(end);
+            // output debugging data for our parameters
+            data.tableEntry(cb);
+            output.tableEntry(cb);
+            context.tableEntry(cb);
+          }
+        };
+    methodBody.writeMethod(methodAccess(), template.renderMethod().method(), writer);
   }
 
   private void generateRenderMethod() {
