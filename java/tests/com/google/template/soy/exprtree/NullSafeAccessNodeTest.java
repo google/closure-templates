@@ -218,7 +218,7 @@ public class NullSafeAccessNodeTest {
             NEWLINE.join(
                 "METHOD_CALL_NODE: *.MessageField|undefined:"
                     + " $foo.getMessageField()?.getReadonlyFoo().getMessageField()",
-                "  METHOD_CALL_NODE: *.Foo: $foo.getMessageField()?.getReadonlyFoo()",
+                "  METHOD_CALL_NODE: *.Foo|undefined: $foo.getMessageField()?.getReadonlyFoo()",
                 "    METHOD_CALL_NODE: *.MessageField|undefined: $foo.getMessageField()",
                 "      VAR_REF_NODE: *.Foo: $foo",
                 ""));
