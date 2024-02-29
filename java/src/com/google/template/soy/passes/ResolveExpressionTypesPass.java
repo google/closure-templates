@@ -60,6 +60,8 @@ import com.google.template.soy.basicfunctions.ConcatMapsMethod;
 import com.google.template.soy.basicfunctions.KeysFunction;
 import com.google.template.soy.basicfunctions.LegacyObjectMapToMapFunction;
 import com.google.template.soy.basicfunctions.ListFlatMethod;
+import com.google.template.soy.basicfunctions.ListIncludesFunction;
+import com.google.template.soy.basicfunctions.ListIndexOfFunction;
 import com.google.template.soy.basicfunctions.ListReverseMethod;
 import com.google.template.soy.basicfunctions.ListSliceMethod;
 import com.google.template.soy.basicfunctions.ListUniqMethod;
@@ -1586,6 +1588,27 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
           }
           if (returnType != null) {
             node.setType(returnType);
+          }
+        } else if ((sourceFunction instanceof ListIncludesFunction)
+            || (sourceFunction instanceof ListIndexOfFunction)) {
+          node.setType(sourceMethod.getReturnType());
+          SoyType listElementType = ((ListType) baseType).getElementType();
+          if ((baseType instanceof ListType)
+              && listElementType != null
+              && node.getParam(0).getType() != null) {
+            // Remove null from the arg to allow eg list<string>.includes(null|string). We can make
+            // it work in TS by adding the `!` operator in Soy->Tsx.
+            SoyType argType = SoyTypes.tryRemoveNullish(node.getParam(0).getType());
+            if (!listElementType.isAssignableFromLoose(argType)
+                && !(SoyTypes.isNumericPrimitive(SoyTypes.tryRemoveNullish(listElementType))
+                    && SoyTypes.isNumericPrimitive(argType))) {
+              errorReporter.report(
+                  node.getParam(0).getSourceLocation(),
+                  INCORRECT_ARG_TYPE,
+                  sourceMethod.getMethodName(),
+                  argType,
+                  listElementType.toString());
+            }
           }
         } else {
           node.setType(sourceMethod.getReturnType());
