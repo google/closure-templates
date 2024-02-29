@@ -107,7 +107,7 @@ public final class GenerateSoyUtilsEscapingDirectiveCode
       throw new IllegalArgumentException("Pattern " + javaPattern + " uses DOTALL.");
     } else if (NAMED_CLASS.matcher(body).find()) {
       throw new IllegalArgumentException(
-          "Pattern " + javaPattern + " uses named character classes.");
+          "Pattern " + javaPattern + " uses named characer classes.");
     }
 
     StringBuilder buffer = new StringBuilder(body.length() + 4);
@@ -168,6 +168,20 @@ public final class GenerateSoyUtilsEscapingDirectiveCode
   protected void generateCommonConstants(StringBuilder outputCode) {
     // Emit patterns and constants needed by escaping functions that are not part of any one
     // escaping convention.
+    outputCode
+        .append('\n')
+        .append("/**\n")
+        .append(" * Matches all tags, HTML comments, and DOCTYPEs in tag soup HTML.\n")
+        .append(" * By removing these, and replacing any '<' or '>' characters with\n")
+        .append(" * entities we guarantee that the result can be embedded into a\n")
+        .append(" * an attribute without introducing a tag boundary.\n")
+        .append(" *\n")
+        .append(" * @type {!RegExp}\n")
+        .append(" */\n")
+        .append("const $$HTML_TAG_REGEX_ = ")
+        .append(convertFromJavaRegex(EscapingConventions.HTML_TAG_CONTENT))
+        .append("g;\n");
+
     outputCode
         .append("\n")
         .append("/**\n")
