@@ -83,7 +83,7 @@ public final class I18NDirectivesRuntime {
       Object number,
       String formatType,
       String numbersKeyword,
-      Integer minFractionDigits,
+      Double minFractionDigits,
       ULocale uLocale) {
     return format(number, formatType, numbersKeyword, minFractionDigits, null, uLocale);
   }
@@ -93,8 +93,8 @@ public final class I18NDirectivesRuntime {
       Object number,
       String formatType,
       String numbersKeyword,
-      Integer minFractionDigits,
-      Integer maxFractionDigits,
+      Double minFractionDigits,
+      Double maxFractionDigits,
       ULocale uLocale) {
     if (number == null) {
       return "";
@@ -111,7 +111,12 @@ public final class I18NDirectivesRuntime {
         val = Double.parseDouble(number.toString());
       }
       return formatInternal(
-          uLocale, val, formatType, numbersKeyword, minFractionDigits, maxFractionDigits);
+          uLocale,
+          val,
+          formatType,
+          numbersKeyword,
+          minFractionDigits == null ? null : minFractionDigits.intValue(),
+          maxFractionDigits == null ? null : maxFractionDigits.intValue());
     }
     return "NaN";
   }
