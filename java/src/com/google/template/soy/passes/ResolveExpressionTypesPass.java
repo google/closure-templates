@@ -240,7 +240,10 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
       SoyErrorKind.of(
           "Bad list to map constructor. {0} has type: {1}, but should be a list of records with 2"
               + " fields named key and value.");
-
+  private static final SoyErrorKind RECORD_LITERAL_NOT_ALLOWED =
+      SoyErrorKind.of(
+          "Record literal is not allowed as an argument here. "
+              + "Object identity equality is used so this will never match anything in the list.");
   private static final SoyErrorKind BRACKET_ACCESS_NOT_SUPPORTED =
       SoyErrorKind.of("Type {0} does not support bracket access.");
   private static final SoyErrorKind BRACKET_ACCESS_NULLABLE_UNION =
@@ -1589,9 +1592,12 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
           if (returnType != null) {
             node.setType(returnType);
           }
-        } else if ((sourceFunction instanceof ListIncludesFunction)
-            || (sourceFunction instanceof ListIndexOfFunction)) {
+        } else if (sourceFunction instanceof ListIncludesFunction
+            || sourceFunction instanceof ListIndexOfFunction) {
           node.setType(sourceMethod.getReturnType());
+          if (node.getParam(0) instanceof RecordLiteralNode) {
+            errorReporter.report(node.getParam(0).getSourceLocation(), RECORD_LITERAL_NOT_ALLOWED);
+          }
           SoyType listElementType = ((ListType) baseType).getElementType();
           if ((baseType instanceof ListType)
               && listElementType != null
