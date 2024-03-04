@@ -17,6 +17,7 @@ package com.google.template.soy.jssrc.dsl;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
+import com.google.template.soy.base.SourceLocation.ByteSpan;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
@@ -89,13 +90,12 @@ public abstract class ClassExpression extends Expression
       implements Expression.InitialStatementsScope {
     abstract String name();
 
+    @Nullable
+    abstract ByteSpan byteSpan();
+
     abstract JsDoc jsDoc();
 
     abstract Statement body();
-
-    public static MethodDeclaration create(String name, JsDoc jsDoc, Statement body) {
-      return new AutoValue_ClassExpression_MethodDeclaration(name, jsDoc, body);
-    }
 
     @Override
     Stream<? extends CodeChunk> childrenStream() {
@@ -106,13 +106,36 @@ public abstract class ClassExpression extends Expression
     void doFormatOutputExpr(FormattingContext ctx) {
       ctx.appendAll(jsDoc());
       ctx.endLine();
-      ctx.append(name() + "(");
+      ctx.appendImputee(name(), byteSpan());
+      ctx.append("(");
       ctx.append(
           FunctionDeclaration.generateParamList(jsDoc(), /* addInlineTypeAnnotations= */ false));
       ctx.append(") ");
       try (FormattingContext ignored = ctx.enterBlock()) {
         ctx.appendAll(body());
       }
+    }
+
+    public static Builder builder(String name, Statement body) {
+      return new AutoValue_ClassExpression_MethodDeclaration.Builder()
+          .setName(name)
+          .setBody(body)
+          .setJsDoc(JsDoc.builder().build());
+    }
+
+    /** Builder. */
+    @AutoValue.Builder
+    public abstract static class Builder {
+
+      public abstract Builder setName(String value);
+
+      public abstract Builder setByteSpan(ByteSpan value);
+
+      public abstract Builder setJsDoc(JsDoc value);
+
+      public abstract Builder setBody(Statement value);
+
+      public abstract MethodDeclaration build();
     }
   }
 }

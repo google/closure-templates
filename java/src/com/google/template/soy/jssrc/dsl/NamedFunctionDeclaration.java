@@ -52,7 +52,7 @@ public abstract class NamedFunctionDeclaration extends Statement {
   abstract boolean isDeclaration();
 
   @Nullable
-  abstract ByteSpan soySpan();
+  abstract ByteSpan byteSpan();
 
   public static Builder builder(String name, ParamDecls params, Expression returnType) {
     return new AutoValue_NamedFunctionDeclaration.Builder()
@@ -63,7 +63,7 @@ public abstract class NamedFunctionDeclaration extends Statement {
         .setBodyStmts(null)
         .setIsExported(false)
         .setIsDeclaration(false)
-        .setSoySpan(null);
+        .setByteSpan(null);
   }
 
   public static Builder builder(
@@ -76,7 +76,7 @@ public abstract class NamedFunctionDeclaration extends Statement {
         .setBodyStmts(null)
         .setIsExported(false)
         .setIsDeclaration(false)
-        .setSoySpan(null);
+        .setByteSpan(null);
   }
 
   @Override
@@ -92,7 +92,7 @@ public abstract class NamedFunctionDeclaration extends Statement {
       ctx.append("declare ");
     }
     ctx.append("function ");
-    ctx.appendImputee(name(), soySpan());
+    ctx.appendImputee(name(), byteSpan());
     ctx.append("(");
     ctx.appendOutputExpression(params());
     ctx.append("): ").appendOutputExpression(returnType());
@@ -135,7 +135,7 @@ public abstract class NamedFunctionDeclaration extends Statement {
 
     public abstract Builder setIsDeclaration(boolean isDeclaration);
 
-    public abstract Builder setSoySpan(ByteSpan soySpan);
+    public abstract Builder setByteSpan(ByteSpan soySpan);
 
     public abstract NamedFunctionDeclaration build();
   }

@@ -39,7 +39,7 @@ public abstract class VariableDeclaration extends Statement implements CodeChunk
         .setIsMutable(false)
         .setIsExported(false)
         .setIsDeclaration(false)
-        .setSoySpan(null);
+        .setByteSpan(null);
   }
 
   public abstract String varName();
@@ -62,7 +62,7 @@ public abstract class VariableDeclaration extends Statement implements CodeChunk
   abstract Expression type();
 
   @Nullable
-  abstract ByteSpan soySpan();
+  abstract ByteSpan byteSpan();
 
   /** Returns an {@link Expression} representing a reference to this declared variable. */
   public Expression ref() {
@@ -89,7 +89,7 @@ public abstract class VariableDeclaration extends Statement implements CodeChunk
     if (!varName().contains(".")) {
       ctx.append((isMutable() || (rhs() == null && !isDeclaration())) ? "let " : "const ");
     }
-    ctx.appendImputee(varName(), soySpan());
+    ctx.appendImputee(varName(), byteSpan());
 
     if (type() != null) {
       ctx.noBreak().append(": ").appendOutputExpression(type());
@@ -155,7 +155,7 @@ public abstract class VariableDeclaration extends Statement implements CodeChunk
 
     public abstract Builder setType(Expression type);
 
-    public abstract Builder setSoySpan(ByteSpan soySpan);
+    public abstract Builder setByteSpan(ByteSpan soySpan);
 
     public abstract VariableDeclaration build();
   }

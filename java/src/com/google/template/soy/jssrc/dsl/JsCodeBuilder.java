@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.jssrc.internal;
+package com.google.template.soy.jssrc.dsl;
 
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
-import com.google.template.soy.jssrc.dsl.CodeChunk;
-import com.google.template.soy.jssrc.dsl.FormatOptions;
-import com.google.template.soy.jssrc.dsl.GoogRequire;
+import com.google.template.soy.javagencode.KytheHelper;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import javax.annotation.Nullable;
@@ -40,78 +40,43 @@ import javax.annotation.Nullable;
  */
 public final class JsCodeBuilder {
 
+  private static final CodeChunk REQUIRES_PLACEHOLDER = Expressions.id("_requires_");
+
   /** A buffer to accumulate the generated code. */
-  private final StringBuilder code;
-  /** The current stack of output variables. */
-  private final OutputVarHandler outputVars;
+  private final List<CodeChunk> chunks;
+
+  @Nullable private final KytheHelper kytheHelper;
 
   // the set of symbols to require, indexed by symbol name to detect conflicting imports
   private final Map<String, GoogRequire> googRequires = new TreeMap<>();
 
-  public JsCodeBuilder(OutputVarHandler outputVars) {
-    code = new StringBuilder();
-    this.outputVars = outputVars;
+  public JsCodeBuilder(@Nullable KytheHelper kytheHelper) {
+    this.chunks = new ArrayList<>();
+    this.kytheHelper = kytheHelper;
   }
 
-  /**
-   * Pushes on a new current output variable.
-   *
-   * @param outputVarName The new output variable name.
-   */
   @CanIgnoreReturnValue
-  public JsCodeBuilder pushOutputVar(String outputVarName) {
-    outputVars.pushOutputVar(outputVarName);
-    return this;
-  }
-
-  /**
-   * Pops off the current output variable. The previous output variable again becomes the current.
-   */
-  @CanIgnoreReturnValue
-  public JsCodeBuilder popOutputVar() {
-    outputVars.popOutputVar();
-    return this;
-  }
-
-  /**
-   * Tells this CodeBuilder that the current output variable has already been initialized. This
-   * causes {@code initOutputVarIfNecessary} and {@code addToOutputVar} to not add initialization
-   * code even on the first use of the variable.
-   */
-  @CanIgnoreReturnValue
-  public JsCodeBuilder setOutputVarInited() {
-    outputVars.setOutputVarInited();
-    return this;
+  public JsCodeBuilder appendRequiresPlaceholder() {
+    return append(REQUIRES_PLACEHOLDER);
   }
 
   /**
    * Serializes the given {@link CodeChunk} into the code builder, respecting the code builder's
    * current indentation level.
    */
+  @CanIgnoreReturnValue
   public JsCodeBuilder append(CodeChunk codeChunk) {
     codeChunk.collectRequires(this::addGoogRequire);
-    return appendLine(codeChunk.getCode(FormatOptions.JSSRC));
-  }
-
-  public JsCodeBuilder appendNullable(@Nullable CodeChunk codeChunk) {
-    if (codeChunk != null) {
-      return append(codeChunk);
-    }
+    chunks.add(codeChunk);
     return this;
   }
 
-  /**
-   * Appends the current indent, then the given strings, then a newline.
-   *
-   * @param codeFragments The code string(s) to append.
-   * @return This CodeBuilder (for stringing together operations).
-   */
   @CanIgnoreReturnValue
-  public JsCodeBuilder appendLine(String... codeFragments) {
-    for (String codeFragment : codeFragments) {
-      code.append(codeFragment);
+  public JsCodeBuilder append(CodeChunk codeChunk, CodeChunk... more) {
+    append(codeChunk);
+    for (CodeChunk c : more) {
+      append(c);
     }
-    code.append("\n");
     return this;
   }
 
@@ -131,25 +96,37 @@ public final class JsCodeBuilder {
     googRequires.forEach(this::addGoogRequire);
   }
 
-  /** Should only be used by {@link GenJsCodeVisitor#visitSoyFileNode}. */
-  public void appendGoogRequiresTo(StringBuilder sb) {
+  /**
+   * Should only be used by {@link
+   * com.google.template.soy.jssrc.internal.GenJsCodeVisitor#visitSoyFileNode}.
+   */
+  private void appendGoogRequiresTo(FormattingContext sb) {
     for (GoogRequire require : googRequires.values()) {
       // TODO(lukes): we need some namespace management here... though really we need namespace
       // management with all declarations... The problem is that a require could introduce a name
       // alias that conflicts with a symbol defined elsewhere in the file.
-      require.writeTo(sb);
+      sb.appendToBuffer(require.chunk().getCode(FormatOptions.JSSRC)).appendToBuffer('\n');
     }
   }
 
   /**
    * @return The generated code.
    */
-  public String getCode() {
-    return code.toString();
-  }
-
-  /** Appends the code accumulated in this builder to the given {@link StringBuilder}. */
-  void appendCodeTo(StringBuilder sb) {
-    sb.append(code);
+  public StringBuilder getCode() {
+    FormattingContext context = new FormattingContext(FormatOptions.JSSRC);
+    context.setKytheHelper(kytheHelper);
+    for (CodeChunk chunk : chunks) {
+      if (chunk == REQUIRES_PLACEHOLDER) {
+        appendGoogRequiresTo(context);
+      } else if (chunk == Whitespace.BLANK_LINE) {
+        context.appendToBuffer('\n');
+      } else {
+        context.appendAll(chunk);
+        if (context.isEndOfLine()) {
+          context.appendToBuffer('\n');
+        }
+      }
+    }
+    return context.getBuffer();
   }
 }

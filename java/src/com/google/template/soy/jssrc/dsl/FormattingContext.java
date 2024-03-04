@@ -16,19 +16,14 @@
 
 package com.google.template.soy.jssrc.dsl;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-
 import com.google.common.base.Preconditions;
 import com.google.common.base.Utf8;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
-import com.google.protobuf.TextFormat;
 import com.google.template.soy.base.SourceLocation.ByteSpan;
 import com.google.template.soy.base.internal.BaseUtils;
-import com.google.template.soy.base.internal.KytheMode;
 import com.google.template.soy.base.internal.QuoteStyle;
 import com.google.template.soy.javagencode.KytheHelper;
 import java.util.ArrayDeque;
-import java.util.Base64;
 import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.Set;
@@ -40,9 +35,8 @@ import javax.annotation.Nullable;
  */
 class FormattingContext implements AutoCloseable {
   private static final int MAX_LINE_LENGTH = 80;
-  private final StringBuilder buf;
-  private final int initialSize;
 
+  private StringBuilder buf;
   private final FormatOptions formatOptions;
   @Nullable private KytheHelper kytheHelper;
   private Scope curScope = new Scope(/* parent= */ null, /* emitClosingBrace= */ false);
@@ -63,8 +57,7 @@ class FormattingContext implements AutoCloseable {
   FormattingContext(FormatOptions formatOptions) {
     this.formatOptions = formatOptions;
     curIndent = "";
-    buf = new StringBuilder();
-    initialSize = 0;
+    this.buf = new StringBuilder();
     lexicalStateStack = new ArrayDeque<>();
     lexicalStateStack.push(LexicalState.JS);
   }
@@ -79,17 +72,12 @@ class FormattingContext implements AutoCloseable {
    */
   FormattingContext buffer() {
     FormattingContext parent = this;
-    FormatOptions bufferOptions =
-        formatOptions.toBuilder()
-            .setUseTsxLineBreaks(false)
-            .setKytheMode(KytheMode.DISABLED)
-            .build();
+    FormatOptions bufferOptions = formatOptions.toBuilder().setUseTsxLineBreaks(false).build();
     FormattingContext context =
         new FormattingContext(bufferOptions) {
           @Override
           public void close() {
-            String buffer = this.toString();
-            parent.append(buffer);
+            parent.append(this.getBuffer());
           }
         };
     // Propagate the Kythe builder but set kytheMode=DISABLED so that toString() doesn't include
@@ -210,47 +198,65 @@ class FormattingContext implements AutoCloseable {
 
   @CanIgnoreReturnValue
   FormattingContext appendImputee(String stuff, @Nullable ByteSpan soyOffsetSpan) {
-    if (soyOffsetSpan == null || kytheHelper == null) {
-      append(stuff);
-      return this;
-    }
-    int targetStart = currentByteOffset;
-    append(stuff);
-    int targetEnd = currentByteOffset;
-
-    kytheHelper.addKytheLinkTo(
-        soyOffsetSpan.getStart(), soyOffsetSpan.getEnd(), targetStart, targetEnd);
+    appendImputee(() -> append(stuff), soyOffsetSpan, stuff);
     return this;
   }
 
   @CanIgnoreReturnValue
-  FormattingContext append(String stuff) {
-    if (!whitespaceIsSignificant()) {
-      maybeBreakLineInsideTsxElement(stuff);
-      maybeIndent(stuff.isEmpty() ? '\0' : stuff.charAt(0));
+  FormattingContext appendImputee(Expression stuff, @Nullable ByteSpan soyOffsetSpan) {
+    appendImputee(() -> stuff.doFormatOutputExpr(this), soyOffsetSpan, "fakeId");
+    return this;
+  }
+
+  private void appendImputee(Runnable stuff, @Nullable ByteSpan soyOffsetSpan, String nextToken) {
+    if (soyOffsetSpan == null || kytheHelper == null) {
+      stuff.run();
+    } else {
+      // Can't have any whitespace be included in the byte offsets, so force a line break + indent
+      // now before calculating the starting byte offset.
+      forceOutputWhitespace(nextToken);
+      int targetStart = currentByteOffset;
+      stuff.run();
+      int targetEnd = currentByteOffset;
+
+      kytheHelper.addKytheLinkTo(
+          soyOffsetSpan.getStart(), soyOffsetSpan.getEnd(), targetStart, targetEnd);
     }
+  }
+
+  private void forceOutputWhitespace(CharSequence nextToken) {
+    if (!whitespaceIsSignificant()) {
+      maybeBreakLineInsideTsxElement(nextToken);
+      maybeIndent(nextToken.length() == 0 ? '\0' : nextToken.charAt(0));
+    }
+  }
+
+  @CanIgnoreReturnValue
+  FormattingContext append(CharSequence stuff) {
+    forceOutputWhitespace(stuff);
     appendToBuffer(stuff);
     return this;
   }
 
   @CanIgnoreReturnValue
   FormattingContext append(char c) {
-    if (!whitespaceIsSignificant()) {
-      maybeBreakLineInsideTsxElement(Character.toString(c));
-      maybeIndent(c);
-    }
+    forceOutputWhitespace(Character.toString(c));
     appendToBuffer(c);
     return this;
   }
 
-  private void appendToBuffer(String stuff) {
+  @CanIgnoreReturnValue
+  FormattingContext appendToBuffer(CharSequence stuff) {
     buf.append(stuff);
     currentByteOffset += Utf8.encodedLength(stuff);
+    return this;
   }
 
-  private void appendToBuffer(char c) {
+  @CanIgnoreReturnValue
+  FormattingContext appendToBuffer(char c) {
     buf.append(c);
     currentByteOffset += Utf8.encodedLength(String.valueOf(c));
+    return this;
   }
 
   @CanIgnoreReturnValue
@@ -314,8 +320,9 @@ class FormattingContext implements AutoCloseable {
   FormattingContext appendAll(CodeChunk chunk) {
     appendInitialStatements(chunk);
     if (chunk instanceof Expression) {
+      int l1 = buf.length();
       appendOutputExpression((Expression) chunk);
-      if (getCurrentLexicalState() == LexicalState.JS) {
+      if ((buf.length() > l1) && getCurrentLexicalState() == LexicalState.JS) {
         append(";");
         endLine();
       }
@@ -361,15 +368,19 @@ class FormattingContext implements AutoCloseable {
     return this;
   }
 
+  boolean isEndOfLine() {
+    return nextAppendShouldStartNewLine;
+  }
+
   char getLastChar() {
     return buf.length() == 0 ? '\0' : buf.charAt(buf.length() - 1);
   }
 
-  private void maybeBreakLineInsideTsxElement(String nextAppendContent) {
+  private void maybeBreakLineInsideTsxElement(CharSequence nextAppendContent) {
     boolean defer = nextAppendShouldNeverStartNewLine;
     nextAppendShouldNeverStartNewLine = false;
 
-    if (!formatOptions.useTsxLineBreaks() || buf.length() == 0 || nextAppendContent.isEmpty()) {
+    if (!formatOptions.useTsxLineBreaks() || buf.length() == 0 || nextAppendContent.length() == 0) {
       return;
     }
 
@@ -397,7 +408,7 @@ class FormattingContext implements AutoCloseable {
    * Return whether a code string can be appended to the current line without going over
    * MAX_LINE_LENGTH.
    */
-  private boolean fitsOnCurrentLine(String stuff) {
+  private boolean fitsOnCurrentLine(CharSequence stuff) {
     int lastNewLine = buf.lastIndexOf("\n");
     int currentLineLength =
         lastNewLine < 0
@@ -464,31 +475,21 @@ class FormattingContext implements AutoCloseable {
 
   @Override
   public String toString() {
-    return isEmpty() ? "" : buf.toString() + getMetadataSuffix();
+    return isEmpty() ? "" : buf.toString();
   }
 
-  private String getMetadataSuffix() {
-    if (kytheHelper != null) {
-      if (formatOptions.kytheMode() == KytheMode.TEXT) {
-        // this mode is primary used for debugging and not intended to generate imputations linkages
-
-        String genCodeInfoMessage =
-            TextFormat.printer().printToString(kytheHelper.getGeneratedCodeInfo());
-        return "\n/**\nKythe inline metadata pretty printed for testing:\n\n"
-            + genCodeInfoMessage
-            + "\n*/";
-      } else if (formatOptions.kytheMode() == KytheMode.BASE64) {
-        return "\n// kythe-inline-metadata:"
-            + new String(
-                Base64.getEncoder().encode(kytheHelper.getGeneratedCodeInfo().toByteArray()), UTF_8)
-            + "\n";
-      }
-    }
-    return "";
+  /**
+   * Returns the contents of the code buffer without converting to a string and poisons this context
+   * instance.
+   */
+  public StringBuilder getBuffer() {
+    StringBuilder tmp = buf;
+    buf = null;
+    return tmp;
   }
 
   boolean isEmpty() {
-    return buf.length() == initialSize;
+    return buf.length() == 0;
   }
 
   @Override

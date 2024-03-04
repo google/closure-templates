@@ -927,7 +927,8 @@ public final class CodeChunkTest {
     JsDoc.Builder jsDocBuilder = JsDoc.builder();
     jsDocBuilder.addParam("num", "number");
     Statement body = returnValue(id("num").plus(number(1)));
-    MethodDeclaration method = MethodDeclaration.create("addOne", jsDocBuilder.build(), body);
+    MethodDeclaration method =
+        MethodDeclaration.builder("addOne", body).setJsDoc(jsDocBuilder.build()).build();
     ClassExpression fooClass = ClassExpression.create(ImmutableList.of(method));
     VariableDeclaration fooClassExpression =
         VariableDeclaration.builder("FooClassTemplate").setRhs(fooClass).build();

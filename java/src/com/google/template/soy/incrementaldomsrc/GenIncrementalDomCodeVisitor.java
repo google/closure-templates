@@ -28,8 +28,10 @@ import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.ST
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.STATE_VAR_PREFIX;
 import static com.google.template.soy.jssrc.dsl.Expressions.EMPTY_OBJECT_LITERAL;
 import static com.google.template.soy.jssrc.dsl.Expressions.LITERAL_EMPTY_STRING;
+import static com.google.template.soy.jssrc.dsl.Expressions.dottedIdNoRequire;
 import static com.google.template.soy.jssrc.dsl.Expressions.id;
 import static com.google.template.soy.jssrc.dsl.Statements.returnValue;
+import static com.google.template.soy.jssrc.dsl.Whitespace.BLANK_LINE;
 import static com.google.template.soy.jssrc.internal.JsRuntime.ELEMENT_LIB_IDOM;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_SOY_ALIAS;
 import static com.google.template.soy.jssrc.internal.JsRuntime.OPT_DATA;
@@ -45,9 +47,11 @@ import com.google.template.soy.incrementaldomsrc.GenIncrementalDomExprsVisitor.G
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.dsl.ClassExpression;
 import com.google.template.soy.jssrc.dsl.ClassExpression.MethodDeclaration;
+import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.jssrc.dsl.Expressions;
 import com.google.template.soy.jssrc.dsl.GoogRequire;
+import com.google.template.soy.jssrc.dsl.JsCodeBuilder;
 import com.google.template.soy.jssrc.dsl.JsDoc;
 import com.google.template.soy.jssrc.dsl.Statement;
 import com.google.template.soy.jssrc.dsl.Statements;
@@ -55,7 +59,6 @@ import com.google.template.soy.jssrc.dsl.VariableDeclaration;
 import com.google.template.soy.jssrc.internal.CanInitOutputVarVisitor;
 import com.google.template.soy.jssrc.internal.GenJsCodeVisitor;
 import com.google.template.soy.jssrc.internal.JavaScriptValueFactoryImpl;
-import com.google.template.soy.jssrc.internal.JsCodeBuilder;
 import com.google.template.soy.jssrc.internal.JsRuntime;
 import com.google.template.soy.jssrc.internal.JsType;
 import com.google.template.soy.jssrc.internal.StandardNames;
@@ -152,8 +155,12 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
 
   @Override
   protected void visitTemplateNode(TemplateNode node) {
-    SanitizedContentKind kind = node.getContentKind();
-    contentKind.push(kind);
+    contentKind.push(node.getContentKind());
+    visitTemplateNodeInternal(node);
+    contentKind.pop();
+  }
+
+  private void visitTemplateNodeInternal(TemplateNode node) {
     String alias;
     if (node instanceof TemplateDelegateNode) {
       alias = node.getPartialTemplateName();
@@ -167,9 +174,9 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
 
     super.visitTemplateNode(node);
     if ((node instanceof TemplateDelegateNode && node.getChildren().isEmpty())) {
-      contentKind.pop();
       return;
     }
+    SanitizedContentKind kind = node.getContentKind();
     if (kind.isHtml() || kind == SanitizedContentKind.ATTRIBUTES) {
       Expression type;
       if (kind.isHtml()) {
@@ -203,55 +210,50 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
       TemplateElementNode element = (TemplateElementNode) node;
       String elementName = this.getSoyElementClassName(alias);
       String elementAccessor = elementName + "Interface";
-      getJsCodeBuilder().appendLine();
+      getJsCodeBuilder().append(BLANK_LINE);
       getJsCodeBuilder().append(generateAccessorInterface(elementAccessor, element));
-      getJsCodeBuilder().append(generateExportsForSoyElement(elementAccessor));
       getJsCodeBuilder().append(generateRenderInternal(element, alias));
-      getJsCodeBuilder().appendNullable(generateSyncInternal(element, alias));
-      getJsCodeBuilder()
-          .append(generateClassForSoyElement(elementName, elementAccessor, element, alias));
-      getJsCodeBuilder().append(generateExportsForSoyElement(elementName));
+      getJsCodeBuilder().append(generateSyncInternal(element, alias));
+      getJsCodeBuilder().append(generateClassForSoyElement(elementName, element, alias));
     }
-    contentKind.pop();
   }
 
   private Statement generateRenderInternal(TemplateElementNode node, String alias) {
     String paramsType = hasOnlyImplicitParams(node) ? "null" : "!" + alias + ".Params";
-    String soyElementClassName = this.getSoyElementClassName(alias);
     JsDoc jsDoc =
         JsDoc.builder()
             .addParam(INCREMENTAL_DOM_PARAM_NAME, "!incrementaldomlib.IncrementalDomRenderer")
             .addParam(StandardNames.OPT_DATA, paramsType)
             .addAnnotation("public")
             .addAnnotation("override")
-            .addParameterizedAnnotation("this", soyElementClassName)
+            .addParameterizedAnnotation("this", "exports." + getSoyElementClassName(alias))
             .addParameterizedAnnotation("suppress", "checkTypes")
             .build();
     // Build `renderInternal` method.
     try (var unused = templateTranslationContext.enterSoyAndJsScope()) {
-    Expression fn =
-        Expressions.function(
-            jsDoc,
-            // Various parts of the js codegen expects these values to be in the local
-            // scope.
-            Statements.of(
-                VariableDeclaration.builder(StandardNames.DOLLAR_IJDATA)
-                    .setRhs(Expressions.THIS.dotAccess("ijData"))
-                    .build(),
-                Statements.of(
-                    node.getStateVars().stream()
-                        .map(
-                            stateVar ->
-                                VariableDeclaration.builder(
-                                        STATE_VAR_PREFIX + STATE_PREFIX + stateVar.name())
-                                    .setRhs(getStateVarWithCasts(stateVar))
-                                    .build())
-                        .collect(toImmutableList())),
-                generateIncrementalDomRenderCalls(node, alias, /* isPositionalStyle= */ false)));
-    return VariableDeclaration.builder(soyElementClassName + "Render")
-        .setJsDoc(jsDoc)
-        .setRhs(fn)
-        .build();
+      Expression fn =
+          Expressions.function(
+              jsDoc,
+              // Various parts of the js codegen expects these values to be in the local
+              // scope.
+              Statements.of(
+                  VariableDeclaration.builder(StandardNames.DOLLAR_IJDATA)
+                      .setRhs(Expressions.THIS.dotAccess("ijData"))
+                      .build(),
+                  Statements.of(
+                      node.getStateVars().stream()
+                          .map(
+                              stateVar ->
+                                  VariableDeclaration.builder(
+                                          STATE_VAR_PREFIX + STATE_PREFIX + stateVar.name())
+                                      .setRhs(getStateVarWithCasts(stateVar))
+                                      .build())
+                          .collect(toImmutableList())),
+                  generateIncrementalDomRenderCalls(node, alias, /* isPositionalStyle= */ false)));
+      return VariableDeclaration.builder("$" + getSoyElementClassName(alias) + "Render")
+          .setJsDoc(jsDoc)
+          .setRhs(fn)
+          .build();
     }
   }
 
@@ -283,33 +285,31 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     return Statements.of(stateVarInitializations.build());
   }
 
-  @Nullable
   private Statement generateSyncInternal(TemplateElementNode node, String alias) {
-    String soyElementClassName = this.getSoyElementClassName(alias);
     String paramsType = hasOnlyImplicitParams(node) ? "null" : "!" + alias + ".Params";
     JsDoc jsDoc =
         JsDoc.builder()
             .addParam(StandardNames.OPT_DATA, paramsType)
             .addAnnotation("public")
             .addAnnotation("override")
-            .addParameterizedAnnotation("this", soyElementClassName)
+            .addParameterizedAnnotation("this", "exports." + getSoyElementClassName(alias))
             .addParameterizedAnnotation("suppress", "checkTypes")
             .addParam("syncOnlyData", "boolean=")
             .build();
     try (var exitScope = templateTranslationContext.enterSoyAndJsScope()) {
-    return VariableDeclaration.builder(soyElementClassName + "SyncInternal")
-        .setJsDoc(jsDoc)
-        .setRhs(
-            Expressions.function(
-                jsDoc,
-                Statements.of(
-                    // Various parts of the js codegen expects these parameters to be in the local
-                    // scope.
-                    VariableDeclaration.builder(StandardNames.DOLLAR_IJDATA)
-                        .setRhs(Expressions.THIS.dotAccess("ijData"))
-                        .build(),
-                    genSyncStateCalls(node, alias))))
-        .build();
+      return VariableDeclaration.builder("$" + this.getSoyElementClassName(alias) + "SyncInternal")
+          .setJsDoc(jsDoc)
+          .setRhs(
+              Expressions.function(
+                  jsDoc,
+                  Statements.of(
+                      // Various parts of the js codegen expects these parameters to be in the local
+                      // scope.
+                      VariableDeclaration.builder(StandardNames.DOLLAR_IJDATA)
+                          .setRhs(Expressions.THIS.dotAccess("ijData"))
+                          .build(),
+                      genSyncStateCalls(node, alias))))
+          .build();
     }
   }
 
@@ -520,7 +520,6 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
   /** Generates idom#elementOpen, idom#elementClose, etc. function calls for the given node. */
   private Statement generateIncrementalDomRenderCalls(
       TemplateNode node, String alias, boolean isPositionalStyle) {
-    JsCodeBuilder jsCodeBuilder = getJsCodeBuilder();
     boolean isTextTemplate = isTextContent(node.getContentKind());
 
     Statement typeChecks = genParamTypeChecks(node, alias, isPositionalStyle);
@@ -529,7 +528,8 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     // the transformation.
     if (isTextTemplate) {
       // We do our own initialization below, so mark it as such.
-      jsCodeBuilder.pushOutputVar("output").setOutputVarInited();
+      outputVars.pushOutputVar("output");
+      outputVars.setOutputVarInited();
     }
     var visitor =
         new GenIncrementalDomTemplateBodyVisitor(
@@ -553,7 +553,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     if (isTextTemplate) {
       VariableDeclaration declare =
           VariableDeclaration.builder("output").setMutable().setRhs(LITERAL_EMPTY_STRING).build();
-      jsCodeBuilder.popOutputVar();
+      outputVars.popOutputVar();
       body =
           Statements.of(declare, body, returnValue(sanitize(declare.ref(), node.getContentKind())));
     }
@@ -565,7 +565,6 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
    * a new instance of the element class and invoke its #render method.
    */
   private Statement generateFunctionBodyForSoyElement(TemplateElementNode node, String alias) {
-    String soyElementClassName = this.getSoyElementClassName(alias);
     String tplName =
         node.getHtmlElementMetadata().getFinalCallee().isEmpty()
             ? node.getTemplateName()
@@ -576,21 +575,18 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
         JsRuntime.XID.call(Expressions.stringLiteral(tplName + "-root"));
     List<Expression> params =
         Arrays.asList(
-            id(soyElementClassName),
+            dottedIdNoRequire("exports." + getSoyElementClassName(alias)),
             firstElementKey,
             Expressions.stringLiteral(node.getHtmlElementMetadata().getTag()),
             OPT_DATA,
             JsRuntime.IJ_DATA,
-            id(soyElementClassName + "Render"));
+            id("$" + this.getSoyElementClassName(alias) + "Render"));
     return Statements.of(INCREMENTAL_DOM.dotAccess("handleSoyElement").call(params).asStatement());
   }
 
   /** Generates class expression for the given template node, provided it is a Soy element. */
-  private VariableDeclaration generateClassForSoyElement(
-      String soyElementClassName,
-      String soyElementAccessorName,
-      TemplateElementNode node,
-      String alias) {
+  private CodeChunk generateClassForSoyElement(
+      String soyElementClassName, TemplateElementNode node, String alias) {
 
     String paramsType = hasOnlyImplicitParams(node) ? "null" : "!" + alias + ".Params";
 
@@ -602,18 +598,19 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
         stateVarInitializations.add(
             Statements.assign(
                 Expressions.THIS.dotAccess("syncStateFromData"),
-                id(soyElementClassName + "SyncInternal")));
+                id("$" + soyElementClassName + "SyncInternal")));
       }
       // Build constructor method.
       Statement ctorBody =
           Statements.of(
               id("super").call().asStatement(), Statements.of(stateVarInitializations.build()));
       MethodDeclaration constructorMethod =
-          MethodDeclaration.create("constructor", JsDoc.builder().build(), ctorBody);
+          MethodDeclaration.builder("constructor", ctorBody).build();
       methods.add(constructorMethod);
     }
     for (TemplateStateVar stateVar : node.getStateVars()) {
-      methods.addAll(this.generateStateMethodsForSoyElementClass(soyElementClassName, stateVar));
+      methods.addAll(
+          this.generateStateMethodsForSoyElementClass("exports." + soyElementClassName, stateVar));
     }
     for (TemplateParam param : node.getParams()) {
       if (param.isImplicit()) {
@@ -631,21 +628,20 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
 
     ClassExpression soyElementClass =
         ClassExpression.create(SOY_IDOM.dotAccess("$SoyElement"), methods.build());
-    String elementAccessor = soyElementClassName + "Interface";
-    return VariableDeclaration.builder(soyElementClassName)
-        .setJsDoc(
-            JsDoc.builder()
-                .addAnnotation(
-                    "extends", "{soyIdom.$SoyElement<" + paramsType + ",!" + elementAccessor + ">}")
-                .addParameterizedAnnotation("implements", soyElementAccessorName)
-                .build())
-        .setRhs(soyElementClass)
-        .build();
+    String elementAccessor = "exports." + soyElementClassName + "Interface";
+
+    return Statements.assign(
+        JsRuntime.EXPORTS.dotAccess(soyElementClassName),
+        soyElementClass,
+        JsDoc.builder()
+            .addAnnotation(
+                "extends", "{soyIdom.$SoyElement<" + paramsType + ",!" + elementAccessor + ">}")
+            .addParameterizedAnnotation("implements", elementAccessor)
+            .build());
   }
 
   /** Generates class expression for the given template node, provided it is a Soy element. */
-  private VariableDeclaration generateAccessorInterface(
-      String className, TemplateElementNode node) {
+  private CodeChunk generateAccessorInterface(String className, TemplateElementNode node) {
     ImmutableList.Builder<MethodDeclaration> parameterMethods = ImmutableList.builder();
     for (TemplateParam param : node.getParams()) {
       if (param.isImplicit()) {
@@ -668,19 +664,11 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
                 .addAll(parameterMethods.build())
                 .addAll(injectedParameterMethods.build())
                 .build());
-    return VariableDeclaration.builder(className)
-        .setJsDoc(JsDoc.builder().addAnnotation("interface").build())
-        .setRhs(soyElementClass)
-        .build();
-  }
 
-  private static Statement generateExportsForSoyElement(String soyElementClassName) {
     return Statements.assign(
-        // Idom only supports goog.module generation.
-        JsRuntime.EXPORTS.dotAccess(
-            // Drop the leading '$' from soyElementClassName.
-            soyElementClassName.substring(1)),
-        id(soyElementClassName));
+        JsRuntime.EXPORTS.dotAccess(className),
+        soyElementClass,
+        JsDoc.builder().addAnnotation("interface").build());
   }
 
   /**
@@ -700,12 +688,13 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
           maybeCastAs(
               id("this").dotAccess(STATE_PREFIX + stateVar.name()), typeForState, typeForGetters);
       methods.add(
-          MethodDeclaration.create(
-              "get" + stateAccessorSuffix,
-              JsDoc.builder()
-                  .addParameterizedAnnotation("return", typeForGetters.typeExpr())
-                  .build(),
-              Statements.returnValue(getterStateValue)));
+          MethodDeclaration.builder(
+                  "get" + stateAccessorSuffix, Statements.returnValue(getterStateValue))
+              .setJsDoc(
+                  JsDoc.builder()
+                      .addParameterizedAnnotation("return", typeForGetters.typeExpr())
+                      .build())
+              .build());
     }
 
     // Generate setters.
@@ -728,13 +717,14 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
       setStateMethodStatements.add(
           setterStateValue.assign(setterParam).asStatement(), Statements.returnValue(id("this")));
       methods.add(
-          MethodDeclaration.create(
-              "set" + stateAccessorSuffix,
-              JsDoc.builder()
-                  .addParam(stateVar.name(), typeForSetters.typeExpr())
-                  .addParameterizedAnnotation("return", "!" + soyElementClassName)
-                  .build(),
-              Statements.of(setStateMethodStatements.build())));
+          MethodDeclaration.builder(
+                  "set" + stateAccessorSuffix, Statements.of(setStateMethodStatements.build()))
+              .setJsDoc(
+                  JsDoc.builder()
+                      .addParam(stateVar.name(), typeForSetters.typeExpr())
+                      .addParameterizedAnnotation("return", "!" + soyElementClassName)
+                      .build())
+              .build());
     }
 
     return methods.build();
@@ -747,14 +737,14 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     String accessorSuffix =
         Ascii.toUpperCase(param.name().substring(0, 1)) + param.name().substring(1);
     if (isAbstract) {
-      return MethodDeclaration.create(
-          "get" + accessorSuffix,
-          JsDoc.builder()
-              .addAnnotation("abstract")
-              // Injected params are marked as optional, see:
-              .addParameterizedAnnotation("return", jsType.typeExpr())
-              .build(),
-          Statements.of(ImmutableList.of()));
+      return MethodDeclaration.builder("get" + accessorSuffix, Statements.of(ImmutableList.of()))
+          .setJsDoc(
+              JsDoc.builder()
+                  .addAnnotation("abstract")
+                  // Injected params are marked as optional, see:
+                  .addParameterizedAnnotation("return", jsType.typeExpr())
+                  .build())
+          .build();
     }
     try (var unused = templateTranslationContext.enterSoyAndJsScope()) {
       // TODO(b/230911572): remove this cast when types are always aligned.
@@ -786,10 +776,10 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
                   /* paramKind= */ "@inject",
                   templateTranslationContext.codeGenerator())
               : Optional.empty();
-      return MethodDeclaration.create(
-          "get" + accessorSuffix,
-          JsDoc.builder().addAnnotation("override").addAnnotation("public").build(),
-          Statements.returnValue(typeAssertion.orElse(value)));
+      return MethodDeclaration.builder(
+              "get" + accessorSuffix, Statements.returnValue(typeAssertion.orElse(value)))
+          .setJsDoc(JsDoc.builder().addAnnotation("override").addAnnotation("public").build())
+          .build();
     }
   }
 
@@ -798,9 +788,9 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     Preconditions.checkState(
         alias.startsWith("$"),
         "Alias should start with '$', or template class name may be malformed.");
-    return "$"
-        // `alias` has '$' as the 0th char, so capitalize the 1st char.
-        + Ascii.toUpperCase(alias.charAt(1))
+
+    // `alias` has '$' as the 0th char, so capitalize the 1st char.
+    return Ascii.toUpperCase(alias.charAt(1))
         /// ...and concat the rest of the alias.
         + alias.substring(2)
         + "Element";

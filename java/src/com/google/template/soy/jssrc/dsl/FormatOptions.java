@@ -17,7 +17,6 @@
 package com.google.template.soy.jssrc.dsl;
 
 import com.google.auto.value.AutoValue;
-import com.google.template.soy.base.internal.KytheMode;
 
 /** Options for code formatting in {@link CodeChunk#getCode} et al. */
 @AutoValue
@@ -28,8 +27,7 @@ public abstract class FormatOptions {
   public static Builder builder() {
     return new AutoValue_FormatOptions.Builder()
         .setHtmlEscapeStrings(true)
-        .setUseTsxLineBreaks(false)
-        .setKytheMode(KytheMode.DISABLED);
+        .setUseTsxLineBreaks(false);
   }
 
   /**
@@ -47,16 +45,12 @@ public abstract class FormatOptions {
 
   public abstract Builder toBuilder();
 
-  public abstract KytheMode kytheMode();
-
   /** Builder. */
   @AutoValue.Builder
   public abstract static class Builder {
     public abstract Builder setUseTsxLineBreaks(boolean useTsxLineBreaks);
 
     public abstract Builder setHtmlEscapeStrings(boolean htmlEscapeStrings);
-
-    public abstract Builder setKytheMode(KytheMode kytheMode);
 
     public abstract FormatOptions build();
   }

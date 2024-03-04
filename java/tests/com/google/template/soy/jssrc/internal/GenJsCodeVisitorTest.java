@@ -30,6 +30,7 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.dsl.Expression;
+import com.google.template.soy.jssrc.dsl.JsCodeBuilder;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.testing.SharedTestUtils;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
@@ -1013,11 +1014,11 @@ public final class GenJsCodeVisitorTest {
             + "}\n";
 
     // Setup the GenJsCodeVisitor's state before the template is visited.
-    genJsCodeVisitor.jsCodeBuilder = new JsCodeBuilder(new OutputVarHandler());
+    genJsCodeVisitor.jsCodeBuilder = new JsCodeBuilder(null);
     ParseResult parseResult = SoyFileSetParserBuilder.forFileContents(testFileContent).parse();
     TemplateNode template = (TemplateNode) SharedTestUtils.getNode(parseResult.fileSet());
     genJsCodeVisitor.visitForTesting(template, parseResult.registry(), ErrorReporter.exploding());
-    assertThat(genJsCodeVisitor.jsCodeBuilder.getCode()).isEqualTo(expectedJsCode);
+    assertThat(genJsCodeVisitor.jsCodeBuilder.getCode().toString()).isEqualTo(expectedJsCode);
   }
 
   // -----------------------------------------------------------------------------------------------
@@ -1036,9 +1037,9 @@ public final class GenJsCodeVisitorTest {
     TemplateNode templateNode = (TemplateNode) parseResult.fileSet().getChild(0).getChild(0);
 
     // Setup the GenJsCodeVisitor's state before the node is visited.
-    genJsCodeVisitor.jsCodeBuilder = new JsCodeBuilder(genJsCodeVisitor.outputVars);
-    genJsCodeVisitor.jsCodeBuilder.pushOutputVar("output");
-    genJsCodeVisitor.jsCodeBuilder.setOutputVarInited();
+    genJsCodeVisitor.jsCodeBuilder = new JsCodeBuilder(null);
+    genJsCodeVisitor.outputVars.pushOutputVar("output");
+    genJsCodeVisitor.outputVars.setOutputVarInited();
     UniqueNameGenerator nameGenerator = JsSrcNameGenerators.forLocalVariables();
     TranslationContext translationContext =
         TranslationContext.of(
@@ -1051,7 +1052,7 @@ public final class GenJsCodeVisitorTest {
     genJsCodeVisitor.jsCodeBuilder.append(
         genJsCodeVisitor.visitTemplateNodeChildren(templateNode, ErrorReporter.exploding()));
 
-    String genCode = genJsCodeVisitor.jsCodeBuilder.getCode();
+    String genCode = genJsCodeVisitor.jsCodeBuilder.getCode().toString();
     assertThat(genCode).isEqualTo(expectedJsCode);
   }
 }

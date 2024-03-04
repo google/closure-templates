@@ -25,6 +25,8 @@ import com.google.errorprone.annotations.Immutable;
 @Immutable
 public abstract class Whitespace extends SpecialToken {
 
+  public static final Whitespace BLANK_LINE = create("\n\n");
+
   abstract String content();
 
   public static Whitespace create(String content) {

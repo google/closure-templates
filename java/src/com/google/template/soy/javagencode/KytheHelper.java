@@ -16,6 +16,7 @@
 
 package com.google.template.soy.javagencode;
 
+
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Utf8;
@@ -24,6 +25,7 @@ import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SourceLocation.ByteSpan;
 import com.google.template.soy.base.internal.IndentedLinesBuilder;
+import com.google.template.soy.base.internal.KytheMode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.TemplateParam;
@@ -50,6 +52,9 @@ public class KytheHelper {
   @Nullable
   public Message getGeneratedCodeInfo() {
     return null;
+  }
+
+  public void appendGeneratedCodeInfo(KytheMode kytheMode, Appendable to) {
   }
 
   public void addKytheLinkTo(ByteSpan classNameSpan, SoyFileNode file) {

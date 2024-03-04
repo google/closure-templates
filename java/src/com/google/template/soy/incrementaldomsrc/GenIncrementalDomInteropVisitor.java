@@ -15,6 +15,9 @@
  */
 package com.google.template.soy.incrementaldomsrc;
 
+import static com.google.template.soy.jssrc.dsl.Expressions.dottedIdNoRequire;
+import static com.google.template.soy.jssrc.dsl.Expressions.stringLiteral;
+import static com.google.template.soy.jssrc.dsl.Whitespace.BLANK_LINE;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_SOY_ALIAS;
 
 import com.google.common.collect.ImmutableList;
@@ -24,6 +27,7 @@ import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.jssrc.dsl.Expressions;
 import com.google.template.soy.jssrc.dsl.GoogRequire;
+import com.google.template.soy.jssrc.dsl.JsCodeBuilder;
 import com.google.template.soy.jssrc.dsl.JsDoc;
 import com.google.template.soy.jssrc.dsl.Statements;
 import com.google.template.soy.jssrc.internal.CanInitOutputVarVisitor;
@@ -33,7 +37,6 @@ import com.google.template.soy.jssrc.internal.GenJsCodeVisitor;
 import com.google.template.soy.jssrc.internal.GenJsExprsVisitor.GenJsExprsVisitorFactory;
 import com.google.template.soy.jssrc.internal.IsComputableAsJsExprsVisitor;
 import com.google.template.soy.jssrc.internal.JavaScriptValueFactoryImpl;
-import com.google.template.soy.jssrc.internal.JsCodeBuilder;
 import com.google.template.soy.jssrc.internal.JsRuntime;
 import com.google.template.soy.jssrc.internal.StandardNames;
 import com.google.template.soy.soytree.SoyFileNode;
@@ -91,14 +94,17 @@ public final class GenIncrementalDomInteropVisitor extends GenJsCodeVisitor {
       visit(soyFile);
     }
   }
+
   /**
    * Helper for visitSoyFileNode(SoyFileNode) to generate a module definition.
    *
    * @param soyFile The node we're visiting.
    */
-  private void addCodeToDeclareGoogModule(StringBuilder header, SoyFileNode soyFile) {
+  private void addCodeToDeclareGoogModule(JsCodeBuilder codeBuilder, SoyFileNode soyFile) {
     String exportNamespace = soyFile.getNamespace() + ".idominterop";
-    header.append("goog.module('").append(exportNamespace).append("');\n\n");
+    codeBuilder
+        .append(dottedIdNoRequire("goog.module").call(stringLiteral(exportNamespace)))
+        .append(BLANK_LINE);
   }
 
   @Override

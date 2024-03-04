@@ -44,26 +44,29 @@ public final class CodeChunks {
   private CodeChunks() {}
 
   public static String getCode(CodeChunk chunk, FormatOptions formatOptions) {
-    return getCode(chunk, new FormattingContext(formatOptions));
-  }
-
-  public static String getCode(
-      CodeChunk chunk, FormatOptions formatOptions, @Nullable KytheHelper kytheHelper) {
     FormattingContext context = new FormattingContext(formatOptions);
-    context.setKytheHelper(kytheHelper);
-    return getCode(chunk, context);
-  }
-
-  private static String getCode(CodeChunk chunk, FormattingContext context) {
     context.appendInitialStatements(chunk);
 
     if (chunk instanceof Expression) {
       context.clearIndent(); // Don't add unnecessary space before expression.
       context.appendOutputExpression((Expression) chunk);
       context.append(';').endLine();
+    } else if (chunk instanceof SpecialToken) {
+      ((SpecialToken) chunk).doFormatToken(context);
     }
-
     return context.toString();
+  }
+
+  public static StringBuilder getCode(
+      CodeChunk chunk, FormatOptions formatOptions, @Nullable KytheHelper kytheHelper) {
+    FormattingContext context = new FormattingContext(formatOptions);
+    context.setKytheHelper(kytheHelper);
+    context.appendAll(chunk);
+    StringBuilder buf = context.getBuffer();
+    if (context.isEndOfLine()) {
+      buf.append('\n');
+    }
+    return buf;
   }
 
   /** Validates that the given string is a valid javascript identifier. */

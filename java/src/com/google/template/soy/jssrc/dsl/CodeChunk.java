@@ -48,7 +48,7 @@ import java.util.stream.Stream;
  *   }
  *   $$tmp0 = $$tmp0 * 5;
  * </code> TODO(b/33382980): do all JS code generation with this DSL (that is, remove {@link
- * com.google.template.soy.jssrc.internal.JsCodeBuilder}).
+ * JsCodeBuilder}).
  */
 @Immutable
 public abstract class CodeChunk {

@@ -25,7 +25,10 @@ import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.jssrc.dsl.FormatOptions;
+import com.google.template.soy.jssrc.dsl.GoogRequire;
 import com.google.template.soy.plugin.javascript.restricted.SoyJavaScriptSourceFunction;
+import java.util.LinkedHashSet;
+import java.util.Set;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -99,8 +102,12 @@ public final class JavaScriptValueFactoryImplTest {
   }
 
   static String getRequires(CodeChunk chunk) {
+    Set<GoogRequire> requires = new LinkedHashSet<>();
+    chunk.collectRequires(requires::add);
     StringBuilder sb = new StringBuilder();
-    chunk.collectRequires(req -> req.writeTo(sb));
+    for (GoogRequire require : requires) {
+      require.writeTo(sb);
+    }
     return sb.toString();
   }
 
