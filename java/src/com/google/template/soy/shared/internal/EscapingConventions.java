@@ -124,15 +124,19 @@ public final class EscapingConventions {
     private final String directiveName;
     @Nullable private final Pattern valueFilter;
     private final ImmutableList<Escape> escapes;
+
     /**
      * A dense mapping mirroring escapes. I.e. for each element of {@link #escapes} {@code e} such
      * that {@code e.plainText < 0x80}, {@code escapesByCodeUnit[e.plainText] == e.escaped}.
      */
     private final String[] escapesByCodeUnit;
+
     /** Keys in a sparse mapping for the non ASCII {@link #escapes}. */
     private final char[] nonAsciiCodeUnits;
+
     /** Values in a sparse mapping corresponding to {@link #nonAsciiCodeUnits}. */
     private final String[] nonAsciiEscapes;
+
     /**
      * @see #getNonAsciiPrefix
      */
@@ -397,6 +401,7 @@ public final class EscapingConventions {
     private static final char[] HEX_DIGITS = {
       '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F',
     };
+
     /** Given {@code 0x20} appends {@code "20"} to the given output buffer. */
     private void appendHexPair(int b, Appendable out) throws IOException {
       out.append(HEX_DIGITS[b >>> 4]);
@@ -924,7 +929,7 @@ public final class EscapingConventions {
 
   /**
    * Implements the {@code |normalizeUri} directive which allows arbitrary content to be included in
-   * a URI regardless of the string delimiters of the the surrounding language. This normalizes, but
+   * a URI regardless of the string delimiters of the surrounding language. This normalizes, but
    * does not escape, so it does not affect URI special characters, but instead escapes HTML, CSS,
    * and JS delimiters.
    */
@@ -1251,7 +1256,7 @@ public final class EscapingConventions {
 
   /**
    * Implements the {@code |escapeUri} directive which allows arbitrary content to be included in a
-   * URI regardless of the string delimiters of the the surrounding language.
+   * URI regardless of the string delimiters of the surrounding language.
    */
   public static final class EscapeUri extends CrossLanguageStringXform {
     /** Implements the {@code |escapeUri} directive. */
@@ -1438,6 +1443,8 @@ public final class EscapingConventions {
    */
   public static final String INNOCUOUS_OUTPUT = "zSoyz";
 
+  private static final String HTML_TAG_FIRST_TOKEN_STR = "(?:!|/?([a-zA-Z][a-zA-Z0-9:\\-]*))";
+
   /**
    * Loose matcher for HTML tags, DOCTYPEs, and HTML comments. This will reliably find HTML tags
    * (though not CDATA tags and not XML tags whose name or namespace starts with a non-latin
@@ -1448,7 +1455,11 @@ public final class EscapingConventions {
    * or RCDATA content.
    *
    * <p>The tag name, if any is in group 1.
+   *
+   * @deprecated Previously used in Java and JS but now only shared with Python. Replaced with
+   *     custom loop that avoids performance cliffs.
    */
+  @Deprecated
   public static final Pattern HTML_TAG_CONTENT =
       Pattern.compile(
           // Matches a left angle bracket followed by either
@@ -1456,7 +1467,15 @@ public final class EscapingConventions {
           // (2) an optional solidus (/, indicating an end tag) and an HTML tag name.
           // followed by any number of quoted strings (found in tags and doctypes) or other content
           // terminated by a right angle bracket.
-          "<(?:!|/?([a-zA-Z][a-zA-Z0-9:\\-]*))(?:[^>'\"]|\"[^\"]*\"|'[^']*')*>");
+          "<" + HTML_TAG_FIRST_TOKEN_STR + "(?:[^>'\"]|\"[^\"]*\"|'[^']*')*>");
+
+  /**
+   * Used by custom loops in Java and JS. Matches the beginning of an HTML comment or element,
+   * assuming that the previous character is a '<'. e.g. matches "!--" (comment), "b" (open tag),
+   * "/b" (close tag). Must be used with {@link java.util.regex.Matcher#region}.
+   */
+  public static final Pattern HTML_TAG_FIRST_TOKEN =
+      Pattern.compile("^" + HTML_TAG_FIRST_TOKEN_STR);
 
   /**
    * Convert an ASCII string to full-width. Full-width characters are in Unicode page U+FFxx and are

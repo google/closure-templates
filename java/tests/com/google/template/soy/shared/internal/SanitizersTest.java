@@ -653,6 +653,7 @@ public class SanitizersTest {
     assertThat(stripHtmlTags("42", true)).isEqualTo("42");
     // Don't merge content around tags into an entity.
     assertThat(stripHtmlTags("&<hr>amp;", true)).isEqualTo("&amp;amp;");
+    assertThat(stripHtmlTags("hi&", true)).isEqualTo("hi&");
   }
 
   private static final TagWhitelist TEST_WHITELIST =

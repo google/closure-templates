@@ -1037,8 +1037,7 @@ const $$HTML5_VOID_ELEMENTS_ = new RegExp(
 const $$stripHtmlTags = function(value, tagWhitelist) {
   if (!tagWhitelist) {
     // If we have no white-list, then use a fast track which elides all tags.
-    return String(value)
-        .replace($$HTML_TAG_REGEX_, '')
+    return $$replaceHtmlTags_(String(value), (match, tag) => '')
         // This is just paranoia since callers should normalize the result
         // anyway, but if they didn't, it would be necessary to ensure that
         // after the first replace non-tag uses of < do not recombine into
@@ -1055,11 +1054,11 @@ const $$stripHtmlTags = function(value, tagWhitelist) {
   // Replace all other uses of < and > with entities.
   const tags = [];
   const attrs = [];
-  html = html.replace($$HTML_TAG_REGEX_, function(tok, tagName) {
+  html = $$replaceHtmlTags_(html, (tok, tagName) => {
     if (tagName) {
       tagName = tagName.toLowerCase();
       if (tagWhitelist.hasOwnProperty(tagName) && tagWhitelist[tagName]) {
-        const isClose = tok.charAt(1) == '/';
+        const isClose = tok.charAt(1) === '/';
         const index = tags.length;
         let start = '</';
         let attributes = '';
@@ -1067,14 +1066,14 @@ const $$stripHtmlTags = function(value, tagWhitelist) {
           start = '<';
           let match;
           while ((match = $$HTML_ATTRIBUTE_REGEX_.exec(tok))) {
-            if (match[1] && match[1].toLowerCase() == 'dir') {
+            if (match[1] && match[1].toLowerCase() === 'dir') {
               let dir = match[2];
               if (dir) {
-                if (dir.charAt(0) == '\'' || dir.charAt(0) == '"') {
+                if (dir.charAt(0) === '\'' || dir.charAt(0) === '"') {
                   dir = dir.substr(1, dir.length - 2);
                 }
                 dir = dir.toLowerCase();
-                if (dir == 'ltr' || dir == 'rtl' || dir == 'auto') {
+                if (dir === 'ltr' || dir === 'rtl' || dir === 'auto') {
                   attributes = ' dir="' + dir + '"';
                 }
               }
@@ -1114,6 +1113,144 @@ const $$stripHtmlTags = function(value, tagWhitelist) {
   return html + finalCloseTags;
 };
 
+/**
+ * @enum {number}
+ */
+const STATE = {
+  DEFAULT: 0,
+  TAG: 1,
+};
+
+
+/** @type {boolean} */
+const hasNativeY = RegExp.prototype.hasOwnProperty('sticky');
+
+/**
+ * Matches the start of an HTML comment, open, or close tag after encountering
+ * a '<' character.
+ *
+ * The 'y' qualifier means this regex is sticky, meaning that it matches as
+ * though it starts with ^ and is applied to s.substring(lastIndex).
+ *
+ * @type {!RegExp}
+ */
+const $$HTML_TAG_FIRST_TOKEN_ = new RegExp(
+    (hasNativeY ? '' : '^') + '(?:!|\/?([a-zA-Z][a-zA-Z0-9:-]*))',
+    hasNativeY ? 'gy' : 'g');
+
+/**
+ * Replaces all matches of an HTML tag (matching Java's HTML_TAG_CONTENT
+ * Pattern) in `s` with the contents returned by `callback`.
+ *
+ * @param {string} s
+ * @param {function(string, ?string):string} callback
+ * @return {string}
+ * @private
+ */
+function $$replaceHtmlTags_(s, callback) {
+  const buffer = [];
+  const l = s.length;
+
+  let state = STATE.DEFAULT;
+  /** @type {!Array<string>} */
+  let tagBuffer = [];
+  let tagName;
+  let tagStartIdx;
+
+  const reset = () => {
+    state = STATE.DEFAULT;
+    tagBuffer = [];
+    tagName = null;
+    tagStartIdx = null;
+  };
+
+  let i = 0;
+  while (i < l) {
+    switch (state) {
+      case STATE.DEFAULT:
+        const nextLt = s.indexOf('<', i);
+        if (nextLt < 0) {
+          // No more < found, push remaining string on buffer and exit.
+          if (buffer.length === 0) {
+            return s;
+          }
+          buffer.push(s.substring(i));
+          i = l;
+        } else {
+          // Push up to < onto buffer.
+          buffer.push(s.substring(i, nextLt));
+          tagStartIdx = nextLt;
+          i = nextLt + 1;
+
+          // Search for required token after <
+          let match;
+          if (hasNativeY) {
+            $$HTML_TAG_FIRST_TOKEN_.lastIndex = i;
+            match = $$HTML_TAG_FIRST_TOKEN_.exec(s);
+          } else {
+            $$HTML_TAG_FIRST_TOKEN_.lastIndex = 0;
+            match = $$HTML_TAG_FIRST_TOKEN_.exec(s.substring(i));
+          }
+          if (match) {
+            // We found a start tag, push contents onto tag buffer.
+            tagBuffer = ['<', match[0]];
+            tagName = match[1];
+            state = STATE.TAG;
+            i += match[0].length;
+          } else {
+            // Otherwise push < to the buffer and continue.
+            buffer.push('<');
+          }
+        }
+        break;
+
+      case STATE.TAG:
+        const char = s.charAt(i++);
+        switch (char) {
+          case '\'':
+          case '"':
+            // Find the corresponding closing quote.
+            let nextQuote = s.indexOf(char, i);
+            if (nextQuote < 0) {
+              // If non closing we will have to backtrack.
+              i = l;
+            } else {
+              // Push full quote token onto tag buffer.
+              tagBuffer.push(char, s.substring(i, nextQuote + 1));
+              i = nextQuote + 1;
+            }
+            break;
+
+          case '>':
+            // We found the end of the tag!
+            tagBuffer.push(char);
+            buffer.push(callback(tagBuffer.join(''), tagName));
+            reset();
+            break;
+
+          default:
+            tagBuffer.push(char);
+        }
+        break;
+      default:
+        throw new Error();
+    }
+
+    // Check if we exhausted the input without completing the tag. In this case
+    // we need to backtrack because we may have skipped over fully formed tags
+    // while we thought we were in a tag. e.g.: <b'<b>
+    if (state === STATE.TAG && i >= l) {
+      // Push the < that started the incomplete tag and backtrack to the next
+      // character.
+      i = tagStartIdx + 1;
+      buffer.push('<');
+      reset();
+    }
+  }
+
+  return buffer.join('');
+}
+// LINT.ThenChange(//depot/google3/third_party/java_src/soy/java/com/google/template/soy/shared/internal/Sanitizers.java)
 
 /**
  * Make sure that tag boundaries are not broken by Safe CSS when embedded in a
@@ -3160,16 +3297,6 @@ const $$filterCspNonceValueHelper = function(value) {
   }
   return str;
 };
-
-/**
- * Matches all tags, HTML comments, and DOCTYPEs in tag soup HTML.
- * By removing these, and replacing any '<' or '>' characters with
- * entities we guarantee that the result can be embedded into a
- * an attribute without introducing a tag boundary.
- *
- * @type {!RegExp}
- */
-const $$HTML_TAG_REGEX_ = /<(?:!|\/?([a-zA-Z][a-zA-Z0-9:\-]*))(?:[^>'"]|"[^"]*"|'[^']*')*>/g;
 
 /**
  * Matches all occurrences of '<'.
