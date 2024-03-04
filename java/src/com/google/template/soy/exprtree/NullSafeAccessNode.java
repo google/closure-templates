@@ -25,6 +25,7 @@ import com.google.template.soy.base.internal.QuoteStyle;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.exprtree.OperatorNodes.AssertNonNullOpNode;
 import com.google.template.soy.internal.util.TreeStreams;
+import com.google.template.soy.types.SoyTypes;
 import java.util.List;
 import javax.annotation.Nullable;
 
@@ -42,6 +43,16 @@ import javax.annotation.Nullable;
  * chain with {@link NullSafeAccessNode}s has the {@code .a} access as the parent of the {@code .b}
  * access. This makes it easier to calculate the type of a null safe access (because {@code $p?.a.b}
  * should be nullable even if the {@code .b} access is nonnull.
+ *
+ * <p>Note that the type of the base of the data access will be typed as non-nullable, so the AST
+ * for $a?.getString() looks like: like:
+ *
+ * <pre>
+ * NSAN type:string|null, assuming $a is nullish
+ * +-- VAR_REF ($a)
+ * +-- METHOD_CALL_NODE (getString) type: string, isNullSafe: false
+ *     +-- GroupNode Placeholder (null)
+ * </pre>
  */
 public final class NullSafeAccessNode extends AbstractParentExprNode {
 
@@ -215,10 +226,16 @@ public final class NullSafeAccessNode extends AbstractParentExprNode {
       // Fix the base expression and set to null safe node. Safe since we've cloned the tree.
       node.setNullSafe(true);
       node.replaceChild(0, base);
-
+      boolean isBaseNullish = SoyTypes.isNullish(base.getType());
       base = node;
       // Walk up any direct ancestors that are data access nodes (not null safe nodes).
       while (base.getParent() instanceof AccessChainComponentNode) {
+        if (base instanceof AssertNonNullOpNode) {
+          isBaseNullish = false;
+        }
+        if (isBaseNullish) {
+          ((DataAccessNode) base).setType(SoyTypes.makeUndefinable(base.getType()));
+        }
         base = base.getParent();
       }
     }
