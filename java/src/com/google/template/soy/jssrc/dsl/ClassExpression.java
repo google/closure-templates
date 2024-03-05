@@ -17,6 +17,7 @@ package com.google.template.soy.jssrc.dsl;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.base.SourceLocation.ByteSpan;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
@@ -35,19 +36,14 @@ import javax.annotation.Nullable;
 @AutoValue
 public abstract class ClassExpression extends Expression
     implements Expression.InitialStatementsScope {
+
+  @Nullable
+  abstract String name();
+
   @Nullable
   abstract Expression baseClass();
 
   abstract ImmutableList<MethodDeclaration> methods();
-
-  public static ClassExpression create(
-      Expression baseClass, ImmutableList<MethodDeclaration> methods) {
-    return new AutoValue_ClassExpression(baseClass, methods);
-  }
-
-  public static ClassExpression create(ImmutableList<MethodDeclaration> methods) {
-    return new AutoValue_ClassExpression(null, methods);
-  }
 
   @Override
   Stream<? extends CodeChunk> childrenStream() {
@@ -61,6 +57,9 @@ public abstract class ClassExpression extends Expression
   @Override
   void doFormatOutputExpr(FormattingContext ctx) {
     ctx.append("class");
+    if (name() != null) {
+      ctx.append(" " + name());
+    }
     if (baseClass() != null) {
       ctx.append(" extends ");
       ctx.appendOutputExpression(baseClass());
@@ -74,6 +73,29 @@ public abstract class ClassExpression extends Expression
         ctx.appendOutputExpression(methods().get(i));
       }
     }
+  }
+
+  public static Builder builder() {
+    return new AutoValue_ClassExpression.Builder();
+  }
+
+  /** Builder. */
+  @AutoValue.Builder
+  public abstract static class Builder {
+
+    public abstract Builder setName(String value);
+
+    public abstract Builder setBaseClass(Expression value);
+
+    abstract ImmutableList.Builder<MethodDeclaration> methodsBuilder();
+
+    @CanIgnoreReturnValue
+    public final Builder addMethod(MethodDeclaration value) {
+      methodsBuilder().add(value);
+      return this;
+    }
+
+    public abstract ClassExpression build();
   }
 
   /**

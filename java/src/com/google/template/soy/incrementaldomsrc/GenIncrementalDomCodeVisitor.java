@@ -590,7 +590,10 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
 
     String paramsType = hasOnlyImplicitParams(node) ? "null" : "!" + alias + ".Params";
 
-    ImmutableList.Builder<MethodDeclaration> methods = ImmutableList.builder();
+    ClassExpression.Builder classBuilder =
+        ClassExpression.builder()
+            .setBaseClass(SOY_IDOM.dotAccess("$SoyElement"))
+            .setName(soyElementClassName);
     try (var unused = templateTranslationContext.enterSoyAndJsScope()) {
       ImmutableList.Builder<Statement> stateVarInitializations = ImmutableList.builder();
       stateVarInitializations.add(generateInitInternal(node));
@@ -606,28 +609,29 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
               id("super").call().asStatement(), Statements.of(stateVarInitializations.build()));
       MethodDeclaration constructorMethod =
           MethodDeclaration.builder("constructor", ctorBody).build();
-      methods.add(constructorMethod);
+      classBuilder.addMethod(constructorMethod);
     }
     for (TemplateStateVar stateVar : node.getStateVars()) {
-      methods.addAll(
-          this.generateStateMethodsForSoyElementClass("exports." + soyElementClassName, stateVar));
+      for (MethodDeclaration m :
+          generateStateMethodsForSoyElementClass("exports." + soyElementClassName, stateVar)) {
+        classBuilder.addMethod(m);
+      }
     }
     for (TemplateParam param : node.getParams()) {
       if (param.isImplicit()) {
         continue;
       }
-      methods.add(
+      classBuilder.addMethod(
           this.generateGetParamMethodForSoyElementClass(
               param, /* isAbstract= */ false, /* isInjected= */ false));
     }
     for (TemplateParam injectedParam : node.getInjectedParams()) {
-      methods.add(
+      classBuilder.addMethod(
           this.generateGetParamMethodForSoyElementClass(
               injectedParam, /* isAbstract= */ false, /* isInjected= */ true));
     }
 
-    ClassExpression soyElementClass =
-        ClassExpression.create(SOY_IDOM.dotAccess("$SoyElement"), methods.build());
+    ClassExpression soyElementClass = classBuilder.build();
     String elementAccessor = "exports." + soyElementClassName + "Interface";
 
     return Statements.assign(
@@ -642,32 +646,24 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
 
   /** Generates class expression for the given template node, provided it is a Soy element. */
   private CodeChunk generateAccessorInterface(String className, TemplateElementNode node) {
-    ImmutableList.Builder<MethodDeclaration> parameterMethods = ImmutableList.builder();
+    ClassExpression.Builder classBuilder = ClassExpression.builder();
     for (TemplateParam param : node.getParams()) {
       if (param.isImplicit()) {
         continue;
       }
-      parameterMethods.add(
+      classBuilder.addMethod(
           this.generateGetParamMethodForSoyElementClass(
               param, /* isAbstract= */ true, /* isInjected= */ false));
     }
-    ImmutableList.Builder<MethodDeclaration> injectedParameterMethods = ImmutableList.builder();
     for (TemplateParam injectedParam : node.getInjectedParams()) {
-      injectedParameterMethods.add(
+      classBuilder.addMethod(
           this.generateGetParamMethodForSoyElementClass(
               injectedParam, /* isAbstract= */ true, /* isInjected= */ true));
     }
 
-    ClassExpression soyElementClass =
-        ClassExpression.create(
-            ImmutableList.<MethodDeclaration>builder()
-                .addAll(parameterMethods.build())
-                .addAll(injectedParameterMethods.build())
-                .build());
-
     return Statements.assign(
         JsRuntime.EXPORTS.dotAccess(className),
-        soyElementClass,
+        classBuilder.build(),
         JsDoc.builder().addAnnotation("interface").build());
   }
 

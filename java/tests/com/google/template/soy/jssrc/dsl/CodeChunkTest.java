@@ -929,7 +929,7 @@ public final class CodeChunkTest {
     Statement body = returnValue(id("num").plus(number(1)));
     MethodDeclaration method =
         MethodDeclaration.builder("addOne", body).setJsDoc(jsDocBuilder.build()).build();
-    ClassExpression fooClass = ClassExpression.create(ImmutableList.of(method));
+    ClassExpression fooClass = ClassExpression.builder().addMethod(method).build();
     VariableDeclaration fooClassExpression =
         VariableDeclaration.builder("FooClassTemplate").setRhs(fooClass).build();
     assertThat(fooClassExpression.getCode(JSSRC))
@@ -943,7 +943,7 @@ public final class CodeChunkTest {
                 "};"));
 
     ClassExpression fooSubclass =
-        ClassExpression.create(id("BaseClassTemplate"), ImmutableList.of(method));
+        ClassExpression.builder().setBaseClass(id("BaseClassTemplate")).addMethod(method).build();
     VariableDeclaration fooSubclassExpression =
         VariableDeclaration.builder("FooClassTemplate").setRhs(fooSubclass).build();
     assertThat(fooSubclassExpression.getCode(JSSRC))
