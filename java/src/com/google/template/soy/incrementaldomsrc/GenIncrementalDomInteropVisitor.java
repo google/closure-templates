@@ -43,6 +43,7 @@ import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
+import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.Visibility;
@@ -103,7 +104,14 @@ public final class GenIncrementalDomInteropVisitor extends GenJsCodeVisitor {
   private void addCodeToDeclareGoogModule(JsCodeBuilder codeBuilder, SoyFileNode soyFile) {
     String exportNamespace = soyFile.getNamespace() + ".idominterop";
     codeBuilder
-        .append(dottedIdNoRequire("goog.module").call(stringLiteral(exportNamespace)))
+        .append(
+            dottedIdNoRequire("goog.module")
+                .call(
+                    stringLiteral(exportNamespace)
+                        .withByteSpan(
+                            SoyTreeUtils.getByteSpan(
+                                soyFile,
+                                soyFile.getNamespaceDeclaration().getNamespaceLocation()))))
         .append(BLANK_LINE);
   }
 

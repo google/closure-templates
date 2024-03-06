@@ -94,6 +94,7 @@ public final class SoyToIncrementalDomSrcCompiler extends AbstractSoyCompiler {
         SoyIncrementalDomSrcOptions.builder()
             .setDependOnCssHeader(dependOnCssHeader)
             .setGoogMsgsAreExternal(googMsgsAreExternal)
+            .setKytheMode(kytheMode)
             .build();
     outputFiles.writeFiles(
         srcs, sfs.compileToIncrementalDomSrcInternal(options), /* locale= */ null);

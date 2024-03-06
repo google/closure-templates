@@ -35,6 +35,7 @@ java_library(
         "//java/src/com/google/template/soy/exprtree",
         "//java/src/com/google/template/soy/internal/i18n",
         "//java/src/com/google/template/soy/internal/proto",
+        "//java/src/com/google/template/soy/javagencode:kythe",
         "//java/src/com/google/template/soy/jssrc",
         "//java/src/com/google/template/soy/jssrc/dsl",
         "//java/src/com/google/template/soy/jssrc/restricted",

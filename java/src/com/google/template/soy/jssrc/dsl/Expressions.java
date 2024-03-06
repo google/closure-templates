@@ -22,7 +22,9 @@ import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Streams;
+import com.google.template.soy.base.SourceLocation.ByteSpan;
 import com.google.template.soy.base.internal.QuoteStyle;
 import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.Operator;
@@ -206,8 +208,17 @@ public final class Expressions {
     return dottedIdWithRequires(dotSeparatedIdentifiers, ImmutableSet.of());
   }
 
+  public static Expression dottedIdNoRequire(String dotSeparatedIdentifiers, ByteSpan byteSpan) {
+    return dottedIdWithRequires(dotSeparatedIdentifiers, ImmutableSet.of(), byteSpan);
+  }
+
   public static Expression dottedIdWithRequires(
       String dotSeparatedIdentifiers, Iterable<GoogRequire> requires) {
+    return dottedIdWithRequires(dotSeparatedIdentifiers, requires, null);
+  }
+
+  private static Expression dottedIdWithRequires(
+      String dotSeparatedIdentifiers, Iterable<GoogRequire> requires, @Nullable ByteSpan byteSpan) {
     List<String> ids = Splitter.on('.').splitToList(dotSeparatedIdentifiers);
     Preconditions.checkState(
         !ids.isEmpty(),
@@ -217,11 +228,17 @@ public final class Expressions {
     // be instead associated with the last dot. Or perhaps with the 'whole' expression somehow.
     // This is a minor philosophical concern but it should be fine in practice because nothing would
     // ever split apart a code chunk into sub-chunks.  So the requires could really go anywhere.
-    Expression tip = id(ids.get(0), requires);
-    for (int i = 1; i < ids.size(); ++i) {
-      tip = tip.dotAccess(ids.get(i));
+    Expression tail = id(Iterables.getLast(ids), requires).withByteSpan(byteSpan);
+
+    if (ids.size() == 1) {
+      return tail;
+    } else {
+      Expression tip = id(ids.get(0), requires);
+      for (int i = 1; i < ids.size() - 1; ++i) {
+        tip = tip.dotAccess(ids.get(i));
+      }
+      return Dot.create(tip, tail);
     }
-    return tip;
   }
 
   /**
@@ -443,6 +460,28 @@ public final class Expressions {
       }
     }
     return null;
+  }
+
+  @AutoValue
+  abstract static class ExpressionWithSpan extends Expression {
+
+    public static Expression create(Expression expr, ByteSpan byteSpan) {
+      return new AutoValue_Expressions_ExpressionWithSpan(expr, byteSpan);
+    }
+
+    abstract Expression expr();
+
+    abstract ByteSpan byteSpan();
+
+    @Override
+    void doFormatOutputExpr(FormattingContext ctx) {
+      ctx.appendImputee(expr(), byteSpan());
+    }
+
+    @Override
+    Stream<? extends CodeChunk> childrenStream() {
+      return expr().childrenStream();
+    }
   }
 
   @AutoValue

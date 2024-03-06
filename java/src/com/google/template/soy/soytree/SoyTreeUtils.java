@@ -705,6 +705,9 @@ public final class SoyTreeUtils {
   }
 
   public static ByteSpan getByteSpan(SoyNode node, SourceLocation location) {
+    if (!location.isKnown()) {
+      return ByteSpan.UNKNOWN;
+    }
     return node.getNearestAncestor(SoyFileNode.class).getByteOffsetIndex().getByteSpan(location);
   }
 }

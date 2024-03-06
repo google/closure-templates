@@ -209,7 +209,7 @@ class FormattingContext implements AutoCloseable {
   }
 
   private void appendImputee(Runnable stuff, @Nullable ByteSpan soyOffsetSpan, String nextToken) {
-    if (soyOffsetSpan == null || kytheHelper == null) {
+    if (soyOffsetSpan == null || !soyOffsetSpan.isKnown() || kytheHelper == null) {
       stuff.run();
     } else {
       // Can't have any whitespace be included in the byte offsets, so force a line break + indent

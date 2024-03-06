@@ -42,6 +42,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.template.soy.base.SourceLocation.ByteSpan;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.incrementaldomsrc.GenIncrementalDomExprsVisitor.GenIncrementalDomExprsVisitorFactory;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
@@ -65,6 +66,7 @@ import com.google.template.soy.jssrc.internal.StandardNames;
 import com.google.template.soy.jssrc.internal.TranslateExprNodeVisitor;
 import com.google.template.soy.passes.ShouldEnsureDataIsDefinedVisitor;
 import com.google.template.soy.soytree.SoyNode;
+import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateElementNode;
 import com.google.template.soy.soytree.TemplateNode;
@@ -92,6 +94,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
   private final Deque<SanitizedContentKind> contentKind;
 
   private boolean hasNonConstantState;
+  private TemplateNode currentTemplateNode;
 
   GenIncrementalDomCodeVisitor(
       SoyJsSrcOptions jsSrcOptions,
@@ -155,9 +158,11 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
 
   @Override
   protected void visitTemplateNode(TemplateNode node) {
+    currentTemplateNode = node;
     contentKind.push(node.getContentKind());
     visitTemplateNodeInternal(node);
     contentKind.pop();
+    currentTemplateNode = null;
   }
 
   private void visitTemplateNodeInternal(TemplateNode node) {
@@ -589,6 +594,9 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
       String soyElementClassName, TemplateElementNode node, String alias) {
 
     String paramsType = hasOnlyImplicitParams(node) ? "null" : "!" + alias + ".Params";
+    ByteSpan byteSpan =
+        SoyTreeUtils.getByteSpan(
+            currentTemplateNode, currentTemplateNode.getTemplateNameLocation());
 
     ClassExpression.Builder classBuilder =
         ClassExpression.builder()
@@ -608,7 +616,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
           Statements.of(
               id("super").call().asStatement(), Statements.of(stateVarInitializations.build()));
       MethodDeclaration constructorMethod =
-          MethodDeclaration.builder("constructor", ctorBody).build();
+          MethodDeclaration.builder("constructor", ctorBody).setByteSpan(byteSpan).build();
       classBuilder.addMethod(constructorMethod);
     }
     for (TemplateStateVar stateVar : node.getStateVars()) {
@@ -635,7 +643,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     String elementAccessor = "exports." + soyElementClassName + "Interface";
 
     return Statements.assign(
-        JsRuntime.EXPORTS.dotAccess(soyElementClassName),
+        exportWithSpan(soyElementClassName, byteSpan),
         soyElementClass,
         JsDoc.builder()
             .addAnnotation(
@@ -661,10 +669,15 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
               injectedParam, /* isAbstract= */ true, /* isInjected= */ true));
     }
 
+    ByteSpan byteSpan = SoyTreeUtils.getByteSpan(node, node.getTemplateNameLocation());
     return Statements.assign(
-        JsRuntime.EXPORTS.dotAccess(className),
+        exportWithSpan(className, byteSpan),
         classBuilder.build(),
         JsDoc.builder().addAnnotation("interface").build());
+  }
+
+  private static Expression exportWithSpan(String symbol, ByteSpan byteSpan) {
+    return JsRuntime.EXPORTS.dotAccess(id(symbol).withByteSpan(byteSpan));
   }
 
   /**
@@ -673,6 +686,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
   private ImmutableList<MethodDeclaration> generateStateMethodsForSoyElementClass(
       String soyElementClassName, TemplateStateVar stateVar) {
     ImmutableList.Builder<MethodDeclaration> methods = ImmutableList.builder();
+    ByteSpan byteSpan = SoyTreeUtils.getByteSpan(currentTemplateNode, stateVar.nameLocation());
 
     JsType typeForState = JsType.forIncrementalDomDeclarations(stateVar.type());
     JsType typeForGetters = JsType.forIncrementalDomGetters(stateVar.type());
@@ -690,6 +704,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
                   JsDoc.builder()
                       .addParameterizedAnnotation("return", typeForGetters.typeExpr())
                       .build())
+              .setByteSpan(byteSpan)
               .build());
     }
 
@@ -720,6 +735,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
                       .addParam(stateVar.name(), typeForSetters.typeExpr())
                       .addParameterizedAnnotation("return", "!" + soyElementClassName)
                       .build())
+              .setByteSpan(byteSpan)
               .build());
     }
 
@@ -732,6 +748,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     JsType jsType = JsType.forIncrementalDomGetters(param.type());
     String accessorSuffix =
         Ascii.toUpperCase(param.name().substring(0, 1)) + param.name().substring(1);
+    ByteSpan byteSpan = SoyTreeUtils.getByteSpan(currentTemplateNode, param.nameLocation());
     if (isAbstract) {
       return MethodDeclaration.builder("get" + accessorSuffix, Statements.of(ImmutableList.of()))
           .setJsDoc(
@@ -740,6 +757,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
                   // Injected params are marked as optional, see:
                   .addParameterizedAnnotation("return", jsType.typeExpr())
                   .build())
+          .setByteSpan(byteSpan)
           .build();
     }
     try (var unused = templateTranslationContext.enterSoyAndJsScope()) {
@@ -775,6 +793,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
       return MethodDeclaration.builder(
               "get" + accessorSuffix, Statements.returnValue(typeAssertion.orElse(value)))
           .setJsDoc(JsDoc.builder().addAnnotation("override").addAnnotation("public").build())
+          .setByteSpan(byteSpan)
           .build();
     }
   }

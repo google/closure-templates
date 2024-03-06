@@ -153,6 +153,7 @@ public final class SoyToJsSrcCompiler extends AbstractSoyCompiler {
             .setGoogMsgsAreExternal(googMsgsAreExternal)
             .setBidiGlobalDir(bidiGlobalDir)
             .setUseGoogIsRtlForBidiGlobalDir(useGoogIsRtlForBidiGlobalDir)
+            .setKytheMode(kytheMode)
             .build();
 
     // Compile.
