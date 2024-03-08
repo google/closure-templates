@@ -22,14 +22,9 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Utf8;
 import com.google.protobuf.Message;
 import com.google.template.soy.base.SourceFilePath;
-import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SourceLocation.ByteSpan;
 import com.google.template.soy.base.internal.IndentedLinesBuilder;
 import com.google.template.soy.base.internal.KytheMode;
-import com.google.template.soy.soytree.SoyFileNode;
-import com.google.template.soy.soytree.TemplateNode;
-import com.google.template.soy.soytree.defn.TemplateParam;
-import com.google.template.soy.types.TemplateType.Parameter;
 import java.util.ArrayList;
 import java.util.List;
 import javax.annotation.Nullable;
@@ -57,30 +52,13 @@ public class KytheHelper {
   public void appendGeneratedCodeInfo(KytheMode kytheMode, Appendable to) {
   }
 
-  public void addKytheLinkTo(ByteSpan classNameSpan, SoyFileNode file) {
-  }
-
-  public void addKytheLinkTo(ByteSpan templateNameSpan, TemplateNode template) {
-    addKytheLinkTo(templateNameSpan, template.getTemplateNameLocation(), template);
-  }
-
-  private void addKytheLinkTo(
-      ByteSpan templateNameSpan, SourceLocation sourceLocation, TemplateNode template) {
-  }
-
-  public void addKytheLinkTo(ByteSpan paramSpan, Parameter paramInfo, TemplateNode template) {
-    addKytheLinkTo(paramSpan, template.getTemplateNameLocation(), template, paramInfo.getName());
-  }
-
-  public void addKytheLinkTo(ByteSpan paramSpan, TemplateNode template, TemplateParam param) {
-    addKytheLinkTo(paramSpan, param.nameLocation(), template, param.name());
+  public void addKytheLinkTo(ByteSpan source, ByteSpan target) {
+    if (source.isKnown() && target.isKnown()) {
+      addKytheLinkTo(source.getStart(), source.getEnd(), target.getStart(), target.getEnd());
+    }
   }
 
   public void addKytheLinkTo(int sourceStart, int sourceEnd, int targetStart, int targetEnd) {
-  }
-
-  private void addKytheLinkTo(
-      ByteSpan paramSpan, SourceLocation location, TemplateNode template, String paramName) {
   }
 
   /**
@@ -102,7 +80,7 @@ public class KytheHelper {
     return appendAndGetSpans(ilb, true, parts);
   }
 
-  private List<ByteSpan> appendAndGetSpans(
+  private static List<ByteSpan> appendAndGetSpans(
       IndentedLinesBuilder ilb, boolean fullLine, String... parts) {
     String line = Joiner.on("").join(parts);
     if (fullLine) {

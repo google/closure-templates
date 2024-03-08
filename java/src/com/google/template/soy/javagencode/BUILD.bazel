@@ -56,9 +56,6 @@ java_library(
     deps = [
         "//java/src/com/google/template/soy/base",
         "//java/src/com/google/template/soy/base/internal",
-        "//java/src/com/google/template/soy/soytree",
-        "//java/src/com/google/template/soy/soytree/defn",
-        "//java/src/com/google/template/soy/types",
         "@com_google_auto_value_auto_value",
         "@com_google_protobuf//:protobuf_java",
         "@maven//:com_google_code_findbugs_jsr305",

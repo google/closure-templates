@@ -46,14 +46,6 @@ public final class SoyParseInfoGenerator extends AbstractSoyCompiler {
               + " instead.")
   private boolean generateBuilders = false;
 
-  // TODO(jcg): Remove here and from rules.bzl.
-  @Option(
-      name = "--kytheCorpus",
-      usage =
-          "[Optional] The value to use for the Kythe corpus of GeneratedCodeInfo metadata. If empty"
-              + " GeneratedCodeInfo will not be added to the output.")
-  private String kytheCorpus = "";
-
   @Option(
       name = "--outputDirectory",
       usage =

@@ -346,7 +346,7 @@ public final class GenerateParseInfoVisitor
             .appendLineAndGetSpans(
                 ilb, "public final class ", javaClassName, " extends SoyFileInfo {")
             .get(1);
-    kytheHelper.addKytheLinkTo(classSpan, node);
+    kytheHelper.addKytheLinkTo(getByteSpan(node), classSpan);
 
     ilb.increaseIndent();
 
@@ -398,7 +398,7 @@ public final class GenerateParseInfoVisitor
                   templateEntry.getValue().getTemplateName(),
                   "\";")
               .get(1);
-      kytheHelper.addKytheLinkTo(templateSpan, templateEntry.getValue());
+      kytheHelper.addKytheLinkTo(getByteSpan(templateEntry.getValue()), templateSpan);
 
       templateSpan =
           kytheHelper
@@ -410,7 +410,7 @@ public final class GenerateParseInfoVisitor
                   templateEntry.getKey(),
                   ");")
               .get(1);
-      kytheHelper.addKytheLinkTo(templateSpan, templateEntry.getValue());
+      kytheHelper.addKytheLinkTo(getByteSpan(templateEntry.getValue()), templateSpan);
     }
 
     ilb.decreaseIndent();
@@ -453,9 +453,9 @@ public final class GenerateParseInfoVisitor
               .appendLineAndGetSpans(
                   ilb, "public static final String ", upperUnderscoreKey, " = \"", key, "\";")
               .get(1);
+      // Could we have multiple IMPUTES edges instead?
       TemplateParam templateParam = indexOfParamNameToFirstParam.get(key);
-      kytheHelper.addKytheLinkTo(
-          paramSpan, indexOfParamToTemplate.get(templateParam), templateParam);
+      kytheHelper.addKytheLinkTo(getByteSpan(node, templateParam), paramSpan);
     }
 
     ilb.decreaseIndent();
@@ -521,6 +521,18 @@ public final class GenerateParseInfoVisitor
     ilb = null;
   }
 
+  private static ByteSpan getByteSpan(SoyFileNode node) {
+    return SoyTreeUtils.getByteSpan(node, node.getNamespaceDeclaration().getNamespaceLocation());
+  }
+
+  private static ByteSpan getByteSpan(TemplateNode node) {
+    return SoyTreeUtils.getByteSpan(node, node.getTemplateNameLocation());
+  }
+
+  private ByteSpan getByteSpan(SoyNode node, TemplateParam param) {
+    return SoyTreeUtils.getByteSpan(node, param.nameLocation());
+  }
+
   @Override
   protected void visitTemplateNode(TemplateNode node) {
     // Don't generate anything for private or delegate templates.
@@ -571,7 +583,7 @@ public final class GenerateParseInfoVisitor
                 templateInfoClassName,
                 " extends SoyTemplateInfo {")
             .get(1);
-    kytheHelper.addKytheLinkTo(templateSpan, node);
+    kytheHelper.addKytheLinkTo(getByteSpan(node), templateSpan);
     ilb.increaseIndent();
 
     // ------ Constants for template name. ------
@@ -616,7 +628,7 @@ public final class GenerateParseInfoVisitor
                       : "\"" + param.name() + "\""),
                   ";")
               .get(1);
-      kytheHelper.addKytheLinkTo(paramSpan, node, param);
+      kytheHelper.addKytheLinkTo(getByteSpan(node, param), paramSpan);
     }
     for (Parameter param : indirectParamsInfo.indirectParams.values()) {
       if (directParamNames.contains(param.getName())) {
@@ -718,7 +730,7 @@ public final class GenerateParseInfoVisitor
             .appendLineAndGetSpans(
                 ilb, "public static final ", templateInfoClassName, " ", upperUnderscoreName, " =")
             .get(3);
-    kytheHelper.addKytheLinkTo(templateSpan, node);
+    kytheHelper.addKytheLinkTo(getByteSpan(node), templateSpan);
     ilb.increaseIndent(2);
     ilb.appendLine(templateInfoClassName, ".getInstance();");
     ilb.decreaseIndent(2);
