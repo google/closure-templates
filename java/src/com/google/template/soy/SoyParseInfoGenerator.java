@@ -23,7 +23,6 @@ import com.google.common.io.CharSink;
 import com.google.common.io.CharSource;
 import com.google.common.io.Files;
 import com.google.template.soy.base.internal.BaseUtils;
-import com.google.template.soy.base.internal.KytheMode;
 import com.google.template.soy.base.internal.SoyJarFileWriter;
 import com.google.template.soy.shared.internal.gencode.GeneratedFile;
 import java.io.File;
@@ -42,7 +41,7 @@ public final class SoyParseInfoGenerator extends AbstractSoyCompiler {
   @Option(
       name = "--generateBuilders",
       usage =
-          "[Reqiured] Whether to generate the new java template invocation builders"
+          "[Required] Whether to generate the new java template invocation builders"
               + " (FooTemplates.java). If false, generates the old FooSoyInfo.java files"
               + " instead.")
   private boolean generateBuilders = false;
@@ -124,8 +123,8 @@ public final class SoyParseInfoGenerator extends AbstractSoyCompiler {
 
     ImmutableList<GeneratedFile> genFiles =
         generateBuilders
-            ? sfs.generateBuilders(javaPackage, KytheMode.BASE64)
-            : sfs.generateParseInfo(javaPackage, KytheMode.BASE64, javaClassNameSource);
+            ? sfs.generateBuilders(javaPackage, kytheMode)
+            : sfs.generateParseInfo(javaPackage, kytheMode, javaClassNameSource);
 
     if (outputSrcJar == null) {
       for (GeneratedFile genFile : genFiles) {

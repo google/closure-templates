@@ -212,7 +212,7 @@ public abstract class AbstractSoyCompiler {
   @Option(
       name = "--kythe_mode",
       usage = "The kythe mode for generating kythe imputation metadata. Used by some compilers.")
-  protected KytheMode kytheMode = KytheMode.BASE64;
+  protected KytheMode kytheMode = KytheMode.DISABLED;
 
   /** The remaining arguments after parsing command-line flags. */
   @Argument private List<String> arguments = new ArrayList<>();
