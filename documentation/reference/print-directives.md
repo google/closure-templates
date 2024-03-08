@@ -79,11 +79,6 @@ Furthermore, this print directive is not unicode sensitive so special characters
 like emojis which are encoded using multiple UTF-16 code points, can be
 corrupted when truncated.
 
-### `|formatNum` {#formatNum}
-
-The formatNum function is also available as a print directive. See
-[formatNum()](functions.md#formatNum) for details.
-
 ### `|filterImageDataUri` {#filterImageDataUri}
 
 Accepts only data URI's that contain an image.

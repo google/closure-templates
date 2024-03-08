@@ -121,7 +121,6 @@ public final class InternalPluginsTest {
             // These aren't worth doing. The values should be small and unlikely to have logging
             // statements.
             "|escapeUri",
-            "|formatNum",
             "|filterNumber",
             "|filterCspNonceValue",
             // These can't be made streaming because it would require a complex state machine or

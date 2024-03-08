@@ -85,8 +85,7 @@ import java.util.Optional;
       @Signature(
           parameterTypes = {"?", "string", "string", "number", "number"},
           returnType = "string"),
-    },
-    callableAsDeprecatedPrintDirective = true)
+    })
 class FormatNumFunction
     implements SoyJavaSourceFunction, SoyJavaScriptSourceFunction, SoyPythonSourceFunction {
 
