@@ -1866,7 +1866,9 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
     @Override
     protected void visitAmpAmpOpNode(AmpAmpOpNode node) {
       processAnd(node);
-      node.setType(UnionType.of(node.getChild(0).getType(), node.getChild(1).getType()));
+      node.setType(
+          SoyTypes.computeLowestCommonType(
+              typeRegistry, node.getChild(0).getType(), node.getChild(1).getType()));
     }
 
     private void processAnd(AbstractOperatorNode node) {
@@ -1897,7 +1899,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
     @Override
     protected void visitBarBarOpNode(BarBarOpNode node) {
       processOr(node);
-      node.setType(UnionType.of(node.getChild(0).getType(), node.getChild(1).getType()));
+      setTypeNullCoalesceNodeOrNode(node);
     }
 
     private void processOr(AbstractOperatorNode node) {
@@ -1947,7 +1949,11 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
 
       // Restore substitutions to previous state
       substitutions.restore(savedSubstitutionState);
+      setTypeNullCoalesceNodeOrNode(node);
+      tryApplySubstitution(node);
+    }
 
+    private void setTypeNullCoalesceNodeOrNode(AbstractOperatorNode node) {
       // If the LHS is of type attributes and the RHS is empty string, the empty string can be
       // coerced to attributes so the node should have attributes type.
       if (node.getChild(1) instanceof StringNode
@@ -1963,7 +1969,6 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
         }
         node.setType(resultType);
       }
-      tryApplySubstitution(node);
     }
 
     @Override
