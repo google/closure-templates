@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.base.internal;
+package com.google.template.soy.shared.internal.gencode;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -31,7 +31,7 @@ public final class IndentedLinesBuilderTest {
   @Test
   public void testIndentedLinesBuilder() {
 
-    IndentedLinesBuilder ilb = new IndentedLinesBuilder(2);
+    IndentedLinesBuilder ilb = new IndentedLinesBuilder(null);
     ilb.appendLine("Line 1");
     ilb.increaseIndent();
     ilb.appendLine("Line", ' ', 2);
@@ -40,7 +40,6 @@ public final class IndentedLinesBuilderTest {
     ilb.decreaseIndent();
     ilb.appendLine("Line 4");
 
-    assertThat(ilb.getIndentIncrementLen()).isEqualTo(2);
     assertThat(ilb.getCurrIndentLen()).isEqualTo(4);
     assertThat(ilb.toString()).isEqualTo("Line 1\n  Line 2\n      Line 3\n    Line 4\n");
   }

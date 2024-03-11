@@ -14,11 +14,14 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.base.internal;
+package com.google.template.soy.shared.internal.gencode;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Utf8;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
+import com.google.template.soy.base.SourceLocation.ByteSpan;
+import com.google.template.soy.javagencode.KytheHelper;
+import javax.annotation.Nullable;
 
 /**
  * A wrapped StringBuilder used for building text with indented lines.
@@ -41,6 +44,8 @@ public class IndentedLinesBuilder implements CharSequence {
   /** The number of spaces between indent stops. */
   private final int indentIncrementLen;
 
+  @Nullable private final KytheHelper kytheHelper;
+
   /** The current indent length. */
   private int indentLen;
 
@@ -49,44 +54,34 @@ public class IndentedLinesBuilder implements CharSequence {
 
   private int byteLength = 0;
 
-  /**
-   * Constructor with initial indent length of 0.
-   *
-   * @param indentIncrementLen The number of spaces between indent stops.
-   */
-  public IndentedLinesBuilder(int indentIncrementLen) {
+  public IndentedLinesBuilder(@Nullable KytheHelper kytheHelper) {
+    this.kytheHelper = kytheHelper;
     sb = new StringBuilder();
-    this.indentIncrementLen = indentIncrementLen;
+    indentIncrementLen = 2;
     indentLen = 0;
     indent = "";
   }
 
-  /**
-   * Constructor with a specified initial indent length.
-   *
-   * @param indentIncrementLen The number of spaces between indent stops.
-   * @param initialIndentLen The inital indent length.
-   */
-  public IndentedLinesBuilder(int indentIncrementLen, int initialIndentLen) {
-    sb = new StringBuilder();
-    this.indentIncrementLen = indentIncrementLen;
-    indentLen = initialIndentLen;
-    Preconditions.checkState(0 <= indentLen && indentLen <= MAX_INDENT_LEN);
-    indent = SPACES.substring(0, indentLen);
+  @CanIgnoreReturnValue
+  public IndentedLinesBuilder appendImputee(String s, @Nullable ByteSpan byteSpan) {
+    int start = getByteLength();
+    appendInternal(s);
+    int end = getByteLength();
+    if (kytheHelper != null && byteSpan != null && byteSpan.isKnown()) {
+      kytheHelper.addKytheLinkTo(byteSpan.getStart(), byteSpan.getEnd(), start, end);
+    }
+    return this;
   }
 
-  private void appendInternal(String s) {
+  @CanIgnoreReturnValue
+  private IndentedLinesBuilder appendInternal(String s) {
     sb.append(s);
     byteLength += Utf8.encodedLength(s);
+    return this;
   }
 
   public int getByteLength() {
     return byteLength;
-  }
-
-  /** Returns the number of spaces between indent stops. */
-  public int getIndentIncrementLen() {
-    return indentIncrementLen;
   }
 
   /** Returns the current indent length. */
@@ -95,27 +90,33 @@ public class IndentedLinesBuilder implements CharSequence {
   }
 
   /** Increases the indent by one stop. */
-  public void increaseIndent() {
-    increaseIndent(1);
+  @CanIgnoreReturnValue
+  public IndentedLinesBuilder increaseIndent() {
+    return increaseIndent(1);
   }
 
   /** Increases the indent by the given number of stops. */
-  public void increaseIndent(int numStops) {
+  @CanIgnoreReturnValue
+  public IndentedLinesBuilder increaseIndent(int numStops) {
     indentLen += numStops * indentIncrementLen;
     Preconditions.checkState(0 <= indentLen && indentLen <= MAX_INDENT_LEN);
     indent = SPACES.substring(0, indentLen);
+    return this;
   }
 
   /** Decreases the indent by one stop. */
-  public void decreaseIndent() {
-    decreaseIndent(1);
+  @CanIgnoreReturnValue
+  public IndentedLinesBuilder decreaseIndent() {
+    return decreaseIndent(1);
   }
 
   /** Decreases the indent by the given number of stops. */
-  public void decreaseIndent(int numStops) {
+  @CanIgnoreReturnValue
+  public IndentedLinesBuilder decreaseIndent(int numStops) {
     indentLen -= numStops * indentIncrementLen;
     Preconditions.checkState(0 <= indentLen && indentLen <= MAX_INDENT_LEN);
     indent = SPACES.substring(0, indentLen);
+    return this;
   }
 
   /**
@@ -124,12 +125,14 @@ public class IndentedLinesBuilder implements CharSequence {
    *
    * @param parts The parts that make up the line.
    */
-  public void appendLine(Object... parts) {
+  @CanIgnoreReturnValue
+  public IndentedLinesBuilder appendLine(Object... parts) {
     if (parts.length > 0) {
       appendInternal(indent);
     }
     appendParts(parts);
     appendInternal("\n");
+    return this;
   }
 
   /**
@@ -161,8 +164,7 @@ public class IndentedLinesBuilder implements CharSequence {
 
   @CanIgnoreReturnValue
   public IndentedLinesBuilder appendLineMiddle(Object... parts) {
-    appendParts(parts);
-    return this;
+    return appendParts(parts);
   }
 
   /**
@@ -173,9 +175,7 @@ public class IndentedLinesBuilder implements CharSequence {
    */
   @CanIgnoreReturnValue
   public IndentedLinesBuilder appendLineEnd(Object... parts) {
-    appendParts(parts);
-    appendInternal("\n");
-    return this;
+    return appendParts(parts).appendInternal("\n");
   }
 
   /** Returns the current content as a string. */

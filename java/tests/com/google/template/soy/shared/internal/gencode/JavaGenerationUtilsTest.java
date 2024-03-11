@@ -17,7 +17,6 @@ package com.google.template.soy.shared.internal.gencode;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import com.google.template.soy.base.internal.IndentedLinesBuilder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -29,9 +28,9 @@ public final class JavaGenerationUtilsTest {
   public void testAppendJavadoc_forceMultiline() {
     String doc = "Test comment.";
 
-    String expectedJavadoc = "    /** Test comment. */\n";
+    String expectedJavadoc = "/** Test comment. */\n";
 
-    IndentedLinesBuilder ilb = new IndentedLinesBuilder(2, 4);
+    IndentedLinesBuilder ilb = new IndentedLinesBuilder(null);
     JavaGenerationUtils.appendJavadoc(
         ilb, doc, /* forceMultiline= */ false, /* wrapAt100Chars= */ true);
     assertThat(ilb.toString()).isEqualTo(expectedJavadoc);
@@ -46,15 +45,15 @@ public final class JavaGenerationUtilsTest {
             + "blahblahblahblahblahblahblahblahblahblahblahblahblahblahblahblahblahblah"
             + "blahblahblah.";
     String expectedJavadoc =
-        "    /**\n"
-            + "     * Blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah "
+        "/**\n"
+            + " * Blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah "
             + "blah blah blah\n"
-            + "     * blah blah blah blah blah\n"
-            + "     * blahblahblahblahblahblahblahblahblahblahblahblahblahblahblahblahblahblahblah"
-            + "blahblahblahb\n"
-            + "     * lahblahblahblahblahblahblahblahblahblahblahblah.\n"
-            + "     */\n";
-    IndentedLinesBuilder ilb = new IndentedLinesBuilder(2, 4);
+            + " * blah blah blah blah blah\n"
+            + " * blahblahblahblahblahblahblahblahblahblahblahblahblahblahblahblahblahblahblah"
+            + "blahblahblahblahb\n"
+            + " * lahblahblahblahblahblahblahblahblahblahblah.\n"
+            + " */\n";
+    IndentedLinesBuilder ilb = new IndentedLinesBuilder(null);
     JavaGenerationUtils.appendJavadoc(
         ilb, doc, /* forceMultiline= */ false, /* wrapAt100Chars= */ true);
     assertThat(ilb.toString()).isEqualTo(expectedJavadoc);

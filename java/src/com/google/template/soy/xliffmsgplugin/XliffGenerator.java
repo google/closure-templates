@@ -19,12 +19,12 @@ package com.google.template.soy.xliffmsgplugin;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.escape.Escaper;
 import com.google.common.xml.XmlEscapers;
-import com.google.template.soy.base.internal.IndentedLinesBuilder;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.restricted.SoyMsg;
 import com.google.template.soy.msgs.restricted.SoyMsgPart;
 import com.google.template.soy.msgs.restricted.SoyMsgPlaceholderPart;
 import com.google.template.soy.msgs.restricted.SoyMsgRawTextPart;
+import com.google.template.soy.shared.internal.gencode.IndentedLinesBuilder;
 import java.util.Optional;
 import javax.annotation.Nullable;
 
@@ -68,7 +68,7 @@ class XliffGenerator {
 
     boolean hasTarget = targetLocaleString != null && targetLocaleString.length() > 0;
 
-    IndentedLinesBuilder ilb = new IndentedLinesBuilder(2);
+    IndentedLinesBuilder ilb = new IndentedLinesBuilder(null);
     ilb.appendLine("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
     ilb.appendLine("<xliff version=\"1.2\" xmlns=\"urn:oasis:names:tc:xliff:document:1.2\">");
     ilb.increaseIndent();

@@ -17,16 +17,11 @@
 package com.google.template.soy.javagencode;
 
 
-import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
-import com.google.common.base.Utf8;
 import com.google.protobuf.Message;
 import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation.ByteSpan;
-import com.google.template.soy.base.internal.IndentedLinesBuilder;
 import com.google.template.soy.base.internal.KytheMode;
-import java.util.ArrayList;
-import java.util.List;
 import javax.annotation.Nullable;
 
 /** Helper for constructing GeneratedCodeInfo proto */
@@ -59,46 +54,5 @@ public class KytheHelper {
   }
 
   public void addKytheLinkTo(int sourceStart, int sourceEnd, int targetStart, int targetEnd) {
-  }
-
-  /**
-   * Appends each member of {@code parts} to {@code ilb} by concatenating the parts and calling
-   * {@link IndentedLinesBuilder#appendLineStart}. For every part, calculate a {@link ByteSpan} of
-   * the appended text and return these spans as a list.
-   *
-   * @return a list of spans, one for every member of {@code parts}.
-   */
-  public List<ByteSpan> appendLineStartAndGetSpans(IndentedLinesBuilder ilb, String... parts) {
-    return appendAndGetSpans(ilb, false, parts);
-  }
-
-  /**
-   * Like {@link #appendLineStartAndGetSpans} but appends the parts with {@link
-   * IndentedLinesBuilder#appendLine}.
-   */
-  public List<ByteSpan> appendLineAndGetSpans(IndentedLinesBuilder ilb, String... parts) {
-    return appendAndGetSpans(ilb, true, parts);
-  }
-
-  private static List<ByteSpan> appendAndGetSpans(
-      IndentedLinesBuilder ilb, boolean fullLine, String... parts) {
-    String line = Joiner.on("").join(parts);
-    if (fullLine) {
-      ilb.appendLine(line);
-    } else {
-      ilb.appendLineStart(line);
-    }
-
-    // Count backwards from end. ilb may insert whitespace before line.
-    int endingLength = ilb.getByteLength();
-    int partStart = endingLength - Utf8.encodedLength(line) - /* newline */ (fullLine ? 1 : 0);
-
-    List<ByteSpan> spans = new ArrayList<>(parts.length);
-    for (String part : parts) {
-      int partEnd = partStart + Utf8.encodedLength(part); // end is exclusive
-      spans.add(ByteSpan.create(partStart, partEnd));
-      partStart = partEnd;
-    }
-    return spans;
   }
 }

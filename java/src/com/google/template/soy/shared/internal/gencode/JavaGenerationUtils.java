@@ -26,7 +26,6 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Streams;
 import com.google.protobuf.Descriptors.FieldDescriptor;
-import com.google.template.soy.base.internal.IndentedLinesBuilder;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.MethodCallNode;
 import com.google.template.soy.internal.proto.ProtoUtils;
