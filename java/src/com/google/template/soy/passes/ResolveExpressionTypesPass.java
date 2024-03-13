@@ -393,6 +393,9 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
       SoyErrorKind.of(
           "The ''kind'' attribute can be omitted only if the let contains a single "
               + "call command.");
+  static final SoyErrorKind TEMPLATE_CALL_NULLISH =
+      SoyErrorKind.of(
+          "Template call expressions must be non-nullish. Try guarding with an '{'if'}' command.");
 
   private final ErrorReporter errorReporter;
 
@@ -713,10 +716,11 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
     private void allowShortFormCall(ExprRootNode rootNode) {
       if (rootNode.getRoot() instanceof FunctionNode) {
         FunctionNode fnNode = (FunctionNode) rootNode.getRoot();
-        if (!fnNode.hasStaticName()
-            && (fnNode.getNameExpr().getType() instanceof TemplateImportType
-                || fnNode.getNameExpr().getType() instanceof TemplateType)) {
-          fnNode.setAllowedToInvokeAsFunction(true);
+        if (!fnNode.hasStaticName()) {
+          SoyType nameExprType = SoyTypes.tryRemoveNullish(fnNode.getNameExpr().getType());
+          if (nameExprType instanceof TemplateImportType || nameExprType instanceof TemplateType) {
+            fnNode.setAllowedToInvokeAsFunction(true);
+          }
         }
       }
     }
@@ -2090,10 +2094,11 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
 
     @Override
     protected void visitFunctionNode(FunctionNode node) {
+      SoyType nameExprType =
+          node.hasStaticName() ? null : SoyTypes.tryRemoveNullish(node.getNameExpr().getType());
       if (!node.hasStaticName()
           && !node.allowedToInvokeAsFunction()
-          && (node.getNameExpr().getType() instanceof TemplateImportType
-              || node.getNameExpr().getType() instanceof TemplateType)) {
+          && (nameExprType instanceof TemplateImportType || nameExprType instanceof TemplateType)) {
         if (node.getParent() instanceof FunctionNode
             && ((FunctionNode) node.getParent()).allowedToInvokeAsFunction()) {
           // Recursively allow short form calls, e.g. {tmpl1(p: tmpl2())}
@@ -2110,22 +2115,23 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
       visitChildren(node);
       if (!node.hasStaticName()) {
         visit(node.getNameExpr());
-        if (node.getNameExpr().getType().getKind() == Kind.TEMPLATE_TYPE) {
+        if (nameExprType.getKind() == Kind.TEMPLATE_TYPE) {
           node.setType(
               SanitizedType.getTypeForContentKind(
-                  ((TemplateImportType) node.getNameExpr().getType())
+                  ((TemplateImportType) nameExprType)
                       .getBasicTemplateType()
                       .getContentKind()
                       .getSanitizedContentKind()));
           return;
-        } else if (node.getNameExpr().getType().getKind() == Kind.TEMPLATE) {
+        } else if (nameExprType.getKind() == Kind.TEMPLATE) {
           node.setType(
               SanitizedType.getTypeForContentKind(
-                  ((TemplateType) node.getNameExpr().getType())
-                      .getContentKind()
-                      .getSanitizedContentKind()));
+                  ((TemplateType) nameExprType).getContentKind().getSanitizedContentKind()));
+          if (SoyTypes.isNullish(node.getNameExpr().getType())) {
+            errorReporter.report(node.getNameExpr().getSourceLocation(), TEMPLATE_CALL_NULLISH);
+          }
           return;
-        } else if (node.getNameExpr().getType().getKind() == Kind.FUNCTION) {
+        } else if (nameExprType.getKind() == Kind.FUNCTION) {
           if (node.getParamsStyle() == ParamsStyle.NAMED) {
             errorReporter.report(node.getFunctionNameLocation(), INCORRECT_ARG_STYLE);
             node.setSoyFunction(FunctionNode.UNRESOLVED);

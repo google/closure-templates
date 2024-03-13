@@ -180,6 +180,12 @@ final class CheckTemplateCallsPass implements CompilerFileSetPass {
       if (calleeType.getKind() == SoyType.Kind.TEMPLATE) {
         checkCall(callerTemplate, node, (TemplateType) calleeType);
       } else if (calleeType.getKind() == SoyType.Kind.UNION) {
+        if (SoyTypes.tryRemoveNullish(calleeType).getKind() == SoyType.Kind.TEMPLATE) {
+          checkCall(callerTemplate, node, (TemplateType) SoyTypes.tryRemoveNullish(calleeType));
+          errorReporter.report(
+              node.getSourceCalleeLocation(), ResolveExpressionTypesPass.TEMPLATE_CALL_NULLISH);
+          return;
+        }
         TemplateContentKind templateContentKind = null;
         for (SoyType member : ((UnionType) calleeType).getMembers()) {
           if (member.getKind() == SoyType.Kind.TEMPLATE) {
