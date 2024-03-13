@@ -528,6 +528,52 @@ public class SoyConformanceTest {
   }
 
   @Test
+  public void bannedHtmlTagWithExemptedAttributes() {
+    String check =
+        "requirement: {\n"
+            + "  banned_html_tag: {\n"
+            + "    tag: 'script'\n"
+            + "    exempt_attribute: {\n"
+            + "      name: 'type'\n"
+            + "      value: 'application/ld+json'\n"
+            + "    }\n"
+            + "    exempt_attribute: {\n"
+            + "      name: 'keyA'\n"
+            + "    }\n"
+            + "  }\n"
+            + "  error_message: 'foo'"
+            + "}";
+
+    assertNoViolation(
+        check,
+        "{namespace ns}\n"
+            + "{template bar}\n"
+            + "  <script type=\"application/ld+json\"></script>\n"
+            + "  <script keyA></script>\n"
+            + "  <script keyA src=\"foo.js\"></script>\n"
+            + "  <script keyA=\"\"></script>\n"
+            + "  <script keyA=\"anything\"></script>\n"
+            + "{/template}");
+
+    assertViolation(
+        check, "{namespace ns}\n" + "{template bar}\n" + "  <script></script>\n" + "{/template}");
+
+    assertViolation(
+        check,
+        "{namespace ns}\n"
+            + "{template bar}\n"
+            + "  <script src =\"foo.js\"></script>\n"
+            + "{/template}");
+
+    assertViolation(
+        check,
+        "{namespace ns}\n"
+            + "{template bar}\n"
+            + "  <script type=\"module\"></script>\n"
+            + "{/template}");
+  }
+
+  @Test
   public void testBanInlineEventHandlers() {
     assertViolation(
         "requirement: {\n"

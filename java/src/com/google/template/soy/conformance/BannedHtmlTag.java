@@ -33,11 +33,13 @@ final class BannedHtmlTag extends Rule<HtmlOpenTagNode> {
   private final ImmutableSet<String> bannedTagNames;
   private final ImmutableSet<String> bannedPossiblyPresentAttributes;
   private final ImmutableSet<String> bannedPossiblyMissingAttributes;
+  private final ImmutableSet<Requirement.HtmlAttribute> exemptAttributes;
 
   BannedHtmlTag(
       Collection<String> bannedTagNames,
       Collection<String> bannedPossiblyPresentAttributes,
       Collection<String> bannedPossiblyMissingAttributes,
+      Collection<Requirement.HtmlAttribute> exemptAttributes,
       SoyErrorKind error) {
     super(error);
 
@@ -50,6 +52,8 @@ final class BannedHtmlTag extends Rule<HtmlOpenTagNode> {
 
     this.bannedPossiblyMissingAttributes =
         bannedPossiblyMissingAttributes.stream().map(Ascii::toLowerCase).collect(toImmutableSet());
+
+    this.exemptAttributes = ImmutableSet.copyOf(exemptAttributes);
   }
 
   @Override
@@ -60,8 +64,7 @@ final class BannedHtmlTag extends Rule<HtmlOpenTagNode> {
   }
 
   private boolean hasConformanceError(HtmlOpenTagNode node) {
-    boolean isBannedTag = isBannedTag(node);
-    if (!isBannedTag) {
+    if (!isBannedTag(node) || hasExemptedAttribute(node)) {
       return false;
     }
     if (bannedPossiblyPresentAttributes.isEmpty() && bannedPossiblyMissingAttributes.isEmpty()) {
@@ -89,5 +92,31 @@ final class BannedHtmlTag extends Rule<HtmlOpenTagNode> {
             attrName ->
                 SoyTreeUtils.allNodesOfType(node, HtmlAttributeNode.class)
                     .anyMatch(attr -> attr.definitelyMatchesAttributeName(attrName)));
+  }
+
+  /**
+   * Returns true if the HTML tag contains an attribute that matches one of
+   * banned_raw_text.exempt_attribute
+   */
+  private boolean hasExemptedAttribute(HtmlOpenTagNode node) {
+    return SoyTreeUtils.allNodesOfType(node, HtmlAttributeNode.class)
+        .anyMatch(n -> exemptAttributes.stream().anyMatch(attr -> matchesAttribute(n, attr)));
+  }
+
+  /**
+   * Compares an HTML node attribute to the attribute requirement specification, and returns true if
+   * it matches. If the Requirement.HtmlAttribute.value is unset, then any value will match
+   * including an unset value.
+   */
+  private static boolean matchesAttribute(HtmlAttributeNode node, Requirement.HtmlAttribute attr) {
+    if (!node.definitelyMatchesAttributeName(Ascii.toLowerCase(attr.getName()))) {
+      return false;
+    }
+    if (!attr.getValue().isEmpty()) {
+      String nodeValue =
+          node.getStaticContent() == null ? "" : Ascii.toLowerCase(node.getStaticContent());
+      return nodeValue.equals(Ascii.toLowerCase(attr.getValue()));
+    }
+    return true;
   }
 }
