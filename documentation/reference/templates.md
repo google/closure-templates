@@ -56,11 +56,11 @@ These are the `template` tag's attributes:
     [strict html support](html)
 
 *   `whitespace`: Optional. Default `join`. Configures the whitespace joining
-    algorithm to use. See the [Line Joining](textual-commands##line-joining)
+    algorithm to use. See the [Line Joining](textual-commands.md##line-joining)
     documentation for details on the default `join` algorithm. Set this to
     `preserve` if you want to preserve all whitespace characters that are found
     inside the current template. This behavior is similar to what can be
-    observed when using the [{literal}](textual-commands#literal) command.
+    observed when using the [{literal}](textual-commands.md#literal) command.
 
     For example, consider the following input file:
 
@@ -137,7 +137,7 @@ The inferred type is `int` but this also allows the parameter to accept
 `string`s.
 
 The default value can only be a compile-time constant expression. It cannot
-reference any other parameters or call [non-pure](../dev/plugins#pure) Soy
+reference any other parameters or call [non-pure](../dev/plugins.md#pure) Soy
 functions.
 
 NOTE: Default parameters don't support content kind types like `html`, `uri` or

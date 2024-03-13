@@ -144,7 +144,7 @@ you don't need to type the whole namespace, only the alias plus the template's
 partial name.
 
 This deprecated feature still works for the ID parameter to the
-[`xid()` function](functions#xid).
+[`xid()` function](functions.md#xid).
 
 ## modname {#modname}
 
