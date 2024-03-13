@@ -185,9 +185,9 @@ HTML-tag templates can declare specific attributes that it requires using the
 `@attribute` parameter command.
 
 ```soy
-{template example kind="html<div>"}
+{template example kind="html<button>"}
   {@attribute aria-label: string}
-  <div @aria-label></div>
+  <button @aria-label></button>
 {/template}
 ```
 
@@ -195,7 +195,7 @@ A caller can then pass this attribute through an HTML attribute on the element
 composition call.
 
 ```soy
-{template caller kind="html<div>"}
+{template caller kind="html<button>"}
   <{example()} aria-label="SomeLabel"></>
 {/template}
 ```
@@ -204,7 +204,7 @@ In a set of chaining template calls, use `@` in intermediate HTML-tag templates
 to pass the attribute:
 
 ```soy
-{template caller kind="html<div>"}
+{template caller kind="html<button>"}
   {@attribute aria-label: string}
   <{example()} @aria-label></>
 {/template}
@@ -215,21 +215,21 @@ prefix.
 
 ```soy
 {template example}
-  {@param tpl: (@aria-label: string) => html<div>}
+  {@param tpl: (@aria-label: string) => html<button>}
 {/template}
 ```
 
 An @attribute parameter, if marked as optional, will omit the attribute on the
 final DOM output if it is not passed in. The following will produce an empty
-`div`.
+`button`.
 
 ```soy
-{template example kind="html<div>"}
+{template example kind="html<button>"}
   {@attribute? aria-label: string}
-  <div @aria-label></div>
+  <button @aria-label></button>
 {/template}
 
-{template caller kind="html<div>"}
+{template caller kind="html<button>"}
   <{example()}></>
 {/template}
 ```
@@ -239,7 +239,7 @@ You can specify a default in the callee HTML-tag template.
 ```soy
 {template example kind="html<div>"}
   {@attribute? aria-label: string}
-  <div @aria-label="SomeDefault"></div>
+  <button @aria-label="SomeDefault"></button>
 {/template}
 ```
 
