@@ -98,6 +98,7 @@ public final class ValidatedConformanceConfig {
             bannedHtmlTag.getTagList(),
             bannedHtmlTag.getWhenAttributePossiblyPresentList(),
             bannedHtmlTag.getWhenAttributePossiblyMissingList(),
+            bannedHtmlTag.getExemptAttributeList(),
             error);
       case BAN_XID_FOR_CSS_OBFUSCATION:
         return new BanXidForCssObfuscation(error);

@@ -28,6 +28,25 @@ message ConformanceConfig {
 
 // A specification of code requirements.
 message Requirement {
+  // Represents an HTML attribute
+  // https://developer.mozilla.org/en-US/docs/Glossary/Attribute
+  //
+  // {name: "foo"} matches the following tags
+  //     <tag foo />
+  //     <tag foo="" />
+  //     <tag foo="bar" />
+  //
+  // {name: "foo", value: "bar"} matches the following tag
+  //     <tag foo="bar" />
+  message HtmlAttribute {
+    // Required: The name of the HTML attribute
+    string name = 1;
+    // Optional: The value of the HTML attribute. If this is unset, then this
+    // matches any attribute with the matching key regardless of whether the
+    // value is present or not.
+    string value = 2;
+  }
+
   message BannedCssSelector {
     // The banned CSS selectors.
     repeated string selector = 1;
@@ -62,6 +81,10 @@ message Requirement {
   message BannedHtmlTag {
     // The banned HTML tag (lowercase).
     repeated string tag = 1;
+
+    // If provided, then the check will pass if any of these attributes exist on
+    // the HTML tag
+    repeated HtmlAttribute exempt_attribute = 4;
 
     // NOTE: All the checks below are considered separately. So if both
     // `when_attribute_possibly_present` and `when_attribute_possibly_missing`
