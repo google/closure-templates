@@ -908,6 +908,11 @@ public class SoyConformanceTest {
     return Iterables.getOnlyElement(violations);
   }
 
+  private void assertViolations(String textProto, String input, int size) {
+    ImmutableList<SoyError> violations = getViolations(textProto, input);
+    assertThat(violations).hasSize(size);
+  }
+
   private void assertNoViolation(String textProto, String input) {
     ImmutableList<SoyError> violations = getViolations(textProto, input);
     assertThat(violations).isEmpty();
