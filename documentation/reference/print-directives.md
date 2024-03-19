@@ -50,7 +50,7 @@ The default set of allowed tags is: `b`, `br`, `em`, `i`, `s`, `strong`, `sub`,
 `sup`, and `u`.
 
 It may take a variable number of arguments which are additional tags to be
-considered safe, only `ul`, `ol`, `li`, `hr`, and `span` can be added to the
+considered safe. Only `ul`, `ol`, `li`, `hr`, and `span` can be added to the
 allowlist.
 
 ### `|insertWordBreaks:NNN` {#insertWordBreaks}
