@@ -1,5 +1,5 @@
 /**
- * g3-format-prettier
+
  * @fileoverview
  *
  * Functions necessary to interact with the Soy-Idom runtime.

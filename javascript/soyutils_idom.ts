@@ -1,5 +1,5 @@
 /*
- * g3-format-prettier
+
  * @fileoverview Helper utilities for incremental dom code generation in Soy.
  * Copyright 2016 Google Inc.
  *
