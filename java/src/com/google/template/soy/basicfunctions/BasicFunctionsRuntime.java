@@ -54,6 +54,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -315,6 +316,7 @@ public final class BasicFunctionsRuntime {
       return FloatData.forValue(Math.max(arg0.numberValue(), arg1.numberValue()));
     }
   }
+
   /** Returns the numeric minimum of the two arguments. */
   public static NumberData min(SoyValue arg0, SoyValue arg1) {
     if (arg0 instanceof IntegerData && arg1 instanceof IntegerData) {
@@ -524,9 +526,18 @@ public final class BasicFunctionsRuntime {
     return arg instanceof NumberData && Double.isFinite(arg.numberValue());
   }
 
-  private static String joinHelper(List<SoyValue> values, String delimiter) {
+  private static boolean isNotNull(SoyValue value) {
+    return value != null;
+  }
+
+  private static boolean isNotNullNorTrue(SoyValue value) {
+    return value != null && !value.equals((Object) true);
+  }
+
+  private static String joinHelper(
+      List<SoyValue> values, String delimiter, Predicate<SoyValue> filter) {
     return values.stream()
-        .filter(v -> v != null)
+        .filter(filter)
         .filter(SoyValue::coerceToBoolean)
         .map(SoyValue::coerceToString)
         .collect(joining(delimiter));
@@ -535,13 +546,13 @@ public final class BasicFunctionsRuntime {
   /** Joins items with a semicolon, filtering out falsey values. */
   @Nonnull
   public static String buildAttrValue(List<SoyValue> values) {
-    return joinHelper(values, ";");
+    return joinHelper(values, ";", BasicFunctionsRuntime::isNotNull);
   }
 
   /** Joins items with a space, filtering out falsey values. */
   @Nonnull
   public static String buildClassValue(List<SoyValue> values) {
-    return joinHelper(values, " ");
+    return joinHelper(values, " ", BasicFunctionsRuntime::isNotNullNorTrue);
   }
 
   private static final Pattern CSS_NAME_REGEX = Pattern.compile("^\\s*[\\w-]+\\s*$");
@@ -551,7 +562,7 @@ public final class BasicFunctionsRuntime {
   public static SanitizedContent buildStyleValue(List<SoyValue> values) {
     return UnsafeSanitizedContentOrdainer.ordainAsSafe(
         values.stream()
-            .filter(v -> v != null)
+            .filter(BasicFunctionsRuntime::isNotNullNorTrue)
             .filter(SoyValue::coerceToBoolean)
             .map(
                 v -> {
