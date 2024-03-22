@@ -221,15 +221,15 @@ this:
 
 The `kind` attribute can be added to the following Soy commands:
 
-| Command     | Notes                                                     |
-| ----------- | --------------------------------------------------------- |
-| template    | Optional. Assumed to be kind="html" if omitted.           |
-| deltemplate | Optional. Assumed to be kind="html" if omitted. All       |
-:             : matching delegates must have the same kind.               :
-| let         | Required only for [block form let                         |
-:             : statements](../reference/let).                            :
-| param       | Required only for [block form param                       |
-:             : statements](../reference/calls#construct-values-to-pass). :
+| Command     | Notes                                                        |
+| ----------- | ------------------------------------------------------------ |
+| template    | Optional. Assumed to be kind="html" if omitted.              |
+| deltemplate | Optional. Assumed to be kind="html" if omitted. All          |
+:             : matching delegates must have the same kind.                  :
+| let         | Required only for [block form let                            |
+:             : statements](../reference/let).                               :
+| param       | Required only for [block form param                          |
+:             : statements](../reference/calls.md#construct-values-to-pass). :
 
 The following example illustrates the usage of the `kind` attribute:
 
