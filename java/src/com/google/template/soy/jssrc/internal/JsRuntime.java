@@ -85,9 +85,6 @@ public final class JsRuntime {
 
   public static final Expression SOY_EQUALS = SOY.dotAccess("$$equals");
 
-  public static final Expression SHOULD_STUB =
-      GOOG_SOY.dotAccess("shouldStub").and(GOOG_SOY.dotAccess("shouldStubAtRuntime").call(), null);
-
   public static final Expression SOY_MAKE_ARRAY = SOY.dotAccess("$$makeArray");
 
   public static final Expression SOY_AS_READONLY = SOY.dotAccess("$$asReadonlyArray");
