@@ -38,7 +38,6 @@ import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_SOY;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_SOY_ALIAS;
 import static com.google.template.soy.jssrc.internal.JsRuntime.OPT_DATA;
 import static com.google.template.soy.jssrc.internal.JsRuntime.OPT_VARIANT;
-import static com.google.template.soy.jssrc.internal.JsRuntime.SHOULD_STUB;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_GET_DELEGATE_FN;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_GET_DELTEMPLATE_ID;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_MAKE_EMPTY_TEMPLATE_FN;
@@ -942,20 +941,6 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
         }
       }
 
-      if (!jsSrcOptions.shouldGenerateGoogModules()
-          && node.getContentKind() == SanitizedContentKind.HTML
-          && node.getVisibility() == Visibility.PUBLIC) {
-        declarations.add(
-            Statements.ifStatement(
-                    Expressions.LITERAL_FALSE,
-                    VariableDeclaration.builder(alias + "_" + StandardNames.SOY_STUB)
-                        .setJsDoc(
-                            generatePositionalFunctionJsDoc(
-                                node, /* addVariantParam= */ isModifiableWithUseVariantType(node)))
-                        .build())
-                .build());
-      }
-
       // ------ Add the @typedef of opt_data. ------
       if (!hasOnlyImplicitParams(node)) {
         declarations.add(
@@ -1214,24 +1199,6 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     }
   }
 
-  private void generateIdomStub(
-      TemplateNode templateNode,
-      String alias,
-      ImmutableList.Builder<Statement> bodyStatements,
-      List<Expression> callParams) {
-    if (!jsSrcOptions.shouldGenerateGoogModules()
-        && templateNode.getContentKind() == SanitizedContentKind.HTML
-        && templateNode.getVisibility() == Visibility.PUBLIC) {
-      Expression stub = dottedIdNoRequire(alias + "_" + StandardNames.SOY_STUB);
-      Statement functionStub =
-          Statements.ifStatement(
-                  SHOULD_STUB.and(stub, templateTranslationContext.codeGenerator()),
-                  Statements.returnValue(stub.call(callParams)))
-              .build();
-      bodyStatements.add(functionStub);
-    }
-  }
-
   /**
    * Generates a function that simply unpacks the opt_data object and calls the positional function
    */
@@ -1253,7 +1220,6 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     if (isModifiableWithUseVariantType(templateNode)) {
       callParams.add(OPT_VARIANT);
     }
-    generateIdomStub(templateNode, alias, bodyStatements, callParams);
     boolean voidReturn =
         isIncrementalDom()
             && (templateNode.getContentKind().isHtml()
@@ -1325,7 +1291,6 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     ImmutableList.Builder<Statement> bodyStatements = ImmutableList.builder();
     if (!isPositionalStyle) {
       bodyStatements.add(redeclareIjData());
-      generateIdomStub(node, alias, bodyStatements, templateArguments(node, isPositionalStyle));
     } else {
       bodyStatements.add(
           JsRuntime.SOY_ARE_YOU_AN_INTERNAL_CALLER
