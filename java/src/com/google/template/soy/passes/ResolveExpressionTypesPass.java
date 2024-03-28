@@ -1896,19 +1896,19 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
 
     @Override
     protected void visitOrOpNode(OrOpNode node) {
-      processOr(node);
+      processOr(node, true);
       node.setType(BoolType.getInstance());
     }
 
     @Override
     protected void visitBarBarOpNode(BarBarOpNode node) {
-      processOr(node);
+      processOr(node, false);
       setTypeNullCoalesceNodeOrNode(node);
     }
 
-    private void processOr(AbstractOperatorNode node) {
+    private void processOr(AbstractOperatorNode node, boolean includeConstantChecks) {
       ExprNode lhs = node.getChild(0);
-      if (SoyTreeUtils.isConstantExpr(lhs)) {
+      if (includeConstantChecks && SoyTreeUtils.isConstantExpr(lhs)) {
         errorReporter.warn(
             node.getOperatorLocation(), OR_OPERATOR_HAS_CONSTANT_OPERAND, lhs.toSourceString());
       }
@@ -1926,7 +1926,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
       substitutions.addAll(visitor.negativeTypeConstraints);
       ExprNode rhs = node.getChild(1);
       visit(rhs);
-      if (SoyTreeUtils.isConstantExpr(rhs)) {
+      if (includeConstantChecks && SoyTreeUtils.isConstantExpr(rhs)) {
         errorReporter.warn(
             node.getOperatorLocation(), OR_OPERATOR_HAS_CONSTANT_OPERAND, rhs.toSourceString());
       }
