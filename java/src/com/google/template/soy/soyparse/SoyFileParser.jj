@@ -1372,6 +1372,7 @@ TOKEN_MGR_DECLS: {
 | < OR: "or" >            // Precedence 2 operators
 | < BAR_BAR: "||" >
 | < QQ: "??" >
+| < SPREAD: "..." >
 | < AND: "and" >          // Precedence 3 operators
 | < AMP_AMP: "&&" >
 //| < BITWISE_OR: "|" >   // Precedence 4 operators. Actually VBAR.
@@ -4092,31 +4093,42 @@ private ExprNode PrecExpr2(ExprState state) :
 {
   { ExprNode expr; }
 
-  expr = PrecExpr3(state)
   (
-    op = <QQ>
-    rightHand = PrecExpr3(state)
+    expr = PrecExpr3(state)
+    (
+      op = <QQ>
+      rightHand = PrecExpr3(state)
 
-    { expr = Operator.NULL_COALESCING.createNode(
-        createSrcLoc(expr, rightHand), createSrcLoc(op), expr, rightHand); }
+      { expr = Operator.NULL_COALESCING.createNode(
+          createSrcLoc(expr, rightHand), createSrcLoc(op), expr, rightHand); }
+    |
+      ( op = <BAR_BAR>
+      | op = <OR>
+        {
+          errorReporter.report(createSrcLoc(op), LEGACY_OR_ERROR);
+          op.image = "||";
+        }
+      )
+      rightHand = PrecExpr3(state)
+
+      { expr = createOperatorNode(
+          createSrcLoc(expr, rightHand),
+          op.image,
+          createSrcLoc(op),
+          SoyPrecedence.P2,
+          expr,
+          rightHand); }
+    )*
   |
-    ( op = <BAR_BAR> 
-    | op = <OR>
-      {
-        errorReporter.report(createSrcLoc(op), LEGACY_OR_ERROR);
-        op.image = "||";
-      }
-    )
-    rightHand = PrecExpr3(state)
-
+    op = <SPREAD>
+    rightHand = PrecExpr2(state)
     { expr = createOperatorNode(
-        createSrcLoc(expr, rightHand),
-        op.image,
-        createSrcLoc(op),
-        SoyPrecedence.P2,
-        expr,
-        rightHand); }
-  )*
+              createSrcLoc(op, rightHand),
+              op.image,
+              createSrcLoc(op),
+              SoyPrecedence.P2,
+              rightHand); }
+  )
 
   { return expr; }
 }

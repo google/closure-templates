@@ -96,19 +96,19 @@ public final class TemplateParserTest {
         .causesError("Soy {{command}} syntax is no longer supported. Use single braces.");
     assertThatTemplateContent("a {} b")
         .causesError(
-            "parse error at '}': expected null, undefined, true, false, number, string, -, [,"
+            "parse error at '}': expected null, undefined, true, false, number, string, ..., -, [,"
                 + " (, !, or identifier");
     assertThatTemplateContent("{msg desc=\"\"}a {} b{/msg}")
         .causesError(
-            "parse error at '}': expected null, undefined, true, false, number, string, -, [,"
+            "parse error at '}': expected null, undefined, true, false, number, string, ..., -, [,"
                 + " (, !, or identifier");
     assertThatTemplateContent("{msg desc=\"\"}<a> {} </a>{/msg}")
         .causesError(
-            "parse error at '}': expected null, undefined, true, false, number, string, -, [,"
+            "parse error at '}': expected null, undefined, true, false, number, string, ..., -, [,"
                 + " (, !, or identifier");
     assertThatTemplateContent("{msg desc=\"\"}<a href=\"{}\" />{/msg}")
         .causesError(
-            "parse error at '}': expected null, undefined, true, false, number, string, -, [,"
+            "parse error at '}': expected null, undefined, true, false, number, string, ..., -, [,"
                 + " (, !, or identifier");
 
     assertThatTemplateContent("{/blah}").causesError("Unexpected closing tag.");
@@ -117,7 +117,7 @@ public final class TemplateParserTest {
 
     assertThatTemplateContent("{@blah}")
         .causesError(
-            "parse error at '@blah': expected null, undefined, true, false, number, string, -,"
+            "parse error at '@blah': expected null, undefined, true, false, number, string, ..., -,"
                 + " [, (, !, or identifier");
     assertThatTemplateContent("{sp ace}").causesError("parse error at '}': expected =");
     assertThatTemplateContent("{literal a=b}")
@@ -1664,7 +1664,7 @@ public final class TemplateParserTest {
     assertThat(errors).hasSize(3);
     assertThat(errors.get(0).message())
         .isEqualTo(
-            "parse error at '.': expected null, undefined, true, false, number, string, -, [,"
+            "parse error at '.': expected null, undefined, true, false, number, string, ..., -, [,"
                 + " (, !, or identifier");
     assertThat(errors.get(1).message()).isEqualTo("parse error at '4': expected identifier");
     assertThat(errors.get(2).message()).isEqualTo("parse error at '/}': expected identifier");

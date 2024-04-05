@@ -96,6 +96,7 @@ public interface ExprNode extends Node {
     BITWISE_OR_OP_NODE,
     BITWISE_XOR_OP_NODE,
     BITWISE_AND_OP_NODE,
+    SPREAD_OP_NODE,
 
     FUNCTION_NODE,
 

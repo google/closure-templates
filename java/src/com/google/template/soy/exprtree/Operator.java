@@ -54,6 +54,7 @@ import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ShiftLeftOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ShiftRightOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.SpreadOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TimesOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TripleEqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TripleNotEqualOpNode;
@@ -261,6 +262,13 @@ public enum Operator {
     @Override
     public OperatorNode createNode(SourceLocation location, SourceLocation operatorLocation) {
       return new NullCoalescingOpNode(location, operatorLocation);
+    }
+  },
+
+  SPREAD(ImmutableList.of(new Token("..."), OPERAND_0), SoyPrecedence.P2, NA) {
+    @Override
+    public OperatorNode createNode(SourceLocation location, SourceLocation operatorLocation) {
+      return new SpreadOpNode(location, operatorLocation);
     }
   },
 
