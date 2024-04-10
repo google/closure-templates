@@ -82,6 +82,7 @@ import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ShiftLeftOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ShiftRightOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.SpreadOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TimesOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TripleEqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TripleNotEqualOpNode;
@@ -1065,6 +1066,12 @@ final class ExpressionCompiler {
     }
 
     // Boolean operators
+
+    @Override
+    protected SoyExpression visitSpreadOpNode(SpreadOpNode node) {
+      // TODO(b/219506554): Implement.
+      return SoyExpression.SOY_UNDEFINED;
+    }
 
     @Override
     protected SoyExpression visitNotOpNode(NotOpNode node) {

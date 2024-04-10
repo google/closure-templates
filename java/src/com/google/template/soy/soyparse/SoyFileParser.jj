@@ -477,7 +477,7 @@ public class SoyFileParser {
           "Soy integers are constrained to the range of JavaScript integers: "
               + "https://www.ecma-international.org/ecma-262/5.1/#sec-8.5",
           StyleAllowance.NO_PUNCTUATION);
-  private static final SoyErrorKind INVALID_PARAM_NAME =
+  static final SoyErrorKind INVALID_PARAM_NAME =
       SoyErrorKind.of("Invalid param name ''{0}''.");
   private static final SoyErrorKind UNEXPECTED_PIPE =
       SoyErrorKind.of("Unexpected ''|''. Print directives should not have whitespace after ''|''.");
@@ -492,6 +492,8 @@ public class SoyFileParser {
       SoyErrorKind.of("Found use of deprecated ''and'', use the ''&&'' operator instead.");
   private static final SoyErrorKind LEGACY_OR_ERROR =
       SoyErrorKind.of("Found use of deprecated ''or'', use the ''||'' operator instead.");
+  private static final SoyErrorKind MAP_LITERAL_LIST_ARGS =
+      SoyErrorKind.of("The map() function accepts either named parameters or a single positional parameter.");
 
   // Extern errors:
   private static final SoyErrorKind MULTIPLE_IMPLS =
@@ -1372,6 +1374,7 @@ TOKEN_MGR_DECLS: {
 | < OR: "or" >            // Precedence 2 operators
 | < BAR_BAR: "||" >
 | < QQ: "??" >
+| < SPREAD: "..." >
 | < AND: "and" >          // Precedence 3 operators
 | < AMP_AMP: "&&" >
 //| < BITWISE_OR: "|" >   // Precedence 4 operators. Actually VBAR.
@@ -3898,98 +3901,59 @@ private ImmutableList<ExprNode> ExprList(boolean printNode) :
 }
 
 
-private CallArgs CallArgs() :
+private CallArgs CallArgs(ExprState state) :
 {
   Token comma, close;
-  List<SourceLocation.Point> commaLocations;
-  ExprNode key, val;
-  List<ExprNode> params = new ArrayList<ExprNode>();
-  Identifier paramName;
-  List<Identifier> paramIds;
+  CallArgs.Builder callArgsBuilder = new CallArgs.Builder();
 }
 {
-  // Parse the first thing, whether ID or expression.
-  val = Expr()
   (
-    // A. Named parameters.
-    <COLON>
-    {
-      paramIds = new ArrayList<Identifier>();
-
-      // Parsed this as an ExprNode but it must actually be an identifier.
-      String firstId = val.toSourceString();
-      if (BaseUtils.isDottedIdentifier(firstId)) {
-        paramName = Identifier.create(firstId, val.getSourceLocation());
-      } else {
-        errorReporter.report(val.getSourceLocation(), INVALID_PARAM_NAME, firstId);
-        paramName = Identifier.create("error" + paramIds.size(), val.getSourceLocation());
-      }
-      paramIds.add(paramName);
-    }
-    val = Expr()
-    {
-      params.add(val);
-    }
+    SingleCallArg(state, callArgsBuilder)
     (
       // Disambiguate with a trailing comma
       LOOKAHEAD( { getToken(1).kind == COMMA && getToken(2).kind != RPAREN } )
-      <COMMA>
-      paramName = Identifier()
-      <COLON>
-      val = Expr()
-      {
-        paramIds.add(paramName);
-        params.add(val);
-      }
-    )*
-    [ <COMMA> ]  // trailing comma
-    close = <RPAREN>
-    {
-      return CallArgs.named(errorReporter,
-          ImmutableList.copyOf(paramIds), ImmutableList.copyOf(params), close);
-    }
-  |
-    // B. Positional parameters, 2 or more.
-    comma = <COMMA>
-    {
-      commaLocations = new ArrayList<SourceLocation.Point>();
-
-      params.add(val);
-      commaLocations.add(createSrcLoc(comma).getBeginPoint());
-    }
-
-    val = Expr()
-    {
-      params.add(val);
-    }
-
-    (
       comma = <COMMA>
-      val = Expr()
       {
-        params.add(val);
-        commaLocations.add(createSrcLoc(comma).getBeginPoint());
+        callArgsBuilder.addComma(createSrcLoc(comma).getBeginPoint());
       }
+      SingleCallArg(state, callArgsBuilder)
     )*
 
+    [ <COMMA> ]  // optional trailing comma
     close = <RPAREN>
+  |
+    // D. No parameters or only spread params.
+    close = <RPAREN>
+  )
+  {
+    return callArgsBuilder.build(errorReporter, close);
+  }
+}
 
+private void SingleCallArg(ExprState state, CallArgs.Builder callArgsBuilder) :
+{
+  ExprNode key = null, val = null;
+}
+{
+  (
+    val = Spread(state)
     {
-      return CallArgs.positional(ImmutableList.copyOf(params), ImmutableList.copyOf(commaLocations), close);
+      callArgsBuilder.addPositional(val);
     }
   |
-    // C. Positional parameters, exactly 1.
-    close = <RPAREN>
+    key = NestedExpr(state)
+    [
+      <COLON>
+      val = NestedExpr(state)
+    ]
     {
-      return CallArgs.positional(ImmutableList.of(val), ImmutableList.of(), close);
+      if (val != null) {
+        callArgsBuilder.addNamed(key, val);
+      } else {
+        callArgsBuilder.addPositional(key);
+      }
     }
   )
-|
-  // D. No parameters.
-  close = <RPAREN>
-  {
-    return CallArgs.empty(close);
-  }
 }
 
 /**
@@ -4023,6 +3987,19 @@ private ExprNode NestedExpr(ExprState state) :
 }
 {
   expr = PrecExpr1(state)
+  { return expr; }
+}
+
+private ExprNode ExprOrSpread(ExprState state) :
+{
+  ExprNode expr;
+}
+{
+  (
+    expr = Spread(state)
+  |
+    expr = PrecExpr1(state)
+  )
   { return expr; }
 }
 
@@ -4121,6 +4098,26 @@ private ExprNode PrecExpr2(ExprState state) :
   { return expr; }
 }
 
+/**
+ * Matches the spread (...) operator. Spread is precedence level 2 but it is only
+ * valid inside of Soy array listerals and function calls so we do not generically
+ * handle it in PrecExpr2.
+ */
+private ExprNode Spread(ExprState state) :
+{
+  ExprNode rightHand;
+  Token op;
+}
+{
+  op = <SPREAD>
+  rightHand = PrecExpr13(state) // nothing before 13 is a valid spread expr
+  { return createOperatorNode(
+            createSrcLoc(op, rightHand),
+            op.image,
+            createSrcLoc(op),
+            SoyPrecedence.P2,
+            rightHand); }
+}
 
 /**
  * Matches expressions with precedence levels 3 and higher.
@@ -4514,10 +4511,10 @@ private ExprNode PrecExpr13(ExprState state) :
       ident = <IDENT>
       (
         <LPAREN>
-        callArgs = CallArgs()
+        callArgs = CallArgs(state)
         {
           expr = callArgs
-              .toBuilder()
+              .toBuilder(errorReporter)
               .setTarget(expr)
               .setIdentifier(Identifier.create(ident.image, createSrcLoc(ident)))
               .setSourceLocation(createSrcLoc(op, callArgs.close))
@@ -4626,103 +4623,58 @@ private ExprNode VarRefOrFunctionCallLike(ExprState state) :
   identToken = <IDENT>
   {
     ident = Identifier.create(identToken.image, createSrcLoc(identToken));
-    boolean isRecord = "record".equals(identToken.image);
   }
 
   [
     openParen = <LPAREN>
-
-    (
-      LOOKAHEAD( {identToken.image.equals("map")} )
-      {
-        return MapLiteral(state, ident);
-      }
-    |
-      callArgs = CallArgs()
-      {
-        SourceLocation loc = ident.location().extend(createSrcLoc(callArgs.close));
-        CallableExprBuilder callBuilder = CallableExprBuilder.builder();
-        if (isRecord) {
-          RecordLiteralNode node;
-          if (callArgs.values.isEmpty()) {
-            errorReporter.report(ident.location(), EMPTY_RECORD_LITERAL);
-            node = new RecordLiteralNode(ident, ImmutableList.of(), loc);
-          } else if (callArgs.isNamed()) {
-            for (Identifier name : callArgs.names) {
-              // CallArgs already reported error for non-dotted ident.
-              if (name.type() != Identifier.Type.SINGLE_IDENT) {
-                errorReporter.report(
-                    name.location(),
-                    INVALID_RECORD_KEY,
-                    name.identifier());
-              }
+    callArgs = CallArgs(state)
+    {
+      SourceLocation loc = ident.location().extend(createSrcLoc(callArgs.close));
+      CallableExprBuilder callBuilder = CallableExprBuilder.builder();
+      if ("record".equals(identToken.image)) {
+        RecordLiteralNode node;
+        if (callArgs.values.isEmpty()) {
+          errorReporter.report(ident.location(), EMPTY_RECORD_LITERAL);
+          node = new RecordLiteralNode(ident, ImmutableList.of(), loc);
+        } else if (callArgs.isNamedOrSpread()) {
+          for (Identifier name : callArgs.getNames(errorReporter)) {
+            // CallArgs already reported error for non-dotted ident.
+            if (name.type() != Identifier.Type.SINGLE_IDENT) {
+              errorReporter.report(
+                  name.location(),
+                  INVALID_RECORD_KEY,
+                  name.identifier());
             }
-            node = new RecordLiteralNode(ident, callArgs.names, loc);
-          } else {
-            errorReporter.report(ident.location(), RECORD_NAMED_PARAMS);
-            node = new RecordLiteralNode(ident, ImmutableList.of(), loc);
           }
-          node.addChildren(callArgs.values);
-          return node;
+          node = new RecordLiteralNode(ident, callArgs.getUniqueNames(errorReporter), loc);
+        } else {
+          errorReporter.report(ident.location(), RECORD_NAMED_PARAMS);
+          node = new RecordLiteralNode(ident, ImmutableList.of(), loc);
         }
-
-        return callArgs
-            .toBuilder()
-            .setIdentifier(ident)
-            .setSourceLocation(loc)
-            .buildFunction();
+        node.addChildren(callArgs.values);
+        return node;
+      } else if ("map".equals(identToken.image)) {
+        if (callArgs.isNamed()) {
+          return new MapLiteralNode(ident, callArgs.toMapLiteral(), loc);
+        } else {
+          if (callArgs.values.size() != 1) {
+              errorReporter.report(loc, MAP_LITERAL_LIST_ARGS);
+              return new MapLiteralNode(ident, ImmutableMap.of(), loc);
+          }
+          return new MapLiteralFromListNode(ident, callArgs.values.get(0), loc, nodeIdGen.genId());
+        }
       }
-    )
+
+      return callArgs
+          .toBuilder(errorReporter)
+          .setIdentifier(ident)
+          .setSourceLocation(loc)
+          .buildFunction();
+    }
   ]
   {
     // We did not find parens, this is a var ref node
     return new VarRefNode(identToken.image, createSrcLoc(identToken), null);
-  }
-}
-
-/** Parses a map literal or a list to map constructor:
- *  {@code map('key': 'value', $key: $value)} or {@code map($list)}
- */
-private ExprNode MapLiteral(ExprState state, Identifier ident) :
-{
-  ExprNode key = null, val;
-  Token closeParen;
-  ImmutableMap.Builder<ExprNode, ExprNode> kvPairs = ImmutableMap.builder();
-  boolean fromList = false;
-}
-{
-  [
-    key = NestedExpr(state)
-    {
-      fromList = true;
-    }
-    [
-      <COLON>
-      val = NestedExpr(state)
-      {
-        kvPairs.put(key, val);
-        fromList = false;
-      }
-      (
-        // Disambiguate with a trailing comma
-        LOOKAHEAD( { getToken(1).kind == COMMA && getToken(2).kind != RPAREN } )
-        <COMMA>
-        key = NestedExpr(state)
-        <COLON>
-        val = NestedExpr(state)
-        { kvPairs.put(key, val); }
-      )*
-      [ <COMMA> ]  // trailing comma
-    ]
-  ]
-  closeParen = <RPAREN>
-  {
-    // Note: the case where there are no keys or values is ambiguous.
-    // It could be a 0-arg function call to a function called "map".
-    // (Function calls and map literals are usually distinguished by their parameter syntax
-    // (positional vs. named), but that's not helpful when there are no params.)
-    SourceLocation srcLoc = ident.location().extend(createSrcLoc(closeParen));
-    return fromList ? new MapLiteralFromListNode(ident, key, srcLoc, nodeIdGen.genId()) : new MapLiteralNode(ident, kvPairs.build(), srcLoc);
   }
 }
 
@@ -4745,13 +4697,16 @@ private ExprNode List(ExprState state) :
       end = <RBRACKET>
       { return new ListLiteralNode(new ArrayList<ExprNode>(), createSrcLoc(begin, end), ImmutableList.of()); }
     |
+      firstExpr = Spread(state)
+      listNode = ListLiteral(state, begin, firstExpr)
+      { return listNode; }
+    |
       firstExpr = NestedExpr(state)
       ( // After the first expr, we have enough info to branch: list comprehensions will have "FOR"
         // as the next token; list literals will either have a comma or a closing "]".
         listNode = ListComprehension(state, begin, firstExpr)
         |
         listNode = ListLiteral(state, begin, firstExpr)
-
       )
       { return listNode; }
   )
@@ -4834,7 +4789,7 @@ private ExprNode ListLiteral(ExprState state, Token begin, ExprNode firstItem) :
     ( // this lookahead is necessary to make this loop unambiguous with the trailing comma
       LOOKAHEAD( { getToken(1).kind == COMMA && getToken(2).kind != RBRACKET } )
       comma = <COMMA>
-      itemExpr = NestedExpr(state)
+      itemExpr = ExprOrSpread(state)
       {
         items.add(itemExpr);
         commaLocations.add(createSrcLoc(comma).getBeginPoint());

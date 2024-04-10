@@ -128,6 +128,7 @@ import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ShiftLeftOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ShiftRightOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.SpreadOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TimesOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TripleEqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TripleNotEqualOpNode;
@@ -1933,6 +1934,12 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
 
       // Restore substitutions to previous state
       substitutions.restore(savedSubstitutionState);
+    }
+
+    @Override
+    protected void visitSpreadOpNode(SpreadOpNode node) {
+      visit(node.getChild(0));
+      node.setType(node.getChild(0).getType());
     }
 
     @Override

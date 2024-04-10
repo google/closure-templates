@@ -93,6 +93,7 @@ public enum Precedence {
       case NULL_COALESCING:
         return P3;
       case CONDITIONAL:
+      case SPREAD:
         return P2;
     }
     throw new AssertionError();

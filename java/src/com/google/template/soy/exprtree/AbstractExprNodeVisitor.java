@@ -45,6 +45,7 @@ import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ShiftLeftOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ShiftRightOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.SpreadOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TimesOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TripleEqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TripleNotEqualOpNode;
@@ -222,6 +223,9 @@ public abstract class AbstractExprNodeVisitor<R> extends AbstractNodeVisitor<Exp
         break;
       case BITWISE_AND_OP_NODE:
         visitBitwiseAndOpNode((BitwiseAndOpNode) node);
+        break;
+      case SPREAD_OP_NODE:
+        visitSpreadOpNode((SpreadOpNode) node);
         break;
 
       case FUNCTION_NODE:
@@ -472,6 +476,10 @@ public abstract class AbstractExprNodeVisitor<R> extends AbstractNodeVisitor<Exp
   }
 
   protected void visitBitwiseAndOpNode(BitwiseAndOpNode node) {
+    visitOperatorNode(node);
+  }
+
+  protected void visitSpreadOpNode(SpreadOpNode node) {
     visitOperatorNode(node);
   }
 

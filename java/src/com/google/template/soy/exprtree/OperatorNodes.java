@@ -73,6 +73,28 @@ public class OperatorNodes {
     }
   }
 
+  /** Node representing the '...' operator. */
+  public static final class SpreadOpNode extends AbstractOperatorNode {
+
+    public SpreadOpNode(SourceLocation sourceLocation, SourceLocation operatorLocation) {
+      super(sourceLocation, Operator.SPREAD, operatorLocation);
+    }
+
+    private SpreadOpNode(SpreadOpNode orig, CopyState copyState) {
+      super(orig, copyState);
+    }
+
+    @Override
+    public Kind getKind() {
+      return Kind.SPREAD_OP_NODE;
+    }
+
+    @Override
+    public SpreadOpNode copy(CopyState copyState) {
+      return new SpreadOpNode(this, copyState);
+    }
+  }
+
   /** Node representing the '*' (times) operator. */
   public static final class TimesOpNode extends AbstractOperatorNode {
 

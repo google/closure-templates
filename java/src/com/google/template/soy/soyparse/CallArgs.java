@@ -16,67 +16,188 @@
 
 package com.google.template.soy.soyparse;
 
+import static com.google.common.collect.ImmutableList.toImmutableList;
+
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Iterables;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.CallableExprBuilder;
 import com.google.template.soy.exprtree.ExprNode;
+import com.google.template.soy.exprtree.OperatorNodes.SpreadOpNode;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 /** Parser helper class. */
 class CallArgs {
 
-  static CallArgs positional(
-      ImmutableList<ExprNode> args, ImmutableList<SourceLocation.Point> commaPos, Token close) {
-    return new CallArgs(null, args, commaPos, close);
+  static final SoyErrorKind PARAM_MIX = SoyErrorKind.of("Mix of named and positional arguments.");
+
+  private static final Identifier SPREAD_KEY = Identifier.create("unused", SourceLocation.UNKNOWN);
+
+  static final class Builder {
+    final List<ExprNode> keys = new ArrayList<>();
+    final List<ExprNode> values = new ArrayList<>();
+    final List<SourceLocation.Point> commas = new ArrayList<>();
+
+    void addComma(SourceLocation.Point comma) {
+      commas.add(comma);
+    }
+
+    void addPositional(ExprNode value) {
+      keys.add(null);
+      values.add(value);
+    }
+
+    void addNamed(ExprNode key, ExprNode value) {
+      keys.add(key);
+      values.add(value);
+    }
+
+    CallArgs build(ErrorReporter errorReporter, Token close) {
+      return create(
+          errorReporter,
+          keys.stream().map(Optional::ofNullable).collect(toImmutableList()),
+          ImmutableList.copyOf(values),
+          ImmutableList.copyOf(commas),
+          close);
+    }
   }
 
-  static CallArgs named(
+  private static CallArgs create(
       ErrorReporter errorReporter,
-      ImmutableList<Identifier> names,
+      ImmutableList<Optional<ExprNode>> keys,
       ImmutableList<ExprNode> values,
+      ImmutableList<SourceLocation.Point> commaPos,
       Token close) {
-    Set<String> paramNames = new HashSet<>();
-    for (Identifier name : names) {
-      if (!paramNames.add(name.identifier())) {
-        errorReporter.report(name.location(), SoyFileParser.DUPLICATE_KEY_NAME, name.identifier());
+
+    Preconditions.checkArgument(keys.size() == values.size());
+
+    SourceLocation fullLocForError = null;
+    if (!values.isEmpty()) {
+      fullLocForError =
+          values
+              .get(0)
+              .getSourceLocation()
+              .createSuperRangeWith(Iterables.getLast(values).getSourceLocation());
+      ExprNode firstName = keys.get(0).orElse(null);
+      if (firstName != null) {
+        fullLocForError = fullLocForError.createSuperRangeWith(firstName.getSourceLocation());
+      }
+    }
+    boolean hasPositional = false;
+    boolean hasNamed = false;
+
+    for (int i = 0; i < keys.size(); i++) {
+      Optional<ExprNode> key = keys.get(i);
+      ExprNode value = values.get(i);
+
+      if (key.isEmpty()) {
+        if (value instanceof SpreadOpNode) {
+          // hasSpread
+        } else {
+          hasPositional = true;
+        }
+      } else {
+        hasNamed = true;
       }
     }
 
-    return new CallArgs(names, values, null, close);
+    if (hasNamed && hasPositional) {
+      errorReporter.report(fullLocForError, PARAM_MIX);
+    }
+
+    return new CallArgs(keys, values, commaPos, close);
   }
 
-  static CallArgs empty(Token close) {
-    return new CallArgs(null, ImmutableList.of(), ImmutableList.of(), close);
-  }
-
-  final ImmutableList<Identifier> names;
+  final ImmutableList<Optional<ExprNode>> keys;
   final ImmutableList<ExprNode> values;
   final ImmutableList<SourceLocation.Point> commas;
+  private ImmutableList<Identifier> names;
   final Token close;
 
   private CallArgs(
-      ImmutableList<Identifier> names,
+      ImmutableList<Optional<ExprNode>> keys,
       ImmutableList<ExprNode> values,
       ImmutableList<SourceLocation.Point> commas,
       Token close) {
-    this.names = names;
+    this.keys = keys;
     this.values = values;
     this.commas = commas;
     this.close = close;
   }
 
   public boolean isNamed() {
-    return names != null;
+    return keys.stream().allMatch(Optional::isPresent);
   }
 
-  public CallableExprBuilder toBuilder() {
+  public boolean isNamedOrSpread() {
+    for (int i = 0; i < keys.size(); i++) {
+      if (keys.get(i).isEmpty() && !(values.get(i) instanceof SpreadOpNode)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  public ImmutableMap<ExprNode, ExprNode> toMapLiteral() {
+    ImmutableMap.Builder<ExprNode, ExprNode> map = ImmutableMap.builder();
+    for (int i = 0; i < keys.size(); i++) {
+      Optional<ExprNode> key = keys.get(i);
+      ExprNode value = values.get(i);
+      map.put(key.get(), value);
+    }
+    return map.buildOrThrow();
+  }
+
+  ImmutableList<Identifier> getNames(ErrorReporter errorReporter) {
+    if (names == null) {
+      Set<String> uniqueNames = new HashSet<>();
+      ImmutableList.Builder<Identifier> builder = ImmutableList.builder();
+      for (int i = 0; i < keys.size(); i++) {
+        if (keys.get(i).isPresent()) {
+          ExprNode key = keys.get(i).get();
+          // Parsed this as an ExprNode but it must actually be an identifier.
+          String firstId = key.toSourceString();
+          if (BaseUtils.isDottedIdentifier(firstId)) {
+            if (!uniqueNames.add(firstId)) {
+              errorReporter.report(
+                  key.getSourceLocation(), SoyFileParser.DUPLICATE_KEY_NAME, firstId);
+            }
+            builder.add(Identifier.create(firstId, key.getSourceLocation()));
+          } else {
+            errorReporter.report(
+                key.getSourceLocation(), SoyFileParser.INVALID_PARAM_NAME, firstId);
+            builder.add(Identifier.create("error", key.getSourceLocation()));
+          }
+        } else if (values.get(i) instanceof SpreadOpNode) {
+          builder.add(SPREAD_KEY);
+        } else {
+          throw new IllegalArgumentException();
+        }
+      }
+      names = builder.build();
+    }
+    return names;
+  }
+
+  ImmutableList<Identifier> getUniqueNames(ErrorReporter errorReporter) {
+    return getNames(errorReporter).stream().distinct().collect(toImmutableList());
+  }
+
+  public CallableExprBuilder toBuilder(ErrorReporter errorReporter) {
     CallableExprBuilder cb =
         CallableExprBuilder.builder().setParamValues(values).setCommaLocations(commas);
-    if (isNamed()) {
-      cb.setParamNames(names);
+    if (isNamedOrSpread()) {
+      cb.setParamNames(getNames(errorReporter));
     }
     return cb;
   }
