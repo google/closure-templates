@@ -22,8 +22,10 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.errorprone.annotations.concurrent.LazyInit;
 import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.SourceLocationMapper;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.soytree.SoyNode.SplitLevelTopNode;
@@ -93,6 +95,7 @@ public final class SoyFileNode extends AbstractParentSoyNode<SoyNode>
   private final ImmutableList<Comment> comments;
   private final ImportsContext importsContext;
   private final ImmutableList<CssPath> requiredCssPaths;
+  @LazyInit private SourceLocationMapper sourceMap;
 
   /**
    * @param id The id for this node.
@@ -264,6 +267,14 @@ public final class SoyFileNode extends AbstractParentSoyNode<SoyNode>
 
   public ByteOffsetIndex getByteOffsetIndex() {
     return byteOffsetIndex;
+  }
+
+  public SourceLocationMapper getSourceMap() {
+    if (sourceMap == null) {
+      sourceMap =
+          SourceLocationMapper.NO_OP;
+    }
+    return sourceMap;
   }
 
   /** Returns all comments in the entire Soy file (not just doc-level comments). */

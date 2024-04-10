@@ -35,8 +35,7 @@ final class CheckIndirectDepsPass implements CompilerFileSetPass {
 
   private static final SoyErrorKind CALL_TO_INDIRECT_DEPENDENCY =
       SoyErrorKind.of(
-          "Import is satisfied only by indirect dependency {0}. Add it as a direct dependency."
-          ,
+          "Import is satisfied only by indirect dependency {0}. Add it as a direct dependency.{1}",
           StyleAllowance.NO_PUNCTUATION);
 
   private final ErrorReporter errorReporter;
@@ -61,8 +60,6 @@ final class CheckIndirectDepsPass implements CompilerFileSetPass {
         .forEach(
             i -> {
               SourceLogicalPath importPath = i.getSourceFilePath();
-              String callerFilePath = i.getSourceLocation().getFilePath().path();
-              String calleeFilePath = importPath.path();
 
               SoyFileKind calleeKind =
                   i.getImportType() == ImportType.TEMPLATE
@@ -76,7 +73,8 @@ final class CheckIndirectDepsPass implements CompilerFileSetPass {
               errorReporter.report(
                   i.getPathSourceLocation(),
                   CALL_TO_INDIRECT_DEPENDENCY,
-                  calleeFilePath);
+                  importPath.path(),
+                  BuildCleanerUtil.getBuildCleanerCommand(i));
             });
     return Result.CONTINUE;
   }

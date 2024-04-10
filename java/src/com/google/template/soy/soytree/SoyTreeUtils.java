@@ -710,4 +710,11 @@ public final class SoyTreeUtils {
     }
     return node.getNearestAncestor(SoyFileNode.class).getByteOffsetIndex().getByteSpan(location);
   }
+
+  public static SourceLocation getOriginalSourceLocation(SoyNode node, SourceLocation location) {
+    if (!location.isKnown()) {
+      return location;
+    }
+    return node.getNearestAncestor(SoyFileNode.class).getSourceMap().map(location);
+  }
 }
