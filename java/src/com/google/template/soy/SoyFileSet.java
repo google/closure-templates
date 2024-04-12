@@ -679,7 +679,7 @@ public final class SoyFileSet {
   }
 
   public ErrorFormatter getErrorFormatterWithSnippets() {
-    return ErrorFormatterImpl.create().withSnippets(soyFileSuppliers);
+    return ErrorFormatterImpl.create().withSources(soyFileSuppliers);
   }
 
   ImmutableList<SourceLogicalPath> getSourceFilePaths() {

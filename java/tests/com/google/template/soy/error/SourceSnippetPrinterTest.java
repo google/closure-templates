@@ -61,14 +61,14 @@ public final class SourceSnippetPrinterTest {
 
   @Before
   public void setUp() {
-    printer = new SourceSnippetPrinter();
+    printer = new SourceSnippetPrinter(SOY_FILE_SUPPLIER);
   }
 
   /** Verifies that empty Optionals are returned for UNKNOWN SourceLocations. */
   @Test
   public void getSnippet_unknownLocation() throws Exception {
     SourceLocation location = SourceLocation.UNKNOWN;
-    assertThat(printer.getSnippet(SOY_FILE_SUPPLIER, location)).isEmpty();
+    assertThat(printer.getSnippet(location)).isEmpty();
   }
 
   /**
@@ -80,7 +80,7 @@ public final class SourceSnippetPrinterTest {
     SourceLocation location =
         makeSourceLocation(
             /* beginLine= */ 4, /* beginColumn= */ 51, /* endLine= */ 4, /* endColumn= */ 51);
-    assertThat(printer.getSnippet(SOY_FILE_SUPPLIER, location))
+    assertThat(printer.getSnippet(location))
         .hasValue(
             JOINER.join(
                 "4: 4:1       4:11      4:21      4:31      4:41      4:51      4:61      4:71",
@@ -97,7 +97,7 @@ public final class SourceSnippetPrinterTest {
     SourceLocation location =
         makeSourceLocation(
             /* beginLine= */ 4, /* beginColumn= */ 21, /* endLine= */ 4, /* endColumn= */ 51);
-    assertThat(printer.getSnippet(SOY_FILE_SUPPLIER, location))
+    assertThat(printer.getSnippet(location))
         .hasValue(
             JOINER.join(
                 "4: 4:1       4:11      4:21      4:31      4:41      4:51      4:61      4:71",
@@ -114,7 +114,7 @@ public final class SourceSnippetPrinterTest {
     SourceLocation location =
         makeSourceLocation(
             /* beginLine= */ 3, /* beginColumn= */ 21, /* endLine= */ 5, /* endColumn= */ 51);
-    assertThat(printer.getSnippet(SOY_FILE_SUPPLIER, location))
+    assertThat(printer.getSnippet(location))
         .hasValue(
             JOINER.join(
                 "3: 3:1       3:11      3:21      3:31      3:41      3:51      3:61      3:71",
@@ -135,7 +135,7 @@ public final class SourceSnippetPrinterTest {
     SourceLocation location =
         makeSourceLocation(
             /* beginLine= */ 9, /* beginColumn= */ 1, /* endLine= */ 10, /* endColumn= */ 1);
-    assertThat(printer.getSnippet(SOY_FILE_SUPPLIER, location))
+    assertThat(printer.getSnippet(location))
         .hasValue(
             JOINER.join(
                 // 9 is padded to be aligned with 10.
@@ -155,16 +155,16 @@ public final class SourceSnippetPrinterTest {
     SourceLocation location =
         makeSourceLocation(
             /* beginLine= */ 1, /* beginColumn= */ 4, /* endLine= */ 3, /* endColumn= */ 8);
-    assertThat(
-            printer.getSnippet(
-                SoyFileSupplier.Factory.create(
-                    JOINER.join(
-                        "First line",
-                        // Blank line.
-                        "",
-                        "Third line"),
-                    SOY_FILE_PATH),
-                location))
+    printer =
+        new SourceSnippetPrinter(
+            SoyFileSupplier.Factory.create(
+                JOINER.join(
+                    "First line",
+                    // Blank line.
+                    "",
+                    "Third line"),
+                SOY_FILE_PATH));
+    assertThat(printer.getSnippet(location))
         .hasValue(
             JOINER.join(
                 "1: First line",
@@ -179,7 +179,9 @@ public final class SourceSnippetPrinterTest {
   /** Verifies that the SourceSnippetPrinter cannot be instantiated with a maxLines lower than 2. */
   @Test
   public void getSnippet_max1Lines() throws Exception {
-    assertThrows(IllegalArgumentException.class, () -> new SourceSnippetPrinter(/* maxLines= */ 1));
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> new SourceSnippetPrinter(SOY_FILE_SUPPLIER, /* maxLines= */ 1));
   }
 
   /**
@@ -188,11 +190,11 @@ public final class SourceSnippetPrinterTest {
    */
   @Test
   public void getSnippet_ellipsis_evenMaxLines() throws Exception {
-    printer = new SourceSnippetPrinter(/* maxLines= */ 2);
+    printer = new SourceSnippetPrinter(SOY_FILE_SUPPLIER, /* maxLines= */ 2);
     SourceLocation location =
         makeSourceLocation(
             /* beginLine= */ 3, /* beginColumn= */ 21, /* endLine= */ 6, /* endColumn= */ 51);
-    assertThat(printer.getSnippet(SOY_FILE_SUPPLIER, location))
+    assertThat(printer.getSnippet(location))
         .hasValue(
             JOINER.join(
                 "3: 3:1       3:11      3:21      3:31      3:41      3:51      3:61      3:71",
@@ -212,11 +214,11 @@ public final class SourceSnippetPrinterTest {
    */
   @Test
   public void getSnippet_ellipsis_oddMaxLines() throws Exception {
-    printer = new SourceSnippetPrinter(/* maxLines= */ 3);
+    printer = new SourceSnippetPrinter(SOY_FILE_SUPPLIER, /* maxLines= */ 3);
     SourceLocation location =
         makeSourceLocation(
             /* beginLine= */ 3, /* beginColumn= */ 21, /* endLine= */ 6, /* endColumn= */ 51);
-    assertThat(printer.getSnippet(SOY_FILE_SUPPLIER, location))
+    assertThat(printer.getSnippet(location))
         .hasValue(
             JOINER.join(
                 "3: 3:1       3:11      3:21      3:31      3:41      3:51      3:61      3:71",
@@ -235,11 +237,11 @@ public final class SourceSnippetPrinterTest {
    */
   @Test
   public void getSnippet_ellipsis_noEllipsisForMaxLines() throws Exception {
-    printer = new SourceSnippetPrinter(/* maxLines= */ 3);
+    printer = new SourceSnippetPrinter(SOY_FILE_SUPPLIER, /* maxLines= */ 3);
     SourceLocation location =
         makeSourceLocation(
             /* beginLine= */ 3, /* beginColumn= */ 21, /* endLine= */ 5, /* endColumn= */ 51);
-    assertThat(printer.getSnippet(SOY_FILE_SUPPLIER, location))
+    assertThat(printer.getSnippet(location))
         .hasValue(
             JOINER.join(
                 "3: 3:1       3:11      3:21      3:31      3:41      3:51      3:61      3:71",
@@ -258,11 +260,11 @@ public final class SourceSnippetPrinterTest {
    */
   @Test
   public void getSnippet_ellipsis_longRange() throws Exception {
-    printer = new SourceSnippetPrinter(/* maxLines= */ 6);
+    printer = new SourceSnippetPrinter(SOY_FILE_SUPPLIER, /* maxLines= */ 6);
     SourceLocation location =
         makeSourceLocation(
             /* beginLine= */ 1, /* beginColumn= */ 61, /* endLine= */ 9, /* endColumn= */ 11);
-    assertThat(printer.getSnippet(SOY_FILE_SUPPLIER, location))
+    assertThat(printer.getSnippet(location))
         .hasValue(
             JOINER.join(
                 "1: 1:1       1:11      1:21      1:31      1:41      1:51      1:61      1:71",

@@ -68,7 +68,7 @@ final class CompilingClassLoader extends AbstractMemoryClassLoader {
         javaClassNameToFile.put(Names.javaClassNameFromSoyNamespace(file.getNamespace()), file);
       }
     }
-    this.errorFormatter = ErrorFormatterImpl.create().withSnippets(filePathsToSuppliers);
+    this.errorFormatter = ErrorFormatterImpl.create().withSources(filePathsToSuppliers);
     this.javaClassNameToFile = ImmutableMap.copyOf(javaClassNameToFile);
     this.typeRegistry = typeRegistry;
     this.fileSetMetadata = fileSetMetadata;
