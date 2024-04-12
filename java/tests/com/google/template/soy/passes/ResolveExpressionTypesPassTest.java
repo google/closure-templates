@@ -365,7 +365,10 @@ public final class ResolveExpressionTypesPassTest {
         "{@param pf: float}",
         "{let $list: [$pi, $pf]/}",
         "{assertType('list<float|int>', $list)}",
-        "{assertType('int', length($list))}");
+        "{assertType('int', length($list))}",
+        "{assertType('list<float|int>', [1, 2, 3, ...$list])}",
+        "{assertType('list<float|int|string>', [1, ...$list, 's'])}",
+        "");
   }
 
   @Test
@@ -403,7 +406,12 @@ public final class ResolveExpressionTypesPassTest {
         "{@param pi: int}",
         "{@param pf: float}",
         "{let $record: record(a: $pi, b: $pf)/}",
-        "{assertType('[a: int, b: float]', $record)}");
+        "{assertType('[a: int, b: float]', $record)}",
+        "{assertType('[a: int, b: float]', record(...$record))}",
+        "{assertType('[a: int, b: float]', record(a: $pi, ...$record))}",
+        "{assertType('[a: int, b: float]', record(a: $pf, ...$record))}",
+        "{assertType('[a: float, b: float]', record(...$record, a: $pf))}",
+        "");
   }
 
   @Test

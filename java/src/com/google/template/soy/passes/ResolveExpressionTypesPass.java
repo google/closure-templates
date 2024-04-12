@@ -194,6 +194,7 @@ import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.MapType;
 import com.google.template.soy.types.ProtoImportType;
 import com.google.template.soy.types.RecordType;
+import com.google.template.soy.types.RecordType.Member;
 import com.google.template.soy.types.SanitizedType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
@@ -397,6 +398,8 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
   static final SoyErrorKind TEMPLATE_CALL_NULLISH =
       SoyErrorKind.of(
           "Template call expressions must be non-nullish. Try guarding with an '{'if'}' command.");
+  private static final SoyErrorKind INVALID_SPREAD_VALUE =
+      SoyErrorKind.of("Value of type ''{0}'' may not be spread here.");
 
   private final ErrorReporter errorReporter;
 
@@ -1083,7 +1086,16 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
       List<SoyType> elementTypes = new ArrayList<>(node.numChildren());
       for (ExprNode child : node.getChildren()) {
         requireNodeType(child);
-        elementTypes.add(child.getType());
+        if (child.getKind() == ExprNode.Kind.SPREAD_OP_NODE) {
+          SoyType spreadType = child.getType();
+          if (spreadType instanceof ListType) {
+            elementTypes.add(((ListType) spreadType).getElementType());
+          } else {
+            errorReporter.report(child.getSourceLocation(), INVALID_SPREAD_VALUE, spreadType);
+          }
+        } else {
+          elementTypes.add(child.getType());
+        }
       }
       // Special case for empty list.
       if (elementTypes.isEmpty()) {
@@ -1166,12 +1178,26 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
       int numChildren = node.numChildren();
       checkState(numChildren == node.getKeys().size());
 
-      List<RecordType.Member> members = new ArrayList<>();
-      for (int i = 0; i < numChildren; i++) {
-        members.add(
-            RecordType.memberOf(node.getKey(i).identifier(), false, node.getChild(i).getType()));
+      LinkedHashMap<String, RecordType.Member> members = new LinkedHashMap<>();
+      int i = 0;
+      for (ExprNode child : node.getChildren()) {
+        String key = node.getKey(i).identifier();
+        if (child.getKind() == ExprNode.Kind.SPREAD_OP_NODE) {
+          SoyType spreadType = child.getType();
+          if (spreadType instanceof RecordType) {
+            for (Member member : ((RecordType) spreadType).getMembers()) {
+              members.put(member.name(), member);
+            }
+          } else {
+            errorReporter.report(child.getSourceLocation(), INVALID_SPREAD_VALUE, spreadType);
+          }
+        } else {
+          members.put(key, RecordType.memberOf(key, false, node.getChild(i).getType()));
+        }
+
+        i++;
       }
-      node.setType(typeRegistry.getOrCreateRecordType(members));
+      node.setType(typeRegistry.getOrCreateRecordType(members.values()));
 
       tryApplySubstitution(node);
     }
@@ -1939,7 +1965,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
     @Override
     protected void visitSpreadOpNode(SpreadOpNode node) {
       visit(node.getChild(0));
-      node.setType(node.getChild(0).getType());
+      node.setType(node.getChild(0).getType()); // Must be spread in context to be valid.
     }
 
     @Override
