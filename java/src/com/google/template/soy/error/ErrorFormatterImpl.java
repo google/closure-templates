@@ -20,34 +20,42 @@ import static com.google.common.collect.ImmutableMap.toImmutableMap;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.SourceLocationMapper;
 import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.base.internal.SoyFileSupplier;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.StreamSupport;
 import javax.annotation.Nullable;
 
-/** Implementation of ErrorFormatter that can add code snippets. */
+/**
+ * Implementation of ErrorFormatter that can add code snippets and incorporate input sourcemaps.
+ *
+ * <p>Calling either of the {@link #withSources} methods will cause snippets to be included in the
+ * formatter errors. And if a <a href="https://sourcemaps.info/spec.html">source map</a> can be
+ * found in the source, the original source location will be included too.
+ */
 public final class ErrorFormatterImpl implements ErrorFormatter {
-
-  private static final SourceSnippetPrinter snippetPrinter = new SourceSnippetPrinter();
 
   public static ErrorFormatterImpl create() {
     return new ErrorFormatterImpl(null);
   }
 
-  @Nullable private final ImmutableMap<SourceLogicalPath, SoyFileSupplier> sourceFileIndex;
+  @Nullable private ImmutableMap<SourceLogicalPath, SoyFileSupplier> sourceFileIndex;
+  private Map<SoyFileSupplier, SourceSnippetPrinter> snippetCache = new HashMap<>();
+  private Map<SoyFileSupplier, SourceLocationMapper> sourceMapsCache = new HashMap<>();
 
   private ErrorFormatterImpl(
       @Nullable ImmutableMap<SourceLogicalPath, SoyFileSupplier> sourceFileIndex) {
     this.sourceFileIndex = sourceFileIndex;
   }
 
-  public ErrorFormatterImpl withSnippets(Map<SourceLogicalPath, SoyFileSupplier> sourceFiles) {
+  public ErrorFormatterImpl withSources(Map<SourceLogicalPath, SoyFileSupplier> sourceFiles) {
     return new ErrorFormatterImpl(ImmutableMap.copyOf(sourceFiles));
   }
 
-  public ErrorFormatterImpl withSnippets(Iterable<SoyFileSupplier> sourceFiles) {
+  public ErrorFormatterImpl withSources(Iterable<SoyFileSupplier> sourceFiles) {
     return new ErrorFormatterImpl(
         StreamSupport.stream(sourceFiles.spliterator(), false)
             .collect(toImmutableMap(f -> f.getFilePath().asLogicalPath(), f -> f)));
@@ -55,14 +63,40 @@ public final class ErrorFormatterImpl implements ErrorFormatter {
 
   @Override
   public String format(SoyError report) {
+    if (sourceFileIndex == null) {
+      return SIMPLE.format(report);
+    }
     SourceLocation location = report.location();
-    Optional<String> snippet =
-        Optional.ofNullable(sourceFileIndex)
-            .map(index -> index.get(location.getFilePath().asLogicalPath()))
-            .flatMap(supplier -> snippetPrinter.getSnippet(supplier, location));
+    SoyFileSupplier sourceFile = sourceFileIndex.get(location.getFilePath().asLogicalPath());
+    if (sourceFile == null) {
+      return SIMPLE.format(report);
+    }
 
-    return snippet
-        .map(s -> SIMPLE.format(report) + '\n' + s.stripTrailing())
-        .orElseGet(() -> SIMPLE.format(report));
+    SourceSnippetPrinter snippetPrinter =
+        snippetCache.computeIfAbsent(sourceFile, SourceSnippetPrinter::new);
+    Optional<String> snippet = snippetPrinter.getSnippet(location);
+
+    String formatted = SIMPLE.format(report);
+    if (snippet.isPresent()) {
+      formatted += '\n' + snippet.get().stripTrailing();
+    }
+    SourceLocationMapper sourceMap =
+        sourceMapsCache.computeIfAbsent(sourceFile, ErrorFormatterImpl::buildSourceMap);
+    SourceLocation originalLocation = sourceMap.map(location);
+    if (!location.equals(originalLocation)) {
+      int line = originalLocation.getBeginLine();
+      if (line < 1) {
+        line = originalLocation.getEndLine();
+      }
+      formatted +=
+          String.format(
+              "\n[generated from: %s:%s]",
+              originalLocation.getFilePath().realPath(), line >= 1 ? "" + line : "(unknown line)");
+    }
+    return formatted;
+  }
+
+  private static SourceLocationMapper buildSourceMap(SoyFileSupplier sourceFile) {
+    return SourceLocationMapper.NO_OP;
   }
 }
