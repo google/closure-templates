@@ -38,6 +38,8 @@ import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.conformance.ValidatedConformanceConfig;
 import com.google.template.soy.css.CssRegistry;
+import com.google.template.soy.error.ErrorFormatter;
+import com.google.template.soy.error.ErrorFormatterImpl;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyCompilationException;
 import com.google.template.soy.error.SoyError;
@@ -676,6 +678,10 @@ public final class SoyFileSet {
     return soyFileSuppliers;
   }
 
+  public ErrorFormatter getErrorFormatterWithSnippets() {
+    return ErrorFormatterImpl.create().withSnippets(soyFileSuppliers);
+  }
+
   ImmutableList<SourceLogicalPath> getSourceFilePaths() {
     return soyFileSuppliers.keySet().asList();
   }
@@ -710,7 +716,9 @@ public final class SoyFileSet {
     } catch (RuntimeException e) {
       if (errorReporter.hasErrorsOrWarnings()) {
         throw new SoyInternalCompilerException(
-            Iterables.concat(errorReporter.getErrors(), errorReporter.getWarnings()), e);
+            Iterables.concat(errorReporter.getErrors(), errorReporter.getWarnings()),
+            getErrorFormatterWithSnippets(),
+            e);
       } else {
         throw e;
       }
@@ -1306,7 +1314,7 @@ public final class SoyFileSet {
    */
   @VisibleForTesting
   public synchronized void resetErrorReporter() {
-    errorReporter = ErrorReporter.create(soyFileSuppliers);
+    errorReporter = ErrorReporter.create();
   }
 
   private void throwIfErrorsPresent() {
@@ -1316,7 +1324,7 @@ public final class SoyFileSet {
           Iterables.concat(errorReporter.getErrors(), errorReporter.getWarnings());
       // clear the field to ensure that error reporters can't leak between compilations
       errorReporter = null;
-      throw new SoyCompilationException(errors);
+      throw new SoyCompilationException(errors, getErrorFormatterWithSnippets());
     }
   }
 
@@ -1332,9 +1340,9 @@ public final class SoyFileSet {
     // this is a custom feature used by the integration test suite.
     if (generalOptions.getExperimentalFeatures().contains("testonly_throw_on_warnings")) {
       errorReporter = null;
-      throw new SoyCompilationException(warnings);
+      throw new SoyCompilationException(warnings, getErrorFormatterWithSnippets());
     }
-    String formatted = SoyErrors.formatErrors(warnings);
+    String formatted = SoyErrors.formatErrors(warnings, getErrorFormatterWithSnippets());
     if (warningSink != null) {
       try {
         warningSink.append(formatted);

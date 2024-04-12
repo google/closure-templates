@@ -64,7 +64,7 @@ public class TemplateNodeTest {
 
   @Test
   public void testInvalidParamNames() {
-    ErrorReporter errorReporter = ErrorReporter.createForTest();
+    ErrorReporter errorReporter = ErrorReporter.create();
     parse(
         "{namespace ns}\n" + "{template boo}\n" + "{@param ij : int}\n" + "{/template}",
         errorReporter);
@@ -74,7 +74,7 @@ public class TemplateNodeTest {
 
   @Test
   public void testParamsAlreadyDeclared() {
-    ErrorReporter errorReporter = ErrorReporter.createForTest();
+    ErrorReporter errorReporter = ErrorReporter.create();
     parse(
         "{namespace ns}\n"
             + "{template boo}\n"
@@ -87,19 +87,19 @@ public class TemplateNodeTest {
 
   @Test
   public void testCommandTextErrors() {
-    ErrorReporter errorReporter = ErrorReporter.createForTest();
+    ErrorReporter errorReporter = ErrorReporter.create();
     parse("{namespace ns}\n{template requirecss=\"strict\"}{/template}", errorReporter);
     assertThat(errorReporter.getErrors()).hasSize(1);
 
     assertThat(errorReporter.getErrors().get(0).message())
         .isEqualTo("parse error at '=': expected }, identifier, or .");
 
-    errorReporter = ErrorReporter.createForTest();
+    errorReporter = ErrorReporter.create();
     parse("{namespace ns}\n{template foo autoescape=\"}{/template}", errorReporter);
     assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
         .isEqualTo(
             "Unexpected end of file.  Did you forget to close an attribute value or a comment?");
-    errorReporter = ErrorReporter.createForTest();
+    errorReporter = ErrorReporter.create();
     parse(
         "{namespace ns}\n{template foo autoescape=\"deprecated-contextual\"}{/template}",
         errorReporter);
@@ -143,12 +143,12 @@ public class TemplateNodeTest {
 
   @Test
   public void testIsComponentErrors() {
-    ErrorReporter errorReporter = ErrorReporter.createForTest();
+    ErrorReporter errorReporter = ErrorReporter.create();
     parse("{namespace ns}\n{template boo component=\"false\"}{/template}", errorReporter);
     assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
         .isEqualTo("'component=\"false\"' is the default, no need to set it.");
 
-    errorReporter = ErrorReporter.createForTest();
+    errorReporter = ErrorReporter.create();
     parse("{namespace ns}\n{template boo component=\"test\"}{/template}", errorReporter);
     assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
         .isEqualTo("Invalid value for attribute 'component', expected true.");
@@ -156,17 +156,17 @@ public class TemplateNodeTest {
 
   @Test
   public void testInvalidRequiredCss() {
-    ErrorReporter errorReporter = ErrorReporter.createForTest();
+    ErrorReporter errorReporter = ErrorReporter.create();
     parse("{namespace ns}\n{template boo requirecss=\"\"}{/template}", errorReporter);
     assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
         .isEqualTo("Invalid required CSS namespace name '', expected an identifier.");
 
-    errorReporter = ErrorReporter.createForTest();
+    errorReporter = ErrorReporter.create();
     parse("{namespace ns}\n{template boo requirecss=\"foo boo\"}{/template}", errorReporter);
     assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
         .isEqualTo("Invalid required CSS namespace name 'foo boo', expected an identifier.");
 
-    errorReporter = ErrorReporter.createForTest();
+    errorReporter = ErrorReporter.create();
     parse("{namespace ns}\n{template boo requirecss=\"9vol\"}{/template}", errorReporter);
     assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
         .isEqualTo("Invalid required CSS namespace name '9vol', expected an identifier.");

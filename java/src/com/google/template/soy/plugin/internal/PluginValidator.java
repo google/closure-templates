@@ -18,7 +18,6 @@ package com.google.template.soy.plugin.internal;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.error.ErrorReporter;
@@ -101,7 +100,7 @@ public final class PluginValidator {
 
   private SoyType typeFor(
       String typeStr, SoyJavaSourceFunction fn, ValidatorErrorReporter validatorReporter) {
-    ErrorReporter localReporter = ErrorReporter.create(ImmutableMap.of());
+    ErrorReporter localReporter = ErrorReporter.create();
     SoyType type = parseType(typeStr, fn, localReporter, typeRegistry);
     // If any errors occurred while parsing the signature, wrap the errors in a more meaningful
     // message tailored to the plugin implementation.

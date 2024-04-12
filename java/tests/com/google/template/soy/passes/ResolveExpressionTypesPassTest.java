@@ -416,7 +416,7 @@ public final class ResolveExpressionTypesPassTest {
 
   @Test
   public void testRecordLiteral_duplicateKeys() {
-    ErrorReporter reporter = ErrorReporter.createForTest();
+    ErrorReporter reporter = ErrorReporter.create();
     SoyFileSetParserBuilder.forFileContents(
             constructFileSource("{let $record: record(a: 1, a: 2)/}"))
         .errorReporter(reporter)
@@ -1198,7 +1198,7 @@ public final class ResolveExpressionTypesPassTest {
    * @param expectedError The expected failure message (a substring).
    */
   private void assertResolveExpressionTypesFails(String expectedError, String fileContent) {
-    ErrorReporter errorReporter = ErrorReporter.createForTest();
+    ErrorReporter errorReporter = ErrorReporter.create();
     SoyFileSetParserBuilder.forFileContents(fileContent)
         .errorReporter(errorReporter)
         .typeRegistry(TYPE_REGISTRY)

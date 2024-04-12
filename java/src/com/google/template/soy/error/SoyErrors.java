@@ -171,17 +171,7 @@ public final class SoyErrors {
     return v0[t.length()];
   }
 
-  /** Formats the errors in a standard way for displaying to a user. */
-  public static String formatErrors(Iterable<SoyError> errors) {
-    return formatErrorsInternal(errors, false);
-  }
-
-  /** Formats the errors, including only the error message (not its location or snippet). */
-  public static String formatErrorsMessageOnly(Iterable<SoyError> errors) {
-    return formatErrorsInternal(errors, true);
-  }
-
-  private static String formatErrorsInternal(Iterable<SoyError> errors, boolean messageOnly) {
+  public static String formatErrors(Iterable<SoyError> errors, ErrorFormatter errorFormatter) {
     int numErrors = 0;
     int numWarnings = 0;
     for (SoyError error : errors) {
@@ -197,13 +187,9 @@ public final class SoyErrors {
     StringBuilder sb =
         new StringBuilder(numErrors == 0 ? "warnings" : "errors")
             .append(" during Soy compilation\n");
-    if (messageOnly) {
-      Joiner.on("\n\n")
-          .appendTo(sb, stream(errors).map(SoyError::message).collect(toImmutableList()))
-          .append('\n');
-    } else {
-      Joiner.on('\n').appendTo(sb, errors);
-    }
+    Joiner.on("\n\n")
+        .appendTo(sb, stream(errors).map(errorFormatter::format).iterator())
+        .append('\n');
     if (numErrors > 0) {
       formatNumber(numErrors, "error", sb);
     }

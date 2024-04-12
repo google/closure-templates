@@ -19,6 +19,7 @@ package com.google.template.soy;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.google.common.collect.ImmutableList;
+import com.google.template.soy.error.ErrorFormatter;
 import com.google.template.soy.error.SoyCompilationException;
 import com.google.template.soy.error.SoyErrors;
 import java.io.File;
@@ -77,7 +78,7 @@ public final class SoyPluginValidator extends AbstractSoyCompiler {
 
   @Override
   String formatCompilationException(SoyCompilationException sce) {
-    return SoyErrors.formatErrorsMessageOnly(sce.getErrors());
+    return SoyErrors.formatErrors(sce.getErrors(), ErrorFormatter.MESSAGE_ONLY);
   }
 
   @Override

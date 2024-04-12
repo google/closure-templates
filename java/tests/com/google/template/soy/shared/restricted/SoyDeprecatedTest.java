@@ -34,7 +34,7 @@ public final class SoyDeprecatedTest {
 
   @Test
   public void testSoyDeprecated() {
-    ErrorReporter reporter = ErrorReporter.createForTest();
+    ErrorReporter reporter = ErrorReporter.create();
     SoyFileSetParserBuilder.forTemplateContents(
             "{@param s:string}\n"
                 + "{deprecatedF() |deprecated}\n"

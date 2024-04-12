@@ -19,62 +19,27 @@ package com.google.template.soy.error;
 import static java.util.Comparator.comparing;
 
 import com.google.auto.value.AutoValue;
+import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
-import java.util.Optional;
 
-/** A structured error object for reporting */
+/** Generating by calling {@link ErrorReporter#report} or {@link ErrorReporter#warn}. */
 @AutoValue
 public abstract class SoyError implements Comparable<SoyError> {
-
   static SoyError create(
-      SourceLocation location,
-      SoyErrorKind kind,
-      String message,
-      Optional<String> snippet,
-      boolean isWarning) {
-    return new AutoValue_SoyError(location, kind, message, snippet, isWarning);
+      SourceLocation location, SoyErrorKind kind, Object[] args, boolean isWarning) {
+    return new AutoValue_SoyError(location, kind, ImmutableList.copyOf(args), isWarning);
   }
 
-  SoyError() {} // package private to prevent external subclassing
-
-  /** The location where the error occurred. */
   public abstract SourceLocation location();
 
-  /** The error kind. For classification usecases. */
   public abstract SoyErrorKind errorKind();
 
-  /**
-   * The error message.
-   *
-   * <p>This does not contain location information. Use {@link #toString} for a formatted message.
-   */
-  public abstract String message();
+  protected abstract ImmutableList<?> getArgs();
 
-  // Should be accessed via toString()
-  abstract Optional<String> snippet();
-
-  /** Whether or not this error should be considered a warning (i.e., don't fail the build). */
   public abstract boolean isWarning();
 
-  /** The full formatted error. */
-  @Override
-  public final String toString() {
-    return toStringInternal(true);
-  }
-
-  public String toStringWithoutSnippet() {
-    return toStringInternal(false);
-  }
-
-  private String toStringInternal(boolean snippet) {
-    return location().getFilePath().realPath()
-        + ':'
-        + location().getBeginLine()
-        + ": "
-        + (isWarning() ? "warning" : "error")
-        + ": "
-        + message()
-        + (snippet ? "\n" + snippet().orElse("") : "");
+  public String message() {
+    return errorKind().format(getArgs().toArray());
   }
 
   @Override

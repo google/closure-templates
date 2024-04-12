@@ -1957,7 +1957,7 @@ public final class ContextualAutoescaperTest {
   }
 
   public SoyFileNode rewrite(String... inputs) {
-    ErrorReporter reporter = ErrorReporter.createForTest();
+    ErrorReporter reporter = ErrorReporter.create();
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(inputs)
             .errorReporter(reporter)

@@ -73,7 +73,7 @@ public final class CheckFunctionCallsVisitorTest {
   }
 
   private void assertFunctionCallsInvalid(String errorMessage, String... lines) {
-    ErrorReporter errorReporter = ErrorReporter.createForTest();
+    ErrorReporter errorReporter = ErrorReporter.create();
     SoyFileSetParserBuilder.forFileContents(Joiner.on('\n').join(lines))
         .errorReporter(errorReporter)
         .parse();

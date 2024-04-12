@@ -48,8 +48,7 @@ public final class StrictHtmlValidationPassTest {
   public void testEmptyTemplate() {
     // Arrange: set up an empty template.
     SoyFileNode template = parseTemplateBody("");
-    StrictHtmlValidationPass matcherPass =
-        new StrictHtmlValidationPass(ErrorReporter.createForTest());
+    StrictHtmlValidationPass matcherPass = new StrictHtmlValidationPass(ErrorReporter.create());
 
     // Act: execute the graph builder.
     matcherPass.run(template, new IncrementingIdGenerator());
@@ -64,8 +63,7 @@ public final class StrictHtmlValidationPassTest {
   public void testSimpleTemplate() {
     // Arrange: set up a simple template.
     SoyFileNode template = parseTemplateBody(Joiner.on("\n").join("<div>", "</div>"));
-    StrictHtmlValidationPass matcherPass =
-        new StrictHtmlValidationPass(ErrorReporter.createForTest());
+    StrictHtmlValidationPass matcherPass = new StrictHtmlValidationPass(ErrorReporter.create());
 
     // Act: execute the graph builder
     matcherPass.run(template, new IncrementingIdGenerator());
@@ -80,7 +78,7 @@ public final class StrictHtmlValidationPassTest {
 
   @Test
   public void testErrorForSelfClosingTag() {
-    ErrorReporter errorReporter = ErrorReporter.createForTest();
+    ErrorReporter errorReporter = ErrorReporter.create();
     SoyFileNode template = parseTemplateBody("<div/>\n");
     StrictHtmlValidationPass matcherPass =
         new StrictHtmlValidationPass(errorReporter);
@@ -98,8 +96,7 @@ public final class StrictHtmlValidationPassTest {
         parseTemplateBody(
             Joiner.on("\n")
                 .join("{@param cond1: bool}", "<span>", "  {if $cond1}Content1{/if}", "</span>"));
-    StrictHtmlValidationPass matcherPass =
-        new StrictHtmlValidationPass(ErrorReporter.createForTest());
+    StrictHtmlValidationPass matcherPass = new StrictHtmlValidationPass(ErrorReporter.create());
 
     // Act: execute the graph builder.
     matcherPass.run(template, new IncrementingIdGenerator());
@@ -142,8 +139,7 @@ public final class StrictHtmlValidationPassTest {
                     "<div>",
                     "  {if $cond1}</div><div>Content1{/if}",
                     "</div>"));
-    StrictHtmlValidationPass matcherPass =
-        new StrictHtmlValidationPass(ErrorReporter.createForTest());
+    StrictHtmlValidationPass matcherPass = new StrictHtmlValidationPass(ErrorReporter.create());
 
     // Act: execute the graph builder.
     matcherPass.run(template, new IncrementingIdGenerator());
@@ -202,8 +198,7 @@ public final class StrictHtmlValidationPassTest {
                     "  {if $cond2}<div>Content2{/if}",
                     "</div>",
                     "</div>"));
-    StrictHtmlValidationPass matcherPass =
-        new StrictHtmlValidationPass(ErrorReporter.createForTest());
+    StrictHtmlValidationPass matcherPass = new StrictHtmlValidationPass(ErrorReporter.create());
 
     // Act: execute the graph builder.
     matcherPass.run(template, new IncrementingIdGenerator());
@@ -277,8 +272,7 @@ public final class StrictHtmlValidationPassTest {
                     "{elseif $cond3}<li>List 3",
                     "{/if}",
                     "</li>"));
-    StrictHtmlValidationPass matcherPass =
-        new StrictHtmlValidationPass(ErrorReporter.createForTest());
+    StrictHtmlValidationPass matcherPass = new StrictHtmlValidationPass(ErrorReporter.create());
 
     // Act: execute the graph builder.
     matcherPass.run(template, new IncrementingIdGenerator());
@@ -350,8 +344,7 @@ public final class StrictHtmlValidationPassTest {
                     "{else}<div>Content 2</div>",
                     "{/if}",
                     "<span>non-conditional content</span>"));
-    StrictHtmlValidationPass matcherPass =
-        new StrictHtmlValidationPass(ErrorReporter.createForTest());
+    StrictHtmlValidationPass matcherPass = new StrictHtmlValidationPass(ErrorReporter.create());
 
     // Act: execute the graph builder.
     matcherPass.run(template, new IncrementingIdGenerator());
@@ -416,8 +409,7 @@ public final class StrictHtmlValidationPassTest {
                     "{else}<div>Content 2</div>",
                     "{/if}",
                     "<span>non-conditional content</span>"));
-    StrictHtmlValidationPass matcherPass =
-        new StrictHtmlValidationPass(ErrorReporter.createForTest());
+    StrictHtmlValidationPass matcherPass = new StrictHtmlValidationPass(ErrorReporter.create());
 
     // Act: execute the graph builder.
     matcherPass.run(template, new IncrementingIdGenerator());
@@ -501,8 +493,7 @@ public final class StrictHtmlValidationPassTest {
                     "  {case 3}<li>List 3",
                     "{/switch}",
                     "</li>"));
-    StrictHtmlValidationPass matcherPass =
-        new StrictHtmlValidationPass(ErrorReporter.createForTest());
+    StrictHtmlValidationPass matcherPass = new StrictHtmlValidationPass(ErrorReporter.create());
 
     // Act: execute the graph builder.
     matcherPass.run(template, new IncrementingIdGenerator());
@@ -621,8 +612,7 @@ public final class StrictHtmlValidationPassTest {
                     "   {default}<div>Default content</div>",
                     "{/switch}",
                     "<span>non-conditional content</span>"));
-    StrictHtmlValidationPass matcherPass =
-        new StrictHtmlValidationPass(ErrorReporter.createForTest());
+    StrictHtmlValidationPass matcherPass = new StrictHtmlValidationPass(ErrorReporter.create());
 
     // Act: execute the graph builder and follow the graph to the accumulator node.
     matcherPass.run(template, new IncrementingIdGenerator());
@@ -693,7 +683,7 @@ public final class StrictHtmlValidationPassTest {
         .addPassContinuationRule(
             StrictHtmlValidationPass.class, PassContinuationRule.STOP_BEFORE_PASS)
         .desugarHtmlNodes(false)
-        .errorReporter(ErrorReporter.createForTest())
+        .errorReporter(ErrorReporter.create())
         .parse()
         .fileSet()
         .getChild(0);

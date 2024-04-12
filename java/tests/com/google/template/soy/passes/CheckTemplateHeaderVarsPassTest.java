@@ -187,7 +187,7 @@ public final class CheckTemplateHeaderVarsPassTest {
   }
 
   private static ImmutableList<SoyError> soyDocErrorsFor(String... soyFileContents) {
-    ErrorReporter errorReporter = ErrorReporter.createForTest();
+    ErrorReporter errorReporter = ErrorReporter.create();
     SoyFileSetParserBuilder.forFileContents(soyFileContents).errorReporter(errorReporter).parse();
     return errorReporter.getErrors();
   }

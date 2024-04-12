@@ -1126,7 +1126,7 @@ public final class TemplateParserTest {
 
   @Test
   public void testParseMsgStmtWithIf() throws Exception {
-    ErrorReporter errorReporter = ErrorReporter.createForTest();
+    ErrorReporter errorReporter = ErrorReporter.create();
     parseTemplateContent(
         "{@param boo :?}\n"
             + "  {msg desc=\"Blah.\"}\n"
@@ -1654,7 +1654,7 @@ public final class TemplateParserTest {
 
   @Test
   public void testMultipleErrors() throws ParseException {
-    ErrorReporter errorReporter = ErrorReporter.createForTest();
+    ErrorReporter errorReporter = ErrorReporter.create();
     parseTemplateContent(
         "{call .123 /}\n" // Invalid callee name
             + "{delcall 456 /}\n" // Invalid callee name
@@ -1732,13 +1732,13 @@ public final class TemplateParserTest {
   }
 
   private static void assertInvalidTemplate(String input) {
-    ErrorReporter errorReporter = ErrorReporter.createForTest();
+    ErrorReporter errorReporter = ErrorReporter.create();
     parseTemplateContent(input, errorReporter);
     assertThat(errorReporter.getErrors()).isNotEmpty();
   }
 
   private static void assertInvalidTemplate(String input, String expectedErrorMessage) {
-    ErrorReporter errorReporter = ErrorReporter.createForTest();
+    ErrorReporter errorReporter = ErrorReporter.create();
     parseTemplateContent(input, errorReporter);
     assertThat(errorReporter.getErrors()).hasSize(1);
     assertThat(errorReporter.getErrors().get(0).message()).contains(expectedErrorMessage);

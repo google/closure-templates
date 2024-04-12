@@ -23,7 +23,6 @@ import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.truth.FailureMetadata;
 import com.google.common.truth.Subject;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
@@ -137,7 +136,7 @@ public final class TemplateSubject extends Subject {
         isTemplateContent
             ? SharedTestUtils.buildTestSoyFileContent(actual)
             : (actual.contains("{namespace ") ? actual : SharedTestUtils.NS + actual);
-    ErrorReporter errorReporter = ErrorReporter.create(ImmutableMap.of());
+    ErrorReporter errorReporter = ErrorReporter.create();
     SoyFileSetNode fileSet =
         SoyFileSetParserBuilder.forFileContents(content)
             .errorReporter(errorReporter)

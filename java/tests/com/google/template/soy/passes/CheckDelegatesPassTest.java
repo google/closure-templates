@@ -142,7 +142,7 @@ public final class CheckDelegatesPassTest {
 
   @Test
   public void testErrorDelegateCallToBasicTemplate() {
-    ErrorReporter errorReporter = ErrorReporter.createForTest();
+    ErrorReporter errorReporter = ErrorReporter.create();
     String soyFile1 =
         "{namespace ns1}\n"
             + "import {foo} from 'no-path-2';\n"
@@ -167,7 +167,7 @@ public final class CheckDelegatesPassTest {
 
   @Test
   public void testErrorDelegateCallToModifiableTemplate() {
-    ErrorReporter errorReporter = ErrorReporter.createForTest();
+    ErrorReporter errorReporter = ErrorReporter.create();
     String soyFile =
         "{namespace ns1}"
             + "{template foo modifiable=\"true\" legacydeltemplatenamespace=\"foo\"}{/template}"
@@ -181,7 +181,7 @@ public final class CheckDelegatesPassTest {
   }
 
   private void assertInvalidSoyFiles(String expectedErrorMsgSubstr, String... soyFileContents) {
-    ErrorReporter errorReporter = ErrorReporter.createForTest();
+    ErrorReporter errorReporter = ErrorReporter.create();
     SoyFileSetParserBuilder.forFileContents(soyFileContents).errorReporter(errorReporter).parse();
     assertThat(errorReporter.getErrors()).hasSize(1);
     assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())

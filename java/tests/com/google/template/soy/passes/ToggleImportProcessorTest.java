@@ -55,11 +55,11 @@ public final class ToggleImportProcessorTest {
           ByteOffsetIndex.EMPTY,
           ImmutableList.of());
 
-  ErrorReporter errorReporter = ErrorReporter.createForTest();
+  ErrorReporter errorReporter = ErrorReporter.create();
 
   @Before
   public void setUp() {
-    errorReporter = ErrorReporter.createForTest();
+    errorReporter = ErrorReporter.create();
   }
 
   @Test

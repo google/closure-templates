@@ -33,7 +33,7 @@ public final class ErrorReporterImplTest {
 
   @Test
   public void testCheckpoint() {
-    ErrorReporter reporter = ErrorReporter.createForTest();
+    ErrorReporter reporter = ErrorReporter.create();
     Checkpoint cp = reporter.checkpoint();
     assertThat(reporter.errorsSince(cp)).isFalse();
 
@@ -47,10 +47,10 @@ public final class ErrorReporterImplTest {
 
   @Test
   public void testCheckpoint_differentInstances() {
-    ErrorReporter reporter = ErrorReporter.createForTest();
+    ErrorReporter reporter = ErrorReporter.create();
     Checkpoint cp = reporter.checkpoint();
     try {
-      ErrorReporter.createForTest().errorsSince(cp);
+      ErrorReporter.create().errorsSince(cp);
       fail();
     } catch (IllegalArgumentException expected) {
     }
@@ -58,18 +58,18 @@ public final class ErrorReporterImplTest {
 
   @Test
   public void testWarn() {
-    ErrorReporter reporter = ErrorReporter.createForTest();
+    ErrorReporter reporter = ErrorReporter.create();
     reporter.warn(SourceLocation.UNKNOWN, ERROR);
-    assertThat(reporter.getWarnings().get(0).toString())
-        .isEqualTo("unknown:-1: warning: Oh noes.\n");
+    assertThat(ErrorFormatter.SIMPLE.format(reporter.getWarnings().get(0)))
+        .isEqualTo("unknown:-1: warning: Oh noes.");
   }
 
   @Test
   public void testCopyTo() {
-    ErrorReporter reporter = ErrorReporter.createForTest();
+    ErrorReporter reporter = ErrorReporter.create();
     reporter.warn(SourceLocation.UNKNOWN, ERROR);
     reporter.report(SourceLocation.UNKNOWN, ERROR);
-    ErrorReporter secondReporter = ErrorReporter.createForTest();
+    ErrorReporter secondReporter = ErrorReporter.create();
 
     Checkpoint cp = secondReporter.checkpoint();
     assertThat(secondReporter.errorsSince(cp)).isFalse();
@@ -79,9 +79,9 @@ public final class ErrorReporterImplTest {
 
     assertThat(secondReporter.errorsSince(cp)).isTrue();
     assertThat(secondReporter.hasErrors()).isTrue();
-    assertThat(secondReporter.getWarnings().get(0).toString())
-        .isEqualTo("unknown:-1: warning: Oh noes.\n");
-    assertThat(secondReporter.getErrors().get(0).toString())
-        .isEqualTo("unknown:-1: error: Oh noes.\n");
+    assertThat(ErrorFormatter.SIMPLE.format(secondReporter.getWarnings().get(0)))
+        .isEqualTo("unknown:-1: warning: Oh noes.");
+    assertThat(ErrorFormatter.SIMPLE.format(secondReporter.getErrors().get(0)))
+        .isEqualTo("unknown:-1: error: Oh noes.");
   }
 }

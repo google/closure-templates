@@ -200,7 +200,7 @@ public final class InsertMsgsVisitorTest {
     assertThat(template.numChildren()).isEqualTo(2);
 
     // Execute the visitor.
-    ErrorReporter errorReporter = ErrorReporter.createForTest();
+    ErrorReporter errorReporter = ErrorReporter.create();
     new InsertMsgsVisitor(/* msgBundle= */ null, errorReporter).insertMsgs(template);
 
     assertThat(errorReporter.getErrors()).hasSize(2);

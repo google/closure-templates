@@ -933,7 +933,7 @@ public class SoyConformanceTest {
 
   private ImmutableList<SoyError> getViolations(String textProto, SoyFileSetParserBuilder builder) {
     ValidatedConformanceConfig config = parseConfigProto(textProto);
-    ErrorReporter errorReporter = ErrorReporter.createForTest();
+    ErrorReporter errorReporter = ErrorReporter.create();
     builder.setConformanceConfig(config).errorReporter(errorReporter).parse();
     ImmutableList<SoyError> errors = errorReporter.getErrors();
     Set<SoyErrorKind> expectedErrorKinds = new HashSet<>();

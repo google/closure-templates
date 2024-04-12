@@ -297,7 +297,7 @@ public final class TemplateTester {
               .errorReporter(ErrorReporter.exploding())
               .build();
       ParseResult parseResult = parser.parse();
-      ErrorReporter errors = ErrorReporter.createForTest();
+      ErrorReporter errors = ErrorReporter.create();
       Optional<CompiledTemplates> template =
           BytecodeCompiler.compile(
               parseResult.registry(),

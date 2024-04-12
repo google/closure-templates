@@ -20,6 +20,8 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.base.internal.SoyFileSupplier;
+import com.google.template.soy.error.ErrorFormatter;
+import com.google.template.soy.error.ErrorFormatterImpl;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyCompilationException;
 import com.google.template.soy.error.SoyError;
@@ -43,7 +45,7 @@ final class CompilingClassLoader extends AbstractMemoryClassLoader {
   // would just use more memory.
   private final Map<String, ClassData> classesByName = Collections.synchronizedMap(new HashMap<>());
 
-  private final ImmutableMap<SourceLogicalPath, SoyFileSupplier> filePathsToSuppliers;
+  private final ErrorFormatter errorFormatter;
   private final ImmutableMap<String, SoyFileNode> javaClassNameToFile;
   private final SoyTypeRegistry typeRegistry;
   private final PartialFileSetMetadata fileSetMetadata;
@@ -66,9 +68,9 @@ final class CompilingClassLoader extends AbstractMemoryClassLoader {
         javaClassNameToFile.put(Names.javaClassNameFromSoyNamespace(file.getNamespace()), file);
       }
     }
+    this.errorFormatter = ErrorFormatterImpl.create().withSnippets(filePathsToSuppliers);
     this.javaClassNameToFile = ImmutableMap.copyOf(javaClassNameToFile);
     this.typeRegistry = typeRegistry;
-    this.filePathsToSuppliers = filePathsToSuppliers;
     this.fileSetMetadata = fileSetMetadata;
   }
 
@@ -94,7 +96,7 @@ final class CompilingClassLoader extends AbstractMemoryClassLoader {
       return null;
     }
     ClassData clazzToLoad = null;
-    ErrorReporter reporter = ErrorReporter.create(filePathsToSuppliers);
+    ErrorReporter reporter = ErrorReporter.create();
     for (ClassData clazz :
         new SoyFileCompiler(
                 node, new JavaSourceFunctionCompiler(typeRegistry, reporter), fileSetMetadata)
@@ -109,7 +111,7 @@ final class CompilingClassLoader extends AbstractMemoryClassLoader {
     if (reporter.hasErrors()) {
       // if we are reporting errors we should report warnings at the same time.
       Iterable<SoyError> errors = Iterables.concat(reporter.getErrors(), reporter.getWarnings());
-      throw new SoyCompilationException(errors);
+      throw new SoyCompilationException(errors, errorFormatter);
     }
     return clazzToLoad;
   }

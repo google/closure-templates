@@ -463,7 +463,7 @@ public final class HtmlRewriterTest {
     // unmatched closing div is fine.
     runPass("</div>");
     for (String tag : new String[] {"</script>", "</style>", "</title>", "</textarea>", "</xmp>"}) {
-      ErrorReporter errorReporter = ErrorReporter.createForTest();
+      ErrorReporter errorReporter = ErrorReporter.create();
       runPass(tag, errorReporter);
       assertWithMessage("error message for: %s", tag)
           .that(Iterables.getOnlyElement(errorReporter.getErrors()).message())
@@ -479,7 +479,7 @@ public final class HtmlRewriterTest {
 
   @Test
   public void testBadTagName() {
-    ErrorReporter errorReporter = ErrorReporter.createForTest();
+    ErrorReporter errorReporter = ErrorReporter.create();
     runPass("<3 >", errorReporter);
     assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
         .isEqualTo("Illegal tag name character.");
@@ -487,11 +487,11 @@ public final class HtmlRewriterTest {
 
   @Test
   public void testBadAttributeName() {
-    ErrorReporter errorReporter = ErrorReporter.createForTest();
+    ErrorReporter errorReporter = ErrorReporter.create();
     runPass("<div foo-->", errorReporter);
     assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
         .isEqualTo("Illegal attribute name character.");
-    errorReporter = ErrorReporter.createForTest();
+    errorReporter = ErrorReporter.create();
     runPass("<div 0a>", errorReporter);
     assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
         .isEqualTo("Illegal attribute name character.");
@@ -506,7 +506,7 @@ public final class HtmlRewriterTest {
 
   @Test
   public void testHtmlCommentWithOnlyRawTextNode() {
-    ErrorReporter errorReporter = ErrorReporter.createForTest();
+    ErrorReporter errorReporter = ErrorReporter.create();
     TemplateNode node;
 
     // The most common test case.
@@ -540,7 +540,7 @@ public final class HtmlRewriterTest {
 
   @Test
   public void testHtmlCommentWithPrintNode() {
-    ErrorReporter errorReporter = ErrorReporter.createForTest();
+    ErrorReporter errorReporter = ErrorReporter.create();
     TemplateNode node;
 
     // Print node.
@@ -560,7 +560,7 @@ public final class HtmlRewriterTest {
 
   @Test
   public void testHtmlCommentWithControlFlow() {
-    ErrorReporter errorReporter = ErrorReporter.createForTest();
+    ErrorReporter errorReporter = ErrorReporter.create();
     // Control flow structure should be preserved.
     TemplateNode node = runPass("<!-- {if $foo} foo {else} bar {/if} -->", errorReporter);
     assertThatASTString(node)
@@ -581,10 +581,10 @@ public final class HtmlRewriterTest {
 
   @Test
   public void testBadHtmlComment() {
-    ErrorReporter errorReporter = ErrorReporter.createForTest();
+    ErrorReporter errorReporter = ErrorReporter.create();
     // These are examples that we haven't closed the HTML comments.
     for (String text : new String[] {"<!--", "<!-- --", "<!--->"}) {
-      errorReporter = ErrorReporter.createForTest();
+      errorReporter = ErrorReporter.create();
       runPass(text, errorReporter);
       assertWithMessage("error message for: %s", text)
           .that(Iterables.getOnlyElement(errorReporter.getErrors()).message())
