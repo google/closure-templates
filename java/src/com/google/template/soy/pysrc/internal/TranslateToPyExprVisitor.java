@@ -18,6 +18,7 @@ package com.google.template.soy.pysrc.internal;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.template.soy.pysrc.restricted.PyExprUtils.genPyExprWithNewToken;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -57,6 +58,7 @@ import com.google.template.soy.exprtree.OperatorNodes.NotEqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NotOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.SpreadOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TripleEqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TripleNotEqualOpNode;
 import com.google.template.soy.exprtree.RecordLiteralNode;
@@ -293,7 +295,11 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
     Map<PyExpr, PyExpr> dict = new LinkedHashMap<>();
 
     for (int i = 0; i < node.numChildren(); i++) {
-      dict.put(new PyStringExpr("'" + node.getKey(i) + "'"), visit(node.getChild(i)));
+      PyExpr key =
+          node.getChild(i).getKind() == ExprNode.Kind.SPREAD_OP_NODE
+              ? PyExprUtils.dictSpreadKey()
+              : new PyStringExpr("'" + node.getKey(i) + "'");
+      dict.put(key, visit(node.getChild(i)));
     }
 
     // TODO(b/69064788): Switch records to use namedtuple so that if a record is accessed as a map
@@ -485,6 +491,12 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
     // 2. Use a lambda to defer evaluation of the right hand side.
     // lambda x=<left hand side> : <right hand side> if x is None else x
     return genTernaryConditional(conditionalExpr, trueExpr, falseExpr);
+  }
+
+  @Override
+  protected PyExpr visitSpreadOpNode(SpreadOpNode node) {
+    String operator = node.getParent().getKind() == ExprNode.Kind.RECORD_LITERAL_NODE ? "**" : "*";
+    return genPyExprWithNewToken(node.getOperator(), visitChildren(node), operator);
   }
 
   @Override
@@ -852,10 +864,7 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
 
   private PyExpr getPyExpr(OperatorNode opNode, String newToken) {
     List<PyExpr> operandPyExprs = visitChildren(opNode);
-    String newExpr =
-        PyExprUtils.genExprWithNewToken(opNode.getOperator(), operandPyExprs, newToken);
-
-    return new PyExpr(newExpr, PyExprUtils.pyPrecedenceForOperator(opNode.getOperator()));
+    return genPyExprWithNewToken(opNode.getOperator(), operandPyExprs, newToken);
   }
 
   /**

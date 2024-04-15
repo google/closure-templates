@@ -437,7 +437,12 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
 
     // Process children
     for (int i = 0; i < node.numChildren(); i++) {
-      objLiteral.put(node.getKey(i).identifier(), visit(node.getChild(i)));
+      ExprNode child = node.getChild(i);
+      String key =
+          child.getKind() == ExprNode.Kind.SPREAD_OP_NODE
+              ? Expressions.objectLiteralSpreadKey()
+              : node.getKey(i).identifier();
+      objLiteral.put(key, visit(node.getChild(i)));
     }
 
     // Build the record literal

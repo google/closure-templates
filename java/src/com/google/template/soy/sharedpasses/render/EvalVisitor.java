@@ -111,6 +111,7 @@ import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ShiftLeftOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ShiftRightOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.SpreadOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TimesOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TripleEqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TripleNotEqualOpNode;
@@ -316,7 +317,15 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
 
   @Override
   protected SoyValue visitListLiteralNode(ListLiteralNode node) {
-    List<SoyValue> values = this.visitChildren(node);
+    List<SoyValueProvider> values = new ArrayList<>();
+    for (ExprNode child : node.getChildren()) {
+      SoyValue val = visit(child);
+      if (child.getKind() == Kind.SPREAD_OP_NODE && val instanceof SoyList) {
+        values.addAll(val.asJavaList());
+      } else {
+        values.add(val);
+      }
+    }
     return ListImpl.forProviderList(values);
   }
 
@@ -354,9 +363,20 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
 
     ParamStore map = new ParamStore(numItems);
     for (int i = 0; i < numItems; i++) {
-      map.setField(RecordProperty.get(node.getKey(i).identifier()), visit(node.getChild(i)));
+      ExprNode child = node.getChild(i);
+      SoyValue value = visit(child);
+      if (child.getKind() == Kind.SPREAD_OP_NODE && value instanceof SoyRecord) {
+        ((SoyRecord) value).forEach(map::setField);
+      } else {
+        map.setField(RecordProperty.get(node.getKey(i).identifier()), value);
+      }
     }
     return new SoyRecordImpl(map);
+  }
+
+  @Override
+  protected SoyValue visitSpreadOpNode(SpreadOpNode node) {
+    return visit(node.getChild(0));
   }
 
   @Override

@@ -61,6 +61,7 @@ public final class PyExprUtils {
    */
   private static final ImmutableMap<Operator, Integer> PYTHON_PRECEDENCES =
       new ImmutableMap.Builder<Operator, Integer>()
+          .put(Operator.SPREAD, 13)
           .put(Operator.NEGATIVE, 12)
           .put(Operator.TIMES, 11)
           .put(Operator.DIVIDE_BY, 11)
@@ -137,16 +138,14 @@ public final class PyExprUtils {
   public static PyExpr genPyNotNullCheck(PyExpr pyExpr) {
     ImmutableList<PyExpr> exprs = ImmutableList.of(pyExpr, new PyExpr("None", Integer.MAX_VALUE));
     // Note: is/is not is Python's identity comparison. It's used for None checks for performance.
-    String conditionalExpr = genExprWithNewToken(Operator.NOT_EQUAL, exprs, "is not");
-    return new PyExpr(conditionalExpr, PyExprUtils.pyPrecedenceForOperator(Operator.NOT_EQUAL));
+    return genPyExprWithNewToken(Operator.NOT_EQUAL, exprs, "is not");
   }
 
   /** Generates a Python null (None) check expression for the given {@link PyExpr}. */
   public static PyExpr genPyNullCheck(PyExpr expr) {
     ImmutableList<PyExpr> exprs = ImmutableList.of(expr, new PyExpr("None", Integer.MAX_VALUE));
     // Note: is/is not is Python's identity comparison. It's used for None checks for performance.
-    String conditionalExpr = genExprWithNewToken(Operator.EQUAL, exprs, "is");
-    return new PyExpr(conditionalExpr, PyExprUtils.pyPrecedenceForOperator(Operator.EQUAL));
+    return genPyExprWithNewToken(Operator.EQUAL, exprs, "is");
   }
 
   /**
@@ -234,7 +233,13 @@ public final class PyExprUtils {
     List<String> values = new ArrayList<>();
 
     for (Map.Entry<PyExpr, PyExpr> entry : dict.entrySet()) {
-      values.add("(" + entry.getKey().getText() + ", " + entry.getValue().getText() + ")");
+      if (entry.getKey() == SPREAD_KEY) {
+        // Remove leading "**" since we need to spread the list of items instead.
+        String withoutUnpack = entry.getValue().getText().substring(2);
+        values.add("*(" + withoutUnpack + ".items())");
+      } else {
+        values.add("(" + entry.getKey().getText() + ", " + entry.getValue().getText() + ")");
+      }
     }
 
     Joiner joiner = Joiner.on(", ");
@@ -359,6 +364,12 @@ public final class PyExprUtils {
     return new PyListExpr(leftDelimiter + contents + rightDelimiter, Integer.MAX_VALUE);
   }
 
+  public static PyExpr genPyExprWithNewToken(
+      Operator op, List<? extends TargetExpr> operandExprs, String newToken) {
+    String conditionalExpr = genExprWithNewToken(op, operandExprs, newToken);
+    return new PyExpr(conditionalExpr, PyExprUtils.pyPrecedenceForOperator(op));
+  }
+
   /**
    * Generates an expression for the given operator and operands assuming that the expression for
    * the operator uses the same syntax format as the Soy operator, with the exception that the of a
@@ -427,5 +438,11 @@ public final class PyExprUtils {
     }
 
     return exprSb.toString();
+  }
+
+  private static final PyExpr SPREAD_KEY = new PyStringExpr("**");
+
+  public static PyExpr dictSpreadKey() {
+    return SPREAD_KEY;
   }
 }
