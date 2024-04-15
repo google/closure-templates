@@ -4646,7 +4646,7 @@ private ExprNode VarRefOrFunctionCallLike(ExprState state) :
                   name.identifier());
             }
           }
-          node = new RecordLiteralNode(ident, callArgs.getUniqueNames(errorReporter), loc);
+          node = new RecordLiteralNode(ident, callArgs.getNames(errorReporter), loc);
         } else {
           errorReporter.report(ident.location(), RECORD_NAMED_PARAMS);
           node = new RecordLiteralNode(ident, ImmutableList.of(), loc);

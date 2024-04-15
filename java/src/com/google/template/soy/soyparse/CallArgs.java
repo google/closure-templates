@@ -189,10 +189,6 @@ class CallArgs {
     return names;
   }
 
-  ImmutableList<Identifier> getUniqueNames(ErrorReporter errorReporter) {
-    return getNames(errorReporter).stream().distinct().collect(toImmutableList());
-  }
-
   public CallableExprBuilder toBuilder(ErrorReporter errorReporter) {
     CallableExprBuilder cb =
         CallableExprBuilder.builder().setParamValues(values).setCommaLocations(commas);
