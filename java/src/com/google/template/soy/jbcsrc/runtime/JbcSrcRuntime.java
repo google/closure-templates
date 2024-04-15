@@ -44,6 +44,7 @@ import com.google.template.soy.data.LoggingFunctionInvocation;
 import com.google.template.soy.data.ProtoFieldInterpreter;
 import com.google.template.soy.data.RecordProperty;
 import com.google.template.soy.data.SanitizedContent;
+import com.google.template.soy.data.SoyAbstractValue;
 import com.google.template.soy.data.SoyLegacyObjectMap;
 import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyRecord;
@@ -685,12 +686,10 @@ public final class JbcSrcRuntime {
     return v != 0.0 & !Double.isNaN(v);
   }
 
-
   @Keep
   public static boolean coerceToBoolean(@Nullable String v) {
     return v != null && !v.isEmpty();
   }
-
 
   /** Function to execute after rendering of a section of buffered template is done. */
   @Immutable
@@ -1051,4 +1050,86 @@ public final class JbcSrcRuntime {
   }
 
   private JbcSrcRuntime() {}
+
+  /**
+   * Wraps a value that is being spread inside a list or record literal, so that it can be expanded
+   * later by testing on `instanceof`.
+   */
+  public static final class SpreadMarker extends SoyAbstractValue {
+    final Object value;
+
+    public static SpreadMarker wrapList(Iterable<SoyValueProvider> value) {
+      return new SpreadMarker(value);
+    }
+
+    public static SpreadMarker wrapRecord(SoyRecord value) {
+      return new SpreadMarker(value);
+    }
+
+    SoyRecord getRecord() {
+      return (SoyRecord) value;
+    }
+
+    @SuppressWarnings("unchecked")
+    Iterable<SoyValueProvider> getList() {
+      return (Iterable<SoyValueProvider>) value;
+    }
+
+    SpreadMarker(Object value) {
+      this.value = value;
+    }
+
+    @Override
+    public boolean equals(Object other) {
+      return this == other;
+    }
+
+    @Override
+    public int hashCode() {
+      return value.hashCode();
+    }
+
+    @Override
+    public boolean coerceToBoolean() {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public String coerceToString() {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void render(LoggingAdvisingAppendable appendable) {
+      throw new UnsupportedOperationException();
+    }
+  }
+
+  @Nonnull
+  @Keep
+  public static ImmutableList<SoyValueProvider> spreadList(Iterable<SoyValueProvider> l) {
+    ImmutableList.Builder<SoyValueProvider> spread = ImmutableList.builder();
+    for (SoyValueProvider value : l) {
+      if (value instanceof SpreadMarker) {
+        Iterable<SoyValueProvider> nested = ((SpreadMarker) value).getList();
+        spread.addAll(nested);
+      } else {
+        spread.add(value);
+      }
+    }
+    return spread.build();
+  }
+
+  @Nonnull
+  @Keep
+  public static ParamStore setParamStoreField(
+      ParamStore store, RecordProperty prop, SoyValueProvider value) {
+    if (value instanceof SpreadMarker) {
+      SoyRecord nestedRecord = ((SpreadMarker) value).getRecord();
+      nestedRecord.forEach(store::setField);
+    } else {
+      store.setField(prop, value);
+    }
+    return store;
+  }
 }

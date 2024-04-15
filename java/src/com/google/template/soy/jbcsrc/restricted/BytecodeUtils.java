@@ -1021,7 +1021,7 @@ public final class BytecodeUtils {
         value = ((SoyExpression) value).box();
       }
       var key = constantRecordProperty(entry.getKey());
-      paramStore = paramStore.invoke(MethodRefs.PARAM_STORE_SET_FIELD, key, value);
+      paramStore = MethodRefs.PARAM_STORE_SET_FIELD.invoke(paramStore, key, value);
     }
 
     return paramStore;

@@ -256,7 +256,12 @@ public final class MethodRefs {
           Dir.class);
 
   public static final MethodRef PARAM_STORE_SET_FIELD =
-      createNonPure(ParamStore.class, "setField", RecordProperty.class, SoyValueProvider.class);
+      createNonPure(
+          JbcSrcRuntime.class,
+          "setParamStoreField",
+          ParamStore.class,
+          RecordProperty.class,
+          SoyValueProvider.class);
   public static final MethodRef PARAM_STORE_FROM_RECORD =
       createPure(ParamStore.class, "fromRecord", SoyRecord.class);
 
@@ -668,6 +673,13 @@ public final class MethodRefs {
 
   public static final MethodRef ESCAPING_BUFFERED_RENDER_DONE_FN =
       createPureConstructor(JbcSrcRuntime.EscapingBufferedRenderDoneFn.class, ImmutableList.class);
+
+  public static final MethodRef MARK_LIST_SPREAD =
+      MethodRef.createNonPure(JbcSrcRuntime.SpreadMarker.class, "wrapList", Iterable.class);
+  public static final MethodRef MARK_RECORD_SPREAD =
+      MethodRef.createNonPure(JbcSrcRuntime.SpreadMarker.class, "wrapRecord", SoyRecord.class);
+  public static final MethodRef SPREAD_LIST =
+      createPure(JbcSrcRuntime.class, "spreadList", Iterable.class);
 
   private MethodRefs() {}
 }
