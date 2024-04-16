@@ -104,6 +104,11 @@ For example:
 *   `[]` empty list
 *   `['a', 'b']` list containing two elements
 
+You can use the `...` operator to spread one or more lists inside a list
+literal.
+
+*   `{let $l2: [1, 2, ...$l1] /}`
+
 ### map {#map}
 
 There are two different syntaxes for creating map literals. They are both
@@ -139,6 +144,11 @@ identifier. For example,
 
 Empty records are not allowed.
 
+You can use the `...` operator to spread one or more records inside a record
+literal.
+
+*   `{let $r2: record(...$r1, key: 'value') /}`
+
 ## Variables
 
 ### Parameters and locals
@@ -171,7 +181,7 @@ Here are the supported operators, listed in decreasing order of precedence
 9.  `^`
 10. `|`
 11. `&&` `and`
-12. `||` `or` `??`
+12. `||` `or` `??` `...`
 13. `? :`(ternary)
 
 The Soy programming language respects the order of evaluation indicated
@@ -423,9 +433,19 @@ For example,
 
 *   `$foo ?? 0`
 
+### Spread operator `...` {#spread-operator}
+
+The spread operator `...` allows you to expand the contents of a list into
+another list literal, or the contents of a record into another record literal.
+
+For example,
+
+*   `[1, 2, ...$list1, 3, 4, ...$list2]`
+*   `record(k1: 'v1', ...$rec1, k2: 'v2', ...$rec2)`
+
 ### Ternary operator `? :` {#ternary-operator}
 
-Ternary conditional operator ? : uses the boolean value of one expression to
+Ternary conditional operator `? :` uses the boolean value of one expression to
 decide which of two other expressions should be evaluated.
 
 For example,
