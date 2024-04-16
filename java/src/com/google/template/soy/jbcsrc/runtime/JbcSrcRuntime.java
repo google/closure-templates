@@ -1056,7 +1056,7 @@ public final class JbcSrcRuntime {
    * later by testing on `instanceof`.
    */
   public static final class SpreadMarker extends SoyAbstractValue {
-    final Object value;
+    private final Object value;
 
     public static SpreadMarker wrapList(Iterable<SoyValueProvider> value) {
       return new SpreadMarker(value);
