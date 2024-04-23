@@ -432,13 +432,16 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
   ResolveExpressionTypesPass(
       ErrorReporter errorReporter,
       PluginResolver pluginResolver,
+      boolean allowMissingSoyDeps,
       boolean rewriteShortFormCalls,
       Supplier<FileSetMetadata> templateRegistryFromDeps) {
     this.errorReporter = errorReporter;
     this.pluginResolutionMode =
-        pluginResolver == null
-            ? PluginResolver.Mode.REQUIRE_DEFINITIONS
-            : pluginResolver.getPluginResolutionMode();
+        allowMissingSoyDeps
+            ? PluginResolver.Mode.ALLOW_UNDEFINED
+            : (pluginResolver == null
+                ? PluginResolver.Mode.REQUIRE_DEFINITIONS
+                : pluginResolver.getPluginResolutionMode());
     this.rewriteShortFormCalls = rewriteShortFormCalls;
     this.templateRegistryFromDeps = templateRegistryFromDeps;
     this.methodRegistry =

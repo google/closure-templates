@@ -289,6 +289,7 @@ public final class PassManager {
     private CssRegistry cssRegistry = CssRegistry.EMPTY;
     private ToggleRegistry toggleRegistry = ToggleRegistry.EMPTY;
     private boolean allowUnknownGlobals;
+    private boolean allowMissingSoyDeps;
     private boolean allowUnknownJsGlobals;
     private boolean disableAllTypeChecking;
     private MethodChecker javaPluginValidator;
@@ -376,6 +377,13 @@ public final class PassManager {
     @CanIgnoreReturnValue
     public Builder allowUnknownGlobals() {
       this.allowUnknownGlobals = true;
+      return this;
+    }
+
+    /** Allows the Soy compiler to skip over any Soy dependencies that are missing. */
+    @CanIgnoreReturnValue
+    public Builder allowMissingSoyDeps() {
+      this.allowMissingSoyDeps = true;
       return this;
     }
 
@@ -511,7 +519,7 @@ public final class PassManager {
           .add(
               new ImportsPass(
                   errorReporter,
-                  disableAllTypeChecking,
+                  disableAllTypeChecking || allowMissingSoyDeps,
                   new ProtoImportProcessor(registry, errorReporter, disableAllTypeChecking),
                   new TemplateImportProcessor(errorReporter, accumulatedState::registryFromDeps),
                   new CssImportProcessor(cssRegistry, errorReporter),
@@ -602,6 +610,7 @@ public final class PassManager {
                 new ResolveExpressionTypesPass(
                     errorReporter,
                     pluginResolver,
+                    allowMissingSoyDeps,
                     astRewrites.rewriteShortFormCalls(),
                     accumulatedState::registryFromDeps))
             .add(new VeDefValidationPass(errorReporter));
