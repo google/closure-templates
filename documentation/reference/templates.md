@@ -20,7 +20,6 @@ With all optional attributes:
 {/template}
 ```
 
-
 These are the `template` tag's attributes:
 
 *   `visibility`: Optional. Default `public`. Set this to `private` if you want
