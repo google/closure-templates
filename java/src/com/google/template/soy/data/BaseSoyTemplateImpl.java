@@ -52,6 +52,7 @@ import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
@@ -88,11 +89,11 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
    * Returns the parameters as a map. Values are not wrapped with SoyValueProvider. This method is
    * intended to be called only by test code.
    */
-  public final ImmutableMap<String, Object> getRawParamsAsMap() {
+  public final Map<String, Object> getRawParamsAsMap() {
     // This is the only place where SoyValueUnconverter escapes this package.
-    ImmutableMap.Builder<String, Object> builder = ImmutableMap.builder();
-    data.forEach((key, value) -> builder.put(key.getName(), SoyValueUnconverter.unconvert(value)));
-    return builder.buildOrThrow();
+    Map<String, Object> rawValues = new HashMap<>();
+    data.forEach((k, v) -> rawValues.put(k.getName(), SoyValueUnconverter.unconvert(v)));
+    return rawValues;
   }
 
   @Override
@@ -144,7 +145,7 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
       prepareData(/* checkRequired= */ true);
       return buildInternal();
     }
- 
+
     private static class PartialSoyTemplateImpl<T extends SoyTemplate>
         implements PartialSoyTemplate {
       private final T soyTemplate;
