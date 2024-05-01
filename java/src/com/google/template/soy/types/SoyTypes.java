@@ -41,7 +41,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
@@ -393,110 +392,9 @@ public final class SoyTypes {
    * contains a type of the given kind -- e.g., within a union, list, record, map, or template
    * argument.
    */
-  public static boolean transitivelyContainsKind(SoyType type, Kind... kind) {
-    Predicate<SoyType> kindTest;
-    if (kind.length == 1) {
-      kindTest = t -> t.getKind() == kind[0];
-    } else {
-      Set<Kind> kinds = ImmutableSet.copyOf(kind);
-      kindTest = t -> kinds.contains(t.getKind());
-    }
-    return type.accept(
-        new SoyTypeVisitor<>() {
-          @Override
-          public Boolean visit(LegacyObjectMapType type) {
-            return kindTest.test(type)
-                || (type.getKeyType() != null && type.getKeyType().accept(this))
-                || (type.getValueType() != null && type.getValueType().accept(this));
-          }
-
-          @Override
-          public Boolean visit(ListType type) {
-            return kindTest.test(type)
-                || (type.getElementType() != null && type.getElementType().accept(this));
-          }
-
-          @Override
-          public Boolean visit(MapType type) {
-            return kindTest.test(type)
-                || (type.getKeyType() != null && type.getKeyType().accept(this))
-                || (type.getValueType() != null && type.getValueType().accept(this));
-          }
-
-          @Override
-          public Boolean visit(PrimitiveType type) {
-            return kindTest.test(type);
-          }
-
-          @Override
-          public Boolean visit(RecordType type) {
-            if (kindTest.test(type)) {
-              return true;
-            }
-            for (RecordType.Member member : type.getMembers()) {
-              if (member.declaredType().accept(this)) {
-                return true;
-              }
-            }
-            return false;
-          }
-
-          @Override
-          public Boolean visit(SoyProtoEnumType type) {
-            return kindTest.test(type);
-          }
-
-          @Override
-          public Boolean visit(SoyProtoType type) {
-            return kindTest.test(type);
-          }
-
-          @Override
-          public Boolean visit(TemplateType type) {
-            if (kindTest.test(type)) {
-              return true;
-            }
-            for (TemplateType.Parameter parameter : type.getParameters()) {
-              if (parameter.getType().accept(this)) {
-                return true;
-              }
-            }
-            return false;
-          }
-
-          @Override
-          public Boolean visit(UnionType type) {
-            if (kindTest.test(type)) {
-              return true;
-            }
-            for (SoyType member : type.getMembers()) {
-              if (member.accept(this)) {
-                return true;
-              }
-            }
-            return false;
-          }
-
-          @Override
-          public Boolean visit(VeType type) {
-            return kindTest.test(type);
-          }
-
-          @Override
-          public Boolean visit(MessageType type) {
-            return kindTest.test(type);
-          }
-
-          @Override
-          public Boolean visit(ImportType type) {
-            return kindTest.test(type);
-          }
-
-          @Override
-          public Boolean visit(FunctionType type) {
-            return kindTest.test(type);
-          }
-        });
+  public static boolean transitivelyContainsKind(SoyType type, Kind kind) {
+    return TreeStreams.breadthFirst(type, new SoyTypeSuccessorsFunction(null))
+        .anyMatch(t -> t.getKind() == kind);
   }
 
   public static boolean isSanitizedType(SoyType type) {
