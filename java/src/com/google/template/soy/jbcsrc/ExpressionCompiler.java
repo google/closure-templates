@@ -29,7 +29,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.base.internal.Identifier;
-import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.exprtree.AbstractLocalVarDefn;
 import com.google.template.soy.exprtree.AbstractOperatorNode;
 import com.google.template.soy.exprtree.AbstractReturningExprNodeVisitor;
@@ -131,7 +130,6 @@ import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypes;
-import com.google.template.soy.types.UnknownType;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.util.ArrayList;
@@ -493,17 +491,28 @@ final class ExpressionCompiler {
 
     @Override
     protected SoyExpression visitListLiteralNode(ListLiteralNode node) {
-      var compiledChildren = visitChildren(node);
-      boolean hasSpread = node.getChildren().stream().anyMatch(SpreadOpNode.class::isInstance);
-      // TODO(lukes): this should really box the children as SoyValueProviders, we are boxing them
-      // anyway and could additionally delay detach generation. Ditto for RecordLiteralNode.
-      var asList = SoyExpression.asBoxedValueProviderList(compiledChildren);
-      if (hasSpread) {
-        asList = MethodRefs.SPREAD_LIST.invoke(asList);
+      if (node.getChildren().stream().anyMatch(SpreadOpNode.class::isInstance)) {
+        // spreads require a different implementation since we need to accumulate into a builder
+        var builder = MethodRefs.IMMUTABLE_LIST_BUILDER.invoke();
+        for (ExprNode child : node.getChildren()) {
+          if (child instanceof SpreadOpNode) {
+            builder =
+                builder.invoke(
+                    MethodRefs.IMMUTABLE_LIST_BUILDER_ADD_ALL,
+                    visit(((SpreadOpNode) child).getChild(0)).unboxAsListUnchecked());
+          } else {
+            builder = builder.invoke(MethodRefs.IMMUTABLE_LIST_BUILDER_ADD, visit(child).box());
+          }
+        }
+        return SoyExpression.forList(
+            (ListType) node.getType(), builder.invoke(MethodRefs.IMMUTABLE_LIST_BUILDER_BUILD));
       }
+
+      var compiledChildren = visitChildren(node);
+      var asList = SoyExpression.asBoxedValueProviderList(compiledChildren);
       var asListSoyExpression = SoyExpression.forList((ListType) node.getType(), asList);
       // lists show up in defaults and const expressions, special case those
-      if (!hasSpread && isConstantContext && Expression.areAllConstant(compiledChildren)) {
+      if (isConstantContext && Expression.areAllConstant(compiledChildren)) {
         Object[] constantArgs = new Object[1 + compiledChildren.size()];
         constantArgs[0] = node.getSourceLocation().hashCode();
         for (int i = 0; i < compiledChildren.size(); i++) {
@@ -639,11 +648,33 @@ final class ExpressionCompiler {
     @Override
     protected SoyExpression visitRecordLiteralNode(RecordLiteralNode node) {
       boolean hasSpread = node.getChildren().stream().anyMatch(SpreadOpNode.class::isInstance);
-      Expression paramStore = recordLiteralAsParamStore(node);
+      Expression paramStore;
+      if (hasSpread) {
+        // The size here is just a guess.
+        paramStore = MethodRefs.PARAM_STORE_SIZE.invoke(constant(node.numChildren()));
+        for (int i = 0; i < node.numChildren(); i++) {
+          var child = node.getChild(i);
+          if (child instanceof SpreadOpNode) {
+            paramStore =
+                paramStore.invoke(
+                    MethodRefs.PARAM_STORE_SET_ALL,
+                    visit(((SpreadOpNode) child).getChild(0))
+                        .checkedCast(BytecodeUtils.SOY_RECORD_TYPE));
+          } else {
+            paramStore =
+                paramStore.invoke(
+                    MethodRefs.PARAM_STORE_SET_FIELD,
+                    BytecodeUtils.constantRecordProperty(node.getKey(i).identifier()),
+                    visit(child).box());
+          }
+        }
+      } else {
+        paramStore = recordLiteralAsParamStore(node);
+      }
       SoyExpression record =
           BytecodeUtils.newRecordImplFromParamStore(
               node.getType(), node.getSourceLocation(), paramStore);
-      return !hasSpread && isConstantContext ? record.toMaybeConstant() : record;
+      return isConstantContext ? record.toMaybeConstant() : record;
     }
 
     private Expression recordLiteralAsParamStore(RecordLiteralNode node) {
@@ -1073,26 +1104,13 @@ final class ExpressionCompiler {
           SoyTypes.NUMBER_TYPE, MethodRefs.RUNTIME_NEGATIVE.invoke(child.box()));
     }
 
-    // Boolean operators
 
     @Override
     protected SoyExpression visitSpreadOpNode(SpreadOpNode node) {
-      // Wrap value in a special marking wrapper so that we can unwrap it elsewhere.
-      switch (node.getParent().getKind()) {
-        case LIST_LITERAL_NODE:
-          return SoyExpression.forSoyValue(
-              UnknownType.getInstance(),
-              MethodRefs.MARK_LIST_SPREAD.invoke(visit(node.getChild(0))));
-        case RECORD_LITERAL_NODE:
-          return SoyExpression.forSoyValue(
-              UnknownType.getInstance(),
-              MethodRefs.MARK_RECORD_SPREAD.invoke(
-                  visit(node.getChild(0)).checkedCast(SoyRecord.class)));
-        default:
-          throw new IllegalArgumentException(
-              "Unhandled parent kind: " + node.getParent().getKind());
-      }
+      throw new AssertionError("The parent should have handled this");
     }
+
+    // Boolean operators
 
     @Override
     protected SoyExpression visitNotOpNode(NotOpNode node) {

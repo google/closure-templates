@@ -16,7 +16,6 @@
 
 package com.google.template.soy.jbcsrc.restricted;
 
-import static com.google.template.soy.jbcsrc.restricted.MethodRef.create;
 import static com.google.template.soy.jbcsrc.restricted.MethodRef.createNonPure;
 import static com.google.template.soy.jbcsrc.restricted.MethodRef.createNonPureConstructor;
 import static com.google.template.soy.jbcsrc.restricted.MethodRef.createPure;
@@ -125,6 +124,15 @@ public final class MethodRefs {
   public static final MethodRef RENDER_RESULT_ASSERT_DONE =
       createPure(RenderResult.class, "assertDone");
 
+  public static final MethodRef IMMUTABLE_LIST_BUILDER =
+      createNonPure(ImmutableList.class, "builder");
+  public static final MethodRef IMMUTABLE_LIST_BUILDER_ADD =
+      createNonPure(ImmutableList.Builder.class, "add", Object.class);
+  public static final MethodRef IMMUTABLE_LIST_BUILDER_ADD_ALL =
+      createNonPure(ImmutableList.Builder.class, "addAll", Iterable.class);
+  public static final MethodRef IMMUTABLE_LIST_BUILDER_BUILD =
+      createNonPure(ImmutableList.Builder.class, "build");
+
   /** a list of all the ImmutableList.of overloads, indexed by arity. */
   public static final ImmutableList<MethodRef> IMMUTABLE_LIST_OF;
 
@@ -148,7 +156,7 @@ public final class MethodRefs {
     for (java.lang.reflect.Method m : ImmutableList.class.getMethods()) {
       if (m.getName().equals("of")) {
         Class<?>[] params = m.getParameterTypes();
-        MethodRef ref = create(m, MethodPureness.PURE).asNonJavaNullable();
+        MethodRef ref = MethodRef.create(m, MethodPureness.PURE).asNonJavaNullable();
         if (params.length > 0 && params[params.length - 1].isArray()) {
           // skip the one that takes an array in the final position
           immutableListOfArray = ref;
@@ -169,7 +177,7 @@ public final class MethodRefs {
     for (java.lang.reflect.Method m : ImmutableMap.class.getMethods()) {
       if (m.getName().equals("of")) {
         Class<?>[] params = m.getParameterTypes();
-        MethodRef ref = create(m, MethodPureness.PURE).asNonJavaNullable();
+        MethodRef ref = MethodRef.create(m, MethodPureness.PURE).asNonJavaNullable();
         if (params.length > 0 && params[params.length - 1].isArray()) {
           // skip the one that takes an array in the final position
           immutableListOfArray = ref;
@@ -256,12 +264,9 @@ public final class MethodRefs {
           Dir.class);
 
   public static final MethodRef PARAM_STORE_SET_FIELD =
-      createNonPure(
-          JbcSrcRuntime.class,
-          "setParamStoreField",
-          ParamStore.class,
-          RecordProperty.class,
-          SoyValueProvider.class);
+      createNonPure(ParamStore.class, "setField", RecordProperty.class, SoyValueProvider.class);
+  public static final MethodRef PARAM_STORE_SET_ALL =
+      createNonPure(ParamStore.class, "setAll", SoyRecord.class);
   public static final MethodRef PARAM_STORE_FROM_RECORD =
       createPure(ParamStore.class, "fromRecord", SoyRecord.class);
 
@@ -673,13 +678,6 @@ public final class MethodRefs {
 
   public static final MethodRef ESCAPING_BUFFERED_RENDER_DONE_FN =
       createPureConstructor(JbcSrcRuntime.EscapingBufferedRenderDoneFn.class, ImmutableList.class);
-
-  public static final MethodRef MARK_LIST_SPREAD =
-      MethodRef.createNonPure(JbcSrcRuntime.SpreadMarker.class, "wrapList", Iterable.class);
-  public static final MethodRef MARK_RECORD_SPREAD =
-      MethodRef.createNonPure(JbcSrcRuntime.SpreadMarker.class, "wrapRecord", SoyRecord.class);
-  public static final MethodRef SPREAD_LIST =
-      createPure(JbcSrcRuntime.class, "spreadList", Iterable.class);
 
   private MethodRefs() {}
 }

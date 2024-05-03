@@ -112,6 +112,12 @@ public final class ParamStore extends IdentityHashMap<RecordProperty, SoyValuePr
     return this;
   }
 
+  @CanIgnoreReturnValue
+  public ParamStore setAll(SoyRecord record) {
+    record.forEach(this::setField);
+    return this;
+  }
+
   public boolean hasField(RecordProperty name) {
     return super.containsKey(name);
   }
@@ -214,7 +220,6 @@ public final class ParamStore extends IdentityHashMap<RecordProperty, SoyValuePr
   @DoNotCall
   @Override
   public Set<RecordProperty> keySet() {
-
     throw new UnsupportedOperationException();
   }
 
