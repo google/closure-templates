@@ -1825,7 +1825,8 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
                 ? Optional.of(getDataRecordExpression(node, reattachDataLabel))
                 : Optional.empty();
 
-    return BytecodeUtils.newParamStore(baseRecord, paramsMap).labelStart(reattachDataLabel);
+    return BytecodeUtils.newParamStore(baseRecord, paramsMap, ImmutableList.of())
+        .labelStart(reattachDataLabel);
   }
 
   private void maybeAddDefaultParams(CallNode node, Map<String, Expression> paramsMap) {

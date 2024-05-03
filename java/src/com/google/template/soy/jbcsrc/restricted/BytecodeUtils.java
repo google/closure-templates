@@ -981,13 +981,14 @@ public final class BytecodeUtils {
    * SoyExpression instances that can be trivially coerced to SoyValueProvider
    */
   public static Expression newParamStore(
-      Optional<Expression> baseStore, Map<String, Expression> params) {
+      Optional<Expression> baseStore, Map<String, Expression> params, List<Integer> spreadIndexes) {
     baseStore.ifPresent(e -> e.checkAssignableTo(BytecodeUtils.PARAM_STORE_TYPE));
     if (params.isEmpty()) {
       return baseStore.orElse(FieldRef.EMPTY_PARAMS.accessor());
     }
     // NOTE: we can always represent ParamStores as a constant
-    if (Expression.areAllConstant(params.values())
+    if (spreadIndexes.isEmpty()
+        && Expression.areAllConstant(params.values())
         && baseStore.map(Expression::isConstant).orElse(true)) {
       Object[] constantArgs = new Object[params.size() * 2 + (baseStore.isPresent() ? 1 : 0)];
       int i = 0;
@@ -1015,13 +1016,21 @@ public final class BytecodeUtils {
             ? MethodRefs.PARAM_STORE_AUGMENT.invoke(baseStore.get(), constant(params.size()))
             : MethodRefs.PARAM_STORE_SIZE.invoke(constant(params.size()));
 
+    int i = 0;
+    int j = 0;
     for (var entry : params.entrySet()) {
       var value = entry.getValue();
       if (value instanceof SoyExpression) {
         value = ((SoyExpression) value).box();
       }
       var key = constantRecordProperty(entry.getKey());
-      paramStore = MethodRefs.PARAM_STORE_SET_FIELD.invoke(paramStore, key, value);
+      if (spreadIndexes.size() > j && spreadIndexes.get(j) == i) {
+        j++;
+        paramStore = MethodRefs.PARAM_STORE_SET_SPREAD.invoke(paramStore, key, value);
+      } else {
+        paramStore = MethodRefs.PARAM_STORE_SET_FIELD.invoke(paramStore, key, value);
+      }
+      i++;
     }
 
     return paramStore;
