@@ -60,6 +60,7 @@ import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.exprtree.NullSafeAccessNode;
 import com.google.template.soy.exprtree.OperatorNodes.AmpAmpOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.AndOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.AsOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.AssertNonNullOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.BarBarOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.BitwiseAndOpNode;
@@ -70,6 +71,7 @@ import com.google.template.soy.exprtree.OperatorNodes.DivideByOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.EqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.GreaterThanOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.GreaterThanOrEqualOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.InstanceOfOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.LessThanOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.LessThanOrEqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.MinusOpNode;
@@ -474,6 +476,18 @@ final class ExpressionCompiler {
     @Override
     protected SoyExpression visitIntegerNode(IntegerNode node) {
       return SoyExpression.forInt(BytecodeUtils.constant(node.getValue()));
+    }
+
+    @Override
+    protected SoyExpression visitAsOpNode(AsOpNode node) {
+      return SoyExpression.forSoyValue(
+          node.getType(), visit(node.getChild(0)).checkedSoyCast(node.getType()));
+    }
+
+    @Override
+    protected SoyExpression visitInstancceOfOpNode(InstanceOfOpNode node) {
+      // TODO(b/156780590): Implement.
+      return SoyExpression.FALSE;
     }
 
     // Collection literals
@@ -1103,7 +1117,6 @@ final class ExpressionCompiler {
       return SoyExpression.forSoyValue(
           SoyTypes.NUMBER_TYPE, MethodRefs.RUNTIME_NEGATIVE.invoke(child.box()));
     }
-
 
     @Override
     protected SoyExpression visitSpreadOpNode(SpreadOpNode node) {

@@ -88,6 +88,7 @@ import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.exprtree.RecordLiteralNode;
 import com.google.template.soy.exprtree.StringNode;
+import com.google.template.soy.exprtree.TypeLiteralNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.exprtree.UndefinedNode;
 import com.google.template.soy.exprtree.VarDefn;
@@ -1374,6 +1375,8 @@ TOKEN_MGR_DECLS: {
 | < OR: "or" >            // Precedence 2 operators
 | < BAR_BAR: "||" >
 | < QQ: "??" >
+| < AS_OP: "as" >
+| < INSTANCEOF: "instanceof" >
 | < SPREAD: "..." >
 | < AND: "and" >          // Precedence 3 operators
 | < AMP_AMP: "&&" >
@@ -1696,7 +1699,7 @@ private AliasDeclaration Alias() :
     open = <ALIAS_OPEN>
     namespace = Identifier()
     [
-      Keyword("as")
+      <AS_OP>
       alias = Identifier()
     ]
     close = <CMD_END>
@@ -4065,12 +4068,22 @@ private ExprNode PrecExpr2(ExprState state) :
 {
   ExprNode rightHand;
   Token op;
+  TypeNode type;
 }
 {
   { ExprNode expr; }
 
   expr = PrecExpr3(state)
   (
+    op = <AS_OP>
+    type = TypeExpr()
+
+    {
+      rightHand = new TypeLiteralNode(type);
+      expr = Operator.AS.createNode(
+          createSrcLoc(expr, rightHand), createSrcLoc(op), expr, rightHand);
+    }
+  |
     op = <QQ>
     rightHand = PrecExpr3(state)
 
@@ -4298,20 +4311,26 @@ private ExprNode PrecExpr8(ExprState state) :
   Token op;
 }
 {
-  { ExprNode expr; }
+  { ExprNode expr; Identifier type; }
 
   expr = PrecExpr9(state)
   (
     (
-      op = <LANGLE>
+      (
+        op = <LANGLE>
+      |
+        op = <RANGLE>
+      |
+        op = <LT_EQ>
+      |
+        op = <GT_EQ>
+      )
+      rightHand = PrecExpr9(state)
     |
-      op = <RANGLE>
-    |
-      op = <LT_EQ>
-    |
-      op = <GT_EQ>
+      op = <INSTANCEOF>
+      type = Identifier()
+      { rightHand = new TypeLiteralNode(NamedTypeNode.create(type)); }
     )
-    rightHand = PrecExpr9(state)
 
     { expr = createOperatorNode(
         createSrcLoc(expr, rightHand),

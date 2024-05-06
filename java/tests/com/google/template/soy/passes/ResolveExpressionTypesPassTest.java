@@ -934,6 +934,30 @@ public final class ResolveExpressionTypesPassTest {
   }
 
   @Test
+  public void testAsOperator() {
+    assertTypes(
+        "{@param union: number|string}",
+        "{@param b: bool}",
+        "{assertType('float|int', $union as number)}",
+        "{assertType('string', $union as string)}",
+        "{assertType('bool', $union as bool)}",
+        // precedence:
+        "{assertType('int|string', $b ? 1 : 'a' as string)}",
+        "{assertType('string', ($b ? 1 : 'a') as string)}",
+        "");
+  }
+
+  @Test
+  public void testInstanceOfOperator() {
+    assertTypes(
+        "{@param union: ?}",
+        "{if $union instanceof string}",
+        "  {assertType('?', $union)}", // no type narrowing yet
+        "{/if}",
+        "");
+  }
+
+  @Test
   public void testProtoTyping() {
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forTemplateAndImports(

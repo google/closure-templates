@@ -95,6 +95,28 @@ public class OperatorNodes {
     }
   }
 
+  /** Node representing the 'as' cast operator. */
+  public static final class AsOpNode extends AbstractOperatorNode {
+
+    public AsOpNode(SourceLocation sourceLocation, SourceLocation operatorLocation) {
+      super(sourceLocation, Operator.AS, operatorLocation);
+    }
+
+    private AsOpNode(AsOpNode orig, CopyState copyState) {
+      super(orig, copyState);
+    }
+
+    @Override
+    public Kind getKind() {
+      return Kind.AS_OP_NODE;
+    }
+
+    @Override
+    public AsOpNode copy(CopyState copyState) {
+      return new AsOpNode(this, copyState);
+    }
+  }
+
   /** Node representing the '*' (times) operator. */
   public static final class TimesOpNode extends AbstractOperatorNode {
 
@@ -291,6 +313,28 @@ public class OperatorNodes {
     @Override
     public GreaterThanOrEqualOpNode copy(CopyState copyState) {
       return new GreaterThanOrEqualOpNode(this, copyState);
+    }
+  }
+
+  /** Node representing the 'instanceof' operator. */
+  public static final class InstanceOfOpNode extends AbstractOperatorNode {
+
+    public InstanceOfOpNode(SourceLocation sourceLocation, SourceLocation operatorLocation) {
+      super(sourceLocation, Operator.INSTANCE_OF, operatorLocation);
+    }
+
+    private InstanceOfOpNode(InstanceOfOpNode orig, CopyState copyState) {
+      super(orig, copyState);
+    }
+
+    @Override
+    public Kind getKind() {
+      return Kind.INSTANCE_OF_OP_NODE;
+    }
+
+    @Override
+    public InstanceOfOpNode copy(CopyState copyState) {
+      return new InstanceOfOpNode(this, copyState);
     }
   }
 

@@ -96,10 +96,12 @@ import com.google.template.soy.exprtree.NullSafeAccessNode;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.exprtree.OperatorNodes.AmpAmpOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.AndOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.AsOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.AssertNonNullOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.BarBarOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ConditionalOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.EqualOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.InstanceOfOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NotEqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NotOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
@@ -892,6 +894,18 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
   @Override
   protected Expression visitOperatorNode(OperatorNode node) {
     return operation(node.getOperator(), visitChildren(node));
+  }
+
+  @Override
+  protected Expression visitAsOpNode(AsOpNode node) {
+    // TODO(b/156780590): Implement.
+    return visit(node.getChild(0));
+  }
+
+  @Override
+  protected Expression visitInstancceOfOpNode(InstanceOfOpNode node) {
+    // TODO(b/156780590): Implement.
+    return LITERAL_FALSE;
   }
 
   private static final ImmutableSet<SoyType.Kind> CAN_USE_EQUALS =

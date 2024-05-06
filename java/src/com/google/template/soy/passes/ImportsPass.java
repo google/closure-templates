@@ -47,7 +47,7 @@ import java.util.TreeSet;
   // Basically anything that needs types...
   ResolveExpressionTypesPass.class,
   ResolvePluginsPass.class, // Needs all local variables in scope.
-  ResolveTemplateParamTypesPass.class,
+  ResolveDeclaredTypesPass.class,
   ResolveExpressionTypesPass.class, // To resolve extensions.
   RewriteGlobalsPass.class, // To resolve extensions.
   ResolveTemplateNamesPass.class,

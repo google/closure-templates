@@ -73,6 +73,7 @@ public enum Precedence {
       case GREATER_THAN:
       case LESS_THAN_OR_EQUAL:
       case GREATER_THAN_OR_EQUAL:
+      case INSTANCE_OF:
         return P9;
       case EQUAL:
       case NOT_EQUAL:
@@ -94,6 +95,7 @@ public enum Precedence {
         return P3;
       case CONDITIONAL:
       case SPREAD:
+      case AS:
         return P2;
     }
     throw new AssertionError();

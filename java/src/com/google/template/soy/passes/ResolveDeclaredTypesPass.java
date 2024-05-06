@@ -20,8 +20,10 @@ import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.TemplateContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
+import com.google.template.soy.exprtree.TypeLiteralNode;
 import com.google.template.soy.soytree.ExternNode;
 import com.google.template.soy.soytree.SoyFileNode;
+import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateElementNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.AttrParam;
@@ -36,15 +38,14 @@ import com.google.template.soy.types.ast.TypeNode;
 import com.google.template.soy.types.ast.TypeNodeConverter;
 
 /** Resolve the TypeNode objects in TemplateParams to SoyTypes */
-final class ResolveTemplateParamTypesPass implements CompilerFilePass {
+final class ResolveDeclaredTypesPass implements CompilerFilePass {
   private final ErrorReporter errorReporter;
   private final boolean disableAllTypeChecking;
 
   private static final SoyErrorKind ATTRIBUTE_PARAM_ONLY_IN_ELEMENT_TEMPLATE =
       SoyErrorKind.of("Only templates of kind=\"html<?>\" can have @attribute.");
 
-  public ResolveTemplateParamTypesPass(
-      ErrorReporter errorReporter, boolean disableAllTypeChecking) {
+  public ResolveDeclaredTypesPass(ErrorReporter errorReporter, boolean disableAllTypeChecking) {
     this.errorReporter = errorReporter;
     this.disableAllTypeChecking = disableAllTypeChecking;
   }
@@ -60,6 +61,9 @@ final class ResolveTemplateParamTypesPass implements CompilerFilePass {
     for (ExternNode extern : file.getExterns()) {
       extern.setType((FunctionType) converter.getOrCreateType(extern.typeNode()));
     }
+
+    SoyTreeUtils.allNodesOfType(file, TypeLiteralNode.class)
+        .forEach(n -> n.setType(converter.getOrCreateType(n.getTypeNode())));
 
     for (TemplateNode template : file.getTemplates()) {
       for (TemplateParam param : template.getAllParams()) {

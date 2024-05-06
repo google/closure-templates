@@ -56,6 +56,8 @@ abstract class Operation extends Expression implements OperatorInterface {
       case SPREAD:
         return soyOperator.getTokenString();
       case CONDITIONAL:
+      case INSTANCE_OF:
+      case AS:
         throw new IllegalArgumentException("Not a single token.");
     }
     throw new AssertionError();

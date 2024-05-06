@@ -106,6 +106,7 @@ import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.exprtree.NullSafeAccessNode;
 import com.google.template.soy.exprtree.OperatorNodes.AmpAmpOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.AndOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.AsOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.AssertNonNullOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.BarBarOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.BitwiseAndOpNode;
@@ -116,6 +117,7 @@ import com.google.template.soy.exprtree.OperatorNodes.DivideByOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.EqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.GreaterThanOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.GreaterThanOrEqualOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.InstanceOfOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.LessThanOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.LessThanOrEqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.MinusOpNode;
@@ -1341,6 +1343,17 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
               "VarRefNode @" + varRef.getSourceLocation() + " doesn't have a type!");
         }
       }
+    }
+
+    @Override
+    protected void visitAsOpNode(AsOpNode node) {
+      visitChildren(node);
+      node.setType(node.getChild(1).getType());
+    }
+
+    @Override
+    protected void visitInstancceOfOpNode(InstanceOfOpNode node) {
+      node.setType(BoolType.getInstance());
     }
 
     @Override

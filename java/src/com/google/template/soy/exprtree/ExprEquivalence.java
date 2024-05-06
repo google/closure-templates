@@ -187,6 +187,11 @@ public final class ExprEquivalence {
         }
 
         @Override
+        protected Integer visitTypeLiteralNode(TypeLiteralNode node) {
+          return node.toSourceString().hashCode();
+        }
+
+        @Override
         protected Integer visitExprRootNode(ExprRootNode node) {
           return hashChildren(node);
         }
@@ -358,6 +363,11 @@ public final class ExprEquivalence {
     protected Boolean visitProtoEnumValueNode(ProtoEnumValueNode node) {
       return node.getType().equals(((ProtoEnumValueNode) other).getType())
           && node.getValue() == ((ProtoEnumValueNode) other).getValue();
+    }
+
+    @Override
+    protected Boolean visitTypeLiteralNode(TypeLiteralNode node) {
+      return node.getType().equals(other.getType());
     }
 
     @Override
