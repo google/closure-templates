@@ -568,9 +568,7 @@ public final class PassManager {
           .add(
               new ResolveDottedImportsPass(
                   errorReporter, registry, astRewrites.rewriteCssVariables()));
-      if (astRewrites.isAll()) {
-        passes.add(new RewriteToggleImportsPass());
-      }
+      passes.add(new RewriteToggleImportsPass(astRewrites.isAll()));
       passes.add(
           new RewriteElementCompositionFunctionsPass(
               errorReporter, astRewrites.rewriteElementComposition()));
