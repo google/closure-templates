@@ -233,7 +233,7 @@ public abstract class AbstractExprNodeVisitor<R> extends AbstractNodeVisitor<Exp
         visitSpreadOpNode((SpreadOpNode) node);
         break;
       case INSTANCE_OF_OP_NODE:
-        visitInstancceOfOpNode((InstanceOfOpNode) node);
+        visitInstanceOfOpNode((InstanceOfOpNode) node);
         break;
       case AS_OP_NODE:
         visitAsOpNode((AsOpNode) node);
@@ -251,8 +251,6 @@ public abstract class AbstractExprNodeVisitor<R> extends AbstractNodeVisitor<Exp
         visitAssertNonNullOpNode((AssertNonNullOpNode) node);
         break;
 
-      default:
-        throw new UnsupportedOperationException();
     }
   }
 
@@ -498,7 +496,7 @@ public abstract class AbstractExprNodeVisitor<R> extends AbstractNodeVisitor<Exp
     visitOperatorNode(node);
   }
 
-  protected void visitInstancceOfOpNode(InstanceOfOpNode node) {
+  protected void visitInstanceOfOpNode(InstanceOfOpNode node) {
     visitOperatorNode(node);
   }
 

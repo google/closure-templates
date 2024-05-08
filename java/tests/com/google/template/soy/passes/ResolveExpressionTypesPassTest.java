@@ -18,6 +18,8 @@ package com.google.template.soy.passes;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
+import static com.google.template.soy.passes.TypeNarrowingConditionVisitor.instanceOfIntersection;
+import static com.google.template.soy.passes.TypeNarrowingConditionVisitor.instanceOfRemainder;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableSet;
@@ -36,6 +38,8 @@ import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.soytree.defn.TemplateStateVar;
 import com.google.template.soy.testing.Example;
 import com.google.template.soy.testing.ExampleExtendable;
+import com.google.template.soy.testing.KvPair;
+import com.google.template.soy.testing.ProtoMap;
 import com.google.template.soy.testing.SomeExtension;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import com.google.template.soy.testing.correct.Proto2CorrectSemantics.Proto2ImplicitDefaults;
@@ -519,6 +523,14 @@ public final class ResolveExpressionTypesPassTest {
         "{/if}",
         "");
     assertTypes(
+        "{let $null: null /}",
+        "{if $null == null}",
+        "  {assertType('null', $null)}",
+        "{else}",
+        "  {assertType('never', $null)}",
+        "{/if}",
+        "");
+    assertTypes(
         "{@param pa: string|null}",
         "{@param? pb: string}",
         "{if $pa != null && $pb != null}",
@@ -950,11 +962,103 @@ public final class ResolveExpressionTypesPassTest {
   @Test
   public void testInstanceOfOperator() {
     assertTypes(
-        "{@param union: ?}",
-        "{if $union instanceof string}",
-        "  {assertType('?', $union)}", // no type narrowing yet
+        "{@param unk: ?}",
+        "{if $unk instanceof string}",
+        "  {assertType('string', $unk)}",
+        "{else}",
+        "  {assertType('?', $unk)}",
         "{/if}",
         "");
+    assertTypes(
+        "{@param union: string|number}",
+        "{if $union instanceof string}",
+        "  {assertType('string', $union)}",
+        "{elseif $union instanceof number}",
+        "  {assertType('float|int', $union)}",
+        "{else}",
+        "  {assertType('never', $union)}",
+        "{/if}",
+        "");
+    assertTypes(
+        "{@param union: string|Message|bool}",
+        "{if $union instanceof string || $union instanceof bool}",
+        "  {assertType('bool|string', $union)}",
+        "{else}",
+        "  {assertType('Message', $union)}",
+        "{/if}",
+        "");
+    assertTypes(
+        "{@param union: map<string, string>|map<int, string>|list<int>}",
+        "{if $union instanceof map}",
+        "  {assertType('map<int,string>|map<string,string>', $union)}",
+        "{else}",
+        "  {assertType('list<int>', $union)}",
+        "{/if}",
+        "");
+
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forTemplateAndImports(
+                constructTemplateSource(
+                    "{@param proto: Message}",
+                    "{@param union: KvPair|ProtoMap}",
+                    "{if $proto instanceof ExampleExtendable}",
+                    "  {assertType('example.ExampleExtendable', $proto)}",
+                    "{else}",
+                    "  {assertType('Message', $proto)}",
+                    "{/if}",
+                    "{if $union instanceof KvPair}",
+                    "  {assertType('example.KvPair', $union)}",
+                    "{else}",
+                    "  {assertType('example.ProtoMap', $union)}",
+                    "{/if}",
+                    "{if $union instanceof Message}",
+                    "  {assertType('example.KvPair|example.ProtoMap', $union)}",
+                    "{else}",
+                    "  {assertType('never', $union)}",
+                    "{/if}",
+                    ""),
+                ExampleExtendable.getDescriptor(),
+                KvPair.getDescriptor(),
+                ProtoMap.getDescriptor())
+            .addSoyFunction(ASSERT_TYPE_FUNCTION)
+            .parse()
+            .fileSet();
+    assertTypes(soyTree);
+  }
+
+  @Test
+  public void testInstanceOfTypeLogic() {
+    assertInstanceOfImplies("?", "string", "string");
+    assertInstanceOfImplies("any", "string", "string");
+    assertInstanceOfImplies("uri", "trusted_resource_uri", "trusted_resource_uri");
+    assertInstanceOfImplies("trusted_resource_uri", "uri", "trusted_resource_uri");
+    assertInstanceOfImplies("uri|string", "trusted_resource_uri", "trusted_resource_uri");
+    assertInstanceOfImplies("trusted_resource_uri|string", "uri", "trusted_resource_uri");
+    assertInstanceOfImplies("bool|string", "string", "string");
+    assertInstanceOfImplies("bool", "string", "never");
+    assertInstanceOfImplies("bool|string", "uri", "never");
+    assertInstanceOfImplies("list<string>|bool", "list<any>", "list<string>");
+
+    assertNotInstanceOfImplies("?", "string", "?");
+    assertNotInstanceOfImplies("any", "string", "any");
+    assertNotInstanceOfImplies("uri", "trusted_resource_uri", "uri");
+    assertNotInstanceOfImplies("trusted_resource_uri", "uri", "never");
+    assertNotInstanceOfImplies("uri|string", "trusted_resource_uri", "uri|string");
+    assertNotInstanceOfImplies("trusted_resource_uri|string", "uri", "string");
+    assertNotInstanceOfImplies("bool|string", "string", "bool");
+    assertNotInstanceOfImplies("bool|string", "uri", "bool|string");
+    assertNotInstanceOfImplies("string", "string", "never");
+  }
+
+  private void assertInstanceOfImplies(String exprType, String operandType, String expectedType) {
+    assertThat(instanceOfIntersection(parseSoyType(exprType), parseSoyType(operandType)))
+        .isEqualTo(parseSoyType(expectedType));
+  }
+
+  private void assertNotInstanceOfImplies(
+      String exprType, String operandType, String expectedType) {
+    assertThat(instanceOfRemainder(parseSoyType(exprType), parseSoyType(operandType)))
+        .isEqualTo(parseSoyType(expectedType));
   }
 
   @Test

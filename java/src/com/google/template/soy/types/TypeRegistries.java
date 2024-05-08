@@ -195,6 +195,7 @@ public final class TypeRegistries {
             .put("string", StringType.getInstance())
             .put("number", NUMBER_TYPE)
             .put("html", HtmlType.getInstance())
+            .put("never", NeverType.getInstance())
             .put("attributes", AttributesType.getInstance())
             .put("css", StyleType.getInstance())
             .put("uri", UriType.getInstance())

@@ -26,7 +26,6 @@ import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.soytree.SoyTypeP;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Comparator;
 import java.util.Objects;
 import java.util.function.Predicate;
@@ -68,13 +67,17 @@ public final class UnionType extends SoyType {
    * @return Union of those types. If there is exactly one distinct type in members, then this will
    *     not be a UnionType.
    */
-  public static SoyType of(Collection<SoyType> members) {
+  public static SoyType of(Iterable<SoyType> members) {
     // sort and flatten the set of types
     ImmutableSortedSet.Builder<SoyType> builder = ImmutableSortedSet.orderedBy(MEMBER_ORDER);
     for (SoyType type : members) {
       // simplify unions containing these types
       if (type.getKind() == Kind.UNKNOWN || type.getKind() == Kind.ANY) {
         return type;
+      }
+      if (type.getKind() == Kind.NEVER) {
+        // `never` is assignable to everything, so we can always just drop from the union.
+        continue;
       }
       if (type.getKind() == Kind.UNION) {
         builder.addAll(((UnionType) type).members);
@@ -83,7 +86,9 @@ public final class UnionType extends SoyType {
       }
     }
     ImmutableSet<SoyType> flattenedMembers = builder.build();
-    if (flattenedMembers.size() == 1) {
+    if (flattenedMembers.isEmpty()) {
+      return NeverType.getInstance();
+    } else if (flattenedMembers.size() == 1) {
       return Iterables.getOnlyElement(flattenedMembers);
     }
     return new UnionType(flattenedMembers);

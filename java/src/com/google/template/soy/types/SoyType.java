@@ -85,6 +85,7 @@ public abstract class SoyType {
     // Special types
     ANY,
     UNKNOWN,
+    NEVER,
     // Primitive types
     NULL,
     UNDEFINED,

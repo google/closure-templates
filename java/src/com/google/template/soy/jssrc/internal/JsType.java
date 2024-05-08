@@ -620,6 +620,7 @@ public final class JsType {
       case TEMPLATE_TYPE:
       case TEMPLATE_MODULE:
       case FUNCTION:
+      case NEVER:
     }
     throw new AssertionError("unhandled soytype: " + soyType);
   }

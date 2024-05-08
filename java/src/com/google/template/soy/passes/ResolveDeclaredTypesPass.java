@@ -30,10 +30,11 @@ import com.google.template.soy.soytree.defn.AttrParam;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.soytree.defn.TemplateStateVar;
 import com.google.template.soy.types.FunctionType;
+import com.google.template.soy.types.ListType;
+import com.google.template.soy.types.MapType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.UnknownType;
-import com.google.template.soy.types.ast.NamedTypeNode;
 import com.google.template.soy.types.ast.TypeNode;
 import com.google.template.soy.types.ast.TypeNodeConverter;
 
@@ -63,7 +64,24 @@ final class ResolveDeclaredTypesPass implements CompilerFilePass {
     }
 
     SoyTreeUtils.allNodesOfType(file, TypeLiteralNode.class)
-        .forEach(n -> n.setType(converter.getOrCreateType(n.getTypeNode())));
+        .forEach(
+            n -> {
+              TypeNode typeNode = n.getTypeNode();
+              String typeName = typeNode.toString();
+              SoyType type;
+              // TypeNodeConverter doesn't tolerate these generic types without <>.
+              switch (typeName) {
+                case "list":
+                  type = ListType.ANY_LIST;
+                  break;
+                case "map":
+                  type = MapType.ANY_MAP;
+                  break;
+                default:
+                  type = converter.getOrCreateType(typeNode);
+              }
+              n.setType(type);
+            });
 
     for (TemplateNode template : file.getTemplates()) {
       for (TemplateParam param : template.getAllParams()) {
@@ -95,14 +113,5 @@ final class ResolveDeclaredTypesPass implements CompilerFilePass {
         }
       }
     }
-  }
-
-  public static boolean isAlreadyOptionalType(TypeNode typeNode) {
-    return typeNode
-        .asStreamExpandingUnion()
-        .anyMatch(
-            tn ->
-                tn instanceof NamedTypeNode
-                    && ((NamedTypeNode) tn).name().identifier().equals("null"));
   }
 }

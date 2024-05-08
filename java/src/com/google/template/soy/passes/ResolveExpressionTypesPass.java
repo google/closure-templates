@@ -137,6 +137,7 @@ import com.google.template.soy.exprtree.OperatorNodes.TripleNotEqualOpNode;
 import com.google.template.soy.exprtree.RecordLiteralNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
+import com.google.template.soy.exprtree.TypeLiteralNode;
 import com.google.template.soy.exprtree.UndefinedNode;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
@@ -272,6 +273,8 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
           "Parameter types, {0}, do not uniquely satisfy one of the function signatures [{1}].");
   private static final SoyErrorKind UNNECESSARY_NULL_SAFE_ACCESS =
       SoyErrorKind.of("This null safe access is unnecessary, it is on a value that is non-null.");
+  private static final SoyErrorKind INVALID_INSTANCE_OF =
+      SoyErrorKind.of("Not a valid instanceof type operand.");
   private static final SoyErrorKind DUPLICATE_KEY_IN_MAP_LITERAL =
       SoyErrorKind.of("Map literals with duplicate keys are not allowed.  Duplicate key: ''{0}''");
   private static final SoyErrorKind KEYS_PASSED_MAP =
@@ -1352,7 +1355,16 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
     }
 
     @Override
-    protected void visitInstancceOfOpNode(InstanceOfOpNode node) {
+    protected void visitInstanceOfOpNode(InstanceOfOpNode node) {
+      visitChildren(node);
+      TypeLiteralNode typeNode = (TypeLiteralNode) node.getChild(1);
+      SoyType opType = typeNode.getType();
+      if (!SoyTypes.isValidInstanceOfOperand(opType)) {
+        // Avoid double error.
+        if (!opType.equals(UnknownType.getInstance())) {
+          errorReporter.report(typeNode.getSourceLocation(), INVALID_INSTANCE_OF);
+        }
+      }
       node.setType(BoolType.getInstance());
     }
 
@@ -2735,42 +2747,10 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
             return SoyTypes.computeLowestCommonType(typeRegistry, itemTypes);
           }
 
-        case ANY:
-        case NULL:
-        case UNDEFINED:
-        case BOOL:
-        case INT:
-        case FLOAT:
-        case STRING:
-        case MAP:
-        case ELEMENT:
-        case HTML:
-        case ATTRIBUTES:
-        case JS:
-        case CSS:
-        case URI:
-        case TRUSTED_RESOURCE_URI:
-        case RECORD:
-        case PROTO:
-        case PROTO_ENUM:
-        case TEMPLATE:
-        case VE:
-        case VE_DATA:
-        case MESSAGE:
-        case CSS_TYPE:
-        case CSS_MODULE:
-        case TOGGLE_TYPE:
-        case PROTO_TYPE:
-        case PROTO_ENUM_TYPE:
-        case PROTO_EXTENSION:
-        case PROTO_MODULE:
-        case TEMPLATE_TYPE:
-        case TEMPLATE_MODULE:
-        case FUNCTION:
+        default:
           errorReporter.report(baseLocation, BRACKET_ACCESS_NOT_SUPPORTED, baseType);
           return UnknownType.getInstance();
       }
-      throw new AssertionError("unhandled kind: " + baseType.getKind());
     }
 
     private void tryApplySubstitution(AbstractParentExprNode parentNode) {

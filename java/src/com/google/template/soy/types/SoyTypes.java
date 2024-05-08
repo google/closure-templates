@@ -146,7 +146,7 @@ public final class SoyTypes {
     return type;
   }
 
-  private static SoyType removeUndefined(SoyType type) {
+  public static SoyType removeUndefined(SoyType type) {
     checkNotNull(type);
     if (type.getKind() == Kind.UNION) {
       return ((UnionType) type).filter(t -> t != UndefinedType.getInstance());
@@ -154,7 +154,7 @@ public final class SoyTypes {
     return type;
   }
 
-  private static SoyType removeNullish(SoyType type) {
+  public static SoyType removeNullish(SoyType type) {
     checkNotNull(type);
     if (type.getKind() == Kind.UNION) {
       return ((UnionType) type).filter(t -> !NULLISH_KINDS.contains(t.getKind()));
@@ -736,5 +736,30 @@ public final class SoyTypes {
       return ((TemplateImportType) type).getBasicTemplateType();
     }
     return null;
+  }
+
+  public static boolean isValidInstanceOfOperand(SoyType type) {
+    switch (type.getKind()) {
+      case STRING:
+      case BOOL:
+      case HTML:
+      case JS:
+      case URI:
+      case TRUSTED_RESOURCE_URI:
+      case CSS:
+      case ATTRIBUTES:
+      case MESSAGE:
+      case PROTO:
+        return true;
+      case LIST:
+        return ((ListType) type).getElementType().equals(AnyType.getInstance());
+      case MAP:
+        return ((MapType) type).getKeyType().equals(AnyType.getInstance())
+            && ((MapType) type).getValueType().equals(AnyType.getInstance());
+      case UNION:
+        return type.equals(NUMBER_TYPE);
+      default:
+        return false;
+    }
   }
 }

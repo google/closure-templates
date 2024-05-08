@@ -22,6 +22,11 @@ migrate one parameter at a time).
 
 Values typed as `?` are assignable to parameters of all types and vice-versa.
 
+### `never` {#never}
+
+Indicates that the compiler believes that a condition is impossible based on
+declared types and type narrowing.
+
 ### `null` {#null}
 
 The `null` type is not very useful on its own, but can be as part of

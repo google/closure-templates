@@ -191,7 +191,7 @@ public abstract class AbstractReturningExprNodeVisitor<R>
       case SPREAD_OP_NODE:
         return visitSpreadOpNode((SpreadOpNode) node);
       case INSTANCE_OF_OP_NODE:
-        return visitInstancceOfOpNode((InstanceOfOpNode) node);
+        return visitInstanceOfOpNode((InstanceOfOpNode) node);
       case AS_OP_NODE:
         return visitAsOpNode((AsOpNode) node);
 
@@ -436,7 +436,7 @@ public abstract class AbstractReturningExprNodeVisitor<R>
     return visitOperatorNode(node);
   }
 
-  protected R visitInstancceOfOpNode(InstanceOfOpNode node) {
+  protected R visitInstanceOfOpNode(InstanceOfOpNode node) {
     return visitOperatorNode(node);
   }
 

@@ -177,6 +177,7 @@ final class KeyCommandPass implements CompilerFilePass {
         case TEMPLATE_TYPE:
         case TEMPLATE_MODULE:
         case FUNCTION:
+        case NEVER:
           throw new AssertionError("impossible");
       }
     }

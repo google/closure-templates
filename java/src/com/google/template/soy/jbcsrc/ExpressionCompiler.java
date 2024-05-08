@@ -485,7 +485,7 @@ final class ExpressionCompiler {
     }
 
     @Override
-    protected SoyExpression visitInstancceOfOpNode(InstanceOfOpNode node) {
+    protected SoyExpression visitInstanceOfOpNode(InstanceOfOpNode node) {
       // TODO(b/156780590): Implement.
       return SoyExpression.FALSE;
     }

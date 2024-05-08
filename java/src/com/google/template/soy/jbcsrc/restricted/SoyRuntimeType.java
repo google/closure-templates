@@ -138,6 +138,7 @@ public abstract class SoyRuntimeType {
       case TEMPLATE_TYPE:
       case TEMPLATE_MODULE:
       case FUNCTION:
+      case NEVER:
     }
     throw new AssertionError("can't map " + soyType + " to an unboxed soy runtime type");
   }

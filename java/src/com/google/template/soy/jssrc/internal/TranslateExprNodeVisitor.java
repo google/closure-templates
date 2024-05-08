@@ -903,7 +903,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
   }
 
   @Override
-  protected Expression visitInstancceOfOpNode(InstanceOfOpNode node) {
+  protected Expression visitInstanceOfOpNode(InstanceOfOpNode node) {
     // TODO(b/156780590): Implement.
     return LITERAL_FALSE;
   }
