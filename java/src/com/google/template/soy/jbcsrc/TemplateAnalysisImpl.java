@@ -27,7 +27,9 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
+import com.google.template.soy.basicfunctions.RangeFunction;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
 import com.google.template.soy.exprtree.DataAccessNode;
 import com.google.template.soy.exprtree.ExprEquivalence;
@@ -50,6 +52,7 @@ import com.google.template.soy.exprtree.OperatorNodes.BarBarOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ConditionalOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.SpreadOpNode;
 import com.google.template.soy.exprtree.RecordLiteralNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.exprtree.VarDefn;
@@ -244,6 +247,20 @@ final class TemplateAnalysisImpl implements TemplateAnalysis {
 
     @Override
     protected void visitForNonemptyNode(ForNonemptyNode node) {
+      var indexVar = node.getIndexVar();
+      if (indexVar != null) {
+        // Add a synthetic access to the index variable prior to execution.  This ensures that all
+        // 'real' access are considered resolved.
+        this.current.add(
+            new VarRefNode(indexVar.getOriginalName(), SourceLocation.UNKNOWN, indexVar));
+      }
+      // Range functions always produce resolved values.
+      var listExpression = node.getParent().getExpr().getRoot();
+      if (listExpression instanceof FunctionNode
+          && ((FunctionNode) listExpression).getSoyFunction() instanceof RangeFunction) {
+        this.current.add(
+            new VarRefNode(node.getVar().getOriginalName(), SourceLocation.UNKNOWN, node.getVar()));
+      }
       visitChildren(node);
     }
 
@@ -601,9 +618,12 @@ final class TemplateAnalysisImpl implements TemplateAnalysis {
     }
     ExprNode expr = node.getExpr().getRoot();
     if (expr instanceof ListLiteralNode) {
-      return ((ListLiteralNode) expr).numChildren() > 0
+      var children = ((ListLiteralNode) expr).getChildren();
+      return children.stream().anyMatch(c -> !(c instanceof SpreadOpNode))
           ? StaticAnalysisResult.FALSE
-          : StaticAnalysisResult.TRUE;
+          : children.stream().allMatch(c -> c instanceof SpreadOpNode)
+              ? StaticAnalysisResult.UNKNOWN
+              : StaticAnalysisResult.TRUE;
     }
     return StaticAnalysisResult.UNKNOWN;
   }
