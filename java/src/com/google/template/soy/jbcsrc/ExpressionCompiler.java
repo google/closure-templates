@@ -1489,15 +1489,6 @@ final class ExpressionCompiler {
             node, sourceMethod, ImmutableList.of(baseExpr), parameters, detacher);
       }
 
-      if (baseExpr.soyRuntimeType().isKnownProtoOrUnionOfProtos()) {
-        return ProtoUtils.accessField(
-            baseExpr,
-            node.getFieldName(),
-            node.getType(),
-            ProtoUtils.SingularFieldAccessMode.NULL_IF_UNSET,
-            varManager,
-            /* forceStringConversion= */ false);
-      }
       // Otherwise this must be a vanilla SoyRecord.  Box, call getField or getFieldProvider
       // depending on the resolution status.
       Expression fieldAccess;
@@ -1523,7 +1514,7 @@ final class ExpressionCompiler {
 
       Expression soyValueProvider;
       // Special case index lookups on lists to avoid boxing the int key.  Maps cannot be
-      // optimized the same way because there is no real way to 'unbox' a SoyMap.
+      // optimized the same way because there is no real way to 'unbox' a SoyLegacyObjectMap.
       if (baseExpr.soyRuntimeType().isKnownListOrUnionOfLists()) {
         SoyExpression list = baseExpr.unboxAsListUnchecked();
         SoyExpression index = keyExpr.unboxAsLong();
