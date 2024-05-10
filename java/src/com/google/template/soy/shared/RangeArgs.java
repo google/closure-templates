@@ -19,6 +19,7 @@ package com.google.template.soy.shared;
 import com.google.auto.value.AutoValue;
 import com.google.template.soy.basicfunctions.RangeFunction;
 import com.google.template.soy.exprtree.ExprNode;
+import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.soytree.ForNode;
 import java.util.List;
@@ -49,8 +50,19 @@ public abstract class RangeArgs {
    * expression.
    */
   public static Optional<RangeArgs> createFromNode(ForNode node) {
-    if (node.getExpr().getRoot() instanceof FunctionNode) {
-      FunctionNode fn = (FunctionNode) node.getExpr().getRoot();
+    return createFromExpr(node.getExpr());
+  }
+
+  /**
+   * Returns a optional {@link RangeArgs} object if the expression is a {@code range(...)}
+   * expression.
+   */
+  public static Optional<RangeArgs> createFromExpr(ExprNode node) {
+    if (node instanceof ExprRootNode) {
+      node = ((ExprRootNode) node).getRoot();
+    }
+    if (node instanceof FunctionNode) {
+      FunctionNode fn = (FunctionNode) node;
       if (fn.getSoyFunction() instanceof RangeFunction) {
         return Optional.of(create(fn.getParams()));
       }

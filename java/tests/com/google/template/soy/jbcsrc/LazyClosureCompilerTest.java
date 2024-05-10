@@ -304,7 +304,8 @@ public class LazyClosureCompilerTest {
   @Test
   public void testTrivialLetClassStructure() throws Exception {
     CompiledTemplates templates =
-        compileTemplateBody("{let $bar : [0,1,2][randomInt(1)] /}", "{let $foo : $bar /} {$foo}");
+        compileTemplateBody(
+            "{@param i : int}{let $bar : [0,1,2][$i] /}", "{let $foo : $bar /} {$foo}");
     Class<?> fileClass = templates.getTemplateData("ns.foo").templateClass();
     assertThat(asList(fileClass.getDeclaredClasses())).hasSize(1);
     assertThat(fileClass.getDeclaredClasses()[0].getSimpleName()).isEqualTo("let_bar");

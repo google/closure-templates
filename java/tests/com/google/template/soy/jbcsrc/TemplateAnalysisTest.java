@@ -122,6 +122,7 @@ public final class TemplateAnalysisTest {
   @Test
   public void mapLiteral() {
     runTest("{let $a: 1 /}", "{let $b: 1 /}", "{map($a: $b)}", "{refed($a)}", "{refed($b)}");
+    runTest("{let $a: 1 /}", "{let $b: map('a': $a) /}", "{refed($b.get('a'))}");
   }
 
   @Test
@@ -250,6 +251,17 @@ public final class TemplateAnalysisTest {
         "{notrefed($p)}",
         "{notrefed($p2)}",
         "{notrefed($p3)}");
+
+    runTest(
+        "{@param p: ?}",
+        "{@param p2: ?}",
+        // literal forces eager resolution
+        "{for $item, $index in [$p, $p2]}",
+        "  {refed($index)}",
+        "  {refed($item)}",
+        "{/for}",
+        "{refed($p)}",
+        "{refed($p2)}");
   }
 
   @Test

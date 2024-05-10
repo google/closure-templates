@@ -16,19 +16,30 @@
 
 package com.google.template.soy.soytree.defn;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.exprtree.AbstractVarDefn;
+import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.types.SoyType;
 
 /** A file-level constant declaration. */
 public final class ConstVar extends AbstractVarDefn {
 
-  public ConstVar(String name, SourceLocation nameLocation, SoyType type) {
-    super(name, nameLocation, type);
+  private final ExprHolderNode declaringNode;
+
+  public ConstVar(String name, SourceLocation nameLocation, ExprHolderNode declaringNode) {
+    super(name, nameLocation, /* type= */ null);
+    this.declaringNode = checkNotNull(declaringNode);
   }
 
-  public ConstVar(ConstVar localVar) {
+  public ConstVar(ConstVar localVar, ExprHolderNode declaringNode) {
     super(localVar);
+    this.declaringNode = checkNotNull(declaringNode);
+  }
+
+  public ExprHolderNode getDeclaringNode() {
+    return declaringNode;
   }
 
   @Override
