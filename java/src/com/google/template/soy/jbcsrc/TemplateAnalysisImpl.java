@@ -29,7 +29,6 @@ import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
-import com.google.template.soy.basicfunctions.RangeFunction;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
 import com.google.template.soy.exprtree.DataAccessNode;
 import com.google.template.soy.exprtree.ExprEquivalence;
@@ -255,9 +254,7 @@ final class TemplateAnalysisImpl implements TemplateAnalysis {
             new VarRefNode(indexVar.getOriginalName(), SourceLocation.UNKNOWN, indexVar));
       }
       // Range functions always produce resolved values.
-      var listExpression = node.getParent().getExpr().getRoot();
-      if (listExpression instanceof FunctionNode
-          && ((FunctionNode) listExpression).getSoyFunction() instanceof RangeFunction) {
+      if (node.isRangeExpr()) {
         this.current.add(
             new VarRefNode(node.getVar().getOriginalName(), SourceLocation.UNKNOWN, node.getVar()));
       }
