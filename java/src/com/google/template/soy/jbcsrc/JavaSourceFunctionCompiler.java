@@ -15,6 +15,7 @@
  */
 package com.google.template.soy.jbcsrc;
 
+import com.google.common.collect.Iterables;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.FunctionNode;
@@ -23,10 +24,13 @@ import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.plugin.internal.JavaPluginExecContext;
+import com.google.template.soy.plugin.java.internal.PluginAnalyzer;
+import com.google.template.soy.plugin.java.restricted.MethodSignature;
 import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
 import com.google.template.soy.shared.restricted.SoySourceFunctionMethod;
 import com.google.template.soy.types.SoyTypeRegistry;
 import java.util.List;
+import java.util.concurrent.Future;
 import javax.annotation.Nullable;
 
 /** Compiles method and function calls. */
@@ -135,5 +139,16 @@ final class JavaSourceFunctionCompiler {
             typeRegistry,
             detacher)
         .computeForJavaSource(args);
+  }
+
+  static boolean doesPluginReturnFuture(SoyJavaSourceFunction function) {
+    PluginAnalyzer.PluginMetadata metadata = PluginAnalyzer.analyze(function);
+    for (MethodSignature methodSignature :
+        Iterables.concat(metadata.instanceMethodSignatures(), metadata.staticMethodSignatures())) {
+      if (Future.class.isAssignableFrom(methodSignature.returnType())) {
+        return true;
+      }
+    }
+    return false;
   }
 }

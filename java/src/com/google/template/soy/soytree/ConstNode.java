@@ -42,7 +42,7 @@ public final class ConstNode extends AbstractCommandNode implements ExprHolderNo
       ExprNode expr,
       boolean exported) {
     super(id, location, "const");
-    this.var = new ConstVar(varName, varNameLocation, null);
+    this.var = new ConstVar(varName, varNameLocation, this);
     this.valueExpr = new ExprRootNode(expr);
     this.exported = exported;
   }
@@ -54,7 +54,7 @@ public final class ConstNode extends AbstractCommandNode implements ExprHolderNo
    */
   private ConstNode(ConstNode orig, CopyState copyState) {
     super(orig, copyState);
-    this.var = new ConstVar(orig.var);
+    this.var = new ConstVar(orig.var, this);
     this.valueExpr = orig.valueExpr.copy(copyState);
     this.exported = orig.exported;
     copyState.updateRefs(orig.var, this.var);

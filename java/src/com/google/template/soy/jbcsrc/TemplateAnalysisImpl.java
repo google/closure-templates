@@ -17,6 +17,7 @@
 package com.google.template.soy.jbcsrc;
 
 import static com.google.common.base.Preconditions.checkState;
+import static com.google.common.collect.ImmutableList.toImmutableList;
 import static java.util.stream.Collectors.joining;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -29,14 +30,18 @@ import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
+import com.google.template.soy.basicfunctions.LegacyObjectMapToMapFunction;
+import com.google.template.soy.basicfunctions.MapToLegacyObjectMapFunction;
 import com.google.template.soy.basicfunctions.RangeFunction;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
 import com.google.template.soy.exprtree.DataAccessNode;
 import com.google.template.soy.exprtree.ExprEquivalence;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.OperatorNode;
+import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
 import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.IntegerNode;
@@ -44,9 +49,11 @@ import com.google.template.soy.exprtree.ListComprehensionNode;
 import com.google.template.soy.exprtree.ListLiteralNode;
 import com.google.template.soy.exprtree.MapLiteralFromListNode;
 import com.google.template.soy.exprtree.MapLiteralNode;
+import com.google.template.soy.exprtree.MethodCallNode;
 import com.google.template.soy.exprtree.NullSafeAccessNode;
 import com.google.template.soy.exprtree.OperatorNodes.AmpAmpOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.AndOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.AsOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.AssertNonNullOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.BarBarOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ConditionalOpNode;
@@ -66,14 +73,18 @@ import com.google.template.soy.msgs.restricted.SoyMsgPluralPart;
 import com.google.template.soy.msgs.restricted.SoyMsgPluralRemainderPart;
 import com.google.template.soy.msgs.restricted.SoyMsgRawTextPart;
 import com.google.template.soy.msgs.restricted.SoyMsgSelectPart;
+import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
 import com.google.template.soy.shared.RangeArgs;
 import com.google.template.soy.shared.internal.BuiltinFunction;
+import com.google.template.soy.shared.internal.BuiltinMethod;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
+import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamNode;
 import com.google.template.soy.soytree.CallParamValueNode;
 import com.google.template.soy.soytree.CaseOrDefaultNode;
+import com.google.template.soy.soytree.ConstNode;
 import com.google.template.soy.soytree.DebuggerNode;
 import com.google.template.soy.soytree.ForNode;
 import com.google.template.soy.soytree.ForNonemptyNode;
@@ -99,6 +110,10 @@ import com.google.template.soy.soytree.SwitchDefaultNode;
 import com.google.template.soy.soytree.SwitchNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.VeLogNode;
+import com.google.template.soy.soytree.defn.ConstVar;
+import com.google.template.soy.soytree.defn.LocalVar;
+import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.SoyTypes;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -111,7 +126,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 final class TemplateAnalysisImpl implements TemplateAnalysis {
 
@@ -231,7 +248,7 @@ final class TemplateAnalysisImpl implements TemplateAnalysis {
       Block loopBody = loopBegin.addBranch();
       Block loopEnd = exec(loopBody, node.getChild(0));
       // If we can statically prove the list empty, use that information.
-      StaticAnalysisResult isLoopEmpty = isListExpressionEmpty(node);
+      StaticAnalysisResult isLoopEmpty = isCollectionEmpty(node.getExpr());
       switch (isLoopEmpty) {
         case FALSE:
           this.current = loopEnd.addBranch();
@@ -251,14 +268,14 @@ final class TemplateAnalysisImpl implements TemplateAnalysis {
       if (indexVar != null) {
         // Add a synthetic access to the index variable prior to execution.  This ensures that all
         // 'real' access are considered resolved.
-        this.current.add(
+        this.current.addReference(
             new VarRefNode(indexVar.getOriginalName(), SourceLocation.UNKNOWN, indexVar));
       }
-      // Range functions always produce resolved values.
-      var listExpression = node.getParent().getExpr().getRoot();
-      if (listExpression instanceof FunctionNode
-          && ((FunctionNode) listExpression).getSoyFunction() instanceof RangeFunction) {
-        this.current.add(
+      // Some list expressions are guaranteed to only contain resolved values.
+      var listExpression = node.getParent().getExpr();
+      var result = isResolvedCollection(listExpression);
+      if (result == ResolutionResult.RESOLVED) {
+        this.current.addReference(
             new VarRefNode(node.getVar().getOriginalName(), SourceLocation.UNKNOWN, node.getVar()));
       }
       visitChildren(node);
@@ -409,6 +426,10 @@ final class TemplateAnalysisImpl implements TemplateAnalysis {
 
     @Override
     protected void visitCallNode(CallNode node) {
+      if (node instanceof CallBasicNode) {
+        // Always evaluate the callee expression.
+        evalInline(((CallBasicNode) node).getCalleeExpr());
+      }
       // If there is a data="<expr>" this is always evaluated first.
       ExprRootNode dataExpr = node.getDataExpr();
       if (dataExpr != null) {
@@ -607,25 +628,311 @@ final class TemplateAnalysisImpl implements TemplateAnalysis {
   private enum StaticAnalysisResult {
     TRUE,
     FALSE,
-    UNKNOWN
+    UNKNOWN;
+
+    static StaticAnalysisResult merge(StaticAnalysisResult a, StaticAnalysisResult b) {
+      if (a == b) {
+        return a;
+      }
+      // All other combinations are irreconcilable.
+      return StaticAnalysisResult.UNKNOWN;
+    }
   }
 
-  // consider moving this to SoyTreeUtils or some similar place.
-  private static StaticAnalysisResult isListExpressionEmpty(ForNode node) {
-    Optional<RangeArgs> rangeArgs = RangeArgs.createFromNode(node);
-    if (rangeArgs.isPresent()) {
-      return isRangeExpressionEmpty(rangeArgs.get());
+  private static final class ResolutionResult {
+    static final ResolutionResult UNRESOLVED = new ResolutionResult(null);
+    static final ResolutionResult RESOLVED = new ResolutionResult(ImmutableList.of());
+
+    static ResolutionResult resolvedIfExprIsResolved(ExprNode conditionallyResolvedSource) {
+      return new ResolutionResult(ImmutableList.of(conditionallyResolvedSource));
     }
-    ExprNode expr = node.getExpr().getRoot();
-    if (expr instanceof ListLiteralNode) {
-      var children = ((ListLiteralNode) expr).getChildren();
-      return children.stream().anyMatch(c -> !(c instanceof SpreadOpNode))
-          ? StaticAnalysisResult.FALSE
-          : children.stream().allMatch(c -> c instanceof SpreadOpNode)
-              ? StaticAnalysisResult.UNKNOWN
-              : StaticAnalysisResult.TRUE;
+
+    private final ImmutableList<ExprNode> onlyIfAllAreResolved;
+
+    ResolutionResult(ImmutableList<ExprNode> onlyIfAllAreResolved) {
+      this.onlyIfAllAreResolved = onlyIfAllAreResolved;
     }
-    return StaticAnalysisResult.UNKNOWN;
+
+    static ResolutionResult merge(ResolutionResult a, ResolutionResult b) {
+      if (a == UNRESOLVED || b == UNRESOLVED) {
+        return UNRESOLVED;
+      }
+      if (a == RESOLVED) {
+        return b;
+      }
+      if (b == RESOLVED) {
+        return a;
+      }
+      return new ResolutionResult(
+          ImmutableList.<ExprNode>builder()
+              .addAll(a.onlyIfAllAreResolved)
+              .addAll(b.onlyIfAllAreResolved)
+              .build());
+    }
+
+    ResolutionResult alsoDependsOn(ExprNode expr) {
+      return merge(this, isResolvedValue(expr));
+    }
+  }
+
+  private static Optional<ExprNode> getVarRefSource(VarRefNode varRefNode) {
+    var defn = varRefNode.getDefnDecl();
+    switch (defn.kind()) {
+      case LOCAL_VAR:
+        {
+          var local = (LocalVar) defn;
+          if (local.declaringNode() instanceof LetValueNode) {
+            var letNode = (LetValueNode) local.declaringNode();
+            return Optional.of(letNode.getExpr());
+          }
+        }
+        break;
+      case CONST:
+        {
+          var constVar = (ConstVar) defn;
+          var constNode = (ConstNode) constVar.getDeclaringNode();
+          return Optional.of(constNode.getExpr());
+        }
+      case COMPREHENSION_VAR:
+      case PARAM:
+      case STATE:
+      case EXTERN:
+      case IMPORT_VAR:
+      case TEMPLATE:
+        // there is nothing to do for these types of variables their values are always unknow.
+        break;
+    }
+
+    return Optional.empty();
+  }
+
+  /**
+   * Queries against all possible sources of the value.
+   *
+   * <p>Specifically follows variable references, and control flow conditions.
+   */
+  private static <T> T inspectValueSources(
+      Function<ExprNode, T> query, BiFunction<T, T, T> merge, ExprNode expr) {
+    if (expr instanceof ExprRootNode) {
+      expr = ((ExprRootNode) expr).getRoot();
+    }
+    // We want to follow variables and conditional control flow.
+    switch (expr.getKind()) {
+      case CONDITIONAL_OP_NODE:
+        {
+          var node = ((ConditionalOpNode) expr);
+          return merge.apply(
+              inspectValueSources(query, merge, node.getChild(1)),
+              inspectValueSources(query, merge, node.getChild(2)));
+        }
+      case NULL_COALESCING_OP_NODE:
+      case AMP_AMP_OP_NODE:
+      case BAR_BAR_OP_NODE:
+        {
+          // All these nodes are conditional operators that return one of the two subexpressions.
+          var node = (ParentExprNode) expr;
+          return merge.apply(
+              inspectValueSources(query, merge, node.getChild(0)),
+              inspectValueSources(query, merge, node.getChild(1)));
+        }
+      case ASSERT_NON_NULL_OP_NODE:
+      case GROUP_NODE:
+        {
+          var node = ((ParentExprNode) expr);
+          return inspectValueSources(query, merge, node.getChild(0));
+        }
+      case AS_OP_NODE:
+        {
+          var node = ((AsOpNode) expr);
+          return inspectValueSources(query, merge, node.getChild(0));
+        }
+
+      default:
+        break;
+    }
+    return query.apply(expr);
+  }
+
+  private static StaticAnalysisResult isCollectionEmpty(ExprNode node) {
+    return inspectValueSources(
+        expr -> {
+          Optional<RangeArgs> rangeArgs = RangeArgs.createFromExpr(expr);
+          if (rangeArgs.isPresent()) {
+            return isRangeExpressionEmpty(rangeArgs.get());
+          }
+          if (expr instanceof VarRefNode) {
+            return getVarRefSource((VarRefNode) expr)
+                .map(TemplateAnalysisImpl::isCollectionEmpty)
+                .orElse(StaticAnalysisResult.UNKNOWN);
+          }
+          if (expr instanceof ListLiteralNode) {
+            var children = ((ListLiteralNode) expr).getChildren();
+            if (children.isEmpty()) {
+              return StaticAnalysisResult.TRUE;
+            }
+            if (children.stream().anyMatch(c -> !(c instanceof SpreadOpNode))) {
+              return StaticAnalysisResult.FALSE;
+            }
+            ImmutableList<StaticAnalysisResult> results =
+                children.stream()
+                    .map(
+                        c -> {
+                          var spreadOpNode = (SpreadOpNode) c;
+                          return isCollectionEmpty(spreadOpNode.getChild(0));
+                        })
+                    .collect(toImmutableList());
+            if (results.stream().allMatch(r -> r == StaticAnalysisResult.TRUE)) {
+              return StaticAnalysisResult.TRUE;
+            }
+            if (results.stream().anyMatch(r -> r == StaticAnalysisResult.FALSE)) {
+              return StaticAnalysisResult.FALSE;
+            }
+          }
+          // TODO(lukes): could handle things like various method calls and function calls, but
+          // this is probably not worth it.
+          return StaticAnalysisResult.UNKNOWN;
+        },
+        StaticAnalysisResult::merge,
+        node);
+  }
+
+  private static final ImmutableSet<SoyType.Kind> COLLECTION_TYPES =
+      ImmutableSet.of(
+          SoyType.Kind.LIST, SoyType.Kind.MAP, SoyType.Kind.RECORD, SoyType.Kind.LEGACY_OBJECT_MAP);
+
+  private static boolean isCollectionType(SoyType type) {
+    type = SoyTypes.tryRemoveNullish(type);
+    return SoyTypes.expandUnions(type).stream()
+        .allMatch(member -> COLLECTION_TYPES.contains(member.getKind()));
+  }
+
+  /**
+   * Returns a resolution result for whether the node evaluates to a collection that is always
+   * resolved or under what conditions it is resolved.
+   */
+  private static ResolutionResult isResolvedCollection(ExprNode rootNode) {
+    return inspectValueSources(
+        expr -> {
+          SoyType type = SoyTypes.tryRemoveNullish(expr.getType());
+          if (!isCollectionType(type)) {
+            return ResolutionResult.UNRESOLVED;
+          }
+          if (expr instanceof VarRefNode) {
+            var varRef = (VarRefNode) expr;
+            if (varRef.getDefnDecl().kind() == VarDefn.Kind.CONST) {
+              return ResolutionResult.RESOLVED;
+            }
+            return getVarRefSource(varRef)
+                .map(TemplateAnalysisImpl::isResolvedCollection)
+                .orElse(ResolutionResult.UNRESOLVED);
+          }
+          if (expr instanceof MethodCallNode) {
+            // Proto methods that return collections always return resolved values.
+            var methodCall = (MethodCallNode) expr;
+            if (SoyTypes.isKindOrUnionOfKind(methodCall.getBaseType(true), SoyType.Kind.PROTO)) {
+              return ResolutionResult.RESOLVED;
+            }
+
+            switch (methodCall.getMethodName().identifier()) {
+              case "sort":
+              case "asciiSort":
+              case "uniq":
+              case "keys":
+                // These force resolution of the base collection, so all returned collections are
+                // resolved.
+                return ResolutionResult.RESOLVED;
+              case "values":
+              case "entries":
+              case "flat":
+              case "slice":
+              case "reverse":
+                {
+                  // The core collection types have methods like `Map.keys()` or `list.flat()` that
+                  // return derived collections.  Those collections always share the same resolution
+                  // status as the base collection.
+                  var baseResult = isResolvedCollection(methodCall.getBaseExprChild());
+                  if (baseResult == ResolutionResult.UNRESOLVED) {
+                    return ResolutionResult.resolvedIfExprIsResolved(methodCall.getBaseExprChild());
+                  }
+                  return baseResult;
+                }
+              case "concat":
+                {
+                  ResolutionResult result = ResolutionResult.RESOLVED;
+                  for (ExprNode child : methodCall.getChildren()) {
+                    result = ResolutionResult.merge(result, isResolvedCollection(child));
+                  }
+                  return result;
+                }
+
+              case "split":
+                // string.split() returns a list of strings.
+                return ResolutionResult.RESOLVED;
+
+              default:
+                return ResolutionResult.UNRESOLVED;
+            }
+          }
+          if (expr instanceof MapLiteralFromListNode) {
+            return isResolvedCollection(((MapLiteralFromListNode) expr).getChild(0));
+          }
+          if (expr instanceof FunctionNode) {
+            var fnNode = (FunctionNode) expr;
+            var function = fnNode.getSoyFunction();
+            if (function instanceof RangeFunction) {
+              return ResolutionResult.RESOLVED;
+            }
+            if (function instanceof MapToLegacyObjectMapFunction
+                || function instanceof LegacyObjectMapToMapFunction) {
+              return isResolvedCollection(fnNode.getChild(0));
+            }
+          }
+          if (expr instanceof ListComprehensionNode
+              || expr instanceof ListLiteralNode
+              || expr instanceof RecordLiteralNode
+              || expr instanceof MapLiteralNode) {
+            // For better or worse we resolve all elements when constructing literals.
+            return ResolutionResult.RESOLVED;
+          }
+
+          return ResolutionResult.UNRESOLVED;
+        },
+        ResolutionResult::merge,
+        rootNode);
+  }
+
+  private static ResolutionResult isResolvedValue(ExprNode rootNode) {
+    return inspectValueSources(
+        expr -> {
+          if (expr instanceof VarRefNode) {
+            var varRef = (VarRefNode) expr;
+            // Const variables are always resolved.
+            if (varRef.getDefnDecl().kind() == VarDefn.Kind.CONST) {
+              return ResolutionResult.RESOLVED;
+            }
+            return getVarRefSource(varRef)
+                .map(TemplateAnalysisImpl::isResolvedValue)
+                .orElseGet(() -> ResolutionResult.resolvedIfExprIsResolved(varRef));
+          }
+          if (expr instanceof PrimitiveNode
+              || expr instanceof ListLiteralNode
+              || expr instanceof RecordLiteralNode
+              || expr instanceof MapLiteralNode) {
+            return ResolutionResult.RESOLVED;
+          }
+          if (expr instanceof FunctionNode) {
+            var fnNode = (FunctionNode) expr;
+            if (fnNode.getSoyFunction() instanceof SoyJavaSourceFunction
+                && JavaSourceFunctionCompiler.doesPluginReturnFuture(
+                    (SoyJavaSourceFunction) fnNode.getSoyFunction())) {
+              return ResolutionResult.UNRESOLVED;
+            }
+            return ResolutionResult.RESOLVED;
+          }
+          return ResolutionResult.UNRESOLVED;
+        },
+        ResolutionResult::merge,
+        rootNode);
   }
 
   private static StaticAnalysisResult isRangeExpressionEmpty(RangeArgs range) {
@@ -721,7 +1028,28 @@ final class TemplateAnalysisImpl implements TemplateAnalysis {
 
     @Override
     protected void visitListComprehensionNode(ListComprehensionNode node) {
-      // TODO(b/172970101): These should be handled the same way as for-loops.
+      visit(node.getListExpr());
+      Block loopBegin = this.current;
+      // create a branch for the loop body
+      Block loopBody = loopBegin.addBranch();
+      // filters execute before the list item transform when they exist
+      if (node.getFilterExpr() != null) {
+        loopBody = eval(loopBody, node.getFilterExpr());
+      }
+      Block loopEnd = eval(loopBody, node.getListItemTransformExpr());
+      // If we can statically prove the list empty, use that information.
+      StaticAnalysisResult isLoopEmpty = isCollectionEmpty(node.getListExpr());
+      switch (isLoopEmpty) {
+        case FALSE:
+          this.current = loopEnd.addBranch();
+          break;
+        case TRUE:
+          this.current = loopBegin.addBranch();
+          break;
+        case UNKNOWN:
+          this.current = Block.merge(loopEnd, loopBegin);
+          break;
+      }
     }
 
     @Override
@@ -794,13 +1122,73 @@ final class TemplateAnalysisImpl implements TemplateAnalysis {
         this.current.successors.add(copy.start);
         this.current = copy.end.addBranch();
       }
-      current.add(node);
+      current.addReference(node);
     }
 
     @Override
     protected void visitDataAccessNode(DataAccessNode node) {
       visitChildren(node); // visit subexpressions first
-      current.add(node);
+
+      switch (node.getKind()) {
+        case FIELD_ACCESS_NODE:
+          {
+            FieldAccessNode fieldAccessNode = (FieldAccessNode) node;
+            if (fieldAccessNode.getSoyMethod() != null) {
+              // All the field accesses implemented as methods always produce resolved values.
+              current.addResolved(node, ResolutionResult.RESOLVED);
+            } else {
+              // We can access fields on collections that are resolved.
+              current.addResolved(node, isResolvedCollection(node.getBaseExprChild()));
+            }
+          }
+          break;
+        case ITEM_ACCESS_NODE:
+          {
+            // Item access is always ok if we are indexing into something like a proto repeated
+            // field.
+            current.addResolved(
+                node,
+                isResolvedCollection(node.getBaseExprChild()).alsoDependsOn(node.getChild(1)));
+          }
+          break;
+        case METHOD_CALL_NODE:
+          {
+            var methodCallNode = (MethodCallNode) node;
+            if (methodCallNode.getSoyMethod() instanceof BuiltinMethod) {
+              switch ((BuiltinMethod) methodCallNode.getSoyMethod()) {
+                case MAP_GET:
+                  // Map.get return values are resolved if their key expression is resolved and so
+                  // is the full collections
+                  current.addResolved(
+                      node,
+                      isResolvedCollection(node.getBaseExprChild())
+                          .alsoDependsOn(node.getChild(1)));
+                  break;
+                case HAS_PROTO_FIELD:
+                case GET_PROTO_FIELD:
+                case GET_READONLY_EXTENSION:
+                case GET_EXTENSION:
+                case GET_PROTO_FIELD_AS_STRING:
+                case GET_PROTO_FIELD_AS_LEGACY_NUMBER_OR_STRING:
+                case GET_READONLY_PROTO_FIELD:
+                case GET_PROTO_FIELD_OR_UNDEFINED_AS_STRING:
+                case GET_PROTO_FIELD_OR_UNDEFINED:
+                case HAS_EXTENSION:
+                case GET_PROTO_FIELD_OR_UNDEFINED_AS_LEGACY_NUMBER_OR_STRING:
+                  // These are always resolved.
+                  current.addResolved(node, ResolutionResult.RESOLVED);
+                  break;
+                case BIND:
+                  current.addReference(node);
+                  break;
+              }
+            }
+          }
+          break;
+
+        default:
+          throw new AssertionError();
+      }
     }
 
     @Override
@@ -940,7 +1328,7 @@ final class TemplateAnalysisImpl implements TemplateAnalysis {
             Block predecessor = Iterables.getOnlyElement(current.predecessors);
             if (predecessor.successors.size() == 1) {
               // in this case the node is a single unconditional link, merge its successor into it
-              predecessor.exprs.addAll(current.exprs);
+              predecessor.encounters.addAll(current.encounters);
               predecessor.successors.clear();
               predecessor.successors.addAll(current.successors);
               for (Block successor : current.successors) {
@@ -961,7 +1349,7 @@ final class TemplateAnalysisImpl implements TemplateAnalysis {
           if (current == end || current == start) {
             return;
           }
-          if (current.exprs.isEmpty()) {
+          if (current.encounters.isEmpty()) {
             // This node has no exprs and it isn't the start node, so we can just merge all of its
             // successors into its predecessors and cut it out of the graph.
             for (Block pred : current.predecessors) {
@@ -1082,10 +1470,24 @@ final class TemplateAnalysisImpl implements TemplateAnalysis {
         Set<ExprEquivalence.Wrapper> currentBlockSet =
             mergePredecessors(blockToAccessedExprs, current);
         // Then figure out which nodes in this block were _already_ accessed.
-        for (ExprNode expr : current.exprs) {
-          ExprEquivalence.Wrapper wrapped = exprEquivalence.wrap(expr);
-          if (!currentBlockSet.add(wrapped)) {
+        for (Block.Encounter encounter : current.encounters) {
+          ExprNode expr = encounter.expr;
+          // All Encounters are references.
+          if (!currentBlockSet.add(exprEquivalence.wrap(expr))) {
             resolvedExprs.add(expr);
+          } else {
+            switch (encounter.type) {
+              case REFERENCE:
+                // handled above
+                break;
+              case CONDITIONALLY_RESOLVED:
+              case RESOLVED:
+                // If all the conditions are already resolved, then we can consider this resolved.
+                if (encounter.conditionallyResolved.stream().allMatch(resolvedExprs::contains)) {
+                  resolvedExprs.add(expr);
+                }
+                break;
+            }
           }
         }
         // no need to store the result if we are in a dead end branch.
@@ -1144,8 +1546,8 @@ final class TemplateAnalysisImpl implements TemplateAnalysis {
       // calculate variables used inside the let body that are later referenced as definitely
       // referenced, without marking the original expression inside the body as referenced. See
       // notes re: $qux' in visitVarRefNode.
-      for (ExprNode expr : original.exprs) {
-        copy.exprs.add(expr.copy(new CopyState()));
+      for (Block.Encounter encounter : original.encounters) {
+        copy.encounters.add(encounter.copy());
       }
       // update the map before recursing to avoid infinite loops
       originalToCopy.put(original, copy);
@@ -1186,14 +1588,19 @@ final class TemplateAnalysisImpl implements TemplateAnalysis {
         }
         graph
             .append(
-                node.exprs.stream()
+                node.encounters.stream()
                     .map(
-                        e ->
-                            e.toSourceString()
-                                + "@"
-                                + e.getSourceLocation().getBeginLine()
-                                + ":"
-                                + e.getSourceLocation().getBeginColumn())
+                        e -> {
+                          var expr = e.expr;
+                          var location = expr.getSourceLocation();
+                          return e.type
+                              + ":"
+                              + expr.toSourceString()
+                              + "@"
+                              + location.getBeginLine()
+                              + ":"
+                              + location.getBeginColumn();
+                        })
                     .collect(joining(" ,", "[", "]")))
             .append("\"];");
         nodeIds.put(node, id);
@@ -1235,18 +1642,66 @@ final class TemplateAnalysisImpl implements TemplateAnalysis {
       return end;
     }
 
+    private enum EncounterType {
+      REFERENCE,
+      RESOLVED,
+      CONDITIONALLY_RESOLVED
+    }
+
+    private static final class Encounter {
+      final ExprNode expr;
+      final EncounterType type;
+      final ImmutableList<ExprNode> conditionallyResolved;
+
+      Encounter(ExprNode expr, EncounterType type) {
+        this.expr = expr;
+        this.type = type;
+        this.conditionallyResolved = ImmutableList.of();
+      }
+
+      Encounter(ExprNode expr, ImmutableList<ExprNode> conditionallyResolved) {
+        this.expr = expr;
+        this.conditionallyResolved = conditionallyResolved;
+        this.type = EncounterType.CONDITIONALLY_RESOLVED;
+      }
+
+      Encounter(ExprNode expr, EncounterType type, ImmutableList<ExprNode> conditionallyResolved) {
+        this.expr = expr;
+        this.conditionallyResolved = conditionallyResolved;
+        this.type = type;
+      }
+
+      Encounter copy() {
+        return new Encounter(
+            type == EncounterType.REFERENCE ? expr.copy(new CopyState()) : expr,
+            type,
+            conditionallyResolved);
+      }
+    }
+
     // This list will contain either DataAccessNode or VarRefNodes, eventually we may want to add
     // all 'leaf' nodes.
-    final List<ExprNode> exprs = new ArrayList<>();
+    final List<Encounter> encounters = new ArrayList<>();
     final Set<Block> successors = new LinkedHashSet<>();
     final Set<Block> predecessors = new LinkedHashSet<>();
 
-    void add(VarRefNode var) {
-      exprs.add(var);
+    void addReference(VarRefNode var) {
+      encounters.add(new Encounter(var, EncounterType.REFERENCE));
     }
 
-    void add(DataAccessNode dataAccess) {
-      exprs.add(dataAccess);
+    void addReference(DataAccessNode dataAccess) {
+      encounters.add(new Encounter(dataAccess, EncounterType.REFERENCE));
+    }
+
+    /** Adds an expression that may depend on a resolution result. */
+    void addResolved(DataAccessNode dataAccess, ResolutionResult resolutionResult) {
+      if (resolutionResult == ResolutionResult.RESOLVED) {
+        encounters.add(new Encounter(dataAccess, EncounterType.RESOLVED));
+      } else if (resolutionResult == ResolutionResult.UNRESOLVED) {
+        addReference(dataAccess);
+      } else {
+        encounters.add(new Encounter(dataAccess, resolutionResult.onlyIfAllAreResolved));
+      }
     }
 
     // Returns a new block that is a successor to this one
@@ -1261,7 +1716,7 @@ final class TemplateAnalysisImpl implements TemplateAnalysis {
       return getClass().getSimpleName()
           + ImmutableMap.of(
               "id", this.hashCode(),
-              "exprs", exprs,
+              "exprs", encounters,
               "in_edges",
                   predecessors.stream()
                       .map(p -> String.valueOf(p.hashCode()))

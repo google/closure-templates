@@ -113,7 +113,6 @@ import com.google.template.soy.jbcsrc.shared.ClassLoaderFallbackCallFactory;
 import com.google.template.soy.jbcsrc.shared.ExtraConstantBootstraps;
 import com.google.template.soy.jbcsrc.shared.Names;
 import com.google.template.soy.plugin.java.internal.PluginAnalyzer;
-import com.google.template.soy.plugin.java.restricted.MethodSignature;
 import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.shared.internal.BuiltinMethod;
@@ -139,7 +138,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.Future;
 import javax.annotation.Nullable;
 import org.objectweb.asm.ConstantDynamic;
 import org.objectweb.asm.Handle;
@@ -2031,9 +2029,6 @@ final class ExpressionCompiler {
       switch (node.getDefnDecl().kind()) {
         case COMPREHENSION_VAR:
           return true;
-        case PARAM:
-        case LOCAL_VAR:
-          return false;
         case CONST:
           // For consts we could allow references if they are in the same file and they themselves
           // are constants. However, this would require changing the calling convention so that
@@ -2046,6 +2041,8 @@ final class ExpressionCompiler {
           // For things like proto extensions and constructors we could allow references. But it
           // isn't clear that that is very useful. For cross file `const`s this isn't possible
           return false;
+        case PARAM:
+        case LOCAL_VAR:
         case EXTERN:
           return false;
         case TEMPLATE:
@@ -2285,15 +2282,9 @@ final class ExpressionCompiler {
     @Override
     protected Boolean visitPluginFunction(FunctionNode node) {
       Object fn = node.getSoyFunction();
-      if (fn instanceof SoyJavaSourceFunction) {
-        PluginAnalyzer.PluginMetadata metadata = PluginAnalyzer.analyze((SoyJavaSourceFunction) fn);
-        for (MethodSignature methodSignature :
-            Iterables.concat(
-                metadata.instanceMethodSignatures(), metadata.staticMethodSignatures())) {
-          if (Future.class.isAssignableFrom(methodSignature.returnType())) {
-            return true;
-          }
-        }
+      if (fn instanceof SoyJavaSourceFunction
+          && JavaSourceFunctionCompiler.doesPluginReturnFuture((SoyJavaSourceFunction) fn)) {
+        return true;
       }
       return node.getParams().stream().anyMatch(this::visit);
     }
