@@ -17,7 +17,6 @@
  */
 
 import {ordainSanitizedHtml} from 'goog:soydata.VERY_UNSAFE'; // from //javascript/template/soy:soy_usegoog_js
-import {isAttribute} from 'google3/javascript/template/soy/checks';
 import * as soy from 'google3/javascript/template/soy/soyutils_usegoog';
 import {Logger} from 'google3/javascript/template/soy/soyutils_velog';
 import {cacheReturnValue} from 'google3/third_party/javascript/closure/functions/functions';
@@ -335,7 +334,7 @@ function printDynamicAttr(
     return;
   }
   const attributes = splitAttributes(expr.toString());
-  const isExprAttribute = isAttribute(expr);
+  const isExprAttribute = soy.$$isAttribute(expr);
   for (const attribute of attributes) {
     const attrName = isExprAttribute
       ? attribute[0]

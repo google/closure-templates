@@ -35,7 +35,6 @@ const googDebug = goog.require('goog.debug');
 const googFormat = goog.require('goog.format');
 const googSoy = goog.requireType('goog.soy');
 const googString = goog.require('goog.string');
-const soyChecks = goog.require('soy.checks');
 const {Message} = goog.requireType('jspb');
 const {SafeHtml, SafeScript, SafeStyle, SafeStyleSheet, SafeUrl, TrustedResourceUrl, unwrapHtml, unwrapResourceUrl, unwrapScript, unwrapStyle, unwrapStyleSheet, unwrapUrl} = goog.require('safevalues');
 const {SanitizedContent, SanitizedContentKind, SanitizedCss, SanitizedHtml, SanitizedHtmlAttribute, SanitizedJs, SanitizedTrustedResourceUri, SanitizedUri} = goog.require('goog.soy.data');
@@ -50,24 +49,6 @@ const {htmlSafeByReview} = goog.require('safevalues.restricted.reviewed');
 
 /** @typedef {!SanitizedContent|{isInvokableFn: boolean}} */
 let IdomFunction;
-
-/**
- * Checks whether a given value is of a given content kind.
- *
- * @param {?} value The value to be examined.
- * @param {!SanitizedContentKind} contentKind The desired content
- *     kind.
- * @return {boolean} Whether the given value is of the given kind.
- * @package
- */
-const isContentKind_ = function(value, contentKind) {
-  // TODO(user): This function should really include the assert on
-  // value.constructor that is currently sprinkled at most of the call sites.
-  // Unfortunately, that would require a (debug-mode-only) switch statement.
-  // TODO(user): Perhaps we should get rid of the contentKind property
-  // altogether and only at the constructor.
-  return value != null && value.contentKind === contentKind;
-};
 
 /**
  * Returns a given value's contentDir property, constrained to a
@@ -119,7 +100,7 @@ const cacheContentDir_ = function(value, dir) {
  *     SafeHtml.
  */
 const createSanitizedHtml = function(value) {
-  if (soyChecks.isHtml(value)) {
+  if ($$isHtml(value)) {
     return /** @type {!SanitizedHtml} */ (value);
   }
   if (value instanceof SafeHtml) {
@@ -740,7 +721,7 @@ const $$escapeHtml = function(value) {
  *     value.
  */
 const $$cleanHtml = function(value, safeTags) {
-  if (soyChecks.isHtml(value)) {
+  if ($$isHtml(value)) {
     return /** @type {!SanitizedHtml} */ (value);
   }
   let tagWhitelist;
@@ -772,7 +753,7 @@ const $$htmlToText = function(value) {
   let html;
   if (value instanceof SafeHtml) {
     html = unwrapHtml(value).toString();
-  } else if (isContentKind_(value, SanitizedContentKind.HTML)) {
+  } else if ($$isHtmlOrHtmlTemplate(value)) {
     html = value.toString();
   } else {
     return asserts.assertString(value);
@@ -1004,7 +985,7 @@ const $$normalizeHtml = function(value) {
  * @return {string} An escaped version of value.
  */
 const $$escapeHtmlRcdata = function(value) {
-  if (soyChecks.isHtml(value)) {
+  if ($$isHtml(value)) {
     return $$normalizeHtmlHelper(value.getContent());
   }
   return $$escapeHtmlHelper(value);
@@ -1312,7 +1293,7 @@ const $$balanceTags_ = function(tags) {
 const $$escapeHtmlAttribute = function(value) {
   // NOTE: We don't accept ATTRIBUTES here because ATTRIBUTES is actually not
   // the attribute value context, but instead k/v pairs.
-  if (soyChecks.isHtml(value)) {
+  if ($$isHtml(value)) {
     // NOTE: After removing tags, we also escape quotes ("normalize") so that
     // the HTML can be embedded in attribute context.
     return $$normalizeHtmlHelper($$stripHtmlTags(value.getContent()));
@@ -1343,7 +1324,7 @@ const $$escapeHtmlHtmlAttribute = function(value) {
  * @return {string} An escaped version of value.
  */
 const $$escapeHtmlAttributeNospace = function(value) {
-  if (soyChecks.isHtml(value)) {
+  if ($$isHtml(value)) {
     return $$normalizeHtmlNospaceHelper($$stripHtmlTags(value.getContent()));
   }
   return $$escapeHtmlNospaceHelper(value);
@@ -1415,7 +1396,7 @@ const $$filterHtmlScriptPhrasingData = function(value) {
 const $$filterHtmlAttributes = function(value) {
   // NOTE: Explicitly no support for SanitizedContentKind.HTML, since that is
   // meaningless in this context, which is generally *between* html attributes.
-  if (soyChecks.isAttribute(value)) {
+  if ($$isAttribute(value)) {
     return value.getContent();
   }
   // TODO: Dynamically inserting attributes that aren't marked as trusted is
@@ -1432,7 +1413,7 @@ const $$filterHtmlAttributes = function(value) {
  * @return {string} value, possibly with an extra leading space.
  */
 const $$whitespaceHtmlAttributes = function(value) {
-  if (soyChecks.isAttribute(value)) {
+  if ($$isAttribute(value)) {
     value = value.getContent();
   }
   return (value && !value.startsWith(' ') ? ' ' : '') + value;
@@ -1498,7 +1479,7 @@ const $$escapeJsValue = function(value) {
     // distinct undefined value.
     return ' null ';
   }
-  if (soyChecks.isJS(value)) {
+  if ($$isJS(value)) {
     return value.getContent();
   }
   if (value instanceof SafeScript) {
@@ -1595,10 +1576,10 @@ const $$normalizeUri = function(value) {
  * @return {string} An escaped version of value.
  */
 const $$filterNormalizeUri = function(value) {
-  if (soyChecks.isURI(value)) {
+  if ($$isURI(value)) {
     return $$normalizeUri(value);
   }
-  if (soyChecks.isTrustedResourceURI(value)) {
+  if ($$isTrustedResourceURI(value)) {
     return $$normalizeUri(value);
   }
   if (value instanceof SafeUrl) {
@@ -1622,10 +1603,10 @@ const $$filterNormalizeMediaUri = function(value) {
   // Image URIs are filtered strictly more loosely than other types of URIs.
   // TODO(shwetakarwa): Add tests for this in soyutils_test_helper while adding
   // tests for filterTrustedResourceUri.
-  if (soyChecks.isURI(value)) {
+  if ($$isURI(value)) {
     return $$normalizeUri(value);
   }
-  if (soyChecks.isTrustedResourceURI(value)) {
+  if ($$isTrustedResourceURI(value)) {
     return $$normalizeUri(value);
   }
   if (value instanceof SafeUrl) {
@@ -1656,7 +1637,7 @@ const $$filterNormalizeRefreshUri = function(value) {
  * @return {string} The value content.
  */
 const $$filterTrustedResourceUri = function(value) {
-  if (soyChecks.isTrustedResourceURI(value)) {
+  if ($$isTrustedResourceURI(value)) {
     return value.getContent();
   }
   if (value instanceof TrustedResourceUrl) {
@@ -1749,7 +1730,7 @@ const $$escapeCssString = function(value) {
  * @return {string} A safe CSS identifier part, keyword, or quanitity.
  */
 const $$filterCssValue = function(value) {
-  if (soyChecks.isCss(value)) {
+  if ($$isCss(value)) {
     return $$embedCssIntoHtml_(value.getContent());
   }
   // Uses == to intentionally match null and undefined for Java compatibility.
@@ -1795,7 +1776,7 @@ const $$filterCspNonceValue = function(value) {
  */
 const $$changeNewlineToBr = function(value) {
   const result = googString.newLineToBr(String(value), false);
-  if (isContentKind_(value, SanitizedContentKind.HTML)) {
+  if ($$isHtmlOrHtmlTemplate(value)) {
     return VERY_UNSAFE.ordainSanitizedHtml(result, getContentDir(value));
   }
   return result;
@@ -1821,7 +1802,7 @@ const $$changeNewlineToBr = function(value) {
 const $$insertWordBreaks = function(value, maxCharsBetweenWordBreaks) {
   const result =
       googFormat.insertWordBreaks(String(value), maxCharsBetweenWordBreaks);
-  if (isContentKind_(value, SanitizedContentKind.HTML)) {
+  if ($$isHtmlOrHtmlTemplate(value)) {
     return VERY_UNSAFE.ordainSanitizedHtml(result, getContentDir(value));
   }
   return result;
@@ -2221,7 +2202,7 @@ const $$bidiTextDir = function(text, isHtml) {
   if (contentDir != null) {
     return contentDir;
   }
-  isHtml = isHtml || isContentKind_(text, SanitizedContentKind.HTML);
+  isHtml = isHtml || $$isHtmlOrHtmlTemplate(text);
   const estimatedDir = bidi.estimateDirection(text + '', isHtml);
   cacheContentDir_(text, estimatedDir);
   return estimatedDir;
@@ -2335,7 +2316,7 @@ const $$bidiMark = function(/** number */ dir) {
  *     bidiGlobalDir, or bidiGlobalDir is 0 (unknown).
  */
 const $$bidiMarkAfter = function(bidiGlobalDir, text, isHtml) {
-  isHtml = isHtml || isContentKind_(text, SanitizedContentKind.HTML);
+  isHtml = isHtml || $$isHtmlOrHtmlTemplate(text);
   const dir = $$bidiTextDir(text, isHtml);
   const formatter = getBidiFormatterInstance_(bidiGlobalDir);
   return formatter.markAfterKnownDir(dir, text + '', isHtml);
@@ -2400,7 +2381,7 @@ const $$bidiUnicodeWrap = function(bidiGlobalDir, text) {
   const formatter = getBidiFormatterInstance_(bidiGlobalDir);
 
   // We treat the value as HTML if and only if it says it's HTML.
-  const isHtml = isContentKind_(text, SanitizedContentKind.HTML);
+  const isHtml = $$isHtmlOrHtmlTemplate(text);
   const dir = $$bidiTextDir(text, isHtml);
   const wrappedText = formatter.unicodeWrapWithKnownDir(dir, text + '', isHtml);
 
@@ -2603,6 +2584,82 @@ function $$maybeMakeImmutableProto(/** !Message*/ message) {
   return message;
 }
 
+/**
+ * Checks whether a given value is of a given content kind.
+ *
+ * @param {?} value The value to be examined.
+ * @param {!SanitizedContentKind} contentKind The desired content
+ *     kind.
+ * @param {?Object=} constructor
+ * @return {boolean} Whether the given value is of the given kind.
+ */
+const isContentKind_ = function(value, contentKind, constructor) {
+  const ret = value != null && value.contentKind === contentKind;
+  if (ret && constructor) {
+    asserts.assert(value.constructor === constructor);
+  }
+  return ret;
+};
+
+/**
+ * @param {?} value
+ * @return {boolean}
+ */
+function $$isHtml(value) {
+  return isContentKind_(value, SanitizedContentKind.HTML, SanitizedHtml);
+}
+
+/**
+ * @param {?} value
+ * @return {boolean}
+ */
+function $$isHtmlOrHtmlTemplate(value) {
+  return isContentKind_(value, SanitizedContentKind.HTML);
+}
+
+/**
+ * @param {?} value
+ * @return {boolean}
+ */
+function $$isCss(value) {
+  return isContentKind_(value, SanitizedContentKind.CSS, SanitizedCss);
+}
+
+/**
+ * @param {?} value
+ * @return {boolean}
+ */
+function $$isAttribute(value) {
+  return isContentKind_(
+      value, SanitizedContentKind.ATTRIBUTES, SanitizedHtmlAttribute);
+}
+
+/**
+ * @param {?} value
+ * @return {boolean}
+ */
+function $$isJS(value) {
+  return isContentKind_(value, SanitizedContentKind.JS, SanitizedJs);
+}
+
+/**
+ * @param {?} value
+ * @return {boolean}
+ */
+function $$isTrustedResourceURI(value) {
+  return isContentKind_(
+      value, SanitizedContentKind.TRUSTED_RESOURCE_URI,
+      SanitizedTrustedResourceUri);
+}
+
+/**
+ * @param {?} value
+ * @return {boolean}
+ */
+function $$isURI(value) {
+  return isContentKind_(value, SanitizedContentKind.URI, SanitizedUri);
+}
+
 
 exports = {
   $$maybeMakeImmutableProto,
@@ -2704,7 +2761,12 @@ exports = {
   $$areYouAnInternalCaller,
   // The following are exported just for tests
   $$balanceTags_,
-  isContentKind_,
+  $$isAttribute,
+  $$isHtml,
+  $$isURI,
+  $$isTrustedResourceURI,
+  $$isCss,
+  $$isJS,
 };
 // -----------------------------------------------------------------------------
 // Generated code.
