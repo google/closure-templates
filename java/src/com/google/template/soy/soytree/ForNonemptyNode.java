@@ -22,6 +22,7 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.soytree.SoyNode.ConditionalBlockNode;
 import com.google.template.soy.soytree.SoyNode.LocalVarBlockNode;
 import com.google.template.soy.soytree.defn.LocalVar;
@@ -75,6 +76,11 @@ public final class ForNonemptyNode extends AbstractBlockNode
     if (orig.indexVar != null) {
       copyState.updateRefs(orig.indexVar, this.indexVar);
     }
+  }
+
+  public boolean isRangeExpr() {
+    return getExpr().getRoot() instanceof FunctionNode
+        && ((FunctionNode) getExpr().getRoot()).getFunctionName().equals("range");
   }
 
   @Override

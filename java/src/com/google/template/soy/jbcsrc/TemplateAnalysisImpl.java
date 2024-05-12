@@ -29,7 +29,6 @@ import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
-import com.google.template.soy.basicfunctions.RangeFunction;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
 import com.google.template.soy.exprtree.DataAccessNode;
 import com.google.template.soy.exprtree.ExprEquivalence;
@@ -69,6 +68,7 @@ import com.google.template.soy.msgs.restricted.SoyMsgSelectPart;
 import com.google.template.soy.shared.RangeArgs;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
+import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamNode;
@@ -255,9 +255,7 @@ final class TemplateAnalysisImpl implements TemplateAnalysis {
             new VarRefNode(indexVar.getOriginalName(), SourceLocation.UNKNOWN, indexVar));
       }
       // Range functions always produce resolved values.
-      var listExpression = node.getParent().getExpr().getRoot();
-      if (listExpression instanceof FunctionNode
-          && ((FunctionNode) listExpression).getSoyFunction() instanceof RangeFunction) {
+      if (node.isRangeExpr()) {
         this.current.add(
             new VarRefNode(node.getVar().getOriginalName(), SourceLocation.UNKNOWN, node.getVar()));
       }
@@ -409,6 +407,10 @@ final class TemplateAnalysisImpl implements TemplateAnalysis {
 
     @Override
     protected void visitCallNode(CallNode node) {
+      if (node instanceof CallBasicNode) {
+        // Always evaluate the callee expression.
+        evalInline(((CallBasicNode) node).getCalleeExpr());
+      }
       // If there is a data="<expr>" this is always evaluated first.
       ExprRootNode dataExpr = node.getDataExpr();
       if (dataExpr != null) {

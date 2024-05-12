@@ -134,6 +134,8 @@ public interface JavaValue extends SoySourceValue {
    */
   JavaValue asSoyInt();
 
+  JavaValue coerceToJavaInt();
+
   /**
    * Asserts that this JavaValue is a soy float. This method is only useful if your signature is
    * overly broad (e.g, 'any' or '?'). Updating the {@code SoyFunctionSignature} is a better option

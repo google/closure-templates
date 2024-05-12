@@ -136,6 +136,11 @@ final class ValidatorValue implements JavaValue {
   }
 
   @Override
+  public ValidatorValue coerceToJavaInt() {
+    return asValue(IntType.getInstance(), "asJavaInt");
+  }
+
+  @Override
   public ValidatorValue asSoyFloat() {
     return asValue(FloatType.getInstance(), "asSoyFloat");
   }

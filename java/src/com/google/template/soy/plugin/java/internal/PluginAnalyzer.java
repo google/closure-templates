@@ -215,6 +215,11 @@ public final class PluginAnalyzer {
     }
 
     @Override
+    public JavaValue coerceToJavaInt() {
+      return this;
+    }
+
+    @Override
     public JavaValue asSoyFloat() {
       return this;
     }
