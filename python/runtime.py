@@ -714,7 +714,9 @@ def build_class_value(*values):
   Returns:
     The joined string.
   """
-  return ' '.join([str(x) for x in values if x])
+  # Disabled to check that value is not exactly "True"
+  # pylint: disable-next=g-bool-id-comparison
+  return ' '.join([str(x) for x in values if x and x is not True])
 
 
 def build_style_value(*values):
@@ -727,7 +729,9 @@ def build_style_value(*values):
     The joined css.
   """
   return sanitize.SanitizedCss(
-      ';'.join([filter_style_part(x) for x in values if x]),
+      # Disabled to check that value is not exactly "True"
+      # pylint: disable-next=g-bool-id-comparison
+      ';'.join([filter_style_part(x) for x in values if x and x is not True]),
       sanitize.IActuallyUnderstandSoyTypeSafetyAndHaveSecurityApproval(
           """Internal framework code."""
       ),
