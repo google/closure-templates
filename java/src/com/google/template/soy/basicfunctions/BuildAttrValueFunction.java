@@ -42,7 +42,9 @@ import java.util.List;
     name = "buildAttrValue",
     value = {
       @Signature(
-          parameterTypes = {"string | css | bool | null | undefined"},
+          parameterTypes = {
+            "string | css | bool | null | undefined | list<string|css|bool|null|undefined>"
+          },
           returnType = "string"),
       @Signature(
           parameterTypes = {

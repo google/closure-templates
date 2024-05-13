@@ -210,7 +210,7 @@ def concat_css_values(l, r):
 def merge_into_dict(original, secondary):
   """Merge two dictionaries into the first and return it.
 
-  This is simply a conveinence wrapper around the dictionary update method. In
+  This is simply a convenience wrapper around the dictionary update method. In
   addition to the update it returns the original dict to allow for chaining.
 
   Args:
@@ -702,7 +702,8 @@ def build_attr_value(*values):
   Returns:
     The joined string.
   """
-  return ';'.join([str(x) for x in values if x])
+  return ';'.join([build_attr_value(*x) if isinstance(x, list)
+                   else str(x) for x in values if x])
 
 
 def build_class_value(*values):
@@ -714,7 +715,9 @@ def build_class_value(*values):
   Returns:
     The joined string.
   """
-  return ' '.join([str(x) for x in values if x])
+
+  return ' '.join([build_class_value(*x) if isinstance(x, list)
+                   else str(x) for x in values if x])
 
 
 def build_style_value(*values):

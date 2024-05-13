@@ -1810,23 +1810,23 @@ const $$insertWordBreaks = function(value, maxCharsBetweenWordBreaks) {
 
 /**
  * Joins items with a semicolon, filtering out falsey values.
- * @param {...(string|SanitizedCss!|boolean|null|undefined)} values The
+ * @param {...(string|SanitizedCss!|boolean|null|undefined|!ReadonlyArray<?>)} values The
  *     values to join.
  * @return {string} The joined string.
  */
 const $$buildAttrValue = function(...values) {
-  return values.filter((s) => $$isTruthyNonEmpty(s)).join(';');
+  return values.flat().filter((s) => $$isTruthyNonEmpty(s)).join(';');
 };
 
 
 /**
  * Joins items with a space, filtering out falsey values.
- * @param {...(string|SanitizedCss!|boolean|null|undefined)} values The values
+ * @param {...(string|SanitizedCss!|boolean|null|undefined|!ReadonlyArray<?>)} values The values
  *     to join.
  * @return {string} The joined string.
  */
 const $$buildClassValue = function(...values) {
-  return values.filter((s) => s).join(' ');
+  return values.flat().filter((s) => s).join(' ');
 };
 
 

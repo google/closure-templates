@@ -55,6 +55,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
@@ -527,6 +528,8 @@ public final class BasicFunctionsRuntime {
   private static String joinHelper(List<SoyValue> values, String delimiter) {
     return values.stream()
         .filter(v -> v != null)
+        .flatMap(
+            v -> v instanceof SoyList ? ((SoyList) v).asResolvedJavaList().stream() : Stream.of(v))
         .filter(SoyValue::coerceToBoolean)
         .map(SoyValue::coerceToString)
         .collect(joining(delimiter));
