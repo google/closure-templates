@@ -28,6 +28,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
+import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.RecordProperty;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
@@ -279,6 +280,12 @@ public final class SoySauceImpl implements SoySauce {
     }
 
     @Override
+    public WriteContinuation renderHtml(LoggingAdvisingAppendable out, boolean captureLogs)
+        throws IOException {
+      return startRender(out, ContentKind.HTML, captureLogs);
+    }
+
+    @Override
     public Continuation<SanitizedContent> renderHtml() {
       return startRenderToSanitizedContent(ContentKind.HTML);
     }
@@ -359,11 +366,21 @@ public final class SoySauceImpl implements SoySauce {
 
     private WriteContinuation startRender(AdvisingAppendable out, ContentKind contentKind)
         throws IOException {
+      return startRender(out, contentKind, /* captureLogs= */ false);
+    }
+
+    private WriteContinuation startRender(
+        AdvisingAppendable out, ContentKind contentKind, boolean captureLogs) throws IOException {
       enforceContentKind(contentKind);
 
       ParamStore params = data == null ? ParamStore.EMPTY_INSTANCE : data;
       RenderContext context = makeContext();
-      OutputAppendable output = OutputAppendable.create(out, context.getLogger());
+      LoggingAdvisingAppendable output;
+      if (captureLogs && out instanceof LoggingAdvisingAppendable) {
+        output = (LoggingAdvisingAppendable) out;
+      } else {
+        output = OutputAppendable.create(out, context.getLogger());
+      }
       return doRender(template, params, output, context);
     }
 
@@ -386,7 +403,10 @@ public final class SoySauceImpl implements SoySauce {
   }
 
   private static WriteContinuation doRender(
-      CompiledTemplate template, ParamStore params, OutputAppendable output, RenderContext context)
+      CompiledTemplate template,
+      ParamStore params,
+      LoggingAdvisingAppendable output,
+      RenderContext context)
       throws IOException {
     RenderResult result;
     try {
@@ -420,7 +440,7 @@ public final class SoySauceImpl implements SoySauce {
     // ThreadSafety guaranteed by the guarded write on hasContinueBeenCalled
     final CompiledTemplate template;
     final ParamStore params;
-    final OutputAppendable output;
+    final LoggingAdvisingAppendable output;
     final RenderContext context;
 
     boolean hasContinueBeenCalled;
@@ -433,7 +453,7 @@ public final class SoySauceImpl implements SoySauce {
         RenderResult result,
         CompiledTemplate template,
         ParamStore params,
-        OutputAppendable output,
+        LoggingAdvisingAppendable output,
         RenderContext context) {
       checkArgument(!result.isDone());
       this.result = checkNotNull(result);
@@ -457,7 +477,7 @@ public final class SoySauceImpl implements SoySauce {
         RenderResult result,
         CompiledTemplate template,
         ParamStore params,
-        OutputAppendable output,
+        LoggingAdvisingAppendable output,
         RenderContext context) {
       super(result, template, params, output, context);
     }
@@ -475,7 +495,7 @@ public final class SoySauceImpl implements SoySauce {
           StringBuilder underlying,
           CompiledTemplate template,
           ParamStore params,
-          OutputAppendable output,
+          LoggingAdvisingAppendable output,
           RenderContext context) {
     RenderResult result;
     try {
@@ -519,7 +539,7 @@ public final class SoySauceImpl implements SoySauce {
         RenderResult result,
         CompiledTemplate template,
         ParamStore params,
-        OutputAppendable output,
+        LoggingAdvisingAppendable output,
         RenderContext context) {
       super(result, template, params, output, context);
       this.targetKind = checkNotNull(targetKind);
