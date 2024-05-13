@@ -21,6 +21,7 @@ import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.UndefinedData;
 import java.io.IOException;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import javax.annotation.Nonnull;
@@ -223,6 +224,11 @@ public interface SoyValue extends SoyValueProvider {
   @Nullable
   default List<? extends SoyValueProvider> asJavaListOrNull() {
     return isNullish() ? null : asJavaList();
+  }
+
+  @Nonnull
+  default Iterator<? extends SoyValueProvider> javaIterator() {
+    return asJavaList().iterator();
   }
 
   @Nonnull

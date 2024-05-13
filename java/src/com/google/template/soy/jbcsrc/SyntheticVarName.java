@@ -47,28 +47,12 @@ abstract class SyntheticVarName {
     return new AutoValue_SyntheticVarName("switch", node);
   }
 
-  static SyntheticVarName foreachLoopRangeStart(ForNonemptyNode forNode) {
-    return new AutoValue_SyntheticVarName(forNode.getVarName() + "_start", forNode);
-  }
-
-  static SyntheticVarName foreachLoopRangeStep(ForNonemptyNode forNode) {
-    return new AutoValue_SyntheticVarName(forNode.getVarName() + "_step", forNode);
-  }
-
-  static SyntheticVarName foreachLoopRangeEnd(ForNonemptyNode forNode) {
-    return new AutoValue_SyntheticVarName(forNode.getVarName() + "_end", forNode);
-  }
-
-  static SyntheticVarName foreachLoopList(ForNonemptyNode forNode) {
-    return new AutoValue_SyntheticVarName(forNode.getVarName() + "_list", forNode);
-  }
-
   static SyntheticVarName foreachLoopIndex(ForNonemptyNode forNode) {
     return new AutoValue_SyntheticVarName(forNode.getVarName() + "_index", forNode);
   }
 
-  static SyntheticVarName foreachLoopLength(ForNonemptyNode forNode) {
-    return new AutoValue_SyntheticVarName(forNode.getVarName() + "_length", forNode);
+  static SyntheticVarName foreachLoopIterator(ForNonemptyNode forNode) {
+    return new AutoValue_SyntheticVarName(forNode.getVarName() + "_iterator", forNode);
   }
 
   static SyntheticVarName forParam(CallParamNode param) {

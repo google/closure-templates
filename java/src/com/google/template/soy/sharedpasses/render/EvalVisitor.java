@@ -21,7 +21,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.template.soy.shared.internal.SharedRuntime.bitwiseAnd;
 import static com.google.template.soy.shared.internal.SharedRuntime.bitwiseOr;
 import static com.google.template.soy.shared.internal.SharedRuntime.bitwiseXor;
-import static com.google.template.soy.shared.internal.SharedRuntime.constructMapFromList;
+import static com.google.template.soy.shared.internal.SharedRuntime.constructMapFromIterator;
 import static com.google.template.soy.shared.internal.SharedRuntime.dividedBy;
 import static com.google.template.soy.shared.internal.SharedRuntime.equal;
 import static com.google.template.soy.shared.internal.SharedRuntime.lessThan;
@@ -400,8 +400,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     ExprNode listExpr = node.getListExpr();
     SoyValue listValue = visit(listExpr);
     try {
-      List<? extends SoyValueProvider> list = ((SoyList) listValue).asJavaList();
-      return constructMapFromList(list);
+      return constructMapFromIterator(listValue.javaIterator());
     } catch (IllegalArgumentException e) {
       throw RenderException.create(
           e.getMessage() + " at " + node.getListExpr().getSourceLocation(), e);

@@ -18,6 +18,7 @@ package com.google.template.soy.jbcsrc;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.isDefinitelyAssignableFrom;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.numericConversion;
 
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.exprtree.DataAccessNode;
@@ -263,10 +264,11 @@ final class ExpressionToSoyValueProviderCompiler {
     @Override
     Optional<Expression> visitForLoopVar(VarRefNode varRef, LocalVar local) {
       Expression loopVar = variables.getLocal(local);
-      if (loopVar.resultType().equals(Type.LONG_TYPE)) {
-        // this happens in foreach loops over ranges
+      if (loopVar.resultType().equals(Type.INT_TYPE)) {
+        // The optional index var is an int.
         if (allowsBoxing()) {
-          return Optional.of(SoyExpression.forInt(loopVar).box());
+          return Optional.of(
+              SoyExpression.forInt(numericConversion(loopVar, Type.LONG_TYPE)).box());
         }
         return Optional.empty();
       } else {

@@ -85,6 +85,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -144,6 +145,7 @@ public final class BytecodeUtils {
   public static final Type COLLECTION_TYPE = Type.getType(Collection.class);
   public static final Type ITERABLE_TYPE = Type.getType(Iterable.class);
   public static final Type LIST_TYPE = Type.getType(List.class);
+  public static final Type ITERATOR_TYPE = Type.getType(Iterator.class);
   public static final Type IMMUTABLE_LIST_TYPE = Type.getType(ImmutableList.class);
   public static final Type IMMUTABLE_MAP_TYPE = Type.getType(ImmutableMap.class);
   public static final Type MAP_TYPE = Type.getType(Map.class);

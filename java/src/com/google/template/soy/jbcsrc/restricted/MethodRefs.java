@@ -130,6 +130,8 @@ public final class MethodRefs {
       createNonPure(ImmutableList.Builder.class, "add", Object.class);
   public static final MethodRef IMMUTABLE_LIST_BUILDER_ADD_ALL =
       createNonPure(ImmutableList.Builder.class, "addAll", Iterable.class);
+  public static final MethodRef IMMUTABLE_LIST_BUILDER_ADD_ALL_ITERATOR =
+      createNonPure(ImmutableList.Builder.class, "addAll", Iterator.class);
   public static final MethodRef IMMUTABLE_LIST_BUILDER_BUILD =
       createNonPure(ImmutableList.Builder.class, "build");
 
@@ -425,8 +427,8 @@ public final class MethodRefs {
   public static final MethodRef RUNTIME_BITWISE_AND =
       createPure(SharedRuntime.class, "bitwiseAnd", SoyValue.class, SoyValue.class);
 
-  public static final MethodRef CONSTRUCT_MAP_FROM_LIST =
-      createPure(SharedRuntime.class, "constructMapFromList", List.class);
+  public static final MethodRef CONSTRUCT_MAP_FROM_ITERATOR =
+      createPure(SharedRuntime.class, "constructMapFromIterator", Iterator.class);
 
   public static final MethodRef RUNTIME_TIMES =
       createPure(SharedRuntime.class, "times", SoyValue.class, SoyValue.class);
@@ -461,6 +463,8 @@ public final class MethodRefs {
   public static final MethodRef SOY_VALUE_AS_JAVA_LIST = createPure(SoyValue.class, "asJavaList");
   public static final MethodRef SOY_VALUE_AS_JAVA_LIST_OR_NULL =
       createPure(SoyValue.class, "asJavaListOrNull");
+  public static final MethodRef SOY_VALUE_AS_JAVA_ITERATOR =
+      createPure(SoyValue.class, "javaIterator");
 
   public static final MethodRef SOY_VALUE_AS_JAVA_MAP = createPure(SoyValue.class, "asJavaMap");
 

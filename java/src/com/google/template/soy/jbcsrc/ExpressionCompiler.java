@@ -17,6 +17,7 @@ package com.google.template.soy.jbcsrc;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.ITERATOR_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.LIST_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.NULL_POINTER_EXCEPTION_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_VALUE_PROVIDER_TYPE;
@@ -512,8 +513,8 @@ final class ExpressionCompiler {
           if (child instanceof SpreadOpNode) {
             builder =
                 builder.invoke(
-                    MethodRefs.IMMUTABLE_LIST_BUILDER_ADD_ALL,
-                    visit(((SpreadOpNode) child).getChild(0)).unboxAsListUnchecked());
+                    MethodRefs.IMMUTABLE_LIST_BUILDER_ADD_ALL_ITERATOR,
+                    visit(((SpreadOpNode) child).getChild(0)).unboxAsIteratorUnchecked());
           } else {
             builder = builder.invoke(MethodRefs.IMMUTABLE_LIST_BUILDER_ADD, visit(child).box());
           }
@@ -553,33 +554,27 @@ final class ExpressionCompiler {
       ExprNode listExpr = node.getListExpr();
       SoyExpression soyList = visit(listExpr);
       // Don't care about nullishness since we always dereference the list
-      SoyExpression javaList = soyList.unboxAsListUnchecked();
       ExprNode mapExpr = node.getListItemTransformExpr();
       ExprNode filterExpr = node.getFilterExpr();
 
       String varName = node.getListIterVar().name();
       LocalVariableManager.Scope scope = varManager.enterScope();
-      LocalVariable listVar = scope.createTemporary(varName + "_input_list", LIST_TYPE);
-      Statement listVarInitializer = listVar.initialize(javaList);
+      LocalVariable iteratorVar = scope.createTemporary(varName + "_iterator", ITERATOR_TYPE);
+      Statement iteratorVarInitializer = iteratorVar.initialize(soyList.unboxAsIteratorUnchecked());
       LocalVariable resultVar = scope.createTemporary(varName + "_output_list", LIST_TYPE);
       Statement resultVarInitializer = resultVar.initialize(MethodRefs.ARRAY_LIST.invoke());
-      LocalVariable sizeVar = scope.createTemporary(varName + "_input_list_size", Type.INT_TYPE);
-      Statement sizeVarInitializer = sizeVar.initialize(listVar.invoke(MethodRefs.LIST_SIZE));
-      LocalVariable indexVar = scope.createTemporary(varName + "_index", Type.INT_TYPE);
-      Statement indexVarInitializer = indexVar.initialize(constant(0));
       LocalVariable itemVar =
           scope.createNamedLocal(node.getListIterVar().name(), SOY_VALUE_PROVIDER_TYPE);
       Statement itemVarInitializer =
           itemVar.initialize(
-              listVar.invoke(MethodRefs.LIST_GET, indexVar).checkedCast(SOY_VALUE_PROVIDER_TYPE));
+              MethodRefs.ITERATOR_NEXT.invoke(iteratorVar).checkedCast(SOY_VALUE_PROVIDER_TYPE));
       LocalVariable userIndexVar =
           node.getIndexVar() == null
               ? null
-              : scope.createNamedLocal(node.getIndexVar().name(), Type.LONG_TYPE);
+              : scope.createNamedLocal(node.getIndexVar().name(), Type.INT_TYPE);
       Statement userIndexVarInitializer =
-          userIndexVar == null
-              ? null
-              : userIndexVar.initialize(numericConversion(indexVar, Type.LONG_TYPE));
+          userIndexVar == null ? null : userIndexVar.initialize(constant(0));
+      Expression hasNext = MethodRefs.ITERATOR_HAS_NEXT.invoke(iteratorVar);
 
       // TODO: Consider compiling to a SoyValueProvider instead of boxing.
       Expression visitedMap = visit(mapExpr).box();
@@ -592,18 +587,16 @@ final class ExpressionCompiler {
 
       Generates byte code for a for loop that looks more or less like:
 
-      List<?> a_list = unwrap(...);
+      Iterator<?> a_iterator = unwrap(...);
       List<?> a_result = new ArrayList<>();
-      int a_length = a_list.size();
-      for (int a_i = 0; a_i < a_length; a_i++) {
-        Object a = a_list.get(a_i);
-        if (userIndexVar != null) {
-          int i = a_i;
-        }
+      int i = 0;
+      while (a_iterator.hasNext()) {
+        Object a = a_iterator.next();
         if (filterPredicate != null && !filterPredicate.test(a,i)) {
           continue;
         }
         a_result.add(mapFunction.apply(a,i));
+        i++;
       }
       return a_result;
 
@@ -613,10 +606,11 @@ final class ExpressionCompiler {
           new Expression(BytecodeUtils.LIST_TYPE, Features.of(Feature.NON_JAVA_NULLABLE)) {
             @Override
             protected void doGen(CodeBuilder adapter) {
-              listVarInitializer.gen(adapter); //   List<?> a_list = ...;
+              iteratorVarInitializer.gen(adapter); //   Iterator<?> a_iterator = ...;
               resultVarInitializer.gen(adapter); // List<?> a_result = new ArrayList<>();
-              sizeVarInitializer.gen(adapter); //   int a_length = a_list.size();
-              indexVarInitializer.gen(adapter); //  int a_i = 0;
+              if (userIndexVarInitializer != null) {
+                userIndexVarInitializer.gen(adapter); //  int i = 0;
+              }
 
               Label loopStart = new Label();
               Label loopContinue = new Label();
@@ -624,15 +618,10 @@ final class ExpressionCompiler {
 
               adapter.mark(loopStart);
 
-              indexVar.gen(adapter);
-              sizeVar.gen(adapter);
-              adapter.ifICmp(Opcodes.IFGE, loopEnd); // if (a_i >= a_length) break;
+              hasNext.gen(adapter);
+              adapter.ifZCmp(Opcodes.IFEQ, loopEnd); // while (a_iterator.hasNext()) {
 
-              itemVarInitializer.gen(adapter); // Object a = a_list.get(a_i);
-
-              if (userIndexVar != null) {
-                userIndexVarInitializer.gen(adapter); // int i = a_i;
-              }
+              itemVarInitializer.gen(adapter); // Object a = a_iterator.next();
 
               if (visitedFilter != null) {
                 visitedFilter
@@ -647,7 +636,9 @@ final class ExpressionCompiler {
 
               adapter.mark(loopContinue);
 
-              adapter.iinc(indexVar.index(), 1); // a_i++
+              if (userIndexVar != null) {
+                adapter.iinc(userIndexVar.index(), 1); // a_i++
+              }
               adapter.goTo(loopStart);
 
               adapter.mark(loopEnd);
@@ -757,9 +748,9 @@ final class ExpressionCompiler {
     protected SoyExpression visitMapLiteralFromListNode(MapLiteralFromListNode node) {
       return SoyExpression.forSoyValue(
           node.getType(),
-          MethodRefs.CONSTRUCT_MAP_FROM_LIST.invoke(
-              // constructMapFromList doesn't support null list params
-              visit(node.getListExpr()).unboxAsListUnchecked()));
+          MethodRefs.CONSTRUCT_MAP_FROM_ITERATOR.invoke(
+              // constructMapFromIterator doesn't support null list params
+              visit(node.getListExpr()).unboxAsIteratorUnchecked()));
     }
 
     // Comparison operators
@@ -1275,9 +1266,9 @@ final class ExpressionCompiler {
     @Override
     SoyExpression visitForLoopVar(VarRefNode varRef, LocalVar local) {
       Expression expression = parameters.getLocal(local);
-      if (expression.resultType().equals(Type.LONG_TYPE)) {
-        // it can be an unboxed long when executing a foreach over a range
-        return SoyExpression.forInt(expression);
+      if (expression.resultType().equals(Type.INT_TYPE)) {
+        // The optional index var is an int.
+        return SoyExpression.forInt(numericConversion(expression, Type.LONG_TYPE));
       }
       return resolveVarRefNode(varRef, expression);
     }
@@ -1360,7 +1351,7 @@ final class ExpressionCompiler {
     SoyExpression visitListComprehensionVar(VarRefNode varRef, ComprehensionVarDefn var) {
       // Index vars are always simple ints
       if (var.declaringNode().getIndexVar() == var) {
-        return SoyExpression.forInt(parameters.getLocal(var));
+        return SoyExpression.forInt(numericConversion(parameters.getLocal(var), Type.LONG_TYPE));
       }
       return resolveVarRefNode(varRef, parameters.getLocal(var));
     }

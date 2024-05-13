@@ -24,7 +24,6 @@ import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static com.google.template.soy.jbcsrc.PrintDirectives.applyStreamingEscapingDirectives;
 import static com.google.template.soy.jbcsrc.PrintDirectives.applyStreamingPrintDirectives;
 import static com.google.template.soy.jbcsrc.PrintDirectives.areAllPrintDirectivesStreamable;
-import static com.google.template.soy.jbcsrc.TemplateVariableManager.SaveStrategy.DERIVED;
 import static com.google.template.soy.jbcsrc.TemplateVariableManager.SaveStrategy.STORE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.RENDER_RESULT_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_VALUE_PROVIDER_TYPE;
@@ -767,58 +766,49 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   protected Statement visitForNode(ForNode node) {
     ForNonemptyNode nonEmptyNode = (ForNonemptyNode) node.getChild(0);
     Scope scope = variables.enterScope();
-    SoyExpression expr =
-        exprCompiler.compileRootExpression(node.getExpr(), detachState).unboxAsListUnchecked();
-    Variable listVar =
-        scope.createSynthetic(SyntheticVarName.foreachLoopList(nonEmptyNode), expr, STORE);
-    Variable sizeVar =
+    Expression iteratorExpr =
+        exprCompiler.compileRootExpression(node.getExpr(), detachState).unboxAsIteratorUnchecked();
+    Variable iteratorVar =
         scope.createSynthetic(
-            SyntheticVarName.foreachLoopLength(nonEmptyNode),
-            MethodRefs.LIST_SIZE.invoke(listVar.local()),
-            DERIVED);
-    Variable indexVar =
-        scope.createSynthetic(SyntheticVarName.foreachLoopIndex(nonEmptyNode), constant(0), STORE);
+            SyntheticVarName.foreachLoopIterator(nonEmptyNode), iteratorExpr, STORE);
     Variable userIndexVar =
         nonEmptyNode.getIndexVar() == null
             ? null
-            : scope.create(
-                nonEmptyNode.getIndexVarName(),
-                BytecodeUtils.numericConversion(indexVar.local(), Type.LONG_TYPE),
-                DERIVED);
+            : scope.create(nonEmptyNode.getIndexVarName(), constant(0), STORE);
     Variable itemVar =
         scope.create(
             nonEmptyNode.getVarName(),
-            MethodRefs.LIST_GET
-                .invoke(listVar.local(), indexVar.local())
+            iteratorVar
+                .local()
+                .invoke(MethodRefs.ITERATOR_NEXT)
                 .checkedCast(SOY_VALUE_PROVIDER_TYPE),
-            DERIVED);
+            STORE);
+    Expression hasNext = MethodRefs.ITERATOR_HAS_NEXT.invoke(iteratorVar.local());
     Statement loopBody = visitChildrenInNewScope(nonEmptyNode);
     Statement exitScope = scope.exitScope();
 
     return new Statement() {
       @Override
       protected void doGen(CodeBuilder adapter) {
-        listVar.initializer().gen(adapter);
-        sizeVar.initializer().gen(adapter);
-        sizeVar.local().gen(adapter);
-        Label emptyListLabel = new Label();
-        adapter.ifZCmp(Opcodes.IFEQ, emptyListLabel);
-        indexVar.initializer().gen(adapter);
-        Label loopStart = adapter.mark();
-        itemVar.initializer().gen(adapter);
+        iteratorVar.initializer().gen(adapter); // Iterator it = ...;
         if (userIndexVar != null) {
-          userIndexVar.initializer().gen(adapter);
+          userIndexVar.initializer().gen(adapter); // int index = 0;
         }
 
+        Label loopStart = adapter.mark();
+        Label loopEnd = new Label();
+
+        hasNext.gen(adapter);
+        adapter.ifZCmp(Opcodes.IFEQ, loopEnd); // while (it.hasNext()) {
+        itemVar.initializer().gen(adapter); // SoyValueProvider item = i.next();
         loopBody.gen(adapter);
 
-        adapter.iinc(indexVar.local().index(), 1); // index++
-        indexVar.local().gen(adapter);
-        sizeVar.local().gen(adapter);
-        adapter.ifICmp(Opcodes.IFLT, loopStart); // if index < list.size(), goto loopstart
-        // exit the loop
+        if (userIndexVar != null) {
+          adapter.iinc(userIndexVar.local().index(), 1); // index++
+        }
+        adapter.goTo(loopStart);
         exitScope.gen(adapter);
-        adapter.mark(emptyListLabel);
+        adapter.mark(loopEnd);
       }
     };
   }

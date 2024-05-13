@@ -45,6 +45,7 @@ import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.StringType;
 import com.google.template.soy.types.UndefinedType;
 import com.google.template.soy.types.UnknownType;
+import java.util.Iterator;
 import java.util.List;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Type;
@@ -715,6 +716,17 @@ public final class SoyExpression extends Expression {
             delegate.isNonSoyNullish()
                 ? MethodRefs.SOY_VALUE_STRING_VALUE
                 : MethodRefs.SOY_VALUE_STRING_VALUE_OR_NULL));
+  }
+
+  public Expression unboxAsIteratorUnchecked() {
+    if (alreadyUnboxed(Iterator.class)) {
+      return this;
+    }
+    if (alreadyUnboxed(Iterable.class)) {
+      return MethodRefs.GET_ITERATOR.invoke(delegate);
+    }
+    assertBoxed(SoyValue.class);
+    return MethodRefs.SOY_VALUE_AS_JAVA_ITERATOR.invoke(delegate);
   }
 
   /** Unboxes a list and its items. Throws an exception if the boxed list value is nullish. */
