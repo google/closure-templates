@@ -89,6 +89,7 @@ import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.exprtree.NullSafeAccessNode;
 import com.google.template.soy.exprtree.OperatorNodes.AmpAmpOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.AndOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.AsOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.AssertNonNullOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.BarBarOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.BitwiseAndOpNode;
@@ -99,6 +100,7 @@ import com.google.template.soy.exprtree.OperatorNodes.DivideByOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.EqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.GreaterThanOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.GreaterThanOrEqualOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.InstanceOfOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.LessThanOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.LessThanOrEqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.MinusOpNode;
@@ -537,9 +539,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     // SoyProtoValue.getFieldProviderInternal() and AbstractDict.getField() return null instead
     // of NullData.
     // TODO(user): Consider cleaning up the null / NullData inconsistencies.
-    if (value != null
-        && !TofuTypeChecks.isInstance(
-            fieldAccess.getType(), value, fieldAccess.getSourceLocation())) {
+    if (value != null && !TofuTypeChecks.isInstance(fieldAccess.getType(), value)) {
       throw RenderException.create(
           String.format(
               "Expected value of type '%s', but actual type was '%s'.",
@@ -600,9 +600,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
 
     SoyValue value = ((SoyLegacyObjectMap) base).getItem(key);
 
-    if (value != null
-        && !TofuTypeChecks.isInstance(
-            itemAccess.getType(), value, itemAccess.getSourceLocation())) {
+    if (value != null && !TofuTypeChecks.isInstance(itemAccess.getType(), value)) {
       throw RenderException.create(
           String.format(
               "Expected value of type '%s', but actual type was '%s'.",
@@ -872,6 +870,17 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
   @Override
   protected SoyValue visitAssertNonNullOpNode(AssertNonNullOpNode node) {
     return visit(Iterables.getOnlyElement(node.getChildren()));
+  }
+
+  @Override
+  protected SoyValue visitAsOpNode(AsOpNode node) {
+    return visit(node.getChild(0));
+  }
+
+  @Override
+  protected SoyValue visitInstanceOfOpNode(InstanceOfOpNode node) {
+    SoyValue operand0 = visit(node.getChild(0));
+    return BooleanData.forValue(TofuTypeChecks.isInstance(node.getChild(1).getType(), operand0));
   }
 
   // -----------------------------------------------------------------------------------------------

@@ -15,7 +15,6 @@
  */
 package com.google.template.soy.passes;
 
-
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.TemplateContentKind;
 import com.google.template.soy.error.ErrorReporter;
@@ -67,18 +66,22 @@ final class ResolveDeclaredTypesPass implements CompilerFilePass {
         .forEach(
             n -> {
               TypeNode typeNode = n.getTypeNode();
-              String typeName = typeNode.toString();
               SoyType type;
-              // TypeNodeConverter doesn't tolerate these generic types without <>.
-              switch (typeName) {
-                case "list":
-                  type = ListType.ANY_LIST;
-                  break;
-                case "map":
-                  type = MapType.ANY_MAP;
-                  break;
-                default:
-                  type = converter.getOrCreateType(typeNode);
+              if (!typeNode.isTypeResolved()) {
+                String typeName = typeNode.toString();
+                // TypeNodeConverter doesn't tolerate these generic types without <>.
+                switch (typeName) {
+                  case "list":
+                    type = ListType.ANY_LIST;
+                    break;
+                  case "map":
+                    type = MapType.ANY_MAP;
+                    break;
+                  default:
+                    type = converter.getOrCreateType(typeNode);
+                }
+              } else {
+                type = typeNode.getResolvedType();
               }
               n.setType(type);
             });

@@ -1579,9 +1579,6 @@ const $$filterNormalizeUri = function(value) {
   if ($$isURI(value)) {
     return $$normalizeUri(value);
   }
-  if ($$isTrustedResourceURI(value)) {
-    return $$normalizeUri(value);
-  }
   if (value instanceof SafeUrl) {
     return $$normalizeUri(unwrapUrl(value));
   }
@@ -1604,9 +1601,6 @@ const $$filterNormalizeMediaUri = function(value) {
   // TODO(shwetakarwa): Add tests for this in soyutils_test_helper while adding
   // tests for filterTrustedResourceUri.
   if ($$isURI(value)) {
-    return $$normalizeUri(value);
-  }
-  if ($$isTrustedResourceURI(value)) {
     return $$normalizeUri(value);
   }
   if (value instanceof SafeUrl) {
@@ -2657,7 +2651,8 @@ function $$isTrustedResourceURI(value) {
  * @return {boolean}
  */
 function $$isURI(value) {
-  return isContentKind_(value, SanitizedContentKind.URI, SanitizedUri);
+  return isContentKind_(value, SanitizedContentKind.URI, SanitizedUri) ||
+      $$isTrustedResourceURI(value);
 }
 
 

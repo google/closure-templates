@@ -53,8 +53,10 @@ import com.google.template.soy.exprtree.MethodCallNode;
 import com.google.template.soy.exprtree.NullSafeAccessNode;
 import com.google.template.soy.exprtree.OperatorNodes.AmpAmpOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.AndOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.AsOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.BarBarOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ConditionalOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.InstanceOfOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
 import com.google.template.soy.exprtree.ProtoEnumValueNode;
@@ -466,6 +468,17 @@ final class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
     }
     // Default to fallback implementation.
     visitExprNode(node);
+  }
+
+  @Override
+  protected void visitAsOpNode(AsOpNode node) {
+    visit(node.getChild(0));
+  }
+
+  @Override
+  protected void visitInstanceOfOpNode(InstanceOfOpNode node) {
+    // Could simplify expressions like `literal instanceof type`.
+    visit(node.getChild(0));
   }
 
   // -----------------------------------------------------------------------------------------------

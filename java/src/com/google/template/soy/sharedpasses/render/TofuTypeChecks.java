@@ -18,7 +18,6 @@ package com.google.template.soy.sharedpasses.render;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyLegacyObjectMap;
@@ -99,11 +98,10 @@ public final class TofuTypeChecks {
    *
    * @param type The type to test.
    * @param value The value to check against the type.
-   * @param location The source location of the instance
    * @return True if the value is an instance of the type.
    */
-  public static boolean isInstance(SoyType type, SoyValue value, SourceLocation location) {
-    CheckResult result = doIsInstance(type, value, location);
+  public static boolean isInstance(SoyType type, SoyValue value) {
+    CheckResult result = doIsInstance(type, value);
     if (result.result) {
       result.onPass.ifPresent(Runnable::run);
       return true;
@@ -111,7 +109,7 @@ public final class TofuTypeChecks {
     return false;
   }
 
-  private static CheckResult doIsInstance(SoyType type, SoyValue value, SourceLocation location) {
+  private static CheckResult doIsInstance(SoyType type, SoyValue value) {
     switch (type.getKind()) {
       case ANY:
       case UNKNOWN:
@@ -163,7 +161,7 @@ public final class TofuTypeChecks {
       case UNION:
         CheckResult unionResult = FAIL;
         for (SoyType memberType : ((UnionType) type).getMembers()) {
-          unionResult = unionResult.or(doIsInstance(memberType, value, location));
+          unionResult = unionResult.or(doIsInstance(memberType, value));
         }
         return unionResult;
       case URI:

@@ -1026,7 +1026,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
       return;
     }
 
-    if (!TofuTypeChecks.isInstance(param.type(), value, param.nameLocation())) {
+    if (!TofuTypeChecks.isInstance(param.type(), value)) {
       // should this be a soydataexception?
       throw RenderException.createWithSource(
           "Parameter type mismatch: attempt to bind value '"

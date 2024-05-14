@@ -134,7 +134,7 @@ final class TofuJavaValue implements JavaValue {
   }
 
   private void checkType(SoyType type) {
-    if (!TofuTypeChecks.isInstance(type, soyValue, sourceLocation)) {
+    if (!TofuTypeChecks.isInstance(type, soyValue)) {
       throw RenderException.create(
           "SoyValue["
               + soyValue

@@ -904,8 +904,46 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
 
   @Override
   protected Expression visitInstanceOfOpNode(InstanceOfOpNode node) {
-    // TODO(b/156780590): Implement.
-    return LITERAL_FALSE;
+    SoyType operand = node.getChild(1).getType();
+    Expression value = visit(node.getChild(0));
+
+    // Handle any operand type supported by SoyTypes#isValidInstanceOfOperand()
+    switch (operand.getKind()) {
+      case STRING:
+        return value.typeOf().tripleEquals(stringLiteral("string"));
+      case BOOL:
+        return value.typeOf().tripleEquals(stringLiteral("boolean"));
+      case UNION:
+        if (operand.equals(SoyTypes.NUMBER_TYPE)) {
+          return value.typeOf().tripleEquals(stringLiteral("number"));
+        }
+        break;
+      case LIST:
+        return JsRuntime.ARRAY_IS_ARRAY.call(value);
+      case MAP:
+        return value.instanceOf(id("Map"));
+      case PROTO:
+        SoyProtoType protoType = (SoyProtoType) operand;
+        return protoConstructor(protoType).dotAccess("hasInstance").call(value);
+      case MESSAGE:
+        return value.instanceOf(GoogRequire.create("jspb.Message").reference());
+      case JS:
+        return JsRuntime.IS_JS.call(value);
+      case CSS:
+        return JsRuntime.IS_CSS.call(value);
+      case URI:
+        return JsRuntime.IS_URI.call(value);
+      case HTML:
+        return JsRuntime.IS_HTML.call(value);
+      case TRUSTED_RESOURCE_URI:
+        return JsRuntime.IS_TRUSTED_RESOURCE_URI.call(value);
+      case ATTRIBUTES:
+        return JsRuntime.IS_ATTRIBUTE.call(value);
+      default:
+        break;
+    }
+
+    throw new AssertionError("Compiler should have disallowed: " + operand);
   }
 
   private static final ImmutableSet<SoyType.Kind> CAN_USE_EQUALS =

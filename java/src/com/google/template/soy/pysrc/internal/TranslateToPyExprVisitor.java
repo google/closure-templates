@@ -50,10 +50,12 @@ import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.exprtree.Operator.Operand;
 import com.google.template.soy.exprtree.Operator.SyntaxElement;
 import com.google.template.soy.exprtree.OperatorNodes.AmpAmpOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.AsOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.AssertNonNullOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.BarBarOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ConditionalOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.EqualOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.InstanceOfOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NotEqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NotOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
@@ -166,6 +168,8 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
               + "The expression should be declared as a list or map.");
   private static final SoyErrorKind EXTERNS_NOT_SUPPORTED =
       SoyErrorKind.of("Externs are not supported in the Python runtime.");
+  private static final SoyErrorKind INSTANCEOF_NOT_SUPPORTED =
+      SoyErrorKind.of("The `instanceof` operator is not supported in the Python runtime.");
 
   /**
    * Errors in this visitor generate Python source that immediately explodes. Users of Soy are
@@ -471,6 +475,17 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
   @Override
   protected PyExpr visitOperatorNode(OperatorNode node) {
     return genPyExprUsingSoySyntax(node);
+  }
+
+  @Override
+  protected PyExpr visitAsOpNode(AsOpNode node) {
+    return visit(node.getChild(0));
+  }
+
+  @Override
+  protected PyExpr visitInstanceOfOpNode(InstanceOfOpNode node) {
+    errorReporter.report(node.getSourceLocation(), INSTANCEOF_NOT_SUPPORTED);
+    return new PyExpr("False", Integer.MAX_VALUE);
   }
 
   @Override
