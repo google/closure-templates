@@ -47,6 +47,7 @@ import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.MapType;
 import com.google.template.soy.types.NullType;
 import com.google.template.soy.types.SanitizedType;
+import com.google.template.soy.types.SetType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
@@ -122,6 +123,15 @@ public final class SoyExpression extends Expression {
 
   @DoNotCall
   public static SoyExpression forList(ListType listType, SoyExpression delegate) {
+    throw new UnsupportedOperationException();
+  }
+
+  public static SoyExpression forSet(SetType setType, Expression delegate) {
+    return new SoyExpression(getUnboxedType(setType), delegate);
+  }
+
+  @DoNotCall
+  public static SoyExpression forSet(SetType setType, SoyExpression delegate) {
     throw new UnsupportedOperationException();
   }
 

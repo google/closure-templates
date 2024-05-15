@@ -50,7 +50,6 @@ import com.google.protobuf.Descriptors.EnumDescriptor;
 import com.google.protobuf.Descriptors.EnumValueDescriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor.JavaType;
-import com.google.protobuf.Descriptors.FileDescriptor.Syntax;
 import com.google.protobuf.Descriptors.OneofDescriptor;
 import com.google.protobuf.ExtensionLite;
 import com.google.protobuf.GeneratedMessage.ExtendableBuilder;
@@ -91,7 +90,7 @@ import com.google.template.soy.jbcsrc.restricted.TypeInfo;
 import com.google.template.soy.jbcsrc.runtime.JbcSrcRuntime;
 import com.google.template.soy.soytree.defn.TemplateStateVar;
 import com.google.template.soy.types.BoolType;
-import com.google.template.soy.types.ListType;
+import com.google.template.soy.types.IterableType;
 import com.google.template.soy.types.MapType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
@@ -1187,7 +1186,8 @@ final class ProtoUtils {
 
       SoyExpression baseArg = compile(argNode);
       // If the list arg is definitely an empty list/map, do nothing
-      if (baseArg.soyType().equals(ListType.EMPTY_LIST)
+      if ((baseArg.soyType() instanceof IterableType
+              && ((IterableType) baseArg.soyType()).isEmpty())
           || baseArg.soyType().equals(MapType.EMPTY_MAP)) {
         return Statement.NULL_STATEMENT;
       }
@@ -1267,7 +1267,7 @@ final class ProtoUtils {
       // exitScope must be called after creating all the variables
       Statement scopeExit = scope.exitScope();
       // Expected type info of the list element
-      SoyType elementSoyType = ((ListType) unboxed.soyType()).getElementType();
+      SoyType elementSoyType = ((IterableType) unboxed.soyType()).getElementType();
       SoyRuntimeType elementType = SoyRuntimeType.getBoxedType(elementSoyType);
 
       // Call list.get(i).resolveSoyValueProvider(), then cast to the expected subtype of SoyValue

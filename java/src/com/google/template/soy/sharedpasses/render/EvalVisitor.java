@@ -151,6 +151,7 @@ import com.google.template.soy.types.UnionType;
 import com.ibm.icu.util.ULocale;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -322,8 +323,11 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     List<SoyValueProvider> values = new ArrayList<>();
     for (ExprNode child : node.getChildren()) {
       SoyValue val = visit(child);
-      if (child.getKind() == Kind.SPREAD_OP_NODE && val instanceof SoyList) {
-        values.addAll(val.asJavaList());
+      if (child.getKind() == Kind.SPREAD_OP_NODE) {
+        Iterator<? extends SoyValueProvider> i = val.javaIterator();
+        while (i.hasNext()) {
+          values.add(i.next());
+        }
       } else {
         values.add(val);
       }

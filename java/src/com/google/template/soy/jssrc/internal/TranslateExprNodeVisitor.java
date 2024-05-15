@@ -135,7 +135,7 @@ import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.soytree.defn.TemplateStateVar;
 import com.google.template.soy.types.AnyType;
-import com.google.template.soy.types.ListType;
+import com.google.template.soy.types.IterableType;
 import com.google.template.soy.types.MapType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
@@ -373,8 +373,8 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
       // elementType can be unknown if it is the special EMPTY_LIST or if it isn't a known list
       // type.
       SoyType elementType =
-          listType.getKind() == SoyType.Kind.LIST
-              ? ((ListType) listType).getElementType()
+          listType instanceof IterableType
+              ? ((IterableType) listType).getElementType()
               : UnknownType.getInstance();
       JsType elementJsType = jsTypeForStrict(elementType);
       JsDoc doc =
@@ -485,12 +485,13 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
     // Generate the code "new Map(list.map(dummyVar => [dummyVar.key, dummyVar.value]))"
     // corresponding to the input "map(list)"
     Expression list = visit(node.getListExpr());
-    SoyType listType = node.getListExpr().getType();
-    if (!(listType instanceof ListType)) {
+    SoyType type = node.getListExpr().getType();
+    if (!(type instanceof IterableType)) {
       errorReporter.report(node.getSourceLocation(), SOY_JS_SRC_BAD_LIST_TO_MAP_CONSTRUCTOR, list);
       return Expressions.constructMap();
     }
-    if (listType.equals(ListType.EMPTY_LIST)) {
+    IterableType iterableType = (IterableType) type;
+    if (iterableType.isEmpty()) {
       // If the list is empty, trying to infer the type of the dummyVar is futile. So we create a
       // special case and directly return an empty list.
       return Expressions.constructMap();
@@ -499,7 +500,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
     String dummyVar = "list_to_map_constructor_" + node.getNodeId();
     JsDoc doc =
         JsDoc.builder()
-            .addParam(dummyVar, jsTypeForStrict(((ListType) listType).getElementType()).typeExpr())
+            .addParam(dummyVar, jsTypeForStrict(iterableType.getElementType()).typeExpr())
             .build();
 
     Expression body =

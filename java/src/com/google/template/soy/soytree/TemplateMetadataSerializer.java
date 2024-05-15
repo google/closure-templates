@@ -361,6 +361,9 @@ public final class TemplateMetadataSerializer {
       case LIST_ELEMENT:
         return typeRegistry.getOrCreateListType(
             fromProto(proto.getListElement(), typeRegistry, filePath, errorReporter));
+      case SET_ELEMENT:
+        return typeRegistry.getOrCreateSetType(
+            fromProto(proto.getSetElement(), typeRegistry, filePath, errorReporter));
 
       case LEGACY_OBJECT_MAP:
         return typeRegistry.getOrCreateLegacyObjectMapType(

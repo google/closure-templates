@@ -82,6 +82,9 @@ public abstract class SoyRuntimeType {
       case LIST:
         // We have some minor support for unboxed lists
         return new PrimitiveSoyType(soyType, BytecodeUtils.LIST_TYPE);
+      case SET:
+        // We have some minor support for unboxed sets
+        return new PrimitiveSoyType(soyType, BytecodeUtils.SET_TYPE);
       case UNION:
         {
           // unions generally don't have a unique unboxed runtime type except in 2 special cases
@@ -242,6 +245,10 @@ public abstract class SoyRuntimeType {
 
   public final boolean isKnownListOrUnionOfLists() {
     return SoyTypes.isKindOrUnionOfKind(soyType, Kind.LIST);
+  }
+
+  public final boolean isKnownSet() {
+    return SoyTypes.isKindOrUnionOfKind(soyType, Kind.SET);
   }
 
   public final ListType asListType() {

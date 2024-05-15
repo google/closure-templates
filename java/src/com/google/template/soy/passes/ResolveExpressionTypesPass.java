@@ -20,6 +20,7 @@ import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static com.google.common.collect.ImmutableSortedSet.toImmutableSortedSet;
+import static com.google.common.collect.Iterables.getOnlyElement;
 import static com.google.template.soy.passes.CheckTemplateCallsPass.ARGUMENT_TYPE_MISMATCH;
 import static com.google.template.soy.types.SoyTypes.SAFE_PROTO_TO_SANITIZED_TYPE;
 import static com.google.template.soy.types.SoyTypes.getMapKeysType;
@@ -192,6 +193,7 @@ import com.google.template.soy.types.FloatType;
 import com.google.template.soy.types.FunctionType;
 import com.google.template.soy.types.FunctionType.Parameter;
 import com.google.template.soy.types.IntType;
+import com.google.template.soy.types.IterableType;
 import com.google.template.soy.types.LegacyObjectMapType;
 import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.MapType;
@@ -985,11 +987,13 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
         return UnknownType.getInstance();
 
       case LIST:
-        if (collectionType == ListType.EMPTY_LIST) {
+      case SET:
+        IterableType iterableType = (IterableType) collectionType;
+        if (iterableType.isEmpty()) {
           errorReporter.report(node.getExpr().getSourceLocation(), EMPTY_LIST_FOREACH);
           return UnknownType.getInstance();
         }
-        return ((ListType) collectionType).getElementType();
+        return iterableType.getElementType();
 
       case UNION:
         {
@@ -1103,8 +1107,8 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
         requireNodeType(child);
         if (child.getKind() == ExprNode.Kind.SPREAD_OP_NODE) {
           SoyType spreadType = child.getType();
-          if (spreadType instanceof ListType) {
-            elementTypes.add(((ListType) spreadType).getElementType());
+          if (spreadType instanceof IterableType) {
+            elementTypes.add(((IterableType) spreadType).getElementType());
           } else {
             errorReporter.report(child.getSourceLocation(), INVALID_SPREAD_VALUE, spreadType);
           }
@@ -1135,7 +1139,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
       SoyType listExprType = node.getListExpr().getType();
 
       // Report an error if listExpr did not actually evaluate to a list.
-      if (!SoyTypes.isKindOrUnionOfKind(listExprType, SoyType.Kind.LIST)
+      if (!SoyTypes.isKindOrUnionOfKind(listExprType, IterableType.class)
           && listExprType.getKind() != SoyType.Kind.UNKNOWN) {
         errorReporter.report(
             node.getListExpr().getSourceLocation(),
@@ -1146,7 +1150,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
       } else if (listExprType.getKind() == SoyType.Kind.UNKNOWN) {
         node.getListIterVar().setType(UnknownType.getInstance());
       } else {
-        SoyType listElementType = SoyTypes.getListElementType(listExprType);
+        SoyType listElementType = SoyTypes.getIterableElementType(listExprType);
         if (listElementType == null) {
           // Report an error if listExpr was the empty list
           errorReporter.report(node.getListExpr().getSourceLocation(), EMPTY_LIST_COMPREHENSION);
@@ -1265,10 +1269,10 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
     }
 
     private boolean isListOfKeyValueRecords(SoyType type) {
-      if (!(type instanceof ListType)) {
+      if (!(type instanceof IterableType)) {
         return false;
       }
-      ListType listType = (ListType) type;
+      IterableType listType = (IterableType) type;
 
       if (!(listType.getElementType() instanceof RecordType)) {
         return false;
@@ -1283,7 +1287,8 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
     protected void visitMapLiteralFromListNode(MapLiteralFromListNode node) {
       // Resolve the listExpr in "map(listExpr)".
       visit(node.getListExpr());
-      if (node.getListExpr().getType().equals(ListType.EMPTY_LIST)) {
+      SoyType type = node.getListExpr().getType();
+      if (type instanceof IterableType && ((IterableType) type).isEmpty()) {
         node.setType(MapType.EMPTY_MAP);
         if (inferringParam) {
           errorReporter.report(node.getSourceLocation(), AMBIGUOUS_INFERRED_TYPE, "an empty map");
@@ -1301,11 +1306,12 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
         return;
       }
 
+      IterableType iterableType = (IterableType) type;
       SoyType keyType =
-          ((RecordType) ((ListType) node.getListExpr().getType()).getElementType())
+          ((RecordType) iterableType.getElementType())
               .getMemberType(MapLiteralFromListNode.KEY_STRING);
       SoyType valueType =
-          ((RecordType) ((ListType) node.getListExpr().getType()).getElementType())
+          ((RecordType) iterableType.getElementType())
               .getMemberType(MapLiteralFromListNode.VALUE_STRING);
       if (!MapType.isAllowedKeyType(keyType)) {
         errorReporter.report(node.getSourceLocation(), MapType.BAD_MAP_KEY_TYPE, keyType);
@@ -1674,9 +1680,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
             errorReporter.report(node.getParam(0).getSourceLocation(), RECORD_LITERAL_NOT_ALLOWED);
           }
           SoyType listElementType = ((ListType) baseType).getElementType();
-          if ((baseType instanceof ListType)
-              && listElementType != null
-              && node.getParam(0).getType() != null) {
+          if (listElementType != null && node.getParam(0).getType() != null) {
             // Remove null from the arg to allow eg list<string>.includes(null|string). We can make
             // it work in TS by adding the `!` operator in Soy->Tsx.
             SoyType argType = SoyTypes.tryRemoveNullish(node.getParam(0).getType());
@@ -2488,8 +2492,8 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
         SoyType fieldType = protoType.getFieldSetterType(fieldName.identifier());
 
         // Same for List<?>, for repeated fields
-        if (fieldType.getKind() == Kind.LIST && argType.getKind() == Kind.LIST) {
-          SoyType argElementType = ((ListType) argType).getElementType();
+        if (fieldType.getKind() == Kind.LIST && argType instanceof IterableType) {
+          SoyType argElementType = ((IterableType) argType).getElementType();
           if (argElementType == null || argElementType.equals(UnknownType.getInstance())) {
             continue;
           }
@@ -2788,6 +2792,10 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
           .getValidArgTypes()
           .ifPresent(
               typeList -> {
+                int arity = getOnlyElement(builtinFunction.getValidArgsSizes());
+                if (arity != node.numParams()) {
+                  return; // previously reported error.
+                }
                 node.setAllowedParamTypes(typeList);
                 for (int i = 0; i < typeList.size(); i++) {
                   if (!typeList.get(i).isAssignableFromStrict(node.getParam(i).getType())) {
@@ -2827,9 +2835,6 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
           checkArgIsStringLiteralWithNoSpaces(node, node.numParams() - 1, builtinFunction);
           node.setType(StringType.getInstance());
           break;
-        case EVAL_TOGGLE:
-          node.setType(BoolType.getInstance());
-          break;
         case SOY_SERVER_KEY:
         case XID:
           // arg validation is already handled by the XidPass
@@ -2838,9 +2843,6 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
         case UNKNOWN_JS_GLOBAL:
           checkArgIsStringLiteral(node, 0, builtinFunction);
           node.setType(UnknownType.getInstance());
-          break;
-        case DEBUG_SOY_TEMPLATE_INFO:
-          node.setType(BoolType.getInstance());
           break;
         case VE_DATA:
           // Arg validation is already handled by the VeLogValidationPass
@@ -2880,6 +2882,8 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
           visit(node.getParam(0));
           node.setType(SoyTypes.undefinedToNull(node.getParam(0).getType()));
           break;
+        case EVAL_TOGGLE:
+        case DEBUG_SOY_TEMPLATE_INFO:
         case BOOLEAN:
         case HAS_CONTENT:
         case IS_TRUTHY_NON_EMPTY:
@@ -2979,10 +2983,10 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
       for (ExprNode childNode : intersectionOf) {
         // If one of the types isn't a list, we can't compute the intersection. Return UnknownType
         // and assume the caller is already reporting an error for bad args.
-        if (!(childNode.getType() instanceof ListType)) {
+        if (!(childNode.getType() instanceof IterableType)) {
           return UnknownType.getInstance();
         }
-        SoyType elementType = ((ListType) childNode.getType()).getElementType();
+        SoyType elementType = ((IterableType) childNode.getType()).getElementType();
         if (elementType != null) { // Empty lists have no element type
           elementTypesBuilder.add(elementType);
         }

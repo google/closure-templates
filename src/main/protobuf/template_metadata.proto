@@ -101,6 +101,7 @@ message SoyTypeP {
   oneof TypeKind {
     PrimitiveTypeP primitive = 1;
     SoyTypeP list_element = 2;
+    SoyTypeP set_element = 15;
     RecordTypeP record = 3;
     LegacyObjectMapTypeP legacy_object_map = 4;
     MapTypeP map = 5;
