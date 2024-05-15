@@ -37,6 +37,7 @@ import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.data.internal.ParamStore;
+import com.google.template.soy.jbcsrc.api.SoySauce.WriteContinuation;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
@@ -210,6 +211,15 @@ public final class SoySauceImpl implements SoySauce {
     public RendererImpl setPluginInstances(
         Map<String, ? extends Supplier<Object>> pluginInstances) {
       this.pluginInstances = SoySauceImpl.this.pluginInstances.combine(pluginInstances);
+      return this;
+    }
+
+    @CanIgnoreReturnValue
+    @Override
+    public RendererImpl overridePluginInstances(
+        Map<String, ? extends Supplier<Object>> newPluginInstances) {
+      this.pluginInstances =
+          SoySauceImpl.this.pluginInstances.combineOrOverride(newPluginInstances);
       return this;
     }
 
