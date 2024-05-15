@@ -315,6 +315,10 @@ public final class Expressions {
     return New.create(ctor).call(args);
   }
 
+  public static Expression construct(Expression ctor, Iterable<? extends Expression> args) {
+    return New.create(ctor).call(args);
+  }
+
   public static Expression constructMap(Expression... initializers) {
     return New.create(id("Map", GoogRequire.create("soy.map"))).call(initializers);
   }

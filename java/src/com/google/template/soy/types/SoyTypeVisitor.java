@@ -22,6 +22,8 @@ public interface SoyTypeVisitor<T> {
 
   T visit(ListType type);
 
+  T visit(SetType type);
+
   T visit(MapType type);
 
   T visit(PrimitiveType type);

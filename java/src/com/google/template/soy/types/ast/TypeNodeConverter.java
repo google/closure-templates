@@ -79,7 +79,7 @@ public final class TypeNodeConverter
       SoyErrorKind.of("Expected a type parameter: ''{0}'' has {1}", StyleAllowance.NO_PUNCTUATION);
 
   private static final SoyErrorKind NOT_A_GENERIC_TYPE =
-      SoyErrorKind.of("''{0}'' is not a generic type, expected ''list'' or ''map''.");
+      SoyErrorKind.of("''{0}'' is not a generic type.");
 
   private static final SoyErrorKind MISSING_GENERIC_TYPE_PARAMETERS =
       SoyErrorKind.of("''{0}'' is a generic type, expected {1}.");
@@ -111,6 +111,13 @@ public final class TypeNodeConverter
             @Override
             SoyType create(List<SoyType> types, TypeInterner interner) {
               return interner.getOrCreateListType(types.get(0));
+            }
+          },
+          "set",
+          new GenericTypeInfo(1) {
+            @Override
+            SoyType create(List<SoyType> types, TypeInterner interner) {
+              return interner.getOrCreateSetType(types.get(0));
             }
           },
           "legacy_object_map",

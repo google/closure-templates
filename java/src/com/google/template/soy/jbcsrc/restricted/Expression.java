@@ -794,6 +794,7 @@ public abstract class Expression extends BytecodeProducer {
         case TEMPLATE_TYPE:
         case TEMPLATE_MODULE:
         case FUNCTION:
+        case SET:
         case NEVER:
           throw new UnsupportedOperationException();
       }

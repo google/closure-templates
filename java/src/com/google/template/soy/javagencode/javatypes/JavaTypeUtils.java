@@ -27,7 +27,7 @@ import com.google.common.collect.Streams;
 import com.google.template.soy.types.AbstractMapType;
 import com.google.template.soy.types.FloatType;
 import com.google.template.soy.types.IntType;
-import com.google.template.soy.types.ListType;
+import com.google.template.soy.types.IterableType;
 import com.google.template.soy.types.RecordType;
 import com.google.template.soy.types.SoyProtoEnumType;
 import com.google.template.soy.types.SoyProtoType;
@@ -103,7 +103,8 @@ public final class JavaTypeUtils {
         types = ImmutableList.of(new ProtoEnumJavaType(asProtoEnum.getDescriptor()));
         break;
       case LIST:
-        SoyType elementType = ((ListType) soyType).getElementType();
+      case SET:
+        SoyType elementType = ((IterableType) soyType).getElementType();
         if (elementType.getKind() == Kind.RECORD) {
           // Hacky handling of list<record>. Probably less code than modifying ListJavaType to
           // handle RecordJavaType element but should consider that alternative.

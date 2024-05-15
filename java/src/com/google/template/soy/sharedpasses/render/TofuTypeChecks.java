@@ -187,6 +187,7 @@ public final class TofuTypeChecks {
       case TEMPLATE_MODULE:
       case FUNCTION:
       case NEVER:
+      case SET:
         throw new UnsupportedOperationException();
     }
     throw new AssertionError("invalid type: " + type);

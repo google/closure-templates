@@ -99,6 +99,7 @@ import java.io.Flushable;
 import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Predicate;
@@ -486,19 +487,19 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
             "In 'for' command "
                 + node.toSourceString()
                 + ", the data reference does not "
-                + "resolve to a SoyList "
+                + "resolve to an iterable value "
                 + "(encountered type "
                 + dataRefValue.getClass().getName()
                 + ").",
             node);
       }
-      SoyList foreachList = (SoyList) dataRefValue;
-      int listLength = foreachList.length();
-      if (listLength > 0) {
+      Iterator<? extends SoyValueProvider> it = dataRefValue.javaIterator();
+      if (it.hasNext()) {
         // Case 1: Nonempty list.
+        int i = 0;
         ForNonemptyNode child = (ForNonemptyNode) node.getChild(0);
-        for (int i = 0; i < listLength; ++i) {
-          executeForeachBody(child, i, foreachList.getProvider(i));
+        while (it.hasNext()) {
+          executeForeachBody(child, i++, it.next());
         }
       }
     }

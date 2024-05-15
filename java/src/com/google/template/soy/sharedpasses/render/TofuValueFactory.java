@@ -60,7 +60,7 @@ import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
 import com.google.template.soy.plugin.java.restricted.MethodSignature;
 import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
 import com.google.template.soy.types.FunctionType;
-import com.google.template.soy.types.ListType;
+import com.google.template.soy.types.IterableType;
 import com.google.template.soy.types.MapType;
 import com.google.template.soy.types.SoyProtoEnumType;
 import com.google.template.soy.types.SoyType;
@@ -330,7 +330,8 @@ class TofuValueFactory extends JavaValueFactory {
                   item ->
                       adaptParamItem(
                           item,
-                          ((ListType) externSig.getParameters().get(i).getType()).getElementType()))
+                          ((IterableType) externSig.getParameters().get(i).getType())
+                              .getElementType()))
               .collect(toImmutableList());
         } else {
           return value.asJavaList();

@@ -103,6 +103,7 @@ public abstract class SoyType {
     TRUSTED_RESOURCE_URI,
     // Aggregate types
     LIST,
+    SET,
     RECORD,
     LEGACY_OBJECT_MAP,
     MAP,
@@ -138,7 +139,7 @@ public abstract class SoyType {
             Kind.TRUSTED_RESOURCE_URI);
 
     public static final ImmutableSet<Kind> ILLEGAL_OPERAND_KINDS_PLUS_OP =
-        Sets.immutableEnumSet(Kind.LIST, Kind.LEGACY_OBJECT_MAP, Kind.MAP, Kind.RECORD);
+        Sets.immutableEnumSet(Kind.LIST, Kind.SET, Kind.LEGACY_OBJECT_MAP, Kind.MAP, Kind.RECORD);
 
     /** Returns true for SoyTypes that are plain strings or sanitized subtypes of strings. */
     public boolean isKnownStringOrSanitizedContent() {

@@ -413,8 +413,7 @@ public final class JsType {
 
       case LIST:
         ListType listType = (ListType) soyType;
-        if (listType.equals(ListType.EMPTY_LIST)
-            || listType.getElementType().getKind() == SoyType.Kind.ANY) {
+        if (listType.isEmpty() || listType.getElementType().getKind() == SoyType.Kind.ANY) {
           return RAW_ARRAY_TYPE;
         }
         JsType element =
@@ -621,6 +620,7 @@ public final class JsType {
       case TEMPLATE_MODULE:
       case FUNCTION:
       case NEVER:
+      case SET:
     }
     throw new AssertionError("unhandled soytype: " + soyType);
   }

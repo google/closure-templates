@@ -90,6 +90,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.IntFunction;
 import javax.annotation.Nullable;
@@ -145,6 +146,7 @@ public final class BytecodeUtils {
   public static final Type COLLECTION_TYPE = Type.getType(Collection.class);
   public static final Type ITERABLE_TYPE = Type.getType(Iterable.class);
   public static final Type LIST_TYPE = Type.getType(List.class);
+  public static final Type SET_TYPE = Type.getType(Set.class);
   public static final Type ITERATOR_TYPE = Type.getType(Iterator.class);
   public static final Type IMMUTABLE_LIST_TYPE = Type.getType(ImmutableList.class);
   public static final Type IMMUTABLE_MAP_TYPE = Type.getType(ImmutableMap.class);
