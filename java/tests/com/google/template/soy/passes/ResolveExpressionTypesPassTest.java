@@ -952,10 +952,10 @@ public final class ResolveExpressionTypesPassTest {
         "{@param b: bool}",
         "{assertType('float|int', $union as number)}",
         "{assertType('string', $union as string)}",
-        "{assertType('bool', $union as bool)}",
+        "{assertType('bool', $union as any as bool)}",
         // precedence:
-        "{assertType('int|string', $b ? 1 : 'a' as string)}",
-        "{assertType('string', ($b ? 1 : 'a') as string)}",
+        "{assertType('int|string', $b ? 1 : $union as string)}",
+        "{assertType('string', ($b ? 1 : $union) as string)}",
         "");
   }
 

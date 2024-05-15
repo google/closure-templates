@@ -487,8 +487,9 @@ final class ExpressionCompiler {
 
     @Override
     protected SoyExpression visitInstanceOfOpNode(InstanceOfOpNode node) {
-      // TODO(b/156780590): Implement.
-      return SoyExpression.FALSE;
+      SoyExpression value = visit(node.getChild(0));
+      SoyType operand = node.getChild(1).getType();
+      return value.instanceOf(operand);
     }
 
     // Collection literals

@@ -437,6 +437,25 @@ public final class SimplifyExprVisitorTest {
         .simplifiesTo("returnsArgument(returnsList())");
   }
 
+  @Test
+  public void testInstanceOf() {
+    assertThat(new ExpressionParser("'s' instanceof string").parseForParentNode())
+        .simplifiesTo("true");
+    assertThat(new ExpressionParser("'s' instanceof number").parseForParentNode())
+        .simplifiesTo("false");
+    assertThat(new ExpressionParser("null instanceof string").parseForParentNode())
+        .simplifiesTo("false");
+    assertThat(new ExpressionParser("[1, 2] instanceof list").parseForParentNode())
+        .simplifiesTo("true");
+  }
+
+  @Test
+  public void testAs() {
+    // ResolveExpressionTypesPass does this simplification.
+    assertThat(new ExpressionParser("$s as string").withParam("s", "string").parseForParentNode())
+        .simplifiesTo("$s");
+  }
+
   @SoyPureFunction
   @SoyFunctionSignature(name = "returnsList", value = @Signature(returnType = "list<string>"))
   public static class ReturnsListFunction implements SoyJavaSourceFunction {

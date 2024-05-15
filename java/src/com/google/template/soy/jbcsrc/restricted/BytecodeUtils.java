@@ -636,6 +636,16 @@ public final class BytecodeUtils {
     };
   }
 
+  public static Expression instanceOf(Expression expr, Type type) {
+    return new Expression(Type.BOOLEAN_TYPE, expr.features()) {
+      @Override
+      protected void doGen(CodeBuilder adapter) {
+        expr.gen(adapter);
+        adapter.instanceOf(type);
+      }
+    };
+  }
+
   /**
    * Returns an expression that does a numeric conversion cast from the given expression to the
    * given type.
@@ -682,7 +692,7 @@ public final class BytecodeUtils {
     };
   }
 
-  private static boolean isNumericPrimitive(Type type) {
+  static boolean isNumericPrimitive(Type type) {
     int sort = type.getSort();
     switch (sort) {
       case Type.OBJECT:

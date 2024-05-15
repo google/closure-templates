@@ -275,6 +275,13 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
       SoyErrorKind.of("This null safe access is unnecessary, it is on a value that is non-null.");
   private static final SoyErrorKind INVALID_INSTANCE_OF =
       SoyErrorKind.of("Not a valid instanceof type operand.");
+  private static final SoyErrorKind UNNECESSARY_CAST =
+      SoyErrorKind.of(
+          "This `as` expression is unnecessary, it does not change the type of the expression.");
+  private static final SoyErrorKind SUSPECT_CAST =
+      SoyErrorKind.of(
+          "Conversion of type {0} to {1} may be a mistake. If this is intentional cast to `any`"
+              + " first.");
   private static final SoyErrorKind DUPLICATE_KEY_IN_MAP_LITERAL =
       SoyErrorKind.of("Map literals with duplicate keys are not allowed.  Duplicate key: ''{0}''");
   private static final SoyErrorKind KEYS_PASSED_MAP =
@@ -1351,7 +1358,16 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
     @Override
     protected void visitAsOpNode(AsOpNode node) {
       visitChildren(node);
-      node.setType(node.getChild(1).getType());
+      SoyType originalType = node.getChild(0).getType();
+      SoyType explicitType = node.getChild(1).getType();
+      if (explicitType.equals(originalType)) {
+        errorReporter.warn(node.getSourceLocation(), UNNECESSARY_CAST);
+        node.getParent().replaceChild(node, node.getChild(0));
+      } else if (!originalType.isAssignableFromLoose(explicitType)
+          && !explicitType.isAssignableFromLoose(originalType)) {
+        errorReporter.report(node.getSourceLocation(), SUSPECT_CAST, originalType, explicitType);
+      }
+      node.setType(explicitType);
     }
 
     @Override

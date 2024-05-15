@@ -71,6 +71,8 @@ import com.google.template.soy.sharedpasses.render.RenderException;
 import com.google.template.soy.types.AnyType;
 import com.google.template.soy.types.BoolType;
 import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.SoyTypes;
+import com.google.template.soy.types.StringType;
 import java.util.function.BiFunction;
 import javax.annotation.Nullable;
 
@@ -477,8 +479,40 @@ final class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
 
   @Override
   protected void visitInstanceOfOpNode(InstanceOfOpNode node) {
-    // Could simplify expressions like `literal instanceof type`.
-    visit(node.getChild(0));
+    ExprNode lhs = node.getChild(0);
+    visit(lhs);
+
+    Boolean staticValue = null;
+    SoyType rhs = node.getChild(1).getType();
+    switch (lhs.getKind()) {
+      case STRING_NODE:
+        staticValue = rhs.equals(StringType.getInstance());
+        break;
+      case INTEGER_NODE:
+      case FLOAT_NODE:
+        staticValue = rhs.equals(SoyTypes.NUMBER_TYPE);
+        break;
+      case BOOLEAN_NODE:
+        staticValue = rhs.equals(BoolType.getInstance());
+        break;
+      case LIST_LITERAL_NODE:
+      case LIST_COMPREHENSION_NODE:
+        staticValue = rhs.getKind() == SoyType.Kind.LIST;
+        break;
+      case MAP_LITERAL_NODE:
+      case MAP_LITERAL_FROM_LIST_NODE:
+        staticValue = rhs.getKind() == SoyType.Kind.MAP;
+        break;
+      default:
+        break;
+    }
+    if (staticValue == null && lhs instanceof PrimitiveNode) {
+      staticValue = false;
+    }
+
+    if (staticValue != null) {
+      node.getParent().replaceChild(node, new BooleanNode(staticValue, node.getSourceLocation()));
+    }
   }
 
   // -----------------------------------------------------------------------------------------------

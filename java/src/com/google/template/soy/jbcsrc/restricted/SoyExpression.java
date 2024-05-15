@@ -19,9 +19,17 @@ package com.google.template.soy.jbcsrc.restricted;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.ImmutableList.toImmutableList;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.BOOLEAN_DATA_TYPE;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.NUMBER_DATA_TYPE;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_LIST_TYPE;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_MAP_TYPE;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_PROTO_VALUE_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_VALUE_PROVIDER_TYPE;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.STRING_DATA_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.STRING_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.isDefinitelyAssignableFrom;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.isNumericPrimitive;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Preconditions;
@@ -39,6 +47,7 @@ import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.MapType;
 import com.google.template.soy.types.NullType;
 import com.google.template.soy.types.SanitizedType;
+import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypes;
@@ -63,7 +72,10 @@ public final class SoyExpression extends Expression {
 
   public static SoyExpression forSoyValue(SoyType type, Expression delegate) {
     if (delegate instanceof SoyExpression) {
-      return forSoyValue(type, ((SoyExpression) delegate).delegate);
+      SoyExpression soyExpression = (SoyExpression) delegate;
+      SoyRuntimeType runtimeType =
+          soyExpression.isBoxed() ? SoyRuntimeType.getBoxedType(type) : getUnboxedType(type);
+      return new SoyExpression(runtimeType, soyExpression.delegate);
     }
     return new SoyExpression(SoyRuntimeType.getBoxedType(type), delegate);
   }
@@ -166,8 +178,7 @@ public final class SoyExpression extends Expression {
         BytecodeUtils.isPossiblyAssignableFrom(
             BytecodeUtils.SOY_VALUE_PROVIDER_TYPE, delegate.resultType()));
     if (delegate.isNonJavaNullable()
-        || !BytecodeUtils.isDefinitelyAssignableFrom(
-            BytecodeUtils.SOY_VALUE_TYPE, delegate.resultType())) {
+        || !isDefinitelyAssignableFrom(BytecodeUtils.SOY_VALUE_TYPE, delegate.resultType())) {
       delegate = delegate.invoke(MethodRefs.SOY_VALUE_PROVIDER_RESOLVE).checkedSoyCast(type);
     }
     return forSoyValue(type, delegate);
@@ -221,8 +232,7 @@ public final class SoyExpression extends Expression {
         soyRuntimeType.soyType(),
         delegate.resultType());
     if (soyRuntimeType.isBoxed()
-        != BytecodeUtils.isDefinitelyAssignableFrom(
-            SOY_VALUE_PROVIDER_TYPE, delegate.resultType())) {
+        != isDefinitelyAssignableFrom(SOY_VALUE_PROVIDER_TYPE, delegate.resultType())) {
       throw new IllegalArgumentException(
           "boxed=" + soyRuntimeType.isBoxed() + " for type " + delegate.resultType());
     }
@@ -803,9 +813,86 @@ public final class SoyExpression extends Expression {
         .checkedCast(runtimeType);
   }
 
+  private SoyExpression instanceOfUnboxed(SoyType soyType) {
+    // The optimization pass removes some but not all of these.
+    Boolean staticValue = null;
+    switch (soyType.getKind()) {
+      case STRING:
+        staticValue = alreadyUnboxed(String.class);
+        break;
+      case BOOL:
+        staticValue = Type.BOOLEAN_TYPE == soyRuntimeType.runtimeType();
+        break;
+      case UNION:
+        staticValue =
+            soyType.equals(SoyTypes.NUMBER_TYPE)
+                && isNumericPrimitive(soyRuntimeType.runtimeType());
+        break;
+      case LIST:
+        staticValue = alreadyUnboxed(List.class);
+        break;
+      default:
+        break;
+    }
+    if (staticValue == null) {
+      throw new IllegalArgumentException("" + soyRuntimeType);
+    }
+    return staticValue ? TRUE : FALSE;
+  }
+
+  /**
+   * JBCSRC implementation of the `instanceof` operator.
+   *
+   * @param soyType must be a valid `instanceof` type operand.
+   */
+  public SoyExpression instanceOf(SoyType soyType) {
+    if (!isBoxed()) {
+      return instanceOfUnboxed(soyType);
+    }
+    Type type = null;
+    switch (soyType.getKind()) {
+      case STRING:
+        type = STRING_DATA_TYPE;
+        break;
+      case BOOL:
+        type = BOOLEAN_DATA_TYPE;
+        break;
+      case UNION:
+        if (soyType.equals(SoyTypes.NUMBER_TYPE)) {
+          type = NUMBER_DATA_TYPE;
+        }
+        break;
+      case LIST:
+        type = SOY_LIST_TYPE;
+        break;
+      case MAP:
+        type = SOY_MAP_TYPE;
+        break;
+      case MESSAGE:
+        type = SOY_PROTO_VALUE_TYPE;
+        break;
+      case PROTO:
+        Type protoType = SoyRuntimeType.protoType(((SoyProtoType) soyType).getDescriptor());
+        return forBool(MethodRefs.IS_PROTO_INSTANCE.invoke(delegate, constant(protoType)));
+      case HTML:
+      case URI:
+      case CSS:
+      case JS:
+      case TRUSTED_RESOURCE_URI:
+      case ATTRIBUTES:
+        ContentKind kind = Converters.toContentKind(((SanitizedType) soyType).getContentKind());
+        return forBool(MethodRefs.IS_SANITIZED_CONTENT_KIND.invoke(delegate, constant(kind)));
+      default:
+        break;
+    }
+    if (type != null) {
+      return forBool(BytecodeUtils.instanceOf(delegate, type));
+    }
+    throw new IllegalArgumentException("" + soyType);
+  }
+
   private boolean alreadyUnboxed(Class<?> asType) {
-    return BytecodeUtils.isDefinitelyAssignableFrom(
-        Type.getType(asType), soyRuntimeType.runtimeType());
+    return isDefinitelyAssignableFrom(Type.getType(asType), soyRuntimeType.runtimeType());
   }
 
   private void assertBoxed(Class<?> asType) {

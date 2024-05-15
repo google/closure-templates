@@ -35,6 +35,7 @@ import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.LoggingAdvisingAppendable.BufferingAppendable;
 import com.google.template.soy.data.ProtoFieldInterpreter;
 import com.google.template.soy.data.RecordProperty;
+import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyProtoValue;
 import com.google.template.soy.data.SoyRecord;
@@ -538,6 +539,12 @@ public final class MethodRefs {
 
   public static final MethodRef CHECK_PROTO =
       createNonPure(SoyValue.class, "checkNullishProto", Class.class);
+
+  public static final MethodRef IS_PROTO_INSTANCE =
+      createNonPure(SoyValue.class, "isProtoInstance", Class.class);
+
+  public static final MethodRef IS_SANITIZED_CONTENT_KIND =
+      createNonPure(SoyValue.class, "isSanitizedContentKind", SanitizedContent.ContentKind.class);
 
   public static final MethodRef GET_COMPILED_TEMPLATE_FROM_VALUE =
       createPure(TemplateValue.class, "getCompiledTemplate").asCheap();

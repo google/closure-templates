@@ -437,4 +437,13 @@ public class SanitizedContent extends SoyAbstractValue {
 
     return this;
   }
+
+  @Override
+  public boolean isSanitizedContentKind(ContentKind contentKind) {
+    if (this.contentKind == ContentKind.TRUSTED_RESOURCE_URI && contentKind == ContentKind.URI) {
+      return true;
+    }
+
+    return contentKind == this.contentKind;
+  }
 }

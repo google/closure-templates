@@ -175,13 +175,13 @@ Here are the supported operators, listed in decreasing order of precedence
 3.  `*` `/` `%`
 4.  `+` `-`(binary)
 5.  `>>` `<<`
-6.  `<` `>` `<=` `>=`
+6.  `<` `>` `<=` `>=` `instanceof`
 7.  `==` `!=`
 8.  `&`
 9.  `^`
 10. `|`
 11. `&&` `and`
-12. `||` `or` `??` `...`
+12. `||` `or` `??` `...` `as`
 13. `? :`(ternary)
 
 The Soy programming language respects the order of evaluation indicated
@@ -239,6 +239,48 @@ There is no 'index out of bounds' error for lists.
 
 Warning: The "short-circuiting" caveat described above (for `?.`) applies here
 as well. For example, the expression `$foo?[$bar] > 0` is *not* safe.
+
+### Casting and type testing
+
+The `instanceof` operator performs a runtime check on the type of an expression.
+This can be very useful when handling values with union, `any`, or `?` types.
+
+```soy
+{@param stringOrHtml: string|html}
+{if $stringOrHtml instanceof string}
+  // handle string
+{else}
+  // handle html
+{/if}
+```
+
+The left hand side of the operator may be any of these values:
+
+*   Primitive types: `number`, `string`, `bool`
+*   Collection types: `list`, `map` (omitting generics)
+*   Sanitized content types: `html`, `attributes`, `css`, `js`, `uri`,
+    `trusted_resource_uri`
+*   Protobuf types: `Message`, a specific protobuf message type
+
+The `as` operator can be used to force the Soy compiler to treat an expression
+as a particular type. This can be useful in places where the Soy compiler's type
+narrowing cannot determine an expression's type, or if the developer knows
+something that the compiler doesn't.
+
+```soy {highlight="as html,1"}
+{@param stringOrHtml: ?}
+{if $stringOrHtml instanceof string}
+  {$stringOrHtml.length}
+{else}
+  {lengthOfHtmlExtern($stringOrHtml as html)}
+{/if}
+```
+
+**WARNING:** Using the `as` operator can result in runtime errors if the value
+is not actually the corresponding type.
+
+**WARNING:** The `as` operator is not type coercion. `(123 as
+string).indexOf('2')` will fail at runtime.
 
 ### Non-null assertion operator `!` {#nonnull-assertion}
 

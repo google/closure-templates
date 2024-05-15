@@ -292,4 +292,14 @@ public interface SoyValue extends SoyValueProvider {
     throw new ClassCastException(
         getClass().getSimpleName() + " cannot be cast to " + messageType.getName());
   }
+
+  /** Returns true if this value is a sanitized content with kind equal to `contentKind`. */
+  default boolean isSanitizedContentKind(ContentKind contentKind) {
+    return false;
+  }
+
+  /** Returns true if this value is a proto of type `messageType`. */
+  default boolean isProtoInstance(Class<? extends Message> messageType) {
+    return false;
+  }
 }
