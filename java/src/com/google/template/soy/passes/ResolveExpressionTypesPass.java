@@ -3088,7 +3088,8 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
           && node.getSoyFunction() != BuiltinFunction.PROTO_INIT
           && node.getSoyFunction() != BuiltinFunction.CSS
           && node.getSoyFunction() != BuiltinFunction.XID
-          && node.getSoyFunction() != BuiltinFunction.VE_DEF) {
+          && node.getSoyFunction() != BuiltinFunction.VE_DEF
+          && node.getSoyFunction() != BuiltinFunction.EVAL_TOGGLE) {
         notAllowed(node);
       }
       super.visitFunctionNode(node);
