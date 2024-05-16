@@ -18,6 +18,7 @@ package com.google.template.soy.plugin.java;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Supplier;
 
@@ -55,5 +56,13 @@ public final class PluginInstances {
             .putAll(pluginInstances)
             .putAll(morePlugins)
             .build());
+  }
+
+  public PluginInstances combineOrOverride(
+      Map<String, ? extends Supplier<Object>> newPluginInstances) {
+    Map<String, Supplier<Object>> overriddenPluginInstances = new HashMap<>();
+    overriddenPluginInstances.putAll(newPluginInstances);
+    this.pluginInstances.forEach(overriddenPluginInstances::putIfAbsent);
+    return new PluginInstances(ImmutableMap.copyOf(overriddenPluginInstances));
   }
 }
