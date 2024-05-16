@@ -34,6 +34,7 @@ import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyProtoValue;
 import com.google.template.soy.data.SoyRecord;
+import com.google.template.soy.data.SoySet;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.TemplateValue;
 import com.google.template.soy.data.restricted.IntegerData;
@@ -748,6 +749,9 @@ public abstract class Expression extends BytecodeProducer {
           return MethodRefs.CHECK_CONTENT_KIND.invoke(this, constant(ContentKind.JS));
         case LIST:
           expectedClass = SoyList.class;
+          break;
+        case SET:
+          expectedClass = SoySet.class;
           break;
         case MAP:
           expectedClass = SoyMap.class;

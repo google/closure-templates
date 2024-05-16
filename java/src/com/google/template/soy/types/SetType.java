@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Google Inc.
+ * Copyright 2024 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,46 +25,45 @@ import java.util.Objects;
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  */
-public final class ListType extends IterableType {
+public final class SetType extends IterableType {
 
-  // TODO(lukes): see if this can be replaced with list<?>
-  public static final ListType EMPTY_LIST = new ListType(null);
-  public static final ListType ANY_LIST = new ListType(AnyType.getInstance());
+  public static final SetType EMPTY_SET = new SetType(null);
+  public static final SetType ANY_SET = new SetType(AnyType.getInstance());
 
-  private ListType(SoyType elementType) {
+  private SetType(SoyType elementType) {
     super(elementType);
   }
 
-  public static ListType of(SoyType elementType) {
+  public static SetType of(SoyType elementType) {
     Preconditions.checkNotNull(elementType);
-    return new ListType(elementType);
+    return new SetType(elementType);
   }
 
   @Override
   public Kind getKind() {
-    return Kind.LIST;
+    return Kind.SET;
   }
 
   @Override
   boolean doIsAssignableFromNonUnionType(SoyType srcType, UnknownAssignmentPolicy policy) {
-    return srcType.getKind() == Kind.LIST && super.doIsAssignableFromNonUnionType(srcType, policy);
+    return srcType.getKind() == Kind.SET && super.doIsAssignableFromNonUnionType(srcType, policy);
   }
 
   @Override
   public String toString() {
-    return "list<" + elementType + ">";
+    return "set<" + elementType + ">";
   }
 
   @Override
   void doToProto(SoyTypeP.Builder builder) {
-    builder.setListElement(elementType.toProto());
+    builder.setSetElement(elementType.toProto());
   }
 
   @Override
   public boolean equals(Object other) {
     return other != null
         && this.getClass() == other.getClass()
-        && Objects.equals(((ListType) other).elementType, elementType);
+        && Objects.equals(((SetType) other).elementType, elementType);
   }
 
   @Override

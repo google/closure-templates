@@ -160,7 +160,10 @@ public final class ConstantsCompiler {
 
       SoyExpression buildConstValue = expressionCompiler.compile(constant.getExpr());
       Preconditions.checkArgument(
-          isDefinitelyAssignableFrom(buildConstValue.soyRuntimeType().runtimeType(), methodType));
+          isDefinitelyAssignableFrom(buildConstValue.soyRuntimeType().runtimeType(), methodType),
+          "Not assignable %s %s",
+          buildConstValue.soyRuntimeType(),
+          methodType);
 
       String constKey = javaClassName + "#" + constant.getVar().name();
 

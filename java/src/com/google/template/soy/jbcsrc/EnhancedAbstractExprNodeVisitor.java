@@ -120,6 +120,8 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
           return visitHasContentFunction(node);
         case IS_TRUTHY_NON_EMPTY:
           return visitIsTruthyNonEmptyFunction(node);
+        case NEW_SET:
+          return visitNewSetFunction(node);
         case MSG_WITH_ID:
         case REMAINDER:
           // should have been removed earlier in the compiler
@@ -223,6 +225,10 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
   }
 
   T visitIsTruthyNonEmptyFunction(FunctionNode node) {
+    return visitExprNode(node);
+  }
+
+  T visitNewSetFunction(FunctionNode node) {
     return visitExprNode(node);
   }
 }

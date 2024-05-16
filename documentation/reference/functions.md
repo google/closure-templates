@@ -242,6 +242,22 @@ for a description of these options.
 This method is only defined on lists of non-nullable strings. If the method is
 not found, please check the type of your list.
 
+## Set Fields
+
+### `set.size` {#set-any_size}
+
+Returns the number of items in the set.
+
+## Set Methods
+
+### `Set(items)` {#Set}
+
+The set constructor. Accepts a single iterable parameter.
+
+### `set.has(item)` {#set-any_has}
+
+Returns whether an item exists in a set.
+
 ## Map Fields
 
 ### `map.size` {#map-any,any_size}

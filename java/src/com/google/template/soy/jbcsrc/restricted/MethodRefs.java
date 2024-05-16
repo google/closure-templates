@@ -23,6 +23,7 @@ import static com.google.template.soy.jbcsrc.restricted.MethodRef.createPureCons
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.UnsignedInts;
 import com.google.common.primitives.UnsignedLongs;
@@ -51,6 +52,7 @@ import com.google.template.soy.data.internal.LazyProtoToSoyValueMap;
 import com.google.template.soy.data.internal.ListImpl;
 import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.data.internal.RuntimeMapTypeTracker;
+import com.google.template.soy.data.internal.SetImpl;
 import com.google.template.soy.data.internal.SoyMapImpl;
 import com.google.template.soy.data.internal.SoyRecordImpl;
 import com.google.template.soy.data.restricted.BooleanData;
@@ -78,6 +80,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.TreeMap;
 
 /** Standard constant MethodRef instances shared throughout the compiler. */
@@ -135,6 +138,15 @@ public final class MethodRefs {
       createNonPure(ImmutableList.Builder.class, "addAll", Iterator.class);
   public static final MethodRef IMMUTABLE_LIST_BUILDER_BUILD =
       createNonPure(ImmutableList.Builder.class, "build");
+
+  public static final MethodRef IMMUTABLE_SET_BUILDER =
+      createNonPure(ImmutableSet.class, "builder");
+  public static final MethodRef IMMUTABLE_SET_BUILDER_ADD_ALL_ITERATOR =
+      createNonPure(ImmutableSet.Builder.class, "addAll", Iterator.class);
+  public static final MethodRef IMMUTABLE_SET_BUILDER_BUILD =
+      createNonPure(ImmutableSet.Builder.class, "build");
+  public static final MethodRef IMMUTABLE_SET_COPY_OF =
+      createNonPure(ImmutableSet.class, "copyOf", Iterator.class);
 
   /** a list of all the ImmutableList.of overloads, indexed by arity. */
   public static final ImmutableList<MethodRef> IMMUTABLE_LIST_OF;
@@ -226,6 +238,8 @@ public final class MethodRefs {
 
   public static final MethodRef LIST_IMPL_FOR_PROVIDER_LIST =
       createPure(ListImpl.class, "forProviderList", List.class);
+  public static final MethodRef SET_IMPL_FOR_PROVIDER_SET =
+      createPureConstructor(SetImpl.class, Set.class);
 
   public static final MethodRef LONG_PARSE_LONG =
       createPure(Long.class, "parseLong", String.class).asCheap().asNonJavaNullable();
@@ -651,6 +665,8 @@ public final class MethodRefs {
 
   public static final MethodRef AS_SWITCHABLE_VALUE_SOY_VALUE =
       createPure(JbcSrcRuntime.class, "asSwitchableValue", SoyValue.class, int.class);
+
+  public static final MethodRef NEW_SOY_SET = createPureConstructor(SetImpl.class, Iterator.class);
 
   // Constructors
 

@@ -366,6 +366,10 @@ public final class SoyTypes {
     return expandUnions(type).stream().allMatch((t) -> kind == t.getKind());
   }
 
+  public static boolean isKindOrUnionOfKind(SoyType type, Class<? extends SoyType> kind) {
+    return expandUnions(type).stream().allMatch(kind::isInstance);
+  }
+
   /**
    * Returns true if the given type matches one of the given kinds, or if the given type is a union
    * of types that all match one of the given kinds.
@@ -662,7 +666,8 @@ public final class SoyTypes {
           return ((UnionType) type).getMembers();
 
         case LIST:
-          return ImmutableList.of(((ListType) type).getElementType());
+        case SET:
+          return ImmutableList.of(((IterableType) type).getElementType());
 
         case MAP:
         case LEGACY_OBJECT_MAP:
@@ -697,14 +702,14 @@ public final class SoyTypes {
         .anyMatch(t -> t.getKind() == Kind.PROTO || t.getKind() == Kind.PROTO_ENUM);
   }
 
-  public static SoyType getListElementType(SoyType type) {
-    if (type instanceof ListType) {
-      return ((ListType) type).getElementType();
+  public static SoyType getIterableElementType(SoyType type) {
+    if (type instanceof IterableType) {
+      return ((IterableType) type).getElementType();
     }
     UnionType union = (UnionType) type;
     return UnionType.of(
         union.getMembers().stream()
-            .map(member -> ((ListType) member).getElementType())
+            .map(member -> ((IterableType) member).getElementType())
             .collect(toImmutableList()));
   }
 
@@ -752,7 +757,8 @@ public final class SoyTypes {
       case PROTO:
         return true;
       case LIST:
-        return ((ListType) type).getElementType().equals(AnyType.getInstance());
+      case SET:
+        return ((IterableType) type).getElementType().equals(AnyType.getInstance());
       case MAP:
         return ((MapType) type).getKeyType().equals(AnyType.getInstance())
             && ((MapType) type).getValueType().equals(AnyType.getInstance());

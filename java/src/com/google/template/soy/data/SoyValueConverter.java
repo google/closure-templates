@@ -18,6 +18,7 @@ package com.google.template.soy.data;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
+import static com.google.common.collect.ImmutableSet.toImmutableSet;
 
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableList;
@@ -44,6 +45,7 @@ import com.google.template.soy.data.internal.DictImpl;
 import com.google.template.soy.data.internal.EasyListImpl;
 import com.google.template.soy.data.internal.ListImpl;
 import com.google.template.soy.data.internal.RuntimeMapTypeTracker;
+import com.google.template.soy.data.internal.SetImpl;
 import com.google.template.soy.data.internal.SoyMapImpl;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
@@ -52,8 +54,8 @@ import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import java.io.IOException;
-import java.util.Collection;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Future;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -119,7 +121,8 @@ public final class SoyValueConverter {
         input -> StringData.forValue(BaseEncoding.base64().encode(input.toByteArray())));
     expensiveConverterMap.put(Map.class, this::newDictFromMap);
     expensiveConverterMap.put(MarkAsSoyMap.class, input -> newSoyMapFromJavaMap(input.delegate()));
-    expensiveConverterMap.put(Collection.class, this::newListFromIterable);
+    expensiveConverterMap.put(Set.class, this::newSetFromSet);
+    expensiveConverterMap.put(Iterable.class, this::newListFromIterable);
     // NOTE: We don't convert plain Iterables, because many types extend from Iterable but are not
     // meant to be enumerated. (e.g. ByteString implements Iterable<Byte>)
     expensiveConverterMap.put(FluentIterable.class, this::newListFromIterable);
@@ -211,6 +214,10 @@ public final class SoyValueConverter {
       builder.add(convertLazy(item));
     }
     return ListImpl.forProviderList(builder.build());
+  }
+
+  private SoySet newSetFromSet(Set<?> items) {
+    return new SetImpl(items.stream().map(this::convertLazy).collect(toImmutableSet()));
   }
 
   // -----------------------------------------------------------------------------------------------

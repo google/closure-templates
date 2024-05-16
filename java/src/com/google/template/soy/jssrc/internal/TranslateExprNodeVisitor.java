@@ -135,6 +135,7 @@ import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.soytree.defn.TemplateStateVar;
 import com.google.template.soy.types.AnyType;
+import com.google.template.soy.types.IterableType;
 import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.MapType;
 import com.google.template.soy.types.SoyProtoType;
@@ -373,8 +374,8 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
       // elementType can be unknown if it is the special EMPTY_LIST or if it isn't a known list
       // type.
       SoyType elementType =
-          listType.getKind() == SoyType.Kind.LIST
-              ? ((ListType) listType).getElementType()
+          listType instanceof IterableType
+              ? ((IterableType) listType).getElementType()
               : UnknownType.getInstance();
       JsType elementJsType = jsTypeForStrict(elementType);
       JsDoc doc =
@@ -920,6 +921,8 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
         break;
       case LIST:
         return JsRuntime.ARRAY_IS_ARRAY.call(value);
+      case SET:
+        return value.instanceOf(id("Set"));
       case MAP:
         return value.instanceOf(id("Map"));
       case PROTO:
@@ -1151,6 +1154,8 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
           return isTruthyNonEmpty(visit(node.getParam(0)));
         case HAS_CONTENT:
           return hasContent(visit(node.getParam(0)));
+        case NEW_SET:
+          return visitNewSetFunction(node);
         case LEGACY_DYNAMIC_TAG:
         case REMAINDER:
         case MSG_WITH_ID:
@@ -1271,6 +1276,10 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
 
   protected Expression visitEmptyToNullFunction(FunctionNode node) {
     return SOY_EMPTY_TO_NULL.call(visit(node.getParam(0)));
+  }
+
+  private Expression visitNewSetFunction(FunctionNode node) {
+    return Expressions.construct(id("Set"), visit(node.getParam(0)));
   }
 
   private static SoyJsSrcFunction getUnknownFunction(String name, int argSize) {

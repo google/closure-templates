@@ -39,6 +39,7 @@ import static com.google.template.soy.shared.internal.SharedRuntime.tripleEqual;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableTable;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Iterators;
 import com.google.errorprone.annotations.ForOverride;
 import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.base.internal.Identifier;
@@ -58,6 +59,7 @@ import com.google.template.soy.data.SoyVisualElementData;
 import com.google.template.soy.data.TemplateValue;
 import com.google.template.soy.data.internal.ListImpl;
 import com.google.template.soy.data.internal.ParamStore;
+import com.google.template.soy.data.internal.SetImpl;
 import com.google.template.soy.data.internal.SoyMapImpl;
 import com.google.template.soy.data.internal.SoyRecordImpl;
 import com.google.template.soy.data.restricted.BooleanData;
@@ -322,8 +324,8 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     List<SoyValueProvider> values = new ArrayList<>();
     for (ExprNode child : node.getChildren()) {
       SoyValue val = visit(child);
-      if (child.getKind() == Kind.SPREAD_OP_NODE && val instanceof SoyList) {
-        values.addAll(val.asJavaList());
+      if (child.getKind() == Kind.SPREAD_OP_NODE) {
+        Iterators.addAll(values, val.javaIterator());
       } else {
         values.add(val);
       }
@@ -935,6 +937,8 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
           return BooleanData.forValue(visit(node.getParam(0)).hasContent());
         case IS_TRUTHY_NON_EMPTY:
           return BooleanData.forValue(visit(node.getParam(0)).isTruthyNonEmpty());
+        case NEW_SET:
+          return visitNewSetFunction(node);
         case MSG_WITH_ID:
         case REMAINDER:
           // should have been removed earlier in the compiler
@@ -1151,6 +1155,10 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
   private SoyValue visitToFloatFunction(FunctionNode node) {
     IntegerData v = (IntegerData) visit(node.getParam(0));
     return FloatData.forValue((double) v.longValue());
+  }
+
+  private SoyValue visitNewSetFunction(FunctionNode node) {
+    return new SetImpl(visit(node.getParam(0)));
   }
 
   @Override

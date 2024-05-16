@@ -682,6 +682,9 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
         return new PyFunctionExprBuilder("runtime.is_truthy_non_empty")
             .addArg(visit(node.getParam(0)))
             .asPyExpr();
+      case NEW_SET:
+        PyExpr spread = genPyExprWithNewToken(Operator.SPREAD, visitChildren(node), "*");
+        return new PyExpr("{" + spread.getText() + "}", Integer.MAX_VALUE);
       case MSG_WITH_ID:
       case REMAINDER:
         // should have been removed earlier in the compiler

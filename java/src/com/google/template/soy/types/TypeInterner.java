@@ -46,6 +46,10 @@ public interface TypeInterner {
     return intern(ListType.of(elementType));
   }
 
+  default SetType getOrCreateSetType(SoyType elementType) {
+    return intern(SetType.of(elementType));
+  }
+
   /**
    * Factory function which creates a legacy object map type, given a key and value type. This folds
    * map types with identical key/value types together, so asking for the same key/value type twice

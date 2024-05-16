@@ -36,6 +36,7 @@ import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyProtoValue;
 import com.google.template.soy.data.SoyRecord;
+import com.google.template.soy.data.SoySet;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyVisualElement;
 import com.google.template.soy.data.SoyVisualElementData;
@@ -98,6 +99,9 @@ final class ValidatorFactory extends JavaValueFactory {
   // TODO(sameb): Remove List?  We can't validate it's generic type.
   private static final ImmutableSet<Class<?>> LIST_TYPES =
       ImmutableSet.of(SoyValue.class, SoyList.class, List.class);
+
+  private static final ImmutableSet<Class<?>> SET_TYPES =
+      ImmutableSet.of(SoyValue.class, SoySet.class, Set.class);
 
   private static final ImmutableSet<Class<?>> MAP_TYPES =
       ImmutableSet.of(SoyValue.class, SoyMap.class, SoyDict.class, SoyRecord.class);
@@ -387,6 +391,9 @@ final class ValidatorFactory extends JavaValueFactory {
         break;
       case LIST:
         expectedClasses = LIST_TYPES;
+        break;
+      case SET:
+        expectedClasses = SET_TYPES;
         break;
       case MAP:
         expectedClasses = MAP_TYPES;

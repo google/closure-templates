@@ -154,6 +154,7 @@ final class KeyCommandPass implements CompilerFilePass {
         case URI:
         case TRUSTED_RESOURCE_URI:
         case LIST:
+        case SET:
         case RECORD:
         case LEGACY_OBJECT_MAP:
         case MAP:

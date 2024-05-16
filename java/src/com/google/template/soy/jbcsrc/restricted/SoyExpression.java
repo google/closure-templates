@@ -24,6 +24,7 @@ import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.NUMBER_DAT
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_LIST_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_MAP_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_PROTO_VALUE_TYPE;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_SET_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_VALUE_PROVIDER_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.STRING_DATA_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.STRING_TYPE;
@@ -47,6 +48,7 @@ import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.MapType;
 import com.google.template.soy.types.NullType;
 import com.google.template.soy.types.SanitizedType;
+import com.google.template.soy.types.SetType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
@@ -56,6 +58,7 @@ import com.google.template.soy.types.UndefinedType;
 import com.google.template.soy.types.UnknownType;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Type;
 
@@ -122,6 +125,15 @@ public final class SoyExpression extends Expression {
 
   @DoNotCall
   public static SoyExpression forList(ListType listType, SoyExpression delegate) {
+    throw new UnsupportedOperationException();
+  }
+
+  public static SoyExpression forSet(SetType setType, Expression delegate) {
+    return new SoyExpression(getUnboxedType(setType), delegate);
+  }
+
+  @DoNotCall
+  public static SoyExpression forSet(SetType setType, SoyExpression delegate) {
     throw new UnsupportedOperationException();
   }
 
@@ -427,6 +439,8 @@ public final class SoyExpression extends Expression {
       MethodRefs.STRING_DATA_FOR_VALUE.invokeUnchecked(adapter);
     } else if (type.isKnownListOrUnionOfLists()) {
       MethodRefs.LIST_IMPL_FOR_PROVIDER_LIST.invokeUnchecked(adapter);
+    } else if (type.isKnownSet()) {
+      MethodRefs.SET_IMPL_FOR_PROVIDER_SET.invokeUnchecked(adapter);
     } else if (type.isKnownLegacyObjectMapOrUnionOfMaps()) {
       FieldRef.enumReference(RuntimeMapTypeTracker.Type.LEGACY_OBJECT_MAP_OR_RECORD)
           .putUnchecked(adapter);
@@ -464,6 +478,8 @@ public final class SoyExpression extends Expression {
       return MethodRefs.STRING_DATA_FOR_VALUE.invoke(delegate).toMaybeConstant();
     } else if (type.isKnownListOrUnionOfLists()) {
       return MethodRefs.LIST_IMPL_FOR_PROVIDER_LIST.invoke(delegate);
+    } else if (type.isKnownSet()) {
+      return MethodRefs.SET_IMPL_FOR_PROVIDER_SET.invoke(delegate);
     } else if (type.isKnownLegacyObjectMapOrUnionOfMaps()) {
       return MethodRefs.DICT_IMPL_FOR_PROVIDER_MAP.invoke(
           delegate,
@@ -831,6 +847,9 @@ public final class SoyExpression extends Expression {
       case LIST:
         staticValue = alreadyUnboxed(List.class);
         break;
+      case SET:
+        staticValue = alreadyUnboxed(Set.class);
+        break;
       default:
         break;
     }
@@ -864,6 +883,9 @@ public final class SoyExpression extends Expression {
         break;
       case LIST:
         type = SOY_LIST_TYPE;
+        break;
+      case SET:
+        type = SOY_SET_TYPE;
         break;
       case MAP:
         type = SOY_MAP_TYPE;

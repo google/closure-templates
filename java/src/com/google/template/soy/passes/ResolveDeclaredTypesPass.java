@@ -31,6 +31,7 @@ import com.google.template.soy.soytree.defn.TemplateStateVar;
 import com.google.template.soy.types.FunctionType;
 import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.MapType;
+import com.google.template.soy.types.SetType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.UnknownType;
@@ -73,6 +74,9 @@ final class ResolveDeclaredTypesPass implements CompilerFilePass {
                 switch (typeName) {
                   case "list":
                     type = ListType.ANY_LIST;
+                    break;
+                  case "set":
+                    type = SetType.ANY_SET;
                     break;
                   case "map":
                     type = MapType.ANY_MAP;

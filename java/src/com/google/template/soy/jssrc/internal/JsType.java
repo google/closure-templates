@@ -19,6 +19,7 @@ package com.google.template.soy.jssrc.internal;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
+import static com.google.template.soy.jssrc.dsl.Expressions.id;
 import static com.google.template.soy.jssrc.dsl.Expressions.stringLiteral;
 import static com.google.template.soy.jssrc.internal.JsRuntime.ARRAY_IS_ARRAY;
 import static com.google.template.soy.jssrc.internal.JsRuntime.ELEMENT_LIB_IDOM;
@@ -48,8 +49,8 @@ import com.google.template.soy.jssrc.dsl.CodeChunk.Generator;
 import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.jssrc.dsl.Expressions;
 import com.google.template.soy.jssrc.dsl.GoogRequire;
+import com.google.template.soy.types.IterableType;
 import com.google.template.soy.types.LegacyObjectMapType;
-import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.MapType;
 import com.google.template.soy.types.RecordType;
 import com.google.template.soy.types.SanitizedType;
@@ -59,6 +60,7 @@ import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.TemplateType;
 import com.google.template.soy.types.UnionType;
+import com.google.template.soy.types.UnknownType;
 import java.util.EnumMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -101,9 +103,7 @@ public final class JsType {
   private static final JsType MESSAGE_TYPE =
       builder()
           .addType("!jspb.Message")
-          .setPredicate(
-              (value, codeGenerator) ->
-                  Optional.of(value.instanceOf(GoogRequire.create("jspb.Message").reference())))
+          .setPredicate(instanceofTypePredicate(GoogRequire.create("jspb.Message").reference()))
           .addRequire(GoogRequire.create("jspb.Message"))
           .build();
   private static final JsType RAW_ARRAY_TYPE =
@@ -186,17 +186,14 @@ public final class JsType {
       builder()
           .addType("!soy.velog.$$VisualElement")
           .addRequire(SOY_VELOG)
-          .setPredicate(
-              (value, codeGenerator) -> Optional.of(value.instanceOf(JsRuntime.SOY_VISUAL_ELEMENT)))
+          .setPredicate(instanceofTypePredicate(JsRuntime.SOY_VISUAL_ELEMENT))
           .build();
 
   private static final JsType VE_DATA_TYPE =
       builder()
           .addType("!soy.velog.$$VisualElementData")
           .addRequire(SOY_VELOG)
-          .setPredicate(
-              (value, codeGenerator) ->
-                  Optional.of(value.instanceOf(JsRuntime.SOY_VISUAL_ELEMENT_DATA)))
+          .setPredicate(instanceofTypePredicate(JsRuntime.SOY_VISUAL_ELEMENT_DATA))
           .build();
 
   static {
@@ -412,9 +409,8 @@ public final class JsType {
             : SANITIZED_TYPES.get(((SanitizedType) soyType).getContentKind());
 
       case LIST:
-        ListType listType = (ListType) soyType;
-        if (listType.equals(ListType.EMPTY_LIST)
-            || listType.getElementType().getKind() == SoyType.Kind.ANY) {
+        IterableType listType = (IterableType) soyType;
+        if (listType.isEmpty() || listType.getElementType().getKind() == SoyType.Kind.ANY) {
           return RAW_ARRAY_TYPE;
         }
         JsType element =
@@ -424,6 +420,19 @@ public final class JsType {
             .addType(ArrayTypeMode.formatArrayType(arrayTypeMode, element.typeExpr()))
             .addRequires(element.getGoogRequires())
             .setPredicate(ARRAY_IS_ARRAY)
+            .build();
+
+      case SET:
+        IterableType setType = (IterableType) soyType;
+        SoyType elmType = setType.getElementType();
+        if (elmType == null) {
+          elmType = UnknownType.getInstance();
+        }
+        JsType jsElmType = forSoyType(elmType, kind, isStrict, arrayTypeMode, messageTypeMode);
+        return builder()
+            .addType(String.format("!Set<%s>", jsElmType.typeExpr()))
+            .addRequires(jsElmType.getGoogRequires())
+            .setPredicate(instanceofTypePredicate(id("Set")))
             .build();
 
       case LEGACY_OBJECT_MAP:
@@ -485,9 +494,7 @@ public final class JsType {
         return builder()
             .addType("!" + protoTypeName)
             .addRequire(GoogRequire.createTypeRequire(protoTypeName))
-            .setPredicate(
-                (value, codeGenerator) ->
-                    Optional.of(value.instanceOf(JsRuntime.protoConstructor(protoType))))
+            .setPredicate(instanceofTypePredicate(JsRuntime.protoConstructor(protoType)))
             .build();
 
       case RECORD:
@@ -693,6 +700,10 @@ public final class JsType {
   private static TypePredicate typeofTypePredicate(String type) {
     return (value, codeGenerator) ->
         Optional.of(value.typeOf().tripleEquals(Expressions.stringLiteral(type)));
+  }
+
+  private static TypePredicate instanceofTypePredicate(Expression constructor) {
+    return (value, codeGenerator) -> Optional.of(value.instanceOf(constructor));
   }
 
   private final ImmutableSortedSet<String> typeExpressions;

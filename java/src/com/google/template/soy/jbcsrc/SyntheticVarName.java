@@ -47,10 +47,6 @@ abstract class SyntheticVarName {
     return new AutoValue_SyntheticVarName("switch", node);
   }
 
-  static SyntheticVarName foreachLoopIndex(ForNonemptyNode forNode) {
-    return new AutoValue_SyntheticVarName(forNode.getVarName() + "_index", forNode);
-  }
-
   static SyntheticVarName foreachLoopIterator(ForNonemptyNode forNode) {
     return new AutoValue_SyntheticVarName(forNode.getVarName() + "_iterator", forNode);
   }

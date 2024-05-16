@@ -45,6 +45,10 @@ import com.google.template.soy.types.ast.UnionTypeNode;
  */
 final class CheckDeclaredTypesPass implements CompilerFilePass {
 
+  static final SoyErrorKind BAD_MAP_OR_SET_KEY_TYPE =
+      SoyErrorKind.of(
+          "''{0}'' is not allowed as a map or set key type. Allowed key types: "
+              + "bool, int, float, number, string, proto enum.");
   private static final SoyErrorKind VE_BAD_DATA_TYPE =
       SoyErrorKind.of("Illegal VE metadata type ''{0}''. The metadata must be a proto.");
 
@@ -88,11 +92,12 @@ final class CheckDeclaredTypesPass implements CompilerFilePass {
           TypeNode key = node.arguments().get(0);
           if (!MapType.isAllowedKeyType(key.getResolvedType())) {
             errorReporter.report(
-                key.sourceLocation(), MapType.BAD_MAP_KEY_TYPE, key.getResolvedType());
+                key.sourceLocation(), BAD_MAP_OR_SET_KEY_TYPE, key.getResolvedType());
           }
           node.arguments().get(1).accept(this);
           break;
         case LIST:
+        case SET:
           checkArgument(node.arguments().size() == 1);
           node.arguments().get(0).accept(this);
           break;

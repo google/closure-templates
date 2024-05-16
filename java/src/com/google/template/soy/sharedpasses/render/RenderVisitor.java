@@ -32,7 +32,6 @@ import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.data.SoyFutureValueProvider;
 import com.google.template.soy.data.SoyFutureValueProvider.FutureBlockCallback;
 import com.google.template.soy.data.SoyInjector;
-import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueConverter;
@@ -49,7 +48,6 @@ import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.plugin.java.PluginInstances;
-import com.google.template.soy.shared.RangeArgs;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
 import com.google.template.soy.shared.internal.DelTemplateSelector;
@@ -99,6 +97,7 @@ import java.io.Flushable;
 import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Predicate;
@@ -463,44 +462,12 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
 
   @Override
   protected void visitForNode(ForNode node) {
-    Optional<RangeArgs> exprAsRangeArgs = RangeArgs.createFromNode(node);
-    if (exprAsRangeArgs.isPresent()) {
-      RangeArgs args = exprAsRangeArgs.get();
-      int step = args.increment().isPresent() ? evalRangeArg(node, args.increment().get()) : 1;
-      int start = args.start().isPresent() ? evalRangeArg(node, args.start().get()) : 0;
-      int end = evalRangeArg(node, args.limit());
-      int length = end - start;
-      if ((length ^ step) < 0) {
-        // sign mismatch, step will never cause start to reach end.
-      } else {
-        ForNonemptyNode child = (ForNonemptyNode) node.getChild(0);
-        int size = length / step + (length % step == 0 ? 0 : 1);
-        for (int i = 0; i < size; ++i) {
-          executeForeachBody(child, i, IntegerData.forValue(start + step * i));
-        }
-      }
-    } else {
-      SoyValue dataRefValue = eval(node.getExpr(), node);
-      if (!(dataRefValue instanceof SoyList)) {
-        throw RenderException.createWithSource(
-            "In 'for' command "
-                + node.toSourceString()
-                + ", the data reference does not "
-                + "resolve to a SoyList "
-                + "(encountered type "
-                + dataRefValue.getClass().getName()
-                + ").",
-            node);
-      }
-      SoyList foreachList = (SoyList) dataRefValue;
-      int listLength = foreachList.length();
-      if (listLength > 0) {
-        // Case 1: Nonempty list.
-        ForNonemptyNode child = (ForNonemptyNode) node.getChild(0);
-        for (int i = 0; i < listLength; ++i) {
-          executeForeachBody(child, i, foreachList.getProvider(i));
-        }
-      }
+    SoyValue dataRefValue = eval(node.getExpr(), node);
+    Iterator<? extends SoyValueProvider> it = dataRefValue.javaIterator();
+    int i = 0;
+    ForNonemptyNode child = (ForNonemptyNode) node.getChild(0);
+    while (it.hasNext()) {
+      executeForeachBody(child, i++, it.next());
     }
   }
 
@@ -510,19 +477,6 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
       env.bind(child.getIndexVar(), SoyValueConverter.INSTANCE.convert(i));
     }
     visitChildren(child);
-  }
-
-  private int evalRangeArg(SoyNode node, ExprNode rangeArg) {
-    SoyValue rangeArgValue = eval(rangeArg, node);
-    if (!(rangeArgValue instanceof IntegerData)) {
-      throw RenderException.create(
-              "In 'range' expression \""
-                  + rangeArg.toSourceString()
-                  + "\" does not resolve to an integer.")
-          .addStackTraceElement(
-              node.getNearestAncestor(TemplateNode.class), rangeArg.getSourceLocation());
-    }
-    return rangeArgValue.integerValue();
   }
 
   @Override

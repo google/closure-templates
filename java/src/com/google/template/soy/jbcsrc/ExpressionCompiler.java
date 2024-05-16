@@ -129,6 +129,7 @@ import com.google.template.soy.soytree.defn.ImportedVar;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.ListType;
+import com.google.template.soy.types.SetType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
@@ -1816,6 +1817,14 @@ final class ExpressionCompiler {
     SoyExpression visitIsTruthyNonEmptyFunction(FunctionNode node) {
       return SoyExpression.forBool(
           MethodRefs.SOY_VALUE_IS_TRUTHY_NON_EMPTY.invoke(visit(node.getParam(0)).box()));
+    }
+
+    @Override
+    SoyExpression visitNewSetFunction(FunctionNode node) {
+      Expression iterator = visit(node.getParam(0)).unboxAsIteratorUnchecked();
+      return SoyExpression.forSet(
+              (SetType) node.getType(), MethodRefs.IMMUTABLE_SET_COPY_OF.invoke(iterator))
+          .asNonJavaNullable();
     }
 
     // Non-builtin functions

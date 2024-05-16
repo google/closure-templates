@@ -68,6 +68,8 @@ public class BasicFunctions {
         new RandomIntFunction(),
         new RangeFunction(),
         new RoundFunction(),
+        new SetHasFunction(),
+        new SetSizeField(),
         new SqrtFunction(),
         new StrEndsWithMethod(),
         new StrIncludesFunction(),

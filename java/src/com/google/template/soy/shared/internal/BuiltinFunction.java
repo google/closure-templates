@@ -19,8 +19,11 @@ package com.google.template.soy.shared.internal;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.shared.restricted.SoyFunction;
+import com.google.template.soy.types.AnyType;
+import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.NullType;
 import com.google.template.soy.types.SanitizedType;
+import com.google.template.soy.types.SetType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.StringType;
 import com.google.template.soy.types.UndefinedType;
@@ -66,7 +69,7 @@ public enum BuiltinFunction implements SoyFunction {
   BOOLEAN("Boolean"),
   HAS_CONTENT("hasContent"),
   IS_TRUTHY_NON_EMPTY("isTruthyNonEmpty"),
-  ;
+  NEW_SET("Set");
 
   /** The function name. */
   private final String functionName;
@@ -105,6 +108,7 @@ public enum BuiltinFunction implements SoyFunction {
       case BOOLEAN:
       case IS_TRUTHY_NON_EMPTY:
       case HAS_CONTENT:
+      case NEW_SET:
         return ImmutableSet.of(1);
       case PROTO_INIT:
         throw new UnsupportedOperationException();
@@ -130,6 +134,12 @@ public enum BuiltinFunction implements SoyFunction {
                     StringType.getInstance(),
                     NullType.getInstance(),
                     UndefinedType.getInstance())));
+      case NEW_SET:
+        // This is further constrained in ResolveExpressionTypesPass.
+        return Optional.of(
+            ImmutableList.of(
+                UnionType.of(
+                    ListType.of(AnyType.getInstance()), SetType.of(AnyType.getInstance()))));
       default:
         return Optional.empty();
     }
@@ -157,6 +167,7 @@ public enum BuiltinFunction implements SoyFunction {
       case BOOLEAN:
       case HAS_CONTENT:
       case IS_TRUTHY_NON_EMPTY:
+      case NEW_SET:
         return true;
       case CSS: // implicitly depends on a renaming map or js compiler flag
       case EVAL_TOGGLE:

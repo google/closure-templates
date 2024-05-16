@@ -57,12 +57,15 @@ import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.MapType;
 import com.google.template.soy.types.NullType;
 import com.google.template.soy.types.RecordType;
+import com.google.template.soy.types.SetType;
 import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.UnknownType;
 import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Future;
 import javax.annotation.Nullable;
 import org.objectweb.asm.Label;
@@ -253,8 +256,12 @@ final class JbcSrcValueFactory extends JavaValueFactory {
               .checkedCast(owner.type());
       methodCall = runtime.invoke(methodRef, adapted);
     } else if (type == PluginCallType.JAVA_VALUE_INSTANCE) {
-      Expression runtime = ((JbcSrcJavaValue) instance).expr().checkedCast(owner.type());
-      methodCall = runtime.invoke(methodRef, adapted);
+      Expression receiver = ((JbcSrcJavaValue) instance).expr();
+      if (receiver instanceof SoyExpression) {
+        receiver = ((SoyExpression) receiver).box();
+      }
+      receiver = receiver.checkedCast(owner.type());
+      methodCall = receiver.invoke(methodRef, adapted);
     } else {
       methodCall = methodRef.invoke(adapted);
     }
@@ -496,6 +503,15 @@ final class JbcSrcValueFactory extends JavaValueFactory {
         } else if (expectedType.getKind() == SoyType.Kind.UNKNOWN
             || expectedType.getKind() == SoyType.Kind.ANY) {
           soyExpr = SoyExpression.forList(ListType.of(UnknownType.getInstance()), expr);
+        } else {
+          throw new IllegalStateException("Invalid type: " + expectedType);
+        }
+      } else if (Set.class.isAssignableFrom(type)) {
+        if (expectedType.getKind() == Kind.SET) {
+          soyExpr = SoyExpression.forSet((SetType) expectedType, expr);
+        } else if (expectedType.getKind() == SoyType.Kind.UNKNOWN
+            || expectedType.getKind() == SoyType.Kind.ANY) {
+          soyExpr = SoyExpression.forSet(SetType.of(UnknownType.getInstance()), expr);
         } else {
           throw new IllegalStateException("Invalid type: " + expectedType);
         }

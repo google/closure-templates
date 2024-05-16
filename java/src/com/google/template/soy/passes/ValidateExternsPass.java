@@ -53,6 +53,7 @@ import com.google.template.soy.types.FunctionType;
 import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.MapType;
 import com.google.template.soy.types.RecordType;
+import com.google.template.soy.types.SetType;
 import com.google.template.soy.types.SoyProtoEnumType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
@@ -408,6 +409,13 @@ class ValidateExternsPass implements CompilerFilePass {
         return mode == Mode.EXTENDS
             ? Iterable.class.isAssignableFrom(javaType)
             : (!javaType.equals(Object.class) && javaType.isAssignableFrom(ImmutableList.class));
+      case SET:
+        if (!isAllowedParameterizedType(((SetType) soyType).getElementType(), extern)) {
+          return false;
+        }
+        return mode == Mode.EXTENDS
+            ? Iterable.class.isAssignableFrom(javaType)
+            : (!javaType.equals(Object.class) && javaType.isAssignableFrom(ImmutableSet.class));
       case MAP:
         MapType mapType = (MapType) soyType;
         if (!ALLOWED_PARAMETERIZED_TYPES.contains(mapType.getKeyType().getKind())

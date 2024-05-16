@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Google Inc.
+ * Copyright 2024 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,36 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.google.template.soy.types;
 
-/** Visitor for {@link SoyType}. */
-public interface SoyTypeVisitor<T> {
+package com.google.template.soy.data;
 
-  T visit(LegacyObjectMapType type);
+/** Soy wrapper for a Java Set. */
+public interface SoySet extends SoyValue {
 
-  T visit(ListType type);
+  boolean contains(SoyValue value);
 
-  T visit(SetType type);
-
-  T visit(MapType type);
-
-  T visit(PrimitiveType type);
-
-  T visit(RecordType type);
-
-  T visit(SoyProtoEnumType type);
-
-  T visit(SoyProtoType type);
-
-  T visit(TemplateType type);
-
-  T visit(UnionType type);
-
-  T visit(VeType type);
-
-  T visit(MessageType type);
-
-  T visit(ImportType type);
-
-  T visit(FunctionType type);
+  int size();
 }

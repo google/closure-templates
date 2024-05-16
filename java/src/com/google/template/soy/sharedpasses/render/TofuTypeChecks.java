@@ -25,6 +25,7 @@ import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyProtoValue;
 import com.google.template.soy.data.SoyRecord;
+import com.google.template.soy.data.SoySet;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.TemplateValue;
 import com.google.template.soy.data.restricted.BooleanData;
@@ -131,6 +132,8 @@ public final class TofuTypeChecks {
         return isSanitizedofKind(value, ContentKind.JS);
       case LIST:
         return CheckResult.fromBool(value instanceof SoyList);
+      case SET:
+        return CheckResult.fromBool(value instanceof SoySet);
       case MAP:
         return CheckResult.fromBool(value instanceof SoyMap);
       case LEGACY_OBJECT_MAP:
