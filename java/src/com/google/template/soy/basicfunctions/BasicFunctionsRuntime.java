@@ -293,10 +293,6 @@ public final class BasicFunctionsRuntime {
         .collect(toImmutableList());
   }
 
-  public static int mapSize(SoyMap map) {
-    return map.size();
-  }
-
   @Nonnull
   public static SoyDict mapToLegacyObjectMap(SoyMap map) {
     Map<String, SoyValueProvider> keysCoercedToStrings = new HashMap<>();

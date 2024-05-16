@@ -123,6 +123,11 @@ public final class PluginAnalyzer {
     }
 
     @Override
+    public JavaValue callJavaValueMethod(Method method, JavaValue instance, JavaValue... params) {
+      return FinderValue.INSTANCE;
+    }
+
+    @Override
     public FinderValue callStaticMethod(Method method, JavaValue... params) {
       return FinderValue.INSTANCE;
     }

@@ -119,6 +119,16 @@ class TofuValueFactory extends JavaValueFactory {
     return callStaticMethod(methodSig, null, params);
   }
 
+  @Override
+  public JavaValue callJavaValueMethod(Method method, JavaValue instance, JavaValue... params) {
+    SoyValue soyValue = ((TofuJavaValue) instance).soyValue();
+    try {
+      return wrapInTofuValue(method, method.invoke(soyValue, adaptParams(method, params)), null);
+    } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+      throw RenderException.create("Unexpected exception", e);
+    }
+  }
+
   TofuJavaValue callStaticMethod(Method method, @Nullable SoyType returnType, JavaValue... params) {
     try {
       return wrapInTofuValue(method, method.invoke(null, adaptParams(method, params)), returnType);

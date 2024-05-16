@@ -162,6 +162,20 @@ final class ValidatorFactory extends JavaValueFactory {
   }
 
   @Override
+  public JavaValue callJavaValueMethod(Method method, JavaValue instance, JavaValue... params) {
+    if (method == null) {
+      reporter.nullMethod("callJavaValueMethod");
+      return errorValue();
+    }
+    MethodSignature methodSignature = toMethodSignature(method);
+    if (Modifier.isStatic(method.getModifiers())) {
+      reporter.staticMismatch(methodSignature, /* expectedInstance= */ true);
+      return errorValue();
+    }
+    return ValidatorValue.forMethodReturnType(methodSignature, reporter);
+  }
+
+  @Override
   public ValidatorValue callInstanceMethod(Method method, JavaValue... params) {
     if (method == null) {
       reporter.nullMethod("callInstanceMethod");

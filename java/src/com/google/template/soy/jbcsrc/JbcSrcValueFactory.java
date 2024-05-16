@@ -64,6 +64,7 @@ import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Future;
+import javax.annotation.Nullable;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Type;
 
@@ -153,36 +154,51 @@ final class JbcSrcValueFactory extends JavaValueFactory {
   @Override
   public JbcSrcJavaValue callStaticMethod(Method method, JavaValue... params) {
     return callPluginMethod(
-        /* isInstance= */ false,
+        PluginCallType.STATIC,
         MethodRef.create(method, MethodPureness.NON_PURE),
         toMethodSignature(method),
+        null,
         params);
   }
 
   @Override
   public JbcSrcJavaValue callStaticMethod(MethodSignature methodSignature, JavaValue... params) {
     return callPluginMethod(
-        /* isInstance= */ false,
+        PluginCallType.STATIC,
         getMethodRef(/* isInstance= */ false, methodSignature),
         methodSignature,
+        null,
+        params);
+  }
+
+  @Override
+  public JavaValue callJavaValueMethod(Method method, JavaValue instance, JavaValue... params) {
+    MethodSignature methodSignature = toMethodSignature(method);
+    return callPluginMethod(
+        PluginCallType.JAVA_VALUE_INSTANCE,
+        getMethodRef(/* isInstance= */ true, methodSignature),
+        methodSignature,
+        instance,
         params);
   }
 
   @Override
   public JbcSrcJavaValue callInstanceMethod(Method method, JavaValue... params) {
     return callPluginMethod(
-        /* isInstance= */ true,
+        PluginCallType.PLUGIN_INSTANCE,
         MethodRef.create(method, MethodPureness.NON_PURE),
         toMethodSignature(method),
+        null,
         params);
   }
 
   @Override
   public JbcSrcJavaValue callInstanceMethod(MethodSignature methodSignature, JavaValue... params) {
     return callPluginMethod(
-        /* isInstance= */ true,
+        PluginCallType.PLUGIN_INSTANCE,
         getMethodRef(/* isInstance= */ true, methodSignature),
         methodSignature,
+        null,
         params);
   }
 
@@ -202,15 +218,23 @@ final class JbcSrcValueFactory extends JavaValueFactory {
     return MethodRef.createStaticMethod(owner, asmMethod, MethodPureness.NON_PURE);
   }
 
+  enum PluginCallType {
+    STATIC,
+    PLUGIN_INSTANCE,
+    JAVA_VALUE_INSTANCE
+  }
+
   /**
    * Adapts the parameters to Expressions and generates the correct invocation for calling the
    * plugin.
    */
   private JbcSrcJavaValue callPluginMethod(
-      boolean isInstance,
+      PluginCallType type,
       MethodRef methodRef,
       MethodSignature methodSignature,
+      @Nullable JavaValue instance,
       JavaValue... params) {
+    Preconditions.checkArgument((instance != null) == (type == PluginCallType.JAVA_VALUE_INSTANCE));
     // Attempt to eagerly convert the result to a SoyExpression to make life easier for ourselves.
     // (We can take various shortcuts if things are SoyExpressions.)
     // This lets us more easily support users who want to compose multiple callXMethod calls, e.g.:
@@ -219,7 +243,7 @@ final class JbcSrcValueFactory extends JavaValueFactory {
     Expression[] adapted = adaptParams(methodSignature, params);
     TypeInfo owner = methodRef.owner();
     Expression methodCall;
-    if (isInstance) {
+    if (type == PluginCallType.PLUGIN_INSTANCE) {
       // We need to cast to the method's declaring class in order for the owner type
       // to be correct when calling the method, otherwise the JVM won't be able to dispatch
       // the method because the type will just be 'Object'.
@@ -227,6 +251,9 @@ final class JbcSrcValueFactory extends JavaValueFactory {
           pluginInstanceLookup
               .getPluginInstance(fnNode.getFunctionName())
               .checkedCast(owner.type());
+      methodCall = runtime.invoke(methodRef, adapted);
+    } else if (type == PluginCallType.JAVA_VALUE_INSTANCE) {
+      Expression runtime = ((JbcSrcJavaValue) instance).expr().checkedCast(owner.type());
       methodCall = runtime.invoke(methodRef, adapted);
     } else {
       methodCall = methodRef.invoke(adapted);
