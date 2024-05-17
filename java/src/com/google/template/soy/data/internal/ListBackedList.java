@@ -50,7 +50,7 @@ abstract class ListBackedList extends AbstractSoyList {
 
   @Override
   @Nonnull
-  public final List<? extends SoyValueProvider> asJavaList() {
+  public List<? extends SoyValueProvider> asJavaList() {
     return Collections.unmodifiableList(providerList);
   }
 

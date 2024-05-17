@@ -19,6 +19,7 @@ package com.google.template.soy.data.internal;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.SoyValueProvider;
+import java.util.Iterator;
 import java.util.List;
 import javax.annotation.Nonnull;
 import javax.annotation.ParametersAreNonnullByDefault;
@@ -46,5 +47,17 @@ public final class ListImpl extends ListBackedList {
 
   private ListImpl(ImmutableList<? extends SoyValueProvider> providerList) {
     super(providerList);
+  }
+
+  // Override to avoid some indirection and unmodifiable list creation.
+  @Override
+  @Nonnull
+  public List<? extends SoyValueProvider> asJavaList() {
+    return providerList;
+  }
+
+  @Override
+  public Iterator<? extends SoyValueProvider> javaIterator() {
+    return providerList.iterator();
   }
 }
