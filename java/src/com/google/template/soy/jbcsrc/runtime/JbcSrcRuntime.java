@@ -1016,7 +1016,7 @@ public final class JbcSrcRuntime {
     return unusedKey;
   }
 
-  public static SoyValue emptyToNull(SoyValue value) {
+  public static SoyValue emptyToUndefined(SoyValue value) {
     return value.stringValue().isEmpty() ? UndefinedData.INSTANCE : value;
   }
 

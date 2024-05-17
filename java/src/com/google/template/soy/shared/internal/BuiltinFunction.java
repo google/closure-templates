@@ -63,7 +63,7 @@ public enum BuiltinFunction implements SoyFunction {
   DEBUG_SOY_TEMPLATE_INFO("$$debugSoyTemplateInfo"),
   PROTO_INIT("$$protoInit"),
   VE_DEF("ve_def"),
-  EMPTY_TO_NULL("$$emptyToNull"),
+  EMPTY_TO_UNDEFINED("$$emptyToUndefined"),
   UNDEFINED_TO_NULL("undefinedToNullForMigration"),
   UNDEFINED_TO_NULL_SSR("undefinedToNullForSsrMigration"),
   BOOLEAN("Boolean"),
@@ -102,7 +102,7 @@ public enum BuiltinFunction implements SoyFunction {
       case REMAINDER:
       case MSG_WITH_ID:
       case TO_FLOAT:
-      case EMPTY_TO_NULL:
+      case EMPTY_TO_UNDEFINED:
       case UNDEFINED_TO_NULL:
       case UNDEFINED_TO_NULL_SSR:
       case BOOLEAN:
@@ -161,7 +161,7 @@ public enum BuiltinFunction implements SoyFunction {
       case VE_DATA:
       case TO_FLOAT:
       case PROTO_INIT:
-      case EMPTY_TO_NULL:
+      case EMPTY_TO_UNDEFINED:
       case UNDEFINED_TO_NULL:
       case UNDEFINED_TO_NULL_SSR:
       case BOOLEAN:

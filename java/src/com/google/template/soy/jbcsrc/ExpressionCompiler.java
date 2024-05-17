@@ -1789,9 +1789,10 @@ final class ExpressionCompiler {
     }
 
     @Override
-    SoyExpression visitEmptyToNullFunction(FunctionNode node) {
+    SoyExpression visitEmptyToUndefinedFunction(FunctionNode node) {
       return SoyExpression.forSoyValue(
-          node.getType(), MethodRefs.RUNTIME_EMPTY_TO_NULL.invoke(visit(node.getParam(0)).box()));
+          node.getType(),
+          MethodRefs.RUNTIME_EMPTY_TO_UNDEFINED.invoke(visit(node.getParam(0)).box()));
     }
 
     @Override

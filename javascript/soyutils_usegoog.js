@@ -550,7 +550,7 @@ const $$hasContent = function(arg) {
  * @param {*} arg The argument to coerce.
  * @return {*}
  */
-const $$emptyToNull = function(arg) {
+const $$emptyToUndefined = function(arg) {
   return $$isTruthyNonEmpty(arg) ? arg : undefined;
 };
 
@@ -2677,7 +2677,7 @@ exports = {
   $$coerceToBoolean,
   $$isTruthyNonEmpty,
   $$hasContent,
-  $$emptyToNull,
+  $$emptyToUndefined,
   $$makeEmptyTemplateFn,
   $$registerDelegateFn,
   $$getDelTemplateId,

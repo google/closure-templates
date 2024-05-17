@@ -469,8 +469,8 @@ public final class MethodRefs {
   public static final MethodRef RUNTIME_NUMBER_EQUALS_STRING_AS_NUMBER =
       createPure(JbcSrcRuntime.class, "numberEqualsStringAsNumber", double.class, String.class);
 
-  public static final MethodRef RUNTIME_EMPTY_TO_NULL =
-      createPure(JbcSrcRuntime.class, "emptyToNull", SoyValue.class);
+  public static final MethodRef RUNTIME_EMPTY_TO_UNDEFINED =
+      createPure(JbcSrcRuntime.class, "emptyToUndefined", SoyValue.class);
 
   public static final MethodRef RUNTIME_UNEXPECTED_STATE_ERROR =
       createNonPure(JbcSrcRuntime.class, "unexpectedStateError", StackFrame.class);

@@ -471,7 +471,7 @@ function hasContent(expr: unknown): boolean {
   return isTruthyNonEmpty(expr);
 }
 
-function emptyToNull<T>(expr: T): T | undefined {
+function emptyToUndefined<T>(expr: T): T | undefined {
   return isTruthyNonEmpty(expr) ? expr : undefined;
 }
 
@@ -577,7 +577,7 @@ export {
   callDynamicJs as $$callDynamicJs,
   callDynamicText as $$callDynamicText,
   defaultIdomRenderer as $$defaultIdomRenderer,
-  emptyToNull as $$emptyToNull,
+  emptyToUndefined as $$emptyToUndefined,
   hasContent as $$hasContent,
   htmlToString as $$htmlToString,
   isIdom as $$isIdom,

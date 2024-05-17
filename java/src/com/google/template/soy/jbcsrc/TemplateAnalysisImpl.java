@@ -824,7 +824,7 @@ final class TemplateAnalysisImpl implements TemplateAnalysis {
           case TO_FLOAT:
           case VE_DATA:
           case XID:
-          case EMPTY_TO_NULL:
+          case EMPTY_TO_UNDEFINED:
           case UNDEFINED_TO_NULL:
           case UNDEFINED_TO_NULL_SSR:
           case BOOLEAN:

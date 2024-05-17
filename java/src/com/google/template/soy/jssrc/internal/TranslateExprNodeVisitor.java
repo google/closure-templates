@@ -43,7 +43,7 @@ import static com.google.template.soy.jssrc.internal.JsRuntime.MARK_TEMPLATE;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SERIALIZE_KEY;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_CHECK_NOT_NULL;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_COERCE_TO_BOOLEAN;
-import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_EMPTY_TO_NULL;
+import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_EMPTY_TO_UNDEFINED;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_EQUALS;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_FILTER_AND_MAP;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_HAS_CONTENT;
@@ -1138,8 +1138,8 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
           return visitVeDataFunction(node);
         case VE_DEF:
           return visitVeDefFunction(node);
-        case EMPTY_TO_NULL:
-          return visitEmptyToNullFunction(node);
+        case EMPTY_TO_UNDEFINED:
+          return visitEmptyToUndefinedFunction(node);
         case UNDEFINED_TO_NULL:
           return visit(node.getParam(0))
               .nullishCoalesce(LITERAL_NULL, translationContext.codeGenerator());
@@ -1274,8 +1274,8 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
     return construct(SOY_VISUAL_ELEMENT, visit(node.getParam(1)), metadataExpr, debugNameExpr);
   }
 
-  protected Expression visitEmptyToNullFunction(FunctionNode node) {
-    return SOY_EMPTY_TO_NULL.call(visit(node.getParam(0)));
+  protected Expression visitEmptyToUndefinedFunction(FunctionNode node) {
+    return SOY_EMPTY_TO_UNDEFINED.call(visit(node.getParam(0)));
   }
 
   private Expression visitNewSetFunction(FunctionNode node) {

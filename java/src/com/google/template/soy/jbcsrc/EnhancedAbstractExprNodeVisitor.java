@@ -109,8 +109,8 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
           return visitProtoInitFunction(node);
         case VE_DEF:
           return visitVeDefNode(node);
-        case EMPTY_TO_NULL:
-          return visitEmptyToNullFunction(node);
+        case EMPTY_TO_UNDEFINED:
+          return visitEmptyToUndefinedFunction(node);
         case UNDEFINED_TO_NULL:
         case UNDEFINED_TO_NULL_SSR:
           return visitUndefinedToNullFunction(node);
@@ -200,7 +200,7 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
     return visitExprNode(node);
   }
 
-  T visitEmptyToNullFunction(FunctionNode node) {
+  T visitEmptyToUndefinedFunction(FunctionNode node) {
     return visitExprNode(node);
   }
 
