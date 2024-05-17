@@ -63,7 +63,7 @@ public enum BuiltinFunction implements SoyFunction {
   DEBUG_SOY_TEMPLATE_INFO("$$debugSoyTemplateInfo"),
   PROTO_INIT("$$protoInit"),
   VE_DEF("ve_def"),
-  EMPTY_TO_UNDEFINED("$$emptyToUndefined"),
+  EMPTY_TO_UNDEFINED("emptyToUndefined"),
   UNDEFINED_TO_NULL("undefinedToNullForMigration"),
   UNDEFINED_TO_NULL_SSR("undefinedToNullForSsrMigration"),
   BOOLEAN("Boolean"),
