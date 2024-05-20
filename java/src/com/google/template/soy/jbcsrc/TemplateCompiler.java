@@ -33,8 +33,9 @@ import com.google.template.soy.exprtree.AbstractLocalVarDefn;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.exprtree.VarRefNode;
+import com.google.template.soy.internal.exemptions.NamespaceExemptions;
 import com.google.template.soy.jbcsrc.ExpressionCompiler.BasicExpressionCompiler;
-import com.google.template.soy.jbcsrc.internal.InnerClasses;
+import com.google.template.soy.jbcsrc.internal.InnerMethods;
 import com.google.template.soy.jbcsrc.internal.SoyClassWriter;
 import com.google.template.soy.jbcsrc.restricted.AnnotationRef;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
@@ -47,7 +48,6 @@ import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.MethodRefs;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.Statement;
-import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.RecordToPositionalCallFactory;
 import com.google.template.soy.jbcsrc.shared.TemplateMetadata;
 import com.google.template.soy.soytree.CallDelegateNode;
@@ -101,7 +101,7 @@ final class TemplateCompiler {
   private final FieldManager fields;
   private final CompiledTemplateMetadata template;
   private final TemplateNode templateNode;
-  private final InnerClasses innerClasses;
+  private final InnerMethods innerClasses;
   private final SoyClassWriter writer;
   private final TemplateAnalysis analysis;
   private final JavaSourceFunctionCompiler javaSourceFunctionCompiler;
@@ -111,7 +111,7 @@ final class TemplateCompiler {
       TemplateNode templateNode,
       SoyClassWriter writer,
       FieldManager fields,
-      InnerClasses innerClasses,
+      InnerMethods innerClasses,
       JavaSourceFunctionCompiler javaSourceFunctionCompiler,
       PartialFileSetMetadata fileSetMetadata) {
     this.template = CompiledTemplateMetadata.create(templateNode);
@@ -205,12 +205,15 @@ final class TemplateCompiler {
   }
 
   private int methodAccess() {
-    // TODO(lukes): private templates need to have default access so they can be called by our
-    // generated inner classes (e.g. a let).  Once jdk11 has landed we could workaround by declaring
-    // our inner classes as 'nestmates' see https://openjdk.java.net/jeps/181
     return (templateNode.getVisibility() == Visibility.PUBLIC || isModifyingTemplate()
             ? Opcodes.ACC_PUBLIC
-            : 0)
+            // TODO(b/180904763): private templates need to have default access so they can be
+            // called by our other templates in the same file when we are compiling templates to
+            // multiple files.
+            : (NamespaceExemptions.isKnownDuplicateNamespace(
+                    templateNode.getSoyFileHeaderInfo().getNamespace())
+                ? /* default access */ 0
+                : Opcodes.ACC_PRIVATE))
         | Opcodes.ACC_STATIC;
   }
 
@@ -422,8 +425,7 @@ final class TemplateCompiler {
     } else {
       paramNames.add(StandardNames.PARAMS);
     }
-    paramNames.add(StandardNames.APPENDABLE);
-    paramNames.add(StandardNames.RENDER_CONTEXT);
+    paramNames.add(StandardNames.APPENDABLE).add(StandardNames.RENDER_CONTEXT);
     Method method = template.positionalRenderMethod().orElse(template.renderMethod()).method();
     TemplateVariableManager variableSet =
         new TemplateVariableManager(
@@ -447,6 +449,7 @@ final class TemplateCompiler {
     SoyNodeCompiler nodeCompiler =
         SoyNodeCompiler.create(
             templateNode,
+            template.typeInfo(),
             analysis,
             innerClasses,
             appendable,
@@ -610,7 +613,7 @@ final class TemplateCompiler {
    * }</pre>
    */
   private void generateModifiableSelectMethod() {
-    if (!template.modifiableSelectMethod().isPresent()) {
+    if (template.modifiableSelectMethod().isEmpty()) {
       return;
     }
     Method method = template.renderMethod().method();
@@ -618,9 +621,10 @@ final class TemplateCompiler {
     Label end = new Label();
 
     ImmutableList.Builder<String> paramNames = ImmutableList.builder();
-    paramNames.add(StandardNames.PARAMS);
-    paramNames.add(StandardNames.APPENDABLE);
-    paramNames.add(StandardNames.RENDER_CONTEXT);
+    paramNames
+        .add(StandardNames.PARAMS)
+        .add(StandardNames.APPENDABLE)
+        .add(StandardNames.RENDER_CONTEXT);
 
     TemplateVariableManager variableSet =
         new TemplateVariableManager(

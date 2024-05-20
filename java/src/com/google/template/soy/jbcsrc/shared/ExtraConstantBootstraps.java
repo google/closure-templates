@@ -135,5 +135,23 @@ public final class ExtraConstantBootstraps {
         .invoke();
   }
 
+  // Usable if/when all lambda captures are constants
+  @Keep
+  public static Object constantMetafactoryWithArgs(
+      MethodHandles.Lookup lookup,
+      String name,
+      Class<?> type,
+      MethodType samMethodType,
+      MethodHandle implMethod,
+      MethodType instantiatedMethodType,
+      MethodType callSiteDescriptor,
+      Object... constantArgs)
+      throws Throwable {
+    return LambdaMetafactory.metafactory(
+            lookup, name, callSiteDescriptor, samMethodType, implMethod, instantiatedMethodType)
+        .getTarget()
+        .invokeWithArguments(constantArgs);
+  }
+
   private ExtraConstantBootstraps() {}
 }

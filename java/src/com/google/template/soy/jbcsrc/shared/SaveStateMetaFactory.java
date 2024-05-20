@@ -17,8 +17,8 @@
 package com.google.template.soy.jbcsrc.shared;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
+import static java.lang.Math.max;
 import static java.util.stream.Collectors.joining;
-import static org.objectweb.asm.Opcodes.V1_8;
 
 import com.google.auto.value.AutoValue;
 import com.google.auto.value.extension.memoized.Memoized;
@@ -61,10 +61,8 @@ public final class SaveStateMetaFactory {
 
   private static final Type STACK_FRAME_TYPE = Type.getType(StackFrame.class);
 
-  private static final String GENERATED_CLASS_NAME_PREFIX =
-      StackFrame.class.getPackage().getName() + ".StackFrame";
   private static final String GENERATED_CLASS_NAME_INTERNAL_PREFIX =
-      GENERATED_CLASS_NAME_PREFIX.replace('.', '/');
+      STACK_FRAME_TYPE.getInternalName();
   private static final MethodType STACK_FRAME_CTOR_TYPE =
       MethodType.methodType(void.class, int.class);
 
@@ -236,10 +234,10 @@ public final class SaveStateMetaFactory {
     if (key.fieldTypes().isEmpty()) {
       return StackFrame.class;
     }
-    ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS + ClassWriter.COMPUTE_FRAMES);
+    ClassWriter cw = new ClassWriter(/* flags= */ 0);
     String className = GENERATED_CLASS_NAME_INTERNAL_PREFIX + key.symbol();
     cw.visit(
-        V1_8,
+        Opcodes.V11,
         Opcodes.ACC_SUPER + Opcodes.ACC_PUBLIC + Opcodes.ACC_FINAL + Opcodes.ACC_SYNTHETIC,
         className,
         /* signature= */ null, // we don't use a generic type signature
@@ -294,7 +292,13 @@ public final class SaveStateMetaFactory {
           Opcodes.PUTFIELD, generatedType.getInternalName(), "f_" + i, argType.getDescriptor());
     }
     constructor.visitInsn(Opcodes.RETURN);
-    constructor.visitMaxs(-1, -1); // necessary for automatic stack frame calculation
+    constructor.visitMaxs(
+        /* maxStack= */ max(
+            /* for the super(stateNumber) call */ 2,
+            /* for the largest field store operation */
+            1 + argTypes.stream().mapToInt(Type::getSize).max().orElse(0)),
+        /* maxLocals= */ Type.getArgumentsAndReturnSizes(ctorMethodType.toMethodDescriptorString())
+            >> 2);
     constructor.visitEnd();
     cw.visitEnd();
     try {

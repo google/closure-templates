@@ -18,6 +18,7 @@ package com.google.template.soy.jbcsrc.restricted;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
 
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.jbcsrc.restricted.testing.ExpressionEvaluator;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -44,6 +45,7 @@ public final class LambdaFactoryTest {
       MethodRef.createPure(LambdaFactoryTest.class, "concat", Object.class, Object.class);
 
   // Actual implementations
+  @CanIgnoreReturnValue
   public static Object identity(Object o) {
     return o;
   }
@@ -68,7 +70,7 @@ public final class LambdaFactoryTest {
   }
 
   @Test
-  public void testOneBundParameter() throws ReflectiveOperationException {
+  public void testOneBoundParameter() throws ReflectiveOperationException {
     @SuppressWarnings("unchecked")
     Supplier<Object> supplier =
         (Supplier)

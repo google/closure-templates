@@ -61,6 +61,20 @@ public final class LambdaFactory {
               MethodType.class)
           .asHandle();
 
+  private static final Handle CONDY_METAFACTORY_WTIH_ARGS =
+      MethodRef.createPure(
+              ExtraConstantBootstraps.class,
+              "constantMetafactoryWithArgs",
+              MethodHandles.Lookup.class,
+              String.class,
+              Class.class,
+              MethodType.class,
+              MethodHandle.class,
+              MethodType.class,
+              MethodType.class,
+              Object[].class)
+          .asHandle();
+
   /**
    * Create a {@code LambdaFactory} that can create instances of an interface that implements {@code
    * interfaceMethod} by delegating to {@code implMethod}.
@@ -128,34 +142,43 @@ public final class LambdaFactory {
     if (Expression.areAllCheap(args)) {
       features = features.plus(Feature.CHEAP);
     }
+    if (Expression.areAllConstant(args)) {
+      // When there are no bound parameters we can link this with condy instead of indy.
+      // According to Brian Goetz this should be faster to link even if the impls are identical
+      // See https://mail.openjdk.org/pipermail/amber-dev/2023-October/008327.html
+      var bytecodeArgs =
+          ImmutableList.<Object>builder()
+              .add(interfaceMethodType)
+              .add(implMethod.asHandle())
+              .add(interfaceMethodType);
+      if (!boundParams.isEmpty()) {
+        bytecodeArgs.add(Type.getType(callSiteDescriptor));
+        for (Expression arg : args) {
+          bytecodeArgs.add(arg.constantBytecodeValue());
+        }
+      }
+      return BytecodeUtils.constant(
+          interfaceType.type(),
+          new ConstantDynamic(
+              interfaceMethodName,
+              interfaceType.type().getDescriptor(),
+              boundParams.isEmpty() ? CONDY_METAFACTORY : CONDY_METAFACTORY_WTIH_ARGS,
+              bytecodeArgs.build().toArray()),
+          features);
+    }
     return new Expression(interfaceType.type(), features) {
       @Override
       protected void doGen(CodeBuilder cb) {
-        // When there are no bound parameters we can link this with condy instead of indy.
-        // According to Brian Goetz this should be faster to link even if the impls are identical
-        // See https://mail.openjdk.org/pipermail/amber-dev/2023-October/008327.html
-        if (boundParams.isEmpty()) {
-          cb.visitLdcInsn(
-              new ConstantDynamic(
-                  interfaceMethodName,
-                  interfaceType.type().getDescriptor(),
-                  CONDY_METAFACTORY,
-                  interfaceMethodType,
-                  implMethod.asHandle(),
-                  interfaceMethodType));
-
-        } else {
-          for (Expression arg : args) {
-            arg.gen(cb);
-          }
-          cb.visitInvokeDynamicInsn(
-              interfaceMethodName,
-              callSiteDescriptor,
-              METAFACTORY_HANDLE,
-              interfaceMethodType,
-              implMethod.asHandle(),
-              interfaceMethodType);
+        for (Expression arg : args) {
+          arg.gen(cb);
         }
+        cb.visitInvokeDynamicInsn(
+            interfaceMethodName,
+            callSiteDescriptor,
+            METAFACTORY_HANDLE,
+            interfaceMethodType,
+            implMethod.asHandle(),
+            interfaceMethodType);
       }
     };
   }

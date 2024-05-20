@@ -28,13 +28,12 @@ import com.google.common.collect.ContiguousSet;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.SettableFuture;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.LoggingAdvisingAppendable.BufferingAppendable;
 import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyValue;
+import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.jbcsrc.TemplateTester.CompiledTemplateSubject;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
@@ -49,6 +48,7 @@ import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.List;
 import org.junit.Test;
@@ -181,7 +181,7 @@ public class LazyClosureCompilerTest {
         compileTemplateBody(
             "{let $fancyList: [$a + 1 for $a in range(100)] /}", "{join($fancyList,',')}");
     Class<?> fileClass = templates.getTemplateData("ns.foo").templateClass();
-    Field fancyListField = fileClass.getDeclaredField("let_fancyList");
+    Field fancyListField = fileClass.getDeclaredField("foo$let_fancyList");
     assertThat(Modifier.toString(fancyListField.getModifiers())).isEqualTo("private static final");
     assertThat(fancyListField.getType()).isAssignableTo(SoyValue.class);
     fancyListField.setAccessible(true);
@@ -221,18 +221,17 @@ public class LazyClosureCompilerTest {
   }
 
   @Test
-  public void testLetValueNodeStructure() {
+  public void testLetValueNodeStructure() throws NoSuchMethodException {
     // make sure we don't break normal reflection apis
     CompiledTemplates templates =
-        compileTemplateBody("{let $bar : 'a' /}", "{let $foo : $bar + 1 /}");
+        compileTemplateBody("{let $bar : randomInt(10) /}", "{let $foo : $bar + 1 /}");
 
     Class<?> fileClass = templates.getTemplateData("ns.foo").templateClass();
-
-    assertThat(fileClass.getDeclaredClasses()).hasLength(1);
-    List<Class<?>> innerClasses = Lists.newArrayList(fileClass.getDeclaredClasses());
-    Class<?> let = Iterables.getOnlyElement(innerClasses);
-    assertThat(let.getSimpleName()).isEqualTo("let_foo");
-    assertThat(let.getDeclaringClass()).isEqualTo(fileClass);
+    // two for the template and one for the let
+    assertThat(fileClass.getDeclaredMethods()).hasLength(3);
+    Method letMethod = fileClass.getDeclaredMethod("foo$let_foo", IntegerData.class);
+    assertThat(Modifier.toString(letMethod.getModifiers())).isEqualTo("static");
+    assertThat(letMethod.getDeclaringClass()).isEqualTo(fileClass);
   }
 
   private static final class IdentityJavaFunction implements SoyJavaFunction {
@@ -306,8 +305,8 @@ public class LazyClosureCompilerTest {
     CompiledTemplates templates =
         compileTemplateBody("{let $bar : [0,1,2][randomInt(1)] /}", "{let $foo : $bar /} {$foo}");
     Class<?> fileClass = templates.getTemplateData("ns.foo").templateClass();
-    assertThat(asList(fileClass.getDeclaredClasses())).hasSize(1);
-    assertThat(fileClass.getDeclaredClasses()[0].getSimpleName()).isEqualTo("let_bar");
+    assertThat(asList(fileClass.getDeclaredMethods())).hasSize(3);
+    assertThat(fileClass.getDeclaredMethod("foo$let_bar")).isNotNull();
     assertThat(asList(fileClass.getDeclaredFields())).isEmpty();
   }
 }

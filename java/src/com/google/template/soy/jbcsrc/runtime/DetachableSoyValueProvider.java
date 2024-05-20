@@ -34,13 +34,16 @@ import java.io.IOException;
  * {@link DetachableSoyValueProviderProvider} instead.
  */
 public abstract class DetachableSoyValueProvider implements SoyValueProvider {
-  protected SoyValue resolvedValue;
+  private SoyValue resolvedValue;
 
   @Override
   public final SoyValue resolve() {
-    JbcSrcRuntime.awaitProvider(this);
     SoyValue local = resolvedValue;
-    checkState(local != null, "doResolve didn't replace tombstone");
+    if (local == null) {
+      JbcSrcRuntime.awaitProvider(this);
+      local = resolvedValue;
+      checkState(local != null, "awaiting didn't resolve provider");
+    }
     return local;
   }
 
@@ -49,23 +52,30 @@ public abstract class DetachableSoyValueProvider implements SoyValueProvider {
     if (resolvedValue != null) {
       return RenderResult.done();
     }
-    return doResolve();
+    Object result = evaluate();
+    // The SoyValue hierarchy is complex, so `instanceof` will be slower, however, the value is
+    // non-null and RenderResult is final so this check will be faster.
+    if (result.getClass() == RenderResult.class) {
+      return (RenderResult) result;
+    }
+    resolvedValue = (SoyValue) result;
+    return RenderResult.done();
   }
 
   @Override
   public RenderResult renderAndResolve(LoggingAdvisingAppendable appendable) throws IOException {
-    RenderResult result = status();
-    if (result.isDone()) {
-      SoyValue resolved = resolve();
-      if (resolved == null) {
-        appendable.append("null");
-      } else {
-        resolved.render(appendable);
-      }
+    RenderResult status = status();
+    if (status.isDone()) {
+      resolvedValue.render(appendable);
+      return RenderResult.done();
     }
-    return result;
+    return status;
   }
 
-  /** Overridden by generated subclasses to implement lazy detachable resolution. */
-  protected abstract RenderResult doResolve();
+  /**
+   * Overridden by generated subclasses to implement lazy detachable resolution.
+   *
+   * @return a RenderResult when not done and a SoyValue when complete
+   */
+  protected abstract Object evaluate();
 }

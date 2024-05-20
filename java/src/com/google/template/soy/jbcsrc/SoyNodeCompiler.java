@@ -40,6 +40,7 @@ import com.google.common.collect.Iterables;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.SanitizedContentKind;
+import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.basetree.Node;
 import com.google.template.soy.basetree.ParentNode;
 import com.google.template.soy.data.SoyRecord;
@@ -58,7 +59,7 @@ import com.google.template.soy.jbcsrc.LazyClosureCompiler.LazyClosure;
 import com.google.template.soy.jbcsrc.MsgCompiler.PlaceholderCompiler;
 import com.google.template.soy.jbcsrc.TemplateVariableManager.Scope;
 import com.google.template.soy.jbcsrc.TemplateVariableManager.Variable;
-import com.google.template.soy.jbcsrc.internal.InnerClasses;
+import com.google.template.soy.jbcsrc.internal.InnerMethods;
 import com.google.template.soy.jbcsrc.restricted.Branch;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
@@ -69,6 +70,7 @@ import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.MethodRefs;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.Statement;
+import com.google.template.soy.jbcsrc.restricted.TypeInfo;
 import com.google.template.soy.jbcsrc.shared.ClassLoaderFallbackCallFactory;
 import com.google.template.soy.jbcsrc.shared.Names;
 import com.google.template.soy.jbcsrc.shared.SwitchFactory;
@@ -152,7 +154,6 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   /**
    * Creates a SoyNodeCompiler
    *
-   * @param innerClasses The current set of inner classes
    * @param appendableVar An expression that returns the current AdvisingAppendable that we are
    *     rendering into
    * @param variables The variable set for generating locals and fields
@@ -160,8 +161,9 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
    */
   static SoyNodeCompiler create(
       SoyNode context,
+      TypeInfo typeInfo,
       TemplateAnalysis analysis,
-      InnerClasses innerClasses,
+      InnerMethods innerMethods,
       AppendableExpression appendableVar,
       TemplateVariableManager variables,
       TemplateParameterLookup parameterLookup,
@@ -170,7 +172,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       JavaSourceFunctionCompiler javaSourceFunctionCompiler,
       PartialFileSetMetadata fileSetMetadata) {
     // We pass a lazy supplier of render context so that lazy closure compiler classes that don't
-    // generate detach logic don't trigger capturing this value into a field.
+    // generate detach logic don't trigger capturing this value into a method parameter.
     DetachState detachState = new DetachState(variables, parameterLookup::getRenderContext);
     ExpressionCompiler expressionCompiler =
         ExpressionCompiler.create(
@@ -183,8 +185,9 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     ExpressionToSoyValueProviderCompiler soyValueProviderCompiler =
         ExpressionToSoyValueProviderCompiler.create(analysis, expressionCompiler, parameterLookup);
     return new SoyNodeCompiler(
+        typeInfo,
         analysis,
-        innerClasses,
+        innerMethods,
         detachState,
         variables,
         parameterLookup,
@@ -197,8 +200,9 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
         fileSetMetadata);
   }
 
+  final TypeInfo typeInfo;
   final TemplateAnalysis analysis;
-  final InnerClasses innerClasses;
+  final InnerMethods innerMethods;
   final DetachState detachState;
   final TemplateVariableManager variables;
   final TemplateParameterLookup parameterLookup;
@@ -212,8 +216,9 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   private Scope currentScope;
 
   SoyNodeCompiler(
+      TypeInfo typeInfo,
       TemplateAnalysis analysis,
-      InnerClasses innerClasses,
+      InnerMethods innerMethods,
       DetachState detachState,
       TemplateVariableManager variables,
       TemplateParameterLookup parameterLookup,
@@ -224,8 +229,9 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       BasicExpressionCompiler constantCompiler,
       JavaSourceFunctionCompiler javaSourceFunctionCompiler,
       PartialFileSetMetadata fileSetMetadata) {
+    this.typeInfo = checkNotNull(typeInfo);
     this.analysis = checkNotNull(analysis);
-    this.innerClasses = innerClasses;
+    this.innerMethods = innerMethods;
     this.detachState = checkNotNull(detachState);
     this.variables = checkNotNull(variables);
     this.parameterLookup = checkNotNull(parameterLookup);
@@ -502,7 +508,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
                     : STRING_SWITCH_DESCRIPTOR_OBJECT)
                 .getDescriptor(),
             STRING_SWITCH_FACTORY_HANDLE,
-            (Object[]) switchKeys);
+            switchKeys);
       }
     };
   }
@@ -1573,7 +1579,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
 
     Optional<ListOfExpressionsAndInitializer> asPositionalParams(
         CallNode node, TemplateVariableManager.Scope scope, TemplateType calleeType) {
-      if (!explicit().isPresent()) {
+      if (explicit().isEmpty()) {
         return Optional.empty();
       }
 
@@ -1622,7 +1628,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
               0,
               callBasicNode.getVariantExpr().getSourceLocation(),
               Identifier.create(Names.VARIANT_VAR_NAME, SourceLocation.UNKNOWN),
-              callBasicNode.getVariantExpr().getRoot()));
+              callBasicNode.getVariantExpr().getRoot().copy(new CopyState())));
     }
     ImmutableMap<String, Supplier<Expression>> explicitParams = compileExplicitParams(node);
     Supplier<Expression> recordExpression = () -> getParamStoreExpression(node, explicitParams);
@@ -1639,14 +1645,13 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
         valueExpr =
             () ->
                 new LazyClosureCompiler(this)
-                    .compileLazyContent("param", (CallParamContentNode) child, paramKey)
+                    .compileLazyContent((CallParamContentNode) child, paramKey)
                     .soyValueProvider();
       } else {
         valueExpr =
             () ->
                 new LazyClosureCompiler(this)
-                    .compileLazyExpression(
-                        "param", child, paramKey, ((CallParamValueNode) child).getExpr())
+                    .compileLazyExpression(child, paramKey, ((CallParamValueNode) child).getExpr())
                     .soyValueProvider();
       }
       builder.put(child.getKey().identifier(), valueExpr);
@@ -1708,13 +1713,12 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   protected Statement visitLetValueNode(LetValueNode node) {
     return storeClosure(
         new LazyClosureCompiler(this)
-            .compileLazyExpression("let", node, node.getVarName(), node.getExpr()));
+            .compileLazyExpression(node, node.getVarName(), node.getExpr()));
   }
 
   @Override
   protected Statement visitLetContentNode(LetContentNode node) {
-    return storeClosure(
-        new LazyClosureCompiler(this).compileLazyContent("let", node, node.getVarName()));
+    return storeClosure(new LazyClosureCompiler(this).compileLazyContent(node, node.getVarName()));
   }
 
   Statement storeClosure(LazyClosure newLetValue) {
@@ -1800,8 +1804,9 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   /** Returns a {@link SoyNodeCompiler} identical to this one but with an alternate appendable. */
   SoyNodeCompiler compilerWithNewAppendable(AppendableExpression appendable) {
     return new SoyNodeCompiler(
+        typeInfo,
         analysis,
-        innerClasses,
+        innerMethods,
         detachState,
         variables,
         parameterLookup,
@@ -1809,6 +1814,26 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
         appendable,
         exprCompiler,
         expressionToSoyValueProviderCompiler,
+        constantCompiler,
+        javaSourceFunctionCompiler,
+        fileSetMetadata);
+  }
+
+  /** Returns a {@link SoyNodeCompiler} for compiling the new child node in a new context. */
+  SoyNodeCompiler compilerForChildNode(
+      SoyNode node,
+      TemplateVariableManager variables,
+      TemplateParameterLookup parameterLookup,
+      AppendableExpression appendable) {
+    return create(
+        node,
+        typeInfo,
+        analysis,
+        innerMethods,
+        appendable,
+        variables,
+        parameterLookup,
+        fields,
         constantCompiler,
         javaSourceFunctionCompiler,
         fileSetMetadata);

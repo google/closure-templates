@@ -25,6 +25,7 @@ import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.LoggingAdvisingAppendable.BufferingAppendable;
 import com.google.template.soy.data.LoggingFunctionInvocation;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
+import com.google.template.soy.data.SoyAbstractValue;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
@@ -40,18 +41,28 @@ import javax.annotation.Nullable;
  */
 public abstract class DetachableContentProvider implements SoyValueProvider {
 
-  // Will be either a SanitizedContent or a StringData.
+  // Will be either a SanitizedContent, a StringData, or a TombstoneValue.
   private SoyValue resolvedValue;
-  private BufferingAppendable buffer;
 
   // Will be either an LoggingAdvisingAppendable.BufferingAppendable or a TeeAdvisingAppendable
   // depending on whether we are being resolved via 'status()' or via 'renderAndResolve()'
+  // upon completion this will always be a BufferingAppendable
   private LoggingAdvisingAppendable builder;
 
   @Override
   public final SoyValue resolve() {
-    JbcSrcRuntime.awaitProvider(this);
-    return getResolvedValue();
+    SoyValue local = resolvedValue;
+    if (local == null) {
+      JbcSrcRuntime.awaitProvider(this);
+      local = resolvedValue;
+    }
+    if (local == TombstoneValue.INSTANCE) {
+      // This drops logs, but that is sometimes necessary.  We should make sure this only happens
+      // when it has to by making sure that renderAndResolve is used for all printing usecases
+      local = ((LoggingAdvisingAppendable.BufferingAppendable) builder).getAsSoyValue();
+      resolvedValue = local;
+    }
+    return local;
   }
 
   @Override
@@ -71,8 +82,8 @@ public abstract class DetachableContentProvider implements SoyValueProvider {
       throw new AssertionError("impossible", ioe);
     }
     if (result.isDone()) {
-      buffer = currentBuilder;
-      builder = null;
+      // following a .status() call the most likely thing is resolve, just do it now
+      resolvedValue = currentBuilder.getAsSoyValue();
     }
     return result;
   }
@@ -80,7 +91,7 @@ public abstract class DetachableContentProvider implements SoyValueProvider {
   @Override
   public RenderResult renderAndResolve(LoggingAdvisingAppendable appendable) throws IOException {
     if (isDone()) {
-      buffer.replayOn(appendable);
+      ((LoggingAdvisingAppendable.BufferingAppendable) builder).replayOn(appendable);
       return RenderResult.done();
     }
 
@@ -90,29 +101,14 @@ public abstract class DetachableContentProvider implements SoyValueProvider {
     }
     RenderResult result = doRender(currentBuilder);
     if (result.isDone()) {
-      buffer = currentBuilder.buffer;
-      builder = null;
+      resolvedValue = TombstoneValue.INSTANCE;
+      builder = currentBuilder.buffer;
     }
     return result;
   }
 
   private boolean isDone() {
-    return resolvedValue != null || buffer != null;
-  }
-
-  private SoyValue getResolvedValue() {
-    SoyValue local = resolvedValue;
-    if (local == null) {
-      if (buffer != null) {
-        // This drops logs, but that is sometimes necessary.  We should make sure this only happens
-        // when it has to by making sure that renderAndResolve is used for all printing usecases
-        local = buffer.getAsSoyValue();
-        resolvedValue = local;
-      } else {
-        throw new AssertionError("getResolvedValue() should only be called if the value isDone.");
-      }
-    }
-    return local;
+    return resolvedValue != null;
   }
 
   /** Overridden by generated subclasses to implement lazy detachable resolution. */
@@ -205,6 +201,40 @@ public abstract class DetachableContentProvider implements SoyValueProvider {
       delegate.appendLoggingFunctionInvocation(funCall, escapers);
       buffer.appendLoggingFunctionInvocation(funCall, escapers);
       return this;
+    }
+  }
+
+  private static final class TombstoneValue extends SoyAbstractValue {
+    static final TombstoneValue INSTANCE = new TombstoneValue();
+
+    @Override
+    public void render(LoggingAdvisingAppendable appendable) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean equals(Object other) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int hashCode() {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public String coerceToString() {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean coerceToBoolean() {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public String toString() {
+      return "TOMBSTONE";
     }
   }
 }

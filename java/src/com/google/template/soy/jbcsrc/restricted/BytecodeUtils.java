@@ -90,6 +90,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -113,7 +114,7 @@ public final class BytecodeUtils {
 
   public static final Type LOGGING_ADVISING_APPENDABLE_TYPE =
       Type.getType(LoggingAdvisingAppendable.class);
-  public static final Type LOGGING_ADVISING_BUILDER_TYPE =
+  public static final Type BUFFERING_APPENDABLE_TYPE =
       Type.getType(LoggingAdvisingAppendable.BufferingAppendable.class);
   public static final Type COMPILED_TEMPLATE_TYPE = Type.getType(CompiledTemplate.class);
   public static final Type TEMPLATE_VALUE_TYPE = Type.getType(TemplateValue.class);
@@ -387,7 +388,7 @@ public final class BytecodeUtils {
     // right is assignable to left.
     Optional<Class<?>> leftClass = objectTypeToClassCache.getUnchecked(left);
     Optional<Class<?>> rightClass = objectTypeToClassCache.getUnchecked(right);
-    if (!leftClass.isPresent() || !rightClass.isPresent()) {
+    if (leftClass.isEmpty() || rightClass.isEmpty()) {
       // This means one of the types being compared is a generated object.  So we can't easily check
       // it.  Just delegate responsibility to the verifier.
       return failOpen;
@@ -758,7 +759,7 @@ public final class BytecodeUtils {
     Label start = mg.mark();
     Label end = mg.newLabel();
     LocalVariable thisVar = LocalVariable.createThisVar(ownerType, start, end);
-    thisVar.gen(mg);
+    thisVar.loadUnchecked(mg);
     mg.invokeConstructor(OBJECT.type(), NULLARY_INIT);
     mg.returnValue();
     mg.mark(end);
@@ -966,7 +967,8 @@ public final class BytecodeUtils {
         SoyExpression.forSoyValue(soyType, MethodRefs.SOY_RECORD_IMPL.invoke(paramStore));
     if (paramStore.isConstant()) {
       var paramCondy = (ConstantDynamic) paramStore.constantBytecodeValue();
-      checkState(paramCondy.getBootstrapMethod() == CONSTANT_PARAM_STORE); // sanity check
+      checkState(
+          Objects.equals(paramCondy.getBootstrapMethod(), CONSTANT_PARAM_STORE)); // sanity check
       Object[] args = new Object[1 + paramCondy.getBootstrapMethodArgumentCount()];
       // We store a hash of the source location so that each distinct list authored
       // gets a unique value to preserve identity semantics even in constant settings

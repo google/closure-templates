@@ -37,7 +37,6 @@ import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
 import com.google.template.soy.testing.Foo;
 import java.io.IOException;
-import java.util.List;
 import java.util.function.Function;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -175,7 +174,7 @@ public final class DetachStateTest {
             "suffix");
     CompiledTemplate template = templates.getTemplate("ns.foo");
     RenderContext context = getDefaultContext(templates);
-    List<SettableFuture<String>> futures =
+    ImmutableList<SettableFuture<String>> futures =
         ImmutableList.of(SettableFuture.create(), SettableFuture.create(), SettableFuture.create());
     BufferingAppendable output = LoggingAdvisingAppendable.buffering();
     TemplateRenderer renderer =
@@ -334,14 +333,14 @@ public final class DetachStateTest {
             "{/template}",
             "");
     CompiledTemplate template = templates.getTemplate("ns.t");
-    SettableFuture<Integer> param = SettableFuture.create();
-    ParamStore params = asParams(ImmutableMap.of("count", param));
+    SettableFuture<Integer> count = SettableFuture.create();
+    ParamStore params = asParams(ImmutableMap.of("count", count));
     BufferingAppendable output = LoggingAdvisingAppendable.buffering();
     RenderContext context = getDefaultContext(templates);
     TemplateRenderer renderer = () -> template.render(params, output, context);
-    assertThat(renderer.render()).isEqualTo(RenderResult.continueAfter(param));
-    assertThat(output.toString()).isEqualTo("");
-    param.set(2);
+    assertThat(renderer.render()).isEqualTo(RenderResult.continueAfter(count));
+    assertThat(output.toString()).isEmpty();
+    count.set(2);
     assertThat(renderer.render()).isEqualTo(RenderResult.done());
     assertThat(output.toString()).isEqualTo("2 items in cart");
   }
@@ -512,5 +511,46 @@ public final class DetachStateTest {
     pending.set("HELLO");
     assertThat(renderer.render()).isEqualTo(RenderResult.done());
     assertThat(output.toString()).isEqualTo("<div>HELLO</div>");
+  }
+
+  // Regression test for a bug where our StackFrame stack manipulation would get confused when a
+  // LetValueNode would depend on a LetContentNode and would fail to correctly restore the
+  // StackFrame objects.  This would manifest as a ClassCastException (because the frame at the top
+  // of the stack had the wrong shape), or a mis-render as parts of templates were skipped or
+  // rendered multiple times.
+  @Test
+  public void testDetachInValueBlockDependingOnContentBlock() throws IOException {
+    CompiledTemplates templates =
+        TemplateTester.compileFile(
+            "{namespace ns}",
+            "{template c}",
+            "  {@inject p: ?}",
+            "  {let $a kind='text'}<a>{$p}</a>{/let}",
+            "  {let $aExpr: $a + '' /}",
+            "  {let $h kind='html'}",
+            "    {call u}{param c: $aExpr.length > 1 ? 1 : 0 /}{/call}",
+            "  {/let}",
+            "  <top>{$h}</top>",
+            "{/template}",
+            "{template u}",
+            "  {@inject p: ?}",
+            "  {@param c: ?}",
+            "  {let $d : $c + 1 /}",
+            "  {$p}<bottom>{$d}</bottom>",
+            "{/template}");
+    CompiledTemplate template = templates.getTemplate("ns.c");
+
+    SettableFuture<Integer> pending = SettableFuture.create();
+    RenderContext context =
+        getDefaultContext(templates).toBuilder()
+            .withIj(SoyInjector.fromStringMap(ImmutableMap.of("p", pending)))
+            .build();
+    BufferingAppendable output = LoggingAdvisingAppendable.buffering();
+    TemplateRenderer renderer = () -> template.render(ParamStore.EMPTY_INSTANCE, output, context);
+    assertThat(renderer.render()).isEqualTo(RenderResult.continueAfter(pending));
+    assertThat(output.toString()).isEqualTo("<top>");
+    pending.set(2);
+    assertThat(renderer.render()).isEqualTo(RenderResult.done());
+    assertThat(output.toString()).isEqualTo("<top>2<bottom>2</bottom></top>");
   }
 }

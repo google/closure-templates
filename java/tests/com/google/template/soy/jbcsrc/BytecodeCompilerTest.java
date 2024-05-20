@@ -17,6 +17,7 @@
 package com.google.template.soy.jbcsrc;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
+import static com.google.common.collect.MoreCollectors.onlyElement;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.util.concurrent.Futures.immediateFailedFuture;
 import static com.google.template.soy.jbcsrc.TemplateTester.asParams;
@@ -25,6 +26,7 @@ import static com.google.template.soy.jbcsrc.TemplateTester.assertThatFile;
 import static com.google.template.soy.jbcsrc.TemplateTester.assertThatTemplateBody;
 import static com.google.template.soy.jbcsrc.TemplateTester.getDefaultContext;
 import static com.google.template.soy.jbcsrc.TemplateTester.getDefaultContextWithDebugInfo;
+import static java.util.Arrays.stream;
 import static org.junit.Assert.fail;
 
 import com.google.common.base.Joiner;
@@ -32,7 +34,6 @@ import com.google.common.collect.HashMultiset;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.template.soy.SoyFileSetParser;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
@@ -50,6 +51,7 @@ import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.SoyValueConverterUtility;
+import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.internal.ListImpl;
 import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.data.restricted.IntegerData;
@@ -63,6 +65,7 @@ import com.google.template.soy.jbcsrc.api.SoySauce;
 import com.google.template.soy.jbcsrc.api.SoySauceBuilder;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
+import com.google.template.soy.jbcsrc.shared.CompiledTemplates.DebuggingClassLoader;
 import com.google.template.soy.jbcsrc.shared.Names;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
 import com.google.template.soy.jbcsrc.shared.TemplateMetadata;
@@ -79,7 +82,7 @@ import com.google.template.soy.soytree.TemplateMetadataSerializer;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import java.io.IOException;
 import java.lang.reflect.Method;
-import java.util.Arrays;
+import java.lang.reflect.Modifier;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -406,10 +409,14 @@ public class BytecodeCompilerTest {
             "  {/msg}",
             "{/template}");
     Class<?> templateClass = templates.getTemplateData("ns.msg").templateClass();
-    Class<?> innerClass =
-        Iterables.getOnlyElement(Arrays.asList(templateClass.getDeclaredClasses()));
-    assertThat(innerClass.getSimpleName()).isEqualTo("ph_FOO");
-    assertThat(innerClass.getDeclaredFields()).hasLength(2);
+    Method phMethod =
+        stream(templateClass.getDeclaredMethods())
+            .filter(method -> method.getName().equals("msg$ph_FOO"))
+            .collect(onlyElement());
+    assertThat(phMethod.getParameterTypes())
+        .asList()
+        .containsExactly(
+            RenderContext.class, SoyValueProvider.class, LoggingAdvisingAppendable.class);
     templates =
         TemplateTester.compileFile(
             "{namespace ns}",
@@ -425,7 +432,11 @@ public class BytecodeCompilerTest {
     templateClass = templates.getTemplateData("ns.msg").templateClass();
     // The placeholder doesn't require an inner class  because `$name` is definitely already
     // resolved so it is evaluated inline
-    assertThat(templateClass.getDeclaredClasses()).isEmpty();
+    assertThat(
+            stream(templateClass.getDeclaredMethods())
+                .filter(method -> Modifier.isPrivate(method.getModifiers()))
+                .collect(toImmutableList()))
+        .isEmpty();
   }
 
   private static TemplateMetadata getTemplateMetadata(CompiledTemplates templates, String name) {
@@ -1372,7 +1383,7 @@ public class BytecodeCompilerTest {
             "com.google.template.soy.jbcsrc.gen.loader2");
   }
 
-  private static class DelegatingClassLoader extends ClassLoader {
+  private static class DelegatingClassLoader extends ClassLoader implements DebuggingClassLoader {
     private final CompilingClassLoader loader1;
     private final CompilingClassLoader loader2;
     private final HashMultiset<String> loadedClassesTracker;
@@ -1384,18 +1395,31 @@ public class BytecodeCompilerTest {
     }
 
     @Override
+    @Nullable
+    public String getDebugInfoForClass(String className) {
+      try {
+        return selectClassLoaderForClass(className).getDebugInfoForClass(className);
+      } catch (ClassNotFoundException e) {
+        throw new AssertionError(e);
+      }
+    }
+
+    @Override
     public Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
-      Class<?> clazz;
+      Class<?> clazz = selectClassLoaderForClass(name).loadClass(name, resolve);
+      loadedClassesTracker.add(name);
+      return clazz;
+    }
+
+    private CompilingClassLoader selectClassLoaderForClass(String name)
+        throws ClassNotFoundException {
       if (name.startsWith("com.google.template.soy.jbcsrc.gen.loader1")) {
-        clazz = loader1.loadClass(name, resolve);
+        return loader1;
       } else if (name.startsWith("com.google.template.soy.jbcsrc.gen.loader2")) {
-        clazz = loader2.loadClass(name, resolve);
+        return loader2;
       } else {
         throw new ClassNotFoundException("Unexpected class to be loaded: " + name);
       }
-
-      loadedClassesTracker.add(name);
-      return clazz;
     }
 
     HashMultiset<String> loadedClasses() {
