@@ -484,13 +484,9 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
     }
     if (isSoyAttr) {
       ExprNode val = new VarRefNode("$" + paramName, unknown, attrs.get(paramName));
-      if (condition.isPresent()) {
-        return new CallParamValueNode(
-            nodeIdGen.genId(),
-            attr.getSourceLocation(),
-            Identifier.create(paramName, attr.getChild(0).getSourceLocation()),
-            emptyToUndefined(val));
-      } else if (ElementAttributePass.getMergingKey(attr) == null) {
+      Preconditions.checkState(
+          !condition.isPresent(), "{if ...}@attr{/if} should not pass parser.");
+      if (ElementAttributePass.getMergingKey(attr) == null) {
         return new CallParamValueNode(
             nodeIdGen.genId(),
             attr.getSourceLocation(),
