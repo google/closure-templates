@@ -82,10 +82,30 @@ public final class BasicFunctionsRuntime {
 
   /** Concatenates its arguments. */
   @Nonnull
-  public static ImmutableList<SoyValueProvider> concatLists(List<SoyList> args) {
+  public static ImmutableList<SoyValueProvider> concatLists(SoyList list1, SoyList list2) {
     ImmutableList.Builder<SoyValueProvider> flattened = ImmutableList.builder();
-    for (SoyList soyList : args) {
-      flattened.addAll(soyList.asJavaList());
+    return flattened.addAll(list1.asJavaList()).addAll(list2.asJavaList()).build();
+  }
+
+  /** Concatenates its arguments. */
+  @Nonnull
+  public static ImmutableList<SoyValueProvider> concatLists(
+      SoyList list1, SoyList list2, SoyList list3) {
+    ImmutableList.Builder<SoyValueProvider> flattened = ImmutableList.builder();
+    return flattened
+        .addAll(list1.asJavaList())
+        .addAll(list2.asJavaList())
+        .addAll(list3.asJavaList())
+        .build();
+  }
+
+  /** Concatenates its arguments. */
+  @Nonnull
+  public static ImmutableList<SoyValueProvider> concatLists(SoyList list1, List<SoyList> lists) {
+    ImmutableList.Builder<SoyValueProvider> flattened = ImmutableList.builder();
+    flattened.addAll(list1.asJavaList());
+    for (var list : lists) {
+      flattened.addAll(list.asJavaList());
     }
     return flattened.build();
   }
