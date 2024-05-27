@@ -23,6 +23,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.errorprone.annotations.CheckReturnValue;
+import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SoyInjector;
 import com.google.template.soy.data.SoyTemplate;
@@ -223,6 +224,19 @@ public interface SoySauce {
     default WriteContinuation renderHtml(Appendable out) throws IOException {
       return renderHtml(asAdvisingAppendable(out));
     }
+
+    /**
+     * Renders the configured html template to the given appendable, returning a continuation. If
+     * captureLogs is true, logs are writtent to the {@link LoggingAdvisingAppendable}.
+     *
+     * <p>Verifies that the content type is {@link ContentKind.HTML} (corresponding to kind="html"
+     * in the template).
+     *
+     * <p>See {@link #renderHtml(AdvisingAppendable out)} for more details).
+     */
+    @CheckReturnValue
+    WriteContinuation renderHtml(LoggingAdvisingAppendable out, boolean captureLogs)
+        throws IOException;
 
     /**
      * Renders the configured html template to a {@link SanitizedContent}. Verifies that the content
