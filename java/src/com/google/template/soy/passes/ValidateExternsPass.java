@@ -179,12 +179,6 @@ class ValidateExternsPass implements CompilerFilePass {
     return moduleEquals && functionEquals;
   }
 
-  private static final ImmutableSet<String> IMPLICIT_PARAMS =
-      ImmutableSet.of(
-          "com.google.template.soy.data.Dir",
-          "com.google.template.soy.plugin.java.RenderCssHelper",
-          "com.ibm.icu.util.ULocale");
-
   private void validateJava(ExternNode extern, JavaImplNode java) {
     int requiredParamCount = extern.getType().getParameters().size();
 
@@ -211,7 +205,7 @@ class ValidateExternsPass implements CompilerFilePass {
     List<String> paramTypes = new ArrayList<>(java.params());
     boolean inTail = true;
     for (int i = paramTypes.size() - 1; i >= 0; i--) {
-      if (IMPLICIT_PARAMS.contains(paramTypes.get(i))) {
+      if (JavaImplNode.isParamImplicit(paramTypes.get(i))) {
         paramTypes.remove(i);
         if (!inTail) {
           errorReporter.report(

@@ -312,6 +312,34 @@ public final class ClassLoaderFallbackCallFactory {
   }
 
   /**
+   * Returns a method handle matching the given type and name, where `type` has a leading
+   * `RenderContext` parameter. If the actual method does not have a `RenderContext` parameter
+   * return that instead.
+   */
+  static MethodHandle findStaticWithOrWithoutLeadingRenderContext(
+      MethodHandles.Lookup lookup, Class<?> context, String name, MethodType type, boolean isConst)
+      throws NoSuchMethodException, IllegalAccessException {
+    checkState(type.parameterType(0).equals(RenderContext.class));
+    try {
+      MethodHandle withoutRenderContext =
+          lookup.findStatic(context, name, type.dropParameterTypes(0, 1));
+      if (isConst) {
+        Object result;
+        try {
+          result = withoutRenderContext.invoke();
+        } catch (Throwable t) {
+          throw new AssertionError("const methods should not throw", t);
+        }
+        withoutRenderContext =
+            MethodHandles.constant(withoutRenderContext.type().returnType(), result);
+      }
+      return MethodHandles.dropArguments(withoutRenderContext, 0, RenderContext.class);
+    } catch (NoSuchMethodException nsme) {
+      return lookup.findStatic(context, name, type);
+    }
+  }
+
+  /**
    * A JVM bootstrap method for resolving references to constants..
    *
    * @param lookup An object that allows us to resolve classes/methods in the context of the
@@ -330,14 +358,14 @@ public final class ClassLoaderFallbackCallFactory {
       MethodType type,
       String constClassName,
       String constName)
-      throws NoSuchMethodException, IllegalAccessException {
+      throws Throwable {
     if (!FORCE_SLOWPATH) {
       ClassLoader callerClassLoader = lookup.lookupClass().getClassLoader();
       try {
         Class<?> constClass = callerClassLoader.loadClass(constClassName);
         MethodHandle handle =
-            lookup.findStatic(
-                constClass, constName, methodType(type.returnType(), RenderContext.class));
+            findStaticWithOrWithoutLeadingRenderContext(
+                lookup, constClass, constName, type, /* isConst= */ true);
         return new ConstantCallSite(handle);
       } catch (ClassNotFoundException classNotFoundException) {
         // Fall back to using the RenderContext class loader.
@@ -380,8 +408,10 @@ public final class ClassLoaderFallbackCallFactory {
     if (!FORCE_SLOWPATH) {
       ClassLoader callerClassLoader = lookup.lookupClass().getClassLoader();
       try {
-        Class<?> constClass = callerClassLoader.loadClass(externClassName);
-        MethodHandle handle = lookup.findStatic(constClass, externName, type);
+        Class<?> externClass = callerClassLoader.loadClass(externClassName);
+        MethodHandle handle =
+            findStaticWithOrWithoutLeadingRenderContext(
+                lookup, externClass, externName, type, /* isConst= */ false);
         return new ConstantCallSite(handle);
       } catch (ClassNotFoundException classNotFoundException) {
         // Fall back to using the RenderContext class loader.
@@ -406,7 +436,8 @@ public final class ClassLoaderFallbackCallFactory {
   public static Object slowPathConst(
       SoyCallSite callSite, String constantFqn, RenderContext context) throws Throwable {
     CompiledTemplates templates = context.getTemplates();
-    MethodHandle constMethod = templates.getConstOrExternMethod(constantFqn);
+    MethodHandle constMethod = templates.getConstMethod(constantFqn);
+    // Update the callsite so future calls dispatch directly to constMethod
     callSite.update(templates, constMethod);
     return constMethod.invoke(context);
   }
@@ -420,8 +451,8 @@ public final class ClassLoaderFallbackCallFactory {
       SoyCallSite callSite, String externFqn, RenderContext context, Object[] args)
       throws Throwable {
     CompiledTemplates templates = context.getTemplates();
-    MethodHandle externMethod = templates.getConstOrExternMethod(externFqn);
-
+    MethodHandle externMethod = templates.getExternMethod(externFqn);
+    // Update the callsite so future calls dispatch directly to externMethod
     callSite.update(templates, externMethod);
 
     // use a slower dynamic call for the slowpath.  On subsequent calls the fastpath will be
@@ -438,7 +469,7 @@ public final class ClassLoaderFallbackCallFactory {
       clazz = callerClassLoader.loadClass(className);
     } catch (ClassNotFoundException classNotFoundException) {
       // expected, if this happens we need to resolve by falling back to one of our slowpaths
-      // which typically disptach the call through RenderContext
+      // which typically dispatch the call through RenderContext
       return Optional.empty();
     }
     // Test if we should send this class through the slowpath anyway

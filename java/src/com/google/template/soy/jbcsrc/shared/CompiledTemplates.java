@@ -101,7 +101,7 @@ public class CompiledTemplates {
     DelTemplateSelector.Builder<TemplateData> builder = new DelTemplateSelector.Builder<>();
     for (String delTemplateImplName : delTemplateNames) {
       TemplateData data = getTemplateData(delTemplateImplName);
-      if (!data.delTemplateName.isPresent()) {
+      if (data.delTemplateName.isEmpty()) {
         throw new IllegalArgumentException(
             "Expected " + delTemplateImplName + " to be a deltemplate");
       }
@@ -244,11 +244,23 @@ public class CompiledTemplates {
    * <p>The format is `clasName#methodName#descriptor` this allows for a simple value that can be
    * cached and then unambiguously looked up.
    */
-  MethodHandle getConstOrExternMethod(String fqn) {
-    return constOrExternNameToMethod.computeIfAbsent(fqn, this::findConstOrExternMethod);
+  MethodHandle getConstMethod(String fqn) {
+    return constOrExternNameToMethod.computeIfAbsent(
+        fqn, n -> findConstOrExternMethod(n, /* isConst= */ true));
   }
 
-  private MethodHandle findConstOrExternMethod(String fqn) {
+  /**
+   * Fetches and caches a method handle for the given fully qualified method reference.
+   *
+   * <p>The format is `clasName#methodName#descriptor` this allows for a simple value that can be
+   * cached and then unambiguously looked up.
+   */
+  MethodHandle getExternMethod(String fqn) {
+    return constOrExternNameToMethod.computeIfAbsent(
+        fqn, n -> findConstOrExternMethod(n, /* isConst= */ false));
+  }
+
+  private MethodHandle findConstOrExternMethod(String fqn, boolean isConst) {
     var parts = HASH_SPLITTER.split(fqn).iterator();
     var className = parts.next();
     var methodName = parts.next();
@@ -256,15 +268,14 @@ public class CompiledTemplates {
     checkArgument(!parts.hasNext(), "Expected FQN with exactly 2 hash characters: %s", fqn);
     try {
       var ownerClass = Class.forName(className, /* initialize= */ true, getClassLoader());
-      return MethodHandles.publicLookup()
-          .in(ownerClass)
-          .findStatic(
-              ownerClass,
-              methodName,
-              // parse the descriptor in the context of the callee
-              MethodType.fromMethodDescriptorString(descriptor, ownerClass.getClassLoader()));
+      // parse the descriptor in the context of the callee
+      var methodType =
+          MethodType.fromMethodDescriptorString(descriptor, ownerClass.getClassLoader());
+
+      return ClassLoaderFallbackCallFactory.findStaticWithOrWithoutLeadingRenderContext(
+          MethodHandles.publicLookup().in(ownerClass), ownerClass, methodName, methodType, isConst);
     } catch (ReflectiveOperationException e) {
-      throw new LinkageError("Could not invoke " + fqn, e);
+      throw new LinkageError("Could not link to " + fqn, e);
     }
   }
 
@@ -609,7 +620,7 @@ public class CompiledTemplates {
           // consider catching them here to add information about our generated types. (e.g. add
           // the
           // class trace and a pointer on how to file a soy bug)
-          throw new AssertionError(e);
+          throw new LinkageError(e.getMessage(), e);
         }
         template = local;
       }

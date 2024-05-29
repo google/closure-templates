@@ -25,12 +25,16 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
 /** Java implementation for an extern. */
 public final class JavaImplNode extends ExternImplNode {
+  private static final ImmutableSet<String> IMPLICIT_PARAMS =
+      ImmutableSet.of(
+          "com.google.template.soy.data.Dir",
+          "com.google.template.soy.plugin.java.RenderCssHelper",
+          "com.ibm.icu.util.ULocale");
   public static final String CLASS = "class";
   public static final String METHOD = "method";
   public static final String PARAMS = "params";
@@ -62,6 +66,7 @@ public final class JavaImplNode extends ExternImplNode {
   private CommandTagAttribute className;
   private CommandTagAttribute methodName;
   private CommandTagAttribute params;
+  private ImmutableList<String> parsedParams = ImmutableList.of();
   private CommandTagAttribute returnType;
   private CommandTagAttribute type;
 
@@ -102,6 +107,9 @@ public final class JavaImplNode extends ExternImplNode {
         this.methodName = attr;
       } else if (attr.hasName(PARAMS)) {
         this.params = attr;
+        if (!attr.getValue().isEmpty()) {
+          this.parsedParams = ImmutableList.copyOf(attr.getValue().split("\\s*,\\s*"));
+        }
       } else if (attr.hasName(RETURN)) {
         this.returnType = attr;
       } else if (attr.hasName(TYPE)) {
@@ -161,11 +169,19 @@ public final class JavaImplNode extends ExternImplNode {
   }
 
   public ImmutableList<String> params() {
-    String val = params.getValue();
-    if (val.isEmpty()) {
-      return ImmutableList.of();
-    }
-    return ImmutableList.copyOf(Arrays.asList(val.split("\\s*,\\s*")));
+    return parsedParams;
+  }
+
+  public static boolean isParamImplicit(String param) {
+    return IMPLICIT_PARAMS.contains(param);
+  }
+
+  private boolean hasImplicitParams() {
+    return params().stream().anyMatch(IMPLICIT_PARAMS::contains);
+  }
+
+  public boolean requiresRenderContext() {
+    return !isStatic() || hasImplicitParams();
   }
 
   public String returnType() {

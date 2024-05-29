@@ -121,6 +121,8 @@ import com.google.template.soy.shared.internal.BuiltinMethod;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyMethod;
 import com.google.template.soy.shared.restricted.SoySourceFunctionMethod;
+import com.google.template.soy.soytree.ConstNode;
+import com.google.template.soy.soytree.JavaImplNode;
 import com.google.template.soy.soytree.PartialFileSetMetadata;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
@@ -1318,7 +1320,8 @@ final class ExpressionCompiler {
               renderContext.gen(adapter);
               adapter.visitInvokeDynamicInsn(
                   "create",
-                  ConstantsCompiler.getConstantMethod(importedVar.name(), importedVar.type())
+                  ConstantsCompiler.getConstantMethodWithRenderContext(
+                          importedVar.name(), importedVar.type())
                       .getDescriptor(),
                   GET_CONST_HANDLE,
                   typeInfo.className(),
@@ -1334,14 +1337,27 @@ final class ExpressionCompiler {
       SoyFileNode fileNode = context.getNearestAncestor(SoyFileNode.class);
       TypeInfo typeInfo =
           TypeInfo.createClass(Names.javaClassNameFromSoyNamespace(fileNode.getNamespace()));
-      MethodRef methodRef =
-          MethodRef.createStaticMethod(
-              typeInfo,
-              ConstantsCompiler.getConstantMethod(constVar.name(), constVar.type()),
-              MethodPureness.NON_PURE);
-      return SoyExpression.forRuntimeType(
-          ConstantsCompiler.getConstantRuntimeType(constVar.type()),
-          methodRef.invoke(parameters.getRenderContext()));
+      ConstNode constNode = (ConstNode) constVar.declaringNode();
+      boolean requiresRenderContext = !canCompileToConstant(constNode, constNode.getExpr());
+      var type = ConstantsCompiler.getConstantRuntimeType(constVar.type());
+      if (requiresRenderContext) {
+        MethodRef methodRef =
+            MethodRef.createStaticMethod(
+                typeInfo,
+                ConstantsCompiler.getConstantMethodWithRenderContext(
+                    constVar.name(), constVar.type()),
+                MethodPureness.PURE);
+        return SoyExpression.forRuntimeType(type, methodRef.invoke(parameters.getRenderContext()));
+      } else {
+        MethodRef methodRef =
+            MethodRef.createStaticMethod(
+                typeInfo,
+                ConstantsCompiler.getConstantMethodWithoutRenderContext(
+                    constVar.name(), constVar.type()),
+                MethodPureness.PURE);
+        // Constant fold the value into the callsite, no need to wait on the jit to inline the value
+        return SoyExpression.forRuntimeType(type, methodRef.invoke().toConstantExpression());
+      }
     }
 
     @Override
@@ -1857,24 +1873,46 @@ final class ExpressionCompiler {
     private SoyExpression callExtern(ExternRef extern, List<ExprNode> params) {
       String namespace = fileSetMetadata.getNamespaceForPath(extern.path());
       TypeInfo externOwner = TypeInfo.createClass(Names.javaClassNameFromSoyNamespace(namespace));
-      Method asmMethod = ExternCompiler.buildMemberMethod(extern.name(), extern.signature());
-      MethodRef ref = MethodRef.createStaticMethod(externOwner, asmMethod, MethodPureness.NON_PURE);
       SoyRuntimeType soyReturnType =
           ExternCompiler.getRuntimeType(extern.signature().getReturnType());
       List<Expression> args = new ArrayList<>();
-      args.add(parameters.getRenderContext());
       for (int i = 0; i < params.size(); i++) {
         args.add(
             adaptExternArg(
                 visit(params.get(i)), extern.signature().getParameters().get(i).getType()));
       }
       // Dispatch directly for locally defined externs
-      if (namespace.equals(context.getNearestAncestor(SoyFileNode.class).getNamespace())) {
+      var soyFileNode = context.getNearestAncestor(SoyFileNode.class);
+      if (namespace.equals(soyFileNode.getNamespace())) {
+        var externNode =
+            soyFileNode.getExterns().stream()
+                .filter(
+                    e ->
+                        e.getIdentifier().identifier().equals(extern.name())
+                            && e.getType().equals(extern.signature()))
+                .findFirst()
+                .get();
+        boolean javaImplRequiresRenderContext =
+            externNode.getJavaImpl().map(JavaImplNode::requiresRenderContext).orElse(false);
+        if (javaImplRequiresRenderContext) {
+          args.add(0, parameters.getRenderContext());
+        }
+        Method asmMethod =
+            ExternCompiler.buildMemberMethod(
+                extern.name(), extern.signature(), javaImplRequiresRenderContext);
+        MethodRef ref =
+            MethodRef.createStaticMethod(externOwner, asmMethod, MethodPureness.NON_PURE);
         return SoyExpression.forRuntimeType(soyReturnType, ref.invoke(args));
       }
 
-      // For externs defined in other files use invoke dynamic so that we can support the
+      // For externs defined in other files use invokeDynamic so that we can support the
       // classloader fallback.
+      // To support those, we always need to pass the render context even when not otherwise
+      // required, so that we can dynamically resolve the target.
+      Method asmMethod =
+          ExternCompiler.buildMemberMethod(
+              extern.name(), extern.signature(), /* requiresRenderContext= */ true);
+      args.add(0, parameters.getRenderContext());
       Expression externCall =
           new Expression(soyReturnType.runtimeType()) {
             @Override
