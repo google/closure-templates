@@ -475,7 +475,7 @@ public final class JsType {
           return builder()
               .addType(
                   String.format(
-                      "!soy.map.Map<%s,%s>", keyTypeName.typeExpr(), valueTypeName.typeExpr()))
+                      "!ReadonlyMap<%s,%s>", keyTypeName.typeExpr(), valueTypeName.typeExpr()))
               .addRequires(keyTypeName.getGoogRequires())
               .addRequires(valueTypeName.getGoogRequires())
               .addRequire(GoogRequire.create("soy.map"))

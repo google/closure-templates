@@ -26,10 +26,9 @@
 goog.module('soy.newmaps');
 
 const googArray = goog.require('goog.array');
-const {Map: SoyMap} = goog.requireType('soy.map');
 
 /**
- * Converts a legacy object map with string keys into an equivalent SoyMap.
+ * Converts a legacy object map with string keys into an equivalent Map.
  * @param {!Object<V>} obj
  * @return {!Map<string, V>}
  * @template V
@@ -47,7 +46,7 @@ function $$legacyObjectMapToMap(obj) {
 /**
  * Calls a function for each value in a map and inserts the result (with the
  * same key) into a new map.
- * @param {!SoyMap<K, VIn>} map The map over which to iterate.
+ * @param {!ReadonlyMap<K, VIn>} map The map over which to iterate.
  * @param {function((VIn|null|undefined)):VOut|function(VIn):VOut} f The
  *     function to call for every value.
  * @return {!Map<K, VOut>} a new map with the results from f
@@ -65,7 +64,7 @@ function $$transformValues(map, f) {
 /**
  * Null-safe version of $$transformValues.
  *
- * @param {?SoyMap<K, VIn>|null|undefined} map
+ * @param {?ReadonlyMap<K, VIn>|null|undefined} map
  * @param {function((VIn|null|undefined)):VOut|function(VIn):VOut} f
  * @return {?Map<K, VOut>|null|undefined}
  * @template K, VIn, VOut
