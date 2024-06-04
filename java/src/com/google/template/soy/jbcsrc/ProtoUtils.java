@@ -1105,7 +1105,7 @@ final class ProtoUtils {
           SoyExpression.forSoyValue(
               keyType,
               mapEntry
-                  .invoke(MethodRefs.MAP_GET_KEY)
+                  .invoke(MethodRefs.MAP_ENTRY_GET_KEY)
                   .checkedCast(keyRuntimeType.runtimeType())
                   // In ResolveExpressionTypesPass we already enforce that key is not nullable.  By
                   // asserting that it isn't we just get an NPE when we are wrong, which is what we
@@ -1119,7 +1119,9 @@ final class ProtoUtils {
           // (SomeType) ((SoyValueProvider) mapEntry.getValue()).resolve()
           SoyExpression.resolveSoyValueProvider(
                   valueType,
-                  mapEntry.invoke(MethodRefs.MAP_GET_VALUE).checkedCast(SOY_VALUE_PROVIDER_TYPE))
+                  mapEntry
+                      .invoke(MethodRefs.MAP_ENTRY_GET_VALUE)
+                      .checkedCast(SOY_VALUE_PROVIDER_TYPE))
               // ResolveExpressionTypesPass already enforces that the value is not nullable. If the
               // value is
               // null, it reports a type mismatch error.

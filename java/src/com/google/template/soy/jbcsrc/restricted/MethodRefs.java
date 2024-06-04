@@ -233,9 +233,9 @@ public final class MethodRefs {
 
   public static final MethodRef ITERATOR_HAS_NEXT = createPure(Iterator.class, "hasNext");
 
-  public static final MethodRef MAP_GET_KEY = createPure(Map.Entry.class, "getKey");
+  public static final MethodRef MAP_ENTRY_GET_KEY = createPure(Map.Entry.class, "getKey");
 
-  public static final MethodRef MAP_GET_VALUE = createPure(Map.Entry.class, "getValue");
+  public static final MethodRef MAP_ENTRY_GET_VALUE = createPure(Map.Entry.class, "getValue");
 
   public static final MethodRef LIST_IMPL_FOR_PROVIDER_LIST =
       createPure(ListImpl.class, "forProviderList", List.class);

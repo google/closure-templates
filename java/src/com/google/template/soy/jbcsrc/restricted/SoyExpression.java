@@ -191,7 +191,7 @@ public final class SoyExpression extends Expression {
             BytecodeUtils.SOY_VALUE_PROVIDER_TYPE, delegate.resultType()));
     if (delegate.isNonJavaNullable()
         || !isDefinitelyAssignableFrom(BytecodeUtils.SOY_VALUE_TYPE, delegate.resultType())) {
-      delegate = delegate.invoke(MethodRefs.SOY_VALUE_PROVIDER_RESOLVE).checkedSoyCast(type);
+      delegate = delegate.invoke(MethodRefs.SOY_VALUE_PROVIDER_RESOLVE);
     }
     return forSoyValue(type, delegate);
   }
@@ -638,7 +638,8 @@ public final class SoyExpression extends Expression {
     }
     assertBoxed(boolean.class);
 
-    return forBool(delegate.invoke(MethodRefs.SOY_VALUE_BOOLEAN_VALUE).toMaybeConstant());
+    return forBool(
+        delegateWithoutCast().invoke(MethodRefs.SOY_VALUE_BOOLEAN_VALUE).toMaybeConstant());
   }
 
   /**
@@ -655,7 +656,7 @@ public final class SoyExpression extends Expression {
     }
     assertBoxed(long.class);
 
-    return forInt(delegate.invoke(MethodRefs.SOY_VALUE_LONG_VALUE));
+    return forInt(delegateWithoutCast().invoke(MethodRefs.SOY_VALUE_LONG_VALUE));
   }
 
   /**
@@ -670,7 +671,8 @@ public final class SoyExpression extends Expression {
     if (alreadyUnboxed(long.class)) {
       return checkedCastLongToInt(this);
     }
-    return box().invoke(MethodRefs.SOY_VALUE_INTEGER_VALUE);
+    assertBoxed(long.class);
+    return delegateWithoutCast().invoke(MethodRefs.SOY_VALUE_INTEGER_VALUE);
   }
 
   public Expression coerceToInt() {
@@ -710,7 +712,7 @@ public final class SoyExpression extends Expression {
     }
     assertBoxed(double.class);
 
-    return forFloat(delegate.invoke(MethodRefs.SOY_VALUE_FLOAT_VALUE));
+    return forFloat(delegateWithoutCast().invoke(MethodRefs.SOY_VALUE_FLOAT_VALUE));
   }
 
   private Features featuresAfterUnboxing() {
@@ -719,6 +721,14 @@ public final class SoyExpression extends Expression {
       features = features.minus(Feature.NON_JAVA_NULLABLE);
     }
     return features;
+  }
+
+  /** Removes a soy cast, useful if/when we are generating a checked unboxing operation. */
+  private Expression delegateWithoutCast() {
+    if (delegate instanceof Expression.SoyCastExpression) {
+      return ((Expression.SoyCastExpression) delegate).getOriginal();
+    }
+    return delegate;
   }
 
   /** Unboxes a string. Throws an exception if the boxed value is nullish. */
@@ -737,6 +747,7 @@ public final class SoyExpression extends Expression {
     }
     assertBoxed(String.class);
 
+    var delegate = delegateWithoutCast();
     return forString(
         delegate.invoke(
             delegate.isNonSoyNullish()
@@ -749,10 +760,10 @@ public final class SoyExpression extends Expression {
       return this;
     }
     if (alreadyUnboxed(Iterable.class)) {
-      return MethodRefs.GET_ITERATOR.invoke(delegate);
+      return delegateWithoutCast().invoke(MethodRefs.GET_ITERATOR);
     }
     assertBoxed(SoyValue.class);
-    return MethodRefs.SOY_VALUE_AS_JAVA_ITERATOR.invoke(delegate);
+    return delegateWithoutCast().invoke(MethodRefs.SOY_VALUE_AS_JAVA_ITERATOR);
   }
 
   /** Unboxes a list and its items. Throws an exception if the boxed list value is nullish. */
@@ -770,7 +781,7 @@ public final class SoyExpression extends Expression {
       return this;
     }
     assertBoxed(List.class);
-
+    var delegate = delegateWithoutCast();
     Expression unboxedList =
         delegate.invoke(
             delegate.isNonSoyNullish()
@@ -821,6 +832,7 @@ public final class SoyExpression extends Expression {
         return this.delegate.checkedCast(runtimeType);
       }
     }
+    var delegate = delegateWithoutCast();
     return delegate
         .invoke(
             delegate.isNonSoyNullish()
@@ -943,12 +955,12 @@ public final class SoyExpression extends Expression {
 
   @Override
   public SoyExpression asNonJavaNullable() {
-    return new SoyExpression(soyRuntimeType, delegate.asNonJavaNullable());
+    return withSource(delegate.asNonJavaNullable());
   }
 
   @Override
   public SoyExpression asJavaNullable() {
-    return new SoyExpression(soyRuntimeType, delegate.asJavaNullable());
+    return withSource(delegate.asJavaNullable());
   }
 
   @Override
