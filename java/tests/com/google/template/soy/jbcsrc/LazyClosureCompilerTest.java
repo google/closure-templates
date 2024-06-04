@@ -35,10 +35,10 @@ import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.jbcsrc.TemplateTester.CompiledTemplateSubject;
-import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
+import com.google.template.soy.jbcsrc.shared.StackFrame;
 import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
 import com.google.template.soy.plugin.java.restricted.JavaValue;
 import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
@@ -51,6 +51,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.List;
+import javax.annotation.Nullable;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -83,7 +84,13 @@ public class LazyClosureCompilerTest {
 
   @FunctionalInterface
   interface TemplateRenderer {
-    RenderResult render() throws IOException;
+    @Nullable
+    default StackFrame render() throws IOException {
+      return render(null);
+    }
+
+    @Nullable
+    StackFrame render(@Nullable StackFrame frame) throws IOException;
   }
 
   @Test
@@ -100,20 +107,18 @@ public class LazyClosureCompilerTest {
     RenderContext context = getDefaultContext(templates);
     BufferingAppendable output = LoggingAdvisingAppendable.buffering();
     TemplateRenderer renderer =
-        () -> template.render(asParams(ImmutableMap.of("bar", bar)), output, context);
-    RenderResult result = renderer.render();
-    assertThat(result.type()).isEqualTo(RenderResult.Type.DETACH);
-    assertThat(result.future()).isSameInstanceAs(bar); // we found bar!
+        frame -> template.render(frame, asParams(ImmutableMap.of("bar", bar)), output, context);
+    StackFrame result = renderer.render();
+    assertThat(result.asRenderResult().future()).isSameInstanceAs(bar); // we found bar!
     assertThat(output.toString()).isEqualTo("hello ");
 
     // make sure no progress is made
-    result = renderer.render();
-    assertThat(result.type()).isEqualTo(RenderResult.Type.DETACH);
-    assertThat(result.future()).isSameInstanceAs(bar);
+    result = renderer.render(result);
+    assertThat(result.asRenderResult().future()).isSameInstanceAs(bar); // we found bar!
     assertThat(output.toString()).isEqualTo("hello ");
     bar.set("bar");
 
-    assertThat(renderer.render()).isEqualTo(RenderResult.done());
+    assertThat(renderer.render(result)).isNull();
     assertThat(output.toString()).isEqualTo("hello bar");
   }
 
@@ -203,20 +208,20 @@ public class LazyClosureCompilerTest {
     RenderContext context = getDefaultContext(templates);
     BufferingAppendable output = LoggingAdvisingAppendable.buffering();
     TemplateRenderer renderer =
-        () -> template.render(asParams(ImmutableMap.of("bar", bar)), output, context);
-    RenderResult result = renderer.render();
-    assertThat(result.type()).isEqualTo(RenderResult.Type.DETACH);
-    assertThat(result.future()).isSameInstanceAs(bar); // we found bar!
+        frame -> template.render(frame, asParams(ImmutableMap.of("bar", bar)), output, context);
+    StackFrame result = renderer.render();
+    assertThat(result).isNotNull();
+    assertThat(result.asRenderResult().future()).isSameInstanceAs(bar); // we found bar!
     assertThat(output.toString()).isEqualTo("before use");
 
     // make sure no progress is made
-    result = renderer.render();
-    assertThat(result.type()).isEqualTo(RenderResult.Type.DETACH);
-    assertThat(result.future()).isSameInstanceAs(bar);
+    result = renderer.render(result);
+    assertThat(result).isNotNull();
+    assertThat(result.asRenderResult().future()).isSameInstanceAs(bar);
     assertThat(output.toString()).isEqualTo("before use");
     bar.set(" bar");
 
-    assertThat(renderer.render()).isEqualTo(RenderResult.done());
+    assertThat(renderer.render(result)).isNull();
     assertThat(output.toString()).isEqualTo("before use bar bar");
   }
 

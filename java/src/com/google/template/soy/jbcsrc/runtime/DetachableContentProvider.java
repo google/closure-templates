@@ -30,6 +30,7 @@ import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
 import com.google.template.soy.jbcsrc.api.RenderResult;
+import com.google.template.soy.jbcsrc.shared.StackFrame;
 import java.io.IOException;
 import java.util.function.Function;
 import javax.annotation.Nullable;
@@ -48,6 +49,7 @@ public abstract class DetachableContentProvider implements SoyValueProvider {
   // depending on whether we are being resolved via 'status()' or via 'renderAndResolve()'
   // upon completion this will always be a BufferingAppendable
   private LoggingAdvisingAppendable builder;
+  private StackFrame frame;
 
   @Override
   public final SoyValue resolve() {
@@ -75,17 +77,14 @@ public abstract class DetachableContentProvider implements SoyValueProvider {
     if (currentBuilder == null) {
       builder = currentBuilder = LoggingAdvisingAppendable.buffering();
     }
-    RenderResult result;
-    try {
-      result = doRender(currentBuilder);
-    } catch (IOException ioe) {
-      throw new AssertionError("impossible", ioe);
-    }
-    if (result.isDone()) {
+    StackFrame local = frame = doRender(frame, currentBuilder);
+
+    if (local == null) {
       // following a .status() call the most likely thing is resolve, just do it now
       resolvedValue = currentBuilder.getAsSoyValue();
+      return RenderResult.done();
     }
-    return result;
+    return local.asRenderResult();
   }
 
   @Override
@@ -99,12 +98,13 @@ public abstract class DetachableContentProvider implements SoyValueProvider {
     if (currentBuilder == null) {
       builder = currentBuilder = new TeeAdvisingAppendable(appendable);
     }
-    RenderResult result = doRender(currentBuilder);
-    if (result.isDone()) {
+    StackFrame local = frame = doRender(frame, currentBuilder);
+    if (local == null) {
       resolvedValue = TombstoneValue.INSTANCE;
       builder = currentBuilder.buffer;
+      return RenderResult.done();
     }
-    return result;
+    return local.asRenderResult();
   }
 
   private boolean isDone() {
@@ -112,7 +112,9 @@ public abstract class DetachableContentProvider implements SoyValueProvider {
   }
 
   /** Overridden by generated subclasses to implement lazy detachable resolution. */
-  protected abstract RenderResult doRender(LoggingAdvisingAppendable appendable) throws IOException;
+  @Nullable
+  protected abstract StackFrame doRender(
+      @Nullable StackFrame frame, LoggingAdvisingAppendable appendable);
 
   /**
    * An {@link AdvisingAppendable} that forwards to a delegate appendable but also saves all the

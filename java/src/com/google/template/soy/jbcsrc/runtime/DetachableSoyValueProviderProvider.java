@@ -28,7 +28,7 @@ import java.io.IOException;
  * implementations.
  *
  * <p>This class resolves to a {@link SoyValueProvider} and calls {@link
- * SoyValueProvider#renderAndResolve}. If you don't neeed to box as a value provider, use {@link
+ * SoyValueProvider#renderAndResolve}. If you don't need to box as a value provider, use {@link
  * DetachableSoyValueProvider} instead, which resolves to a {@link SoyValue} and calls {@link
  * SoyValue#render}.
  */

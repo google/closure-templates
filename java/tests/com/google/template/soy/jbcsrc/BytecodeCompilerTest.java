@@ -60,7 +60,6 @@ import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.jbcsrc.TemplateTester.CompiledTemplateSubject;
-import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.api.SoySauce;
 import com.google.template.soy.jbcsrc.api.SoySauceBuilder;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
@@ -68,6 +67,7 @@ import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplates.DebuggingClassLoader;
 import com.google.template.soy.jbcsrc.shared.Names;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
+import com.google.template.soy.jbcsrc.shared.StackFrame;
 import com.google.template.soy.jbcsrc.shared.TemplateMetadata;
 import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
 import com.google.template.soy.plugin.java.restricted.JavaValue;
@@ -269,8 +269,7 @@ public class BytecodeCompilerTest {
   private static String renderWithContext(CompiledTemplate template, RenderContext context)
       throws IOException {
     BufferingAppendable builder = LoggingAdvisingAppendable.buffering();
-    assertThat(template.render(ParamStore.EMPTY_INSTANCE, builder, context))
-        .isEqualTo(RenderResult.done());
+    assertThat(template.render(null, ParamStore.EMPTY_INSTANCE, builder, context)).isNull();
     return builder.toString();
   }
 
@@ -415,8 +414,7 @@ public class BytecodeCompilerTest {
             .collect(onlyElement());
     assertThat(phMethod.getParameterTypes())
         .asList()
-        .containsExactly(
-            RenderContext.class, SoyValueProvider.class, LoggingAdvisingAppendable.class);
+        .containsExactly(SoyValueProvider.class, StackFrame.class, LoggingAdvisingAppendable.class);
     templates =
         TemplateTester.compileFile(
             "{namespace ns}",
@@ -447,8 +445,7 @@ public class BytecodeCompilerTest {
       throws IOException {
     CompiledTemplate caller = templates.getTemplate(name);
     BufferingAppendable builder = LoggingAdvisingAppendable.buffering();
-    assertThat(caller.render(params, builder, getDefaultContext(templates)))
-        .isEqualTo(RenderResult.done());
+    assertThat(caller.render(null, params, builder, getDefaultContext(templates))).isNull();
     return builder.toString();
   }
 
@@ -823,11 +820,10 @@ public class BytecodeCompilerTest {
     BufferingAppendable builder = LoggingAdvisingAppendable.buffering();
 
     ParamStore params = SoyValueConverterUtility.newParams("foo", IntegerData.forValue(1));
-    assertThat(singleParam.render(params, builder, context)).isEqualTo(RenderResult.done());
+    assertThat(singleParam.render(null, params, builder, context)).isNull();
     assertThat(builder.getAndClearBuffer()).isEqualTo("1");
 
-    assertThat(singleParam.render(ParamStore.EMPTY_INSTANCE, builder, context))
-        .isEqualTo(RenderResult.done());
+    assertThat(singleParam.render(null, ParamStore.EMPTY_INSTANCE, builder, context)).isNull();
     assertThat(builder.getAndClearBuffer()).isEqualTo("-1");
 
     templates = TemplateTester.compileTemplateBody("{@inject foo : int}", "{$foo}");
@@ -837,14 +833,14 @@ public class BytecodeCompilerTest {
     params = SoyValueConverterUtility.newParams("foo", IntegerData.forValue(1));
     assertThat(
             singleIj.render(
+                null,
                 ParamStore.EMPTY_INSTANCE,
                 builder,
                 context.toBuilder().withIj(SoyInjector.fromParamStore(params)).build()))
-        .isEqualTo(RenderResult.done());
+        .isNull();
     assertThat(builder.getAndClearBuffer()).isEqualTo("1");
 
-    assertThat(singleIj.render(ParamStore.EMPTY_INSTANCE, builder, context))
-        .isEqualTo(RenderResult.done());
+    assertThat(singleIj.render(null, ParamStore.EMPTY_INSTANCE, builder, context)).isNull();
     assertThat(builder.getAndClearBuffer()).isEqualTo("undefined");
   }
 

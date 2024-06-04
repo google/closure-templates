@@ -477,8 +477,6 @@ public final class JbcSrcRuntime {
           try {
             RenderResult result = placeholderValue.renderAndResolve(out);
             if (!result.isDone()) {
-              // store partIndex as i + 1 so that after the placeholder is done we proceed to the
-              // next part
               partIndex = i + 1;
               pendingRender = placeholderValue;
               return result;
@@ -745,7 +743,7 @@ public final class JbcSrcRuntime {
       static {
         MethodHandles.Lookup lookup = MethodHandles.lookup();
         MethodType saveMethodType =
-            methodType(void.class, RenderContext.class, int.class, BufferingAppendable.class);
+            methodType(StackFrame.class, StackFrame.class, int.class, BufferingAppendable.class);
         SAVE_STATE_METHOD_HANDLE =
             SaveStateMetaFactory.bootstrapSaveState(lookup, "saveState", saveMethodType)
                 .getTarget();
@@ -756,7 +754,8 @@ public final class JbcSrcRuntime {
                     methodType(BufferingAppendable.class, StackFrame.class),
                     saveMethodType,
                     0)
-                .getTarget();
+                .getTarget()
+                .asType(methodType(BufferingAppendable.class, StackFrame.class));
       }
     }
 
@@ -769,13 +768,24 @@ public final class JbcSrcRuntime {
       this.bufferedRenderDoneFn = bufferedRenderDoneFn;
     }
 
+    @Nullable
     @Override
-    public RenderResult render(
-        ParamStore params, LoggingAdvisingAppendable appendable, RenderContext context)
+    public StackFrame render(
+        StackFrame frame,
+        ParamStore params,
+        LoggingAdvisingAppendable appendable,
+        RenderContext context)
         throws IOException {
-      StackFrame frame = context.popFrame();
       BufferingAppendable buffer;
-      switch (frame.stateNumber) {
+      int state;
+      StackFrame originalFrame = frame;
+      if (frame == null) {
+        state = 0;
+      } else {
+        state = frame.stateNumber;
+        frame = frame.child;
+      }
+      switch (state) {
         case 0:
           buffer = LoggingAdvisingAppendable.buffering();
           break;
@@ -784,7 +794,7 @@ public final class JbcSrcRuntime {
             buffer =
                 (BufferingAppendable)
                     BufferedCompiledTemplate.SaveRestoreState.RESTORE_APPENDABLE_HANDLE.invokeExact(
-                        frame);
+                        originalFrame);
           } catch (Throwable t) {
             throw new AssertionError(t);
           }
@@ -792,26 +802,27 @@ public final class JbcSrcRuntime {
         default:
           throw unexpectedStateError(frame);
       }
-      RenderResult result;
       try {
-        result = delegate.render(params, buffer, context);
+        frame = delegate.render(frame, params, buffer, context);
       } catch (RuntimeException e) {
         if (ignoreExceptions) {
-          return RenderResult.done();
+          return null;
         }
         throw e;
       }
-      if (result.isDone()) {
+      if (frame == null) {
         bufferedRenderDoneFn.exec(appendable, buffer);
       } else {
         try {
-          BufferedCompiledTemplate.SaveRestoreState.SAVE_STATE_METHOD_HANDLE.invokeExact(
-              context, 1, buffer);
+          frame =
+              (StackFrame)
+                  BufferedCompiledTemplate.SaveRestoreState.SAVE_STATE_METHOD_HANDLE.invokeExact(
+                      frame, 1, buffer);
         } catch (Throwable t) {
           throw new AssertionError(t);
         }
       }
-      return result;
+      return frame;
     }
   }
 
@@ -899,10 +910,13 @@ public final class JbcSrcRuntime {
     }
 
     @Override
-    public RenderResult render(
-        ParamStore params, LoggingAdvisingAppendable appendable, RenderContext context)
+    public StackFrame render(
+        StackFrame frame,
+        ParamStore params,
+        LoggingAdvisingAppendable appendable,
+        RenderContext context)
         throws IOException {
-      return delegate.render(ParamStore.merge(boundParams, params), appendable, context);
+      return delegate.render(frame, ParamStore.merge(boundParams, params), appendable, context);
     }
   }
 
@@ -1027,8 +1041,8 @@ public final class JbcSrcRuntime {
   public static final class EveryDetachStateForTesting {
     private static final Set<Object> visited = Sets.newConcurrentHashSet();
 
-    private static final RenderResult TRIVIAL_PENDING =
-        RenderResult.continueAfter(Futures.immediateVoidFuture());
+    private static final StackFrame TRIVIAL_PENDING =
+        StackFrame.create(RenderResult.continueAfter(Futures.immediateVoidFuture()));
 
     public static void clear() {
       visited.clear();
@@ -1038,9 +1052,22 @@ public final class JbcSrcRuntime {
       return actual || EveryDetachStateForTesting.visited.add(callsite);
     }
 
+    @Nullable
+    public static StackFrame maybeForceContinueAfter(Object callsite) {
+      return maybeForceContinueAfter((StackFrame) null, callsite);
+    }
+
+    @Nullable
+    public static StackFrame maybeForceContinueAfter(@Nullable StackFrame actual, Object callsite) {
+      if (actual == null && EveryDetachStateForTesting.visited.add(callsite)) {
+        actual = EveryDetachStateForTesting.TRIVIAL_PENDING;
+      }
+      return actual;
+    }
+
     public static RenderResult maybeForceContinueAfter(RenderResult actual, Object callsite) {
       if (actual.isDone() && EveryDetachStateForTesting.visited.add(callsite)) {
-        actual = EveryDetachStateForTesting.TRIVIAL_PENDING;
+        actual = EveryDetachStateForTesting.TRIVIAL_PENDING.asRenderResult();
       }
       return actual;
     }

@@ -101,6 +101,7 @@ public final class MethodRefs {
       createNonPure(
           CompiledTemplate.class,
           "render",
+          StackFrame.class,
           ParamStore.class,
           LoggingAdvisingAppendable.class,
           RenderContext.class);
@@ -705,6 +706,12 @@ public final class MethodRefs {
 
   public static final MethodRef ESCAPING_BUFFERED_RENDER_DONE_FN =
       createPureConstructor(JbcSrcRuntime.EscapingBufferedRenderDoneFn.class, ImmutableList.class);
+
+  public static final MethodRef STACK_FRAME_CREATE_LEAF =
+      createPure(StackFrame.class, "create", RenderResult.class, int.class);
+
+  public static final MethodRef STACK_FRAME_CREATE_NON_LEAF =
+      createPure(StackFrame.class, "create", StackFrame.class, int.class);
 
   private MethodRefs() {}
 }

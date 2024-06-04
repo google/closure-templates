@@ -21,11 +21,15 @@ import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.exprtree.AbstractLocalVarDefn;
 import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
+import com.google.template.soy.jbcsrc.restricted.LocalVariable;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.soytree.defn.TemplateParam;
 
 /** A mechanism to lookup expressions for accessing template parameters. */
 interface TemplateParameterLookup {
+  /** Returns the current stack frame. */
+  LocalVariable getStackFrame();
+
   /**
    * Returns an expression for a given {@code @param} or {@code @inject} parameter.
    *

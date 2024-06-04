@@ -16,7 +16,6 @@
 
 package com.google.template.soy.jbcsrc.api;
 
-import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.template.soy.jbcsrc.shared.Names.rewriteStackTrace;
@@ -40,6 +39,7 @@ import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
+import com.google.template.soy.jbcsrc.shared.StackFrame;
 import com.google.template.soy.logging.SoyLogger;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.plugin.java.PluginInstances;
@@ -354,7 +354,7 @@ public final class SoySauceImpl implements SoySauce {
       ParamStore params = data == null ? ParamStore.EMPTY_INSTANCE : data;
       RenderContext context = makeContext();
       OutputAppendable output = OutputAppendable.create(sb, context.getLogger());
-      return doRenderToValue(contentKind, sb, template, params, output, context);
+      return doRenderToValue(contentKind, sb, template, null, params, output, context);
     }
 
     private WriteContinuation startRender(AdvisingAppendable out, ContentKind contentKind)
@@ -364,7 +364,7 @@ public final class SoySauceImpl implements SoySauce {
       ParamStore params = data == null ? ParamStore.EMPTY_INSTANCE : data;
       RenderContext context = makeContext();
       OutputAppendable output = OutputAppendable.create(out, context.getLogger());
-      return doRender(template, params, output, context);
+      return doRender(template, null, params, output, context);
     }
 
     private void enforceContentKind(ContentKind expectedContentKind) {
@@ -386,20 +386,23 @@ public final class SoySauceImpl implements SoySauce {
   }
 
   private static WriteContinuation doRender(
-      CompiledTemplate template, ParamStore params, OutputAppendable output, RenderContext context)
+      CompiledTemplate template,
+      @Nullable StackFrame frame,
+      ParamStore params,
+      OutputAppendable output,
+      RenderContext context)
       throws IOException {
-    RenderResult result;
     try {
-      result = template.render(params, output, context);
+      frame = template.render(frame, params, output, context);
     } catch (Throwable t) {
       rewriteStackTrace(t);
       Throwables.throwIfInstanceOf(t, IOException.class);
       throw t;
     }
-    if (result.isDone()) {
+    if (frame == null) {
       return Continuations.done();
     }
-    return new WriteContinuationImpl(result, template, params, output, context);
+    return new WriteContinuationImpl(template, frame, params, output, context);
   }
 
   abstract static class ContinuationImpl {
@@ -415,29 +418,28 @@ public final class SoySauceImpl implements SoySauce {
       }
     }
 
-    final RenderResult result;
-
     // ThreadSafety guaranteed by the guarded write on hasContinueBeenCalled
     final CompiledTemplate template;
+    final StackFrame frame;
     final ParamStore params;
     final OutputAppendable output;
     final RenderContext context;
 
     boolean hasContinueBeenCalled;
 
+    // implements the result() method on the Continuation and WriteContinuation interfaces
     public RenderResult result() {
-      return result;
+      return frame.asRenderResult();
     }
 
     ContinuationImpl(
-        RenderResult result,
         CompiledTemplate template,
+        StackFrame frame,
         ParamStore params,
         OutputAppendable output,
         RenderContext context) {
-      checkArgument(!result.isDone());
-      this.result = checkNotNull(result);
       this.template = checkNotNull(template);
+      this.frame = checkNotNull(frame);
       this.params = checkNotNull(params);
       this.output = checkNotNull(output);
       this.context = checkNotNull(context);
@@ -454,18 +456,18 @@ public final class SoySauceImpl implements SoySauce {
       implements WriteContinuation {
 
     WriteContinuationImpl(
-        RenderResult result,
         CompiledTemplate template,
+        StackFrame frame,
         ParamStore params,
         OutputAppendable output,
         RenderContext context) {
-      super(result, template, params, output, context);
+      super(template, frame, params, output, context);
     }
 
     @Override
     public WriteContinuation continueRender() throws IOException {
       doContinue();
-      return doRender(template, params, output, context);
+      return doRender(template, frame, params, output, context);
     }
   }
 
@@ -474,19 +476,20 @@ public final class SoySauceImpl implements SoySauce {
           ContentKind targetKind,
           StringBuilder underlying,
           CompiledTemplate template,
+          @Nullable StackFrame frame,
           ParamStore params,
           OutputAppendable output,
           RenderContext context) {
-    RenderResult result;
+
     try {
-      result = template.render(params, output, context);
+      frame = template.render(frame, params, output, context);
     } catch (IOException t) {
       throw new AssertionError("impossible", t);
     } catch (Throwable t) {
       rewriteStackTrace(t);
       throw t;
     }
-    if (result.isDone()) {
+    if (frame == null) {
       String content = underlying.toString();
       if (targetKind == ContentKind.TEXT) {
         // these casts are lame, the way to resolve is simply to fork this method
@@ -502,7 +505,7 @@ public final class SoySauceImpl implements SoySauce {
       return c;
     }
     return new ValueContinuationImpl<T>(
-        targetKind, underlying, result, template, params, output, context);
+        targetKind, underlying, template, frame, params, output, context);
   }
 
   private static final class ValueContinuationImpl<
@@ -516,25 +519,25 @@ public final class SoySauceImpl implements SoySauce {
     ValueContinuationImpl(
         ContentKind targetKind,
         StringBuilder underlying,
-        RenderResult result,
         CompiledTemplate template,
+        StackFrame frame,
         ParamStore params,
         OutputAppendable output,
         RenderContext context) {
-      super(result, template, params, output, context);
+      super(template, frame, params, output, context);
       this.targetKind = checkNotNull(targetKind);
       this.underlying = checkNotNull(underlying);
     }
 
     @Override
     public T get() {
-      throw new IllegalStateException("Rendering is not complete: " + result);
+      throw new IllegalStateException("Rendering is not complete: " + result());
     }
 
     @Override
     public Continuation<T> continueRender() {
       doContinue();
-      return doRenderToValue(targetKind, underlying, template, params, output, context);
+      return doRenderToValue(targetKind, underlying, template, frame, params, output, context);
     }
   }
 }

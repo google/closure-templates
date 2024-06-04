@@ -250,6 +250,11 @@ final class ExpressionCompiler {
               }
 
               @Override
+              public LocalVariable getStackFrame() {
+                throw unsupported();
+              }
+
+              @Override
               public Expression getParam(TemplateParam param) {
                 throw unsupported();
               }

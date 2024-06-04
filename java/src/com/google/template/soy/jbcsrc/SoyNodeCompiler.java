@@ -25,8 +25,8 @@ import static com.google.template.soy.jbcsrc.PrintDirectives.applyStreamingEscap
 import static com.google.template.soy.jbcsrc.PrintDirectives.applyStreamingPrintDirectives;
 import static com.google.template.soy.jbcsrc.PrintDirectives.areAllPrintDirectivesStreamable;
 import static com.google.template.soy.jbcsrc.TemplateVariableManager.SaveStrategy.STORE;
-import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.RENDER_RESULT_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_VALUE_PROVIDER_TYPE;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.STACK_FRAME_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.compareSoySwitchCaseEquals;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
 import static org.objectweb.asm.commons.GeneratorAdapter.EQ;
@@ -36,7 +36,6 @@ import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.SanitizedContentKind;
@@ -172,8 +171,8 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       JavaSourceFunctionCompiler javaSourceFunctionCompiler,
       PartialFileSetMetadata fileSetMetadata) {
     // We pass a lazy supplier of render context so that lazy closure compiler classes that don't
-    // generate detach logic don't trigger capturing this value into a method parameter.
-    DetachState detachState = new DetachState(variables, parameterLookup::getRenderContext);
+    // generate detach logic don't trigger capturing this value into a field.
+    DetachState detachState = new DetachState(variables, parameterLookup.getStackFrame());
     ExpressionCompiler expressionCompiler =
         ExpressionCompiler.create(
             context,
@@ -247,7 +246,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   Statement compile(RenderUnitNode node, ExtraCodeCompiler prefix, ExtraCodeCompiler suffix) {
     List<Statement> statements = new ArrayList<>();
     if (shouldCheckForSoftLimit(node)) {
-      statements.add(detachState.detachLimited(appendableExpression));
+      detachState.detachLimited(appendableExpression).ifPresent(statements::add);
     }
     statements.add(trackRequiredCssPathStatements(node));
     statements.add(doCompile(node, prefix, suffix));
@@ -1185,17 +1184,22 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
 
   @FunctionalInterface
   private interface BoundCallGenerator {
-    Expression call(AppendableExpression appendable, RenderContextExpression renderContext);
+    Expression call(
+        Expression frame, AppendableExpression appendable, RenderContextExpression renderContext);
   }
 
   @FunctionalInterface
   private interface DirectCallGenerator {
     Expression call(
-        Expression params, AppendableExpression appendable, RenderContextExpression renderContext);
+        Expression stackFrame,
+        Expression params,
+        AppendableExpression appendable,
+        RenderContextExpression renderContext);
   }
 
   private interface DirectPositionalCallGenerator {
     Expression call(
+        Expression stackFrame,
         List<Expression> params,
         AppendableExpression appendable,
         RenderContextExpression renderContext);
@@ -1318,17 +1322,23 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
 
                       @Override
                       public Expression call(
+                          Expression stackFrame,
                           List<Expression> params,
                           AppendableExpression appendable,
                           RenderContextExpression renderContext) {
                         if (isPrivateCall) {
                           return positionalRenderMethod.invoke(
-                              Iterables.concat(
-                                  params, ImmutableList.of(appendable, renderContext)));
+                              ImmutableList.<Expression>builder()
+                                  .add(stackFrame)
+                                  .addAll(params)
+                                  .add(appendable)
+                                  .add(renderContext)
+                                  .build());
                         }
-                        return new Expression(RENDER_RESULT_TYPE) {
+                        return new Expression(STACK_FRAME_TYPE) {
                           @Override
                           protected void doGen(CodeBuilder adapter) {
+                            stackFrame.gen(adapter);
                             params.forEach(p -> p.gen(adapter));
                             appendable.gen(adapter);
                             renderContext.gen(adapter);
@@ -1348,13 +1358,16 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
             @Override
             public Optional<DirectCallGenerator> asDirectCall() {
               return Optional.of(
-                  (params, appendable, renderContext) -> {
+                  (stackFrame, params, appendable, renderContext) -> {
                     if (isPrivateCall) {
-                      return metadata.renderMethod().invoke(params, appendable, renderContext);
+                      return metadata
+                          .renderMethod()
+                          .invoke(stackFrame, params, appendable, renderContext);
                     }
-                    return new Expression(RENDER_RESULT_TYPE) {
+                    return new Expression(STACK_FRAME_TYPE) {
                       @Override
                       protected void doGen(CodeBuilder adapter) {
+                        stackFrame.gen(adapter);
                         params.gen(adapter);
                         appendable.gen(adapter);
                         renderContext.gen(adapter);
@@ -1382,9 +1395,9 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
 
   private static DirectCallGenerator directCallFromTemplateExpression(
       Expression compiledTemplateExpression) {
-    return (params, output, context) ->
+    return (frame, params, output, context) ->
         compiledTemplateExpression.invoke(
-            MethodRefs.COMPILED_TEMPLATE_RENDER, params, output, context);
+            MethodRefs.COMPILED_TEMPLATE_RENDER, frame, params, output, context);
   }
 
   private static BoundCallGenerator simpleCall(
@@ -1394,7 +1407,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
 
   private static BoundCallGenerator simpleCall(
       DirectCallGenerator callGenerator, Expression params) {
-    return (output, context) -> callGenerator.call(params, output, context);
+    return (frame, output, context) -> callGenerator.call(frame, params, output, context);
   }
 
   /**
@@ -1460,10 +1473,10 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
               .isPresent()) {
         initParams = explicitParams.get().initializer();
         boundCall =
-            (output, context) ->
+            (frame, output, context) ->
                 asDirectPositionalCall
                     .get()
-                    .call(explicitParams.get().expressions(), output, context);
+                    .call(frame, explicitParams.get().expressions(), output, context);
       } else {
         Optional<DirectCallGenerator> asDirectCall = callGenerator.asDirectCall();
         ExpressionAndInitializer expressionAndInitializer = paramsExpression.asRecord(renderScope);
@@ -1501,7 +1514,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
 
     Expression callRender =
         boundCall
-            .call(appendable, parameterLookup.getRenderContext())
+            .call(parameterLookup.getStackFrame(), appendable, parameterLookup.getRenderContext())
             // make sure to tag this expression with the source location to ensure stack traces are
             // accurate.
             .withSourceLocation(node.getSourceLocation());

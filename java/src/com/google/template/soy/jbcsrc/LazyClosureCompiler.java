@@ -21,13 +21,13 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_VALUE_PROVIDER_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constantNull;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constantSanitizedContentKindAsContentKind;
 import static com.google.template.soy.jbcsrc.restricted.Statement.returnExpression;
 import static com.google.template.soy.soytree.SoyTreeUtils.isDescendantOf;
 import static java.util.Arrays.asList;
 
 import com.google.auto.value.AutoValue;
-import com.google.auto.value.extension.memoized.Memoized;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.base.internal.SanitizedContentKind;
@@ -50,6 +50,7 @@ import com.google.template.soy.jbcsrc.runtime.DetachableContentProvider;
 import com.google.template.soy.jbcsrc.runtime.DetachableSoyValueProvider;
 import com.google.template.soy.jbcsrc.shared.DetachableProviderFactory;
 import com.google.template.soy.jbcsrc.shared.Names;
+import com.google.template.soy.jbcsrc.shared.RenderContext;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamNode;
 import com.google.template.soy.soytree.LetNode;
@@ -434,9 +435,9 @@ final class LazyClosureCompiler {
     List<String> paramNames = new ArrayList<>();
     int slot = 0;
     for (var capture : lookup.getCaptures()) {
-      var captureType = capture.childExpression().resultType();
+      var captureType = capture.childExpression.resultType();
       paramTypes.add(captureType);
-      paramNames.add(capture.paramName());
+      paramNames.add(capture.paramName);
       capture.setLocal(slot);
       slot += captureType.getSize();
     }
@@ -468,7 +469,8 @@ final class LazyClosureCompiler {
               end,
               /* isStatic= */ true);
       LazyClosureParameterLookup lookup =
-          new LazyClosureParameterLookup(this, parent.parameterLookup, variableSet);
+          new LazyClosureParameterLookup(
+              this, parent.parameterLookup, variableSet, Optional.empty());
       SoyExpression compile =
           ExpressionCompiler.createBasicCompiler(
                   node,
@@ -509,7 +511,8 @@ final class LazyClosureCompiler {
               /* isStatic= */ true);
 
       LazyClosureParameterLookup lookup =
-          new LazyClosureParameterLookup(this, parent.parameterLookup, variableSet);
+          new LazyClosureParameterLookup(
+              this, parent.parameterLookup, variableSet, Optional.empty());
 
       ExpressionCompiler expressionCompiler =
           ExpressionCompiler.create(
@@ -564,32 +567,28 @@ final class LazyClosureCompiler {
               end,
               /* isStatic= */ true);
 
-      LazyClosureParameterLookup lookup =
-          new LazyClosureParameterLookup(this, parent.parameterLookup, variableSet);
-      // The appendable parameter is the last parameter, but we don't know what values will be
+      // The stackFrame and appendable parameters come last, but we don't know what values will be
       // captured yet so we need to defer computing its slot.
-      class AppendableParameter extends Expression {
-        int parameterSlot = -1;
-
-        AppendableParameter() {
-          super(
-              BytecodeUtils.LOGGING_ADVISING_APPENDABLE_TYPE,
-              Features.of(Feature.NON_JAVA_NULLABLE, Feature.CHEAP, Feature.NON_SOY_NULLISH));
-        }
-
-        @Override
-        protected void doGen(CodeBuilder cb) {
-          checkState(parameterSlot != -1);
-          cb.visitVarInsn(Opcodes.ALOAD, parameterSlot);
-        }
-      }
-      AppendableParameter appendableParameter = new AppendableParameter();
+      LocalVariable stackFrameParameter =
+          LocalVariable.createLocal(
+              StandardNames.STACK_FRAME, 0, BytecodeUtils.STACK_FRAME_TYPE, start, end);
+      LocalVariable appendableParameter =
+          LocalVariable.createLocal(
+                  StandardNames.APPENDABLE,
+                  0,
+                  BytecodeUtils.LOGGING_ADVISING_APPENDABLE_TYPE,
+                  start,
+                  end)
+              .asNonJavaNullable();
+      LazyClosureParameterLookup lookup =
+          new LazyClosureParameterLookup(
+              this, parent.parameterLookup, variableSet, Optional.of(stackFrameParameter));
 
       SoyNodeCompiler soyNodeCompiler =
           parent.compilerForChildNode(
               node, variableSet, lookup, AppendableExpression.forExpression(appendableParameter));
       Statement nodeBody = soyNodeCompiler.compile(renderUnit, prefix, suffix);
-      Statement returnDone = returnExpression(MethodRefs.RENDER_RESULT_DONE.invoke());
+      Statement returnDone = returnExpression(constantNull(BytecodeUtils.STACK_FRAME_TYPE));
       Statement fullMethodBody =
           new Statement() {
             @Override
@@ -605,23 +604,26 @@ final class LazyClosureCompiler {
       List<String> paramNames = new ArrayList<>();
       int slot = 0;
       for (var capture : lookup.getCaptures()) {
-        var captureType = capture.childExpression().resultType();
+        var captureType = capture.childExpression.resultType();
         paramTypes.add(captureType);
-        paramNames.add(capture.paramName());
+        paramNames.add(capture.paramName);
         capture.setLocal(slot);
         slot += captureType.getSize();
       }
-      // For lambda capture to work our 'free' parameter, the appendable, must come last.
-      paramTypes.add(BytecodeUtils.LOGGING_ADVISING_APPENDABLE_TYPE);
-      paramNames.add(StandardNames.APPENDABLE);
-      appendableParameter.parameterSlot = slot;
+      // For lambda capture to work our 'free' parameters must come last.
+      paramTypes.add(stackFrameParameter.resultType());
+      paramNames.add(stackFrameParameter.variableName());
+      stackFrameParameter.shiftIndex(slot);
+      paramTypes.add(appendableParameter.resultType());
+      paramNames.add(appendableParameter.variableName());
+      appendableParameter.shiftIndex(slot + 1);
       var paramTypesArray = paramTypes.toArray(new Type[0]);
       // Now that we have generated the full method we know the names and types of all parameters
       // update the parameters
       variableSet.updateParameterTypes(paramTypesArray, paramNames);
       MethodRef method =
           parent.innerMethods.registerLazyClosureMethod(
-              new Method(methodName, BytecodeUtils.RENDER_RESULT_TYPE, paramTypesArray),
+              new Method(methodName, BytecodeUtils.STACK_FRAME_TYPE, paramTypesArray),
               fullMethodBody);
       return generateInitialCall(
           BOOTSTRAP_LAZY_CONTENT_PROVIDER, method.method().getName(), lookup);
@@ -632,7 +634,7 @@ final class LazyClosureCompiler {
         Handle indyFactory, String implMethodName, LazyClosureParameterLookup lookup) {
       List<Expression> args = new ArrayList<>();
       for (ParentCapture capture : lookup.getCaptures()) {
-        args.add(capture.parentExpression());
+        args.add(capture.parentExpression);
       }
       return new Expression(
           BytecodeUtils.SOY_VALUE_PROVIDER_TYPE, Features.of(Feature.NON_JAVA_NULLABLE)) {
@@ -662,35 +664,39 @@ final class LazyClosureCompiler {
    * <p>{@link CompilationUnit#generateConstructor} generates the code to propagate the captured
    * values from the parent to the child, and from the constructor to the generated fields.
    */
-  @AutoValue
-  abstract static class ParentCapture {
+  private static final class ParentCapture {
     static ParentCapture create(String paramName, Expression parentExpression) {
-      return new AutoValue_LazyClosureCompiler_ParentCapture(paramName, parentExpression);
+      return new ParentCapture(paramName, parentExpression);
     }
 
     private int localSlot = -1;
 
     /** The field in the closure that stores the captured value. */
-    abstract String paramName();
+    final String paramName;
 
     /** An expression that produces the value for this capture from the parent. */
-    abstract Expression parentExpression();
+    final Expression parentExpression;
+
+    final Expression childExpression;
+
+    ParentCapture(String paramName, Expression parentExpression) {
+      this.paramName = paramName;
+      this.parentExpression = parentExpression;
+      this.childExpression =
+          new Expression(
+              parentExpression.resultType(), parentExpression.features().plus(Feature.CHEAP)) {
+            @Override
+            protected void doGen(CodeBuilder adapter) {
+              checkArgument(ParentCapture.this.localSlot != -1, "didn't call 'setLocal'");
+              adapter.visitVarInsn(
+                  parentExpression.resultType().getOpcode(Opcodes.ILOAD), localSlot);
+            }
+          };
+    }
 
     void setLocal(int argSlot) {
       checkState(localSlot == -1);
       this.localSlot = argSlot;
-    }
-
-    @Memoized
-    Expression childExpression() {
-      return new Expression(
-          parentExpression().resultType(), parentExpression().features().plus(Feature.CHEAP)) {
-        @Override
-        protected void doGen(CodeBuilder adapter) {
-          checkArgument(ParentCapture.this.localSlot != -1, "didn't call 'setLocal'");
-          adapter.visitVarInsn(parentExpression().resultType().getOpcode(Opcodes.ILOAD), localSlot);
-        }
-      };
     }
   }
 
@@ -723,14 +729,22 @@ final class LazyClosureCompiler {
     private ParentCapture renderContextCapture;
     private ParentCapture ijCapture;
     private ParentCapture paramsCapture;
+    private final Optional<LocalVariable> stackFrame;
 
     LazyClosureParameterLookup(
         CompilationUnit params,
         TemplateParameterLookup parentParameterLookup,
-        TemplateVariableManager variableSet) {
+        TemplateVariableManager variableSet,
+        Optional<LocalVariable> stackFrame) {
       this.params = params;
       this.parentParameterLookup = parentParameterLookup;
       this.variableSet = variableSet;
+      this.stackFrame = stackFrame;
+    }
+
+    @Override
+    public LocalVariable getStackFrame() {
+      return stackFrame.get();
     }
 
     @Override
@@ -741,7 +755,7 @@ final class LazyClosureCompiler {
         capture = ParentCapture.create(param.name(), expression);
         variableCaptures.put(param, capture);
       }
-      return capture.childExpression();
+      return capture.childExpression;
     }
 
 
@@ -751,7 +765,7 @@ final class LazyClosureCompiler {
         paramsCapture =
             ParentCapture.create(StandardNames.PARAMS, parentParameterLookup.getParamsRecord());
       }
-      return paramsCapture.childExpression();
+      return paramsCapture.childExpression;
     }
 
     @Override
@@ -767,7 +781,7 @@ final class LazyClosureCompiler {
         capture = ParentCapture.create(local.name(), expression);
         variableCaptures.put(local, capture);
       }
-      return capture.childExpression();
+      return capture.childExpression;
     }
 
     @Override
@@ -783,7 +797,7 @@ final class LazyClosureCompiler {
         capture = ParentCapture.create(varName.name(), expression);
         syntheticCaptures.put(varName, capture);
       }
-      return capture.childExpression();
+      return capture.childExpression;
     }
 
     Iterable<ParentCapture> getCaptures() {
@@ -801,7 +815,7 @@ final class LazyClosureCompiler {
             ParentCapture.create(
                 StandardNames.RENDER_CONTEXT, parentParameterLookup.getRenderContext());
       }
-      return new RenderContextExpression(renderContextCapture.childExpression());
+      return new RenderContextExpression(renderContextCapture.childExpression);
     }
   }
 }

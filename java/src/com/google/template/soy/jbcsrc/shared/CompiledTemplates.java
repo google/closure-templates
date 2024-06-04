@@ -35,7 +35,6 @@ import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.TemplateValue;
 import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.data.restricted.UndefinedData;
-import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.shared.TemplateMetadata.DelTemplateMetadata;
 import com.google.template.soy.shared.internal.DelTemplateSelector;
 import java.lang.invoke.MethodHandle;
@@ -65,7 +64,8 @@ public class CompiledTemplates {
 
   private static final MethodType RENDER_TYPE =
       methodType(
-          RenderResult.class,
+          StackFrame.class,
+          StackFrame.class,
           ParamStore.class,
           LoggingAdvisingAppendable.class,
           RenderContext.class);
@@ -477,11 +477,12 @@ public class CompiledTemplates {
         var positionalParameters = this.positionalParameters.get();
         MethodHandle positionalRenderMethod = this.renderMethod;
         // Replace the initial SoyRecord argument with a call through positionalToRecord so the
-        // signature becomes (SoyValueProvider[],SoyRecord,LoggingAdvisingAppendable,RenderContext)
+        // signature becomes (StackFrame,
+        // SoyValueProvider[],SoyRecord,LoggingAdvisingAppendable,RenderContext)
         positionalRenderMethod =
             MethodHandles.filterArguments(
                 positionalRenderMethod,
-                0,
+                1,
                 MethodHandles.insertArguments(
                     HandlesForTesting.POSITIONAL_TO_RECORD,
                     0,
@@ -492,7 +493,7 @@ public class CompiledTemplates {
         // positional signature.
         this.positionalRenderMethod =
             positionalRenderMethod.asCollector(
-                0, SoyValueProvider[].class, positionalParameters.size());
+                1, SoyValueProvider[].class, positionalParameters.size());
       }
     }
 
@@ -542,8 +543,9 @@ public class CompiledTemplates {
       var positionalRenderMethod = this.positionalRenderMethod;
       if (positionalRenderMethod == null) {
         String templateMethodName = Names.renderMethodNameFromSoyTemplateName(soyTemplateName);
-        Class<?>[] paramTypes = new Class<?>[arity + 2];
-        Arrays.fill(paramTypes, 0, arity, SoyValueProvider.class);
+        Class<?>[] paramTypes = new Class<?>[arity + 3];
+        paramTypes[0] = StackFrame.class;
+        Arrays.fill(paramTypes, 1, 1 + arity, SoyValueProvider.class);
         paramTypes[paramTypes.length - 2] = LoggingAdvisingAppendable.class;
         paramTypes[paramTypes.length - 1] = RenderContext.class;
         try {
@@ -552,7 +554,7 @@ public class CompiledTemplates {
                   .findStatic(
                       this.templateMethod.getDeclaringClass(),
                       templateMethodName,
-                      methodType(RenderResult.class, paramTypes));
+                      methodType(StackFrame.class, paramTypes));
         } catch (ReflectiveOperationException e) {
           // This may be caused by:
           //   1. Trying to call a private template. The factory() method is package private and so

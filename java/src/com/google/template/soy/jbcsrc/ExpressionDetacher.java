@@ -155,7 +155,8 @@ interface ExpressionDetacher {
           MethodRefs.SOY_VALUE_PROVIDER_STATUS.invokeUnchecked(cb); // Stack: SVP, RR
           if (DetachState.FORCE_EVERY_DETACH_POINT) {
             cb.visitLdcInsn(DetachState.ForceDetachPointsForTesting.uniqueCallSite());
-            DetachState.ForceDetachPointsForTesting.MAYBE_FORCE_CONTINUE_AFTER.invokeUnchecked(cb);
+            DetachState.ForceDetachPointsForTesting.MAYBE_FORCE_CONTINUE_AFTER_RENDER_RESULT
+                .invokeUnchecked(cb);
           }
           cb.dup(); // Stack: SVP, RR, RR
           MethodRefs.RENDER_RESULT_IS_DONE.invokeUnchecked(cb); // Stack: SVP, RR, Z
@@ -199,7 +200,8 @@ interface ExpressionDetacher {
           MethodRefs.RUNTIME_GET_LIST_STATUS.invokeUnchecked(cb); // Stack: List, RR
           if (DetachState.FORCE_EVERY_DETACH_POINT) {
             cb.visitLdcInsn(DetachState.ForceDetachPointsForTesting.uniqueCallSite());
-            DetachState.ForceDetachPointsForTesting.MAYBE_FORCE_CONTINUE_AFTER.invokeUnchecked(cb);
+            DetachState.ForceDetachPointsForTesting.MAYBE_FORCE_CONTINUE_AFTER_RENDER_RESULT
+                .invokeUnchecked(cb);
           }
           cb.dup(); // Stack: List, RR, RR
           MethodRefs.RENDER_RESULT_IS_DONE.invokeUnchecked(cb); // Stack: List, RR, Z
@@ -231,7 +233,8 @@ interface ExpressionDetacher {
           MethodRefs.RUNTIME_GET_MAP_STATUS.invokeUnchecked(cb); // Stack: Map, RR
           if (DetachState.FORCE_EVERY_DETACH_POINT) {
             cb.visitLdcInsn(DetachState.ForceDetachPointsForTesting.uniqueCallSite());
-            DetachState.ForceDetachPointsForTesting.MAYBE_FORCE_CONTINUE_AFTER.invokeUnchecked(cb);
+            DetachState.ForceDetachPointsForTesting.MAYBE_FORCE_CONTINUE_AFTER_RENDER_RESULT
+                .invokeUnchecked(cb);
           }
           cb.dup(); // Stack: Map, RR, RR
           MethodRefs.RENDER_RESULT_IS_DONE.invokeUnchecked(cb); // Stack: Map, RR, Z

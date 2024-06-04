@@ -77,11 +77,12 @@ public final class DetachableProviderFactoryTest {
     assertThat(provider.resolve()).isEqualTo(StringData.forValue("from the future"));
   }
 
-  public static RenderResult renderMethod(String capture, LoggingAdvisingAppendable appendable)
+  public static StackFrame renderMethod(
+      String capture, StackFrame stackFrame, LoggingAdvisingAppendable appendable)
       throws IOException {
     appendable.append(capture);
 
-    return RenderResult.done();
+    return null;
   }
 
   @Test

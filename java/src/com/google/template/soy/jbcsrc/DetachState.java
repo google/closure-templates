@@ -18,6 +18,7 @@ package com.google.template.soy.jbcsrc;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.RENDER_RESULT_TYPE;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.STACK_FRAME_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.Statement.returnExpression;
 
 import com.google.auto.value.AutoValue;
@@ -33,13 +34,13 @@ import com.google.template.soy.jbcsrc.restricted.MethodRefs;
 import com.google.template.soy.jbcsrc.restricted.Statement;
 import com.google.template.soy.jbcsrc.runtime.JbcSrcRuntime;
 import com.google.template.soy.jbcsrc.shared.ExtraConstantBootstraps;
+import com.google.template.soy.jbcsrc.shared.StackFrame;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import org.objectweb.asm.ConstantDynamic;
 import org.objectweb.asm.Handle;
 import org.objectweb.asm.Label;
@@ -68,18 +69,23 @@ import org.objectweb.asm.Opcodes;
  *
  * <pre>{@code
  * int state;
- * Result detachable() {
- *   switch (state) {
- *     case 0: goto L0;  // no locals for state 0
- *     case 1:
- *       // restore all variables active at state 1
- *       goto L1;
- *     case 2:
- *       // restore locals active at state 2
- *       goto L2;
- *     ...
- *     default:
- *       throw new AssertionError();
+ * StackFrame detachable(StackFrame stackFrame) {
+ *   if (frame != null) {
+ *    StackFrame saved = frame;
+ *    frame = frame.child;
+ *
+ *     switch (frame.state) {
+ *       case 0: goto L0;  // no locals for state 0
+ *       case 1:
+ *         // restore all variables active at state 1
+ *         goto L1;
+ *       case 2:
+ *         // restore locals active at state 2
+ *         goto L2;
+ *       ...
+ *       default:
+ *         throw new AssertionError();
+ *     }
  *   }
  *   L0:
  *   // start of the method
@@ -93,9 +99,7 @@ import org.objectweb.asm.Opcodes;
  * <pre>{@code
  * LN:
  *   if (needs to detach) {
- *     save locals to fields
- *     state = N;
- *     return Result.detachCause(cause);
+ *     return new StackFrame(N, locals...);
  *   }
  * }
  * }</pre>
@@ -133,12 +137,26 @@ final class DetachState implements ExpressionDetacher.Factory {
             boolean.class,
             Object.class);
 
-    static final MethodRef MAYBE_FORCE_CONTINUE_AFTER =
+    static final MethodRef MAYBE_FORCE_CONTINUE_AFTER_STACK_FRAME =
+        MethodRef.createNonPure(
+            JbcSrcRuntime.EveryDetachStateForTesting.class,
+            "maybeForceContinueAfter",
+            StackFrame.class,
+            Object.class);
+
+    static final MethodRef MAYBE_FORCE_CONTINUE_AFTER_RENDER_RESULT =
         MethodRef.createNonPure(
             JbcSrcRuntime.EveryDetachStateForTesting.class,
             "maybeForceContinueAfter",
             RenderResult.class,
             Object.class);
+
+    static final MethodRef MAYBE_FORCE_CONTINUE_AFTER_NO_ARG =
+        MethodRef.createNonPure(
+            JbcSrcRuntime.EveryDetachStateForTesting.class,
+            "maybeForceContinueAfter",
+            Object.class);
+
     private static final AtomicInteger counter = new AtomicInteger();
 
     /** Constructs a key that can be used to identify if a call site has been visited before. */
@@ -153,14 +171,12 @@ final class DetachState implements ExpressionDetacher.Factory {
 
   private final TemplateVariableManager variables;
   private final List<ReattachState> reattaches = new ArrayList<>();
-  private final Supplier<RenderContextExpression> renderContextExpression;
+  private final LocalVariable stackFrameVar;
   int disabledCount;
 
-  DetachState(
-      TemplateVariableManager variables,
-      Supplier<RenderContextExpression> renderContextExpression) {
+  DetachState(TemplateVariableManager variables, LocalVariable stackFrameVar) {
     this.variables = variables;
-    this.renderContextExpression = renderContextExpression;
+    this.stackFrameVar = stackFrameVar;
   }
 
   interface NoNewDetaches extends AutoCloseable {
@@ -190,8 +206,8 @@ final class DetachState implements ExpressionDetacher.Factory {
    */
   @Override
   public ExpressionDetacher createExpressionDetacher(Label reattachPoint) {
-    // Lazily allocate the save restore state since it isnt always needed.
-    return new ExpressionDetacher.BasicDetacher(() -> addState(reattachPoint));
+    // Lazily allocate the save restore state since it isn't always needed.
+    return new ExpressionDetacher.BasicDetacher(() -> addState(reattachPoint).saveRenderResult());
   }
 
   /**
@@ -201,28 +217,29 @@ final class DetachState implements ExpressionDetacher.Factory {
    * <p>This is only valid to call at the begining of templates. It does not allocate a save/restore
    * block since there should be nothing to save or restore.
    */
-  Statement detachLimited(AppendableExpression appendable) {
+  Optional<Statement> detachLimited(AppendableExpression appendable) {
     checkDetachesAllowed();
     variables.assertSaveRestoreStateIsEmpty();
     if (!appendable.supportsSoftLimiting()) {
-      return appendable.toStatement();
+      return Optional.empty();
     }
     Expression isSoftLimited = appendable.softLimitReached();
-    Statement returnLimited = returnExpression(MethodRefs.RENDER_RESULT_LIMITED.invoke());
-    return new Statement() {
-      @Override
-      protected void doGen(CodeBuilder adapter) {
-        Label continueLabel = new Label();
-        isSoftLimited.gen(adapter);
-        if (FORCE_EVERY_DETACH_POINT) {
-          adapter.visitLdcInsn(ForceDetachPointsForTesting.uniqueCallSite());
-          ForceDetachPointsForTesting.MAYBE_FORCE_LIMITED.invokeUnchecked(adapter);
-        }
-        adapter.ifZCmp(Opcodes.IFEQ, continueLabel); // if !softLimited
-        returnLimited.gen(adapter);
-        adapter.mark(continueLabel);
-      }
-    };
+    Statement returnLimited = returnExpression(FieldRef.STACK_FRAME_LIMITED.accessor());
+    return Optional.of(
+        new Statement() {
+          @Override
+          protected void doGen(CodeBuilder adapter) {
+            Label continueLabel = new Label();
+            isSoftLimited.gen(adapter);
+            if (FORCE_EVERY_DETACH_POINT) {
+              adapter.visitLdcInsn(ForceDetachPointsForTesting.uniqueCallSite());
+              ForceDetachPointsForTesting.MAYBE_FORCE_LIMITED.invokeUnchecked(adapter);
+            }
+            adapter.ifZCmp(Opcodes.IFEQ, continueLabel); // if !softLimited
+            returnLimited.gen(adapter);
+            adapter.mark(continueLabel);
+          }
+        });
   }
 
   /**
@@ -256,9 +273,13 @@ final class DetachState implements ExpressionDetacher.Factory {
    */
   Statement detachForRender(Expression render) {
     checkDetachesAllowed();
-    checkArgument(render.resultType().equals(RENDER_RESULT_TYPE));
+    boolean isRenderResult = render.resultType().equals(RENDER_RESULT_TYPE);
+    checkArgument(
+        render.resultType().equals(STACK_FRAME_TYPE) || isRenderResult,
+        "Unsupported render type: %s",
+        render.resultType());
     Label reattachPoint = new Label();
-    Statement saveState = addState(reattachPoint);
+    SaveRestoreState saveState = addState(reattachPoint);
     return new Statement() {
       @Override
       protected void doGen(CodeBuilder adapter) {
@@ -268,30 +289,38 @@ final class DetachState implements ExpressionDetacher.Factory {
           // we insert the extra detach operation _before_ calling into render
           // This ensures that we always detach at least once and we never call back into render
           // after it returns done().  Otherwise we might end up double rendering.
-          MethodRefs.RENDER_RESULT_DONE.invokeUnchecked(adapter);
           adapter.visitLdcInsn(DetachState.ForceDetachPointsForTesting.uniqueCallSite());
-          DetachState.ForceDetachPointsForTesting.MAYBE_FORCE_CONTINUE_AFTER.invokeUnchecked(
+          DetachState.ForceDetachPointsForTesting.MAYBE_FORCE_CONTINUE_AFTER_NO_ARG.invokeUnchecked(
               adapter);
-          adapter.dup(); // Stack: RR, RR
-          MethodRefs.RENDER_RESULT_IS_DONE.invokeUnchecked(adapter); // Stack: RR, Z
-          // if isDone goto Done
+          adapter.dup(); // Stack: SF, SF
+          // if isDone goto end
           Label end = new Label();
-          adapter.ifZCmp(Opcodes.IFNE, end); // Stack: RR
-          saveState.gen(adapter);
+          adapter.ifNull(end); // Stack: SF
+          saveState.saveStackFrame().gen(adapter);
           adapter.returnValue();
           adapter.mark(end);
           adapter.pop(); // Stack:
         }
-        render.gen(adapter); // Stack: RR
-        adapter.dup(); // Stack: RR, RR
-        MethodRefs.RENDER_RESULT_IS_DONE.invokeUnchecked(adapter); // Stack: RR, Z
-        // if isDone goto Done
+        render.gen(adapter); // Stack: SF or RR
         Label end = new Label();
-        adapter.ifZCmp(Opcodes.IFNE, end); // Stack: RR
-        saveState.gen(adapter);
-        adapter.returnValue();
-        adapter.mark(end);
-        adapter.pop(); // Stack:
+        if (isRenderResult) {
+          adapter.dup(); // Stack: RR, RR
+          MethodRefs.RENDER_RESULT_IS_DONE.invokeUnchecked(adapter); // Stack: RR, Z
+          adapter.ifZCmp(Opcodes.IFNE, end); // Stack: RR
+          saveState.saveRenderResult().gen(adapter);
+          adapter.returnValue();
+          adapter.mark(end);
+          adapter.pop(); // Stack:
+        } else {
+          stackFrameVar.storeUnchecked(adapter);
+          stackFrameVar.loadUnchecked(adapter);
+          adapter.ifNull(end); // Stack: SF
+          stackFrameVar.loadUnchecked(adapter);
+          saveState.saveStackFrame().gen(adapter);
+          adapter.returnValue();
+          adapter.returnValue();
+          adapter.mark(end);
+        }
       }
     };
   }
@@ -306,10 +335,12 @@ final class DetachState implements ExpressionDetacher.Factory {
       return Statement.NULL_STATEMENT;
     }
     var stackFrameScope = variables.enterScope();
-    LocalVariable stackFrameVar =
-        stackFrameScope.createTemporary(StandardNames.STACK_FRAME, BytecodeUtils.STACK_FRAME_TYPE);
-    Statement initStackFrame = stackFrameVar.initialize(renderContextExpression.get().popFrame());
-    Expression readStateNumber = FieldRef.STACK_FRAME_STATE_NUMBER.accessor(stackFrameVar);
+    LocalVariable tempStackFrameVar =
+        stackFrameScope.createTemporary(
+            StandardNames.STACK_FRAME_TMP, BytecodeUtils.STACK_FRAME_TYPE);
+    Statement initTemp = tempStackFrameVar.initialize(stackFrameVar);
+    Statement updateFrame = stackFrameVar.store(FieldRef.STACK_FRAME_CHILD.accessor(stackFrameVar));
+    Expression readStateNumber = FieldRef.STACK_FRAME_STATE_NUMBER.accessor(tempStackFrameVar);
     // Generate a switch table.  Note, while it might be preferable to just 'goto state',
     // Java doesn't allow computable gotos (probably because it makes verification impossible).
     // So instead we emulate that with a jump table.  And anyway we still need to execute
@@ -324,7 +355,7 @@ final class DetachState implements ExpressionDetacher.Factory {
     caseLabels.add(end);
     for (ReattachState reattachState : reattaches) {
       if (reattachState.restoreStatement().isPresent()) {
-        Statement restoreState = reattachState.restoreStatement().get().apply(stackFrameVar);
+        Statement restoreState = reattachState.restoreStatement().get().apply(tempStackFrameVar);
         Label caseLabel = new Label();
         // execute the restore and jump to the reattach point
         casesToGen.add(
@@ -345,15 +376,19 @@ final class DetachState implements ExpressionDetacher.Factory {
     // we throw a generic assertion error, if we wanted a potentially better error message we could
     // augment 'restoreState' to take the expected max state and move this logic in there.
     casesToGen.add(
-        Statement.throwExpression(MethodRefs.RUNTIME_UNEXPECTED_STATE_ERROR.invoke(stackFrameVar))
+        Statement.throwExpression(
+                MethodRefs.RUNTIME_UNEXPECTED_STATE_ERROR.invoke(tempStackFrameVar))
             .labelStart(unexpectedState));
     var scopeExit = stackFrameScope.exitScope();
     return Statement.concat(
-            initStackFrame,
             new Statement() {
               @Override
               protected void doGen(CodeBuilder adapter) {
-                readStateNumber.gen(adapter);
+                stackFrameVar.gen(adapter);
+                adapter.ifNull(end); // if (stackFrame == null) goto case 0
+                initTemp.gen(adapter); // StackFrame tmp = stackFrame
+                updateFrame.gen(adapter); // stackFrame = stackFrame.child
+                readStateNumber.gen(adapter); // tmp.state
                 // we need to mark the end of the stackFrameVar somewhere, this isn't exactly
                 // accurate since it does extend into the beginning of some of the cases, but there
                 // is no consistent end point. This means that our debugging information will be
@@ -373,21 +408,20 @@ final class DetachState implements ExpressionDetacher.Factory {
   }
 
   /** Add a new state item and return the statement that saves state. */
-  private Statement addState(Label reattachPoint) {
+  private SaveRestoreState addState(Label reattachPoint) {
     checkDetachesAllowed();
     // the index of the ReattachState in the list + 1, 0 is reserved for 'initial state'.
     int stateNumber = reattaches.size() + 1;
-    SaveRestoreState saveRestoreState =
-        variables.saveRestoreState(renderContextExpression.get(), stateNumber);
+    SaveRestoreState saveRestoreState = variables.saveRestoreState(stateNumber);
     ReattachState create = ReattachState.create(reattachPoint, saveRestoreState.restore());
     reattaches.add(create);
-    return saveRestoreState.save();
+    return saveRestoreState;
   }
 
   @AutoValue
   abstract static class ReattachState {
     static ReattachState create(
-        Label reattachPoint, Optional<Function<LocalVariable, Statement>> restore) {
+        Label reattachPoint, Optional<Function<Expression, Statement>> restore) {
       return new AutoValue_DetachState_ReattachState(reattachPoint, restore);
     }
 
@@ -395,6 +429,6 @@ final class DetachState implements ExpressionDetacher.Factory {
     abstract Label reattachPoint();
 
     /** The statement that restores the state of local variables so we can resume execution. */
-    abstract Optional<Function<LocalVariable, Statement>> restoreStatement();
+    abstract Optional<Function<Expression, Statement>> restoreStatement();
   }
 }

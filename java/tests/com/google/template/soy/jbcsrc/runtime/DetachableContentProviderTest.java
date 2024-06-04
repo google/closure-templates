@@ -25,6 +25,7 @@ import com.google.template.soy.data.SanitizedContents;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.jbcsrc.api.RenderResult;
+import com.google.template.soy.jbcsrc.shared.StackFrame;
 import java.io.IOException;
 import java.util.concurrent.Future;
 import org.junit.Test;
@@ -39,10 +40,14 @@ public final class DetachableContentProviderTest {
     SoyValue v =
         new DetachableContentProvider() {
           @Override
-          protected RenderResult doRender(LoggingAdvisingAppendable appendable) throws IOException {
-            appendable.setKindAndDirectionality(SanitizedContent.ContentKind.CSS);
-            appendable.append("foo");
-            return RenderResult.done();
+          protected StackFrame doRender(StackFrame stack, LoggingAdvisingAppendable appendable) {
+            try {
+              appendable.setKindAndDirectionality(SanitizedContent.ContentKind.CSS);
+              appendable.append("foo");
+              return null;
+            } catch (IOException e) {
+              throw new RuntimeException(e);
+            }
           }
         }.resolve();
     assertThat(v).isEqualTo(SanitizedContents.constantCss("foo"));
@@ -51,9 +56,6 @@ public final class DetachableContentProviderTest {
   static class TestDetachableContentProvider extends DetachableContentProvider {
     final Future<String> future1;
     final Future<String> future2;
-    // Normally we would use RenderContext to manage this, but for this test we just use a simple
-    // state variable.
-    int state;
 
     TestDetachableContentProvider(Future<String> future1, Future<String> future2) {
       this.future1 = future1;
@@ -61,32 +63,33 @@ public final class DetachableContentProviderTest {
     }
 
     @Override
-    protected RenderResult doRender(LoggingAdvisingAppendable appendable) throws IOException {
-      switch (state) {
-        case 0:
-          appendable.setKindAndDirectionality(SanitizedContent.ContentKind.CSS);
-          appendable.append("start\n");
-          // fall-through
-        case 1:
-          if (future1.isDone()) {
-            appendable.append("future1: ").append(Futures.getUnchecked(future1)).append("\n");
-          } else {
-            state = 1;
-            return RenderResult.continueAfter(future1);
-          }
-          // fall-through
-        case 2:
-          if (future2.isDone()) {
-            appendable.append("future2: ").append(Futures.getUnchecked(future2)).append("\n");
-          } else {
-            state = 2;
-            return RenderResult.continueAfter(future2);
-          }
-          appendable.append("end\n");
-          state = 3; // ensure if we get called again we fail.
-          return RenderResult.done();
-        default:
-          throw new IllegalStateException();
+    protected StackFrame doRender(StackFrame stack, LoggingAdvisingAppendable appendable) {
+      try {
+        switch (stack == null ? 0 : stack.stateNumber) {
+          case 0:
+            appendable.setKindAndDirectionality(SanitizedContent.ContentKind.CSS);
+            appendable.append("start\n");
+            // fall-through
+          case 1:
+            if (future1.isDone()) {
+              appendable.append("future1: ").append(Futures.getUnchecked(future1)).append("\n");
+            } else {
+              return StackFrame.create(RenderResult.continueAfter(future1), 1);
+            }
+            // fall-through
+          case 2:
+            if (future2.isDone()) {
+              appendable.append("future2: ").append(Futures.getUnchecked(future2)).append("\n");
+            } else {
+              return StackFrame.create(RenderResult.continueAfter(future2), 2);
+            }
+            appendable.append("end\n");
+            return null;
+          default:
+            throw new IllegalStateException();
+        }
+      } catch (IOException e) {
+        throw new RuntimeException(e);
       }
     }
   }

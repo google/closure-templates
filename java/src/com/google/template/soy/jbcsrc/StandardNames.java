@@ -27,6 +27,7 @@ final class StandardNames {
   static final String CURRENT_APPENDABLE = "$currentAppendable";
   static final String CURRENT_PARAMS = "$currentParams";
   static final String STACK_FRAME = "$stackFrame";
+  static final String STACK_FRAME_TMP = "$stackFrameTmp";
 
   private StandardNames() {}
 }

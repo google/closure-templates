@@ -47,9 +47,9 @@ import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.data.restricted.StringData;
-import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
+import com.google.template.soy.jbcsrc.shared.StackFrame;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -456,8 +456,10 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
       return TemplateValue.createFromTemplate(
           template,
           new CompiledTemplate() {
+            @Nullable
             @Override
-            public RenderResult render(
+            public StackFrame render(
+                @Nullable StackFrame frame,
                 ParamStore params,
                 LoggingAdvisingAppendable appendable,
                 RenderContext context)
@@ -465,6 +467,7 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
               return context
                   .getTemplate(template.getTemplateName())
                   .render(
+                      frame,
                       ParamStore.merge(params, (ParamStore) template.getParamsAsRecord()),
                       appendable,
                       context);

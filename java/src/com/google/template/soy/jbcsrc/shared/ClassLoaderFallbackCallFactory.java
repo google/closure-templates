@@ -27,7 +27,6 @@ import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.TemplateValue;
 import com.google.template.soy.data.internal.ParamStore;
-import com.google.template.soy.jbcsrc.api.RenderResult;
 import java.lang.invoke.CallSite;
 import java.lang.invoke.ConstantCallSite;
 import java.lang.invoke.MethodHandle;
@@ -101,9 +100,10 @@ public final class ClassLoaderFallbackCallFactory {
         findLocalStaticOrDie(
             "slowPathRenderRecord",
             methodType(
-                RenderResult.class,
+                StackFrame.class,
                 SoyCallSite.class,
                 String.class,
+                StackFrame.class,
                 ParamStore.class,
                 LoggingAdvisingAppendable.class,
                 RenderContext.class));
@@ -112,9 +112,10 @@ public final class ClassLoaderFallbackCallFactory {
         findLocalStaticOrDie(
             "slowPathRenderPositional",
             methodType(
-                RenderResult.class,
+                StackFrame.class,
                 SoyCallSite.class,
                 String.class,
+                StackFrame.class,
                 SoyValueProvider[].class,
                 LoggingAdvisingAppendable.class,
                 RenderContext.class));
@@ -149,7 +150,8 @@ public final class ClassLoaderFallbackCallFactory {
 
     private static final MethodType RENDER_TYPE =
         methodType(
-            RenderResult.class,
+            StackFrame.class,
+            StackFrame.class,
             ParamStore.class,
             LoggingAdvisingAppendable.class,
             RenderContext.class);
@@ -301,12 +303,13 @@ public final class ClassLoaderFallbackCallFactory {
       // target type has a signature like (SVP,SVP,...SVP,ParamStore,Appendable,RenderContext)
       // we want to collect the leading SVPs into an array at the end of the slowpath
       int numParams = type.parameterCount();
-      int numPositionalParams = numParams - 2; // 3 for the CallSite, appenable and context
+      int numPositionalParams =
+          numParams - 3; // 4 for the CallSite,ij params, appenable and context
 
       // Turn slowPath from accepting a SoyValueProvider[] to a fixed number of
-      // SoyValueProvider arguments at position 1
+      // SoyValueProvider arguments at position 2
       slowPathRenderHandle =
-          slowPathRenderHandle.asCollector(1, SoyValueProvider[].class, numPositionalParams);
+          slowPathRenderHandle.asCollector(2, SoyValueProvider[].class, numPositionalParams);
     }
     return new SoyCallSite(type, slowPathRenderHandle);
   }
@@ -507,9 +510,10 @@ public final class ClassLoaderFallbackCallFactory {
   }
 
   /** The slow path for a call using positional call style. */
-  public static RenderResult slowPathRenderPositional(
+  public static StackFrame slowPathRenderPositional(
       SoyCallSite callSite,
       String templateName,
+      StackFrame frame,
       SoyValueProvider[] params,
       LoggingAdvisingAppendable appendable,
       RenderContext context)
@@ -520,16 +524,21 @@ public final class ClassLoaderFallbackCallFactory {
     callSite.update(templates, renderMethod);
     // NOTE: we don't need to handle any state since if we are detaching on the next re-attach we
     // will call back into the same function directly
-    Object[] args = ObjectArrays.concat(params, new Object[] {appendable, context}, Object.class);
+    Object[] args = new Object[params.length + 3];
+    args[0] = frame;
+    System.arraycopy(params, 0, args, 1, params.length);
+    args[params.length + 1] = appendable;
+    args[params.length + 2] = context;
     // This call style involves some boxing and should be equivalent to a reflective call in terms
     // of speed.
-    return (RenderResult) renderMethod.invokeWithArguments(args);
+    return (StackFrame) renderMethod.invokeWithArguments(args);
   }
 
   /** The slow path for a call. */
-  public static RenderResult slowPathRenderRecord(
+  public static StackFrame slowPathRenderRecord(
       SoyCallSite callSite,
       String templateName,
+      StackFrame frame,
       ParamStore params,
       LoggingAdvisingAppendable appendable,
       RenderContext context)
@@ -542,7 +551,7 @@ public final class ClassLoaderFallbackCallFactory {
         renderMethod);
     // NOTE: we don't need to handle any state since if we are detaching on the next re-attach we
     // will call back into the same function directly
-    return (RenderResult) renderMethod.invoke(params, appendable, context);
+    return (StackFrame) renderMethod.invokeExact(frame, params, appendable, context);
   }
 
   /**

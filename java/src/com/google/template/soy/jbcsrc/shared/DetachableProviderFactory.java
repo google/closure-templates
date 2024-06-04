@@ -53,7 +53,7 @@ public final class DetachableProviderFactory {
   private static final MethodType BASE_CLASS_CTOR_TYPE = methodType(void.class);
   private static final MethodType EVALUATE_TYPE = methodType(Object.class);
   private static final MethodType DO_RENDER_TYPE =
-      methodType(RenderResult.class, LoggingAdvisingAppendable.class);
+      methodType(StackFrame.class, StackFrame.class, LoggingAdvisingAppendable.class);
   // Due to build cycles we don't have hard `.class` references we can use.
   private static final Type DETACHABLE_VALUE_PROVIDER_BASE_CLASS =
       Type.getType("L" + RUNTIME_PACKAGE + "/DetachableSoyValueProvider;");

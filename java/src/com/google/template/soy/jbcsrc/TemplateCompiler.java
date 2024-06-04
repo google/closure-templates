@@ -20,6 +20,7 @@ import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.base.Strings.nullToEmpty;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constantNull;
 import static com.google.template.soy.soytree.SoyTreeUtils.allNodesOfType;
 import static java.util.stream.Collectors.toCollection;
 
@@ -364,20 +365,24 @@ final class TemplateCompiler {
     MethodRef renderMethod = template.positionalRenderMethod().get();
     Label start = new Label();
     Label end = new Label();
+    LocalVariable stackFrame =
+        LocalVariable.createLocal(
+            StandardNames.STACK_FRAME, 0, BytecodeUtils.STACK_FRAME_TYPE, start, end);
     LocalVariable data =
         LocalVariable.createLocal(
-            StandardNames.PARAMS, 0, BytecodeUtils.PARAM_STORE_TYPE, start, end);
+            StandardNames.PARAMS, 1, BytecodeUtils.PARAM_STORE_TYPE, start, end);
     LocalVariable output =
         LocalVariable.createLocal(
             StandardNames.APPENDABLE,
-            1,
+            2,
             BytecodeUtils.LOGGING_ADVISING_APPENDABLE_TYPE,
             start,
             end);
     LocalVariable context =
         LocalVariable.createLocal(
-            StandardNames.RENDER_CONTEXT, 2, BytecodeUtils.RENDER_CONTEXT_TYPE, start, end);
+            StandardNames.RENDER_CONTEXT, 3, BytecodeUtils.RENDER_CONTEXT_TYPE, start, end);
     List<Expression> renderMethodArgs = new ArrayList<>();
+    renderMethodArgs.add(stackFrame);
     for (var param : template.templateType().getActualParameters()) {
       renderMethodArgs.add(
           data.invoke(
@@ -396,6 +401,7 @@ final class TemplateCompiler {
             cb.returnValue();
             cb.mark(end);
             // output debugging data for our parameters
+            stackFrame.tableEntry(cb);
             data.tableEntry(cb);
             output.tableEntry(cb);
             context.tableEntry(cb);
@@ -415,6 +421,7 @@ final class TemplateCompiler {
     Label start = new Label();
     Label end = new Label();
     ImmutableList.Builder<String> paramNames = ImmutableList.builder();
+    paramNames.add(StandardNames.STACK_FRAME);
     if (template.hasPositionalSignature()) {
       paramNames.addAll(
           template.templateType().getActualParameters().stream()
@@ -440,7 +447,12 @@ final class TemplateCompiler {
 
     var renderContext =
         new RenderContextExpression(variableSet.getVariable(StandardNames.RENDER_CONTEXT));
-    TemplateVariables variables = new TemplateVariables(variableSet, paramsVar, renderContext);
+    TemplateVariables variables =
+        new TemplateVariables(
+            variableSet,
+            variableSet.getMethodParameter(StandardNames.STACK_FRAME),
+            paramsVar,
+            renderContext);
     AppendableExpression appendable =
         AppendableExpression.forExpression(
             variableSet.getVariable(StandardNames.APPENDABLE).asNonJavaNullable());
@@ -501,7 +513,7 @@ final class TemplateCompiler {
             /* prefix= */ ExtraCodeCompiler.NO_OP,
             /* suffix= */ ExtraCodeCompiler.NO_OP);
     Statement exitTemplateScope = templateScope.exitScope();
-    Statement returnDone = Statement.returnExpression(MethodRefs.RENDER_RESULT_DONE.invoke());
+    Statement returnDone = Statement.returnExpression(constantNull(BytecodeUtils.STACK_FRAME_TYPE));
     new Statement() {
       @Override
       protected void doGen(CodeBuilder adapter) {
@@ -618,20 +630,22 @@ final class TemplateCompiler {
     Label start = new Label();
     Label end = new Label();
 
-    ImmutableList.Builder<String> paramNames = ImmutableList.builder();
-    paramNames
-        .add(StandardNames.PARAMS)
-        .add(StandardNames.APPENDABLE)
-        .add(StandardNames.RENDER_CONTEXT);
+    ImmutableList<String> paramNames =
+        ImmutableList.of(
+            StandardNames.STACK_FRAME,
+            StandardNames.PARAMS,
+            StandardNames.APPENDABLE,
+            StandardNames.RENDER_CONTEXT);
 
     TemplateVariableManager variableSet =
         new TemplateVariableManager(
             template.typeInfo().type(),
             method.getArgumentTypes(),
-            paramNames.build(),
+            paramNames,
             start,
             end,
             /* isStatic= */ true);
+    Expression stackFrameVar = variableSet.getVariable(StandardNames.STACK_FRAME);
     Expression paramsVar = variableSet.getVariable(StandardNames.PARAMS);
     Expression appendableVar = variableSet.getVariable(StandardNames.APPENDABLE);
     RenderContextExpression context =
@@ -640,7 +654,7 @@ final class TemplateCompiler {
     TemplateBasicNode templateBasicNode = (TemplateBasicNode) templateNode;
     Expression renderExpression =
         context.renderModifiable(
-            modifiableImplsMapKey(templateBasicNode), paramsVar, appendableVar);
+            modifiableImplsMapKey(templateBasicNode), stackFrameVar, paramsVar, appendableVar);
 
     Statement returnExpression = Statement.returnExpression(renderExpression);
 
@@ -660,14 +674,22 @@ final class TemplateCompiler {
     private final TemplateVariableManager variableSet;
     private final Optional<? extends Expression> paramsRecord;
     private final RenderContextExpression renderContext;
+    private final LocalVariable stackFrame;
 
     TemplateVariables(
         TemplateVariableManager variableSet,
+        LocalVariable stackFrame,
         Optional<? extends Expression> paramsRecord,
         RenderContextExpression renderContext) {
+      this.stackFrame = stackFrame;
       this.variableSet = variableSet;
       this.paramsRecord = paramsRecord;
       this.renderContext = renderContext;
+    }
+
+    @Override
+    public LocalVariable getStackFrame() {
+      return stackFrame;
     }
 
     @Override

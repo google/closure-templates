@@ -33,6 +33,7 @@ import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
 import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
+import com.google.template.soy.jbcsrc.restricted.LocalVariable;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyRuntimeType;
 import com.google.template.soy.jbcsrc.restricted.Statement;
@@ -253,6 +254,11 @@ public final class ConstantsCompiler {
     static UnsupportedOperationException unsupported() {
       return new UnsupportedOperationException(
           "This method isn't supported in constants compilation context");
+    }
+
+    @Override
+    public LocalVariable getStackFrame() {
+      throw unsupported();
     }
 
     @Override

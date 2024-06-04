@@ -32,8 +32,8 @@ import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.Visibility;
 import com.google.template.soy.types.TemplateType;
+import java.util.Arrays;
 import java.util.Optional;
-import java.util.stream.Stream;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.Method;
 
@@ -60,7 +60,8 @@ abstract class CompiledTemplateMetadata {
     return new Method(
         methodName,
         Type.getMethodDescriptor(
-            BytecodeUtils.RENDER_RESULT_TYPE,
+            BytecodeUtils.STACK_FRAME_TYPE,
+            BytecodeUtils.STACK_FRAME_TYPE,
             BytecodeUtils.PARAM_STORE_TYPE,
             BytecodeUtils.LOGGING_ADVISING_APPENDABLE_TYPE,
             BytecodeUtils.RENDER_CONTEXT_TYPE));
@@ -68,17 +69,13 @@ abstract class CompiledTemplateMetadata {
 
   /** Generates a method signature for a positional style call to the given template. */
   private static Method createPositionalRenderMethod(String methodName, TemplateType templateType) {
+    Type[] parameters = new Type[templateType.getActualParameters().size() + 3];
+    parameters[0] = BytecodeUtils.STACK_FRAME_TYPE;
+    Arrays.fill(parameters, 1, parameters.length - 2, BytecodeUtils.SOY_VALUE_PROVIDER_TYPE);
+    parameters[parameters.length - 2] = BytecodeUtils.LOGGING_ADVISING_APPENDABLE_TYPE;
+    parameters[parameters.length - 1] = BytecodeUtils.RENDER_CONTEXT_TYPE;
     return new Method(
-        methodName,
-        Type.getMethodDescriptor(
-            BytecodeUtils.RENDER_RESULT_TYPE,
-            Stream.concat(
-                    templateType.getActualParameters().stream()
-                        .map(i -> BytecodeUtils.SOY_VALUE_PROVIDER_TYPE),
-                    Stream.of(
-                        BytecodeUtils.LOGGING_ADVISING_APPENDABLE_TYPE,
-                        BytecodeUtils.RENDER_CONTEXT_TYPE))
-                .toArray(Type[]::new)));
+        methodName, Type.getMethodDescriptor(BytecodeUtils.STACK_FRAME_TYPE, parameters));
   }
 
   static boolean isPrivateCall(CallBasicNode call) {

@@ -76,6 +76,11 @@ public abstract class FieldRef {
   public static final FieldRef STACK_FRAME_STATE_NUMBER =
       instanceFieldReference(StackFrame.class, "stateNumber");
 
+  public static final FieldRef STACK_FRAME_CHILD =
+      instanceFieldReference(StackFrame.class, "child");
+  public static final FieldRef STACK_FRAME_LIMITED =
+      staticFieldReference(StackFrame.class, "LIMITED");
+
   public static FieldRef create(
       TypeInfo owner, String name, Type type, int modifiers, boolean isNullable) {
     if ((Modifier.fieldModifiers() & modifiers) != modifiers) {
