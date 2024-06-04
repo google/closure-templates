@@ -164,6 +164,10 @@ public final class CallBasicNode extends CallNode {
     } else if (getDataExpr() != null) {
       commandText.append(" data=\"").append(getDataExpr().toSourceString()).append('"');
     }
+    var variant = getVariantExpr();
+    if (variant != null) {
+      commandText.append(" variant=\"").append(variant.toSourceString()).append('"');
+    }
     getPlaceholder()
         .userSuppliedName()
         .ifPresent(phname -> commandText.append(" phname=\"").append(phname).append('"'));
