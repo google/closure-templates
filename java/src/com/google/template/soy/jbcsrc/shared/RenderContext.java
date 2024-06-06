@@ -17,7 +17,6 @@
 package com.google.template.soy.jbcsrc.shared;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Preconditions.checkState;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
@@ -34,7 +33,6 @@ import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
-import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplates.TemplateData;
 import com.google.template.soy.logging.LoggableElementMetadata;
 import com.google.template.soy.logging.SoyLogger;
@@ -245,20 +243,13 @@ public final class RenderContext {
       ParamStore params,
       LoggingAdvisingAppendable appendable)
       throws IOException {
-    SoyValueProvider variantProvider = params.getFieldProvider(Names.VARIANT_VAR_PROPERTY);
+    SoyValueProvider value = params.getFieldProvider(Names.VARIANT_VAR_PROPERTY);
     String variant;
-    if (variantProvider == null) {
+    if (value == null) {
       variant = "";
     } else {
-      RenderResult status = variantProvider.status();
-      if (!status.isDone()) {
-        // This must be the case.  If stackFrame is non null it means that we have already called
-        // into `template.render` below, and thus we have already called status successfully.
-        checkState(frame == null);
-        return StackFrame.create(status);
-      }
-      SoyValue value = variantProvider.resolve();
-      variant = value == null ? "null" : value.coerceToString();
+      // This is always fully resolved by our caller
+      variant = ((SoyValue) value).coerceToString();
     }
     CompiledTemplate template = getDelTemplate(delCalleeName, variant);
     return template.render(frame, params, appendable, this);

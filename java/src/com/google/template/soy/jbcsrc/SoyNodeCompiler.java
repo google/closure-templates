@@ -16,6 +16,7 @@
 
 package com.google.template.soy.jbcsrc;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.ImmutableList.toImmutableList;
@@ -36,10 +37,7 @@ import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.SanitizedContentKind;
-import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.basetree.Node;
 import com.google.template.soy.basetree.ParentNode;
 import com.google.template.soy.data.SoyRecord;
@@ -1274,9 +1272,6 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
 
   @Override
   protected Statement visitCallBasicNode(CallBasicNode node) {
-    // TODO(nicholasyu): if there is a variant expression, we should evaluate it prior to calling
-    // the template since we know that it will always be the first thing evaluated, there is no
-    // benefit in lazy evaluation.
     if (node.isStaticCall()) {
       // Use invokedynamic to bind to the method.  This allows applications using complex
       // classloader setups to have {call} commands cross classloader boundaries.  It also enables
@@ -1440,12 +1435,12 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     Statement initParams;
 
     TemplateVariableManager.Scope renderScope = variables.enterScope();
-    RecordOrPositional paramsExpression = prepareParamsHelper(node);
     Statement initCallee = Statement.NULL_STATEMENT;
     if (!areAllPrintDirectivesStreamable(node) || node.isErrorFallbackSkip()) {
       // in this case we need to wrap a CompiledTemplate to buffer to catch exceptions or to
       // apply non-streaming escaping directives.
-      ExpressionAndInitializer expressionAndInitializer = paramsExpression.asRecord(renderScope);
+      ExpressionAndInitializer expressionAndInitializer =
+          compileParamStoreParams(node, renderScope);
       initParams = expressionAndInitializer.initializer();
       Expression calleeExpression =
           MethodRefs.BUFFER_TEMPLATE.invoke(
@@ -1463,23 +1458,24 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       initCallee = calleeVariable.initializer();
       boundCall = simpleCall(calleeVariable.accessor(), expressionAndInitializer.expression());
     } else {
+      // We can only do a positional call if the template has such a signature and we are not using
+      // data=...
+      // TODO(lukes): we could support data=... since we know it isn't transitive, by unpacking the
+      // parameters from the data record and passing them to the callee positionally... not clear
+      // if this is worth it.  It is possibly useful for some component templates.
       Optional<DirectPositionalCallGenerator> asDirectPositionalCall =
           callGenerator.asDirectPositionalCall();
-      Optional<ListOfExpressionsAndInitializer> explicitParams;
-      if (asDirectPositionalCall.isPresent()
-          && (explicitParams =
-                  paramsExpression.asPositionalParams(
-                      node, renderScope, asDirectPositionalCall.get().calleeType()))
-              .isPresent()) {
-        initParams = explicitParams.get().initializer();
+      if (asDirectPositionalCall.isPresent() && !node.isPassingData()) {
+        var positional =
+            compilePositionalParams(node, renderScope, asDirectPositionalCall.get().calleeType());
+        initParams = positional.initializer();
         boundCall =
             (frame, output, context) ->
-                asDirectPositionalCall
-                    .get()
-                    .call(frame, explicitParams.get().expressions(), output, context);
+                asDirectPositionalCall.get().call(frame, positional.expressions(), output, context);
       } else {
         Optional<DirectCallGenerator> asDirectCall = callGenerator.asDirectCall();
-        ExpressionAndInitializer expressionAndInitializer = paramsExpression.asRecord(renderScope);
+        ExpressionAndInitializer expressionAndInitializer =
+            compileParamStoreParams(node, renderScope);
         initParams = expressionAndInitializer.initializer();
         if (asDirectCall.isPresent()) {
           boundCall = simpleCall(asDirectCall.get(), expressionAndInitializer.expression());
@@ -1563,22 +1559,12 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     abstract Statement initializer();
   }
 
-  @AutoValue
-  abstract static class RecordOrPositional {
-    static RecordOrPositional create(Expression record) {
-      return create(Suppliers.ofInstance(record), Optional.empty());
-    }
-
-    static RecordOrPositional create(
-        Supplier<Expression> record,
-        Optional<ImmutableMap<String, Supplier<Expression>>> explicit) {
-      return new AutoValue_SoyNodeCompiler_RecordOrPositional(record, explicit);
-    }
-
-    ExpressionAndInitializer asRecord(TemplateVariableManager.Scope scope) {
-      // params will only be 'cheap' if they are something trivial like the empty constant
-      // or data="all", in those cases we don't need to save/restore anything.
-      Expression record = record().get();
+  private ExpressionAndInitializer compileParamStoreParams(
+      CallNode node, TemplateVariableManager.Scope scope) {
+    // params will only be 'cheap' if they are something trivial like the empty constant
+    // or data="all", in those cases we don't need to save/restore anything.
+    Label reattachPoint = new Label();
+    Expression record = getParamStoreExpression(node, compileExplicitParams(node, reattachPoint));
       Statement initialize = Statement.NULL_STATEMENT;
       if (!record.isCheap()) {
         TemplateVariableManager.Variable paramsVariable =
@@ -1587,70 +1573,61 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
         record = paramsVariable.accessor();
         initialize = paramsVariable.initializer();
       }
-      return ExpressionAndInitializer.create(record, initialize);
+    return ExpressionAndInitializer.create(record, initialize.labelStart(reattachPoint));
     }
 
-    Optional<ListOfExpressionsAndInitializer> asPositionalParams(
-        CallNode node, TemplateVariableManager.Scope scope, TemplateType calleeType) {
-      if (explicit().isEmpty()) {
-        return Optional.empty();
-      }
+  private ListOfExpressionsAndInitializer compilePositionalParams(
+      CallNode node, TemplateVariableManager.Scope scope, TemplateType calleeType) {
+    checkArgument(!node.isPassingData());
 
-      List<Statement> initStatements = new ArrayList<>();
-      ImmutableList.Builder<Expression> builder = ImmutableList.builder();
-      Map<String, Supplier<Expression>> explicit = new HashMap<>(explicit().get());
-      ImmutableMap<String, CallParamNode> keyToParam = null;
-      for (TemplateType.Parameter param : calleeType.getActualParameters()) {
-        Supplier<Expression> supplier = explicit.remove(param.getName());
-        Expression value = supplier == null ? FieldRef.UNDEFINED_DATA.accessor() : supplier.get();
-        if (!value.isCheap()) {
-          if (keyToParam == null) {
-            keyToParam =
-                node.getChildren().stream()
-                    .collect(toImmutableMap(n -> n.getKey().identifier(), child -> child));
-          }
-          TemplateVariableManager.Variable variable =
-              scope.createSynthetic(
-                  SyntheticVarName.forParam(keyToParam.get(param.getName())),
-                  value,
-                  TemplateVariableManager.SaveStrategy.STORE);
-          value = variable.accessor();
-          initStatements.add(variable.initializer());
+    List<Statement> initStatements = new ArrayList<>();
+    ImmutableList.Builder<Expression> builder = ImmutableList.builder();
+    Label reattachPoint = new Label();
+    Map<String, Supplier<Expression>> explicit =
+        new HashMap<>(compileExplicitParams(node, reattachPoint));
+    ImmutableMap<String, CallParamNode> keyToParam = null;
+    for (TemplateType.Parameter param : calleeType.getActualParameters()) {
+      Supplier<Expression> supplier = explicit.remove(param.getName());
+      Expression value = supplier == null ? FieldRef.UNDEFINED_DATA.accessor() : supplier.get();
+      if (!value.isCheap()) {
+        if (keyToParam == null) {
+          keyToParam =
+              node.getChildren().stream()
+                  .collect(toImmutableMap(n -> n.getKey().identifier(), child -> child));
         }
-        builder.add(value);
+        TemplateVariableManager.Variable variable =
+            scope.createSynthetic(
+                SyntheticVarName.forParam(keyToParam.get(param.getName())),
+                value,
+                TemplateVariableManager.SaveStrategy.STORE);
+        value = variable.accessor();
+        initStatements.add(variable.initializer());
       }
-      if (!explicit.isEmpty()) {
-        // sanity check
-        throw new AssertionError("failed to use: " + explicit);
-      }
-      return Optional.of(
-          ListOfExpressionsAndInitializer.create(
-              builder.build(), Statement.concat(initStatements)));
+      builder.add(value);
     }
-
-    abstract Supplier<Expression> record();
-
-    abstract Optional<ImmutableMap<String, Supplier<Expression>>> explicit();
+    if (!explicit.isEmpty()) {
+      // sanity check
+      throw new AssertionError("failed to use: " + explicit);
+    }
+    return ListOfExpressionsAndInitializer.create(
+        builder.build(), Statement.concat(initStatements).labelStart(reattachPoint));
   }
 
-  private RecordOrPositional prepareParamsHelper(CallNode node) {
+  private ImmutableMap<String, Supplier<Expression>> compileExplicitParams(
+      CallNode node, Label reattachPoint) {
+    ImmutableMap.Builder<String, Supplier<Expression>> builder = ImmutableMap.builder();
+
     if (node instanceof CallBasicNode && ((CallBasicNode) node).getVariantExpr() != null) {
       CallBasicNode callBasicNode = (CallBasicNode) node;
-      node.addChild(
-          new CallParamValueNode(
-              0,
-              callBasicNode.getVariantExpr().getSourceLocation(),
-              Identifier.create(Names.VARIANT_VAR_NAME, SourceLocation.UNKNOWN),
-              callBasicNode.getVariantExpr().getRoot().copy(new CopyState())));
+      builder.put(
+          Names.VARIANT_VAR_NAME,
+          Suppliers.ofInstance(
+              exprCompiler
+                  .compileSubExpression(
+                      callBasicNode.getVariantExpr(),
+                      detachState.createExpressionDetacher(reattachPoint))
+                  .box()));
     }
-    ImmutableMap<String, Supplier<Expression>> explicitParams = compileExplicitParams(node);
-    Supplier<Expression> recordExpression = () -> getParamStoreExpression(node, explicitParams);
-    return RecordOrPositional.create(
-        recordExpression, node.isPassingData() ? Optional.empty() : Optional.of(explicitParams));
-  }
-
-  private ImmutableMap<String, Supplier<Expression>> compileExplicitParams(CallNode node) {
-    ImmutableMap.Builder<String, Supplier<Expression>> builder = ImmutableMap.builder();
     for (CallParamNode child : node.getChildren()) {
       String paramKey = child.getKey().identifier();
       Supplier<Expression> valueExpr;
