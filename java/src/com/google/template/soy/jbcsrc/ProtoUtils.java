@@ -1161,7 +1161,8 @@ final class ProtoUtils {
     }
 
     private Statement handleRepeated(ExprNode argNode, FieldDescriptor field) {
-      if (argNode.getKind() == ExprNode.Kind.LIST_LITERAL_NODE) {
+      if (argNode.getKind() == ExprNode.Kind.LIST_LITERAL_NODE
+          && !((ListLiteralNode) argNode).containsSpreads()) {
         checkState(!field.isMapField());
         List<Statement> additions = new ArrayList<>();
         ListLiteralNode list = (ListLiteralNode) argNode;

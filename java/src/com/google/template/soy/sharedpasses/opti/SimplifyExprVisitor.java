@@ -296,7 +296,9 @@ final class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
   @Nullable
   private static ExprNode visitItemAccessNode(ItemAccessNode node, ExprNode baseExpr) {
     ExprNode keyExpr = node.getChild(1);
-    if (baseExpr instanceof ListLiteralNode && keyExpr instanceof IntegerNode) {
+    if (baseExpr instanceof ListLiteralNode
+        && !((ListLiteralNode) baseExpr).containsSpreads()
+        && keyExpr instanceof IntegerNode) {
       ListLiteralNode listLiteral = (ListLiteralNode) baseExpr;
       long index = ((IntegerNode) keyExpr).getValue();
       if (index >= 0 && index < listLiteral.numChildren()) {

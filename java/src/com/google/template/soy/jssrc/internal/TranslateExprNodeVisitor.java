@@ -1049,7 +1049,8 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
         }
       } else if (fieldDesc.isRepeated()
           && !fieldDesc.isExtension()
-          && child.getKind() == ExprNode.Kind.LIST_LITERAL_NODE) {
+          && child.getKind() == ExprNode.Kind.LIST_LITERAL_NODE
+          && !((ListLiteralNode) child).containsSpreads()) {
         // use .add-er functions
         // This saves allocating an array and makes later calls to toImmutable cheaper
         ListLiteralNode listLiteral = (ListLiteralNode) child;

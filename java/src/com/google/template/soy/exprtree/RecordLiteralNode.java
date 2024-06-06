@@ -95,4 +95,8 @@ public final class RecordLiteralNode extends AbstractParentExprNode {
   public RecordLiteralNode copy(CopyState copyState) {
     return new RecordLiteralNode(this, copyState);
   }
+
+  public boolean containsSpreads() {
+    return getChildren().stream().anyMatch(SpreadOpNode.class::isInstance);
+  }
 }

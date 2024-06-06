@@ -515,7 +515,7 @@ final class ExpressionCompiler {
 
     @Override
     protected SoyExpression visitListLiteralNode(ListLiteralNode node) {
-      if (node.getChildren().stream().anyMatch(SpreadOpNode.class::isInstance)) {
+      if (node.containsSpreads()) {
         // spreads require a different implementation since we need to accumulate into a builder
         var builder = MethodRefs.IMMUTABLE_LIST_BUILDER.invoke();
         for (ExprNode child : node.getChildren()) {
@@ -661,9 +661,8 @@ final class ExpressionCompiler {
 
     @Override
     protected SoyExpression visitRecordLiteralNode(RecordLiteralNode node) {
-      boolean hasSpread = node.getChildren().stream().anyMatch(SpreadOpNode.class::isInstance);
       Expression paramStore;
-      if (hasSpread) {
+      if (node.containsSpreads()) {
         // The size here is just a guess.
         paramStore = MethodRefs.PARAM_STORE_SIZE.invoke(constant(node.numChildren()));
         for (int i = 0; i < node.numChildren(); i++) {
