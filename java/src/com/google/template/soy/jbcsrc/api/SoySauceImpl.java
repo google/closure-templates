@@ -395,11 +395,13 @@ public final class SoySauceImpl implements SoySauce {
     try {
       frame = template.render(frame, params, output, context);
     } catch (Throwable t) {
+      context.flushDeferredErrors();
       rewriteStackTrace(t);
       Throwables.throwIfInstanceOf(t, IOException.class);
       throw t;
     }
     if (frame == null) {
+      context.flushDeferredErrors();
       return Continuations.done();
     }
     return new WriteContinuationImpl(template, frame, params, output, context);
@@ -486,10 +488,12 @@ public final class SoySauceImpl implements SoySauce {
     } catch (IOException t) {
       throw new AssertionError("impossible", t);
     } catch (Throwable t) {
+      context.flushDeferredErrors();
       rewriteStackTrace(t);
       throw t;
     }
     if (frame == null) {
+      context.flushDeferredErrors();
       String content = underlying.toString();
       if (targetKind == ContentKind.TEXT) {
         // these casts are lame, the way to resolve is simply to fork this method

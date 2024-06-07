@@ -179,6 +179,10 @@ final class DetachState implements ExpressionDetacher.Factory {
     this.stackFrameVar = stackFrameVar;
   }
 
+  boolean hasDetaches() {
+    return !reattaches.isEmpty();
+  }
+
   interface NoNewDetaches extends AutoCloseable {
     @Override
     void close();

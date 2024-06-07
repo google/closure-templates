@@ -234,7 +234,8 @@ public class LazyClosureCompilerTest {
     Class<?> fileClass = templates.getTemplateData("ns.foo").templateClass();
     // two for the template and one for the let
     assertThat(fileClass.getDeclaredMethods()).hasLength(3);
-    Method letMethod = fileClass.getDeclaredMethod("foo$let_foo", IntegerData.class);
+    Method letMethod =
+        fileClass.getDeclaredMethod("foo$let_foo", RenderContext.class, IntegerData.class);
     assertThat(Modifier.toString(letMethod.getModifiers())).isEqualTo("static");
     assertThat(letMethod.getDeclaringClass()).isEqualTo(fileClass);
   }

@@ -20,7 +20,6 @@ import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_VALUE_
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_VALUE_TYPE;
 
 import com.google.common.base.Suppliers;
-import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
 import com.google.template.soy.jbcsrc.restricted.Expression;
@@ -132,17 +131,27 @@ interface ExpressionDetacher {
    * }</pre>
    */
   final class BasicDetacher implements ExpressionDetacher {
-    static final BasicDetacher INSTANCE = new BasicDetacher(() -> Statement.NULL_STATEMENT);
     private final Supplier<Statement> saveOperationSupplier;
+
+    private boolean hasDetaches;
 
     BasicDetacher(Supplier<Statement> saveOperationSupplier) {
       this.saveOperationSupplier = Suppliers.memoize(saveOperationSupplier::get);
     }
 
+    public boolean hasDetaches() {
+      return hasDetaches;
+    }
+
     @Override
     public Expression waitForSoyValueProvider(Expression soyValueProvider) {
       soyValueProvider.checkAssignableTo(BytecodeUtils.SOY_VALUE_PROVIDER_TYPE);
+      if (BytecodeUtils.isDefinitelyAssignableFrom(SOY_VALUE_TYPE, soyValueProvider.resultType())
+          || soyValueProvider.resultType().equals(BytecodeUtils.BUFFERED_SOY_VALUE_PROVIDER_TYPE)) {
+        return soyValueProvider;
+      }
       Statement saveOperation = saveOperationSupplier.get();
+      hasDetaches = true;
       return new Expression(soyValueProvider.resultType()) {
         @Override
         protected void doGen(CodeBuilder cb) {
@@ -188,6 +197,7 @@ interface ExpressionDetacher {
     public Expression resolveSoyValueProviderList(Expression soyValueProviderList) {
       soyValueProviderList.checkAssignableTo(BytecodeUtils.LIST_TYPE);
       Statement saveOperation = saveOperationSupplier.get();
+      hasDetaches = true;
       return new Expression(soyValueProviderList.resultType()) {
         @Override
         protected void doGen(CodeBuilder cb) {
@@ -221,6 +231,7 @@ interface ExpressionDetacher {
     public Expression resolveSoyValueProviderMap(Expression soyValueProviderMap) {
       soyValueProviderMap.checkAssignableTo(BytecodeUtils.MAP_TYPE);
       Statement saveOperation = saveOperationSupplier.get();
+      hasDetaches = true;
       return new Expression(soyValueProviderMap.resultType()) {
         @Override
         protected void doGen(CodeBuilder cb) {

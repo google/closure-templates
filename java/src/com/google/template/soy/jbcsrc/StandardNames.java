@@ -28,6 +28,7 @@ final class StandardNames {
   static final String CURRENT_PARAMS = "$currentParams";
   static final String STACK_FRAME = "$stackFrame";
   static final String STACK_FRAME_TMP = "$stackFrameTmp";
+  static final String BUFFER = "$buffer";
 
   private StandardNames() {}
 }

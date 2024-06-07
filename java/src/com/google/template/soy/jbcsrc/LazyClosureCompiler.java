@@ -21,9 +21,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_VALUE_PROVIDER_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
-import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constantNull;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constantSanitizedContentKindAsContentKind;
-import static com.google.template.soy.jbcsrc.restricted.Statement.returnExpression;
 import static com.google.template.soy.soytree.SoyTreeUtils.isDescendantOf;
 import static java.util.Arrays.asList;
 
@@ -35,7 +33,6 @@ import com.google.template.soy.exprtree.AbstractLocalVarDefn;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.VarDefn;
-import com.google.template.soy.jbcsrc.ExpressionDetacher.BasicDetacher;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
 import com.google.template.soy.jbcsrc.restricted.Expression;
@@ -182,6 +179,9 @@ final class LazyClosureCompiler {
               MethodType.class)
           .asHandle();
 
+  private static final MethodRef CATCH_AS_PROVIDER =
+      MethodRef.createPure(RenderContext.class, "catchAsProvider", Throwable.class);
+
   private final SoyNodeCompiler parent;
 
   LazyClosureCompiler(SoyNodeCompiler parent) {
@@ -324,7 +324,7 @@ final class LazyClosureCompiler {
     LocalVariable variable =
         scope
             .createTemporary(
-                "buffer", MethodRefs.LOGGING_ADVISING_APPENDABLE_BUFFERING.returnType())
+                StandardNames.BUFFER, MethodRefs.LOGGING_ADVISING_APPENDABLE_BUFFERING.returnType())
             .asNonJavaNullable();
     Statement initBuffer =
         variable.initialize(MethodRefs.LOGGING_ADVISING_APPENDABLE_BUFFERING.invoke());
@@ -422,15 +422,13 @@ final class LazyClosureCompiler {
     return checkNotNull(name);
   }
 
-  /**
-   * Constructs and registers a lazy method. All lazy methods begin with a boolean parameter
-   * `initial` and then have parameters for every value that was 'captured' from the parent scope.
-   */
-  private MethodRef createLazyExpressionMethod(
+  /** Constructs and registers a new method for one of our closures. */
+  private MethodRef createClosureMethod(
       String methodName,
       LazyClosureParameterLookup lookup,
       TemplateVariableManager variableSet,
-      Statement methodBody) {
+      Statement methodBody,
+      Type returnType) {
     List<Type> paramTypes = new ArrayList<>();
     List<String> paramNames = new ArrayList<>();
     int slot = 0;
@@ -441,12 +439,36 @@ final class LazyClosureCompiler {
       capture.setLocal(slot);
       slot += captureType.getSize();
     }
-    Method method =
-        new Method(methodName, BytecodeUtils.OBJECT.type(), paramTypes.toArray(new Type[0]));
+    Method method = new Method(methodName, returnType, paramTypes.toArray(new Type[0]));
     // Now that we have generated the full method we know the names and types of all parameters
     // update the parameters
     variableSet.updateParameterTypes(method.getArgumentTypes(), paramNames);
     return parent.innerMethods.registerLazyClosureMethod(method, methodBody);
+  }
+
+  interface Handler extends AutoCloseable {
+    @Override
+    public void close();
+  }
+
+  // TODO(b/289390227): remove the try/catch once we are sure it is safe.
+  static Handler catchAsThrowingSoyValueProvider(CodeBuilder cb, Expression renderContext) {
+    Label tryStart = new Label();
+    Label tryEnd = new Label();
+
+    Label handlerLabel = new Label();
+    cb.visitTryCatchBlock(
+        tryStart, tryEnd, handlerLabel, BytecodeUtils.THROWABLE_TYPE.getInternalName());
+    cb.mark(tryStart);
+    return () -> {
+      cb.mark(tryEnd);
+      cb.mark(handlerLabel);
+      // In the catch block the exception is at the top of the stack
+      renderContext.gen(cb);
+      cb.swap(); // swap the exception and the render context so we can call the method.
+      CATCH_AS_PROVIDER.invokeUnchecked(cb);
+      cb.returnValue();
+    };
   }
 
   /** A simple object to aid in generating code for a single node. */
@@ -471,6 +493,7 @@ final class LazyClosureCompiler {
       LazyClosureParameterLookup lookup =
           new LazyClosureParameterLookup(
               this, parent.parameterLookup, variableSet, Optional.empty());
+      var detacher = new ExpressionDetacher.BasicDetacher(() -> Statement.NULL_STATEMENT);
       SoyExpression compile =
           ExpressionCompiler.createBasicCompiler(
                   node,
@@ -478,23 +501,43 @@ final class LazyClosureCompiler {
                   lookup,
                   variableSet,
                   parent.javaSourceFunctionCompiler,
-                  parent.fileSetMetadata)
+                  parent.fileSetMetadata,
+                  detacher)
               .compile(exprNode);
       Expression expression = compile.box();
+      boolean hasDetaches = detacher.hasDetaches();
       final Statement returnSvp = Statement.returnExpression(expression);
+      Expression renderContextExpression = hasDetaches ? null : lookup.getRenderContext();
       Statement methodBody =
           new Statement() {
             @Override
             protected void doGen(CodeBuilder cb) {
               cb.mark(start);
-              returnSvp.gen(cb);
+              if (hasDetaches) {
+                returnSvp.gen(cb);
+              } else {
+                try (Handler handler =
+                    catchAsThrowingSoyValueProvider(cb, renderContextExpression)) {
+                  returnSvp.gen(cb);
+                }
+              }
               cb.mark(end);
               variableSet.generateTableEntries(cb);
             }
           };
-      MethodRef method = createLazyExpressionMethod(methodName, lookup, variableSet, methodBody);
-      return generateInitialCall(
-          BOOTSTRAP_DETACHABLE_SOY_VALUE_PROVIDER, method.method().getName(), lookup);
+
+      MethodRef method =
+          createClosureMethod(
+              methodName,
+              lookup,
+              variableSet,
+              methodBody,
+              hasDetaches ? BytecodeUtils.OBJECT.type() : BytecodeUtils.SOY_VALUE_PROVIDER_TYPE);
+
+      return hasDetaches
+          ? generateLazyCall(
+              BOOTSTRAP_DETACHABLE_SOY_VALUE_PROVIDER, method.method().getName(), lookup)
+          : generateEagerCall(method, lookup);
     }
 
     Optional<Expression> compileExpressionToSoyValueProviderIfUseful(
@@ -513,6 +556,7 @@ final class LazyClosureCompiler {
       LazyClosureParameterLookup lookup =
           new LazyClosureParameterLookup(
               this, parent.parameterLookup, variableSet, Optional.empty());
+      var detacher = new ExpressionDetacher.BasicDetacher(() -> Statement.NULL_STATEMENT);
 
       ExpressionCompiler expressionCompiler =
           ExpressionCompiler.create(
@@ -524,13 +568,14 @@ final class LazyClosureCompiler {
               parent.fileSetMetadata);
       Optional<Expression> expr =
           ExpressionToSoyValueProviderCompiler.create(parent.analysis, expressionCompiler, lookup)
-              .compileToSoyValueProviderIfUsefulToPreserveStreaming(
-                  exprNode, BasicDetacher.INSTANCE);
+              .compileToSoyValueProviderIfUsefulToPreserveStreaming(exprNode, detacher);
 
       if (expr.isEmpty()) {
         return Optional.empty();
       }
 
+      boolean hasDetaches = detacher.hasDetaches();
+      Expression renderContextExpression = hasDetaches ? null : lookup.getRenderContext();
       Expression expression = expr.get();
       final Statement returnSvp = Statement.returnExpression(expression);
       Statement methodBody =
@@ -538,16 +583,58 @@ final class LazyClosureCompiler {
             @Override
             protected void doGen(CodeBuilder cb) {
               cb.mark(start);
-              returnSvp.gen(cb);
+              if (hasDetaches) {
+                returnSvp.gen(cb);
+              } else {
+                try (Handler handler =
+                    catchAsThrowingSoyValueProvider(cb, renderContextExpression)) {
+                  returnSvp.gen(cb);
+                }
+              }
               cb.mark(end);
-
               variableSet.generateTableEntries(cb);
             }
           };
-      MethodRef method = createLazyExpressionMethod(methodName, lookup, variableSet, methodBody);
+      MethodRef method =
+          createClosureMethod(
+              methodName,
+              lookup,
+              variableSet,
+              methodBody,
+              hasDetaches ? BytecodeUtils.OBJECT.type() : BytecodeUtils.SOY_VALUE_PROVIDER_TYPE);
       return Optional.of(
-          generateInitialCall(
-              BOOTSTRAP_DETACHABLE_SOY_VALUE_PROVIDER_PROVIDER, method.method().getName(), lookup));
+          hasDetaches
+              ? generateLazyCall(
+                  BOOTSTRAP_DETACHABLE_SOY_VALUE_PROVIDER_PROVIDER,
+                  method.method().getName(),
+                  lookup)
+              : generateEagerCall(method, lookup));
+    }
+
+    /**
+     * Returns true if it is possible to eagerly evaluate a `RenderUnitNode`.
+     *
+     * <p>Currently, due to certain Soy externs and plugins related to content deferral (e.g.
+     * `flushLogsAndRender`) it is not possible to optimistically evaluate any html or attributes
+     * content. By making html deferral a built-in feature we should be able to remove this
+     * restriction.
+     *
+     * <p>See b/343267009 for more details.
+     */
+    private boolean canEagerlyRender(RenderUnitNode renderUnit) {
+      switch (renderUnit.getContentKind()) {
+        case HTML:
+        case ATTRIBUTES:
+        case HTML_ELEMENT:
+          return false;
+        case TRUSTED_RESOURCE_URI:
+        case TEXT:
+        case CSS:
+        case JS:
+        case URI:
+          return true;
+      }
+      throw new AssertionError("unreachable");
     }
 
     Expression compileRenderable(
@@ -588,7 +675,11 @@ final class LazyClosureCompiler {
           parent.compilerForChildNode(
               node, variableSet, lookup, AppendableExpression.forExpression(appendableParameter));
       Statement nodeBody = soyNodeCompiler.compile(renderUnit, prefix, suffix);
-      Statement returnDone = returnExpression(constantNull(BytecodeUtils.STACK_FRAME_TYPE));
+
+      // We have to lazy render if we have any detaches or if the content type doesn't allow it.
+      // TODO(b/289390227): optimistically render even when there are detaches.
+      boolean useLazyRendering =
+          soyNodeCompiler.detachState.hasDetaches() || !canEagerlyRender(renderUnit);
       Statement fullMethodBody =
           new Statement() {
             @Override
@@ -596,7 +687,12 @@ final class LazyClosureCompiler {
               cb.mark(start);
               nodeBody.gen(cb);
               cb.mark(end);
-              returnDone.gen(cb); // return RenderResult.done()
+              if (useLazyRendering) {
+                cb.pushNull(); // return the 'done' stackframe
+              } else {
+                appendableParameter.gen(cb);
+              }
+              cb.returnValue();
               variableSet.generateTableEntries(cb);
             }
           };
@@ -614,7 +710,10 @@ final class LazyClosureCompiler {
       paramTypes.add(stackFrameParameter.resultType());
       paramNames.add(stackFrameParameter.variableName());
       stackFrameParameter.shiftIndex(slot);
-      paramTypes.add(appendableParameter.resultType());
+      paramTypes.add(
+          useLazyRendering
+              ? BytecodeUtils.LOGGING_ADVISING_APPENDABLE_TYPE
+              : BytecodeUtils.BUFFERING_APPENDABLE_TYPE);
       paramNames.add(appendableParameter.variableName());
       appendableParameter.shiftIndex(slot + 1);
       var paramTypesArray = paramTypes.toArray(new Type[0]);
@@ -623,14 +722,21 @@ final class LazyClosureCompiler {
       variableSet.updateParameterTypes(paramTypesArray, paramNames);
       MethodRef method =
           parent.innerMethods.registerLazyClosureMethod(
-              new Method(methodName, BytecodeUtils.STACK_FRAME_TYPE, paramTypesArray),
+              new Method(
+                  methodName,
+                  useLazyRendering
+                      ? BytecodeUtils.STACK_FRAME_TYPE
+                      : BytecodeUtils.BUFFERING_APPENDABLE_TYPE,
+                  paramTypesArray),
               fullMethodBody);
-      return generateInitialCall(
-          BOOTSTRAP_LAZY_CONTENT_PROVIDER, method.method().getName(), lookup);
+      if (useLazyRendering) {
+        return generateLazyCall(BOOTSTRAP_LAZY_CONTENT_PROVIDER, method.method().getName(), lookup);
+      }
+      return generateEagerCallToRenderable(method, lookup);
     }
 
     /** Generates the initial call to a lazy expression function */
-    private Expression generateInitialCall(
+    private Expression generateLazyCall(
         Handle indyFactory, String implMethodName, LazyClosureParameterLookup lookup) {
       List<Expression> args = new ArrayList<>();
       for (ParentCapture capture : lookup.getCaptures()) {
@@ -653,6 +759,95 @@ final class LazyClosureCompiler {
               indyFactory);
         }
       };
+    }
+
+    /** Generates the initial call to a lazy expression function */
+    private Expression generateEagerCall(
+        MethodRef implMethodName, LazyClosureParameterLookup lookup) {
+      List<Expression> args = new ArrayList<>();
+      for (ParentCapture capture : lookup.getCaptures()) {
+        args.add(capture.parentExpression);
+      }
+      var result = implMethodName.invoke(args);
+      checkArgument(
+          BytecodeUtils.isPossiblyAssignableFrom(
+              BytecodeUtils.SOY_VALUE_PROVIDER_TYPE, result.resultType()));
+      return result;
+    }
+
+    /** Generates a call to eagerly evaluate a 'renderable' function. */
+    private Expression generateEagerCallToRenderable(
+        MethodRef implMethod, LazyClosureParameterLookup lookup) {
+      // In this case we can just call the method directly and do something like this:
+      // var buffer = LoggingAdvisingAppendable.buffering();
+      // implMethod(...args, buffer);
+      // BufferedSoyValueProvider.create(buffer);
+      //
+      // However, for compatibility with lazy rendering we need to be able to catch exceptions and
+      // capture in a ThrowingSoyValueProvider.  The problem with just adding a try catch block is
+      // that all exceptions always pop the full stack!  This means if our caller generates the
+      // returned expression at a non-zero stack depth (like what MsgCompiler does), then we will
+      // generate bad code.  So instead for optimistic or eager evaluation we need to generate a
+      // helper method to hold the try-catch.  Luckily the helper method is trivial.
+      // static SoyValueProvider implMethodHelper(...args) {
+      //   try {
+      //     return BufferedSoyValueProvider.create(implMethod(...args,
+      // LoggingAdvisingAppendable.buffering()));
+      //   } catch (Throwable t) {
+      //     return ThrowingSoyValueProvider.create(t);
+      //   }
+      // }
+      // TODO(b/289390227): remove the try...catch and just inline the call to the implMethod
+      Expression buffer = MethodRefs.LOGGING_ADVISING_APPENDABLE_BUFFERING.invoke();
+      List<Expression> args = new ArrayList<>();
+      int slot = 0;
+      Expression renderContext = null;
+      for (ParentCapture capture : lookup.getCaptures()) {
+        args.add(capture.parentExpression);
+        var type = capture.childExpression.resultType();
+        if (type.equals(BytecodeUtils.RENDER_CONTEXT_TYPE)) {
+          renderContext = capture.childExpression;
+        }
+        slot += type.getSize();
+      }
+      if (renderContext == null) {
+        args.add(parent.parameterLookup.getRenderContext());
+        int renderContextSlot = slot;
+        renderContext =
+            new Expression(
+                BytecodeUtils.RENDER_CONTEXT_TYPE,
+                Features.of(Feature.NON_JAVA_NULLABLE, Feature.CHEAP, Feature.NON_SOY_NULLISH)) {
+              @Override
+              protected void doGen(CodeBuilder cb) {
+                cb.visitVarInsn(Opcodes.ALOAD, renderContextSlot);
+              }
+            };
+      }
+      Expression renderContextFinal = renderContext;
+      Statement helperMethodBody =
+          new Statement() {
+            @Override
+            protected void doGen(CodeBuilder cb) {
+              try (Handler handler = catchAsThrowingSoyValueProvider(cb, renderContextFinal)) {
+                for (ParentCapture capture : lookup.getCaptures()) {
+                  capture.childExpression.gen(cb);
+                }
+                cb.pushNull(); // push the stack frame.
+                buffer.gen(cb);
+                implMethod.invokeUnchecked(cb);
+                MethodRefs.BUFFERED_SOY_VALUE_PROVIDER_CREATE.invokeUnchecked(cb);
+                cb.returnValue();
+              }
+            }
+          };
+      Method helperMethod =
+          new Method(
+              implMethod.method().getName() + "$eager", // better name?
+              BytecodeUtils.SOY_VALUE_PROVIDER_TYPE,
+              args.stream().map(Expression::resultType).toArray(Type[]::new));
+      MethodRef helperMethodRef =
+          parent.innerMethods.registerLazyClosureMethod(helperMethod, helperMethodBody);
+      return helperMethodRef.invoke(args);
     }
   }
 

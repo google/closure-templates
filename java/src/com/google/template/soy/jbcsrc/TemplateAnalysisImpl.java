@@ -890,6 +890,10 @@ final class TemplateAnalysisImpl implements TemplateAnalysis {
     @Override
     protected void visitAndOpNode(AndOpNode node) {
       visit(node.getChild(0));
+      // TODO(lukes): this isn't correct.  we conditionally evaluate the right side, if the left
+      // side is falsy, but if the left side is truthy we always evaluate the right side.  So given
+      // {if $foo && $bar} HERE {/if}
+      // at location HERE we know $bar has been resolved but this analysis doesn't represent that.
       executeInBranch(node.getChild(1));
     }
 

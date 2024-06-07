@@ -170,7 +170,8 @@ public final class ConstantsCompiler {
               variables,
               variableSet,
               javaSourceFunctionCompiler,
-              fileSetMetadata);
+              fileSetMetadata,
+              ExpressionDetacher.NullDetatcher.INSTANCE);
 
       SoyExpression buildConstValue = expressionCompiler.compile(constant.getExpr());
       Preconditions.checkArgument(

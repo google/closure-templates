@@ -101,3 +101,18 @@ import {Foo} from 'src/test/protobuf/test.proto';
     it works!
   {/if}
 {/template}
+
+{template testEagerExecutionFailure}
+  {@param proto: Foo}
+  {@param counter: int}
+  {if $counter === 0}
+    Done!
+  {elseif $proto != null}
+    {call testEagerExecutionFailure}
+      {param counter: $counter - 1 /}
+      {param proto: $proto.getMessageField()!.getFoo()! /}
+    {/call}
+  {else}
+    Failed!
+  {/if}
+{/template}

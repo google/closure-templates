@@ -95,7 +95,6 @@ import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.exprtree.UndefinedNode;
 import com.google.template.soy.exprtree.VarRefNode;
-import com.google.template.soy.jbcsrc.ExpressionDetacher.BasicDetacher;
 import com.google.template.soy.jbcsrc.restricted.Branch;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
@@ -179,14 +178,15 @@ final class ExpressionCompiler {
         TemplateParameterLookup parameters,
         LocalVariableManager varManager,
         JavaSourceFunctionCompiler sourceFunctionCompiler,
-        PartialFileSetMetadata fileSetMetadata) {
+        PartialFileSetMetadata fileSetMetadata,
+        ExpressionDetacher detacher) {
       this.compilerVisitor =
           new CompilerVisitor(
               context,
               analysis,
               parameters,
               varManager,
-              BasicDetacher.INSTANCE,
+              detacher,
               sourceFunctionCompiler,
               fileSetMetadata,
               /* isConstantContext= */ false);
@@ -298,9 +298,16 @@ final class ExpressionCompiler {
       TemplateParameterLookup parameters,
       LocalVariableManager varManager,
       JavaSourceFunctionCompiler sourceFunctionCompiler,
-      PartialFileSetMetadata fileSetMetadata) {
+      PartialFileSetMetadata fileSetMetadata,
+      ExpressionDetacher detacher) {
     return new BasicExpressionCompiler(
-        context, analysis, parameters, varManager, sourceFunctionCompiler, fileSetMetadata);
+        context,
+        analysis,
+        parameters,
+        varManager,
+        sourceFunctionCompiler,
+        fileSetMetadata,
+        detacher);
   }
 
   /**
@@ -2075,9 +2082,6 @@ final class ExpressionCompiler {
       switch (node.getDefnDecl().kind()) {
         case COMPREHENSION_VAR:
           return true;
-        case PARAM:
-        case LOCAL_VAR:
-          return false;
         case CONST:
           // For consts we could allow references if they are in the same file and they themselves
           // are constants. However, this would require changing the calling convention so that
@@ -2090,6 +2094,8 @@ final class ExpressionCompiler {
           // For things like proto extensions and constructors we could allow references. But it
           // isn't clear that that is very useful. For cross file `const`s this isn't possible
           return false;
+        case PARAM:
+        case LOCAL_VAR:
         case EXTERN:
           return false;
         case TEMPLATE:

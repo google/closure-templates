@@ -46,7 +46,9 @@ import com.google.template.soy.shared.SoyIdRenamingMap;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.ibm.icu.util.ULocale;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.IdentityHashMap;
+import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -87,6 +89,8 @@ public final class RenderContext {
 
   private final boolean debugSoyTemplateInfo;
   private final SoyLogger logger;
+
+  private List<ThrowingSoyValueProvider> deferredErrors;
 
   public RenderContext(
       CompiledTemplates templates,
@@ -453,6 +457,27 @@ public final class RenderContext {
   /** Retrieves an injected parameter with a default if unset. */
   public SoyValueProvider getInjectedValue(RecordProperty key, SoyValue defaultValue) {
     return SoyValueProvider.withDefault(ijData.get(key), defaultValue);
+  }
+
+  /** Catches a deferred error */
+  public SoyValueProvider catchAsProvider(Throwable t) {
+    var provider = new ThrowingSoyValueProvider(t);
+    var deferredErrors = this.deferredErrors;
+    if (deferredErrors == null) {
+      deferredErrors = this.deferredErrors = new ArrayList<>();
+    }
+    deferredErrors.add(provider);
+    return provider;
+  }
+
+  public void flushDeferredErrors() {
+    var deferredErrors = this.deferredErrors;
+    if (deferredErrors != null) {
+      for (var provider : deferredErrors) {
+        provider.maybeLog();
+      }
+      this.deferredErrors = null;
+    }
   }
 
   @VisibleForTesting

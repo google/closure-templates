@@ -369,6 +369,10 @@ public class SoySauceTest {
         .isEqualTo("null");
   }
 
+  // When eager evaluation fails, we defer the error and log it at the end
+
+  // But if we report the error then we don't log it
+
   /**
    * Regression test for http://b/296964679. This ensures that execution order in == is preserved
    * (i.e. the left expression is always executed first). We analyze templates to figure out which

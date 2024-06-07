@@ -981,6 +981,10 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
         clearAppendable = appendable.flushBuffers(wrappedAppendable.flushBuffersDepth());
       }
     }
+    // TODO(b/289390227): there are some cases where we statically know that this will not require a
+    // detach despite our static analysis saying otherwise.  Remove references to the analyzer and
+    // instead type test the expression.  If the ExpressionCompiler doesn't require a detach we
+    // should get something statically typed as a BufferedSoyValueProvider or a SoyValue subtype.
     Expression callRenderAndResolve =
         soyValueProvider.invoke(MethodRefs.SOY_VALUE_PROVIDER_RENDER_AND_RESOLVE, appendable);
     Statement doCall =

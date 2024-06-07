@@ -336,6 +336,7 @@ public final class TemplateTester {
       if (result != null) {
         failWithActual("expected to render to completion", result);
       }
+      context.flushDeferredErrors();
 
       check("render()").that(builder.toString()).isEqualTo(expectedOutput);
       check("logOutput()").that(logOutput.toString()).isEqualTo(expectedLogged);
