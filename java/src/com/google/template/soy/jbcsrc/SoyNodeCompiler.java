@@ -16,7 +16,6 @@
 
 package com.google.template.soy.jbcsrc;
 
-import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.ImmutableList.toImmutableList;
@@ -30,6 +29,7 @@ import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_VALUE_
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.STACK_FRAME_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.compareSoySwitchCaseEquals;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
+import static java.util.function.Function.identity;
 import static org.objectweb.asm.commons.GeneratorAdapter.EQ;
 
 import com.google.auto.value.AutoValue;
@@ -74,6 +74,7 @@ import com.google.template.soy.jbcsrc.shared.SwitchFactory;
 import com.google.template.soy.logging.LoggingFunction;
 import com.google.template.soy.msgs.internal.MsgUtils;
 import com.google.template.soy.msgs.internal.MsgUtils.MsgPartsAndIds;
+import com.google.template.soy.passes.IndirectParamsCalculator;
 import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.AbstractReturningSoyNodeVisitor;
@@ -86,6 +87,7 @@ import com.google.template.soy.soytree.CallParamValueNode;
 import com.google.template.soy.soytree.CaseOrDefaultNode;
 import com.google.template.soy.soytree.ConstNode;
 import com.google.template.soy.soytree.DebuggerNode;
+import com.google.template.soy.soytree.FileSetMetadata;
 import com.google.template.soy.soytree.ForNode;
 import com.google.template.soy.soytree.ForNonemptyNode;
 import com.google.template.soy.soytree.IfCondNode;
@@ -99,7 +101,6 @@ import com.google.template.soy.soytree.MsgFallbackGroupNode;
 import com.google.template.soy.soytree.MsgHtmlTagNode;
 import com.google.template.soy.soytree.MsgNode;
 import com.google.template.soy.soytree.MsgPlaceholderNode;
-import com.google.template.soy.soytree.PartialFileSetMetadata;
 import com.google.template.soy.soytree.PrintDirectiveNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
@@ -131,6 +132,8 @@ import java.util.Map;
 import java.util.NavigableSet;
 import java.util.Optional;
 import java.util.TreeMap;
+import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 import org.objectweb.asm.Handle;
@@ -167,7 +170,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       FieldManager fields,
       BasicExpressionCompiler constantCompiler,
       JavaSourceFunctionCompiler javaSourceFunctionCompiler,
-      PartialFileSetMetadata fileSetMetadata) {
+      FileSetMetadata fileSetMetadata) {
     // We pass a lazy supplier of render context so that lazy closure compiler classes that don't
     // generate detach logic don't trigger capturing this value into a field.
     DetachState detachState = new DetachState(variables, parameterLookup.getStackFrame());
@@ -209,7 +212,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   final ExpressionToSoyValueProviderCompiler expressionToSoyValueProviderCompiler;
   final BasicExpressionCompiler constantCompiler;
   final JavaSourceFunctionCompiler javaSourceFunctionCompiler;
-  final PartialFileSetMetadata fileSetMetadata;
+  final FileSetMetadata fileSetMetadata;
   private Scope currentScope;
 
   SoyNodeCompiler(
@@ -225,7 +228,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       ExpressionToSoyValueProviderCompiler expressionToSoyValueProviderCompiler,
       BasicExpressionCompiler constantCompiler,
       JavaSourceFunctionCompiler javaSourceFunctionCompiler,
-      PartialFileSetMetadata fileSetMetadata) {
+      FileSetMetadata fileSetMetadata) {
     this.typeInfo = checkNotNull(typeInfo);
     this.analysis = checkNotNull(analysis);
     this.innerMethods = innerMethods;
@@ -1280,7 +1283,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       // Use invokedynamic to bind to the method.  This allows applications using complex
       // classloader setups to have {call} commands cross classloader boundaries.  It also enables
       // our stubbing library to intercept all calls.
-      CompiledTemplateMetadata metadata = CompiledTemplateMetadata.create(node);
+      CompiledTemplateMetadata metadata = CompiledTemplateMetadata.create(node, fileSetMetadata);
       // For private calls we can directly dispatch, but in order to support test stubbing we need
       // to dispatch all calls to public templates through our invokedyanmic infrastructure
       boolean isPrivateCall = CompiledTemplateMetadata.isPrivateCall(node);
@@ -1462,14 +1465,9 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       initCallee = calleeVariable.initializer();
       boundCall = simpleCall(calleeVariable.accessor(), expressionAndInitializer.expression());
     } else {
-      // We can only do a positional call if the template has such a signature and we are not using
-      // data=...
-      // TODO(lukes): we could support data=... since we know it isn't transitive, by unpacking the
-      // parameters from the data record and passing them to the callee positionally... not clear
-      // if this is worth it.  It is possibly useful for some component templates.
       Optional<DirectPositionalCallGenerator> asDirectPositionalCall =
           callGenerator.asDirectPositionalCall();
-      if (asDirectPositionalCall.isPresent() && !node.isPassingData()) {
+      if (asDirectPositionalCall.isPresent()) {
         var positional =
             compilePositionalParams(node, renderScope, asDirectPositionalCall.get().calleeType());
         initParams = positional.initializer();
@@ -1582,9 +1580,61 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
 
   private ListOfExpressionsAndInitializer compilePositionalParams(
       CallNode node, TemplateVariableManager.Scope scope, TemplateType calleeType) {
-    checkArgument(!node.isPassingData());
-
     List<Statement> initStatements = new ArrayList<>();
+    // For positional calls we support looking up non-explicitly passed parameters from the data=
+    // expression.
+    Function<TemplateType.Parameter, Expression> paramFallback;
+    if (node.isPassingData()) {
+      if (node.isPassingAllData()) {
+        ImmutableMap<String, TemplateParam> callerParams =
+            node.getNearestAncestor(TemplateNode.class).getParams().stream()
+                .collect(toImmutableMap(TemplateParam::name, identity()));
+        paramFallback =
+            calleeParam -> {
+              // If it matches a param on our signature, just access it directly. This supports the
+              // case where the callee template has a positional signature.
+              TemplateParam param = callerParams.get(calleeParam.getName());
+              if (param != null) {
+                return parameterLookup.getParam(param).asCheap();
+              }
+              // For indirect parameters we must have a params record, unless it is an implicit
+              // parameter.
+              if (calleeParam.isImplicit()) {
+                return FieldRef.UNDEFINED_DATA.accessor();
+              }
+              // Otherwise, we must have a params record just unpack the parameter from it.
+              return parameterLookup
+                  .getParamsRecord()
+                  .orElseThrow(
+                      () -> new IllegalStateException("no local param found for " + calleeParam))
+                  .invoke(
+                      MethodRefs.PARAM_STORE_GET_PARAMETER,
+                      BytecodeUtils.constantRecordProperty(calleeParam.getName()))
+                  .asCheap();
+            };
+      } else {
+        Label reattachPoint = new Label();
+        Expression data = getDataRecordExpression(node, reattachPoint);
+        TemplateVariableManager.Variable variable =
+            scope.createSynthetic(
+                SyntheticVarName.dataExpr(), data, TemplateVariableManager.SaveStrategy.STORE);
+
+        var value = variable.accessor();
+        initStatements.add(variable.initializer().labelStart(reattachPoint));
+        paramFallback =
+            calleeParam ->
+                calleeParam.isImplicit()
+                    ? FieldRef.UNDEFINED_DATA.accessor()
+                    : value
+                        .invoke(
+                            MethodRefs.PARAM_STORE_GET_PARAMETER,
+                            BytecodeUtils.constantRecordProperty(calleeParam.getName()))
+                        .asCheap();
+      }
+    } else {
+      paramFallback = name -> FieldRef.UNDEFINED_DATA.accessor();
+    }
+
     ImmutableList.Builder<Expression> builder = ImmutableList.builder();
     Label reattachPoint = new Label();
     Map<String, Supplier<Expression>> explicit =
@@ -1592,7 +1642,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     ImmutableMap<String, CallParamNode> keyToParam = null;
     for (TemplateType.Parameter param : calleeType.getActualParameters()) {
       Supplier<Expression> supplier = explicit.remove(param.getName());
-      Expression value = supplier == null ? FieldRef.UNDEFINED_DATA.accessor() : supplier.get();
+      Expression value = supplier == null ? paramFallback.apply(param) : supplier.get();
       if (!value.isCheap()) {
         if (keyToParam == null) {
           keyToParam =
@@ -1661,29 +1711,63 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       CallNode node, Map<String, Supplier<Expression>> params) {
     Map<String, Expression> paramsMap = new LinkedHashMap<>();
     params.forEach((k, v) -> paramsMap.put(k, v.get()));
-    if (node.isPassingAllData()) {
-      maybeAddDefaultParams(node, paramsMap);
-    }
-
+    Optional<Expression> baseRecord;
+    ;
     Label reattachDataLabel = new Label();
-    Optional<Expression> baseRecord =
-        node.isPassingAllData()
-            ? Optional.of(parameterLookup.getParamsRecord())
-            : node.isPassingData()
-                ? Optional.of(getDataRecordExpression(node, reattachDataLabel))
-                : Optional.empty();
+    if (node.isPassingAllData()) {
+      maybeAddCallerParametersForDataAllCall(node, paramsMap);
+      baseRecord = parameterLookup.getParamsRecord();
+    } else {
+      baseRecord =
+          node.isPassingData()
+              ? Optional.of(getDataRecordExpression(node, reattachDataLabel))
+              : Optional.empty();
+    }
 
     return BytecodeUtils.newParamStore(baseRecord, paramsMap).labelStart(reattachDataLabel);
   }
 
-  private void maybeAddDefaultParams(CallNode node, Map<String, Expression> paramsMap) {
-    // If this is a data="all" call and the caller has default parameters we need to augment the
-    // params record to make sure any unset default parameters are set to the default in the
-    // params record. It's not worth it to determine if we're using the default value or not
-    // here, so just augment all default parameters with whatever value they ended up with.
+  /**
+   * Augment the set of explicit parameters with values from the local template signature.
+   *
+   * <p>We need to do this in 2 cases:
+   *
+   * <ul>
+   *   <li>The caller has a default value for the parameter. In this case we need to pass the
+   *       default when otherwise unset.
+   *   <li>The caller is passing data="all" but has a positional signature, now we need to copy
+   *       local parameters to the new record.
+   * </ul>
+   *
+   * <p>Finally, we should avoid doing this for 'all' caller parameters and instead only do it for
+   * those parameters that satisfy a callee parameter.
+   */
+  private void maybeAddCallerParametersForDataAllCall(
+      CallNode node, Map<String, Expression> paramsMap) {
+    Predicate<String> isCalleeParameter = s -> true;
+
+    if (node instanceof CallBasicNode) {
+      CallBasicNode callBasicNode = (CallBasicNode) node;
+      if (callBasicNode.isStaticCall()) {
+        var indirectParams =
+            new IndirectParamsCalculator(fileSetMetadata)
+                .calculateIndirectParams(callBasicNode.getStaticType());
+        if (!indirectParams.mayHaveExternalParams()) {
+          var directParams =
+              callBasicNode.getStaticType().getActualParameters().stream()
+                  .map(p -> p.getName())
+                  .collect(toImmutableSet());
+          isCalleeParameter =
+              param ->
+                  directParams.contains(param) || indirectParams.indirectParams.containsKey(param);
+        }
+      }
+    }
     for (TemplateParam param : node.getNearestAncestor(TemplateNode.class).getParams()) {
-      if (param.hasDefault() && !paramsMap.containsKey(param.name())) {
-        paramsMap.put(param.name(), parameterLookup.getParam(param));
+      if (!paramsMap.containsKey(param.name()) && isCalleeParameter.test(param.name())) {
+        if (param.hasDefault() || parameterLookup.getParamsRecord().isEmpty()) {
+          paramsMap.put(param.name(), parameterLookup.getParam(param));
+        }
       }
     }
   }

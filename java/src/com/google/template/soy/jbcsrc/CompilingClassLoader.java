@@ -29,7 +29,7 @@ import com.google.template.soy.internal.exemptions.NamespaceExemptions;
 import com.google.template.soy.jbcsrc.internal.AbstractMemoryClassLoader;
 import com.google.template.soy.jbcsrc.internal.ClassData;
 import com.google.template.soy.jbcsrc.shared.Names;
-import com.google.template.soy.soytree.PartialFileSetMetadata;
+import com.google.template.soy.soytree.FileSetMetadata;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.TemplateNode;
@@ -48,13 +48,13 @@ final class CompilingClassLoader extends AbstractMemoryClassLoader {
   private final ErrorFormatter errorFormatter;
   private final ImmutableMap<String, SoyFileNode> javaClassNameToFile;
   private final SoyTypeRegistry typeRegistry;
-  private final PartialFileSetMetadata fileSetMetadata;
+  private final FileSetMetadata fileSetMetadata;
 
   CompilingClassLoader(
       SoyFileSetNode fileSet,
       ImmutableMap<SourceLogicalPath, SoyFileSupplier> filePathsToSuppliers,
       SoyTypeRegistry typeRegistry,
-      PartialFileSetMetadata fileSetMetadata) {
+      FileSetMetadata fileSetMetadata) {
     Map<String, SoyFileNode> javaClassNameToFile = new LinkedHashMap<>();
     for (SoyFileNode file : fileSet.getChildren()) {
       if (NamespaceExemptions.isKnownDuplicateNamespace(file.getNamespace())) {

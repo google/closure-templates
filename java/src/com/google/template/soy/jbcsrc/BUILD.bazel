@@ -44,6 +44,7 @@ java_library(
         "//java/src/com/google/template/soy/logging:public",
         "//java/src/com/google/template/soy/msgs",
         "//java/src/com/google/template/soy/msgs/internal",
+        "//java/src/com/google/template/soy/passes",
         "//java/src/com/google/template/soy/plugin/internal",
         "//java/src/com/google/template/soy/plugin/java/internal",
         "//java/src/com/google/template/soy/plugin/java/restricted",

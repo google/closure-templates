@@ -268,7 +268,7 @@ public final class ConstantsCompiler {
     }
 
     @Override
-    public Expression getParamsRecord() {
+    public Optional<Expression> getParamsRecord() {
       throw unsupported();
     }
 

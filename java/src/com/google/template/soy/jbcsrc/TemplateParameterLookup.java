@@ -16,7 +16,6 @@
 
 package com.google.template.soy.jbcsrc;
 
-import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.exprtree.AbstractLocalVarDefn;
 import com.google.template.soy.jbcsrc.restricted.Expression;
@@ -24,6 +23,7 @@ import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
 import com.google.template.soy.jbcsrc.restricted.LocalVariable;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.soytree.defn.TemplateParam;
+import java.util.Optional;
 
 /** A mechanism to lookup expressions for accessing template parameters. */
 interface TemplateParameterLookup {
@@ -89,7 +89,9 @@ interface TemplateParameterLookup {
 
   /**
    * Returns the current template's parameter dictionary. The returned expression will have a {@link
-   * Expression#resultType()} of {@link SoyRecord}.
+   * Expression#resultType()} of {@link ParamStore}.
+   *
+   * <p>Will be empty if the current template has a positional signature.
    */
-  Expression getParamsRecord();
+  Optional<Expression> getParamsRecord();
 }

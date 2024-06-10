@@ -68,6 +68,7 @@ import com.google.template.soy.types.UnknownType;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -597,7 +598,7 @@ public class ExpressionCompilerTest {
               }
 
               @Override
-              public Expression getParamsRecord() {
+              public Optional<Expression> getParamsRecord() {
                 throw new UnsupportedOperationException();
               }
             },

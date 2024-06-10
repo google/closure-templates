@@ -923,7 +923,7 @@ final class LazyClosureCompiler {
     private final Map<SyntheticVarName, ParentCapture> syntheticCaptures = new LinkedHashMap<>();
     private ParentCapture renderContextCapture;
     private ParentCapture ijCapture;
-    private ParentCapture paramsCapture;
+    private Optional<ParentCapture> paramsCapture;
     private final Optional<LocalVariable> stackFrame;
 
     LazyClosureParameterLookup(
@@ -953,14 +953,13 @@ final class LazyClosureCompiler {
       return capture.childExpression;
     }
 
-
     @Override
-    public Expression getParamsRecord() {
+    public Optional<Expression> getParamsRecord() {
       if (paramsCapture == null) {
-        paramsCapture =
-            ParentCapture.create(StandardNames.PARAMS, parentParameterLookup.getParamsRecord());
+        var parentParams = parentParameterLookup.getParamsRecord();
+        paramsCapture = parentParams.map(e -> ParentCapture.create(StandardNames.PARAMS, e));
       }
-      return paramsCapture.childExpression;
+      return paramsCapture.map(c -> c.childExpression);
     }
 
     @Override
@@ -998,7 +997,11 @@ final class LazyClosureCompiler {
     Iterable<ParentCapture> getCaptures() {
       return Iterables.concat(
           Iterables.filter(
-              asList(renderContextCapture, ijCapture, paramsCapture), Objects::nonNull),
+              asList(
+                  renderContextCapture,
+                  ijCapture,
+                  paramsCapture == null ? null : paramsCapture.orElse(null)),
+              Objects::nonNull),
           variableCaptures.values(),
           syntheticCaptures.values());
     }

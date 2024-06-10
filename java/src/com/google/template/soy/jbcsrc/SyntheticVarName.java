@@ -43,6 +43,10 @@ abstract class SyntheticVarName {
     return new AutoValue_SyntheticVarName(StandardNames.CURRENT_PARAMS, null);
   }
 
+  static SyntheticVarName dataExpr() {
+    return new AutoValue_SyntheticVarName(StandardNames.CURRENT_DATA_EXPR, null);
+  }
+
   static SyntheticVarName forSwitch(SwitchNode node) {
     return new AutoValue_SyntheticVarName("switch", node);
   }

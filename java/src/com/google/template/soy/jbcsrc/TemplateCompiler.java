@@ -51,12 +51,11 @@ import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.Statement;
 import com.google.template.soy.jbcsrc.shared.TemplateMetadata;
 import com.google.template.soy.soytree.CallDelegateNode;
-import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamValueNode;
+import com.google.template.soy.soytree.FileSetMetadata;
 import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.LetValueNode;
-import com.google.template.soy.soytree.PartialFileSetMetadata;
 import com.google.template.soy.soytree.SoyFileNode.CssPath;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
@@ -99,7 +98,7 @@ final class TemplateCompiler {
   private final SoyClassWriter writer;
   private final TemplateAnalysis analysis;
   private final JavaSourceFunctionCompiler javaSourceFunctionCompiler;
-  private final PartialFileSetMetadata fileSetMetadata;
+  private final FileSetMetadata fileSetMetadata;
 
   TemplateCompiler(
       TemplateNode templateNode,
@@ -107,8 +106,8 @@ final class TemplateCompiler {
       FieldManager fields,
       InnerMethods innerClasses,
       JavaSourceFunctionCompiler javaSourceFunctionCompiler,
-      PartialFileSetMetadata fileSetMetadata) {
-    this.template = CompiledTemplateMetadata.create(templateNode);
+      FileSetMetadata fileSetMetadata) {
+    this.template = CompiledTemplateMetadata.create(templateNode, fileSetMetadata);
     this.templateNode = templateNode;
     this.writer = writer;
     this.fields = fields;
@@ -479,9 +478,7 @@ final class TemplateCompiler {
     List<Statement> paramInitStatements = new ArrayList<>();
     var referencedParams = getReferencedParams(templateNode);
     for (TemplateParam param : templateNode.getAllParams()) {
-      if (!referencedParams.contains(param)) {
-        continue;
-      }
+      boolean isExplicitlyReferenced = referencedParams.contains(param);
       SoyExpression defaultValue =
           param.hasDefault()
               ? getDefaultValue(param, nodeCompiler.exprCompiler, constantCompiler)
@@ -490,20 +487,35 @@ final class TemplateCompiler {
       LocalVariable localVariable;
       // When pulling params out of ParamStores we need to allocate locals for them
       if (param.isInjected()) {
-        initialValue = renderContext.getInjectedValue(param.name(), defaultValue);
-        localVariable = templateScope.createNamedLocal(param.name(), initialValue.resultType());
-        paramInitStatements.add(localVariable.initialize(initialValue));
+        // For injected parameters, we only need to allocate a local if the parameter is explicitly
+        // referenced.
+        if (isExplicitlyReferenced) {
+          initialValue = renderContext.getInjectedValue(param.name(), defaultValue);
+          localVariable = templateScope.createNamedLocal(param.name(), initialValue.resultType());
+          paramInitStatements.add(localVariable.initialize(initialValue));
+        }
       } else if (paramsVar.isPresent()) {
         initialValue = getFieldProviderOrDefault(param.name(), paramsVar.get(), defaultValue);
-        localVariable = templateScope.createNamedLocal(param.name(), initialValue.resultType());
-        paramInitStatements.add(localVariable.initialize(initialValue));
+        if (isExplicitlyReferenced) {
+          localVariable = templateScope.createNamedLocal(param.name(), initialValue.resultType());
+          paramInitStatements.add(localVariable.initialize(initialValue));
+        } else {
+          templateScope.createTrivial(param.name(), initialValue);
+        }
       } else {
         // positional parameters just need defaults to be managed
         if (defaultValue != null) {
           localVariable = (LocalVariable) variableSet.getVariable(param.name());
-          paramInitStatements.add(
-              localVariable.store(
-                  MethodRefs.RUNTIME_PARAM_OR_DEFAULT.invoke(localVariable, defaultValue.box())));
+          Expression initializer =
+              MethodRefs.RUNTIME_PARAM_OR_DEFAULT.invoke(localVariable, defaultValue.box());
+          if (isExplicitlyReferenced) {
+            paramInitStatements.add(
+                localVariable.store(
+                    MethodRefs.RUNTIME_PARAM_OR_DEFAULT.invoke(localVariable, defaultValue.box())));
+          } else {
+            // If they aren't referenced just compute default on demand.
+            templateScope.createTrivial(param.name(), initializer);
+          }
         }
       }
     }
@@ -538,28 +550,11 @@ final class TemplateCompiler {
    * passed by {@code data="all"} callsites.
    */
   private static Set<TemplateParam> getReferencedParams(TemplateNode templateNode) {
-    Set<TemplateParam> referencedVars =
-        SoyTreeUtils.allNodesOfType(templateNode, VarRefNode.class)
-            .map(v -> v.getDefnDecl())
-            .filter(d -> d instanceof TemplateParam)
-            .map(d -> (TemplateParam) d)
-            .collect(toCollection(() -> Collections.newSetFromMap(new IdentityHashMap<>())));
-    if (referencedVars.size() == templateNode.getHeaderParams().size()) {
-      return referencedVars;
-    }
-
-    for (CallNode call : SoyTreeUtils.getAllNodesOfType(templateNode, CallNode.class)) {
-      if (call.isPassingAllData()) {
-        ImmutableSet<String> explicitCallParams =
-            call.getChildren().stream().map(c -> c.getKey().identifier()).collect(toImmutableSet());
-        for (TemplateParam param : templateNode.getParams()) {
-          if (param.hasDefault() && !explicitCallParams.contains(param.name())) {
-            referencedVars.add(param);
-          }
-        }
-      }
-    }
-    return referencedVars;
+    return SoyTreeUtils.allNodesOfType(templateNode, VarRefNode.class)
+        .map(v -> v.getDefnDecl())
+        .filter(d -> d instanceof TemplateParam)
+        .map(d -> (TemplateParam) d)
+        .collect(toCollection(() -> Collections.newSetFromMap(new IdentityHashMap<>())));
   }
 
   // TODO(lukes): it seems like this should actually compile params to SoyValueProvider instances
@@ -672,14 +667,14 @@ final class TemplateCompiler {
 
   private static final class TemplateVariables implements TemplateParameterLookup {
     private final TemplateVariableManager variableSet;
-    private final Optional<? extends Expression> paramsRecord;
+    private final Optional<Expression> paramsRecord;
     private final RenderContextExpression renderContext;
     private final LocalVariable stackFrame;
 
     TemplateVariables(
         TemplateVariableManager variableSet,
         LocalVariable stackFrame,
-        Optional<? extends Expression> paramsRecord,
+        Optional<Expression> paramsRecord,
         RenderContextExpression renderContext) {
       this.stackFrame = stackFrame;
       this.variableSet = variableSet;
@@ -698,8 +693,8 @@ final class TemplateCompiler {
     }
 
     @Override
-    public Expression getParamsRecord() {
-      return paramsRecord.get();
+    public Optional<Expression> getParamsRecord() {
+      return paramsRecord;
     }
 
     @Override

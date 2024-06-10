@@ -16,6 +16,8 @@
 
 package com.google.template.soy.jbcsrc;
 
+import static com.google.common.collect.ImmutableSet.toImmutableSet;
+
 import com.google.auto.value.AutoValue;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
@@ -25,7 +27,9 @@ import com.google.template.soy.jbcsrc.restricted.TypeInfo;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.Names;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
+import com.google.template.soy.passes.IndirectParamsCalculator;
 import com.google.template.soy.soytree.CallBasicNode;
+import com.google.template.soy.soytree.FileSetMetadata;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.TemplateMetadata;
@@ -99,28 +103,42 @@ abstract class CompiledTemplateMetadata {
     return new Method(methodName, Type.getMethodDescriptor(BytecodeUtils.COMPILED_TEMPLATE_TYPE));
   }
 
-  static CompiledTemplateMetadata create(TemplateNode node) {
-    return create(node.getTemplateName(), TemplateMetadata.buildTemplateType(node));
+  static CompiledTemplateMetadata create(TemplateNode node, FileSetMetadata fileSetMetadata) {
+    return create(
+        node.getTemplateName(), TemplateMetadata.buildTemplateType(node), fileSetMetadata);
   }
 
-  static CompiledTemplateMetadata create(CallBasicNode callNode) {
-    return create(callNode.getCalleeName(), callNode.getStaticType());
+  static CompiledTemplateMetadata create(CallBasicNode callNode, FileSetMetadata fileSetMetadata) {
+    return create(callNode.getCalleeName(), callNode.getStaticType(), fileSetMetadata);
   }
 
-  private static CompiledTemplateMetadata create(String templateName, TemplateType templateType) {
+  private static CompiledTemplateMetadata create(
+      String templateName, TemplateType templateType, FileSetMetadata fileSetMetadata) {
     String className = Names.javaClassNameFromSoyTemplateName(templateName);
     TypeInfo type = TypeInfo.createClass(className);
+    var params =
+        new IndirectParamsCalculator(fileSetMetadata).calculateIndirectParams(templateType);
+    // Check if there is any indirect param that is not declared by this template.
+    boolean hasUndeclaredIndirectParams;
+    if (params.indirectParams.isEmpty()) {
+      hasUndeclaredIndirectParams = false;
+    } else {
+      var declaredParamNames =
+          templateType.getActualParameters().stream()
+              .map(p -> p.getName())
+              .collect(toImmutableSet());
+      hasUndeclaredIndirectParams =
+          params.indirectParams.keySet().stream().anyMatch(p -> !declaredParamNames.contains(p));
+    }
+
     // Decide whether or not to use a positional style call signature.
-    // Positional parameters are not possible to do if there are indirect calls since those may
-    // require parameters not declared in our signature.
-    // If there are no parameters, then there is no value in exploding into multiple functions
-    // If the template is a Soy element, then we also need the `opt_data` object.
+    // Positional parameters are not possible to do if there are any indirect parameters that are
+    // not declared by this template.  To satisfy those we must allow passing a ParamStore.
+    // We could allow for those but it would require changing the TemplateType to declare all
+    // indirect parameters as optional in the template signature.
     boolean hasPositionalSignature =
-        templateType.getDataAllCallSituations().isEmpty()
-            // Skip positional signatures when there are no parameters.  This is not necessary for
-            // correctness however in this case there is very little benefit in the positional
-            // overload and so we can generate one fewer method by just not generating it.
-            && !templateType.getActualParameters().isEmpty()
+        !params.mayHaveExternalParams()
+            && !hasUndeclaredIndirectParams
             // only basic/element templates are supported for now.
             // deltemplates require the object style to support the relatively weak type checking we
             // perform on them.

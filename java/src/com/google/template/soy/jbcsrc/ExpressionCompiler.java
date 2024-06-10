@@ -260,7 +260,7 @@ final class ExpressionCompiler {
               }
 
               @Override
-              public Expression getParamsRecord() {
+              public Optional<Expression> getParamsRecord() {
                 throw unsupported();
               }
 

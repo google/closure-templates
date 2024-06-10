@@ -29,7 +29,7 @@ import com.google.template.soy.jbcsrc.restricted.TypeInfo;
 import com.google.template.soy.jbcsrc.shared.Names;
 import com.google.template.soy.soytree.ConstNode;
 import com.google.template.soy.soytree.ExternNode;
-import com.google.template.soy.soytree.PartialFileSetMetadata;
+import com.google.template.soy.soytree.FileSetMetadata;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.TemplateNode;
 import org.objectweb.asm.Opcodes;
@@ -42,12 +42,12 @@ final class SoyFileCompiler {
 
   private final SoyFileNode fileNode;
   private final JavaSourceFunctionCompiler javaSourceFunctionCompiler;
-  private final PartialFileSetMetadata fileSetMetadata;
+  private final FileSetMetadata fileSetMetadata;
 
   SoyFileCompiler(
       SoyFileNode fileNode,
       JavaSourceFunctionCompiler javaSourceFunctionCompiler,
-      PartialFileSetMetadata fileSetMetadata) {
+      FileSetMetadata fileSetMetadata) {
     this.fileNode = fileNode;
     this.javaSourceFunctionCompiler = javaSourceFunctionCompiler;
     this.fileSetMetadata = fileSetMetadata;

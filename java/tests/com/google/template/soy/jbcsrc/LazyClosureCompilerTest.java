@@ -232,8 +232,8 @@ public class LazyClosureCompilerTest {
         compileTemplateBody("{let $bar : randomInt(10) /}", "{let $foo : $bar + 1 /}");
 
     Class<?> fileClass = templates.getTemplateData("ns.foo").templateClass();
-    // two for the template and one for the let
-    assertThat(fileClass.getDeclaredMethods()).hasLength(3);
+    // 3 for the template and one for the let
+    assertThat(fileClass.getDeclaredMethods()).hasLength(4);
     Method letMethod =
         fileClass.getDeclaredMethod("foo$let_foo", RenderContext.class, IntegerData.class);
     assertThat(Modifier.toString(letMethod.getModifiers())).isEqualTo("static");
@@ -311,7 +311,7 @@ public class LazyClosureCompilerTest {
     CompiledTemplates templates =
         compileTemplateBody("{let $bar : [0,1,2][randomInt(1)] /}", "{let $foo : $bar /} {$foo}");
     Class<?> fileClass = templates.getTemplateData("ns.foo").templateClass();
-    assertThat(asList(fileClass.getDeclaredMethods())).hasSize(3);
+    assertThat(asList(fileClass.getDeclaredMethods())).hasSize(4);
     assertThat(fileClass.getDeclaredMethod("foo$let_bar")).isNotNull();
     assertThat(asList(fileClass.getDeclaredFields())).isEmpty();
   }
