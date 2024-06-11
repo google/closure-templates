@@ -9,7 +9,7 @@ templates to reference template data, variables, or compute intermediate values.
 
 ## What types of expressions are there?
 
-TIP: For a complete list, see the [reference section](../reference/index).
+TIP: For a complete list, see the [reference section](../reference/expressions).
 
 ### Literals
 
