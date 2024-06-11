@@ -411,7 +411,7 @@ semantics:
 
 *   `&&` The first operand is returned if it is falsey, otherwise the second is
     returned;
-*   `||`` The first operand is returned if it is truthy, otherwise the second is
+*   `||` The first operand is returned if it is truthy, otherwise the second is
     returned;
 
 When used with booleans, the result is boolean logic "and" and "or" operations.
