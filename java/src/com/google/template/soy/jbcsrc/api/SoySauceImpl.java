@@ -89,7 +89,7 @@ public final class SoySauceImpl implements SoySauce {
       }
     }
     this.printDirectives = soyJavaPrintDirectives.build();
-    this.pluginInstances = pluginInstances.combine(pluginInstanceBuilder.build());
+    this.pluginInstances = pluginInstances.combine(pluginInstanceBuilder.buildOrThrow());
   }
 
   @Override
@@ -395,13 +395,13 @@ public final class SoySauceImpl implements SoySauce {
     try {
       frame = template.render(frame, params, output, context);
     } catch (Throwable t) {
-      context.flushDeferredErrors();
+      context.suppressDeferredErrorsOnto(t);
       rewriteStackTrace(t);
       Throwables.throwIfInstanceOf(t, IOException.class);
       throw t;
     }
     if (frame == null) {
-      context.flushDeferredErrors();
+      context.logDeferredErrors();
       return Continuations.done();
     }
     return new WriteContinuationImpl(template, frame, params, output, context);
@@ -488,12 +488,12 @@ public final class SoySauceImpl implements SoySauce {
     } catch (IOException t) {
       throw new AssertionError("impossible", t);
     } catch (Throwable t) {
-      context.flushDeferredErrors();
+      context.suppressDeferredErrorsOnto(t);
       rewriteStackTrace(t);
       throw t;
     }
     if (frame == null) {
-      context.flushDeferredErrors();
+      context.logDeferredErrors();
       String content = underlying.toString();
       if (targetKind == ContentKind.TEXT) {
         // these casts are lame, the way to resolve is simply to fork this method

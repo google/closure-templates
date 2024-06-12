@@ -336,7 +336,7 @@ public final class TemplateTester {
       if (result != null) {
         failWithActual("expected to render to completion", result);
       }
-      context.flushDeferredErrors();
+      context.logDeferredErrors();
 
       check("render()").that(builder.toString()).isEqualTo(expectedOutput);
       check("logOutput()").that(logOutput.toString()).isEqualTo(expectedLogged);
@@ -407,7 +407,7 @@ public final class TemplateTester {
         }
         defaultContext =
             createDefaultBuilder(compiledTemplates)
-                .withPluginInstances(PluginInstances.of(pluginInstances.build()))
+                .withPluginInstances(PluginInstances.of(pluginInstances.buildOrThrow()))
                 .withCssRenamingMap(cssRenamingMap)
                 .withXidRenamingMap(xidRenamingMap)
                 .build();

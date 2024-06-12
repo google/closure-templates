@@ -15,12 +15,12 @@
  */
 package com.google.template.soy.jbcsrc.shared;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.flogger.GoogleLogger;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.jbcsrc.api.RenderResult;
+import java.util.Set;
 
 /**
  * A provider that always throws an exception.
@@ -35,34 +35,42 @@ import com.google.template.soy.jbcsrc.api.RenderResult;
 final class ThrowingSoyValueProvider implements SoyValueProvider {
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
 
-  @VisibleForTesting
-  static final class DeferredException extends RuntimeException {
-    DeferredException(Throwable t) {
-      super(t);
+  private static final class SuppressedDeferredException extends RuntimeException {
+    SuppressedDeferredException(Throwable t) {
+      super(
+          "Failed optimistic evaluation during rendering, this will soon become an error",
+          t,
+          /* enableSuppression= */ false,
+          // This means there will be no stack trace for this throwable.
+          /* writableStackTrace= */ false);
+      ;
     }
   }
 
-  private final Throwable t;
-  private boolean suppressLogging;
+  private final Throwable deferredError;
 
   ThrowingSoyValueProvider(Throwable t) {
-    this.t = t;
-    // If the original exception was a DeferredException, then we don't need to log it again.
-    this.suppressLogging = t instanceof DeferredException;
+    this.deferredError = t;
   }
 
-  public void maybeLog() {
-    if (!suppressLogging) {
-      suppressLogging = true;
-      logger.atSevere().withCause(t).log(
+  /** Logs the exception if it hasn't already been logged. */
+  void maybeLog(Set<Throwable> alreadyLogged) {
+    if (alreadyLogged.add(deferredError)) {
+      logger.atSevere().withCause(deferredError).log(
           "Failed optimistic evaluation during rendering, this will soon become an error");
+    }
+  }
+
+  /** Adds the original exception as a suppressed exception if it hasn't already been suppressed. */
+  void maybeSuppressOnto(Throwable t, Set<Throwable> alreadySuppressed) {
+    if (alreadySuppressed.add(deferredError)) {
+      t.addSuppressed(new SuppressedDeferredException(this.deferredError));
     }
   }
 
   @Override
   public SoyValue resolve() {
-    suppressLogging = true;
-    throw new DeferredException(t);
+    throw sneakyDropCheckedCast(deferredError);
   }
 
   @Override
@@ -72,7 +80,14 @@ final class ThrowingSoyValueProvider implements SoyValueProvider {
 
   @Override
   public RenderResult renderAndResolve(LoggingAdvisingAppendable appendable) {
-    suppressLogging = true;
-    throw new DeferredException(t);
+    throw sneakyDropCheckedCast(deferredError);
+  }
+
+  // The `throws` class tricks Java type inference into deciding that E must be some subtype of
+  // RuntimeException but because the cast is unchecked it doesn't check.  So the compiler cannot
+  // tell that this might be a checked exception.
+  @SuppressWarnings({"unchecked", "TypeParameterUnusedInFormals", "CheckedExceptionNotThrown"})
+  private static <E extends Throwable> E sneakyDropCheckedCast(Throwable e) throws E {
+    return (E) e;
   }
 }

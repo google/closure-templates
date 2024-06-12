@@ -110,9 +110,24 @@ import {Foo} from 'src/test/protobuf/test.proto';
   {elseif $proto != null}
     {call testEagerExecutionFailure}
       {param counter: $counter - 1 /}
+      // This param is eagerly executed.
       {param proto: $proto.getMessageField()!.getFoo()! /}
     {/call}
   {else}
     Failed!
+  {/if}
+{/template}
+
+{template testMultipleEagerExecutionFailures}
+  {@param proto: Foo}
+  {if $proto != null}
+    // These lets are eagerly executed and will fail.
+    {let $foo: $proto.getMessageField()!.getFoo() /}
+    {let $foo2: $proto.getMessageField()!.getFoo() /}
+    // The checkNotNull will fail, the other references to $foo and $foo2 are needed to prevent the
+    // optimizer from reodering or inlining the lets.
+    {checkNotNull($proto.getMessageField())
+        && ($foo!.getSomeNumWithDefault() + $foo2!.getSomeNumWithDefault())}
+    {$foo}{$foo2}
   {/if}
 {/template}

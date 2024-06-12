@@ -19,6 +19,7 @@ package com.google.template.soy.jbcsrc.api;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 import static com.google.template.soy.data.UnsafeSanitizedContentOrdainer.ordainAsSafe;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.fail;
 
 import com.google.common.base.Joiner;
@@ -372,6 +373,49 @@ public class SoySauceTest {
   // When eager evaluation fails, we defer the error and log it at the end
 
   // But if we report the error then we don't log it
+  @Test
+  public void testDeferredErrorLogging_throws() {
+    SoySauce.Renderer tmpl =
+        sauce
+            .renderTemplate("strict_test.testEagerExecutionFailure")
+            .setData(ImmutableMap.of("proto", Foo.getDefaultInstance(), "counter", 2));
+
+    var exception = assertThrows(Exception.class, () -> tmpl.renderText().get());
+    assertThat(exception)
+        .hasMessageThat()
+        .contains("Expecting proto value but instead encountered type UndefinedData");
+  }
+
+  @Test
+  public void testDeferredErrorLogging_throws_extrasAreSuppressed() {
+    SoySauce.Renderer tmpl =
+        sauce
+            .renderTemplate("strict_test.testMultipleEagerExecutionFailures")
+            .setData(ImmutableMap.of("proto", Foo.getDefaultInstance()));
+
+    var exception = assertThrows(NullPointerException.class, () -> tmpl.renderText().get());
+    assertThat(exception)
+        .hasMessageThat()
+        .isEqualTo("'$proto.getMessageField()' evaluates to null");
+    // The template optimistically evaluated two fields, and both failed.
+    assertThat(exception.getSuppressed()).hasLength(2);
+    Throwable suppressed0 = exception.getSuppressed()[0];
+    assertThat(suppressed0)
+        .hasMessageThat()
+        .isEqualTo("Failed optimistic evaluation during rendering, this will soon become an error");
+    assertThat(suppressed0)
+        .hasCauseThat()
+        .hasMessageThat()
+        .isEqualTo("Expecting proto value but instead encountered type UndefinedData");
+    Throwable suppressed1 = exception.getSuppressed()[1];
+    assertThat(suppressed1)
+        .hasMessageThat()
+        .isEqualTo("Failed optimistic evaluation during rendering, this will soon become an error");
+    assertThat(suppressed1)
+        .hasCauseThat()
+        .hasMessageThat()
+        .isEqualTo("Expecting proto value but instead encountered type UndefinedData");
+  }
 
   /**
    * Regression test for http://b/296964679. This ensures that execution order in == is preserved

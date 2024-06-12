@@ -22,6 +22,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Sets;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.data.Dir;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
@@ -49,6 +50,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -470,13 +472,24 @@ public final class RenderContext {
     return provider;
   }
 
-  public void flushDeferredErrors() {
+  public void logDeferredErrors() {
     var deferredErrors = this.deferredErrors;
     if (deferredErrors != null) {
+      Set<Throwable> logged = Sets.newIdentityHashSet();
       for (var provider : deferredErrors) {
-        provider.maybeLog();
+        provider.maybeLog(logged);
       }
-      this.deferredErrors = null;
+    }
+  }
+
+  public void suppressDeferredErrorsOnto(Throwable t) {
+    var deferredErrors = this.deferredErrors;
+    if (deferredErrors != null) {
+      Set<Throwable> suppressed = Sets.newIdentityHashSet();
+      suppressed.add(t);
+      for (var provider : deferredErrors) {
+        provider.maybeSuppressOnto(t, suppressed);
+      }
     }
   }
 
