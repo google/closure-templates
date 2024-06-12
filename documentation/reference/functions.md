@@ -16,7 +16,7 @@ custom external functions, see
 ### `Boolean(value)` {#Boolean}
 
 Explicitly
-[coerces](go/soy/reference/coercions?polyglot=call-command#boolean-coercions)
+[coerces](http://go/soy/reference/coercions?polyglot=call-command#boolean-coercions)
 the argument to a boolean.
 
 ### `hasContent(value)` {#hasContent}
@@ -29,7 +29,7 @@ non-null and has content which is not empty string.
 
 For strings and sanitized types, equivalent to `hasContent(value)`. Any other
 type is allowed, in which case standard
-[boolean coercion](go/soy/reference/coercions?polyglot=call-command#boolean-coercions)
+[boolean coercion](http://go/soy/reference/coercions?polyglot=call-command#boolean-coercions)
 is used.
 
 ### `checkNotNull(value)` {#checkNotNull}
