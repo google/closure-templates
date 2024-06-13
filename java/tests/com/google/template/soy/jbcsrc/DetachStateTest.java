@@ -581,4 +581,43 @@ public final class DetachStateTest {
     assertThat(renderer.render(result)).isNull();
     assertThat(output.toString()).isEqualTo("<top>2<bottom>2</bottom></top>");
   }
+
+  // Tests an issue where a content block would get evaluated multiple times with multiple different
+  // appendables.
+  @Test
+  public void testEvaluateContentBlockFromMultiplePlaces() throws IOException {
+    CompiledTemplates templates =
+        TemplateTester.compileFile(
+            "{namespace ns}",
+            "{template c}",
+            "  {@inject p: ?}",
+            "  {let $content kind='text'}<a>{$p}</a>{/let}",
+            "  {let $t kind='text'}",
+            "    text({$content})",
+            "  {/let}",
+            "  {let $h kind='html'}",
+            "    <pre>{$content}</pre>",
+            "  {/let}",
+            "  {let $te: $t + 'expr' /}",
+            "  {let $he: $h + 'expr' /}",
+            "  <top>{$he}:{$te}</top>",
+            "{/template}");
+    CompiledTemplate template = templates.getTemplate("ns.c");
+
+    SettableFuture<Integer> pending = SettableFuture.create();
+    RenderContext context =
+        getDefaultContext(templates).toBuilder()
+            .withIj(SoyInjector.fromStringMap(ImmutableMap.of("p", pending)))
+            .build();
+    BufferingAppendable output = LoggingAdvisingAppendable.buffering();
+    TemplateRenderer renderer =
+        (frame) -> template.render(frame, ParamStore.EMPTY_INSTANCE, output, context);
+    var result = renderer.render();
+    assertThat(result.asRenderResult()).isEqualTo(RenderResult.continueAfter(pending));
+    assertThat(output.toString()).isEqualTo("<top>");
+    pending.set(2);
+    assertThat(renderer.render(result)).isNull();
+    assertThat(output.toString())
+        .isEqualTo("<top><pre><a>2</a></pre>expr:text(<a>2</a>)expr</top>");
+  }
 }

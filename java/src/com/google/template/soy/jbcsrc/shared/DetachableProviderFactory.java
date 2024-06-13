@@ -19,8 +19,6 @@ package com.google.template.soy.jbcsrc.shared;
 import static java.lang.Math.max;
 import static java.lang.invoke.MethodType.methodType;
 
-import com.google.common.collect.ImmutableList;
-import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import java.lang.invoke.CallSite;
 import java.lang.invoke.ConstantCallSite;
@@ -31,7 +29,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import org.objectweb.asm.ClassWriter;
-import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -49,18 +46,35 @@ import org.objectweb.asm.Type;
  */
 public final class DetachableProviderFactory {
 
-  private static final String RUNTIME_PACKAGE = "com/google/template/soy/jbcsrc/runtime";
-  private static final MethodType BASE_CLASS_CTOR_TYPE = methodType(void.class);
+  private static final MethodType DETACHABLE_VALUE_PROVIDER_CTOR_TYPE = methodType(void.class);
+  private static final MethodType DETACHABLE_CONTENT_PROVIDER_CTOR_TYPE =
+      DETACHABLE_VALUE_PROVIDER_CTOR_TYPE;
+  private static final Class<?> MULTIPLEXING_APPENDABLE_CLASS =
+      getRuntimeClass("DetachableContentProvider$MultiplexingAppendable");
+  private static final Type MULTIPLEXING_APPENDABLE_TYPE =
+      Type.getType(MULTIPLEXING_APPENDABLE_CLASS);
+  private static final MethodType DETACHABLE_CONTENT_PROVIDER_OPTIMISTIC_CTOR_TYPE =
+      methodType(void.class, StackFrame.class, MULTIPLEXING_APPENDABLE_CLASS);
   private static final MethodType EVALUATE_TYPE = methodType(Object.class);
   private static final MethodType DO_RENDER_TYPE =
-      methodType(StackFrame.class, StackFrame.class, LoggingAdvisingAppendable.class);
+      methodType(StackFrame.class, StackFrame.class, MULTIPLEXING_APPENDABLE_CLASS);
   // Due to build cycles we don't have hard `.class` references we can use.
   private static final Type DETACHABLE_VALUE_PROVIDER_BASE_CLASS =
-      Type.getType("L" + RUNTIME_PACKAGE + "/DetachableSoyValueProvider;");
+      Type.getType(getRuntimeClass("DetachableSoyValueProvider"));
   private static final Type DETACHABLE_VALUE_PROVIDER_PROVIDER_BASE_CLASS =
-      Type.getType("L" + RUNTIME_PACKAGE + "/DetachableSoyValueProviderProvider;");
+      Type.getType(getRuntimeClass("DetachableSoyValueProviderProvider"));
   private static final Type DETACHABLE_CONTENT_PROVIDER_BASE_CLASS =
-      Type.getType("L" + RUNTIME_PACKAGE + "/DetachableContentProvider;");
+      Type.getType(getRuntimeClass("DetachableContentProvider"));
+  private static final Type STACK_FRAME_TYPE = Type.getType(StackFrame.class);
+  private static final Type OBJECT_TYPE = Type.getType(Object.class);
+
+  private static Class<?> getRuntimeClass(String name) {
+    try {
+      return Class.forName("com.google.template.soy.jbcsrc.runtime." + name);
+    } catch (ClassNotFoundException cnfe) {
+      throw new LinkageError(cnfe.getMessage(), cnfe);
+    }
+  }
 
   /**
    * Generates a subclass of DetachableSoyValueProvider binding implMethod to the abstract
@@ -72,6 +86,8 @@ public final class DetachableProviderFactory {
         new Metafactory(
                 lookup,
                 DETACHABLE_VALUE_PROVIDER_BASE_CLASS,
+                DETACHABLE_VALUE_PROVIDER_CTOR_TYPE,
+                /* hasOptimisticParameter= */ true,
                 "evaluate",
                 EVALUATE_TYPE,
                 name,
@@ -91,6 +107,8 @@ public final class DetachableProviderFactory {
         new Metafactory(
                 lookup,
                 DETACHABLE_VALUE_PROVIDER_PROVIDER_BASE_CLASS,
+                DETACHABLE_VALUE_PROVIDER_CTOR_TYPE,
+                /* hasOptimisticParameter= */ true,
                 "evaluate",
                 EVALUATE_TYPE,
                 name,
@@ -105,10 +123,22 @@ public final class DetachableProviderFactory {
    */
   public static CallSite bootstrapDetachableContentProvider(
       MethodHandles.Lookup lookup, String name, MethodType type) {
+    // There are 2 cases for DetachableContentProviders:
+    // 1. a normal 'eagerly' allocated subclass, such as is used by html blocks
+    // 2. an optimistically rendered block
+    // We can tell the difference by looking at the signature. If the last parameter is a
+    // MultiplexingAppendable, then it is an optimistic provider.
+    boolean isOptimisticProvider =
+        type.parameterCount() > 0
+            && type.parameterType(type.parameterCount() - 1) == MULTIPLEXING_APPENDABLE_CLASS;
     MethodHandle generatedClassCtor =
         new Metafactory(
                 lookup,
                 DETACHABLE_CONTENT_PROVIDER_BASE_CLASS,
+                isOptimisticProvider
+                    ? DETACHABLE_CONTENT_PROVIDER_OPTIMISTIC_CTOR_TYPE
+                    : DETACHABLE_CONTENT_PROVIDER_CTOR_TYPE,
+                /* hasOptimisticParameter= */ false,
                 "doRender",
                 DO_RENDER_TYPE,
                 name,
@@ -118,6 +148,18 @@ public final class DetachableProviderFactory {
   }
 
   private static final class Metafactory {
+    private static final class Capture {
+      final int ctorSlot;
+      final String fieldName;
+      final Type type;
+
+      Capture(int ctorSlot, String fieldName, Type type) {
+        this.ctorSlot = ctorSlot;
+        this.fieldName = fieldName;
+        this.type = type;
+      }
+    }
+
     static final ClassValue<ConcurrentHashMap<String, Class<?>>> cache =
         new ClassValue<ConcurrentHashMap<String, Class<?>>>() {
           @Override
@@ -125,26 +167,31 @@ public final class DetachableProviderFactory {
             return new ConcurrentHashMap<>();
           }
         };
+
     final MethodHandles.Lookup lookup;
     final Type baseClass;
+    final MethodType baseConstructorType;
     final String ownerInternalName;
     final String generatedClassInternalName;
     final String baseClassMethodName;
     final MethodType baseMethodType;
     final String implMethodName;
     final MethodType implMethodType;
-    final List<Type> argTypes;
-    final List<String> argNames;
+    final List<Capture> captures;
+    final boolean hasOptimisticParameter;
 
     Metafactory(
         MethodHandles.Lookup lookup,
         Type baseClass,
+        MethodType baseConstructorType,
+        boolean hasOptimisticParameter,
         String methodToImplement,
         MethodType baseMethodType,
         String implMethodName,
         MethodType implMethodType) {
       this.lookup = lookup;
       this.baseClass = baseClass;
+      this.baseConstructorType = baseConstructorType;
       this.ownerInternalName = Type.getInternalName(lookup.lookupClass());
       // We can use the 'same name' as the method we are adapting.  This is because methods and
       // classes are in different namespaces.  The dollar sign makes it look like an innerclass,
@@ -154,17 +201,19 @@ public final class DetachableProviderFactory {
       this.baseMethodType = baseMethodType;
       this.implMethodName = implMethodName;
       this.implMethodType = implMethodType;
+      this.hasOptimisticParameter = hasOptimisticParameter;
       int parameterCount = implMethodType.parameterCount();
-      if (parameterCount > 0) {
-        this.argTypes = new ArrayList<>(implMethodType.parameterCount());
-        this.argNames = new ArrayList<>(implMethodType.parameterCount());
-        for (int i = 0; i < parameterCount; i++) {
-          argTypes.add(Type.getType(implMethodType.parameterType(i)));
-          argNames.add("arg$" + (i + 1));
+      this.captures = new ArrayList<>(parameterCount);
+      int currentSlot = 1; // 0 is for `this`
+      for (int i = 0; i < parameterCount; i++) {
+        Class<?> argClass = implMethodType.parameterType(i);
+        Type argType = Type.getType(argClass);
+        if (argClass == MULTIPLEXING_APPENDABLE_CLASS || argClass == StackFrame.class) {
+          // skip superclass arguments
+        } else {
+          captures.add(new Capture(currentSlot, "arg$" + (i + 1), argType));
         }
-      } else {
-        this.argTypes = ImmutableList.of();
-        this.argNames = ImmutableList.of();
+        currentSlot += argType.getSize();
       }
     }
 
@@ -178,15 +227,14 @@ public final class DetachableProviderFactory {
           /* superName= */ baseClass.getInternalName(),
           /* interfaces= */ null);
       // Define a field for every element,f_N in order
-      for (int i = 0; i < this.argTypes.size(); i++) {
-        FieldVisitor fv =
-            cw.visitField(
+      for (Capture capture : captures) {
+        cw.visitField(
                 Opcodes.ACC_PRIVATE + Opcodes.ACC_FINAL,
-                this.argNames.get(i),
-                this.argTypes.get(i).getDescriptor(),
+                capture.fieldName,
+                capture.type.getDescriptor(),
                 /* signature= */ null,
-                /* value= */ null);
-        fv.visitEnd();
+                /* value= */ null)
+            .visitEnd();
       }
       generateConstructor(cw);
       generateOverrideMethod(cw);
@@ -247,32 +295,56 @@ public final class DetachableProviderFactory {
               /* signature= */ null,
               /* exceptions= */ null);
       constructor.visitCode();
-      // super()
+      // super(renderContext, renderResult?)
       constructor.visitVarInsn(Opcodes.ALOAD, 0); // this
+      int superCallStackHeight = 1;
+      if (baseConstructorType.equals(DETACHABLE_CONTENT_PROVIDER_OPTIMISTIC_CTOR_TYPE)) {
+        int stackFrameConstructorSlot = -1;
+        int multiplexingAppendableConstructorSlot = -1;
+        int slot = 1; // start at 1 for `this`
+        for (Class<?> paramClass : ctorMethodType.parameterList()) {
+          Type type = Type.getType(paramClass);
+          if (paramClass == StackFrame.class) {
+            stackFrameConstructorSlot = slot;
+          } else if (paramClass == MULTIPLEXING_APPENDABLE_CLASS) {
+            multiplexingAppendableConstructorSlot = slot;
+          }
+          slot += type.getSize();
+        }
+        constructor.visitVarInsn(Opcodes.ALOAD, stackFrameConstructorSlot);
+        constructor.visitVarInsn(Opcodes.ALOAD, multiplexingAppendableConstructorSlot);
+        superCallStackHeight += 2;
+      }
       constructor.visitMethodInsn(
           Opcodes.INVOKESPECIAL,
           baseClass.getInternalName(),
           "<init>",
-          BASE_CLASS_CTOR_TYPE.toMethodDescriptorString(),
+          baseConstructorType.toMethodDescriptorString(),
           /* isInterface= */ false);
       // assign fields
-      int argPosition = 1; // next arg starts at 1, 0 is this
-      for (int i = 0; i < argTypes.size(); i++) {
-        Type argType = argTypes.get(i);
+      for (Capture capture : captures) {
         // this.arg$N = arg;
         constructor.visitVarInsn(Opcodes.ALOAD, 0); // this
-        constructor.visitVarInsn(argType.getOpcode(Opcodes.ILOAD), argPosition);
-        argPosition += argType.getSize();
+        constructor.visitVarInsn(capture.type.getOpcode(Opcodes.ILOAD), capture.ctorSlot);
         constructor.visitFieldInsn(
-            Opcodes.PUTFIELD, generatedClassInternalName, argNames.get(i), argType.getDescriptor());
+            Opcodes.PUTFIELD,
+            generatedClassInternalName,
+            capture.fieldName,
+            capture.type.getDescriptor());
       }
       constructor.visitInsn(Opcodes.RETURN);
       constructor.visitMaxs(
           // our max stack is either 1, 2, or 3 depending on if any of our parameters is a
           // double/long
-          /* maxStack= */ 1 + argTypes.stream().mapToInt(Type::getSize).max().orElse(0),
+          /* maxStack= */ max(
+              // for our fieldWrites
+              1 + captures.stream().mapToInt(c -> c.type.getSize()).max().orElse(0),
+              superCallStackHeight),
           // our max locals is just the size of our parameters + 1 for `this`
-          /* maxLocals= */ 1 + argTypes.stream().mapToInt(Type::getSize).sum());
+          /* maxLocals= */ 1
+              + implMethodType.parameterList().stream()
+                  .mapToInt(c -> Type.getType(c).getSize())
+                  .sum());
       constructor.visitEnd();
     }
 
@@ -293,22 +365,31 @@ public final class DetachableProviderFactory {
               /* signature= */ null,
               /* exceptions= */ null);
       // load the fields and call the method
-      List<Type> methodArgTypes = new ArrayList<>(argTypes);
-      for (int i = 0; i < argTypes.size(); i++) {
-        var argType = this.argTypes.get(i);
+      List<Type> methodArgTypes = new ArrayList<>();
+      if (hasOptimisticParameter) {
+        methodArgTypes.add(Type.BOOLEAN_TYPE);
+        overrideMethod.visitInsn(Opcodes.ICONST_0); // push false for the 'optimistic' parameter
+      }
+      if (baseMethodType.parameterCount() > 0) {
+        overrideMethod.visitVarInsn(Opcodes.ALOAD, 1); // StackFrame
+        methodArgTypes.add(STACK_FRAME_TYPE);
+      }
+      for (Capture capture : captures) {
         // load the arg$N field onto the stack
         overrideMethod.visitVarInsn(Opcodes.ALOAD, 0); // this
         overrideMethod.visitFieldInsn(
-            Opcodes.GETFIELD, generatedClassInternalName, argNames.get(i), argType.getDescriptor());
+            Opcodes.GETFIELD,
+            generatedClassInternalName,
+            capture.fieldName,
+            capture.type.getDescriptor());
+        methodArgTypes.add(capture.type);
       }
-      int paramIndex = 1; // 0 is for `this`
-      for (Class<?> paramClass : baseMethodType.parameterList()) {
-        Type paramType = Type.getType(paramClass);
-        methodArgTypes.add(paramType);
-        overrideMethod.visitVarInsn(paramType.getOpcode(Opcodes.ILOAD), paramIndex);
-        paramIndex += paramType.getSize();
+      if (baseMethodType.parameterCount() > 0) {
+        overrideMethod.visitVarInsn(Opcodes.ALOAD, 2); // Appendable
+        methodArgTypes.add(MULTIPLEXING_APPENDABLE_TYPE);
       }
-      Type returnType = Type.getType(baseMethodType.returnType());
+      Type returnType =
+          baseMethodType.returnType() == StackFrame.class ? STACK_FRAME_TYPE : OBJECT_TYPE;
       overrideMethod.visitMethodInsn(
           // all impl methods are static
           Opcodes.INVOKESTATIC,

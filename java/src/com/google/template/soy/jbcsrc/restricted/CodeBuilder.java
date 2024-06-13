@@ -29,7 +29,6 @@ import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.GeneratorAdapter;
-import org.objectweb.asm.commons.LocalVariablesSorter;
 import org.objectweb.asm.commons.Method;
 import org.objectweb.asm.commons.TableSwitchGenerator;
 
@@ -142,6 +141,15 @@ public final class CodeBuilder extends MethodVisitor {
   /** See {@link GeneratorAdapter#loadArgs()} */
   public void loadArgs() {
     adapter.loadArgs();
+  }
+
+  public String getThisMethodName() {
+    return adapter.getName();
+  }
+
+  /** See {@link GeneratorAdapter#getArgumentTypes()} */
+  public Type[] getArgumentTypes() {
+    return adapter.getArgumentTypes();
   }
 
   /** See {@link GeneratorAdapter#pop()} */

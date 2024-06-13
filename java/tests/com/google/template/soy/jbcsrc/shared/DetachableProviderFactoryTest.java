@@ -20,7 +20,6 @@ import static java.lang.invoke.MethodType.methodType;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
-import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.runtime.DetachableContentProvider;
@@ -35,7 +34,8 @@ import org.junit.runners.JUnit4;
 public final class DetachableProviderFactoryTest {
   private static final MethodHandles.Lookup lookup = MethodHandles.lookup();
 
-  public static Object simpleMethod(String capture) {
+  public static Object simpleMethod(boolean optimistic, String capture) {
+    assertThat(optimistic).isFalse();
     return StringData.forValue(capture);
   }
 
@@ -52,7 +52,32 @@ public final class DetachableProviderFactoryTest {
     assertThat(provider.resolve()).isEqualTo(StringData.forValue("SomeValue"));
   }
 
-  public static Object detachingMethod(ListenableFuture<String> capture) throws Exception {
+  @Test
+  public void testWrapMultipleTimesReturnsSameClass() throws Throwable {
+    DetachableSoyValueProvider provider1 =
+        (DetachableSoyValueProvider)
+            DetachableProviderFactory.bootstrapDetachableSoyValueProvider(
+                    lookup,
+                    "simpleMethod",
+                    methodType(DetachableSoyValueProvider.class, String.class))
+                .getTarget()
+                .invokeExact("SomeValue");
+    DetachableSoyValueProvider provider2 =
+        (DetachableSoyValueProvider)
+            DetachableProviderFactory.bootstrapDetachableSoyValueProvider(
+                    lookup,
+                    "simpleMethod",
+                    methodType(DetachableSoyValueProvider.class, String.class))
+                .getTarget()
+                .invokeExact("SomeOtherValue");
+    assertThat(provider1.getClass()).isEqualTo(provider2.getClass());
+    assertThat(provider1.resolve()).isEqualTo(StringData.forValue("SomeValue"));
+    assertThat(provider2.resolve()).isEqualTo(StringData.forValue("SomeOtherValue"));
+  }
+
+  public static Object detachingMethod(boolean optimistic, ListenableFuture<String> capture)
+      throws Exception {
+    assertThat(optimistic).isFalse();
     if (capture.isDone()) {
       return StringData.forValue(capture.get());
     } else {
@@ -78,7 +103,9 @@ public final class DetachableProviderFactoryTest {
   }
 
   public static StackFrame renderMethod(
-      String capture, StackFrame stackFrame, LoggingAdvisingAppendable appendable)
+      StackFrame stackFrame,
+      String capture,
+      DetachableContentProvider.MultiplexingAppendable appendable)
       throws IOException {
     appendable.append(capture);
 
@@ -92,11 +119,19 @@ public final class DetachableProviderFactoryTest {
             DetachableProviderFactory.bootstrapDetachableContentProvider(
                     lookup,
                     "renderMethod",
-                    methodType(DetachableContentProvider.class, String.class))
+                    methodType(
+                        DetachableContentProvider.class,
+                        StackFrame.class,
+                        String.class,
+                        DetachableContentProvider.MultiplexingAppendable.class))
                 .getTarget()
-                .invokeExact("render me please");
+                .invokeExact(
+                    (StackFrame) null,
+                    "render me please",
+                    new DetachableContentProvider.MultiplexingAppendable());
 
     assertThat(provider.status()).isEqualTo(RenderResult.done());
     assertThat(provider.resolve()).isEqualTo(StringData.forValue("render me please"));
   }
+
 }

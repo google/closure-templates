@@ -69,6 +69,7 @@ import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.restricted.Expression.Feature;
 import com.google.template.soy.jbcsrc.restricted.Expression.Features;
 import com.google.template.soy.jbcsrc.runtime.BufferedSoyValueProvider;
+import com.google.template.soy.jbcsrc.runtime.DetachableContentProvider;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.ExtraConstantBootstraps;
 import com.google.template.soy.jbcsrc.shared.LargeStringConstantFactory;
@@ -117,6 +118,8 @@ public final class BytecodeUtils {
       Type.getType(LoggingAdvisingAppendable.class);
   public static final Type BUFFERING_APPENDABLE_TYPE =
       Type.getType(LoggingAdvisingAppendable.BufferingAppendable.class);
+  public static final Type MULTIPLEXING_APPENDABLE_TYPE =
+      Type.getType(DetachableContentProvider.MultiplexingAppendable.class);
   public static final Type COMPILED_TEMPLATE_TYPE = Type.getType(CompiledTemplate.class);
   public static final Type TEMPLATE_VALUE_TYPE = Type.getType(TemplateValue.class);
   public static final Type CONTENT_KIND_TYPE = Type.getType(ContentKind.class);

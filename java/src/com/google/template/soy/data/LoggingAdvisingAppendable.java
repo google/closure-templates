@@ -219,23 +219,24 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
     }
 
     @Override
-    protected final void doAppend(CharSequence s) throws IOException {
+    protected void doAppend(CharSequence s) throws IOException {
       delegate.append(s);
     }
 
     @Override
-    protected final void doAppend(CharSequence s, int start, int end) throws IOException {
+    protected void doAppend(CharSequence s, int start, int end) throws IOException {
       delegate.append(s, start, end);
     }
 
     @Override
-    protected final void doAppend(char c) throws IOException {
+    protected void doAppend(char c) throws IOException {
       delegate.append(c);
     }
 
     @Override
     protected void doAppendLoggingFunctionInvocation(
-        LoggingFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers) {
+        LoggingFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers)
+        throws IOException {
       escapePlaceholder(funCall.placeholderValue(), escapers);
     }
 
@@ -257,7 +258,7 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
   }
 
   /** A {@link LoggingAdvisingAppendable} that renders to a string builder. */
-  public static final class BufferingAppendable extends DelegatingToAppendable<StringBuilder> {
+  public static class BufferingAppendable extends DelegatingToAppendable<StringBuilder> {
 
     private static final Object EXIT_LOG_STATEMENT_MARKER = new Object();
     // lazily allocated list that contains one of 7 types of objects, each which corresponds to one
@@ -271,7 +272,7 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
     //   setSanitizedContentDirectionality with a null parameter
     private List<Object> commands;
 
-    BufferingAppendable() {
+    protected BufferingAppendable() {
       super(new StringBuilder());
     }
 
@@ -305,7 +306,8 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
 
     @Override
     protected void doAppendLoggingFunctionInvocation(
-        LoggingFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers) {
+        LoggingFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers)
+        throws IOException {
       getCommandsAndAddPendingStringData().add(LoggingFunctionCommand.create(funCall, escapers));
     }
 
@@ -329,7 +331,10 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
           }
         }
       } else {
-        appendable.append(delegate);
+        var delegate = this.delegate;
+        if (delegate.length() != 0) {
+          appendable.append(delegate);
+        }
       }
     }
 

@@ -30,6 +30,7 @@ final class StandardNames {
   static final String STACK_FRAME = "$stackFrame";
   static final String STACK_FRAME_TMP = "$stackFrameTmp";
   static final String BUFFER = "$buffer";
+  static final String OPTIMISTIC = "$optimistic";
 
   private StandardNames() {}
 }

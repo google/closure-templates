@@ -312,7 +312,8 @@ public class LazyClosureCompilerTest {
         compileTemplateBody("{let $bar : [0,1,2][randomInt(1)] /}", "{let $foo : $bar /} {$foo}");
     Class<?> fileClass = templates.getTemplateData("ns.foo").templateClass();
     assertThat(asList(fileClass.getDeclaredMethods())).hasSize(4);
-    assertThat(fileClass.getDeclaredMethod("foo$let_bar")).isNotNull();
+    assertThat(fileClass.getDeclaredMethod("foo$let_bar", boolean.class, RenderContext.class))
+        .isNotNull();
     assertThat(asList(fileClass.getDeclaredFields())).isEmpty();
   }
 }

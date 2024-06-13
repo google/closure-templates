@@ -16,9 +16,7 @@
 
 package com.google.template.soy.jbcsrc.runtime;
 
-
 import com.google.common.collect.ImmutableList;
-import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.data.Dir;
 import com.google.template.soy.data.LogStatement;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
@@ -28,10 +26,11 @@ import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyAbstractValue;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
-import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.shared.StackFrame;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
@@ -45,11 +44,18 @@ public abstract class DetachableContentProvider implements SoyValueProvider {
   // Will be either a SanitizedContent, a StringData, or a TombstoneValue.
   private SoyValue resolvedValue;
 
-  // Will be either an LoggingAdvisingAppendable.BufferingAppendable or a TeeAdvisingAppendable
-  // depending on whether we are being resolved via 'status()' or via 'renderAndResolve()'
-  // upon completion this will always be a BufferingAppendable
-  private LoggingAdvisingAppendable builder;
+  private final MultiplexingAppendable appendable;
   private StackFrame frame;
+
+  protected DetachableContentProvider() {
+    this.appendable = new MultiplexingAppendable();
+  }
+
+  // This is called for an 'optimistic' evaluation when it fails.
+  protected DetachableContentProvider(StackFrame frame, MultiplexingAppendable appendable) {
+    this.appendable = appendable;
+    this.frame = frame;
+  }
 
   @Override
   public final SoyValue resolve() {
@@ -61,7 +67,7 @@ public abstract class DetachableContentProvider implements SoyValueProvider {
     if (local == TombstoneValue.INSTANCE) {
       // This drops logs, but that is sometimes necessary.  We should make sure this only happens
       // when it has to by making sure that renderAndResolve is used for all printing usecases
-      local = ((LoggingAdvisingAppendable.BufferingAppendable) builder).getAsSoyValue();
+      local = appendable.getAsSoyValue();
       resolvedValue = local;
     }
     return local;
@@ -72,16 +78,12 @@ public abstract class DetachableContentProvider implements SoyValueProvider {
     if (isDone()) {
       return RenderResult.done();
     }
-    LoggingAdvisingAppendable.BufferingAppendable currentBuilder =
-        (LoggingAdvisingAppendable.BufferingAppendable) builder;
-    if (currentBuilder == null) {
-      builder = currentBuilder = LoggingAdvisingAppendable.buffering();
-    }
-    StackFrame local = frame = doRender(frame, currentBuilder);
+    var localAppendable = this.appendable;
+    StackFrame local = frame = doRender(frame, localAppendable);
 
     if (local == null) {
       // following a .status() call the most likely thing is resolve, just do it now
-      resolvedValue = currentBuilder.getAsSoyValue();
+      resolvedValue = localAppendable.getAsSoyValue();
       return RenderResult.done();
     }
     return local.asRenderResult();
@@ -90,18 +92,16 @@ public abstract class DetachableContentProvider implements SoyValueProvider {
   @Override
   public RenderResult renderAndResolve(LoggingAdvisingAppendable appendable) throws IOException {
     if (isDone()) {
-      ((LoggingAdvisingAppendable.BufferingAppendable) builder).replayOn(appendable);
+      this.appendable.replayFinishedOn(appendable);
       return RenderResult.done();
     }
 
-    TeeAdvisingAppendable currentBuilder = (TeeAdvisingAppendable) builder;
-    if (currentBuilder == null) {
-      builder = currentBuilder = new TeeAdvisingAppendable(appendable);
-    }
-    StackFrame local = frame = doRender(frame, currentBuilder);
+    var localAppendable = this.appendable;
+    int delegateIndex = localAppendable.addDelegate(appendable);
+    StackFrame local = frame = doRender(frame, localAppendable);
     if (local == null) {
       resolvedValue = TombstoneValue.INSTANCE;
-      builder = currentBuilder.buffer;
+      localAppendable.removeDelegate(delegateIndex, appendable);
       return RenderResult.done();
     }
     return local.asRenderResult();
@@ -114,57 +114,120 @@ public abstract class DetachableContentProvider implements SoyValueProvider {
   /** Overridden by generated subclasses to implement lazy detachable resolution. */
   @Nullable
   protected abstract StackFrame doRender(
-      @Nullable StackFrame frame, LoggingAdvisingAppendable appendable);
+      @Nullable StackFrame frame, MultiplexingAppendable appendable);
 
   /**
-   * An {@link AdvisingAppendable} that forwards to a delegate appendable but also saves all the
-   * same forwarded content into a buffer.
-   *
-   * <p>See: <a href="http://en.wikipedia.org/wiki/Tee_%28command%29">Tee command for the unix
-   * command on which this is based.
+   * An {@link AdvisingAppendable} that forwards to a set of delegate appendables but also saves all
+   * the same forwarded content into a buffer.
    */
-  private static final class TeeAdvisingAppendable extends LoggingAdvisingAppendable {
-    final BufferingAppendable buffer = LoggingAdvisingAppendable.buffering();
-    final LoggingAdvisingAppendable delegate;
+  public static final class MultiplexingAppendable extends BufferingAppendable {
+    // Lazily initialized to avoid allocations in the common case of optimistic evaluation
+    // succeeding or there being no delegates (because we're capturing as a SoyValue).
+    // The second most common case is a single delegate,  so we could consider special casing that
+    // but it is probably not worth it and would add a lot of complexity.
+    List<LoggingAdvisingAppendable> delegates;
 
-    TeeAdvisingAppendable(LoggingAdvisingAppendable delegate) {
-      this.delegate = delegate;
+    int addDelegate(LoggingAdvisingAppendable delegate) throws IOException {
+      // We don't want to add the same delegate multiple times.
+      // a linear scan is sufficient since typically there is only one delegate
+      var delegates = this.delegates;
+      if (delegates == null) {
+        delegates = new ArrayList<>();
+        delegates.add(delegate);
+        this.delegates = delegates;
+        super.replayOn(delegate);
+        return 0;
+      }
+      int index = delegates.indexOf(delegate);
+      if (index == -1) {
+        index = delegates.size();
+        super.replayOn(delegate);
+        delegates.add(delegate);
+      }
+      return index;
+    }
+
+    void replayFinishedOn(LoggingAdvisingAppendable appendable) throws IOException {
+      var delegates = this.delegates;
+      if (delegates != null && delegates.remove(appendable)) {
+        return;
+      }
+      super.replayOn(appendable);
+    }
+
+    void removeDelegate(int delegateIndex, LoggingAdvisingAppendable expected) {
+      var actual = delegates.remove(delegateIndex);
+      if (actual != expected) {
+        throw new AssertionError("impossible");
+      }
     }
 
     @Override
     protected void notifyKindAndDirectionality(ContentKind kind, @Nullable Dir contentDir)
         throws IOException {
-      delegate.setKindAndDirectionality(kind, contentDir);
-      buffer.setKindAndDirectionality(kind, contentDir);
+      var delegates = this.delegates;
+      if (delegates == null) {
+        return;
+      }
+      int size = delegates.size();
+      for (int i = 0; i < size; i++) {
+        delegates.get(i).setKindAndDirectionality(kind, contentDir);
+      }
     }
 
-    @CanIgnoreReturnValue
     @Override
-    public TeeAdvisingAppendable append(CharSequence csq) throws IOException {
-      delegate.append(csq);
-      buffer.append(csq);
-      return this;
+    protected void doAppend(CharSequence csq) throws IOException {
+      super.doAppend(csq);
+      var delegates = this.delegates;
+      if (delegates == null) {
+        return;
+      }
+      int size = delegates.size();
+      for (int i = 0; i < size; i++) {
+        delegates.get(i).append(csq);
+      }
     }
 
-    @CanIgnoreReturnValue
     @Override
-    public TeeAdvisingAppendable append(CharSequence csq, int start, int end) throws IOException {
-      delegate.append(csq, start, end);
-      buffer.append(csq, start, end);
-      return this;
+    protected void doAppend(CharSequence csq, int start, int end) throws IOException {
+      super.doAppend(csq, start, end);
+      var delegates = this.delegates;
+      if (delegates == null) {
+        return;
+      }
+      int size = delegates.size();
+      for (int i = 0; i < size; i++) {
+        delegates.get(i).append(csq, start, end);
+      }
     }
 
-    @CanIgnoreReturnValue
     @Override
-    public TeeAdvisingAppendable append(char c) throws IOException {
-      delegate.append(c);
-      buffer.append(c);
-      return this;
+    protected void doAppend(char c) throws IOException {
+      super.doAppend(c);
+      var delegates = this.delegates;
+      if (delegates == null) {
+        return;
+      }
+      int size = delegates.size();
+      for (int i = 0; i < size; i++) {
+        delegates.get(i).append(c);
+      }
     }
 
     @Override
     public boolean softLimitReached() {
-      return delegate.softLimitReached();
+      // don't need to query our base class, it always returns false
+      var delegates = this.delegates;
+      if (delegates == null) {
+        return false;
+      }
+      int size = delegates.size();
+      for (int i = 0; i < size; i++) {
+        if (delegates.get(i).softLimitReached()) {
+          return true;
+        }
+      }
+      return false;
     }
 
     @Override
@@ -175,34 +238,44 @@ public abstract class DetachableContentProvider implements SoyValueProvider {
     }
 
     @Override
-    public String toString() {
-      return buffer.toString();
+    protected void doEnterLoggableElement(LogStatement statement) {
+      super.doEnterLoggableElement(statement);
+      var delegates = this.delegates;
+      if (delegates == null) {
+        return;
+      }
+      int size = delegates.size();
+      for (int i = 0; i < size; i++) {
+        delegates.get(i).enterLoggableElement(statement);
+      }
     }
 
-    @CanIgnoreReturnValue
     @Override
-    public LoggingAdvisingAppendable enterLoggableElement(LogStatement statement) {
-      delegate.enterLoggableElement(statement);
-      buffer.enterLoggableElement(statement);
-      return this;
+    protected void doExitLoggableElement() {
+      super.doExitLoggableElement();
+      var delegates = this.delegates;
+      if (delegates == null) {
+        return;
+      }
+      int size = delegates.size();
+      for (int i = 0; i < size; i++) {
+        delegates.get(i).exitLoggableElement();
+      }
     }
 
-    @CanIgnoreReturnValue
     @Override
-    public LoggingAdvisingAppendable exitLoggableElement() {
-      delegate.exitLoggableElement();
-      buffer.exitLoggableElement();
-      return this;
-    }
-
-    @CanIgnoreReturnValue
-    @Override
-    public LoggingAdvisingAppendable appendLoggingFunctionInvocation(
+    protected void doAppendLoggingFunctionInvocation(
         LoggingFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers)
         throws IOException {
-      delegate.appendLoggingFunctionInvocation(funCall, escapers);
-      buffer.appendLoggingFunctionInvocation(funCall, escapers);
-      return this;
+      super.doAppendLoggingFunctionInvocation(funCall, escapers);
+      var delegates = this.delegates;
+      if (delegates == null) {
+        return;
+      }
+      int size = delegates.size();
+      for (int i = 0; i < size; i++) {
+        delegates.get(i).appendLoggingFunctionInvocation(funCall, escapers);
+      }
     }
   }
 

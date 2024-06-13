@@ -23,7 +23,6 @@ import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContents;
 import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.shared.StackFrame;
 import java.io.IOException;
@@ -40,7 +39,8 @@ public final class DetachableContentProviderTest {
     SoyValue v =
         new DetachableContentProvider() {
           @Override
-          protected StackFrame doRender(StackFrame stack, LoggingAdvisingAppendable appendable) {
+          protected StackFrame doRender(
+              StackFrame stack, DetachableContentProvider.MultiplexingAppendable appendable) {
             try {
               appendable.setKindAndDirectionality(SanitizedContent.ContentKind.CSS);
               appendable.append("foo");
@@ -63,7 +63,8 @@ public final class DetachableContentProviderTest {
     }
 
     @Override
-    protected StackFrame doRender(StackFrame stack, LoggingAdvisingAppendable appendable) {
+    protected StackFrame doRender(
+        StackFrame stack, DetachableContentProvider.MultiplexingAppendable appendable) {
       try {
         switch (stack == null ? 0 : stack.stateNumber) {
           case 0:
@@ -137,7 +138,7 @@ public final class DetachableContentProviderTest {
   // generated because we are guaranteed that once a DetachableContentProvider returns !done we will
   // always call back with the exact same appendable.
   @Test
-  public void testDetaching_renderAndResolveWithMultipleAppendablesLosesData() throws IOException {
+  public void testDetaching_renderAndResolveWithMultipleAppendables() throws IOException {
     LoggingAdvisingAppendable.BufferingAppendable appendable =
         LoggingAdvisingAppendable.buffering();
     LoggingAdvisingAppendable.BufferingAppendable appendable2 =
@@ -151,8 +152,8 @@ public final class DetachableContentProviderTest {
 
     result = provider.renderAndResolve(appendable2);
     assertThat(result).isEqualTo(RenderResult.continueAfter(future1));
-    // Missing the prefix?
-    assertThat(appendable2.toString()).isEmpty();
+    // sync'd up
+    assertThat(appendable2.toString()).isEqualTo("start\n");
 
     future1.set("hello");
     result = provider.renderAndResolve(appendable);
@@ -163,22 +164,13 @@ public final class DetachableContentProviderTest {
     future2.set("goodbye");
     result = provider.renderAndResolve(appendable2);
     assertThat(result).isEqualTo(RenderResult.done());
-    // Missing all the content
-    assertThat(appendable2.getAsSoyValue()).isEqualTo(StringData.forValue(""));
+    assertThat(appendable2.getAsSoyValue())
+        .isEqualTo(SanitizedContents.constantCss("start\nfuture1: hello\nfuture2: goodbye\nend\n"));
     // Now complete on the original appendable
     result = provider.renderAndResolve(appendable);
     assertThat(result).isEqualTo(RenderResult.done());
-    // double output?
     assertThat(appendable.getAsSoyValue())
-        .isEqualTo(
-            SanitizedContents.constantCss(
-                "start\n"
-                    + "future1: hello\n"
-                    + "future2: goodbye\n"
-                    + "end\n"
-                    + "start\n"
-                    + "future1: hello\n"
-                    + "future2: goodbye\n"
-                    + "end\n"));
+        .isEqualTo(SanitizedContents.constantCss("start\nfuture1: hello\nfuture2: goodbye\nend\n"));
   }
+
 }

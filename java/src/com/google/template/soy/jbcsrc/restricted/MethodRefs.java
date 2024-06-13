@@ -63,6 +63,7 @@ import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.restricted.MethodRef.MethodPureness;
 import com.google.template.soy.jbcsrc.runtime.BufferedSoyValueProvider;
+import com.google.template.soy.jbcsrc.runtime.DetachableContentProvider;
 import com.google.template.soy.jbcsrc.runtime.JbcSrcRuntime;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
@@ -614,6 +615,8 @@ public final class MethodRefs {
 
   public static final MethodRef LOGGING_ADVISING_APPENDABLE_BUFFERING =
       createNonPure(LoggingAdvisingAppendable.class, "buffering");
+  public static final MethodRef MULTIPLEXING_APPENDABLE =
+      createNonPureConstructor(DetachableContentProvider.MultiplexingAppendable.class);
 
   public static final MethodRef BUFFERED_SOY_VALUE_PROVIDER_CREATE =
       createPure(BufferedSoyValueProvider.class, "create", BufferingAppendable.class);

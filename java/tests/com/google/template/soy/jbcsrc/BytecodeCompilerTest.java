@@ -62,6 +62,7 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.jbcsrc.TemplateTester.CompiledTemplateSubject;
 import com.google.template.soy.jbcsrc.api.SoySauce;
 import com.google.template.soy.jbcsrc.api.SoySauceBuilder;
+import com.google.template.soy.jbcsrc.runtime.DetachableContentProvider;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplates.DebuggingClassLoader;
@@ -414,7 +415,10 @@ public class BytecodeCompilerTest {
             .collect(onlyElement());
     assertThat(phMethod.getParameterTypes())
         .asList()
-        .containsExactly(SoyValueProvider.class, StackFrame.class, LoggingAdvisingAppendable.class);
+        .containsExactly(
+            StackFrame.class,
+            SoyValueProvider.class,
+            DetachableContentProvider.MultiplexingAppendable.class);
     templates =
         TemplateTester.compileFile(
             "{namespace ns}",
