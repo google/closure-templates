@@ -356,6 +356,7 @@ public final class ExternCompiler {
           return JbcSrcExternRuntime.LIST_UNBOX_STRINGS.invoke(unboxedList);
         case BOOL:
           return JbcSrcExternRuntime.LIST_UNBOX_BOOLS.invoke(unboxedList);
+        case MESSAGE:
         case PROTO:
           return JbcSrcExternRuntime.LIST_UNBOX_PROTOS.invoke(unboxedList);
         case PROTO_ENUM:

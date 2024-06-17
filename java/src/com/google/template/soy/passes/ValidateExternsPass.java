@@ -346,6 +346,7 @@ class ValidateExternsPass implements CompilerFilePass {
           SoyType.Kind.FLOAT,
           SoyType.Kind.STRING,
           SoyType.Kind.BOOL,
+          SoyType.Kind.MESSAGE,
           SoyType.Kind.PROTO,
           SoyType.Kind.PROTO_ENUM);
 
