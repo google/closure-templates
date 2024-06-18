@@ -37,12 +37,11 @@ public final class DetachableContentProviderTest {
   @Test
   public void testInfersTypeFromLoggedKind() {
     SoyValue v =
-        new DetachableContentProvider() {
+        new DetachableContentProvider(SanitizedContent.ContentKind.CSS) {
           @Override
           protected StackFrame doRender(
               StackFrame stack, DetachableContentProvider.MultiplexingAppendable appendable) {
             try {
-              appendable.setKindAndDirectionality(SanitizedContent.ContentKind.CSS);
               appendable.append("foo");
               return null;
             } catch (IOException e) {
@@ -58,6 +57,7 @@ public final class DetachableContentProviderTest {
     final Future<String> future2;
 
     TestDetachableContentProvider(Future<String> future1, Future<String> future2) {
+      super(SanitizedContent.ContentKind.CSS);
       this.future1 = future1;
       this.future2 = future2;
     }
@@ -68,7 +68,6 @@ public final class DetachableContentProviderTest {
       try {
         switch (stack == null ? 0 : stack.stateNumber) {
           case 0:
-            appendable.setKindAndDirectionality(SanitizedContent.ContentKind.CSS);
             appendable.append("start\n");
             // fall-through
           case 1:

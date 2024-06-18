@@ -176,12 +176,14 @@ public final class Sanitizers {
     }
 
     @Override
-    protected void notifyKindAndDirectionality(ContentKind kind, @Nullable Dir contentDir)
-        throws IOException {
+    protected LoggingAdvisingAppendable notifyKindAndDirectionality(
+        ContentKind kind, @Nullable Dir contentDir) {
       if (isInHtml()) {
-        activeAppendable = delegate;
         delegate.setKindAndDirectionality(kind, contentDir);
+        activeAppendable = delegate;
+        return delegate;
       }
+      return this;
     }
 
     @CanIgnoreReturnValue
@@ -266,12 +268,13 @@ public final class Sanitizers {
     }
 
     @Override
-    protected void notifyKindAndDirectionality(ContentKind kind, @Nullable Dir directionality)
-        throws IOException {
+    protected LoggingAdvisingAppendable notifyKindAndDirectionality(
+        ContentKind kind, @Nullable Dir directionality) {
       if (isInHtml()) {
         activeAppendable = EscapingConventions.NormalizeHtml.INSTANCE.escape(delegate);
       }
       delegate.setKindAndDirectionality(kind, directionality);
+      return this;
     }
 
     @CanIgnoreReturnValue
@@ -906,12 +909,14 @@ public final class Sanitizers {
     }
 
     @Override
-    protected void notifyKindAndDirectionality(ContentKind kind, @Nullable Dir dir)
-        throws IOException {
+    protected LoggingAdvisingAppendable notifyKindAndDirectionality(
+        ContentKind kind, @Nullable Dir dir) {
+      delegate.setKindAndDirectionality(kind, dir);
       if (kind == ContentKind.ATTRIBUTES) {
         activeAppendable = delegate;
+        return delegate;
       }
-      delegate.setKindAndDirectionality(kind, dir);
+      return this;
     }
 
     @CanIgnoreReturnValue
@@ -1051,12 +1056,13 @@ public final class Sanitizers {
     }
 
     @Override
-    protected void notifyKindAndDirectionality(ContentKind kind, @Nullable Dir dir)
-        throws IOException {
+    protected LoggingAdvisingAppendable notifyKindAndDirectionality(
+        ContentKind kind, @Nullable Dir dir) {
       if (kind == ContentKind.ATTRIBUTES) {
         activeAppendable = delegate;
       }
       delegate.setKindAndDirectionality(kind, dir);
+      return this;
     }
 
     @CanIgnoreReturnValue

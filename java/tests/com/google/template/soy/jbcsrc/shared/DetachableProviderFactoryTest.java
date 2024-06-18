@@ -20,6 +20,8 @@ import static java.lang.invoke.MethodType.methodType;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
+import com.google.template.soy.data.SanitizedContent;
+import com.google.template.soy.data.SanitizedContents;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.runtime.DetachableContentProvider;
@@ -128,10 +130,11 @@ public final class DetachableProviderFactoryTest {
                 .invokeExact(
                     (StackFrame) null,
                     "render me please",
-                    new DetachableContentProvider.MultiplexingAppendable());
+                    DetachableContentProvider.MultiplexingAppendable.create(
+                        SanitizedContent.ContentKind.HTML));
 
     assertThat(provider.status()).isEqualTo(RenderResult.done());
-    assertThat(provider.resolve()).isEqualTo(StringData.forValue("render me please"));
+    assertThat(provider.resolve()).isEqualTo(SanitizedContents.constantHtml("render me please"));
   }
 
 }

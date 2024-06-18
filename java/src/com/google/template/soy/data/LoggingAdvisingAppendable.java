@@ -56,6 +56,15 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
     return new BufferingAppendable();
   }
 
+  /**
+   * Returns a {@link BufferingAppendable} that renders everything to a buffer that can be accessed
+   * via {@link BufferingAppendable#toString()} or {@link BufferingAppendable#getAndClearBuffer()}
+   */
+  @Nonnull
+  public static BufferingAppendable buffering(ContentKind kind) {
+    return new BufferingAppendable(kind);
+  }
+
   /** Returns a {@link LoggingAdvisingAppendable} that delegates to an {@link Appendable} */
   public static LoggingAdvisingAppendable delegating(Appendable appendable) {
     return new DelegatingToAppendable<>(appendable);
@@ -73,6 +82,16 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
   private static final class StringCoercingAppendable extends ForwardingLoggingAdvisingAppendable {
     StringCoercingAppendable(LoggingAdvisingAppendable delegate) {
       super(delegate);
+    }
+
+    @Override
+    protected LoggingAdvisingAppendable notifyKindAndDirectionality(
+        ContentKind kind, @Nullable Dir direction) {
+      delegate.setKindAndDirectionality(kind, direction);
+      if (kind == ContentKind.TEXT) {
+        return delegate;
+      }
+      return this;
     }
 
     @Override
@@ -134,12 +153,11 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
    */
   @Nonnull
   @CanIgnoreReturnValue
-  public final LoggingAdvisingAppendable setKindAndDirectionality(ContentKind kind)
-      throws IOException {
+  public LoggingAdvisingAppendable setKindAndDirectionality(ContentKind kind) {
     if (this.kind == null) {
       this.kind = kind;
       var direction = this.contentDir = kind.getDefaultDir();
-      notifyKindAndDirectionality(kind, direction);
+      return notifyKindAndDirectionality(kind, direction);
     }
     return this;
   }
@@ -155,12 +173,12 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
   @CanIgnoreReturnValue
   @Nonnull
   public final LoggingAdvisingAppendable setKindAndDirectionality(
-      ContentKind kind, @Nullable Dir direction) throws IOException {
+      ContentKind kind, @Nullable Dir direction) {
     checkNotNull(kind);
     if (this.kind == null) {
       this.kind = kind;
       this.contentDir = direction;
-      notifyKindAndDirectionality(kind, direction);
+      return notifyKindAndDirectionality(kind, direction);
     }
     return this;
   }
@@ -172,8 +190,10 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
    * @see #setKindAndDirectionality(ContentKind, Dir)
    */
   @ForOverride
-  protected void notifyKindAndDirectionality(ContentKind kind, @Nullable Dir direction)
-      throws IOException {}
+  protected LoggingAdvisingAppendable notifyKindAndDirectionality(
+      ContentKind kind, @Nullable Dir direction) {
+    return this;
+  }
 
   /**
    * Returns the content kind of this appendable.
@@ -276,6 +296,11 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
       super(new StringBuilder());
     }
 
+    protected BufferingAppendable(SanitizedContent.ContentKind kind) {
+      this();
+      setKindAndDirectionality(kind);
+    }
+
     /**
      * Returns the commands list, allocating it if necessary and appending any string data to it.
      */
@@ -313,8 +338,9 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
 
     public void replayOn(LoggingAdvisingAppendable appendable) throws IOException {
       if (getSanitizedContentKind() != null) {
-        appendable.setKindAndDirectionality(
-            getSanitizedContentKind(), getSanitizedContentDirectionality());
+        appendable =
+            appendable.setKindAndDirectionality(
+                getSanitizedContentKind(), getSanitizedContentDirectionality());
       }
       if (commands != null) {
         for (Object o : getCommandsAndAddPendingStringData()) {

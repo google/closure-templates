@@ -130,12 +130,13 @@ public final class BasicDirectivesRuntime {
     }
 
     @Override
-    protected void notifyKindAndDirectionality(ContentKind kind, @Nullable Dir dir)
-        throws IOException {
+    protected LoggingAdvisingAppendable notifyKindAndDirectionality(
+        ContentKind kind, @Nullable Dir dir) {
       // |truncate converts all input to TEXT, so label the output appendable as such. This isn't
       // strictly necessary, as the autoescaper will have already made sure the output is properly
       // escaped, but it helps make the intent clear.
       delegate.setKindAndDirectionality(ContentKind.TEXT, dir);
+      return this;
     }
 
     @CanIgnoreReturnValue

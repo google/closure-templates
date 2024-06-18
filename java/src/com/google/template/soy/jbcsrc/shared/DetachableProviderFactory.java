@@ -19,6 +19,7 @@ package com.google.template.soy.jbcsrc.shared;
 import static java.lang.Math.max;
 import static java.lang.invoke.MethodType.methodType;
 
+import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import java.lang.invoke.CallSite;
 import java.lang.invoke.ConstantCallSite;
@@ -48,7 +49,7 @@ public final class DetachableProviderFactory {
 
   private static final MethodType DETACHABLE_VALUE_PROVIDER_CTOR_TYPE = methodType(void.class);
   private static final MethodType DETACHABLE_CONTENT_PROVIDER_CTOR_TYPE =
-      DETACHABLE_VALUE_PROVIDER_CTOR_TYPE;
+      methodType(void.class, SanitizedContent.ContentKind.class);
   private static final Class<?> MULTIPLEXING_APPENDABLE_CLASS =
       getRuntimeClass("DetachableContentProvider$MultiplexingAppendable");
   private static final Type MULTIPLEXING_APPENDABLE_TYPE =
@@ -208,7 +209,9 @@ public final class DetachableProviderFactory {
       for (int i = 0; i < parameterCount; i++) {
         Class<?> argClass = implMethodType.parameterType(i);
         Type argType = Type.getType(argClass);
-        if (argClass == MULTIPLEXING_APPENDABLE_CLASS || argClass == StackFrame.class) {
+        if (argClass == MULTIPLEXING_APPENDABLE_CLASS
+            || argClass == StackFrame.class
+            || argClass == SanitizedContent.ContentKind.class) {
           // skip superclass arguments
         } else {
           captures.add(new Capture(currentSlot, "arg$" + (i + 1), argType));
@@ -314,6 +317,9 @@ public final class DetachableProviderFactory {
         constructor.visitVarInsn(Opcodes.ALOAD, stackFrameConstructorSlot);
         constructor.visitVarInsn(Opcodes.ALOAD, multiplexingAppendableConstructorSlot);
         superCallStackHeight += 2;
+      } else if (baseConstructorType.equals(DETACHABLE_CONTENT_PROVIDER_CTOR_TYPE)) {
+        constructor.visitVarInsn(Opcodes.ALOAD, 1); // load the content kind
+        superCallStackHeight++;
       }
       constructor.visitMethodInsn(
           Opcodes.INVOKESPECIAL,

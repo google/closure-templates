@@ -696,13 +696,8 @@ public final class JbcSrcRuntime {
   }
 
   /** Replays commands to the main appendable, including logging. */
-  public static class ReplayingBufferedRenderDoneFn implements BufferedRenderDoneFn {
-    @Override
-    public void exec(LoggingAdvisingAppendable appendable, BufferingAppendable buffer)
-        throws IOException {
-      buffer.replayOn(appendable);
-    }
-  }
+  public static final BufferedRenderDoneFn REPLAYING_BUFFERED_RENDER_DONE_FN =
+      (appendable, buffer) -> buffer.replayOn(appendable);
 
   /** Coerces to a string and applies non-streaming escaping directives. */
   public static class EscapingBufferedRenderDoneFn implements BufferedRenderDoneFn {

@@ -70,7 +70,7 @@ final class ThrowingSoyValueProvider implements SoyValueProvider {
 
   @Override
   public SoyValue resolve() {
-    throw sneakyDropCheckedCast(deferredError);
+    throw sneakyThrow(deferredError);
   }
 
   @Override
@@ -80,14 +80,14 @@ final class ThrowingSoyValueProvider implements SoyValueProvider {
 
   @Override
   public RenderResult renderAndResolve(LoggingAdvisingAppendable appendable) {
-    throw sneakyDropCheckedCast(deferredError);
+    throw sneakyThrow(deferredError);
   }
 
   // The `throws` class tricks Java type inference into deciding that E must be some subtype of
   // RuntimeException but because the cast is unchecked it doesn't check.  So the compiler cannot
   // tell that this might be a checked exception.
   @SuppressWarnings({"unchecked", "TypeParameterUnusedInFormals", "CheckedExceptionNotThrown"})
-  private static <E extends Throwable> E sneakyDropCheckedCast(Throwable e) throws E {
-    return (E) e;
+  private static <E extends Throwable> E sneakyThrow(Throwable e) throws E {
+    throw (E) e;
   }
 }

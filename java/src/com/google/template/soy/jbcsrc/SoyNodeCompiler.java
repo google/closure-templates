@@ -316,12 +316,6 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   private Statement doCompile(
       RenderUnitNode node, ExtraCodeCompiler prefix, ExtraCodeCompiler suffix) {
     return Statement.concat(
-        // Tag the content with the kind.
-        // TODO(lukes): this is often unnecessary and could be avoided by either shifting management
-        // to the caller or simply making this call cheaper.
-        appendableExpression
-            .setSanitizedContentKindAndDirectionality(node.getContentKind())
-            .toStatement(),
         prefix.compile(exprCompiler, appendableExpression, detachState),
         visitChildrenInNewScope(node),
         suffix.compile(exprCompiler, appendableExpression, detachState));
@@ -1395,22 +1389,6 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     }
   }
 
-  private static DirectCallGenerator directCallFromTemplateExpression(
-      Expression compiledTemplateExpression) {
-    return (frame, params, output, context) ->
-        compiledTemplateExpression.invoke(
-            MethodRefs.COMPILED_TEMPLATE_RENDER, frame, params, output, context);
-  }
-
-  private static BoundCallGenerator simpleCall(
-      Expression compiledTemplateExpression, Expression params) {
-    return simpleCall(directCallFromTemplateExpression(compiledTemplateExpression), params);
-  }
-
-  private static BoundCallGenerator simpleCall(
-      DirectCallGenerator callGenerator, Expression params) {
-    return (frame, output, context) -> callGenerator.call(frame, params, output, context);
-  }
 
   /**
    * Renders a {@link com.google.template.soy.jbcsrc.shared.CompiledTemplate} incrementally.
@@ -1456,14 +1434,23 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
               !areAllPrintDirectivesStreamable(node)
                   ? MethodRefs.ESCAPING_BUFFERED_RENDER_DONE_FN.invoke(
                       getEscapingDirectivesList(node))
-                  : MethodRefs.REPLAYING_BUFFERED_RENDER_DONE_FN.invoke());
+                  : FieldRef.REPLAYING_BUFFERED_RENDER_DONE_FN.accessor());
       TemplateVariableManager.Variable calleeVariable =
           renderScope.createSynthetic(
               SyntheticVarName.renderee(),
               calleeExpression,
               TemplateVariableManager.SaveStrategy.STORE);
       initCallee = calleeVariable.initializer();
-      boundCall = simpleCall(calleeVariable.accessor(), expressionAndInitializer.expression());
+      boundCall =
+          (frame, output, context) ->
+              calleeVariable
+                  .accessor()
+                  .invoke(
+                      MethodRefs.COMPILED_TEMPLATE_RENDER,
+                      frame,
+                      expressionAndInitializer.expression(),
+                      output,
+                      context);
     } else {
       Optional<DirectPositionalCallGenerator> asDirectPositionalCall =
           callGenerator.asDirectPositionalCall();
@@ -1473,14 +1460,28 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
         initParams = positional.initializer();
         boundCall =
             (frame, output, context) ->
-                asDirectPositionalCall.get().call(frame, positional.expressions(), output, context);
+                asDirectPositionalCall
+                    .get()
+                    .call(
+                        frame,
+                        positional.expressions(),
+                        maybeSetKindAndDirectionalityForCall(output, node),
+                        context);
       } else {
         Optional<DirectCallGenerator> asDirectCall = callGenerator.asDirectCall();
         ExpressionAndInitializer expressionAndInitializer =
             compileParamStoreParams(node, renderScope);
         initParams = expressionAndInitializer.initializer();
         if (asDirectCall.isPresent()) {
-          boundCall = simpleCall(asDirectCall.get(), expressionAndInitializer.expression());
+          boundCall =
+              (frame, output, context) ->
+                  asDirectCall
+                      .get()
+                      .call(
+                          frame,
+                          expressionAndInitializer.expression(),
+                          maybeSetKindAndDirectionalityForCall(output, node),
+                          context);
         } else {
           TemplateVariableManager.Variable calleeVariable =
               renderScope.createSynthetic(
@@ -1488,7 +1489,16 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
                   callGenerator.asCompiledTemplate(),
                   TemplateVariableManager.SaveStrategy.STORE);
           initCallee = calleeVariable.initializer();
-          boundCall = simpleCall(calleeVariable.accessor(), expressionAndInitializer.expression());
+          boundCall =
+              (frame, output, context) ->
+                  calleeVariable
+                      .accessor()
+                      .invoke(
+                          MethodRefs.COMPILED_TEMPLATE_RENDER,
+                          frame,
+                          expressionAndInitializer.expression(),
+                          output,
+                          context);
         }
       }
     }
@@ -1500,8 +1510,6 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
           renderScope.createSynthetic(
               SyntheticVarName.appendable(),
               wrappedAppendable.appendable(),
-              // TODO(lukes): this could be STORE or derive depending on whether or not flush
-              // logic is required.
               TemplateVariableManager.SaveStrategy.STORE);
       initAppendable = variable.initializer();
       appendable = AppendableExpression.forExpression(variable.accessor());
@@ -1526,6 +1534,19 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
         callCallee,
         flushAppendable,
         renderScope.exitScope());
+  }
+
+  /**
+   * Calls `setKindAndDirectionality` on the appendable iff it is not identical to the current
+   * appendable for this renderUnit.
+   */
+  private AppendableExpression maybeSetKindAndDirectionalityForCall(
+      AppendableExpression appendable, CallNode node) {
+    if (!appendable.equals(this.appendableExpression)) {
+      var kind = ((CallBasicNode) node).getStaticType().getContentKind().getSanitizedContentKind();
+      return appendable.setSanitizedContentKindAndDirectionality(kind);
+    }
+    return appendable;
   }
 
   private Expression getEscapingDirectivesList(CallNode node) {

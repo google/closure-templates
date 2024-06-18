@@ -614,9 +614,15 @@ public final class MethodRefs {
       createPure(StringData.class, "forValue", String.class).asCheap();
 
   public static final MethodRef LOGGING_ADVISING_APPENDABLE_BUFFERING =
-      createNonPure(LoggingAdvisingAppendable.class, "buffering");
+      createNonPure(
+              LoggingAdvisingAppendable.class, "buffering", SanitizedContent.ContentKind.class)
+          .asCheap();
   public static final MethodRef MULTIPLEXING_APPENDABLE =
-      createNonPureConstructor(DetachableContentProvider.MultiplexingAppendable.class);
+      createNonPure(
+              DetachableContentProvider.MultiplexingAppendable.class,
+              "create",
+              SanitizedContent.ContentKind.class)
+          .asCheap();
 
   public static final MethodRef BUFFERED_SOY_VALUE_PROVIDER_CREATE =
       createPure(BufferedSoyValueProvider.class, "create", BufferingAppendable.class);
@@ -704,8 +710,6 @@ public final class MethodRefs {
           int.class,
           boolean.class);
 
-  public static final MethodRef REPLAYING_BUFFERED_RENDER_DONE_FN =
-      createPureConstructor(JbcSrcRuntime.ReplayingBufferedRenderDoneFn.class);
 
   public static final MethodRef ESCAPING_BUFFERED_RENDER_DONE_FN =
       createPureConstructor(JbcSrcRuntime.EscapingBufferedRenderDoneFn.class, ImmutableList.class);

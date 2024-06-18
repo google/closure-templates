@@ -17,7 +17,6 @@
 package com.google.template.soy.jbcsrc.runtime;
 
 import com.google.common.collect.ImmutableList;
-import com.google.template.soy.data.Dir;
 import com.google.template.soy.data.LogStatement;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.LoggingAdvisingAppendable.BufferingAppendable;
@@ -47,8 +46,8 @@ public abstract class DetachableContentProvider implements SoyValueProvider {
   private final MultiplexingAppendable appendable;
   private StackFrame frame;
 
-  protected DetachableContentProvider() {
-    this.appendable = new MultiplexingAppendable();
+  protected DetachableContentProvider(ContentKind kind) {
+    this.appendable = MultiplexingAppendable.create(kind);
   }
 
   // This is called for an 'optimistic' evaluation when it fails.
@@ -121,6 +120,15 @@ public abstract class DetachableContentProvider implements SoyValueProvider {
    * the same forwarded content into a buffer.
    */
   public static final class MultiplexingAppendable extends BufferingAppendable {
+
+    public static MultiplexingAppendable create(ContentKind kind) {
+      return new MultiplexingAppendable(kind);
+    }
+
+    private MultiplexingAppendable(ContentKind kind) {
+      super(kind);
+    }
+
     // Lazily initialized to avoid allocations in the common case of optimistic evaluation
     // succeeding or there being no delegates (because we're capturing as a SoyValue).
     // The second most common case is a single delegate,  so we could consider special casing that
@@ -162,18 +170,6 @@ public abstract class DetachableContentProvider implements SoyValueProvider {
       }
     }
 
-    @Override
-    protected void notifyKindAndDirectionality(ContentKind kind, @Nullable Dir contentDir)
-        throws IOException {
-      var delegates = this.delegates;
-      if (delegates == null) {
-        return;
-      }
-      int size = delegates.size();
-      for (int i = 0; i < size; i++) {
-        delegates.get(i).setKindAndDirectionality(kind, contentDir);
-      }
-    }
 
     @Override
     protected void doAppend(CharSequence csq) throws IOException {

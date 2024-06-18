@@ -331,7 +331,11 @@ final class LazyClosureCompiler {
                 StandardNames.BUFFER, MethodRefs.LOGGING_ADVISING_APPENDABLE_BUFFERING.returnType())
             .asNonJavaNullable();
     Statement initBuffer =
-        variable.initialize(MethodRefs.LOGGING_ADVISING_APPENDABLE_BUFFERING.invoke());
+        variable.initialize(
+            AppendableExpression.forExpression(
+                MethodRefs.LOGGING_ADVISING_APPENDABLE_BUFFERING.invoke(
+                    BytecodeUtils.constantSanitizedContentKindAsContentKind(
+                        renderUnitNode.getContentKind()))));
     Statement populateBuffer =
         parent
             .compilerWithNewAppendable(AppendableExpression.forExpression(variable))
@@ -702,7 +706,9 @@ final class LazyClosureCompiler {
           LocalVariable.createLocal(
                   StandardNames.APPENDABLE,
                   0,
-                  BytecodeUtils.LOGGING_ADVISING_APPENDABLE_TYPE,
+                  // It will either be a buffering or a multiplexing appendable, but the latter is a
+                  // subtype so this is accurate
+                  BytecodeUtils.BUFFERING_APPENDABLE_TYPE,
                   start,
                   end)
               .asNonJavaNullable();
@@ -771,15 +777,18 @@ final class LazyClosureCompiler {
                   paramTypesArray),
               fullMethodBody);
       if (useLazyRendering) {
-        return generateLazyCallToRenderable(method.method().getName(), lookup);
+        return generateLazyCallToRenderable(
+            renderUnit.getContentKind(), method.method().getName(), lookup);
       }
-      return generateEagerCallToRenderable(method, /* isOptimistic= */ !isEager, lookup);
+      return generateEagerCallToRenderable(
+          renderUnit.getContentKind(), method, /* isOptimistic= */ !isEager, lookup);
     }
 
     /** Generates the initial call to a lazy expression function */
     private Expression generateLazyCallToRenderable(
-        String implMethodName, LazyClosureParameterLookup lookup) {
+        SanitizedContentKind kind, String implMethodName, LazyClosureParameterLookup lookup) {
       List<Expression> args = new ArrayList<>();
+      args.add(BytecodeUtils.constantSanitizedContentKindAsContentKind(kind));
       for (ParentCapture capture : lookup.getCaptures()) {
         args.add(capture.parentExpression);
       }
@@ -833,7 +842,10 @@ final class LazyClosureCompiler {
 
     /** Generates a call to eagerly evaluate a 'renderable' function. */
     private Expression generateEagerCallToRenderable(
-        MethodRef implMethod, boolean isOptimistic, LazyClosureParameterLookup lookup) {
+        SanitizedContentKind kind,
+        MethodRef implMethod,
+        boolean isOptimistic,
+        LazyClosureParameterLookup lookup) {
       // In this case we can just call the method directly and do something like this:
       // var buffer = LoggingAdvisingAppendable.buffering();
       // implMethod(...args, buffer);
@@ -855,9 +867,10 @@ final class LazyClosureCompiler {
       // }
       // TODO(b/289390227): remove the try...catch and just inline the call to the implMethod
       Expression buffer =
-          isOptimistic
-              ? MethodRefs.MULTIPLEXING_APPENDABLE.invoke()
-              : MethodRefs.LOGGING_ADVISING_APPENDABLE_BUFFERING.invoke();
+          (isOptimistic
+                  ? MethodRefs.MULTIPLEXING_APPENDABLE
+                  : MethodRefs.LOGGING_ADVISING_APPENDABLE_BUFFERING)
+              .invoke(BytecodeUtils.constantSanitizedContentKindAsContentKind(kind));
       List<Expression> args = new ArrayList<>();
       List<Expression> parameters = new ArrayList<>();
       int slot = 0;

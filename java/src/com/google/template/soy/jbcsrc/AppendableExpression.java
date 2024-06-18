@@ -36,7 +36,6 @@ import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.Statement;
 import java.util.List;
 import org.objectweb.asm.Label;
-import org.objectweb.asm.Type;
 
 /**
  * An expression for an {@link
@@ -86,10 +85,7 @@ final class AppendableExpression extends Expression {
   static AppendableExpression forStringBuilder(Expression delegate) {
     checkArgument(delegate.resultType().equals(BUFFERING_APPENDABLE_TYPE));
     return new AppendableExpression(
-        BytecodeUtils.BUFFERING_APPENDABLE_TYPE,
-        delegate,
-        /* hasSideEffects= */ false,
-        /* supportsSoftLimiting= */ false);
+        delegate, /* hasSideEffects= */ false, /* supportsSoftLimiting= */ false);
   }
 
   static AppendableExpression logger() {
@@ -107,12 +103,7 @@ final class AppendableExpression extends Expression {
 
   private AppendableExpression(
       Expression delegate, boolean hasSideEffects, boolean supportsSoftLimiting) {
-    this(LOGGING_ADVISING_APPENDABLE_TYPE, delegate, hasSideEffects, supportsSoftLimiting);
-  }
-
-  private AppendableExpression(
-      Type resultType, Expression delegate, boolean hasSideEffects, boolean supportsSoftLimiting) {
-    super(resultType, delegate.features());
+    super(delegate.resultType(), delegate.features());
     delegate.checkAssignableTo(LOGGING_ADVISING_APPENDABLE_TYPE);
     checkArgument(
         delegate.isNonJavaNullable(),

@@ -20,6 +20,7 @@ import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.base.Strings.nullToEmpty;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constantNull;
 import static com.google.template.soy.soytree.SoyTreeUtils.allNodesOfType;
 import static java.util.stream.Collectors.toCollection;
@@ -43,19 +44,15 @@ import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
 import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.FieldRef;
-import com.google.template.soy.jbcsrc.restricted.LambdaFactory;
 import com.google.template.soy.jbcsrc.restricted.LocalVariable;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.MethodRefs;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.Statement;
+import com.google.template.soy.jbcsrc.shared.CompiledTemplateMetaFactory;
 import com.google.template.soy.jbcsrc.shared.TemplateMetadata;
 import com.google.template.soy.soytree.CallDelegateNode;
-import com.google.template.soy.soytree.CallParamContentNode;
-import com.google.template.soy.soytree.CallParamValueNode;
 import com.google.template.soy.soytree.FileSetMetadata;
-import com.google.template.soy.soytree.LetContentNode;
-import com.google.template.soy.soytree.LetValueNode;
 import com.google.template.soy.soytree.SoyFileNode.CssPath;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
@@ -69,6 +66,7 @@ import com.google.template.soy.types.NullType;
 import com.google.template.soy.types.TemplateType;
 import com.google.template.soy.types.TemplateType.Parameter;
 import com.google.template.soy.types.UndefinedType;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.IdentityHashMap;
@@ -77,6 +75,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import javax.annotation.Nullable;
+import org.objectweb.asm.ConstantDynamic;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.commons.Method;
@@ -151,15 +150,22 @@ final class TemplateCompiler {
     generateModifiableSelectMethod();
   }
 
+  private static final MethodRef COMPILED_TEMPLATE_METAFACTORY =
+      MethodRef.createPure(
+          CompiledTemplateMetaFactory.class,
+          "createCompiledTemplate",
+          MethodHandles.Lookup.class,
+          String.class,
+          Class.class);
+
   /** Write the function "templateMethod", which returns a reference to "renderMethod". */
   private void generateTemplateMethod(MethodRef templateMethod, MethodRef renderMethod) {
-    // use invoke dynamic to lazily allocate the template instance.
+    // Use constant dynamic to lazily allocate the template instance.
     // templates are needed for direct java->soy calls, references to template literals and
-    // deltemplates, which
-    // should mean that the vast majority are not needed.  We can generate a simple factory() method
-    // that uses invoke dynamic to generate a factory instance as needed.  This should be just as
-    // fast as our previous approach of generating an explicit factory subclass while requiring much
-    // less bytecode, since most factory instances are not needed.
+    // deltemplates, which should mean that the vast majority are not needed.  We can generate a
+    // simple factory() method that uses constant dynamic to generate a factory instance as needed.
+    // This should be just as fast as our previous approach of generating an explicit factory
+    // subclass while requiring much less bytecode, since most factory instances are not needed.
     // The code here is identical to:
     // public static CompiledTemplate template() {
     //  return foo::render;
@@ -167,7 +173,13 @@ final class TemplateCompiler {
     // assuming foo is the name of the template class.
     Statement methodBody =
         Statement.returnExpression(
-            LambdaFactory.create(MethodRefs.COMPILED_TEMPLATE_RENDER, renderMethod).invoke());
+            constant(
+                BytecodeUtils.COMPILED_TEMPLATE_TYPE,
+                new ConstantDynamic(
+                    renderMethod.method().getName(),
+                    BytecodeUtils.COMPILED_TEMPLATE_TYPE.getDescriptor(),
+                    COMPILED_TEMPLATE_METAFACTORY.asHandle()),
+                Expression.Features.of(Expression.Feature.NON_JAVA_NULLABLE)));
     CodeBuilder methodWriter =
         new CodeBuilder(methodAccess(), templateMethod.method(), /* exceptions= */ null, writer);
     generateTemplateMetadata(methodWriter);
@@ -188,7 +200,10 @@ final class TemplateCompiler {
             : (NamespaceExemptions.isKnownDuplicateNamespace(
                     templateNode.getSoyFileHeaderInfo().getNamespace())
                 ? /* default access */ 0
-                : Opcodes.ACC_PRIVATE))
+                // private templates need to have default access so they can be called by our
+                // runtime generated Compiledtemplate subtypes.  We can eliminate this once jdk21 is
+                // available and we can generate these classes as a private nestmate.
+                : 0))
         | Opcodes.ACC_STATIC;
   }
 
