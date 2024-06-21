@@ -107,6 +107,7 @@ java_library(
         ":record_property",
         ":template",
         "//java/src/com/google/template/soy/base/internal",
+        "//java/src/com/google/template/soy/internal/base",
         "//java/src/com/google/template/soy/internal/proto",
         "//java/src/com/google/template/soy/jbcsrc/api:helpers",
         "//java/src/com/google/template/soy/jbcsrc/shared:names",

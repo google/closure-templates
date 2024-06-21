@@ -17,8 +17,10 @@
 package com.google.template.soy.data;
 
 import static com.google.common.truth.Truth.assertThat;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.fail;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -75,5 +77,48 @@ public class UnsafeSanitizedContentOrdainerTest {
     html = UnsafeSanitizedContentOrdainer.ordainAsSafe("Hello World", ContentKind.HTML);
     assertThat(html.getContent()).isEqualTo("Hello World");
     assertThat(html.getContentDirection()).isNull();
+  }
+
+  @Test
+  public void testOrdainAttributesAsSafe() {
+    SanitizedContent attributes =
+        UnsafeSanitizedContentOrdainer.ordainAsSafeAttributes(
+            ImmutableMap.of(
+                "a", SanitizedContent.AttributeValue.createFromEscapedValue("b"),
+                "c", SanitizedContent.AttributeValue.createFromEscapedValue("d")));
+    assertThat(attributes.getContentKind()).isEqualTo(ContentKind.ATTRIBUTES);
+    assertThat(attributes.getContent()).isEqualTo("a=\"b\" c=\"d\"");
+
+    assertThat(
+            UnsafeSanitizedContentOrdainer.ordainAsSafeAttributes(ImmutableMap.of()).getContent())
+        .isEqualTo("");
+
+    assertThat(
+            UnsafeSanitizedContentOrdainer.ordainAsSafeAttributes(
+                    ImmutableMap.of(
+                        "a",
+                        SanitizedContent.AttributeValue.none(),
+                        "b",
+                        SanitizedContent.AttributeValue.createFromEscapedValue("")))
+                .getContent())
+        .isEqualTo("a b=\"\"");
+  }
+
+  @Test
+  public void testOrdainAttributesAsSafe_errors() {
+    assertThrows(
+        IllegalArgumentException.class,
+        () ->
+            UnsafeSanitizedContentOrdainer.ordainAsSafeAttributes(
+                ImmutableMap.of("A", SanitizedContent.AttributeValue.createFromEscapedValue("b"))));
+    assertThrows(
+        IllegalArgumentException.class,
+        () ->
+            UnsafeSanitizedContentOrdainer.ordainAsSafeAttributes(
+                ImmutableMap.of("", SanitizedContent.AttributeValue.createFromEscapedValue("b"))));
+
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> SanitizedContent.AttributeValue.createFromEscapedValue("\""));
   }
 }

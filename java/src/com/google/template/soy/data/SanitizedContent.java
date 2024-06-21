@@ -18,7 +18,13 @@ package com.google.template.soy.data;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
+import com.google.auto.value.AutoValue;
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Ascii;
+import com.google.common.base.CharMatcher;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.html.HtmlEscapers;
 import com.google.common.html.types.SafeHtml;
 import com.google.common.html.types.SafeHtmlProto;
 import com.google.common.html.types.SafeHtmls;
@@ -40,7 +46,10 @@ import com.google.common.html.types.TrustedResourceUrls;
 import com.google.common.html.types.UncheckedConversions;
 import com.google.errorprone.annotations.DoNotMock;
 import com.google.errorprone.annotations.Immutable;
+import com.google.errorprone.annotations.concurrent.LazyInit;
+import com.google.template.soy.internal.base.UnescapeUtils;
 import java.io.IOException;
+import java.util.Map;
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 
@@ -48,7 +57,7 @@ import javax.annotation.ParametersAreNonnullByDefault;
 @ParametersAreNonnullByDefault
 @Immutable
 @DoNotMock("Use SanitizedContents.emptyString or UnsafeSanitizedContentOrdainer.ordainAsSafe")
-public class SanitizedContent extends SoyAbstractValue {
+public abstract class SanitizedContent extends SoyAbstractValue {
 
   /**
    * Creates a SanitizedContent object.
@@ -64,7 +73,9 @@ public class SanitizedContent extends SoyAbstractValue {
    * @param dir The content's direction; null if unknown and thus to be estimated when necessary.
    */
   static SanitizedContent create(String content, ContentKind kind, @Nullable Dir dir) {
-    return new SanitizedContent(content, kind, dir);
+    return kind == ContentKind.ATTRIBUTES
+        ? new Attributes(content, dir)
+        : new Impl(content, kind, dir);
   }
 
   /** Creates a SanitizedContent object with default direction. */
@@ -152,25 +163,21 @@ public class SanitizedContent extends SoyAbstractValue {
 
   private final ContentKind contentKind;
   private final Dir contentDir;
-  private final String content;
 
   /**
    * Package private constructor to limit subclasses to this file. This is important to ensure that
    * all implementations of this class are fully vetted by security.
    */
-  SanitizedContent(String content, ContentKind contentKind, @Nullable Dir contentDir) {
+  private SanitizedContent(ContentKind contentKind, @Nullable Dir contentDir) {
     checkArgument(
         contentKind != ContentKind.TEXT,
         "Use plain strings instead SanitizedContent with kind of TEXT");
-    this.content = content;
     this.contentKind = Preconditions.checkNotNull(contentKind);
     this.contentDir = contentDir;
   }
 
   /** Returns a string of valid content with kind {@link #getContentKind}. */
-  public String getContent() {
-    return content;
-  }
+  public abstract String getContent();
 
   /** Returns the kind of content. */
   public final ContentKind getContentKind() {
@@ -209,11 +216,6 @@ public class SanitizedContent extends SoyAbstractValue {
   @Override
   public String toString() {
     return getContent();
-  }
-
-  @Override
-  public void render(LoggingAdvisingAppendable appendable) throws IOException {
-    appendable.setKindAndDirectionality(getContentKind(), getContentDirection()).append(content);
   }
 
   /**
@@ -445,5 +447,262 @@ public class SanitizedContent extends SoyAbstractValue {
     }
 
     return contentKind == this.contentKind;
+  }
+
+  /** A single attribute value. */
+  @AutoValue
+  @Immutable
+  public abstract static class AttributeValue {
+    private static final AttributeValue NONE = new AutoValue_SanitizedContent_AttributeValue(null);
+
+    /**
+     * Returns an attribute value that represents no value, useful for bare attributes like {@code
+     * disabled}.
+     */
+    public static AttributeValue none() {
+      return NONE;
+    }
+
+    /** Creates an attribute value from a string that has already been entity escaped. */
+    public static AttributeValue createFromEscapedValue(String escapedValue) {
+      // Much like the rest of Soy we are as permissive as the browsers when it comes to attribute
+      // values.  While technically everything must be entity escaped, only quotation marks really
+      // matter
+      checkArgument(escapedValue.indexOf('"') == -1, "value contains unescped characters");
+      return createFromEscapedValueUnchecked(escapedValue);
+    }
+
+    /** Creates an attribute value from a string that has not been entity escaped. */
+    public static AttributeValue createFromUnescapedValue(String unescaped) {
+      String escapedValue = HtmlEscapers.htmlEscaper().escape(unescaped);
+      var v = createFromEscapedValueUnchecked(escapedValue);
+      v.unescapedValue = unescaped;
+      return v;
+    }
+
+    private static AttributeValue createFromEscapedValueUnchecked(String escapedValue) {
+      return new AutoValue_SanitizedContent_AttributeValue(escapedValue);
+    }
+
+    @LazyInit private String unescapedValue;
+
+    @Nullable
+    public abstract String escapedValue();
+
+    @Nullable
+    public String unescapedValue() {
+      var unescapedValue = this.unescapedValue;
+      if (unescapedValue == null) {
+        if (escapedValue() == null) {
+          return null;
+        }
+        unescapedValue = this.unescapedValue = UnescapeUtils.unescapeHtml(escapedValue());
+      }
+      return unescapedValue;
+    }
+
+    AttributeValue() {} // prevent instantiation outside of this package
+  }
+
+  /**
+   * Returns the contents of a SanitizedContent of kind ATTRIBUTES as a map of attribute name to
+   * attribute value.
+   *
+   * <p>All quotation marks have been remove and the names
+   */
+  public ImmutableMap<String, AttributeValue> getAsAttributesMap() {
+    throw new IllegalStateException(
+        "getAsAttributesMap() is only valid for SanitizedContent of kind  ATTRIBUTES, this is "
+            + contentKind);
+  }
+
+  static final class Attributes extends SanitizedContent {
+
+    // At least one of these is always non-null and each can be derived from the other.
+    @LazyInit @Nullable private String content;
+    @LazyInit @Nullable private ImmutableMap<String, AttributeValue> attributes;
+
+    Attributes(String content, @Nullable Dir contentDir) {
+      super(ContentKind.ATTRIBUTES, contentDir);
+      this.content = content;
+    }
+
+    Attributes(Map<String, AttributeValue> content) {
+      super(ContentKind.ATTRIBUTES, ContentKind.ATTRIBUTES.getDefaultDir());
+      var builder = ImmutableMap.<String, AttributeValue>builderWithExpectedSize(content.size());
+      for (var entry : content.entrySet()) {
+        var key = entry.getKey();
+        checkArgument(
+            key.length() > 0 && key.equals(Ascii.toLowerCase(key)),
+            "attribute names must be lowercase and non-empty %s",
+            key);
+        var value = entry.getValue();
+        builder.put(key, value);
+      }
+      this.attributes = builder.buildOrThrow();
+    }
+
+    @Override
+    public String getContent() {
+      var content = this.content;
+      if (content == null) {
+        StringBuilder sb = new StringBuilder();
+        try {
+          writeAttributesToAppendable(sb);
+        } catch (IOException e) {
+          throw new AssertionError(e); // impossible
+        }
+        content = this.content = sb.toString();
+      }
+      return content;
+    }
+
+    @Override
+    public void render(LoggingAdvisingAppendable appendable) throws IOException {
+      appendable = appendable.setKindAndDirectionality(getContentKind(), getContentDirection());
+      var content = this.content;
+      if (content == null) {
+        writeAttributesToAppendable(appendable);
+      } else {
+        appendable.append(content);
+      }
+    }
+
+    private void writeAttributesToAppendable(Appendable appendable) throws IOException {
+      boolean first = true;
+      for (var entry : attributes.entrySet()) {
+        if (!first) {
+          appendable.append(' ');
+        }
+        first = false;
+        var key = entry.getKey();
+        var escapedValue = entry.getValue().escapedValue();
+        appendable.append(key);
+        if (escapedValue != null) {
+          appendable.append("=\"").append(escapedValue).append('"');
+        }
+      }
+    }
+
+    @Override
+    public ImmutableMap<String, AttributeValue> getAsAttributesMap() {
+      var attributes = this.attributes;
+      if (attributes == null) {
+        attributes = this.attributes = parseAttributes(this.content);
+      }
+      return attributes;
+    }
+  }
+
+  private static final CharMatcher NOT_WHITESPACE = CharMatcher.whitespace().negate();
+
+  private static int consume(CharMatcher endMatcher, String content, int position) {
+    int length = content.length();
+    for (; position < length; position++) {
+      if (endMatcher.matches(content.charAt(position))) {
+        break;
+      }
+    }
+    return position;
+  }
+
+  /** Returns the position of the first non-whitespace character, or length */
+  private static int consumeWhitespace(String content, int position) {
+    return consume(NOT_WHITESPACE, content, position);
+  }
+
+  private static final CharMatcher WHITESPACE_OR_EQUALS =
+      CharMatcher.whitespace().or(CharMatcher.is('=')).precomputed();
+
+  private static int consumeAttributeName(String content, int position) {
+    return consume(WHITESPACE_OR_EQUALS, content, position);
+  }
+
+  private static int consumeUnquotedAttributeValue(String content, int position) {
+    return consume(CharMatcher.whitespace(), content, position);
+  }
+
+  /**
+   * Returns a map of attributes from the given content.
+   *
+   * <p>This parser does not validate, the content provided here was either produced by a trusted
+   * producer (like Soy), a safe factory function, or was 'ordained' as safe by the caller. So we
+   * assume that attribute names and values are well formed and will only perform the validation
+   * that is necessary to fulfill our contract.
+   *
+   * @throws IllegalArgumentException if attribute values are not well formed (quotes are not
+   *     balanced, a value is missing after an equals sign, etc).
+   */
+  @VisibleForTesting
+  static ImmutableMap<String, AttributeValue> parseAttributes(String content) {
+    var attributes = ImmutableMap.<String, AttributeValue>builder();
+    final var length = content.length();
+    int position = consumeWhitespace(content, 0);
+    while (position < length) {
+      var end = consumeAttributeName(content, position);
+      // Canonically attribute names are case insensitive (in ascii), and by convention lowercase
+      // is used.
+      var name = Ascii.toLowerCase(content.substring(position, end));
+      if (name.isEmpty()) {
+        throw new IllegalArgumentException("Empty attribute name in " + content);
+      }
+      // end is pointing at whitespace or an equals sign (or the end of the string).
+      if (end == length) {
+        attributes.put(name, AttributeValue.none());
+        break;
+      }
+      // The most common case is that the equals sign follows the attribute name immediately
+      if (content.charAt(end) != '=') {
+        end = consumeWhitespace(content, end);
+        if (end == length || content.charAt(end) != '=') {
+          position = end;
+          attributes.put(name, AttributeValue.none());
+          continue;
+        }
+      }
+      position = end + 1; // consume the equals sign
+      position = consumeWhitespace(content, position);
+      if (position == length) {
+        throw new IllegalArgumentException(
+            "missing attribute value for " + name + " in " + content);
+      }
+      char initial = content.charAt(position);
+      if (initial == '"' || initial == '\'') {
+        position++;
+        end = content.indexOf(initial, position);
+        if (end == -1) {
+          throw new IllegalArgumentException("Unbalanced quotes in attribute value");
+        }
+        attributes.put(
+            name, AttributeValue.createFromEscapedValueUnchecked(content.substring(position, end)));
+        position = end + 1; // ignore the trailing quotation mark
+      } else {
+        end = consumeUnquotedAttributeValue(content, position);
+        attributes.put(
+            name, AttributeValue.createFromEscapedValueUnchecked(content.substring(position, end)));
+        position = end + 1; // we found the end or some whitespace, skip it.
+      }
+      position = consumeWhitespace(content, position);
+    }
+    return attributes.buildKeepingLast();
+  }
+
+  private static final class Impl extends SanitizedContent {
+    private final String content;
+
+    Impl(String content, ContentKind contentKind, @Nullable Dir contentDir) {
+      super(contentKind, contentDir);
+      this.content = content;
+    }
+
+    @Override
+    public void render(LoggingAdvisingAppendable appendable) throws IOException {
+      appendable.setKindAndDirectionality(getContentKind(), getContentDirection()).append(content);
+    }
+
+    @Override
+    public String getContent() {
+      return content;
+    }
   }
 }
