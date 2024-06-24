@@ -146,8 +146,7 @@ interface ExpressionDetacher {
     @Override
     public Expression waitForSoyValueProvider(Expression soyValueProvider) {
       soyValueProvider.checkAssignableTo(BytecodeUtils.SOY_VALUE_PROVIDER_TYPE);
-      if (BytecodeUtils.isDefinitelyAssignableFrom(SOY_VALUE_TYPE, soyValueProvider.resultType())
-          || soyValueProvider.resultType().equals(BytecodeUtils.BUFFERED_SOY_VALUE_PROVIDER_TYPE)) {
+      if (BytecodeUtils.isDefinitelyAssignableFrom(SOY_VALUE_TYPE, soyValueProvider.resultType())) {
         return soyValueProvider;
       }
       Statement saveOperation = saveOperationSupplier.get();

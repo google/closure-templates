@@ -68,7 +68,6 @@ import com.google.template.soy.internal.proto.JavaQualifiedNames;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.restricted.Expression.Feature;
 import com.google.template.soy.jbcsrc.restricted.Expression.Features;
-import com.google.template.soy.jbcsrc.runtime.BufferedSoyValueProvider;
 import com.google.template.soy.jbcsrc.runtime.DetachableContentProvider;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.ExtraConstantBootstraps;
@@ -147,8 +146,6 @@ public final class BytecodeUtils {
   public static final Type SOY_RECORD_IMPL_TYPE = Type.getType(SoyRecordImpl.class);
   public static final Type SOY_VALUE_TYPE = Type.getType(SoyValue.class);
   public static final Type SOY_VALUE_PROVIDER_TYPE = Type.getType(SoyValueProvider.class);
-  public static final Type BUFFERED_SOY_VALUE_PROVIDER_TYPE =
-      Type.getType(BufferedSoyValueProvider.class);
 
   public static final Type LINKED_HASH_MAP_TYPE = Type.getType(LinkedHashMap.class);
   public static final Type IDENTITY_HASH_MAP_TYPE = Type.getType(IdentityHashMap.class);

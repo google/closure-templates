@@ -22,7 +22,6 @@ import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.LoggingAdvisingAppendable.BufferingAppendable;
 import com.google.template.soy.data.LoggingFunctionInvocation;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
-import com.google.template.soy.data.SoyAbstractValue;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.jbcsrc.api.RenderResult;
@@ -40,7 +39,7 @@ import javax.annotation.Nullable;
  */
 public abstract class DetachableContentProvider implements SoyValueProvider {
 
-  // Will be either a SanitizedContent, a StringData, or a TombstoneValue.
+  // Will be either a SanitizedContent, a StringData.
   private SoyValue resolvedValue;
 
   private final MultiplexingAppendable appendable;
@@ -62,12 +61,6 @@ public abstract class DetachableContentProvider implements SoyValueProvider {
     if (local == null) {
       JbcSrcRuntime.awaitProvider(this);
       local = resolvedValue;
-    }
-    if (local == TombstoneValue.INSTANCE) {
-      // This drops logs, but that is sometimes necessary.  We should make sure this only happens
-      // when it has to by making sure that renderAndResolve is used for all printing usecases
-      local = appendable.getAsSoyValue();
-      resolvedValue = local;
     }
     return local;
   }
@@ -99,7 +92,7 @@ public abstract class DetachableContentProvider implements SoyValueProvider {
     int delegateIndex = localAppendable.addDelegate(appendable);
     StackFrame local = frame = doRender(frame, localAppendable);
     if (local == null) {
-      resolvedValue = TombstoneValue.INSTANCE;
+      resolvedValue = localAppendable.getAsSoyValue();
       localAppendable.removeDelegate(delegateIndex, appendable);
       return RenderResult.done();
     }
@@ -272,40 +265,6 @@ public abstract class DetachableContentProvider implements SoyValueProvider {
       for (int i = 0; i < size; i++) {
         delegates.get(i).appendLoggingFunctionInvocation(funCall, escapers);
       }
-    }
-  }
-
-  private static final class TombstoneValue extends SoyAbstractValue {
-    static final TombstoneValue INSTANCE = new TombstoneValue();
-
-    @Override
-    public void render(LoggingAdvisingAppendable appendable) {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public boolean equals(Object other) {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public int hashCode() {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public String coerceToString() {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public boolean coerceToBoolean() {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public String toString() {
-      return "TOMBSTONE";
     }
   }
 }

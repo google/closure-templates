@@ -62,7 +62,6 @@ import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.restricted.MethodRef.MethodPureness;
-import com.google.template.soy.jbcsrc.runtime.BufferedSoyValueProvider;
 import com.google.template.soy.jbcsrc.runtime.DetachableContentProvider;
 import com.google.template.soy.jbcsrc.runtime.JbcSrcRuntime;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
@@ -343,6 +342,8 @@ public final class MethodRefs {
       createPure(SoyValue.class, "isTruthyNonEmpty");
 
   public static final MethodRef SOY_VALUE_HAS_CONTENT = createPure(SoyValue.class, "hasContent");
+  public static final MethodRef SOY_VALUE_RENDER =
+      createPure(SoyValue.class, "render", LoggingAdvisingAppendable.class);
 
   public static final MethodRef RUNTIME_TRIPLE_EQUAL =
       createPure(SharedRuntime.class, "tripleEqual", SoyValue.class, SoyValue.class);
@@ -624,8 +625,10 @@ public final class MethodRefs {
               SanitizedContent.ContentKind.class)
           .asCheap();
 
-  public static final MethodRef BUFFERED_SOY_VALUE_PROVIDER_CREATE =
-      createPure(BufferedSoyValueProvider.class, "create", BufferingAppendable.class);
+  public static final MethodRef BUFFERING_APPENDABLE_GET_AS_STRING_DATA =
+      createPure(BufferingAppendable.class, "getAsStringData");
+  public static final MethodRef BUFFERING_APPENDABLE_GET_AS_SANITIZED_CONTENT =
+      createPure(BufferingAppendable.class, "getAsSanitizedContent");
 
   public static final MethodRef CREATE_LOG_STATEMENT =
       createPure(JbcSrcRuntime.class, "createLogStatement", boolean.class, SoyValue.class);

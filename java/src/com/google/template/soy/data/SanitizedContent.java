@@ -83,6 +83,18 @@ public abstract class SanitizedContent extends SoyAbstractValue {
     return create(content, kind, kind.getDefaultDir());
   }
 
+  /** Creates a SanitizedContent from a command buffer. */
+  static SanitizedContent create(
+      LoggingAdvisingAppendable.CommandBuffer commandBuffer, ContentKind kind, @Nullable Dir dir) {
+    if (kind == ContentKind.HTML) {
+      return new BufferedImpl(commandBuffer, kind, dir);
+    }
+    if (kind == ContentKind.ATTRIBUTES) {
+      return new BufferedAttributes(commandBuffer, dir);
+    }
+    throw new IllegalArgumentException("Only kind ATTRIBUTES and HTML are supported, got: " + kind);
+  }
+
   /** A kind of textual content. */
   public enum ContentKind {
     // NOTE: internally in the compiler we use a parallel enum SanitizedContentKind.  That should
@@ -703,6 +715,53 @@ public abstract class SanitizedContent extends SoyAbstractValue {
     @Override
     public String getContent() {
       return content;
+    }
+  }
+
+  private static class BufferedImpl extends SanitizedContent {
+    @LazyInit String content;
+    private final LoggingAdvisingAppendable.CommandBuffer commandBuffer;
+
+    BufferedImpl(
+        LoggingAdvisingAppendable.CommandBuffer commandBuffer,
+        ContentKind contentKind,
+        @Nullable Dir contentDir) {
+      super(contentKind, contentDir);
+      this.commandBuffer = commandBuffer;
+    }
+
+    @Override
+    public String getContent() {
+      var content = this.content;
+      if (content == null) {
+        content = commandBuffer.toString();
+        this.content = content;
+      }
+      return content;
+    }
+
+    @Override
+    public void render(LoggingAdvisingAppendable appendable) throws IOException {
+      commandBuffer.replayOn(
+          appendable.setKindAndDirectionality(getContentKind(), getContentDirection()));
+    }
+  }
+
+  private static final class BufferedAttributes extends BufferedImpl {
+    @LazyInit @Nullable private ImmutableMap<String, AttributeValue> attributes;
+
+    BufferedAttributes(LoggingAdvisingAppendable.CommandBuffer commandBuffer, @Nullable Dir dir) {
+      super(commandBuffer, ContentKind.ATTRIBUTES, dir);
+    }
+
+    @Override
+    public ImmutableMap<String, AttributeValue> getAsAttributesMap() {
+      var attributes = this.attributes;
+      if (attributes == null) {
+        // TODO(b/288958830): create a fast path for parsing attributes from a buffer.
+        attributes = this.attributes = parseAttributes(this.getContent());
+      }
+      return attributes;
     }
   }
 }

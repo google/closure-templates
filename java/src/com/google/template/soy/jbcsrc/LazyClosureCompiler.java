@@ -342,7 +342,15 @@ final class LazyClosureCompiler {
             .compileWithoutDetaches(renderUnitNode, prefix, suffix);
 
     return Statement.concat(initBuffer, populateBuffer, scope.exitScope())
-        .then(MethodRefs.BUFFERED_SOY_VALUE_PROVIDER_CREATE.invoke(variable));
+        .then(variable.invoke(getUnpackBufferingAppendableMethod(renderUnitNode.getContentKind())));
+  }
+
+  private static MethodRef getUnpackBufferingAppendableMethod(SanitizedContentKind kind) {
+    if (kind == SanitizedContentKind.TEXT) {
+      return MethodRefs.BUFFERING_APPENDABLE_GET_AS_STRING_DATA;
+    } else {
+      return MethodRefs.BUFFERING_APPENDABLE_GET_AS_SANITIZED_CONTENT;
+    }
   }
 
   /**
@@ -849,7 +857,7 @@ final class LazyClosureCompiler {
       // In this case we can just call the method directly and do something like this:
       // var buffer = LoggingAdvisingAppendable.buffering();
       // implMethod(...args, buffer);
-      // BufferedSoyValueProvider.create(buffer);
+      // buffer.getAsSoyValue();
       //
       // However, for compatibility with lazy rendering we need to be able to catch exceptions and
       // capture in a ThrowingSoyValueProvider.  The problem with just adding a try catch block is
@@ -859,8 +867,7 @@ final class LazyClosureCompiler {
       // helper method to hold the try-catch.  Luckily the helper method is trivial.
       // static SoyValueProvider implMethodHelper(...args) {
       //   try {
-      //     return BufferedSoyValueProvider.create(implMethod(...args,
-      // LoggingAdvisingAppendable.buffering()));
+      //     return implMethod(...args, LoggingAdvisingAppendable.buffering())).getAsSoyValue();
       //   } catch (Throwable t) {
       //     return ThrowingSoyValueProvider.create(t);
       //   }
@@ -935,7 +942,7 @@ final class LazyClosureCompiler {
                 } else {
                   implMethod.invokeUnchecked(cb);
                 }
-                MethodRefs.BUFFERED_SOY_VALUE_PROVIDER_CREATE.invokeUnchecked(cb);
+                getUnpackBufferingAppendableMethod(kind).invokeUnchecked(cb);
                 cb.returnValue();
               }
             }

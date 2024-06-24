@@ -27,6 +27,8 @@ import com.google.template.soy.types.BoolType;
 import com.google.template.soy.types.FloatType;
 import com.google.template.soy.types.IntType;
 import com.google.template.soy.types.ListType;
+import com.google.template.soy.types.SanitizedType.AttributesType;
+import com.google.template.soy.types.SanitizedType.HtmlType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
@@ -183,6 +185,12 @@ public abstract class SoyRuntimeType {
     return soyType.getKind().isKnownStringOrSanitizedContent()
         || (soyType.getKind() == Kind.UNION
             && SoyTypes.tryRemoveNullish(soyType).getKind().isKnownStringOrSanitizedContent());
+  }
+
+  public boolean assignableToNullableHtmlOrAttributes() {
+    var type = SoyTypes.tryRemoveNullish(soyType);
+    return type.isAssignableFromLoose(HtmlType.getInstance())
+        || type.isAssignableFromLoose(AttributesType.getInstance());
   }
 
   private boolean assignableToNullableType(SoyType type) {

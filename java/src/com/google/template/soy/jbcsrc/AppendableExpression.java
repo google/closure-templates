@@ -66,7 +66,7 @@ final class AppendableExpression extends Expression {
           ImmutableList.class);
 
   private static final MethodRef LOGGING_FUNCTION_INVOCATION_CREATE =
-      MethodRef.createNonPure(
+      MethodRef.createPure(
           LoggingFunctionInvocation.class, "create", String.class, String.class, List.class);
 
   private static final MethodRef SET_SANITIZED_CONTENT_KIND_AND_DIRECTIONALITY =
@@ -162,12 +162,15 @@ final class AppendableExpression extends Expression {
     return withNewDelegate(
         delegate.invoke(
             APPEND_LOGGING_FUNCTION_INVOCATION,
-            LOGGING_FUNCTION_INVOCATION_CREATE.invoke(
-                constant(functionName),
-                constant(placeholderValue),
-                // TODO(lukes): nearly all implementations don't want `null`, change them to accept
-                // NullData and perform a regular boxing conversion here.
-                SoyExpression.boxListWithSoyNullishAsJavaNull(args)),
+            LOGGING_FUNCTION_INVOCATION_CREATE
+                .invoke(
+                    constant(functionName),
+                    constant(placeholderValue),
+                    // TODO(lukes): nearly all implementations don't want `null`, change them to
+                    // accept
+                    // NullData and perform a regular boxing conversion here.
+                    SoyExpression.boxListWithSoyNullishAsJavaNull(args))
+                .toMaybeConstant(),
             BytecodeUtils.asImmutableList(escapingDirectives)),
         true);
   }

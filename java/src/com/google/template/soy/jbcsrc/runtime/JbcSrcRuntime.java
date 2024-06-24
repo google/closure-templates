@@ -417,7 +417,7 @@ public final class JbcSrcRuntime {
     @Override
     public final SoyValue resolve() {
       checkState(status().isDone());
-      return buffer.getAsSoyValue();
+      return buffer.getAsStringData();
     }
 
     /** Renders the message to the given output stream incrementally. */
@@ -718,7 +718,7 @@ public final class JbcSrcRuntime {
       for (SoyJavaPrintDirective directive : directives) {
         resultData = directive.applyForJava(resultData, ImmutableList.of());
       }
-      appendable.append(resultData.coerceToString());
+      resultData.render(appendable);
     }
   }
 

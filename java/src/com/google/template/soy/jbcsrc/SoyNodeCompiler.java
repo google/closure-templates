@@ -844,7 +844,12 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     // require boxing to be a print directive (which usually means it is quite trivial).
     Label reattachPoint = new Label();
     SoyExpression value = compilePrintNodeAsExpression(node, reattachPoint);
-    // TODO(lukes): call value.render?
+    if (value.isBoxed()) {
+      return value
+          .invokeVoid(MethodRefs.SOY_VALUE_RENDER, appendableExpression)
+          .labelStart(reattachPoint);
+    }
+    // handle trivial unboxed values like numbers and strings.
     AppendableExpression renderSoyValue =
         appendableExpression.appendString(value.coerceToString()).labelStart(reattachPoint);
 
@@ -981,7 +986,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     // TODO(b/289390227): there are some cases where we statically know that this will not require a
     // detach despite our static analysis saying otherwise.  Remove references to the analyzer and
     // instead type test the expression.  If the ExpressionCompiler doesn't require a detach we
-    // should get something statically typed as a BufferedSoyValueProvider or a SoyValue subtype.
+    // should get something statically typed as a SoyValue subtype.
     Expression callRenderAndResolve =
         soyValueProvider.invoke(MethodRefs.SOY_VALUE_PROVIDER_RENDER_AND_RESOLVE, appendable);
     Statement doCall =
@@ -1421,7 +1426,8 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
 
     TemplateVariableManager.Scope renderScope = variables.enterScope();
     Statement initCallee = Statement.NULL_STATEMENT;
-    if (!areAllPrintDirectivesStreamable(node) || node.isErrorFallbackSkip()) {
+    boolean allPrintDirectivesStreamable = areAllPrintDirectivesStreamable(node);
+    if (!allPrintDirectivesStreamable || node.isErrorFallbackSkip()) {
       // in this case we need to wrap a CompiledTemplate to buffer to catch exceptions or to
       // apply non-streaming escaping directives.
       ExpressionAndInitializer expressionAndInitializer =
@@ -1431,9 +1437,10 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
           MethodRefs.BUFFER_TEMPLATE.invoke(
               callGenerator.asCompiledTemplate(),
               BytecodeUtils.constant(node.isErrorFallbackSkip()),
-              !areAllPrintDirectivesStreamable(node)
+              !allPrintDirectivesStreamable
                   ? MethodRefs.ESCAPING_BUFFERED_RENDER_DONE_FN.invoke(
                       getEscapingDirectivesList(node))
+                  // In this case the appendable is wrapped below.
                   : FieldRef.REPLAYING_BUFFERED_RENDER_DONE_FN.accessor());
       TemplateVariableManager.Variable calleeVariable =
           renderScope.createSynthetic(
@@ -1502,7 +1509,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
         }
       }
     }
-    if (!node.getEscapingDirectives().isEmpty() && areAllPrintDirectivesStreamable(node)) {
+    if (!node.getEscapingDirectives().isEmpty() && allPrintDirectivesStreamable) {
       PrintDirectives.AppendableAndFlushBuffersDepth wrappedAppendable =
           applyStreamingEscapingDirectives(
               node.getEscapingDirectives(), appendable, parameterLookup.getPluginContext());

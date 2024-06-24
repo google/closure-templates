@@ -22,6 +22,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.errorprone.annotations.ForOverride;
+import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
@@ -272,8 +273,31 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
     }
 
     @Override
-    public void flushBuffers(int depth) {
+    public void flushBuffers(int depth) throws IOException {
       throw new AssertionError("should not be called");
+    }
+  }
+
+  /** A buffer of commands that can be replayed on a {@link LoggingAdvisingAppendable}. */
+  @Immutable
+  public static final class CommandBuffer {
+    // There is no common supertype of all the commands but they are all deeply immutable.
+    @SuppressWarnings("Immutable")
+    private final ImmutableList<Object> commands;
+
+    private CommandBuffer(ImmutableList<Object> commands) {
+      this.commands = commands;
+    }
+
+    public void replayOn(LoggingAdvisingAppendable appendable) throws IOException {
+      BufferingAppendable.replayOn(commands, appendable);
+    }
+
+    @Override
+    public String toString() {
+      StringBuilder builder = new StringBuilder();
+      BufferingAppendable.appendCommandsToBuilder(commands, builder);
+      return builder.toString();
     }
   }
 
@@ -342,24 +366,29 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
             appendable.setKindAndDirectionality(
                 getSanitizedContentKind(), getSanitizedContentDirectionality());
       }
+      var commands = this.commands;
       if (commands != null) {
-        for (Object o : getCommandsAndAddPendingStringData()) {
-          if (o instanceof String) {
-            appendable.append((String) o);
-          } else if (o instanceof LoggingFunctionCommand) {
-            ((LoggingFunctionCommand) o).replayOn(appendable);
-          } else if (o == EXIT_LOG_STATEMENT_MARKER) {
-            appendable.exitLoggableElement();
-          } else if (o instanceof LogStatement) {
-            appendable.enterLoggableElement((LogStatement) o);
-          } else {
-            throw new AssertionError("unexpected command object: " + o);
-          }
-        }
-      } else {
-        var delegate = this.delegate;
-        if (delegate.length() != 0) {
-          appendable.append(delegate);
+        replayOn(commands, appendable);
+      }
+      var delegate = this.delegate;
+      if (delegate.length() != 0) {
+        appendable.append(delegate);
+      }
+    }
+
+    private static void replayOn(List<Object> commands, LoggingAdvisingAppendable appendable)
+        throws IOException {
+      for (Object o : commands) {
+        if (o instanceof String) {
+          appendable.append((String) o);
+        } else if (o instanceof LoggingFunctionCommand) {
+          ((LoggingFunctionCommand) o).replayOn(appendable);
+        } else if (o == EXIT_LOG_STATEMENT_MARKER) {
+          appendable.exitLoggableElement();
+        } else if (o instanceof LogStatement) {
+          appendable.enterLoggableElement((LogStatement) o);
+        } else {
+          throw new AssertionError("unexpected command object: " + o);
         }
       }
     }
@@ -377,12 +406,53 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
       return value;
     }
 
+    /**
+     * Returns the content as a {@link SoyValue}. Callers should prefer calling {@code
+     * getAsSanitizedContent} or {@code getAsStringData} when they can.
+     */
+    @Nonnull
     public SoyValue getAsSoyValue() {
+      var kind = getSanitizedContentKind();
       // Null will happen for default empty deltemplates.
-      return (getSanitizedContentKind() == ContentKind.TEXT || getSanitizedContentKind() == null)
-          ? StringData.forValue(toString())
-          : SanitizedContent.create(
-              toString(), getSanitizedContentKind(), getSanitizedContentDirectionality());
+      if (kind == null || kind == ContentKind.TEXT) {
+        return getAsStringData();
+      } else {
+        return getAsSanitizedContent();
+      }
+    }
+
+    @Nonnull
+    public SanitizedContent getAsSanitizedContent() {
+      var kind = getSanitizedContentKind();
+      if (kind == null || kind == ContentKind.TEXT) {
+        throw new IllegalStateException("not a sanitized content kind: " + kind);
+      }
+      var dir = getSanitizedContentDirectionality();
+      if (kind == ContentKind.HTML || kind == ContentKind.ATTRIBUTES) {
+        var commands = this.commands;
+        if (commands == null) {
+          return SanitizedContent.create(delegate.toString(), kind, dir);
+        }
+        return SanitizedContent.create(
+            new CommandBuffer(ImmutableList.copyOf(getCommandsAndAddPendingStringData())),
+            kind,
+            dir);
+      } else {
+        return SanitizedContent.create(toString(), kind, dir);
+      }
+    }
+
+    @Nonnull
+    public StringData getAsStringData() {
+      // all kinds can be coerced to string data, no need to check
+      var commands = this.commands;
+      if (commands == null) {
+        return StringData.forValue(delegate.toString());
+      }
+      // This case is entirely about soy element style calls passing logging functions to
+      // callees.  Possibly we should disallow that?
+      return StringData.forValue(
+          new CommandBuffer(ImmutableList.copyOf(getCommandsAndAddPendingStringData())));
     }
 
     @Override
@@ -407,6 +477,7 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
           LoggingFunctionCommand command = (LoggingFunctionCommand) o;
           builder.append(escapePlaceholder(command.fn().placeholderValue(), command.escapers()));
         }
+        // ignore the logging statements
       }
     }
 
