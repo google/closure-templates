@@ -565,7 +565,9 @@ def parse_int(s, radix):
     int if s is a valid int string, otherwise None.
   """
   try:
-    return int(s, radix)
+    if radix:
+      return int(s, math.floor(radix))
+    return int(s)
   except ValueError:
     return None
 

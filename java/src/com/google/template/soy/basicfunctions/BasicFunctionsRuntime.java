@@ -348,7 +348,8 @@ public final class BasicFunctionsRuntime {
   }
 
   @Nullable
-  public static IntegerData parseInt(String str, int radix) {
+  public static IntegerData parseInt(String str, SoyValue radixVal) {
+    int radix = SoyValue.isNullish(radixVal) ? 10 : (int) radixVal.numberValue();
     if (radix < 2 || radix > 36) {
       return null;
     }

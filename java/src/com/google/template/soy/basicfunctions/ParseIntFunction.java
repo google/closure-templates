@@ -16,6 +16,7 @@
 
 package com.google.template.soy.basicfunctions;
 
+import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
 import com.google.template.soy.plugin.java.restricted.JavaValue;
 import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
@@ -57,7 +58,7 @@ import java.util.List;
           // TODO(b/70946095): should be nullable
           returnType = "int"),
       @Signature(
-          parameterTypes = {"string", "int"},
+          parameterTypes = {"string", "int|float|undefined"},
           returnType = "int|null")
     })
 final class ParseIntFunction
@@ -82,7 +83,7 @@ final class ParseIntFunction
   private static final class Methods {
     static final Method PARSE_INT =
         JavaValueFactory.createMethod(
-            BasicFunctionsRuntime.class, "parseInt", String.class, int.class);
+            BasicFunctionsRuntime.class, "parseInt", String.class, SoyValue.class);
   }
 
   private <T> T getRadixValue(List<T> args, T defaultValue) {
@@ -93,6 +94,6 @@ final class ParseIntFunction
   public JavaValue applyForJavaSource(
       JavaValueFactory factory, List<JavaValue> args, JavaPluginContext context) {
     return factory.callStaticMethod(
-        Methods.PARSE_INT, args.get(0), getRadixValue(args, factory.constant(10)));
+        Methods.PARSE_INT, args.get(0), getRadixValue(args, factory.constantNull()));
   }
 }
