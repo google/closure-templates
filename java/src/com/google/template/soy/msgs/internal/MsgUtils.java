@@ -36,6 +36,7 @@ import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyNode.MsgBlockNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.VeLogNode;
+import java.util.ArrayDeque;
 
 /**
  * Soy-specific utilities for working with messages.
@@ -206,8 +207,10 @@ public class MsgUtils {
       MsgPluralNode msgPluralNode, MsgNode msgNode) {
 
     // This is the list of the cases.
-    ImmutableList.Builder<SoyMsgPart.Case<SoyMsgPluralCaseSpec>> pluralCases =
-        ImmutableList.builder();
+    ArrayDeque<SoyMsgPart.Case<SoyMsgPluralCaseSpec>> pluralCases = new ArrayDeque<>();
+
+    ImmutableList<SoyMsgPart> defaultMsgParts = null;
+    boolean hasCaseOne = false;
 
     for (CaseOrDefaultNode child : msgPluralNode.getChildren()) {
 
@@ -217,19 +220,23 @@ public class MsgUtils {
 
       if (child instanceof MsgPluralCaseNode) {
         caseSpec = new SoyMsgPluralCaseSpec(((MsgPluralCaseNode) child).getCaseNumber());
-
+        if (((MsgPluralCaseNode) child).getCaseNumber() == 1) {
+          hasCaseOne = true;
+        }
       } else if (child instanceof MsgPluralDefaultNode) {
         caseSpec = SoyMsgPluralCaseSpec.forType(SoyMsgPluralCaseSpec.Type.OTHER);
-
+        defaultMsgParts = caseMsgParts;
       } else {
         throw new AssertionError("Unidentified node under a plural node.");
       }
 
-      pluralCases.add(SoyMsgPart.Case.create(caseSpec, caseMsgParts));
+      pluralCases.addLast(SoyMsgPart.Case.create(caseSpec, caseMsgParts));
     }
-
+    if (!hasCaseOne) {
+      pluralCases.addFirst(SoyMsgPart.Case.create(new SoyMsgPluralCaseSpec(1), defaultMsgParts));
+    }
     return new SoyMsgPluralPart(
-        msgNode.getPluralVarName(msgPluralNode), msgPluralNode.getOffset(), pluralCases.build());
+        msgNode.getPluralVarName(msgPluralNode), msgPluralNode.getOffset(), pluralCases);
   }
 
   /**
