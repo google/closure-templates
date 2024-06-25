@@ -541,17 +541,15 @@ public abstract class SanitizedContent extends SoyAbstractValue {
 
     Attributes(Map<String, AttributeValue> content) {
       super(ContentKind.ATTRIBUTES, ContentKind.ATTRIBUTES.getDefaultDir());
-      var builder = ImmutableMap.<String, AttributeValue>builderWithExpectedSize(content.size());
-      for (var entry : content.entrySet()) {
-        var key = entry.getKey();
-        checkArgument(
-            key.length() > 0 && key.equals(Ascii.toLowerCase(key)),
-            "attribute names must be lowercase and non-empty %s",
-            key);
-        var value = entry.getValue();
-        builder.put(key, value);
-      }
-      this.attributes = builder.buildOrThrow();
+      var attributes = ImmutableMap.copyOf(content);
+      attributes.forEach(
+          (key, value) -> {
+            if (key.isEmpty() || !key.equals(Ascii.toLowerCase(key))) {
+              throw new IllegalArgumentException(
+                  "attribute names must be lowercase and non-empty:" + key);
+            }
+          });
+      this.attributes = attributes;
     }
 
     @Override
@@ -680,13 +678,19 @@ public abstract class SanitizedContent extends SoyAbstractValue {
       }
       char initial = content.charAt(position);
       if (initial == '"' || initial == '\'') {
-        position++;
+        position++; // skip the leading quotation mark
         end = content.indexOf(initial, position);
         if (end == -1) {
           throw new IllegalArgumentException("Unbalanced quotes in attribute value");
         }
-        attributes.put(
-            name, AttributeValue.createFromEscapedValueUnchecked(content.substring(position, end)));
+        String quotedValue = content.substring(position, end);
+        if (initial == '\'') {
+          // In a single quoted attribute value, a double quote may exist which will corrupt the
+          // output when/if the value is re-encoded as a double quoted attribute value.
+          // This is technically out of spec, but we are permissive.
+          quotedValue = quotedValue.replace("\"", "&quot;");
+        }
+        attributes.put(name, AttributeValue.createFromEscapedValueUnchecked(quotedValue));
         position = end + 1; // ignore the trailing quotation mark
       } else {
         end = consumeUnquotedAttributeValue(content, position);

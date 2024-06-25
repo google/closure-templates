@@ -412,9 +412,11 @@ public class SanitizedContentsTest {
     assertThat(parseAttributes("CLASS=foo")).isEqualTo(ImmutableMap.of("class", "foo"));
     assertThat(parseAttributes("A=1 a")).isEqualTo(ImmutableMap.of("a", ""));
 
-    // test verious stilly amounts of whitespace
+    // test various silly amounts of whitespace
     assertThat(parseAttributes("a = b c        =d e=    'f' g"))
         .isEqualTo(ImmutableMap.of("a", "b", "c", "d", "e", "f", "g", ""));
+
+    assertThat(parseAttributes("a='\"b'")).containsExactly("a", "&quot;b");
   }
 
   @Test
