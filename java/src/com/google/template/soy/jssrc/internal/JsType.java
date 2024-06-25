@@ -457,9 +457,9 @@ public final class JsType {
         {
           MapType mapType = (MapType) soyType;
           SoyType keyType = mapType.getKeyType();
-          SoyType.Kind keyKind = keyType.getKind();
           Preconditions.checkState(
               MapType.isAllowedKeyType(keyType), "%s is not allowed as a map key", keyType);
+          SoyType.Kind keyKind = keyType.getKind();
           // Soy key type of string should translate to a JS key type of string.
           // forSoyType(StringType.getInstance()) normally translates to
           // string|!goog.soy.data.UnsanitizedText, but ES6 Maps always use instance equality for
