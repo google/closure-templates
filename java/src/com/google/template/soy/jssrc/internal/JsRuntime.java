@@ -157,8 +157,6 @@ public final class JsRuntime {
   public static final Expression SOY_INTERNAL_CALL_MARKER =
       SOY.dotAccess("$$internalCallMarkerDoNotUse");
 
-  public static final Expression SOY_MAP_IS_SOY_MAP = SOY_MAP.dotAccess("$$isSoyMap");
-
   public static final Expression SOY_NEWMAPS_TRANSFORM_VALUES =
       SOY_NEWMAPS.googModuleGet().dotAccess("$$transformValues");
   public static final Expression SOY_NEWMAPS_NULL_SAFE_TRANSFORM_VALUES =

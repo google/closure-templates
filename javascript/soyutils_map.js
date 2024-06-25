@@ -22,7 +22,6 @@ goog.module('soy.map');
 goog.module.declareLegacyNamespace();
 
 const {Message} = goog.require('jspb');
-const {assertString} = goog.require('goog.asserts');
 const {shuffle} = goog.require('goog.array');
 /**
  * Required to fix declareLegacyNamespace, since soy is also
@@ -32,32 +31,20 @@ const {shuffle} = goog.require('goog.array');
 goog.require('soy');
 
 /**
- * An alias for ReadonlyMap
- * @extends {ReadonlyMap<K, V>}
- * @record
- * @template K, V
- */
-class SoyMap {}
-
-/**
  * Converts an ES6 Map or jspb.Map into an equivalent legacy object map.
  * N.B.: although ES6 Maps and jspb.Maps allow many values to serve as map keys,
  * legacy object maps allow only string keys.
- * @param {!SoyMap<?, V>} map
+ * @param {!ReadonlyMap<?, V>} map
  * @return {!Object<V>}
  * @template V
  */
 function $$mapToLegacyObjectMap(map) {
-  const obj = {};
-  for (const [k, v] of map.entries()) {
-    obj[assertString(k)] = v;
-  }
-  return obj;
+  return Object.fromEntries(map.entries());
 }
 
 /**
  * Gets the keys in a map as an array. There are no guarantees on the order.
- * @param {!SoyMap<K, V>} map The map to get the keys of.
+ * @param {!ReadonlyMap<K, V>} map The map to get the keys of.
  * @return {!Array<K>} The array of keys in the given map.
  * @template K, V
  */
@@ -67,6 +54,7 @@ function $$getMapKeys(map) {
   // undefined. But the iteration order of ES6 Maps is specified as insertion
   // order. In debug mode, shuffle the keys to hopefully catch callers that are
   // making assumptions about iteration order.
+  // TODO(b/346022289): Delete?
   if (goog.DEBUG) {
     shuffle(keys);
   }
@@ -75,23 +63,8 @@ function $$getMapKeys(map) {
 
 
 /**
- * Determines if the argument matches the soy.map.Map interface.
- * @param {?} map The object to check.
- * @return {boolean} True if it is a soy.map.Map, false otherwise.
- * @suppress {missingProperties}
- */
-function $$isSoyMap(map) {
-  return goog.isObject(map) && typeof map.size === 'number' &&
-      typeof map.get === 'function' && typeof map.set === 'function' &&
-      typeof map.delete === 'function' && typeof map.clear === 'function' &&
-      typeof map.keys === 'function' && typeof map.values === 'function' &&
-      typeof map.entries === 'function';
-}
-
-
-/**
- * @param {!SoyMap<?, ?>} mapOne
- * @param {!SoyMap<?, ?>} mapTwo
+ * @param {!ReadonlyMap<?, ?>} mapOne
+ * @param {!ReadonlyMap<?, ?>} mapTwo
  * @return {!Map<?,?>}
  */
 function $$concatMaps(mapOne, mapTwo) {
@@ -108,7 +81,7 @@ function $$concatMaps(mapOne, mapTwo) {
 
 /**
  * Gets the values in a map as an array. There are no guarantees on the order.
- * @param {!SoyMap<K, V>} map The map to get the values of.
+ * @param {!ReadonlyMap<K, V>} map The map to get the values of.
  * @return {!Array<V>} The array of values in the given map.
  * @template K, V
  */
@@ -123,7 +96,7 @@ function $$getMapValues(map) {
 
 /**
  * Gets the values in a map as an array. There are no guarantees on the order.
- * @param {!SoyMap<?, ?>} map The map to get the values of.
+ * @param {!ReadonlyMap<?, ?>} map The map to get the values of.
  * @return {!Array<?>} The array of values in the given map.
  */
 function $$getMapEntries(map) {
@@ -137,7 +110,7 @@ function $$getMapEntries(map) {
 
 /**
  * Gets the size of a map.
- * @param {!SoyMap<?, ?>} map The map to get the values of.
+ * @param {!ReadonlyMap<?, ?>} map The map to get the values of.
  * @return {number} The number of keys in the map.
  * @suppress {missingProperties}
  */
@@ -179,12 +152,8 @@ exports = {
   $$getMapKeys,
   $$isProtoDefault,
   $$protoEquals,
-  $$isSoyMap,
   $$getMapValues,
   $$getMapEntries,
   $$getMapLength,
   $$concatMaps,
-  // This is declared as SoyMap instead of Map to avoid shadowing ES6 Map, which
-  // is used by $$legacyObjectMapToMap. But the external name can still be Map.
-  Map: SoyMap,
 };

@@ -29,7 +29,6 @@ import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_IS_OBJECT;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_SOY_DATA_SANITIZED_CONTENT;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SAFEVALUES_SAFEHTML;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_ASSERT_PARAM_TYPE;
-import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_MAP_IS_SOY_MAP;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_VELOG;
 import static com.google.template.soy.jssrc.internal.JsRuntime.sanitizedContentType;
 
@@ -475,11 +474,11 @@ public final class JsType {
           return builder()
               .addType(
                   String.format(
-                      "!soy.map.Map<%s,%s>", keyTypeName.typeExpr(), valueTypeName.typeExpr()))
+                      "!ReadonlyMap<%s,%s>", keyTypeName.typeExpr(), valueTypeName.typeExpr()))
               .addRequires(keyTypeName.getGoogRequires())
               .addRequires(valueTypeName.getGoogRequires())
               .addRequire(GoogRequire.create("soy.map"))
-              .setPredicate(SOY_MAP_IS_SOY_MAP)
+              .setPredicate(instanceofTypePredicate(id("Map")))
               .build();
         }
       case MESSAGE:
