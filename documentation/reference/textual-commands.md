@@ -103,7 +103,7 @@ joined below.
         `{` `}`) or HTML tag (something in triangle brackets `<` `>`) on either
         side, the lines are joined with **no space**.
 
-        **Note:**: This differs from how pure HTML is rendered outside of Soy
+        **Note:** This differs from how pure HTML is rendered outside of Soy
         ([spec](https://www.w3.org/TR/html4/struct/text.html#h-9.1)).
 
     *   If the join location does not border a Soy Command or HTML tag on either
@@ -113,9 +113,9 @@ joined below.
     with the bare minimum to avoid parsing errors (e.g. we would retain a space
     between `id="foo"` and `class="bar"`; see examples below).
 
-    **Note:**: This does not apply **within** quoted attribute values; inside
-    the quotes, Soy will apply the regular line joining algorithm (lines are
-    joined with a space, unless bordering a curly brace or angle bracket).
+    **Note:** This does not apply **within** quoted attribute values; inside the
+    quotes, Soy will apply the regular line joining algorithm (lines are joined
+    with a space, unless bordering a curly brace or angle bracket).
 
 ### Line Joining Examples
 
