@@ -49,9 +49,7 @@ import java.util.List;
       @Signature(returnType = "int", parameterTypes = "?"),
       @Signature(
           returnType = "number",
-          parameterTypes = {"?", "?"},
-          deprecatedWarning =
-              "round() with two parameters is deprecated. Use i18n formatting instead."),
+          parameterTypes = {"?", "?"}),
     })
 @SoyPureFunction
 final class RoundFunction
