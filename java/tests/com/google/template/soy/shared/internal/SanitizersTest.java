@@ -525,40 +525,6 @@ public class SanitizersTest {
   }
 
   @Test
-  public void testFilterLegacyUriBehavior() {
-    String[] validUris =
-        new String[] {
-          "88",
-          "http://google.com",
-          "https://google.com",
-          "ftp://google.com/",
-          "mailto:user@gmail.com"
-        };
-
-    String[] invalidUris =
-        new String[] {
-          "javascript:alert(1337)",
-          "j%41vascript:alert(1337)",
-          "jAvAsCrIpT:alert(1337)",
-          "vbscript:alert(1337)",
-          "javascript:",
-          "unknownScheme:hello",
-          "tel:0123456789",
-          " invalidScheme:x",
-          "javascript:"
-        };
-
-    for (String uri : validUris) {
-      assertThat(Sanitizers.filterLegacyUriBehavior(uri).toString()).isEqualTo(uri);
-    }
-
-    for (String uri : invalidUris) {
-      assertThat(Sanitizers.filterLegacyUriBehavior(uri).toString())
-          .isEqualTo("about:invalid#zSoyz");
-    }
-  }
-
-  @Test
   public void testEscapeHtml() {
     String escapedAscii =
         ("&#0;\u0001\u0002\u0003\u0004\u0005\u0006\u0007\b\t\n\u000b\f\r\u000e\u000f"

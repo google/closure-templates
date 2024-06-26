@@ -227,8 +227,6 @@ _FILTER_FOR_FILTER_SMS_URI = re.compile(r"""^sms:[0-9a-z;=\-+._!~*' /():&$#?@,]+
 
 _FILTER_FOR_FILTER_TEL_URI = re.compile(r"""^tel:(?:[0-9a-z;=\-+._!~*' /():&$#?@,]|%23|%2C|%3B)+\Z""", re.U | re.I)
 
-_FILTER_FOR_FILTER_LEGACY_URI_BEHAVIOR = re.compile(r"""^(?:(?:https?|mailto|ftp):|[^&:/?#]*(?:[/?#]|\Z))""", re.U | re.I)
-
 _FILTER_FOR_FILTER_HTML_ATTRIBUTES = re.compile(r"""^(?!on|src|(?:action|archive|background|cite|classid|codebase|content|data|dsync|href|http-equiv|longdesc|style|usemap)\s*$)(?:[a-z0-9_$:-]*)\Z""", re.U | re.I)
 
 _FILTER_FOR_FILTER_HTML_ELEMENT_NAME = re.compile(r"""^(?!base|iframe|link|noframes|noscript|object|script|style|textarea|title|xmp)[a-z0-9_$:-]*\Z""", re.U | re.I)
@@ -336,14 +334,6 @@ def filter_sms_uri_helper(value):
 def filter_tel_uri_helper(value):
   value = str(value)
   if not _FILTER_FOR_FILTER_TEL_URI.search(value):
-    return 'about:invalid#zSoyz'
-
-  return value
-
-
-def filter_legacy_uri_behavior_helper(value):
-  value = str(value)
-  if not _FILTER_FOR_FILTER_LEGACY_URI_BEHAVIOR.search(value):
     return 'about:invalid#zSoyz'
 
   return value

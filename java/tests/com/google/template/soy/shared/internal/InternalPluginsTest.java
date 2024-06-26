@@ -138,7 +138,6 @@ public final class InternalPluginsTest {
             "|filterImageDataUri",
             "|filterSipUri",
             "|filterTelUri",
-            "|filterLegacyUriBehavior",
             // This can be migrated since  escapeHtmlAttribute* is streaming.
             "|escapeHtmlHtmlAttribute",
             // Could be made streaming, but it would be a bit tricky and is unlikely to be

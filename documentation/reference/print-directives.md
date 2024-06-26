@@ -138,9 +138,3 @@ information.
 
 This directive is used internally by the compiler to optimize whitespace inside
 of Html tags.
-
-### `|filterLegacyUriBehavior` {#filterLegacyUriBehavior}
-
-Legacy directive. Primarily used in templates that need to keep the legacy URI
-escaping behavior of Soy. Only allows URLs that have a `http:`, `https:`,
-`mailto:`, `ftp:` scheme, or no explicit scheme.

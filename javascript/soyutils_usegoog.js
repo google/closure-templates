@@ -417,7 +417,7 @@ const $$checkNotNull = function(val) {
  * @param {number=} radix The base of the string
  * @return {?number} The string parsed as an integer, or null if unsuccessful
  */
-const $$parseInt = function(str, radix=10) {
+const $$parseInt = function(str, radix = 10) {
   const parsed = parseInt(String(str), radix);
   return isNaN(parsed) ? null : parsed;
 };
@@ -802,7 +802,7 @@ const $$htmlToText = function(value) {
           text += '\t';
         }
 
-        if (!$$HTML5_VOID_ELEMENTS_.test("<" + lowerCaseTag + ">")) {
+        if (!$$HTML5_VOID_ELEMENTS_.test('<' + lowerCaseTag + '>')) {
           $$updatePreserveWhitespaceStack(
               preserveWhitespaceStack, lowerCaseTag, attrs);
         }
@@ -838,9 +838,9 @@ class TagPreservesWhitespace {
  * Determines if whitespace should currently be preserved by inspecting the top
  * element of the stack.
  *
- * @param {!ReadonlyArray<!TagPreservesWhitespace>} preserveWhitespaceStack, an array of
- * structs with properties tag and preserveWhitespace. The last element in the
- * array is the top of the stack.
+ * @param {!ReadonlyArray<!TagPreservesWhitespace>} preserveWhitespaceStack, an
+ *     array of structs with properties tag and preserveWhitespace. The last
+ *     element in the array is the top of the stack.
  * @return {boolean}
  */
 const $$shouldPreserveWhitespace_ = function(preserveWhitespaceStack) {
@@ -886,7 +886,7 @@ const $$getStylePreservesWhitespace_ = function(style) {
  * they say not to preserve whitespace, and null if they don't say either.
  */
 const $$getAttributesPreserveWhitespace_ = function(attrs) {
-  if (attrs !== "") {
+  if (attrs !== '') {
     for (let attrMatch; attrMatch = $$HTML_ATTRIBUTE_REGEX_.exec(attrs);) {
       const attributeName = attrMatch[1];
       if (/^style$/i.test(attributeName)) {
@@ -895,7 +895,7 @@ const $$getAttributesPreserveWhitespace_ = function(attrs) {
         // regex. Reset the regex matcher.
         $$HTML_ATTRIBUTE_REGEX_.lastIndex = 0;
 
-        if (style !== "") {
+        if (style !== '') {
           // Strip quotes if the attribute value was quoted.
           if (style.charAt(0) === '\'' || style.charAt(0) === '"') {
             style = style.substr(1, style.length - 2);
@@ -921,8 +921,8 @@ const $$getAttributesPreserveWhitespace_ = function(attrs) {
  * @param {string} lowerCaseTag the current tag, in lower case
  * @param {string} attrs the attributes for the current tag
  */
-const $$updatePreserveWhitespaceStack =
-    function(preserveWhitespaceStack, lowerCaseTag, attrs) {
+const $$updatePreserveWhitespaceStack = function(
+    preserveWhitespaceStack, lowerCaseTag, attrs) {
   if (lowerCaseTag.charAt(0) === '/') {
     const closedTag = lowerCaseTag.substring(1);
     // Pop tags until we pop one that matches the tag that's being closed. This
@@ -1692,19 +1692,6 @@ const $$filterTelUri = function(value) {
 };
 
 /**
- * Allows only a limited number of known to be safe protocols.
- * This is the historical behavior of the Soy URI sanitization.
- *
- * @param {?} value The value to process. May not be a string, but the value
- *     will be coerced to a string.
- * @return {!SanitizedUri} An escaped version of value.
- */
-const $$filterLegacyUriBehavior = function(value) {
-  // NOTE: Even if it's a SanitizedUri, we will still filter it.
-  return VERY_UNSAFE.ordainSanitizedUri($$filterLegacyUriBehaviorHelper(value));
-};
-
-/**
  * Escapes a string so it can safely be included inside a quoted CSS string.
  *
  * @param {?} value The value to escape. May not be a string, but the value
@@ -1804,8 +1791,8 @@ const $$insertWordBreaks = function(value, maxCharsBetweenWordBreaks) {
 
 /**
  * Joins items with a semicolon, filtering out falsey values.
- * @param {...(string|SanitizedCss!|boolean|null|undefined|!ReadonlyArray<?>)} values The
- *     values to join.
+ * @param {...(string|SanitizedCss!|boolean|null|undefined|!ReadonlyArray<?>)}
+ *     values The values to join.
  * @return {string} The joined string.
  */
 const $$buildAttrValue = function(...values) {
@@ -1815,8 +1802,8 @@ const $$buildAttrValue = function(...values) {
 
 /**
  * Joins items with a space, filtering out falsey values.
- * @param {...(string|SanitizedCss!|boolean|null|undefined|!ReadonlyArray<?>)} values The values
- *     to join.
+ * @param {...(string|SanitizedCss!|boolean|null|undefined|!ReadonlyArray<?>)}
+ *     values The values to join.
  * @return {string} The joined string.
  */
 const $$buildClassValue = function(...values) {
@@ -1832,7 +1819,8 @@ const $$buildClassValue = function(...values) {
  * @return {SanitizedCss!|$$EMPTY_STRING_!} The joined string.
  */
 const $$buildStyleValue = function(...values) {
-  return VERY_UNSAFE.ordainSanitizedCss(values.filter((s) => s)
+  return VERY_UNSAFE.ordainSanitizedCss(
+      values.filter((s) => s)
           .map((s) => {
             if (typeof s === 'string') {
               const firstColonPos = s.indexOf(':');
@@ -1996,8 +1984,8 @@ const $$listContains = function(list, val) {
  */
 const $$listIndexOf = function(list, val, startIndex = 0) {
   const clampedStartIndex = clampArrayStartIndex(list, startIndex);
-  const indexInSublist = googArray.findIndex(
-      list.slice(clampedStartIndex), (el) => val === el);
+  const indexInSublist =
+      googArray.findIndex(list.slice(clampedStartIndex), (el) => val === el);
   return indexInSublist === -1 ? -1 : indexInSublist + clampedStartIndex;
 };
 
@@ -2189,7 +2177,8 @@ const getBidiFormatterInstance_ = function(bidiGlobalDir) {
  * @param {?} text The content whose directionality is to be estimated.
  * @param {boolean=} isHtml Whether text is HTML/HTML-escaped.
  *     Default: false.
- * @return {!bidi.Dir} 1 if text is LTR, -1 if it is RTL, and 0 if it is neutral.
+ * @return {!bidi.Dir} 1 if text is LTR, -1 if it is RTL, and 0 if it is
+ *     neutral.
  */
 const $$bidiTextDir = function(text, isHtml) {
   const contentDir = getContentDir(text);
@@ -2444,7 +2433,7 @@ const $$internalCallMarkerDoNotUse = {};
  * @param {?} marker
  * @return {void}
  */
-const $$areYouAnInternalCaller = (marker) =>{
+const $$areYouAnInternalCaller = (marker) => {
   asserts.assert(
       marker === $$internalCallMarkerDoNotUse,
       'found an incorrect call marker, was an internal function called from the top level?');
@@ -2551,7 +2540,8 @@ function $$getConst(value, areYouAnInternalCaller) {
   return value;
 }
 
-// TODO(b/230911572): roll this out to all environments. First tests, then goog.DEBUG, then production.
+// TODO(b/230911572): roll this out to all environments. First tests, then
+// goog.DEBUG, then production.
 const /** boolean */ SOY_CREATED_PROTOS_ARE_IMMUTABLE = false;
 
 /**
@@ -2709,7 +2699,6 @@ exports = {
   $$filterSipUri,
   $$strSmsUriToUri,
   $$filterTelUri,
-  $$filterLegacyUriBehavior,
   $$escapeCssString,
   $$filterCssValue,
   $$filterCspNonceValue,
@@ -3081,12 +3070,6 @@ const $$FILTER_FOR_FILTER_TEL_URI_ = /^tel:(?:[0-9a-z;=\-+._!~*'\u0020\/():&$#?@
  * A pattern that vets values produced by the named directives.
  * @type {!RegExp}
  */
-const $$FILTER_FOR_FILTER_LEGACY_URI_BEHAVIOR_ = /^(?:(?:https?|mailto|ftp):|[^&:\/?#]*(?:[\/?#]|$))/i;
-
-/**
- * A pattern that vets values produced by the named directives.
- * @type {!RegExp}
- */
 const $$FILTER_FOR_FILTER_HTML_ATTRIBUTES_ = /^(?!on|src|(?:action|archive|background|cite|classid|codebase|content|data|dsync|href|http-equiv|longdesc|style|usemap)\s*$)(?:[a-z0-9_$:-]*)$/i;
 
 /**
@@ -3294,20 +3277,6 @@ const $$filterTelUriHelper = function(value) {
   const str = String(value);
   if (!$$FILTER_FOR_FILTER_TEL_URI_.test(str)) {
     asserts.fail('Bad value `%s` for |filterTelUri', [str]);
-    return 'about:invalid#zSoyz';
-  }
-  return str;
-};
-
-/**
- * A helper for the Soy directive |filterLegacyUriBehavior
- * @param {?} value Can be of any type but will be coerced to a string.
- * @return {string} The escaped text.
- */
-const $$filterLegacyUriBehaviorHelper = function(value) {
-  const str = String(value);
-  if (!$$FILTER_FOR_FILTER_LEGACY_URI_BEHAVIOR_.test(str)) {
-    asserts.fail('Bad value `%s` for |filterLegacyUriBehavior', [str]);
     return 'about:invalid#zSoyz';
   }
   return str;

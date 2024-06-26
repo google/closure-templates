@@ -837,30 +837,6 @@ public final class Sanitizers {
         SanitizedContent.ContentKind.URI);
   }
 
-  /** Legacy URI filtering from Soy. */
-  @Nonnull
-  public static SanitizedContent filterLegacyUriBehavior(SoyValue value) {
-    value = normalizeNull(value);
-    return filterLegacyUriBehavior(value.coerceToString());
-  }
-
-  /** Makes sure that the given input is a tel URI. */
-  @Nonnull
-  public static SanitizedContent filterLegacyUriBehavior(String value) {
-    if (EscapingConventions.FilterLegacyUriBehavior.INSTANCE
-        .getValueFilter()
-        .matcher(value)
-        .find()) {
-      // NOTE: No need to escape. Escaping for other contexts (e.g. HTML) happen after this.
-      return UnsafeSanitizedContentOrdainer.ordainAsSafe(value, ContentKind.URI);
-    }
-    logger.atWarning().withStackTrace(MEDIUM).log(
-        "|filterLegacyUriBehavior received bad value '%s'", value);
-    return UnsafeSanitizedContentOrdainer.ordainAsSafe(
-        EscapingConventions.FilterLegacyUriBehavior.INSTANCE.getInnocuousOutput(),
-        SanitizedContent.ContentKind.URI);
-  }
-
   /**
    * Checks that the input is a valid HTML attribute name with normal keyword or textual content or
    * known safe attribute content.
