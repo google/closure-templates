@@ -29,6 +29,7 @@ import com.google.errorprone.annotations.ForOverride;
 import com.google.errorprone.annotations.FormatMethod;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
+import com.google.template.soy.data.SoyIterable;
 import com.google.template.soy.data.SoyLegacyObjectMap;
 import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyMap;
@@ -824,6 +825,9 @@ public abstract class Expression extends BytecodeProducer {
           return Optional.of(MethodRefs.CHECK_INT.invoke(this));
         case JS:
           return Optional.of(MethodRefs.CHECK_CONTENT_KIND.invoke(this, constant(ContentKind.JS)));
+        case ITERABLE:
+          expectedClass = SoyIterable.class;
+          break;
         case LIST:
           expectedClass = SoyList.class;
           break;

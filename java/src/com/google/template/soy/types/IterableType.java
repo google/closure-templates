@@ -16,38 +16,53 @@
 
 package com.google.template.soy.types;
 
-/**
- * Represents the type of a list, a sequential random-access container keyed by integer.
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- */
-public abstract class IterableType extends SoyType {
+import com.google.common.base.Preconditions;
+import com.google.template.soy.soytree.SoyTypeP;
+import java.util.Objects;
 
-  protected final SoyType elementType;
+/** Represents an iterable object that can be used in {for} and list comprehension. */
+public final class IterableType extends AbstractIterableType {
+
+  public static final IterableType EMPTY_ITERABLE = new IterableType(null);
 
   protected IterableType(SoyType elementType) {
-    this.elementType = elementType;
+    super(elementType);
   }
 
-  public SoyType getElementType() {
-    return elementType;
-  }
-
-  public boolean isEmpty() {
-    return elementType == null;
+  public static IterableType of(SoyType elementType) {
+    Preconditions.checkNotNull(elementType);
+    return new IterableType(elementType);
   }
 
   @Override
-  boolean doIsAssignableFromNonUnionType(SoyType srcType, UnknownAssignmentPolicy policy) {
-    if (srcType instanceof IterableType) {
-      IterableType srcListType = (IterableType) srcType;
-      if (srcListType.isEmpty()) {
-        return true;
-      } else if (isEmpty()) {
-        return false;
-      }
-      return elementType.isAssignableFromInternal(srcListType.elementType, policy);
-    }
-    return false;
+  public Kind getKind() {
+    return Kind.ITERABLE;
+  }
+
+  @Override
+  public String toString() {
+    return "iterable<" + elementType + ">";
+  }
+
+  @Override
+  void doToProto(SoyTypeP.Builder builder) {
+    builder.setIterableElement(elementType.toProto());
+  }
+
+  @Override
+  public boolean equals(Object other) {
+    return other != null
+        && this.getClass() == other.getClass()
+        && Objects.equals(((IterableType) other).elementType, elementType);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(this.getClass(), elementType);
+  }
+
+  @Override
+  public <T> T accept(SoyTypeVisitor<T> visitor) {
+    return visitor.visit(this);
   }
 }

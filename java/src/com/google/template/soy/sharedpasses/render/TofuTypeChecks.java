@@ -20,6 +20,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
+import com.google.template.soy.data.SoyIterable;
 import com.google.template.soy.data.SoyLegacyObjectMap;
 import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyMap;
@@ -130,6 +131,8 @@ public final class TofuTypeChecks {
         return CheckResult.fromBool(value instanceof IntegerData);
       case JS:
         return isSanitizedofKind(value, ContentKind.JS);
+      case ITERABLE:
+        return CheckResult.fromBool(value instanceof SoyIterable);
       case LIST:
         return CheckResult.fromBool(value instanceof SoyList);
       case SET:

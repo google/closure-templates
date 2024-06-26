@@ -106,6 +106,13 @@ public final class TypeNodeConverter
 
   private static final ImmutableMap<String, BaseGenericTypeInfo> GENERIC_TYPES =
       ImmutableMap.of(
+          "iterable",
+          new GenericTypeInfo(1) {
+            @Override
+            SoyType create(List<SoyType> types, TypeInterner interner) {
+              return interner.getOrCreateIterableType(types.get(0));
+            }
+          },
           "list",
           new GenericTypeInfo(1) {
             @Override

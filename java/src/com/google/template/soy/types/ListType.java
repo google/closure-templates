@@ -25,7 +25,7 @@ import java.util.Objects;
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  */
-public final class ListType extends IterableType {
+public final class ListType extends AbstractIterableType {
 
   // TODO(lukes): see if this can be replaced with list<?>
   public static final ListType EMPTY_LIST = new ListType(null);

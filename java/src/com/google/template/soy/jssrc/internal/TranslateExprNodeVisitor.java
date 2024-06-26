@@ -134,8 +134,8 @@ import com.google.template.soy.soytree.MsgFallbackGroupNode;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.soytree.defn.TemplateStateVar;
+import com.google.template.soy.types.AbstractIterableType;
 import com.google.template.soy.types.AnyType;
-import com.google.template.soy.types.IterableType;
 import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.MapType;
 import com.google.template.soy.types.SoyProtoType;
@@ -374,8 +374,8 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
       // elementType can be unknown if it is the special EMPTY_LIST or if it isn't a known list
       // type.
       SoyType elementType =
-          listType instanceof IterableType
-              ? ((IterableType) listType).getElementType()
+          listType instanceof AbstractIterableType
+              ? ((AbstractIterableType) listType).getElementType()
               : UnknownType.getInstance();
       JsType elementJsType = jsTypeForStrict(elementType);
       JsDoc doc =

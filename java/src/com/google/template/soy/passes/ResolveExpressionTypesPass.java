@@ -187,13 +187,13 @@ import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.ImportedVar;
 import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import com.google.template.soy.soytree.defn.TemplateStateVar;
+import com.google.template.soy.types.AbstractIterableType;
 import com.google.template.soy.types.AbstractMapType;
 import com.google.template.soy.types.BoolType;
 import com.google.template.soy.types.FloatType;
 import com.google.template.soy.types.FunctionType;
 import com.google.template.soy.types.FunctionType.Parameter;
 import com.google.template.soy.types.IntType;
-import com.google.template.soy.types.IterableType;
 import com.google.template.soy.types.LegacyObjectMapType;
 import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.MapType;
@@ -989,7 +989,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
 
       case LIST:
       case SET:
-        IterableType iterableType = (IterableType) collectionType;
+        AbstractIterableType iterableType = (AbstractIterableType) collectionType;
         if (iterableType.isEmpty()) {
           errorReporter.report(node.getExpr().getSourceLocation(), EMPTY_COLLECTION_FOREACH);
           return UnknownType.getInstance();
@@ -1108,8 +1108,8 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
         requireNodeType(child);
         if (child.getKind() == ExprNode.Kind.SPREAD_OP_NODE) {
           SoyType spreadType = child.getType();
-          if (spreadType instanceof IterableType) {
-            elementTypes.add(((IterableType) spreadType).getElementType());
+          if (spreadType instanceof AbstractIterableType) {
+            elementTypes.add(((AbstractIterableType) spreadType).getElementType());
           } else {
             errorReporter.report(child.getSourceLocation(), INVALID_SPREAD_VALUE, spreadType);
           }
@@ -1140,7 +1140,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
       SoyType listExprType = node.getListExpr().getType();
 
       // Report an error if listExpr did not actually evaluate to a list.
-      if (!SoyTypes.isKindOrUnionOfKind(listExprType, IterableType.class)
+      if (!SoyTypes.isKindOrUnionOfKind(listExprType, AbstractIterableType.class)
           && listExprType.getKind() != SoyType.Kind.UNKNOWN) {
         errorReporter.report(
             node.getListExpr().getSourceLocation(),
@@ -2495,8 +2495,8 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
         SoyType fieldType = protoType.getFieldSetterType(fieldName.identifier());
 
         // Same for List<?>, for repeated fields
-        if (fieldType.getKind() == Kind.LIST && argType instanceof IterableType) {
-          SoyType argElementType = ((IterableType) argType).getElementType();
+        if (fieldType.getKind() == Kind.LIST && argType instanceof AbstractIterableType) {
+          SoyType argElementType = ((AbstractIterableType) argType).getElementType();
           if (argElementType == null || argElementType.equals(UnknownType.getInstance())) {
             continue;
           }
@@ -2895,8 +2895,8 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
         case NEW_SET:
           visit(node.getParam(0));
           SoyType listType = node.getParam(0).getType();
-          if (listType instanceof IterableType) {
-            SoyType keyType = ((IterableType) listType).getElementType();
+          if (listType instanceof AbstractIterableType) {
+            SoyType keyType = ((AbstractIterableType) listType).getElementType();
             if (keyType != null) {
               if (SoyTypes.expandUnions(keyType).stream()
                   .anyMatch(t -> !MapType.isAllowedKeyType(t))) {
@@ -2906,7 +2906,8 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
                     keyType);
               }
               node.setType(
-                  typeRegistry.getOrCreateSetType(((IterableType) listType).getElementType()));
+                  typeRegistry.getOrCreateSetType(
+                      ((AbstractIterableType) listType).getElementType()));
             } else {
               node.setType(SetType.EMPTY_SET);
             }

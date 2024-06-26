@@ -25,7 +25,7 @@ import java.util.Objects;
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  */
-public final class SetType extends IterableType {
+public final class SetType extends AbstractIterableType {
 
   public static final SetType EMPTY_SET = new SetType(null);
   public static final SetType ANY_SET = new SetType(AnyType.getInstance());

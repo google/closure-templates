@@ -100,6 +100,7 @@ message SoyTypeP {
   // discriminated union of the different type categories
   oneof TypeKind {
     PrimitiveTypeP primitive = 1;
+    SoyTypeP iterable_element = 14;
     SoyTypeP list_element = 2;
     SoyTypeP set_element = 15;
     RecordTypeP record = 3;

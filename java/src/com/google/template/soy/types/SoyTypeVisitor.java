@@ -20,6 +20,8 @@ public interface SoyTypeVisitor<T> {
 
   T visit(LegacyObjectMapType type);
 
+  T visit(IterableType type);
+
   T visit(ListType type);
 
   T visit(SetType type);

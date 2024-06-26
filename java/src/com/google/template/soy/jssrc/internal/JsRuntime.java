@@ -130,6 +130,8 @@ public final class JsRuntime {
 
   public static final Expression SOY_HAS_CONTENT = SOY.dotAccess("$$hasContent");
 
+  public static final Expression SOY_IS_ITERABLE = SOY.dotAccess("$$isIterable");
+
   public static final Expression SOY_EMPTY_TO_UNDEFINED = SOY.dotAccess("$$emptyToUndefined");
 
   public static final Expression SOY_ESCAPE_HTML = SOY.dotAccess("$$escapeHtml");

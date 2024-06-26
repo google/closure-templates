@@ -519,6 +519,17 @@ const $$coerceToBoolean = function(arg) {
 
 
 /**
+ * Returns whether `it` is a JavaScript iterable.
+ *
+ * @param {*} it The argument to test.
+ * @return {boolean}
+ */
+const $$isIterable = function(it) {
+  return it != null && typeof it[Symbol.iterator] === 'function';
+};
+
+
+/**
  * Returns if the value is truthy or is a sanitized content with content.
  *
  * @param {*} arg The argument to coerce.
@@ -2665,6 +2676,7 @@ exports = {
   $$round,
   $$strContains,
   $$coerceToBoolean,
+  $$isIterable,
   $$isTruthyNonEmpty,
   $$hasContent,
   $$emptyToUndefined,

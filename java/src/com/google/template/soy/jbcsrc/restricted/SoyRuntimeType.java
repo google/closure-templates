@@ -123,6 +123,7 @@ public abstract class SoyRuntimeType {
       case HTML:
       case JS:
       case TRUSTED_RESOURCE_URI:
+      case ITERABLE:
       case LEGACY_OBJECT_MAP:
       case MAP:
       case RECORD:

@@ -20,10 +20,9 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.types.AnyType;
-import com.google.template.soy.types.ListType;
+import com.google.template.soy.types.IterableType;
 import com.google.template.soy.types.NullType;
 import com.google.template.soy.types.SanitizedType;
-import com.google.template.soy.types.SetType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.StringType;
 import com.google.template.soy.types.UndefinedType;
@@ -136,10 +135,7 @@ public enum BuiltinFunction implements SoyFunction {
                     UndefinedType.getInstance())));
       case NEW_SET:
         // This is further constrained in ResolveExpressionTypesPass.
-        return Optional.of(
-            ImmutableList.of(
-                UnionType.of(
-                    ListType.of(AnyType.getInstance()), SetType.of(AnyType.getInstance()))));
+        return Optional.of(ImmutableList.of(IterableType.of(AnyType.getInstance())));
       default:
         return Optional.empty();
     }

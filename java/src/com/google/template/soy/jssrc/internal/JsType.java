@@ -48,7 +48,7 @@ import com.google.template.soy.jssrc.dsl.CodeChunk.Generator;
 import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.jssrc.dsl.Expressions;
 import com.google.template.soy.jssrc.dsl.GoogRequire;
-import com.google.template.soy.types.IterableType;
+import com.google.template.soy.types.AbstractIterableType;
 import com.google.template.soy.types.LegacyObjectMapType;
 import com.google.template.soy.types.MapType;
 import com.google.template.soy.types.RecordType;
@@ -407,8 +407,20 @@ public final class JsType {
             ? SANITIZED_TYPES_STRICT.get(((SanitizedType) soyType).getContentKind())
             : SANITIZED_TYPES.get(((SanitizedType) soyType).getContentKind());
 
+      case ITERABLE:
+        SoyType itElmType = ((AbstractIterableType) soyType).getElementType();
+        if (itElmType == null) {
+          itElmType = UnknownType.getInstance();
+        }
+        JsType jsItElmType = forSoyType(itElmType, kind, isStrict, arrayTypeMode, messageTypeMode);
+        return builder()
+            .addType(String.format("!Iterable<%s>", jsItElmType.typeExpr()))
+            .addRequires(jsItElmType.getGoogRequires())
+            .setPredicate(JsRuntime.SOY_IS_ITERABLE)
+            .build();
+
       case LIST:
-        IterableType listType = (IterableType) soyType;
+        AbstractIterableType listType = (AbstractIterableType) soyType;
         if (listType.isEmpty() || listType.getElementType().getKind() == SoyType.Kind.ANY) {
           return RAW_ARRAY_TYPE;
         }
@@ -422,8 +434,7 @@ public final class JsType {
             .build();
 
       case SET:
-        IterableType setType = (IterableType) soyType;
-        SoyType elmType = setType.getElementType();
+        SoyType elmType = ((AbstractIterableType) soyType).getElementType();
         if (elmType == null) {
           elmType = UnknownType.getInstance();
         }

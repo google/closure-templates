@@ -217,6 +217,20 @@ public class SoyTypesTest {
   }
 
   @Test
+  public void testIterable() {
+    assertThatSoyType("iterable<string>").isAssignableFromStrict("iterable<string>");
+    assertThatSoyType("iterable<?>").isAssignableFromStrict("iterable<string>");
+    assertThatSoyType("iterable<string>").isAssignableFromStrict("list<string>");
+    assertThatSoyType("iterable<?>").isAssignableFromStrict("list<string>");
+    assertThatSoyType("iterable<string>").isAssignableFromStrict("set<string>");
+    assertThatSoyType("iterable<?>").isAssignableFromStrict("set<string>");
+    assertThatSoyType("iterable<string>").isAssignableFromStrict("set<string>|list<string>");
+
+    assertThatSoyType("list<string>").isNotAssignableFromStrict("iterable<string>");
+    assertThatSoyType("set<string>").isNotAssignableFromStrict("iterable<string>");
+  }
+
+  @Test
   public void testListTypeEquality() {
     assertThatSoyType("list<any>").isEqualTo("list<any>");
     assertThatSoyType("list<any>").isNotEqualTo("list<string>");

@@ -665,9 +665,10 @@ public final class SoyTypes {
         case UNION:
           return ((UnionType) type).getMembers();
 
+        case ITERABLE:
         case LIST:
         case SET:
-          return ImmutableList.of(((IterableType) type).getElementType());
+          return ImmutableList.of(((AbstractIterableType) type).getElementType());
 
         case MAP:
         case LEGACY_OBJECT_MAP:
@@ -703,13 +704,13 @@ public final class SoyTypes {
   }
 
   public static SoyType getIterableElementType(SoyType type) {
-    if (type instanceof IterableType) {
-      return ((IterableType) type).getElementType();
+    if (type instanceof AbstractIterableType) {
+      return ((AbstractIterableType) type).getElementType();
     }
     UnionType union = (UnionType) type;
     return UnionType.of(
         union.getMembers().stream()
-            .map(member -> ((IterableType) member).getElementType())
+            .map(member -> ((AbstractIterableType) member).getElementType())
             .collect(toImmutableList()));
   }
 
@@ -758,7 +759,7 @@ public final class SoyTypes {
         return true;
       case LIST:
       case SET:
-        return ((IterableType) type).getElementType().equals(AnyType.getInstance());
+        return ((AbstractIterableType) type).getElementType().equals(AnyType.getInstance());
       case MAP:
         return ((MapType) type).getKeyType().equals(AnyType.getInstance())
             && ((MapType) type).getValueType().equals(AnyType.getInstance());

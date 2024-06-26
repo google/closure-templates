@@ -96,6 +96,7 @@ final class CheckDeclaredTypesPass implements CompilerFilePass {
           }
           node.arguments().get(1).accept(this);
           break;
+        case ITERABLE:
         case LIST:
         case SET:
           checkArgument(node.arguments().size() == 1);

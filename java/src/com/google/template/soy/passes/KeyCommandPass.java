@@ -153,6 +153,7 @@ final class KeyCommandPass implements CompilerFilePass {
         case CSS:
         case URI:
         case TRUSTED_RESOURCE_URI:
+        case ITERABLE:
         case LIST:
         case SET:
         case RECORD:

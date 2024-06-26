@@ -16,10 +16,8 @@
 
 package com.google.template.soy.data;
 
-/** Soy wrapper for a Java Set. */
-public interface SoySet extends SoyIterable {
-
-  boolean contains(SoyValue value);
-
-  int size();
-}
+/**
+ * Marker interface for iterable value. Implementations of this should allow calls on {@link
+ * SoyValue#javaIterator()}.
+ */
+public interface SoyIterable extends SoyValue {}
