@@ -721,7 +721,7 @@ const $$escapeHtml = function(value) {
  *     value.
  */
 const $$cleanHtml = function(value, safeTags) {
-  if ($$isHtml(value)) {
+  if ($$isHtmlOrHtmlTemplate(value)) {
     return /** @type {!SanitizedHtml} */ (value);
   }
   let tagWhitelist;
