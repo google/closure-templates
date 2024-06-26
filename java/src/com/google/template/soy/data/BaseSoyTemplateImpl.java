@@ -47,10 +47,6 @@ import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.data.restricted.StringData;
-import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
-import com.google.template.soy.jbcsrc.shared.RenderContext;
-import com.google.template.soy.jbcsrc.shared.StackFrame;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
@@ -453,26 +449,7 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
 
     @SuppressWarnings("Immutable")
     protected static SoyValueProvider asTemplateValue(TemplateInterface template) {
-      return TemplateValue.createFromTemplate(
-          template,
-          new CompiledTemplate() {
-            @Nullable
-            @Override
-            public StackFrame render(
-                @Nullable StackFrame frame,
-                ParamStore params,
-                LoggingAdvisingAppendable appendable,
-                RenderContext context)
-                throws IOException {
-              return context
-                  .getTemplate(template.getTemplateName())
-                  .render(
-                      frame,
-                      ParamStore.merge(params, (ParamStore) template.getParamsAsRecord()),
-                      appendable,
-                      context);
-            }
-          });
+      return TemplateValue.createFromTemplate(template);
     }
 
     @ForOverride

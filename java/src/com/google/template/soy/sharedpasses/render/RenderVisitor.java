@@ -100,7 +100,6 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Optional;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
@@ -534,7 +533,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
     }
 
     if (callee != null) {
-      visitCallNodeHelper(node, callee, Optional.empty());
+      visitCallNodeHelper(node, callee, ParamStore.EMPTY_INSTANCE);
     } else {
       throw RenderException.createWithSource(
           "Found no active impl for delegate call to \""
@@ -545,14 +544,10 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
     }
   }
 
-  private void visitCallNodeHelper(
-      CallNode node, TemplateNode callee, Optional<ParamStore> boundParams) {
+  private void visitCallNodeHelper(CallNode node, TemplateNode callee, ParamStore boundParams) {
 
     // ------ Build the call data. ------
-    ParamStore callData = createCallParamsWithVariant(node);
-    if (boundParams.isPresent()) {
-      callData = ParamStore.merge(boundParams.get(), callData);
-    }
+    ParamStore callData = ParamStore.merge(createCallParamsWithVariant(node), boundParams);
 
     // ------ Render the callee template with the callData built above. ------
 

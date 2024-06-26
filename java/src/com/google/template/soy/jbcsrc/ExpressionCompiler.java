@@ -1632,11 +1632,17 @@ final class ExpressionCompiler {
             Expression expr = getMapGetExpression(baseExpr, node, visit(node.getParam(0)));
             return SoyExpression.forSoyValue(node.getType(), expr.checkedSoyCast(node.getType()));
           case BIND:
-            return SoyExpression.forSoyValue(
-                node.getType(),
-                MethodRefs.RUNTIME_BIND_TEMPLATE_PARAMS.invoke(
-                    baseExpr.checkedCast(BytecodeUtils.TEMPLATE_VALUE_TYPE),
-                    recordLiteralAsParamStore((RecordLiteralNode) node.getChild(1))));
+            {
+              var record = (RecordLiteralNode) node.getChild(1);
+              if (record.numChildren() == 0) {
+                return baseExpr;
+              }
+              return SoyExpression.forSoyValue(
+                  node.getType(),
+                  MethodRefs.RUNTIME_BIND_TEMPLATE_PARAMS.invoke(
+                      baseExpr.checkedCast(BytecodeUtils.TEMPLATE_VALUE_TYPE),
+                      recordLiteralAsParamStore(record)));
+            }
         }
       } else if (function instanceof SoySourceFunctionMethod) {
         SoySourceFunctionMethod sourceMethod = (SoySourceFunctionMethod) function;

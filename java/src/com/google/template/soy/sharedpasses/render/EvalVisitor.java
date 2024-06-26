@@ -132,7 +132,6 @@ import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.plugin.internal.JavaPluginExecContext;
 import com.google.template.soy.plugin.java.PluginInstances;
 import com.google.template.soy.plugin.java.RenderCssHelper;
-import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
 import com.google.template.soy.plugin.java.restricted.MethodSignature;
 import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
 import com.google.template.soy.shared.SoyCssRenamingMap;
@@ -667,10 +666,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
           TemplateValue template = (TemplateValue) base;
           ParamStore params = ParamStore.fromRecord((SoyRecord) visit(methodNode.getParam(0)));
           return TemplateValue.createWithBoundParameters(
-              template.getTemplateName(),
-              template.getBoundParameters().isPresent()
-                  ? ParamStore.merge(template.getBoundParameters().get(), params)
-                  : params);
+              template.getTemplateName(), ParamStore.merge(template.getBoundParameters(), params));
       }
     } else if (method instanceof SoySourceFunctionMethod) {
       SoySourceFunctionMethod sourceMethod = (SoySourceFunctionMethod) method;

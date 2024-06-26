@@ -879,29 +879,32 @@ public final class JbcSrcRuntime {
   @Nonnull
   @Keep
   public static TemplateValue bindTemplateParams(TemplateValue template, ParamStore boundParams) {
-    var newTemplate =
-        new PartiallyBoundTemplate(boundParams, (CompiledTemplate) template.getCompiledTemplate());
-    return TemplateValue.createWithBoundParameters(
-        template.getTemplateName(), newTemplate.boundParams, newTemplate);
+    return TemplateValue.create(
+        template.getTemplateName(), new BoundTemplate(template, boundParams));
   }
 
   @Immutable
-  private static final class PartiallyBoundTemplate implements CompiledTemplate {
+  private static final class BoundTemplate implements CompiledTemplate {
+    private final String name;
+
     @SuppressWarnings("Immutable") // this is never mutated
     private final ParamStore boundParams;
 
     private final CompiledTemplate delegate;
 
-    PartiallyBoundTemplate(ParamStore boundParams, CompiledTemplate delegate) {
+    BoundTemplate(TemplateValue value, ParamStore boundParams) {
       // unwrap delegation by eagerly merging params, this removes layers of indirection at call
       // time
-      if (delegate instanceof PartiallyBoundTemplate) {
-        PartiallyBoundTemplate partiallyBoundTemplate = (PartiallyBoundTemplate) delegate;
+      var delegate = (CompiledTemplate) value.compiledTemplate().orElse(null);
+      if (delegate instanceof BoundTemplate) {
+        BoundTemplate partiallyBoundTemplate = (BoundTemplate) delegate;
         boundParams = ParamStore.merge(partiallyBoundTemplate.boundParams, boundParams);
-        delegate = partiallyBoundTemplate.delegate;
+        this.delegate = partiallyBoundTemplate.delegate;
+      } else {
+        this.delegate = delegate;
       }
-      this.delegate = delegate;
-      this.boundParams = boundParams;
+      this.name = value.getTemplateName();
+      this.boundParams = ParamStore.merge(value.getBoundParameters(), boundParams);
     }
 
     @Override
@@ -911,8 +914,24 @@ public final class JbcSrcRuntime {
         LoggingAdvisingAppendable appendable,
         RenderContext context)
         throws IOException {
+      // Delegate is null when the template is passed from java as a parameter. Resolve it on
+      // demand.
+      var delegate = this.delegate;
+      if (delegate == null) {
+        delegate = context.getTemplate(name);
+      }
       return delegate.render(frame, ParamStore.merge(boundParams, params), appendable, context);
     }
+  }
+
+  public static CompiledTemplate getCompiledTemplate(TemplateValue template) {
+    var delegate = (CompiledTemplate) template.compiledTemplate().orElse(null);
+    if (delegate != null && template.getBoundParameters().isEmpty()) {
+      // This is likely a template literal from the code generator, so we can just return the
+      // delegate.
+      return delegate;
+    }
+    return new BoundTemplate(template, ParamStore.EMPTY_INSTANCE);
   }
 
   /**

@@ -564,7 +564,7 @@ public final class MethodRefs {
       createNonPure(SoyValue.class, "isSanitizedContentKind", SanitizedContent.ContentKind.class);
 
   public static final MethodRef GET_COMPILED_TEMPLATE_FROM_VALUE =
-      createPure(TemplateValue.class, "getCompiledTemplate").asCheap();
+      createPure(JbcSrcRuntime.class, "getCompiledTemplate", TemplateValue.class).asCheap();
 
   public static final MethodRef CREATE_TEMPLATE_VALUE =
       createPure(TemplateValue.class, "create", String.class, Object.class);

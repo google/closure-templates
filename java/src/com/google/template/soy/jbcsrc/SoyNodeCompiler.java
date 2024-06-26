@@ -1386,11 +1386,10 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       return renderCallNode(
           node,
           () ->
-              exprCompiler
-                  .compileRootExpression(node.getCalleeExpr(), detachState)
-                  .checkedCast(BytecodeUtils.TEMPLATE_VALUE_TYPE)
-                  .invoke(MethodRefs.GET_COMPILED_TEMPLATE_FROM_VALUE)
-                  .checkedCast(BytecodeUtils.COMPILED_TEMPLATE_TYPE));
+              MethodRefs.GET_COMPILED_TEMPLATE_FROM_VALUE.invoke(
+                  exprCompiler
+                      .compileRootExpression(node.getCalleeExpr(), detachState)
+                      .checkedCast(BytecodeUtils.TEMPLATE_VALUE_TYPE)));
     }
   }
 

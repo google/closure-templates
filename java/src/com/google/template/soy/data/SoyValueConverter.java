@@ -115,6 +115,7 @@ public final class SoyValueConverter {
         TrustedResourceUrlProto.class, SanitizedContents::fromTrustedResourceUrlProto);
     cheapConverterMap.put(Message.Builder.class, input -> SoyProtoValue.create(input.build()));
     cheapConverterMap.put(Message.class, SoyProtoValue::create);
+    cheapConverterMap.put(TemplateInterface.class, TemplateValue::createFromTemplate);
 
     expensiveConverterMap.put(
         ByteString.class,
