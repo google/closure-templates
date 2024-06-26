@@ -201,32 +201,32 @@ public abstract class SanitizedContent extends SoyAbstractValue {
    * estimated when necessary.
    */
   @Nullable
-  public Dir getContentDirection() {
+  public final Dir getContentDirection() {
     return contentDir;
   }
 
   @Override
-  public boolean coerceToBoolean() {
+  public final boolean coerceToBoolean() {
     return true;
   }
 
   @Override
-  public boolean isTruthyNonEmpty() {
-    return getContent().length() > 0;
+  public final boolean isTruthyNonEmpty() {
+    return hasContent();
   }
 
   @Override
   public boolean hasContent() {
-    return getContent().length() > 0;
+    return !getContent().isEmpty();
   }
 
   @Override
-  public String coerceToString() {
-    return toString();
+  public final String coerceToString() {
+    return getContent();
   }
 
   @Override
-  public String toString() {
+  public final String toString() {
     return getContent();
   }
 
@@ -236,12 +236,15 @@ public abstract class SanitizedContent extends SoyAbstractValue {
    * <p>In contexts where a string value is required, SanitizedContent is permitted.
    */
   @Override
-  public String stringValue() {
+  public final String stringValue() {
     return getContent();
   }
 
   @Override
-  public boolean equals(@Nullable Object other) {
+  public final boolean equals(@Nullable Object other) {
+    if (other == this) {
+      return true;
+    }
     // TODO(user): js uses reference equality, this uses content comparison
     return other instanceof SanitizedContent
         && this.contentKind == ((SanitizedContent) other).contentKind
@@ -250,7 +253,7 @@ public abstract class SanitizedContent extends SoyAbstractValue {
   }
 
   @Override
-  public int hashCode() {
+  public final int hashCode() {
     return getContent().hashCode() + 31 * contentKind.hashCode();
   }
 
@@ -260,7 +263,7 @@ public abstract class SanitizedContent extends SoyAbstractValue {
    * @throws IllegalStateException if this SanitizedContent's content kind is not {@link
    *     ContentKind#HTML}.
    */
-  public SafeHtml toSafeHtml() {
+  public final SafeHtml toSafeHtml() {
     Preconditions.checkState(
         getContentKind() == ContentKind.HTML,
         "toSafeHtml() only valid for SanitizedContent of kind HTML, is: %s",
@@ -274,7 +277,7 @@ public abstract class SanitizedContent extends SoyAbstractValue {
    * @throws IllegalStateException if this SanitizedContent's content kind is not {@link
    *     ContentKind#HTML}.
    */
-  public SafeHtmlProto toSafeHtmlProto() {
+  public final SafeHtmlProto toSafeHtmlProto() {
     return SafeHtmls.toProto(toSafeHtml());
   }
 
@@ -284,7 +287,7 @@ public abstract class SanitizedContent extends SoyAbstractValue {
    * @throws IllegalStateException if this SanitizedContent's content kind is not {@link
    *     ContentKind#JS}.
    */
-  public SafeScript toSafeScript() {
+  public final SafeScript toSafeScript() {
     Preconditions.checkState(
         getContentKind() == ContentKind.JS,
         "toSafeScript() only valid for SanitizedContent of kind JS, is: %s",
@@ -298,7 +301,7 @@ public abstract class SanitizedContent extends SoyAbstractValue {
    * @throws IllegalStateException if this SanitizedContent's content kind is not {@link
    *     ContentKind#JS}.
    */
-  public SafeScriptProto toSafeScriptProto() {
+  public final SafeScriptProto toSafeScriptProto() {
     return SafeScripts.toProto(toSafeScript());
   }
 
@@ -308,7 +311,7 @@ public abstract class SanitizedContent extends SoyAbstractValue {
    * @throws IllegalStateException if this SanitizedContent's content kind is not {@link
    *     ContentKind#CSS}.
    */
-  public SafeStyle toSafeStyle() {
+  public final SafeStyle toSafeStyle() {
     Preconditions.checkState(
         getContentKind() == ContentKind.CSS,
         "toSafeStyle() only valid for SanitizedContent of kind CSS, is: %s",
@@ -320,12 +323,13 @@ public abstract class SanitizedContent extends SoyAbstractValue {
     // quoted strings.
     //
     // This is a best-effort attempt to preserve SafeStyle's semantical guarantees.
+    var content = getContent();
     Preconditions.checkState(
-        !getContent().contains("{"),
+        content.indexOf('{') == -1,
         "Calling toSafeStyle() with content that doesn't look like CSS declarations. "
             + "Consider using toSafeStyleSheet().");
 
-    return UncheckedConversions.safeStyleFromStringKnownToSatisfyTypeContract(getContent());
+    return UncheckedConversions.safeStyleFromStringKnownToSatisfyTypeContract(content);
   }
 
   /**
@@ -334,7 +338,7 @@ public abstract class SanitizedContent extends SoyAbstractValue {
    * @throws IllegalStateException if this SanitizedContent's content kind is not {@link
    *     ContentKind#CSS}.
    */
-  public SafeStyleProto toSafeStyleProto() {
+  public final SafeStyleProto toSafeStyleProto() {
     return SafeStyles.toProto(toSafeStyle());
   }
 
@@ -348,7 +352,7 @@ public abstract class SanitizedContent extends SoyAbstractValue {
    * @throws IllegalStateException if this SanitizedContent's content kind is not {@link
    *     ContentKind#CSS}.
    */
-  public SafeStyleSheet toSafeStyleSheet() {
+  public final SafeStyleSheet toSafeStyleSheet() {
     Preconditions.checkState(
         getContentKind() == ContentKind.CSS,
         "toSafeStyleSheet() only valid for SanitizedContent of kind CSS, is: %s",
@@ -360,11 +364,12 @@ public abstract class SanitizedContent extends SoyAbstractValue {
     // be fine to make this more sophisticated, but in practice it's unlikely and keeping this check
     // simple helps ensure it is fast. Note that this isn't a true security boundary, but a
     // best-effort attempt to preserve SafeStyleSheet's semantical guarantees.
+    var content = getContent();
     Preconditions.checkState(
-        getContent().isEmpty() || getContent().indexOf('{') > 0,
+        content.isEmpty() || content.indexOf('{') > 0,
         "Calling toSafeStyleSheet() with content that doesn't look like a stylesheet");
 
-    return UncheckedConversions.safeStyleSheetFromStringKnownToSatisfyTypeContract(getContent());
+    return UncheckedConversions.safeStyleSheetFromStringKnownToSatisfyTypeContract(content);
   }
 
   /**
@@ -377,7 +382,7 @@ public abstract class SanitizedContent extends SoyAbstractValue {
    * @throws IllegalStateException if this SanitizedContent's content kind is not {@link
    *     ContentKind#CSS}.
    */
-  public SafeStyleSheetProto toSafeStyleSheetProto() {
+  public final SafeStyleSheetProto toSafeStyleSheetProto() {
     return SafeStyleSheets.toProto(toSafeStyleSheet());
   }
 
@@ -387,7 +392,7 @@ public abstract class SanitizedContent extends SoyAbstractValue {
    * @throws IllegalStateException if this SanitizedContent's content kind is not {@link
    *     ContentKind#URI}.
    */
-  public SafeUrl toSafeUrl() {
+  public final SafeUrl toSafeUrl() {
     Preconditions.checkState(
         getContentKind() == ContentKind.URI,
         "toSafeUrl() only valid for SanitizedContent of kind URI, is: %s",
@@ -401,7 +406,7 @@ public abstract class SanitizedContent extends SoyAbstractValue {
    * @throws IllegalStateException if this SanitizedContent's content kind is not {@link
    *     ContentKind#URI}.
    */
-  public SafeUrlProto toSafeUrlProto() {
+  public final SafeUrlProto toSafeUrlProto() {
     return SafeUrls.toProto(toSafeUrl());
   }
 
@@ -412,7 +417,7 @@ public abstract class SanitizedContent extends SoyAbstractValue {
    * @throws IllegalStateException if this SanitizedContent's content kind is not {@link
    *     ContentKind#TRUSTED_RESOURCE_URI}.
    */
-  public TrustedResourceUrl toTrustedResourceUrl() {
+  public final TrustedResourceUrl toTrustedResourceUrl() {
     Preconditions.checkState(
         getContentKind() == ContentKind.TRUSTED_RESOURCE_URI,
         "toTrustedResourceUrl() only valid for SanitizedContent of kind TRUSTED_RESOURCE_URI, "
@@ -429,12 +434,12 @@ public abstract class SanitizedContent extends SoyAbstractValue {
    * @throws IllegalStateException if this SanitizedContent's content kind is not {@link
    *     ContentKind#TRUSTED_RESOURCE_URI}.
    */
-  public TrustedResourceUrlProto toTrustedResourceUrlProto() {
+  public final TrustedResourceUrlProto toTrustedResourceUrlProto() {
     return TrustedResourceUrls.toProto(toTrustedResourceUrl());
   }
 
   @Override
-  public SoyValue checkNullishSanitizedContent(ContentKind contentKind) {
+  public final SoyValue checkNullishSanitizedContent(ContentKind contentKind) {
     if (this.contentKind == ContentKind.TRUSTED_RESOURCE_URI && contentKind == ContentKind.URI) {
       // This should be allowed.
       return this;
@@ -453,7 +458,7 @@ public abstract class SanitizedContent extends SoyAbstractValue {
   }
 
   @Override
-  public boolean isSanitizedContentKind(ContentKind contentKind) {
+  public final boolean isSanitizedContentKind(ContentKind contentKind) {
     if (this.contentKind == ContentKind.TRUSTED_RESOURCE_URI && contentKind == ContentKind.URI) {
       return true;
     }
@@ -565,6 +570,15 @@ public abstract class SanitizedContent extends SoyAbstractValue {
         content = this.content = sb.toString();
       }
       return content;
+    }
+
+    @Override
+    public boolean hasContent() {
+      var content = this.content;
+      if (content != null) {
+        return !content.isEmpty();
+      }
+      return !attributes.isEmpty();
     }
 
     @Override
@@ -742,6 +756,11 @@ public abstract class SanitizedContent extends SoyAbstractValue {
         this.content = content;
       }
       return content;
+    }
+
+    @Override
+    public boolean hasContent() {
+      return commandBuffer.hasContent();
     }
 
     @Override

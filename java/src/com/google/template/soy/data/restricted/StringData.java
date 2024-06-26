@@ -54,28 +54,18 @@ public abstract class StringData extends PrimitiveData {
   public abstract String getValue();
 
   @Override
-  public String stringValue() {
+  public final String stringValue() {
     return getValue();
   }
 
   @Override
-  public String toString() {
+  public final String toString() {
     return getValue();
   }
 
-  /**
-   * {@inheritDoc}
-   *
-   * <p>The empty string is falsy.
-   */
   @Override
-  public boolean coerceToBoolean() {
-    return getValue().length() > 0;
-  }
-
-  @Override
-  public String coerceToString() {
-    return toString();
+  public final String coerceToString() {
+    return getValue();
   }
 
   @Override
@@ -85,11 +75,11 @@ public abstract class StringData extends PrimitiveData {
 
   @Override
   public final int hashCode() {
-    return stringValue().hashCode();
+    return getValue().hashCode();
   }
 
   @Override
-  public SoyValue checkNullishString() {
+  public final SoyValue checkNullishString() {
     return this;
   }
 
@@ -103,6 +93,11 @@ public abstract class StringData extends PrimitiveData {
     @Override
     public String getValue() {
       return value;
+    }
+
+    @Override
+    public boolean coerceToBoolean() {
+      return !value.isEmpty();
     }
 
     @Override
@@ -127,6 +122,11 @@ public abstract class StringData extends PrimitiveData {
         this.value = value;
       }
       return value;
+    }
+
+    @Override
+    public boolean coerceToBoolean() {
+      return true;
     }
 
     @Override

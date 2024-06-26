@@ -39,6 +39,7 @@ import com.google.common.html.types.SafeUrl;
 import com.google.common.html.types.SafeUrlProto;
 import com.google.common.html.types.SafeUrls;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
+import java.io.IOException;
 import java.util.Map;
 import java.util.Optional;
 import org.junit.Test;
@@ -457,5 +458,34 @@ public class SanitizedContentsTest {
     assertThrows(
         IllegalArgumentException.class,
         () -> SanitizedContent.AttributeValue.createFromEscapedValue("\""));
+  }
+
+  @Test
+  public void testAttributes_hasContent() {
+    assertThat(
+            UnsafeSanitizedContentOrdainer.ordainAsSafeAttributes(ImmutableMap.of()).hasContent())
+        .isFalse();
+    assertThat(
+            UnsafeSanitizedContentOrdainer.ordainAsSafeAttributes(
+                    ImmutableMap.of(
+                        "a", SanitizedContent.AttributeValue.createFromEscapedValue("b")))
+                .hasContent())
+        .isTrue();
+  }
+
+  @Test
+  public void testBufferedContents_hasContent() throws IOException {
+    var buffering = LoggingAdvisingAppendable.buffering(ContentKind.HTML);
+    assertThat(buffering.getAsSanitizedContent().hasContent()).isFalse();
+    buffering.append("foo");
+    assertThat(buffering.getAsSanitizedContent().hasContent()).isTrue();
+
+    buffering = LoggingAdvisingAppendable.buffering(ContentKind.HTML);
+    buffering.enterLoggableElement(LogStatement.create(0, null, false));
+    assertThat(buffering.getAsSanitizedContent().hasContent()).isFalse();
+    buffering.exitLoggableElement();
+    assertThat(buffering.getAsSanitizedContent().hasContent()).isFalse();
+    buffering.append("bar");
+    assertThat(buffering.getAsSanitizedContent().hasContent()).isTrue();
   }
 }

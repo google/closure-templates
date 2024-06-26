@@ -293,6 +293,19 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
       BufferingAppendable.replayOn(commands, appendable);
     }
 
+    boolean hasContent() {
+      for (var command : commands) {
+        // BufferingAppendable only adds non-empty strings to the command list.
+        if (command instanceof String) {
+          return true;
+        }
+        // NOTE: we don't need to check logging functions, because CommandBuffers are only created
+        // for HTML and ATTRIBUTES, and logging functions are only used for attribute_values.  So to
+        // see one we must have already seen at least an `=` character and returned above.
+      }
+      return false;
+    }
+
     @Override
     public String toString() {
       StringBuilder builder = new StringBuilder();
