@@ -274,16 +274,18 @@ Returns a single value from a map; equivalent to bracket access.
 
 ### `map.keys()` {#mapKeys}
 
-The keys of a [map](types.md#map) as a list. There is no guarantee on order.
+The keys of a [map](types.md#map) as a list. The ordering is stable and will
+match the map constructor.
 
 ### `map.values()` {#map-any,any_values}
 
-The values of a [map](types.md#map) as a list. There is no guarantee on order.
+The values of a [map](types.md#map) as a list. The ordering is stable and will
+match the map constructor.
 
 ### `map.entries()` {#map-any,any_entries}
 
 The entries of a [map](types.md#map) as a list of records with fields `key` and
-`value`. There is no guarantee on order.
+`value`. The ordering is stable and will match the map constructor.
 
 ### `map.concat(map)` {#map-any,any_concat}
 

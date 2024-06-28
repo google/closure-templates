@@ -22,7 +22,6 @@ goog.module('soy.map');
 goog.module.declareLegacyNamespace();
 
 const {Message} = goog.require('jspb');
-const {shuffle} = goog.require('goog.array');
 /**
  * Required to fix declareLegacyNamespace, since soy is also
  * declareLegacyNamespace.
@@ -43,22 +42,13 @@ function $$mapToLegacyObjectMap(map) {
 }
 
 /**
- * Gets the keys in a map as an array. There are no guarantees on the order.
+ * Gets the keys in a map as an array in insertion order.
  * @param {!ReadonlyMap<K, V>} map The map to get the keys of.
  * @return {!Array<K>} The array of keys in the given map.
  * @template K, V
  */
 function $$getMapKeys(map) {
-  const keys = Array.from(map.keys());
-  // The iteration order of Soy map keys and proto maps is documented as
-  // undefined. But the iteration order of ES6 Maps is specified as insertion
-  // order. In debug mode, shuffle the keys to hopefully catch callers that are
-  // making assumptions about iteration order.
-  // TODO(b/346022289): Delete?
-  if (goog.DEBUG) {
-    shuffle(keys);
-  }
-  return keys;
+  return Array.from(map.keys());
 }
 
 
@@ -80,22 +70,19 @@ function $$concatMaps(mapOne, mapTwo) {
 
 
 /**
- * Gets the values in a map as an array. There are no guarantees on the order.
+ * Gets the values in a map as an array in insertion order.
  * @param {!ReadonlyMap<K, V>} map The map to get the values of.
  * @return {!Array<V>} The array of values in the given map.
  * @template K, V
  */
 function $$getMapValues(map) {
   const values = Array.from(map.values());
-  if (goog.DEBUG) {
-    shuffle(values);
-  }
   return values;
 }
 
 
 /**
- * Gets the values in a map as an array. There are no guarantees on the order.
+ * Gets the values in a map as an array in insertion order.
  * @param {!ReadonlyMap<?, ?>} map The map to get the values of.
  * @return {!Array<?>} The array of values in the given map.
  */
