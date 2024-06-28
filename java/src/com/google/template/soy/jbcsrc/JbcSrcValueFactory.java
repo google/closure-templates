@@ -572,6 +572,9 @@ final class JbcSrcValueFactory extends JavaValueFactory {
     Preconditions.checkArgument(
         BytecodeUtils.isDefinitelyAssignableFrom(
             BytecodeUtils.SOY_VALUE_TYPE, delegate.resultType()));
+    if (delegate.isNonJavaNullable()) {
+      return delegate;
+    }
     return JAVA_NULL_TO_SOY_NULL.invoke(delegate);
   }
 }

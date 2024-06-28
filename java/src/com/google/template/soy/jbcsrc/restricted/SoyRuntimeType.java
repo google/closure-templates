@@ -23,6 +23,7 @@ import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_VALUE_
 import com.google.common.base.Objects;
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.template.soy.internal.proto.JavaQualifiedNames;
+import com.google.template.soy.types.AbstractIterableType;
 import com.google.template.soy.types.BoolType;
 import com.google.template.soy.types.FloatType;
 import com.google.template.soy.types.IntType;
@@ -260,14 +261,20 @@ public abstract class SoyRuntimeType {
     return SoyTypes.isKindOrUnionOfKind(soyType, Kind.SET);
   }
 
+  public final boolean isKnownIterable() {
+    return SoyTypes.isKindOrUnionOfKinds(soyType, SoyType.Kind.ITERABLE_KINDS);
+  }
+
   public final ListType asListType() {
-    checkState(isKnownListOrUnionOfLists());
+    checkState(isKnownIterable());
     if (soyType instanceof ListType) {
       return (ListType) soyType;
+    } else if (soyType instanceof AbstractIterableType) {
+      return ListType.of(((AbstractIterableType) soyType).getElementType());
     }
     List<SoyType> members = new ArrayList<>();
     for (SoyType member : ((UnionType) soyType).getMembers()) {
-      ListType memberAsList = (ListType) member;
+      AbstractIterableType memberAsList = (AbstractIterableType) member;
       if (memberAsList.getElementType() != null) {
         members.add(memberAsList.getElementType());
       }

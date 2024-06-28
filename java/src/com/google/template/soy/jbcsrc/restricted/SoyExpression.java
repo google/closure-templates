@@ -791,7 +791,7 @@ public final class SoyExpression extends Expression {
     ListType asListType;
     SoyRuntimeType nonNullRuntimeType =
         SoyRuntimeType.getBoxedType(SoyTypes.tryRemoveNullish(soyType()));
-    if (!SoyTypes.isNullOrUndefined(soyType()) && nonNullRuntimeType.isKnownListOrUnionOfLists()) {
+    if (!SoyTypes.isNullOrUndefined(soyType()) && nonNullRuntimeType.isKnownIterable()) {
       asListType = nonNullRuntimeType.asListType();
     } else {
       if (soyType().getKind() == Kind.UNKNOWN || soyType().isNullOrUndefined()) {

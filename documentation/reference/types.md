@@ -382,6 +382,18 @@ SoySauce   | `java.util.Set`, `com.google.template.soy.data.SoySet`
 Tofu       | `com.google.template.soy.data.SoySet`
 Python     | partial support
 
+### `iterable<T>` {#iterable}
+
+A supertype of `list` and `set`. Iterables can be iterated over in a `{for}`
+loop or list comprehension.
+
+Backend    | type in host language
+---------- | ------------------------------------------
+JavaScript | `Iterable`
+SoySauce   | `com.google.template.soy.data.SoyIterable`
+Tofu       | `com.google.template.soy.data.SoyIterable`
+Python     | partial support
+
 ### `map<K, V>` {#map}
 
 A map takes two parameters for the key and value types. Map values are accessed

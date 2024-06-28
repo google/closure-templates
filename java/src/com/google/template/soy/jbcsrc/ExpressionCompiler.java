@@ -1975,6 +1975,8 @@ final class ExpressionCompiler {
           return soyExpression.unboxAsLong();
         } else if (nonNullableType.getKind() == Kind.LIST) {
           return soyExpression.unboxAsListOrJavaNull();
+        } else if (nonNullableType.getKind() == Kind.ITERABLE) {
+          return soyExpression.box().checkedCast(BytecodeUtils.SOY_ITERABLE_TYPE);
         } else if (javaType.equals(BytecodeUtils.SOY_VALUE_TYPE)) {
           return soyExpression.box().checkedCast(javaType);
         } else {

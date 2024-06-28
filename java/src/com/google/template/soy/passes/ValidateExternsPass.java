@@ -50,6 +50,7 @@ import com.google.template.soy.soytree.JavaImplNode;
 import com.google.template.soy.soytree.JsImplNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.types.FunctionType;
+import com.google.template.soy.types.IterableType;
 import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.MapType;
 import com.google.template.soy.types.RecordType;
@@ -393,10 +394,17 @@ class ValidateExternsPass implements CompilerFilePass {
             .getMembers().stream().anyMatch(t -> !ALLOWED_UNION_MEMBERS.contains(t.getKind()))) {
           return false;
         }
-        // fallthrough
+      // fallthrough
       case ANY:
       case UNKNOWN:
         return javaType == Object.class || javaType == SoyValue.class;
+      case ITERABLE:
+        if (!isAllowedParameterizedType(((IterableType) soyType).getElementType(), extern)) {
+          return false;
+        }
+        return mode == Mode.EXTENDS
+            ? Iterable.class.isAssignableFrom(javaType)
+            : javaType == Iterable.class;
       case LIST:
         if (!isAllowedParameterizedType(((ListType) soyType).getElementType(), extern)) {
           return false;

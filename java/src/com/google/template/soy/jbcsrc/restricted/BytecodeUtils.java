@@ -40,6 +40,7 @@ import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.RecordProperty;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
+import com.google.template.soy.data.SoyIterable;
 import com.google.template.soy.data.SoyLegacyObjectMap;
 import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyMap;
@@ -151,6 +152,7 @@ public final class BytecodeUtils {
   public static final Type IDENTITY_HASH_MAP_TYPE = Type.getType(IdentityHashMap.class);
   public static final Type COLLECTION_TYPE = Type.getType(Collection.class);
   public static final Type ITERABLE_TYPE = Type.getType(Iterable.class);
+  public static final Type SOY_ITERABLE_TYPE = Type.getType(SoyIterable.class);
   public static final Type LIST_TYPE = Type.getType(List.class);
   public static final Type SET_TYPE = Type.getType(Set.class);
   public static final Type ITERATOR_TYPE = Type.getType(Iterator.class);
