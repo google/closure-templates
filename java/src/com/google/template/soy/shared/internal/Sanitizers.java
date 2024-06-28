@@ -1160,7 +1160,7 @@ public final class Sanitizers {
     CharSequence replaced =
         replaceHtmlTags(
             value,
-            (tag, tagName) -> {
+            (tag, tagName, startIndex, endIndex) -> {
               if (safeTags == null || tagName == null) {
                 return "";
               }
@@ -1266,10 +1266,14 @@ public final class Sanitizers {
     TAG;
   }
 
-  private static CharSequence replaceHtmlTags(
-      String s,
-      BiFunction<String, String, String> callback,
-      BiFunction<String, Boolean, String> escaper) {
+  /** Signature for callback passed to replaceHtmlTags() */
+  @FunctionalInterface
+  public interface ReplaceHtmlTagCallback {
+    String apply(String tag, String tagName, int startIndex, int endIndex);
+  }
+
+  public static CharSequence replaceHtmlTags(
+      String s, ReplaceHtmlTagCallback callback, BiFunction<String, Boolean, String> escaper) {
     StringBuilder buffer = new StringBuilder();
     int l = s.length();
 
@@ -1329,7 +1333,7 @@ public final class Sanitizers {
             case '>':
               // We found the end of the tag!
               tagBuffer.append(c);
-              buffer.append(callback.apply(tagBuffer.toString(), tagName));
+              buffer.append(callback.apply(tagBuffer.toString(), tagName, tagStartIdx, i));
               state = State.DEFAULT;
               tagBuffer = new StringBuilder();
               tagName = null;
