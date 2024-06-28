@@ -21,7 +21,6 @@ import static com.google.common.base.Preconditions.checkArgument;
 import com.google.auto.value.AutoValue;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Ascii;
-import com.google.common.base.CharMatcher;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.html.HtmlEscapers;
@@ -549,12 +548,21 @@ public abstract class SanitizedContent extends SoyAbstractValue {
       var attributes = ImmutableMap.copyOf(content);
       attributes.forEach(
           (key, value) -> {
-            if (key.isEmpty() || !key.equals(Ascii.toLowerCase(key))) {
+            if (key.isEmpty() || !isLowerCase(key)) {
               throw new IllegalArgumentException(
                   "attribute names must be lowercase and non-empty:" + key);
             }
           });
       this.attributes = attributes;
+    }
+
+    private static boolean isLowerCase(String s) {
+      for (int i = 0; i < s.length(); i++) {
+        if (Ascii.isUpperCase(s.charAt(i))) {
+          return false;
+        }
+      }
+      return true;
     }
 
     @Override
@@ -618,32 +626,45 @@ public abstract class SanitizedContent extends SoyAbstractValue {
     }
   }
 
-  private static final CharMatcher NOT_WHITESPACE = CharMatcher.whitespace().negate();
+  /**
+   * According the the spec, these are the only whitespace characters that are relevant in html
+   * attributes.
+   *
+   * <p>https://html.spec.whatwg.org/multipage/parsing.html#before-attribute-name-state
+   */
+  private static boolean isHtmlAttributeWhitespace(char c) {
+    return c == ' ' || c == '\t' || c == '\n' || c == '\f';
+  }
 
-  private static int consume(CharMatcher endMatcher, String content, int position) {
-    int length = content.length();
+  /** Returns the position of the first non-whitespace character, or length */
+  private static int consumeWhitespace(String content, int position, int length) {
     for (; position < length; position++) {
-      if (endMatcher.matches(content.charAt(position))) {
+      if (!isHtmlAttributeWhitespace(content.charAt(position))) {
         break;
       }
     }
     return position;
   }
 
-  /** Returns the position of the first non-whitespace character, or length */
-  private static int consumeWhitespace(String content, int position) {
-    return consume(NOT_WHITESPACE, content, position);
+  /** See https://html.spec.whatwg.org/multipage/parsing.html#before-attribute-name-state */
+  private static int consumeAttributeName(String content, int position, int length) {
+    for (; position < length; position++) {
+      char c = content.charAt(position);
+      if (c == '=' || isHtmlAttributeWhitespace(c)) {
+        break;
+      }
+    }
+    return position;
   }
 
-  private static final CharMatcher WHITESPACE_OR_EQUALS =
-      CharMatcher.whitespace().or(CharMatcher.is('=')).precomputed();
-
-  private static int consumeAttributeName(String content, int position) {
-    return consume(WHITESPACE_OR_EQUALS, content, position);
-  }
-
-  private static int consumeUnquotedAttributeValue(String content, int position) {
-    return consume(CharMatcher.whitespace(), content, position);
+  /** See https://html.spec.whatwg.org/multipage/parsing.html#attribute-value-(unquoted)-state */
+  private static int consumeUnquotedAttributeValue(String content, int position, int length) {
+    for (; position < length; position++) {
+      if (isHtmlAttributeWhitespace(content.charAt(position))) {
+        break;
+      }
+    }
+    return position;
   }
 
   /**
@@ -661,11 +682,12 @@ public abstract class SanitizedContent extends SoyAbstractValue {
   static ImmutableMap<String, AttributeValue> parseAttributes(String content) {
     var attributes = ImmutableMap.<String, AttributeValue>builder();
     final var length = content.length();
-    int position = consumeWhitespace(content, 0);
+    int position = consumeWhitespace(content, 0, length);
     while (position < length) {
-      var end = consumeAttributeName(content, position);
-      // Canonically attribute names are case insensitive (in ascii), and by convention lowercase
-      // is used.
+      var end = consumeAttributeName(content, position, length);
+      // See https://html.spec.whatwg.org/multipage/parsing.html#attribute-name-state
+      // When observing an ascii upper case character we are instructed to append the lower case
+      // version.
       var name = Ascii.toLowerCase(content.substring(position, end));
       if (name.isEmpty()) {
         throw new IllegalArgumentException("Empty attribute name in " + content);
@@ -677,7 +699,7 @@ public abstract class SanitizedContent extends SoyAbstractValue {
       }
       // The most common case is that the equals sign follows the attribute name immediately
       if (content.charAt(end) != '=') {
-        end = consumeWhitespace(content, end);
+        end = consumeWhitespace(content, end, length);
         if (end == length || content.charAt(end) != '=') {
           position = end;
           attributes.put(name, AttributeValue.none());
@@ -685,7 +707,7 @@ public abstract class SanitizedContent extends SoyAbstractValue {
         }
       }
       position = end + 1; // consume the equals sign
-      position = consumeWhitespace(content, position);
+      position = consumeWhitespace(content, position, length);
       if (position == length) {
         throw new IllegalArgumentException(
             "missing attribute value for " + name + " in " + content);
@@ -707,12 +729,12 @@ public abstract class SanitizedContent extends SoyAbstractValue {
         attributes.put(name, AttributeValue.createFromEscapedValueUnchecked(quotedValue));
         position = end + 1; // ignore the trailing quotation mark
       } else {
-        end = consumeUnquotedAttributeValue(content, position);
+        end = consumeUnquotedAttributeValue(content, position, length);
         attributes.put(
             name, AttributeValue.createFromEscapedValueUnchecked(content.substring(position, end)));
         position = end + 1; // we found the end or some whitespace, skip it.
       }
-      position = consumeWhitespace(content, position);
+      position = consumeWhitespace(content, position, length);
     }
     return attributes.buildKeepingLast();
   }
