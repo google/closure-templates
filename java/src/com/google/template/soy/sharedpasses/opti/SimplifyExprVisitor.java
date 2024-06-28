@@ -59,7 +59,6 @@ import com.google.template.soy.exprtree.OperatorNodes.ConditionalOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.InstanceOfOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
-import com.google.template.soy.exprtree.ProtoEnumValueNode;
 import com.google.template.soy.exprtree.RecordLiteralNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.UndefinedNode;
@@ -612,7 +611,9 @@ final class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
       case STRING_NODE:
         return StringData.forValue(((StringNode) expr).getValue());
       case PROTO_ENUM_VALUE_NODE:
-        return IntegerData.forValue(((ProtoEnumValueNode) expr).getValue());
+        // Delay resolving proto enums to their values to support strong typing in JS.
+        // See b/255452370 for background
+        return null;
       case FUNCTION_NODE:
         FunctionNode func = (FunctionNode) expr;
         if (func.getFunctionName().equals("Boolean")) {

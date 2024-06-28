@@ -374,7 +374,7 @@ public final class JsType {
                 .addRequire(GoogRequire.createTypeRequire(enumTypeName))
                 .setPredicate(typeofTypePredicate("number"));
         if (!isStrict) {
-          // TODO(lukes): stop allowing number?, just allow the enum
+          // TODO(b/255452370): drop this after fixing clients.
           enumBuilder.addType("number");
         }
         return enumBuilder.build();

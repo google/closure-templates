@@ -69,6 +69,7 @@ import com.google.common.collect.Sets;
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.SoyBackendKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.AbstractReturningExprNodeVisitor;
@@ -336,7 +337,10 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
 
   @Override
   protected Expression visitProtoEnumValueNode(ProtoEnumValueNode node) {
-    return number(node.getValue());
+    // Use goog.module.get to be idom compatible
+    return GoogRequire.create(node.getType().getNameForBackend(SoyBackendKind.JS_SRC))
+        .googModuleGet()
+        .dotAccess(node.getEnumValueDescriptor().getName());
   }
 
   // -----------------------------------------------------------------------------------------------
@@ -737,8 +741,8 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
                       ProtoCall.getReadonlyField(
                           fieldName, ((SoyProtoType) type).getFieldDescriptor(fieldName)));
           return base.dotAccess(fieldAccess, nullSafe);
-          // When adding new built-in methods it may be necessary to assert that the base expression
-          // is not null in order to prevent a method call on a null instance from ever succeeding.
+        // When adding new built-in methods it may be necessary to assert that the base expression
+        // is not null in order to prevent a method call on a null instance from ever succeeding.
         case MAP_GET:
           return base.mapGetAccess(visit(methodCallNode.getParam(0)), nullSafe);
         case BIND:
@@ -1010,11 +1014,6 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
           ? GOOG_ARRAY_MAP.call(fieldValue, protoBytesPackToByteStringFunction())
           : protoBytesPackToByteStringFunction().call(fieldValue);
     }
-    if (fieldDesc.getType() == FieldDescriptor.Type.ENUM && !isArray) {
-      // TODO(b/255452370): no cast should be necessary, but soy eagerly desugars enum literals
-      // into numeric literals which drops type information.
-      return fieldValue.castAsUnknown();
-    }
     return fieldValue;
   }
 
@@ -1216,7 +1215,11 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
 
   private Expression assertNonNull(ExprNode expr) {
     Expression e = visit(expr);
-    return e.isDefinitelyNotNull() ? e : SOY_CHECK_NOT_NULL.call(e);
+    // Ideally Dot e could answer isDefinitelyNotNull correctly but immutable class hierarchy makes
+    // this annoying to fix.
+    return expr.getKind() == ExprNode.Kind.PROTO_ENUM_VALUE_NODE || e.isDefinitelyNotNull()
+        ? e
+        : SOY_CHECK_NOT_NULL.call(e);
   }
 
   private Expression visitCssFunction(FunctionNode node) {
