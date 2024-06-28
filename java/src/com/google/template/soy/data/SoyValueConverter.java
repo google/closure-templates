@@ -18,10 +18,9 @@ package com.google.template.soy.data;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
+import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
 
-import com.google.common.collect.FluentIterable;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.google.common.html.types.SafeHtml;
@@ -54,11 +53,14 @@ import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import java.io.IOException;
+import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Future;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.StreamSupport;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
@@ -122,11 +124,6 @@ public final class SoyValueConverter {
         input -> StringData.forValue(BaseEncoding.base64().encode(input.toByteArray())));
     expensiveConverterMap.put(Map.class, this::newDictFromMap);
     expensiveConverterMap.put(MarkAsSoyMap.class, input -> newSoyMapFromJavaMap(input.delegate()));
-    expensiveConverterMap.put(Set.class, this::newSetFromSet);
-    expensiveConverterMap.put(Iterable.class, this::newListFromIterable);
-    // NOTE: We don't convert plain Iterables, because many types extend from Iterable but are not
-    // meant to be enumerated. (e.g. ByteString implements Iterable<Byte>)
-    expensiveConverterMap.put(FluentIterable.class, this::newListFromIterable);
   }
 
   // -----------------------------------------------------------------------------------------------
@@ -206,15 +203,21 @@ public final class SoyValueConverter {
    * @param items The collection of Java values
    * @return A new SoyList initialized from the given Java Collection.
    */
-  private SoyList newListFromIterable(Iterable<?> items) {
-    // Create a list backed by a Java list which has eagerly converted each value into a lazy
-    // value provider. Specifically, the list iteration is done eagerly so that the lazy value
-    // provider can cache its value.
-    ImmutableList.Builder<SoyValueProvider> builder = ImmutableList.builder();
-    for (Object item : items) {
-      builder.add(convertLazy(item));
+  private SoyIterable newIterableFromIterable(Iterable<?> items) {
+    // TODO(jcg): Marshal Set to SetImpl.
+    if (items instanceof List || items instanceof Set) {
+      // Create a list backed by a Java list which has eagerly converted each value into a lazy
+      // value provider. Specifically, the list iteration is done eagerly so that the lazy value
+      // provider can cache its value.
+      return ListImpl.forProviderList(
+          ((Collection<?>) items).stream().map(this::convertLazy).collect(toImmutableList()));
     }
-    return ListImpl.forProviderList(builder.build());
+
+    // TODO(jcg): Marshal Iterable get SoyIterable.
+    return ListImpl.forProviderList(
+        StreamSupport.stream(items.spliterator(), false)
+            .map(this::convertLazy)
+            .collect(toImmutableList()));
   }
 
   private SoySet newSetFromSet(Set<?> items) {
@@ -277,6 +280,9 @@ public final class SoyValueConverter {
 
   private SoyValueProvider convertNonPrimitive(@Nullable Object obj) {
     SoyValueProvider converted = expensiveConverterMap.convert(obj);
+    if (converted == null && obj instanceof Iterable) {
+      converted = newIterableFromIterable((Iterable<?>) obj);
+    }
     if (converted != null) {
       return converted;
     }

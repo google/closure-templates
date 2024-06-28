@@ -987,6 +987,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
         // about the field type.
         return UnknownType.getInstance();
 
+      case ITERABLE:
       case LIST:
       case SET:
         AbstractIterableType iterableType = (AbstractIterableType) collectionType;

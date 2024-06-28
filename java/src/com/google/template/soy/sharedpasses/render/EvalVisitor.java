@@ -46,8 +46,8 @@ import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.data.Dir;
 import com.google.template.soy.data.RecordProperty;
 import com.google.template.soy.data.SoyDataException;
+import com.google.template.soy.data.SoyIterable;
 import com.google.template.soy.data.SoyLegacyObjectMap;
-import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyProtoValue;
 import com.google.template.soy.data.SoyRecord;
@@ -152,6 +152,7 @@ import com.google.template.soy.types.UnionType;
 import com.ibm.icu.util.ULocale;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -336,18 +337,20 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
   protected SoyValue visitListComprehensionNode(ListComprehensionNode node) {
     ExprNode listExpr = node.getListExpr();
     SoyValue listValue = visit(listExpr);
-    if (!(listValue instanceof SoyList)) {
-      throw RenderException.create(String.format("List expression is not a list: %s", listValue));
+    if (!(listValue instanceof SoyIterable)) {
+      throw RenderException.create(
+          String.format("Iterable expression is not iterable: %s", listValue));
     }
     ExprNode mapExpr = node.getListItemTransformExpr();
     ExprNode filterExpr = node.getFilterExpr();
     ComprehensionVarDefn itemName = node.getListIterVar();
     ImmutableList.Builder<SoyValueProvider> mappedValues = ImmutableList.builder();
-    List<? extends SoyValueProvider> list = ((SoyList) listValue).asJavaList();
-    for (int i = 0; i < list.size(); i++) {
-      env.bind(itemName, list.get(i));
+    Iterator<? extends SoyValueProvider> list = listValue.javaIterator();
+    int i = 0;
+    while (list.hasNext()) {
+      env.bind(itemName, list.next());
       if (node.getIndexVar() != null) {
-        env.bind(node.getIndexVar(), SoyValueConverter.INSTANCE.convert(i));
+        env.bind(node.getIndexVar(), SoyValueConverter.INSTANCE.convert(i++));
       }
       if (filterExpr != null) {
         if (!visit(filterExpr).coerceToBoolean()) {

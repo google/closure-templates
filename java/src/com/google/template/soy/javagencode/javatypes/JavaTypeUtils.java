@@ -103,8 +103,10 @@ public final class JavaTypeUtils {
         types = ImmutableList.of(new ProtoEnumJavaType(asProtoEnum.getDescriptor()));
         break;
       case ITERABLE:
-      case LIST:
       case SET:
+        // Do not support set<> or iterable<> for now.
+        return ImmutableList.of();
+      case LIST:
         SoyType elementType = ((AbstractIterableType) soyType).getElementType();
         if (elementType.getKind() == Kind.RECORD) {
           // Hacky handling of list<record>. Probably less code than modifying ListJavaType to
