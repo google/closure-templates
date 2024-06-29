@@ -2,7 +2,7 @@
 
 In Soy it is common to have optional
 [parameters](../reference/templates.md#param) and other
-[nullable types](../reference/types#null). This is useful since the compiler
+[nullable types](../reference/types.md#null). This is useful since the compiler
 will prevent you from accidentally dereferencing potentially nullish values and
 it provides additional information to callers. However, for these same reasons
 they can be difficult to work with. This page shows a few strategies for dealing
@@ -35,10 +35,10 @@ import {Person} from 'foo/bar.proto';
 
 This type narrowing feature is triggered by the various control flow mechanisms:
 
-*   [if statements](../reference/control-flow#if)
-*   [and/or operators](../reference/expressions#logical-operators)
-*   [nullish coalescing operator](../reference/expressions#nullish-coalescing-operator)
-*   [ternary operator](../reference/expressions#ternary)
+*   [if statements](../reference/control-flow.md#if)
+*   [and/or operators](../reference/expressions.md#logical-operators)
+*   [nullish coalescing operator](../reference/expressions.md#nullish-coalescing-operator)
+*   [ternary operator](../reference/expressions.md#ternary)
 
 When the predicate of the conditional is a comparison with `null` or `undefined`
 the compiler is able to narrow the type on each side of the branch.
@@ -52,7 +52,7 @@ Furthermore within the `B` branch we know that `$foo` is `null` or at least is
 
 ## `checkNotNull` function
 
-The [`checkNotNull`](../reference/functions#checkNotNull) function will either
+The [`checkNotNull`](../reference/functions.md#checkNotNull) function will either
 return its parameter or throw an unspecified exception if the provided value is
 nullish. Additionally the type checker understands this behavior and so this can
 be used as a cast operator to turn nullable types into non-nullable types.

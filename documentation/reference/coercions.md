@@ -12,8 +12,8 @@ TODO(lukes): this page is insufficiently exhaustive, but it is a start
 
 There are a few ways to cause an implicit string coercion in Soy.
 
-*   [print commands](print) implicitly coerce their expression to a string
-*   [concatenation](expressions#plus) with a string will coerce a value to a
+*   [print commands](print.md) implicitly coerce their expression to a string
+*   [concatenation](expressions.md#plus) with a string will coerce a value to a
     string
 
 While every value in Soy can be coerced to a string, not every value has a
@@ -34,9 +34,9 @@ debugging purposes.
 
 There are a few ways to coerce a value to a boolean.
 
-*   use it in an [if-expression](control-flow#if)
-*   use it in a [ternary expression](expressions#ternary-operator)
-*   use the built-in function [`Boolean()`](functions#Boolean)
+*   use it in an [if-expression](control-flow.md#if)
+*   use it in a [ternary expression](expressions.md#ternary-operator)
+*   use the built-in function [`Boolean()`](functions.md#Boolean)
 
 All values have a boolean coercion (sometimes referred to as a 'truthiness'
 check), these mostly follow JavaScript semantics:
