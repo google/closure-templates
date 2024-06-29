@@ -18,8 +18,11 @@ package com.google.template.soy.data;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.fail;
 
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
 import com.google.common.html.types.SafeHtml;
 import com.google.common.html.types.SafeHtmlBuilder;
 import com.google.common.html.types.SafeHtmlProto;
@@ -36,6 +39,9 @@ import com.google.common.html.types.SafeUrl;
 import com.google.common.html.types.SafeUrlProto;
 import com.google.common.html.types.SafeUrls;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
+import java.io.IOException;
+import java.util.Map;
+import java.util.Optional;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -381,5 +387,105 @@ public class SanitizedContentsTest {
       } catch (IllegalStateException expected) {
       }
     }
+  }
+
+  private static Map<String, String> parseAttributes(String attributes) {
+    return Maps.transformValues(
+        SanitizedContent.parseAttributes(attributes),
+        v -> Optional.ofNullable(v.escapedValue()).orElse(""));
+  }
+
+  @Test
+  public void testParseAttributes() {
+    assertThat(parseAttributes("")).isEmpty();
+    assertThat(parseAttributes("   ")).isEmpty();
+    assertThat(parseAttributes("a=b c=d")).isEqualTo(ImmutableMap.of("a", "b", "c", "d"));
+    assertThat(parseAttributes("a='b' c=\"d\"")).isEqualTo(ImmutableMap.of("a", "b", "c", "d"));
+    assertThat(parseAttributes("a c=\"d\" e"))
+        .isEqualTo(ImmutableMap.of("a", "", "c", "d", "e", ""));
+
+    // Newlines and tabs are allowed in attribute values.
+    // We allow attributes to abut each other without a space, this is common in HTML though
+    // technically out of spec.
+    assertThat(parseAttributes("a='b\n\tx' c=\"d\"e=f"))
+        .isEqualTo(ImmutableMap.of("a", "b\n\tx", "c", "d", "e", "f"));
+
+    assertThat(parseAttributes("CLASS=foo")).isEqualTo(ImmutableMap.of("class", "foo"));
+    assertThat(parseAttributes("A=1 a")).isEqualTo(ImmutableMap.of("a", ""));
+
+    // test various silly amounts of whitespace
+    assertThat(parseAttributes("a = b c        =d e=    'f' g"))
+        .isEqualTo(ImmutableMap.of("a", "b", "c", "d", "e", "f", "g", ""));
+
+    assertThat(parseAttributes("a='\"b'")).containsExactly("a", "&quot;b");
+  }
+
+  @Test
+  public void testParseAttributes_errors() {
+    assertThrows(IllegalArgumentException.class, () -> parseAttributes("a="));
+    assertThrows(IllegalArgumentException.class, () -> parseAttributes("a='"));
+    assertThrows(IllegalArgumentException.class, () -> parseAttributes("a=\""));
+    assertThrows(IllegalArgumentException.class, () -> parseAttributes("a=\"'"));
+    assertThrows(IllegalArgumentException.class, () -> parseAttributes("a='\""));
+    assertThrows(IllegalArgumentException.class, () -> parseAttributes("=foo"));
+  }
+
+  @Test
+  public void testSanitizedAttributes_getAsAttributesMap() {
+    SanitizedContent attributes = SanitizedContent.create("a=b", ContentKind.ATTRIBUTES);
+    assertThat(attributes.getAsAttributesMap())
+        .isEqualTo(
+            ImmutableMap.of("a", SanitizedContent.AttributeValue.createFromEscapedValue("b")));
+  }
+
+  @Test
+  public void testSanitizedHtml_getAsAttributesMap() {
+    SanitizedContent attributes = SanitizedContent.create("a=b", ContentKind.HTML);
+    assertThrows(IllegalStateException.class, () -> attributes.getAsAttributesMap());
+  }
+
+  @Test
+  public void testAttributeValue() {
+    assertThat(SanitizedContent.AttributeValue.createFromEscapedValue("foo").escapedValue())
+        .isEqualTo("foo");
+    assertThat(SanitizedContent.AttributeValue.createFromUnescapedValue("foo").escapedValue())
+        .isEqualTo("foo");
+    assertThat(SanitizedContent.AttributeValue.createFromUnescapedValue("'").escapedValue())
+        .isEqualTo("&#39;");
+    assertThat(SanitizedContent.AttributeValue.createFromEscapedValue("&#39;").unescapedValue())
+        .isEqualTo("'");
+
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> SanitizedContent.AttributeValue.createFromEscapedValue("\""));
+  }
+
+  @Test
+  public void testAttributes_hasContent() {
+    assertThat(
+            UnsafeSanitizedContentOrdainer.ordainAsSafeAttributes(ImmutableMap.of()).hasContent())
+        .isFalse();
+    assertThat(
+            UnsafeSanitizedContentOrdainer.ordainAsSafeAttributes(
+                    ImmutableMap.of(
+                        "a", SanitizedContent.AttributeValue.createFromEscapedValue("b")))
+                .hasContent())
+        .isTrue();
+  }
+
+  @Test
+  public void testBufferedContents_hasContent() throws IOException {
+    var buffering = LoggingAdvisingAppendable.buffering(ContentKind.HTML);
+    assertThat(buffering.getAsSanitizedContent().hasContent()).isFalse();
+    buffering.append("foo");
+    assertThat(buffering.getAsSanitizedContent().hasContent()).isTrue();
+
+    buffering = LoggingAdvisingAppendable.buffering(ContentKind.HTML);
+    buffering.enterLoggableElement(LogStatement.create(0, null, false));
+    assertThat(buffering.getAsSanitizedContent().hasContent()).isFalse();
+    buffering.exitLoggableElement();
+    assertThat(buffering.getAsSanitizedContent().hasContent()).isFalse();
+    buffering.append("bar");
+    assertThat(buffering.getAsSanitizedContent().hasContent()).isTrue();
   }
 }

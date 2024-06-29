@@ -59,8 +59,8 @@ import com.google.template.soy.plugin.java.restricted.JavaValue;
 import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
 import com.google.template.soy.plugin.java.restricted.MethodSignature;
 import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
+import com.google.template.soy.types.AbstractIterableType;
 import com.google.template.soy.types.FunctionType;
-import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.MapType;
 import com.google.template.soy.types.SoyProtoEnumType;
 import com.google.template.soy.types.SoyType;
@@ -117,6 +117,16 @@ class TofuValueFactory extends JavaValueFactory {
   @Override
   public TofuJavaValue callStaticMethod(MethodSignature methodSig, JavaValue... params) {
     return callStaticMethod(methodSig, null, params);
+  }
+
+  @Override
+  public JavaValue callJavaValueMethod(Method method, JavaValue instance, JavaValue... params) {
+    SoyValue soyValue = ((TofuJavaValue) instance).soyValue();
+    try {
+      return wrapInTofuValue(method, method.invoke(soyValue, adaptParams(method, params)), null);
+    } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+      throw RenderException.create("Unexpected exception", e);
+    }
   }
 
   TofuJavaValue callStaticMethod(Method method, @Nullable SoyType returnType, JavaValue... params) {
@@ -330,7 +340,8 @@ class TofuValueFactory extends JavaValueFactory {
                   item ->
                       adaptParamItem(
                           item,
-                          ((ListType) externSig.getParameters().get(i).getType()).getElementType()))
+                          ((AbstractIterableType) externSig.getParameters().get(i).getType())
+                              .getElementType()))
               .collect(toImmutableList());
         } else {
           return value.asJavaList();

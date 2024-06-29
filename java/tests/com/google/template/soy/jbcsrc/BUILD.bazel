@@ -66,6 +66,7 @@ java_library(
         "//java/src/com/google/template/soy/jbcsrc/api:output_appendable",
         "//java/src/com/google/template/soy/jbcsrc/internal",
         "//java/src/com/google/template/soy/jbcsrc/restricted",
+        "//java/src/com/google/template/soy/jbcsrc/runtime",
         "//java/src/com/google/template/soy/jbcsrc/shared",
         "//java/src/com/google/template/soy/jbcsrc/shared:names",
         "//java/src/com/google/template/soy/logging:internal",

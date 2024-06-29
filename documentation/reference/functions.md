@@ -16,7 +16,7 @@ custom external functions, see
 ### `Boolean(value)` {#Boolean}
 
 Explicitly
-[coerces](go/soy/reference/coercions?polyglot=call-command#boolean-coercions)
+[coerces](http://go/soy/reference/coercions?polyglot=call-command#boolean-coercions)
 the argument to a boolean.
 
 ### `hasContent(value)` {#hasContent}
@@ -29,7 +29,7 @@ non-null and has content which is not empty string.
 
 For strings and sanitized types, equivalent to `hasContent(value)`. Any other
 type is allowed, in which case standard
-[boolean coercion](go/soy/reference/coercions?polyglot=call-command#boolean-coercions)
+[boolean coercion](http://go/soy/reference/coercions?polyglot=call-command#boolean-coercions)
 is used.
 
 ### `checkNotNull(value)` {#checkNotNull}
@@ -242,6 +242,22 @@ for a description of these options.
 This method is only defined on lists of non-nullable strings. If the method is
 not found, please check the type of your list.
 
+## Set Fields
+
+### `set.size` {#set-any_size}
+
+Returns the number of items in the set.
+
+## Set Methods
+
+### `Set(items)` {#Set}
+
+The set constructor. Accepts a single iterable parameter.
+
+### `set.has(item)` {#set-any_has}
+
+Returns whether an item exists in a set.
+
 ## Map Fields
 
 ### `map.size` {#map-any,any_size}
@@ -258,16 +274,18 @@ Returns a single value from a map; equivalent to bracket access.
 
 ### `map.keys()` {#mapKeys}
 
-The keys of a [map](types.md#map) as a list. There is no guarantee on order.
+The keys of a [map](types.md#map) as a list. The ordering is stable and will
+match the map constructor.
 
 ### `map.values()` {#map-any,any_values}
 
-The values of a [map](types.md#map) as a list. There is no guarantee on order.
+The values of a [map](types.md#map) as a list. The ordering is stable and will
+match the map constructor.
 
 ### `map.entries()` {#map-any,any_entries}
 
 The entries of a [map](types.md#map) as a list of records with fields `key` and
-`value`. There is no guarantee on order.
+`value`. The ordering is stable and will match the map constructor.
 
 ### `map.concat(map)` {#map-any,any_concat}
 

@@ -53,6 +53,7 @@ public interface ExprNode extends Node {
     FLOAT_NODE,
     STRING_NODE,
     PROTO_ENUM_VALUE_NODE,
+    TYPE_LITERAL_NODE,
 
     LIST_LITERAL_NODE,
     LIST_COMPREHENSION_NODE,
@@ -80,6 +81,7 @@ public interface ExprNode extends Node {
     GREATER_THAN_OP_NODE,
     LESS_THAN_OR_EQUAL_OP_NODE,
     GREATER_THAN_OR_EQUAL_OP_NODE,
+    INSTANCE_OF_OP_NODE,
     EQUAL_OP_NODE,
     NOT_EQUAL_OP_NODE,
     TRIPLE_EQUAL_OP_NODE,
@@ -96,6 +98,8 @@ public interface ExprNode extends Node {
     BITWISE_OR_OP_NODE,
     BITWISE_XOR_OP_NODE,
     BITWISE_AND_OP_NODE,
+    SPREAD_OP_NODE,
+    AS_OP_NODE,
 
     FUNCTION_NODE,
 

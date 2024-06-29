@@ -289,6 +289,7 @@ public final class PassManager {
     private CssRegistry cssRegistry = CssRegistry.EMPTY;
     private ToggleRegistry toggleRegistry = ToggleRegistry.EMPTY;
     private boolean allowUnknownGlobals;
+    private boolean allowMissingSoyDeps;
     private boolean allowUnknownJsGlobals;
     private boolean disableAllTypeChecking;
     private MethodChecker javaPluginValidator;
@@ -376,6 +377,13 @@ public final class PassManager {
     @CanIgnoreReturnValue
     public Builder allowUnknownGlobals() {
       this.allowUnknownGlobals = true;
+      return this;
+    }
+
+    /** Allows the Soy compiler to skip over any Soy dependencies that are missing. */
+    @CanIgnoreReturnValue
+    public Builder allowMissingSoyDeps() {
+      this.allowMissingSoyDeps = true;
       return this;
     }
 
@@ -511,7 +519,7 @@ public final class PassManager {
           .add(
               new ImportsPass(
                   errorReporter,
-                  disableAllTypeChecking,
+                  disableAllTypeChecking || allowMissingSoyDeps,
                   new ProtoImportProcessor(registry, errorReporter, disableAllTypeChecking),
                   new TemplateImportProcessor(errorReporter, accumulatedState::registryFromDeps),
                   new CssImportProcessor(cssRegistry, errorReporter),
@@ -525,7 +533,7 @@ public final class PassManager {
           .add(new RestoreCompilerChecksPass(errorReporter))
           // needs to come early since it is necessary to create template metadata objects for
           // header compilation
-          .add(new ResolveTemplateParamTypesPass(errorReporter, disableAllTypeChecking));
+          .add(new ResolveDeclaredTypesPass(errorReporter, disableAllTypeChecking));
 
       // needs to come before SoyConformancePass
       passes.add(new ResolvePluginsPass(pluginResolver));
@@ -560,9 +568,7 @@ public final class PassManager {
           .add(
               new ResolveDottedImportsPass(
                   errorReporter, registry, astRewrites.rewriteCssVariables()));
-      if (astRewrites.isAll()) {
-        passes.add(new RewriteToggleImportsPass());
-      }
+      passes.add(new RewriteToggleImportsPass(astRewrites.isAll()));
       passes.add(
           new RewriteElementCompositionFunctionsPass(
               errorReporter, astRewrites.rewriteElementComposition()));
@@ -602,6 +608,7 @@ public final class PassManager {
                 new ResolveExpressionTypesPass(
                     errorReporter,
                     pluginResolver,
+                    allowMissingSoyDeps,
                     astRewrites.rewriteShortFormCalls(),
                     accumulatedState::registryFromDeps))
             .add(new VeDefValidationPass(errorReporter));

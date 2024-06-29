@@ -16,7 +16,6 @@
 
 package com.google.template.soy.jbcsrc.restricted;
 
-import static com.google.template.soy.jbcsrc.restricted.MethodRef.create;
 import static com.google.template.soy.jbcsrc.restricted.MethodRef.createNonPure;
 import static com.google.template.soy.jbcsrc.restricted.MethodRef.createNonPureConstructor;
 import static com.google.template.soy.jbcsrc.restricted.MethodRef.createPure;
@@ -24,6 +23,7 @@ import static com.google.template.soy.jbcsrc.restricted.MethodRef.createPureCons
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.UnsignedInts;
 import com.google.common.primitives.UnsignedLongs;
@@ -36,6 +36,7 @@ import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.LoggingAdvisingAppendable.BufferingAppendable;
 import com.google.template.soy.data.ProtoFieldInterpreter;
 import com.google.template.soy.data.RecordProperty;
+import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyProtoValue;
 import com.google.template.soy.data.SoyRecord;
@@ -51,6 +52,7 @@ import com.google.template.soy.data.internal.LazyProtoToSoyValueMap;
 import com.google.template.soy.data.internal.ListImpl;
 import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.data.internal.RuntimeMapTypeTracker;
+import com.google.template.soy.data.internal.SetImpl;
 import com.google.template.soy.data.internal.SoyMapImpl;
 import com.google.template.soy.data.internal.SoyRecordImpl;
 import com.google.template.soy.data.restricted.BooleanData;
@@ -60,7 +62,7 @@ import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.restricted.MethodRef.MethodPureness;
-import com.google.template.soy.jbcsrc.runtime.BufferedSoyValueProvider;
+import com.google.template.soy.jbcsrc.runtime.DetachableContentProvider;
 import com.google.template.soy.jbcsrc.runtime.JbcSrcRuntime;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
@@ -78,6 +80,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.TreeMap;
 
 /** Standard constant MethodRef instances shared throughout the compiler. */
@@ -98,6 +101,7 @@ public final class MethodRefs {
       createNonPure(
           CompiledTemplate.class,
           "render",
+          StackFrame.class,
           ParamStore.class,
           LoggingAdvisingAppendable.class,
           RenderContext.class);
@@ -125,6 +129,26 @@ public final class MethodRefs {
   public static final MethodRef RENDER_RESULT_ASSERT_DONE =
       createPure(RenderResult.class, "assertDone");
 
+  public static final MethodRef IMMUTABLE_LIST_BUILDER =
+      createNonPure(ImmutableList.class, "builder");
+  public static final MethodRef IMMUTABLE_LIST_BUILDER_ADD =
+      createNonPure(ImmutableList.Builder.class, "add", Object.class);
+  public static final MethodRef IMMUTABLE_LIST_BUILDER_ADD_ALL =
+      createNonPure(ImmutableList.Builder.class, "addAll", Iterable.class);
+  public static final MethodRef IMMUTABLE_LIST_BUILDER_ADD_ALL_ITERATOR =
+      createNonPure(ImmutableList.Builder.class, "addAll", Iterator.class);
+  public static final MethodRef IMMUTABLE_LIST_BUILDER_BUILD =
+      createNonPure(ImmutableList.Builder.class, "build");
+
+  public static final MethodRef IMMUTABLE_SET_BUILDER =
+      createNonPure(ImmutableSet.class, "builder");
+  public static final MethodRef IMMUTABLE_SET_BUILDER_ADD_ALL_ITERATOR =
+      createNonPure(ImmutableSet.Builder.class, "addAll", Iterator.class);
+  public static final MethodRef IMMUTABLE_SET_BUILDER_BUILD =
+      createNonPure(ImmutableSet.Builder.class, "build");
+  public static final MethodRef IMMUTABLE_SET_COPY_OF =
+      createNonPure(ImmutableSet.class, "copyOf", Iterator.class);
+
   /** a list of all the ImmutableList.of overloads, indexed by arity. */
   public static final ImmutableList<MethodRef> IMMUTABLE_LIST_OF;
 
@@ -148,7 +172,7 @@ public final class MethodRefs {
     for (java.lang.reflect.Method m : ImmutableList.class.getMethods()) {
       if (m.getName().equals("of")) {
         Class<?>[] params = m.getParameterTypes();
-        MethodRef ref = create(m, MethodPureness.PURE).asNonJavaNullable();
+        MethodRef ref = MethodRef.create(m, MethodPureness.PURE).asNonJavaNullable();
         if (params.length > 0 && params[params.length - 1].isArray()) {
           // skip the one that takes an array in the final position
           immutableListOfArray = ref;
@@ -169,7 +193,7 @@ public final class MethodRefs {
     for (java.lang.reflect.Method m : ImmutableMap.class.getMethods()) {
       if (m.getName().equals("of")) {
         Class<?>[] params = m.getParameterTypes();
-        MethodRef ref = create(m, MethodPureness.PURE).asNonJavaNullable();
+        MethodRef ref = MethodRef.create(m, MethodPureness.PURE).asNonJavaNullable();
         if (params.length > 0 && params[params.length - 1].isArray()) {
           // skip the one that takes an array in the final position
           immutableListOfArray = ref;
@@ -209,12 +233,14 @@ public final class MethodRefs {
 
   public static final MethodRef ITERATOR_HAS_NEXT = createPure(Iterator.class, "hasNext");
 
-  public static final MethodRef MAP_GET_KEY = createPure(Map.Entry.class, "getKey");
+  public static final MethodRef MAP_ENTRY_GET_KEY = createPure(Map.Entry.class, "getKey");
 
-  public static final MethodRef MAP_GET_VALUE = createPure(Map.Entry.class, "getValue");
+  public static final MethodRef MAP_ENTRY_GET_VALUE = createPure(Map.Entry.class, "getValue");
 
   public static final MethodRef LIST_IMPL_FOR_PROVIDER_LIST =
       createPure(ListImpl.class, "forProviderList", List.class);
+  public static final MethodRef SET_IMPL_FOR_PROVIDER_SET =
+      createPureConstructor(SetImpl.class, Set.class);
 
   public static final MethodRef LONG_PARSE_LONG =
       createPure(Long.class, "parseLong", String.class).asCheap().asNonJavaNullable();
@@ -257,6 +283,8 @@ public final class MethodRefs {
 
   public static final MethodRef PARAM_STORE_SET_FIELD =
       createNonPure(ParamStore.class, "setField", RecordProperty.class, SoyValueProvider.class);
+  public static final MethodRef PARAM_STORE_SET_ALL =
+      createNonPure(ParamStore.class, "setAll", SoyRecord.class);
   public static final MethodRef PARAM_STORE_FROM_RECORD =
       createPure(ParamStore.class, "fromRecord", SoyRecord.class);
 
@@ -314,6 +342,8 @@ public final class MethodRefs {
       createPure(SoyValue.class, "isTruthyNonEmpty");
 
   public static final MethodRef SOY_VALUE_HAS_CONTENT = createPure(SoyValue.class, "hasContent");
+  public static final MethodRef SOY_VALUE_RENDER =
+      createPure(SoyValue.class, "render", LoggingAdvisingAppendable.class);
 
   public static final MethodRef RUNTIME_TRIPLE_EQUAL =
       createPure(SharedRuntime.class, "tripleEqual", SoyValue.class, SoyValue.class);
@@ -415,8 +445,8 @@ public final class MethodRefs {
   public static final MethodRef RUNTIME_BITWISE_AND =
       createPure(SharedRuntime.class, "bitwiseAnd", SoyValue.class, SoyValue.class);
 
-  public static final MethodRef CONSTRUCT_MAP_FROM_LIST =
-      createPure(SharedRuntime.class, "constructMapFromList", List.class);
+  public static final MethodRef CONSTRUCT_MAP_FROM_ITERATOR =
+      createPure(SharedRuntime.class, "constructMapFromIterator", Iterator.class);
 
   public static final MethodRef RUNTIME_TIMES =
       createPure(SharedRuntime.class, "times", SoyValue.class, SoyValue.class);
@@ -442,8 +472,8 @@ public final class MethodRefs {
   public static final MethodRef RUNTIME_NUMBER_EQUALS_STRING_AS_NUMBER =
       createPure(JbcSrcRuntime.class, "numberEqualsStringAsNumber", double.class, String.class);
 
-  public static final MethodRef RUNTIME_EMPTY_TO_NULL =
-      createPure(JbcSrcRuntime.class, "emptyToNull", SoyValue.class);
+  public static final MethodRef RUNTIME_EMPTY_TO_UNDEFINED =
+      createPure(JbcSrcRuntime.class, "emptyToUndefined", SoyValue.class);
 
   public static final MethodRef RUNTIME_UNEXPECTED_STATE_ERROR =
       createNonPure(JbcSrcRuntime.class, "unexpectedStateError", StackFrame.class);
@@ -451,6 +481,8 @@ public final class MethodRefs {
   public static final MethodRef SOY_VALUE_AS_JAVA_LIST = createPure(SoyValue.class, "asJavaList");
   public static final MethodRef SOY_VALUE_AS_JAVA_LIST_OR_NULL =
       createPure(SoyValue.class, "asJavaListOrNull");
+  public static final MethodRef SOY_VALUE_AS_JAVA_ITERATOR =
+      createPure(SoyValue.class, "javaIterator");
 
   public static final MethodRef SOY_VALUE_AS_JAVA_MAP = createPure(SoyValue.class, "asJavaMap");
 
@@ -525,8 +557,14 @@ public final class MethodRefs {
   public static final MethodRef CHECK_PROTO =
       createNonPure(SoyValue.class, "checkNullishProto", Class.class);
 
+  public static final MethodRef IS_PROTO_INSTANCE =
+      createNonPure(SoyValue.class, "isProtoInstance", Class.class);
+
+  public static final MethodRef IS_SANITIZED_CONTENT_KIND =
+      createNonPure(SoyValue.class, "isSanitizedContentKind", SanitizedContent.ContentKind.class);
+
   public static final MethodRef GET_COMPILED_TEMPLATE_FROM_VALUE =
-      createPure(TemplateValue.class, "getCompiledTemplate").asCheap();
+      createPure(JbcSrcRuntime.class, "getCompiledTemplate", TemplateValue.class).asCheap();
 
   public static final MethodRef CREATE_TEMPLATE_VALUE =
       createPure(TemplateValue.class, "create", String.class, Object.class);
@@ -577,10 +615,20 @@ public final class MethodRefs {
       createPure(StringData.class, "forValue", String.class).asCheap();
 
   public static final MethodRef LOGGING_ADVISING_APPENDABLE_BUFFERING =
-      createNonPure(LoggingAdvisingAppendable.class, "buffering");
+      createNonPure(
+              LoggingAdvisingAppendable.class, "buffering", SanitizedContent.ContentKind.class)
+          .asCheap();
+  public static final MethodRef MULTIPLEXING_APPENDABLE =
+      createNonPure(
+              DetachableContentProvider.MultiplexingAppendable.class,
+              "create",
+              SanitizedContent.ContentKind.class)
+          .asCheap();
 
-  public static final MethodRef BUFFERED_SOY_VALUE_PROVIDER_CREATE =
-      createPure(BufferedSoyValueProvider.class, "create", BufferingAppendable.class);
+  public static final MethodRef BUFFERING_APPENDABLE_GET_AS_STRING_DATA =
+      createPure(BufferingAppendable.class, "getAsStringData");
+  public static final MethodRef BUFFERING_APPENDABLE_GET_AS_SANITIZED_CONTENT =
+      createPure(BufferingAppendable.class, "getAsSanitizedContent");
 
   public static final MethodRef CREATE_LOG_STATEMENT =
       createPure(JbcSrcRuntime.class, "createLogStatement", boolean.class, SoyValue.class);
@@ -631,6 +679,8 @@ public final class MethodRefs {
   public static final MethodRef AS_SWITCHABLE_VALUE_SOY_VALUE =
       createPure(JbcSrcRuntime.class, "asSwitchableValue", SoyValue.class, int.class);
 
+  public static final MethodRef NEW_SOY_SET = createPureConstructor(SetImpl.class, Iterator.class);
+
   // Constructors
 
   public static final MethodRef ARRAY_LIST = createNonPureConstructor(ArrayList.class);
@@ -663,11 +713,15 @@ public final class MethodRefs {
           int.class,
           boolean.class);
 
-  public static final MethodRef REPLAYING_BUFFERED_RENDER_DONE_FN =
-      createPureConstructor(JbcSrcRuntime.ReplayingBufferedRenderDoneFn.class);
 
   public static final MethodRef ESCAPING_BUFFERED_RENDER_DONE_FN =
       createPureConstructor(JbcSrcRuntime.EscapingBufferedRenderDoneFn.class, ImmutableList.class);
+
+  public static final MethodRef STACK_FRAME_CREATE_LEAF =
+      createPure(StackFrame.class, "create", RenderResult.class, int.class);
+
+  public static final MethodRef STACK_FRAME_CREATE_NON_LEAF =
+      createPure(StackFrame.class, "create", StackFrame.class, int.class);
 
   private MethodRefs() {}
 }

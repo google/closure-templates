@@ -85,6 +85,7 @@ public abstract class SoyType {
     // Special types
     ANY,
     UNKNOWN,
+    NEVER,
     // Primitive types
     NULL,
     UNDEFINED,
@@ -101,7 +102,9 @@ public abstract class SoyType {
     URI,
     TRUSTED_RESOURCE_URI,
     // Aggregate types
+    ITERABLE,
     LIST,
+    SET,
     RECORD,
     LEGACY_OBJECT_MAP,
     MAP,
@@ -137,7 +140,11 @@ public abstract class SoyType {
             Kind.TRUSTED_RESOURCE_URI);
 
     public static final ImmutableSet<Kind> ILLEGAL_OPERAND_KINDS_PLUS_OP =
-        Sets.immutableEnumSet(Kind.LIST, Kind.LEGACY_OBJECT_MAP, Kind.MAP, Kind.RECORD);
+        Sets.immutableEnumSet(
+            Kind.ITERABLE, Kind.LIST, Kind.SET, Kind.LEGACY_OBJECT_MAP, Kind.MAP, Kind.RECORD);
+
+    public static final ImmutableSet<Kind> ITERABLE_KINDS =
+        Sets.immutableEnumSet(Kind.ITERABLE, Kind.LIST, Kind.SET);
 
     /** Returns true for SoyTypes that are plain strings or sanitized subtypes of strings. */
     public boolean isKnownStringOrSanitizedContent() {

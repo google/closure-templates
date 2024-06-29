@@ -88,7 +88,7 @@ public final class MsgHtmlTagNodeTest {
 
   @Test
   public void testErrorNodeReturnedWhenPhNameAttrIsMalformed() {
-    ErrorReporter errorReporter = ErrorReporter.createForTest();
+    ErrorReporter errorReporter = ErrorReporter.create();
     parseMsgHtmlTagNode("<div phname=\".+\" />", errorReporter);
     assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
         .isEqualTo("'phname' is not a valid identifier.");

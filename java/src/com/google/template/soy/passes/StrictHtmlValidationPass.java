@@ -20,7 +20,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprNode;
@@ -82,7 +81,7 @@ public final class StrictHtmlValidationPass implements CompilerFilePass {
   }
 
   private void checkTemplateNode(TemplateNode node, IdGenerator idGenerator) {
-    ErrorReporter reporter = ErrorReporter.create(ImmutableMap.of());
+    ErrorReporter reporter = ErrorReporter.create();
     htmlMatcherGraph = new HtmlTagVisitor(idGenerator, reporter).exec(node);
     new HtmlTagMatchingPass(
             reporter,

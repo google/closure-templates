@@ -35,9 +35,9 @@ import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.jbcsrc.TemplateTester.CompiledTemplateSubject;
-import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
+import com.google.template.soy.jbcsrc.shared.StackFrame;
 import com.google.template.soy.testing.Example;
 import com.google.template.soy.testing.ExampleExtendable;
 import com.google.template.soy.testing.KvPair;
@@ -467,7 +467,11 @@ public final class ProtoSupportTest {
 
   @FunctionalInterface
   interface TemplateRenderer {
-    RenderResult render() throws IOException;
+    StackFrame render(StackFrame frame) throws IOException;
+
+    default StackFrame render() throws IOException {
+      return render(null);
+    }
   }
 
   private CompiledTemplateSubject assertThatTemplateBody(String... body) {
@@ -489,8 +493,7 @@ public final class ProtoSupportTest {
     CompiledTemplate caller = templates.getTemplate(name);
     BufferingAppendable sb = LoggingAdvisingAppendable.buffering();
     try {
-      assertThat(caller.render(params, sb, getDefaultContext(templates)))
-          .isEqualTo(RenderResult.done());
+      assertThat(caller.render(null, params, sb, getDefaultContext(templates))).isNull();
     } catch (IOException e) {
       throw new RuntimeException(e);
     }

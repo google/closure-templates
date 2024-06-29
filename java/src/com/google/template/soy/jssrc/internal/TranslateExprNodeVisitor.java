@@ -43,7 +43,7 @@ import static com.google.template.soy.jssrc.internal.JsRuntime.MARK_TEMPLATE;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SERIALIZE_KEY;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_CHECK_NOT_NULL;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_COERCE_TO_BOOLEAN;
-import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_EMPTY_TO_NULL;
+import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_EMPTY_TO_UNDEFINED;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_EQUALS;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_FILTER_AND_MAP;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_HAS_CONTENT;
@@ -96,10 +96,12 @@ import com.google.template.soy.exprtree.NullSafeAccessNode;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.exprtree.OperatorNodes.AmpAmpOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.AndOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.AsOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.AssertNonNullOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.BarBarOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ConditionalOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.EqualOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.InstanceOfOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NotEqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NotOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
@@ -132,6 +134,7 @@ import com.google.template.soy.soytree.MsgFallbackGroupNode;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.soytree.defn.TemplateStateVar;
+import com.google.template.soy.types.AbstractIterableType;
 import com.google.template.soy.types.AnyType;
 import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.MapType;
@@ -371,8 +374,8 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
       // elementType can be unknown if it is the special EMPTY_LIST or if it isn't a known list
       // type.
       SoyType elementType =
-          listType.getKind() == SoyType.Kind.LIST
-              ? ((ListType) listType).getElementType()
+          listType instanceof AbstractIterableType
+              ? ((AbstractIterableType) listType).getElementType()
               : UnknownType.getInstance();
       JsType elementJsType = jsTypeForStrict(elementType);
       JsDoc doc =
@@ -437,7 +440,12 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
 
     // Process children
     for (int i = 0; i < node.numChildren(); i++) {
-      objLiteral.put(node.getKey(i).identifier(), visit(node.getChild(i)));
+      ExprNode child = node.getChild(i);
+      String key =
+          child.getKind() == ExprNode.Kind.SPREAD_OP_NODE
+              ? Expressions.objectLiteralSpreadKey()
+              : node.getKey(i).identifier();
+      objLiteral.put(key, visit(node.getChild(i)));
     }
 
     // Build the record literal
@@ -889,6 +897,58 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
     return operation(node.getOperator(), visitChildren(node));
   }
 
+  @Override
+  protected Expression visitAsOpNode(AsOpNode node) {
+    // TODO(b/156780590): Implement.
+    return visit(node.getChild(0));
+  }
+
+  @Override
+  protected Expression visitInstanceOfOpNode(InstanceOfOpNode node) {
+    SoyType operand = node.getChild(1).getType();
+    Expression value = visit(node.getChild(0));
+
+    // Handle any operand type supported by SoyTypes#isValidInstanceOfOperand()
+    switch (operand.getKind()) {
+      case STRING:
+        return value.typeOf().tripleEquals(stringLiteral("string"));
+      case BOOL:
+        return value.typeOf().tripleEquals(stringLiteral("boolean"));
+      case UNION:
+        if (operand.equals(SoyTypes.NUMBER_TYPE)) {
+          return value.typeOf().tripleEquals(stringLiteral("number"));
+        }
+        break;
+      case LIST:
+        return JsRuntime.ARRAY_IS_ARRAY.call(value);
+      case SET:
+        return value.instanceOf(id("Set"));
+      case MAP:
+        return value.instanceOf(id("Map"));
+      case PROTO:
+        SoyProtoType protoType = (SoyProtoType) operand;
+        return protoConstructor(protoType).dotAccess("hasInstance").call(value);
+      case MESSAGE:
+        return value.instanceOf(GoogRequire.create("jspb.Message").reference());
+      case JS:
+        return JsRuntime.IS_JS.call(value);
+      case CSS:
+        return JsRuntime.IS_CSS.call(value);
+      case URI:
+        return JsRuntime.IS_URI.call(value);
+      case HTML:
+        return JsRuntime.IS_HTML.call(value);
+      case TRUSTED_RESOURCE_URI:
+        return JsRuntime.IS_TRUSTED_RESOURCE_URI.call(value);
+      case ATTRIBUTES:
+        return JsRuntime.IS_ATTRIBUTE.call(value);
+      default:
+        break;
+    }
+
+    throw new AssertionError("Compiler should have disallowed: " + operand);
+  }
+
   private static final ImmutableSet<SoyType.Kind> CAN_USE_EQUALS =
       Sets.immutableEnumSet(
           SoyType.Kind.INT, SoyType.Kind.FLOAT, SoyType.Kind.PROTO_ENUM, Kind.BOOL, Kind.STRING);
@@ -989,7 +1049,8 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
         }
       } else if (fieldDesc.isRepeated()
           && !fieldDesc.isExtension()
-          && child.getKind() == ExprNode.Kind.LIST_LITERAL_NODE) {
+          && child.getKind() == ExprNode.Kind.LIST_LITERAL_NODE
+          && !((ListLiteralNode) child).containsSpreads()) {
         // use .add-er functions
         // This saves allocating an array and makes later calls to toImmutable cheaper
         ListLiteralNode listLiteral = (ListLiteralNode) child;
@@ -1078,8 +1139,8 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
           return visitVeDataFunction(node);
         case VE_DEF:
           return visitVeDefFunction(node);
-        case EMPTY_TO_NULL:
-          return visitEmptyToNullFunction(node);
+        case EMPTY_TO_UNDEFINED:
+          return visitEmptyToUndefinedFunction(node);
         case UNDEFINED_TO_NULL:
           return visit(node.getParam(0))
               .nullishCoalesce(LITERAL_NULL, translationContext.codeGenerator());
@@ -1094,6 +1155,8 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
           return isTruthyNonEmpty(visit(node.getParam(0)));
         case HAS_CONTENT:
           return hasContent(visit(node.getParam(0)));
+        case NEW_SET:
+          return visitNewSetFunction(node);
         case LEGACY_DYNAMIC_TAG:
         case REMAINDER:
         case MSG_WITH_ID:
@@ -1212,8 +1275,12 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
     return construct(SOY_VISUAL_ELEMENT, visit(node.getParam(1)), metadataExpr, debugNameExpr);
   }
 
-  protected Expression visitEmptyToNullFunction(FunctionNode node) {
-    return SOY_EMPTY_TO_NULL.call(visit(node.getParam(0)));
+  protected Expression visitEmptyToUndefinedFunction(FunctionNode node) {
+    return SOY_EMPTY_TO_UNDEFINED.call(visit(node.getParam(0)));
+  }
+
+  private Expression visitNewSetFunction(FunctionNode node) {
+    return Expressions.construct(id("Set"), visit(node.getParam(0)));
   }
 
   private static SoyJsSrcFunction getUnknownFunction(String name, int argSize) {

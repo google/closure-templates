@@ -27,9 +27,9 @@ import com.google.template.soy.data.LogStatement;
 import com.google.template.soy.data.LoggingFunctionInvocation;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.jbcsrc.api.OutputAppendable;
-import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
+import com.google.template.soy.jbcsrc.shared.StackFrame;
 import com.google.template.soy.logging.LoggingFunction;
 import com.google.template.soy.logging.SoyLogger;
 import com.google.template.soy.shared.restricted.Signature;
@@ -322,8 +322,8 @@ public final class VeLoggingTest {
             .get();
     RenderContext ctx =
         TemplateTester.getDefaultContext(templates).toBuilder().withLogger(logger).build();
-    RenderResult result =
-        templates.getTemplate("ns.foo").render(TemplateTester.asParams(params), output, ctx);
-    assertThat(result).isEqualTo(RenderResult.done());
+    StackFrame result =
+        templates.getTemplate("ns.foo").render(null, TemplateTester.asParams(params), output, ctx);
+    assertThat(result).isNull();
   }
 }

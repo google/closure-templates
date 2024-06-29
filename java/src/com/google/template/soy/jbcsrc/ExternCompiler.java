@@ -49,6 +49,7 @@ import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypes;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Stream;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
@@ -70,19 +71,33 @@ public final class ExternCompiler {
     // We define a local static method that simply delegates to the extern method. However, the
     // local method parameter types match the soy types from the extern definition while the extern
     // delegate parameter types match the java types from the javaimpl definition.
-    Method memberMethod = buildMemberMethod(extern.getIdentifier().identifier(), extern.getType());
 
     if (!extern.getJavaImpl().isPresent()) {
       Statement.throwExpression(JbcSrcExternRuntime.NO_EXTERN_JAVA_IMPL.invoke())
-          .writeMethod(methodAccess(), memberMethod, writer);
+          .writeMethod(
+              methodAccess(),
+              buildMemberMethod(
+                  extern.getIdentifier().identifier(),
+                  extern.getType(),
+                  /* requiresRenderContext= */ false),
+              writer);
       return;
     }
 
     JavaImplNode javaImpl = extern.getJavaImpl().get();
+    Method memberMethod =
+        buildMemberMethod(
+            extern.getIdentifier().identifier(),
+            extern.getType(),
+            javaImpl.requiresRenderContext());
     int declaredMethodArgs = extern.getType().getParameters().size();
 
     ImmutableList.Builder<String> paramNamesBuilder = ImmutableList.builder();
-    paramNamesBuilder.add(StandardNames.RENDER_CONTEXT);
+    int paramNamesOffset = 0;
+    if (javaImpl.requiresRenderContext()) {
+      paramNamesBuilder.add(StandardNames.RENDER_CONTEXT);
+      paramNamesOffset = 1;
+    }
     for (int i = 0; i < declaredMethodArgs; i++) {
       paramNamesBuilder.add("p" + (i + 1 /* start with p1 */));
     }
@@ -109,9 +124,12 @@ public final class ExternCompiler {
             start,
             end,
             /* isStatic= */ true);
-    Expression renderContext = paramSet.getVariable(StandardNames.RENDER_CONTEXT);
-    ConstantVariables vars =
-        new ConstantVariables(paramSet, new RenderContextExpression(renderContext));
+    var renderContext =
+        javaImpl.requiresRenderContext()
+            ? Optional.of(
+                new RenderContextExpression(paramSet.getVariable(StandardNames.RENDER_CONTEXT)))
+            : Optional.<RenderContextExpression>empty();
+    ConstantVariables vars = new ConstantVariables(paramSet, renderContext);
 
     Method externMethod = new Method(javaImpl.methodName(), returnType.type(), paramTypes);
 
@@ -125,7 +143,7 @@ public final class ExternCompiler {
     for (int i = 0; i < declaredMethodArgs; i++) {
       adaptedParams.add(
           adaptParameter(
-              paramSet.getVariable(paramNames.get(i + 1)),
+              paramSet.getVariable(paramNames.get(i + paramNamesOffset)),
               paramTypesInfos[i],
               extern.getType().getParameters().get(i).getType()));
     }
@@ -192,10 +210,12 @@ public final class ExternCompiler {
     return runtimeType;
   }
 
-  static Method buildMemberMethod(String symbol, FunctionType type) {
+  static Method buildMemberMethod(String symbol, FunctionType type, boolean requiresRenderContext) {
     Type[] args =
         Streams.concat(
-                Stream.of(BytecodeUtils.RENDER_CONTEXT_TYPE),
+                requiresRenderContext
+                    ? Stream.of(BytecodeUtils.RENDER_CONTEXT_TYPE)
+                    : Stream.empty(),
                 type.getParameters().stream().map(p -> getRuntimeType(p.getType()).runtimeType()))
             .toArray(Type[]::new);
     return new Method(symbol, getRuntimeType(type.getReturnType()).runtimeType(), args);
@@ -324,7 +344,7 @@ public final class ExternCompiler {
       return actualParam.unboxAsStringOrJavaNull();
     } else if (!isObject
         && BytecodeUtils.isDefinitelyAssignableFrom(javaType, BytecodeUtils.IMMUTABLE_LIST_TYPE)) {
-      SoyType elmType = SoyTypes.getListElementType(nonNullableSoyType);
+      SoyType elmType = SoyTypes.getIterableElementType(nonNullableSoyType);
       SoyExpression unboxedList =
           actualParam.isBoxed() ? actualParam.unboxAsListOrJavaNull() : actualParam;
       switch (elmType.getKind()) {
@@ -336,6 +356,7 @@ public final class ExternCompiler {
           return JbcSrcExternRuntime.LIST_UNBOX_STRINGS.invoke(unboxedList);
         case BOOL:
           return JbcSrcExternRuntime.LIST_UNBOX_BOOLS.invoke(unboxedList);
+        case MESSAGE:
         case PROTO:
           return JbcSrcExternRuntime.LIST_UNBOX_PROTOS.invoke(unboxedList);
         case PROTO_ENUM:
@@ -423,8 +444,13 @@ public final class ExternCompiler {
         externCall = JbcSrcExternRuntime.MARK_AS_SOY_MAP.invoke(externCall);
       }
       return JbcSrcExternRuntime.CONVERT_OBJECT_TO_SOY_VALUE_PROVIDER.invoke(externCall);
-    } else if (BytecodeUtils.isDefinitelyAssignableFrom(BytecodeUtils.ITERABLE_TYPE, externType)) {
+    } else if (BytecodeUtils.isDefinitelyAssignableFrom(
+        BytecodeUtils.COLLECTION_TYPE, externType)) {
       return JbcSrcExternRuntime.LIST_BOX_VALUES.invoke(externCall);
+    } else if (BytecodeUtils.isDefinitelyAssignableFrom(BytecodeUtils.ITERABLE_TYPE, externType)) {
+      // TODO(jcg): Return as a lazy transforming SoyIterable.
+      return JbcSrcExternRuntime.CONVERT_OBJECT_TO_SOY_VALUE_PROVIDER.invoke(
+          JbcSrcExternRuntime.LIST_BOX_VALUES.invoke(externCall));
     } else if (externType.equals(BytecodeUtils.SAFE_URL_TYPE)) {
       return JbcSrcExternRuntime.CONVERT_SAFE_URL_TO_SOY_VALUE_PROVIDER.invoke(externCall);
     } else if (externType.equals(BytecodeUtils.SAFE_URL_PROTO_TYPE)) {

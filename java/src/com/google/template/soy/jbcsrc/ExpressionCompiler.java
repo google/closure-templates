@@ -17,6 +17,7 @@ package com.google.template.soy.jbcsrc;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.ITERATOR_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.LIST_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.NULL_POINTER_EXCEPTION_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_VALUE_PROVIDER_TYPE;
@@ -60,6 +61,7 @@ import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.exprtree.NullSafeAccessNode;
 import com.google.template.soy.exprtree.OperatorNodes.AmpAmpOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.AndOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.AsOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.AssertNonNullOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.BarBarOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.BitwiseAndOpNode;
@@ -70,6 +72,7 @@ import com.google.template.soy.exprtree.OperatorNodes.DivideByOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.EqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.GreaterThanOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.GreaterThanOrEqualOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.InstanceOfOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.LessThanOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.LessThanOrEqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.MinusOpNode;
@@ -82,6 +85,7 @@ import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ShiftLeftOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ShiftRightOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.SpreadOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TimesOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TripleEqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TripleNotEqualOpNode;
@@ -91,7 +95,6 @@ import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.exprtree.UndefinedNode;
 import com.google.template.soy.exprtree.VarRefNode;
-import com.google.template.soy.jbcsrc.ExpressionDetacher.BasicDetacher;
 import com.google.template.soy.jbcsrc.restricted.Branch;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
@@ -117,6 +120,8 @@ import com.google.template.soy.shared.internal.BuiltinMethod;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyMethod;
 import com.google.template.soy.shared.restricted.SoySourceFunctionMethod;
+import com.google.template.soy.soytree.ConstNode;
+import com.google.template.soy.soytree.JavaImplNode;
 import com.google.template.soy.soytree.PartialFileSetMetadata;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
@@ -125,6 +130,7 @@ import com.google.template.soy.soytree.defn.ImportedVar;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.ListType;
+import com.google.template.soy.types.SetType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
@@ -172,14 +178,15 @@ final class ExpressionCompiler {
         TemplateParameterLookup parameters,
         LocalVariableManager varManager,
         JavaSourceFunctionCompiler sourceFunctionCompiler,
-        PartialFileSetMetadata fileSetMetadata) {
+        PartialFileSetMetadata fileSetMetadata,
+        ExpressionDetacher detacher) {
       this.compilerVisitor =
           new CompilerVisitor(
               context,
               analysis,
               parameters,
               varManager,
-              BasicDetacher.INSTANCE,
+              detacher,
               sourceFunctionCompiler,
               fileSetMetadata,
               /* isConstantContext= */ false);
@@ -243,12 +250,17 @@ final class ExpressionCompiler {
               }
 
               @Override
+              public LocalVariable getStackFrame() {
+                throw unsupported();
+              }
+
+              @Override
               public Expression getParam(TemplateParam param) {
                 throw unsupported();
               }
 
               @Override
-              public Expression getParamsRecord() {
+              public Optional<Expression> getParamsRecord() {
                 throw unsupported();
               }
 
@@ -286,9 +298,16 @@ final class ExpressionCompiler {
       TemplateParameterLookup parameters,
       LocalVariableManager varManager,
       JavaSourceFunctionCompiler sourceFunctionCompiler,
-      PartialFileSetMetadata fileSetMetadata) {
+      PartialFileSetMetadata fileSetMetadata,
+      ExpressionDetacher detacher) {
     return new BasicExpressionCompiler(
-        context, analysis, parameters, varManager, sourceFunctionCompiler, fileSetMetadata);
+        context,
+        analysis,
+        parameters,
+        varManager,
+        sourceFunctionCompiler,
+        fileSetMetadata,
+        detacher);
   }
 
   /**
@@ -475,6 +494,19 @@ final class ExpressionCompiler {
       return SoyExpression.forInt(BytecodeUtils.constant(node.getValue()));
     }
 
+    @Override
+    protected SoyExpression visitAsOpNode(AsOpNode node) {
+      return SoyExpression.forSoyValue(
+          node.getType(), visit(node.getChild(0)).checkedSoyCast(node.getType()));
+    }
+
+    @Override
+    protected SoyExpression visitInstanceOfOpNode(InstanceOfOpNode node) {
+      SoyExpression value = visit(node.getChild(0));
+      SoyType operand = node.getChild(1).getType();
+      return value.instanceOf(operand);
+    }
+
     // Collection literals
 
     private static final Handle CONSTANT_LIST_HANDLE =
@@ -490,9 +522,24 @@ final class ExpressionCompiler {
 
     @Override
     protected SoyExpression visitListLiteralNode(ListLiteralNode node) {
+      if (node.containsSpreads()) {
+        // spreads require a different implementation since we need to accumulate into a builder
+        var builder = MethodRefs.IMMUTABLE_LIST_BUILDER.invoke();
+        for (ExprNode child : node.getChildren()) {
+          if (child instanceof SpreadOpNode) {
+            builder =
+                builder.invoke(
+                    MethodRefs.IMMUTABLE_LIST_BUILDER_ADD_ALL_ITERATOR,
+                    visit(((SpreadOpNode) child).getChild(0)).unboxAsIteratorUnchecked());
+          } else {
+            builder = builder.invoke(MethodRefs.IMMUTABLE_LIST_BUILDER_ADD, visit(child).box());
+          }
+        }
+        return SoyExpression.forList(
+            (ListType) node.getType(), builder.invoke(MethodRefs.IMMUTABLE_LIST_BUILDER_BUILD));
+      }
+
       var compiledChildren = visitChildren(node);
-      // TODO(lukes): this should really box the children as SoyValueProviders, we are boxing them
-      // anyway and could additionally delay detach generation. Ditto for RecordLiteralNode.
       var asList = SoyExpression.asBoxedValueProviderList(compiledChildren);
       var asListSoyExpression = SoyExpression.forList((ListType) node.getType(), asList);
       // lists show up in defaults and const expressions, special case those
@@ -523,33 +570,27 @@ final class ExpressionCompiler {
       ExprNode listExpr = node.getListExpr();
       SoyExpression soyList = visit(listExpr);
       // Don't care about nullishness since we always dereference the list
-      SoyExpression javaList = soyList.unboxAsListUnchecked();
       ExprNode mapExpr = node.getListItemTransformExpr();
       ExprNode filterExpr = node.getFilterExpr();
 
       String varName = node.getListIterVar().name();
       LocalVariableManager.Scope scope = varManager.enterScope();
-      LocalVariable listVar = scope.createTemporary(varName + "_input_list", LIST_TYPE);
-      Statement listVarInitializer = listVar.initialize(javaList);
+      LocalVariable iteratorVar = scope.createTemporary(varName + "_iterator", ITERATOR_TYPE);
+      Statement iteratorVarInitializer = iteratorVar.initialize(soyList.unboxAsIteratorUnchecked());
       LocalVariable resultVar = scope.createTemporary(varName + "_output_list", LIST_TYPE);
       Statement resultVarInitializer = resultVar.initialize(MethodRefs.ARRAY_LIST.invoke());
-      LocalVariable sizeVar = scope.createTemporary(varName + "_input_list_size", Type.INT_TYPE);
-      Statement sizeVarInitializer = sizeVar.initialize(listVar.invoke(MethodRefs.LIST_SIZE));
-      LocalVariable indexVar = scope.createTemporary(varName + "_index", Type.INT_TYPE);
-      Statement indexVarInitializer = indexVar.initialize(constant(0));
       LocalVariable itemVar =
           scope.createNamedLocal(node.getListIterVar().name(), SOY_VALUE_PROVIDER_TYPE);
       Statement itemVarInitializer =
           itemVar.initialize(
-              listVar.invoke(MethodRefs.LIST_GET, indexVar).checkedCast(SOY_VALUE_PROVIDER_TYPE));
+              MethodRefs.ITERATOR_NEXT.invoke(iteratorVar).checkedCast(SOY_VALUE_PROVIDER_TYPE));
       LocalVariable userIndexVar =
           node.getIndexVar() == null
               ? null
-              : scope.createNamedLocal(node.getIndexVar().name(), Type.LONG_TYPE);
+              : scope.createNamedLocal(node.getIndexVar().name(), Type.INT_TYPE);
       Statement userIndexVarInitializer =
-          userIndexVar == null
-              ? null
-              : userIndexVar.initialize(numericConversion(indexVar, Type.LONG_TYPE));
+          userIndexVar == null ? null : userIndexVar.initialize(constant(0));
+      Expression hasNext = MethodRefs.ITERATOR_HAS_NEXT.invoke(iteratorVar);
 
       // TODO: Consider compiling to a SoyValueProvider instead of boxing.
       Expression visitedMap = visit(mapExpr).box();
@@ -562,18 +603,16 @@ final class ExpressionCompiler {
 
       Generates byte code for a for loop that looks more or less like:
 
-      List<?> a_list = unwrap(...);
+      Iterator<?> a_iterator = unwrap(...);
       List<?> a_result = new ArrayList<>();
-      int a_length = a_list.size();
-      for (int a_i = 0; a_i < a_length; a_i++) {
-        Object a = a_list.get(a_i);
-        if (userIndexVar != null) {
-          int i = a_i;
-        }
+      int i = 0;
+      while (a_iterator.hasNext()) {
+        Object a = a_iterator.next();
         if (filterPredicate != null && !filterPredicate.test(a,i)) {
           continue;
         }
         a_result.add(mapFunction.apply(a,i));
+        i++;
       }
       return a_result;
 
@@ -583,10 +622,11 @@ final class ExpressionCompiler {
           new Expression(BytecodeUtils.LIST_TYPE, Features.of(Feature.NON_JAVA_NULLABLE)) {
             @Override
             protected void doGen(CodeBuilder adapter) {
-              listVarInitializer.gen(adapter); //   List<?> a_list = ...;
+              iteratorVarInitializer.gen(adapter); //   Iterator<?> a_iterator = ...;
               resultVarInitializer.gen(adapter); // List<?> a_result = new ArrayList<>();
-              sizeVarInitializer.gen(adapter); //   int a_length = a_list.size();
-              indexVarInitializer.gen(adapter); //  int a_i = 0;
+              if (userIndexVarInitializer != null) {
+                userIndexVarInitializer.gen(adapter); //  int i = 0;
+              }
 
               Label loopStart = new Label();
               Label loopContinue = new Label();
@@ -594,15 +634,10 @@ final class ExpressionCompiler {
 
               adapter.mark(loopStart);
 
-              indexVar.gen(adapter);
-              sizeVar.gen(adapter);
-              adapter.ifICmp(Opcodes.IFGE, loopEnd); // if (a_i >= a_length) break;
+              hasNext.gen(adapter);
+              adapter.ifZCmp(Opcodes.IFEQ, loopEnd); // while (a_iterator.hasNext()) {
 
-              itemVarInitializer.gen(adapter); // Object a = a_list.get(a_i);
-
-              if (userIndexVar != null) {
-                userIndexVarInitializer.gen(adapter); // int i = a_i;
-              }
+              itemVarInitializer.gen(adapter); // Object a = a_iterator.next();
 
               if (visitedFilter != null) {
                 visitedFilter
@@ -617,7 +652,9 @@ final class ExpressionCompiler {
 
               adapter.mark(loopContinue);
 
-              adapter.iinc(indexVar.index(), 1); // a_i++
+              if (userIndexVar != null) {
+                adapter.iinc(userIndexVar.index(), 1); // a_i++
+              }
               adapter.goTo(loopStart);
 
               adapter.mark(loopEnd);
@@ -631,9 +668,32 @@ final class ExpressionCompiler {
 
     @Override
     protected SoyExpression visitRecordLiteralNode(RecordLiteralNode node) {
+      Expression paramStore;
+      if (node.containsSpreads()) {
+        // The size here is just a guess.
+        paramStore = MethodRefs.PARAM_STORE_SIZE.invoke(constant(node.numChildren()));
+        for (int i = 0; i < node.numChildren(); i++) {
+          var child = node.getChild(i);
+          if (child instanceof SpreadOpNode) {
+            paramStore =
+                paramStore.invoke(
+                    MethodRefs.PARAM_STORE_SET_ALL,
+                    visit(((SpreadOpNode) child).getChild(0))
+                        .checkedCast(BytecodeUtils.SOY_RECORD_TYPE));
+          } else {
+            paramStore =
+                paramStore.invoke(
+                    MethodRefs.PARAM_STORE_SET_FIELD,
+                    BytecodeUtils.constantRecordProperty(node.getKey(i).identifier()),
+                    visit(child).box());
+          }
+        }
+      } else {
+        paramStore = recordLiteralAsParamStore(node);
+      }
       SoyExpression record =
           BytecodeUtils.newRecordImplFromParamStore(
-              node.getType(), node.getSourceLocation(), recordLiteralAsParamStore(node));
+              node.getType(), node.getSourceLocation(), paramStore);
       return isConstantContext ? record.toMaybeConstant() : record;
     }
 
@@ -703,9 +763,9 @@ final class ExpressionCompiler {
     protected SoyExpression visitMapLiteralFromListNode(MapLiteralFromListNode node) {
       return SoyExpression.forSoyValue(
           node.getType(),
-          MethodRefs.CONSTRUCT_MAP_FROM_LIST.invoke(
-              // constructMapFromList doesn't support null list params
-              visit(node.getListExpr()).unboxAsListUnchecked()));
+          MethodRefs.CONSTRUCT_MAP_FROM_ITERATOR.invoke(
+              // constructMapFromIterator doesn't support null list params
+              visit(node.getListExpr()).unboxAsIteratorUnchecked()));
     }
 
     // Comparison operators
@@ -1064,6 +1124,11 @@ final class ExpressionCompiler {
           SoyTypes.NUMBER_TYPE, MethodRefs.RUNTIME_NEGATIVE.invoke(child.box()));
     }
 
+    @Override
+    protected SoyExpression visitSpreadOpNode(SpreadOpNode node) {
+      throw new AssertionError("The parent should have handled this");
+    }
+
     // Boolean operators
 
     @Override
@@ -1216,9 +1281,9 @@ final class ExpressionCompiler {
     @Override
     SoyExpression visitForLoopVar(VarRefNode varRef, LocalVar local) {
       Expression expression = parameters.getLocal(local);
-      if (expression.resultType().equals(Type.LONG_TYPE)) {
-        // it can be an unboxed long when executing a foreach over a range
-        return SoyExpression.forInt(expression);
+      if (expression.resultType().equals(Type.INT_TYPE)) {
+        // The optional index var is an int.
+        return SoyExpression.forInt(numericConversion(expression, Type.LONG_TYPE));
       }
       return resolveVarRefNode(varRef, expression);
     }
@@ -1266,7 +1331,8 @@ final class ExpressionCompiler {
               renderContext.gen(adapter);
               adapter.visitInvokeDynamicInsn(
                   "create",
-                  ConstantsCompiler.getConstantMethod(importedVar.name(), importedVar.type())
+                  ConstantsCompiler.getConstantMethodWithRenderContext(
+                          importedVar.name(), importedVar.type())
                       .getDescriptor(),
                   GET_CONST_HANDLE,
                   typeInfo.className(),
@@ -1282,14 +1348,27 @@ final class ExpressionCompiler {
       SoyFileNode fileNode = context.getNearestAncestor(SoyFileNode.class);
       TypeInfo typeInfo =
           TypeInfo.createClass(Names.javaClassNameFromSoyNamespace(fileNode.getNamespace()));
-      MethodRef methodRef =
-          MethodRef.createStaticMethod(
-              typeInfo,
-              ConstantsCompiler.getConstantMethod(constVar.name(), constVar.type()),
-              MethodPureness.NON_PURE);
-      return SoyExpression.forRuntimeType(
-          ConstantsCompiler.getConstantRuntimeType(constVar.type()),
-          methodRef.invoke(parameters.getRenderContext()));
+      ConstNode constNode = (ConstNode) constVar.declaringNode();
+      boolean requiresRenderContext = !canCompileToConstant(constNode, constNode.getExpr());
+      var type = ConstantsCompiler.getConstantRuntimeType(constVar.type());
+      if (requiresRenderContext) {
+        MethodRef methodRef =
+            MethodRef.createStaticMethod(
+                typeInfo,
+                ConstantsCompiler.getConstantMethodWithRenderContext(
+                    constVar.name(), constVar.type()),
+                MethodPureness.PURE);
+        return SoyExpression.forRuntimeType(type, methodRef.invoke(parameters.getRenderContext()));
+      } else {
+        MethodRef methodRef =
+            MethodRef.createStaticMethod(
+                typeInfo,
+                ConstantsCompiler.getConstantMethodWithoutRenderContext(
+                    constVar.name(), constVar.type()),
+                MethodPureness.PURE);
+        // Constant fold the value into the callsite, no need to wait on the jit to inline the value
+        return SoyExpression.forRuntimeType(type, methodRef.invoke().toConstantExpression());
+      }
     }
 
     @Override
@@ -1301,7 +1380,7 @@ final class ExpressionCompiler {
     SoyExpression visitListComprehensionVar(VarRefNode varRef, ComprehensionVarDefn var) {
       // Index vars are always simple ints
       if (var.declaringNode().getIndexVar() == var) {
-        return SoyExpression.forInt(parameters.getLocal(var));
+        return SoyExpression.forInt(numericConversion(parameters.getLocal(var), Type.LONG_TYPE));
       }
       return resolveVarRefNode(varRef, parameters.getLocal(var));
     }
@@ -1430,15 +1509,6 @@ final class ExpressionCompiler {
             node, sourceMethod, ImmutableList.of(baseExpr), parameters, detacher);
       }
 
-      if (baseExpr.soyRuntimeType().isKnownProtoOrUnionOfProtos()) {
-        return ProtoUtils.accessField(
-            baseExpr,
-            node.getFieldName(),
-            node.getType(),
-            ProtoUtils.SingularFieldAccessMode.NULL_IF_UNSET,
-            varManager,
-            /* forceStringConversion= */ false);
-      }
       // Otherwise this must be a vanilla SoyRecord.  Box, call getField or getFieldProvider
       // depending on the resolution status.
       Expression fieldAccess;
@@ -1464,7 +1534,7 @@ final class ExpressionCompiler {
 
       Expression soyValueProvider;
       // Special case index lookups on lists to avoid boxing the int key.  Maps cannot be
-      // optimized the same way because there is no real way to 'unbox' a SoyMap.
+      // optimized the same way because there is no real way to 'unbox' a SoyLegacyObjectMap.
       if (baseExpr.soyRuntimeType().isKnownListOrUnionOfLists()) {
         SoyExpression list = baseExpr.unboxAsListUnchecked();
         SoyExpression index = keyExpr.unboxAsLong();
@@ -1562,11 +1632,17 @@ final class ExpressionCompiler {
             Expression expr = getMapGetExpression(baseExpr, node, visit(node.getParam(0)));
             return SoyExpression.forSoyValue(node.getType(), expr.checkedSoyCast(node.getType()));
           case BIND:
-            return SoyExpression.forSoyValue(
-                node.getType(),
-                MethodRefs.RUNTIME_BIND_TEMPLATE_PARAMS.invoke(
-                    baseExpr.checkedCast(BytecodeUtils.TEMPLATE_VALUE_TYPE),
-                    recordLiteralAsParamStore((RecordLiteralNode) node.getChild(1))));
+            {
+              var record = (RecordLiteralNode) node.getChild(1);
+              if (record.numChildren() == 0) {
+                return baseExpr;
+              }
+              return SoyExpression.forSoyValue(
+                  node.getType(),
+                  MethodRefs.RUNTIME_BIND_TEMPLATE_PARAMS.invoke(
+                      baseExpr.checkedCast(BytecodeUtils.TEMPLATE_VALUE_TYPE),
+                      recordLiteralAsParamStore(record)));
+            }
         }
       } else if (function instanceof SoySourceFunctionMethod) {
         SoySourceFunctionMethod sourceMethod = (SoySourceFunctionMethod) function;
@@ -1746,9 +1822,10 @@ final class ExpressionCompiler {
     }
 
     @Override
-    SoyExpression visitEmptyToNullFunction(FunctionNode node) {
+    SoyExpression visitEmptyToUndefinedFunction(FunctionNode node) {
       return SoyExpression.forSoyValue(
-          node.getType(), MethodRefs.RUNTIME_EMPTY_TO_NULL.invoke(visit(node.getParam(0)).box()));
+          node.getType(),
+          MethodRefs.RUNTIME_EMPTY_TO_UNDEFINED.invoke(visit(node.getParam(0)).box()));
     }
 
     @Override
@@ -1774,6 +1851,14 @@ final class ExpressionCompiler {
     SoyExpression visitIsTruthyNonEmptyFunction(FunctionNode node) {
       return SoyExpression.forBool(
           MethodRefs.SOY_VALUE_IS_TRUTHY_NON_EMPTY.invoke(visit(node.getParam(0)).box()));
+    }
+
+    @Override
+    SoyExpression visitNewSetFunction(FunctionNode node) {
+      Expression iterator = visit(node.getParam(0)).unboxAsIteratorUnchecked();
+      return SoyExpression.forSet(
+              (SetType) node.getType(), MethodRefs.IMMUTABLE_SET_COPY_OF.invoke(iterator))
+          .asNonJavaNullable();
     }
 
     // Non-builtin functions
@@ -1805,24 +1890,46 @@ final class ExpressionCompiler {
     private SoyExpression callExtern(ExternRef extern, List<ExprNode> params) {
       String namespace = fileSetMetadata.getNamespaceForPath(extern.path());
       TypeInfo externOwner = TypeInfo.createClass(Names.javaClassNameFromSoyNamespace(namespace));
-      Method asmMethod = ExternCompiler.buildMemberMethod(extern.name(), extern.signature());
-      MethodRef ref = MethodRef.createStaticMethod(externOwner, asmMethod, MethodPureness.NON_PURE);
       SoyRuntimeType soyReturnType =
           ExternCompiler.getRuntimeType(extern.signature().getReturnType());
       List<Expression> args = new ArrayList<>();
-      args.add(parameters.getRenderContext());
       for (int i = 0; i < params.size(); i++) {
         args.add(
             adaptExternArg(
                 visit(params.get(i)), extern.signature().getParameters().get(i).getType()));
       }
       // Dispatch directly for locally defined externs
-      if (namespace.equals(context.getNearestAncestor(SoyFileNode.class).getNamespace())) {
+      var soyFileNode = context.getNearestAncestor(SoyFileNode.class);
+      if (namespace.equals(soyFileNode.getNamespace())) {
+        var externNode =
+            soyFileNode.getExterns().stream()
+                .filter(
+                    e ->
+                        e.getIdentifier().identifier().equals(extern.name())
+                            && e.getType().equals(extern.signature()))
+                .findFirst()
+                .get();
+        boolean javaImplRequiresRenderContext =
+            externNode.getJavaImpl().map(JavaImplNode::requiresRenderContext).orElse(false);
+        if (javaImplRequiresRenderContext) {
+          args.add(0, parameters.getRenderContext());
+        }
+        Method asmMethod =
+            ExternCompiler.buildMemberMethod(
+                extern.name(), extern.signature(), javaImplRequiresRenderContext);
+        MethodRef ref =
+            MethodRef.createStaticMethod(externOwner, asmMethod, MethodPureness.NON_PURE);
         return SoyExpression.forRuntimeType(soyReturnType, ref.invoke(args));
       }
 
-      // For externs defined in other files use invoke dynamic so that we can support the
+      // For externs defined in other files use invokeDynamic so that we can support the
       // classloader fallback.
+      // To support those, we always need to pass the render context even when not otherwise
+      // required, so that we can dynamically resolve the target.
+      Method asmMethod =
+          ExternCompiler.buildMemberMethod(
+              extern.name(), extern.signature(), /* requiresRenderContext= */ true);
+      args.add(0, parameters.getRenderContext());
       Expression externCall =
           new Expression(soyReturnType.runtimeType()) {
             @Override
@@ -1868,6 +1975,8 @@ final class ExpressionCompiler {
           return soyExpression.unboxAsLong();
         } else if (nonNullableType.getKind() == Kind.LIST) {
           return soyExpression.unboxAsListOrJavaNull();
+        } else if (nonNullableType.getKind() == Kind.ITERABLE) {
+          return soyExpression.box().checkedCast(BytecodeUtils.SOY_ITERABLE_TYPE);
         } else if (javaType.equals(BytecodeUtils.SOY_VALUE_TYPE)) {
           return soyExpression.box().checkedCast(javaType);
         } else {
@@ -1981,9 +2090,6 @@ final class ExpressionCompiler {
       switch (node.getDefnDecl().kind()) {
         case COMPREHENSION_VAR:
           return true;
-        case PARAM:
-        case LOCAL_VAR:
-          return false;
         case CONST:
           // For consts we could allow references if they are in the same file and they themselves
           // are constants. However, this would require changing the calling convention so that
@@ -1996,6 +2102,8 @@ final class ExpressionCompiler {
           // For things like proto extensions and constructors we could allow references. But it
           // isn't clear that that is very useful. For cross file `const`s this isn't possible
           return false;
+        case PARAM:
+        case LOCAL_VAR:
         case EXTERN:
           return false;
         case TEMPLATE:

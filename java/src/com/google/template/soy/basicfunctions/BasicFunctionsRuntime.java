@@ -55,6 +55,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
@@ -81,10 +82,30 @@ public final class BasicFunctionsRuntime {
 
   /** Concatenates its arguments. */
   @Nonnull
-  public static ImmutableList<SoyValueProvider> concatLists(List<SoyList> args) {
+  public static ImmutableList<SoyValueProvider> concatLists(SoyList list1, SoyList list2) {
     ImmutableList.Builder<SoyValueProvider> flattened = ImmutableList.builder();
-    for (SoyList soyList : args) {
-      flattened.addAll(soyList.asJavaList());
+    return flattened.addAll(list1.asJavaList()).addAll(list2.asJavaList()).build();
+  }
+
+  /** Concatenates its arguments. */
+  @Nonnull
+  public static ImmutableList<SoyValueProvider> concatLists(
+      SoyList list1, SoyList list2, SoyList list3) {
+    ImmutableList.Builder<SoyValueProvider> flattened = ImmutableList.builder();
+    return flattened
+        .addAll(list1.asJavaList())
+        .addAll(list2.asJavaList())
+        .addAll(list3.asJavaList())
+        .build();
+  }
+
+  /** Concatenates its arguments. */
+  @Nonnull
+  public static ImmutableList<SoyValueProvider> concatLists(SoyList list1, List<SoyList> lists) {
+    ImmutableList.Builder<SoyValueProvider> flattened = ImmutableList.builder();
+    flattened.addAll(list1.asJavaList());
+    for (var list : lists) {
+      flattened.addAll(list.asJavaList());
     }
     return flattened.build();
   }
@@ -292,10 +313,6 @@ public final class BasicFunctionsRuntime {
         .collect(toImmutableList());
   }
 
-  public static int mapSize(SoyMap map) {
-    return map.size();
-  }
-
   @Nonnull
   public static SoyDict mapToLegacyObjectMap(SoyMap map) {
     Map<String, SoyValueProvider> keysCoercedToStrings = new HashMap<>();
@@ -331,7 +348,8 @@ public final class BasicFunctionsRuntime {
   }
 
   @Nullable
-  public static IntegerData parseInt(String str, int radix) {
+  public static IntegerData parseInt(String str, SoyValue radixVal) {
+    int radix = SoyValue.isNullish(radixVal) ? 10 : (int) radixVal.numberValue();
     if (radix < 2 || radix > 36) {
       return null;
     }
@@ -527,6 +545,8 @@ public final class BasicFunctionsRuntime {
   private static String joinHelper(List<SoyValue> values, String delimiter) {
     return values.stream()
         .filter(v -> v != null)
+        .flatMap(
+            v -> v instanceof SoyList ? ((SoyList) v).asResolvedJavaList().stream() : Stream.of(v))
         .filter(SoyValue::coerceToBoolean)
         .map(SoyValue::coerceToString)
         .collect(joining(delimiter));

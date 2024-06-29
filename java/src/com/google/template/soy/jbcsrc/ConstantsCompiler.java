@@ -33,6 +33,7 @@ import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
 import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
+import com.google.template.soy.jbcsrc.restricted.LocalVariable;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyRuntimeType;
 import com.google.template.soy.jbcsrc.restricted.Statement;
@@ -43,6 +44,7 @@ import com.google.template.soy.soytree.PartialFileSetMetadata;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.SoyType;
+import java.util.Optional;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -89,11 +91,15 @@ public final class ConstantsCompiler {
     return SoyRuntimeType.getUnboxedType(type).orElseGet(() -> SoyRuntimeType.getBoxedType(type));
   }
 
-  static Method getConstantMethod(String symbol, SoyType type) {
+  static Method getConstantMethodWithRenderContext(String symbol, SoyType type) {
     return new Method(
         symbol,
         getConstantRuntimeType(type).runtimeType(),
         new Type[] {BytecodeUtils.RENDER_CONTEXT_TYPE});
+  }
+
+  static Method getConstantMethodWithoutRenderContext(String symbol, SoyType type) {
+    return new Method(symbol, getConstantRuntimeType(type).runtimeType(), new Type[] {});
   }
 
   public void compile() {
@@ -101,23 +107,11 @@ public final class ConstantsCompiler {
         Names.javaClassNameFromSoyNamespace(
             constant.getNearestAncestor(SoyFileNode.class).getNamespace());
     TypeInfo javaClass = TypeInfo.createClass(javaClassName);
-    Method method = getConstantMethod(constant.getVar().name(), constant.getVar().type());
-    Type methodType = method.getReturnType();
+
+    Type methodType = getConstantRuntimeType(constant.getVar().type()).runtimeType();
 
     Label start = new Label();
     Label end = new Label();
-    TemplateVariableManager variableSet =
-        new TemplateVariableManager(
-            javaClass.type(),
-            method.getArgumentTypes(),
-            ImmutableList.of(StandardNames.RENDER_CONTEXT),
-            start,
-            end,
-            /* isStatic= */ true);
-    Expression renderContext = variableSet.getVariable(StandardNames.RENDER_CONTEXT);
-    RenderContextExpression renderContextExpr = new RenderContextExpression(renderContext);
-    TemplateParameterLookup variables = new ConstantVariables(variableSet, renderContextExpr);
-
     if (ExpressionCompiler.canCompileToConstant(constant, constant.getExpr())) {
       BasicExpressionCompiler constantCompiler =
           ExpressionCompiler.createConstantCompiler(
@@ -125,8 +119,8 @@ public final class ConstantsCompiler {
               ALL_RESOLVED,
               new SimpleLocalVariableManager(
                   javaClass.type(),
-                  method.getArgumentTypes(),
-                  ImmutableList.of("renderContext"),
+                  new Type[] {},
+                  ImmutableList.of(),
                   start,
                   end,
                   /* isStatic= */ true),
@@ -147,8 +141,28 @@ public final class ConstantsCompiler {
       Statement.returnExpression(value)
           .labelStart(start)
           .labelEnd(end)
-          .writeMethod(methodAccess(), method, writer);
+          .writeMethod(
+              methodAccess(),
+              getConstantMethodWithoutRenderContext(
+                  constant.getVar().name(), constant.getVar().type()),
+              writer);
     } else {
+      Method method =
+          getConstantMethodWithRenderContext(constant.getVar().name(), constant.getVar().type());
+      TemplateVariableManager variableSet =
+          new TemplateVariableManager(
+              javaClass.type(),
+              method.getArgumentTypes(),
+              ImmutableList.of(StandardNames.RENDER_CONTEXT),
+              start,
+              end,
+              /* isStatic= */ true);
+
+      Expression renderContext = variableSet.getVariable(StandardNames.RENDER_CONTEXT);
+      RenderContextExpression renderContextExpr = new RenderContextExpression(renderContext);
+      TemplateParameterLookup variables =
+          new ConstantVariables(variableSet, Optional.of(renderContextExpr));
+
       BasicExpressionCompiler expressionCompiler =
           ExpressionCompiler.createBasicCompiler(
               constant,
@@ -156,11 +170,15 @@ public final class ConstantsCompiler {
               variables,
               variableSet,
               javaSourceFunctionCompiler,
-              fileSetMetadata);
+              fileSetMetadata,
+              ExpressionDetacher.NullDetatcher.INSTANCE);
 
       SoyExpression buildConstValue = expressionCompiler.compile(constant.getExpr());
       Preconditions.checkArgument(
-          isDefinitelyAssignableFrom(buildConstValue.soyRuntimeType().runtimeType(), methodType));
+          isDefinitelyAssignableFrom(buildConstValue.soyRuntimeType().runtimeType(), methodType),
+          "Not assignable %s %s",
+          buildConstValue.soyRuntimeType(),
+          methodType);
 
       String constKey = javaClassName + "#" + constant.getVar().name();
 
@@ -226,16 +244,22 @@ public final class ConstantsCompiler {
 
   static final class ConstantVariables implements TemplateParameterLookup {
     private final TemplateVariableManager variableSet;
-    private final RenderContextExpression renderContext;
+    private final Optional<RenderContextExpression> renderContext;
 
-    ConstantVariables(TemplateVariableManager variableSet, RenderContextExpression renderContext) {
+    ConstantVariables(
+        TemplateVariableManager variableSet, Optional<RenderContextExpression> renderContext) {
       this.renderContext = renderContext;
       this.variableSet = variableSet;
     }
 
-    UnsupportedOperationException unsupported() {
+    static UnsupportedOperationException unsupported() {
       return new UnsupportedOperationException(
           "This method isn't supported in constants compilation context");
+    }
+
+    @Override
+    public LocalVariable getStackFrame() {
+      throw unsupported();
     }
 
     @Override
@@ -244,7 +268,7 @@ public final class ConstantsCompiler {
     }
 
     @Override
-    public Expression getParamsRecord() {
+    public Optional<Expression> getParamsRecord() {
       throw unsupported();
     }
 
@@ -261,7 +285,7 @@ public final class ConstantsCompiler {
 
     @Override
     public RenderContextExpression getRenderContext() {
-      return renderContext;
+      return renderContext.orElseThrow(ConstantVariables::unsupported);
     }
 
     @Override

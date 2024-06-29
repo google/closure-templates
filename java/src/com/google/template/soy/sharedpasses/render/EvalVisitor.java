@@ -21,7 +21,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.template.soy.shared.internal.SharedRuntime.bitwiseAnd;
 import static com.google.template.soy.shared.internal.SharedRuntime.bitwiseOr;
 import static com.google.template.soy.shared.internal.SharedRuntime.bitwiseXor;
-import static com.google.template.soy.shared.internal.SharedRuntime.constructMapFromList;
+import static com.google.template.soy.shared.internal.SharedRuntime.constructMapFromIterator;
 import static com.google.template.soy.shared.internal.SharedRuntime.dividedBy;
 import static com.google.template.soy.shared.internal.SharedRuntime.equal;
 import static com.google.template.soy.shared.internal.SharedRuntime.lessThan;
@@ -39,14 +39,15 @@ import static com.google.template.soy.shared.internal.SharedRuntime.tripleEqual;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableTable;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Iterators;
 import com.google.errorprone.annotations.ForOverride;
 import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.data.Dir;
 import com.google.template.soy.data.RecordProperty;
 import com.google.template.soy.data.SoyDataException;
+import com.google.template.soy.data.SoyIterable;
 import com.google.template.soy.data.SoyLegacyObjectMap;
-import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyProtoValue;
 import com.google.template.soy.data.SoyRecord;
@@ -58,6 +59,7 @@ import com.google.template.soy.data.SoyVisualElementData;
 import com.google.template.soy.data.TemplateValue;
 import com.google.template.soy.data.internal.ListImpl;
 import com.google.template.soy.data.internal.ParamStore;
+import com.google.template.soy.data.internal.SetImpl;
 import com.google.template.soy.data.internal.SoyMapImpl;
 import com.google.template.soy.data.internal.SoyRecordImpl;
 import com.google.template.soy.data.restricted.BooleanData;
@@ -89,6 +91,7 @@ import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.exprtree.NullSafeAccessNode;
 import com.google.template.soy.exprtree.OperatorNodes.AmpAmpOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.AndOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.AsOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.AssertNonNullOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.BarBarOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.BitwiseAndOpNode;
@@ -99,6 +102,7 @@ import com.google.template.soy.exprtree.OperatorNodes.DivideByOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.EqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.GreaterThanOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.GreaterThanOrEqualOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.InstanceOfOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.LessThanOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.LessThanOrEqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.MinusOpNode;
@@ -111,6 +115,7 @@ import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ShiftLeftOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ShiftRightOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.SpreadOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TimesOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TripleEqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TripleNotEqualOpNode;
@@ -127,7 +132,6 @@ import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.plugin.internal.JavaPluginExecContext;
 import com.google.template.soy.plugin.java.PluginInstances;
 import com.google.template.soy.plugin.java.RenderCssHelper;
-import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
 import com.google.template.soy.plugin.java.restricted.MethodSignature;
 import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
 import com.google.template.soy.shared.SoyCssRenamingMap;
@@ -148,6 +152,7 @@ import com.google.template.soy.types.UnionType;
 import com.ibm.icu.util.ULocale;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -316,7 +321,15 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
 
   @Override
   protected SoyValue visitListLiteralNode(ListLiteralNode node) {
-    List<SoyValue> values = this.visitChildren(node);
+    List<SoyValueProvider> values = new ArrayList<>();
+    for (ExprNode child : node.getChildren()) {
+      SoyValue val = visit(child);
+      if (child.getKind() == Kind.SPREAD_OP_NODE) {
+        Iterators.addAll(values, val.javaIterator());
+      } else {
+        values.add(val);
+      }
+    }
     return ListImpl.forProviderList(values);
   }
 
@@ -324,18 +337,20 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
   protected SoyValue visitListComprehensionNode(ListComprehensionNode node) {
     ExprNode listExpr = node.getListExpr();
     SoyValue listValue = visit(listExpr);
-    if (!(listValue instanceof SoyList)) {
-      throw RenderException.create(String.format("List expression is not a list: %s", listValue));
+    if (!(listValue instanceof SoyIterable)) {
+      throw RenderException.create(
+          String.format("Iterable expression is not iterable: %s", listValue));
     }
     ExprNode mapExpr = node.getListItemTransformExpr();
     ExprNode filterExpr = node.getFilterExpr();
     ComprehensionVarDefn itemName = node.getListIterVar();
     ImmutableList.Builder<SoyValueProvider> mappedValues = ImmutableList.builder();
-    List<? extends SoyValueProvider> list = ((SoyList) listValue).asJavaList();
-    for (int i = 0; i < list.size(); i++) {
-      env.bind(itemName, list.get(i));
+    Iterator<? extends SoyValueProvider> list = listValue.javaIterator();
+    int i = 0;
+    while (list.hasNext()) {
+      env.bind(itemName, list.next());
       if (node.getIndexVar() != null) {
-        env.bind(node.getIndexVar(), SoyValueConverter.INSTANCE.convert(i));
+        env.bind(node.getIndexVar(), SoyValueConverter.INSTANCE.convert(i++));
       }
       if (filterExpr != null) {
         if (!visit(filterExpr).coerceToBoolean()) {
@@ -354,9 +369,20 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
 
     ParamStore map = new ParamStore(numItems);
     for (int i = 0; i < numItems; i++) {
-      map.setField(RecordProperty.get(node.getKey(i).identifier()), visit(node.getChild(i)));
+      ExprNode child = node.getChild(i);
+      SoyValue value = visit(child);
+      if (child.getKind() == Kind.SPREAD_OP_NODE && value instanceof SoyRecord) {
+        ((SoyRecord) value).forEach(map::setField);
+      } else {
+        map.setField(RecordProperty.get(node.getKey(i).identifier()), value);
+      }
     }
     return new SoyRecordImpl(map);
+  }
+
+  @Override
+  protected SoyValue visitSpreadOpNode(SpreadOpNode node) {
+    return visit(node.getChild(0));
   }
 
   @Override
@@ -380,8 +406,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     ExprNode listExpr = node.getListExpr();
     SoyValue listValue = visit(listExpr);
     try {
-      List<? extends SoyValueProvider> list = ((SoyList) listValue).asJavaList();
-      return constructMapFromList(list);
+      return constructMapFromIterator(listValue.javaIterator());
     } catch (IllegalArgumentException e) {
       throw RenderException.create(
           e.getMessage() + " at " + node.getListExpr().getSourceLocation(), e);
@@ -518,9 +543,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     // SoyProtoValue.getFieldProviderInternal() and AbstractDict.getField() return null instead
     // of NullData.
     // TODO(user): Consider cleaning up the null / NullData inconsistencies.
-    if (value != null
-        && !TofuTypeChecks.isInstance(
-            fieldAccess.getType(), value, fieldAccess.getSourceLocation())) {
+    if (value != null && !TofuTypeChecks.isInstance(fieldAccess.getType(), value)) {
       throw RenderException.create(
           String.format(
               "Expected value of type '%s', but actual type was '%s'.",
@@ -581,9 +604,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
 
     SoyValue value = ((SoyLegacyObjectMap) base).getItem(key);
 
-    if (value != null
-        && !TofuTypeChecks.isInstance(
-            itemAccess.getType(), value, itemAccess.getSourceLocation())) {
+    if (value != null && !TofuTypeChecks.isInstance(itemAccess.getType(), value)) {
       throw RenderException.create(
           String.format(
               "Expected value of type '%s', but actual type was '%s'.",
@@ -648,10 +669,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
           TemplateValue template = (TemplateValue) base;
           ParamStore params = ParamStore.fromRecord((SoyRecord) visit(methodNode.getParam(0)));
           return TemplateValue.createWithBoundParameters(
-              template.getTemplateName(),
-              template.getBoundParameters().isPresent()
-                  ? ParamStore.merge(template.getBoundParameters().get(), params)
-                  : params);
+              template.getTemplateName(), ParamStore.merge(template.getBoundParameters(), params));
       }
     } else if (method instanceof SoySourceFunctionMethod) {
       SoySourceFunctionMethod sourceMethod = (SoySourceFunctionMethod) method;
@@ -855,6 +873,17 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     return visit(Iterables.getOnlyElement(node.getChildren()));
   }
 
+  @Override
+  protected SoyValue visitAsOpNode(AsOpNode node) {
+    return visit(node.getChild(0));
+  }
+
+  @Override
+  protected SoyValue visitInstanceOfOpNode(InstanceOfOpNode node) {
+    SoyValue operand0 = visit(node.getChild(0));
+    return BooleanData.forValue(TofuTypeChecks.isInstance(node.getChild(1).getType(), operand0));
+  }
+
   // -----------------------------------------------------------------------------------------------
   // Implementations for functions.
 
@@ -893,7 +922,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
           return UNDEFINED_VE_DATA;
         case VE_DEF:
           return UNDEFINED_VE;
-        case EMPTY_TO_NULL:
+        case EMPTY_TO_UNDEFINED:
           {
             var value = visit(node.getParam(0));
             return value.stringValue().isEmpty() ? UndefinedData.INSTANCE : value;
@@ -907,6 +936,8 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
           return BooleanData.forValue(visit(node.getParam(0)).hasContent());
         case IS_TRUTHY_NON_EMPTY:
           return BooleanData.forValue(visit(node.getParam(0)).isTruthyNonEmpty());
+        case NEW_SET:
+          return visitNewSetFunction(node);
         case MSG_WITH_ID:
         case REMAINDER:
           // should have been removed earlier in the compiler
@@ -1123,6 +1154,10 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
   private SoyValue visitToFloatFunction(FunctionNode node) {
     IntegerData v = (IntegerData) visit(node.getParam(0));
     return FloatData.forValue((double) v.longValue());
+  }
+
+  private SoyValue visitNewSetFunction(FunctionNode node) {
+    return new SetImpl(visit(node.getParam(0)));
   }
 
   @Override

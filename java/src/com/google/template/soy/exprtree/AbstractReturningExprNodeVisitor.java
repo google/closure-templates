@@ -23,6 +23,7 @@ import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
 import com.google.template.soy.exprtree.OperatorNodes.AmpAmpOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.AndOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.AsOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.AssertNonNullOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.BarBarOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.BitwiseAndOpNode;
@@ -33,6 +34,7 @@ import com.google.template.soy.exprtree.OperatorNodes.DivideByOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.EqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.GreaterThanOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.GreaterThanOrEqualOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.InstanceOfOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.LessThanOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.LessThanOrEqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.MinusOpNode;
@@ -45,6 +47,7 @@ import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ShiftLeftOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ShiftRightOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.SpreadOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TimesOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TripleEqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TripleNotEqualOpNode;
@@ -100,6 +103,8 @@ public abstract class AbstractReturningExprNodeVisitor<R>
         return visitStringNode((StringNode) node);
       case PROTO_ENUM_VALUE_NODE:
         return visitProtoEnumValueNode((ProtoEnumValueNode) node);
+      case TYPE_LITERAL_NODE:
+        return visitTypeLiteralNode((TypeLiteralNode) node);
 
       case LIST_LITERAL_NODE:
         return visitListLiteralNode((ListLiteralNode) node);
@@ -183,6 +188,12 @@ public abstract class AbstractReturningExprNodeVisitor<R>
         return visitBitwiseXorOpNode((BitwiseXorOpNode) node);
       case BITWISE_AND_OP_NODE:
         return visitBitwiseAndOpNode((BitwiseAndOpNode) node);
+      case SPREAD_OP_NODE:
+        return visitSpreadOpNode((SpreadOpNode) node);
+      case INSTANCE_OF_OP_NODE:
+        return visitInstanceOfOpNode((InstanceOfOpNode) node);
+      case AS_OP_NODE:
+        return visitAsOpNode((AsOpNode) node);
 
       case FUNCTION_NODE:
         return visitFunctionNode((FunctionNode) node);
@@ -241,6 +252,10 @@ public abstract class AbstractReturningExprNodeVisitor<R>
   }
 
   protected R visitProtoEnumValueNode(ProtoEnumValueNode node) {
+    return visitPrimitiveNode(node);
+  }
+
+  protected R visitTypeLiteralNode(TypeLiteralNode node) {
     return visitPrimitiveNode(node);
   }
 
@@ -413,7 +428,19 @@ public abstract class AbstractReturningExprNodeVisitor<R>
     return visitOperatorNode(node);
   }
 
+  protected R visitSpreadOpNode(SpreadOpNode node) {
+    return visitOperatorNode(node);
+  }
+
   protected R visitNullCoalescingOpNode(NullCoalescingOpNode node) {
+    return visitOperatorNode(node);
+  }
+
+  protected R visitInstanceOfOpNode(InstanceOfOpNode node) {
+    return visitOperatorNode(node);
+  }
+
+  protected R visitAsOpNode(AsOpNode node) {
     return visitOperatorNode(node);
   }
 

@@ -22,6 +22,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.errorprone.annotations.ForOverride;
+import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
@@ -56,6 +57,15 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
     return new BufferingAppendable();
   }
 
+  /**
+   * Returns a {@link BufferingAppendable} that renders everything to a buffer that can be accessed
+   * via {@link BufferingAppendable#toString()} or {@link BufferingAppendable#getAndClearBuffer()}
+   */
+  @Nonnull
+  public static BufferingAppendable buffering(ContentKind kind) {
+    return new BufferingAppendable(kind);
+  }
+
   /** Returns a {@link LoggingAdvisingAppendable} that delegates to an {@link Appendable} */
   public static LoggingAdvisingAppendable delegating(Appendable appendable) {
     return new DelegatingToAppendable<>(appendable);
@@ -73,6 +83,16 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
   private static final class StringCoercingAppendable extends ForwardingLoggingAdvisingAppendable {
     StringCoercingAppendable(LoggingAdvisingAppendable delegate) {
       super(delegate);
+    }
+
+    @Override
+    protected LoggingAdvisingAppendable notifyKindAndDirectionality(
+        ContentKind kind, @Nullable Dir direction) {
+      delegate.setKindAndDirectionality(kind, direction);
+      if (kind == ContentKind.TEXT) {
+        return delegate;
+      }
+      return this;
     }
 
     @Override
@@ -134,12 +154,11 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
    */
   @Nonnull
   @CanIgnoreReturnValue
-  public final LoggingAdvisingAppendable setKindAndDirectionality(ContentKind kind)
-      throws IOException {
+  public LoggingAdvisingAppendable setKindAndDirectionality(ContentKind kind) {
     if (this.kind == null) {
       this.kind = kind;
       var direction = this.contentDir = kind.getDefaultDir();
-      notifyKindAndDirectionality(kind, direction);
+      return notifyKindAndDirectionality(kind, direction);
     }
     return this;
   }
@@ -155,12 +174,12 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
   @CanIgnoreReturnValue
   @Nonnull
   public final LoggingAdvisingAppendable setKindAndDirectionality(
-      ContentKind kind, @Nullable Dir direction) throws IOException {
+      ContentKind kind, @Nullable Dir direction) {
     checkNotNull(kind);
     if (this.kind == null) {
       this.kind = kind;
       this.contentDir = direction;
-      notifyKindAndDirectionality(kind, direction);
+      return notifyKindAndDirectionality(kind, direction);
     }
     return this;
   }
@@ -172,8 +191,10 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
    * @see #setKindAndDirectionality(ContentKind, Dir)
    */
   @ForOverride
-  protected void notifyKindAndDirectionality(ContentKind kind, @Nullable Dir direction)
-      throws IOException {}
+  protected LoggingAdvisingAppendable notifyKindAndDirectionality(
+      ContentKind kind, @Nullable Dir direction) {
+    return this;
+  }
 
   /**
    * Returns the content kind of this appendable.
@@ -219,23 +240,24 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
     }
 
     @Override
-    protected final void doAppend(CharSequence s) throws IOException {
+    protected void doAppend(CharSequence s) throws IOException {
       delegate.append(s);
     }
 
     @Override
-    protected final void doAppend(CharSequence s, int start, int end) throws IOException {
+    protected void doAppend(CharSequence s, int start, int end) throws IOException {
       delegate.append(s, start, end);
     }
 
     @Override
-    protected final void doAppend(char c) throws IOException {
+    protected void doAppend(char c) throws IOException {
       delegate.append(c);
     }
 
     @Override
     protected void doAppendLoggingFunctionInvocation(
-        LoggingFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers) {
+        LoggingFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers)
+        throws IOException {
       escapePlaceholder(funCall.placeholderValue(), escapers);
     }
 
@@ -251,13 +273,49 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
     }
 
     @Override
-    public void flushBuffers(int depth) {
+    public void flushBuffers(int depth) throws IOException {
       throw new AssertionError("should not be called");
     }
   }
 
+  /** A buffer of commands that can be replayed on a {@link LoggingAdvisingAppendable}. */
+  @Immutable
+  public static final class CommandBuffer {
+    // There is no common supertype of all the commands but they are all deeply immutable.
+    @SuppressWarnings("Immutable")
+    private final ImmutableList<Object> commands;
+
+    private CommandBuffer(ImmutableList<Object> commands) {
+      this.commands = commands;
+    }
+
+    public void replayOn(LoggingAdvisingAppendable appendable) throws IOException {
+      BufferingAppendable.replayOn(commands, appendable);
+    }
+
+    boolean hasContent() {
+      for (var command : commands) {
+        // BufferingAppendable only adds non-empty strings to the command list.
+        if (command instanceof String) {
+          return true;
+        }
+        // NOTE: we don't need to check logging functions, because CommandBuffers are only created
+        // for HTML and ATTRIBUTES, and logging functions are only used for attribute_values.  So to
+        // see one we must have already seen at least an `=` character and returned above.
+      }
+      return false;
+    }
+
+    @Override
+    public String toString() {
+      StringBuilder builder = new StringBuilder();
+      BufferingAppendable.appendCommandsToBuilder(commands, builder);
+      return builder.toString();
+    }
+  }
+
   /** A {@link LoggingAdvisingAppendable} that renders to a string builder. */
-  public static final class BufferingAppendable extends DelegatingToAppendable<StringBuilder> {
+  public static class BufferingAppendable extends DelegatingToAppendable<StringBuilder> {
 
     private static final Object EXIT_LOG_STATEMENT_MARKER = new Object();
     // lazily allocated list that contains one of 7 types of objects, each which corresponds to one
@@ -271,8 +329,13 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
     //   setSanitizedContentDirectionality with a null parameter
     private List<Object> commands;
 
-    BufferingAppendable() {
+    protected BufferingAppendable() {
       super(new StringBuilder());
+    }
+
+    protected BufferingAppendable(SanitizedContent.ContentKind kind) {
+      this();
+      setKindAndDirectionality(kind);
     }
 
     /**
@@ -305,31 +368,41 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
 
     @Override
     protected void doAppendLoggingFunctionInvocation(
-        LoggingFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers) {
+        LoggingFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers)
+        throws IOException {
       getCommandsAndAddPendingStringData().add(LoggingFunctionCommand.create(funCall, escapers));
     }
 
     public void replayOn(LoggingAdvisingAppendable appendable) throws IOException {
       if (getSanitizedContentKind() != null) {
-        appendable.setKindAndDirectionality(
-            getSanitizedContentKind(), getSanitizedContentDirectionality());
+        appendable =
+            appendable.setKindAndDirectionality(
+                getSanitizedContentKind(), getSanitizedContentDirectionality());
       }
+      var commands = this.commands;
       if (commands != null) {
-        for (Object o : getCommandsAndAddPendingStringData()) {
-          if (o instanceof String) {
-            appendable.append((String) o);
-          } else if (o instanceof LoggingFunctionCommand) {
-            ((LoggingFunctionCommand) o).replayOn(appendable);
-          } else if (o == EXIT_LOG_STATEMENT_MARKER) {
-            appendable.exitLoggableElement();
-          } else if (o instanceof LogStatement) {
-            appendable.enterLoggableElement((LogStatement) o);
-          } else {
-            throw new AssertionError("unexpected command object: " + o);
-          }
-        }
-      } else {
+        replayOn(commands, appendable);
+      }
+      var delegate = this.delegate;
+      if (delegate.length() != 0) {
         appendable.append(delegate);
+      }
+    }
+
+    private static void replayOn(List<Object> commands, LoggingAdvisingAppendable appendable)
+        throws IOException {
+      for (Object o : commands) {
+        if (o instanceof String) {
+          appendable.append((String) o);
+        } else if (o instanceof LoggingFunctionCommand) {
+          ((LoggingFunctionCommand) o).replayOn(appendable);
+        } else if (o == EXIT_LOG_STATEMENT_MARKER) {
+          appendable.exitLoggableElement();
+        } else if (o instanceof LogStatement) {
+          appendable.enterLoggableElement((LogStatement) o);
+        } else {
+          throw new AssertionError("unexpected command object: " + o);
+        }
       }
     }
 
@@ -346,12 +419,53 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
       return value;
     }
 
+    /**
+     * Returns the content as a {@link SoyValue}. Callers should prefer calling {@code
+     * getAsSanitizedContent} or {@code getAsStringData} when they can.
+     */
+    @Nonnull
     public SoyValue getAsSoyValue() {
+      var kind = getSanitizedContentKind();
       // Null will happen for default empty deltemplates.
-      return (getSanitizedContentKind() == ContentKind.TEXT || getSanitizedContentKind() == null)
-          ? StringData.forValue(toString())
-          : SanitizedContent.create(
-              toString(), getSanitizedContentKind(), getSanitizedContentDirectionality());
+      if (kind == null || kind == ContentKind.TEXT) {
+        return getAsStringData();
+      } else {
+        return getAsSanitizedContent();
+      }
+    }
+
+    @Nonnull
+    public SanitizedContent getAsSanitizedContent() {
+      var kind = getSanitizedContentKind();
+      if (kind == null || kind == ContentKind.TEXT) {
+        throw new IllegalStateException("not a sanitized content kind: " + kind);
+      }
+      var dir = getSanitizedContentDirectionality();
+      if (kind == ContentKind.HTML || kind == ContentKind.ATTRIBUTES) {
+        var commands = this.commands;
+        if (commands == null) {
+          return SanitizedContent.create(delegate.toString(), kind, dir);
+        }
+        return SanitizedContent.create(
+            new CommandBuffer(ImmutableList.copyOf(getCommandsAndAddPendingStringData())),
+            kind,
+            dir);
+      } else {
+        return SanitizedContent.create(toString(), kind, dir);
+      }
+    }
+
+    @Nonnull
+    public StringData getAsStringData() {
+      // all kinds can be coerced to string data, no need to check
+      var commands = this.commands;
+      if (commands == null) {
+        return StringData.forValue(delegate.toString());
+      }
+      // This case is entirely about soy element style calls passing logging functions to
+      // callees.  Possibly we should disallow that?
+      return StringData.forValue(
+          new CommandBuffer(ImmutableList.copyOf(getCommandsAndAddPendingStringData())));
     }
 
     @Override
@@ -376,6 +490,7 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
           LoggingFunctionCommand command = (LoggingFunctionCommand) o;
           builder.append(escapePlaceholder(command.fn().placeholderValue(), command.escapers()));
         }
+        // ignore the logging statements
       }
     }
 

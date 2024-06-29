@@ -18,17 +18,27 @@ package com.google.template.soy.soytree.defn;
 
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.exprtree.AbstractVarDefn;
+import com.google.template.soy.soytree.SoyNode.FileVarNode;
 import com.google.template.soy.types.SoyType;
 
 /** A file-level constant declaration. */
 public final class ConstVar extends AbstractVarDefn {
 
-  public ConstVar(String name, SourceLocation nameLocation, SoyType type) {
+  private final FileVarNode declaringNode;
+
+  public ConstVar(
+      String name, SourceLocation nameLocation, FileVarNode declaringNode, SoyType type) {
     super(name, nameLocation, type);
+    this.declaringNode = declaringNode;
   }
 
-  public ConstVar(ConstVar localVar) {
+  public ConstVar(ConstVar localVar, FileVarNode declaringNode) {
     super(localVar);
+    this.declaringNode = declaringNode;
+  }
+
+  public FileVarNode declaringNode() {
+    return declaringNode;
   }
 
   @Override

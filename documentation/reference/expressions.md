@@ -104,6 +104,11 @@ For example:
 *   `[]` empty list
 *   `['a', 'b']` list containing two elements
 
+You can use the `...` operator to spread one or more lists inside a list
+literal.
+
+*   `{let $l2: [1, 2, ...$l1] /}`
+
 ### map {#map}
 
 There are two different syntaxes for creating map literals. They are both
@@ -139,6 +144,11 @@ identifier. For example,
 
 Empty records are not allowed.
 
+You can use the `...` operator to spread one or more records inside a record
+literal.
+
+*   `{let $r2: record(...$r1, key: 'value') /}`
+
 ## Variables
 
 ### Parameters and locals
@@ -165,13 +175,13 @@ Here are the supported operators, listed in decreasing order of precedence
 3.  `*` `/` `%`
 4.  `+` `-`(binary)
 5.  `>>` `<<`
-6.  `<` `>` `<=` `>=`
+6.  `<` `>` `<=` `>=` `instanceof`
 7.  `==` `!=`
 8.  `&`
 9.  `^`
 10. `|`
 11. `&&` `and`
-12. `||` `or` `??`
+12. `||` `or` `??` `...` `as`
 13. `? :`(ternary)
 
 The Soy programming language respects the order of evaluation indicated
@@ -229,6 +239,48 @@ There is no 'index out of bounds' error for lists.
 
 Warning: The "short-circuiting" caveat described above (for `?.`) applies here
 as well. For example, the expression `$foo?[$bar] > 0` is *not* safe.
+
+### Casting and type testing
+
+The `instanceof` operator performs a runtime check on the type of an expression.
+This can be very useful when handling values with union, `any`, or `?` types.
+
+```soy
+{@param stringOrHtml: string|html}
+{if $stringOrHtml instanceof string}
+  // handle string
+{else}
+  // handle html
+{/if}
+```
+
+The left hand side of the operator may be any of these values:
+
+*   Primitive types: `number`, `string`, `bool`
+*   Collection types: `list`, `map` (omitting generics)
+*   Sanitized content types: `html`, `attributes`, `css`, `js`, `uri`,
+    `trusted_resource_uri`
+*   Protobuf types: `Message`, a specific protobuf message type
+
+The `as` operator can be used to force the Soy compiler to treat an expression
+as a particular type. This can be useful in places where the Soy compiler's type
+narrowing cannot determine an expression's type, or if the developer knows
+something that the compiler doesn't.
+
+```soy {highlight="as html,1"}
+{@param stringOrHtml: ?}
+{if $stringOrHtml instanceof string}
+  {$stringOrHtml.length}
+{else}
+  {lengthOfHtmlExtern($stringOrHtml as html)}
+{/if}
+```
+
+**WARNING:** Using the `as` operator can result in runtime errors if the value
+is not actually the corresponding type.
+
+**WARNING:** The `as` operator is not type coercion. `(123 as
+string).indexOf('2')` will fail at runtime.
 
 ### Non-null assertion operator `!` {#nonnull-assertion}
 
@@ -359,7 +411,7 @@ semantics:
 
 *   `&&` The first operand is returned if it is falsey, otherwise the second is
     returned;
-*   `||`` The first operand is returned if it is truthy, otherwise the second is
+*   `||` The first operand is returned if it is truthy, otherwise the second is
     returned;
 
 When used with booleans, the result is boolean logic "and" and "or" operations.
@@ -423,9 +475,19 @@ For example,
 
 *   `$foo ?? 0`
 
+### Spread operator `...` {#spread-operator}
+
+The spread operator `...` allows you to expand the contents of a list into
+another list literal, or the contents of a record into another record literal.
+
+For example,
+
+*   `[1, 2, ...$list1, 3, 4, ...$list2]`
+*   `record(k1: 'v1', ...$rec1, k2: 'v2', ...$rec2)`
+
 ### Ternary operator `? :` {#ternary-operator}
 
-Ternary conditional operator ? : uses the boolean value of one expression to
+Ternary conditional operator `? :` uses the boolean value of one expression to
 decide which of two other expressions should be evaluated.
 
 For example,

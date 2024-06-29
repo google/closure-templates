@@ -528,6 +528,52 @@ public class SoyConformanceTest {
   }
 
   @Test
+  public void bannedHtmlTagWithExemptedAttributes() {
+    String check =
+        "requirement: {\n"
+            + "  banned_html_tag: {\n"
+            + "    tag: 'script'\n"
+            + "    exempt_attribute: {\n"
+            + "      name: 'type'\n"
+            + "      value: 'application/ld+json'\n"
+            + "    }\n"
+            + "    exempt_attribute: {\n"
+            + "      name: 'keyA'\n"
+            + "    }\n"
+            + "  }\n"
+            + "  error_message: 'foo'"
+            + "}";
+
+    assertNoViolation(
+        check,
+        "{namespace ns}\n"
+            + "{template bar}\n"
+            + "  <script type=\"application/ld+json\"></script>\n"
+            + "  <script keyA></script>\n"
+            + "  <script keyA src=\"foo.js\"></script>\n"
+            + "  <script keyA=\"\"></script>\n"
+            + "  <script keyA=\"anything\"></script>\n"
+            + "{/template}");
+
+    assertViolation(
+        check, "{namespace ns}\n" + "{template bar}\n" + "  <script></script>\n" + "{/template}");
+
+    assertViolation(
+        check,
+        "{namespace ns}\n"
+            + "{template bar}\n"
+            + "  <script src =\"foo.js\"></script>\n"
+            + "{/template}");
+
+    assertViolation(
+        check,
+        "{namespace ns}\n"
+            + "{template bar}\n"
+            + "  <script type=\"module\"></script>\n"
+            + "{/template}");
+  }
+
+  @Test
   public void testBanInlineEventHandlers() {
     assertViolation(
         "requirement: {\n"
@@ -862,6 +908,11 @@ public class SoyConformanceTest {
     return Iterables.getOnlyElement(violations);
   }
 
+  private void assertViolations(String textProto, String input, int size) {
+    ImmutableList<SoyError> violations = getViolations(textProto, input);
+    assertThat(violations).hasSize(size);
+  }
+
   private void assertNoViolation(String textProto, String input) {
     ImmutableList<SoyError> violations = getViolations(textProto, input);
     assertThat(violations).isEmpty();
@@ -882,7 +933,7 @@ public class SoyConformanceTest {
 
   private ImmutableList<SoyError> getViolations(String textProto, SoyFileSetParserBuilder builder) {
     ValidatedConformanceConfig config = parseConfigProto(textProto);
-    ErrorReporter errorReporter = ErrorReporter.createForTest();
+    ErrorReporter errorReporter = ErrorReporter.create();
     builder.setConformanceConfig(config).errorReporter(errorReporter).parse();
     ImmutableList<SoyError> errors = errorReporter.getErrors();
     Set<SoyErrorKind> expectedErrorKinds = new HashSet<>();

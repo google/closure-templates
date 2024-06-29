@@ -159,7 +159,7 @@ public final class CombineConsecutiveRawTextNodesPassTest {
             + "// special case for finishing in the wrong block\n"
             + "{/template}";
 
-    ErrorReporter boomForTest = ErrorReporter.createForTest();
+    ErrorReporter boomForTest = ErrorReporter.create();
     SoyFileSetNode soyFileSetNode =
         SoyFileSetParserBuilder.forFileContents(testFileContent)
             .runAutoescaper(true)

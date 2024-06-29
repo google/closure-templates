@@ -31,6 +31,7 @@ import java.util.Collection;
 import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiConsumer;
 import javax.annotation.Nonnull;
 
 /**
@@ -38,12 +39,22 @@ import javax.annotation.Nonnull;
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  */
-public final class ParamStore extends IdentityHashMap<RecordProperty, SoyValueProvider> {
+public final class ParamStore extends IdentityHashMap<RecordProperty, SoyValueProvider>
+    implements BiConsumer<RecordProperty, SoyValueProvider> {
 
   public static ParamStore merge(ParamStore store1, ParamStore store2) {
-    var newStore = new ParamStore(store1.size() + store2.size());
-    store1.forEach(newStore::setFieldCritical);
-    store2.forEach(newStore::setFieldCritical);
+    // Merging with empty stores is common due to the way we bind template literals.
+    var store1Size = store1.size();
+    if (store1Size == 0) {
+      return store2;
+    }
+    var store2Size = store2.size();
+    if (store2Size == 0) {
+      return store1;
+    }
+    var newStore = new ParamStore(store1Size + store2Size);
+    store1.forEach(newStore);
+    store2.forEach(newStore);
     return newStore.freeze();
   }
 
@@ -52,7 +63,7 @@ public final class ParamStore extends IdentityHashMap<RecordProperty, SoyValuePr
       return ((SoyRecordImpl) record).getParamStore();
     }
     var newStore = new ParamStore(record.recordSize());
-    record.forEach(newStore::setFieldCritical);
+    record.forEach(newStore);
     return newStore.freeze();
   }
 
@@ -60,7 +71,7 @@ public final class ParamStore extends IdentityHashMap<RecordProperty, SoyValuePr
 
   public ParamStore(ParamStore backingStore, int size) {
     super(backingStore.size() + size);
-    backingStore.forEach(super::put);
+    backingStore.forEach(this);
   }
 
   public ParamStore(int size) {
@@ -109,6 +120,13 @@ public final class ParamStore extends IdentityHashMap<RecordProperty, SoyValuePr
     Preconditions.checkNotNull(valueProvider);
     SoyValueProvider previous = super.put(name, valueProvider);
     checkState(previous == null, "value already set for param %s", name);
+    return this;
+  }
+
+  @CanIgnoreReturnValue
+  public ParamStore setAll(SoyRecord record) {
+    checkState(!frozen);
+    record.forEach(this);
     return this;
   }
 
@@ -214,7 +232,6 @@ public final class ParamStore extends IdentityHashMap<RecordProperty, SoyValuePr
   @DoNotCall
   @Override
   public Set<RecordProperty> keySet() {
-
     throw new UnsupportedOperationException();
   }
 
@@ -230,8 +247,21 @@ public final class ParamStore extends IdentityHashMap<RecordProperty, SoyValuePr
     throw new UnsupportedOperationException();
   }
 
+  // Implements BiConsumer.accept
+  /**
+   * @deprecated just so people don't call it directly or accidentally
+   */
+  @Override
+  @DoNotCall
+  @Deprecated
+  @SuppressWarnings("Deprecated")
+  public void accept(RecordProperty name, SoyValueProvider valueProvider) {
+    super.put(name, valueProvider);
+  }
+
   // -----------------------------------------------------------------------------------------------
   // Empty instance.
 
   public static final ParamStore EMPTY_INSTANCE = new ParamStore(0).freeze();
+
 }

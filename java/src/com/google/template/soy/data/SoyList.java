@@ -30,7 +30,7 @@ import javax.annotation.ParametersAreNonnullByDefault;
  * classes that implement this interface.
  */
 @ParametersAreNonnullByDefault
-public interface SoyList extends SoyLegacyObjectMap {
+public interface SoyList extends SoyLegacyObjectMap, SoyIterable {
 
   /**
    * Gets the length of this SoyList.

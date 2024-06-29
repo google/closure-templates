@@ -19,6 +19,7 @@ package com.google.template.soy.jbcsrc.api;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 import static com.google.template.soy.data.UnsafeSanitizedContentOrdainer.ordainAsSafe;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.fail;
 
 import com.google.common.base.Joiner;
@@ -30,12 +31,10 @@ import com.google.template.soy.SoyFileSet;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
-import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.jbcsrc.api.SoySauce.Continuation;
 import com.google.template.soy.jbcsrc.api.SoySauce.WriteContinuation;
-import com.google.template.soy.jbcsrc.runtime.DetachableSoyValueProvider;
 import com.google.template.soy.testing.Foo;
 import java.io.IOException;
 import org.junit.Before;
@@ -343,17 +342,8 @@ public class SoySauceTest {
   public void testExceptionRewriting() {
     SoySauce.Renderer tmpl = sauce.renderTemplate("strict_test.callsItself");
 
-    SoyValueProvider intProvider =
-        new DetachableSoyValueProvider() {
-          @Override
-          protected RenderResult doResolve() {
-            resolvedValue = IntegerData.ZERO;
-            return RenderResult.done();
-          }
-        };
-
     try {
-      tmpl.setData(ImmutableMap.of("depth", 10, "p", intProvider)).renderHtml();
+      tmpl.setData(ImmutableMap.of("depth", 10, "p", IntegerData.ZERO)).renderHtml();
       fail();
     } catch (ClassCastException cce) {
       // we get a CCE because we passed an int but it expected a string
@@ -378,6 +368,53 @@ public class SoySauceTest {
 
     assertThat(tmpl.setData(ImmutableMap.of("p", NullData.INSTANCE)).renderText().get())
         .isEqualTo("null");
+  }
+
+  // When eager evaluation fails, we defer the error and log it at the end
+
+  // But if we report the error then we don't log it
+  @Test
+  public void testDeferredErrorLogging_throws() {
+    SoySauce.Renderer tmpl =
+        sauce
+            .renderTemplate("strict_test.testEagerExecutionFailure")
+            .setData(ImmutableMap.of("proto", Foo.getDefaultInstance(), "counter", 2));
+
+    var exception = assertThrows(Exception.class, () -> tmpl.renderText().get());
+    assertThat(exception)
+        .hasMessageThat()
+        .contains("Expecting proto value but instead encountered type UndefinedData");
+  }
+
+  @Test
+  public void testDeferredErrorLogging_throws_extrasAreSuppressed() {
+    SoySauce.Renderer tmpl =
+        sauce
+            .renderTemplate("strict_test.testMultipleEagerExecutionFailures")
+            .setData(ImmutableMap.of("proto", Foo.getDefaultInstance()));
+
+    var exception = assertThrows(NullPointerException.class, () -> tmpl.renderText().get());
+    assertThat(exception)
+        .hasMessageThat()
+        .isEqualTo("'$proto.getMessageField()' evaluates to null");
+    // The template optimistically evaluated two fields, and both failed.
+    assertThat(exception.getSuppressed()).hasLength(2);
+    Throwable suppressed0 = exception.getSuppressed()[0];
+    assertThat(suppressed0)
+        .hasMessageThat()
+        .isEqualTo("Failed optimistic evaluation during rendering, this will soon become an error");
+    assertThat(suppressed0)
+        .hasCauseThat()
+        .hasMessageThat()
+        .isEqualTo("Expecting proto value but instead encountered type UndefinedData");
+    Throwable suppressed1 = exception.getSuppressed()[1];
+    assertThat(suppressed1)
+        .hasMessageThat()
+        .isEqualTo("Failed optimistic evaluation during rendering, this will soon become an error");
+    assertThat(suppressed1)
+        .hasCauseThat()
+        .hasMessageThat()
+        .isEqualTo("Expecting proto value but instead encountered type UndefinedData");
   }
 
   /**

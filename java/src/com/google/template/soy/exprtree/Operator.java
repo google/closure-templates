@@ -32,6 +32,7 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.exprtree.ExprNode.OperatorNode;
 import com.google.template.soy.exprtree.OperatorNodes.AmpAmpOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.AndOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.AsOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.AssertNonNullOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.BarBarOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.BitwiseAndOpNode;
@@ -42,6 +43,7 @@ import com.google.template.soy.exprtree.OperatorNodes.DivideByOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.EqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.GreaterThanOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.GreaterThanOrEqualOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.InstanceOfOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.LessThanOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.LessThanOrEqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.MinusOpNode;
@@ -54,6 +56,7 @@ import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ShiftLeftOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ShiftRightOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.SpreadOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TimesOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TripleEqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TripleNotEqualOpNode;
@@ -67,7 +70,8 @@ import javax.annotation.Nullable;
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  */
 public enum Operator {
-  // Precedence borrowed at least in part from JavaScript:
+  // SoyPrecedence values must agree with SoyFileParser.jj.
+  // Relative order borrowed as much as possible from JavaScript:
   // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Operator_Precedence
 
   ASSERT_NON_NULL(
@@ -174,6 +178,15 @@ public enum Operator {
       return new GreaterThanOrEqualOpNode(location, operatorLocation);
     }
   },
+  INSTANCE_OF(
+      ImmutableList.of(OPERAND_0, SP, new Token("instanceof"), SP, OPERAND_1),
+      SoyPrecedence.P8,
+      LEFT) {
+    @Override
+    public OperatorNode createNode(SourceLocation location, SourceLocation operatorLocation) {
+      return new InstanceOfOpNode(location, operatorLocation);
+    }
+  },
 
   EQUAL(ImmutableList.of(OPERAND_0, SP, new Token("=="), SP, OPERAND_1), SoyPrecedence.P7, LEFT) {
     @Override
@@ -261,6 +274,25 @@ public enum Operator {
     @Override
     public OperatorNode createNode(SourceLocation location, SourceLocation operatorLocation) {
       return new NullCoalescingOpNode(location, operatorLocation);
+    }
+  },
+
+  SPREAD(ImmutableList.of(new Token("..."), OPERAND_0), SoyPrecedence.P2, NA) {
+    @Override
+    public OperatorNode createNode(SourceLocation location, SourceLocation operatorLocation) {
+      return new SpreadOpNode(location, operatorLocation);
+    }
+  },
+
+  /**
+   * While JavaScript does not have an 'as' operator and TypeScript does not publish a precedence
+   * table, manual tests in TypeScript reveal that 'as' has higher precedence than '? :' and not
+   * higher than '...'. Hence, P2.
+   */
+  AS(ImmutableList.of(OPERAND_0, SP, new Token("as"), SP, OPERAND_1), SoyPrecedence.P2, LEFT) {
+    @Override
+    public OperatorNode createNode(SourceLocation location, SourceLocation operatorLocation) {
+      return new AsOpNode(location, operatorLocation);
     }
   },
 

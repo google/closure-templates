@@ -41,7 +41,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
@@ -147,7 +146,7 @@ public final class SoyTypes {
     return type;
   }
 
-  private static SoyType removeUndefined(SoyType type) {
+  public static SoyType removeUndefined(SoyType type) {
     checkNotNull(type);
     if (type.getKind() == Kind.UNION) {
       return ((UnionType) type).filter(t -> t != UndefinedType.getInstance());
@@ -155,7 +154,7 @@ public final class SoyTypes {
     return type;
   }
 
-  private static SoyType removeNullish(SoyType type) {
+  public static SoyType removeNullish(SoyType type) {
     checkNotNull(type);
     if (type.getKind() == Kind.UNION) {
       return ((UnionType) type).filter(t -> !NULLISH_KINDS.contains(t.getKind()));
@@ -367,6 +366,10 @@ public final class SoyTypes {
     return expandUnions(type).stream().allMatch((t) -> kind == t.getKind());
   }
 
+  public static boolean isKindOrUnionOfKind(SoyType type, Class<? extends SoyType> kind) {
+    return expandUnions(type).stream().allMatch(kind::isInstance);
+  }
+
   /**
    * Returns true if the given type matches one of the given kinds, or if the given type is a union
    * of types that all match one of the given kinds.
@@ -393,110 +396,9 @@ public final class SoyTypes {
    * contains a type of the given kind -- e.g., within a union, list, record, map, or template
    * argument.
    */
-  public static boolean transitivelyContainsKind(SoyType type, Kind... kind) {
-    Predicate<SoyType> kindTest;
-    if (kind.length == 1) {
-      kindTest = t -> t.getKind() == kind[0];
-    } else {
-      Set<Kind> kinds = ImmutableSet.copyOf(kind);
-      kindTest = t -> kinds.contains(t.getKind());
-    }
-    return type.accept(
-        new SoyTypeVisitor<>() {
-          @Override
-          public Boolean visit(LegacyObjectMapType type) {
-            return kindTest.test(type)
-                || (type.getKeyType() != null && type.getKeyType().accept(this))
-                || (type.getValueType() != null && type.getValueType().accept(this));
-          }
-
-          @Override
-          public Boolean visit(ListType type) {
-            return kindTest.test(type)
-                || (type.getElementType() != null && type.getElementType().accept(this));
-          }
-
-          @Override
-          public Boolean visit(MapType type) {
-            return kindTest.test(type)
-                || (type.getKeyType() != null && type.getKeyType().accept(this))
-                || (type.getValueType() != null && type.getValueType().accept(this));
-          }
-
-          @Override
-          public Boolean visit(PrimitiveType type) {
-            return kindTest.test(type);
-          }
-
-          @Override
-          public Boolean visit(RecordType type) {
-            if (kindTest.test(type)) {
-              return true;
-            }
-            for (RecordType.Member member : type.getMembers()) {
-              if (member.declaredType().accept(this)) {
-                return true;
-              }
-            }
-            return false;
-          }
-
-          @Override
-          public Boolean visit(SoyProtoEnumType type) {
-            return kindTest.test(type);
-          }
-
-          @Override
-          public Boolean visit(SoyProtoType type) {
-            return kindTest.test(type);
-          }
-
-          @Override
-          public Boolean visit(TemplateType type) {
-            if (kindTest.test(type)) {
-              return true;
-            }
-            for (TemplateType.Parameter parameter : type.getParameters()) {
-              if (parameter.getType().accept(this)) {
-                return true;
-              }
-            }
-            return false;
-          }
-
-          @Override
-          public Boolean visit(UnionType type) {
-            if (kindTest.test(type)) {
-              return true;
-            }
-            for (SoyType member : type.getMembers()) {
-              if (member.accept(this)) {
-                return true;
-              }
-            }
-            return false;
-          }
-
-          @Override
-          public Boolean visit(VeType type) {
-            return kindTest.test(type);
-          }
-
-          @Override
-          public Boolean visit(MessageType type) {
-            return kindTest.test(type);
-          }
-
-          @Override
-          public Boolean visit(ImportType type) {
-            return kindTest.test(type);
-          }
-
-          @Override
-          public Boolean visit(FunctionType type) {
-            return kindTest.test(type);
-          }
-        });
+  public static boolean transitivelyContainsKind(SoyType type, Kind kind) {
+    return TreeStreams.breadthFirst(type, new SoyTypeSuccessorsFunction(null))
+        .anyMatch(t -> t.getKind() == kind);
   }
 
   public static boolean isSanitizedType(SoyType type) {
@@ -763,8 +665,10 @@ public final class SoyTypes {
         case UNION:
           return ((UnionType) type).getMembers();
 
+        case ITERABLE:
         case LIST:
-          return ImmutableList.of(((ListType) type).getElementType());
+        case SET:
+          return ImmutableList.of(((AbstractIterableType) type).getElementType());
 
         case MAP:
         case LEGACY_OBJECT_MAP:
@@ -799,14 +703,14 @@ public final class SoyTypes {
         .anyMatch(t -> t.getKind() == Kind.PROTO || t.getKind() == Kind.PROTO_ENUM);
   }
 
-  public static SoyType getListElementType(SoyType type) {
-    if (type instanceof ListType) {
-      return ((ListType) type).getElementType();
+  public static SoyType getIterableElementType(SoyType type) {
+    if (type instanceof AbstractIterableType) {
+      return ((AbstractIterableType) type).getElementType();
     }
     UnionType union = (UnionType) type;
     return UnionType.of(
         union.getMembers().stream()
-            .map(member -> ((ListType) member).getElementType())
+            .map(member -> ((AbstractIterableType) member).getElementType())
             .collect(toImmutableList()));
   }
 
@@ -838,5 +742,31 @@ public final class SoyTypes {
       return ((TemplateImportType) type).getBasicTemplateType();
     }
     return null;
+  }
+
+  public static boolean isValidInstanceOfOperand(SoyType type) {
+    switch (type.getKind()) {
+      case STRING:
+      case BOOL:
+      case HTML:
+      case JS:
+      case URI:
+      case TRUSTED_RESOURCE_URI:
+      case CSS:
+      case ATTRIBUTES:
+      case MESSAGE:
+      case PROTO:
+        return true;
+      case LIST:
+      case SET:
+        return ((AbstractIterableType) type).getElementType().equals(AnyType.getInstance());
+      case MAP:
+        return ((MapType) type).getKeyType().equals(AnyType.getInstance())
+            && ((MapType) type).getValueType().equals(AnyType.getInstance());
+      case UNION:
+        return type.equals(NUMBER_TYPE);
+      default:
+        return false;
+    }
   }
 }

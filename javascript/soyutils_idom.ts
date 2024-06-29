@@ -1,5 +1,5 @@
 /*
- * g3-format-prettier
+
  * @fileoverview Helper utilities for incremental dom code generation in Soy.
  * Copyright 2016 Google Inc.
  *
@@ -17,7 +17,6 @@
  */
 
 import {ordainSanitizedHtml} from 'goog:soydata.VERY_UNSAFE'; // from //javascript/template/soy:soy_usegoog_js
-import {isAttribute} from 'google3/javascript/template/soy/checks';
 import * as soy from 'google3/javascript/template/soy/soyutils_usegoog';
 import {Logger} from 'google3/javascript/template/soy/soyutils_velog';
 import {cacheReturnValue} from 'google3/third_party/javascript/closure/functions/functions';
@@ -335,7 +334,7 @@ function printDynamicAttr(
     return;
   }
   const attributes = splitAttributes(expr.toString());
-  const isExprAttribute = isAttribute(expr);
+  const isExprAttribute = soy.$$isAttribute(expr);
   for (const attribute of attributes) {
     const attrName = isExprAttribute
       ? attribute[0]
@@ -472,7 +471,7 @@ function hasContent(expr: unknown): boolean {
   return isTruthyNonEmpty(expr);
 }
 
-function emptyToNull<T>(expr: T): T | undefined {
+function emptyToUndefined<T>(expr: T): T | undefined {
   return isTruthyNonEmpty(expr) ? expr : undefined;
 }
 
@@ -578,7 +577,7 @@ export {
   callDynamicJs as $$callDynamicJs,
   callDynamicText as $$callDynamicText,
   defaultIdomRenderer as $$defaultIdomRenderer,
-  emptyToNull as $$emptyToNull,
+  emptyToUndefined as $$emptyToUndefined,
   hasContent as $$hasContent,
   htmlToString as $$htmlToString,
   isIdom as $$isIdom,

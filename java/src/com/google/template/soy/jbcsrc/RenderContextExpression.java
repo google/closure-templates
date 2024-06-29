@@ -32,6 +32,7 @@ import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcPrintDirective;
 import com.google.template.soy.jbcsrc.restricted.Statement;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
+import com.google.template.soy.jbcsrc.shared.StackFrame;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.types.UnknownType;
 import java.util.List;
@@ -48,6 +49,7 @@ final class RenderContextExpression extends Expression implements JbcSrcPluginCo
           RenderContext.class,
           "renderModifiable",
           String.class,
+          StackFrame.class,
           ParamStore.class,
           LoggingAdvisingAppendable.class);
 
@@ -167,8 +169,6 @@ final class RenderContextExpression extends Expression implements JbcSrcPluginCo
 
   private static final MethodRef GET_LOGGER =
       MethodRef.createNonPure(RenderContext.class, "getLogger");
-  private static final MethodRef POP_FRAME =
-      MethodRef.createNonPure(RenderContext.class, "popFrame");
   private static final MethodRef GET_RENDER_CSS_HELPER =
       MethodRef.createNonPure(RenderContext.class, "getRenderCssHelper");
 
@@ -251,9 +251,12 @@ final class RenderContextExpression extends Expression implements JbcSrcPluginCo
   }
 
   Expression renderModifiable(
-      String delCalleeName, Expression params, Expression appendableExpression) {
+      String delCalleeName,
+      Expression stackFrame,
+      Expression params,
+      Expression appendableExpression) {
     return delegate.invoke(
-        RENDER_MODIFIABLE, constant(delCalleeName), params, appendableExpression);
+        RENDER_MODIFIABLE, constant(delCalleeName), stackFrame, params, appendableExpression);
   }
 
   @Override
@@ -379,9 +382,6 @@ final class RenderContextExpression extends Expression implements JbcSrcPluginCo
     return delegate.invoke(GET_LOGGER);
   }
 
-  public Expression popFrame() {
-    return delegate.invoke(POP_FRAME);
-  }
 
   public Expression getInjectedValue(String property, @Nullable SoyExpression value) {
     var prop = BytecodeUtils.constantRecordProperty(property);

@@ -20,6 +20,7 @@ import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static com.google.common.collect.ImmutableSortedSet.toImmutableSortedSet;
+import static com.google.common.collect.Iterables.getOnlyElement;
 import static com.google.template.soy.passes.CheckTemplateCallsPass.ARGUMENT_TYPE_MISMATCH;
 import static com.google.template.soy.types.SoyTypes.SAFE_PROTO_TO_SANITIZED_TYPE;
 import static com.google.template.soy.types.SoyTypes.getMapKeysType;
@@ -106,6 +107,7 @@ import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.exprtree.NullSafeAccessNode;
 import com.google.template.soy.exprtree.OperatorNodes.AmpAmpOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.AndOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.AsOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.AssertNonNullOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.BarBarOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.BitwiseAndOpNode;
@@ -116,6 +118,7 @@ import com.google.template.soy.exprtree.OperatorNodes.DivideByOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.EqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.GreaterThanOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.GreaterThanOrEqualOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.InstanceOfOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.LessThanOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.LessThanOrEqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.MinusOpNode;
@@ -128,12 +131,14 @@ import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ShiftLeftOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ShiftRightOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.SpreadOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TimesOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TripleEqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TripleNotEqualOpNode;
 import com.google.template.soy.exprtree.RecordLiteralNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
+import com.google.template.soy.exprtree.TypeLiteralNode;
 import com.google.template.soy.exprtree.UndefinedNode;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
@@ -182,6 +187,7 @@ import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.ImportedVar;
 import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import com.google.template.soy.soytree.defn.TemplateStateVar;
+import com.google.template.soy.types.AbstractIterableType;
 import com.google.template.soy.types.AbstractMapType;
 import com.google.template.soy.types.BoolType;
 import com.google.template.soy.types.FloatType;
@@ -193,7 +199,9 @@ import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.MapType;
 import com.google.template.soy.types.ProtoImportType;
 import com.google.template.soy.types.RecordType;
+import com.google.template.soy.types.RecordType.Member;
 import com.google.template.soy.types.SanitizedType;
+import com.google.template.soy.types.SetType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
@@ -268,6 +276,15 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
           "Parameter types, {0}, do not uniquely satisfy one of the function signatures [{1}].");
   private static final SoyErrorKind UNNECESSARY_NULL_SAFE_ACCESS =
       SoyErrorKind.of("This null safe access is unnecessary, it is on a value that is non-null.");
+  private static final SoyErrorKind INVALID_INSTANCE_OF =
+      SoyErrorKind.of("Not a valid instanceof type operand.");
+  private static final SoyErrorKind UNNECESSARY_CAST =
+      SoyErrorKind.of(
+          "This `as` expression is unnecessary, it does not change the type of the expression.");
+  private static final SoyErrorKind SUSPECT_CAST =
+      SoyErrorKind.of(
+          "Conversion of type {0} to {1} may be a mistake. If this is intentional cast to `any`"
+              + " first.");
   private static final SoyErrorKind DUPLICATE_KEY_IN_MAP_LITERAL =
       SoyErrorKind.of("Map literals with duplicate keys are not allowed.  Duplicate key: ''{0}''");
   private static final SoyErrorKind KEYS_PASSED_MAP =
@@ -279,8 +296,8 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
               + "(''{0}'').");
   private static final SoyErrorKind EMPTY_LIST_ACCESS =
       SoyErrorKind.of("Accessing item in empty list.");
-  private static final SoyErrorKind EMPTY_LIST_FOREACH =
-      SoyErrorKind.of("Cannot iterate over empty list.");
+  private static final SoyErrorKind EMPTY_COLLECTION_FOREACH =
+      SoyErrorKind.of("Cannot iterate over an empty collection.");
   private static final SoyErrorKind EMPTY_LIST_COMPREHENSION =
       SoyErrorKind.of("Cannot use list comprehension over empty list.");
   private static final SoyErrorKind EMPTY_MAP_ACCESS =
@@ -396,6 +413,8 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
   static final SoyErrorKind TEMPLATE_CALL_NULLISH =
       SoyErrorKind.of(
           "Template call expressions must be non-nullish. Try guarding with an '{'if'}' command.");
+  private static final SoyErrorKind INVALID_SPREAD_VALUE =
+      SoyErrorKind.of("Value of type ''{0}'' may not be spread here.");
 
   private final ErrorReporter errorReporter;
 
@@ -428,13 +447,16 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
   ResolveExpressionTypesPass(
       ErrorReporter errorReporter,
       PluginResolver pluginResolver,
+      boolean allowMissingSoyDeps,
       boolean rewriteShortFormCalls,
       Supplier<FileSetMetadata> templateRegistryFromDeps) {
     this.errorReporter = errorReporter;
     this.pluginResolutionMode =
-        pluginResolver == null
-            ? PluginResolver.Mode.REQUIRE_DEFINITIONS
-            : pluginResolver.getPluginResolutionMode();
+        allowMissingSoyDeps
+            ? PluginResolver.Mode.ALLOW_UNDEFINED
+            : (pluginResolver == null
+                ? PluginResolver.Mode.REQUIRE_DEFINITIONS
+                : pluginResolver.getPluginResolutionMode());
     this.rewriteShortFormCalls = rewriteShortFormCalls;
     this.templateRegistryFromDeps = templateRegistryFromDeps;
     this.methodRegistry =
@@ -965,12 +987,15 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
         // about the field type.
         return UnknownType.getInstance();
 
+      case ITERABLE:
       case LIST:
-        if (collectionType == ListType.EMPTY_LIST) {
-          errorReporter.report(node.getExpr().getSourceLocation(), EMPTY_LIST_FOREACH);
+      case SET:
+        AbstractIterableType iterableType = (AbstractIterableType) collectionType;
+        if (iterableType.isEmpty()) {
+          errorReporter.report(node.getExpr().getSourceLocation(), EMPTY_COLLECTION_FOREACH);
           return UnknownType.getInstance();
         }
-        return ((ListType) collectionType).getElementType();
+        return iterableType.getElementType();
 
       case UNION:
         {
@@ -1082,7 +1107,16 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
       List<SoyType> elementTypes = new ArrayList<>(node.numChildren());
       for (ExprNode child : node.getChildren()) {
         requireNodeType(child);
-        elementTypes.add(child.getType());
+        if (child.getKind() == ExprNode.Kind.SPREAD_OP_NODE) {
+          SoyType spreadType = child.getType();
+          if (spreadType instanceof AbstractIterableType) {
+            elementTypes.add(((AbstractIterableType) spreadType).getElementType());
+          } else {
+            errorReporter.report(child.getSourceLocation(), INVALID_SPREAD_VALUE, spreadType);
+          }
+        } else {
+          elementTypes.add(child.getType());
+        }
       }
       // Special case for empty list.
       if (elementTypes.isEmpty()) {
@@ -1107,7 +1141,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
       SoyType listExprType = node.getListExpr().getType();
 
       // Report an error if listExpr did not actually evaluate to a list.
-      if (!SoyTypes.isKindOrUnionOfKind(listExprType, SoyType.Kind.LIST)
+      if (!SoyTypes.isKindOrUnionOfKind(listExprType, AbstractIterableType.class)
           && listExprType.getKind() != SoyType.Kind.UNKNOWN) {
         errorReporter.report(
             node.getListExpr().getSourceLocation(),
@@ -1118,7 +1152,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
       } else if (listExprType.getKind() == SoyType.Kind.UNKNOWN) {
         node.getListIterVar().setType(UnknownType.getInstance());
       } else {
-        SoyType listElementType = SoyTypes.getListElementType(listExprType);
+        SoyType listElementType = SoyTypes.getIterableElementType(listExprType);
         if (listElementType == null) {
           // Report an error if listExpr was the empty list
           errorReporter.report(node.getListExpr().getSourceLocation(), EMPTY_LIST_COMPREHENSION);
@@ -1165,12 +1199,26 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
       int numChildren = node.numChildren();
       checkState(numChildren == node.getKeys().size());
 
-      List<RecordType.Member> members = new ArrayList<>();
-      for (int i = 0; i < numChildren; i++) {
-        members.add(
-            RecordType.memberOf(node.getKey(i).identifier(), false, node.getChild(i).getType()));
+      LinkedHashMap<String, RecordType.Member> members = new LinkedHashMap<>();
+      int i = 0;
+      for (ExprNode child : node.getChildren()) {
+        String key = node.getKey(i).identifier();
+        if (child.getKind() == ExprNode.Kind.SPREAD_OP_NODE) {
+          SoyType spreadType = child.getType();
+          if (spreadType instanceof RecordType) {
+            for (Member member : ((RecordType) spreadType).getMembers()) {
+              members.put(member.name(), member);
+            }
+          } else {
+            errorReporter.report(child.getSourceLocation(), INVALID_SPREAD_VALUE, spreadType);
+          }
+        } else {
+          members.put(key, RecordType.memberOf(key, false, node.getChild(i).getType()));
+        }
+
+        i++;
       }
-      node.setType(typeRegistry.getOrCreateRecordType(members));
+      node.setType(typeRegistry.getOrCreateRecordType(members.values()));
 
       tryApplySubstitution(node);
     }
@@ -1207,7 +1255,10 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
         }
         keyTypes.add(key.getType());
         if (!MapType.isAllowedKeyType(key.getType())) {
-          errorReporter.report(key.getSourceLocation(), MapType.BAD_MAP_KEY_TYPE, key.getType());
+          errorReporter.report(
+              key.getSourceLocation(),
+              CheckDeclaredTypesPass.BAD_MAP_OR_SET_KEY_TYPE,
+              key.getType());
         }
         valueTypes.add(value.getType());
       }
@@ -1266,7 +1317,8 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
           ((RecordType) ((ListType) node.getListExpr().getType()).getElementType())
               .getMemberType(MapLiteralFromListNode.VALUE_STRING);
       if (!MapType.isAllowedKeyType(keyType)) {
-        errorReporter.report(node.getSourceLocation(), MapType.BAD_MAP_KEY_TYPE, keyType);
+        errorReporter.report(
+            node.getSourceLocation(), CheckDeclaredTypesPass.BAD_MAP_OR_SET_KEY_TYPE, keyType);
       }
       // TODO: Catch duplicate keys whenever possible. This is important to support when we make the
       // map from list constructor syntax less clunky (e.g. by supporting tuples, see b/182212609).
@@ -1311,6 +1363,35 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
               "VarRefNode @" + varRef.getSourceLocation() + " doesn't have a type!");
         }
       }
+    }
+
+    @Override
+    protected void visitAsOpNode(AsOpNode node) {
+      visitChildren(node);
+      SoyType originalType = node.getChild(0).getType();
+      SoyType explicitType = node.getChild(1).getType();
+      if (explicitType.equals(originalType)) {
+        errorReporter.warn(node.getSourceLocation(), UNNECESSARY_CAST);
+        node.getParent().replaceChild(node, node.getChild(0));
+      } else if (!originalType.isAssignableFromLoose(explicitType)
+          && !explicitType.isAssignableFromLoose(originalType)) {
+        errorReporter.report(node.getSourceLocation(), SUSPECT_CAST, originalType, explicitType);
+      }
+      node.setType(explicitType);
+    }
+
+    @Override
+    protected void visitInstanceOfOpNode(InstanceOfOpNode node) {
+      visitChildren(node);
+      TypeLiteralNode typeNode = (TypeLiteralNode) node.getChild(1);
+      SoyType opType = typeNode.getType();
+      if (!SoyTypes.isValidInstanceOfOperand(opType)) {
+        // Avoid double error.
+        if (!opType.equals(UnknownType.getInstance())) {
+          errorReporter.report(typeNode.getSourceLocation(), INVALID_INSTANCE_OF);
+        }
+      }
+      node.setType(BoolType.getInstance());
     }
 
     @Override
@@ -1603,9 +1684,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
             errorReporter.report(node.getParam(0).getSourceLocation(), RECORD_LITERAL_NOT_ALLOWED);
           }
           SoyType listElementType = ((ListType) baseType).getElementType();
-          if ((baseType instanceof ListType)
-              && listElementType != null
-              && node.getParam(0).getType() != null) {
+          if (listElementType != null && node.getParam(0).getType() != null) {
             // Remove null from the arg to allow eg list<string>.includes(null|string). We can make
             // it work in TS by adding the `!` operator in Soy->Tsx.
             SoyType argType = SoyTypes.tryRemoveNullish(node.getParam(0).getType());
@@ -1896,19 +1975,19 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
 
     @Override
     protected void visitOrOpNode(OrOpNode node) {
-      processOr(node);
+      processOr(node, true);
       node.setType(BoolType.getInstance());
     }
 
     @Override
     protected void visitBarBarOpNode(BarBarOpNode node) {
-      processOr(node);
+      processOr(node, false);
       setTypeNullCoalesceNodeOrNode(node);
     }
 
-    private void processOr(AbstractOperatorNode node) {
+    private void processOr(AbstractOperatorNode node, boolean includeConstantChecks) {
       ExprNode lhs = node.getChild(0);
-      if (SoyTreeUtils.isConstantExpr(lhs)) {
+      if (includeConstantChecks && SoyTreeUtils.isConstantExpr(lhs)) {
         errorReporter.warn(
             node.getOperatorLocation(), OR_OPERATOR_HAS_CONSTANT_OPERAND, lhs.toSourceString());
       }
@@ -1926,13 +2005,19 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
       substitutions.addAll(visitor.negativeTypeConstraints);
       ExprNode rhs = node.getChild(1);
       visit(rhs);
-      if (SoyTreeUtils.isConstantExpr(rhs)) {
+      if (includeConstantChecks && SoyTreeUtils.isConstantExpr(rhs)) {
         errorReporter.warn(
             node.getOperatorLocation(), OR_OPERATOR_HAS_CONSTANT_OPERAND, rhs.toSourceString());
       }
 
       // Restore substitutions to previous state
       substitutions.restore(savedSubstitutionState);
+    }
+
+    @Override
+    protected void visitSpreadOpNode(SpreadOpNode node) {
+      visit(node.getChild(0));
+      node.setType(node.getChild(0).getType()); // Must be spread in context to be valid.
     }
 
     @Override
@@ -2411,8 +2496,8 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
         SoyType fieldType = protoType.getFieldSetterType(fieldName.identifier());
 
         // Same for List<?>, for repeated fields
-        if (fieldType.getKind() == Kind.LIST && argType.getKind() == Kind.LIST) {
-          SoyType argElementType = ((ListType) argType).getElementType();
+        if (fieldType.getKind() == Kind.LIST && argType instanceof AbstractIterableType) {
+          SoyType argElementType = ((AbstractIterableType) argType).getElementType();
           if (argElementType == null || argElementType.equals(UnknownType.getInstance())) {
             continue;
           }
@@ -2686,42 +2771,10 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
             return SoyTypes.computeLowestCommonType(typeRegistry, itemTypes);
           }
 
-        case ANY:
-        case NULL:
-        case UNDEFINED:
-        case BOOL:
-        case INT:
-        case FLOAT:
-        case STRING:
-        case MAP:
-        case ELEMENT:
-        case HTML:
-        case ATTRIBUTES:
-        case JS:
-        case CSS:
-        case URI:
-        case TRUSTED_RESOURCE_URI:
-        case RECORD:
-        case PROTO:
-        case PROTO_ENUM:
-        case TEMPLATE:
-        case VE:
-        case VE_DATA:
-        case MESSAGE:
-        case CSS_TYPE:
-        case CSS_MODULE:
-        case TOGGLE_TYPE:
-        case PROTO_TYPE:
-        case PROTO_ENUM_TYPE:
-        case PROTO_EXTENSION:
-        case PROTO_MODULE:
-        case TEMPLATE_TYPE:
-        case TEMPLATE_MODULE:
-        case FUNCTION:
+        default:
           errorReporter.report(baseLocation, BRACKET_ACCESS_NOT_SUPPORTED, baseType);
           return UnknownType.getInstance();
       }
-      throw new AssertionError("unhandled kind: " + baseType.getKind());
     }
 
     private void tryApplySubstitution(AbstractParentExprNode parentNode) {
@@ -2743,6 +2796,10 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
           .getValidArgTypes()
           .ifPresent(
               typeList -> {
+                int arity = getOnlyElement(builtinFunction.getValidArgsSizes());
+                if (arity != node.numParams()) {
+                  return; // previously reported error.
+                }
                 node.setAllowedParamTypes(typeList);
                 for (int i = 0; i < typeList.size(); i++) {
                   if (!typeList.get(i).isAssignableFromStrict(node.getParam(i).getType())) {
@@ -2782,9 +2839,6 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
           checkArgIsStringLiteralWithNoSpaces(node, node.numParams() - 1, builtinFunction);
           node.setType(StringType.getInstance());
           break;
-        case EVAL_TOGGLE:
-          node.setType(BoolType.getInstance());
-          break;
         case SOY_SERVER_KEY:
         case XID:
           // arg validation is already handled by the XidPass
@@ -2793,9 +2847,6 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
         case UNKNOWN_JS_GLOBAL:
           checkArgIsStringLiteral(node, 0, builtinFunction);
           node.setType(UnknownType.getInstance());
-          break;
-        case DEBUG_SOY_TEMPLATE_INFO:
-          node.setType(BoolType.getInstance());
           break;
         case VE_DATA:
           // Arg validation is already handled by the VeLogValidationPass
@@ -2835,12 +2886,37 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
           visit(node.getParam(0));
           node.setType(SoyTypes.undefinedToNull(node.getParam(0).getType()));
           break;
+        case EVAL_TOGGLE:
+        case DEBUG_SOY_TEMPLATE_INFO:
         case BOOLEAN:
         case HAS_CONTENT:
         case IS_TRUTHY_NON_EMPTY:
           node.setType(BoolType.getInstance());
           break;
-        case EMPTY_TO_NULL:
+        case NEW_SET:
+          visit(node.getParam(0));
+          SoyType listType = node.getParam(0).getType();
+          if (listType instanceof AbstractIterableType) {
+            SoyType keyType = ((AbstractIterableType) listType).getElementType();
+            if (keyType != null) {
+              if (SoyTypes.expandUnions(keyType).stream()
+                  .anyMatch(t -> !MapType.isAllowedKeyType(t))) {
+                errorReporter.report(
+                    node.getParam(0).getSourceLocation(),
+                    CheckDeclaredTypesPass.BAD_MAP_OR_SET_KEY_TYPE,
+                    keyType);
+              }
+              node.setType(
+                  typeRegistry.getOrCreateSetType(
+                      ((AbstractIterableType) listType).getElementType()));
+            } else {
+              node.setType(SetType.EMPTY_SET);
+            }
+          } else {
+            node.setType(UnknownType.getInstance());
+          }
+          break;
+        case EMPTY_TO_UNDEFINED:
           throw new AssertionError("impossible, this is only used by desuraging passes: " + node);
       }
     }
@@ -3040,10 +3116,12 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
     @Override
     protected void visitFunctionNode(FunctionNode node) {
       if (node.isResolved()
+          && node.getSoyFunction() != BuiltinFunction.NEW_SET
           && node.getSoyFunction() != BuiltinFunction.PROTO_INIT
           && node.getSoyFunction() != BuiltinFunction.CSS
           && node.getSoyFunction() != BuiltinFunction.XID
-          && node.getSoyFunction() != BuiltinFunction.VE_DEF) {
+          && node.getSoyFunction() != BuiltinFunction.VE_DEF
+          && node.getSoyFunction() != BuiltinFunction.EVAL_TOGGLE) {
         notAllowed(node);
       }
       super.visitFunctionNode(node);

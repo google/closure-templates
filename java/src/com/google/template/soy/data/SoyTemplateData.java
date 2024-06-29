@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.data.internal.ParamStore;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -90,9 +91,9 @@ public final class SoyTemplateData {
    * intended to be called only by test code.
    */
   public Map<String, Object> getRawParamsAsMap() {
-    ImmutableMap.Builder<String, Object> params = ImmutableMap.builder();
-    data.forEach((k, v) -> params.put(k.getName(), SoyValueUnconverter.unconvert(v)));
-    return params.buildOrThrow();
+    Map<String, Object> rawValues = new HashMap<>();
+    data.forEach((k, v) -> rawValues.put(k.getName(), SoyValueUnconverter.unconvert(v)));
+    return rawValues;
   }
 
   /** Returns the parameters as a record. Intended only for soy internal usecases. */

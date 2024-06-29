@@ -57,13 +57,12 @@ public final class MapLengthMethod
 
   // lazy singleton pattern, allows other backends to avoid the work.
   private static final class Methods {
-    static final Method MAP_SIZE_FN =
-        JavaValueFactory.createMethod(BasicFunctionsRuntime.class, "mapSize", SoyMap.class);
+    static final Method MAP_SIZE_FN = JavaValueFactory.createMethod(SoyMap.class, "size");
   }
 
   @Override
   public JavaValue applyForJavaSource(
       JavaValueFactory factory, List<JavaValue> args, JavaPluginContext context) {
-    return factory.callStaticMethod(Methods.MAP_SIZE_FN, args.get(0));
+    return factory.callJavaValueMethod(Methods.MAP_SIZE_FN, args.get(0));
   }
 }

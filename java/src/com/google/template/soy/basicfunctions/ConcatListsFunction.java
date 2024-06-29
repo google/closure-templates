@@ -16,6 +16,7 @@
 
 package com.google.template.soy.basicfunctions;
 
+import com.google.template.soy.data.SoyList;
 import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
 import com.google.template.soy.plugin.java.restricted.JavaValue;
 import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
@@ -154,13 +155,37 @@ public final class ConcatListsFunction
 
   // lazy singleton pattern, allows other backends to avoid the work.
   private static final class Methods {
-    static final Method CONCAT_LISTS_FN =
-        JavaValueFactory.createMethod(BasicFunctionsRuntime.class, "concatLists", List.class);
+    static final Method CONCAT_LISTS_FN_2 =
+        JavaValueFactory.createMethod(
+            BasicFunctionsRuntime.class, "concatLists", SoyList.class, SoyList.class);
+    static final Method CONCAT_LISTS_FN_3 =
+        JavaValueFactory.createMethod(
+            BasicFunctionsRuntime.class,
+            "concatLists",
+            SoyList.class,
+            SoyList.class,
+            SoyList.class);
+    static final Method CONCAT_LISTS_FN_MANY =
+        JavaValueFactory.createMethod(
+            BasicFunctionsRuntime.class, "concatLists", SoyList.class, List.class);
   }
 
   @Override
   public JavaValue applyForJavaSource(
       JavaValueFactory factory, List<JavaValue> args, JavaPluginContext context) {
-    return factory.callStaticMethod(Methods.CONCAT_LISTS_FN, factory.listOf(args));
+    // It is important to evaluate the first argument first as it is the 'receiver' and so may
+    // contain a nullcheck,  e.g. `list?.concat(other)`
+    switch (args.size()) {
+      case 2:
+        return factory.callStaticMethod(Methods.CONCAT_LISTS_FN_2, args.get(0), args.get(1));
+      case 3:
+        return factory.callStaticMethod(
+            Methods.CONCAT_LISTS_FN_3, args.get(0), args.get(1), args.get(2));
+      default:
+        return factory.callStaticMethod(
+            Methods.CONCAT_LISTS_FN_MANY,
+            args.get(0),
+            factory.listOf(args.subList(1, args.size())));
+    }
   }
 }

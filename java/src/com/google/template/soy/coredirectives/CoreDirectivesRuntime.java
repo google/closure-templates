@@ -73,12 +73,14 @@ public final class CoreDirectivesRuntime {
     }
 
     @Override
-    protected void notifyKindAndDirectionality(ContentKind kind, @Nullable Dir dir)
-        throws IOException {
-      if (isInHtml()) {
-        activeAppendable = delegate;
-      }
+    protected LoggingAdvisingAppendable notifyKindAndDirectionality(
+        ContentKind kind, @Nullable Dir dir) {
       delegate.setKindAndDirectionality(kind, dir);
+      if (kind == ContentKind.HTML) {
+        activeAppendable = delegate;
+        return delegate;
+      }
+      return this;
     }
 
     @CanIgnoreReturnValue

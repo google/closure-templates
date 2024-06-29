@@ -17,8 +17,8 @@
 package com.google.template.soy.jbcsrc;
 
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.BUFFERING_APPENDABLE_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.LOGGING_ADVISING_APPENDABLE_TYPE;
-import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.LOGGING_ADVISING_BUILDER_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
 
 import com.google.common.collect.ImmutableList;
@@ -36,7 +36,6 @@ import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.Statement;
 import java.util.List;
 import org.objectweb.asm.Label;
-import org.objectweb.asm.Type;
 
 /**
  * An expression for an {@link
@@ -67,7 +66,7 @@ final class AppendableExpression extends Expression {
           ImmutableList.class);
 
   private static final MethodRef LOGGING_FUNCTION_INVOCATION_CREATE =
-      MethodRef.createNonPure(
+      MethodRef.createPure(
           LoggingFunctionInvocation.class, "create", String.class, String.class, List.class);
 
   private static final MethodRef SET_SANITIZED_CONTENT_KIND_AND_DIRECTIONALITY =
@@ -84,12 +83,9 @@ final class AppendableExpression extends Expression {
   }
 
   static AppendableExpression forStringBuilder(Expression delegate) {
-    checkArgument(delegate.resultType().equals(LOGGING_ADVISING_BUILDER_TYPE));
+    checkArgument(delegate.resultType().equals(BUFFERING_APPENDABLE_TYPE));
     return new AppendableExpression(
-        BytecodeUtils.LOGGING_ADVISING_BUILDER_TYPE,
-        delegate,
-        /* hasSideEffects= */ false,
-        /* supportsSoftLimiting= */ false);
+        delegate, /* hasSideEffects= */ false, /* supportsSoftLimiting= */ false);
   }
 
   static AppendableExpression logger() {
@@ -107,12 +103,7 @@ final class AppendableExpression extends Expression {
 
   private AppendableExpression(
       Expression delegate, boolean hasSideEffects, boolean supportsSoftLimiting) {
-    this(LOGGING_ADVISING_APPENDABLE_TYPE, delegate, hasSideEffects, supportsSoftLimiting);
-  }
-
-  private AppendableExpression(
-      Type resultType, Expression delegate, boolean hasSideEffects, boolean supportsSoftLimiting) {
-    super(resultType, delegate.features());
+    super(delegate.resultType(), delegate.features());
     delegate.checkAssignableTo(LOGGING_ADVISING_APPENDABLE_TYPE);
     checkArgument(
         delegate.isNonJavaNullable(),
@@ -171,12 +162,15 @@ final class AppendableExpression extends Expression {
     return withNewDelegate(
         delegate.invoke(
             APPEND_LOGGING_FUNCTION_INVOCATION,
-            LOGGING_FUNCTION_INVOCATION_CREATE.invoke(
-                constant(functionName),
-                constant(placeholderValue),
-                // TODO(lukes): nearly all implementations don't want `null`, change them to accept
-                // NullData and perform a regular boxing conversion here.
-                SoyExpression.boxListWithSoyNullishAsJavaNull(args)),
+            LOGGING_FUNCTION_INVOCATION_CREATE
+                .invoke(
+                    constant(functionName),
+                    constant(placeholderValue),
+                    // TODO(lukes): nearly all implementations don't want `null`, change them to
+                    // accept
+                    // NullData and perform a regular boxing conversion here.
+                    SoyExpression.boxListWithSoyNullishAsJavaNull(args))
+                .toMaybeConstant(),
             BytecodeUtils.asImmutableList(escapingDirectives)),
         true);
   }

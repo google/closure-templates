@@ -48,7 +48,7 @@ final class ExpressionSubject extends Subject {
     return Truth.assertAbout(
             ((Subject.Factory<ExpressionSubject, String>)
                 (failureMetadata, s) ->
-                    new ExpressionSubject(failureMetadata, s, ErrorReporter.createForTest())))
+                    new ExpressionSubject(failureMetadata, s, ErrorReporter.create())))
         .that(input);
   }
 

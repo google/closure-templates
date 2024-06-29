@@ -53,8 +53,10 @@ import com.google.template.soy.exprtree.MethodCallNode;
 import com.google.template.soy.exprtree.NullSafeAccessNode;
 import com.google.template.soy.exprtree.OperatorNodes.AmpAmpOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.AndOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.AsOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.BarBarOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ConditionalOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.InstanceOfOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
 import com.google.template.soy.exprtree.ProtoEnumValueNode;
@@ -69,6 +71,8 @@ import com.google.template.soy.sharedpasses.render.RenderException;
 import com.google.template.soy.types.AnyType;
 import com.google.template.soy.types.BoolType;
 import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.SoyTypes;
+import com.google.template.soy.types.StringType;
 import java.util.function.BiFunction;
 import javax.annotation.Nullable;
 
@@ -292,7 +296,9 @@ final class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
   @Nullable
   private static ExprNode visitItemAccessNode(ItemAccessNode node, ExprNode baseExpr) {
     ExprNode keyExpr = node.getChild(1);
-    if (baseExpr instanceof ListLiteralNode && keyExpr instanceof IntegerNode) {
+    if (baseExpr instanceof ListLiteralNode
+        && !((ListLiteralNode) baseExpr).containsSpreads()
+        && keyExpr instanceof IntegerNode) {
       ListLiteralNode listLiteral = (ListLiteralNode) baseExpr;
       long index = ((IntegerNode) keyExpr).getValue();
       if (index >= 0 && index < listLiteral.numChildren()) {
@@ -450,7 +456,7 @@ final class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
     if (node.getSoyFunction() instanceof BuiltinFunction) {
       switch ((BuiltinFunction) node.getSoyFunction()) {
         case BOOLEAN:
-        case EMPTY_TO_NULL:
+        case EMPTY_TO_UNDEFINED:
         case UNDEFINED_TO_NULL:
         case UNDEFINED_TO_NULL_SSR:
           visitExprNode(node);
@@ -466,6 +472,49 @@ final class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
     }
     // Default to fallback implementation.
     visitExprNode(node);
+  }
+
+  @Override
+  protected void visitAsOpNode(AsOpNode node) {
+    visit(node.getChild(0));
+  }
+
+  @Override
+  protected void visitInstanceOfOpNode(InstanceOfOpNode node) {
+    ExprNode lhs = node.getChild(0);
+    visit(lhs);
+
+    Boolean staticValue = null;
+    SoyType rhs = node.getChild(1).getType();
+    switch (lhs.getKind()) {
+      case STRING_NODE:
+        staticValue = rhs.equals(StringType.getInstance());
+        break;
+      case INTEGER_NODE:
+      case FLOAT_NODE:
+        staticValue = rhs.equals(SoyTypes.NUMBER_TYPE);
+        break;
+      case BOOLEAN_NODE:
+        staticValue = rhs.equals(BoolType.getInstance());
+        break;
+      case LIST_LITERAL_NODE:
+      case LIST_COMPREHENSION_NODE:
+        staticValue = rhs.getKind() == SoyType.Kind.LIST;
+        break;
+      case MAP_LITERAL_NODE:
+      case MAP_LITERAL_FROM_LIST_NODE:
+        staticValue = rhs.getKind() == SoyType.Kind.MAP;
+        break;
+      default:
+        break;
+    }
+    if (staticValue == null && lhs instanceof PrimitiveNode) {
+      staticValue = false;
+    }
+
+    if (staticValue != null) {
+      node.getParent().replaceChild(node, new BooleanNode(staticValue, node.getSourceLocation()));
+    }
   }
 
   // -----------------------------------------------------------------------------------------------

@@ -29,6 +29,7 @@ import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.defn.ImportedVar;
+import com.google.template.soy.types.BoolType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.StringType;
 import com.google.template.soy.types.ToggleImportType;
@@ -40,7 +41,11 @@ import com.google.template.soy.types.ToggleImportType;
 @RunAfter(ResolveNamesPass.class)
 final class RewriteToggleImportsPass implements CompilerFilePass {
 
-  public RewriteToggleImportsPass() {}
+  private final boolean rewrite;
+
+  public RewriteToggleImportsPass(boolean rewrite) {
+    this.rewrite = rewrite;
+  }
 
   @Override
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
@@ -57,6 +62,13 @@ final class RewriteToggleImportsPass implements CompilerFilePass {
    * not be resolved.
    */
   private void rewriteToggleNode(VarRefNode refn, SourceLocation fullLocation) {
+    if (!rewrite) {
+      // If we don't delete the VarRefNode then we at least need to set the type of the import to
+      // boolean for type checking to succeed.
+      ((ImportedVar) refn.getDefnDecl()).setType(BoolType.getInstance());
+      return;
+    }
+
     ImportedVar defn = (ImportedVar) refn.getDefnDecl();
     ToggleImportType toggleType = (ToggleImportType) defn.type();
     FunctionNode funcNode =

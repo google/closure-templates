@@ -358,9 +358,15 @@ public final class TemplateMetadataSerializer {
         } else {
           return HtmlType.getInstance();
         }
+      case ITERABLE_ELEMENT:
+        return typeRegistry.getOrCreateIterableType(
+            fromProto(proto.getIterableElement(), typeRegistry, filePath, errorReporter));
       case LIST_ELEMENT:
         return typeRegistry.getOrCreateListType(
             fromProto(proto.getListElement(), typeRegistry, filePath, errorReporter));
+      case SET_ELEMENT:
+        return typeRegistry.getOrCreateSetType(
+            fromProto(proto.getSetElement(), typeRegistry, filePath, errorReporter));
 
       case LEGACY_OBJECT_MAP:
         return typeRegistry.getOrCreateLegacyObjectMapType(

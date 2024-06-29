@@ -17,6 +17,7 @@
 package com.google.template.soy.data;
 
 import com.google.template.soy.data.SanitizedContent.ContentKind;
+import java.util.Map;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
@@ -76,5 +77,16 @@ public final class UnsafeSanitizedContentOrdainer {
   @Nonnull
   public static SanitizedContent ordainAsSafe(String value, ContentKind kind, @Nullable Dir dir) {
     return SanitizedContent.create(value, kind, dir);
+  }
+
+  /**
+   * Constructs a sanitized attributes object from the given map.
+   *
+   * <p>The keys must be non-empty and in ASCII lowercase, values must be non-null.
+   */
+  @Nonnull
+  public static SanitizedContent ordainAsSafeAttributes(
+      Map<String, SanitizedContent.AttributeValue> attributes) {
+    return new SanitizedContent.Attributes(attributes);
   }
 }

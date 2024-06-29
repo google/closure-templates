@@ -23,10 +23,13 @@ import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_VALUE_
 import com.google.common.base.Objects;
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.template.soy.internal.proto.JavaQualifiedNames;
+import com.google.template.soy.types.AbstractIterableType;
 import com.google.template.soy.types.BoolType;
 import com.google.template.soy.types.FloatType;
 import com.google.template.soy.types.IntType;
 import com.google.template.soy.types.ListType;
+import com.google.template.soy.types.SanitizedType.AttributesType;
+import com.google.template.soy.types.SanitizedType.HtmlType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
@@ -82,6 +85,9 @@ public abstract class SoyRuntimeType {
       case LIST:
         // We have some minor support for unboxed lists
         return new PrimitiveSoyType(soyType, BytecodeUtils.LIST_TYPE);
+      case SET:
+        // We have some minor support for unboxed sets
+        return new PrimitiveSoyType(soyType, BytecodeUtils.SET_TYPE);
       case UNION:
         {
           // unions generally don't have a unique unboxed runtime type except in 2 special cases
@@ -118,6 +124,7 @@ public abstract class SoyRuntimeType {
       case HTML:
       case JS:
       case TRUSTED_RESOURCE_URI:
+      case ITERABLE:
       case LEGACY_OBJECT_MAP:
       case MAP:
       case RECORD:
@@ -138,6 +145,7 @@ public abstract class SoyRuntimeType {
       case TEMPLATE_TYPE:
       case TEMPLATE_MODULE:
       case FUNCTION:
+      case NEVER:
     }
     throw new AssertionError("can't map " + soyType + " to an unboxed soy runtime type");
   }
@@ -179,6 +187,12 @@ public abstract class SoyRuntimeType {
     return soyType.getKind().isKnownStringOrSanitizedContent()
         || (soyType.getKind() == Kind.UNION
             && SoyTypes.tryRemoveNullish(soyType).getKind().isKnownStringOrSanitizedContent());
+  }
+
+  public boolean assignableToNullableHtmlOrAttributes() {
+    var type = SoyTypes.tryRemoveNullish(soyType);
+    return type.isAssignableFromLoose(HtmlType.getInstance())
+        || type.isAssignableFromLoose(AttributesType.getInstance());
   }
 
   private boolean assignableToNullableType(SoyType type) {
@@ -243,14 +257,24 @@ public abstract class SoyRuntimeType {
     return SoyTypes.isKindOrUnionOfKind(soyType, Kind.LIST);
   }
 
+  public final boolean isKnownSet() {
+    return SoyTypes.isKindOrUnionOfKind(soyType, Kind.SET);
+  }
+
+  public final boolean isKnownIterable() {
+    return SoyTypes.isKindOrUnionOfKinds(soyType, SoyType.Kind.ITERABLE_KINDS);
+  }
+
   public final ListType asListType() {
-    checkState(isKnownListOrUnionOfLists());
+    checkState(isKnownIterable());
     if (soyType instanceof ListType) {
       return (ListType) soyType;
+    } else if (soyType instanceof AbstractIterableType) {
+      return ListType.of(((AbstractIterableType) soyType).getElementType());
     }
     List<SoyType> members = new ArrayList<>();
     for (SoyType member : ((UnionType) soyType).getMembers()) {
-      ListType memberAsList = (ListType) member;
+      AbstractIterableType memberAsList = (AbstractIterableType) member;
       if (memberAsList.getElementType() != null) {
         members.add(memberAsList.getElementType());
       }

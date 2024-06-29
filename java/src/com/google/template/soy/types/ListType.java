@@ -25,16 +25,14 @@ import java.util.Objects;
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  */
-public final class ListType extends SoyType {
+public final class ListType extends AbstractIterableType {
 
   // TODO(lukes): see if this can be replaced with list<?>
   public static final ListType EMPTY_LIST = new ListType(null);
   public static final ListType ANY_LIST = new ListType(AnyType.getInstance());
 
-  private final SoyType elementType;
-
   private ListType(SoyType elementType) {
-    this.elementType = elementType;
+    super(elementType);
   }
 
   public static ListType of(SoyType elementType) {
@@ -47,23 +45,9 @@ public final class ListType extends SoyType {
     return Kind.LIST;
   }
 
-  public SoyType getElementType() {
-    return elementType;
-  }
-
   @Override
   boolean doIsAssignableFromNonUnionType(SoyType srcType, UnknownAssignmentPolicy policy) {
-    if (srcType.getKind() == Kind.LIST) {
-      ListType srcListType = (ListType) srcType;
-      if (srcListType == EMPTY_LIST) {
-        return true;
-      } else if (this == EMPTY_LIST) {
-        return false;
-      }
-      // Lists are covariant (because values are immutable.)
-      return elementType.isAssignableFromInternal(srcListType.elementType, policy);
-    }
-    return false;
+    return srcType.getKind() == Kind.LIST && super.doIsAssignableFromNonUnionType(srcType, policy);
   }
 
   @Override

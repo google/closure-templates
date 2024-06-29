@@ -25,10 +25,13 @@ import com.google.common.collect.ImmutableList;
  */
 public final class SoyInternalCompilerException extends RuntimeException {
   private final ImmutableList<SoyError> errors;
+  private final ErrorFormatter errorFormatter;
 
-  public SoyInternalCompilerException(Iterable<SoyError> errors, Throwable cause) {
+  public SoyInternalCompilerException(
+      Iterable<SoyError> errors, ErrorFormatter errorFormatter, Throwable cause) {
     super(cause);
     this.errors = ImmutableList.sortedCopyOf(errors);
+    this.errorFormatter = errorFormatter;
     checkArgument(!this.errors.isEmpty());
   }
 
@@ -40,6 +43,6 @@ public final class SoyInternalCompilerException extends RuntimeException {
   @Override
   public String getMessage() {
     return "Unrecoverable internal Soy error. Prior to failure found "
-        + SoyErrors.formatErrors(errors);
+        + SoyErrors.formatErrors(errors, errorFormatter);
   }
 }

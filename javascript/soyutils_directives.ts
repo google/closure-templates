@@ -15,7 +15,6 @@
  */
 
 import {ordainSanitizedHtml} from 'goog:soydata.VERY_UNSAFE'; // from //javascript/template/soy:soy_usegoog_js
-import {isAttribute} from 'google3/javascript/template/soy/checks';
 import * as soy from 'google3/javascript/template/soy/soyutils_usegoog';
 import {SanitizedContentKind} from 'google3/third_party/javascript/closure/soy/data';
 
@@ -41,7 +40,7 @@ function isIdomFunctionType(
 function filterHtmlAttributes(value: unknown) {
   if (
     isIdomFunctionType(value, SanitizedContentKind.ATTRIBUTES) ||
-    isAttribute(value)
+    soy.$$isAttribute(value)
   ) {
     return value;
   }

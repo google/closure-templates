@@ -18,6 +18,7 @@ package com.google.template.soy.passes;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import com.google.common.base.MoreObjects;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.ImmutableSortedMap;
@@ -92,6 +93,21 @@ public final class IndirectParamsCalculator {
       this.indirectParamTypes = indirectParamTypes;
       this.mayHaveIndirectParamsInExternalCalls = mayHaveIndirectParamsInExternalCalls;
       this.mayHaveIndirectParamsInExternalDelCalls = mayHaveIndirectParamsInExternalDelCalls;
+    }
+
+    public boolean mayHaveExternalParams() {
+      return mayHaveIndirectParamsInExternalCalls || mayHaveIndirectParamsInExternalDelCalls;
+    }
+
+    @Override
+    public String toString() {
+      return MoreObjects.toStringHelper(this)
+          .add("indirectParams", indirectParams)
+          .add("paramKeyToCalleesMultimap", paramKeyToCalleesMultimap)
+          .add("indirectParamTypes", indirectParamTypes)
+          .add("mayHaveIndirectParamsInExternalCalls", mayHaveIndirectParamsInExternalCalls)
+          .add("mayHaveIndirectParamsInExternalDelCalls", mayHaveIndirectParamsInExternalDelCalls)
+          .toString();
     }
   }
 
@@ -236,8 +252,12 @@ public final class IndirectParamsCalculator {
         TemplateMetadata basicCallee =
             fileSetMetadata.getBasicTemplateOrElement(call.getTemplateName());
         if (basicCallee == null) {
+          // TODO(lukes): this should be impossible
           mayHaveIndirectParamsInExternalCalls = true;
         } else {
+          if (basicCallee.getTemplateType().isModifiable()) {
+            mayHaveIndirectParamsInExternalDelCalls = true;
+          }
           processCall(template, basicCallee, newAllCallParamKeys, allCallers);
         }
       }
@@ -252,7 +272,8 @@ public final class IndirectParamsCalculator {
       Set<TemplateType> allCallers) {
     TemplateType calleeSignature = callee.getTemplateType();
     if (caller.equals(calleeSignature) || allCallers.contains(calleeSignature)) {
-      // We never recursive calls to bring in an indirect param.
+      // Recursive call or a call to a template that is already visited in this call chain, it
+      // cannot add any new indirect params.
       return;
     }
     for (Parameter p : callee.getTemplateType().getParameters()) {

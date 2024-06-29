@@ -34,6 +34,10 @@ public interface TypeInterner {
   /** Intern any type so that it can be used with the == operator. */
   <T extends SoyType> T intern(T type);
 
+  default IterableType getOrCreateIterableType(SoyType elementType) {
+    return intern(IterableType.of(elementType));
+  }
+
   /**
    * Factory function which creates a list type, given an element type. This folds list types with
    * identical element types together, so asking for the same element type twice will return a
@@ -44,6 +48,10 @@ public interface TypeInterner {
    */
   default ListType getOrCreateListType(SoyType elementType) {
     return intern(ListType.of(elementType));
+  }
+
+  default SetType getOrCreateSetType(SoyType elementType) {
+    return intern(SetType.of(elementType));
   }
 
   /**

@@ -34,13 +34,16 @@ import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.MapType;
 import com.google.template.soy.types.NullType;
 import com.google.template.soy.types.RecordType;
+import com.google.template.soy.types.SetType;
 import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.UnionType;
 import com.google.template.soy.types.UnknownType;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.Future;
 
 /** Validates plugin functions. */
@@ -123,6 +126,16 @@ public class JavaPluginValidator {
         } else if (expectedType.getKind() == SoyType.Kind.UNKNOWN
             || expectedType.getKind() == SoyType.Kind.ANY) {
           actualSoyType = ListType.of(UnknownType.getInstance());
+        } else {
+          reporter.invalidReturnType(actualClass, expectedType, method);
+          return;
+        }
+      } else if (Set.class.isAssignableFrom(actualClass)) {
+        if (expectedType.getKind() == Kind.SET) {
+          actualSoyType = expectedType;
+        } else if (expectedType.getKind() == SoyType.Kind.UNKNOWN
+            || expectedType.getKind() == SoyType.Kind.ANY) {
+          actualSoyType = SetType.of(UnknownType.getInstance());
         } else {
           reporter.invalidReturnType(actualClass, expectedType, method);
           return;

@@ -35,7 +35,6 @@ import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.TemplateValue;
 import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.data.restricted.UndefinedData;
-import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.shared.TemplateMetadata.DelTemplateMetadata;
 import com.google.template.soy.shared.internal.DelTemplateSelector;
 import java.lang.invoke.MethodHandle;
@@ -65,7 +64,8 @@ public class CompiledTemplates {
 
   private static final MethodType RENDER_TYPE =
       methodType(
-          RenderResult.class,
+          StackFrame.class,
+          StackFrame.class,
           ParamStore.class,
           LoggingAdvisingAppendable.class,
           RenderContext.class);
@@ -101,7 +101,7 @@ public class CompiledTemplates {
     DelTemplateSelector.Builder<TemplateData> builder = new DelTemplateSelector.Builder<>();
     for (String delTemplateImplName : delTemplateNames) {
       TemplateData data = getTemplateData(delTemplateImplName);
-      if (!data.delTemplateName.isPresent()) {
+      if (data.delTemplateName.isEmpty()) {
         throw new IllegalArgumentException(
             "Expected " + delTemplateImplName + " to be a deltemplate");
       }
@@ -244,11 +244,23 @@ public class CompiledTemplates {
    * <p>The format is `clasName#methodName#descriptor` this allows for a simple value that can be
    * cached and then unambiguously looked up.
    */
-  MethodHandle getConstOrExternMethod(String fqn) {
-    return constOrExternNameToMethod.computeIfAbsent(fqn, this::findConstOrExternMethod);
+  MethodHandle getConstMethod(String fqn) {
+    return constOrExternNameToMethod.computeIfAbsent(
+        fqn, n -> findConstOrExternMethod(n, /* isConst= */ true));
   }
 
-  private MethodHandle findConstOrExternMethod(String fqn) {
+  /**
+   * Fetches and caches a method handle for the given fully qualified method reference.
+   *
+   * <p>The format is `clasName#methodName#descriptor` this allows for a simple value that can be
+   * cached and then unambiguously looked up.
+   */
+  MethodHandle getExternMethod(String fqn) {
+    return constOrExternNameToMethod.computeIfAbsent(
+        fqn, n -> findConstOrExternMethod(n, /* isConst= */ false));
+  }
+
+  private MethodHandle findConstOrExternMethod(String fqn, boolean isConst) {
     var parts = HASH_SPLITTER.split(fqn).iterator();
     var className = parts.next();
     var methodName = parts.next();
@@ -256,15 +268,14 @@ public class CompiledTemplates {
     checkArgument(!parts.hasNext(), "Expected FQN with exactly 2 hash characters: %s", fqn);
     try {
       var ownerClass = Class.forName(className, /* initialize= */ true, getClassLoader());
-      return MethodHandles.publicLookup()
-          .in(ownerClass)
-          .findStatic(
-              ownerClass,
-              methodName,
-              // parse the descriptor in the context of the callee
-              MethodType.fromMethodDescriptorString(descriptor, ownerClass.getClassLoader()));
+      // parse the descriptor in the context of the callee
+      var methodType =
+          MethodType.fromMethodDescriptorString(descriptor, ownerClass.getClassLoader());
+
+      return ClassLoaderFallbackCallFactory.findStaticWithOrWithoutLeadingRenderContext(
+          MethodHandles.publicLookup().in(ownerClass), ownerClass, methodName, methodType, isConst);
     } catch (ReflectiveOperationException e) {
-      throw new LinkageError("Could not invoke " + fqn, e);
+      throw new LinkageError("Could not link to " + fqn, e);
     }
   }
 
@@ -466,11 +477,12 @@ public class CompiledTemplates {
         var positionalParameters = this.positionalParameters.get();
         MethodHandle positionalRenderMethod = this.renderMethod;
         // Replace the initial SoyRecord argument with a call through positionalToRecord so the
-        // signature becomes (SoyValueProvider[],SoyRecord,LoggingAdvisingAppendable,RenderContext)
+        // signature becomes (StackFrame,
+        // SoyValueProvider[],SoyRecord,LoggingAdvisingAppendable,RenderContext)
         positionalRenderMethod =
             MethodHandles.filterArguments(
                 positionalRenderMethod,
-                0,
+                1,
                 MethodHandles.insertArguments(
                     HandlesForTesting.POSITIONAL_TO_RECORD,
                     0,
@@ -481,7 +493,7 @@ public class CompiledTemplates {
         // positional signature.
         this.positionalRenderMethod =
             positionalRenderMethod.asCollector(
-                0, SoyValueProvider[].class, positionalParameters.size());
+                1, SoyValueProvider[].class, positionalParameters.size());
       }
     }
 
@@ -531,8 +543,9 @@ public class CompiledTemplates {
       var positionalRenderMethod = this.positionalRenderMethod;
       if (positionalRenderMethod == null) {
         String templateMethodName = Names.renderMethodNameFromSoyTemplateName(soyTemplateName);
-        Class<?>[] paramTypes = new Class<?>[arity + 2];
-        Arrays.fill(paramTypes, 0, arity, SoyValueProvider.class);
+        Class<?>[] paramTypes = new Class<?>[arity + 3];
+        paramTypes[0] = StackFrame.class;
+        Arrays.fill(paramTypes, 1, 1 + arity, SoyValueProvider.class);
         paramTypes[paramTypes.length - 2] = LoggingAdvisingAppendable.class;
         paramTypes[paramTypes.length - 1] = RenderContext.class;
         try {
@@ -541,7 +554,7 @@ public class CompiledTemplates {
                   .findStatic(
                       this.templateMethod.getDeclaringClass(),
                       templateMethodName,
-                      methodType(RenderResult.class, paramTypes));
+                      methodType(StackFrame.class, paramTypes));
         } catch (ReflectiveOperationException e) {
           // This may be caused by:
           //   1. Trying to call a private template. The factory() method is package private and so
@@ -609,7 +622,7 @@ public class CompiledTemplates {
           // consider catching them here to add information about our generated types. (e.g. add
           // the
           // class trace and a pointer on how to file a soy bug)
-          throw new AssertionError(e);
+          throw new LinkageError(e.getMessage(), e);
         }
         template = local;
       }

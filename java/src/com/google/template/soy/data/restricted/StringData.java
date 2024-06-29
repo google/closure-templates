@@ -17,6 +17,7 @@
 package com.google.template.soy.data.restricted;
 
 import com.google.errorprone.annotations.Immutable;
+import com.google.errorprone.annotations.concurrent.LazyInit;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SoyValue;
 import java.io.IOException;
@@ -28,16 +29,10 @@ import javax.annotation.Nonnull;
  * <p>Important: This class may only be used in implementing plugins (e.g. functions, directives).
  */
 @Immutable
-public final class StringData extends PrimitiveData {
+public abstract class StringData extends PrimitiveData {
 
   /** Static instance of StringData with value "". */
-  public static final StringData EMPTY_STRING = new StringData("");
-
-  private final String value;
-
-  private StringData(String value) {
-    this.value = value;
-  }
+  public static final StringData EMPTY_STRING = new Impl("");
 
   /**
    * Gets a StringData instance for the given value.
@@ -47,56 +42,96 @@ public final class StringData extends PrimitiveData {
    */
   @Nonnull
   public static StringData forValue(String value) {
-    return (value.length() == 0) ? EMPTY_STRING : new StringData(value);
+    return (value.length() == 0) ? EMPTY_STRING : new Impl(value);
+  }
+
+  @Nonnull
+  public static StringData forValue(LoggingAdvisingAppendable.CommandBuffer value) {
+    return new BufferedImpl(value);
   }
 
   /** Returns the string value. */
-  public String getValue() {
-    return value;
-  }
+  public abstract String getValue();
 
   @Override
-  public String stringValue() {
+  public final String stringValue() {
     return getValue();
   }
 
   @Override
-  public String toString() {
+  public final String toString() {
     return getValue();
   }
 
-  /**
-   * {@inheritDoc}
-   *
-   * <p>The empty string is falsy.
-   */
   @Override
-  public boolean coerceToBoolean() {
-    return getValue().length() > 0;
+  public final String coerceToString() {
+    return getValue();
   }
 
   @Override
-  public String coerceToString() {
-    return toString();
-  }
-
-  @Override
-  public void render(LoggingAdvisingAppendable appendable) throws IOException {
-    appendable.append(value);
-  }
-
-  @Override
-  public boolean equals(Object other) {
+  public final boolean equals(Object other) {
     return other instanceof StringData && getValue().equals(((StringData) other).getValue());
   }
 
   @Override
-  public int hashCode() {
-    return stringValue().hashCode();
+  public final int hashCode() {
+    return getValue().hashCode();
   }
 
   @Override
-  public SoyValue checkNullishString() {
+  public final SoyValue checkNullishString() {
     return this;
+  }
+
+  private static final class Impl extends StringData {
+    private final String value;
+
+    Impl(String value) {
+      this.value = value;
+    }
+
+    @Override
+    public String getValue() {
+      return value;
+    }
+
+    @Override
+    public boolean coerceToBoolean() {
+      return !value.isEmpty();
+    }
+
+    @Override
+    public void render(LoggingAdvisingAppendable appendable) throws IOException {
+      appendable.append(value);
+    }
+  }
+
+  private static final class BufferedImpl extends StringData {
+    @LazyInit private String value;
+    private final LoggingAdvisingAppendable.CommandBuffer buffer;
+
+    BufferedImpl(LoggingAdvisingAppendable.CommandBuffer value) {
+      this.buffer = value;
+    }
+
+    @Override
+    public String getValue() {
+      var value = this.value;
+      if (value == null) {
+        value = buffer.toString();
+        this.value = value;
+      }
+      return value;
+    }
+
+    @Override
+    public boolean coerceToBoolean() {
+      return true;
+    }
+
+    @Override
+    public void render(LoggingAdvisingAppendable appendable) throws IOException {
+      buffer.replayOn(appendable);
+    }
   }
 }

@@ -129,7 +129,7 @@ public final class PassManagerTest {
             ResolveExpressionTypesPass.class,
             ResolveNamesPass.class,
             ResolvePackageRelativeCssNamesPass.class,
-            ResolveTemplateParamTypesPass.class,
+            ResolveDeclaredTypesPass.class,
             RestoreGlobalsPass.class,
             RewriteGenderMsgsPass.class,
             UnknownJsGlobalPass.class,

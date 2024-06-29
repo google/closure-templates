@@ -112,6 +112,7 @@ java_library(
         "//java/src/com/google/template/soy/conformance",
         "//java/src/com/google/template/soy/css",
         "//java/src/com/google/template/soy/error:error_reporter",
+        "//java/src/com/google/template/soy/error:formatter",
         "//java/src/com/google/template/soy/incrementaldomsrc",
         "//java/src/com/google/template/soy/incrementaldomsrc:options",
         "//java/src/com/google/template/soy/javagencode",

@@ -22,6 +22,11 @@ migrate one parameter at a time).
 
 Values typed as `?` are assignable to parameters of all types and vice-versa.
 
+### `never` {#never}
+
+Indicates that the compiler believes that a condition is impossible based on
+declared types and type narrowing.
+
 ### `null` {#null}
 
 The `null` type is not very useful on its own, but can be as part of
@@ -356,6 +361,38 @@ JavaScript | `Array`
 SoySauce   | `java.util.List`, `com.google.template.soy.data.SoyList`
 Tofu       | `com.google.template.soy.data.SoyList`
 Python     | `list`
+
+### `set<T>` {#set}
+
+Like a list but contains only unique values and the `has` method is constant
+time.
+
+Sets can be iterated over in a `{for}` loop or list comprehension but they do
+not support index-based item access. Iteration order is defined as insertion
+order. To convert a set into a list, spread it into a list literal.
+
+```soy
+{let $list = [...$set] /}
+```
+
+Backend    | type in host language
+---------- | ------------------------------------------------------
+JavaScript | `Set`
+SoySauce   | `java.util.Set`, `com.google.template.soy.data.SoySet`
+Tofu       | `com.google.template.soy.data.SoySet`
+Python     | partial support
+
+### `iterable<T>` {#iterable}
+
+A supertype of `list` and `set`. Iterables can be iterated over in a `{for}`
+loop or list comprehension.
+
+Backend    | type in host language
+---------- | ------------------------------------------
+JavaScript | `Iterable`
+SoySauce   | `com.google.template.soy.data.SoyIterable`
+Tofu       | `com.google.template.soy.data.SoyIterable`
+Python     | partial support
 
 ### `map<K, V>` {#map}
 

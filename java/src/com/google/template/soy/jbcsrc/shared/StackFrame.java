@@ -16,6 +16,12 @@
 
 package com.google.template.soy.jbcsrc.shared;
 
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
+
+import com.google.template.soy.jbcsrc.api.RenderResult;
+import javax.annotation.Nullable;
+
 /**
  * Represents a detached stack frame.
  *
@@ -24,24 +30,50 @@ package com.google.template.soy.jbcsrc.shared;
  */
 public class StackFrame {
 
-  /**
-   * The initial state for every detachable method.
-   *
-   * <p>This frame is linked to itself to simplify state restoration logic.
-   */
-  static final StackFrame INIT;
+  public static final StackFrame LIMITED = create(RenderResult.limited());
 
-  static {
-    INIT = new StackFrame(0);
-    INIT.child = INIT;
+  public static StackFrame create(StackFrame child, int stateNumber) {
+    return new StackFrame(child, stateNumber);
+  }
+
+  public static StackFrame create(RenderResult result) {
+    return new StackFrame(result, 0);
+  }
+
+  public static StackFrame create(RenderResult result, int stateNumber) {
+    return new StackFrame(result, stateNumber);
   }
 
   /** The logical position in the suspended frame. A non-negative number. */
   public final int stateNumber;
-  /** The child frame in the stack. */
-  StackFrame child;
 
-  public StackFrame(int stateNumber) {
+  /** The child frame in the stack. */
+  @Nullable public final StackFrame child;
+
+  // When null, this is held by the child.
+  @Nullable private final RenderResult result;
+
+  protected StackFrame(StackFrame child, int stateNumber) {
+    this.child = checkNotNull(child);
     this.stateNumber = stateNumber;
+    this.result = null;
+  }
+
+  protected StackFrame(RenderResult renderResult, int stateNumber) {
+    this.child = null;
+    this.stateNumber = stateNumber;
+    this.result = checkNotNull(renderResult);
+    checkArgument(!renderResult.isDone());
+  }
+
+  /** Returns the `RenderResult` that this was constructed with originally. */
+  public RenderResult asRenderResult() {
+    var cur = this;
+    StackFrame child;
+    // Find the leaf frame which always has the result.
+    while ((child = cur.child) != null) {
+      cur = child;
+    }
+    return cur.result;
   }
 }

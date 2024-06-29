@@ -35,7 +35,6 @@ goog.module('google3.javascript.template.soy.soyutils_directives');
 var module = module || { id: 'javascript/template/soy/soyutils_directives.js' };
 var goog_goog_soy_data_SanitizedContentKind_1 = goog.require('goog.soy.data.SanitizedContentKind'); // from //javascript/closure/soy:data
 var soy = goog.require('soy'); // from //javascript/template/soy:soy_usegoog_js
-var goog_soy_checks_1 = goog.require('soy.checks'); // from //javascript/template/soy:checks
 var goog_soydata_VERY_UNSAFE_1 = goog.require('soydata.VERY_UNSAFE'); // from //javascript/template/soy:soy_usegoog_js
 function isIdomFunctionType(
 // tslint:disable-next-line:no-any
@@ -50,10 +49,11 @@ exports.$$isIdomFunctionType = isIdomFunctionType;
  */
 // tslint:disable-next-line:no-any
 function filterHtmlAttributes(value) {
-    if (isIdomFunctionType(value, goog_goog_soy_data_SanitizedContentKind_1.ATTRIBUTES) ||
-        goog_soy_checks_1.isAttribute(value)) {
-        return value;
-    }
+  if (isIdomFunctionType(
+          value, goog_goog_soy_data_SanitizedContentKind_1.ATTRIBUTES) ||
+      soy.$$isAttribute(value)) {
+    return value;
+  }
     return soy.$$filterHtmlAttributes(value);
 }
 exports.$$filterHtmlAttributes = filterHtmlAttributes;

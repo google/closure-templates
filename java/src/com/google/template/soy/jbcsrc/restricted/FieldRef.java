@@ -28,6 +28,7 @@ import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.jbcsrc.restricted.Expression.Feature;
 import com.google.template.soy.jbcsrc.restricted.Expression.Features;
+import com.google.template.soy.jbcsrc.runtime.JbcSrcRuntime;
 import com.google.template.soy.jbcsrc.shared.StackFrame;
 import java.lang.invoke.ConstantBootstraps;
 import java.lang.invoke.MethodHandles;
@@ -75,6 +76,14 @@ public abstract class FieldRef {
 
   public static final FieldRef STACK_FRAME_STATE_NUMBER =
       instanceFieldReference(StackFrame.class, "stateNumber");
+
+  public static final FieldRef STACK_FRAME_CHILD =
+      instanceFieldReference(StackFrame.class, "child");
+  public static final FieldRef STACK_FRAME_LIMITED =
+      staticFieldReference(StackFrame.class, "LIMITED");
+
+  public static final FieldRef REPLAYING_BUFFERED_RENDER_DONE_FN =
+      staticFieldReference(JbcSrcRuntime.class, "REPLAYING_BUFFERED_RENDER_DONE_FN");
 
   public static FieldRef create(
       TypeInfo owner, String name, Type type, int modifiers, boolean isNullable) {

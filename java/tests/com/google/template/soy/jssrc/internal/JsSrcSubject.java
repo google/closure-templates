@@ -166,7 +166,7 @@ abstract class JsSrcSubject<T extends Subject> extends Subject {
   }
 
   void causesErrors(String... expectedErrorMsgSubstrings) {
-    ErrorReporter reporter = ErrorReporter.createForTest();
+    ErrorReporter reporter = ErrorReporter.create();
     this.errorReporter = reporter;
 
     generateCode();

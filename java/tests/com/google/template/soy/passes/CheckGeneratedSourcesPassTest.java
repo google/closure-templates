@@ -42,7 +42,7 @@ public final class CheckGeneratedSourcesPassTest {
   private static final SourceFilePath PATH1 = SourceFilePath.forTest("file1.soy");
   private static final SourceFilePath PATH2 = SourceFilePath.forTest("file2.soy");
 
-  private final ErrorReporter errorReporter = ErrorReporter.createForTest();
+  private final ErrorReporter errorReporter = ErrorReporter.create();
   private final IdGenerator idGenerator = new FixedIdGenerator(-1);
 
   @Test

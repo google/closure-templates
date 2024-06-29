@@ -116,7 +116,6 @@ public final class BidiDirectivesRuntime {
   private static final class BidiWrapAppendable extends ForwardingLoggingAdvisingAppendable {
     private final BidiGlobalDir globalDir;
     private final WrapType wrapType;
-    private final StringBuilder buffer;
     private final BufferingAppendable commandBuffer;
 
     BidiWrapAppendable(
@@ -124,14 +123,14 @@ public final class BidiDirectivesRuntime {
       super(delegate);
       this.globalDir = globalDir;
       this.wrapType = Preconditions.checkNotNull(wrapType);
-      buffer = new StringBuilder();
       commandBuffer = LoggingAdvisingAppendable.buffering();
     }
 
     @Override
-    protected void notifyKindAndDirectionality(ContentKind kind, @Nullable Dir dir)
-        throws IOException {
+    protected LoggingAdvisingAppendable notifyKindAndDirectionality(
+        ContentKind kind, @Nullable Dir dir) {
       commandBuffer.setKindAndDirectionality(kind, dir);
+      return this;
     }
 
     @CanIgnoreReturnValue
@@ -160,7 +159,6 @@ public final class BidiDirectivesRuntime {
     @CanIgnoreReturnValue
     @Override
     public LoggingAdvisingAppendable append(char c) throws IOException {
-      buffer.append(c);
       commandBuffer.append(c);
       return this;
     }
@@ -168,7 +166,6 @@ public final class BidiDirectivesRuntime {
     @CanIgnoreReturnValue
     @Override
     public LoggingAdvisingAppendable append(CharSequence csq) throws IOException {
-      buffer.append(csq);
       commandBuffer.append(csq);
       return this;
     }
@@ -177,7 +174,6 @@ public final class BidiDirectivesRuntime {
     @Override
     public LoggingAdvisingAppendable append(CharSequence csq, int start, int end)
         throws IOException {
-      buffer.append(csq, start, end);
       commandBuffer.append(csq, start, end);
       return this;
     }
@@ -190,13 +186,15 @@ public final class BidiDirectivesRuntime {
         case SPAN:
           wrappingText =
               formatter.spanWrappingText(
-                  getSanitizedContentDirectionality(), buffer.toString(), /* isHtml= */ true);
+                  getSanitizedContentDirectionality(),
+                  commandBuffer.toString(),
+                  /* isHtml= */ true);
           break;
         case UNICODE:
           wrappingText =
               formatter.unicodeWrappingText(
                   getSanitizedContentDirectionality(),
-                  buffer.toString(),
+                  commandBuffer.toString(),
                   getSanitizedContentKind() == ContentKind.HTML);
           break;
         default:

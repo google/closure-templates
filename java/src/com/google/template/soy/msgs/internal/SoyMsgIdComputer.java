@@ -106,6 +106,7 @@ final class SoyMsgIdComputer {
     }
 
     // If there is a content type other than "text/html", incorporate its fingerprint.
+    // TODO(nicholasyu): This is never executed. Look into removing.
     if (contentType != null && !contentType.equals("text/html")) {
       fp = (fp << 1) + (fp < 0 ? 1 : 0) + fingerprint(contentType);
     }

@@ -77,8 +77,8 @@ public abstract class AbstractStreamingHtmlEscaper extends LoggingAdvisingAppend
    * content kind.
    */
   @Override
-  protected abstract void notifyKindAndDirectionality(ContentKind kind, @Nullable Dir contentDir)
-      throws IOException;
+  protected abstract LoggingAdvisingAppendable notifyKindAndDirectionality(
+      ContentKind kind, @Nullable Dir contentDir);
 
   @Override
   public void flushBuffers(int depth) throws IOException {

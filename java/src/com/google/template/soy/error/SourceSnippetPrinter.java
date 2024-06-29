@@ -30,6 +30,7 @@ import java.util.Optional;
 
 /** Class responsible for extracting code snippets from soy sources. */
 public final class SourceSnippetPrinter {
+
   /** Represents an item that can be printed as part of a snippet. */
   private interface Printable {
     /**
@@ -115,10 +116,15 @@ public final class SourceSnippetPrinter {
     }
   }
 
+  private final SoyFileSupplier sourceFile;
+
   /** The maximum number of lines that should be printed. */
   private final int maxLines;
 
-  public SourceSnippetPrinter() {
+  private ImmutableList<Printable> allLines;
+
+  public SourceSnippetPrinter(SoyFileSupplier sourceFile) {
+    this.sourceFile = sourceFile;
     this.maxLines = Integer.MAX_VALUE;
   }
 
@@ -128,7 +134,8 @@ public final class SourceSnippetPrinter {
    *     totaling to maxLines lines, with an ellipsis instead of the middle portion. The number must
    *     be at least 2, allowing at least one line before and after the ellipsis.
    */
-  public SourceSnippetPrinter(int maxLines) {
+  public SourceSnippetPrinter(SoyFileSupplier sourceFile, int maxLines) {
+    this.sourceFile = sourceFile;
     checkArgument(maxLines > 1, "maxLines must be at least 2");
     this.maxLines = maxLines;
   }
@@ -153,13 +160,13 @@ public final class SourceSnippetPrinter {
    * would exceed maxLines, only the beginning and end of the snippet, up to maxLines lines, is
    * returned, with an ellipsis in between.
    */
-  public Optional<String> getSnippet(SoyFileSupplier soyFileSupplier, SourceLocation location) {
+  public Optional<String> getSnippet(SourceLocation location) {
     if (!location.isKnown()) {
       return Optional.empty();
     }
 
     // Find a snippet of source code associated with the location.
-    ImmutableList<Printable> snippetLines = getSourceLines(soyFileSupplier, location);
+    ImmutableList<Printable> snippetLines = getSourceLines(location);
     if (snippetLines.isEmpty()) {
       return Optional.empty();
     }
@@ -189,25 +196,28 @@ public final class SourceSnippetPrinter {
    * Optional#empty()} if source code is unavailable. (This happens, for example, when anyone uses
    * {@link SourceLocation#UNKNOWN}, which is why no one should use it.)
    */
-  private static ImmutableList<Printable> getSourceLines(
-      SoyFileSupplier supplier, SourceLocation location) {
-    ImmutableList.Builder<Printable> lines = ImmutableList.builder();
-    try (BufferedReader reader = new BufferedReader(supplier.open())) {
-      // Line numbers are 1-indexed and inclusive of end lines
-      for (int lineNum = 1; lineNum <= location.getEndLine(); ++lineNum) {
-        String line = reader.readLine();
-        if (line == null) {
-          // eof, warn if happens too early?
-          break;
+  private ImmutableList<Printable> getSourceLines(SourceLocation location) {
+    ImmutableList<Printable> allLines = getAllLines();
+    return allLines.subList(
+        location.getBeginLine() - 1, Math.min(location.getEndLine(), allLines.size()));
+  }
+
+  private ImmutableList<Printable> getAllLines() {
+    if (allLines == null) {
+      ImmutableList.Builder<Printable> lines = ImmutableList.builder();
+      try (BufferedReader reader = new BufferedReader(sourceFile.open())) {
+        // Line numbers are 1-indexed and inclusive of end lines
+        int lineNum = 1;
+        String line;
+
+        while ((line = reader.readLine()) != null) {
+          lines.add(SourceLine.create(lineNum++, line));
         }
-        // Skip preceding lines
-        if (lineNum >= location.getBeginLine()) {
-          lines.add(SourceLine.create(lineNum, line));
-        }
+        allLines = lines.build();
+      } catch (IOException ioe) {
+        return ImmutableList.of(); // TODO(lukes): log warning?
       }
-      return lines.build();
-    } catch (IOException ioe) {
-      return ImmutableList.of(); // TODO(lukes): log warning?
     }
+    return allLines;
   }
 }

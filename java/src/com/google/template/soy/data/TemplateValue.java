@@ -25,49 +25,35 @@ import javax.annotation.Nonnull;
 public abstract class TemplateValue extends SoyAbstractValue {
   @Nonnull
   public static TemplateValue create(String templateName) {
-    return new AutoValue_TemplateValue(templateName, Optional.empty(), Optional.empty());
+    return createWithBoundParameters(templateName, ParamStore.EMPTY_INSTANCE);
   }
 
   @Nonnull
   public static TemplateValue create(String templateName, Object compiledTemplate) {
     return new AutoValue_TemplateValue(
-        templateName, Optional.empty(), Optional.of(compiledTemplate));
+        templateName, ParamStore.EMPTY_INSTANCE, Optional.of(compiledTemplate));
   }
 
   @Nonnull
   public static TemplateValue createWithBoundParameters(
       String templateName, ParamStore boundParameters) {
-    return new AutoValue_TemplateValue(
-        templateName, Optional.of(boundParameters), Optional.empty());
+    return new AutoValue_TemplateValue(templateName, boundParameters, Optional.empty());
   }
 
-  @Nonnull
-  public static TemplateValue createWithBoundParameters(
-      String templateName, ParamStore boundParameters, Object compiledTemplate) {
-    return new AutoValue_TemplateValue(
-        templateName, Optional.of(boundParameters), Optional.of(compiledTemplate));
-  }
-
-  @Nonnull
-  public static TemplateValue createFromTemplate(
-      TemplateInterface template, Object compiledTemplate) {
+  public static TemplateValue createFromTemplate(TemplateInterface template) {
     ParamStore record = (ParamStore) template.getParamsAsRecord();
-    return new AutoValue_TemplateValue(
-        template.getTemplateName(), Optional.of(record), Optional.of(compiledTemplate));
+    return createWithBoundParameters(template.getTemplateName(), record);
   }
 
   public abstract String getTemplateName();
 
-  public abstract Optional<ParamStore> getBoundParameters();
+  public abstract ParamStore getBoundParameters();
 
   // This is supposed to be the CompiledTemplate interface, but is an Object here because of
   // circular build dependencies.
+  // This will always be present for templates that are constructed by the jbcsrc code gen, but
+  // absent when constructed by Tofu or passed in at the top level.
   public abstract Optional<Object> compiledTemplate();
-
-  @Nonnull
-  public Object getCompiledTemplate() {
-    return compiledTemplate().get();
-  }
 
   @Override
   public final boolean coerceToBoolean() {

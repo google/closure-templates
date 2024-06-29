@@ -89,6 +89,11 @@ final class JbcSrcJavaValue implements JavaValue {
   }
 
   @Override
+  public JavaValue coerceToJavaInt() {
+    return new JbcSrcJavaValue(((SoyExpression) expr).coerceToInt(), methodSignature);
+  }
+
+  @Override
   public JbcSrcJavaValue asSoyString() {
     return this;
   }

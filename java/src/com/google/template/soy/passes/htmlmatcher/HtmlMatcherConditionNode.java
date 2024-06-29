@@ -18,7 +18,6 @@ package com.google.template.soy.passes.htmlmatcher;
 
 import static com.google.common.base.Preconditions.checkState;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprNode;
@@ -70,7 +69,7 @@ public final class HtmlMatcherConditionNode extends HtmlMatcherGraphNode {
   }
 
   public boolean isInternallyBalanced(int foreignContentTagDepth, IdGenerator idGenerator) {
-    ErrorReporter errorReporter = ErrorReporter.create(ImmutableMap.of());
+    ErrorReporter errorReporter = ErrorReporter.create();
     HtmlTagMatchingPass pass =
         new HtmlTagMatchingPass(
             errorReporter,

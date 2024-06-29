@@ -19,9 +19,8 @@ package com.google.template.soy.jbcsrc.shared;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.internal.ParamStore;
-import com.google.template.soy.jbcsrc.api.RenderResult;
 import java.io.IOException;
-import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 /** A compiled Soy template. Each instance is suitable for being rendered exactly once. */
 @Immutable
@@ -30,19 +29,20 @@ public interface CompiledTemplate {
   /**
    * Renders the template.
    *
+   * @param frame The StackFrame to use to resume executing, or {@code null} for the initial render.
    * @param params the explicit params of the template
    * @param appendable The output target
    * @param context The rendering context
-   * @return {@link RenderResult#done()} if rendering has completed successfully, {@link
-   *     RenderResult#limited()} if rendering was paused because the appendable reported {@link
-   *     LoggingAdvisingAppendable#softLimitReached()} or {@link
-   *     RenderResult#continueAfter(java.util.concurrent.Future)} if rendering encountered a future
-   *     that was not {@link java.util.concurrent.Future#isDone done}.
+   * @return {@code null} if rendering has completed successfully, a {@link StackFrame} defining how
+   *     to continue otherwise.
    * @throws IOException If the output stream throws an exception. This is a fatal error and
    *     rendering cannot be continued.
    */
-  @Nonnull
-  RenderResult render(
-      ParamStore params, LoggingAdvisingAppendable appendable, RenderContext context)
+  @Nullable
+  StackFrame render(
+      @Nullable StackFrame frame,
+      ParamStore params,
+      LoggingAdvisingAppendable appendable,
+      RenderContext context)
       throws IOException;
 }

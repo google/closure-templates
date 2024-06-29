@@ -25,8 +25,12 @@ final class StandardNames {
   static final String CURRENT_CALLEE = "$currentCallee";
   static final String CURRENT_RENDEREE = "$currentRenderee";
   static final String CURRENT_APPENDABLE = "$currentAppendable";
+  static final String CURRENT_DATA_EXPR = "$currentDataExpr";
   static final String CURRENT_PARAMS = "$currentParams";
   static final String STACK_FRAME = "$stackFrame";
+  static final String STACK_FRAME_TMP = "$stackFrameTmp";
+  static final String BUFFER = "$buffer";
+  static final String OPTIMISTIC = "$optimistic";
 
   private StandardNames() {}
 }

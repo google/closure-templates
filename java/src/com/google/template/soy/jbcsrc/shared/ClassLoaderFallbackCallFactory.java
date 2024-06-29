@@ -27,7 +27,6 @@ import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.TemplateValue;
 import com.google.template.soy.data.internal.ParamStore;
-import com.google.template.soy.jbcsrc.api.RenderResult;
 import java.lang.invoke.CallSite;
 import java.lang.invoke.ConstantCallSite;
 import java.lang.invoke.MethodHandle;
@@ -101,9 +100,10 @@ public final class ClassLoaderFallbackCallFactory {
         findLocalStaticOrDie(
             "slowPathRenderRecord",
             methodType(
-                RenderResult.class,
+                StackFrame.class,
                 SoyCallSite.class,
                 String.class,
+                StackFrame.class,
                 ParamStore.class,
                 LoggingAdvisingAppendable.class,
                 RenderContext.class));
@@ -112,9 +112,10 @@ public final class ClassLoaderFallbackCallFactory {
         findLocalStaticOrDie(
             "slowPathRenderPositional",
             methodType(
-                RenderResult.class,
+                StackFrame.class,
                 SoyCallSite.class,
                 String.class,
+                StackFrame.class,
                 SoyValueProvider[].class,
                 LoggingAdvisingAppendable.class,
                 RenderContext.class));
@@ -149,7 +150,8 @@ public final class ClassLoaderFallbackCallFactory {
 
     private static final MethodType RENDER_TYPE =
         methodType(
-            RenderResult.class,
+            StackFrame.class,
+            StackFrame.class,
             ParamStore.class,
             LoggingAdvisingAppendable.class,
             RenderContext.class);
@@ -301,14 +303,43 @@ public final class ClassLoaderFallbackCallFactory {
       // target type has a signature like (SVP,SVP,...SVP,ParamStore,Appendable,RenderContext)
       // we want to collect the leading SVPs into an array at the end of the slowpath
       int numParams = type.parameterCount();
-      int numPositionalParams = numParams - 2; // 3 for the CallSite, appenable and context
+      int numPositionalParams =
+          numParams - 3; // 4 for the CallSite,ij params, appenable and context
 
       // Turn slowPath from accepting a SoyValueProvider[] to a fixed number of
-      // SoyValueProvider arguments at position 1
+      // SoyValueProvider arguments at position 2
       slowPathRenderHandle =
-          slowPathRenderHandle.asCollector(1, SoyValueProvider[].class, numPositionalParams);
+          slowPathRenderHandle.asCollector(2, SoyValueProvider[].class, numPositionalParams);
     }
     return new SoyCallSite(type, slowPathRenderHandle);
+  }
+
+  /**
+   * Returns a method handle matching the given type and name, where `type` has a leading
+   * `RenderContext` parameter. If the actual method does not have a `RenderContext` parameter
+   * return that instead.
+   */
+  static MethodHandle findStaticWithOrWithoutLeadingRenderContext(
+      MethodHandles.Lookup lookup, Class<?> context, String name, MethodType type, boolean isConst)
+      throws NoSuchMethodException, IllegalAccessException {
+    checkState(type.parameterType(0).equals(RenderContext.class));
+    try {
+      MethodHandle withoutRenderContext =
+          lookup.findStatic(context, name, type.dropParameterTypes(0, 1));
+      if (isConst) {
+        Object result;
+        try {
+          result = withoutRenderContext.invoke();
+        } catch (Throwable t) {
+          throw new AssertionError("const methods should not throw", t);
+        }
+        withoutRenderContext =
+            MethodHandles.constant(withoutRenderContext.type().returnType(), result);
+      }
+      return MethodHandles.dropArguments(withoutRenderContext, 0, RenderContext.class);
+    } catch (NoSuchMethodException nsme) {
+      return lookup.findStatic(context, name, type);
+    }
   }
 
   /**
@@ -330,14 +361,14 @@ public final class ClassLoaderFallbackCallFactory {
       MethodType type,
       String constClassName,
       String constName)
-      throws NoSuchMethodException, IllegalAccessException {
+      throws Throwable {
     if (!FORCE_SLOWPATH) {
       ClassLoader callerClassLoader = lookup.lookupClass().getClassLoader();
       try {
         Class<?> constClass = callerClassLoader.loadClass(constClassName);
         MethodHandle handle =
-            lookup.findStatic(
-                constClass, constName, methodType(type.returnType(), RenderContext.class));
+            findStaticWithOrWithoutLeadingRenderContext(
+                lookup, constClass, constName, type, /* isConst= */ true);
         return new ConstantCallSite(handle);
       } catch (ClassNotFoundException classNotFoundException) {
         // Fall back to using the RenderContext class loader.
@@ -380,8 +411,10 @@ public final class ClassLoaderFallbackCallFactory {
     if (!FORCE_SLOWPATH) {
       ClassLoader callerClassLoader = lookup.lookupClass().getClassLoader();
       try {
-        Class<?> constClass = callerClassLoader.loadClass(externClassName);
-        MethodHandle handle = lookup.findStatic(constClass, externName, type);
+        Class<?> externClass = callerClassLoader.loadClass(externClassName);
+        MethodHandle handle =
+            findStaticWithOrWithoutLeadingRenderContext(
+                lookup, externClass, externName, type, /* isConst= */ false);
         return new ConstantCallSite(handle);
       } catch (ClassNotFoundException classNotFoundException) {
         // Fall back to using the RenderContext class loader.
@@ -406,7 +439,8 @@ public final class ClassLoaderFallbackCallFactory {
   public static Object slowPathConst(
       SoyCallSite callSite, String constantFqn, RenderContext context) throws Throwable {
     CompiledTemplates templates = context.getTemplates();
-    MethodHandle constMethod = templates.getConstOrExternMethod(constantFqn);
+    MethodHandle constMethod = templates.getConstMethod(constantFqn);
+    // Update the callsite so future calls dispatch directly to constMethod
     callSite.update(templates, constMethod);
     return constMethod.invoke(context);
   }
@@ -420,8 +454,8 @@ public final class ClassLoaderFallbackCallFactory {
       SoyCallSite callSite, String externFqn, RenderContext context, Object[] args)
       throws Throwable {
     CompiledTemplates templates = context.getTemplates();
-    MethodHandle externMethod = templates.getConstOrExternMethod(externFqn);
-
+    MethodHandle externMethod = templates.getExternMethod(externFqn);
+    // Update the callsite so future calls dispatch directly to externMethod
     callSite.update(templates, externMethod);
 
     // use a slower dynamic call for the slowpath.  On subsequent calls the fastpath will be
@@ -438,7 +472,7 @@ public final class ClassLoaderFallbackCallFactory {
       clazz = callerClassLoader.loadClass(className);
     } catch (ClassNotFoundException classNotFoundException) {
       // expected, if this happens we need to resolve by falling back to one of our slowpaths
-      // which typically disptach the call through RenderContext
+      // which typically dispatch the call through RenderContext
       return Optional.empty();
     }
     // Test if we should send this class through the slowpath anyway
@@ -476,9 +510,10 @@ public final class ClassLoaderFallbackCallFactory {
   }
 
   /** The slow path for a call using positional call style. */
-  public static RenderResult slowPathRenderPositional(
+  public static StackFrame slowPathRenderPositional(
       SoyCallSite callSite,
       String templateName,
+      StackFrame frame,
       SoyValueProvider[] params,
       LoggingAdvisingAppendable appendable,
       RenderContext context)
@@ -489,16 +524,21 @@ public final class ClassLoaderFallbackCallFactory {
     callSite.update(templates, renderMethod);
     // NOTE: we don't need to handle any state since if we are detaching on the next re-attach we
     // will call back into the same function directly
-    Object[] args = ObjectArrays.concat(params, new Object[] {appendable, context}, Object.class);
+    Object[] args = new Object[params.length + 3];
+    args[0] = frame;
+    System.arraycopy(params, 0, args, 1, params.length);
+    args[params.length + 1] = appendable;
+    args[params.length + 2] = context;
     // This call style involves some boxing and should be equivalent to a reflective call in terms
     // of speed.
-    return (RenderResult) renderMethod.invokeWithArguments(args);
+    return (StackFrame) renderMethod.invokeWithArguments(args);
   }
 
   /** The slow path for a call. */
-  public static RenderResult slowPathRenderRecord(
+  public static StackFrame slowPathRenderRecord(
       SoyCallSite callSite,
       String templateName,
+      StackFrame frame,
       ParamStore params,
       LoggingAdvisingAppendable appendable,
       RenderContext context)
@@ -511,7 +551,7 @@ public final class ClassLoaderFallbackCallFactory {
         renderMethod);
     // NOTE: we don't need to handle any state since if we are detaching on the next re-attach we
     // will call back into the same function directly
-    return (RenderResult) renderMethod.invoke(params, appendable, context);
+    return (StackFrame) renderMethod.invokeExact(frame, params, appendable, context);
   }
 
   /**

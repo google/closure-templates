@@ -31,11 +31,13 @@ import com.google.protobuf.Message;
 import com.google.protobuf.ProtocolMessageEnum;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SoyDict;
+import com.google.template.soy.data.SoyIterable;
 import com.google.template.soy.data.SoyLegacyObjectMap;
 import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyProtoValue;
 import com.google.template.soy.data.SoyRecord;
+import com.google.template.soy.data.SoySet;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyVisualElement;
 import com.google.template.soy.data.SoyVisualElementData;
@@ -99,6 +101,12 @@ final class ValidatorFactory extends JavaValueFactory {
   private static final ImmutableSet<Class<?>> LIST_TYPES =
       ImmutableSet.of(SoyValue.class, SoyList.class, List.class);
 
+  private static final ImmutableSet<Class<?>> SET_TYPES =
+      ImmutableSet.of(SoyValue.class, SoySet.class, Set.class);
+
+  private static final ImmutableSet<Class<?>> ITERABLE_TYPES =
+      ImmutableSet.of(SoyValue.class, SoyIterable.class, Iterable.class);
+
   private static final ImmutableSet<Class<?>> MAP_TYPES =
       ImmutableSet.of(SoyValue.class, SoyMap.class, SoyDict.class, SoyRecord.class);
 
@@ -156,6 +164,20 @@ final class ValidatorFactory extends JavaValueFactory {
       return errorValue();
     }
     if (!validateParams(methodSignature, params, "callStaticMethod")) {
+      return errorValue();
+    }
+    return ValidatorValue.forMethodReturnType(methodSignature, reporter);
+  }
+
+  @Override
+  public JavaValue callJavaValueMethod(Method method, JavaValue instance, JavaValue... params) {
+    if (method == null) {
+      reporter.nullMethod("callJavaValueMethod");
+      return errorValue();
+    }
+    MethodSignature methodSignature = toMethodSignature(method);
+    if (Modifier.isStatic(method.getModifiers())) {
+      reporter.staticMismatch(methodSignature, /* expectedInstance= */ true);
       return errorValue();
     }
     return ValidatorValue.forMethodReturnType(methodSignature, reporter);
@@ -271,7 +293,7 @@ final class ValidatorFactory extends JavaValueFactory {
     if (value.isConstantNull()) {
       // If the value is for our "constant null", then we special-case things to allow
       // any valid type (expect primitives).
-      // TODO(sameb): Limit the allowed types to ones that valid for real soy types, e.g
+      // TODO(sameb): Limit the allowed types to ones that valid for real soy types, e.g.
       // the union of all the values the *_TYPES constants + protos + proto enums - primitives.
       validationResult =
           Primitives.allPrimitiveTypes().contains(expectedParamType)
@@ -337,7 +359,7 @@ final class ValidatorFactory extends JavaValueFactory {
   private static ValidationResult isValidClassForType(Class<?> clazz, SoyType type) {
     // Exit early if the class is primitive and the type is nullable -- that's not allowed.
     // Then remove null from the type.  This allows us to accept precise params for nullable
-    // types, e.g, for int|null we can allow IntegerData (which will be passed as 'null').
+    // types, e.g., for int|null we can allow IntegerData (which will be passed as 'null').
     if (SoyTypes.isNullish(type) && Primitives.allPrimitiveTypes().contains(clazz)) {
       return ValidationResult.forNullToPrimitive(type);
     }
@@ -373,6 +395,12 @@ final class ValidatorFactory extends JavaValueFactory {
         break;
       case LIST:
         expectedClasses = LIST_TYPES;
+        break;
+      case ITERABLE:
+        expectedClasses = ITERABLE_TYPES;
+        break;
+      case SET:
+        expectedClasses = SET_TYPES;
         break;
       case MAP:
         expectedClasses = MAP_TYPES;
@@ -429,6 +457,7 @@ final class ValidatorFactory extends JavaValueFactory {
       case TEMPLATE_TYPE:
       case TEMPLATE_MODULE:
       case FUNCTION:
+      case NEVER:
         throw new IllegalStateException(
             "Cannot have " + type.getKind() + " from function signature");
     }

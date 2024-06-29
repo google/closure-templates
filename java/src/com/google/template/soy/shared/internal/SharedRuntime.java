@@ -29,7 +29,7 @@ import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.data.restricted.StringData;
-import java.util.List;
+import java.util.Iterator;
 import java.util.Objects;
 import javax.annotation.Nonnull;
 
@@ -228,11 +228,12 @@ public final class SharedRuntime {
   }
 
   @Nonnull
-  public static SoyMap constructMapFromList(List<? extends SoyValueProvider> list) {
-    ImmutableMap.Builder<SoyValue, SoyValueProvider> map =
-        ImmutableMap.builderWithExpectedSize(list.size());
-    for (int i = 0; i < list.size(); i++) {
-      SoyValue recordEntry = list.get(i).resolve();
+  public static SoyMap constructMapFromIterator(Iterator<? extends SoyValueProvider> iterator) {
+    ImmutableMap.Builder<SoyValue, SoyValueProvider> map = ImmutableMap.builder();
+    int i = 0;
+    while (iterator.hasNext()) {
+      SoyValueProvider item = iterator.next();
+      SoyValue recordEntry = item.resolve();
       checkMapFromListConstructorCondition(recordEntry instanceof SoyRecord, recordEntry, i);
       SoyRecord record = (SoyRecord) recordEntry;
       SoyValue key = record.getField(RecordProperty.KEY);
@@ -240,6 +241,7 @@ public final class SharedRuntime {
       checkMapFromListConstructorCondition(
           SoyMap.isAllowedKeyType(key) && valueProvider != null, recordEntry, i);
       map.put(key, valueProvider);
+      i++;
     }
 
     return SoyMapImpl.forProviderMap(map.buildKeepingLast());

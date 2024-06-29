@@ -687,7 +687,7 @@ public final class SourceLocationTest {
     // look for a line number and break in a way that suppresses the real error
     // message.
     // JavaCC is pretty good about never using null as a token value.
-    ErrorReporter reporter = ErrorReporter.createForTest();
+    ErrorReporter reporter = ErrorReporter.create();
     SoyFileSetParserBuilder.forSuppliers(
             SoyFileSupplier.Factory.create(
                 "{template t}\nHello, World!\n", SourceFilePath.forTest("broken.soy")))
@@ -1230,7 +1230,7 @@ public final class SourceLocationTest {
                 new IncrementingIdGenerator(),
                 new StringReader(soySourceCode),
                 SourceFilePath.forTest("/example/file.soy"),
-                ErrorReporter.createForTest())
+                ErrorReporter.create())
             .parseSoyFile();
 
     assertThat(soyFile.numChildren()).isGreaterThan(0);

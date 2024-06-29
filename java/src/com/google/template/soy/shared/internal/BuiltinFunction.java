@@ -19,6 +19,8 @@ package com.google.template.soy.shared.internal;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.shared.restricted.SoyFunction;
+import com.google.template.soy.types.AnyType;
+import com.google.template.soy.types.IterableType;
 import com.google.template.soy.types.NullType;
 import com.google.template.soy.types.SanitizedType;
 import com.google.template.soy.types.SoyType;
@@ -60,13 +62,13 @@ public enum BuiltinFunction implements SoyFunction {
   DEBUG_SOY_TEMPLATE_INFO("$$debugSoyTemplateInfo"),
   PROTO_INIT("$$protoInit"),
   VE_DEF("ve_def"),
-  EMPTY_TO_NULL("$$emptyToNull"),
+  EMPTY_TO_UNDEFINED("$$emptyToUndefined"),
   UNDEFINED_TO_NULL("undefinedToNullForMigration"),
   UNDEFINED_TO_NULL_SSR("undefinedToNullForSsrMigration"),
   BOOLEAN("Boolean"),
   HAS_CONTENT("hasContent"),
   IS_TRUTHY_NON_EMPTY("isTruthyNonEmpty"),
-  ;
+  NEW_SET("Set");
 
   /** The function name. */
   private final String functionName;
@@ -99,12 +101,13 @@ public enum BuiltinFunction implements SoyFunction {
       case REMAINDER:
       case MSG_WITH_ID:
       case TO_FLOAT:
-      case EMPTY_TO_NULL:
+      case EMPTY_TO_UNDEFINED:
       case UNDEFINED_TO_NULL:
       case UNDEFINED_TO_NULL_SSR:
       case BOOLEAN:
       case IS_TRUTHY_NON_EMPTY:
       case HAS_CONTENT:
+      case NEW_SET:
         return ImmutableSet.of(1);
       case PROTO_INIT:
         throw new UnsupportedOperationException();
@@ -130,6 +133,9 @@ public enum BuiltinFunction implements SoyFunction {
                     StringType.getInstance(),
                     NullType.getInstance(),
                     UndefinedType.getInstance())));
+      case NEW_SET:
+        // This is further constrained in ResolveExpressionTypesPass.
+        return Optional.of(ImmutableList.of(IterableType.of(AnyType.getInstance())));
       default:
         return Optional.empty();
     }
@@ -151,12 +157,13 @@ public enum BuiltinFunction implements SoyFunction {
       case VE_DATA:
       case TO_FLOAT:
       case PROTO_INIT:
-      case EMPTY_TO_NULL:
+      case EMPTY_TO_UNDEFINED:
       case UNDEFINED_TO_NULL:
       case UNDEFINED_TO_NULL_SSR:
       case BOOLEAN:
       case HAS_CONTENT:
       case IS_TRUTHY_NON_EMPTY:
+      case NEW_SET:
         return true;
       case CSS: // implicitly depends on a renaming map or js compiler flag
       case EVAL_TOGGLE:

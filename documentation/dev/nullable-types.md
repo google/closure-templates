@@ -55,4 +55,4 @@ Furthermore within the `B` branch we know that `$foo` is `null` or at least is
 The [`checkNotNull`](../reference/functions.md#checkNotNull) function will either
 return its parameter or throw an unspecified exception if the provided value is
 nullish. Additionally the type checker understands this behavior and so this can
-be used a cast operator to turn nullable types into non-nullable types.
+be used as a cast operator to turn nullable types into non-nullable types.

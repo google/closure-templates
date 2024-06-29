@@ -24,7 +24,6 @@ import com.google.common.collect.ImmutableSet;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.errorprone.annotations.CheckReturnValue;
 import com.google.template.soy.data.SanitizedContent;
-import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyInjector;
 import com.google.template.soy.data.SoyTemplate;
 import com.google.template.soy.data.SoyTemplateData;
@@ -142,7 +141,7 @@ public interface SoySauce {
      * SoyJavaSourceFunctions} that use {@code JavaValueFactory.callInstanceMethod}.
      *
      * <p>Most plugin instances should be associated with the SoySauce instance during construction,
-     * but this method can be used to add more if that is not feasible.
+     * but this method can be used to add more plugins or override existing plugins, per renderer.
      */
     @CanIgnoreReturnValue
     Renderer setPluginInstances(Map<String, ? extends Supplier<Object>> pluginInstances);

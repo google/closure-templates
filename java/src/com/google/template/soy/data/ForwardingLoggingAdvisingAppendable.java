@@ -72,8 +72,9 @@ public abstract class ForwardingLoggingAdvisingAppendable extends LoggingAdvisin
   }
 
   @Override
-  protected void notifyKindAndDirectionality(ContentKind kind, Dir dir) throws IOException {
+  protected LoggingAdvisingAppendable notifyKindAndDirectionality(ContentKind kind, Dir dir) {
     delegate.setKindAndDirectionality(kind, dir);
+    return this;
   }
 
   @CanIgnoreReturnValue

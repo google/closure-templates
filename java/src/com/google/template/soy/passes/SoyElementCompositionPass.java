@@ -484,13 +484,9 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
     }
     if (isSoyAttr) {
       ExprNode val = new VarRefNode("$" + paramName, unknown, attrs.get(paramName));
-      if (condition.isPresent()) {
-        return new CallParamValueNode(
-            nodeIdGen.genId(),
-            attr.getSourceLocation(),
-            Identifier.create(paramName, attr.getChild(0).getSourceLocation()),
-            emptyToUndefined(val));
-      } else if (ElementAttributePass.getMergingKey(attr) == null) {
+      Preconditions.checkState(
+          !condition.isPresent(), "{if ...}@attr{/if} should not pass parser.");
+      if (ElementAttributePass.getMergingKey(attr) == null) {
         return new CallParamValueNode(
             nodeIdGen.genId(),
             attr.getSourceLocation(),
@@ -580,7 +576,7 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
      *
      * {let $__internal_call_someAttr_0 kind="text"}{if $cond}...{/if}{/let}
      * {call foo}
-     *   {param someAttr: $$emptyToNull($__internal_call_someAttr_0) /}
+     *   {param someAttr: $$emptyToUndefined($__internal_call_someAttr_0) /}
      * {/call}
      */
     LetContentNode letContentNode =
@@ -619,8 +615,9 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
   private static ExprNode emptyToUndefined(ExprNode val) {
     var functionNode =
         FunctionNode.newPositional(
-            Identifier.create(BuiltinFunction.EMPTY_TO_NULL.getName(), val.getSourceLocation()),
-            BuiltinFunction.EMPTY_TO_NULL,
+            Identifier.create(
+                BuiltinFunction.EMPTY_TO_UNDEFINED.getName(), val.getSourceLocation()),
+            BuiltinFunction.EMPTY_TO_UNDEFINED,
             val.getSourceLocation());
     functionNode.setType(UnionType.of(UndefinedType.getInstance(), val.getType()));
     functionNode.addChild(val);

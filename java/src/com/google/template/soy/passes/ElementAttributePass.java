@@ -91,7 +91,7 @@ import javax.annotation.Nullable;
  */
 @RunAfter({
   ResolveNamesPass.class, // Needs full template names resolved.
-  ResolveTemplateParamTypesPass.class,
+  ResolveDeclaredTypesPass.class,
   SoyElementPass.class // Uses HtmlElementMetadataP
 })
 @RunBefore({

@@ -60,9 +60,13 @@ public final class JsRuntime {
 
   public static final GoogRequire GOOG_SOY = GoogRequire.create("goog.soy");
 
-  public static final Expression SOY_EMPTY_OBJECT = SOY.dotAccess("$$EMPTY_OBJECT");
-  public static final Expression SOY_INTERCEPT_SOY_TEMPLATES =
-      SOY.dotAccess("INTERCEPT_SOY_TEMPLATES");
+  public static final Expression IS_JS = SOY.dotAccess("$$isJS");
+  public static final Expression IS_HTML = SOY.dotAccess("$$isHtml");
+  public static final Expression IS_CSS = SOY.dotAccess("$$isCss");
+  public static final Expression IS_ATTRIBUTE = SOY.dotAccess("$$isAttribute");
+  public static final Expression IS_TRUSTED_RESOURCE_URI = SOY.dotAccess("$$isTrustedResourceURI");
+  public static final Expression IS_URI = SOY.dotAccess("$$isURI");
+
   public static final Expression SOY_STUBS_MAP = SOY.dotAccess("$$stubsMap");
 
   private static final GoogRequire XID_REQUIRE = GoogRequire.create("xid");
@@ -84,9 +88,6 @@ public final class JsRuntime {
   public static final Expression GOOG_IS_FUNCTION = SOY.dotAccess("$$isFunction");
 
   public static final Expression SOY_EQUALS = SOY.dotAccess("$$equals");
-
-  public static final Expression SHOULD_STUB =
-      GOOG_SOY.dotAccess("shouldStub").and(GOOG_SOY.dotAccess("shouldStubAtRuntime").call(), null);
 
   public static final Expression SOY_MAKE_ARRAY = SOY.dotAccess("$$makeArray");
 
@@ -129,7 +130,9 @@ public final class JsRuntime {
 
   public static final Expression SOY_HAS_CONTENT = SOY.dotAccess("$$hasContent");
 
-  public static final Expression SOY_EMPTY_TO_NULL = SOY.dotAccess("$$emptyToNull");
+  public static final Expression SOY_IS_ITERABLE = SOY.dotAccess("$$isIterable");
+
+  public static final Expression SOY_EMPTY_TO_UNDEFINED = SOY.dotAccess("$$emptyToUndefined");
 
   public static final Expression SOY_ESCAPE_HTML = SOY.dotAccess("$$escapeHtml");
 
@@ -155,8 +158,6 @@ public final class JsRuntime {
       SOY.dotAccess("$$areYouAnInternalCaller");
   public static final Expression SOY_INTERNAL_CALL_MARKER =
       SOY.dotAccess("$$internalCallMarkerDoNotUse");
-
-  public static final Expression SOY_MAP_IS_SOY_MAP = SOY_MAP.dotAccess("$$isSoyMap");
 
   public static final Expression SOY_NEWMAPS_TRANSFORM_VALUES =
       SOY_NEWMAPS.googModuleGet().dotAccess("$$transformValues");

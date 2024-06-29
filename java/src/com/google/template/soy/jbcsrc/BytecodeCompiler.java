@@ -21,6 +21,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.io.ByteSink;
 import com.google.common.io.ByteSource;
@@ -38,7 +39,6 @@ import com.google.template.soy.jbcsrc.shared.Names;
 import com.google.template.soy.plugin.java.internal.PluginAnalyzer;
 import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
 import com.google.template.soy.soytree.FileSetMetadata;
-import com.google.template.soy.soytree.PartialFileSetMetadata;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
@@ -121,7 +121,7 @@ public final class BytecodeCompiler {
       ErrorReporter reporter,
       SoyTypeRegistry typeRegistry,
       ByteSink sink,
-      PartialFileSetMetadata fileSetMetadata)
+      FileSetMetadata fileSetMetadata)
       throws IOException {
     try (SoyJarFileWriter writer = new SoyJarFileWriter(sink.openStream())) {
       Set<String> modTemplates = new TreeSet<>();
@@ -134,7 +134,7 @@ public final class BytecodeCompiler {
           fileSet,
           reporter,
           typeRegistry,
-          new CompilerListener<Void, IOException>() {
+          new CompilerListener<IOException>() {
             @Override
             void onCompile(ClassData clazz) throws IOException {
               writer.writeEntry(
@@ -151,7 +151,7 @@ public final class BytecodeCompiler {
               // For each function call, check if the plugin needs an instance class. If so, add an
               // entry to pluginInstances.
               if (fnNode.getSoyFunction() instanceof SoyJavaSourceFunction) {
-                Set<String> instances =
+                ImmutableSet<String> instances =
                     PluginAnalyzer.analyze(
                             (SoyJavaSourceFunction) fnNode.getSoyFunction(), fnNode.numParams())
                         .pluginInstanceNames();
@@ -234,7 +234,7 @@ public final class BytecodeCompiler {
     }
   }
 
-  private abstract static class CompilerListener<T, E extends Throwable> {
+  private abstract static class CompilerListener<E extends Throwable> {
     /** Callback for for class data that was generated. */
     abstract void onCompile(ClassData newClass) throws E;
 
@@ -243,33 +243,22 @@ public final class BytecodeCompiler {
      *
      * @param name The full name as would be returned by SoyTemplateInfo.getName()
      */
-    void onCompileModifiableTemplate(String name) {}
-
-    /**
-     * Callback to notify a template (not a modifiable template) was compiled.
-     *
-     * @param name The full name as would be returned by SoyTemplateInfo.getName()
-     */
-    void onCompileTemplate(String name) {}
+    abstract void onCompileModifiableTemplate(String name);
 
     /**
      * Callback to notify that a function call was found.
      *
      * @param function The function call node.
      */
-    void onFunctionCallFound(FunctionNode function) {}
-
-    T getResult() {
-      return null;
-    }
+    abstract void onFunctionCallFound(FunctionNode function);
   }
 
-  private static <T, E extends Throwable> T compileTemplates(
+  private static <E extends Throwable> void compileTemplates(
       SoyFileSetNode fileSet,
       ErrorReporter errorReporter,
       SoyTypeRegistry typeRegistry,
-      CompilerListener<T, E> listener,
-      PartialFileSetMetadata fileSetMetadata)
+      CompilerListener<E> listener,
+      FileSetMetadata fileSetMetadata)
       throws E {
     JavaSourceFunctionCompiler javaSourceFunctionCompiler =
         new JavaSourceFunctionCompiler(typeRegistry, errorReporter);
@@ -285,8 +274,6 @@ public final class BytecodeCompiler {
         TemplateMetadata metadata = TemplateMetadata.fromTemplate(template);
         if (isModTemplate(metadata)) {
           listener.onCompileModifiableTemplate(modImplName(metadata));
-        } else {
-          listener.onCompileTemplate(template.getTemplateName());
         }
 
         /* For each function call in the template, trigger the function call listener. */
@@ -295,7 +282,6 @@ public final class BytecodeCompiler {
         }
       }
     }
-    return listener.getResult();
   }
 
   private BytecodeCompiler() {}

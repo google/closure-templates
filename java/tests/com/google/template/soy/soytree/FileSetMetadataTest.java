@@ -197,7 +197,7 @@ public final class FileSetMetadataTest {
             + "/** Foo. */\n"
             + "{template foo}\n"
             + "{/template}\n";
-    ErrorReporter errorReporter = ErrorReporter.createForTest();
+    ErrorReporter errorReporter = ErrorReporter.create();
     SoyFileSetParserBuilder.forFileContents(file).errorReporter(errorReporter).parse();
     assertThat(errorReporter.getErrors()).hasSize(1);
     assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
@@ -210,7 +210,7 @@ public final class FileSetMetadataTest {
 
     String file2 = "{namespace ns}\n" + "/** Foo. */\n" + "{template foo}\n" + "{/template}\n";
 
-    ErrorReporter errorReporter = ErrorReporter.createForTest();
+    ErrorReporter errorReporter = ErrorReporter.create();
     SoyFileSetParserBuilder.forFileContents(file, file2).errorReporter(errorReporter).parse();
     assertThat(errorReporter.getErrors()).hasSize(1);
     assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
@@ -227,7 +227,7 @@ public final class FileSetMetadataTest {
             + "/** Foo. */\n"
             + "{template foo modifiable='true'}\n"
             + "{/template}\n";
-    ErrorReporter errorReporter = ErrorReporter.createForTest();
+    ErrorReporter errorReporter = ErrorReporter.create();
     SoyFileSetParserBuilder.forFileContents(file).errorReporter(errorReporter).parse();
     assertThat(errorReporter.getErrors()).hasSize(1);
     assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
@@ -252,7 +252,7 @@ public final class FileSetMetadataTest {
             + "/** Foo. */\n"
             + "{template fooMod visibility='private' modifies='foo'}\n"
             + "{/template}\n";
-    ErrorReporter errorReporter = ErrorReporter.createForTest();
+    ErrorReporter errorReporter = ErrorReporter.create();
     ParseResult parseResult =
         SoyFileSetParserBuilder.forSuppliers(
                 SoyFileSupplier.Factory.create(fileContents, SourceFilePath.forTest("foo.soy")),
@@ -300,7 +300,7 @@ public final class FileSetMetadataTest {
             + "/** Foo. */\n"
             + "{template fooMod visibility='private' modifies='foo'}\n"
             + "{/template}\n";
-    ErrorReporter errorReporter = ErrorReporter.createForTest();
+    ErrorReporter errorReporter = ErrorReporter.create();
     ParseResult parseResult =
         SoyFileSetParserBuilder.forSuppliers(
                 SoyFileSupplier.Factory.create(file1Contents, SourceFilePath.forTest("foo.soy")),
@@ -344,7 +344,7 @@ public final class FileSetMetadataTest {
             + "/** Foo. */\n"
             + "{deltemplate foo.bar}\n"
             + "{/deltemplate}\n";
-    ErrorReporter errorReporter = ErrorReporter.createForTest();
+    ErrorReporter errorReporter = ErrorReporter.create();
     SoyFileSetParserBuilder.forFileContents(file).errorReporter(errorReporter).parse();
     assertThat(errorReporter.getErrors()).hasSize(1);
     assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
@@ -367,7 +367,7 @@ public final class FileSetMetadataTest {
             + "/** Foo. */\n"
             + "{deltemplate foo.bar}\n"
             + "{/deltemplate}\n";
-    ErrorReporter errorReporter = ErrorReporter.createForTest();
+    ErrorReporter errorReporter = ErrorReporter.create();
     SoyFileSetParserBuilder.forFileContents(file, file2).errorReporter(errorReporter).parse();
     assertThat(errorReporter.getErrors()).hasSize(1);
     assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
@@ -388,7 +388,7 @@ public final class FileSetMetadataTest {
             + "/** Foo. */\n"
             + "{template fooMod2 visibility='private' modifies='foo'}\n"
             + "{/template}\n";
-    ErrorReporter errorReporter = ErrorReporter.createForTest();
+    ErrorReporter errorReporter = ErrorReporter.create();
     SoyFileSetParserBuilder.forSuppliers(
             SoyFileSupplier.Factory.create(file1, SourceFilePath.forTest("foo.soy")),
             SoyFileSupplier.Factory.create(file2, SourceFilePath.forTest("foo2.soy")))
@@ -418,7 +418,7 @@ public final class FileSetMetadataTest {
             + "/** Foo. */\n"
             + "{template fooMod1 visibility='private' modifies='foo'}\n"
             + "{/template}\n";
-    ErrorReporter errorReporter = ErrorReporter.createForTest();
+    ErrorReporter errorReporter = ErrorReporter.create();
     SoyFileSetParserBuilder.forSuppliers(
             SoyFileSupplier.Factory.create(file1, SourceFilePath.forTest("foo.soy")),
             SoyFileSupplier.Factory.create(file2, SourceFilePath.forTest("foo2.soy")),

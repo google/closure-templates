@@ -17,20 +17,20 @@
 package com.google.template.soy.jbcsrc.shared;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
+import static java.lang.Math.max;
+import static java.lang.invoke.MethodType.methodType;
 import static java.util.stream.Collectors.joining;
-import static org.objectweb.asm.Opcodes.V1_8;
 
 import com.google.auto.value.AutoValue;
 import com.google.auto.value.extension.memoized.Memoized;
 import com.google.common.collect.ImmutableList;
+import com.google.template.soy.jbcsrc.api.RenderResult;
 import java.lang.invoke.CallSite;
 import java.lang.invoke.ConstantCallSite;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import org.objectweb.asm.ClassWriter;
@@ -61,27 +61,12 @@ public final class SaveStateMetaFactory {
 
   private static final Type STACK_FRAME_TYPE = Type.getType(StackFrame.class);
 
-  private static final String GENERATED_CLASS_NAME_PREFIX =
-      StackFrame.class.getPackage().getName() + ".StackFrame";
   private static final String GENERATED_CLASS_NAME_INTERNAL_PREFIX =
-      GENERATED_CLASS_NAME_PREFIX.replace('.', '/');
-  private static final MethodType STACK_FRAME_CTOR_TYPE =
-      MethodType.methodType(void.class, int.class);
-
-  private static final MethodHandle RENDER_CONTEXT_PUSH_FRAME;
-
-  static {
-    try {
-      RENDER_CONTEXT_PUSH_FRAME =
-          MethodHandles.publicLookup()
-              .findVirtual(
-                  RenderContext.class,
-                  "pushFrame",
-                  MethodType.methodType(void.class, StackFrame.class));
-    } catch (ReflectiveOperationException nsme) {
-      throw new LinkageError(nsme.getMessage(), nsme);
-    }
-  }
+      STACK_FRAME_TYPE.getInternalName();
+  private static final MethodType STACK_FRAME_LINKED_CTOR_TYPE =
+      MethodType.methodType(void.class, StackFrame.class, int.class);
+  private static final MethodType STACK_FRAME_ROOT_CTOR_TYPE =
+      MethodType.methodType(void.class, RenderResult.class, int.class);
 
   @AutoValue
   abstract static class FrameKey {
@@ -140,7 +125,7 @@ public final class SaveStateMetaFactory {
     // We generate a small class that is a subclass of StackFrame
     ImmutableList<Class<?>> fieldTypes =
         type.parameterList().stream()
-            // Skip RenderContext and the state number, the first two parameters
+            // Skip StackFrame/RenderResult and the state number, the first two parameters
             .skip(2)
             // map to just primitive types and objects.
             // This is important because the class is defined in this classloader and so shouldn't
@@ -154,7 +139,7 @@ public final class SaveStateMetaFactory {
   /**
    * A JVM bootstrap method for saving incremental rendering state
    *
-   * <p>This generates code equivalent to {@code renderContext.pushFrame(new
+   * <p>This generates code equivalent to {@code renderResult.withFrame(new
    * StackFrameXXX(stateNumber, ....))} where {@code StackFrameXXX} is a dynamically generated
    * {@link StackFrame} instance, {@code stateNumber} is a parameter to the bootstrap method and
    * {@code ...} is all the values to be saved.
@@ -165,7 +150,7 @@ public final class SaveStateMetaFactory {
    *     invokeDynamic JVM infrastructure and currently unused. Hardcoded to 'save'
    * @param type The type of the method being called. This will be the method signature of the
    *     callsite we produce. Provided automatically by invokeDynamic JVM infrastructure. For this
-   *     method it is always (RenderContext,int, ....)->void where the parameters after render
+   *     method it is always (StackFrame,int, ....)->StackFrame where the parameters after render
    *     context are all the values to be saves
    */
   public static CallSite bootstrapSaveState(
@@ -174,25 +159,21 @@ public final class SaveStateMetaFactory {
     FrameKey frameKey = frameKeyFromSaveMethodType(type);
     // Generate a StackFrame subclass based on the set of fields it will hold.
     Class<? extends StackFrame> frameClass = getStackFrameClass(frameKey);
+
     MethodHandle ctorHandle;
     try {
       ctorHandle =
           lookup.findConstructor(
-              frameClass, STACK_FRAME_CTOR_TYPE.appendParameterTypes(frameKey.fieldTypes()));
+              frameClass,
+              methodType(void.class, type.parameterType(0), int.class)
+                  .appendParameterTypes(frameKey.fieldTypes()));
     } catch (ReflectiveOperationException nsme) {
       throw new LinkageError(nsme.getMessage(), nsme);
     }
-    // The handle is currently returning a specific subtype of StackFrame, modify the return type
-    // to be StackFrame exactly which is required by the collectArguments combiner below.  Various
-    // methodHandle APIs require exact type matching even though Java semantics would not.
-    MethodHandle stackFrameConstructionHandle =
-        ctorHandle.asType(ctorHandle.type().changeReturnType(StackFrame.class));
-    MethodHandle saveStateHandle =
-        MethodHandles.collectArguments(RENDER_CONTEXT_PUSH_FRAME, 1, stackFrameConstructionHandle);
     // our target signature is something like (I,RenderContext, SoyValueProvider, long)void, but the
     // stackFrameConstructionHandle here is (RenderContext, Object, long)void.
     // Our callsite signature needs to match exactly, asType() will adjust.
-    return new ConstantCallSite(saveStateHandle.asType(type));
+    return new ConstantCallSite(ctorHandle.asType(type));
   }
 
   private static Class<? extends StackFrame> getStackFrameClass(FrameKey key) {
@@ -236,10 +217,10 @@ public final class SaveStateMetaFactory {
     if (key.fieldTypes().isEmpty()) {
       return StackFrame.class;
     }
-    ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS + ClassWriter.COMPUTE_FRAMES);
+    ClassWriter cw = new ClassWriter(/* flags= */ 0);
     String className = GENERATED_CLASS_NAME_INTERNAL_PREFIX + key.symbol();
     cw.visit(
-        V1_8,
+        Opcodes.V11,
         Opcodes.ACC_SUPER + Opcodes.ACC_PUBLIC + Opcodes.ACC_FINAL + Opcodes.ACC_SYNTHETIC,
         className,
         /* signature= */ null, // we don't use a generic type signature
@@ -247,61 +228,80 @@ public final class SaveStateMetaFactory {
         /* interfaces= */ null);
     int counter = 0;
     // Define a field for every element,f_N in order
-    List<Type> argTypes = new ArrayList<>(key.fieldTypes().size());
     for (Class<?> fieldType : key.fieldTypes()) {
       Type asmType = Type.getType(fieldType);
-      argTypes.add(asmType);
       FieldVisitor fv =
           cw.visitField(
               Opcodes.ACC_PUBLIC + Opcodes.ACC_FINAL,
               "f_" + counter,
               asmType.getDescriptor(),
-              /*signature=*/ null,
-              /*value=*/ null);
+              /* signature= */ null,
+              /* value= */ null);
       fv.visitEnd();
       counter++;
     }
-    // Create a constructor that accepts the state number and all values
+    // Create 2 constructors, one for linking to a child frame and one for creating a root frame.
     Type generatedType = Type.getObjectType(className);
-    MethodType ctorMethodType =
-        MethodType.methodType(void.class, key.fieldTypes()).insertParameterTypes(0, int.class);
-    MethodVisitor constructor =
-        cw.visitMethod(
-            Opcodes.ACC_PUBLIC,
-            "<init>",
-            ctorMethodType.toMethodDescriptorString(),
-            /*signature=*/ null,
-            /*exceptions=*/ null);
-    constructor.visitCode();
-    // super(stateNumber)
-    constructor.visitVarInsn(Opcodes.ALOAD, 0); // this
-    constructor.visitVarInsn(Opcodes.ILOAD, 1); // stateNumber (first argument)
-    constructor.visitMethodInsn(
-        Opcodes.INVOKESPECIAL,
-        STACK_FRAME_TYPE.getInternalName(),
-        "<init>",
-        STACK_FRAME_CTOR_TYPE.toMethodDescriptorString(),
-        /*isInterface=*/ false);
-    // assign fields
-    int argPosition = 2; // next arg starts at 2, 0 is this, 1 is stateNumber
-    for (int i = 0; i < argTypes.size(); i++) {
-      Type argType = argTypes.get(i);
-      // this.f_N = arg;
-      constructor.visitVarInsn(Opcodes.ALOAD, 0); // this
-      constructor.visitVarInsn(argType.getOpcode(Opcodes.ILOAD), argPosition);
-      argPosition += argType.getSize();
-      constructor.visitFieldInsn(
-          Opcodes.PUTFIELD, generatedType.getInternalName(), "f_" + i, argType.getDescriptor());
-    }
-    constructor.visitInsn(Opcodes.RETURN);
-    constructor.visitMaxs(-1, -1); // necessary for automatic stack frame calculation
-    constructor.visitEnd();
+    generateConstructor(cw, key, generatedType, STACK_FRAME_LINKED_CTOR_TYPE);
+    generateConstructor(cw, key, generatedType, STACK_FRAME_ROOT_CTOR_TYPE);
     cw.visitEnd();
     try {
       return MethodHandles.lookup().defineClass(cw.toByteArray()).asSubclass(StackFrame.class);
     } catch (IllegalAccessException iae) {
       throw new AssertionError(iae);
     }
+  }
+
+  private static void generateConstructor(
+      ClassWriter cw, FrameKey key, Type generatedType, MethodType baseClassCtor) {
+    MethodType ctorMethodType = baseClassCtor.appendParameterTypes(key.fieldTypes());
+    MethodVisitor constructor =
+        cw.visitMethod(
+            Opcodes.ACC_PUBLIC,
+            "<init>",
+            ctorMethodType.toMethodDescriptorString(),
+            /* signature= */ null,
+            /* exceptions= */ null);
+    constructor.visitCode();
+    // super(stateNumber)
+    constructor.visitVarInsn(Opcodes.ALOAD, 0); // this
+    int argPosition = 1;
+    for (Class<?> baseClassArg : baseClassCtor.parameterList()) {
+      var type = Type.getType(baseClassArg);
+      constructor.visitVarInsn(type.getOpcode(Opcodes.ILOAD), argPosition);
+      argPosition += type.getSize();
+    }
+    int superStackDepth = argPosition;
+    constructor.visitMethodInsn(
+        Opcodes.INVOKESPECIAL,
+        STACK_FRAME_TYPE.getInternalName(),
+        "<init>",
+        baseClassCtor.toMethodDescriptorString(),
+        /* isInterface= */ false);
+    // assign fields
+    int largestArgSize = 0;
+    for (int i = baseClassCtor.parameterCount(); i < ctorMethodType.parameterCount(); i++) {
+      Class<?> argClass = ctorMethodType.parameterType(i);
+      Type argType = Type.getType(argClass);
+      // this.f_N = arg;
+      constructor.visitVarInsn(Opcodes.ALOAD, 0); // this
+      constructor.visitVarInsn(argType.getOpcode(Opcodes.ILOAD), argPosition);
+      argPosition += argType.getSize();
+      largestArgSize = max(largestArgSize, argType.getSize());
+      constructor.visitFieldInsn(
+          Opcodes.PUTFIELD,
+          generatedType.getInternalName(),
+          "f_" + (i - baseClassCtor.parameterCount()),
+          argType.getDescriptor());
+    }
+    constructor.visitInsn(Opcodes.RETURN);
+    constructor.visitMaxs(
+        /* maxStack= */ max(
+            /* for the super(child, stateNumber) call */ superStackDepth,
+            /* for the largest field store operation */
+            1 + largestArgSize),
+        /* maxLocals= */ argPosition);
+    constructor.visitEnd();
   }
 
   /**

@@ -51,7 +51,7 @@ public final class CheckTemplateVisibilityPassTest {
 
   @Test
   public void testCallPrivateTemplateFromSameNamespaceButDifferentFile() {
-    ErrorReporter errorReporter = ErrorReporter.createForTest();
+    ErrorReporter errorReporter = ErrorReporter.create();
     SoyFileSetParserBuilder.forFileContents(
             "{namespace ns}\n"
                 + "/** Private template. */\n"
@@ -73,7 +73,7 @@ public final class CheckTemplateVisibilityPassTest {
 
   @Test
   public void testImportPrivateTemplateFromSameNamespaceButDifferentFile() {
-    ErrorReporter errorReporter = ErrorReporter.createForTest();
+    ErrorReporter errorReporter = ErrorReporter.create();
     SoyFileSetParserBuilder.forFileContents(
             "{namespace ns}\n"
                 + "/** Private template. */\n"
@@ -95,7 +95,7 @@ public final class CheckTemplateVisibilityPassTest {
 
   @Test
   public void testCallPrivateTemplateDifferentFile() {
-    ErrorReporter errorReporter = ErrorReporter.createForTest();
+    ErrorReporter errorReporter = ErrorReporter.create();
     SoyFileSetParserBuilder.forFileContents(
             "{namespace ns}\n"
                 + "/** Private template. */\n"
@@ -117,7 +117,7 @@ public final class CheckTemplateVisibilityPassTest {
 
   @Test
   public void testBindPrivateTemplateDifferentFile() {
-    ErrorReporter errorReporter = ErrorReporter.createForTest();
+    ErrorReporter errorReporter = ErrorReporter.create();
     SoyFileSetParserBuilder.forFileContents(
             "{namespace ns}\n"
                 + "/** Private template. */\n"
@@ -142,7 +142,7 @@ public final class CheckTemplateVisibilityPassTest {
   // defined in a file with the same name irrespective of directory
   @Test
   public void testCallPrivateTemplateSameFileNameDifferentDirectory() {
-    ErrorReporter errorReporter = ErrorReporter.createForTest();
+    ErrorReporter errorReporter = ErrorReporter.create();
     SoyFileSetParserBuilder.forSuppliers(
             SoyFileSupplier.Factory.create(
                 "{namespace ns}\n"
@@ -168,7 +168,7 @@ public final class CheckTemplateVisibilityPassTest {
 
   @Test
   public void testBindPrivateTemplateSameFileNameDifferentDirectory() {
-    ErrorReporter errorReporter = ErrorReporter.createForTest();
+    ErrorReporter errorReporter = ErrorReporter.create();
     SoyFileSetParserBuilder.forSuppliers(
             SoyFileSupplier.Factory.create(
                 "{namespace ns}\n"

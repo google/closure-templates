@@ -33,6 +33,7 @@ java_library(
         "@maven//:com_google_errorprone_error_prone_annotations",
         "@maven//:com_google_guava_guava",
         "@maven//:org_ow2_asm_asm",
+        "@maven//:org_ow2_asm_asm_commons",
         "@maven//:org_ow2_asm_asm_tree",
         "@maven//:org_ow2_asm_asm_util",
     ],

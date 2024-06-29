@@ -31,6 +31,7 @@ java_library(
         "//java/src/com/google/template/soy/shared/internal:builtin_function",
         "//java/src/com/google/template/soy/shared/restricted:restricted_internal",
         "//java/src/com/google/template/soy/types",
+        "//java/src/com/google/template/soy/types/ast",
         "@com_google_auto_value_auto_value",
         "@com_google_protobuf//:protobuf_java",
         "@maven//:com_google_code_findbugs_jsr305",

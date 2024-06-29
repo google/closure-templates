@@ -23,6 +23,7 @@ import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
 import com.google.template.soy.exprtree.OperatorNodes.AmpAmpOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.AndOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.AsOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.AssertNonNullOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.BarBarOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.BitwiseAndOpNode;
@@ -33,6 +34,7 @@ import com.google.template.soy.exprtree.OperatorNodes.DivideByOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.EqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.GreaterThanOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.GreaterThanOrEqualOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.InstanceOfOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.LessThanOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.LessThanOrEqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.MinusOpNode;
@@ -45,6 +47,7 @@ import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ShiftLeftOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ShiftRightOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.SpreadOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TimesOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TripleEqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TripleNotEqualOpNode;
@@ -105,6 +108,9 @@ public abstract class AbstractExprNodeVisitor<R> extends AbstractNodeVisitor<Exp
         break;
       case PROTO_ENUM_VALUE_NODE:
         visitProtoEnumValueNode((ProtoEnumValueNode) node);
+        break;
+      case TYPE_LITERAL_NODE:
+        visitTypeLiteralNode((TypeLiteralNode) node);
         break;
 
       case LIST_LITERAL_NODE:
@@ -223,6 +229,15 @@ public abstract class AbstractExprNodeVisitor<R> extends AbstractNodeVisitor<Exp
       case BITWISE_AND_OP_NODE:
         visitBitwiseAndOpNode((BitwiseAndOpNode) node);
         break;
+      case SPREAD_OP_NODE:
+        visitSpreadOpNode((SpreadOpNode) node);
+        break;
+      case INSTANCE_OF_OP_NODE:
+        visitInstanceOfOpNode((InstanceOfOpNode) node);
+        break;
+      case AS_OP_NODE:
+        visitAsOpNode((AsOpNode) node);
+        break;
 
       case FUNCTION_NODE:
         visitFunctionNode((FunctionNode) node);
@@ -236,8 +251,6 @@ public abstract class AbstractExprNodeVisitor<R> extends AbstractNodeVisitor<Exp
         visitAssertNonNullOpNode((AssertNonNullOpNode) node);
         break;
 
-      default:
-        throw new UnsupportedOperationException();
     }
   }
 
@@ -303,6 +316,10 @@ public abstract class AbstractExprNodeVisitor<R> extends AbstractNodeVisitor<Exp
   }
 
   protected void visitProtoEnumValueNode(ProtoEnumValueNode node) {
+    visitPrimitiveNode(node);
+  }
+
+  protected void visitTypeLiteralNode(TypeLiteralNode node) {
     visitPrimitiveNode(node);
   }
 
@@ -472,6 +489,18 @@ public abstract class AbstractExprNodeVisitor<R> extends AbstractNodeVisitor<Exp
   }
 
   protected void visitBitwiseAndOpNode(BitwiseAndOpNode node) {
+    visitOperatorNode(node);
+  }
+
+  protected void visitSpreadOpNode(SpreadOpNode node) {
+    visitOperatorNode(node);
+  }
+
+  protected void visitInstanceOfOpNode(InstanceOfOpNode node) {
+    visitOperatorNode(node);
+  }
+
+  protected void visitAsOpNode(AsOpNode node) {
     visitOperatorNode(node);
   }
 

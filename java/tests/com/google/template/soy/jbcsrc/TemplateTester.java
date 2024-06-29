@@ -47,12 +47,12 @@ import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyError;
 import com.google.template.soy.exprtree.FunctionNode;
-import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.internal.ClassData;
 import com.google.template.soy.jbcsrc.internal.MemoryClassLoader;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
+import com.google.template.soy.jbcsrc.shared.StackFrame;
 import com.google.template.soy.plugin.java.PluginInstances;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import com.google.template.soy.shared.SoyCssRenamingMap;
@@ -249,7 +249,7 @@ public final class TemplateTester {
       BufferingAppendable builder = LoggingAdvisingAppendable.buffering();
       compile();
       try {
-        var unused = template.render(asParams(params), builder, defaultContext);
+        var unused = template.render(null, asParams(params), builder, defaultContext);
         failWithoutActual(
             simpleFact(
                 String.format(
@@ -271,7 +271,7 @@ public final class TemplateTester {
       BufferingAppendable builder = LoggingAdvisingAppendable.buffering();
       compile();
       try {
-        var unused = template.render(asParams(params), builder, defaultContext);
+        var unused = template.render(null, asParams(params), builder, defaultContext);
         failWithoutActual(
             simpleFact(
                 String.format(
@@ -297,7 +297,7 @@ public final class TemplateTester {
               .errorReporter(ErrorReporter.exploding())
               .build();
       ParseResult parseResult = parser.parse();
-      ErrorReporter errors = ErrorReporter.createForTest();
+      ErrorReporter errors = ErrorReporter.create();
       Optional<CompiledTemplates> template =
           BytecodeCompiler.compile(
               parseResult.registry(),
@@ -323,9 +323,9 @@ public final class TemplateTester {
         String expectedOutput, String expectedLogged, ParamStore params, RenderContext context) {
       BufferingAppendable builder = LoggingAdvisingAppendable.buffering();
       LogCapturer logOutput = new LogCapturer();
-      RenderResult result;
+      StackFrame result;
       try (SystemOutRestorer restorer = logOutput.enter()) {
-        result = template.render(params, builder, context);
+        result = template.render(null, params, builder, context);
       } catch (Throwable e) {
         // TODO(lukes): the fact that we are catching an exception means we have structured
         // this subject poorly.  The subject should be responsible for asserting, not actually
@@ -333,9 +333,10 @@ public final class TemplateTester {
         failWithCauseAndMessage(e, "template was not expected to throw an exception");
         result = null;
       }
-      if (result.type() != RenderResult.Type.DONE) {
+      if (result != null) {
         failWithActual("expected to render to completion", result);
       }
+      context.logDeferredErrors();
 
       check("render()").that(builder.toString()).isEqualTo(expectedOutput);
       check("logOutput()").that(logOutput.toString()).isEqualTo(expectedLogged);
@@ -406,7 +407,7 @@ public final class TemplateTester {
         }
         defaultContext =
             createDefaultBuilder(compiledTemplates)
-                .withPluginInstances(PluginInstances.of(pluginInstances.build()))
+                .withPluginInstances(PluginInstances.of(pluginInstances.buildOrThrow()))
                 .withCssRenamingMap(cssRenamingMap)
                 .withXidRenamingMap(xidRenamingMap)
                 .build();

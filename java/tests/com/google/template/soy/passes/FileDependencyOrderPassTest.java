@@ -45,7 +45,7 @@ public final class FileDependencyOrderPassTest {
             + "{template t3}\n"
             + "{/template}\n";
 
-    ErrorReporter errorReporter = ErrorReporter.createForTest();
+    ErrorReporter errorReporter = ErrorReporter.create();
     SoyFileSetParserBuilder.forFileContents(alpha, beta, gamma)
         .errorReporter(errorReporter)
         .parse();

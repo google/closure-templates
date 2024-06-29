@@ -52,6 +52,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
+import javax.annotation.Nullable;
 
 /**
  * A compiler pass that performs HTML validation that is always enabled, as opposed to
@@ -67,6 +68,12 @@ final class BasicHtmlValidationPass implements CompilerFilePass {
       SoyErrorKind.of(
           "Html id attributes should not be valid JavaScript identifiers, consider hyphenating the"
               + " id."
+          );
+  private static final SoyErrorKind XID_ID_VALUE =
+      SoyErrorKind.of(
+          "Html id attributes should not be valid JavaScript identifiers and the xid() function can"
+              + " return a JavaScript identifier. Consider adding a hyphen outside of the xid()"
+              + " call."
           );
 
   private final ErrorReporter errorReporter;
@@ -115,28 +122,55 @@ final class BasicHtmlValidationPass implements CompilerFilePass {
   private static final Pattern JS_IDENTIFIER_PATTERN =
       Pattern.compile("^[$_\\p{IsLetter}][$_\\p{IsLetter}\\p{IsDigit}]*$");
 
-  private static boolean isIdShapedValue(HtmlAttributeValueNode node) {
+  private enum IdShape {
+    YES {
+      @Override
+      SoyErrorKind getError() {
+        return BAD_ID_VALUE;
+      }
+    },
+    XID {
+      @Override
+      SoyErrorKind getError() {
+        return XID_ID_VALUE;
+      }
+    },
+    NO;
+
+    @Nullable
+    SoyErrorKind getError() {
+      return null;
+    }
+  }
+
+  private static IdShape getIdShape(HtmlAttributeValueNode node) {
     if (node.numChildren() != 1) {
-      return false;
+      return IdShape.NO;
     }
     StandaloneNode attrValueNode = node.getChild(0);
     if (attrValueNode instanceof RawTextNode) {
-      return JS_IDENTIFIER_PATTERN.matcher(((RawTextNode) attrValueNode).getRawText()).matches();
+      if (JS_IDENTIFIER_PATTERN.matcher(((RawTextNode) attrValueNode).getRawText()).matches()) {
+        return IdShape.YES;
+      }
     } else if (attrValueNode instanceof PrintNode) {
       ExprNode exprRoot = ((PrintNode) attrValueNode).getExpr().getRoot();
       // Cannot
-      return exprRoot instanceof FunctionNode
-          && ((FunctionNode) exprRoot).getFunctionName().equals("xid");
+      if (exprRoot instanceof FunctionNode
+          && ((FunctionNode) exprRoot).getFunctionName().equals("xid")) {
+        return IdShape.XID;
+      }
     }
-    return false;
+    return IdShape.NO;
   }
 
   private void warnOnIdAttributesMatchingJsIdentifiers(HtmlAttributeNode attributeNode) {
     if (attributeNode.definitelyMatchesAttributeName("id") && attributeNode.hasValue()) {
       SoyNode child = attributeNode.getChild(1);
-      if (child instanceof HtmlAttributeValueNode
-          && isIdShapedValue((HtmlAttributeValueNode) child)) {
-        errorReporter.warn(attributeNode.getChild(1).getSourceLocation(), BAD_ID_VALUE);
+      if (child instanceof HtmlAttributeValueNode) {
+        SoyErrorKind error = getIdShape((HtmlAttributeValueNode) child).getError();
+        if (error != null) {
+          errorReporter.warn(attributeNode.getChild(1).getSourceLocation(), error);
+        }
       }
     }
   }
@@ -173,12 +207,12 @@ final class BasicHtmlValidationPass implements CompilerFilePass {
 
     @Override
     protected void visitIfNode(IfNode node) {
-      visitControlFlowNode(node, /* exhaustive=*/ node.hasElse());
+      visitControlFlowNode(node, /* exhaustive= */ node.hasElse());
     }
 
     @Override
     protected void visitSwitchNode(SwitchNode node) {
-      visitControlFlowNode(node, /* exhaustive=*/ node.hasDefaultCase());
+      visitControlFlowNode(node, /* exhaustive= */ node.hasDefaultCase());
     }
 
     @Override

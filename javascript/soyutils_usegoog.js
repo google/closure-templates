@@ -35,7 +35,6 @@ const googDebug = goog.require('goog.debug');
 const googFormat = goog.require('goog.format');
 const googSoy = goog.requireType('goog.soy');
 const googString = goog.require('goog.string');
-const soyChecks = goog.require('soy.checks');
 const {Message} = goog.requireType('jspb');
 const {SafeHtml, SafeScript, SafeStyle, SafeStyleSheet, SafeUrl, TrustedResourceUrl, unwrapHtml, unwrapResourceUrl, unwrapScript, unwrapStyle, unwrapStyleSheet, unwrapUrl} = goog.require('safevalues');
 const {SanitizedContent, SanitizedContentKind, SanitizedCss, SanitizedHtml, SanitizedHtmlAttribute, SanitizedJs, SanitizedTrustedResourceUri, SanitizedUri} = goog.require('goog.soy.data');
@@ -50,24 +49,6 @@ const {htmlSafeByReview} = goog.require('safevalues.restricted.reviewed');
 
 /** @typedef {!SanitizedContent|{isInvokableFn: boolean}} */
 let IdomFunction;
-
-/**
- * Checks whether a given value is of a given content kind.
- *
- * @param {?} value The value to be examined.
- * @param {!SanitizedContentKind} contentKind The desired content
- *     kind.
- * @return {boolean} Whether the given value is of the given kind.
- * @package
- */
-const isContentKind_ = function(value, contentKind) {
-  // TODO(user): This function should really include the assert on
-  // value.constructor that is currently sprinkled at most of the call sites.
-  // Unfortunately, that would require a (debug-mode-only) switch statement.
-  // TODO(user): Perhaps we should get rid of the contentKind property
-  // altogether and only at the constructor.
-  return value != null && value.contentKind === contentKind;
-};
 
 /**
  * Returns a given value's contentDir property, constrained to a
@@ -119,7 +100,7 @@ const cacheContentDir_ = function(value, dir) {
  *     SafeHtml.
  */
 const createSanitizedHtml = function(value) {
-  if (soyChecks.isHtml(value)) {
+  if ($$isHtml(value)) {
     return /** @type {!SanitizedHtml} */ (value);
   }
   if (value instanceof SafeHtml) {
@@ -436,7 +417,7 @@ const $$checkNotNull = function(val) {
  * @param {number=} radix The base of the string
  * @return {?number} The string parsed as an integer, or null if unsuccessful
  */
-const $$parseInt = function(str, radix=10) {
+const $$parseInt = function(str, radix = 10) {
   const parsed = parseInt(String(str), radix);
   return isNaN(parsed) ? null : parsed;
 };
@@ -538,6 +519,17 @@ const $$coerceToBoolean = function(arg) {
 
 
 /**
+ * Returns whether `it` is a JavaScript iterable.
+ *
+ * @param {*} it The argument to test.
+ * @return {boolean}
+ */
+const $$isIterable = function(it) {
+  return it != null && typeof it[Symbol.iterator] === 'function';
+};
+
+
+/**
  * Returns if the value is truthy or is a sanitized content with content.
  *
  * @param {*} arg The argument to coerce.
@@ -569,7 +561,7 @@ const $$hasContent = function(arg) {
  * @param {*} arg The argument to coerce.
  * @return {*}
  */
-const $$emptyToNull = function(arg) {
+const $$emptyToUndefined = function(arg) {
   return $$isTruthyNonEmpty(arg) ? arg : undefined;
 };
 
@@ -740,7 +732,7 @@ const $$escapeHtml = function(value) {
  *     value.
  */
 const $$cleanHtml = function(value, safeTags) {
-  if (soyChecks.isHtml(value)) {
+  if ($$isHtmlOrHtmlTemplate(value)) {
     return /** @type {!SanitizedHtml} */ (value);
   }
   let tagWhitelist;
@@ -772,7 +764,7 @@ const $$htmlToText = function(value) {
   let html;
   if (value instanceof SafeHtml) {
     html = unwrapHtml(value).toString();
-  } else if (isContentKind_(value, SanitizedContentKind.HTML)) {
+  } else if ($$isHtmlOrHtmlTemplate(value)) {
     html = value.toString();
   } else {
     return asserts.assertString(value);
@@ -821,7 +813,7 @@ const $$htmlToText = function(value) {
           text += '\t';
         }
 
-        if (!$$HTML5_VOID_ELEMENTS_.test("<" + lowerCaseTag + ">")) {
+        if (!$$HTML5_VOID_ELEMENTS_.test('<' + lowerCaseTag + '>')) {
           $$updatePreserveWhitespaceStack(
               preserveWhitespaceStack, lowerCaseTag, attrs);
         }
@@ -857,9 +849,9 @@ class TagPreservesWhitespace {
  * Determines if whitespace should currently be preserved by inspecting the top
  * element of the stack.
  *
- * @param {!ReadonlyArray<!TagPreservesWhitespace>} preserveWhitespaceStack, an array of
- * structs with properties tag and preserveWhitespace. The last element in the
- * array is the top of the stack.
+ * @param {!ReadonlyArray<!TagPreservesWhitespace>} preserveWhitespaceStack, an
+ *     array of structs with properties tag and preserveWhitespace. The last
+ *     element in the array is the top of the stack.
  * @return {boolean}
  */
 const $$shouldPreserveWhitespace_ = function(preserveWhitespaceStack) {
@@ -905,7 +897,7 @@ const $$getStylePreservesWhitespace_ = function(style) {
  * they say not to preserve whitespace, and null if they don't say either.
  */
 const $$getAttributesPreserveWhitespace_ = function(attrs) {
-  if (attrs !== "") {
+  if (attrs !== '') {
     for (let attrMatch; attrMatch = $$HTML_ATTRIBUTE_REGEX_.exec(attrs);) {
       const attributeName = attrMatch[1];
       if (/^style$/i.test(attributeName)) {
@@ -914,7 +906,7 @@ const $$getAttributesPreserveWhitespace_ = function(attrs) {
         // regex. Reset the regex matcher.
         $$HTML_ATTRIBUTE_REGEX_.lastIndex = 0;
 
-        if (style !== "") {
+        if (style !== '') {
           // Strip quotes if the attribute value was quoted.
           if (style.charAt(0) === '\'' || style.charAt(0) === '"') {
             style = style.substr(1, style.length - 2);
@@ -940,8 +932,8 @@ const $$getAttributesPreserveWhitespace_ = function(attrs) {
  * @param {string} lowerCaseTag the current tag, in lower case
  * @param {string} attrs the attributes for the current tag
  */
-const $$updatePreserveWhitespaceStack =
-    function(preserveWhitespaceStack, lowerCaseTag, attrs) {
+const $$updatePreserveWhitespaceStack = function(
+    preserveWhitespaceStack, lowerCaseTag, attrs) {
   if (lowerCaseTag.charAt(0) === '/') {
     const closedTag = lowerCaseTag.substring(1);
     // Pop tags until we pop one that matches the tag that's being closed. This
@@ -1004,7 +996,7 @@ const $$normalizeHtml = function(value) {
  * @return {string} An escaped version of value.
  */
 const $$escapeHtmlRcdata = function(value) {
-  if (soyChecks.isHtml(value)) {
+  if ($$isHtml(value)) {
     return $$normalizeHtmlHelper(value.getContent());
   }
   return $$escapeHtmlHelper(value);
@@ -1312,7 +1304,7 @@ const $$balanceTags_ = function(tags) {
 const $$escapeHtmlAttribute = function(value) {
   // NOTE: We don't accept ATTRIBUTES here because ATTRIBUTES is actually not
   // the attribute value context, but instead k/v pairs.
-  if (soyChecks.isHtml(value)) {
+  if ($$isHtml(value)) {
     // NOTE: After removing tags, we also escape quotes ("normalize") so that
     // the HTML can be embedded in attribute context.
     return $$normalizeHtmlHelper($$stripHtmlTags(value.getContent()));
@@ -1343,7 +1335,7 @@ const $$escapeHtmlHtmlAttribute = function(value) {
  * @return {string} An escaped version of value.
  */
 const $$escapeHtmlAttributeNospace = function(value) {
-  if (soyChecks.isHtml(value)) {
+  if ($$isHtml(value)) {
     return $$normalizeHtmlNospaceHelper($$stripHtmlTags(value.getContent()));
   }
   return $$escapeHtmlNospaceHelper(value);
@@ -1415,7 +1407,7 @@ const $$filterHtmlScriptPhrasingData = function(value) {
 const $$filterHtmlAttributes = function(value) {
   // NOTE: Explicitly no support for SanitizedContentKind.HTML, since that is
   // meaningless in this context, which is generally *between* html attributes.
-  if (soyChecks.isAttribute(value)) {
+  if ($$isAttribute(value)) {
     return value.getContent();
   }
   // TODO: Dynamically inserting attributes that aren't marked as trusted is
@@ -1432,7 +1424,7 @@ const $$filterHtmlAttributes = function(value) {
  * @return {string} value, possibly with an extra leading space.
  */
 const $$whitespaceHtmlAttributes = function(value) {
-  if (soyChecks.isAttribute(value)) {
+  if ($$isAttribute(value)) {
     value = value.getContent();
   }
   return (value && !value.startsWith(' ') ? ' ' : '') + value;
@@ -1498,7 +1490,7 @@ const $$escapeJsValue = function(value) {
     // distinct undefined value.
     return ' null ';
   }
-  if (soyChecks.isJS(value)) {
+  if ($$isJS(value)) {
     return value.getContent();
   }
   if (value instanceof SafeScript) {
@@ -1595,10 +1587,7 @@ const $$normalizeUri = function(value) {
  * @return {string} An escaped version of value.
  */
 const $$filterNormalizeUri = function(value) {
-  if (soyChecks.isURI(value)) {
-    return $$normalizeUri(value);
-  }
-  if (soyChecks.isTrustedResourceURI(value)) {
+  if ($$isURI(value)) {
     return $$normalizeUri(value);
   }
   if (value instanceof SafeUrl) {
@@ -1622,10 +1611,7 @@ const $$filterNormalizeMediaUri = function(value) {
   // Image URIs are filtered strictly more loosely than other types of URIs.
   // TODO(shwetakarwa): Add tests for this in soyutils_test_helper while adding
   // tests for filterTrustedResourceUri.
-  if (soyChecks.isURI(value)) {
-    return $$normalizeUri(value);
-  }
-  if (soyChecks.isTrustedResourceURI(value)) {
+  if ($$isURI(value)) {
     return $$normalizeUri(value);
   }
   if (value instanceof SafeUrl) {
@@ -1656,7 +1642,7 @@ const $$filterNormalizeRefreshUri = function(value) {
  * @return {string} The value content.
  */
 const $$filterTrustedResourceUri = function(value) {
-  if (soyChecks.isTrustedResourceURI(value)) {
+  if ($$isTrustedResourceURI(value)) {
     return value.getContent();
   }
   if (value instanceof TrustedResourceUrl) {
@@ -1717,19 +1703,6 @@ const $$filterTelUri = function(value) {
 };
 
 /**
- * Allows only a limited number of known to be safe protocols.
- * This is the historical behavior of the Soy URI sanitization.
- *
- * @param {?} value The value to process. May not be a string, but the value
- *     will be coerced to a string.
- * @return {!SanitizedUri} An escaped version of value.
- */
-const $$filterLegacyUriBehavior = function(value) {
-  // NOTE: Even if it's a SanitizedUri, we will still filter it.
-  return VERY_UNSAFE.ordainSanitizedUri($$filterLegacyUriBehaviorHelper(value));
-};
-
-/**
  * Escapes a string so it can safely be included inside a quoted CSS string.
  *
  * @param {?} value The value to escape. May not be a string, but the value
@@ -1749,7 +1722,7 @@ const $$escapeCssString = function(value) {
  * @return {string} A safe CSS identifier part, keyword, or quanitity.
  */
 const $$filterCssValue = function(value) {
-  if (soyChecks.isCss(value)) {
+  if ($$isCss(value)) {
     return $$embedCssIntoHtml_(value.getContent());
   }
   // Uses == to intentionally match null and undefined for Java compatibility.
@@ -1795,7 +1768,7 @@ const $$filterCspNonceValue = function(value) {
  */
 const $$changeNewlineToBr = function(value) {
   const result = googString.newLineToBr(String(value), false);
-  if (isContentKind_(value, SanitizedContentKind.HTML)) {
+  if ($$isHtmlOrHtmlTemplate(value)) {
     return VERY_UNSAFE.ordainSanitizedHtml(result, getContentDir(value));
   }
   return result;
@@ -1821,7 +1794,7 @@ const $$changeNewlineToBr = function(value) {
 const $$insertWordBreaks = function(value, maxCharsBetweenWordBreaks) {
   const result =
       googFormat.insertWordBreaks(String(value), maxCharsBetweenWordBreaks);
-  if (isContentKind_(value, SanitizedContentKind.HTML)) {
+  if ($$isHtmlOrHtmlTemplate(value)) {
     return VERY_UNSAFE.ordainSanitizedHtml(result, getContentDir(value));
   }
   return result;
@@ -1829,23 +1802,23 @@ const $$insertWordBreaks = function(value, maxCharsBetweenWordBreaks) {
 
 /**
  * Joins items with a semicolon, filtering out falsey values.
- * @param {...(string|SanitizedCss!|boolean|null|undefined)} values The
- *     values to join.
+ * @param {...(string|SanitizedCss!|boolean|null|undefined|!ReadonlyArray<?>)}
+ *     values The values to join.
  * @return {string} The joined string.
  */
 const $$buildAttrValue = function(...values) {
-  return values.filter((s) => $$isTruthyNonEmpty(s)).join(';');
+  return values.flat().filter((s) => $$isTruthyNonEmpty(s)).join(';');
 };
 
 
 /**
  * Joins items with a space, filtering out falsey values.
- * @param {...(string|SanitizedCss!|boolean|null|undefined)} values The values
- *     to join.
+ * @param {...(string|SanitizedCss!|boolean|null|undefined|!ReadonlyArray<?>)}
+ *     values The values to join.
  * @return {string} The joined string.
  */
 const $$buildClassValue = function(...values) {
-  return values.filter((s) => s).join(' ');
+  return values.flat().filter((s) => s).join(' ');
 };
 
 
@@ -1857,7 +1830,8 @@ const $$buildClassValue = function(...values) {
  * @return {SanitizedCss!|$$EMPTY_STRING_!} The joined string.
  */
 const $$buildStyleValue = function(...values) {
-  return VERY_UNSAFE.ordainSanitizedCss(values.filter((s) => s)
+  return VERY_UNSAFE.ordainSanitizedCss(
+      values.filter((s) => s)
           .map((s) => {
             if (typeof s === 'string') {
               const firstColonPos = s.indexOf(':');
@@ -2021,8 +1995,8 @@ const $$listContains = function(list, val) {
  */
 const $$listIndexOf = function(list, val, startIndex = 0) {
   const clampedStartIndex = clampArrayStartIndex(list, startIndex);
-  const indexInSublist = googArray.findIndex(
-      list.slice(clampedStartIndex), (el) => val === el);
+  const indexInSublist =
+      googArray.findIndex(list.slice(clampedStartIndex), (el) => val === el);
   return indexInSublist === -1 ? -1 : indexInSublist + clampedStartIndex;
 };
 
@@ -2214,14 +2188,15 @@ const getBidiFormatterInstance_ = function(bidiGlobalDir) {
  * @param {?} text The content whose directionality is to be estimated.
  * @param {boolean=} isHtml Whether text is HTML/HTML-escaped.
  *     Default: false.
- * @return {!bidi.Dir} 1 if text is LTR, -1 if it is RTL, and 0 if it is neutral.
+ * @return {!bidi.Dir} 1 if text is LTR, -1 if it is RTL, and 0 if it is
+ *     neutral.
  */
 const $$bidiTextDir = function(text, isHtml) {
   const contentDir = getContentDir(text);
   if (contentDir != null) {
     return contentDir;
   }
-  isHtml = isHtml || isContentKind_(text, SanitizedContentKind.HTML);
+  isHtml = isHtml || $$isHtmlOrHtmlTemplate(text);
   const estimatedDir = bidi.estimateDirection(text + '', isHtml);
   cacheContentDir_(text, estimatedDir);
   return estimatedDir;
@@ -2335,7 +2310,7 @@ const $$bidiMark = function(/** number */ dir) {
  *     bidiGlobalDir, or bidiGlobalDir is 0 (unknown).
  */
 const $$bidiMarkAfter = function(bidiGlobalDir, text, isHtml) {
-  isHtml = isHtml || isContentKind_(text, SanitizedContentKind.HTML);
+  isHtml = isHtml || $$isHtmlOrHtmlTemplate(text);
   const dir = $$bidiTextDir(text, isHtml);
   const formatter = getBidiFormatterInstance_(bidiGlobalDir);
   return formatter.markAfterKnownDir(dir, text + '', isHtml);
@@ -2400,7 +2375,7 @@ const $$bidiUnicodeWrap = function(bidiGlobalDir, text) {
   const formatter = getBidiFormatterInstance_(bidiGlobalDir);
 
   // We treat the value as HTML if and only if it says it's HTML.
-  const isHtml = isContentKind_(text, SanitizedContentKind.HTML);
+  const isHtml = $$isHtmlOrHtmlTemplate(text);
   const dir = $$bidiTextDir(text, isHtml);
   const wrappedText = formatter.unicodeWrapWithKnownDir(dir, text + '', isHtml);
 
@@ -2469,7 +2444,7 @@ const $$internalCallMarkerDoNotUse = {};
  * @param {?} marker
  * @return {void}
  */
-const $$areYouAnInternalCaller = (marker) =>{
+const $$areYouAnInternalCaller = (marker) => {
   asserts.assert(
       marker === $$internalCallMarkerDoNotUse,
       'found an incorrect call marker, was an internal function called from the top level?');
@@ -2576,7 +2551,8 @@ function $$getConst(value, areYouAnInternalCaller) {
   return value;
 }
 
-// TODO(b/230911572): roll this out to all environments. First tests, then goog.DEBUG, then production.
+// TODO(b/230911572): roll this out to all environments. First tests, then
+// goog.DEBUG, then production.
 const /** boolean */ SOY_CREATED_PROTOS_ARE_IMMUTABLE = false;
 
 /**
@@ -2603,6 +2579,83 @@ function $$maybeMakeImmutableProto(/** !Message*/ message) {
   return message;
 }
 
+/**
+ * Checks whether a given value is of a given content kind.
+ *
+ * @param {?} value The value to be examined.
+ * @param {!SanitizedContentKind} contentKind The desired content
+ *     kind.
+ * @param {?Object=} constructor
+ * @return {boolean} Whether the given value is of the given kind.
+ */
+const isContentKind_ = function(value, contentKind, constructor) {
+  const ret = value != null && value.contentKind === contentKind;
+  if (ret && constructor) {
+    asserts.assert(value.constructor === constructor);
+  }
+  return ret;
+};
+
+/**
+ * @param {?} value
+ * @return {boolean}
+ */
+function $$isHtml(value) {
+  return isContentKind_(value, SanitizedContentKind.HTML, SanitizedHtml);
+}
+
+/**
+ * @param {?} value
+ * @return {boolean}
+ */
+function $$isHtmlOrHtmlTemplate(value) {
+  return isContentKind_(value, SanitizedContentKind.HTML);
+}
+
+/**
+ * @param {?} value
+ * @return {boolean}
+ */
+function $$isCss(value) {
+  return isContentKind_(value, SanitizedContentKind.CSS, SanitizedCss);
+}
+
+/**
+ * @param {?} value
+ * @return {boolean}
+ */
+function $$isAttribute(value) {
+  return isContentKind_(
+      value, SanitizedContentKind.ATTRIBUTES, SanitizedHtmlAttribute);
+}
+
+/**
+ * @param {?} value
+ * @return {boolean}
+ */
+function $$isJS(value) {
+  return isContentKind_(value, SanitizedContentKind.JS, SanitizedJs);
+}
+
+/**
+ * @param {?} value
+ * @return {boolean}
+ */
+function $$isTrustedResourceURI(value) {
+  return isContentKind_(
+      value, SanitizedContentKind.TRUSTED_RESOURCE_URI,
+      SanitizedTrustedResourceUri);
+}
+
+/**
+ * @param {?} value
+ * @return {boolean}
+ */
+function $$isURI(value) {
+  return isContentKind_(value, SanitizedContentKind.URI, SanitizedUri) ||
+      $$isTrustedResourceURI(value);
+}
+
 
 exports = {
   $$maybeMakeImmutableProto,
@@ -2623,9 +2676,10 @@ exports = {
   $$round,
   $$strContains,
   $$coerceToBoolean,
+  $$isIterable,
   $$isTruthyNonEmpty,
   $$hasContent,
-  $$emptyToNull,
+  $$emptyToUndefined,
   $$makeEmptyTemplateFn,
   $$registerDelegateFn,
   $$getDelTemplateId,
@@ -2657,7 +2711,6 @@ exports = {
   $$filterSipUri,
   $$strSmsUriToUri,
   $$filterTelUri,
-  $$filterLegacyUriBehavior,
   $$escapeCssString,
   $$filterCssValue,
   $$filterCspNonceValue,
@@ -2704,7 +2757,12 @@ exports = {
   $$areYouAnInternalCaller,
   // The following are exported just for tests
   $$balanceTags_,
-  isContentKind_,
+  $$isAttribute,
+  $$isHtml,
+  $$isURI,
+  $$isTrustedResourceURI,
+  $$isCss,
+  $$isJS,
 };
 // -----------------------------------------------------------------------------
 // Generated code.
@@ -3024,12 +3082,6 @@ const $$FILTER_FOR_FILTER_TEL_URI_ = /^tel:(?:[0-9a-z;=\-+._!~*'\u0020\/():&$#?@
  * A pattern that vets values produced by the named directives.
  * @type {!RegExp}
  */
-const $$FILTER_FOR_FILTER_LEGACY_URI_BEHAVIOR_ = /^(?:(?:https?|mailto|ftp):|[^&:\/?#]*(?:[\/?#]|$))/i;
-
-/**
- * A pattern that vets values produced by the named directives.
- * @type {!RegExp}
- */
 const $$FILTER_FOR_FILTER_HTML_ATTRIBUTES_ = /^(?!on|src|(?:action|archive|background|cite|classid|codebase|content|data|dsync|href|http-equiv|longdesc|style|usemap)\s*$)(?:[a-z0-9_$:-]*)$/i;
 
 /**
@@ -3237,20 +3289,6 @@ const $$filterTelUriHelper = function(value) {
   const str = String(value);
   if (!$$FILTER_FOR_FILTER_TEL_URI_.test(str)) {
     asserts.fail('Bad value `%s` for |filterTelUri', [str]);
-    return 'about:invalid#zSoyz';
-  }
-  return str;
-};
-
-/**
- * A helper for the Soy directive |filterLegacyUriBehavior
- * @param {?} value Can be of any type but will be coerced to a string.
- * @return {string} The escaped text.
- */
-const $$filterLegacyUriBehaviorHelper = function(value) {
-  const str = String(value);
-  if (!$$FILTER_FOR_FILTER_LEGACY_URI_BEHAVIOR_.test(str)) {
-    asserts.fail('Bad value `%s` for |filterLegacyUriBehavior', [str]);
     return 'about:invalid#zSoyz';
   }
   return str;

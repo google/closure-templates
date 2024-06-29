@@ -25,9 +25,11 @@ import com.google.common.collect.ImmutableList;
  */
 public final class SoyCompilationException extends RuntimeException {
   private final ImmutableList<SoyError> errors;
+  private final ErrorFormatter errorFormatter;
 
-  public SoyCompilationException(Iterable<SoyError> errors) {
+  public SoyCompilationException(Iterable<SoyError> errors, ErrorFormatter errorFormatter) {
     this.errors = ImmutableList.sortedCopyOf(errors);
+    this.errorFormatter = errorFormatter;
     checkArgument(!this.errors.isEmpty());
   }
 
@@ -38,6 +40,6 @@ public final class SoyCompilationException extends RuntimeException {
 
   @Override
   public String getMessage() {
-    return SoyErrors.formatErrors(errors);
+    return SoyErrors.formatErrors(errors, errorFormatter);
   }
 }

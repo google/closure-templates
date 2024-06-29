@@ -36,7 +36,8 @@ public final class DelegatingMethodChecker implements MethodChecker {
     Response lastResponse = null;
     for (MethodChecker methodChecker : methodCheckers) {
       lastResponse = methodChecker.findMethod(className, methodName, returnType, arguments);
-      if (lastResponse.getCode() == Code.EXISTS) {
+      // Assumes that a unique class name can only exist in at most one constituent method checker.
+      if (lastResponse.getCode() != Code.NO_SUCH_CLASS) {
         return lastResponse;
       }
     }

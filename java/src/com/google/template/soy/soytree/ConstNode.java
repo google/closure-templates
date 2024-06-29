@@ -21,11 +21,11 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
-import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
+import com.google.template.soy.soytree.SoyNode.FileVarNode;
 import com.google.template.soy.soytree.defn.ConstVar;
 
 /** Node representing a 'const' statement with a value expression. */
-public final class ConstNode extends AbstractCommandNode implements ExprHolderNode {
+public final class ConstNode extends AbstractCommandNode implements FileVarNode {
 
   private final ConstVar var;
 
@@ -42,7 +42,7 @@ public final class ConstNode extends AbstractCommandNode implements ExprHolderNo
       ExprNode expr,
       boolean exported) {
     super(id, location, "const");
-    this.var = new ConstVar(varName, varNameLocation, null);
+    this.var = new ConstVar(varName, varNameLocation, this, /* type= */ null);
     this.valueExpr = new ExprRootNode(expr);
     this.exported = exported;
   }
@@ -54,12 +54,13 @@ public final class ConstNode extends AbstractCommandNode implements ExprHolderNo
    */
   private ConstNode(ConstNode orig, CopyState copyState) {
     super(orig, copyState);
-    this.var = new ConstVar(orig.var);
+    this.var = new ConstVar(orig.var, this);
     this.valueExpr = orig.valueExpr.copy(copyState);
     this.exported = orig.exported;
     copyState.updateRefs(orig.var, this.var);
   }
 
+  @Override
   public ConstVar getVar() {
     return var;
   }

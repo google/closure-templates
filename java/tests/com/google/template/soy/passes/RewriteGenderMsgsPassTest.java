@@ -49,7 +49,7 @@ public final class RewriteGenderMsgsPassTest {
             + "{msg genders=\"$userGender, $gender\" desc=\"Button text.\"}\n"
             + "  You joined {$owner}'s community.\n"
             + "{/msg}\n";
-    ErrorReporter errorReporter = ErrorReporter.createForTest();
+    ErrorReporter errorReporter = ErrorReporter.create();
     SoyFileSetParserBuilder.forTemplateContents(soyCode)
         .errorReporter(errorReporter)
         .parse()
@@ -80,7 +80,7 @@ public final class RewriteGenderMsgsPassTest {
             + "    desc=\"...\"}\n"
             + "  You added {$targetName1} and {$targetName2} to {$groupOwnerName}'s group.\n"
             + "{/msg}\n";
-    ErrorReporter errorReporter = ErrorReporter.createForTest();
+    ErrorReporter errorReporter = ErrorReporter.create();
     SoyFileSetParserBuilder.forTemplateContents(soyCode).errorReporter(errorReporter).parse();
     assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
         .isEqualTo("Attribute 'genders' should contain 1-3 expressions.");
@@ -127,7 +127,7 @@ public final class RewriteGenderMsgsPassTest {
             + "      {/select}\n"
             + "  {/select}\n"
             + "{/msg}\n";
-    ErrorReporter errorReporter = ErrorReporter.createForTest();
+    ErrorReporter errorReporter = ErrorReporter.create();
     SoyFileSetParserBuilder.forTemplateContents(soyCode)
         .errorReporter(errorReporter)
         .parse()
@@ -154,7 +154,7 @@ public final class RewriteGenderMsgsPassTest {
             + "    {default}Find {$name1}'s face in {$name2}'s photos\n"
             + "  {/plural}\n"
             + "{/msg}\n";
-    ErrorReporter errorReporter = ErrorReporter.createForTest();
+    ErrorReporter errorReporter = ErrorReporter.create();
     SoyFileSetParserBuilder.forTemplateContents(soyCode)
         .errorReporter(errorReporter)
         .parse()
@@ -189,7 +189,7 @@ public final class RewriteGenderMsgsPassTest {
             + "      {/plural}\n"
             + "  {/select}\n"
             + "{/msg}\n";
-    ErrorReporter errorReporter = ErrorReporter.createForTest();
+    ErrorReporter errorReporter = ErrorReporter.create();
     SoyFileSetParserBuilder.forTemplateContents(soyCode)
         .errorReporter(errorReporter)
         .parse()

@@ -23,16 +23,15 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.internal.exemptions.NamespaceExemptions;
 import com.google.template.soy.jbcsrc.internal.ClassData;
-import com.google.template.soy.jbcsrc.internal.InnerClasses;
+import com.google.template.soy.jbcsrc.internal.InnerMethods;
 import com.google.template.soy.jbcsrc.internal.SoyClassWriter;
 import com.google.template.soy.jbcsrc.restricted.TypeInfo;
 import com.google.template.soy.jbcsrc.shared.Names;
 import com.google.template.soy.soytree.ConstNode;
 import com.google.template.soy.soytree.ExternNode;
-import com.google.template.soy.soytree.PartialFileSetMetadata;
+import com.google.template.soy.soytree.FileSetMetadata;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.TemplateNode;
-import java.util.stream.Stream;
 import org.objectweb.asm.Opcodes;
 
 /**
@@ -43,12 +42,12 @@ final class SoyFileCompiler {
 
   private final SoyFileNode fileNode;
   private final JavaSourceFunctionCompiler javaSourceFunctionCompiler;
-  private final PartialFileSetMetadata fileSetMetadata;
+  private final FileSetMetadata fileSetMetadata;
 
   SoyFileCompiler(
       SoyFileNode fileNode,
       JavaSourceFunctionCompiler javaSourceFunctionCompiler,
-      PartialFileSetMetadata fileSetMetadata) {
+      FileSetMetadata fileSetMetadata) {
     this.fileNode = fileNode;
     this.javaSourceFunctionCompiler = javaSourceFunctionCompiler;
     this.fileSetMetadata = fileSetMetadata;
@@ -61,7 +60,7 @@ final class SoyFileCompiler {
     } else if (NamespaceExemptions.isKnownDuplicateNamespace(fileNode.getNamespace())) {
       return compileToManyClasses();
     } else {
-      return compileToSingleClass();
+      return ImmutableList.of(compileToSingleClass());
     }
   }
 
@@ -80,17 +79,17 @@ final class SoyFileCompiler {
                           templateNode,
                           typeWriter.writer(),
                           typeWriter.fields(),
-                          typeWriter.innerClasses(),
+                          typeWriter.innerMethods(),
                           javaSourceFunctionCompiler,
                           fileSetMetadata)
                       .compile();
                   return typeWriter;
                 })
             .collect(toImmutableList());
-    return writers.stream().flatMap(TypeWriter::close).collect(toImmutableList());
+    return writers.stream().map(TypeWriter::close).collect(toImmutableList());
   }
 
-  private ImmutableList<ClassData> compileToSingleClass() {
+  private ClassData compileToSingleClass() {
     TypeWriter typeWriter = TypeWriter.create(fileNode);
 
     fileNode
@@ -112,13 +111,13 @@ final class SoyFileCompiler {
                         (TemplateNode) c,
                         typeWriter.writer(),
                         typeWriter.fields(),
-                        typeWriter.innerClasses(),
+                        typeWriter.innerMethods(),
                         javaSourceFunctionCompiler,
                         fileSetMetadata)
                     .compile();
               }
             });
-    return typeWriter.close().collect(toImmutableList());
+    return typeWriter.close();
   }
 
   @AutoValue
@@ -137,29 +136,27 @@ final class SoyFileCompiler {
 
     static TypeWriter create(TypeInfo type, SoyFileNode node) {
       FieldManager fields = new FieldManager(type);
-      InnerClasses innerClasses = new InnerClasses(type);
       SoyClassWriter writer =
           SoyClassWriter.builder(type)
               .setAccess(Opcodes.ACC_PUBLIC + Opcodes.ACC_SUPER + Opcodes.ACC_FINAL)
               .sourceFileName(node.getFileName())
               .build();
-      return new AutoValue_SoyFileCompiler_TypeWriter(writer, fields, innerClasses);
+      InnerMethods innerMethods = new InnerMethods(type, writer);
+      return new AutoValue_SoyFileCompiler_TypeWriter(writer, fields, innerMethods);
     }
 
     abstract SoyClassWriter writer();
 
     abstract FieldManager fields();
 
-    abstract InnerClasses innerClasses();
+    abstract InnerMethods innerMethods();
 
-    Stream<ClassData> close() {
-      innerClasses().registerAllInnerClasses(writer());
+    ClassData close() {
       fields().defineFields(writer());
       fields().defineStaticInitializer(writer());
       writer().visitEnd();
 
-      return Stream.concat(
-          Stream.of(writer().toClassData()), innerClasses().getInnerClassData().stream());
+      return writer().toClassData();
     }
   }
 }

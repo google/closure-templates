@@ -29,11 +29,13 @@ import com.google.errorprone.annotations.ForOverride;
 import com.google.errorprone.annotations.FormatMethod;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
+import com.google.template.soy.data.SoyIterable;
 import com.google.template.soy.data.SoyLegacyObjectMap;
 import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyProtoValue;
 import com.google.template.soy.data.SoyRecord;
+import com.google.template.soy.data.SoySet;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.TemplateValue;
 import com.google.template.soy.data.restricted.IntegerData;
@@ -554,7 +556,7 @@ public abstract class Expression extends BytecodeProducer {
     if (isCheap()) {
       return this;
     }
-    return new DelegatingExpression(this, features.plus(Feature.CHEAP));
+    return withNewFeatures(features.plus(Feature.CHEAP));
   }
 
   /** Returns an equivalent expression where {@link #isNonJavaNullable()} returns {@code true}. */
@@ -562,21 +564,21 @@ public abstract class Expression extends BytecodeProducer {
     if (isNonJavaNullable()) {
       return this;
     }
-    return new DelegatingExpression(this, features.plus(Feature.NON_JAVA_NULLABLE));
+    return withNewFeatures(features.plus(Feature.NON_JAVA_NULLABLE));
   }
 
   public Expression asJavaNullable() {
     if (!isNonJavaNullable()) {
       return this;
     }
-    return new DelegatingExpression(this, features.minus(Feature.NON_JAVA_NULLABLE));
+    return withNewFeatures(features.minus(Feature.NON_JAVA_NULLABLE));
   }
 
   public Expression asNonSoyNullish() {
     if (isNonSoyNullish()) {
       return this;
     }
-    return new DelegatingExpression(this, features.plus(Feature.NON_SOY_NULLISH));
+    return withNewFeatures(features.plus(Feature.NON_SOY_NULLISH));
   }
 
   public Expression asSoyNullish() {
@@ -590,30 +592,17 @@ public abstract class Expression extends BytecodeProducer {
         this, BytecodeUtils.SOY_VALUE_TYPE, features.minus(Feature.NON_SOY_NULLISH));
   }
 
+  protected Expression withNewFeatures(Features features) {
+    return new DelegatingExpression(this, features);
+  }
+
   /**
    * Returns an expression that performs a checked cast from the current type to the target type.
    *
    * @throws IllegalArgumentException if either type is not a reference type.
    */
   public Expression checkedCast(Type target) {
-    checkArgument(
-        target.getSort() == Type.OBJECT,
-        "cast targets must be reference types. (%s)",
-        target.getClassName());
-    checkArgument(
-        resultType().getSort() == Type.OBJECT,
-        "you may only cast from reference types. (%s)",
-        resultType().getClassName());
-    if (BytecodeUtils.isDefinitelyAssignableFrom(target, resultType())) {
-      return this;
-    }
-    return new Expression(target, features()) {
-      @Override
-      protected void doGen(CodeBuilder adapter) {
-        Expression.this.gen(adapter);
-        adapter.checkCast(resultType());
-      }
-    };
+    return maybeCheckedCast(target).orElse(this);
   }
 
   /**
@@ -624,6 +613,30 @@ public abstract class Expression extends BytecodeProducer {
   public Expression checkedCast(Class<?> target) {
     return checkedCast(Type.getType(target));
   }
+
+  private Optional<Expression> maybeCheckedCast(Type target) {
+    checkArgument(
+        target.getSort() == Type.OBJECT,
+        "cast targets must be reference types. (%s)",
+        target.getClassName());
+    checkArgument(
+        resultType().getSort() == Type.OBJECT,
+        "you may only cast from reference types. (%s)",
+        resultType().getClassName());
+    if (BytecodeUtils.isDefinitelyAssignableFrom(target, resultType())) {
+      return Optional.empty();
+    }
+    return Optional.of(
+        new Expression(target, features()) {
+          @Override
+          protected void doGen(CodeBuilder adapter) {
+            Expression.this.gen(adapter);
+            adapter.checkCast(resultType());
+          }
+        });
+  }
+
+
 
   /**
    * A simple helper that calls through to {@link MethodRef#invoke(Expression...)}, but allows a
@@ -688,6 +701,64 @@ public abstract class Expression extends BytecodeProducer {
   }
 
   /**
+   * An expression representing a checked cast operation.
+   *
+   * <p>Allows it to be folded away in order to avoid redundant checks.
+   */
+  public static final class SoyCastExpression extends Expression {
+    private final Expression original;
+    private final Expression checked;
+
+    SoyCastExpression(Expression original, Expression checked) {
+      super(checked.resultType(), checked.features, checked.location, checked.constantValue);
+      this.original = original;
+      this.checked = checked;
+    }
+
+    @Override
+    protected void doGen(CodeBuilder adapter) {
+      checked.gen(adapter);
+    }
+
+    public Expression getOriginal() {
+      return original;
+    }
+
+    @Override
+    public Expression asSoyNullish() {
+      return new SoyCastExpression(original.asSoyNullish(), checked.asSoyNullish());
+    }
+
+    @Override
+    public SoyCastExpression withConstantValue(ConstantValue constantValue) {
+      return new SoyCastExpression(
+          original.withConstantValue(constantValue), checked.withConstantValue(constantValue));
+    }
+
+    @Override
+    protected SoyCastExpression withNewFeatures(Features features) {
+      return new SoyCastExpression(
+          original.withNewFeatures(features), checked.withNewFeatures(features));
+    }
+
+    @Override
+    public SoyCastExpression withSourceLocation(SourceLocation location) {
+      return new SoyCastExpression(
+          original.withSourceLocation(location), checked.withSourceLocation(location));
+    }
+
+    @Override
+    public SoyCastExpression labelStart(Label label) {
+      return new SoyCastExpression(original.labelStart(label), checked.labelStart(label));
+    }
+
+    @Override
+    public SoyCastExpression labelEnd(Label label) {
+      return new SoyCastExpression(original.labelEnd(label), checked.labelEnd(label));
+    }
+  }
+
+  /**
    * Inserts a runtime type check that this expression matches {@code type}. These checks are
    * typically inserted to validate user-supplied values are the expected type and fail early. The
    * resulting checks typically must call a method rather than a simple bytecode instruction since
@@ -695,10 +766,16 @@ public abstract class Expression extends BytecodeProducer {
    * SoyValue}.
    */
   public Expression checkedSoyCast(SoyType type) {
+    return doCheckedSoyCast(type)
+        .<Expression>map(checked -> new SoyCastExpression(this, checked))
+        .orElse(this);
+  }
+
+  private Optional<Expression> doCheckedSoyCast(SoyType type) {
     type = SoyTypes.tryRemoveNullish(type);
     if (BytecodeUtils.isDefinitelyAssignableFrom(BytecodeUtils.SOY_VALUE_TYPE, resultType)) {
       if (isDefinitelyAssignableFrom(BytecodeUtils.NULLISH_DATA_TYPE, resultType)) {
-        return this;
+        return Optional.empty();
       }
       Class<? extends SoyValue> expectedClass = null;
       switch (type.getKind()) {
@@ -706,48 +783,56 @@ public abstract class Expression extends BytecodeProducer {
         case UNKNOWN:
         case VE:
         case VE_DATA:
-          return this;
+          return Optional.empty();
         case UNION:
           if (type.equals(SoyTypes.NUMBER_TYPE)) {
             if (BytecodeUtils.isDefinitelyAssignableFrom(
                 BytecodeUtils.NUMBER_DATA_TYPE, resultType)) {
-              return this;
+              return Optional.empty();
             }
-            return MethodRefs.CHECK_NUMBER.invoke(this);
+            return Optional.of(MethodRefs.CHECK_NUMBER.invoke(this));
           }
-          return this;
+          return Optional.empty();
         case NULL:
-          return this.checkedCast(BytecodeUtils.NULL_DATA_TYPE);
+          return this.maybeCheckedCast(BytecodeUtils.NULL_DATA_TYPE);
         case UNDEFINED:
-          return this.checkedCast(BytecodeUtils.UNDEFINED_DATA_TYPE);
+          return this.maybeCheckedCast(BytecodeUtils.UNDEFINED_DATA_TYPE);
         case ATTRIBUTES:
-          return MethodRefs.CHECK_CONTENT_KIND.invoke(this, constant(ContentKind.ATTRIBUTES));
+          return Optional.of(
+              MethodRefs.CHECK_CONTENT_KIND.invoke(this, constant(ContentKind.ATTRIBUTES)));
         case CSS:
-          return MethodRefs.CHECK_CONTENT_KIND.invoke(this, constant(ContentKind.CSS));
+          return Optional.of(MethodRefs.CHECK_CONTENT_KIND.invoke(this, constant(ContentKind.CSS)));
         case BOOL:
           if (BytecodeUtils.isDefinitelyAssignableFrom(
               BytecodeUtils.BOOLEAN_DATA_TYPE, resultType)) {
-            return this;
+            return Optional.empty();
           }
-          return MethodRefs.CHECK_BOOLEAN.invoke(this);
+          return Optional.of(MethodRefs.CHECK_BOOLEAN.invoke(this));
         case FLOAT:
           if (BytecodeUtils.isDefinitelyAssignableFrom(BytecodeUtils.FLOAT_DATA_TYPE, resultType)) {
-            return this;
+            return Optional.empty();
           }
-          return MethodRefs.CHECK_FLOAT.invoke(this);
+          return Optional.of(MethodRefs.CHECK_FLOAT.invoke(this));
         case HTML:
         case ELEMENT:
-          return MethodRefs.CHECK_CONTENT_KIND.invoke(this, constant(ContentKind.HTML));
+          return Optional.of(
+              MethodRefs.CHECK_CONTENT_KIND.invoke(this, constant(ContentKind.HTML)));
         case INT:
           if (BytecodeUtils.isDefinitelyAssignableFrom(
               BytecodeUtils.INTEGER_DATA_TYPE, resultType)) {
-            return this;
+            return Optional.empty();
           }
-          return MethodRefs.CHECK_INT.invoke(this);
+          return Optional.of(MethodRefs.CHECK_INT.invoke(this));
         case JS:
-          return MethodRefs.CHECK_CONTENT_KIND.invoke(this, constant(ContentKind.JS));
+          return Optional.of(MethodRefs.CHECK_CONTENT_KIND.invoke(this, constant(ContentKind.JS)));
+        case ITERABLE:
+          expectedClass = SoyIterable.class;
+          break;
         case LIST:
           expectedClass = SoyList.class;
+          break;
+        case SET:
+          expectedClass = SoySet.class;
           break;
         case MAP:
           expectedClass = SoyMap.class;
@@ -763,7 +848,7 @@ public abstract class Expression extends BytecodeProducer {
               TypeInfo.create(
                       JavaQualifiedNames.getClassName(((SoyProtoType) type).getDescriptor()), false)
                   .type();
-          return MethodRefs.CHECK_PROTO.invoke(this, constant(protoType));
+          return Optional.of(MethodRefs.CHECK_PROTO.invoke(this, constant(protoType)));
         case PROTO_ENUM:
           expectedClass = IntegerData.class;
           break;
@@ -773,17 +858,18 @@ public abstract class Expression extends BytecodeProducer {
         case STRING:
           if (BytecodeUtils.isDefinitelyAssignableFrom(
               BytecodeUtils.STRING_DATA_TYPE, resultType)) {
-            return this;
+            return Optional.empty();
           }
-          return MethodRefs.CHECK_STRING.invoke(this);
+          return Optional.of(MethodRefs.CHECK_STRING.invoke(this));
         case TEMPLATE:
           expectedClass = TemplateValue.class;
           break;
         case TRUSTED_RESOURCE_URI:
-          return MethodRefs.CHECK_CONTENT_KIND.invoke(
-              this, constant(ContentKind.TRUSTED_RESOURCE_URI));
+          return Optional.of(
+              MethodRefs.CHECK_CONTENT_KIND.invoke(
+                  this, constant(ContentKind.TRUSTED_RESOURCE_URI)));
         case URI:
-          return MethodRefs.CHECK_CONTENT_KIND.invoke(this, constant(ContentKind.URI));
+          return Optional.of(MethodRefs.CHECK_CONTENT_KIND.invoke(this, constant(ContentKind.URI)));
         case CSS_TYPE:
         case CSS_MODULE:
         case TOGGLE_TYPE:
@@ -794,14 +880,15 @@ public abstract class Expression extends BytecodeProducer {
         case TEMPLATE_TYPE:
         case TEMPLATE_MODULE:
         case FUNCTION:
+        case NEVER:
           throw new UnsupportedOperationException();
       }
 
       Type expectedType = Type.getType(expectedClass);
       if (isDefinitelyAssignableFrom(expectedType, resultType)) {
-        return this;
+        return Optional.empty();
       }
-      return MethodRefs.CHECK_TYPE.invoke(this, constant(expectedType));
+      return Optional.of(MethodRefs.CHECK_TYPE.invoke(this, constant(expectedType)));
     }
 
     SoyRuntimeType unboxedType = SoyRuntimeType.getUnboxedType(type).orElse(null);
@@ -810,11 +897,11 @@ public abstract class Expression extends BytecodeProducer {
       if (BytecodeUtils.isPrimitive(runtimeType)) {
         checkArgument(resultType.equals(runtimeType), "%s != %s", resultType, runtimeType);
       } else {
-        return this.checkedCast(runtimeType);
+        return this.maybeCheckedCast(runtimeType);
       }
     }
     // Expression is not boxed but the soy type can only be a boxed value. Throw.
-    return this.checkedCast(BytecodeUtils.SOY_VALUE_TYPE);
+    return this.maybeCheckedCast(BytecodeUtils.SOY_VALUE_TYPE);
   }
 
   /** Subclasses can override this to supply extra properties for the toString method. */

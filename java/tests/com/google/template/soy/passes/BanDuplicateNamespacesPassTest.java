@@ -32,7 +32,7 @@ public final class BanDuplicateNamespacesPassTest {
 
   @Test
   public void externOnlyDuplicateNamespace_reportsError() {
-    ErrorReporter errorReporter = ErrorReporter.createForTest();
+    ErrorReporter errorReporter = ErrorReporter.create();
     ParseResult unused =
         SoyFileSetParserBuilder.forSuppliers(
                 SoyFileSupplier.Factory.create(

@@ -19,6 +19,7 @@ package com.google.template.soy.exprtree;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
+import com.google.template.soy.exprtree.OperatorNodes.SpreadOpNode;
 import java.util.List;
 import java.util.Optional;
 
@@ -90,5 +91,9 @@ public final class ListLiteralNode extends AbstractParentExprNode {
   @Override
   public ListLiteralNode copy(CopyState copyState) {
     return new ListLiteralNode(this, copyState);
+  }
+
+  public boolean containsSpreads() {
+    return getChildren().stream().anyMatch(SpreadOpNode.class::isInstance);
   }
 }

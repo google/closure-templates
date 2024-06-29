@@ -15,36 +15,38 @@
  */
 package com.google.template.soy.passes;
 
-
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.TemplateContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
+import com.google.template.soy.exprtree.TypeLiteralNode;
 import com.google.template.soy.soytree.ExternNode;
 import com.google.template.soy.soytree.SoyFileNode;
+import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateElementNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.AttrParam;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.soytree.defn.TemplateStateVar;
 import com.google.template.soy.types.FunctionType;
+import com.google.template.soy.types.ListType;
+import com.google.template.soy.types.MapType;
+import com.google.template.soy.types.SetType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.UnknownType;
-import com.google.template.soy.types.ast.NamedTypeNode;
 import com.google.template.soy.types.ast.TypeNode;
 import com.google.template.soy.types.ast.TypeNodeConverter;
 
 /** Resolve the TypeNode objects in TemplateParams to SoyTypes */
-final class ResolveTemplateParamTypesPass implements CompilerFilePass {
+final class ResolveDeclaredTypesPass implements CompilerFilePass {
   private final ErrorReporter errorReporter;
   private final boolean disableAllTypeChecking;
 
   private static final SoyErrorKind ATTRIBUTE_PARAM_ONLY_IN_ELEMENT_TEMPLATE =
       SoyErrorKind.of("Only templates of kind=\"html<?>\" can have @attribute.");
 
-  public ResolveTemplateParamTypesPass(
-      ErrorReporter errorReporter, boolean disableAllTypeChecking) {
+  public ResolveDeclaredTypesPass(ErrorReporter errorReporter, boolean disableAllTypeChecking) {
     this.errorReporter = errorReporter;
     this.disableAllTypeChecking = disableAllTypeChecking;
   }
@@ -60,6 +62,33 @@ final class ResolveTemplateParamTypesPass implements CompilerFilePass {
     for (ExternNode extern : file.getExterns()) {
       extern.setType((FunctionType) converter.getOrCreateType(extern.typeNode()));
     }
+
+    SoyTreeUtils.allNodesOfType(file, TypeLiteralNode.class)
+        .forEach(
+            n -> {
+              TypeNode typeNode = n.getTypeNode();
+              SoyType type;
+              if (!typeNode.isTypeResolved()) {
+                String typeName = typeNode.toString();
+                // TypeNodeConverter doesn't tolerate these generic types without <>.
+                switch (typeName) {
+                  case "list":
+                    type = ListType.ANY_LIST;
+                    break;
+                  case "set":
+                    type = SetType.ANY_SET;
+                    break;
+                  case "map":
+                    type = MapType.ANY_MAP;
+                    break;
+                  default:
+                    type = converter.getOrCreateType(typeNode);
+                }
+              } else {
+                type = typeNode.getResolvedType();
+              }
+              n.setType(type);
+            });
 
     for (TemplateNode template : file.getTemplates()) {
       for (TemplateParam param : template.getAllParams()) {
@@ -91,14 +120,5 @@ final class ResolveTemplateParamTypesPass implements CompilerFilePass {
         }
       }
     }
-  }
-
-  public static boolean isAlreadyOptionalType(TypeNode typeNode) {
-    return typeNode
-        .asStreamExpandingUnion()
-        .anyMatch(
-            tn ->
-                tn instanceof NamedTypeNode
-                    && ((NamedTypeNode) tn).name().identifier().equals("null"));
   }
 }

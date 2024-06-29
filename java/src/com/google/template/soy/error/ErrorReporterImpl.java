@@ -16,46 +16,36 @@
 
 package com.google.template.soy.error;
 
-import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.base.SourceLogicalPath;
-import com.google.template.soy.base.internal.SoyFileSupplier;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 /** Simple {@link com.google.template.soy.error.ErrorReporter} implementation. */
 final class ErrorReporterImpl extends ErrorReporter {
 
-  private static final SourceSnippetPrinter snippetPrinter = new SourceSnippetPrinter();
-
-  private final List<RecordedError> reports = new ArrayList<>();
+  private final List<SoyError> reports = new ArrayList<>();
   private int errorCount;
-  private final ImmutableMap<SourceLogicalPath, SoyFileSupplier> filePathsToSuppliers;
 
-  ErrorReporterImpl(ImmutableMap<SourceLogicalPath, SoyFileSupplier> filePathsToSuppliers) {
-    this.filePathsToSuppliers = filePathsToSuppliers;
-  }
+  ErrorReporterImpl() {}
 
   @Override
   public void report(SourceLocation location, SoyErrorKind kind, Object... args) {
     errorCount++;
-    reports.add(new RecordedError(location, kind, args, /* isWarning= */ false));
+    reports.add(SoyError.create(location, kind, args, /* isWarning= */ false));
   }
 
   @Override
   public void warn(SourceLocation location, SoyErrorKind kind, Object... args) {
-    reports.add(new RecordedError(location, kind, args, /* isWarning= */ true));
+    reports.add(SoyError.create(location, kind, args, /* isWarning= */ true));
   }
 
   @Override
   public ImmutableList<SoyError> getReports() {
-    return reports.stream().map(r -> r.asSoyError(filePathsToSuppliers)).collect(toImmutableList());
+    return ImmutableList.copyOf(reports);
   }
 
   @Override
@@ -63,30 +53,27 @@ final class ErrorReporterImpl extends ErrorReporter {
     return reports.stream()
         .skip(from)
         .limit(to - from)
-        .map(r -> r.asSoyError(filePathsToSuppliers))
         .collect(toImmutableList());
   }
 
   @Override
   public ImmutableList<SoyError> getErrors() {
-    return reports.stream()
-        .filter(r -> !r.isWarning)
-        .map(r -> r.asSoyError(filePathsToSuppliers))
-        .collect(toImmutableList());
+    return reports.stream().filter(r -> !r.isWarning()).collect(toImmutableList());
   }
 
   @Override
   public ImmutableList<SoyError> getWarnings() {
-    return reports.stream()
-        .filter(r -> r.isWarning)
-        .map(r -> r.asSoyError(filePathsToSuppliers))
-        .collect(toImmutableList());
+    return reports.stream().filter(SoyError::isWarning).collect(toImmutableList());
   }
 
   @Override
   public void copyTo(ErrorReporter other) {
-    for (RecordedError report : reports) {
-      report.copyTo(other);
+    for (SoyError report : reports) {
+      if (report.isWarning()) {
+        other.warn(report.location(), report.errorKind(), report.getArgs().toArray());
+      } else {
+        other.report(report.location(), report.errorKind(), report.getArgs().toArray());
+      }
     }
   }
 
@@ -106,37 +93,5 @@ final class ErrorReporterImpl extends ErrorReporter {
         .add("errors", errorCount)
         .add("warnings", reports.size() - errorCount)
         .toString();
-  }
-
-  private static final class RecordedError {
-    final SourceLocation location;
-    final SoyErrorKind kind;
-    final Object[] args;
-    final boolean isWarning;
-
-    RecordedError(SourceLocation location, SoyErrorKind kind, Object[] args, boolean isWarning) {
-      this.location = checkNotNull(location);
-      this.kind = checkNotNull(kind);
-      this.args = checkNotNull(args);
-      this.isWarning = isWarning;
-    }
-
-    void copyTo(ErrorReporter other) {
-      if (isWarning) {
-        other.warn(location, kind, args);
-      } else {
-        other.report(location, kind, args);
-      }
-    }
-
-    SoyError asSoyError(ImmutableMap<SourceLogicalPath, SoyFileSupplier> filePathsToSuppliers) {
-      Optional<String> snippet =
-          Optional
-              // Sometimes we report errors against things like plugins, in which case we won't have
-              // a file.
-              .ofNullable(filePathsToSuppliers.get(location.getFilePath().asLogicalPath()))
-              .flatMap(supplier -> snippetPrinter.getSnippet(supplier, location));
-      return SoyError.create(location, kind, kind.format(args), snippet, isWarning);
-    }
   }
 }

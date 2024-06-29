@@ -19,9 +19,18 @@ package com.google.template.soy.jbcsrc.restricted;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.ImmutableList.toImmutableList;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.BOOLEAN_DATA_TYPE;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.NUMBER_DATA_TYPE;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_LIST_TYPE;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_MAP_TYPE;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_PROTO_VALUE_TYPE;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_SET_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_VALUE_PROVIDER_TYPE;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.STRING_DATA_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.STRING_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.isDefinitelyAssignableFrom;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.isNumericPrimitive;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Preconditions;
@@ -39,13 +48,17 @@ import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.MapType;
 import com.google.template.soy.types.NullType;
 import com.google.template.soy.types.SanitizedType;
+import com.google.template.soy.types.SetType;
+import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.StringType;
 import com.google.template.soy.types.UndefinedType;
 import com.google.template.soy.types.UnknownType;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Type;
 
@@ -62,7 +75,10 @@ public final class SoyExpression extends Expression {
 
   public static SoyExpression forSoyValue(SoyType type, Expression delegate) {
     if (delegate instanceof SoyExpression) {
-      return forSoyValue(type, ((SoyExpression) delegate).delegate);
+      SoyExpression soyExpression = (SoyExpression) delegate;
+      SoyRuntimeType runtimeType =
+          soyExpression.isBoxed() ? SoyRuntimeType.getBoxedType(type) : getUnboxedType(type);
+      return new SoyExpression(runtimeType, soyExpression.delegate);
     }
     return new SoyExpression(SoyRuntimeType.getBoxedType(type), delegate);
   }
@@ -109,6 +125,15 @@ public final class SoyExpression extends Expression {
 
   @DoNotCall
   public static SoyExpression forList(ListType listType, SoyExpression delegate) {
+    throw new UnsupportedOperationException();
+  }
+
+  public static SoyExpression forSet(SetType setType, Expression delegate) {
+    return new SoyExpression(getUnboxedType(setType), delegate);
+  }
+
+  @DoNotCall
+  public static SoyExpression forSet(SetType setType, SoyExpression delegate) {
     throw new UnsupportedOperationException();
   }
 
@@ -165,9 +190,8 @@ public final class SoyExpression extends Expression {
         BytecodeUtils.isPossiblyAssignableFrom(
             BytecodeUtils.SOY_VALUE_PROVIDER_TYPE, delegate.resultType()));
     if (delegate.isNonJavaNullable()
-        || !BytecodeUtils.isDefinitelyAssignableFrom(
-            BytecodeUtils.SOY_VALUE_TYPE, delegate.resultType())) {
-      delegate = delegate.invoke(MethodRefs.SOY_VALUE_PROVIDER_RESOLVE).checkedSoyCast(type);
+        || !isDefinitelyAssignableFrom(BytecodeUtils.SOY_VALUE_TYPE, delegate.resultType())) {
+      delegate = delegate.invoke(MethodRefs.SOY_VALUE_PROVIDER_RESOLVE);
     }
     return forSoyValue(type, delegate);
   }
@@ -220,8 +244,7 @@ public final class SoyExpression extends Expression {
         soyRuntimeType.soyType(),
         delegate.resultType());
     if (soyRuntimeType.isBoxed()
-        != BytecodeUtils.isDefinitelyAssignableFrom(
-            SOY_VALUE_PROVIDER_TYPE, delegate.resultType())) {
+        != isDefinitelyAssignableFrom(SOY_VALUE_PROVIDER_TYPE, delegate.resultType())) {
       throw new IllegalArgumentException(
           "boxed=" + soyRuntimeType.isBoxed() + " for type " + delegate.resultType());
     }
@@ -416,6 +439,8 @@ public final class SoyExpression extends Expression {
       MethodRefs.STRING_DATA_FOR_VALUE.invokeUnchecked(adapter);
     } else if (type.isKnownListOrUnionOfLists()) {
       MethodRefs.LIST_IMPL_FOR_PROVIDER_LIST.invokeUnchecked(adapter);
+    } else if (type.isKnownSet()) {
+      MethodRefs.SET_IMPL_FOR_PROVIDER_SET.invokeUnchecked(adapter);
     } else if (type.isKnownLegacyObjectMapOrUnionOfMaps()) {
       FieldRef.enumReference(RuntimeMapTypeTracker.Type.LEGACY_OBJECT_MAP_OR_RECORD)
           .putUnchecked(adapter);
@@ -453,6 +478,8 @@ public final class SoyExpression extends Expression {
       return MethodRefs.STRING_DATA_FOR_VALUE.invoke(delegate).toMaybeConstant();
     } else if (type.isKnownListOrUnionOfLists()) {
       return MethodRefs.LIST_IMPL_FOR_PROVIDER_LIST.invoke(delegate);
+    } else if (type.isKnownSet()) {
+      return MethodRefs.SET_IMPL_FOR_PROVIDER_SET.invoke(delegate);
     } else if (type.isKnownLegacyObjectMapOrUnionOfMaps()) {
       return MethodRefs.DICT_IMPL_FOR_PROVIDER_MAP.invoke(
           delegate,
@@ -611,7 +638,8 @@ public final class SoyExpression extends Expression {
     }
     assertBoxed(boolean.class);
 
-    return forBool(delegate.invoke(MethodRefs.SOY_VALUE_BOOLEAN_VALUE).toMaybeConstant());
+    return forBool(
+        delegateWithoutCast().invoke(MethodRefs.SOY_VALUE_BOOLEAN_VALUE).toMaybeConstant());
   }
 
   /**
@@ -628,7 +656,7 @@ public final class SoyExpression extends Expression {
     }
     assertBoxed(long.class);
 
-    return forInt(delegate.invoke(MethodRefs.SOY_VALUE_LONG_VALUE));
+    return forInt(delegateWithoutCast().invoke(MethodRefs.SOY_VALUE_LONG_VALUE));
   }
 
   /**
@@ -643,7 +671,8 @@ public final class SoyExpression extends Expression {
     if (alreadyUnboxed(long.class)) {
       return checkedCastLongToInt(this);
     }
-    return box().invoke(MethodRefs.SOY_VALUE_INTEGER_VALUE);
+    assertBoxed(long.class);
+    return delegateWithoutCast().invoke(MethodRefs.SOY_VALUE_INTEGER_VALUE);
   }
 
   public Expression coerceToInt() {
@@ -683,7 +712,7 @@ public final class SoyExpression extends Expression {
     }
     assertBoxed(double.class);
 
-    return forFloat(delegate.invoke(MethodRefs.SOY_VALUE_FLOAT_VALUE));
+    return forFloat(delegateWithoutCast().invoke(MethodRefs.SOY_VALUE_FLOAT_VALUE));
   }
 
   private Features featuresAfterUnboxing() {
@@ -692,6 +721,14 @@ public final class SoyExpression extends Expression {
       features = features.minus(Feature.NON_JAVA_NULLABLE);
     }
     return features;
+  }
+
+  /** Removes a soy cast, useful if/when we are generating a checked unboxing operation. */
+  private Expression delegateWithoutCast() {
+    if (delegate instanceof Expression.SoyCastExpression) {
+      return ((Expression.SoyCastExpression) delegate).getOriginal();
+    }
+    return delegate;
   }
 
   /** Unboxes a string. Throws an exception if the boxed value is nullish. */
@@ -710,11 +747,23 @@ public final class SoyExpression extends Expression {
     }
     assertBoxed(String.class);
 
+    var delegate = delegateWithoutCast();
     return forString(
         delegate.invoke(
             delegate.isNonSoyNullish()
                 ? MethodRefs.SOY_VALUE_STRING_VALUE
                 : MethodRefs.SOY_VALUE_STRING_VALUE_OR_NULL));
+  }
+
+  public Expression unboxAsIteratorUnchecked() {
+    if (alreadyUnboxed(Iterator.class)) {
+      return this;
+    }
+    if (alreadyUnboxed(Iterable.class)) {
+      return delegateWithoutCast().invoke(MethodRefs.GET_ITERATOR);
+    }
+    assertBoxed(SoyValue.class);
+    return delegateWithoutCast().invoke(MethodRefs.SOY_VALUE_AS_JAVA_ITERATOR);
   }
 
   /** Unboxes a list and its items. Throws an exception if the boxed list value is nullish. */
@@ -732,7 +781,7 @@ public final class SoyExpression extends Expression {
       return this;
     }
     assertBoxed(List.class);
-
+    var delegate = delegateWithoutCast();
     Expression unboxedList =
         delegate.invoke(
             delegate.isNonSoyNullish()
@@ -742,7 +791,7 @@ public final class SoyExpression extends Expression {
     ListType asListType;
     SoyRuntimeType nonNullRuntimeType =
         SoyRuntimeType.getBoxedType(SoyTypes.tryRemoveNullish(soyType()));
-    if (!SoyTypes.isNullOrUndefined(soyType()) && nonNullRuntimeType.isKnownListOrUnionOfLists()) {
+    if (!SoyTypes.isNullOrUndefined(soyType()) && nonNullRuntimeType.isKnownIterable()) {
       asListType = nonNullRuntimeType.asListType();
     } else {
       if (soyType().getKind() == Kind.UNKNOWN || soyType().isNullOrUndefined()) {
@@ -783,6 +832,7 @@ public final class SoyExpression extends Expression {
         return this.delegate.checkedCast(runtimeType);
       }
     }
+    var delegate = delegateWithoutCast();
     return delegate
         .invoke(
             delegate.isNonSoyNullish()
@@ -791,9 +841,92 @@ public final class SoyExpression extends Expression {
         .checkedCast(runtimeType);
   }
 
+  private SoyExpression instanceOfUnboxed(SoyType soyType) {
+    // The optimization pass removes some but not all of these.
+    Boolean staticValue = null;
+    switch (soyType.getKind()) {
+      case STRING:
+        staticValue = alreadyUnboxed(String.class);
+        break;
+      case BOOL:
+        staticValue = Type.BOOLEAN_TYPE == soyRuntimeType.runtimeType();
+        break;
+      case UNION:
+        staticValue =
+            soyType.equals(SoyTypes.NUMBER_TYPE)
+                && isNumericPrimitive(soyRuntimeType.runtimeType());
+        break;
+      case LIST:
+        staticValue = alreadyUnboxed(List.class);
+        break;
+      case SET:
+        staticValue = alreadyUnboxed(Set.class);
+        break;
+      default:
+        break;
+    }
+    if (staticValue == null) {
+      throw new IllegalArgumentException("" + soyRuntimeType);
+    }
+    return staticValue ? TRUE : FALSE;
+  }
+
+  /**
+   * JBCSRC implementation of the `instanceof` operator.
+   *
+   * @param soyType must be a valid `instanceof` type operand.
+   */
+  public SoyExpression instanceOf(SoyType soyType) {
+    if (!isBoxed()) {
+      return instanceOfUnboxed(soyType);
+    }
+    Type type = null;
+    switch (soyType.getKind()) {
+      case STRING:
+        type = STRING_DATA_TYPE;
+        break;
+      case BOOL:
+        type = BOOLEAN_DATA_TYPE;
+        break;
+      case UNION:
+        if (soyType.equals(SoyTypes.NUMBER_TYPE)) {
+          type = NUMBER_DATA_TYPE;
+        }
+        break;
+      case LIST:
+        type = SOY_LIST_TYPE;
+        break;
+      case SET:
+        type = SOY_SET_TYPE;
+        break;
+      case MAP:
+        type = SOY_MAP_TYPE;
+        break;
+      case MESSAGE:
+        type = SOY_PROTO_VALUE_TYPE;
+        break;
+      case PROTO:
+        Type protoType = SoyRuntimeType.protoType(((SoyProtoType) soyType).getDescriptor());
+        return forBool(MethodRefs.IS_PROTO_INSTANCE.invoke(delegate, constant(protoType)));
+      case HTML:
+      case URI:
+      case CSS:
+      case JS:
+      case TRUSTED_RESOURCE_URI:
+      case ATTRIBUTES:
+        ContentKind kind = Converters.toContentKind(((SanitizedType) soyType).getContentKind());
+        return forBool(MethodRefs.IS_SANITIZED_CONTENT_KIND.invoke(delegate, constant(kind)));
+      default:
+        break;
+    }
+    if (type != null) {
+      return forBool(BytecodeUtils.instanceOf(delegate, type));
+    }
+    throw new IllegalArgumentException("" + soyType);
+  }
+
   private boolean alreadyUnboxed(Class<?> asType) {
-    return BytecodeUtils.isDefinitelyAssignableFrom(
-        Type.getType(asType), soyRuntimeType.runtimeType());
+    return isDefinitelyAssignableFrom(Type.getType(asType), soyRuntimeType.runtimeType());
   }
 
   private void assertBoxed(Class<?> asType) {
@@ -822,12 +955,12 @@ public final class SoyExpression extends Expression {
 
   @Override
   public SoyExpression asNonJavaNullable() {
-    return new SoyExpression(soyRuntimeType, delegate.asNonJavaNullable());
+    return withSource(delegate.asNonJavaNullable());
   }
 
   @Override
   public SoyExpression asJavaNullable() {
-    return new SoyExpression(soyRuntimeType, delegate.asJavaNullable());
+    return withSource(delegate.asJavaNullable());
   }
 
   @Override

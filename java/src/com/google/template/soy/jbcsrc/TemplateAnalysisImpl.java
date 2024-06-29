@@ -27,6 +27,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
 import com.google.template.soy.exprtree.DataAccessNode;
@@ -50,6 +51,7 @@ import com.google.template.soy.exprtree.OperatorNodes.BarBarOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ConditionalOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.SpreadOpNode;
 import com.google.template.soy.exprtree.RecordLiteralNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.exprtree.VarDefn;
@@ -66,6 +68,7 @@ import com.google.template.soy.msgs.restricted.SoyMsgSelectPart;
 import com.google.template.soy.shared.RangeArgs;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
+import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamNode;
@@ -244,6 +247,18 @@ final class TemplateAnalysisImpl implements TemplateAnalysis {
 
     @Override
     protected void visitForNonemptyNode(ForNonemptyNode node) {
+      var indexVar = node.getIndexVar();
+      if (indexVar != null) {
+        // Add a synthetic access to the index variable prior to execution.  This ensures that all
+        // 'real' access are considered resolved.
+        this.current.add(
+            new VarRefNode(indexVar.getOriginalName(), SourceLocation.UNKNOWN, indexVar));
+      }
+      // Range functions always produce resolved values.
+      if (node.isRangeExpr()) {
+        this.current.add(
+            new VarRefNode(node.getVar().getOriginalName(), SourceLocation.UNKNOWN, node.getVar()));
+      }
       visitChildren(node);
     }
 
@@ -392,6 +407,10 @@ final class TemplateAnalysisImpl implements TemplateAnalysis {
 
     @Override
     protected void visitCallNode(CallNode node) {
+      if (node instanceof CallBasicNode) {
+        // Always evaluate the callee expression.
+        evalInline(((CallBasicNode) node).getCalleeExpr());
+      }
       // If there is a data="<expr>" this is always evaluated first.
       ExprRootNode dataExpr = node.getDataExpr();
       if (dataExpr != null) {
@@ -601,9 +620,12 @@ final class TemplateAnalysisImpl implements TemplateAnalysis {
     }
     ExprNode expr = node.getExpr().getRoot();
     if (expr instanceof ListLiteralNode) {
-      return ((ListLiteralNode) expr).numChildren() > 0
+      var children = ((ListLiteralNode) expr).getChildren();
+      return children.stream().anyMatch(c -> !(c instanceof SpreadOpNode))
           ? StaticAnalysisResult.FALSE
-          : StaticAnalysisResult.TRUE;
+          : children.stream().allMatch(c -> c instanceof SpreadOpNode)
+              ? StaticAnalysisResult.UNKNOWN
+              : StaticAnalysisResult.TRUE;
     }
     return StaticAnalysisResult.UNKNOWN;
   }
@@ -802,12 +824,13 @@ final class TemplateAnalysisImpl implements TemplateAnalysis {
           case TO_FLOAT:
           case VE_DATA:
           case XID:
-          case EMPTY_TO_NULL:
+          case EMPTY_TO_UNDEFINED:
           case UNDEFINED_TO_NULL:
           case UNDEFINED_TO_NULL_SSR:
           case BOOLEAN:
           case HAS_CONTENT:
           case IS_TRUTHY_NON_EMPTY:
+          case NEW_SET:
             // visit children normally
             break;
           case UNKNOWN_JS_GLOBAL:
@@ -867,6 +890,10 @@ final class TemplateAnalysisImpl implements TemplateAnalysis {
     @Override
     protected void visitAndOpNode(AndOpNode node) {
       visit(node.getChild(0));
+      // TODO(lukes): this isn't correct.  we conditionally evaluate the right side, if the left
+      // side is falsy, but if the left side is truthy we always evaluate the right side.  So given
+      // {if $foo && $bar} HERE {/if}
+      // at location HERE we know $bar has been resolved but this analysis doesn't represent that.
       executeInBranch(node.getChild(1));
     }
 

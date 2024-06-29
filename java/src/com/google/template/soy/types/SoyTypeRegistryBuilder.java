@@ -35,6 +35,7 @@ import com.google.protobuf.Descriptors.GenericDescriptor;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.base.internal.SoyFileKind;
+import com.google.template.soy.error.ErrorFormatter;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyInternalCompilerException;
@@ -105,7 +106,7 @@ public final class SoyTypeRegistryBuilder {
 
   /** Builder for {@link ProtoTypeRegistry}. */
   public static class ProtoFqnRegistryBuilder {
-    private final ErrorReporter errorReporter = ErrorReporter.create(ImmutableMap.of());
+    private final ErrorReporter errorReporter = ErrorReporter.create();
     private final ImmutableSet<GenericDescriptor> inputs;
     private final ImmutableMap<String, SoyFileKind> importPathToDepKind;
     private final Predicate<GenericDescriptor> alreadyVisitedKey;
@@ -143,7 +144,8 @@ public final class SoyTypeRegistryBuilder {
           .forEach(this::visitFileForExtensions);
 
       if (errorReporter.hasErrors()) {
-        throw new SoyInternalCompilerException(errorReporter.getErrors(), null);
+        throw new SoyInternalCompilerException(
+            errorReporter.getErrors(), ErrorFormatter.SIMPLE, null);
       }
 
       return new ProtoFqnTypeRegistry(
@@ -275,8 +277,10 @@ public final class SoyTypeRegistryBuilder {
   private static class ProtoFqnTypeRegistry implements ProtoTypeRegistry {
 
     private final TypeInterner interner;
+
     /** Map of FQN to descriptor for all message and enum descendants of imported symbols. */
     private final ImmutableMap<String, GenericDescriptor> msgAndEnumFqnToDesc;
+
     /** Multimap of FQN to extensions descriptor for all message descendants of imported symbols. */
     private final ImmutableSetMultimap<String, FieldDescriptor> msgFqnToExts;
 

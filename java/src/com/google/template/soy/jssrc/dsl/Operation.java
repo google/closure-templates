@@ -32,7 +32,6 @@ abstract class Operation extends Expression implements OperatorInterface {
       case OR:
         return "||";
       case NULL_COALESCING:
-        return "??";
       case ASSERT_NON_NULL:
       case BITWISE_AND:
       case BITWISE_OR:
@@ -54,8 +53,11 @@ abstract class Operation extends Expression implements OperatorInterface {
       case TIMES:
       case TRIPLE_EQUAL:
       case TRIPLE_NOT_EQUAL:
+      case SPREAD:
         return soyOperator.getTokenString();
       case CONDITIONAL:
+      case INSTANCE_OF:
+      case AS:
         throw new IllegalArgumentException("Not a single token.");
     }
     throw new AssertionError();

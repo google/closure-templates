@@ -248,7 +248,7 @@ public final class ResolveNamesPassTest {
   }
 
   private void assertResolveNamesFails(String expectedError, String fileContent) {
-    ErrorReporter errorReporter = ErrorReporter.createForTest();
+    ErrorReporter errorReporter = ErrorReporter.create();
     SoyFileSetParserBuilder.forFileContents(fileContent)
         .errorReporter(errorReporter)
         .typeRegistry(typeRegistry)

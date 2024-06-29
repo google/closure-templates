@@ -50,10 +50,8 @@ public final class PluginInstances {
     if (morePlugins.isEmpty()) {
       return this;
     }
-    return new PluginInstances(
-        ImmutableMap.<String, Supplier<Object>>builder()
-            .putAll(pluginInstances)
-            .putAll(morePlugins)
-            .build());
+    ImmutableMap.Builder<String, Supplier<Object>> pluginInstancesBuilder = ImmutableMap.builder();
+    pluginInstancesBuilder.putAll(this.pluginInstances).putAll(morePlugins);
+    return new PluginInstances(pluginInstancesBuilder.buildKeepingLast());
   }
 }

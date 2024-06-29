@@ -417,7 +417,7 @@ public final class JbcSrcRuntime {
     @Override
     public final SoyValue resolve() {
       checkState(status().isDone());
-      return buffer.getAsSoyValue();
+      return buffer.getAsStringData();
     }
 
     /** Renders the message to the given output stream incrementally. */
@@ -477,8 +477,6 @@ public final class JbcSrcRuntime {
           try {
             RenderResult result = placeholderValue.renderAndResolve(out);
             if (!result.isDone()) {
-              // store partIndex as i + 1 so that after the placeholder is done we proceed to the
-              // next part
               partIndex = i + 1;
               pendingRender = placeholderValue;
               return result;
@@ -685,12 +683,10 @@ public final class JbcSrcRuntime {
     return v != 0.0 & !Double.isNaN(v);
   }
 
-
   @Keep
   public static boolean coerceToBoolean(@Nullable String v) {
     return v != null && !v.isEmpty();
   }
-
 
   /** Function to execute after rendering of a section of buffered template is done. */
   @Immutable
@@ -700,13 +696,8 @@ public final class JbcSrcRuntime {
   }
 
   /** Replays commands to the main appendable, including logging. */
-  public static class ReplayingBufferedRenderDoneFn implements BufferedRenderDoneFn {
-    @Override
-    public void exec(LoggingAdvisingAppendable appendable, BufferingAppendable buffer)
-        throws IOException {
-      buffer.replayOn(appendable);
-    }
-  }
+  public static final BufferedRenderDoneFn REPLAYING_BUFFERED_RENDER_DONE_FN =
+      (appendable, buffer) -> buffer.replayOn(appendable);
 
   /** Coerces to a string and applies non-streaming escaping directives. */
   public static class EscapingBufferedRenderDoneFn implements BufferedRenderDoneFn {
@@ -727,7 +718,7 @@ public final class JbcSrcRuntime {
       for (SoyJavaPrintDirective directive : directives) {
         resultData = directive.applyForJava(resultData, ImmutableList.of());
       }
-      appendable.append(resultData.coerceToString());
+      resultData.render(appendable);
     }
   }
 
@@ -747,7 +738,7 @@ public final class JbcSrcRuntime {
       static {
         MethodHandles.Lookup lookup = MethodHandles.lookup();
         MethodType saveMethodType =
-            methodType(void.class, RenderContext.class, int.class, BufferingAppendable.class);
+            methodType(StackFrame.class, StackFrame.class, int.class, BufferingAppendable.class);
         SAVE_STATE_METHOD_HANDLE =
             SaveStateMetaFactory.bootstrapSaveState(lookup, "saveState", saveMethodType)
                 .getTarget();
@@ -758,7 +749,8 @@ public final class JbcSrcRuntime {
                     methodType(BufferingAppendable.class, StackFrame.class),
                     saveMethodType,
                     0)
-                .getTarget();
+                .getTarget()
+                .asType(methodType(BufferingAppendable.class, StackFrame.class));
       }
     }
 
@@ -771,13 +763,24 @@ public final class JbcSrcRuntime {
       this.bufferedRenderDoneFn = bufferedRenderDoneFn;
     }
 
+    @Nullable
     @Override
-    public RenderResult render(
-        ParamStore params, LoggingAdvisingAppendable appendable, RenderContext context)
+    public StackFrame render(
+        StackFrame frame,
+        ParamStore params,
+        LoggingAdvisingAppendable appendable,
+        RenderContext context)
         throws IOException {
-      StackFrame frame = context.popFrame();
       BufferingAppendable buffer;
-      switch (frame.stateNumber) {
+      int state;
+      StackFrame originalFrame = frame;
+      if (frame == null) {
+        state = 0;
+      } else {
+        state = frame.stateNumber;
+        frame = frame.child;
+      }
+      switch (state) {
         case 0:
           buffer = LoggingAdvisingAppendable.buffering();
           break;
@@ -786,7 +789,7 @@ public final class JbcSrcRuntime {
             buffer =
                 (BufferingAppendable)
                     BufferedCompiledTemplate.SaveRestoreState.RESTORE_APPENDABLE_HANDLE.invokeExact(
-                        frame);
+                        originalFrame);
           } catch (Throwable t) {
             throw new AssertionError(t);
           }
@@ -794,26 +797,27 @@ public final class JbcSrcRuntime {
         default:
           throw unexpectedStateError(frame);
       }
-      RenderResult result;
       try {
-        result = delegate.render(params, buffer, context);
+        frame = delegate.render(frame, params, buffer, context);
       } catch (RuntimeException e) {
         if (ignoreExceptions) {
-          return RenderResult.done();
+          return null;
         }
         throw e;
       }
-      if (result.isDone()) {
+      if (frame == null) {
         bufferedRenderDoneFn.exec(appendable, buffer);
       } else {
         try {
-          BufferedCompiledTemplate.SaveRestoreState.SAVE_STATE_METHOD_HANDLE.invokeExact(
-              context, 1, buffer);
+          frame =
+              (StackFrame)
+                  BufferedCompiledTemplate.SaveRestoreState.SAVE_STATE_METHOD_HANDLE.invokeExact(
+                      frame, 1, buffer);
         } catch (Throwable t) {
           throw new AssertionError(t);
         }
       }
-      return result;
+      return frame;
     }
   }
 
@@ -875,37 +879,59 @@ public final class JbcSrcRuntime {
   @Nonnull
   @Keep
   public static TemplateValue bindTemplateParams(TemplateValue template, ParamStore boundParams) {
-    var newTemplate =
-        new PartiallyBoundTemplate(boundParams, (CompiledTemplate) template.getCompiledTemplate());
-    return TemplateValue.createWithBoundParameters(
-        template.getTemplateName(), newTemplate.boundParams, newTemplate);
+    return TemplateValue.create(
+        template.getTemplateName(), new BoundTemplate(template, boundParams));
   }
 
   @Immutable
-  private static final class PartiallyBoundTemplate implements CompiledTemplate {
+  private static final class BoundTemplate implements CompiledTemplate {
+    private final String name;
+
     @SuppressWarnings("Immutable") // this is never mutated
     private final ParamStore boundParams;
 
     private final CompiledTemplate delegate;
 
-    PartiallyBoundTemplate(ParamStore boundParams, CompiledTemplate delegate) {
+    BoundTemplate(TemplateValue value, ParamStore boundParams) {
       // unwrap delegation by eagerly merging params, this removes layers of indirection at call
       // time
-      if (delegate instanceof PartiallyBoundTemplate) {
-        PartiallyBoundTemplate partiallyBoundTemplate = (PartiallyBoundTemplate) delegate;
+      var delegate = (CompiledTemplate) value.compiledTemplate().orElse(null);
+      if (delegate instanceof BoundTemplate) {
+        BoundTemplate partiallyBoundTemplate = (BoundTemplate) delegate;
         boundParams = ParamStore.merge(partiallyBoundTemplate.boundParams, boundParams);
-        delegate = partiallyBoundTemplate.delegate;
+        this.delegate = partiallyBoundTemplate.delegate;
+      } else {
+        this.delegate = delegate;
       }
-      this.delegate = delegate;
-      this.boundParams = boundParams;
+      this.name = value.getTemplateName();
+      this.boundParams = ParamStore.merge(value.getBoundParameters(), boundParams);
     }
 
     @Override
-    public RenderResult render(
-        ParamStore params, LoggingAdvisingAppendable appendable, RenderContext context)
+    public StackFrame render(
+        StackFrame frame,
+        ParamStore params,
+        LoggingAdvisingAppendable appendable,
+        RenderContext context)
         throws IOException {
-      return delegate.render(ParamStore.merge(boundParams, params), appendable, context);
+      // Delegate is null when the template is passed from java as a parameter. Resolve it on
+      // demand.
+      var delegate = this.delegate;
+      if (delegate == null) {
+        delegate = context.getTemplate(name);
+      }
+      return delegate.render(frame, ParamStore.merge(boundParams, params), appendable, context);
     }
+  }
+
+  public static CompiledTemplate getCompiledTemplate(TemplateValue template) {
+    var delegate = (CompiledTemplate) template.compiledTemplate().orElse(null);
+    if (delegate != null && template.getBoundParameters().isEmpty()) {
+      // This is likely a template literal from the code generator, so we can just return the
+      // delegate.
+      return delegate;
+    }
+    return new BoundTemplate(template, ParamStore.EMPTY_INSTANCE);
   }
 
   /**
@@ -1018,7 +1044,7 @@ public final class JbcSrcRuntime {
     return unusedKey;
   }
 
-  public static SoyValue emptyToNull(SoyValue value) {
+  public static SoyValue emptyToUndefined(SoyValue value) {
     return value.stringValue().isEmpty() ? UndefinedData.INSTANCE : value;
   }
 
@@ -1029,8 +1055,8 @@ public final class JbcSrcRuntime {
   public static final class EveryDetachStateForTesting {
     private static final Set<Object> visited = Sets.newConcurrentHashSet();
 
-    private static final RenderResult TRIVIAL_PENDING =
-        RenderResult.continueAfter(Futures.immediateVoidFuture());
+    private static final StackFrame TRIVIAL_PENDING =
+        StackFrame.create(RenderResult.continueAfter(Futures.immediateVoidFuture()));
 
     public static void clear() {
       visited.clear();
@@ -1040,9 +1066,22 @@ public final class JbcSrcRuntime {
       return actual || EveryDetachStateForTesting.visited.add(callsite);
     }
 
+    @Nullable
+    public static StackFrame maybeForceContinueAfter(Object callsite) {
+      return maybeForceContinueAfter((StackFrame) null, callsite);
+    }
+
+    @Nullable
+    public static StackFrame maybeForceContinueAfter(@Nullable StackFrame actual, Object callsite) {
+      if (actual == null && EveryDetachStateForTesting.visited.add(callsite)) {
+        actual = EveryDetachStateForTesting.TRIVIAL_PENDING;
+      }
+      return actual;
+    }
+
     public static RenderResult maybeForceContinueAfter(RenderResult actual, Object callsite) {
       if (actual.isDone() && EveryDetachStateForTesting.visited.add(callsite)) {
-        actual = EveryDetachStateForTesting.TRIVIAL_PENDING;
+        actual = EveryDetachStateForTesting.TRIVIAL_PENDING.asRenderResult();
       }
       return actual;
     }

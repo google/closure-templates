@@ -50,9 +50,11 @@ import com.google.template.soy.soytree.JavaImplNode;
 import com.google.template.soy.soytree.JsImplNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.types.FunctionType;
+import com.google.template.soy.types.IterableType;
 import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.MapType;
 import com.google.template.soy.types.RecordType;
+import com.google.template.soy.types.SetType;
 import com.google.template.soy.types.SoyProtoEnumType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
@@ -178,12 +180,6 @@ class ValidateExternsPass implements CompilerFilePass {
     return moduleEquals && functionEquals;
   }
 
-  private static final ImmutableSet<String> IMPLICIT_PARAMS =
-      ImmutableSet.of(
-          "com.google.template.soy.data.Dir",
-          "com.google.template.soy.plugin.java.RenderCssHelper",
-          "com.ibm.icu.util.ULocale");
-
   private void validateJava(ExternNode extern, JavaImplNode java) {
     int requiredParamCount = extern.getType().getParameters().size();
 
@@ -210,7 +206,7 @@ class ValidateExternsPass implements CompilerFilePass {
     List<String> paramTypes = new ArrayList<>(java.params());
     boolean inTail = true;
     for (int i = paramTypes.size() - 1; i >= 0; i--) {
-      if (IMPLICIT_PARAMS.contains(paramTypes.get(i))) {
+      if (JavaImplNode.isParamImplicit(paramTypes.get(i))) {
         paramTypes.remove(i);
         if (!inTail) {
           errorReporter.report(
@@ -351,6 +347,7 @@ class ValidateExternsPass implements CompilerFilePass {
           SoyType.Kind.FLOAT,
           SoyType.Kind.STRING,
           SoyType.Kind.BOOL,
+          SoyType.Kind.MESSAGE,
           SoyType.Kind.PROTO,
           SoyType.Kind.PROTO_ENUM);
 
@@ -397,10 +394,17 @@ class ValidateExternsPass implements CompilerFilePass {
             .getMembers().stream().anyMatch(t -> !ALLOWED_UNION_MEMBERS.contains(t.getKind()))) {
           return false;
         }
-        // fallthrough
+      // fallthrough
       case ANY:
       case UNKNOWN:
         return javaType == Object.class || javaType == SoyValue.class;
+      case ITERABLE:
+        if (!isAllowedParameterizedType(((IterableType) soyType).getElementType(), extern)) {
+          return false;
+        }
+        return mode == Mode.EXTENDS
+            ? Iterable.class.isAssignableFrom(javaType)
+            : javaType == Iterable.class;
       case LIST:
         if (!isAllowedParameterizedType(((ListType) soyType).getElementType(), extern)) {
           return false;
@@ -408,6 +412,13 @@ class ValidateExternsPass implements CompilerFilePass {
         return mode == Mode.EXTENDS
             ? Iterable.class.isAssignableFrom(javaType)
             : (!javaType.equals(Object.class) && javaType.isAssignableFrom(ImmutableList.class));
+      case SET:
+        if (!isAllowedParameterizedType(((SetType) soyType).getElementType(), extern)) {
+          return false;
+        }
+        return mode == Mode.EXTENDS
+            ? Iterable.class.isAssignableFrom(javaType)
+            : (!javaType.equals(Object.class) && javaType.isAssignableFrom(ImmutableSet.class));
       case MAP:
         MapType mapType = (MapType) soyType;
         if (!ALLOWED_PARAMETERIZED_TYPES.contains(mapType.getKeyType().getKind())

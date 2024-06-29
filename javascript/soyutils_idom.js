@@ -40,7 +40,6 @@ var goog_goog_soy_data_SanitizedContentKind_1 = goog.require('goog.soy.data.Sani
 var goog_goog_soy_data_SanitizedHtml_1 = goog.require('goog.soy.data.SanitizedHtml'); // from //javascript/closure/soy:data
 var googString = goog.require('goog.string'); // from //javascript/closure/string
 var soy = goog.require('soy'); // from //javascript/template/soy:soy_usegoog_js
-var goog_soy_checks_1 = goog.require('soy.checks'); // from //javascript/template/soy:checks
 var goog_soydata_VERY_UNSAFE_1 = goog.require('soydata.VERY_UNSAFE'); // from //javascript/template/soy:soy_usegoog_js
 var incrementaldom = goog.require('google3.third_party.javascript.incremental_dom.index'); // from //third_party/javascript/incremental_dom:incrementaldom
 var api_idom_1 = goog.require('google3.javascript.template.soy.api_idom');
@@ -244,7 +243,7 @@ function printDynamicAttr(incrementaldom, expr) {
       return;
     }
     var attributes = splitAttributes(expr.toString());
-    var isExprAttribute = goog_soy_checks_1.isAttribute(expr);
+    var isExprAttribute = soy.$$isAttribute(expr);
     try {
         for (var attributes_1 = tslib_1.__values(attributes), attributes_1_1 = attributes_1.next(); !attributes_1_1.done; attributes_1_1 = attributes_1.next()) {
             var attribute = attributes_1_1.value;

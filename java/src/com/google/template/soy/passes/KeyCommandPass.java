@@ -153,7 +153,9 @@ final class KeyCommandPass implements CompilerFilePass {
         case CSS:
         case URI:
         case TRUSTED_RESOURCE_URI:
+        case ITERABLE:
         case LIST:
+        case SET:
         case RECORD:
         case LEGACY_OBJECT_MAP:
         case MAP:
@@ -177,6 +179,7 @@ final class KeyCommandPass implements CompilerFilePass {
         case TEMPLATE_TYPE:
         case TEMPLATE_MODULE:
         case FUNCTION:
+        case NEVER:
           throw new AssertionError("impossible");
       }
     }

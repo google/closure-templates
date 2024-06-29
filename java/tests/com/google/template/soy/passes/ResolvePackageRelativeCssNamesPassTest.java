@@ -100,7 +100,7 @@ public final class ResolvePackageRelativeCssNamesPassTest {
 
   @Test
   public void testWithComponentName() {
-    ErrorReporter errorReporter = ErrorReporter.createForTest();
+    ErrorReporter errorReporter = ErrorReporter.create();
     compileTemplate(
         "{namespace boo}\n\n"
             + "/** Test template. */\n"

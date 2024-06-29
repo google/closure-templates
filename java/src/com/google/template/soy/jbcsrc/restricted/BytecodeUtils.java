@@ -40,11 +40,13 @@ import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.RecordProperty;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
+import com.google.template.soy.data.SoyIterable;
 import com.google.template.soy.data.SoyLegacyObjectMap;
 import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyProtoValue;
 import com.google.template.soy.data.SoyRecord;
+import com.google.template.soy.data.SoySet;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.SoyVisualElement;
@@ -67,6 +69,7 @@ import com.google.template.soy.internal.proto.JavaQualifiedNames;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.restricted.Expression.Feature;
 import com.google.template.soy.jbcsrc.restricted.Expression.Features;
+import com.google.template.soy.jbcsrc.runtime.DetachableContentProvider;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.ExtraConstantBootstraps;
 import com.google.template.soy.jbcsrc.shared.LargeStringConstantFactory;
@@ -85,10 +88,13 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.IntFunction;
 import javax.annotation.Nullable;
@@ -110,8 +116,10 @@ public final class BytecodeUtils {
 
   public static final Type LOGGING_ADVISING_APPENDABLE_TYPE =
       Type.getType(LoggingAdvisingAppendable.class);
-  public static final Type LOGGING_ADVISING_BUILDER_TYPE =
+  public static final Type BUFFERING_APPENDABLE_TYPE =
       Type.getType(LoggingAdvisingAppendable.BufferingAppendable.class);
+  public static final Type MULTIPLEXING_APPENDABLE_TYPE =
+      Type.getType(DetachableContentProvider.MultiplexingAppendable.class);
   public static final Type COMPILED_TEMPLATE_TYPE = Type.getType(CompiledTemplate.class);
   public static final Type TEMPLATE_VALUE_TYPE = Type.getType(TemplateValue.class);
   public static final Type CONTENT_KIND_TYPE = Type.getType(ContentKind.class);
@@ -130,6 +138,7 @@ public final class BytecodeUtils {
   public static final Type STRING_DATA_TYPE = Type.getType(StringData.class);
   public static final Type SANITIZED_CONTENT_TYPE = Type.getType(SanitizedContent.class);
   public static final Type SOY_LIST_TYPE = Type.getType(SoyList.class);
+  public static final Type SOY_SET_TYPE = Type.getType(SoySet.class);
   public static final Type SOY_LEGACY_OBJECT_MAP_TYPE = Type.getType(SoyLegacyObjectMap.class);
   public static final Type SOY_MAP_TYPE = Type.getType(SoyMap.class);
   public static final Type SOY_MAP_IMPL_TYPE = Type.getType(SoyMapImpl.class);
@@ -143,7 +152,10 @@ public final class BytecodeUtils {
   public static final Type IDENTITY_HASH_MAP_TYPE = Type.getType(IdentityHashMap.class);
   public static final Type COLLECTION_TYPE = Type.getType(Collection.class);
   public static final Type ITERABLE_TYPE = Type.getType(Iterable.class);
+  public static final Type SOY_ITERABLE_TYPE = Type.getType(SoyIterable.class);
   public static final Type LIST_TYPE = Type.getType(List.class);
+  public static final Type SET_TYPE = Type.getType(Set.class);
+  public static final Type ITERATOR_TYPE = Type.getType(Iterator.class);
   public static final Type IMMUTABLE_LIST_TYPE = Type.getType(ImmutableList.class);
   public static final Type IMMUTABLE_MAP_TYPE = Type.getType(ImmutableMap.class);
   public static final Type MAP_TYPE = Type.getType(Map.class);
@@ -381,7 +393,7 @@ public final class BytecodeUtils {
     // right is assignable to left.
     Optional<Class<?>> leftClass = objectTypeToClassCache.getUnchecked(left);
     Optional<Class<?>> rightClass = objectTypeToClassCache.getUnchecked(right);
-    if (!leftClass.isPresent() || !rightClass.isPresent()) {
+    if (leftClass.isEmpty() || rightClass.isEmpty()) {
       // This means one of the types being compared is a generated object.  So we can't easily check
       // it.  Just delegate responsibility to the verifier.
       return failOpen;
@@ -634,6 +646,16 @@ public final class BytecodeUtils {
     };
   }
 
+  public static Expression instanceOf(Expression expr, Type type) {
+    return new Expression(Type.BOOLEAN_TYPE, expr.features()) {
+      @Override
+      protected void doGen(CodeBuilder adapter) {
+        expr.gen(adapter);
+        adapter.instanceOf(type);
+      }
+    };
+  }
+
   /**
    * Returns an expression that does a numeric conversion cast from the given expression to the
    * given type.
@@ -680,7 +702,7 @@ public final class BytecodeUtils {
     };
   }
 
-  private static boolean isNumericPrimitive(Type type) {
+  static boolean isNumericPrimitive(Type type) {
     int sort = type.getSort();
     switch (sort) {
       case Type.OBJECT:
@@ -742,7 +764,7 @@ public final class BytecodeUtils {
     Label start = mg.mark();
     Label end = mg.newLabel();
     LocalVariable thisVar = LocalVariable.createThisVar(ownerType, start, end);
-    thisVar.gen(mg);
+    thisVar.loadUnchecked(mg);
     mg.invokeConstructor(OBJECT.type(), NULLARY_INIT);
     mg.returnValue();
     mg.mark(end);
@@ -950,7 +972,8 @@ public final class BytecodeUtils {
         SoyExpression.forSoyValue(soyType, MethodRefs.SOY_RECORD_IMPL.invoke(paramStore));
     if (paramStore.isConstant()) {
       var paramCondy = (ConstantDynamic) paramStore.constantBytecodeValue();
-      checkState(paramCondy.getBootstrapMethod() == CONSTANT_PARAM_STORE); // sanity check
+      checkState(
+          Objects.equals(paramCondy.getBootstrapMethod(), CONSTANT_PARAM_STORE)); // sanity check
       Object[] args = new Object[1 + paramCondy.getBootstrapMethodArgumentCount()];
       // We store a hash of the source location so that each distinct list authored
       // gets a unique value to preserve identity semantics even in constant settings
@@ -1021,7 +1044,7 @@ public final class BytecodeUtils {
         value = ((SoyExpression) value).box();
       }
       var key = constantRecordProperty(entry.getKey());
-      paramStore = paramStore.invoke(MethodRefs.PARAM_STORE_SET_FIELD, key, value);
+      paramStore = MethodRefs.PARAM_STORE_SET_FIELD.invoke(paramStore, key, value);
     }
 
     return paramStore;

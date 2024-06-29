@@ -16,6 +16,7 @@
 
 package com.google.template.soy.jbcsrc;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.ImmutableMap.toImmutableMap;
@@ -30,6 +31,7 @@ import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
 import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.LocalVariable;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
+import com.google.template.soy.jbcsrc.restricted.MethodRefs;
 import com.google.template.soy.jbcsrc.restricted.Statement;
 import com.google.template.soy.jbcsrc.shared.SaveStateMetaFactory;
 import java.lang.invoke.MethodHandles;
@@ -200,6 +202,7 @@ final class TemplateVariableManager implements LocalVariableManager {
 
   private ScopeImpl activeScope;
   private final SimpleLocalVariableManager delegate;
+  private final ImmutableMap<String, LocalVariable> methodParameters;
 
   TemplateVariableManager(
       Type owner,
@@ -218,11 +221,10 @@ final class TemplateVariableManager implements LocalVariableManager {
             /* isStatic= */ isStatic);
     activeScope = new ScopeImpl();
     // seed our map with all the method parameters from our delegate.
-    delegate
-        .allActiveVariables()
-        .forEach(
-            (key, value) ->
-                activeScope.variablesByKey.put(VarKey.create(key), new TrivialVariable(value)));
+    methodParameters = delegate.allActiveVariables();
+    methodParameters.forEach(
+        (key, value) ->
+            activeScope.variablesByKey.put(VarKey.create(key), new TrivialVariable(value)));
   }
 
   public void updateParameterTypes(Type[] parameterTypes, List<String> parameterNames) {
@@ -346,6 +348,18 @@ final class TemplateVariableManager implements LocalVariableManager {
   }
 
   /**
+   * Looks up a user defined variable with the given name. The variable must have been created in a
+   * currently active scope.
+   */
+  public LocalVariable getMethodParameter(String name) {
+    return checkNotNull(
+        methodParameters.get(name),
+        "No such parameter: %s, expected one of %s",
+        name,
+        methodParameters.keySet());
+  }
+
+  /**
    * Looks up a synthetic variable with the given name. The variable must have been created in a
    * currently active scope.
    */
@@ -360,9 +374,27 @@ final class TemplateVariableManager implements LocalVariableManager {
   /** Statements for saving and restoring local variables in class fields. */
   @AutoValue
   abstract static class SaveRestoreState {
-    abstract Statement save();
+    static SaveRestoreState create(
+        Statement saveStackFrame,
+        Statement saveRenderResult,
+        Optional<Function<Expression, Statement>> restore) {
+      return new AutoValue_TemplateVariableManager_SaveRestoreState(
+          saveStackFrame, saveRenderResult, restore);
+    }
 
-    abstract Optional<Function<LocalVariable, Statement>> restore();
+    /**
+     * This must be execute in a context where the StackFrame that is about to be returned is on top
+     * of the stack.
+     */
+    abstract Statement saveStackFrame();
+
+    /**
+     * This must be execute in a context where the RenderREsult that is about to be returned is on
+     * top of the stack.
+     */
+    abstract Statement saveRenderResult();
+
+    abstract Optional<Function<Expression, Statement>> restore();
   }
 
   void assertSaveRestoreStateIsEmpty() {
@@ -408,8 +440,7 @@ final class TemplateVariableManager implements LocalVariableManager {
   }
 
   /** Returns a {@link SaveRestoreState} for the current state of the variable set. */
-  SaveRestoreState saveRestoreState(
-      RenderContextExpression renderContextExpression, int stateNumber) {
+  SaveRestoreState saveRestoreState(int stateNumber) {
     // The map is in insertion order.  This is important since it means derived variables will work.
     // we save in reverse order and then reverse again to restore so derived variables work.  The
     // save and restore logic need to be in opposite orders because we are pushing and popping onto
@@ -445,7 +476,7 @@ final class TemplateVariableManager implements LocalVariableManager {
             .sorted(comparing(v -> v.accessor().resultType().getSort()))
             .collect(toImmutableList());
     List<Type> methodTypeParams = new ArrayList<>();
-    methodTypeParams.add(BytecodeUtils.RENDER_CONTEXT_TYPE);
+    methodTypeParams.add(BytecodeUtils.STACK_FRAME_TYPE);
     methodTypeParams.add(Type.INT_TYPE);
     for (Variable variable : storesToPerform) {
       // Type simplification isn't strictly necessary, but it does reduce the number of MethodType
@@ -453,26 +484,40 @@ final class TemplateVariableManager implements LocalVariableManager {
       methodTypeParams.add(simplifyType(variable.accessor().resultType()));
     }
 
-    Type saveStateMethodType =
-        Type.getMethodType(Type.VOID_TYPE, methodTypeParams.toArray(new Type[0]));
-    Statement saveState =
-        new Statement() {
-          @Override
-          protected void doGen(CodeBuilder cb) {
-            renderContextExpression.gen(cb);
-            // Because this is a constant, we could pass it to the visitInvokeDynamicInsn as a
-            // constant bootstrap argument.  There is no real benefit though since all we do is
-            // arrange to pass it to a constructor so we can just as easily do that here. Bootstrap
-            // arguments are mostly valuable when we can leverage them at linkage time.
-            cb.pushInt(stateNumber);
-            // load all variables onto the stack
-            for (Variable var : storesToPerform) {
-              var.accessor().gen(cb);
-            }
-            cb.visitInvokeDynamicInsn(
-                "save", saveStateMethodType.getDescriptor(), BOOTSTRAP_SAVE_HANDLE);
-          }
-        };
+    Type saveStateMethodTypeStackFrame =
+        Type.getMethodType(BytecodeUtils.STACK_FRAME_TYPE, methodTypeParams.toArray(new Type[0]));
+    methodTypeParams.set(0, BytecodeUtils.RENDER_RESULT_TYPE);
+    Type saveStateMethodTypeRenderResult =
+        Type.getMethodType(BytecodeUtils.STACK_FRAME_TYPE, methodTypeParams.toArray(new Type[0]));
+    Function<Type, Statement> saveState =
+        (Type saveType) ->
+            new Statement() {
+              @Override
+              protected void doGen(CodeBuilder cb) {
+                // Because this is a constant, we could pass it to the visitInvokeDynamicInsn as a
+                // constant bootstrap argument.  There is no real benefit though since all we do is
+                // arrange to pass it to a constructor so we can just as easily do that here.
+                // Bootstrap
+                // arguments are mostly valuable when we can leverage them at linkage time.
+                cb.pushInt(stateNumber);
+                // load all variables onto the stack
+                for (Variable var : storesToPerform) {
+                  var.accessor().gen(cb);
+                }
+                // special case the base class ctors when there are no variables to save.
+                if (storesToPerform.isEmpty()) {
+                  var argTypes = saveType.getArgumentTypes();
+                  if (argTypes[0].equals(BytecodeUtils.STACK_FRAME_TYPE)) {
+                    MethodRefs.STACK_FRAME_CREATE_NON_LEAF.invokeUnchecked(cb);
+                  } else {
+                    MethodRefs.STACK_FRAME_CREATE_LEAF.invokeUnchecked(cb);
+                  }
+                } else {
+                  cb.visitInvokeDynamicInsn(
+                      "save", saveType.getDescriptor(), BOOTSTRAP_SAVE_HANDLE);
+                }
+              }
+            };
     // Restore instructions
     // A side effect of save logic is that StackFrame type is created
     // So we can predict its name and generate direct references to it.
@@ -486,7 +531,7 @@ final class TemplateVariableManager implements LocalVariableManager {
         restoresInOrder.stream()
             .filter(v -> v.strategy == SaveStrategy.STORE)
             .collect(toImmutableList());
-    Optional<Function<LocalVariable, Statement>> restoreFromFrame =
+    Optional<Function<Expression, Statement>> restoreFromFrame =
         variablesToRestoreFromStorage.isEmpty()
             ? Optional.empty()
             : Optional.of(
@@ -494,7 +539,7 @@ final class TemplateVariableManager implements LocalVariableManager {
                     new Statement() {
                       @Override
                       protected void doGen(CodeBuilder cb) {
-                        stackFrameVar.loadUnchecked(cb);
+                        stackFrameVar.gen(cb);
                         for (int i = 0; i < variablesToRestoreFromStorage.size(); i++) {
                           if (i < variablesToRestoreFromStorage.size() - 1) {
                             // duplicate the reference to the stack frame at the top of the stack
@@ -508,7 +553,10 @@ final class TemplateVariableManager implements LocalVariableManager {
                               Type.getMethodType(varType, BytecodeUtils.STACK_FRAME_TYPE)
                                   .getDescriptor(),
                               BOOTSTRAP_RESTORE_HANDLE,
-                              saveStateMethodType,
+                              // Either type would be fine here since we ignore the first two
+                              // parameters.  In fact we could just pass the encoded FrameKey string
+                              // which would be smaller.
+                              saveStateMethodTypeStackFrame,
                               storeToSlotIndex.get(variableToRestore));
                           variableToRestore.local.storeUnchecked(cb);
                         }
@@ -520,16 +568,17 @@ final class TemplateVariableManager implements LocalVariableManager {
             .filter(var -> var.strategy == SaveStrategy.DERIVED)
             .map(v -> v.local.store(v.initExpression))
             .collect(toImmutableList());
-    return new AutoValue_TemplateVariableManager_SaveRestoreState(
-        saveState,
-        !restoreFromFrame.isPresent() && restoreDerivedVariables.isEmpty()
+    return SaveRestoreState.create(
+        saveState.apply(saveStateMethodTypeStackFrame),
+        saveState.apply(saveStateMethodTypeRenderResult),
+        restoreFromFrame.isEmpty() && restoreDerivedVariables.isEmpty()
             ? Optional.empty()
             : Optional.of(
-                (LocalVariable variable) ->
+                (Expression variable) ->
                     Statement.concat(
-                        restoreFromFrame
-                            .orElse((LocalVariable v) -> Statement.NULL_STATEMENT)
-                            .apply(variable),
+                        restoreFromFrame.isPresent()
+                            ? restoreFromFrame.get().apply(variable)
+                            : Statement.NULL_STATEMENT,
                         Statement.concat(restoreDerivedVariables))));
   }
 }

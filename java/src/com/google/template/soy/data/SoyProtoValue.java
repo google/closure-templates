@@ -402,6 +402,11 @@ public final class SoyProtoValue extends SoyAbstractValue implements SoyLegacyOb
     return this;
   }
 
+  @Override
+  public boolean isProtoInstance(Class<? extends Message> messageType) {
+    return messageType.isInstance(proto);
+  }
+
   // -----------------------------------------------------------------------------------------------
   // Object.
 

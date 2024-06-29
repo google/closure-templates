@@ -19,7 +19,9 @@ package com.google.template.soy.passes;
 import static com.google.template.soy.exprtree.ExprNodes.isNonFalsyLiteral;
 import static com.google.template.soy.exprtree.ExprNodes.isNonNullishLiteral;
 import static com.google.template.soy.exprtree.ExprNodes.isNullishLiteral;
+import static java.util.stream.Collectors.toList;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
@@ -37,6 +39,7 @@ import com.google.template.soy.exprtree.OperatorNodes.BarBarOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.EqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.GreaterThanOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.GreaterThanOrEqualOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.InstanceOfOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.LessThanOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.LessThanOrEqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NotEqualOpNode;
@@ -45,13 +48,19 @@ import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TripleEqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TripleNotEqualOpNode;
 import com.google.template.soy.shared.internal.BuiltinFunction;
+import com.google.template.soy.types.AnyType;
+import com.google.template.soy.types.NeverType;
 import com.google.template.soy.types.NullType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.UndefinedType;
+import com.google.template.soy.types.UnionType;
+import com.google.template.soy.types.UnknownType;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Visitor which analyzes a boolean expression and determines if any of the variables involved in
@@ -142,11 +151,17 @@ final class TypeNarrowingConditionVisitor {
     private SoyType tryRemoveNullish(SoyType type) {
       switch (mode) {
         case NULLISH:
-          return SoyTypes.tryRemoveNullish(type);
+          return SoyTypes.isNullOrUndefined(type)
+              ? NeverType.getInstance()
+              : SoyTypes.removeNullish(type);
         case NULL:
-          return SoyTypes.tryRemoveNull(type);
+          return type.equals(NullType.getInstance())
+              ? NeverType.getInstance()
+              : SoyTypes.removeNull(type);
         case UNDEFINED:
-          return SoyTypes.tryRemoveUndefined(type);
+          return type.equals(UndefinedType.getInstance())
+              ? NeverType.getInstance()
+              : SoyTypes.removeUndefined(type);
       }
       throw new AssertionError();
     }
@@ -337,6 +352,22 @@ final class TypeNarrowingConditionVisitor {
     }
 
     @Override
+    protected void visitInstanceOfOpNode(InstanceOfOpNode node) {
+      ExprNode expr = node.getChild(0);
+      SoyType exprType = expr.getType();
+      SoyType instanceType = node.getChild(1).getType();
+
+      SoyType positiveType = instanceOfIntersection(exprType, instanceType);
+      if (!positiveType.equals(exprType)) {
+        positiveTypeConstraints.put(exprEquivalence.wrap(expr), positiveType);
+      }
+      SoyType negativeType = instanceOfRemainder(exprType, instanceType);
+      if (!negativeType.equals(exprType)) {
+        negativeTypeConstraints.put(exprEquivalence.wrap(expr), negativeType);
+      }
+    }
+
+    @Override
     protected void visitNotOpNode(NotOpNode node) {
       // For a logical not node, compute the positive and negative constraints of the
       // operand and then simply swap them.
@@ -463,8 +494,7 @@ final class TypeNarrowingConditionVisitor {
                 stricter = lhsType;
               } else {
                 stricter =
-                    SoyTypes.computeStricterType(lhsType, rhsType)
-                        .orElse(/* Properly we would use the `never` type here. */ lhsType);
+                    SoyTypes.computeStricterType(lhsType, rhsType).orElse(NeverType.getInstance());
               }
               into.put(key, stricter);
             });
@@ -534,5 +564,50 @@ final class TypeNarrowingConditionVisitor {
       return true;
     }
     return false;
+  }
+
+  /** Returns `exprType` narrowed by a positive match on instanceof `instanceOfOperand`. */
+  @VisibleForTesting
+  static SoyType instanceOfIntersection(SoyType exprType, SoyType instanceOfOperand) {
+    if (exprType.equals(UnknownType.getInstance())) {
+      // (unknown instanceof x) => x
+      return instanceOfOperand;
+    }
+    List<SoyType> matches =
+        SoyTypes.expandUnions(exprType).stream()
+            .map(
+                member -> {
+                  // (string instanceof string) => string
+                  // (superclass instanceof subclass) => subclass
+                  if (instanceOfOperand.isAssignableFromStrict(member)) {
+                    return member;
+                  }
+                  // (subclass instanceof superclass) => subclass
+                  if (member.isAssignableFromStrict(instanceOfOperand)) {
+                    return instanceOfOperand;
+                  }
+                  return null;
+                })
+            .filter(Objects::nonNull)
+            .collect(toList());
+    return matches.isEmpty() ? NeverType.getInstance() : UnionType.of(matches);
+  }
+
+  /** Returns `exprType` narrowed by a negative match on instanceof `instanceOfOperand`. */
+  @VisibleForTesting
+  static SoyType instanceOfRemainder(SoyType exprType, SoyType instanceOfOperand) {
+    // !(unknown instanceof x) => unknown
+    // !(any instanceof x) => any
+    if (exprType.equals(AnyType.getInstance()) || exprType.equals(UnknownType.getInstance())) {
+      return exprType;
+    }
+    // !(superclass instanceof subclass) => superclass
+    // !(subclass instanceof superclass) => never
+    // !(a|b instanceof a) => b
+    List<SoyType> remaining =
+        SoyTypes.expandUnions(exprType).stream()
+            .filter(t -> !instanceOfOperand.isAssignableFromStrict(t))
+            .collect(toList());
+    return remaining.isEmpty() ? NeverType.getInstance() : UnionType.of(remaining);
   }
 }

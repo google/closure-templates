@@ -18,9 +18,7 @@ package com.google.template.soy.jbcsrc.shared;
 import static com.google.common.truth.Truth.assertThat;
 import static java.lang.invoke.MethodType.methodType;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-import com.google.template.soy.plugin.java.PluginInstances;
+import com.google.template.soy.jbcsrc.api.RenderResult;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
@@ -38,7 +36,7 @@ public final class SaveStateMetaFactoryTest {
   public void testSaveConstantFrame() throws Throwable {
     StackFrame frame =
         (StackFrame)
-            createSaveFrame(methodType(void.class, RenderContext.class, int.class), 20)
+            createSaveFrame(methodType(StackFrame.class, StackFrame.class, int.class), 20)
                 .invokeExact();
     assertThat(frame.getClass()).isEqualTo(StackFrame.class);
   }
@@ -49,8 +47,8 @@ public final class SaveStateMetaFactoryTest {
         (StackFrame)
             createSaveFrame(
                     methodType(
-                        void.class,
-                        RenderContext.class,
+                        StackFrame.class,
+                        StackFrame.class,
                         int.class,
                         int.class,
                         long.class,
@@ -78,10 +76,15 @@ public final class SaveStateMetaFactoryTest {
     Class<?> frameClass = frame.getClass();
     assertThat(frameClass.getSimpleName()).isEqualTo("StackFrameIJA");
     assertThat(frameClass.getSuperclass()).isEqualTo(StackFrame.class);
-    assertThat(frameClass.getDeclaredConstructors()).hasLength(1);
+    assertThat(frameClass.getDeclaredConstructors()).hasLength(2);
     Constructor<?> ctor = frameClass.getDeclaredConstructors()[0];
     assertThat(ctor.getParameterTypes())
-        .isEqualTo(new Class<?>[] {int.class, int.class, long.class, Object.class});
+        .isEqualTo(
+            new Class<?>[] {StackFrame.class, int.class, int.class, long.class, Object.class});
+    Constructor<?> ctor2 = frameClass.getDeclaredConstructors()[1];
+    assertThat(ctor2.getParameterTypes())
+        .isEqualTo(
+            new Class<?>[] {RenderResult.class, int.class, int.class, long.class, Object.class});
 
     assertThat(frameClass.getDeclaredFields()).hasLength(3);
 
@@ -104,14 +107,14 @@ public final class SaveStateMetaFactoryTest {
         (StackFrame)
             createSaveFrame(
                     methodType(
-                        void.class, RenderContext.class, int.class, String.class, int[].class),
+                        StackFrame.class, StackFrame.class, int.class, String.class, int[].class),
                     20)
                 .invokeExact("foo", new int[] {1, 2, 3});
     StackFrame frame2 =
         (StackFrame)
             createSaveFrame(
                     methodType(
-                        void.class, RenderContext.class, int.class, int[].class, String.class),
+                        StackFrame.class, StackFrame.class, int.class, int[].class, String.class),
                     50)
                 .invokeExact(new int[] {1, 2, 3}, "foo");
 
@@ -124,13 +127,15 @@ public final class SaveStateMetaFactoryTest {
     StackFrame frame =
         (StackFrame)
             createSaveFrame(
-                    methodType(void.class, RenderContext.class, int.class, int.class, String.class),
+                    methodType(
+                        StackFrame.class, StackFrame.class, int.class, int.class, String.class),
                     20)
                 .invokeExact(2, "foo");
     StackFrame frame2 =
         (StackFrame)
             createSaveFrame(
-                    methodType(void.class, RenderContext.class, int.class, String.class, int.class),
+                    methodType(
+                        StackFrame.class, StackFrame.class, int.class, String.class, int.class),
                     50)
                 .invokeExact("foo", 2);
 
@@ -144,7 +149,7 @@ public final class SaveStateMetaFactoryTest {
   public void testRestoreState() throws Throwable {
     MethodType saveType =
         methodType(
-            void.class, RenderContext.class, int.class, int.class, String.class, boolean.class);
+            StackFrame.class, StackFrame.class, int.class, int.class, String.class, boolean.class);
     StackFrame frame = (StackFrame) createSaveFrame(saveType, 20).invokeExact(2, "foo", false);
     assertThat(frame.stateNumber).isEqualTo(20);
     assertThat(
@@ -167,16 +172,7 @@ public final class SaveStateMetaFactoryTest {
   private MethodHandle createSaveFrame(MethodType type, int number) throws Exception {
     MethodHandle saveState =
         SaveStateMetaFactory.bootstrapSaveState(MethodHandles.lookup(), "save", type).getTarget();
-    RenderContext ctx = createContext();
-    MethodHandle restoreState =
-        MethodHandles.insertArguments(
-            MethodHandles.lookup()
-                .findVirtual(RenderContext.class, "popFrame", methodType(StackFrame.class)),
-            0,
-            ctx);
-
-    return MethodHandles.collectArguments(
-        restoreState, 0, MethodHandles.insertArguments(saveState, 0, ctx, number));
+    return MethodHandles.insertArguments(saveState, 0, StackFrame.LIMITED, number);
   }
 
   private MethodHandle createRestoreState(MethodType restoreType, MethodType saveType, int slot) {
@@ -189,14 +185,4 @@ public final class SaveStateMetaFactoryTest {
     return frame.getClass().getField("f_" + num);
   }
 
-  private static RenderContext createContext() {
-    return new RenderContext.Builder(
-            new CompiledTemplates(
-                ImmutableSet.of(), SaveStateMetaFactoryTest.class.getClassLoader()),
-            ImmutableMap.of(),
-            PluginInstances.empty())
-        .withActiveModSelector(arg -> false)
-        .withDebugSoyTemplateInfo(false)
-        .build();
-  }
 }

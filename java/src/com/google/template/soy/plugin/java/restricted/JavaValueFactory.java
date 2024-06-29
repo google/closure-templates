@@ -36,6 +36,14 @@ public abstract class JavaValueFactory {
   public abstract JavaValue callStaticMethod(MethodSignature methodSignature, JavaValue... params);
 
   /**
+   * Instructs Soy to call the given instance {@code method} on `instance` with the given params at
+   * runtime. `method` should be defined on {@link com.google.template.soy.data.SoyValue} or one of
+   * its subtypes.
+   */
+  public abstract JavaValue callJavaValueMethod(
+      Method method, JavaValue instance, JavaValue... params);
+
+  /**
    * Instructs Soy to call the given {@code method} with the given params on the registered plugin
    * instance at runtime. In the SoySauce backend, instances are registered in the
    * SoySauce.Renderer, in the Tofu backend, instances are registered in the SoyTofu.Renderer.

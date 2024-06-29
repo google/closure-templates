@@ -20,7 +20,6 @@ import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_VALUE_
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_VALUE_TYPE;
 
 import com.google.common.base.Suppliers;
-import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
 import com.google.template.soy.jbcsrc.restricted.Expression;
@@ -132,17 +131,26 @@ interface ExpressionDetacher {
    * }</pre>
    */
   final class BasicDetacher implements ExpressionDetacher {
-    static final BasicDetacher INSTANCE = new BasicDetacher(() -> Statement.NULL_STATEMENT);
     private final Supplier<Statement> saveOperationSupplier;
+
+    private boolean hasDetaches;
 
     BasicDetacher(Supplier<Statement> saveOperationSupplier) {
       this.saveOperationSupplier = Suppliers.memoize(saveOperationSupplier::get);
     }
 
+    public boolean hasDetaches() {
+      return hasDetaches;
+    }
+
     @Override
     public Expression waitForSoyValueProvider(Expression soyValueProvider) {
       soyValueProvider.checkAssignableTo(BytecodeUtils.SOY_VALUE_PROVIDER_TYPE);
+      if (BytecodeUtils.isDefinitelyAssignableFrom(SOY_VALUE_TYPE, soyValueProvider.resultType())) {
+        return soyValueProvider;
+      }
       Statement saveOperation = saveOperationSupplier.get();
+      hasDetaches = true;
       return new Expression(soyValueProvider.resultType()) {
         @Override
         protected void doGen(CodeBuilder cb) {
@@ -155,7 +163,8 @@ interface ExpressionDetacher {
           MethodRefs.SOY_VALUE_PROVIDER_STATUS.invokeUnchecked(cb); // Stack: SVP, RR
           if (DetachState.FORCE_EVERY_DETACH_POINT) {
             cb.visitLdcInsn(DetachState.ForceDetachPointsForTesting.uniqueCallSite());
-            DetachState.ForceDetachPointsForTesting.MAYBE_FORCE_CONTINUE_AFTER.invokeUnchecked(cb);
+            DetachState.ForceDetachPointsForTesting.MAYBE_FORCE_CONTINUE_AFTER_RENDER_RESULT
+                .invokeUnchecked(cb);
           }
           cb.dup(); // Stack: SVP, RR, RR
           MethodRefs.RENDER_RESULT_IS_DONE.invokeUnchecked(cb); // Stack: SVP, RR, Z
@@ -187,6 +196,7 @@ interface ExpressionDetacher {
     public Expression resolveSoyValueProviderList(Expression soyValueProviderList) {
       soyValueProviderList.checkAssignableTo(BytecodeUtils.LIST_TYPE);
       Statement saveOperation = saveOperationSupplier.get();
+      hasDetaches = true;
       return new Expression(soyValueProviderList.resultType()) {
         @Override
         protected void doGen(CodeBuilder cb) {
@@ -199,7 +209,8 @@ interface ExpressionDetacher {
           MethodRefs.RUNTIME_GET_LIST_STATUS.invokeUnchecked(cb); // Stack: List, RR
           if (DetachState.FORCE_EVERY_DETACH_POINT) {
             cb.visitLdcInsn(DetachState.ForceDetachPointsForTesting.uniqueCallSite());
-            DetachState.ForceDetachPointsForTesting.MAYBE_FORCE_CONTINUE_AFTER.invokeUnchecked(cb);
+            DetachState.ForceDetachPointsForTesting.MAYBE_FORCE_CONTINUE_AFTER_RENDER_RESULT
+                .invokeUnchecked(cb);
           }
           cb.dup(); // Stack: List, RR, RR
           MethodRefs.RENDER_RESULT_IS_DONE.invokeUnchecked(cb); // Stack: List, RR, Z
@@ -219,6 +230,7 @@ interface ExpressionDetacher {
     public Expression resolveSoyValueProviderMap(Expression soyValueProviderMap) {
       soyValueProviderMap.checkAssignableTo(BytecodeUtils.MAP_TYPE);
       Statement saveOperation = saveOperationSupplier.get();
+      hasDetaches = true;
       return new Expression(soyValueProviderMap.resultType()) {
         @Override
         protected void doGen(CodeBuilder cb) {
@@ -231,7 +243,8 @@ interface ExpressionDetacher {
           MethodRefs.RUNTIME_GET_MAP_STATUS.invokeUnchecked(cb); // Stack: Map, RR
           if (DetachState.FORCE_EVERY_DETACH_POINT) {
             cb.visitLdcInsn(DetachState.ForceDetachPointsForTesting.uniqueCallSite());
-            DetachState.ForceDetachPointsForTesting.MAYBE_FORCE_CONTINUE_AFTER.invokeUnchecked(cb);
+            DetachState.ForceDetachPointsForTesting.MAYBE_FORCE_CONTINUE_AFTER_RENDER_RESULT
+                .invokeUnchecked(cb);
           }
           cb.dup(); // Stack: Map, RR, RR
           MethodRefs.RENDER_RESULT_IS_DONE.invokeUnchecked(cb); // Stack: Map, RR, Z

@@ -52,8 +52,10 @@ final class LegacyObjectMapFinder implements TypeNodeVisitor<Void> {
     switch (node.getResolvedType().getKind()) {
       case LEGACY_OBJECT_MAP:
         errorReporter.report(node.sourceLocation(), LEGACY_OBJECT_MAP_NOT_SUPPORTED);
-        // fallthrough
+      // fallthrough
+      case ITERABLE:
       case LIST:
+      case SET:
       case MAP:
       case VE:
         for (TypeNode child : node.arguments()) {

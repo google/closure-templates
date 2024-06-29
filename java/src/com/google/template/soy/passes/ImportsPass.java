@@ -47,7 +47,7 @@ import java.util.TreeSet;
   // Basically anything that needs types...
   ResolveExpressionTypesPass.class,
   ResolvePluginsPass.class, // Needs all local variables in scope.
-  ResolveTemplateParamTypesPass.class,
+  ResolveDeclaredTypesPass.class,
   ResolveExpressionTypesPass.class, // To resolve extensions.
   RewriteGlobalsPass.class, // To resolve extensions.
   ResolveTemplateNamesPass.class,
@@ -56,10 +56,7 @@ import java.util.TreeSet;
 final class ImportsPass implements CompilerFileSetPass {
 
   private static final SoyErrorKind IMPORT_NOT_IN_DEPS =
-      SoyErrorKind.of(
-          "Unknown import dep {0}.{1}"
-          ,
-          StyleAllowance.NO_PUNCTUATION);
+      SoyErrorKind.of("Unknown import dep {0}.{1}{2}", StyleAllowance.NO_PUNCTUATION);
   private static final SoyErrorKind RELATIVE_IMPORT =
       SoyErrorKind.of(
           "Relative imports are not supported, use the fully qualified name of the file.");
@@ -210,7 +207,7 @@ final class ImportsPass implements CompilerFileSetPass {
         IMPORT_NOT_IN_DEPS,
         nodePath,
         SoyErrors.getDidYouMeanMessage(
-            allPaths.stream().map(SourceLogicalPath::path).collect(toImmutableList()),
-            nodePath) );
+            allPaths.stream().map(SourceLogicalPath::path).collect(toImmutableList()), nodePath),
+        BuildCleanerUtil.getBuildCleanerCommand(node));
   }
 }

@@ -42,6 +42,7 @@ import com.google.template.soy.jbcsrc.TemplateTester.CompiledTemplateSubject;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
+import com.google.template.soy.jbcsrc.restricted.LocalVariable;
 import com.google.template.soy.jbcsrc.restricted.MethodRefs;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.testing.ExpressionEvaluator;
@@ -67,6 +68,7 @@ import com.google.template.soy.types.UnknownType;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -539,7 +541,7 @@ public class ExpressionCompilerTest {
     // The fake function allows us to work around the 'can't print bool' restrictions
     String createTemplateBody =
         SharedTestUtils.createTemplateBodyForExpression(
-            "fakeFunction(" + soyExpr + ")", types.build());
+            "fakeFunction(" + soyExpr + ")", types.buildOrThrow());
     ParseResult result =
         SoyFileSetParserBuilder.forTemplateContents(createTemplateBody)
             .errorReporter(ErrorReporter.explodeOnErrorsAndIgnoreWarnings())
@@ -564,6 +566,11 @@ public class ExpressionCompilerTest {
             templateNode,
             TemplateAnalysisImpl.analyze(templateNode),
             new TemplateParameterLookup() {
+              @Override
+              public LocalVariable getStackFrame() {
+                throw new AssertionError();
+              }
+
               @Override
               public Expression getParam(TemplateParam paramName) {
                 return variables.get(paramName.name());
@@ -591,10 +598,9 @@ public class ExpressionCompilerTest {
               }
 
               @Override
-              public Expression getParamsRecord() {
+              public Optional<Expression> getParamsRecord() {
                 throw new UnsupportedOperationException();
               }
-
             },
             new TemplateVariableManager(
                 BytecodeUtils.OBJECT.type(),

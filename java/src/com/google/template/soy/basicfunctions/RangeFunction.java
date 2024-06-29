@@ -77,18 +77,18 @@ public final class RangeFunction
     switch (args.size()) {
       case 1:
         start = factory.constant(0);
-        end = args.get(0).asSoyInt();
+        end = args.get(0).coerceToJavaInt();
         step = factory.constant(1);
         break;
       case 2:
-        start = args.get(0).asSoyInt();
-        end = args.get(1).asSoyInt();
+        start = args.get(0).coerceToJavaInt();
+        end = args.get(1).coerceToJavaInt();
         step = factory.constant(1);
         break;
       case 3:
-        start = args.get(0).asSoyInt();
-        end = args.get(1).asSoyInt();
-        step = args.get(2).asSoyInt();
+        start = args.get(0).coerceToJavaInt();
+        end = args.get(1).coerceToJavaInt();
+        step = args.get(2).coerceToJavaInt();
         break;
       default:
         throw new AssertionError();

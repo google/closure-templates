@@ -21,6 +21,8 @@ import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.UndefinedData;
 import java.io.IOException;
+import java.lang.reflect.Modifier;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import javax.annotation.Nonnull;
@@ -205,7 +207,7 @@ public interface SoyValue extends SoyValueProvider {
   @Nonnull
   default Message getProto() {
     throw new SoyDataException(
-        "Expecting proto value but instead encountered type " + getClass().getSimpleName());
+        "Expecting proto value but instead encountered type " + soyValueClassName(this));
   }
 
   /** Returns null is this value is nullish, otherwise {@link #getProto()}. */
@@ -217,7 +219,7 @@ public interface SoyValue extends SoyValueProvider {
   @Nonnull
   default List<? extends SoyValueProvider> asJavaList() {
     throw new SoyDataException(
-        "Expecting list value but instead encountered type " + getClass().getSimpleName());
+        "Expecting list value but instead encountered type " + soyValueClassName(this));
   }
 
   @Nullable
@@ -226,9 +228,14 @@ public interface SoyValue extends SoyValueProvider {
   }
 
   @Nonnull
+  default Iterator<? extends SoyValueProvider> javaIterator() {
+    return asJavaList().iterator();
+  }
+
+  @Nonnull
   default Map<? extends SoyValue, ? extends SoyValueProvider> asJavaMap() {
     throw new SoyDataException(
-        "Expecting map value but instead encountered type " + getClass().getSimpleName());
+        "Expecting map value but instead encountered type " + soyValueClassName(this));
   }
 
   /**
@@ -243,27 +250,27 @@ public interface SoyValue extends SoyValueProvider {
 
   /** A runtime type check for this boxed Soy value. */
   default SoyValue checkNullishInt() {
-    throw new ClassCastException(getClass().getSimpleName() + " cannot be cast to IntegerData");
+    throw new ClassCastException(soyValueClassName(this) + " cannot be cast to IntegerData");
   }
 
   /** A runtime type check for this boxed Soy value. */
   default SoyValue checkNullishFloat() {
-    throw new ClassCastException(getClass().getSimpleName() + " cannot be cast to FloatData");
+    throw new ClassCastException(soyValueClassName(this) + " cannot be cast to FloatData");
   }
 
   /** A runtime type check for this boxed Soy value. */
   default SoyValue checkNullishNumber() {
-    throw new ClassCastException(getClass().getSimpleName() + " cannot be cast to NumberData");
+    throw new ClassCastException(soyValueClassName(this) + " cannot be cast to NumberData");
   }
 
   /** A runtime type check for this boxed Soy value. */
   default SoyValue checkNullishBoolean() {
-    throw new ClassCastException(getClass().getSimpleName() + " cannot be cast to BooleanData");
+    throw new ClassCastException(soyValueClassName(this) + " cannot be cast to BooleanData");
   }
 
   /** A runtime type check for this boxed Soy value. */
   default SoyValue checkNullishString() {
-    throw new ClassCastException(getClass().getSimpleName() + " cannot be cast to StringData");
+    throw new ClassCastException(soyValueClassName(this) + " cannot be cast to StringData");
   }
 
   /**
@@ -273,7 +280,7 @@ public interface SoyValue extends SoyValueProvider {
    *     SanitizedContent} whose content kind is equal to {@code contentKind}.
    */
   default SoyValue checkNullishSanitizedContent(ContentKind contentKind) {
-    throw new ClassCastException(getClass().getSimpleName() + " cannot be cast to " + contentKind);
+    throw new ClassCastException(soyValueClassName(this) + " cannot be cast to " + contentKind);
   }
 
   /**
@@ -284,6 +291,29 @@ public interface SoyValue extends SoyValueProvider {
    */
   default SoyValue checkNullishProto(Class<? extends Message> messageType) {
     throw new ClassCastException(
-        getClass().getSimpleName() + " cannot be cast to " + messageType.getName());
+        soyValueClassName(this) + " cannot be cast to " + messageType.getName());
+  }
+
+  /** Returns true if this value is a sanitized content with kind equal to `contentKind`. */
+  default boolean isSanitizedContentKind(ContentKind contentKind) {
+    return false;
+  }
+
+  /** Returns true if this value is a proto of type `messageType`. */
+  default boolean isProtoInstance(Class<? extends Message> messageType) {
+    return false;
+  }
+
+  private static String soyValueClassName(SoyValue value) {
+    var clazz = value.getClass();
+    // A number of soy value types have private inner classes as implementation details.  Report the
+    // outer class name instead.
+    Class<?> declaring;
+    if (Modifier.isPrivate(clazz.getModifiers())
+        && (declaring = clazz.getDeclaringClass()) != null
+        && declaring.isInstance(value)) {
+      return declaring.getSimpleName();
+    }
+    return clazz.getSimpleName();
   }
 }

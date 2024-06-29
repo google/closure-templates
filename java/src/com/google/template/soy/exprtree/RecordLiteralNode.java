@@ -20,6 +20,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.basetree.CopyState;
+import com.google.template.soy.exprtree.OperatorNodes.SpreadOpNode;
 
 /**
  * A node representing a record literal (with keys and values as alternating children).
@@ -79,7 +80,11 @@ public final class RecordLiteralNode extends AbstractParentExprNode {
       if (i != 0) {
         sourceSb.append(", ");
       }
-      sourceSb.append(getKey(i)).append(": ").append(getChild(i).toSourceString());
+      ExprNode value = getChild(i);
+      if (!(value instanceof SpreadOpNode)) {
+        sourceSb.append(getKey(i)).append(": ");
+      }
+      sourceSb.append(value.toSourceString());
     }
 
     sourceSb.append(')');
@@ -89,5 +94,9 @@ public final class RecordLiteralNode extends AbstractParentExprNode {
   @Override
   public RecordLiteralNode copy(CopyState copyState) {
     return new RecordLiteralNode(this, copyState);
+  }
+
+  public boolean containsSpreads() {
+    return getChildren().stream().anyMatch(SpreadOpNode.class::isInstance);
   }
 }
