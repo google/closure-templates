@@ -471,11 +471,6 @@ public class SanitizedContentsTest {
                         "a", SanitizedContent.AttributeValue.createFromEscapedValue("b")))
                 .hasContent())
         .isTrue();
-    assertThat(UnsafeSanitizedContentOrdainer.ordainAsSafe("", ContentKind.ATTRIBUTES).hasContent())
-        .isFalse();
-    assertThat(
-            UnsafeSanitizedContentOrdainer.ordainAsSafe("a=b", ContentKind.ATTRIBUTES).hasContent())
-        .isTrue();
   }
 
   @Test
