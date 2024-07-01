@@ -192,24 +192,25 @@ import {imageUrlFromOptions} from 'path/to/functions.soy';
 
 ## Supported type mappings between Soy and Java {#javatypes}
 
-Soy type               | Allowed Java types                                                                                        | Notes
----------------------- | --------------------------------------------------------------------------------------------------------- | -----
-`int`                  | `int`\*, `java.lang.Integer`, `long`\*, `java.lang.Long`                                                  | Integer overflow throws a runtime error.
-`float`                | `double`\*, `java.lang.Double`, `float`\*, `java.lang.Float`                                              |
-`number`               | `double`\*, `java.lang.Double`, `java.lang.Number`                                                        | `number` is an alias for `int\|float`.
-`string`               | `java.lang.String`                                                                                        |
-`bool`                 | `boolean`*, `java.lang.Boolean`                                                                           |
-`Message`              | `com.google.protobuf.Message`                                                                             |
-protos                 | the proto message Java type                                                                               |
-proto enums            | the proto enum Java type                                                                                  |
-`uri`                  | `com.google.common.html.types.SafeUrl`, `com.google.common.html.types.SafeUrlProto`                       |
-`trusted_resource_uri` | `com.google.common.html.types.TrustedResourceUrl`, `com.google.common.html.types.TrustedResourceUrlProto` |
-`html`                 | `com.google.common.html.types.SafeHtml`, `com.google.common.html.types.SafeHtmlProto`                     |
-`list<?>`              | `java.util.List`, `com.google.common.collect.ImmutableList`, `java.util.Collection`, `java.util.Iterable` | Supported element types are: `int`, `float`, `string`, `bool`, `Message`, proto, and proto enum.
-`map<?,?>`             | `java.util.Map`, `com.google.common.collect.ImmutableMap`                                                 | Same supported element types as list.
-records                | `java.util.Map`, `com.google.common.collect.ImmutableMap`                                                 | Supports all value types other than `list`, `map`, records, and unions.
-unions                 | `java.lang.Object`, `com.google.template.soy.data.SoyValue`                                               | All unions other than `int\|float`. Supported union members are: `int`, `float`, `string`, `bool`, proto, proto enum, `uri`, `trusted_resource_uri`, and `html`.
-`any`                  | `java.lang.Object`, `com.google.template.soy.data.SoyValue`                                               | For params, `NullData` is provided as Java `null` while `UndefinedData` is provided as-is.
+Soy type               | Allowed Java types                                                                                                                         | Notes
+---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | -----
+`int`                  | `int`\*, `java.lang.Integer`, `long`\*, `java.lang.Long`                                                                                   | Integer overflow throws a runtime error.
+`float`                | `double`\*, `java.lang.Double`, `float`\*, `java.lang.Float`                                                                               |
+`number`               | `double`\*, `java.lang.Double`, `java.lang.Number`                                                                                         | `number` is an alias for `int\|float`.
+`string`               | `java.lang.String`                                                                                                                         |
+`bool`                 | `boolean`*, `java.lang.Boolean`                                                                                                            |
+`Message`              | `com.google.protobuf.Message`                                                                                                              |
+protos                 | the proto message Java type                                                                                                                |
+proto enums            | the proto enum Java type                                                                                                                   |
+`uri`                  | `com.google.common.html.types.SafeUrl`, `com.google.common.html.types.SafeUrlProto`                                                        |
+`trusted_resource_uri` | `com.google.common.html.types.TrustedResourceUrl`, `com.google.common.html.types.TrustedResourceUrlProto`                                  |
+`html`                 | `com.google.common.html.types.SafeHtml`, `com.google.common.html.types.SafeHtmlProto`                                                      |
+`list<?>`              | `java.util.List`, `com.google.common.collect.ImmutableList`, `java.util.Collection`, `java.lang.Iterable`                                  | Supported element types are: `int`, `float`, `string`, `bool`, `Message`, proto, and proto enum.
+`map<?,?>`             | `java.util.Map`, `com.google.common.collect.ImmutableMap`                                                                                  | Same supported element types as list.
+records                | `java.util.Map`, `com.google.common.collect.ImmutableMap`                                                                                  | Supports all value types other than `list`, `map`, records, and unions.
+unions                 | `java.lang.Object`, `com.google.template.soy.data.SoyValue`                                                                                | All unions other than `int\|float`. Supported union members are: `int`, `float`, `string`, `bool`, proto, proto enum, `uri`, `trusted_resource_uri`, and `html`.
+`any`                  | `java.lang.Object`, `com.google.template.soy.data.SoyValue`                                                                                | For params, `NullData` is provided as Java `null` while `UndefinedData` is provided as-is.
+template types         | `com.google.template.soy.data.SoyTemplate`, `com.google.template.soy.data.PartialSoyTemplate`,`com.google.template.soy.data.TemplateValue` | the `SoyTemplate` type can only match fully bound template types. To accept a template type as a parameter you must use `TemplateValue`
 
 \* If the Soy type is nullable then the primitive Java type is not allowed.
 

@@ -23,6 +23,8 @@ import com.google.protobuf.Message;
 import com.google.protobuf.ProtocolMessageEnum;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
+import com.google.template.soy.data.PartialSoyTemplate;
+import com.google.template.soy.data.SoyTemplate;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.plugin.java.restricted.JavaValue;
@@ -38,6 +40,7 @@ import com.google.template.soy.types.SetType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypeRegistry;
+import com.google.template.soy.types.TemplateType;
 import com.google.template.soy.types.UnionType;
 import com.google.template.soy.types.UnknownType;
 import java.util.List;
@@ -174,9 +177,15 @@ public class JavaPluginValidator {
           reporter.incompatibleReturnType(returnType.get(), expectedType, method);
           return;
         }
-        // TODO(lukes): SoyExpression should have a way to track type information with an unboxed
-        // int that is actually a proto enum.  Like we do with SanitizedContents
         actualSoyType = IntType.getInstance();
+      } else if (PartialSoyTemplate.class.isAssignableFrom(actualClass)
+          || SoyTemplate.class.isAssignableFrom(actualClass)) {
+        if (expectedType instanceof TemplateType) {
+          actualSoyType = expectedType;
+        } else {
+          reporter.invalidReturnType(actualClass, expectedType, method);
+          return;
+        }
       } else {
         reporter.invalidReturnType(actualClass, expectedType, method);
         return;

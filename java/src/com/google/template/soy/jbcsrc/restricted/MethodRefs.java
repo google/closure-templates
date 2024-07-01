@@ -44,6 +44,7 @@ import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.SoyVisualElement;
 import com.google.template.soy.data.SoyVisualElementData;
+import com.google.template.soy.data.TemplateInterface;
 import com.google.template.soy.data.TemplateValue;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.data.internal.DictImpl;
@@ -569,6 +570,9 @@ public final class MethodRefs {
   public static final MethodRef CREATE_TEMPLATE_VALUE =
       createPure(TemplateValue.class, "create", String.class, Object.class);
 
+  public static final MethodRef CREATE_TEMPLATE_VALUE_FROM_TEMPLATE =
+      createPure(TemplateValue.class, "createFromTemplate", TemplateInterface.class);
+
   public static final MethodRef SOY_VALUE_PROVIDER_RENDER_AND_RESOLVE =
       createNonPure(SoyValueProvider.class, "renderAndResolve", LoggingAdvisingAppendable.class);
 
@@ -712,7 +716,6 @@ public final class MethodRefs {
           ULocale.class,
           int.class,
           boolean.class);
-
 
   public static final MethodRef ESCAPING_BUFFERED_RENDER_DONE_FN =
       createPureConstructor(JbcSrcRuntime.EscapingBufferedRenderDoneFn.class, ImmutableList.class);

@@ -34,9 +34,12 @@ import com.google.common.primitives.Primitives;
 import com.google.protobuf.Message;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
+import com.google.template.soy.data.PartialSoyTemplate;
 import com.google.template.soy.data.SanitizedContent;
+import com.google.template.soy.data.SoyTemplate;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyVisualElement;
+import com.google.template.soy.data.TemplateValue;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
@@ -59,6 +62,7 @@ import com.google.template.soy.types.SoyProtoEnumType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypes;
+import com.google.template.soy.types.TemplateType;
 import com.google.template.soy.types.UnionType;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -463,6 +467,13 @@ class ValidateExternsPass implements CompilerFilePass {
             .equals(javaType.getName());
       case VE:
         return isAllowedVeExtern(extern) && javaType == SoyVisualElement.class;
+      case TEMPLATE:
+        TemplateType templateType = (TemplateType) soyType;
+        return javaType == TemplateValue.class
+            || (javaType == SoyTemplate.class
+                && templateType.getParameters().stream().noneMatch(p -> p.isRequired()))
+            || (javaType == PartialSoyTemplate.class
+                && templateType.getParameters().stream().anyMatch(p -> p.isRequired()));
       default:
         return false;
     }
