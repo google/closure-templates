@@ -15,6 +15,7 @@
  */
 package com.google.template.soy.data;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.auto.value.AutoValue;
@@ -29,6 +30,7 @@ import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -205,6 +207,7 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
   public final ContentKind getSanitizedContentKind() {
     return kind;
   }
+
   /**
    * Returns the directionality of this appendable.
    *
@@ -286,6 +289,7 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
     private final ImmutableList<Object> commands;
 
     private CommandBuffer(ImmutableList<Object> commands) {
+      checkArgument(!commands.isEmpty());
       this.commands = commands;
     }
 
@@ -324,9 +328,6 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
     // - LogStatement -> corresponds to enterLoggableElement
     // - EXIT_LOG_STATEMENT_MARKER -> corresponds to exitLoggableElement
     // - LoggingFunctionInvocation -> corresponds to appendLoggingFunctionInvocation
-    // - Dir -> corresponds to setSanitizedContentDirectionality
-    // - SET_SANITIZED_CONTENT_DIRECTIONALITY_NULL_MARKER -> corresponds to
-    //   setSanitizedContentDirectionality with a null parameter
     private List<Object> commands;
 
     protected BufferingAppendable() {
@@ -493,22 +494,26 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
         // ignore the logging statements
       }
     }
+  }
 
-    @AutoValue
-    abstract static class LoggingFunctionCommand {
-      static LoggingFunctionCommand create(
-          LoggingFunctionInvocation fn, ImmutableList<Function<String, String>> escapers) {
-        return new AutoValue_LoggingAdvisingAppendable_BufferingAppendable_LoggingFunctionCommand(
-            fn, escapers);
-      }
+  @AutoValue
+  abstract static class LoggingFunctionCommand {
+    static LoggingFunctionCommand create(
+        LoggingFunctionInvocation fn, ImmutableList<Function<String, String>> escapers) {
+      return new AutoValue_LoggingAdvisingAppendable_LoggingFunctionCommand(fn, escapers);
+    }
 
-      abstract LoggingFunctionInvocation fn();
+    abstract LoggingFunctionInvocation fn();
 
-      abstract ImmutableList<Function<String, String>> escapers();
+    abstract ImmutableList<Function<String, String>> escapers();
 
-      LoggingAdvisingAppendable replayOn(LoggingAdvisingAppendable appendable) throws IOException {
-        return appendable.appendLoggingFunctionInvocation(fn(), escapers());
-      }
+    @CanIgnoreReturnValue
+    LoggingAdvisingAppendable replayOn(LoggingAdvisingAppendable appendable) throws IOException {
+      return appendable.appendLoggingFunctionInvocation(fn(), escapers());
+    }
+
+    LoggingFunctionCommand withResultConsumer(Consumer<String> resultConsumer) {
+      return create(fn().withResultConsumer(resultConsumer), escapers());
     }
   }
 

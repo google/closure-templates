@@ -82,7 +82,15 @@ public final class OutputAppendable extends AbstractLoggingAdvisingAppendable {
     for (Function<String, String> directive : escapers) {
       value = directive.apply(value);
     }
-    outputAppendable.append(value);
+    var consumer = funCall.resultConsumer();
+    // When a consumer is present, this means that this logging function is being evaluated to
+    // satisfy a call to `splitLogsAndContent`.  In that case we should not render the value to the
+    // output, but instead pass it to the consumer.
+    if (consumer.isPresent()) {
+      consumer.get().accept(value);
+    } else {
+      outputAppendable.append(value);
+    }
   }
 
   @Override

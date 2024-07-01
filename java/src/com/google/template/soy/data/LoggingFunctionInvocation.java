@@ -17,15 +17,19 @@ package com.google.template.soy.data;
 
 import com.google.auto.value.AutoValue;
 import java.util.List;
+import java.util.Optional;
+import java.util.function.Consumer;
 import javax.annotation.Nonnull;
 
 /** The result of executing the logging function. */
 @AutoValue
 public abstract class LoggingFunctionInvocation {
+
   @Nonnull
   public static LoggingFunctionInvocation create(
       String functionName, String placeholderValue, List<SoyValue> args) {
-    return new AutoValue_LoggingFunctionInvocation(functionName, placeholderValue, args);
+    return new AutoValue_LoggingFunctionInvocation(
+        functionName, placeholderValue, args, Optional.<Consumer<String>>empty());
   }
 
   /**
@@ -41,4 +45,21 @@ public abstract class LoggingFunctionInvocation {
    * {@code SoyFunction#getValidArgsSizes()}.
    */
   public abstract List<SoyValue> args();
+
+  /**
+   * When set, informs the ultimate logger that the content should be sent to the consumer instead
+   * of the output.
+   */
+  public abstract Optional<Consumer<String>> resultConsumer();
+
+  /** Returns a new invocation that will send the result to the given consumer. */
+  LoggingFunctionInvocation withResultConsumer(Consumer<String> resultConsumer) {
+    if (resultConsumer().isPresent()) {
+      // There is no known usecase where multiple consumers are needed.  If they are it is trivial
+      // to compose `Consumer` objects via `Consumer.andThen
+      throw new IllegalStateException("resultConsumer already set");
+    }
+    return new AutoValue_LoggingFunctionInvocation(
+        functionName(), placeholderValue(), args(), Optional.of(resultConsumer));
+  }
 }
