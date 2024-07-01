@@ -448,9 +448,7 @@ public final class ExternCompiler {
         BytecodeUtils.COLLECTION_TYPE, externType)) {
       return JbcSrcExternRuntime.LIST_BOX_VALUES.invoke(externCall);
     } else if (BytecodeUtils.isDefinitelyAssignableFrom(BytecodeUtils.ITERABLE_TYPE, externType)) {
-      // TODO(jcg): Return as a lazy transforming SoyIterable.
-      return JbcSrcExternRuntime.CONVERT_OBJECT_TO_SOY_VALUE_PROVIDER.invoke(
-          JbcSrcExternRuntime.LIST_BOX_VALUES.invoke(externCall));
+      return JbcSrcExternRuntime.ITERABLE_BOX_VALUES.invoke(externCall);
     } else if (externType.equals(BytecodeUtils.SAFE_URL_TYPE)) {
       return JbcSrcExternRuntime.CONVERT_SAFE_URL_TO_SOY_VALUE_PROVIDER.invoke(externCall);
     } else if (externType.equals(BytecodeUtils.SAFE_URL_PROTO_TYPE)) {

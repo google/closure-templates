@@ -23,6 +23,7 @@ import static java.util.stream.Collectors.toList;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Streams;
 import com.google.common.html.types.SafeHtml;
 import com.google.common.html.types.SafeHtmlProto;
@@ -38,12 +39,14 @@ import com.google.protobuf.Message;
 import com.google.protobuf.ProtocolMessageEnum;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContents;
+import com.google.template.soy.data.SoyIterable;
 import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.SoyValueUnconverter;
+import com.google.template.soy.data.internal.IterableImpl;
 import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import java.lang.reflect.Method;
@@ -95,6 +98,17 @@ public final class JbcSrcExternRuntime {
       return null;
     }
     return Streams.stream(javaValues).map(SoyValueConverter.INSTANCE::convert).collect(toList());
+  }
+
+  public static final MethodRef ITERABLE_BOX_VALUES = create("iterableBoxValues", Iterable.class);
+
+  @Keep
+  @Nullable
+  public static SoyIterable iterableBoxValues(Iterable<?> javaValues) {
+    if (javaValues == null) {
+      return null;
+    }
+    return new IterableImpl(Iterables.transform(javaValues, SoyValueConverter.INSTANCE::convert));
   }
 
   public static final MethodRef LIST_UNBOX_BOOLS = create("listUnboxBools", List.class);
