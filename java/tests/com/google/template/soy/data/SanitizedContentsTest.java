@@ -407,8 +407,8 @@ public class SanitizedContentsTest {
     // Newlines and tabs are allowed in attribute values.
     // We allow attributes to abut each other without a space, this is common in HTML though
     // technically out of spec.
-    assertThat(parseAttributes("a='b\n\tx' c=\"d\"e=f"))
-        .isEqualTo(ImmutableMap.of("a", "b\n\tx", "c", "d", "e", "f"));
+    assertThat(parseAttributes("a='b\n\tx'\r\nc=\"d\"e=f\r"))
+        .containsExactly("a", "b\n\tx", "c", "d", "e", "f");
 
     assertThat(parseAttributes("CLASS=foo")).isEqualTo(ImmutableMap.of("class", "foo"));
     assertThat(parseAttributes("A=1 a")).isEqualTo(ImmutableMap.of("a", ""));
@@ -470,6 +470,11 @@ public class SanitizedContentsTest {
                     ImmutableMap.of(
                         "a", SanitizedContent.AttributeValue.createFromEscapedValue("b")))
                 .hasContent())
+        .isTrue();
+    assertThat(UnsafeSanitizedContentOrdainer.ordainAsSafe("", ContentKind.ATTRIBUTES).hasContent())
+        .isFalse();
+    assertThat(
+            UnsafeSanitizedContentOrdainer.ordainAsSafe("a=b", ContentKind.ATTRIBUTES).hasContent())
         .isTrue();
   }
 
