@@ -104,8 +104,6 @@ public final class JavaTypeUtils {
         break;
       case ITERABLE:
       case SET:
-        // Do not support set<> or iterable<> for now.
-        return ImmutableList.of();
       case LIST:
         SoyType elementType = ((AbstractIterableType) soyType).getElementType();
         if (elementType.getKind() == Kind.RECORD) {
@@ -115,7 +113,9 @@ public final class JavaTypeUtils {
         } else {
           List<JavaType> listElementTypes = getJavaTypes(elementType, skipSoyTypes);
           if (listElementTypes.size() == 1 && listElementTypes.get(0).isGenericsTypeSupported()) {
-            return ImmutableList.of(new ListJavaType(listElementTypes.get(0)));
+            return ImmutableList.of(
+                new CollectionJavaType(
+                    CollectionJavaType.Subtype.forSoyType(kind), listElementTypes.get(0)));
           } // Currently, we don't handle multiple element types b/c of type erasure.
           types = ImmutableList.of();
         }
@@ -308,7 +308,8 @@ public final class JavaTypeUtils {
   private static ImmutableList<JavaType> clearListIfHasTypeErasureOverloadCollisions(
       ImmutableList<JavaType> types) {
 
-    long numTopLevelListTypes = types.stream().filter(type -> type instanceof ListJavaType).count();
+    long numTopLevelListTypes =
+        types.stream().filter(type -> type instanceof CollectionJavaType).count();
 
     long numTopLevelMapTypes = types.stream().filter(type -> type instanceof MapJavaType).count();
 
