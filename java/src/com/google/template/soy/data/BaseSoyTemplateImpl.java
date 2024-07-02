@@ -36,8 +36,10 @@ import com.google.errorprone.annotations.CheckReturnValue;
 import com.google.errorprone.annotations.ForOverride;
 import com.google.protobuf.Message;
 import com.google.protobuf.ProtocolMessageEnum;
+import com.google.template.soy.data.internal.IterableImpl;
 import com.google.template.soy.data.internal.ListImpl;
 import com.google.template.soy.data.internal.ParamStore;
+import com.google.template.soy.data.internal.SetImpl;
 import com.google.template.soy.data.internal.SoyLegacyObjectMapImpl;
 import com.google.template.soy.data.internal.SoyMapImpl;
 import com.google.template.soy.data.internal.SoyRecordImpl;
@@ -241,6 +243,26 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
     protected static <T> SoyValue asNullableList(
         @Nullable Iterable<T> iterable, Function<? super T, ? extends SoyValueProvider> mapper) {
       return iterable == null ? NullData.INSTANCE : asList(iterable, mapper);
+    }
+
+    protected static <T> SoySet asSet(
+        Iterable<T> iterable, Function<? super T, ? extends SoyValueProvider> mapper) {
+      return new SetImpl(stream(iterable).map(mapper).iterator());
+    }
+
+    protected static <T> SoyValue asNullableSet(
+        @Nullable Iterable<T> iterable, Function<? super T, ? extends SoyValueProvider> mapper) {
+      return iterable == null ? NullData.INSTANCE : asSet(iterable, mapper);
+    }
+
+    protected static <T> SoyIterable asIterable(
+        Iterable<T> iterable, Function<? super T, ? extends SoyValueProvider> mapper) {
+      return new IterableImpl(stream(iterable).map(mapper).collect(toImmutableList()));
+    }
+
+    protected static <T> SoyValue asNullableIterable(
+        @Nullable Iterable<T> iterable, Function<? super T, ? extends SoyValueProvider> mapper) {
+      return iterable == null ? NullData.INSTANCE : asIterable(iterable, mapper);
     }
 
     protected static SoyProtoValue asProto(Message proto) {
