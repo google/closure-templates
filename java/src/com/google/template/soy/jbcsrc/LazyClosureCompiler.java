@@ -666,19 +666,18 @@ final class LazyClosureCompiler {
      * Returns true if it is possible to eagerly evaluate a `RenderUnitNode`.
      *
      * <p>Currently, due to certain Soy externs and plugins related to content deferral (e.g.
-     * `flushLogsAndRender`) it is not possible to optimistically evaluate any html or attributes
-     * content. By making html deferral a built-in feature we should be able to remove this
-     * restriction.
+     * `flushLogsAndRender`) it is not possible to optimistically evaluate any html content. By
+     * making html deferral a built-in feature we should be able to remove this restriction.
      *
      * <p>See b/343267009 for more details.
      */
     private boolean canEagerlyRender(RenderUnitNode renderUnit) {
       switch (renderUnit.getContentKind()) {
         case HTML:
-        case ATTRIBUTES:
         case HTML_ELEMENT:
           return false;
         case TRUSTED_RESOURCE_URI:
+        case ATTRIBUTES:
         case TEXT:
         case CSS:
         case JS:
