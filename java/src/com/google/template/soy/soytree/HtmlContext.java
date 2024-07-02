@@ -15,6 +15,7 @@
  */
 package com.google.template.soy.soytree;
 
+import com.google.common.collect.ImmutableSet;
 import javax.annotation.Nullable;
 
 /**
@@ -126,6 +127,19 @@ public enum HtmlContext {
 
   @Nullable private final EscapingMode escapingMode;
   @Nullable private final String errorMessage;
+  public static final ImmutableSet<HtmlContext> JS_CONTEXTS =
+      ImmutableSet.of(
+          JS,
+          JS_LINE_COMMENT,
+          JS_BLOCK_COMMENT,
+          JS_DQ_STRING,
+          JS_SQ_STRING,
+          JS_REGEX,
+          JS_TEMPLATE_LITERAL);
+
+  public static final Boolean isJsContext(HtmlContext context) {
+    return JS_CONTEXTS.contains(context);
+  }
 
   /** Whether a class contains information about HTML context */
   public interface HtmlContextHolder {
