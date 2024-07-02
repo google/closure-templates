@@ -23,6 +23,7 @@ import static com.google.common.collect.ImmutableSet.toImmutableSet;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Streams;
 import com.google.common.html.types.SafeHtml;
 import com.google.common.html.types.SafeHtmlProto;
 import com.google.common.html.types.SafeScript;
@@ -42,6 +43,7 @@ import com.google.protobuf.Message;
 import com.google.protobuf.ProtocolMessageEnum;
 import com.google.template.soy.data.internal.DictImpl;
 import com.google.template.soy.data.internal.EasyListImpl;
+import com.google.template.soy.data.internal.IterableImpl;
 import com.google.template.soy.data.internal.ListImpl;
 import com.google.template.soy.data.internal.RuntimeMapTypeTracker;
 import com.google.template.soy.data.internal.SetImpl;
@@ -60,7 +62,6 @@ import java.util.Set;
 import java.util.concurrent.Future;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.stream.StreamSupport;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
@@ -124,6 +125,7 @@ public final class SoyValueConverter {
         input -> StringData.forValue(BaseEncoding.base64().encode(input.toByteArray())));
     expensiveConverterMap.put(Map.class, this::newDictFromMap);
     expensiveConverterMap.put(MarkAsSoyMap.class, input -> newSoyMapFromJavaMap(input.delegate()));
+    expensiveConverterMap.put(Iterable.class, this::newIterableFromIterable);
   }
 
   // -----------------------------------------------------------------------------------------------
@@ -204,24 +206,21 @@ public final class SoyValueConverter {
    * @return A new SoyList initialized from the given Java Collection.
    */
   private SoyIterable newIterableFromIterable(Iterable<?> items) {
-    // TODO(jcg): Marshal Set to SetImpl.
-    if (items instanceof List || items instanceof Set) {
+    if (items instanceof List) {
       // Create a list backed by a Java list which has eagerly converted each value into a lazy
       // value provider. Specifically, the list iteration is done eagerly so that the lazy value
       // provider can cache its value.
       return ListImpl.forProviderList(
           ((Collection<?>) items).stream().map(this::convertLazy).collect(toImmutableList()));
     }
+    if (items instanceof Set) {
+      // Must convert elements eagerly for set semantics.
+      return new SetImpl(
+          ((Collection<?>) items).stream().map(this::convert).collect(toImmutableSet()));
+    }
 
-    // TODO(jcg): Marshal Iterable get SoyIterable.
-    return ListImpl.forProviderList(
-        StreamSupport.stream(items.spliterator(), false)
-            .map(this::convertLazy)
-            .collect(toImmutableList()));
-  }
-
-  private SoySet newSetFromSet(Set<?> items) {
-    return new SetImpl(items.stream().map(this::convertLazy).collect(toImmutableSet()));
+    return new IterableImpl(
+        Streams.stream(items).map(this::convertLazy).collect(toImmutableList()));
   }
 
   // -----------------------------------------------------------------------------------------------
@@ -280,9 +279,6 @@ public final class SoyValueConverter {
 
   private SoyValueProvider convertNonPrimitive(@Nullable Object obj) {
     SoyValueProvider converted = expensiveConverterMap.convert(obj);
-    if (converted == null && obj instanceof Iterable) {
-      converted = newIterableFromIterable((Iterable<?>) obj);
-    }
     if (converted != null) {
       return converted;
     }

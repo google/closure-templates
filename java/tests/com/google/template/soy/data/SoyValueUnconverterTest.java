@@ -21,6 +21,7 @@ import static com.google.template.soy.data.SoyValueUnconverter.unconvert;
 import static com.google.template.soy.data.UnsafeSanitizedContentOrdainer.ordainAsSafe;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import com.google.common.html.types.SafeHtml;
 import com.google.common.html.types.SafeScript;
 import com.google.common.html.types.SafeStyle;
@@ -38,6 +39,7 @@ import com.google.template.soy.testing.SomeEmbeddedMessage;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -63,6 +65,8 @@ public class SoyValueUnconverterTest {
 
     List<String> list = Lists.newArrayList("a", "b", null, "c");
     assertThat((List<?>) unconvert(CONVERTER.convert(list))).isEqualTo(list);
+    Set<String> set = Sets.newHashSet("a", "b", null, "c");
+    assertThat((Set<?>) unconvert(CONVERTER.convert(set))).isEqualTo(set);
 
     Map<String, String> map = new HashMap<>();
     map.put("k1", "v1");

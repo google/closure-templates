@@ -16,7 +16,10 @@
 
 package com.google.template.soy.data;
 
+import static com.google.common.collect.Streams.stream;
+
 import com.google.template.soy.data.SoyValueConverter.TypeMap;
+import com.google.template.soy.data.internal.IterableImpl;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
@@ -24,6 +27,7 @@ import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.data.restricted.UndefinedData;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -46,6 +50,18 @@ public final class SoyValueUnconverter {
         SoyList.class,
         v ->
             v.asResolvedJavaList().stream()
+                .map(SoyValueUnconverter::unconvert)
+                .collect(Collectors.toList())); // Use ArrayList to allow nulls.
+    CONVERTERS.put(
+        SoySet.class,
+        v ->
+            stream(v.javaIterator())
+                .map(SoyValueUnconverter::unconvert)
+                .collect(Collectors.toCollection(LinkedHashSet::new))); // allow nulls
+    CONVERTERS.put(
+        IterableImpl.class,
+        v ->
+            stream(v.javaIterator())
                 .map(SoyValueUnconverter::unconvert)
                 .collect(Collectors.toList())); // Use ArrayList to allow nulls.
     CONVERTERS.put(

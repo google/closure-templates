@@ -87,7 +87,12 @@ public class SoyValueConverterTest {
         .isEqualTo("foo");
     assertThat(((SoyList) CONVERTER.convert(ImmutableList.of("goo"))).get(0).stringValue())
         .isEqualTo("goo");
-    assertThat(((SoyList) CONVERTER.convert(ImmutableSet.of("hoo"))).get(0).stringValue())
+    assertThat(
+            ((SoySet) CONVERTER.convert(ImmutableSet.of("hoo")))
+                .javaIterator()
+                .next()
+                .resolve()
+                .stringValue())
         .isEqualTo("hoo");
     assertThat(CONVERTER.convert(3.14).resolve().floatValue()).isEqualTo(3.14);
     assertThat((float) CONVERTER.convert(3.14F).resolve().floatValue()).isEqualTo(3.14F);
