@@ -36,6 +36,7 @@ import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.error.SoyErrors;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.MethodCallNode;
+import com.google.template.soy.internal.proto.Field;
 import com.google.template.soy.internal.proto.ProtoUtils;
 import com.google.template.soy.shared.restricted.SoyMethod;
 import com.google.template.soy.types.BoolType;
@@ -452,6 +453,14 @@ public enum BuiltinMethod implements SoyMethod {
       SoyType baseType,
       Predicate<FieldDescriptor> acceptField,
       Function<String, String> fieldToMethodName) {
+    return expandMethodNamesForProtoWithDescriptors(
+        baseType, acceptField, d -> fieldToMethodName.apply(Field.computeSoyName(d)));
+  }
+
+  protected ImmutableCollection<String> expandMethodNamesForProtoWithDescriptors(
+      SoyType baseType,
+      Predicate<FieldDescriptor> acceptField,
+      Function<FieldDescriptor, String> fieldToMethodName) {
     if (!appliesToBase(baseType)) {
       return ImmutableList.of();
     }
@@ -459,7 +468,8 @@ public enum BuiltinMethod implements SoyMethod {
     // appliesTo with the entire union baseType.
     SoyProtoType protoType = (SoyProtoType) SoyTypes.expandUnions(baseType).get(0);
     return protoType.getFieldNames().stream()
-        .filter(name -> acceptField.test(protoType.getFieldDescriptor(name)))
+        .map(protoType::getFieldDescriptor)
+        .filter(acceptField)
         .map(fieldToMethodName)
         .collect(toImmutableSet());
   }

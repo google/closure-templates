@@ -94,6 +94,7 @@ public final class ProtoUtils {
       return null;
     }
   }
+
   /**
    * Returns the field descriptor representing the type of the value of the map field. Returns null
    * if the map value isn't a message.
@@ -229,5 +230,13 @@ public final class ProtoUtils {
   public static OneofDescriptor getContainingOneof(FieldDescriptor fd) {
     return
     fd.getContainingOneof();
+  }
+
+  public static boolean isMessageLike(FieldDescriptor field) {
+    if (field.isMapField()) {
+      FieldDescriptor valueField = field.getMessageType().findFieldByName("value");
+      return valueField.getJavaType() == FieldDescriptor.JavaType.MESSAGE;
+    }
+    return field.getJavaType() == FieldDescriptor.JavaType.MESSAGE;
   }
 }
