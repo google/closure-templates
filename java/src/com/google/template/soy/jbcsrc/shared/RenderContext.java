@@ -462,7 +462,10 @@ public final class RenderContext {
   }
 
   /** Catches a deferred error */
-  public SoyValueProvider catchAsProvider(Throwable t) {
+  public SoyValueProvider catchAsProvider(Throwable t) throws Throwable {
+    if (debugSoyTemplateInfo) {
+      throw t;
+    }
     var provider = new ThrowingSoyValueProvider(t);
     var deferredErrors = this.deferredErrors;
     if (deferredErrors == null) {
