@@ -64,6 +64,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import javax.inject.Provider;
 
 /**
  * A converter that knows how to convert all expected Java objects into SoyValues or
@@ -251,6 +252,19 @@ public final class SoyValueConverter {
    * @return An equivalent SoyValueProvider.
    */
   public SoyValueProvider convertLazy(Supplier<?> supplier) {
+    return new LazyProvider(() -> convert(supplier.get()));
+  }
+
+  /**
+   * Converts the object returned by the given provider lazily.
+   *
+   * <p>The supplier is guaranteed to only be called once and will be immediately discarded after
+   * being invoked.
+   *
+   * @param supplier The object to convert.
+   * @return An equivalent SoyValueProvider.
+   */
+  public SoyValueProvider convertLazyProvider(Provider<?> supplier) {
     return new LazyProvider(() -> convert(supplier.get()));
   }
 
