@@ -16,6 +16,9 @@
 
 package com.google.template.soy.types;
 
+import com.google.common.base.Preconditions;
+import java.util.Objects;
+
 /**
  * Represents the type of a list, a sequential random-access container keyed by integer.
  *
@@ -26,19 +29,21 @@ public abstract class AbstractIterableType extends SoyType {
   protected final SoyType elementType;
 
   protected AbstractIterableType(SoyType elementType) {
-    this.elementType = elementType;
+    this.elementType = Preconditions.checkNotNull(elementType);
   }
 
   public SoyType getElementType() {
     return elementType;
   }
 
-  public boolean isEmpty() {
-    return elementType == null;
-  }
+  public abstract boolean isEmpty();
 
   @Override
   boolean doIsAssignableFromNonUnionType(SoyType srcType, UnknownAssignmentPolicy policy) {
+    // Handle the special empty types.
+    if (this == srcType) {
+      return true;
+    }
     if (srcType instanceof AbstractIterableType) {
       AbstractIterableType srcListType = (AbstractIterableType) srcType;
       if (srcListType.isEmpty()) {
@@ -49,5 +54,18 @@ public abstract class AbstractIterableType extends SoyType {
       return elementType.isAssignableFromInternal(srcListType.elementType, policy);
     }
     return false;
+  }
+
+  @Override
+  public final boolean equals(Object other) {
+    return other != null
+        && this.getClass() == other.getClass()
+        && isEmpty() == ((AbstractIterableType) other).isEmpty()
+        && Objects.equals(((AbstractIterableType) other).elementType, elementType);
+  }
+
+  @Override
+  public final int hashCode() {
+    return Objects.hash(this.getClass(), elementType, isEmpty());
   }
 }

@@ -16,22 +16,28 @@
 
 package com.google.template.soy.types;
 
-import com.google.common.base.Preconditions;
 import com.google.template.soy.soytree.SoyTypeP;
-import java.util.Objects;
 
 /** Represents an iterable object that can be used in {for} and list comprehension. */
 public final class IterableType extends AbstractIterableType {
 
-  public static final IterableType EMPTY_ITERABLE = new IterableType(null);
+  private static final IterableType EMPTY = new IterableType(UnknownType.getInstance());
 
-  protected IterableType(SoyType elementType) {
-    super(elementType);
+  public static IterableType empty() {
+    return EMPTY;
   }
 
   public static IterableType of(SoyType elementType) {
-    Preconditions.checkNotNull(elementType);
     return new IterableType(elementType);
+  }
+
+  private IterableType(SoyType elementType) {
+    super(elementType);
+  }
+
+  @Override
+  public boolean isEmpty() {
+    return this == EMPTY;
   }
 
   @Override
@@ -47,18 +53,6 @@ public final class IterableType extends AbstractIterableType {
   @Override
   void doToProto(SoyTypeP.Builder builder) {
     builder.setIterableElement(elementType.toProto());
-  }
-
-  @Override
-  public boolean equals(Object other) {
-    return other != null
-        && this.getClass() == other.getClass()
-        && Objects.equals(((IterableType) other).elementType, elementType);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(this.getClass(), elementType);
   }
 
   @Override

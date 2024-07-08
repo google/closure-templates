@@ -39,9 +39,9 @@ import com.google.template.soy.exprtree.MethodCallNode;
 import com.google.template.soy.internal.proto.Field;
 import com.google.template.soy.internal.proto.ProtoUtils;
 import com.google.template.soy.shared.restricted.SoyMethod;
+import com.google.template.soy.types.AbstractMapType;
 import com.google.template.soy.types.BoolType;
 import com.google.template.soy.types.ListType;
-import com.google.template.soy.types.MapType;
 import com.google.template.soy.types.ProtoExtensionImportType;
 import com.google.template.soy.types.RecordType;
 import com.google.template.soy.types.SoyProtoType;
@@ -326,17 +326,15 @@ public enum BuiltinMethod implements SoyMethod {
       SoyType keyType = SoyTypes.getMapKeysType(baseType);
 
       ExprNode arg = params.get(0);
-      if (baseType.equals(MapType.EMPTY_MAP)) {
+      if (baseType instanceof AbstractMapType && ((AbstractMapType) baseType).isEmpty()) {
         errorReporter.report(arg.getParent().getSourceLocation(), EMPTY_MAP_ACCESS);
+        return UndefinedType.getInstance();
       } else if (!keyType.isAssignableFromLoose(arg.getType())) {
         // TypeScript allows get with 'any' typed key.
         errorReporter.report(
             arg.getSourceLocation(), METHOD_INVALID_PARAM_TYPES, "get", arg.getType(), keyType);
       }
 
-      if (baseType.equals(MapType.EMPTY_MAP)) {
-        return UndefinedType.getInstance();
-      }
       return SoyTypes.makeUndefinable(SoyTypes.getMapValuesType(baseType));
     }
   },

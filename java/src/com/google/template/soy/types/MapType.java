@@ -17,8 +17,8 @@
 package com.google.template.soy.types;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.soytree.SoyTypeP;
-import java.util.Objects;
 
 /**
  * Map type - generalized mapping type with key and value type arguments.
@@ -29,10 +29,19 @@ import java.util.Objects;
  */
 public final class MapType extends AbstractMapType {
 
-  // TODO(lukes): see if this can be replaced with map<?,?>
-  public static final MapType EMPTY_MAP = new MapType(null, null);
+  /** Special instance used to track empty maps. Only valid with == equality. */
+  private static final MapType EMPTY =
+      new MapType(UnknownType.getInstance(), UnknownType.getInstance());
 
   public static final MapType ANY_MAP = new MapType(AnyType.getInstance(), AnyType.getInstance());
+
+  public static MapType empty() {
+    return EMPTY;
+  }
+
+  public static MapType of(SoyType keyType, SoyType valueType) {
+    return new MapType(keyType, valueType);
+  }
 
   /** The declared type of item keys in this map. */
   private final SoyType keyType;
@@ -41,31 +50,36 @@ public final class MapType extends AbstractMapType {
   private final SoyType valueType;
 
   private MapType(SoyType keyType, SoyType valueType) {
-    this.keyType = keyType;
-    this.valueType = valueType;
+    this.keyType = Preconditions.checkNotNull(keyType);
+    this.valueType = Preconditions.checkNotNull(valueType);
   }
 
-  public static MapType of(SoyType keyType, SoyType valueType) {
-    Preconditions.checkNotNull(keyType);
-    Preconditions.checkNotNull(valueType);
-    return new MapType(keyType, valueType);
+  @Override
+  public boolean isEmpty() {
+    return this == EMPTY;
   }
 
-  // IMPORTANT: if the allowed key types change, make sure to update BAD_MAP_KEY_TYPE above.
-  /** Whether the type is permissible as a key in a Soy {@code map} ({@link MapType}). */
+  private static final ImmutableSet<Kind> ALLOWED_KINDS =
+      ImmutableSet.of(Kind.BOOL, Kind.INT, Kind.FLOAT, Kind.STRING, Kind.PROTO_ENUM);
+
+  /** Whether the type is permissible as a key in a declared map type literal. */
   // LINT.IfChange(allowed_soy_map_key_types)
   public static boolean isAllowedKeyType(SoyType type) {
     switch (type.getKind()) {
-      case BOOL:
-      case INT:
-      case FLOAT:
-      case STRING:
-      case PROTO_ENUM:
+      case ANY:
+      case UNKNOWN:
+      case NEVER:
         return true;
       default:
-        return type == SoyTypes.NUMBER_TYPE;
+        return SoyTypes.isKindOrUnionOfKinds(type, ALLOWED_KINDS);
     }
   }
+
+  /** Whether the type is permissible as a key in a map literal. */
+  public static boolean isAllowedKeyValueType(SoyType type) {
+    return SoyTypes.isKindOrUnionOfKinds(type, ALLOWED_KINDS);
+  }
+
   // LINT.ThenChange(../data/SoyMap.java:allowed_soy_map_key_types)
 
   @Override
@@ -87,9 +101,9 @@ public final class MapType extends AbstractMapType {
   boolean doIsAssignableFromNonUnionType(SoyType srcType, UnknownAssignmentPolicy policy) {
     if (srcType.getKind() == Kind.MAP) {
       MapType srcMapType = (MapType) srcType;
-      if (srcMapType == EMPTY_MAP) {
+      if (srcMapType == EMPTY) {
         return true;
-      } else if (this == EMPTY_MAP) {
+      } else if (this == EMPTY) {
         return false;
       }
       // Maps are covariant.
@@ -107,21 +121,6 @@ public final class MapType extends AbstractMapType {
   @Override
   void doToProto(SoyTypeP.Builder builder) {
     builder.getMapBuilder().setKey(keyType.toProto()).setValue(valueType.toProto());
-  }
-
-  @Override
-  public boolean equals(Object other) {
-    if (other != null && other.getClass() == this.getClass()) {
-      MapType otherMap = (MapType) other;
-      return Objects.equals(otherMap.keyType, keyType)
-          && Objects.equals(otherMap.valueType, valueType);
-    }
-    return false;
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(this.getClass(), keyType, valueType);
   }
 
   @Override

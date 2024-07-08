@@ -16,9 +16,7 @@
 
 package com.google.template.soy.types;
 
-import com.google.common.base.Preconditions;
 import com.google.template.soy.soytree.SoyTypeP;
-import java.util.Objects;
 
 /**
  * Represents the type of a list, a sequential random-access container keyed by integer.
@@ -27,16 +25,26 @@ import java.util.Objects;
  */
 public final class SetType extends AbstractIterableType {
 
-  public static final SetType EMPTY_SET = new SetType(null);
+  /** Special instance used to track empty sets. Only valid with == equality. */
+  private static final SetType EMPTY = new SetType(UnknownType.getInstance());
+
   public static final SetType ANY_SET = new SetType(AnyType.getInstance());
+
+  public static SetType empty() {
+    return EMPTY;
+  }
+
+  public static SetType of(SoyType elementType) {
+    return new SetType(elementType);
+  }
 
   private SetType(SoyType elementType) {
     super(elementType);
   }
 
-  public static SetType of(SoyType elementType) {
-    Preconditions.checkNotNull(elementType);
-    return new SetType(elementType);
+  @Override
+  public boolean isEmpty() {
+    return this == EMPTY;
   }
 
   @Override
@@ -57,18 +65,6 @@ public final class SetType extends AbstractIterableType {
   @Override
   void doToProto(SoyTypeP.Builder builder) {
     builder.setSetElement(elementType.toProto());
-  }
-
-  @Override
-  public boolean equals(Object other) {
-    return other != null
-        && this.getClass() == other.getClass()
-        && Objects.equals(((SetType) other).elementType, elementType);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(this.getClass(), elementType);
   }
 
   @Override

@@ -275,7 +275,7 @@ public abstract class SoyRuntimeType {
     List<SoyType> members = new ArrayList<>();
     for (SoyType member : ((UnionType) soyType).getMembers()) {
       AbstractIterableType memberAsList = (AbstractIterableType) member;
-      if (memberAsList.getElementType() != null) {
+      if (!memberAsList.isEmpty()) {
         members.add(memberAsList.getElementType());
       }
     }

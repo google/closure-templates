@@ -1117,7 +1117,7 @@ public final class ResolveExpressionTypesPassTest {
         "{assertType('list<int>', [1].concat([]))}",
         "{assertType('list<int>', [].concat([1]))}",
         "{assertType('list<int>', (true ? [] : [1]).concat([2]))}",
-        "{assertType('list<null>', [].concat([]))}",
+        "{assertType('list<?>', [].concat([]))}",
         "{assertType('list<int|string>', [1].concat([\"2\"]))}");
   }
 
@@ -1139,7 +1139,7 @@ public final class ResolveExpressionTypesPassTest {
     assertTypes(
         "{@param m: map<string, int>}",
         "{assertType('list<string>', $m.keys())}",
-        "{assertType('list<null>', map().keys())}",
+        "{assertType('list<?>', map().keys())}",
         "");
   }
 
@@ -1148,7 +1148,7 @@ public final class ResolveExpressionTypesPassTest {
     assertTypes(
         "{@param m: map<string, int>}",
         "{assertType('legacy_object_map<string,int>', mapToLegacyObjectMap($m))}",
-        "{assertType('legacy_object_map<null,null>', mapToLegacyObjectMap(map()))}",
+        "{assertType('legacy_object_map<?,?>', mapToLegacyObjectMap(map()))}",
         "");
   }
 

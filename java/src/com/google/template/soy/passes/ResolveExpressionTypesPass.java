@@ -290,10 +290,6 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
   private static final SoyErrorKind KEYS_PASSED_MAP =
       SoyErrorKind.of(
           "Use the ''mapKeys'' function instead of ''keys'' for objects of type ''map''.");
-  private static final SoyErrorKind ILLEGAL_MAP_RESOLVED_KEY_TYPE =
-      SoyErrorKind.of(
-          "A map''s keys must all be the same type. This map has keys of multiple types "
-              + "(''{0}'').");
   private static final SoyErrorKind EMPTY_LIST_ACCESS =
       SoyErrorKind.of("Accessing item in empty list.");
   private static final SoyErrorKind EMPTY_COLLECTION_FOREACH =
@@ -1123,7 +1119,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
         if (inferringParam) {
           errorReporter.report(node.getSourceLocation(), AMBIGUOUS_INFERRED_TYPE, "an empty list");
         }
-        node.setType(ListType.EMPTY_LIST);
+        node.setType(ListType.empty());
       } else {
         node.setType(
             typeRegistry.getOrCreateListType(
@@ -1152,14 +1148,15 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
       } else if (listExprType.getKind() == SoyType.Kind.UNKNOWN) {
         node.getListIterVar().setType(UnknownType.getInstance());
       } else {
-        SoyType listElementType = SoyTypes.getIterableElementType(listExprType);
-        if (listElementType == null) {
+        if (listExprType instanceof AbstractIterableType
+            && ((AbstractIterableType) listExprType).isEmpty()) {
           // Report an error if listExpr was the empty list
           errorReporter.report(node.getListExpr().getSourceLocation(), EMPTY_LIST_COMPREHENSION);
           node.getListIterVar().setType(UnknownType.getInstance());
         } else {
           // Otherwise, use the list element type to set the type of the iterator ($var in this
           // example).
+          SoyType listElementType = SoyTypes.getIterableElementType(listExprType);
           node.getListIterVar().setType(listElementType);
         }
       }
@@ -1230,7 +1227,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
       int numChildren = node.numChildren();
       checkState(numChildren % 2 == 0);
       if (numChildren == 0) {
-        node.setType(MapType.EMPTY_MAP);
+        node.setType(MapType.empty());
         if (inferringParam) {
           errorReporter.report(node.getSourceLocation(), AMBIGUOUS_INFERRED_TYPE, "an empty map");
         }
@@ -1241,7 +1238,6 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
       Map<String, SoyType> recordFieldTypes = new LinkedHashMap<>();
       List<SoyType> keyTypes = new ArrayList<>(numChildren / 2);
       List<SoyType> valueTypes = new ArrayList<>(numChildren / 2);
-      Checkpoint checkpoint = errorReporter.checkpoint();
       for (int i = 0; i < numChildren; i += 2) {
         ExprNode key = node.getChild(i);
         ExprNode value = node.getChild(i + 1);
@@ -1254,7 +1250,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
           }
         }
         keyTypes.add(key.getType());
-        if (!MapType.isAllowedKeyType(key.getType())) {
+        if (!MapType.isAllowedKeyValueType(key.getType())) {
           errorReporter.report(
               key.getSourceLocation(),
               CheckDeclaredTypesPass.BAD_MAP_OR_SET_KEY_TYPE,
@@ -1263,10 +1259,6 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
         valueTypes.add(value.getType());
       }
       SoyType commonKeyType = SoyTypes.computeLowestCommonType(typeRegistry, keyTypes);
-      if (!errorReporter.errorsSince(checkpoint) && !MapType.isAllowedKeyType(commonKeyType)) {
-        errorReporter.report(
-            node.getSourceLocation(), ILLEGAL_MAP_RESOLVED_KEY_TYPE, commonKeyType);
-      }
       SoyType commonValueType = SoyTypes.computeLowestCommonType(typeRegistry, valueTypes);
       node.setType(typeRegistry.getOrCreateMapType(commonKeyType, commonValueType));
 
@@ -1292,31 +1284,33 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
     protected void visitMapLiteralFromListNode(MapLiteralFromListNode node) {
       // Resolve the listExpr in "map(listExpr)".
       visit(node.getListExpr());
-      if (node.getListExpr().getType().equals(ListType.EMPTY_LIST)) {
-        node.setType(MapType.EMPTY_MAP);
+      SoyType listExprType = node.getListExpr().getType();
+      if (listExprType instanceof AbstractIterableType
+          && ((AbstractIterableType) listExprType).isEmpty()) {
+        node.setType(MapType.empty());
         if (inferringParam) {
           errorReporter.report(node.getSourceLocation(), AMBIGUOUS_INFERRED_TYPE, "an empty map");
         }
         return;
       }
 
-      if (!isListOfKeyValueRecords(node.getListExpr().getType())) {
+      if (!isListOfKeyValueRecords(listExprType)) {
         errorReporter.report(
             node.getListExpr().getSourceLocation(),
             BAD_MAP_LITERAL_FROM_LIST_TYPE,
             node.getListExpr().toSourceString(),
-            node.getListExpr().getType());
-        node.setType(MapType.EMPTY_MAP);
+            listExprType);
+        node.setType(MapType.empty());
         return;
       }
 
       SoyType keyType =
-          ((RecordType) ((ListType) node.getListExpr().getType()).getElementType())
+          ((RecordType) ((ListType) listExprType).getElementType())
               .getMemberType(MapLiteralFromListNode.KEY_STRING);
       SoyType valueType =
-          ((RecordType) ((ListType) node.getListExpr().getType()).getElementType())
+          ((RecordType) ((ListType) listExprType).getElementType())
               .getMemberType(MapLiteralFromListNode.VALUE_STRING);
-      if (!MapType.isAllowedKeyType(keyType)) {
+      if (!MapType.isAllowedKeyValueType(keyType)) {
         errorReporter.report(
             node.getSourceLocation(), CheckDeclaredTypesPass.BAD_MAP_OR_SET_KEY_TYPE, keyType);
       }
@@ -1610,20 +1604,20 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
         } else if (sourceFunction instanceof ConcatMapsMethod) {
           node.setType(getGenericMapType(node.getChildren()));
         } else if (sourceFunction instanceof MapKeysFunction) {
-          if (baseType.equals(MapType.EMPTY_MAP)) {
-            node.setType(ListType.EMPTY_LIST);
+          if (baseType instanceof AbstractMapType && ((AbstractMapType) baseType).isEmpty()) {
+            node.setType(ListType.empty());
           } else {
             node.setType(ListType.of(getMapKeysType(baseType)));
           }
         } else if (sourceFunction instanceof MapValuesMethod) {
-          if (baseType.equals(MapType.EMPTY_MAP)) {
-            node.setType(ListType.EMPTY_LIST);
+          if (baseType instanceof AbstractMapType && ((AbstractMapType) baseType).isEmpty()) {
+            node.setType(ListType.empty());
           } else {
             node.setType(ListType.of(getMapValuesType(baseType)));
           }
         } else if (sourceFunction instanceof MapEntriesMethod) {
-          if (baseType.equals(MapType.EMPTY_MAP)) {
-            node.setType(ListType.EMPTY_LIST);
+          if (baseType instanceof AbstractMapType && ((AbstractMapType) baseType).isEmpty()) {
+            node.setType(ListType.empty());
           } else {
             node.setType(
                 ListType.of(
@@ -1684,7 +1678,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
             errorReporter.report(node.getParam(0).getSourceLocation(), RECORD_LITERAL_NOT_ALLOWED);
           }
           SoyType listElementType = ((ListType) baseType).getElementType();
-          if (listElementType != null && node.getParam(0).getType() != null) {
+          if (node.getParam(0).getType() != null) {
             // Remove null from the arg to allow eg list<string>.includes(null|string). We can make
             // it work in TS by adding the `!` operator in Soy->Tsx.
             SoyType argType = SoyTypes.tryRemoveNullish(node.getParam(0).getType());
@@ -2326,8 +2320,8 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
     private void visitKeysFunction(FunctionNode node) {
       ListType listType;
       SoyType argType = node.getParam(0).getType();
-      if (argType.equals(LegacyObjectMapType.EMPTY_MAP)) {
-        listType = ListType.EMPTY_LIST;
+      if (argType instanceof AbstractMapType && ((AbstractMapType) argType).isEmpty()) {
+        listType = ListType.empty();
       } else {
         SoyType listArg;
         if (argType.getKind() == Kind.LEGACY_OBJECT_MAP) {
@@ -2347,8 +2341,8 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
 
     private void visitLegacyObjectMapToMapFunction(FunctionNode node) {
       SoyType argType = node.getParam(0).getType();
-      if (argType.equals(LegacyObjectMapType.EMPTY_MAP)) {
-        node.setType(MapType.EMPTY_MAP);
+      if (argType instanceof AbstractMapType && ((AbstractMapType) argType).isEmpty()) {
+        node.setType(MapType.empty());
       } else if (argType == UnknownType.getInstance()) {
         // Allow the type of the arg to be unknown as legacy_object_map functionality on unknown
         // types is allowed (i.e. bracket access on a variable with an unknown type).
@@ -2369,15 +2363,14 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
     }
 
     private void visitMapToLegacyObjectMapFunction(FunctionNode node) {
-      SoyType argType = node.getParam(0).getType();
-      if (argType.equals(MapType.EMPTY_MAP)) {
-        node.setType(LegacyObjectMapType.EMPTY_MAP);
+      MapType argType = (MapType) node.getParam(0).getType();
+      if (argType.isEmpty()) {
+        node.setType(LegacyObjectMapType.empty());
       } else {
-        MapType actualArgType = (MapType) argType;
         node.setType(
             typeRegistry.getOrCreateLegacyObjectMapType(
                 // Converting a map to a legacy object map coerces all the keys to strings
-                StringType.getInstance(), actualArgType.getValueType()));
+                StringType.getInstance(), argType.getValueType()));
       }
     }
 
@@ -2498,7 +2491,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
         // Same for List<?>, for repeated fields
         if (fieldType.getKind() == Kind.LIST && argType instanceof AbstractIterableType) {
           SoyType argElementType = ((AbstractIterableType) argType).getElementType();
-          if (argElementType == null || argElementType.equals(UnknownType.getInstance())) {
+          if (argElementType.equals(UnknownType.getInstance())) {
             continue;
           }
         }
@@ -2711,7 +2704,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
 
         case LIST:
           ListType listType = (ListType) baseType;
-          if (listType.equals(ListType.EMPTY_LIST)) {
+          if (listType.isEmpty()) {
             errorReporter.report(baseLocation, EMPTY_LIST_ACCESS);
             return UnknownType.getInstance();
           }
@@ -2727,8 +2720,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
         case LEGACY_OBJECT_MAP:
           {
             AbstractMapType mapType = (AbstractMapType) baseType;
-            if (mapType.equals(LegacyObjectMapType.EMPTY_MAP)
-                || mapType.equals(MapType.EMPTY_MAP)) {
+            if (mapType.isEmpty()) {
               errorReporter.report(baseLocation, EMPTY_MAP_ACCESS);
               return UnknownType.getInstance();
             }
@@ -2897,10 +2889,12 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
           visit(node.getParam(0));
           SoyType listType = node.getParam(0).getType();
           if (listType instanceof AbstractIterableType) {
-            SoyType keyType = ((AbstractIterableType) listType).getElementType();
-            if (keyType != null) {
+            if (((AbstractIterableType) listType).isEmpty()) {
+              node.setType(SetType.empty());
+            } else {
+              SoyType keyType = ((AbstractIterableType) listType).getElementType();
               if (SoyTypes.expandUnions(keyType).stream()
-                  .anyMatch(t -> !MapType.isAllowedKeyType(t))) {
+                  .anyMatch(t -> !MapType.isAllowedKeyValueType(t))) {
                 errorReporter.report(
                     node.getParam(0).getSourceLocation(),
                     CheckDeclaredTypesPass.BAD_MAP_OR_SET_KEY_TYPE,
@@ -2909,8 +2903,6 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
               node.setType(
                   typeRegistry.getOrCreateSetType(
                       ((AbstractIterableType) listType).getElementType()));
-            } else {
-              node.setType(SetType.EMPTY_SET);
             }
           } else {
             node.setType(UnknownType.getInstance());
@@ -3013,15 +3005,14 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
         if (!(childNode.getType() instanceof ListType)) {
           return UnknownType.getInstance();
         }
-        SoyType elementType = ((ListType) childNode.getType()).getElementType();
-        if (elementType != null) { // Empty lists have no element type
-          elementTypesBuilder.add(elementType);
+        if (!((ListType) childNode.getType()).isEmpty()) {
+          elementTypesBuilder.add(((ListType) childNode.getType()).getElementType());
         }
       }
 
       ImmutableSet<SoyType> elementTypes = elementTypesBuilder.build();
       return elementTypes.isEmpty()
-          ? ListType.EMPTY_LIST
+          ? ListType.empty()
           : typeRegistry.getOrCreateListType(typeRegistry.getOrCreateUnionType(elementTypes));
     }
 
@@ -3035,12 +3026,11 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
           return UnknownType.getInstance();
         }
         MapType mapType = ((MapType) childNode.getType());
-        if (mapType.getKeyType() != null) {
-          keyTypesBuilder.add(mapType.getKeyType());
+        if (mapType.isEmpty()) {
+          continue;
         }
-        if (mapType.getValueType() != null) {
-          valueTypesBuilder.add(mapType.getValueType());
-        }
+        keyTypesBuilder.add(mapType.getKeyType());
+        valueTypesBuilder.add(mapType.getValueType());
       }
 
       ImmutableSet<SoyType> keys = keyTypesBuilder.build();

@@ -59,7 +59,6 @@ import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.TemplateType;
 import com.google.template.soy.types.UnionType;
-import com.google.template.soy.types.UnknownType;
 import java.util.EnumMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -409,9 +408,6 @@ public final class JsType {
 
       case ITERABLE:
         SoyType itElmType = ((AbstractIterableType) soyType).getElementType();
-        if (itElmType == null) {
-          itElmType = UnknownType.getInstance();
-        }
         JsType jsItElmType = forSoyType(itElmType, kind, isStrict, arrayTypeMode, messageTypeMode);
         return builder()
             .addType(String.format("!Iterable<%s>", jsItElmType.typeExpr()))
@@ -435,9 +431,6 @@ public final class JsType {
 
       case SET:
         SoyType elmType = ((AbstractIterableType) soyType).getElementType();
-        if (elmType == null) {
-          elmType = UnknownType.getInstance();
-        }
         JsType jsElmType = forSoyType(elmType, kind, isStrict, arrayTypeMode, messageTypeMode);
         return builder()
             .addType(String.format("!Set<%s>", jsElmType.typeExpr()))
@@ -469,8 +462,6 @@ public final class JsType {
           MapType mapType = (MapType) soyType;
           SoyType keyType = mapType.getKeyType();
           SoyType.Kind keyKind = keyType.getKind();
-          Preconditions.checkState(
-              MapType.isAllowedKeyType(keyType), "%s is not allowed as a map key", keyType);
           // Soy key type of string should translate to a JS key type of string.
           // forSoyType(StringType.getInstance()) normally translates to
           // string|!goog.soy.data.UnsanitizedText, but ES6 Maps always use instance equality for

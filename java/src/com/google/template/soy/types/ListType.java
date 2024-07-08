@@ -16,9 +16,7 @@
 
 package com.google.template.soy.types;
 
-import com.google.common.base.Preconditions;
 import com.google.template.soy.soytree.SoyTypeP;
-import java.util.Objects;
 
 /**
  * Represents the type of a list, a sequential random-access container keyed by integer.
@@ -27,17 +25,26 @@ import java.util.Objects;
  */
 public final class ListType extends AbstractIterableType {
 
-  // TODO(lukes): see if this can be replaced with list<?>
-  public static final ListType EMPTY_LIST = new ListType(null);
+  /** Special instance used to track empty lists. Only valid with == equality. */
+  private static final ListType EMPTY = new ListType(UnknownType.getInstance());
+
   public static final ListType ANY_LIST = new ListType(AnyType.getInstance());
+
+  public static ListType of(SoyType elementType) {
+    return new ListType(elementType);
+  }
+
+  public static ListType empty() {
+    return EMPTY;
+  }
 
   private ListType(SoyType elementType) {
     super(elementType);
   }
 
-  public static ListType of(SoyType elementType) {
-    Preconditions.checkNotNull(elementType);
-    return new ListType(elementType);
+  @Override
+  public boolean isEmpty() {
+    return this == EMPTY;
   }
 
   @Override
@@ -58,18 +65,6 @@ public final class ListType extends AbstractIterableType {
   @Override
   void doToProto(SoyTypeP.Builder builder) {
     builder.setListElement(elementType.toProto());
-  }
-
-  @Override
-  public boolean equals(Object other) {
-    return other != null
-        && this.getClass() == other.getClass()
-        && Objects.equals(((ListType) other).elementType, elementType);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(this.getClass(), elementType);
   }
 
   @Override

@@ -456,8 +456,8 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
   protected Expression visitMapLiteralNode(MapLiteralNode node) {
     // Always construct maps as ES6 Maps so that we can call `set`.
     Expression map = Expressions.constructMap();
-    if (node.getType() != MapType.EMPTY_MAP) {
-      MapType mapType = (MapType) node.getType();
+    MapType mapType = (MapType) node.getType();
+    if (!mapType.isEmpty()) {
       JsType keyType = jsTypeFor(mapType.getKeyType());
       JsType valueType = jsTypeFor(mapType.getValueType());
       map =
@@ -491,9 +491,9 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
       errorReporter.report(node.getSourceLocation(), SOY_JS_SRC_BAD_LIST_TO_MAP_CONSTRUCTOR, list);
       return Expressions.constructMap();
     }
-    if (listType.equals(ListType.EMPTY_LIST)) {
+    if (((ListType) listType).isEmpty()) {
       // If the list is empty, trying to infer the type of the dummyVar is futile. So we create a
-      // special case and directly return an empty list.
+      // special case and directly return an empty map.
       return Expressions.constructMap();
     }
 
