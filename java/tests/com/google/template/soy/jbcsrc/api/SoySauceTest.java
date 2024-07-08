@@ -338,6 +338,7 @@ public class SoySauceTest {
     assertThat(continuation.get().getContent()).isEqualTo("Hello, Charlie!");
   }
 
+
   @Test
   public void testExceptionRewriting() {
     SoySauce.Renderer tmpl = sauce.renderTemplate("strict_test.callsItself");

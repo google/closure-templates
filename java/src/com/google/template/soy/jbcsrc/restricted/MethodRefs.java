@@ -636,6 +636,8 @@ public final class MethodRefs {
 
   public static final MethodRef CREATE_LOG_STATEMENT =
       createPure(JbcSrcRuntime.class, "createLogStatement", boolean.class, SoyValue.class);
+  public static final MethodRef CREATE_LOG_STATEMENT_NOT_LOGONLY =
+      createPure(JbcSrcRuntime.class, "createLogStatement", SoyValue.class);
 
   public static final MethodRef CLOSEABLE_CLOSE = createNonPure(Closeable.class, "close");
 

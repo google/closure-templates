@@ -666,7 +666,7 @@ final class LazyClosureCompiler {
      * Returns true if it is possible to eagerly evaluate a `RenderUnitNode`.
      *
      * <p>Currently, due to certain Soy externs and plugins related to content deferral (e.g.
-     * `flushLogsAndRender`) it is not possible to optimistically evaluate any html content. By
+     * `isInDeferredContext`) it is not possible to optimistically evaluate any html content. By
      * making html deferral a built-in feature we should be able to remove this restriction.
      *
      * <p>See b/343267009 for more details.

@@ -823,12 +823,16 @@ public final class JbcSrcRuntime {
 
   @Keep
   public static LogStatement createLogStatement(boolean logOnly, SoyValue value) {
-    if (value == null || value.isNullish()) {
-      throw new NullPointerException();
-    }
     SoyVisualElementData veData = (SoyVisualElementData) value;
     return LogStatement.create(veData.ve().id(), veData.data(), logOnly);
   }
+
+  @Keep
+  public static LogStatement createLogStatement(SoyValue value) {
+    SoyVisualElementData veData = (SoyVisualElementData) value;
+    return LogStatement.create(veData.ve().id(), veData.data(), false);
+  }
+
 
   /** Asserts that all members of the list are resolved. */
   @Keep
