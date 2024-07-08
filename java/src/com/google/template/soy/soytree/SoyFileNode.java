@@ -42,7 +42,7 @@ import javax.annotation.Nullable;
 public final class SoyFileNode extends AbstractParentSoyNode<SoyNode>
     implements SplitLevelTopNode<SoyNode> {
 
-  /** A css path required by a Soy file. Constains both the source text and the resolved file. */
+  /** A css path required by a Soy file. Contains both the source text and the resolved file. */
   public static final class CssPath {
     private final String sourcePath;
     private String resolvedPath;

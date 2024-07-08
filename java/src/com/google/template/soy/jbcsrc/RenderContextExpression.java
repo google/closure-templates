@@ -15,9 +15,12 @@
  */
 package com.google.template.soy.jbcsrc;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
 
+import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.RecordProperty;
 import com.google.template.soy.data.SoyValue;
@@ -31,12 +34,17 @@ import com.google.template.soy.jbcsrc.restricted.MethodRefs;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcPrintDirective;
 import com.google.template.soy.jbcsrc.restricted.Statement;
+import com.google.template.soy.jbcsrc.shared.ExtraConstantBootstraps;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
 import com.google.template.soy.jbcsrc.shared.StackFrame;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.types.UnknownType;
+import java.lang.invoke.MethodHandles;
 import java.util.List;
 import javax.annotation.Nullable;
+import org.objectweb.asm.ConstantDynamic;
+import org.objectweb.asm.Handle;
+import org.objectweb.asm.Type;
 
 /** An expression for a {@link RenderContext} object. */
 final class RenderContextExpression extends Expression implements JbcSrcPluginContext {
@@ -178,11 +186,9 @@ final class RenderContextExpression extends Expression implements JbcSrcPluginCo
   private static final MethodRef STORE_CONST =
       MethodRef.createNonPure(RenderContext.class, "storeConst", String.class, Object.class);
 
-  private static final MethodRef TRACK_REQUIRED_CSS_PATH =
-      MethodRef.createNonPure(RenderContext.class, "trackRequiredCssPath", String.class);
-
-  private static final MethodRef TRACK_REQUIRED_CSS_NAMESPACE =
-      MethodRef.createNonPure(RenderContext.class, "trackRequiredCssNamespace", String.class);
+  private static final MethodRef TRACK_REQUIRED_CSS =
+      MethodRef.createNonPure(
+          RenderContext.class, "trackRequiredCss", RenderContext.CssToTrack.class);
 
   private static final MethodRef GET_INJECTED_PARAMETER =
       MethodRef.createPure(RenderContext.class, "getInjectedValue", RecordProperty.class);
@@ -190,6 +196,17 @@ final class RenderContextExpression extends Expression implements JbcSrcPluginCo
   private static final MethodRef GET_INJECTED_PARAMETER_DEFAULT =
       MethodRef.createPure(
           RenderContext.class, "getInjectedValue", RecordProperty.class, SoyValue.class);
+
+  private static final Type CSS_TO_TRACK_TYPE = Type.getType(RenderContext.CssToTrack.class);
+  private static final Handle CSS_TO_TRACK_HANDLE =
+      MethodRef.createPure(
+              ExtraConstantBootstraps.class,
+              "cssToTrack",
+              MethodHandles.Lookup.class,
+              String.class,
+              Class.class,
+              String.class)
+          .asHandle();
 
   private final Expression delegate;
 
@@ -315,12 +332,26 @@ final class RenderContextExpression extends Expression implements JbcSrcPluginCo
     return delegate.invokeVoid(STORE_CONST, constant(name), value);
   }
 
-  Statement trackRequiredCssPath(String cssPath) {
-    return delegate.invokeVoid(TRACK_REQUIRED_CSS_PATH, constant(cssPath));
-  }
-
-  Statement trackRequiredCssNamespace(String cssNamespace) {
-    return delegate.invokeVoid(TRACK_REQUIRED_CSS_NAMESPACE, constant(cssNamespace));
+  Statement trackRequiredCss(ImmutableList<String> cssPaths, ImmutableList<String> cssNamespaces) {
+    checkArgument(!cssPaths.isEmpty() || !cssNamespaces.isEmpty());
+    // Concatenate the paths and namespaces into a single string, adding the number of paths
+    // as the initial value so we can tell where paths end and namespaces begin.
+    // This is parsed in `ExtraConstantBootstraps.cssToTrack`.  Alternatively, we could pass an
+    // array of these values but having a single string is useful since we also use it as a key for
+    // interning.
+    StringBuilder sb = new StringBuilder();
+    sb.append(cssPaths.size()).append(",");
+    Joiner.on(',').appendTo(sb, Iterables.concat(cssPaths, cssNamespaces));
+    return delegate.invokeVoid(
+        TRACK_REQUIRED_CSS,
+        constant(
+            CSS_TO_TRACK_TYPE,
+            new ConstantDynamic(
+                "cssToTrack",
+                CSS_TO_TRACK_TYPE.getDescriptor(),
+                CSS_TO_TRACK_HANDLE,
+                constant(sb.toString()).constantBytecodeValue()),
+            Features.of(Feature.NON_JAVA_NULLABLE)));
   }
 
   SoyExpression applyPrintDirective(SoyPrintDirective directive, SoyExpression value) {
@@ -381,7 +412,6 @@ final class RenderContextExpression extends Expression implements JbcSrcPluginCo
   public Expression getLogger() {
     return delegate.invoke(GET_LOGGER);
   }
-
 
   public Expression getInjectedValue(String property, @Nullable SoyExpression value) {
     var prop = BytecodeUtils.constantRecordProperty(property);

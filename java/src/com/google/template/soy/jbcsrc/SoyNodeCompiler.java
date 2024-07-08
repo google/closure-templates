@@ -135,7 +135,6 @@ import java.util.TreeMap;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-import java.util.stream.Stream;
 import org.objectweb.asm.Handle;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
@@ -273,20 +272,12 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
         && !(fileNode.getAllRequiredCssPaths().isEmpty()
             && fileNode.getRequiredCssNamespaces().isEmpty())
         && !definitelyCallsPublicTemplateInSameFile((TemplateNode) node)) {
-      return Statement.concat(
-          Stream.concat(
-                  fileNode.getAllRequiredCssPaths().stream()
-                      .map(css -> css.resolvedPath().orElseThrow())
-                      .map(
-                          cssPath ->
-                              parameterLookup.getRenderContext().trackRequiredCssPath(cssPath)),
-                  fileNode.getRequiredCssNamespaces().stream()
-                      .map(
-                          cssNamespace ->
-                              parameterLookup
-                                  .getRenderContext()
-                                  .trackRequiredCssNamespace(cssNamespace)))
-              .collect(toImmutableList()));
+      var cssPaths =
+          fileNode.getAllRequiredCssPaths().stream()
+              .map(css -> css.resolvedPath().orElseThrow())
+              .collect(toImmutableList());
+      var cssNamespaces = fileNode.getRequiredCssNamespaces();
+      return parameterLookup.getRenderContext().trackRequiredCss(cssPaths, cssNamespaces);
     }
 
     return Statement.NULL_STATEMENT;
@@ -1594,16 +1585,16 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     // or data="all", in those cases we don't need to save/restore anything.
     Label reattachPoint = new Label();
     Expression record = getParamStoreExpression(node, compileExplicitParams(node, reattachPoint));
-      Statement initialize = Statement.NULL_STATEMENT;
-      if (!record.isCheap()) {
-        TemplateVariableManager.Variable paramsVariable =
-            scope.createSynthetic(
-                SyntheticVarName.params(), record, TemplateVariableManager.SaveStrategy.STORE);
-        record = paramsVariable.accessor();
-        initialize = paramsVariable.initializer();
-      }
-    return ExpressionAndInitializer.create(record, initialize.labelStart(reattachPoint));
+    Statement initialize = Statement.NULL_STATEMENT;
+    if (!record.isCheap()) {
+      TemplateVariableManager.Variable paramsVariable =
+          scope.createSynthetic(
+              SyntheticVarName.params(), record, TemplateVariableManager.SaveStrategy.STORE);
+      record = paramsVariable.accessor();
+      initialize = paramsVariable.initializer();
     }
+    return ExpressionAndInitializer.create(record, initialize.labelStart(reattachPoint));
+  }
 
   private ListOfExpressionsAndInitializer compilePositionalParams(
       CallNode node, TemplateVariableManager.Scope scope, TemplateType calleeType) {

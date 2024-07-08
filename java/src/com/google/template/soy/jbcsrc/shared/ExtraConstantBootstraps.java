@@ -28,6 +28,9 @@ import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.data.internal.SoyMapImpl;
 import com.google.template.soy.data.internal.SoyRecordImpl;
 import java.lang.invoke.MethodHandles;
+import java.util.Arrays;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 /** Extra constant bootstrap methods. */
 public final class ExtraConstantBootstraps {
@@ -107,6 +110,25 @@ public final class ExtraConstantBootstraps {
   @Keep
   public static RecordProperty symbol(MethodHandles.Lookup lookup, String name, Class<?> type) {
     return RecordProperty.get(name);
+  }
+
+  private static final ConcurrentMap<String, RenderContext.CssToTrack> cssToTrackInterner =
+      new ConcurrentHashMap<>();
+
+  @Keep
+  public static RenderContext.CssToTrack cssToTrack(
+      MethodHandles.Lookup lookup, String name, Class<?> type, String pathsAndNamespaces) {
+    // Experimentally. Among files with css dependencies, 5% - 10% of them share the same deps as
+    // another file in the application, so we can expect a 5% - 10% hit rate on this interner.
+    return cssToTrackInterner.computeIfAbsent(
+        pathsAndNamespaces,
+        (String key) -> {
+          String[] parts = key.split(",");
+          int numCssPaths = Integer.parseInt(parts[0]);
+          return new RenderContext.CssToTrack(
+              Arrays.copyOfRange(parts, 1, 1 + numCssPaths),
+              Arrays.copyOfRange(parts, 1 + numCssPaths, parts.length));
+        });
   }
 
   private ExtraConstantBootstraps() {}

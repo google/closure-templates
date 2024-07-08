@@ -431,22 +431,40 @@ public final class RenderContext {
   }
 
   /**
-   * Reports that a CSS path was required by a file used during rendering (if a {@code
-   * SoyCssTracker} was registered).
+   * Aggregate parameter object.
+   *
+   * <p>The gencode produces these as constants.
    */
-  public void trackRequiredCssPath(String cssPath) {
-    if (cssTracker != null) {
-      cssTracker.trackRequiredCssPath(cssPath);
+  public static final class CssToTrack {
+    // store arrays since they are faster to iterate over
+    final String[] cssPaths;
+    final String[] cssNamespaces;
+
+    // this is simpler and faster for our condy bootstrap. See ExtraConstantBootstraps.
+    @SuppressWarnings("AvoidObjectArrays")
+    public CssToTrack(String[] cssPaths, String[] cssNamespaces) {
+      this.cssPaths = cssPaths;
+      this.cssNamespaces = cssNamespaces;
     }
   }
 
   /**
-   * Reports that a CSS namespace was required by a file used during rendering (if a {@code
+   * Reports that a CSS path was required by a file used during rendering (if a {@code
    * SoyCssTracker} was registered).
    */
-  public void trackRequiredCssNamespace(String cssNamespace) {
-    if (cssTracker != null) {
-      cssTracker.trackRequiredCssNamespace(cssNamespace);
+  public void trackRequiredCss(CssToTrack css) {
+    var tracker = cssTracker;
+    if (tracker != null) {
+      // TODO: if performance becomes a concern, we could use a simple bitset to track whether or
+      // not we have called `traceRequiredCss` on this object before.  Each CssToTrack object is
+      // allocated as a constant and aggressively interned, so it is likely that we will call
+      // `trackRequiredCss` on the same object many times.
+      for (String cssPath : css.cssPaths) {
+        tracker.trackRequiredCssPath(cssPath);
+      }
+      for (String cssNamespace : css.cssNamespaces) {
+        tracker.trackRequiredCssNamespace(cssNamespace);
+      }
     }
   }
 
