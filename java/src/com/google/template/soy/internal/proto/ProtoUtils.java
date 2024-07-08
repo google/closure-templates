@@ -18,6 +18,7 @@ package com.google.template.soy.internal.proto;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
+import com.google.apps.jspb.Jspb;
 import com.google.common.base.CaseFormat;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
@@ -238,5 +239,15 @@ public final class ProtoUtils {
       return valueField.getJavaType() == FieldDescriptor.JavaType.MESSAGE;
     }
     return field.getJavaType() == FieldDescriptor.JavaType.MESSAGE;
+  }
+
+  public static boolean isNumberInt64(FieldDescriptor field) {
+    if (field.getJavaType() != FieldDescriptor.JavaType.LONG) {
+      return false;
+    }
+    if (field.getOptions().hasExtension(Jspb.jstype)) {
+      return field.getOptions().getExtension(Jspb.jstype) != Jspb.JsType.STRING;
+    }
+    return field.getOptions().getJstype() != JSType.JS_STRING;
   }
 }
