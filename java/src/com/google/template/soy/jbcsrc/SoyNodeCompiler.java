@@ -66,6 +66,7 @@ import com.google.template.soy.jbcsrc.restricted.FieldRef;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.MethodRefs;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
+import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcPrintDirective;
 import com.google.template.soy.jbcsrc.restricted.Statement;
 import com.google.template.soy.jbcsrc.restricted.TypeInfo;
 import com.google.template.soy.jbcsrc.shared.ClassLoaderFallbackCallFactory;
@@ -120,6 +121,7 @@ import com.google.template.soy.soytree.VeLogNode;
 import com.google.template.soy.soytree.Visibility;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.TemplateType;
+import com.google.template.soy.types.UnknownType;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.util.ArrayList;
@@ -881,13 +883,24 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     // We may have print directives, that means we need to pass the render value through a bunch of
     // SoyJavaPrintDirective.apply methods.  This means lots and lots of boxing.
     for (PrintDirectiveNode printDirective : node.getChildren()) {
-      value =
-          parameterLookup
-              .getRenderContext()
-              .applyPrintDirective(
-                  printDirective.getPrintDirective(),
-                  value,
-                  basic.compileToList(printDirective.getArgs()));
+      var directive = printDirective.getPrintDirective();
+      if (directive instanceof SoyJbcSrcPrintDirective) {
+        value =
+            ((SoyJbcSrcPrintDirective) directive)
+                .applyForJbcSrc(
+                    parameterLookup.getPluginContext(),
+                    value,
+                    basic.compileToList(printDirective.getArgs()));
+      } else {
+        value =
+            SoyExpression.forSoyValue(
+                UnknownType.getInstance(),
+                MethodRefs.SOY_JAVA_PRINT_DIRECTIVE_APPLY_FOR_JAVA.invoke(
+                    parameterLookup.getRenderContext().getPrintDirective(directive.getName()),
+                    value.box(),
+                    SoyExpression.asBoxedValueProviderList(
+                        basic.compileToList(printDirective.getArgs()))));
+      }
     }
     return value;
   }
@@ -1033,7 +1046,8 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   protected Statement visitMsgFallbackGroupNode(MsgFallbackGroupNode node) {
     MsgNode msg = node.getMsg();
     MsgPartsAndIds idAndParts = MsgUtils.buildMsgPartsAndComputeMsgIdForDualFormat(msg);
-    ImmutableList<SoyPrintDirective> escapingDirectives = node.getEscapingDirectives();
+    ImmutableList<SoyJbcSrcPrintDirective> escapingDirectives =
+        PrintDirectives.asJbcSrcDirectives(node.getEscapingDirectives());
     Statement renderDefault =
         getMsgCompiler()
             .compileMessage(idAndParts, msg, escapingDirectives, /* isFallback= */ false);

@@ -30,17 +30,12 @@ import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
 import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
-import com.google.template.soy.jbcsrc.restricted.MethodRefs;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
-import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcPrintDirective;
 import com.google.template.soy.jbcsrc.restricted.Statement;
 import com.google.template.soy.jbcsrc.shared.ExtraConstantBootstraps;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
 import com.google.template.soy.jbcsrc.shared.StackFrame;
-import com.google.template.soy.shared.restricted.SoyPrintDirective;
-import com.google.template.soy.types.UnknownType;
 import java.lang.invoke.MethodHandles;
-import java.util.List;
 import javax.annotation.Nullable;
 import org.objectweb.asm.ConstantDynamic;
 import org.objectweb.asm.Handle;
@@ -352,26 +347,6 @@ final class RenderContextExpression extends Expression implements JbcSrcPluginCo
                 CSS_TO_TRACK_HANDLE,
                 constant(sb.toString()).constantBytecodeValue()),
             Features.of(Feature.NON_JAVA_NULLABLE)));
-  }
-
-  SoyExpression applyPrintDirective(SoyPrintDirective directive, SoyExpression value) {
-    return applyPrintDirective(directive, value, ImmutableList.of());
-  }
-
-  SoyExpression applyPrintDirective(
-      SoyPrintDirective directive, SoyExpression value, List<SoyExpression> args) {
-    if (directive instanceof SoyJbcSrcPrintDirective) {
-      value = ((SoyJbcSrcPrintDirective) directive).applyForJbcSrc(this, value, args);
-    } else {
-      value =
-          SoyExpression.forSoyValue(
-              UnknownType.getInstance(),
-              MethodRefs.SOY_JAVA_PRINT_DIRECTIVE_APPLY_FOR_JAVA.invoke(
-                  getPrintDirective(directive.getName()),
-                  value.box(),
-                  SoyExpression.asBoxedValueProviderList(args)));
-    }
-    return value;
   }
 
   Expression usePrimaryMsgIfFallback(long msgId, long fallbackId) {

@@ -36,11 +36,11 @@ import com.google.template.soy.jbcsrc.restricted.FieldRef;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.MethodRefs;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
+import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcPrintDirective;
 import com.google.template.soy.jbcsrc.restricted.Statement;
 import com.google.template.soy.jbcsrc.shared.MsgDefaultConstantFactory;
 import com.google.template.soy.msgs.internal.MsgUtils.MsgPartsAndIds;
 import com.google.template.soy.msgs.restricted.SoyMsgRawTextPart;
-import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.EscapingMode;
 import com.google.template.soy.soytree.MsgHtmlTagNode;
 import com.google.template.soy.soytree.MsgNode;
@@ -148,7 +148,7 @@ final class MsgCompiler {
   Statement compileMessage(
       MsgPartsAndIds partsAndId,
       MsgNode msg,
-      ImmutableList<SoyPrintDirective> escapingDirectives,
+      ImmutableList<SoyJbcSrcPrintDirective> escapingDirectives,
       boolean isFallback) {
 
     Statement printMsg;
@@ -217,7 +217,9 @@ final class MsgCompiler {
 
   /** Handles a translation consisting of a single raw text node. */
   private Statement handleBasicTranslation(
-      MsgNode msg, ImmutableList<SoyPrintDirective> escapingDirectives, Expression soyMsgPart) {
+      MsgNode msg,
+      ImmutableList<SoyJbcSrcPrintDirective> escapingDirectives,
+      Expression soyMsgPart) {
     // optimize for simple constant translations (very common)
     // this becomes: renderContext.getSoyMessge(<id>).getParts().get(0).getRawText()
     SoyExpression text =
@@ -227,8 +229,8 @@ final class MsgCompiler {
                 : soyMsgPart);
     // Note: there is no point in trying to stream here, since we are starting with a constant
     // string.
-    for (SoyPrintDirective directive : escapingDirectives) {
-      text = parameterLookup.getRenderContext().applyPrintDirective(directive, text);
+    for (SoyJbcSrcPrintDirective directive : escapingDirectives) {
+      text = directive.applyForJbcSrc(parameterLookup.getPluginContext(), text, ImmutableList.of());
     }
     return appendableExpression.appendString(text.coerceToString()).toStatement();
   }
@@ -238,7 +240,7 @@ final class MsgCompiler {
   /** Handles a complex message with placeholders. */
   private Statement handleTranslationWithPlaceholders(
       MsgNode msg,
-      ImmutableList<SoyPrintDirective> escapingDirectives,
+      ImmutableList<SoyJbcSrcPrintDirective> escapingDirectives,
       Expression soyMsgParts,
       Expression locale,
       MsgPartsAndIds partsAndId) {
@@ -322,8 +324,9 @@ final class MsgCompiler {
                           .resolveSoyValueProvider(msgRendererVar.accessor())
                       : msgRendererVar.accessor().invoke(MethodRefs.SOY_VALUE_PROVIDER_RESOLVE))
                   .checkedCast(STRING_DATA_TYPE));
-      for (SoyPrintDirective directive : escapingDirectives) {
-        value = parameterLookup.getRenderContext().applyPrintDirective(directive, value);
+      for (var directive : escapingDirectives) {
+        value =
+            directive.applyForJbcSrc(parameterLookup.getPluginContext(), value, ImmutableList.of());
       }
       render =
           appendableExpression

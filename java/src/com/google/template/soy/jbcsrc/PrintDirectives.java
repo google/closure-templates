@@ -55,7 +55,7 @@ final class PrintDirectives {
   }
 
   static boolean areAllPrintDirectivesStreamable(
-      ImmutableList<SoyPrintDirective> escapingDirectives) {
+      ImmutableList<? extends SoyPrintDirective> escapingDirectives) {
     for (SoyPrintDirective directive : escapingDirectives) {
       if (!(directive instanceof SoyJbcSrcPrintDirective.Streamable)) {
         return false;
@@ -87,7 +87,7 @@ final class PrintDirectives {
    * @return The wrapped appendable
    */
   static AppendableAndFlushBuffersDepth applyStreamingEscapingDirectives(
-      List<SoyPrintDirective> directives,
+      List<? extends SoyPrintDirective> directives,
       AppendableExpression appendable,
       JbcSrcPluginContext context) {
     checkArgument(!directives.isEmpty());
@@ -171,6 +171,18 @@ final class PrintDirectives {
     AppendableAndOptions apply(JbcSrcPluginContext context, Expression appendable) {
       return directive().applyForJbcSrcStreaming(context, appendable, arguments());
     }
+  }
+
+  static ImmutableList<SoyJbcSrcPrintDirective> asJbcSrcDirectives(
+      ImmutableList<SoyPrintDirective> escapeDirectives) {
+    escapeDirectives.forEach(
+        d -> {
+          // The implicit ClassCastException has a good error message, just use it.
+          var unused = (SoyJbcSrcPrintDirective) d;
+        });
+    @SuppressWarnings("unchecked") // checked above
+    ImmutableList<SoyJbcSrcPrintDirective> result = (ImmutableList) escapeDirectives;
+    return result;
   }
 
   private PrintDirectives() {}
