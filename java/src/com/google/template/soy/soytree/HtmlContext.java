@@ -127,6 +127,10 @@ public enum HtmlContext {
   @Nullable private final EscapingMode escapingMode;
   @Nullable private final String errorMessage;
 
+  public static final Boolean isJsContext(HtmlContext context) {
+    return context.name().startsWith("JS");
+  }
+
   /** Whether a class contains information about HTML context */
   public interface HtmlContextHolder {
     HtmlContext getHtmlContext();
