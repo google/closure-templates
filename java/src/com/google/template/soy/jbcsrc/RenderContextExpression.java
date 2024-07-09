@@ -167,11 +167,6 @@ final class RenderContextExpression extends Expression implements JbcSrcPluginCo
   private static final MethodRef GET_ESCAPING_DIRECTIVE_AS_FUNCTION =
       MethodRef.createNonPure(RenderContext.class, "getEscapingDirectiveAsFunction", String.class);
 
-  private static final MethodRef HAS_LOGGER =
-      MethodRef.createNonPure(RenderContext.class, "hasLogger").asCheap();
-
-  private static final MethodRef GET_LOGGER =
-      MethodRef.createNonPure(RenderContext.class, "getLogger");
   private static final MethodRef GET_RENDER_CSS_HELPER =
       MethodRef.createNonPure(RenderContext.class, "getRenderCssHelper");
 
@@ -378,14 +373,6 @@ final class RenderContextExpression extends Expression implements JbcSrcPluginCo
         constant(alternateId),
         constant(fallbackId),
         constant(fallbackAlternateId));
-  }
-
-  public Expression hasLogger() {
-    return delegate.invoke(HAS_LOGGER);
-  }
-
-  public Expression getLogger() {
-    return delegate.invoke(GET_LOGGER);
   }
 
   public Expression getInjectedValue(String property, @Nullable SoyExpression value) {

@@ -654,7 +654,8 @@ public final class MethodRefs {
           long.class,
           String.class,
           LoggableElementMetadata.class);
-
+  public static final MethodRef SOY_VISUAL_ELEMENT_DATA_CREATE_NULL_MESSAGE =
+      createPure(SoyVisualElementData.class, "create", SoyValue.class);
   public static final MethodRef SOY_VISUAL_ELEMENT_DATA_CREATE =
       createPure(SoyVisualElementData.class, "create", SoyValue.class, Message.class);
 

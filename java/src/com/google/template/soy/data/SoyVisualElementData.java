@@ -24,8 +24,11 @@ import javax.annotation.Nullable;
 /** Soy's runtime representation of objects of the Soy {@code ve_data} type. */
 @AutoValue
 public abstract class SoyVisualElementData extends SoyAbstractValue {
+  public static SoyVisualElementData create(SoyValue ve) {
+    return create(ve, null);
+  }
 
-  public static SoyVisualElementData create(SoyValue ve, Message data) {
+  public static SoyVisualElementData create(SoyValue ve, @Nullable Message data) {
     if (ve.isNullish()) {
       throw new NullPointerException();
     }
@@ -44,7 +47,10 @@ public abstract class SoyVisualElementData extends SoyAbstractValue {
 
   @Override
   public String coerceToString() {
-    return String.format("**FOR DEBUGGING ONLY ve_data(%s, %s)**", ve().getDebugString(), data());
+    return "**FOR DEBUGGING ONLY ve_data("
+        + ve().getDebugString()
+        + (data() == null ? "" : ", " + data())
+        + ")**";
   }
 
   @Override

@@ -1815,6 +1815,10 @@ final class ExpressionCompiler {
     @Override
     SoyExpression visitVeDataFunction(FunctionNode node) {
       SoyExpression ve = visit(node.getParam(0));
+      if (node.numParams() == 1) {
+        return SoyExpression.forSoyValue(
+            node.getType(), MethodRefs.SOY_VISUAL_ELEMENT_DATA_CREATE_NULL_MESSAGE.invoke(ve));
+      }
       Expression data =
           visit(node.getParam(1)).unboxAsMessageOrJavaNull(BytecodeUtils.MESSAGE_TYPE);
       return SoyExpression.forSoyValue(

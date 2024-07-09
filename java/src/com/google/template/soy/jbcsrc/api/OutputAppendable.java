@@ -16,7 +16,6 @@
 package com.google.template.soy.jbcsrc.api;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.template.soy.jbcsrc.api.AppendableAsAdvisingAppendable.asAdvisingAppendable;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
@@ -28,6 +27,7 @@ import com.google.template.soy.logging.SoyLogger;
 import java.io.IOException;
 import java.util.Optional;
 import java.util.function.Function;
+import javax.annotation.Nullable;
 
 /**
  * The outermost logger used in rendering.
@@ -36,27 +36,33 @@ import java.util.function.Function;
  */
 public final class OutputAppendable extends AbstractLoggingAdvisingAppendable {
 
-  public static OutputAppendable create(AdvisingAppendable outputAppendable, SoyLogger logger) {
+  public static OutputAppendable create(
+      AdvisingAppendable outputAppendable, @Nullable SoyLogger logger) {
     return new OutputAppendable(outputAppendable, logger);
   }
 
-  public static OutputAppendable create(StringBuilder sb, SoyLogger logger) {
-    return new OutputAppendable(asAdvisingAppendable(sb), logger);
+  public static OutputAppendable create(StringBuilder sb) {
+    return create(sb, null);
+  }
+
+  public static OutputAppendable create(StringBuilder sb, @Nullable SoyLogger logger) {
+    return new OutputAppendable(sb, logger);
   }
 
   private static final GoogleLogger googleLogger = GoogleLogger.forEnclosingClass();
 
-  private final SoyLogger logger;
-  private final AdvisingAppendable outputAppendable;
+  @Nullable private final SoyLogger logger;
+  private final Appendable outputAppendable;
 
-  private OutputAppendable(AdvisingAppendable outputAppendable, SoyLogger logger) {
+  private OutputAppendable(Appendable outputAppendable, @Nullable SoyLogger logger) {
     this.outputAppendable = checkNotNull(outputAppendable);
-    this.logger = checkNotNull(logger);
+    this.logger = logger;
   }
 
   @Override
   public boolean softLimitReached() {
-    return outputAppendable.softLimitReached();
+    return outputAppendable instanceof AdvisingAppendable
+        && ((AdvisingAppendable) outputAppendable).softLimitReached();
   }
 
   @Override
@@ -78,7 +84,8 @@ public final class OutputAppendable extends AbstractLoggingAdvisingAppendable {
   protected void doAppendLoggingFunctionInvocation(
       LoggingFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers)
       throws IOException {
-    String value = logger.evalLoggingFunction(funCall);
+    String value =
+        logger == null ? funCall.placeholderValue() : logger.evalLoggingFunction(funCall);
     for (Function<String, String> directive : escapers) {
       value = directive.apply(value);
     }
@@ -95,28 +102,22 @@ public final class OutputAppendable extends AbstractLoggingAdvisingAppendable {
 
   @Override
   protected void doEnterLoggableElement(LogStatement statement) {
-    Optional<SafeHtml> veDebugOutput = logger.enter(statement);
-    if (veDebugOutput.isPresent()) {
-      try {
-        appendDebugOutput(veDebugOutput.get().getSafeHtmlString());
-      } catch (IOException ioException) {
-        googleLogger.atWarning().withCause(ioException).log(
-            "Something went wrong while outputting VE debug info to the DOM");
+    if (logger == null) {
+      if (statement.logOnly()) {
+        throw new IllegalStateException(
+            "Cannot set logonly=\"true\" unless there is a logger configured");
       }
+      return;
     }
+    appendDebugOutput(logger.enter(statement));
   }
 
   @Override
   protected void doExitLoggableElement() {
-    Optional<SafeHtml> veDebugOutput = logger.exit();
-    if (veDebugOutput.isPresent()) {
-      try {
-        appendDebugOutput(veDebugOutput.get().getSafeHtmlString());
-      } catch (IOException ioException) {
-        googleLogger.atWarning().withCause(ioException).log(
-            "Something went wrong while outputting VE debug info to the DOM");
-      }
+    if (logger == null) {
+      return;
     }
+    appendDebugOutput(logger.exit());
   }
 
   @Override
@@ -124,7 +125,14 @@ public final class OutputAppendable extends AbstractLoggingAdvisingAppendable {
     throw new AssertionError("shouldn't be called");
   }
 
-  private void appendDebugOutput(CharSequence csq) throws IOException {
-    outputAppendable.append(csq);
+  private void appendDebugOutput(Optional<SafeHtml> veDebugOutput) {
+    if (veDebugOutput.isPresent()) {
+      try {
+        outputAppendable.append(veDebugOutput.get().getSafeHtmlString());
+      } catch (IOException ioException) {
+        googleLogger.atWarning().withCause(ioException).log(
+            "Something went wrong while outputting VE debug info to the DOM");
+      }
+    }
   }
 }

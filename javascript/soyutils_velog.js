@@ -39,7 +39,7 @@ const {startsWith} = goog.require('goog.string');
 class ElementMetadata {
   /**
    * @param {number} id
-   * @param {?Message} data
+   * @param {?Message|undefined} data
    * @param {boolean} logOnly
    */
   constructor(id, data, logOnly) {
@@ -52,7 +52,7 @@ class ElementMetadata {
     /**
      * The optional payload from the `data` attribute. This is guaranteed to
      * match the proto_type specified in the logging configuration.
-     * @const {?Message}
+     * @const {?Message|undefined}
      */
     this.data = data;
 
@@ -493,12 +493,12 @@ class $$VisualElement {
 class $$VisualElementData {
   /**
    * @param {!$$VisualElement} ve
-   * @param {?Message} data
+   * @param {?Message=} data
    */
   constructor(ve, data) {
     /** @private @const {!$$VisualElement} */
     this.ve_ = ve;
-    /** @private @const {?Message} */
+    /** @private @const {?Message|undefined} */
     this.data_ = data;
   }
 
@@ -507,7 +507,7 @@ class $$VisualElementData {
     return this.ve_;
   }
 
-  /** @return {?Message} */
+  /** @return {?Message|undefined} */
   getData() {
     return this.data_;
   }
@@ -518,8 +518,8 @@ class $$VisualElementData {
    */
   toString() {
     if (goog.DEBUG) {
-      return `**FOR DEBUGGING ONLY ve_data(${this.ve_.toDebugString()}, ${
-          this.data_})**`;
+      return `**FOR DEBUGGING ONLY ve_data(${this.ve_.toDebugString()}${
+          this.data_? ', ' + this.data_ : ''})**`;
     } else {
       return 'zSoyVeDz';
     }

@@ -195,10 +195,11 @@ final class TemplateAnalysisImpl implements TemplateAnalysis {
 
     @Override
     protected void visitVeLogNode(VeLogNode node) {
+      if (node.getLogonlyExpression() != null) {
+        evalInline(node.getLogonlyExpression());
+      }
+      evalInline(node.getVeDataExpression());
       visitChildren(node);
-
-      // TODO(b/172970101): we always evaluate the logOnly expression and conditionally evaluate
-      // the vedata expression, so we should probably treat it like a dead end branch.
     }
 
     @Override

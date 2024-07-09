@@ -30,7 +30,6 @@ import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.STACK_FRAM
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.compareSoySwitchCaseEquals;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
 import static java.util.function.Function.identity;
-import static org.objectweb.asm.commons.GeneratorAdapter.EQ;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Suppliers;
@@ -1104,77 +1103,37 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   @Override
   protected Statement visitVeLogNode(VeLogNode node) {
     Label restartPoint = new Label();
-    Expression veData =
-        exprCompiler.compileSubExpression(
-            node.getVeDataExpression(), detachState.createExpressionDetacher(restartPoint));
-    Expression hasLogger = parameterLookup.getRenderContext().hasLogger();
-    Statement exitStatement =
-        ControlFlow.IfBlock.create(
-                Branch.ifTrue(hasLogger), appendableExpression.exitLoggableElement().toStatement())
-            .asStatement();
+    var detacher = detachState.createExpressionDetacher(restartPoint);
+    Statement enterStatement;
     if (node.getLogonlyExpression() != null) {
       Expression logonlyExpression =
-          exprCompiler
-              .compileSubExpression(
-                  node.getLogonlyExpression(), detachState.createExpressionDetacher(restartPoint))
-              .unboxAsBoolean();
-      // needs to be called after evaluating the logonly expression so variables defined in the
-      // block aren't part of the save restore state for the logonly expression.
-      Statement body = Statement.concat(visitChildrenInNewScope(node));
-      return new Statement() {
-        @Override
-        protected void doGen(CodeBuilder cb) {
-          // Key
-          // LO: logonly
-          // HL: hasLogger
-          // veData: SoyVisualElementData
-          // LS: LogStatement
-          // A: appendable
-          // RC: RenderContext
-          //
-          // Each en end of line comments represents the state of the stack  _after_ the instruction
-          // is executed, the top of the stack is on the left.
-          // These shenanigans are necessary to ensure that
-          // 1. we only generate/evaluate the logonly code once
-          // 2. the arguments are put into the correct order for the LogStatement constructor
-          cb.mark(restartPoint);
-          logonlyExpression.gen(cb); // LO
-          Label noLogger = new Label();
-          hasLogger.gen(cb); // HL, LO
-          cb.ifZCmp(EQ, noLogger); // LO
-          veData.gen(cb); // veData, LO
-          MethodRefs.CREATE_LOG_STATEMENT.invokeUnchecked(cb); // LS
-          appendableExpression.gen(cb); // A, LS
-          cb.swap(); // LS, A
-          AppendableExpression.ENTER_LOGGABLE_STATEMENT.invokeUnchecked(cb); // A
-          cb.pop();
-          Label bodyLabel = new Label();
-          cb.goTo(bodyLabel);
-          cb.mark(noLogger); // LO
-          cb.ifZCmp(EQ, bodyLabel);
-          cb.throwException(
-              BytecodeUtils.ILLEGAL_STATE_EXCEPTION_TYPE,
-              "Cannot set logonly=\"true\" unless there is a logger configured");
-          cb.mark(bodyLabel);
-
-          body.gen(cb);
-          exitStatement.gen(cb);
-        }
-      };
+          exprCompiler.compileSubExpression(node.getLogonlyExpression(), detacher).unboxAsBoolean();
+      Expression veData =
+          exprCompiler.compileSubExpression(node.getVeDataExpression(), detacher).toMaybeConstant();
+      enterStatement =
+          appendableExpression
+              .enterLoggableElement(
+                  MethodRefs.CREATE_LOG_STATEMENT
+                      .invoke(logonlyExpression, veData)
+                      .toMaybeConstant())
+              .toStatement();
     } else {
-      Statement enterStatement =
-          ControlFlow.IfBlock.create(
-                  Branch.ifTrue(hasLogger),
-                  appendableExpression
-                      .enterLoggableElement(
-                          MethodRefs.CREATE_LOG_STATEMENT.invoke(
-                              BytecodeUtils.constant(false), veData))
-                      .toStatement()
-                      .labelStart(restartPoint))
-              .asStatement();
-      return Statement.concat(
-          enterStatement, Statement.concat(visitChildrenInNewScope(node)), exitStatement);
+      enterStatement =
+          appendableExpression
+              .enterLoggableElement(
+                  MethodRefs.CREATE_LOG_STATEMENT_NOT_LOGONLY
+                      .invoke(
+                          exprCompiler
+                              .compileSubExpression(node.getVeDataExpression(), detacher)
+                              .toMaybeConstant())
+                      .toMaybeConstant())
+              .toStatement();
     }
+    return Statement.concat(
+            enterStatement,
+            visitChildrenInNewScope(node),
+            appendableExpression.exitLoggableElement().toStatement())
+        .labelStart(restartPoint);
   }
 
   /** Helper interface for generating templates calls. */

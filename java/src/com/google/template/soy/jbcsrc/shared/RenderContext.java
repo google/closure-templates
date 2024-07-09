@@ -36,7 +36,6 @@ import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplates.TemplateData;
 import com.google.template.soy.logging.LoggableElementMetadata;
-import com.google.template.soy.logging.SoyLogger;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.restricted.SoyMsgPart;
 import com.google.template.soy.plugin.java.PluginInstances;
@@ -90,7 +89,6 @@ public final class RenderContext {
   private IdentityHashMap<String, Object> constValues;
 
   private final boolean debugSoyTemplateInfo;
-  private final SoyLogger logger;
 
   private List<ThrowingSoyValueProvider> deferredErrors;
 
@@ -104,7 +102,6 @@ public final class RenderContext {
       @Nullable SoyIdRenamingMap xidRenamingMap,
       @Nullable SoyMsgBundle msgBundle,
       boolean debugSoyTemplateInfo,
-      @Nullable SoyLogger logger,
       @Nullable SoyCssTracker cssTracker) {
     this.templates = templates;
     this.soyJavaDirectivesMap = soyJavaDirectivesMap;
@@ -115,7 +112,6 @@ public final class RenderContext {
     this.xidRenamingMap = xidRenamingMap == null ? SoyCssRenamingMap.EMPTY : xidRenamingMap;
     this.msgBundle = msgBundle == null ? SoyMsgBundle.EMPTY : msgBundle;
     this.debugSoyTemplateInfo = debugSoyTemplateInfo;
-    this.logger = logger == null ? SoyLogger.NO_OP : logger;
     this.cssTracker = cssTracker;
   }
 
@@ -212,15 +208,6 @@ public final class RenderContext {
    */
   public boolean getDebugSoyTemplateInfo() {
     return debugSoyTemplateInfo;
-  }
-
-  /** Returns a boolean indicating whether or not there is a logger configured. */
-  public boolean hasLogger() {
-    return logger != SoyLogger.NO_OP;
-  }
-
-  public SoyLogger getLogger() {
-    return logger;
   }
 
   public CompiledTemplate getTemplate(String calleeName) {
@@ -536,7 +523,6 @@ public final class RenderContext {
     private SoyIdRenamingMap xidRenamingMap;
     private SoyMsgBundle msgBundle;
     private boolean debugSoyTemplateInfo;
-    private SoyLogger logger;
     private SoyCssTracker cssTracker;
     private SoyInjector ijData;
 
@@ -586,12 +572,6 @@ public final class RenderContext {
     }
 
     @CanIgnoreReturnValue
-    public Builder withLogger(SoyLogger logger) {
-      this.logger = logger;
-      return this;
-    }
-
-    @CanIgnoreReturnValue
     public Builder withCssTracker(SoyCssTracker cssTracker) {
       this.cssTracker = cssTracker;
       return this;
@@ -614,7 +594,6 @@ public final class RenderContext {
           xidRenamingMap,
           msgBundle,
           debugSoyTemplateInfo,
-          logger,
           cssTracker);
     }
   }

@@ -20,7 +20,6 @@ import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.exprtree.ExprNode.Kind;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.GlobalNode;
-import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
@@ -31,7 +30,6 @@ import com.google.template.soy.soytree.VeLogNode;
  *
  * <ul>
  *   <li>Rewrites {@code {velog MyVe}} to {@code {velog ve_data(MyVe)}}
- *   <li>Rewrites {@code ve_data(ve(MyVe))} to {@code ve_data(MyVe, null)}
  * </ul>
  */
 final class VeRewritePass implements CompilerFilePass {
@@ -41,8 +39,6 @@ final class VeRewritePass implements CompilerFilePass {
     for (VeLogNode node : SoyTreeUtils.getAllNodesOfType(file, VeLogNode.class)) {
       maybeRewriteVeLogNode(node);
     }
-    SoyTreeUtils.allFunctionInvocations(file, BuiltinFunction.VE_DATA)
-        .forEach(this::maybeRewriteVeDataNode);
   }
 
   private void maybeRewriteVeLogNode(VeLogNode node) {
@@ -60,13 +56,4 @@ final class VeRewritePass implements CompilerFilePass {
     }
   }
 
-  private void maybeRewriteVeDataNode(FunctionNode node) {
-    if (node.numParams() < 1 || node.numParams() > 2) {
-      return; // an error has already been reported
-    }
-    if (node.numParams() < 2) {
-      // For ve_data(MyVe) set the data parameter to null.
-      node.addChild(new NullNode(node.getSourceLocation().getEndLocation()));
-    }
-  }
 }

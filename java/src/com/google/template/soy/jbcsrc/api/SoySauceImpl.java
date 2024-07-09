@@ -178,7 +178,6 @@ public final class SoySauceImpl implements SoySauce {
           xidRenamingMap,
           msgBundle,
           debugSoyTemplateInfo,
-          logger,
           cssTracker);
     }
 
@@ -353,7 +352,7 @@ public final class SoySauceImpl implements SoySauce {
       StringBuilder sb = new StringBuilder();
       ParamStore params = data == null ? ParamStore.EMPTY_INSTANCE : data;
       RenderContext context = makeContext();
-      OutputAppendable output = OutputAppendable.create(sb, context.getLogger());
+      OutputAppendable output = OutputAppendable.create(sb, logger);
       return doRenderToValue(contentKind, sb, template, null, params, output, context);
     }
 
@@ -363,7 +362,7 @@ public final class SoySauceImpl implements SoySauce {
 
       ParamStore params = data == null ? ParamStore.EMPTY_INSTANCE : data;
       RenderContext context = makeContext();
-      OutputAppendable output = OutputAppendable.create(out, context.getLogger());
+      OutputAppendable output = OutputAppendable.create(out, logger);
       return doRender(template, null, params, output, context);
     }
 

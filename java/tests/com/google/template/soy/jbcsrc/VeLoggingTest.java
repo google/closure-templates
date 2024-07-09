@@ -92,7 +92,6 @@ public final class VeLoggingTest {
     TestLogger testLogger = new TestLogger();
     renderTemplate(
         OutputAppendable.create(sb, testLogger),
-        testLogger,
         "{velog FooVe}<div data-id=1>{velog Bar}<div data-id=2></div>"
             + "{/velog}{velog Baz}<div data-id=3></div>{/velog}</div>{/velog}");
     assertThat(sb.toString())
@@ -107,7 +106,6 @@ public final class VeLoggingTest {
     TestLogger testLogger = new TestLogger();
     renderTemplate(
         OutputAppendable.create(sb, testLogger),
-        testLogger,
         "{velog ve_data(FooVe, Foo(intField: 123))}<div data-id=1></div>{/velog}");
     assertThat(sb.toString()).isEqualTo("<div data-id=1></div>");
     assertThat(testLogger.builder.toString())
@@ -120,7 +118,6 @@ public final class VeLoggingTest {
     TestLogger testLogger = new TestLogger();
     renderTemplate(
         OutputAppendable.create(sb, testLogger),
-        testLogger,
         "{velog FooVe logonly=\"true\"}<div data-id=1></div>{/velog}");
     // logonly ve's disable content generation
     assertThat(sb.toString()).isEmpty();
@@ -134,7 +131,6 @@ public final class VeLoggingTest {
     renderTemplate(
         ImmutableMap.of("t", true, "f", false, "n", 0),
         OutputAppendable.create(sb, testLogger),
-        testLogger,
         "{@param t : bool}",
         "{@param f : bool}",
         "{@param n : int}",
@@ -154,8 +150,7 @@ public final class VeLoggingTest {
     StringBuilder sb = new StringBuilder();
     renderTemplate(
         ImmutableMap.of("b", false),
-        OutputAppendable.create(sb, SoyLogger.NO_OP),
-        SoyLogger.NO_OP,
+        OutputAppendable.create(sb),
         "{@param b : bool}",
         "{velog FooVe logonly=\"$b\"}<div></div>{/velog}");
     // logonly ve's disable content generation
@@ -167,8 +162,7 @@ public final class VeLoggingTest {
     try {
       renderTemplate(
           ImmutableMap.of("b", true),
-          OutputAppendable.create(new StringBuilder(), SoyLogger.NO_OP),
-          SoyLogger.NO_OP,
+          OutputAppendable.create(new StringBuilder()),
           "{@param b : bool}",
           "{velog FooVe logonly=\"$b\"}<div></div>{/velog}");
       fail();
@@ -185,7 +179,6 @@ public final class VeLoggingTest {
     TestLogger testLogger = new TestLogger();
     renderTemplate(
         OutputAppendable.create(sb, testLogger),
-        testLogger,
         "{let $foo kind=\"html\"}{velog FooVe}<div data-id=1></div>{/velog}{/let}{$foo}{$foo}");
     assertThat(testLogger.builder.toString()).isEqualTo("velog{id=1}\nvelog{id=1}");
     assertThat(sb.toString()).isEqualTo("<div data-id=1></div><div data-id=1></div>");
@@ -197,7 +190,6 @@ public final class VeLoggingTest {
     TestLogger testLogger = new TestLogger();
     renderTemplate(
         OutputAppendable.create(sb, testLogger),
-        testLogger,
         ""
             + "{msg desc=\"a message!\"}\n"
             + "  Greetings, {velog FooVe}<a href='./wiki?human'>Human</a>{/velog}\n"
@@ -214,7 +206,6 @@ public final class VeLoggingTest {
     TestLogger testLogger = new TestLogger();
     renderTemplate(
         OutputAppendable.create(sb, testLogger),
-        testLogger,
         ""
             + "{msg desc=\"a message!\"}\n"
             + "  Greetings, {velog FooVe}<input type=text>{/velog}\n"
@@ -229,7 +220,6 @@ public final class VeLoggingTest {
     TestLogger testLogger = new TestLogger();
     renderTemplate(
         OutputAppendable.create(sb, testLogger),
-        testLogger,
         "{velog FooVe logonly=\"true\"}<div data-id=1>{velog FooVe logonly=\"false\"}<div"
             + " data-id=1>{velog FooVe logonly=\"true\"}<div data-id=1>{velog FooVe"
             + " logonly=\"true\"}<div data-id=1></div>{/velog}"
@@ -249,7 +239,6 @@ public final class VeLoggingTest {
     TestLogger testLogger = new TestLogger();
     renderTemplate(
         OutputAppendable.create(sb, testLogger),
-        testLogger,
         "<div data-depth={depth()}></div>"
             + "{velog FooVe}<div data-depth={depth()}></div>{/velog}"
             + "<div data-depth={depth()}></div>");
@@ -264,7 +253,6 @@ public final class VeLoggingTest {
     TestLogger testLogger = new TestLogger();
     renderTemplate(
         OutputAppendable.create(sb, testLogger),
-        testLogger,
         "{let $html kind=\"html\"}{velog FooVe}<div data-depth={depth()}></div>{/velog}{/let}"
             + "<script>{'' + $html}</script>");
     // nothing is logged because no elements were rendered
@@ -279,7 +267,6 @@ public final class VeLoggingTest {
     TestLogger testLogger = new TestLogger();
     renderTemplate(
         OutputAppendable.create(sb, testLogger),
-        testLogger,
         "{let $log kind='html'}",
         "  {velog FooVe}",
         "    <div>hello</div>",
@@ -290,13 +277,13 @@ public final class VeLoggingTest {
     assertThat(sb.toString()).isEqualTo("<div>hello</div>");
   }
 
-  private void renderTemplate(
-      OutputAppendable output, SoyLogger logger, String... templateBodyLines) throws IOException {
-    renderTemplate(ImmutableMap.of(), output, logger, templateBodyLines);
+  private void renderTemplate(OutputAppendable output, String... templateBodyLines)
+      throws IOException {
+    renderTemplate(ImmutableMap.of(), output, templateBodyLines);
   }
 
   private void renderTemplate(
-      Map<String, ?> params, OutputAppendable output, SoyLogger logger, String... templateBodyLines)
+      Map<String, ?> params, OutputAppendable output, String... templateBodyLines)
       throws IOException {
     SoyFileSetParserBuilder builder =
         SoyFileSetParserBuilder.forTemplateAndImports(
@@ -320,8 +307,7 @@ public final class VeLoggingTest {
                 parser.soyFileSuppliers(),
                 builder.getTypeRegistry())
             .get();
-    RenderContext ctx =
-        TemplateTester.getDefaultContext(templates).toBuilder().withLogger(logger).build();
+    RenderContext ctx = TemplateTester.getDefaultContext(templates).toBuilder().build();
     StackFrame result =
         templates.getTemplate("ns.foo").render(null, TemplateTester.asParams(params), output, ctx);
     assertThat(result).isNull();

@@ -1263,7 +1263,9 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
   }
 
   private Expression visitVeDataFunction(FunctionNode node) {
-    return construct(SOY_VISUAL_ELEMENT_DATA, visit(node.getParam(0)), visit(node.getParam(1)));
+    return node.numParams() == 1
+        ? construct(SOY_VISUAL_ELEMENT_DATA, visit(node.getParam(0)))
+        : construct(SOY_VISUAL_ELEMENT_DATA, visit(node.getParam(0)), visit(node.getParam(1)));
   }
 
   private Expression visitVeDefFunction(FunctionNode node) {

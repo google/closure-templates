@@ -20,7 +20,6 @@ import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.FunctionNode;
-import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
@@ -62,10 +61,6 @@ final class VeLogRewritePass implements CompilerFilePass {
       // type on our own here.
       veData.setType(VeDataType.getInstance());
       veData.addChild(veExpr);
-      // Explicitly set the second parameter to null. This parameter is optional, but it's rewritten
-      // to null (if left off) by the VeRewritePass. The VeRewritePass runs before this so we can't
-      // rely on that to add the null parameter, so we have to do it ourselves here.
-      veData.addChild(new NullNode(veExpr.getSourceLocation()));
       node.getVeDataExpression().addChild(veData);
     }
   }
