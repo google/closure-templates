@@ -17,7 +17,6 @@
 package com.google.template.soy.jbcsrc.api;
 
 import static com.google.common.base.Preconditions.checkState;
-import static com.google.template.soy.jbcsrc.api.AppendableAsAdvisingAppendable.asAdvisingAppendable;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -220,9 +219,7 @@ public interface SoySauce {
      * <p>See {@link #renderHtml(AdvisingAppendable out)} for more details).
      */
     @CheckReturnValue
-    default WriteContinuation renderHtml(Appendable out) throws IOException {
-      return renderHtml(asAdvisingAppendable(out));
-    }
+    WriteContinuation renderHtml(Appendable out) throws IOException;
 
     /**
      * Renders the configured html template to a {@link SanitizedContent}. Verifies that the content
@@ -264,9 +261,7 @@ public interface SoySauce {
      * <p>See {@link #renderHtml(AdvisingAppendable out)} for more details).
      */
     @CheckReturnValue
-    default WriteContinuation renderJs(Appendable out) throws IOException {
-      return renderJs(asAdvisingAppendable(out));
-    }
+    WriteContinuation renderJs(Appendable out) throws IOException;
 
     /**
      * Renders the configured js template to a {@link SanitizedContent}.
@@ -299,9 +294,7 @@ public interface SoySauce {
      * <p>See {@link #renderHtml(AdvisingAppendable out)} for more details).
      */
     @CheckReturnValue
-    default WriteContinuation renderUri(Appendable out) throws IOException {
-      return renderUri(asAdvisingAppendable(out));
-    }
+    WriteContinuation renderUri(Appendable out) throws IOException;
 
     /**
      * Renders the configured uri template to a {@link SanitizedContent}.
@@ -336,9 +329,7 @@ public interface SoySauce {
      * <p>See {@link #renderHtml(AdvisingAppendable out)} for more details.
      */
     @CheckReturnValue
-    default WriteContinuation renderTrustedResourceUri(Appendable out) throws IOException {
-      return renderTrustedResourceUri(asAdvisingAppendable(out));
-    }
+    WriteContinuation renderTrustedResourceUri(Appendable out) throws IOException;
 
     /**
      * Renders the configured template to a {@link SanitizedContent}.
@@ -371,9 +362,7 @@ public interface SoySauce {
      * <p>See {@link #renderHtml(AdvisingAppendable out)} for more details.
      */
     @CheckReturnValue
-    default WriteContinuation renderAttributes(Appendable out) throws IOException {
-      return renderAttributes(asAdvisingAppendable(out));
-    }
+    WriteContinuation renderAttributes(Appendable out) throws IOException;
 
     /**
      * Renders the configured template to a {@link SanitizedContent}.
@@ -406,9 +395,7 @@ public interface SoySauce {
      * <p>See {@link #renderHtml(AdvisingAppendable out)} for more details.
      */
     @CheckReturnValue
-    default WriteContinuation renderCss(Appendable out) throws IOException {
-      return renderCss(asAdvisingAppendable(out));
-    }
+    WriteContinuation renderCss(Appendable out) throws IOException;
 
     /**
      * Renders the configured template to a {@link SanitizedContent} of kind {@link
@@ -441,9 +428,7 @@ public interface SoySauce {
      * <p>See {@link #renderHtml(AdvisingAppendable out)} for more details.
      */
     @CheckReturnValue
-    default WriteContinuation renderText(Appendable out) throws IOException {
-      return renderText(asAdvisingAppendable(out));
-    }
+    WriteContinuation renderText(Appendable out) throws IOException;
 
     /**
      * Renders the configured template to a {@link String}.
@@ -501,7 +486,7 @@ public interface SoySauce {
     /**
      * The final value of the rendering operation.
      *
-     * @throws IllegalStateException
+     * @throws IllegalStateException if the rendering operation is not complete.
      */
     T get();
 

@@ -36,8 +36,7 @@ import javax.annotation.Nullable;
  */
 public final class OutputAppendable extends AbstractLoggingAdvisingAppendable {
 
-  public static OutputAppendable create(
-      AdvisingAppendable outputAppendable, @Nullable SoyLogger logger) {
+  public static OutputAppendable create(Appendable outputAppendable, @Nullable SoyLogger logger) {
     return new OutputAppendable(outputAppendable, logger);
   }
 

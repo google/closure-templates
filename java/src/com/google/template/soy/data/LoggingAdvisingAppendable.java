@@ -68,11 +68,6 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
     return new BufferingAppendable(kind);
   }
 
-  /** Returns a {@link LoggingAdvisingAppendable} that delegates to an {@link Appendable} */
-  public static LoggingAdvisingAppendable delegating(Appendable appendable) {
-    return new DelegatingToAppendable<>(appendable);
-  }
-
   /**
    * An implementation that only delegates {@link #append} calls. This has the effect of coercing
    * the content to a string by dropping all the strict content directives.
@@ -144,7 +139,9 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
    * @param depth If this is a delegating appendable, the flushBuffers command should only be
    *     delegated if {@code depth > 0} and depth should be decremented when delegating.
    */
-  public abstract void flushBuffers(int depth) throws IOException;
+  public void flushBuffers(int depth) throws IOException {
+    throw new AssertionError("should not be called");
+  }
 
   /**
    * Marks the content kind of this appendable. All the {@link #append} commands should be
@@ -233,54 +230,6 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
       LoggingFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers)
       throws IOException;
 
-  /** A {@link LoggingAdvisingAppendable} that renders to an appendable. */
-  private static class DelegatingToAppendable<T extends Appendable>
-      extends AbstractLoggingAdvisingAppendable {
-    final T delegate;
-
-    private DelegatingToAppendable(T delegate) {
-      this.delegate = checkNotNull(delegate);
-    }
-
-    @Override
-    protected void doAppend(CharSequence s) throws IOException {
-      delegate.append(s);
-    }
-
-    @Override
-    protected void doAppend(CharSequence s, int start, int end) throws IOException {
-      delegate.append(s, start, end);
-    }
-
-    @Override
-    protected void doAppend(char c) throws IOException {
-      delegate.append(c);
-    }
-
-    @Override
-    protected void doAppendLoggingFunctionInvocation(
-        LoggingFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers)
-        throws IOException {
-      escapePlaceholder(funCall.placeholderValue(), escapers);
-    }
-
-    @Override
-    protected void doEnterLoggableElement(LogStatement statement) {}
-
-    @Override
-    protected void doExitLoggableElement() {}
-
-    @Override
-    public boolean softLimitReached() {
-      return false;
-    }
-
-    @Override
-    public void flushBuffers(int depth) throws IOException {
-      throw new AssertionError("should not be called");
-    }
-  }
-
   /** A buffer of commands that can be replayed on a {@link LoggingAdvisingAppendable}. */
   @Immutable
   public static final class CommandBuffer {
@@ -319,7 +268,7 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
   }
 
   /** A {@link LoggingAdvisingAppendable} that renders to a string builder. */
-  public static class BufferingAppendable extends DelegatingToAppendable<StringBuilder> {
+  public static class BufferingAppendable extends AbstractLoggingAdvisingAppendable {
 
     private static final Object EXIT_LOG_STATEMENT_MARKER = new Object();
     // lazily allocated list that contains one of 7 types of objects, each which corresponds to one
@@ -329,14 +278,32 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
     // - EXIT_LOG_STATEMENT_MARKER -> corresponds to exitLoggableElement
     // - LoggingFunctionInvocation -> corresponds to appendLoggingFunctionInvocation
     private List<Object> commands;
+    private final StringBuilder builder = new StringBuilder();
 
-    protected BufferingAppendable() {
-      super(new StringBuilder());
-    }
+    protected BufferingAppendable() {}
 
     protected BufferingAppendable(SanitizedContent.ContentKind kind) {
-      this();
       setKindAndDirectionality(kind);
+    }
+
+    @Override
+    public boolean softLimitReached() {
+      return false;
+    }
+
+    @Override
+    protected void doAppend(CharSequence s) throws IOException {
+      builder.append(s);
+    }
+
+    @Override
+    protected void doAppend(CharSequence s, int start, int end) throws IOException {
+      builder.append(s, start, end);
+    }
+
+    @Override
+    protected void doAppend(char c) throws IOException {
+      builder.append(c);
     }
 
     /**
@@ -347,10 +314,10 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
       if (commands == null) {
         this.commands = commands = new ArrayList<>();
       }
-      var delegate = this.delegate;
-      if (delegate.length() != 0) {
-        commands.add(delegate.toString());
-        delegate.setLength(0);
+      var builder = this.builder;
+      if (builder.length() != 0) {
+        commands.add(builder.toString());
+        builder.setLength(0);
       }
       return commands;
     }
@@ -384,9 +351,9 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
       if (commands != null) {
         replayOn(commands, appendable);
       }
-      var delegate = this.delegate;
-      if (delegate.length() != 0) {
-        appendable.append(delegate);
+      var builder = this.builder;
+      if (builder.length() != 0) {
+        appendable.append(builder);
       }
     }
 
@@ -412,11 +379,11 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
       if (commands != null) {
         // NOTE: this ignores all the logging statements which is as it should be since they don't
         // affect output
-        appendCommandsToBuilder(getCommandsAndAddPendingStringData(), delegate);
+        appendCommandsToBuilder(getCommandsAndAddPendingStringData(), builder);
         commands = null;
       }
-      String value = delegate.toString();
-      delegate.setLength(0);
+      String value = builder.toString();
+      builder.setLength(0);
       return value;
     }
 
@@ -445,7 +412,7 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
       if (kind == ContentKind.HTML || kind == ContentKind.ATTRIBUTES) {
         var commands = this.commands;
         if (commands == null) {
-          return SanitizedContent.create(delegate.toString(), kind, dir);
+          return SanitizedContent.create(builder.toString(), kind, dir);
         }
         return SanitizedContent.create(
             new CommandBuffer(ImmutableList.copyOf(getCommandsAndAddPendingStringData())),
@@ -461,7 +428,7 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
       // all kinds can be coerced to string data, no need to check
       var commands = this.commands;
       if (commands == null) {
-        return StringData.forValue(delegate.toString());
+        return StringData.forValue(builder.toString());
       }
       // This case is entirely about soy element style calls passing logging functions to
       // callees.  Possibly we should disallow that?
@@ -474,12 +441,12 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
       if (commands != null) {
         // NOTE: this ignores all the logging statements which is as it should be since they don't
         // affect output
-        StringBuilder builder = new StringBuilder();
-        appendCommandsToBuilder(commands, builder);
-        builder.append(delegate);
-        return builder.toString();
+        StringBuilder sb = new StringBuilder();
+        appendCommandsToBuilder(commands, sb);
+        sb.append(builder);
+        return sb.toString();
       } else {
-        return delegate.toString();
+        return builder.toString();
       }
     }
 

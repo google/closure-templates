@@ -42,7 +42,6 @@ java_library(
     ],
     deps = [
         ":api_impl",
-        ":appendable_as_advising_appendable",
         ":continuations_impl",
         ":helpers",
         ":output_appendable",
@@ -69,7 +68,6 @@ java_library(
     name = "output_appendable",
     srcs = ["OutputAppendable.java"],
     deps = [
-        ":appendable_as_advising_appendable",
         ":helpers",
         "//java/src/com/google/template/soy/data",
         "//java/src/com/google/template/soy/logging:public",
@@ -98,17 +96,6 @@ java_library(
     ],
 )
 
-java_library(
-    name = "appendable_as_advising_appendable",
-    srcs = [
-        "AppendableAsAdvisingAppendable.java",
-    ],
-    deps = [
-        ":helpers",
-        "@maven//:com_google_errorprone_error_prone_annotations",
-        "@maven//:com_google_guava_guava",
-    ],
-)
 
 java_library(
     name = "api_impl",
@@ -117,7 +104,6 @@ java_library(
     ],
     visibility = ["//visibility:private"],
     deps = [
-        ":appendable_as_advising_appendable",
         ":helpers",
         "//java/src/com/google/template/soy/data",
         "//java/src/com/google/template/soy/logging:public",

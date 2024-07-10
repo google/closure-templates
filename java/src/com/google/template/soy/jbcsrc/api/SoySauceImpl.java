@@ -88,7 +88,7 @@ public final class SoySauceImpl implements SoySauce {
             printDirective.getName(), (SoyJavaPrintDirective) printDirective);
       }
     }
-    this.printDirectives = soyJavaPrintDirectives.build();
+    this.printDirectives = soyJavaPrintDirectives.buildOrThrow();
     this.pluginInstances = pluginInstances.combine(pluginInstanceBuilder.buildOrThrow());
   }
 
@@ -278,12 +278,22 @@ public final class SoySauceImpl implements SoySauce {
     }
 
     @Override
+    public WriteContinuation renderHtml(Appendable out) throws IOException {
+      return startRender(out, ContentKind.HTML);
+    }
+
+    @Override
     public Continuation<SanitizedContent> renderHtml() {
       return startRenderToSanitizedContent(ContentKind.HTML);
     }
 
     @Override
     public WriteContinuation renderJs(AdvisingAppendable out) throws IOException {
+      return startRender(out, ContentKind.JS);
+    }
+
+    @Override
+    public WriteContinuation renderJs(Appendable out) throws IOException {
       return startRender(out, ContentKind.JS);
     }
 
@@ -298,12 +308,22 @@ public final class SoySauceImpl implements SoySauce {
     }
 
     @Override
+    public WriteContinuation renderUri(Appendable out) throws IOException {
+      return startRender(out, ContentKind.URI);
+    }
+
+    @Override
     public Continuation<SanitizedContent> renderUri() {
       return startRenderToSanitizedContent(ContentKind.URI);
     }
 
     @Override
     public WriteContinuation renderTrustedResourceUri(AdvisingAppendable out) throws IOException {
+      return startRender(out, ContentKind.TRUSTED_RESOURCE_URI);
+    }
+
+    @Override
+    public WriteContinuation renderTrustedResourceUri(Appendable out) throws IOException {
       return startRender(out, ContentKind.TRUSTED_RESOURCE_URI);
     }
 
@@ -318,6 +338,11 @@ public final class SoySauceImpl implements SoySauce {
     }
 
     @Override
+    public WriteContinuation renderAttributes(Appendable out) throws IOException {
+      return startRender(out, ContentKind.ATTRIBUTES);
+    }
+
+    @Override
     public Continuation<SanitizedContent> renderAttributes() {
       return startRenderToSanitizedContent(ContentKind.ATTRIBUTES);
     }
@@ -328,12 +353,22 @@ public final class SoySauceImpl implements SoySauce {
     }
 
     @Override
+    public WriteContinuation renderCss(Appendable out) throws IOException {
+      return startRender(out, ContentKind.CSS);
+    }
+
+    @Override
     public Continuation<SanitizedContent> renderCss() {
       return startRenderToSanitizedContent(ContentKind.CSS);
     }
 
     @Override
     public WriteContinuation renderText(AdvisingAppendable out) throws IOException {
+      return startRender(out, ContentKind.TEXT);
+    }
+
+    @Override
+    public WriteContinuation renderText(Appendable out) throws IOException {
       return startRender(out, ContentKind.TEXT);
     }
 
@@ -356,7 +391,7 @@ public final class SoySauceImpl implements SoySauce {
       return doRenderToValue(contentKind, sb, template, null, params, output, context);
     }
 
-    private WriteContinuation startRender(AdvisingAppendable out, ContentKind contentKind)
+    private WriteContinuation startRender(Appendable out, ContentKind contentKind)
         throws IOException {
       enforceContentKind(contentKind);
 

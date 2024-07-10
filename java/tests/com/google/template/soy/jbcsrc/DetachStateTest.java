@@ -24,11 +24,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.SettableFuture;
 import com.google.protobuf.Descriptors.GenericDescriptor;
-import com.google.template.soy.data.AbstractLoggingAdvisingAppendable;
-import com.google.template.soy.data.LogStatement;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.LoggingAdvisingAppendable.BufferingAppendable;
-import com.google.template.soy.data.LoggingFunctionInvocation;
 import com.google.template.soy.data.SoyInjector;
 import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.jbcsrc.api.RenderResult;
@@ -38,7 +35,6 @@ import com.google.template.soy.jbcsrc.shared.RenderContext;
 import com.google.template.soy.jbcsrc.shared.StackFrame;
 import com.google.template.soy.testing.Foo;
 import java.io.IOException;
-import java.util.function.Function;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -46,24 +42,8 @@ import org.junit.runners.JUnit4;
 /** Tests for {@link DetachState}. */
 @RunWith(JUnit4.class)
 public final class DetachStateTest {
-  static class TestAppendable extends AbstractLoggingAdvisingAppendable {
-    private final StringBuilder delegate = new StringBuilder();
+  static class TestAppendable extends LoggingAdvisingAppendable.BufferingAppendable {
     boolean softLimitReached;
-
-    @Override
-    protected final void doAppend(CharSequence s) {
-      delegate.append(s);
-    }
-
-    @Override
-    protected final void doAppend(CharSequence s, int start, int end) {
-      delegate.append(s, start, end);
-    }
-
-    @Override
-    protected final void doAppend(char c) {
-      delegate.append(c);
-    }
 
     @Override
     public boolean softLimitReached() {
@@ -73,24 +53,6 @@ public final class DetachStateTest {
     @Override
     public void flushBuffers(int depth) {
       throw new AssertionError("should not be called");
-    }
-
-    @Override
-    public String toString() {
-      return delegate.toString();
-    }
-
-    @Override
-    protected void doEnterLoggableElement(LogStatement statement) {}
-
-    @Override
-    protected void doExitLoggableElement() {}
-
-    @Override
-    protected void doAppendLoggingFunctionInvocation(
-        LoggingFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers)
-        throws IOException {
-      delegate.append(funCall.placeholderValue());
     }
   }
 

@@ -43,11 +43,6 @@ public abstract class SoyAbstractValue implements SoyValue {
   }
 
   @Override
-  public final void render(Appendable appendable) throws IOException {
-    render(LoggingAdvisingAppendable.delegating(appendable));
-  }
-
-  @Override
   public RenderResult renderAndResolve(LoggingAdvisingAppendable appendable) throws IOException {
     render(appendable);
     return RenderResult.done();

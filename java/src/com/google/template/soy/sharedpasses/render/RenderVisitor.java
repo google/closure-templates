@@ -866,7 +866,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
   /** Helper to append a SoyValue to the output, propagating any exceptions. */
   static void append(Appendable outputBuf, SoyValue value, SoyNode node) {
     try {
-      value.render(outputBuf);
+      outputBuf.append(value.coerceToString());
     } catch (IOException e) {
       throw new RuntimeException(e);
     } catch (RenderException e) {

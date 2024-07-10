@@ -109,16 +109,6 @@ public interface SoyValue extends SoyValueProvider {
    */
   void render(LoggingAdvisingAppendable appendable) throws IOException;
 
-  /**
-   * Renders this value to the given appendable.
-   *
-   * <p>This should behave identically to {@code appendable.append(coerceToString())} but is
-   * provided separately to allow more incremental approaches.
-   *
-   * @param appendable The appendable to render to.
-   * @throws IOException
-   */
-  void render(Appendable appendable) throws IOException;
 
   // -----------------------------------------------------------------------------------------------
   // Convenience methods for retrieving a known primitive type.
