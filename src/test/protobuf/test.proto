@@ -6,7 +6,14 @@ package soy.test;
 option java_package = "com.google.template.soy.testing";
 option java_multiple_files = true;
 
+extend Foo {
+  optional int32 top_level_extension_field = 1002;
+}
+
 message Foo {
+  extend Foo {
+    optional int32 extension_field = 1001;
+  }
   message InnerMessage {
     optional int32 field = 1;
   }
@@ -15,6 +22,7 @@ message Foo {
     ONE = 1;
     TWO = 2;
     THREE = 3;
+    FOUR = 4;
   }
 
   optional int32 some_num_with_default = 1 [default = 31337];
@@ -48,6 +56,8 @@ message Foo {
   repeated InnerEnum some_repeated_enum = 28;
 
   optional Foo foo = 31;
+
+  extensions 1000 to max;
 }
 
 // These fields have the same names as fields in Foo to test accessing fields
