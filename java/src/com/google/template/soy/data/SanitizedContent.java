@@ -648,14 +648,35 @@ public abstract class SanitizedContent extends SoyAbstractValue {
   }
 
   /** See https://html.spec.whatwg.org/multipage/parsing.html#before-attribute-name-state */
-  private static int consumeAttributeName(String content, int position, int length) {
+  private static String consumeAttributeName(String content, int position, int length) {
+    int start = position;
+    int upperCaseStartPos = -1;
     for (; position < length; position++) {
       char c = content.charAt(position);
       if (c == '=' || isHtmlAttributeWhitespace(c)) {
         break;
       }
+      if (upperCaseStartPos == -1 && Ascii.isUpperCase(c)) {
+        upperCaseStartPos = position;
+      }
     }
-    return position;
+    if (start == position) {
+      throw new IllegalArgumentException("Empty attribute name @" + start + " in " + content);
+    }
+    // See https://html.spec.whatwg.org/multipage/parsing.html#attribute-name-state
+    // When observing an ascii upper case character we are instructed to append the lower case
+    // version.
+    if (upperCaseStartPos != -1) {
+      // This is similar to what Ascii.toLowerCase(String) does but by inlining we can avoid two
+      // passes in the common case of no upper case characters.
+      char[] chars = new char[position - start];
+      content.getChars(start, position, chars, 0);
+      for (int i = upperCaseStartPos; i < position; i++) {
+        chars[i] = Ascii.toLowerCase(chars[i]);
+      }
+      return String.valueOf(chars);
+    }
+    return content.substring(start, position);
   }
 
   /** See https://html.spec.whatwg.org/multipage/parsing.html#attribute-value-(unquoted)-state */
@@ -685,14 +706,8 @@ public abstract class SanitizedContent extends SoyAbstractValue {
     final var length = content.length();
     int position = consumeWhitespace(content, 0, length);
     while (position < length) {
-      var end = consumeAttributeName(content, position, length);
-      // See https://html.spec.whatwg.org/multipage/parsing.html#attribute-name-state
-      // When observing an ascii upper case character we are instructed to append the lower case
-      // version.
-      var name = Ascii.toLowerCase(content.substring(position, end));
-      if (name.isEmpty()) {
-        throw new IllegalArgumentException("Empty attribute name in " + content);
-      }
+      var name = consumeAttributeName(content, position, length);
+      int end = position + name.length();
       // end is pointing at whitespace or an equals sign (or the end of the string).
       if (end == length) {
         attributes.put(name, AttributeValue.none());
@@ -708,14 +723,24 @@ public abstract class SanitizedContent extends SoyAbstractValue {
         }
       }
       position = end + 1; // consume the equals sign
-      position = consumeWhitespace(content, position, length);
       if (position == length) {
         throw new IllegalArgumentException(
             "missing attribute value for " + name + " in " + content);
       }
       char initial = content.charAt(position);
+      // It is extremely rare for whitespace to follow an equals sign, so partially inline
+      // consumeWhitespace to avoid the extra checks.
+      if (isHtmlAttributeWhitespace(initial)) {
+        position = consumeWhitespace(content, position + 1, length);
+        if (position == length) {
+          throw new IllegalArgumentException(
+              "missing attribute value for " + name + " in " + content);
+        }
+        initial = content.charAt(position);
+      }
       if (initial == '"' || initial == '\'') {
         position++; // skip the leading quotation mark
+        // NOTE: This is one of the most expensive parts of this method
         end = content.indexOf(initial, position);
         if (end == -1) {
           throw new IllegalArgumentException("Unbalanced quotes in attribute value");
