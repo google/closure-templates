@@ -791,6 +791,7 @@ public final class JbcSrcRuntime {
                     BufferedCompiledTemplate.SaveRestoreState.RESTORE_APPENDABLE_HANDLE.invokeExact(
                         originalFrame);
           } catch (Throwable t) {
+            // the above is essentially a field read and should never fail.
             throw new AssertionError(t);
           }
           break;
@@ -889,6 +890,44 @@ public final class JbcSrcRuntime {
 
   @Immutable
   private static final class BoundTemplate implements CompiledTemplate {
+    static class SaveRestoreState {
+      static final MethodHandle SAVE_STATE_METHOD_HANDLE;
+      static final MethodHandle RESTORE_TEMPLATE_HANDLE;
+      static final MethodHandle RESTORE_PARAMS_HANDLE;
+
+      static {
+        MethodHandles.Lookup lookup = MethodHandles.lookup();
+        MethodType saveMethodType =
+            methodType(
+                StackFrame.class,
+                StackFrame.class,
+                int.class,
+                CompiledTemplate.class,
+                ParamStore.class);
+        SAVE_STATE_METHOD_HANDLE =
+            SaveStateMetaFactory.bootstrapSaveState(lookup, "saveState", saveMethodType)
+                .getTarget();
+        RESTORE_TEMPLATE_HANDLE =
+            SaveStateMetaFactory.bootstrapRestoreState(
+                    lookup,
+                    "restoreLocal",
+                    methodType(CompiledTemplate.class, StackFrame.class),
+                    saveMethodType,
+                    0)
+                .getTarget()
+                .asType(methodType(CompiledTemplate.class, StackFrame.class));
+        RESTORE_PARAMS_HANDLE =
+            SaveStateMetaFactory.bootstrapRestoreState(
+                    lookup,
+                    "restoreLocal",
+                    methodType(ParamStore.class, StackFrame.class),
+                    saveMethodType,
+                    1)
+                .getTarget()
+                .asType(methodType(ParamStore.class, StackFrame.class));
+      }
+    }
+
     private final String name;
 
     @SuppressWarnings("Immutable") // this is never mutated
@@ -911,20 +950,58 @@ public final class JbcSrcRuntime {
       this.boundParams = ParamStore.merge(value.getBoundParameters(), boundParams);
     }
 
+    @Nullable
     @Override
     public StackFrame render(
-        StackFrame frame,
+        @Nullable StackFrame frame,
         ParamStore params,
         LoggingAdvisingAppendable appendable,
         RenderContext context)
         throws IOException {
-      // Delegate is null when the template is passed from java as a parameter. Resolve it on
-      // demand.
-      var delegate = this.delegate;
-      if (delegate == null) {
-        delegate = context.getTemplate(name);
+      CompiledTemplate delegate;
+      ParamStore mergedParams;
+      int state;
+      StackFrame childFrame;
+      if (frame == null) {
+        state = 0;
+        childFrame = null;
+      } else {
+        state = frame.stateNumber;
+        childFrame = frame.child;
       }
-      return delegate.render(frame, ParamStore.merge(boundParams, params), appendable, context);
+      switch (state) {
+        case 0:
+          delegate = this.delegate;
+          // Delegate is null when the template is passed from java as a parameter. Resolve it on
+          // demand.
+          if (delegate == null) {
+            delegate = context.getTemplate(name);
+          }
+          mergedParams = ParamStore.merge(boundParams, params);
+          break;
+        case 1:
+          try {
+            delegate =
+                (CompiledTemplate) SaveRestoreState.RESTORE_TEMPLATE_HANDLE.invokeExact(frame);
+            mergedParams = (ParamStore) SaveRestoreState.RESTORE_PARAMS_HANDLE.invokeExact(frame);
+          } catch (Throwable t) {
+            // the above are essentially field reads and should never fail.
+            throw new AssertionError(t);
+          }
+          break;
+        default:
+          throw unexpectedStateError(frame);
+      }
+      frame = delegate.render(childFrame, mergedParams, appendable, context);
+      if (frame == null) {
+        return null;
+      }
+      try {
+        return (StackFrame)
+            SaveRestoreState.SAVE_STATE_METHOD_HANDLE.invokeExact(frame, 1, delegate, mergedParams);
+      } catch (Throwable t) {
+        throw new AssertionError(t);
+      }
     }
   }
 
