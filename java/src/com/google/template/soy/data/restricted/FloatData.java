@@ -110,4 +110,9 @@ public final class FloatData extends NumberData {
   public SoyValue checkNullishFloat() {
     return this;
   }
+
+  @Override
+  public String getSoyTypeName() {
+    return "float";
+  }
 }

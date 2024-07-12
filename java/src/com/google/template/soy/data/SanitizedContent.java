@@ -170,6 +170,10 @@ public abstract class SanitizedContent extends SoyAbstractValue {
       }
       throw new AssertionError(this);
     }
+
+    public String getSoyTypeName() {
+      return Ascii.toLowerCase(name());
+    }
   }
 
   private final ContentKind contentKind;
@@ -834,5 +838,10 @@ public abstract class SanitizedContent extends SoyAbstractValue {
       }
       return attributes;
     }
+  }
+
+  @Override
+  public String getSoyTypeName() {
+    return contentKind.getSoyTypeName();
   }
 }

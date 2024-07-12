@@ -58,7 +58,8 @@ public final class ParamStore extends IdentityHashMap<RecordProperty, SoyValuePr
     return newStore.freeze();
   }
 
-  public static ParamStore fromRecord(SoyRecord record) {
+  public static ParamStore fromRecord(SoyValue value) {
+    SoyRecord record = value.asSoyRecord();
     if (record instanceof SoyRecordImpl) {
       return ((SoyRecordImpl) record).getParamStore();
     }
@@ -124,9 +125,9 @@ public final class ParamStore extends IdentityHashMap<RecordProperty, SoyValuePr
   }
 
   @CanIgnoreReturnValue
-  public ParamStore setAll(SoyRecord record) {
+  public ParamStore setAll(SoyValue record) {
     checkState(!frozen);
-    record.forEach(this);
+    record.asSoyRecord().forEach(this);
     return this;
   }
 
@@ -263,5 +264,4 @@ public final class ParamStore extends IdentityHashMap<RecordProperty, SoyValuePr
   // Empty instance.
 
   public static final ParamStore EMPTY_INSTANCE = new ParamStore(0).freeze();
-
 }

@@ -80,4 +80,9 @@ abstract class AbstractSoyMap extends SoyAbstractValue implements SoyMap {
   public String toString() {
     return coerceToString();
   }
+
+  @Override
+  public String getSoyTypeName() {
+    return "map";
+  }
 }

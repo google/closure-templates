@@ -39,7 +39,6 @@ import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.basetree.Node;
 import com.google.template.soy.basetree.ParentNode;
-import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.exprtree.BooleanNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FloatNode;
@@ -1769,7 +1768,6 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
             .compileSubExpression(
                 node.getDataExpr(), detachState.createExpressionDetacher(reattachPoint))
             .box()
-            .checkedCast(SoyRecord.class)
             .toMaybeConstant());
   }
 

@@ -45,4 +45,9 @@ public final class UndefinedData extends NullishData {
   public int hashCode() {
     return getClass().hashCode();
   }
+
+  @Override
+  public String getSoyTypeName() {
+    return "undefined";
+  }
 }

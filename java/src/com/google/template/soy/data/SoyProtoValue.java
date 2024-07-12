@@ -33,6 +33,7 @@ import com.google.protobuf.TextFormat;
 import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.internal.proto.Field;
 import com.google.template.soy.internal.proto.JavaQualifiedNames;
+import com.google.template.soy.internal.proto.ProtoUtils;
 import com.google.template.soy.jbcsrc.shared.Names;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -465,5 +466,10 @@ public final class SoyProtoValue extends SoyAbstractValue implements SoyLegacyOb
     public boolean hasField(String field) {
       return clazz.fields.containsKey(field);
     }
+  }
+
+  @Override
+  public String getSoyTypeName() {
+    return ProtoUtils.getProtoName(proto);
   }
 }

@@ -67,4 +67,9 @@ public abstract class SoyVisualElementData extends SoyAbstractValue {
   public final int hashCode() {
     return System.identityHashCode(this);
   }
+
+  @Override
+  public String getSoyTypeName() {
+    return "ve_data";
+  }
 }

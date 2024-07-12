@@ -93,4 +93,9 @@ public final class BooleanData extends PrimitiveData {
   public SoyValue checkNullishBoolean() {
     return this;
   }
+
+  @Override
+  public String getSoyTypeName() {
+    return "bool";
+  }
 }

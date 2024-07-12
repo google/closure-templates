@@ -382,9 +382,7 @@ public class SoySauceTest {
             .setData(ImmutableMap.of("proto", Foo.getDefaultInstance(), "counter", 2));
 
     var exception = assertThrows(Exception.class, () -> tmpl.renderText().get());
-    assertThat(exception)
-        .hasMessageThat()
-        .contains("Expecting proto value but instead encountered type UndefinedData");
+    assertThat(exception).hasMessageThat().contains("expected Message, got undefined");
   }
 
   @Test
@@ -407,7 +405,7 @@ public class SoySauceTest {
     assertThat(suppressed0)
         .hasCauseThat()
         .hasMessageThat()
-        .isEqualTo("Expecting proto value but instead encountered type UndefinedData");
+        .isEqualTo("expected Message, got undefined");
     Throwable suppressed1 = exception.getSuppressed()[1];
     assertThat(suppressed1)
         .hasMessageThat()
@@ -415,7 +413,7 @@ public class SoySauceTest {
     assertThat(suppressed1)
         .hasCauseThat()
         .hasMessageThat()
-        .isEqualTo("Expecting proto value but instead encountered type UndefinedData");
+        .isEqualTo("expected Message, got undefined");
   }
 
   /**

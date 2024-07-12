@@ -345,4 +345,9 @@ public class SoyMapData extends CollectionData implements SoyDict, SoyMap {
           e);
     }
   }
+
+  @Override
+  public String getSoyTypeName() {
+    return "map";
+  }
 }

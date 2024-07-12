@@ -87,4 +87,9 @@ public final class SetImpl extends SoyAbstractValue implements SoySet {
   public void render(LoggingAdvisingAppendable appendable) throws IOException {
     appendable.append(coerceToString());
   }
+
+  @Override
+  public String getSoyTypeName() {
+    return "set";
+  }
 }

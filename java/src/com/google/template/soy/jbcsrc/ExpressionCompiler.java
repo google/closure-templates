@@ -677,9 +677,7 @@ final class ExpressionCompiler {
           if (child instanceof SpreadOpNode) {
             paramStore =
                 paramStore.invoke(
-                    MethodRefs.PARAM_STORE_SET_ALL,
-                    visit(((SpreadOpNode) child).getChild(0))
-                        .checkedCast(BytecodeUtils.SOY_RECORD_TYPE));
+                    MethodRefs.PARAM_STORE_SET_ALL, visit(((SpreadOpNode) child).getChild(0)));
           } else {
             paramStore =
                 paramStore.invoke(

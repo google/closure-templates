@@ -86,4 +86,9 @@ public final class IterableImpl extends SoyAbstractValue implements SoyIterable 
   public void render(LoggingAdvisingAppendable appendable) throws IOException {
     appendable.append(coerceToString());
   }
+
+  @Override
+  public String getSoyTypeName() {
+    return "iterable";
+  }
 }

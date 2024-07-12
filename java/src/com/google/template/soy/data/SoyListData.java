@@ -503,4 +503,9 @@ public final class SoyListData extends CollectionData implements Iterable<SoyVal
       }
     }
   }
+
+  @Override
+  public String getSoyTypeName() {
+    return "list";
+  }
 }

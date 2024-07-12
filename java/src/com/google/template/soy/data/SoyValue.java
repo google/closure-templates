@@ -20,8 +20,8 @@ import com.google.protobuf.Message;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.UndefinedData;
+import com.google.template.soy.internal.proto.ProtoUtils;
 import java.io.IOException;
-import java.lang.reflect.Modifier;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -109,7 +109,6 @@ public interface SoyValue extends SoyValueProvider {
    */
   void render(LoggingAdvisingAppendable appendable) throws IOException;
 
-
   // -----------------------------------------------------------------------------------------------
   // Convenience methods for retrieving a known primitive type.
 
@@ -196,8 +195,7 @@ public interface SoyValue extends SoyValueProvider {
 
   @Nonnull
   default Message getProto() {
-    throw new SoyDataException(
-        "Expecting proto value but instead encountered type " + soyValueClassName(this));
+    throw new SoyDataException(classCastErrorMessage(this, "Message"));
   }
 
   /** Returns null is this value is nullish, otherwise {@link #getProto()}. */
@@ -208,8 +206,7 @@ public interface SoyValue extends SoyValueProvider {
 
   @Nonnull
   default List<? extends SoyValueProvider> asJavaList() {
-    throw new SoyDataException(
-        "Expecting list value but instead encountered type " + soyValueClassName(this));
+    throw new SoyDataException(classCastErrorMessage(this, "list"));
   }
 
   @Nullable
@@ -224,8 +221,11 @@ public interface SoyValue extends SoyValueProvider {
 
   @Nonnull
   default Map<? extends SoyValue, ? extends SoyValueProvider> asJavaMap() {
-    throw new SoyDataException(
-        "Expecting map value but instead encountered type " + soyValueClassName(this));
+    throw new SoyDataException(classCastErrorMessage(this, "map"));
+  }
+
+  default SoyRecord asSoyRecord() {
+    throw new ClassCastException(classCastErrorMessage(this, "record"));
   }
 
   /**
@@ -240,27 +240,27 @@ public interface SoyValue extends SoyValueProvider {
 
   /** A runtime type check for this boxed Soy value. */
   default SoyValue checkNullishInt() {
-    throw new ClassCastException(soyValueClassName(this) + " cannot be cast to IntegerData");
+    throw new ClassCastException(classCastErrorMessage(this, "int"));
   }
 
   /** A runtime type check for this boxed Soy value. */
   default SoyValue checkNullishFloat() {
-    throw new ClassCastException(soyValueClassName(this) + " cannot be cast to FloatData");
+    throw new ClassCastException(classCastErrorMessage(this, "float"));
   }
 
   /** A runtime type check for this boxed Soy value. */
   default SoyValue checkNullishNumber() {
-    throw new ClassCastException(soyValueClassName(this) + " cannot be cast to NumberData");
+    throw new ClassCastException(classCastErrorMessage(this, "number"));
   }
 
   /** A runtime type check for this boxed Soy value. */
   default SoyValue checkNullishBoolean() {
-    throw new ClassCastException(soyValueClassName(this) + " cannot be cast to BooleanData");
+    throw new ClassCastException(classCastErrorMessage(this, "bool"));
   }
 
   /** A runtime type check for this boxed Soy value. */
   default SoyValue checkNullishString() {
-    throw new ClassCastException(soyValueClassName(this) + " cannot be cast to StringData");
+    throw new ClassCastException(classCastErrorMessage(this, "string"));
   }
 
   /**
@@ -270,7 +270,7 @@ public interface SoyValue extends SoyValueProvider {
    *     SanitizedContent} whose content kind is equal to {@code contentKind}.
    */
   default SoyValue checkNullishSanitizedContent(ContentKind contentKind) {
-    throw new ClassCastException(soyValueClassName(this) + " cannot be cast to " + contentKind);
+    throw new ClassCastException(classCastErrorMessage(this, contentKind.getSoyTypeName()));
   }
 
   /**
@@ -281,7 +281,7 @@ public interface SoyValue extends SoyValueProvider {
    */
   default SoyValue checkNullishProto(Class<? extends Message> messageType) {
     throw new ClassCastException(
-        soyValueClassName(this) + " cannot be cast to " + messageType.getName());
+        classCastErrorMessage(this, ProtoUtils.getProtoTypeName(messageType)));
   }
 
   /** Returns true if this value is a sanitized content with kind equal to `contentKind`. */
@@ -294,16 +294,13 @@ public interface SoyValue extends SoyValueProvider {
     return false;
   }
 
-  private static String soyValueClassName(SoyValue value) {
-    var clazz = value.getClass();
-    // A number of soy value types have private inner classes as implementation details.  Report the
-    // outer class name instead.
-    Class<?> declaring;
-    if (Modifier.isPrivate(clazz.getModifiers())
-        && (declaring = clazz.getDeclaringClass()) != null
-        && declaring.isInstance(value)) {
-      return declaring.getSimpleName();
-    }
-    return clazz.getSimpleName();
+  /**
+   * Returns a human-readable string representation of the Soy type contained by this value, for use
+   * in error messages.
+   */
+  String getSoyTypeName();
+
+  private static String classCastErrorMessage(SoyValue value, String requiredSoyType) {
+    return String.format("expected %s, got %s", requiredSoyType, value.getSoyTypeName());
   }
 }

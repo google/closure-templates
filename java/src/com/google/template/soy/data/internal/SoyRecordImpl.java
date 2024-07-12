@@ -118,4 +118,9 @@ public final class SoyRecordImpl extends SoyAbstractValue implements SoyRecord {
   ParamStore getParamStore() {
     return map;
   }
+
+  @Override
+  public String getSoyTypeName() {
+    return "record";
+  }
 }

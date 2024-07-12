@@ -96,4 +96,9 @@ public interface SoyRecord extends SoyValue {
   void forEach(BiConsumer<RecordProperty, ? super SoyValueProvider> action);
 
   int recordSize();
+
+  @Override
+  default SoyRecord asSoyRecord() {
+    return this;
+  }
 }

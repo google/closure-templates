@@ -181,4 +181,9 @@ public final class IntegerData extends NumberData {
   public SoyValue checkNullishInt() {
     return this;
   }
+
+  @Override
+  public String getSoyTypeName() {
+    return "int";
+  }
 }

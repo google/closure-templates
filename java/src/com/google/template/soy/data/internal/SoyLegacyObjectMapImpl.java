@@ -121,4 +121,9 @@ public final class SoyLegacyObjectMapImpl extends SoyAbstractValue implements So
           e);
     }
   }
+
+  @Override
+  public String getSoyTypeName() {
+    return "legacy_object_map";
+  }
 }

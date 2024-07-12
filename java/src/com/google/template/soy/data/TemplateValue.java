@@ -70,4 +70,9 @@ public abstract class TemplateValue extends SoyAbstractValue {
     throw new IllegalStateException(
         "Cannot print template types; this should have been caught during parsing.");
   }
+
+  @Override
+  public String getSoyTypeName() {
+    return "template";
+  }
 }

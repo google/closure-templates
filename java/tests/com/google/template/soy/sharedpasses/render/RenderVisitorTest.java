@@ -1545,6 +1545,11 @@ public class RenderVisitorTest {
       public int hashCode() {
         return this.getClass().hashCode();
       }
+
+      @Override
+      public String getSoyTypeName() {
+        return "test";
+      }
     };
   }
 

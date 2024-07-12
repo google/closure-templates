@@ -1075,10 +1075,7 @@ final class ProtoUtils {
       // Wait until all map values can be resolved. Since we don't box/unbox maps, directly call
       // mapArg.asJavaMap() that converts SoyMapImpl to a Map<String, SoyValueProvider>.
       Expression resolved =
-          detacher.resolveSoyValueProviderMap(
-              mapArg
-                  .checkedCast(BytecodeUtils.SOY_MAP_TYPE)
-                  .invoke(MethodRefs.SOY_VALUE_AS_JAVA_MAP));
+          detacher.resolveSoyValueProviderMap(mapArg.invoke(MethodRefs.SOY_VALUE_AS_JAVA_MAP));
 
       // Enter new scope
       LocalVariableManager.Scope scope = varManager.enterScope();

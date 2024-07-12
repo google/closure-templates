@@ -147,4 +147,9 @@ abstract class AbstractSoyList extends SoyAbstractValue implements SoyList {
 
     appendable.append(']');
   }
+
+  @Override
+  public String getSoyTypeName() {
+    return "list";
+  }
 }

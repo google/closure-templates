@@ -48,4 +48,9 @@ public final class NullData extends NullishData {
   public int hashCode() {
     return getClass().hashCode();
   }
+
+  @Override
+  public String getSoyTypeName() {
+    return "null";
+  }
 }

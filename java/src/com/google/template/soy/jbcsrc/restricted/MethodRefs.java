@@ -39,7 +39,6 @@ import com.google.template.soy.data.RecordProperty;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyProtoValue;
-import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.SoyVisualElement;
@@ -285,9 +284,9 @@ public final class MethodRefs {
   public static final MethodRef PARAM_STORE_SET_FIELD =
       createNonPure(ParamStore.class, "setField", RecordProperty.class, SoyValueProvider.class);
   public static final MethodRef PARAM_STORE_SET_ALL =
-      createNonPure(ParamStore.class, "setAll", SoyRecord.class);
+      createNonPure(ParamStore.class, "setAll", SoyValue.class);
   public static final MethodRef PARAM_STORE_FROM_RECORD =
-      createPure(ParamStore.class, "fromRecord", SoyRecord.class);
+      createPure(ParamStore.class, "fromRecord", SoyValue.class);
 
   public static final MethodRef SOY_PROTO_VALUE_CREATE =
       createPure(SoyProtoValue.class, "create", Message.class);

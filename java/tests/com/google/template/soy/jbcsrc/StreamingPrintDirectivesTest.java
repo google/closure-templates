@@ -189,8 +189,7 @@ public final class StreamingPrintDirectivesTest {
             ClassCastException.class,
             () ->
                 templates.getTemplate("ns.nonstreamable").render(null, badParam, output, context));
-    assertThat(cce).hasMessageThat().contains("StringData cannot be cast to");
-    assertThat(cce).hasMessageThat().contains("IntegerData");
+    assertThat(cce).hasMessageThat().contains("expected int, got string");
   }
 
   @Test

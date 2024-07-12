@@ -307,4 +307,9 @@ public final class DictImpl extends SoyAbstractValue implements SoyDict, SoyMap 
   public RuntimeMapTypeTracker.Type getMapType() {
     return typeTracker.type();
   }
+
+  @Override
+  public String getSoyTypeName() {
+    return "dict";
+  }
 }

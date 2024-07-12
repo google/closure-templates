@@ -35,6 +35,7 @@ import com.google.protobuf.Descriptors.FileDescriptor;
 import com.google.protobuf.Descriptors.GenericDescriptor;
 import com.google.protobuf.Descriptors.OneofDescriptor;
 import com.google.protobuf.ExtensionRegistry;
+import com.google.protobuf.Message;
 import java.util.HashMap;
 import java.util.Map;
 import javax.annotation.Nullable;
@@ -238,5 +239,21 @@ public final class ProtoUtils {
       return valueField.getJavaType() == FieldDescriptor.JavaType.MESSAGE;
     }
     return field.getJavaType() == FieldDescriptor.JavaType.MESSAGE;
+  }
+
+  private static <T extends Message> T getDefaultInstance(Class<T> type) {
+    try {
+      return type.cast(type.getMethod("getDefaultInstance").invoke(null));
+    } catch (ReflectiveOperationException | ClassCastException e) {
+      throw new IllegalArgumentException("" + type, e);
+    }
+  }
+
+  public static String getProtoTypeName(Class<? extends Message> clazz) {
+    return getProtoName(getDefaultInstance(clazz));
+  }
+
+  public static String getProtoName(Message message) {
+    return message.getDescriptorForType().getFullName();
   }
 }

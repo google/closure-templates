@@ -134,4 +134,9 @@ public abstract class StringData extends PrimitiveData {
       buffer.replayOn(appendable);
     }
   }
+
+  @Override
+  public String getSoyTypeName() {
+    return "string";
+  }
 }
