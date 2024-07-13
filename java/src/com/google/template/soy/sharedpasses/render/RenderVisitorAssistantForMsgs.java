@@ -24,7 +24,6 @@ import com.google.template.soy.msgs.internal.MsgUtils;
 import com.google.template.soy.msgs.restricted.SoyMsgPart;
 import com.google.template.soy.msgs.restricted.SoyMsgPlaceholderPart;
 import com.google.template.soy.msgs.restricted.SoyMsgPluralPart;
-import com.google.template.soy.msgs.restricted.SoyMsgPluralRemainderPart;
 import com.google.template.soy.msgs.restricted.SoyMsgRawTextPart;
 import com.google.template.soy.msgs.restricted.SoyMsgSelectPart;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
@@ -42,7 +41,6 @@ import com.google.template.soy.soytree.MsgSelectDefaultNode;
 import com.google.template.soy.soytree.MsgSelectNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.ibm.icu.util.ULocale;
-import java.util.List;
 import javax.annotation.Nullable;
 
 /**
@@ -282,7 +280,7 @@ final class RenderVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
             repSelectNode);
       }
 
-      List<SoyMsgPart> caseParts = selectPart.lookupCase(correctSelectValue);
+      ImmutableList<SoyMsgPart> caseParts = selectPart.lookupCase(correctSelectValue);
 
       if (caseParts != null) {
 
@@ -336,7 +334,7 @@ final class RenderVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
       }
 
       // Handle cases.
-      List<SoyMsgPart> caseParts = pluralPart.lookupCase(correctPluralValue, locale);
+      ImmutableList<SoyMsgPart> caseParts = pluralPart.lookupCase(correctPluralValue, locale);
 
       for (SoyMsgPart casePart : caseParts) {
 
@@ -345,9 +343,6 @@ final class RenderVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
 
         } else if (casePart instanceof SoyMsgRawTextPart) {
           appendRawTextPart((SoyMsgRawTextPart) casePart);
-
-        } else if (casePart instanceof SoyMsgPluralRemainderPart) {
-          appendPluralRemainder(correctPluralValue - pluralPart.getOffset());
 
         } else {
           // Plural parts will not have nested plural/select parts.  So, this is an error.
@@ -370,16 +365,6 @@ final class RenderVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
       // Since the content of a placeholder is not altered by translation, just render
       // the corresponding placeholder node.
       visit(msgNode.getRepPlaceholderNode(msgPlaceholderPart.getPlaceholderName()));
-    }
-
-    /**
-     * Processes a {@code SoyMsgPluralRemainderPart} and appends the rendered output to the {@code
-     * StringBuilder} object in {@code RenderVisitor}. Since this is precomputed when visiting the
-     * {@code SoyMsgPluralPart} object, it is directly used here.
-     */
-    private void appendPluralRemainder(double currentPluralRemainderValue) {
-      RenderVisitor.append(
-          master.getCurrOutputBufForUseByAssistants(), String.valueOf(currentPluralRemainderValue));
     }
 
     /**

@@ -62,7 +62,6 @@ import com.google.template.soy.msgs.restricted.SoyMsgPart;
 import com.google.template.soy.msgs.restricted.SoyMsgPart.Case;
 import com.google.template.soy.msgs.restricted.SoyMsgPlaceholderPart;
 import com.google.template.soy.msgs.restricted.SoyMsgPluralPart;
-import com.google.template.soy.msgs.restricted.SoyMsgPluralRemainderPart;
 import com.google.template.soy.msgs.restricted.SoyMsgRawTextPart;
 import com.google.template.soy.msgs.restricted.SoyMsgSelectPart;
 import com.google.template.soy.shared.RangeArgs;
@@ -523,8 +522,8 @@ final class TemplateAnalysisImpl implements TemplateAnalysis {
       // placeholder multiple times.  This isn't a concern here because our 'pseudo evaluation'
       // process is idempotent.
       for (SoyMsgPart part : parts) {
-        if (part instanceof SoyMsgRawTextPart || part instanceof SoyMsgPluralRemainderPart) {
-          // raw text and plural remainders don't have associated expressions
+        if (part instanceof SoyMsgRawTextPart) {
+          // raw text doesn't have associated expressions
           continue;
         }
         if (part instanceof SoyMsgPluralPart) {

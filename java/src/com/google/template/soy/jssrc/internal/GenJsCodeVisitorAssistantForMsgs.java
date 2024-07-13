@@ -45,7 +45,6 @@ import com.google.template.soy.msgs.restricted.SoyMsgPart;
 import com.google.template.soy.msgs.restricted.SoyMsgPlaceholderPart;
 import com.google.template.soy.msgs.restricted.SoyMsgPluralCaseSpec;
 import com.google.template.soy.msgs.restricted.SoyMsgPluralPart;
-import com.google.template.soy.msgs.restricted.SoyMsgPluralRemainderPart;
 import com.google.template.soy.msgs.restricted.SoyMsgRawTextPart;
 import com.google.template.soy.msgs.restricted.SoyMsgSelectPart;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
@@ -443,10 +442,8 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractReturningSoyNodeVi
       ImmutableList<SoyMsgPart> parts, MsgNode msgNode, GoogMsgPlaceholderCodeGenInfo codeGenInfo) {
 
     for (SoyMsgPart child : parts) {
-      if (child instanceof SoyMsgRawTextPart || child instanceof SoyMsgPluralRemainderPart) {
-        // raw text doesn't have placeholders and remainders use the same placeholder as plural they
-        // are a member of.
-        // nothing to do
+      if (child instanceof SoyMsgRawTextPart) {
+        // raw text doesn't have placeholders
       } else if (child instanceof SoyMsgSelectPart) {
         genGoogMsgCodeForSelectNode((SoyMsgSelectPart) child, msgNode, codeGenInfo);
       } else if (child instanceof SoyMsgPlaceholderPart) {

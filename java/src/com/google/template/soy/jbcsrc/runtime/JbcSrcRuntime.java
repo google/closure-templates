@@ -64,7 +64,6 @@ import com.google.template.soy.jbcsrc.shared.StackFrame;
 import com.google.template.soy.msgs.restricted.SoyMsgPart;
 import com.google.template.soy.msgs.restricted.SoyMsgPlaceholderPart;
 import com.google.template.soy.msgs.restricted.SoyMsgPluralPart;
-import com.google.template.soy.msgs.restricted.SoyMsgPluralRemainderPart;
 import com.google.template.soy.msgs.restricted.SoyMsgRawTextPart;
 import com.google.template.soy.msgs.restricted.SoyMsgSelectPart;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
@@ -484,9 +483,6 @@ public final class JbcSrcRuntime {
           } catch (IllegalStateException e) {
             throw new IllegalStateException(placeholderName, e);
           }
-        } else if (msgPart instanceof SoyMsgPluralRemainderPart) {
-          // this is weird... shouldn't this be using a number format?
-          out.append(String.valueOf(getPluralRemainder()));
         } else {
           throw new AssertionError("unexpected part: " + msgPart);
         }

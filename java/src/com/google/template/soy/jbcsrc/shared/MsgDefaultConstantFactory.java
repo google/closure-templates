@@ -27,7 +27,6 @@ import com.google.template.soy.msgs.restricted.SoyMsgPart.Case;
 import com.google.template.soy.msgs.restricted.SoyMsgPlaceholderPart;
 import com.google.template.soy.msgs.restricted.SoyMsgPluralCaseSpec;
 import com.google.template.soy.msgs.restricted.SoyMsgPluralPart;
-import com.google.template.soy.msgs.restricted.SoyMsgPluralRemainderPart;
 import com.google.template.soy.msgs.restricted.SoyMsgRawTextPart;
 import com.google.template.soy.msgs.restricted.SoyMsgSelectPart;
 import java.lang.invoke.MethodHandles;
@@ -64,8 +63,6 @@ public final class MsgDefaultConstantFactory {
     RAW,
     /** will be followed by a single string representing the placeholder name. */
     PLACEHOLDER,
-    /** will be followed by a single string representing the plural name. */
-    REMAINDER,
     BEGIN_PLURAL,
     BEGIN_SELECT,
     /**
@@ -135,10 +132,6 @@ public final class MsgDefaultConstantFactory {
         builder.addAll(partsToConstantPartsList(item.parts()));
       }
       builder.add(Tag.END.ordinal());
-    } else if (part instanceof SoyMsgPluralRemainderPart) {
-      builder
-          .add(Tag.REMAINDER.ordinal())
-          .add(((SoyMsgPluralRemainderPart) part).getPluralVarName());
     } else if (part instanceof SoyMsgRawTextPart) {
       builder.add(Tag.RAW.ordinal()).add(((SoyMsgRawTextPart) part).getRawText());
     } else if (part instanceof SoyMsgSelectPart) {
@@ -198,9 +191,6 @@ public final class MsgDefaultConstantFactory {
           break;
         case PLACEHOLDER:
           parts.add(new SoyMsgPlaceholderPart((String) rawParts.next()));
-          break;
-        case REMAINDER:
-          parts.add(new SoyMsgPluralRemainderPart((String) rawParts.next()));
           break;
         case BEGIN_PLURAL:
           {

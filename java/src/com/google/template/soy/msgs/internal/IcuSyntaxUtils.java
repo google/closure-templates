@@ -26,7 +26,6 @@ import com.google.template.soy.msgs.restricted.SoyMsgPart.Case;
 import com.google.template.soy.msgs.restricted.SoyMsgPlaceholderPart;
 import com.google.template.soy.msgs.restricted.SoyMsgPluralCaseSpec;
 import com.google.template.soy.msgs.restricted.SoyMsgPluralPart;
-import com.google.template.soy.msgs.restricted.SoyMsgPluralRemainderPart;
 import com.google.template.soy.msgs.restricted.SoyMsgRawTextPart;
 import com.google.template.soy.msgs.restricted.SoyMsgSelectPart;
 import java.util.List;
@@ -106,9 +105,6 @@ public class IcuSyntaxUtils {
         }
         // Reuse the msg part for the placeholder since it's immutable.
         newMsgPartsBuilder.add(origMsgPart);
-
-      } else if (origMsgPart instanceof SoyMsgPluralRemainderPart) {
-        currRawTextSb.append(getPluralRemainderString());
 
       } else if (origMsgPart instanceof SoyMsgPluralPart) {
         convertPluralPartHelper(newMsgPartsBuilder, currRawTextSb, (SoyMsgPluralPart) origMsgPart);
@@ -302,15 +298,6 @@ public class IcuSyntaxUtils {
    */
   private static String getPluralCaseCloseString() {
     return "}";
-  }
-
-  /**
-   * Gets the closing string for a plural remainder statement.
-   *
-   * @return the ICU syntax string for the plural remainder string.
-   */
-  private static String getPluralRemainderString() {
-    return "#";
   }
 
   // ------ Select related strings. ------
