@@ -29,9 +29,6 @@ import javax.annotation.ParametersAreNonnullByDefault;
  * <p>This allows for adding providers of late-resolved values (e.g. Futures) to records/maps/lists
  * that are only resolved if the values are actually retrieved. Note that each Soy value object
  * should itself be a provider (of itself).
- *
- * <p>Important: Until this API is more stable and this note is removed, users must not define
- * classes that implement this interface.
  */
 @ParametersAreNonnullByDefault
 public interface SoyValueProvider {

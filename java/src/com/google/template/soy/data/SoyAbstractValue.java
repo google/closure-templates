@@ -21,12 +21,7 @@ import java.io.IOException;
 import javax.annotation.Nonnull;
 import javax.annotation.ParametersAreNonnullByDefault;
 
-/**
- * Abstract implementation of SoyValue.
- *
- * <p>Important: Until this API is more stable and this note is removed, users must not define
- * classes that extend this class.
- */
+/** Abstract implementation of SoyValue. */
 @ParametersAreNonnullByDefault
 public abstract class SoyAbstractValue implements SoyValue {
 

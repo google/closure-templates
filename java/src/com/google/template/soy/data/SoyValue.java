@@ -29,12 +29,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 
-/**
- * Superinterface of all Soy value interfaces/classes.
- *
- * <p>Important: Until this API is more stable and this note is removed, users must not define
- * classes that implement this interface.
- */
+/** Superinterface of all Soy value interfaces/classes. */
 @ParametersAreNonnullByDefault
 public interface SoyValue extends SoyValueProvider {
 

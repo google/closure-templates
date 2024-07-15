@@ -41,8 +41,6 @@ import javax.annotation.Nullable;
 
 /**
  * Internal utilities related to Soy values.
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  */
 public class InternalValueUtils {
 

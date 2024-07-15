@@ -24,9 +24,6 @@ import javax.annotation.ParametersAreNonnullByDefault;
  * A SoyRecord that also implements the SoyLegacyObjectMap interface.
  *
  * <p>In map usage, the item keys are the record field names in the form of StringData.
- *
- * <p>Important: Until this API is more stable and this note is removed, users must not define
- * classes that implement this interface.
  */
 @ParametersAreNonnullByDefault
 public interface SoyDict extends SoyRecord, SoyLegacyObjectMap {

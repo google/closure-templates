@@ -24,9 +24,6 @@ import javax.annotation.ParametersAreNonnullByDefault;
 /**
  * A record containing name-to-value mappings referred to as fields. Each name is a string and each
  * value is a SoyValue (can be unresolved).
- *
- * <p>Important: Until this API is more stable and this note is removed, users must not define
- * classes that implement this interface.
  */
 @ParametersAreNonnullByDefault
 public interface SoyRecord extends SoyValue {

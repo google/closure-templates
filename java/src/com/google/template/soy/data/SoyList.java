@@ -25,9 +25,6 @@ import javax.annotation.ParametersAreNonnullByDefault;
  *
  * <p>A list also supports the map interface. In that usage, the item keys are the list indices in
  * the form of IntegerData.
- *
- * <p>Important: Until this API is more stable and this note is removed, users must not define
- * classes that implement this interface.
  */
 @ParametersAreNonnullByDefault
 public interface SoyList extends SoyLegacyObjectMap, SoyIterable {
