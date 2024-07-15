@@ -805,7 +805,7 @@ It takes 1 required and 4 optional arguments.
     'compact_long'. If this argument is not provided, the default 'decimal' will
     be used.
 1.  The "numbers" keyword passed to the ICU4J's locale. For instance, it can be
-    "native" so that we show native characters in languages like arabic (this
+    "native" so that we show native characters in languages like Arabic (this
     argument is ignored for templates running in JavaScript).
 
     NOTE: see https://unicode-org.github.io/icu/userguide/locale/ for more
