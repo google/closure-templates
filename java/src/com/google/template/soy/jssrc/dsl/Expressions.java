@@ -366,6 +366,11 @@ public final class Expressions {
     return ObjectLiteral.create(object);
   }
 
+  /** Creates a code chunk representing an object literal with the specified keys/values. */
+  public static Expression objectLiteralWithKeys(Map<Expression, Expression> object) {
+    return ObjectLiteral.createWithKeys(object);
+  }
+
   /**
    * Returns a unique key that can be used in the parameter passed to {@link #objectLiteral} to
    * cause the corresponding value to be interpreted as an object spread.
