@@ -16,14 +16,16 @@
 
 package com.google.template.soy.sharedpasses.render;
 
+import com.google.common.collect.ImmutableList;
 import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.internal.MsgUtils;
-import com.google.template.soy.msgs.restricted.PlaceholderName;
-import com.google.template.soy.msgs.restricted.SoyMsgPluralPartForRendering;
-import com.google.template.soy.msgs.restricted.SoyMsgRawParts;
-import com.google.template.soy.msgs.restricted.SoyMsgSelectPartForRendering;
+import com.google.template.soy.msgs.restricted.SoyMsgPart;
+import com.google.template.soy.msgs.restricted.SoyMsgPlaceholderPart;
+import com.google.template.soy.msgs.restricted.SoyMsgPluralPart;
+import com.google.template.soy.msgs.restricted.SoyMsgRawTextPart;
+import com.google.template.soy.msgs.restricted.SoyMsgSelectPart;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CaseOrDefaultNode;
 import com.google.template.soy.soytree.EscapingMode;
@@ -81,18 +83,18 @@ final class RenderVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
     boolean foundTranslation = false;
     if (msgBundle != null) {
       for (MsgNode msg : node.getChildren()) {
-        SoyMsgRawParts translation =
-            msgBundle.getMsgPartsForRendering(MsgUtils.computeMsgIdForDualFormat(msg));
-        if (translation != null) {
+        ImmutableList<SoyMsgPart> translation =
+            msgBundle.getMsgParts(MsgUtils.computeMsgIdForDualFormat(msg));
+        if (!translation.isEmpty()) {
           renderMsgFromTranslation(msg, translation, msgBundle.getLocale());
           foundTranslation = true;
           break;
         }
-        SoyMsgRawParts translationByAlternateId =
+        ImmutableList<SoyMsgPart> translationByAlternateId =
             msg.getAlternateId().isPresent()
-                ? msgBundle.getMsgPartsForRendering(msg.getAlternateId().getAsLong())
-                : null;
-        if (translationByAlternateId != null) {
+                ? msgBundle.getMsgParts(msg.getAlternateId().getAsLong())
+                : ImmutableList.of();
+        if (!translationByAlternateId.isEmpty()) {
           renderMsgFromTranslation(msg, translationByAlternateId, msgBundle.getLocale());
           foundTranslation = true;
           break;
@@ -109,32 +111,35 @@ final class RenderVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
    *
    * <p>TODO(lukes): Refactor this to share the implementation with the JbcSrcRuntime.
    */
-  void renderMsgFromTranslation(MsgNode msg, SoyMsgRawParts msgParts, @Nullable ULocale locale) {
-    if (msgParts instanceof SoyMsgPluralPartForRendering) {
-      new PlrselMsgPartsVisitor(msg, locale).visitPart((SoyMsgPluralPartForRendering) msgParts);
+  private void renderMsgFromTranslation(
+      MsgNode msg, ImmutableList<SoyMsgPart> msgParts, @Nullable ULocale locale) {
+    SoyMsgPart firstPart = msgParts.get(0);
 
-    } else if (msgParts instanceof SoyMsgSelectPartForRendering) {
-      new PlrselMsgPartsVisitor(msg, locale).visitPart((SoyMsgSelectPartForRendering) msgParts);
+    if (firstPart instanceof SoyMsgPluralPart) {
+      new PlrselMsgPartsVisitor(msg, locale).visitPart((SoyMsgPluralPart) firstPart);
+
+    } else if (firstPart instanceof SoyMsgSelectPart) {
+      new PlrselMsgPartsVisitor(msg, locale).visitPart((SoyMsgSelectPart) firstPart);
 
     } else {
-      msgParts.forEach(
-          msgPart -> {
-            if (msgPart instanceof String) {
-              String s = (String) msgPart;
-              if (msg.getEscapingMode() == EscapingMode.ESCAPE_HTML) {
-                // Note that "&" is not replaced because the translation can contain HTML entities.
-                s = s.replace("<", "&lt;");
-              }
-              RenderVisitor.append(master.getCurrOutputBufForUseByAssistants(), s);
+      for (SoyMsgPart msgPart : msgParts) {
 
-            } else if (msgPart instanceof PlaceholderName) {
-              String placeholderName = ((PlaceholderName) msgPart).name();
-              visit(msg.getRepPlaceholderNode(placeholderName));
+        if (msgPart instanceof SoyMsgRawTextPart) {
+          String s = ((SoyMsgRawTextPart) msgPart).getRawText();
+          if (msg.getEscapingMode() == EscapingMode.ESCAPE_HTML) {
+            // Note that "&" is not replaced because the translation can contain HTML entities.
+            s = s.replace("<", "&lt;");
+          }
+          RenderVisitor.append(master.getCurrOutputBufForUseByAssistants(), s);
 
-            } else {
-              throw new AssertionError();
-            }
-          });
+        } else if (msgPart instanceof SoyMsgPlaceholderPart) {
+          String placeholderName = ((SoyMsgPlaceholderPart) msgPart).getPlaceholderName();
+          visit(msg.getRepPlaceholderNode(placeholderName));
+
+        } else {
+          throw new AssertionError();
+        }
+      }
     }
   }
 
@@ -256,9 +261,9 @@ final class RenderVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
      *
      * @param selectPart The Select part.
      */
-    private void visitPart(SoyMsgSelectPartForRendering selectPart) {
+    private void visitPart(SoyMsgSelectPart selectPart) {
 
-      String selectVarName = selectPart.getSelectVarName().name();
+      String selectVarName = selectPart.getSelectVarName();
       MsgSelectNode repSelectNode = msgNode.getRepSelectNode(selectVarName);
 
       // Associate the select variable with the value.
@@ -275,9 +280,32 @@ final class RenderVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
             repSelectNode);
       }
 
-      SoyMsgRawParts caseParts = selectPart.lookupCase(correctSelectValue);
+      ImmutableList<SoyMsgPart> caseParts = selectPart.lookupCase(correctSelectValue);
+
       if (caseParts != null) {
-        renderMsgFromTranslation(msgNode, caseParts, locale);
+
+        for (SoyMsgPart casePart : caseParts) {
+
+          if (casePart instanceof SoyMsgSelectPart) {
+            visitPart((SoyMsgSelectPart) casePart);
+
+          } else if (casePart instanceof SoyMsgPluralPart) {
+            visitPart((SoyMsgPluralPart) casePart);
+
+          } else if (casePart instanceof SoyMsgPlaceholderPart) {
+            visitPart((SoyMsgPlaceholderPart) casePart);
+
+          } else if (casePart instanceof SoyMsgRawTextPart) {
+            appendRawTextPart((SoyMsgRawTextPart) casePart);
+
+          } else {
+            throw RenderException.create(
+                    "Unsupported part of type "
+                        + casePart.getClass().getName()
+                        + " under a select case.")
+                .addStackTraceElement(repSelectNode);
+          }
+        }
       }
     }
 
@@ -289,9 +317,9 @@ final class RenderVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
      *
      * @param pluralPart The Plural part.
      */
-    private void visitPart(SoyMsgPluralPartForRendering pluralPart) {
+    private void visitPart(SoyMsgPluralPart pluralPart) {
 
-      MsgPluralNode repPluralNode = msgNode.getRepPluralNode(pluralPart.getPluralVarName().name());
+      MsgPluralNode repPluralNode = msgNode.getRepPluralNode(pluralPart.getPluralVarName());
       double correctPluralValue;
       ExprRootNode pluralExpr = repPluralNode.getExpr();
       try {
@@ -306,11 +334,48 @@ final class RenderVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
       }
 
       // Handle cases.
-      SoyMsgRawParts caseParts = pluralPart.lookupCase(correctPluralValue, locale);
+      ImmutableList<SoyMsgPart> caseParts = pluralPart.lookupCase(correctPluralValue, locale);
 
-      renderMsgFromTranslation(msgNode, caseParts, locale);
+      for (SoyMsgPart casePart : caseParts) {
+
+        if (casePart instanceof SoyMsgPlaceholderPart) {
+          visitPart((SoyMsgPlaceholderPart) casePart);
+
+        } else if (casePart instanceof SoyMsgRawTextPart) {
+          appendRawTextPart((SoyMsgRawTextPart) casePart);
+
+        } else {
+          // Plural parts will not have nested plural/select parts.  So, this is an error.
+          throw RenderException.create(
+                  "Unsupported part of type "
+                      + casePart.getClass().getName()
+                      + " under a plural case.")
+              .addStackTraceElement(repPluralNode);
+        }
+      }
     }
 
+    /**
+     * Process a {@code SoyMsgPlaceholderPart} and updates the internal data structures.
+     *
+     * @param msgPlaceholderPart the Placeholder part.
+     */
+    private void visitPart(SoyMsgPlaceholderPart msgPlaceholderPart) {
+
+      // Since the content of a placeholder is not altered by translation, just render
+      // the corresponding placeholder node.
+      visit(msgNode.getRepPlaceholderNode(msgPlaceholderPart.getPlaceholderName()));
+    }
+
+    /**
+     * Processes a {@code SoyMsgRawTextPart} and appends the contained text to the {@code
+     * StringBuilder} object in {@code RenderVisitor}.
+     *
+     * @param rawTextPart The raw text part.
+     */
+    private void appendRawTextPart(SoyMsgRawTextPart rawTextPart) {
+      RenderVisitor.append(master.getCurrOutputBufForUseByAssistants(), rawTextPart.getRawText());
+    }
   }
 
   // -----------------------------------------------------------------------------------------------

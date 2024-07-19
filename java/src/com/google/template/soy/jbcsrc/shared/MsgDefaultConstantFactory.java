@@ -27,7 +27,6 @@ import com.google.template.soy.msgs.restricted.SoyMsgPart.Case;
 import com.google.template.soy.msgs.restricted.SoyMsgPlaceholderPart;
 import com.google.template.soy.msgs.restricted.SoyMsgPluralCaseSpec;
 import com.google.template.soy.msgs.restricted.SoyMsgPluralPart;
-import com.google.template.soy.msgs.restricted.SoyMsgRawParts;
 import com.google.template.soy.msgs.restricted.SoyMsgRawTextPart;
 import com.google.template.soy.msgs.restricted.SoyMsgSelectPart;
 import java.lang.invoke.MethodHandles;
@@ -163,12 +162,12 @@ public final class MsgDefaultConstantFactory {
    *     ()->ImmutableList<SoyMsgPart>}
    * @param rawParts The pieces of the message
    */
-  public static SoyMsgRawParts bootstrapMsgConstant(
+  public static ImmutableList<SoyMsgPart> bootstrapMsgConstant(
       MethodHandles.Lookup lookup, String name, Class<?> type, Object... rawParts) {
     PeekingIterator<Object> itr = peekingIterator(forArray(rawParts));
     ImmutableList<SoyMsgPart> parts = parseParts(itr);
     checkState(!itr.hasNext()); // sanity
-    return SoyMsgRawParts.fromMsgParts(parts);
+    return parts;
   }
 
   private static ImmutableList<SoyMsgPart> parseParts(PeekingIterator<Object> rawParts) {

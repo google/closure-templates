@@ -19,7 +19,7 @@ package com.google.template.soy.msgs;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.msgs.restricted.SoyMsg;
-import com.google.template.soy.msgs.restricted.SoyMsgRawParts;
+import com.google.template.soy.msgs.restricted.SoyMsgPart;
 import com.google.template.soy.msgs.restricted.SoyMsgRawTextPart;
 import com.ibm.icu.util.ULocale;
 import java.util.Iterator;
@@ -61,12 +61,9 @@ public abstract class SoyMsgBundle implements Iterable<SoyMsg> {
    * matter. The default implementation is just {@link SoyMsg#getParts} but some subclasses may have
    * more efficient implementations
    */
-  @Nullable
-  public SoyMsgRawParts getMsgPartsForRendering(long msgId) {
+  public ImmutableList<SoyMsgPart> getMsgParts(long msgId) {
     SoyMsg msg = getMsg(msgId);
-    // This will be slow, but all callers should use the RenderOnlySoyMsgBundleImpl which will be
-    // fast.
-    return msg == null ? null : SoyMsgRawParts.fromMsgParts(msg.getParts());
+    return msg == null ? ImmutableList.of() : msg.getParts();
   }
 
   /** Returns the plain translated text of a message with no placeholders. */
@@ -129,10 +126,9 @@ public abstract class SoyMsgBundle implements Iterable<SoyMsg> {
         return null;
       }
 
-      @Nullable
       @Override
-      public SoyMsgRawParts getMsgPartsForRendering(long msgId) {
-        return null;
+      public ImmutableList<SoyMsgPart> getMsgParts(long msgId) {
+        return ImmutableList.of();
       }
 
       @Override

@@ -37,7 +37,7 @@ import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplates.TemplateData;
 import com.google.template.soy.logging.LoggableElementMetadata;
 import com.google.template.soy.msgs.SoyMsgBundle;
-import com.google.template.soy.msgs.restricted.SoyMsgRawParts;
+import com.google.template.soy.msgs.restricted.SoyMsgPart;
 import com.google.template.soy.plugin.java.PluginInstances;
 import com.google.template.soy.plugin.java.RenderCssHelper;
 import com.google.template.soy.shared.SoyCssRenamingMap;
@@ -299,9 +299,10 @@ public final class RenderContext {
    * Returns the {@link SoyMsg} associated with the {@code msgId} or the fallback (aka english)
    * translation if there is no such message.
    */
-  public SoyMsgRawParts getSoyMsgParts(long msgId, SoyMsgRawParts defaultMsgParts) {
-    SoyMsgRawParts msgParts = msgBundle.getMsgPartsForRendering(msgId);
-    if (msgParts == null) {
+  public ImmutableList<SoyMsgPart> getSoyMsgParts(
+      long msgId, ImmutableList<SoyMsgPart> defaultMsgParts) {
+    ImmutableList<SoyMsgPart> msgParts = msgBundle.getMsgParts(msgId);
+    if (msgParts.isEmpty()) {
       return defaultMsgParts;
     }
     return msgParts;
@@ -311,9 +312,9 @@ public final class RenderContext {
    * Returns the {@link SoyMsg} associated with the {@code msgId} or throws if there is no such
    * message.
    */
-  public SoyMsgRawParts getSoyMsgParts(long msgId) {
-    SoyMsgRawParts msgParts = msgBundle.getMsgPartsForRendering(msgId);
-    if (msgParts == null) {
+  public ImmutableList<SoyMsgPart> getSoyMsgParts(long msgId) {
+    ImmutableList<SoyMsgPart> msgParts = msgBundle.getMsgParts(msgId);
+    if (msgParts.isEmpty()) {
       throw new AssertionError();
     }
     return msgParts;
@@ -323,12 +324,12 @@ public final class RenderContext {
    * Returns the {@link SoyMsg} associated with the {@code msgId}, the {@code alternateId} or the
    * fallback (aka english) translation if there is no such message.
    */
-  public SoyMsgRawParts getSoyMsgPartsWithAlternateId(
-      long msgId, SoyMsgRawParts defaultMsgParts, long alternateId) {
-    SoyMsgRawParts msgParts = msgBundle.getMsgPartsForRendering(msgId);
-    if (msgParts == null) {
-      SoyMsgRawParts msgPartsByAlternateId = msgBundle.getMsgPartsForRendering(alternateId);
-      if (msgPartsByAlternateId == null) {
+  public ImmutableList<SoyMsgPart> getSoyMsgPartsWithAlternateId(
+      long msgId, ImmutableList<SoyMsgPart> defaultMsgParts, long alternateId) {
+    ImmutableList<SoyMsgPart> msgParts = msgBundle.getMsgParts(msgId);
+    if (msgParts.isEmpty()) {
+      ImmutableList<SoyMsgPart> msgPartsByAlternateId = msgBundle.getMsgParts(alternateId);
+      if (msgPartsByAlternateId.isEmpty()) {
         return defaultMsgParts;
       }
       return msgPartsByAlternateId;
@@ -340,11 +341,11 @@ public final class RenderContext {
    * Returns the {@link SoyMsg} associated with the {@code msgId}, the {@code alternateId} or throws
    * if there is no such message.
    */
-  public SoyMsgRawParts getSoyMsgPartsWithAlternateId(long msgId, long alternateId) {
-    SoyMsgRawParts msgParts = msgBundle.getMsgPartsForRendering(msgId);
-    if (msgParts == null) {
-      SoyMsgRawParts msgPartsByAlternateId = msgBundle.getMsgPartsForRendering(alternateId);
-      if (msgPartsByAlternateId == null) {
+  public ImmutableList<SoyMsgPart> getSoyMsgPartsWithAlternateId(long msgId, long alternateId) {
+    ImmutableList<SoyMsgPart> msgParts = msgBundle.getMsgParts(msgId);
+    if (msgParts.isEmpty()) {
+      ImmutableList<SoyMsgPart> msgPartsByAlternateId = msgBundle.getMsgParts(alternateId);
+      if (msgPartsByAlternateId.isEmpty()) {
         throw new AssertionError();
       }
       return msgPartsByAlternateId;

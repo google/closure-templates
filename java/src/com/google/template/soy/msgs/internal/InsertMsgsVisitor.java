@@ -224,7 +224,9 @@ public final class InsertMsgsVisitor {
       // are using the primary message.
       long primaryMsgId = ((IntegerNode) node.getParam(1)).getValue();
       long fallbackMsgId = ((IntegerNode) node.getParam(2)).getValue();
-      isPrimaryMsgInUse = msgBundle.hasMsg(primaryMsgId) || !msgBundle.hasMsg(fallbackMsgId);
+      isPrimaryMsgInUse =
+          !msgBundle.getMsgParts(primaryMsgId).isEmpty()
+              || msgBundle.getMsgParts(fallbackMsgId).isEmpty();
     }
     node.getParent()
         .replaceChild(node, new BooleanNode(isPrimaryMsgInUse, node.getSourceLocation()));

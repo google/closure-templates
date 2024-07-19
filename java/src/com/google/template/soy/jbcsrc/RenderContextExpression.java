@@ -35,7 +35,6 @@ import com.google.template.soy.jbcsrc.restricted.Statement;
 import com.google.template.soy.jbcsrc.shared.ExtraConstantBootstraps;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
 import com.google.template.soy.jbcsrc.shared.StackFrame;
-import com.google.template.soy.msgs.restricted.SoyMsgRawParts;
 import java.lang.invoke.MethodHandles;
 import javax.annotation.Nullable;
 import org.objectweb.asm.ConstantDynamic;
@@ -68,7 +67,7 @@ final class RenderContextExpression extends Expression implements JbcSrcPluginCo
 
   private static final MethodRef GET_SOY_MSG_PARTS =
       MethodRef.createNonPure(
-              RenderContext.class, "getSoyMsgParts", long.class, SoyMsgRawParts.class)
+              RenderContext.class, "getSoyMsgParts", long.class, ImmutableList.class)
           .asNonJavaNullable();
 
   private static final MethodRef GET_SOY_MSG_PARTS_NO_DEFAULT =
@@ -80,7 +79,7 @@ final class RenderContextExpression extends Expression implements JbcSrcPluginCo
               RenderContext.class,
               "getSoyMsgPartsWithAlternateId",
               long.class,
-              SoyMsgRawParts.class,
+              ImmutableList.class,
               long.class)
           .asNonJavaNullable();
 
