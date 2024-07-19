@@ -43,6 +43,22 @@ Here are details on how Soy generates placeholders in messages:
     that's named according to the last key name, by default. For example,
     `{$user.emailAddress}` turns into the placeholder `{EMAIL_ADDRESS}`.
 
+-   A function call or more complex expressions turns into a single placeholder,
+    named `{XXX}` by default. To aid translation, be sure to provide a clear
+    example of what the message might look like in the `desc` attribute and
+    consider setting a `phname` or `phex`.
+
+    Examples of these transforms can be seen below:
+
+    *   `$fooBar` -> FOO_BAR
+    *   `$aaa_bbb` -> AAA_BBB
+    *   `$foo.bar` -> BAR
+    *   `$arr[0]` -> XXX
+    *   `$arr[0].bar` -> BAR
+    *   `$num + 1` -> XXX
+    *   `length($aaa)` -> XXX
+    *   `$foo.getBar()` -> XXX
+
 -   A complete `call` block (up to the closing `/call`) turns into a single
     placeholder. The placeholder is named `{XXX}` by default, so if you put a
     `call` inside a `msg`, be sure to provide a clear example of what the
@@ -162,19 +178,6 @@ the message. For example, if there are multiple gender expressions, a translator
 might not know whether an expression `$gender` applies to the gender of the user
 or the target. Expressions like `$userGender` and `$targetGender` clearly
 represent the gender of the user and the gender of the target.
-
-Examples of these transforms can be seen below:
-
-*   `aaaBbb` -> AAA_BBB
-*   `aaa_bbb` -> AAA_BBB
-*   `aaa.bbb` -> BBB
-*   `$b.aaa` -> AAA
-*   `aaa.BBB` -> BBB
-*   `aaa.0` -> fallback
-*   `aaa[0]` -> fallback
-*   `aaa[0].bbb` -> BBB
-*   `length($aaa)` -> fallback
-*   `aaa + 1` -> fallback
 
 #### Varies in English {#gender-vary}
 
