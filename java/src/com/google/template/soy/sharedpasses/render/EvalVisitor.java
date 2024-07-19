@@ -1144,11 +1144,11 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     // if the primary message id is available or the fallback message is not available, then we
     // are using the primary message.
     long primaryMsgId = ((IntegerNode) node.getParam(1)).getValue();
-    if (!msgBundle.getMsgParts(primaryMsgId).isEmpty()) {
+    if (msgBundle.hasMsg(primaryMsgId)) {
       return BooleanData.TRUE;
     }
     long fallbackMsgId = ((IntegerNode) node.getParam(2)).getValue();
-    return BooleanData.forValue(msgBundle.getMsgParts(fallbackMsgId).isEmpty());
+    return BooleanData.forValue(!msgBundle.hasMsg(fallbackMsgId));
   }
 
   private SoyValue visitToFloatFunction(FunctionNode node) {

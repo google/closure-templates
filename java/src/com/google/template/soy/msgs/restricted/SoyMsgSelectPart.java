@@ -19,7 +19,6 @@ package com.google.template.soy.msgs.restricted;
 import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableList;
 import java.util.Objects;
-import javax.annotation.Nullable;
 
 /**
  * Represents a select statement within a message.
@@ -49,26 +48,6 @@ public final class SoyMsgSelectPart extends SoyMsgPart {
   /** Returns the cases. */
   public ImmutableList<Case<String>> getCases() {
     return cases;
-  }
-
-  @Nullable
-  public ImmutableList<SoyMsgPart> lookupCase(String selectValue) {
-    // TODO(lukes): consider indexing the case in some way to speed lookups
-    ImmutableList<SoyMsgPart> caseParts = null;
-    ImmutableList<SoyMsgPart> defaultParts = null;
-    for (Case<String> case0 : getCases()) {
-      if (case0.spec() == null) {
-        defaultParts = case0.parts();
-      } else if (case0.spec().equals(selectValue)) {
-        caseParts = case0.parts();
-        break;
-      }
-    }
-
-    if (caseParts == null) {
-      return defaultParts;
-    }
-    return caseParts;
   }
 
   @Override
