@@ -403,19 +403,18 @@ class ValidateExternsPass implements CompilerFilePass {
       case UNKNOWN:
         return javaType == Object.class || javaType == SoyValue.class;
       case ITERABLE:
-        if (!isAllowedParameterizedType(((IterableType) soyType).getElementType(), extern)) {
-          return false;
-        }
         return mode == Mode.EXTENDS
             ? Iterable.class.isAssignableFrom(javaType)
-            : javaType == Iterable.class;
+            : (isAllowedParameterizedType(((IterableType) soyType).getElementType(), extern)
+                    && javaType == Iterable.class)
+                || javaType == SoyValue.class;
       case LIST:
-        if (!isAllowedParameterizedType(((ListType) soyType).getElementType(), extern)) {
-          return false;
-        }
         return mode == Mode.EXTENDS
             ? Iterable.class.isAssignableFrom(javaType)
-            : (!javaType.equals(Object.class) && javaType.isAssignableFrom(ImmutableList.class));
+            : (isAllowedParameterizedType(((ListType) soyType).getElementType(), extern)
+                    && !javaType.equals(Object.class)
+                    && javaType.isAssignableFrom(ImmutableList.class))
+                || javaType == SoyValue.class;
       case SET:
         if (!isAllowedParameterizedType(((SetType) soyType).getElementType(), extern)) {
           return false;
