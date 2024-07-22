@@ -446,15 +446,19 @@ function isTruthy(expr: unknown): boolean {
   return !!expr;
 }
 
+let isInFalsinessRenderer = false;
 function isTruthyNonEmpty(expr: unknown): boolean {
   if (!expr) return false;
 
   // idom callbacks.
   if ((expr as IdomFunction).isInvokableFn) {
     const renderer = new FalsinessRenderer();
-    (expr as IdomFunction).invoke(
-      renderer as unknown as IncrementalDomRenderer,
-    );
+    try {
+      isInFalsinessRenderer = true;
+      (expr as IdomFunction).invoke(renderer);
+    } finally {
+      isInFalsinessRenderer = false;
+    }
     return renderer.didRender();
   }
 
@@ -487,9 +491,12 @@ class IdHolderForDebug implements IdHolder {
   backing?: string;
   get id(): string | undefined {
     if (!this.backing) {
+      // b/235271145: When checking idom blocks for truthiness, the attribute is
+      // skipped.  Ignore this error in this case.
+      if (isInFalsinessRenderer) return 'zSoyz: Fake ID in FalsyRenderer';
       throw new Error(
         `
-Cannot read 'idHolder.id' until the element with the 'uniqueAttribute()' call is
+        Cannot read 'idHolder.id' until the element with the 'uniqueAttribute()' call is
 patched.  If you're trying to print {$idHolder.id} first, swap the usage around,
 so that the first element calls uniqueAttribute(), and the second element prints
 {$idHolder.id}.`.trim(),
