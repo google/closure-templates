@@ -20,7 +20,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.msgs.SoyMsgBundle;
-import com.google.template.soy.msgs.restricted.SoyMsgPart.Case;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -58,25 +57,27 @@ public final class SoyMsgBundleCompactor {
    * messages in order to reuse identical objects.
    */
   public SoyMsgBundle compact(SoyMsgBundle input) {
-    ImmutableList.Builder<SoyMsg> builder = ImmutableList.builder();
+    ImmutableList.Builder<RenderOnlySoyMsgBundleImpl.RenderOnlySoyMsg> builder =
+        ImmutableList.builder();
     for (SoyMsg msg : input) {
-      ImmutableList<SoyMsgPart> parts = compactParts(msg.getParts());
-      builder.add(
-          SoyMsg.builder()
-              .setId(msg.getId())
-              .setLocaleString(msg.getLocaleString())
-              .setIsPlrselMsg(MsgPartUtils.hasPlrselPart(parts))
-              .setParts(parts)
-              .build());
+      if (RenderOnlySoyMsgBundleImpl.isValidMsgPartsForSoyRendering(msg.getParts())) {
+        try {
+          builder.add(
+              RenderOnlySoyMsgBundleImpl.RenderOnlySoyMsg.create(
+                  msg.getId(), compactParts(msg.getParts())));
+        } catch (RuntimeException e) {
+          throw new IllegalArgumentException("Failed to compact message: " + msg, e);
+        }
+      }
     }
     return new RenderOnlySoyMsgBundleImpl(input.getLocaleString(), builder.build());
   }
 
   /** Compacts a set of message parts. */
-  private ImmutableList<SoyMsgPart> compactParts(ImmutableList<SoyMsgPart> parts) {
-    ImmutableList.Builder<SoyMsgPart> builder = ImmutableList.builder();
+  private SoyMsgRawParts compactParts(ImmutableList<SoyMsgPart> parts) {
+    SoyMsgRawParts.Builder builder = SoyMsgRawParts.builderWithExpectedSize(parts.size());
     for (SoyMsgPart part : parts) {
-      builder.add(compactPart(part));
+      builder.addRawPart(compactPart(part));
     }
     return builder.build();
   }
@@ -86,34 +87,34 @@ public final class SoyMsgBundleCompactor {
    *
    * <p>If the part is a plural/select part, it might be expanded into multiple parts.
    */
-  private SoyMsgPart compactPart(SoyMsgPart part) {
+  private Object compactPart(SoyMsgPart part) {
+    Object result;
     if (part instanceof SoyMsgPluralPart) {
-      part = compactPlural((SoyMsgPluralPart) part);
+      result = compactPlural((SoyMsgPluralPart) part);
     } else if (part instanceof SoyMsgSelectPart) {
-      part = compactSelect((SoyMsgSelectPart) part);
+      result = compactSelect((SoyMsgSelectPart) part);
     } else if (part instanceof SoyMsgPlaceholderPart) {
-      part = compactPlaceholder((SoyMsgPlaceholderPart) part);
+      return PlaceholderName.create(
+          ((SoyMsgPlaceholderPart) part).getPlaceholderName()); // already interned
+    } else {
+      result = ((SoyMsgRawTextPart) part).getRawText();
     }
     // Now intern the message part.
-    return intern(part);
+    return intern(result);
   }
 
-  private SoyMsgPart compactPlaceholder(SoyMsgPlaceholderPart part) {
-    return new SoyMsgPlaceholderPart(intern(part.getPlaceholderName()));
-  }
-
-  private SoyMsgPart compactSelect(SoyMsgSelectPart select) {
+  private SoyMsgSelectPartForRendering compactSelect(SoyMsgSelectPart select) {
     // TODO: Turn into a non-select message if there's only one unique case.
     // Select variable names tend to be repeated across many templates, like "gender".
-    return new SoyMsgSelectPart(
-        intern(select.getSelectVarName()),
+    return new SoyMsgSelectPartForRendering(
+        PlaceholderName.create(select.getSelectVarName()),
         compactCases(select.getCases(), DEFAULT_SELECT_CASE_SPEC));
   }
 
-  private SoyMsgPart compactPlural(SoyMsgPluralPart plural) {
+  private SoyMsgPluralPartForRendering compactPlural(SoyMsgPluralPart plural) {
     // Plural variable names tend to be repeated across templates, such as "count".
-    return new SoyMsgPluralPart(
-        intern(plural.getPluralVarName()),
+    return new SoyMsgPluralPartForRendering(
+        PlaceholderName.create(plural.getPluralVarName()),
         plural.getOffset(),
         compactCases(plural.getCases(), DEFAULT_PLURAL_CASE_SPEC));
   }
@@ -126,7 +127,7 @@ public final class SoyMsgBundleCompactor {
    * @param cases Mapping (as pairs) from case spec to the message parts for that case.
    * @param defaultCaseSpec The default or "other" case specification value.
    */
-  public static <T> Iterable<SoyMsgPart.Case<T>> pruneRedundantCases(
+  public static <T> ImmutableList<SoyMsgPart.Case<T>> pruneRedundantCases(
       ImmutableList<SoyMsgPart.Case<T>> cases, T defaultCaseSpec) {
 
     // Determine the fallback/other case value.
@@ -164,14 +165,15 @@ public final class SoyMsgBundleCompactor {
    * @param cases Mapping (as pairs) from case spec to the message parts for that case.
    * @param defaultCaseSpec The default or "other" case specification value.
    */
-  private <T> ImmutableList<Case<T>> compactCases(ImmutableList<Case<T>> cases, T defaultCaseSpec) {
-    ImmutableList.Builder<Case<T>> builder = ImmutableList.builder();
-    for (Case<T> caseAndValue : pruneRedundantCases(cases, defaultCaseSpec)) {
+  private <T> ImmutableList<SoyMsgRawParts.RawCase<T>> compactCases(
+      ImmutableList<SoyMsgPart.Case<T>> cases, T defaultCaseSpec) {
+    ImmutableList.Builder<SoyMsgRawParts.RawCase<T>> builder = ImmutableList.builder();
+    for (var caseAndValue : pruneRedundantCases(cases, defaultCaseSpec)) {
       // Intern the case value, since they tend to be very common among templates. For select,
       // they tend to be strings like "male" or "female", and for plurals, it tends to be one
       // of the few in the enum.
       builder.add(
-          Case.create(
+          SoyMsgRawParts.RawCase.create(
               caseAndValue.spec() != null ? intern(caseAndValue.spec()) : null,
               compactParts(caseAndValue.parts())));
     }

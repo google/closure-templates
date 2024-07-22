@@ -61,11 +61,10 @@ import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
 import com.google.template.soy.jbcsrc.shared.SaveStateMetaFactory;
 import com.google.template.soy.jbcsrc.shared.StackFrame;
-import com.google.template.soy.msgs.restricted.SoyMsgPart;
-import com.google.template.soy.msgs.restricted.SoyMsgPlaceholderPart;
-import com.google.template.soy.msgs.restricted.SoyMsgPluralPart;
-import com.google.template.soy.msgs.restricted.SoyMsgRawTextPart;
-import com.google.template.soy.msgs.restricted.SoyMsgSelectPart;
+import com.google.template.soy.msgs.restricted.PlaceholderName;
+import com.google.template.soy.msgs.restricted.SoyMsgPluralPartForRendering;
+import com.google.template.soy.msgs.restricted.SoyMsgRawParts;
+import com.google.template.soy.msgs.restricted.SoyMsgSelectPartForRendering;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.ibm.icu.util.ULocale;
 import java.io.IOException;
@@ -269,7 +268,7 @@ public final class JbcSrcRuntime {
    * for rendering to proceed.
    */
   public static class MsgRenderer implements SoyValueProvider {
-    ImmutableList<SoyMsgPart> msgParts;
+    SoyMsgRawParts msgParts;
     final ULocale locale;
     private int partIndex;
     private SoyValueProvider pendingRender;
@@ -289,7 +288,7 @@ public final class JbcSrcRuntime {
 
     public MsgRenderer(
         long msgId,
-        ImmutableList<SoyMsgPart> msgParts,
+        SoyMsgRawParts msgParts,
         @Nullable ULocale locale,
         int numPlaceholders,
         boolean htmlEscape) {
@@ -430,16 +429,16 @@ public final class JbcSrcRuntime {
         }
         pendingRender = null;
       }
-      for (int i = partIndex; i < msgParts.size(); i++) {
-        SoyMsgPart msgPart = msgParts.get(i);
-        if (msgPart instanceof SoyMsgRawTextPart) {
-          String s = ((SoyMsgRawTextPart) msgPart).getRawText();
+      for (int i = partIndex; i < msgParts.numParts(); i++) {
+        Object msgPart = msgParts.getPart(i);
+        if (msgPart instanceof String) {
+          String s = (String) msgPart;
           if (htmlEscape) {
             s = escapeHtml(s);
           }
           out.append(s);
-        } else if (msgPart instanceof SoyMsgPlaceholderPart) {
-          String placeholderName = ((SoyMsgPlaceholderPart) msgPart).getPlaceholderName();
+        } else {
+          String placeholderName = ((PlaceholderName) msgPart).name();
           if (endPlaceholderToStartPlaceholder != null) {
             if (startPlaceholders.contains(placeholderName)) {
               startPlaceholderRenderCount.add(placeholderName);
@@ -483,8 +482,6 @@ public final class JbcSrcRuntime {
           } catch (IllegalStateException e) {
             throw new IllegalStateException(placeholderName, e);
           }
-        } else {
-          throw new AssertionError("unexpected part: " + msgPart);
         }
       }
       if (startPlaceholderRenderCount != null && !startPlaceholderRenderCount.isEmpty()) {
@@ -497,21 +494,15 @@ public final class JbcSrcRuntime {
       return RenderResult.done();
     }
 
-    double getPluralRemainder() {
-      throw new UnsupportedOperationException(
-          "this is not a plural message so remainder don't make sense");
-    }
   }
 
   /** A MsgRenderer for plural or select style messages. */
   public static final class PlrSelMsgRenderer extends MsgRenderer {
     private boolean resolvedCases;
-    // only one plural is allowed per message so we only need to track one remainder.
-    private double remainder = -1;
 
     public PlrSelMsgRenderer(
         long msgId,
-        ImmutableList<SoyMsgPart> msgParts,
+        SoyMsgRawParts msgParts,
         @Nullable ULocale locale,
         int numPlaceholders,
         boolean htmlEscape) {
@@ -527,28 +518,27 @@ public final class JbcSrcRuntime {
         // NOTE: that in the most common case, this loop only executes once and at maximum it will
         // loop 3 times.  We do know statically what the first iteration will be, but it is not
         // possible to know anything beyond that.
-        ImmutableList<SoyMsgPart> parts = this.msgParts;
+        SoyMsgRawParts parts = this.msgParts;
         RenderResult caseSelectionResult = RenderResult.done();
-        while (!parts.isEmpty()) {
-          SoyMsgPart first = parts.get(0);
-          if (first instanceof SoyMsgSelectPart) {
-            SoyMsgSelectPart selectPart = (SoyMsgSelectPart) first;
-            SoyValueProvider selectPlaceholder = placeholders.get(selectPart.getSelectVarName());
+        while (true) {
+          if (parts instanceof SoyMsgSelectPartForRendering) {
+            SoyMsgSelectPartForRendering selectPart = (SoyMsgSelectPartForRendering) parts;
+            SoyValueProvider selectPlaceholder =
+                placeholders.get(selectPart.getSelectVarName().name());
             caseSelectionResult = selectPlaceholder.status();
             if (caseSelectionResult.isDone()) {
               parts = selectPart.lookupCase(selectPlaceholder.resolve().coerceToString());
             } else {
               break;
             }
-          } else if (first instanceof SoyMsgPluralPart) {
-            SoyMsgPluralPart pluralPart = (SoyMsgPluralPart) first;
-            SoyValueProvider pluralPlaceholder = placeholders.get(pluralPart.getPluralVarName());
+          } else if (parts instanceof SoyMsgPluralPartForRendering) {
+            SoyMsgPluralPartForRendering pluralPart = (SoyMsgPluralPartForRendering) parts;
+            SoyValueProvider pluralPlaceholder =
+                placeholders.get(pluralPart.getPluralVarName().name());
             caseSelectionResult = pluralPlaceholder.status();
             if (caseSelectionResult.isDone()) {
               double pluralValue = pluralPlaceholder.resolve().numberValue();
               parts = pluralPart.lookupCase(pluralValue, locale);
-              // precalculate and store the remainder.
-              remainder = pluralValue - pluralPart.getOffset();
             } else {
               break;
             }
@@ -565,11 +555,6 @@ public final class JbcSrcRuntime {
       }
       // render the cases.
       return super.renderAndResolve(out);
-    }
-
-    @Override
-    double getPluralRemainder() {
-      return remainder;
     }
   }
 

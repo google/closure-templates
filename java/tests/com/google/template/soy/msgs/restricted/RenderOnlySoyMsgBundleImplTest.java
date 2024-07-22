@@ -16,14 +16,15 @@
 
 package com.google.template.soy.msgs.restricted;
 
+import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.template.soy.msgs.SoyMsgBundle;
+import com.google.template.soy.msgs.restricted.RenderOnlySoyMsgBundleImpl.RenderOnlySoyMsg;
 import java.util.List;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.junit.Before;
 import org.junit.Test;
@@ -99,7 +100,9 @@ public class RenderOnlySoyMsgBundleImplTest {
             createSelectMsg(832),
             createSelectMsg(791),
             createSelectMsg(6065559473112027469L));
-    bundle = new RenderOnlySoyMsgBundleImpl(LOCALE, testMessages);
+    bundle =
+        new RenderOnlySoyMsgBundleImpl(
+            LOCALE, testMessages.stream().map(RenderOnlySoyMsg::create).collect(toImmutableList()));
   }
 
   @Test
@@ -157,7 +160,7 @@ public class RenderOnlySoyMsgBundleImplTest {
     // This tries to OOM the test in the presence of such issues.
     IntStream.range(1, 10000)
         .mapToObj(i -> new RenderOnlySoyMsgBundleImpl("fr", ImmutableList.of()))
-        .collect(Collectors.toList());
+        .collect(toImmutableList());
   }
 
   @Test
@@ -169,11 +172,52 @@ public class RenderOnlySoyMsgBundleImplTest {
   @Test
   public void testLargerBundle() {
     // Tests the hash table behavior.
-    List<SoyMsg> msgs =
-        IntStream.range(1, 10000).mapToObj(this::createSimpleMsg).collect(Collectors.toList());
-    SoyMsgBundle largeBundle = new RenderOnlySoyMsgBundleImpl(LOCALE, msgs);
-    for (SoyMsg msg : msgs) {
+    ImmutableList<SoyMsg> msgs =
+        IntStream.range(1, 10000).mapToObj(this::createSimpleMsg).collect(toImmutableList());
+    SoyMsgBundle largeBundle =
+        new RenderOnlySoyMsgBundleImpl(
+            LOCALE, msgs.stream().map(RenderOnlySoyMsg::create).collect(toImmutableList()));
+    for (var msg : msgs) {
       assertThat(largeBundle.getMsg(msg.getId())).isEqualTo(msg);
     }
+  }
+
+  @Test
+  public void dropsUnsupportedIcuMessages() {
+    var bundle =
+        new RenderOnlySoyMsgBundleImpl(
+            LOCALE,
+            new SoyMsgBundleImpl(
+                LOCALE,
+                ImmutableList.of(
+                    SoyMsg.builder()
+                        .setId(1)
+                        .setLocaleString(LOCALE)
+                        .setIsPlrselMsg(true)
+                        .setParts(
+                            ImmutableList.of(
+                                new SoyMsgSelectPart(
+                                    "varname",
+                                    ImmutableList.of(
+                                        SoyMsgPart.Case.create(
+                                            "male",
+                                            ImmutableList.of(SoyMsgRawTextPart.of("Male message"))),
+                                        SoyMsgPart.Case.create(
+                                            "female",
+                                            ImmutableList.of(
+                                                SoyMsgRawTextPart.of("Female message"))))),
+                                new SoyMsgSelectPart(
+                                    "varname",
+                                    ImmutableList.of(
+                                        SoyMsgPart.Case.create(
+                                            "male",
+                                            ImmutableList.of(SoyMsgRawTextPart.of("Male message"))),
+                                        SoyMsgPart.Case.create(
+                                            "female",
+                                            ImmutableList.of(
+                                                SoyMsgRawTextPart.of("Female message")))))))
+                        .build())));
+    assertThat(bundle.getMsg(1)).isNull();
+    assertThat(bundle.getNumMsgs()).isEqualTo(0);
   }
 }

@@ -18,6 +18,7 @@ package com.google.template.soy.jbcsrc.runtime;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.util.concurrent.Futures.immediateFuture;
+import static java.util.Arrays.stream;
 import static org.junit.Assert.assertThrows;
 
 import com.google.common.collect.ImmutableList;
@@ -29,6 +30,7 @@ import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.runtime.JbcSrcRuntime.MsgRenderer;
 import com.google.template.soy.msgs.restricted.SoyMsgPart;
 import com.google.template.soy.msgs.restricted.SoyMsgPlaceholderPart;
+import com.google.template.soy.msgs.restricted.SoyMsgRawParts;
 import com.google.template.soy.msgs.restricted.SoyMsgRawTextPart;
 import com.ibm.icu.util.ULocale;
 import org.junit.Test;
@@ -235,10 +237,10 @@ public final class JbcSrcRuntimeTest {
   }
 
   private MsgRenderer createRenderer(SoyMsgPart... parts) {
-    ImmutableList<SoyMsgPart> partsCopy = ImmutableList.copyOf(parts);
+    SoyMsgRawParts rawParts = SoyMsgRawParts.fromMsgParts(ImmutableList.copyOf(parts));
     int numPlaceholders =
-        (int) partsCopy.stream().filter(p -> p instanceof SoyMsgPlaceholderPart).count();
+        (int) stream(parts).filter(p -> p instanceof SoyMsgPlaceholderPart).count();
     return new JbcSrcRuntime.MsgRenderer(
-        /* msgId=*/ 0L, partsCopy, ULocale.US, numPlaceholders, /* htmlEscape= */ false);
+        /* msgId= */ 0L, rawParts, ULocale.US, numPlaceholders, /* htmlEscape= */ false);
   }
 }
