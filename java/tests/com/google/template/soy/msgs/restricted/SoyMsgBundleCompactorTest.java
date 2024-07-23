@@ -132,38 +132,36 @@ public class SoyMsgBundleCompactorTest {
   @Test
   public void testInterning() {
     assertWithMessage("SoyMsgRawTextPart should be interned")
-        .that(yyMsgBundle.getMsgPartsForRendering(314).getPart(0))
-        .isSameInstanceAs(xxMsgBundle.getMsgPartsForRendering(314).getPart(0));
+        .that(yyMsgBundle.getMsg(314).getParts().get(0))
+        .isSameInstanceAs(xxMsgBundle.getMsg(314).getParts().get(0));
     assertWithMessage("SoyMsgRawTextPart should be interned")
-        .that(yyMsgBundle.getMsgPartsForRendering(159).getPart(0))
-        .isSameInstanceAs(xxMsgBundle.getMsgPartsForRendering(159).getPart(0));
+        .that(yyMsgBundle.getMsg(159).getParts().get(0))
+        .isSameInstanceAs(xxMsgBundle.getMsg(159).getParts().get(0));
     assertWithMessage("SoyMsgPlaceholderPart should be interned")
-        .that(yyMsgBundle.getMsgPartsForRendering(159).getPart(1))
-        .isSameInstanceAs(xxMsgBundle.getMsgPartsForRendering(159).getPart(1));
+        .that(yyMsgBundle.getMsg(159).getParts().get(1))
+        .isSameInstanceAs(xxMsgBundle.getMsg(159).getParts().get(1));
     assertWithMessage("SoyMsgSelectPart should be interned")
-        .that(yyMsgBundle.getMsgPartsForRendering(265))
-        .isSameInstanceAs(xxMsgBundle.getMsgPartsForRendering(265));
+        .that(yyMsgBundle.getMsg(265).getParts().get(0))
+        .isSameInstanceAs(xxMsgBundle.getMsg(265).getParts().get(0));
     assertWithMessage("SoyMsgSelectPart should be interned")
-        .that(yyMsgBundle.getMsgPartsForRendering(358))
-        .isSameInstanceAs(xxMsgBundle.getMsgPartsForRendering(358));
+        .that(yyMsgBundle.getMsg(358).getParts().get(0))
+        .isSameInstanceAs(xxMsgBundle.getMsg(358).getParts().get(0));
 
-    var select1 = (SoyMsgSelectPartForRendering) xxMsgBundle.getMsgPartsForRendering(265);
-    var select2 = (SoyMsgSelectPartForRendering) xxMsgBundle.getMsgPartsForRendering(266);
+    SoyMsgSelectPart select1 = (SoyMsgSelectPart) xxMsgBundle.getMsg(265).getParts().get(0);
+    SoyMsgSelectPart select2 = (SoyMsgSelectPart) xxMsgBundle.getMsg(266).getParts().get(0);
     assertThat(select2).isNotSameInstanceAs(select1);
     assertWithMessage("Select var names should be interned")
         .that(select2.getSelectVarName())
         .isSameInstanceAs(select1.getSelectVarName());
     assertWithMessage("Case values should be interned")
-        .that(select2.toSelectPart().getCases().get(0).spec())
-        .isSameInstanceAs(select1.toSelectPart().getCases().get(0).spec());
+        .that(select2.getCases().get(0).spec())
+        .isSameInstanceAs(select1.getCases().get(0).spec());
   }
 
   @Test
   public void testCaseCollapsing() {
-    var differentSelect =
-        ((SoyMsgSelectPartForRendering) xxMsgBundle.getMsgPartsForRendering(265)).toSelectPart();
-    var sameSelect =
-        ((SoyMsgSelectPartForRendering) xxMsgBundle.getMsgPartsForRendering(358)).toSelectPart();
+    SoyMsgSelectPart differentSelect = (SoyMsgSelectPart) xxMsgBundle.getMsg(265).getParts().get(0);
+    SoyMsgSelectPart sameSelect = (SoyMsgSelectPart) xxMsgBundle.getMsg(358).getParts().get(0);
     assertWithMessage("Selects with different cases should not be collapsed")
         .that(differentSelect.getCases().size())
         .isEqualTo(3);

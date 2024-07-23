@@ -77,7 +77,6 @@ import com.google.template.soy.jbcsrc.shared.Names;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
 import com.google.template.soy.jbcsrc.shared.StackFrame;
 import com.google.template.soy.logging.LoggableElementMetadata;
-import com.google.template.soy.msgs.restricted.SoyMsgRawParts;
 import com.google.template.soy.types.SoyProtoEnumType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
@@ -190,7 +189,6 @@ public final class BytecodeUtils {
   public static final Type SAFE_HTML_TYPE = Type.getType(SafeHtml.class);
   public static final Type TRUSTED_RESOURCE_URL_TYPE = Type.getType(TrustedResourceUrl.class);
   public static final Type RECORD_SYMBOL_TYPE = Type.getType(RecordProperty.class);
-  public static final Type SOY_MSG_RAW_PARTS_TYPE = Type.getType(SoyMsgRawParts.class);
 
   public static final Method CLASS_INIT = Method.getMethod("void <clinit>()");
   public static final Method NULLARY_INIT = Method.getMethod("void <init>()");

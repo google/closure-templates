@@ -68,7 +68,6 @@ import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
 import com.google.template.soy.jbcsrc.shared.StackFrame;
 import com.google.template.soy.logging.LoggableElementMetadata;
-import com.google.template.soy.msgs.restricted.SoyMsgRawParts;
 import com.google.template.soy.shared.internal.SharedRuntime;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
@@ -707,7 +706,7 @@ public final class MethodRefs {
       createPureConstructor(
           JbcSrcRuntime.MsgRenderer.class,
           long.class,
-          SoyMsgRawParts.class,
+          ImmutableList.class,
           ULocale.class,
           int.class,
           boolean.class);
@@ -715,7 +714,7 @@ public final class MethodRefs {
       createPureConstructor(
           JbcSrcRuntime.PlrSelMsgRenderer.class,
           long.class,
-          SoyMsgRawParts.class,
+          ImmutableList.class,
           ULocale.class,
           int.class,
           boolean.class);

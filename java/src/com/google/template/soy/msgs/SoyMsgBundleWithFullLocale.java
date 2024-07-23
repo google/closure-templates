@@ -17,10 +17,11 @@
 package com.google.template.soy.msgs;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.ImmutableList;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.msgs.restricted.RenderOnlySoyMsgBundleImpl;
 import com.google.template.soy.msgs.restricted.SoyMsg;
-import com.google.template.soy.msgs.restricted.SoyMsgRawParts;
+import com.google.template.soy.msgs.restricted.SoyMsgPart;
 import com.ibm.icu.util.ULocale;
 import java.util.Iterator;
 import java.util.Locale;
@@ -99,8 +100,8 @@ public final class SoyMsgBundleWithFullLocale extends SoyMsgBundle {
   }
 
   @Override
-  public SoyMsgRawParts getMsgPartsForRendering(long msgId) {
-    return delegate.getMsgPartsForRendering(msgId);
+  public ImmutableList<SoyMsgPart> getMsgParts(long msgId) {
+    return delegate.getMsgParts(msgId);
   }
 
   @Override
