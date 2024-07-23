@@ -106,6 +106,7 @@ import com.google.template.soy.soytree.CaseOrDefaultNode;
 import com.google.template.soy.soytree.CommandTagAttribute;
 import com.google.template.soy.soytree.Comment;
 import com.google.template.soy.soytree.ConstNode;
+import com.google.template.soy.soytree.TypeDefNode;
 import com.google.template.soy.soytree.DebuggerNode;
 import com.google.template.soy.soytree.ExternImplNode;
 import com.google.template.soy.soytree.ExternNode;
@@ -1077,6 +1078,7 @@ TOKEN_MGR_DECLS: {
 | < MODNAME_OPEN: "{modname" <WS> > : IN_CMD_TAG
 | < IMPORT_OPEN: "import" >
 | < CONST_OPEN: "{" ("export ")? "const" <WS> > : EXPR
+| < TYPEDEF_OPEN: "{" ("export ")? "type" <WS> > : EXPR
 | < SEMICOLON: ";"      >
 | < DEFAULT_COMMA: "," >
 | < LCURLY: "{"      >
@@ -1508,10 +1510,12 @@ private SoyFileNode NonEmptySoyFile() :
   AliasDeclaration alias;
   ImportNode importNode;
   ConstNode constant;
+  TypeDefNode typeDef;
   ExternNode extern;
   ImmutableList.Builder<AliasDeclaration> aliases = new ImmutableList.Builder<AliasDeclaration>();
   ImmutableList.Builder<ImportNode> imports = new ImmutableList.Builder<ImportNode>();
   ImmutableList.Builder<ConstNode> constants = new ImmutableList.Builder<ConstNode>();
+  ImmutableList.Builder<TypeDefNode> typeDefs = new ImmutableList.Builder<TypeDefNode>();
   ImmutableList.Builder<ExternNode> externs = new ImmutableList.Builder<ExternNode>();
   TemplateNode template;
   Token eof;
@@ -1542,6 +1546,15 @@ private SoyFileNode NonEmptySoyFile() :
     {
       if (constant != null) {
         constants.add(constant);
+      }
+    }
+  )*
+
+  (
+    typeDef = TypeDefStmt()
+    {
+      if (typeDef != null) {
+        typeDefs.add(typeDef);
       }
     }
   )*
@@ -1583,7 +1596,8 @@ private SoyFileNode NonEmptySoyFile() :
         namespace, headerInfo, buildByteOffsetIndex(token_source), buildComments(token_source));
     sfn.addChildren(imports.build());
     sfn.addChildren(constants.build());
-     sfn.addChildren(externs.build());
+    sfn.addChildren(typeDefs.build());  
+    sfn.addChildren(externs.build());
     sfn.addChildren(templates);
     return sfn;
   }
@@ -3336,6 +3350,53 @@ private ConstNode ConstStmt() :
   }
 }
 
+/**
+ * TypeDefStmt -> {type ident= expr /}
+*/
+private TypeDefNode TypeDefStmt() :
+{
+  Token tagBegin, tagClose, nameTok = null, tagBeginEnd = null;
+  TypeNode type = null;
+  TypeLiteralNode valueExpr = null;
+  CommandTagAttribute attr = null;
+  List<StandaloneNode> templateBlock = ImmutableList.of();
+  boolean exported;
+}
+{
+  tagBegin = <TYPEDEF_OPEN>
+  {
+    exported = tagBegin.image.startsWith("{export ");
+  }
+
+  try {
+    nameTok = <IDENT>
+  } catch (ParseException e) {
+    tagClose = reportTemplateBodyErrorAndSkipTo(e, CMD_SELF_CLOSE, CMD_END);
+    SourceLocation loc = createSrcLoc(tagBegin, tagClose);
+    return new TypeDefNode(-1, loc, "$error", loc, null, exported);
+  }
+
+  // Type Literal
+  try {
+    <EQ>
+    type = TypeExpr()
+    tagClose = <CMD_SELF_CLOSE>
+  } catch (ParseException e) {
+    tagClose = reportTemplateBodyErrorAndSkipTo(e, CMD_SELF_CLOSE, CMD_END);
+  }
+
+  {
+    valueExpr = new TypeLiteralNode(type);
+
+    return new TypeDefNode(
+        nodeIdGen.genId(),
+        createSrcLoc(tagBegin, tagClose),
+        nameTok.image,
+        createSrcLoc(nameTok),
+        valueExpr,
+        exported);
+  }
+}
 
 /**
  * IfStmt -> CmdBeginIf Expr CmdEnd TemplateBlock

@@ -16,6 +16,7 @@
 
 package com.google.template.soy.exprtree;
 
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.SetOnce;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.types.SoyType;
@@ -23,6 +24,10 @@ import com.google.template.soy.types.ast.TypeNode;
 
 /** Node representing a type literal. */
 public final class TypeLiteralNode extends AbstractPrimitiveNode {
+
+  public static VarRefNode error(SourceLocation location) {
+    return new VarRefNode("$error", location, null);
+  }
 
   /** The boolean value. */
   private final TypeNode typeNode;

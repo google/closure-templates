@@ -119,6 +119,9 @@ public abstract class AbstractSoyNodeVisitor<R> extends AbstractNodeVisitor<SoyN
       case CONST_NODE:
         visitConstNode((ConstNode) node);
         break;
+      case TYPEDEF_NODE:
+        visitTypeDefNode((TypeDefNode) node);
+        break;
       case LET_VALUE_NODE:
         visitLetValueNode((LetValueNode) node);
         break;
@@ -343,6 +346,10 @@ public abstract class AbstractSoyNodeVisitor<R> extends AbstractNodeVisitor<SoyN
   }
 
   protected void visitConstNode(ConstNode node) {
+    visitSoyNode(node);
+  }
+
+  protected void visitTypeDefNode(TypeDefNode node) {
     visitSoyNode(node);
   }
 

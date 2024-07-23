@@ -114,6 +114,8 @@ final class Tokens {
         return "{namespace";
       case SoyFileParserConstants.CONST_OPEN:
         return "{[export ]const";
+      case SoyFileParserConstants.TYPEDEF_OPEN:
+        return "{[export ]type";
       case SoyFileParserConstants.TEMPLATE_OPEN:
         return "{template";
       case SoyFileParserConstants.EXTERN_OPEN:

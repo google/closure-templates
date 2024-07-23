@@ -94,6 +94,9 @@ public final class TemplateMetadataSerializer {
       file.getConstants().stream()
           .filter(ConstNode::isExported)
           .forEach(c -> fileBuilder.addConstants(protoFromConstant(c)));
+      file.getTypeDefs().stream()
+          .filter(TypeDefNode::isExported)
+          .forEach(t -> fileBuilder.addTypeDefs(protoFromTypeDef(t)));
       file.getExterns().stream()
           .filter(ExternNode::isExported)
           .forEach(e -> fileBuilder.addExterns(protoFromExtern(e)));
@@ -136,6 +139,10 @@ public final class TemplateMetadataSerializer {
         .setName(node.getVar().name())
         .setType(node.getVar().type().toProto())
         .build();
+  }
+
+  private static TypeDefP protoFromTypeDef(TypeDefNode node) {
+    return TypeDefP.newBuilder().setName(node.getName()).setType(node.getType().toProto()).build();
   }
 
   private static ExternP protoFromExtern(ExternNode node) {

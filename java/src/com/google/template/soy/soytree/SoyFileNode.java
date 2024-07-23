@@ -247,6 +247,10 @@ public final class SoyFileNode extends AbstractParentSoyNode<SoyNode>
     return getChildrenOfType(ConstNode.class);
   }
 
+  public ImmutableList<TypeDefNode> getTypeDefs() {
+    return getChildrenOfType(TypeDefNode.class);
+  }
+
   public ImmutableList<TemplateNode> getTemplates() {
     return getChildrenOfType(TemplateNode.class);
   }

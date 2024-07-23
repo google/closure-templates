@@ -96,6 +96,8 @@ public abstract class AbstractReturningSoyNodeVisitor<R>
 
       case CONST_NODE:
         return visitConstNode((ConstNode) node);
+      case TYPEDEF_NODE:
+        return visitTypeDefNode((TypeDefNode) node);
       case LET_VALUE_NODE:
         return visitLetValueNode((LetValueNode) node);
       case LET_CONTENT_NODE:
@@ -262,6 +264,10 @@ public abstract class AbstractReturningSoyNodeVisitor<R>
   }
 
   protected R visitConstNode(ConstNode node) {
+    return visitSoyNode(node);
+  }
+
+  protected R visitTypeDefNode(TypeDefNode node) {
     return visitSoyNode(node);
   }
 

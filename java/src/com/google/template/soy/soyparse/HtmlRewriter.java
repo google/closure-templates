@@ -80,6 +80,7 @@ import com.google.template.soy.soytree.SwitchCaseNode;
 import com.google.template.soy.soytree.SwitchNode;
 import com.google.template.soy.soytree.TagName;
 import com.google.template.soy.soytree.TemplateNode;
+import com.google.template.soy.soytree.TypeDefNode;
 import com.google.template.soy.soytree.VeLogNode;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -1438,6 +1439,11 @@ final class HtmlRewriter {
 
     @Override
     protected void visitConstNode(ConstNode node) {
+      // do nothing
+    }
+
+    @Override
+    protected void visitTypeDefNode(TypeDefNode node) {
       // do nothing
     }
 

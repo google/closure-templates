@@ -47,6 +47,7 @@ import com.google.template.soy.soytree.SoyNode.BlockNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.TemplateNode;
+import com.google.template.soy.soytree.TypeDefNode;
 import com.google.template.soy.soytree.defn.ExternVar;
 import com.google.template.soy.soytree.defn.ImportedVar;
 import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
@@ -87,7 +88,7 @@ final class LocalVariablesNodeVisitor {
   /**
    * Manages the set of active variable names.
    *
-   * <p>Ensures that no two active variabes have the same name
+   * <p>Ensures that no two active variables have the same name
    */
   static final class LocalVariables {
 
@@ -216,6 +217,11 @@ final class LocalVariablesNodeVisitor {
     protected void visitConstNode(ConstNode node) {
       super.visitConstNode(node);
       localVariables.define(node.getVar(), node);
+    }
+
+    @Override
+    protected void visitTypeDefNode(TypeDefNode node) {
+      super.visitTypeDefNode(node);
     }
 
     @Override

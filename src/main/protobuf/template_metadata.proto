@@ -35,6 +35,8 @@ message SoyFileP {
   string namespace = 3;
   // The exported constants in the file
   repeated ConstantP constants = 6;
+  // The exported type definitions in the file
+  repeated TypeDefP type_defs = 9;
   // The exported constants in the file
   repeated ExternP externs = 7;
   // The templates in the file
@@ -115,6 +117,14 @@ message SoyTypeP {
     bool message = 11;
     HtmlTypeP html = 12;
   }
+}
+
+// An exported type definition.
+message TypeDefP {
+  // The local name of the type definition.
+  string name = 1;
+  // The type of the type definition.
+  SoyTypeP type = 2;
 }
 
 // An exported constant.
