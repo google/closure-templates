@@ -372,10 +372,6 @@ public final class JsType {
                 .addType("!" + enumTypeName)
                 .addRequire(GoogRequire.createTypeRequire(enumTypeName))
                 .setPredicate(typeofTypePredicate("number"));
-        if (!isStrict) {
-          // TODO(lukes): stop allowing number?, just allow the enum
-          enumBuilder.addType("number");
-        }
         return enumBuilder.build();
 
       case FLOAT:

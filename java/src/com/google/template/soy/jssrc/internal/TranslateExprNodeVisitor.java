@@ -60,6 +60,7 @@ import static com.google.template.soy.jssrc.internal.JsRuntime.protoConstructor;
 import static com.google.template.soy.passes.ContentSecurityPolicyNonceInjectionPass.CSP_NONCE_VARIABLE_NAME;
 import static com.google.template.soy.passes.ContentSecurityPolicyNonceInjectionPass.CSP_STYLE_NONCE_VARIABLE_NAME;
 
+import com.google.common.base.Ascii;
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -69,6 +70,7 @@ import com.google.common.collect.Sets;
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.SoyBackendKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.AbstractReturningExprNodeVisitor;
@@ -336,7 +338,10 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
 
   @Override
   protected Expression visitProtoEnumValueNode(ProtoEnumValueNode node) {
-    return number(node.getValue());
+    String module = node.getType().getNameForBackend(SoyBackendKind.JS_SRC);
+    return GoogRequire.create(module)
+        .reference()
+        .dotAccess(Ascii.toUpperCase(node.getEnumValueDescriptor().getName()));
   }
 
   // -----------------------------------------------------------------------------------------------
@@ -1010,11 +1015,6 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
           ? GOOG_ARRAY_MAP.call(fieldValue, protoBytesPackToByteStringFunction())
           : protoBytesPackToByteStringFunction().call(fieldValue);
     }
-    if (fieldDesc.getType() == FieldDescriptor.Type.ENUM && !isArray) {
-      // TODO(b/255452370): no cast should be necessary, but soy eagerly desugars enum literals
-      // into numeric literals which drops type information.
-      return fieldValue.castAsUnknown();
-    }
     return fieldValue;
   }
 
@@ -1216,7 +1216,11 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
 
   private Expression assertNonNull(ExprNode expr) {
     Expression e = visit(expr);
-    return e.isDefinitelyNotNull() ? e : SOY_CHECK_NOT_NULL.call(e);
+    // Ideally Dot e could answer isDefinitelyNotNull correctly but immutable class hierarchy makes
+    // this annoying to fix.
+    return expr.getKind() == ExprNode.Kind.PROTO_ENUM_VALUE_NODE || e.isDefinitelyNotNull()
+        ? e
+        : SOY_CHECK_NOT_NULL.call(e);
   }
 
   private Expression visitCssFunction(FunctionNode node) {

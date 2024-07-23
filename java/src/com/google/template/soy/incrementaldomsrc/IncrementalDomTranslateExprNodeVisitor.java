@@ -24,20 +24,22 @@ import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SO
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.STATE_PREFIX;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.STATE_VAR_PREFIX;
 import static com.google.template.soy.jssrc.dsl.Expressions.id;
-import static com.google.template.soy.jssrc.dsl.Expressions.number;
 import static com.google.template.soy.jssrc.internal.JsRuntime.BIND_TEMPLATE_PARAMS_FOR_IDOM;
 import static com.google.template.soy.jssrc.internal.JsRuntime.XID;
 
+import com.google.common.base.Ascii;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import com.google.protobuf.Descriptors.Descriptor;
+import com.google.template.soy.base.SoyBackendKind;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.ProtoEnumValueNode;
 import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.jssrc.dsl.Expressions;
+import com.google.template.soy.jssrc.dsl.GoogRequire;
 import com.google.template.soy.jssrc.internal.JavaScriptValueFactoryImpl;
 import com.google.template.soy.jssrc.internal.JsType;
 import com.google.template.soy.jssrc.internal.TemplateAliases;
@@ -114,13 +116,6 @@ public class IncrementalDomTranslateExprNodeVisitor extends TranslateExprNodeVis
     }
   }
 
-  @Override
-  protected Expression visitProtoEnumValueNode(ProtoEnumValueNode node) {
-    // TODO(b/128869068) Ensure that a hard require is added for this type.
-    JsType type = JsType.forJsSrcStrict(SoyTypes.tryRemoveNullish(node.getType()));
-    return number(node.getValue()).castAs(type.typeExpr(), type.getGoogRequires());
-  }
-
   /** Types that might possibly be idom function callbacks, which always need custom truthiness. */
   private static final ImmutableSet<Kind> FUNCTION_TYPES =
       Sets.immutableEnumSet(Kind.HTML, Kind.ELEMENT, Kind.ATTRIBUTES, Kind.UNKNOWN, Kind.ANY);
@@ -152,5 +147,12 @@ public class IncrementalDomTranslateExprNodeVisitor extends TranslateExprNodeVis
   @Override
   protected JsType jsTypeFor(SoyType type) {
     return JsType.forIncrementalDom(type);
+  }
+
+  @Override
+  protected Expression visitProtoEnumValueNode(ProtoEnumValueNode node) {
+    return GoogRequire.create(node.getType().getNameForBackend(SoyBackendKind.JS_SRC))
+        .googModuleGet()
+        .dotAccess(Ascii.toUpperCase(node.getEnumValueDescriptor().getName()));
   }
 }
