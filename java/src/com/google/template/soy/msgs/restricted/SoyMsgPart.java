@@ -21,9 +21,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;
 import javax.annotation.Nullable;
 
-/**
- * Represents a part of a message (i.e. raw text or placeholder).
- */
+/** Represents a part of a message (i.e. raw text or placeholder). */
 @Immutable
 public abstract class SoyMsgPart {
   // TODO(lukes): there is a fair bit of code inspecting this type hierarchy via cascading
@@ -44,6 +42,9 @@ public abstract class SoyMsgPart {
     public abstract T spec();
 
     public abstract ImmutableList<SoyMsgPart> parts();
+
+    @Override
+    public abstract String toString();
   }
 
   // force subtypes to implement this.

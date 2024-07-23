@@ -271,4 +271,7 @@ public abstract class SoyMsg {
 
   /** Returns {@code true} if this message has a fallback. */
   public abstract boolean hasFallback();
+
+  @Override
+  public abstract String toString();
 }
