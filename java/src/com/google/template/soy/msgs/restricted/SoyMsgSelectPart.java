@@ -16,7 +16,8 @@
 
 package com.google.template.soy.msgs.restricted;
 
-import com.google.common.base.MoreObjects;
+import static java.util.stream.Collectors.joining;
+
 import com.google.common.collect.ImmutableList;
 import java.util.Objects;
 import javax.annotation.Nullable;
@@ -87,9 +88,11 @@ public final class SoyMsgSelectPart extends SoyMsgPart {
 
   @Override
   public String toString() {
-    return MoreObjects.toStringHelper("Select")
-        .addValue(selectVarName)
-        .add("cases", cases)
-        .toString();
+    return "Select{\n  selectVarName: "
+        + selectVarName
+        + ",\n"
+        + "  cases: "
+        + cases.stream().map(Case::toString).collect(joining(",\n    ", "[\n    ", "],"))
+        + "\n}";
   }
 }

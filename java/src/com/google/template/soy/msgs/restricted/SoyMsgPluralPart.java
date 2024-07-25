@@ -17,8 +17,8 @@
 package com.google.template.soy.msgs.restricted;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.stream.Collectors.joining;
 
-import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableList;
 import com.ibm.icu.text.PluralRules;
 import com.ibm.icu.util.ULocale;
@@ -145,11 +145,12 @@ public final class SoyMsgPluralPart extends SoyMsgPart {
 
   @Override
   public String toString() {
-    return MoreObjects.toStringHelper("Plural")
-        .omitNullValues()
-        .addValue(pluralVarName)
-        .add("cases", cases)
-        .add("offset", offset == 0 ? null : Integer.toString(offset))
-        .toString();
+    return "Plural{\n  pluralVarName: "
+        + pluralVarName
+        + ",\n"
+        + (offset == 0 ? "" : "  offset: " + offset + ",\n")
+        + "  cases: "
+        + cases.stream().map(Case::toString).collect(joining(",\n    ", "[\n    ", "],"))
+        + "\n}";
   }
 }
