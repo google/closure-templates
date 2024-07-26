@@ -21,6 +21,7 @@ import static com.google.common.collect.Maps.toImmutableEnumMap;
 import static java.util.Arrays.stream;
 
 import com.google.common.base.Ascii;
+import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.ImmutableMap;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.msgs.SoyMsgException;
@@ -37,7 +38,7 @@ import java.util.function.Function;
  * explicitValue} with status set to EXPLICIT and the remaining by an enum value.
  */
 @Immutable
-public final class SoyMsgPluralCaseSpec {
+public final class SoyMsgPluralCaseSpec implements Comparable<SoyMsgPluralCaseSpec> {
 
   /** The type. EXPLICIT indicating numeric, or one of the others indicating non-numeric. */
   public enum Type {
@@ -143,5 +144,13 @@ public final class SoyMsgPluralCaseSpec {
   @Override
   public int hashCode() {
     return Objects.hash(SoyMsgPluralCaseSpec.class, type, explicitValue);
+  }
+
+  @Override
+  public int compareTo(SoyMsgPluralCaseSpec other) {
+    return ComparisonChain.start()
+        .compare(type, other.type)
+        .compare(explicitValue, other.explicitValue)
+        .result();
   }
 }

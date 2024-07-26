@@ -16,8 +16,10 @@
 
 package com.google.template.soy.msgs.restricted;
 
+
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
+import com.google.errorprone.annotations.DoNotMock;
 import com.google.errorprone.annotations.Immutable;
 import javax.annotation.Nullable;
 
@@ -29,6 +31,7 @@ public abstract class SoyMsgPart {
 
   /** A case in a plural or 'select' msg part. */
   @AutoValue
+  @DoNotMock("use the create() method instead")
   @Immutable(containerOf = "T")
   public abstract static class Case<T> {
     public static <T> Case<T> create(T spec, Iterable<? extends SoyMsgPart> parts) {

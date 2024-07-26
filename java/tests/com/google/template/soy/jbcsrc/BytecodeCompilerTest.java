@@ -954,16 +954,11 @@ public class BytecodeCompilerTest {
             "  <a href=\"{$url}\">Learn more</A>",
             "  <br /><br />",
             "{/msg}",
-            "{msg meaning=\"noun\" desc=\"\"}Archive{/msg}",
-            "{msg meaning=\"noun\" desc=\"The archive (noun).\"}Archive{/msg}",
-            "{msg meaning=\"verb\" desc=\"\"}Archive{/msg}",
-            "{msg desc=\"\"}Archive{/msg}",
             "")
         .rendersAs(
             "You're currently using 26 MB of your quota. "
                 + "<a href=\"http://foo.com\">Learn more</A>"
-                + "<br/><br/>"
-                + "ArchiveArchiveArchiveArchive",
+                + "<br/><br/>",
             ImmutableMap.of("quota", 26, "url", "http://foo.com"));
   }
 

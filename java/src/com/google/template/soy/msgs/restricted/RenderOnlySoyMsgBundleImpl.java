@@ -18,13 +18,16 @@ package com.google.template.soy.msgs.restricted;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
+import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.ibm.icu.util.ULocale;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
@@ -40,6 +43,30 @@ import javax.annotation.Nullable;
  */
 @Immutable
 public final class RenderOnlySoyMsgBundleImpl extends SoyMsgBundle {
+
+  /** A minimal {@link SoyMsg} representation that is required for this implementation. */
+  @AutoValue
+  public abstract static class RenderOnlySoyMsg {
+    public static RenderOnlySoyMsg create(long id, SoyMsgRawParts parts) {
+      return new AutoValue_RenderOnlySoyMsgBundleImpl_RenderOnlySoyMsg(id, parts);
+    }
+
+    @Nullable
+    public static RenderOnlySoyMsg create(SoyMsg msg) {
+      if (isValidMsgPartsForSoyRendering(msg.getParts())) {
+        return new AutoValue_RenderOnlySoyMsgBundleImpl_RenderOnlySoyMsg(
+            msg.getId(), SoyMsgRawParts.fromMsgParts(msg.getParts()));
+      }
+
+      return null;
+    }
+
+    abstract long id();
+
+    abstract SoyMsgRawParts parts();
+
+    RenderOnlySoyMsg() {}
+  }
 
   /** The language/locale string of this bundle's messages. */
   private final String localeString;
@@ -58,20 +85,12 @@ public final class RenderOnlySoyMsgBundleImpl extends SoyMsgBundle {
   private final long[] ids;
 
   /**
-   * List containing the message parts. See {@link #partRanges} for an explanation for how they
-   * correspond to {@link #ids}.
+   * List containing the message parts. For a 'basic' translation (meanign a single translatable
+   * piece of text), this will be a String, for all other messages it will be a {@code
+   * ImmutableList<Object>} as defined by SoyMsgRawParts.
    */
-  private final ImmutableList<SoyMsgPart> values;
-
-  /**
-   * Contains index-ranges for parts belonging to messages.
-   *
-   * <p>For instance, for a message with ID {@code ids[n]}, the SoyMsgPart values belonging to that
-   * message are the sublist of {@code values} from {@code partRanges[n]} (inclusive} to {@code
-   * partRanges[n+1]} (exclusive).
-   */
-  @SuppressWarnings("Immutable")
-  private final int[] partRanges;
+  @SuppressWarnings("Immutable") // All the object values are immutable.
+  private final ImmutableList<Object> values;
 
   /*
    * This implements a very nearly free dense hashtable of SoyMsgs.
@@ -133,53 +152,65 @@ public final class RenderOnlySoyMsgBundleImpl extends SoyMsgBundle {
    * @param msgs The list of messages. List order will become the iteration order. Duplicate message
    *     ID's are not permitted.
    */
-  public RenderOnlySoyMsgBundleImpl(@Nullable String localeString, Iterable<SoyMsg> msgs) {
+  public RenderOnlySoyMsgBundleImpl(@Nullable String localeString, SoyMsgBundle bundle) {
+    this(
+        localeString,
+        Iterables.filter(Iterables.transform(bundle, RenderOnlySoyMsg::create), m -> m != null));
+  }
+
+  /**
+   * Constructs a map of render-only soy messages. This implementation saves memory but doesn't
+   * store all fields necessary during extraction.
+   *
+   * @param localeString The language/locale string of this bundle of messages, or null if unknown.
+   *     Should only be null for bundles newly extracted from source files. Should always be set for
+   *     bundles parsed from message files/resources.
+   * @param msgs The list of messages. List order will become the iteration order. Duplicate message
+   *     ID's are not permitted.
+   */
+  public RenderOnlySoyMsgBundleImpl(
+      @Nullable String localeString, Iterable<RenderOnlySoyMsg> msgs) {
 
     this.localeString = localeString;
     this.locale = localeString == null ? null : new ULocale(localeString);
     this.isRtl = BidiGlobalDir.forStaticLocale(localeString) == BidiGlobalDir.RTL;
-
+    var sortedMsgs = new ArrayList<RenderOnlySoyMsg>();
+    Iterables.addAll(sortedMsgs, msgs);
     // This creates the mask. Basically, take the high-bit and fill in the bits below it.
-    int maskHigh = Integer.highestOneBit(Iterables.size(msgs));
+    int maskHigh = Integer.highestOneBit(sortedMsgs.size());
     this.bucketMask = maskHigh == 0 ? 0 : (maskHigh | (maskHigh - 1)) >>> BUCKET_SHIFT;
     int numBuckets = this.bucketMask + 1;
 
     // Sorts by bucket (low bits within the mask) and breaks ties with the full ID.
-    Comparator<SoyMsg> bucketComparator =
-        Comparator.comparingInt((SoyMsg m) -> bucketOf(m.getId())).thenComparingLong(SoyMsg::getId);
-    ImmutableList<SoyMsg> sortedMsgs = ImmutableList.sortedCopyOf(bucketComparator, msgs);
+    Comparator<RenderOnlySoyMsg> bucketComparator =
+        Comparator.comparingInt((RenderOnlySoyMsg m) -> bucketOf(m.id()))
+            .thenComparingLong(RenderOnlySoyMsg::id);
+    Collections.sort(sortedMsgs, bucketComparator);
 
     // Scan the sorted list to discover bucket boundaries and place them into the boundaries array.
     bucketBoundaries = new int[numBuckets + 1];
     for (int bucket = 0, idx = 0; bucket < numBuckets; bucket++) {
       bucketBoundaries[bucket] = idx;
-      for (;
-          (idx < sortedMsgs.size()) && (bucketOf(sortedMsgs.get(idx).getId()) == bucket);
-          idx++) {}
+      for (; (idx < sortedMsgs.size()) && (bucketOf(sortedMsgs.get(idx).id()) == bucket); idx++) {}
     }
     bucketBoundaries[numBuckets] = sortedMsgs.size();
 
     ids = new long[sortedMsgs.size()];
-    ImmutableList.Builder<SoyMsgPart> partsBuilder = ImmutableList.builder();
-    partRanges = new int[sortedMsgs.size() + 1];
-    partRanges[0] = 0; // The first range always starts at the beginning of the list.
-    long priorId = sortedMsgs.isEmpty() ? -1L : sortedMsgs.get(0).getId() - 1L;
-    int runningPartCount = 0;
+    ImmutableList.Builder<Object> partsBuilder = ImmutableList.builder();
+    long priorId = sortedMsgs.isEmpty() ? -1L : sortedMsgs.get(0).id() - 1L;
     for (int i = 0, c = sortedMsgs.size(); i < c; i++) {
-      SoyMsg msg = sortedMsgs.get(i);
-      ImmutableList<SoyMsgPart> parts = msg.getParts();
+      RenderOnlySoyMsg msg = sortedMsgs.get(i);
+      SoyMsgRawParts parts = msg.parts();
 
       checkArgument(
-          msg.getId() != priorId, "Duplicate messages are not permitted in the render-only impl.");
-      checkArgument(
-          MsgPartUtils.hasPlrselPart(parts) == msg.isPlrselMsg(),
-          "Message's plural/select status is inconsistent -- internal compiler bug.");
-
-      priorId = msg.getId();
-      ids[i] = msg.getId();
-      partsBuilder.addAll(parts);
-      runningPartCount += parts.size();
-      partRanges[i + 1] = runningPartCount; // runningPartCount is the end of range, hence +1
+          msg.id() != priorId, "Duplicate messages are not permitted in the render-only impl.");
+      priorId = msg.id();
+      ids[i] = msg.id();
+      if (parts.numParts() == 1 && parts.getPart(0) instanceof String) {
+        partsBuilder.add(parts.getPart(0));
+      } else {
+        partsBuilder.add(parts);
+      }
     }
 
     // This will build the collections in the same order as the sorted map.
@@ -197,17 +228,16 @@ public final class RenderOnlySoyMsgBundleImpl extends SoyMsgBundle {
     this.bucketBoundaries = exemplar.bucketBoundaries;
     this.ids = exemplar.ids;
     this.values = exemplar.values;
-    this.partRanges = exemplar.partRanges;
   }
 
   /** Brings a message back to life from only its ID and parts. */
   // The constructor guarantees the type of ImmutableList.
-  private SoyMsg resurrectMsg(long id, ImmutableList<SoyMsgPart> parts) {
+  private SoyMsg resurrectMsg(long id, SoyMsgRawParts rawParts) {
     return SoyMsg.builder()
         .setId(id)
         .setLocaleString(localeString)
-        .setIsPlrselMsg(MsgPartUtils.hasPlrselPart(parts))
-        .setParts(parts)
+        .setIsPlrselMsg(rawParts.isPlrselMsg())
+        .setParts(rawParts.toSoyMsgParts())
         .build();
   }
 
@@ -227,10 +257,17 @@ public final class RenderOnlySoyMsgBundleImpl extends SoyMsgBundle {
     return isRtl;
   }
 
-  private ImmutableList<SoyMsgPart> partsForIndex(int index) {
-    int startInclusive = partRanges[index];
-    int endExclusive = partRanges[index + 1];
-    return values.subList(startInclusive, endExclusive);
+  // The constructor guarantees the type of ImmutableList.
+  private SoyMsgRawParts partsForIndex(int index) {
+    Object value = values.get(index);
+    if (value instanceof String) {
+      // This is a basic translation, the vast majority of uses should go through
+      // getBasicTranslation instead of getMsgPartsForRendering, so we hope that
+      // this will not be hit.
+      return SoyMsgRawParts.of((String) value);
+    } else {
+      return (SoyMsgRawParts) value;
+    }
   }
 
   @Nullable
@@ -245,10 +282,11 @@ public final class RenderOnlySoyMsgBundleImpl extends SoyMsgBundle {
     return binarySearch(msgId) >= 0;
   }
 
+  @Nullable
   @Override
-  public ImmutableList<SoyMsgPart> getMsgParts(long msgId) {
+  public SoyMsgRawParts getMsgPartsForRendering(long msgId) {
     int index = binarySearch(msgId);
-    return index >= 0 ? partsForIndex(index) : ImmutableList.of();
+    return index >= 0 ? partsForIndex(index) : null;
   }
 
   @Override
@@ -258,9 +296,7 @@ public final class RenderOnlySoyMsgBundleImpl extends SoyMsgBundle {
     if (index < 0) {
       return null;
     }
-    int startInclusive = partRanges[index];
-    checkArgument(startInclusive + 1 == partRanges[index + 1]);
-    return ((SoyMsgRawTextPart) values.get(startInclusive)).getRawText();
+    return (String) values.get(index);
   }
 
   private int binarySearch(long key) {
@@ -300,5 +336,46 @@ public final class RenderOnlySoyMsgBundleImpl extends SoyMsgBundle {
         throw new UnsupportedOperationException("Iterator is immutable");
       }
     };
+  }
+
+  /**
+   * Not every message that we might parse out of an XTB is valid for soy renderings. Notably we
+   * only allow a single top level plural or select clause and our memory optimization relies on it.
+   *
+   * <p>Such messages are allowed by the spec but are not used by soy so we can safely ignore them.
+   */
+  static boolean isValidMsgPartsForSoyRendering(ImmutableList<SoyMsgPart> parts) {
+    var numPlrSel =
+        parts.stream()
+            .filter(part -> part instanceof SoyMsgPluralPart || part instanceof SoyMsgSelectPart)
+            .count();
+    if (numPlrSel > 1) {
+      return false;
+    }
+    if (numPlrSel == 1) {
+      if (parts.size() == 1) {
+        if (parts.get(0) instanceof SoyMsgPluralPart) {
+          var pluralPart = (SoyMsgPluralPart) parts.get(0);
+          for (var casePart : pluralPart.getCases()) {
+            if (!isValidMsgPartsForSoyRendering(casePart.parts())) {
+              return false;
+            }
+          }
+          return true;
+        } else if (parts.get(0) instanceof SoyMsgSelectPart) {
+          var selectPart = (SoyMsgSelectPart) parts.get(0);
+          for (var casePart : selectPart.getCases()) {
+            if (!isValidMsgPartsForSoyRendering(casePart.parts())) {
+              return false;
+            }
+          }
+          return true;
+        }
+      } else {
+        // if there is a plr/sel part, it should be the only part.
+        return false;
+      }
+    }
+    return true;
   }
 }

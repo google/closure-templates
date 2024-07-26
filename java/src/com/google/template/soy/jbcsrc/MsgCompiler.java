@@ -19,7 +19,7 @@ package com.google.template.soy.jbcsrc;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.template.soy.jbcsrc.PrintDirectives.applyStreamingEscapingDirectives;
 import static com.google.template.soy.jbcsrc.PrintDirectives.areAllPrintDirectivesStreamable;
-import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.IMMUTABLE_LIST_TYPE;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_MSG_RAW_PARTS_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_VALUE_PROVIDER_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.STRING_DATA_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
@@ -206,10 +206,10 @@ final class MsgCompiler {
     ImmutableList<Object> constantParts =
         MsgDefaultConstantFactory.msgToPartsList(partsAndId.parts);
     return constant(
-        IMMUTABLE_LIST_TYPE,
+        SOY_MSG_RAW_PARTS_TYPE,
         new ConstantDynamic(
             "defaultMsg",
-            IMMUTABLE_LIST_TYPE.getDescriptor(),
+            SOY_MSG_RAW_PARTS_TYPE.getDescriptor(),
             MESSAGE_FACTORY_HANDLE,
             constantParts.toArray()),
         Features.of(Feature.CHEAP, Feature.NON_JAVA_NULLABLE));
