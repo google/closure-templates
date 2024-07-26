@@ -121,8 +121,7 @@ public class SoyMsgBundleHandler {
       // reading the file as a byte array and then invoking the string constructor is the fastest
       // way to read a full file as a string.  it avoids copies incurred by CharSource and picks a
       // faster path for charset decoding.
-      String inputFileContent = Files.asCharSource(inputFile, UTF_8).read();
-      return msgPlugin.parseTranslatedMsgsFile(inputFileContent);
+      return msgPlugin.parseTranslatedMsgsFile(Files.asCharSource(inputFile, UTF_8));
 
     } catch (SoyMsgException sme) {
       sme.setFileOrResourceName(inputFile.toString());
@@ -141,8 +140,7 @@ public class SoyMsgBundleHandler {
   public SoyMsgBundle createFromResource(URL inputResource) throws IOException {
 
     try {
-      String inputFileContent = Resources.asCharSource(inputResource, UTF_8).read();
-      return msgPlugin.parseTranslatedMsgsFile(inputFileContent);
+      return msgPlugin.parseTranslatedMsgsFile(Resources.asCharSource(inputResource, UTF_8));
 
     } catch (SoyMsgException sme) {
       sme.setFileOrResourceName(inputResource.toString());

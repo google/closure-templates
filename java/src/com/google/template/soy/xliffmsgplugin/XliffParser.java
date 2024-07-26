@@ -17,6 +17,7 @@
 package com.google.template.soy.xliffmsgplugin;
 
 import com.google.common.collect.Lists;
+import com.google.common.io.CharSource;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.SoyMsgException;
 import com.google.template.soy.msgs.restricted.SoyMsg;
@@ -25,7 +26,6 @@ import com.google.template.soy.msgs.restricted.SoyMsgPart;
 import com.google.template.soy.msgs.restricted.SoyMsgPlaceholderPart;
 import com.google.template.soy.msgs.restricted.SoyMsgRawTextPart;
 import java.io.IOException;
-import java.io.StringReader;
 import java.util.List;
 import java.util.Optional;
 import javax.xml.parsers.ParserConfigurationException;
@@ -53,7 +53,8 @@ class XliffParser {
    * @throws SAXException If there's an error parsing the data.
    * @throws SoyMsgException If there's an error in parsing the data.
    */
-  static SoyMsgBundle parseXliffTargetMsgs(String xliffContent) throws SAXException {
+  static SoyMsgBundle parseXliffTargetMsgs(CharSource xliffContent)
+      throws IOException, SAXException {
 
     // Get a SAX parser.
     SAXParserFactory saxParserFactory = SAXParserFactory.newInstance();
@@ -78,11 +79,7 @@ class XliffParser {
     XliffSaxHandler xliffSaxHandler = new XliffSaxHandler();
 
     // Parse the XLIFF content.
-    try {
-      saxParser.parse(new InputSource(new StringReader(xliffContent)), xliffSaxHandler);
-    } catch (IOException e) {
-      throw new AssertionError("Should not fail in reading a string.");
-    }
+    saxParser.parse(new InputSource(xliffContent.openBufferedStream()), xliffSaxHandler);
 
     // Build a SoyMsgBundle from the parsed data (stored in xliffSaxHandler).
     return new SoyMsgBundleImpl(xliffSaxHandler.getTargetLocaleString(), xliffSaxHandler.getMsgs());

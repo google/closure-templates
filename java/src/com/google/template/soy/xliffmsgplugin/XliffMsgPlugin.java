@@ -16,12 +16,14 @@
 
 package com.google.template.soy.xliffmsgplugin;
 
+import com.google.common.io.CharSource;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.SoyMsgBundleHandler.OutputFileOptions;
 import com.google.template.soy.msgs.SoyMsgException;
 import com.google.template.soy.msgs.SoyMsgPlugin;
+import java.io.IOException;
 import org.xml.sax.SAXException;
 
 /**
@@ -39,7 +41,8 @@ public final class XliffMsgPlugin implements SoyMsgPlugin {
   }
 
   @Override
-  public SoyMsgBundle parseTranslatedMsgsFile(String translatedMsgsFileContent) {
+  public SoyMsgBundle parseTranslatedMsgsFile(CharSource translatedMsgsFileContent)
+      throws IOException {
 
     try {
       return XliffParser.parseXliffTargetMsgs(translatedMsgsFileContent);

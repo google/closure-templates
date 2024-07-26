@@ -16,9 +16,13 @@
 
 package com.google.template.soy.msgs;
 
+import com.google.common.io.CharSource;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
+import com.google.errorprone.annotations.CheckReturnValue;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.msgs.SoyMsgBundleHandler.OutputFileOptions;
+import java.io.IOException;
 
 /**
  * Plugin for implementing a specific message file format.
@@ -37,15 +41,34 @@ public interface SoyMsgPlugin {
    * @return The content of the generated extracted messages file.
    * @throws SoyMsgException If there was an error building the file content.
    */
+  @CheckReturnValue
   CharSequence generateExtractedMsgsFile(
       SoyMsgBundle msgBundle, OutputFileOptions options, ErrorReporter errorReporter);
 
   /**
+   * Parses a translated messages file and builds a message bundle object.
+   *
+   * @param translatedMsgsFileContent The translated messages file.
+   * @return The message bundle object built from the messages file.
+   * @throws SoyMsgException If there was an error parsing the file content.
+   * @throws IOException if there is a problem reading the content.
+   */
+  @CheckReturnValue
+  SoyMsgBundle parseTranslatedMsgsFile(CharSource translatedMsgsFileContent) throws IOException;
+
+  /**
    * Parses the content of a translated messages file and builds a message bundle object.
    *
-   * @param translatedMsgsFileContent The content of the translated messages file.
+   * @param translatedMsgsFileContent The translated messages file.
    * @return The message bundle object built from the messages file.
    * @throws SoyMsgException If there was an error parsing the file content.
    */
-  SoyMsgBundle parseTranslatedMsgsFile(String translatedMsgsFileContent);
+  @CanIgnoreReturnValue
+  default SoyMsgBundle parseTranslatedMsgsFile(String translatedMsgsFileContent) {
+    try {
+      return parseTranslatedMsgsFile(CharSource.wrap(translatedMsgsFileContent));
+    } catch (IOException ioe) {
+      throw new AssertionError("should not fail reading a string", ioe);
+    }
+  }
 }
