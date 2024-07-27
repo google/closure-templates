@@ -103,6 +103,30 @@ public class SoyMsgBundleCompactorTest {
         .build();
   }
 
+  /** Creates a message that has a select with identical cases. */
+  private SoyMsg createPluralWithRedundantCases(String locale, long id) {
+    return SoyMsg.builder()
+        .setId(id)
+        .setLocaleString(locale)
+        .setIsPlrselMsg(true)
+        .setParts(
+            ImmutableList.of(
+                new SoyMsgPluralPart(
+                    "varname",
+                    0,
+                    ImmutableList.of(
+                        SoyMsgPart.Case.create(
+                            SoyMsgPluralCaseSpec.forType(SoyMsgPluralCaseSpec.Type.OTHER),
+                            ImmutableList.of(SoyMsgRawTextPart.of("unused plural form"))),
+                        SoyMsgPart.Case.create(
+                            new SoyMsgPluralCaseSpec(1),
+                            ImmutableList.of(SoyMsgRawTextPart.of("1 coconut"))),
+                        SoyMsgPart.Case.create(
+                            new SoyMsgPluralCaseSpec(1),
+                            ImmutableList.of(SoyMsgRawTextPart.of("1 coconut, again")))))))
+        .build();
+  }
+
   @Before
   public void setUp() throws Exception {
 
@@ -115,7 +139,8 @@ public class SoyMsgBundleCompactorTest {
                 createMessageWithPlaceholder(LOCALE_XX, 159),
                 createSelectMsgDifferent(LOCALE_XX, 265),
                 createSelectMsgDifferent(LOCALE_XX, 266),
-                createSelectMsgSame(LOCALE_XX, 358)));
+                createSelectMsgSame(LOCALE_XX, 358),
+                createPluralWithRedundantCases(LOCALE_XX, 42)));
     xxMsgBundle = compactor.compact(xxMsgBundle);
     yyMsgBundle =
         new SoyMsgBundleImpl(
@@ -125,7 +150,8 @@ public class SoyMsgBundleCompactorTest {
                 createMessageWithPlaceholder(LOCALE_YY, 159),
                 createSelectMsgDifferent(LOCALE_YY, 265),
                 createSelectMsgDifferent(LOCALE_YY, 266),
-                createSelectMsgSame(LOCALE_YY, 358)));
+                createSelectMsgSame(LOCALE_YY, 358),
+                createPluralWithRedundantCases(LOCALE_YY, 42)));
     yyMsgBundle = compactor.compact(yyMsgBundle);
   }
 
@@ -172,5 +198,13 @@ public class SoyMsgBundleCompactorTest {
         .containsExactly(
             SoyMsgPart.Case.<String>create(
                 null, ImmutableList.of(SoyMsgRawTextPart.of("Same message 358"))));
+  }
+
+  @Test
+  public void testPluralWithDuplicateCases() {
+    assertThat(
+            ((SoyMsgPluralPartForRendering) xxMsgBundle.getMsgPartsForRendering(42))
+                .lookupCase(1, null))
+        .isEqualTo(SoyMsgRawParts.of("1 coconut"));
   }
 }

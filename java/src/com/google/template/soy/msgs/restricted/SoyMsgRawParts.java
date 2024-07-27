@@ -243,6 +243,11 @@ public abstract class SoyMsgRawParts implements Iterable<Object> {
     public boolean equals(Object other) {
       return other instanceof SinglePart && part.equals(((SinglePart) other).part);
     }
+
+    @Override
+    public String toString() {
+      return "SoyMsgRawParts.SinglePart{" + part + "}";
+    }
   }
 
   private static final class MultipleParts extends SoyMsgRawParts {
@@ -298,6 +303,11 @@ public abstract class SoyMsgRawParts implements Iterable<Object> {
     @Override
     public boolean equals(Object other) {
       return other instanceof MultipleParts && Arrays.equals(parts, ((MultipleParts) other).parts);
+    }
+
+    @Override
+    public String toString() {
+      return "SoyMsgRawParts.MultipleParts{" + Arrays.toString(parts) + "}";
     }
   }
 }

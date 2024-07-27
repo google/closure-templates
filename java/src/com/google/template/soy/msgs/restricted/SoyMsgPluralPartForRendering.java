@@ -67,7 +67,12 @@ public final class SoyMsgPluralPartForRendering extends SoyMsgRawParts {
                         // We can skip cases that are the same as the default case, since we can
                         // just fall back to it.
                         && !c.parts().equals(otherCases))
-            .collect(toImmutableEnumMap(c -> c.spec().getType(), SoyMsgRawParts.RawCase::parts));
+            .collect(
+                toImmutableEnumMap(
+                    c -> c.spec().getType(),
+                    SoyMsgRawParts.RawCase::parts,
+                    // Resolve collisions by picking the first one.
+                    (l, r) -> l));
     this.explicitCases =
         cases.stream()
             .filter(
@@ -78,7 +83,11 @@ public final class SoyMsgPluralPartForRendering extends SoyMsgRawParts {
                         // want to fall back to one of those.
                         && (!nonExplicitCases.isEmpty() || !c.parts().equals(otherCases)))
             .collect(
-                toImmutableMap(c -> c.spec().getExplicitValue(), SoyMsgRawParts.RawCase::parts));
+                toImmutableMap(
+                    c -> c.spec().getExplicitValue(),
+                    SoyMsgRawParts.RawCase::parts,
+                    // Resolve collisions by picking the first one.
+                    (l, r) -> l));
   }
 
   SoyMsgPluralPartForRendering(SoyMsgPluralPart pluralPart) {

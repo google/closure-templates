@@ -52,7 +52,12 @@ public final class SoyMsgSelectPartForRendering extends SoyMsgRawParts {
             // Filter out cases that are the same as the default case, since we can just fall back
             // to it.
             .filter(c -> c.spec() != null && !c.parts().equals(defaultParts))
-            .collect(toImmutableMap(SoyMsgRawParts.RawCase::spec, SoyMsgRawParts.RawCase::parts));
+            .collect(
+                toImmutableMap(
+                    SoyMsgRawParts.RawCase::spec,
+                    SoyMsgRawParts.RawCase::parts,
+                    // Resolve collisions by picking the first one.
+                    (l, r) -> l));
   }
 
   SoyMsgSelectPartForRendering(SoyMsgSelectPart selectPart) {
