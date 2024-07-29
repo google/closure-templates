@@ -19,7 +19,6 @@ package com.google.template.soy.msgs;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.msgs.restricted.SoyMsg;
-import com.google.template.soy.msgs.restricted.SoyMsgPart;
 import com.google.template.soy.msgs.restricted.SoyMsgRawParts;
 import com.google.template.soy.msgs.restricted.SoyMsgRawTextPart;
 import com.ibm.icu.util.ULocale;
@@ -53,15 +52,6 @@ public abstract class SoyMsgBundle implements Iterable<SoyMsg> {
   @Nullable
   public ULocale getLocale() {
     return getLocaleString() == null ? null : new ULocale(getLocaleString());
-  }
-
-  /**
-   * @deprecated This is no longer used by the soy runtime.
-   */
-  @Deprecated
-  public ImmutableList<SoyMsgPart> getMsgParts(long msgId) {
-    SoyMsg msg = getMsg(msgId);
-    return msg == null ? ImmutableList.of() : msg.getParts();
   }
 
   /**
