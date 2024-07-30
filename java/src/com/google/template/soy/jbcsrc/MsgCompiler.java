@@ -17,9 +17,9 @@
 package com.google.template.soy.jbcsrc;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.template.soy.jbcsrc.PrintDirectives.applyStreamingEscapingDirectives;
 import static com.google.template.soy.jbcsrc.PrintDirectives.areAllPrintDirectivesStreamable;
-import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_MSG_RAW_PARTS_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_VALUE_PROVIDER_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.STRING_DATA_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
@@ -27,6 +27,8 @@ import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.SortedSetMultimap;
+import com.google.common.collect.TreeMultimap;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.Expression;
@@ -53,8 +55,8 @@ import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.VeLogNode;
 import com.google.template.soy.types.StringType;
 import java.lang.invoke.MethodHandles;
-import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Stream;
 import org.objectweb.asm.ConstantDynamic;
 import org.objectweb.asm.Handle;
 import org.objectweb.asm.Label;
@@ -81,6 +83,24 @@ final class MsgCompiler {
               String.class,
               Class.class,
               Object[].class)
+          .asHandle();
+  private static final Handle PLACEHOLDER_ORDERING_HANDLE =
+      MethodRef.createPure(
+              MsgDefaultConstantFactory.class,
+              "placeholderOrdering",
+              MethodHandles.Lookup.class,
+              String.class,
+              Class.class,
+              String[].class)
+          .asHandle();
+  private static final Handle PLACEHOLDER_INDEX_FUNCTION_HANDLE =
+      MethodRef.createPure(
+              MsgDefaultConstantFactory.class,
+              "placeholderIndexFunction",
+              MethodHandles.Lookup.class,
+              String.class,
+              Class.class,
+              String[].class)
           .asHandle();
 
   /**
@@ -187,8 +207,7 @@ final class MsgCompiler {
               msg,
               escapingDirectives,
               soyMsgParts,
-              parameterLookup.getPluginContext().getULocale(),
-              partsAndId);
+              parameterLookup.getPluginContext().getULocale());
     }
     return printMsg.withSourceLocation(msg.getSourceLocation());
   }
@@ -206,10 +225,10 @@ final class MsgCompiler {
     ImmutableList<Object> constantParts =
         MsgDefaultConstantFactory.msgToPartsList(partsAndId.parts);
     return constant(
-        SOY_MSG_RAW_PARTS_TYPE,
+        BytecodeUtils.SOY_MSG_RAW_PARTS_TYPE,
         new ConstantDynamic(
             "defaultMsg",
-            SOY_MSG_RAW_PARTS_TYPE.getDescriptor(),
+            BytecodeUtils.SOY_MSG_RAW_PARTS_TYPE.getDescriptor(),
             MESSAGE_FACTORY_HANDLE,
             constantParts.toArray()),
         Features.of(Feature.CHEAP, Feature.NON_JAVA_NULLABLE));
@@ -235,6 +254,18 @@ final class MsgCompiler {
     return appendableExpression.appendString(text.coerceToString()).toStatement();
   }
 
+  private static SortedSetMultimap<String, String> getEndPlaceholderToStartPlaceholders(
+      ImmutableList<PlaceholderAndEndTag> placeholders) {
+    SortedSetMultimap<String, String> endPlaceholderToStartPlaceholders = TreeMultimap.create();
+    for (var placeholder : placeholders) {
+      if (placeholder.endTagToMatch().isPresent()) {
+        endPlaceholderToStartPlaceholders.put(
+            placeholder.endTagToMatch().get(), placeholder.placeholderName());
+      }
+    }
+    return endPlaceholderToStartPlaceholders;
+  }
+
   // TODO(lukes): this is really similar to SoyNodeCompiler.visitPrintNode
 
   /** Handles a complex message with placeholders. */
@@ -242,40 +273,70 @@ final class MsgCompiler {
       MsgNode msg,
       ImmutableList<SoyJbcSrcPrintDirective> escapingDirectives,
       Expression soyMsgParts,
-      Expression locale,
-      MsgPartsAndIds partsAndId) {
+      Expression locale) {
     Label reattachPoint = new Label();
+    var detacher = detachState.createExpressionDetacher(reattachPoint);
+    ImmutableList<String> placeholderNames =
+        ImmutableList.sortedCopyOf(msg.getVarNameToRepNodeMap().keySet());
+    ImmutableList<PlaceholderAndEndTag> placeholders =
+        placeholderNames.stream()
+            .map(
+                name ->
+                    compilePlaceholder(msg, name, msg.getVarNameToRepNodeMap().get(name), detacher))
+            .collect(toImmutableList());
+
+    var endPlaceholderToStartPlaceholders = getEndPlaceholderToStartPlaceholders(placeholders);
     MethodRef cstruct =
         msg.isPlrselMsg() ? MethodRefs.PLRSEL_MSG_RENDERER : MethodRefs.MSG_RENDERER;
-    Expression renderer =
-        cstruct.invoke(
-            constant(partsAndId.id),
-            soyMsgParts,
-            locale,
-            constant(msg.getVarNameToRepNodeMap().size()),
-            constant(msg.getEscapingMode() == EscapingMode.ESCAPE_HTML));
-    boolean requiresDetachLogic = false;
-    for (Map.Entry<String, MsgSubstUnitNode> entry : msg.getVarNameToRepNodeMap().entrySet()) {
-      String phName = entry.getKey();
-      PlaceholderAndEndTag placeholder =
-          compilePlaceholder(
-              msg, phName, entry.getValue(), detachState.createExpressionDetacher(reattachPoint));
-      requiresDetachLogic = requiresDetachLogic || placeholder.requiresDetachLogic();
-      if (placeholder.endTagToMatch().isPresent()) {
-        renderer =
-            renderer.invoke(
-                MethodRefs.MSG_RENDERER_SET_PLACEHOLDER_AND_ORDERING,
-                constant(phName),
-                placeholder.expression(),
-                constant(placeholder.endTagToMatch().get()));
+    ImmutableList.Builder<Expression> ctorParams =
+        ImmutableList.<Expression>builder()
+            .add(soyMsgParts)
+            // Pass the full set of placeholder names to list indexes as a constant map.
+            .add(
+                BytecodeUtils.constant(
+                    BytecodeUtils.TO_INT_FUNCTION_TYPE,
+                    new ConstantDynamic(
+                        "placeholderIndexFunction",
+                        BytecodeUtils.TO_INT_FUNCTION_TYPE.getDescriptor(),
+                        PLACEHOLDER_INDEX_FUNCTION_HANDLE,
+                        placeholderNames.toArray()),
+                    Features.of(Feature.NON_JAVA_NULLABLE)))
+            .add(
+                BytecodeUtils.asImmutableList(
+                        placeholders.stream()
+                            .map(PlaceholderAndEndTag::expression)
+                            .collect(toImmutableList()))
+                    // If the placeholders are all constants (e.g. html tags), then we can promote
+                    // the whole list to a constant.  This is somewhat common.
+                    .toMaybeConstant())
+            .add(constant(msg.getEscapingMode() == EscapingMode.ESCAPE_HTML));
+    if (msg.isPlrselMsg()) {
+      // PlrSel messages always have accept locale since they need it to resolve plural parts, so we
+      // only need to pass it if we have a plural part.
+      if (msg.hasPluralNode()) {
+        ctorParams.add(locale);
       } else {
-        renderer =
-            renderer.invoke(
-                MethodRefs.MSG_RENDERER_SET_PLACEHOLDER,
-                constant(phName),
-                placeholder.expression());
+        ctorParams.add(BytecodeUtils.constantNull(BytecodeUtils.ULOCALE_TYPE));
       }
     }
+    if (!endPlaceholderToStartPlaceholders.isEmpty()) {
+      ctorParams.add(
+          BytecodeUtils.constant(
+              BytecodeUtils.IMMUTABLE_SET_MULTIMAP_TYPE,
+              new ConstantDynamic(
+                  "msgOrdering",
+                  BytecodeUtils.IMMUTABLE_SET_MULTIMAP_TYPE.getDescriptor(),
+                  PLACEHOLDER_ORDERING_HANDLE,
+                  endPlaceholderToStartPlaceholders.entries().stream()
+                      .flatMap(e -> Stream.of(e.getKey(), e.getValue()))
+                      .toArray(Object[]::new)),
+              Features.of(Feature.NON_JAVA_NULLABLE)));
+    } else {
+      ctorParams.add(BytecodeUtils.constantNull(BytecodeUtils.IMMUTABLE_SET_MULTIMAP_TYPE));
+    }
+    var renderer = cstruct.invoke(ctorParams.build());
+    boolean requiresDetachLogic =
+        placeholders.stream().anyMatch(PlaceholderAndEndTag::requiresDetachLogic);
     TemplateVariableManager.Scope scope = variableManager.enterScope();
     TemplateVariableManager.Variable msgRendererVar =
         scope.createSynthetic(
@@ -339,19 +400,26 @@ final class MsgCompiler {
 
   @AutoValue
   abstract static class PlaceholderAndEndTag {
-    static PlaceholderAndEndTag create(PlaceholderCompiler.Placeholder placeholder) {
-      return create(placeholder, Optional.empty());
+    static PlaceholderAndEndTag create(
+        PlaceholderCompiler.Placeholder placeholder, String placeholderName) {
+      return create(placeholder, placeholderName, Optional.empty());
     }
 
     static PlaceholderAndEndTag create(
-        PlaceholderCompiler.Placeholder placeholder, Optional<String> matchingEndTag) {
+        PlaceholderCompiler.Placeholder placeholder,
+        String placeholderName,
+        Optional<String> matchingEndTag) {
+      ;
       return new AutoValue_MsgCompiler_PlaceholderAndEndTag(
           placeholder.soyValueProvider(),
+          placeholderName,
           placeholder.requiresDetachLogicToResolve(),
           matchingEndTag);
     }
 
     abstract Expression expression();
+
+    abstract String placeholderName();
 
     abstract boolean requiresDetachLogic();
 
@@ -366,11 +434,13 @@ final class MsgCompiler {
     if (substUnitNode instanceof MsgPluralNode) {
       return PlaceholderAndEndTag.create(
           placeholderCompiler.compile(
-              ((MsgPluralNode) substUnitNode).getExpr(), expressionDetacher));
+              ((MsgPluralNode) substUnitNode).getExpr(), expressionDetacher),
+          placeholderName);
     } else if (substUnitNode instanceof MsgSelectNode) {
       return PlaceholderAndEndTag.create(
           placeholderCompiler.compile(
-              ((MsgSelectNode) substUnitNode).getExpr(), expressionDetacher));
+              ((MsgSelectNode) substUnitNode).getExpr(), expressionDetacher),
+          placeholderName);
     } else if (substUnitNode instanceof MsgPlaceholderNode) {
       return compileNormalPlaceholder(
           originalMsg, placeholderName, (MsgPlaceholderNode) substUnitNode);
@@ -387,7 +457,8 @@ final class MsgCompiler {
       // placeholder.
       return PlaceholderAndEndTag.create(
           PlaceholderCompiler.Placeholder.create(
-              FieldRef.EMPTY_STRING_DATA.accessor(), /* requiresDetachLogicToResolve= */ false));
+              FieldRef.EMPTY_STRING_DATA.accessor(), /* requiresDetachLogicToResolve= */ false),
+          placeholderName);
     }
     ExtraCodeCompiler prefix = ExtraCodeCompiler.NO_OP;
     ExtraCodeCompiler suffix = ExtraCodeCompiler.NO_OP;
@@ -456,6 +527,7 @@ final class MsgCompiler {
 
     return PlaceholderAndEndTag.create(
         placeholderCompiler.compile(placeholderName, initialNode, prefix, suffix),
+        placeholderName,
         closeTagPlaceholderNameToMatch);
   }
 

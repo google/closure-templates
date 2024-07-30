@@ -393,6 +393,31 @@ public final class MsgNode extends AbstractBlockCommandNode
     return numChildren() == 1 && (getChild(0) instanceof RawTextNode);
   }
 
+  /** Returns whether this message has a plural node. */
+  public boolean hasPluralNode() {
+    return hasPluralNode(this);
+  }
+
+  /** A message might have a plural at the root or under a select, but nowhere else. */
+  private static boolean hasPluralNode(ParentSoyNode<?> node) {
+    if (node.numChildren() != 1) {
+      return false;
+    }
+    if (node.getChild(0) instanceof MsgPluralNode) {
+      return true;
+    }
+    if (node.getChild(0) instanceof MsgSelectNode) {
+      var selectNode = (MsgSelectNode) node.getChild(0);
+      for (CaseOrDefaultNode child : selectNode.getChildren()) {
+        if (hasPluralNode(child)) {
+          return true;
+        }
+      }
+      return false;
+    }
+    return false;
+  }
+
   /**
    * This class lazily allocates some datastructures for accessing data about nested placeholders.
    * This method ensures that generation and access to that data structure hasn't happened yet. This

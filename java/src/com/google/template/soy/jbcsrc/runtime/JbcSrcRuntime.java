@@ -19,14 +19,14 @@ package com.google.template.soy.jbcsrc.runtime;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 import static java.lang.invoke.MethodType.methodType;
+import static java.util.stream.Collectors.joining;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.HashMultimap;
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Maps;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Multiset;
-import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
 import com.google.common.io.BaseEncoding;
 import com.google.common.util.concurrent.Futures;
@@ -71,7 +71,6 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -80,6 +79,7 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.function.Function;
+import java.util.function.ToIntFunction;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.annotation.Nonnull;
@@ -259,7 +259,11 @@ public final class JbcSrcRuntime {
   @Keep
   @Nonnull
   public static String handleBasicTranslationAndEscapeHtml(String text) {
-    return MsgRenderer.escapeHtml(text);
+    try {
+      return MsgRenderer.maybeEscapeHtmlOnto(text, null);
+    } catch (IOException e) {
+      throw new AssertionError("impossible", e);
+    }
   }
 
   /**
@@ -269,126 +273,80 @@ public final class JbcSrcRuntime {
    */
   public static class MsgRenderer implements SoyValueProvider {
     SoyMsgRawParts msgParts;
-    final ULocale locale;
     private int partIndex;
     private SoyValueProvider pendingRender;
-    final Map<String, SoyValueProvider> placeholders;
+    final ToIntFunction<PlaceholderName> placeholderPositionFunction;
+    final ImmutableList<SoyValueProvider> placeholders;
 
     // Some placeholders have ordering constraints.  This is necessary for the velog to function
     // correctly in the face of translators reordering things.
     // The constraints are simply that an end tag must come after a start tag
-    @Nullable Set<String> startPlaceholders;
-    @Nullable Multiset<String> startPlaceholderRenderCount;
+    @Nullable final Multiset<PlaceholderName> startPlaceholderRenderCount;
+
     // an optional map from a placeholder to another placeholder that must precede it.
-    @Nullable SetMultimap<String, String> endPlaceholderToStartPlaceholder;
-    private final long msgId;
+    @Nullable
+    final ImmutableSetMultimap<PlaceholderName, PlaceholderName> endPlaceholderToStartPlaceholder;
+
     private final boolean htmlEscape;
     private BufferingAppendable buffer;
     private boolean isDone;
 
     public MsgRenderer(
-        long msgId,
         SoyMsgRawParts msgParts,
-        @Nullable ULocale locale,
-        int numPlaceholders,
-        boolean htmlEscape) {
-      this.msgId = msgId;
+        ToIntFunction<PlaceholderName> placeholderPositionFunction,
+        ImmutableList<SoyValueProvider> placeholders,
+        boolean htmlEscape,
+        @Nullable
+            ImmutableSetMultimap<PlaceholderName, PlaceholderName>
+                endPlaceholderToStartPlaceholder) {
       this.msgParts = msgParts;
-      this.locale = locale;
-      this.placeholders = Maps.newLinkedHashMapWithExpectedSize(numPlaceholders);
+      this.placeholderPositionFunction = placeholderPositionFunction;
+      this.placeholders = placeholders;
       this.htmlEscape = htmlEscape;
+      if (endPlaceholderToStartPlaceholder != null) {
+        this.endPlaceholderToStartPlaceholder = endPlaceholderToStartPlaceholder;
+        this.startPlaceholderRenderCount = HashMultiset.create();
+      } else {
+        this.endPlaceholderToStartPlaceholder = null;
+        this.startPlaceholderRenderCount = null;
+      }
     }
 
     /**
-     * Sets a placeholder value.
+     * Html escapes the string.
      *
-     * @param placeholderName The placeholder name
-     * @param placeholderValue The placeholder value.
+     * <p>If the appendable is non-null, the result is appended to it and null is returned.
+     *
+     * <p>If the appendable is null, the escaped string is returned
      */
+    @Nullable
     @CanIgnoreReturnValue
-    @Nonnull
-    public MsgRenderer setPlaceholder(String placeholderName, SoyValueProvider placeholderValue) {
-      Object prev = placeholders.put(placeholderName, placeholderValue);
-      if (prev != null) {
-        throw new IllegalArgumentException(
-            "found multiple placeholders: "
-                + prev
-                + " and "
-                + placeholderValue
-                + " for key "
-                + placeholderName);
-      }
-      return this;
-    }
-
-    static String escapeHtml(String s) {
+    static String maybeEscapeHtmlOnto(String s, @Nullable Appendable out) throws IOException {
       // Note that "&" is not replaced because the translation can contain HTML entities.
       int ltIndex = s.indexOf('<');
       if (ltIndex < 0) {
+        if (out != null) {
+          out.append(s);
+          return null;
+        }
         return s;
       }
       int length = s.length();
-      StringBuilder sb = new StringBuilder(length + 3);
+      boolean returnToString = false;
+      if (out == null) {
+        out = new StringBuilder(length + 3);
+        returnToString = true;
+      }
       int i = 0;
       do {
-        sb.append(s, i, ltIndex).append("&lt;");
+        out.append(s, i, ltIndex).append("&lt;");
         i = ltIndex + 1;
       } while (ltIndex < length && (ltIndex = s.indexOf('<', ltIndex + 1)) > 0);
-      return sb.append(s, i, length).toString();
-    }
-
-    /**
-     * Sets a placeholder and declares that it must come before {@code endPlaceholder}.
-     *
-     * <p>This is necessary to enforce the constraints of the velogging system.
-     *
-     * @param placeholderName The placeholder name
-     * @param placeholderValue The placeholder value. For a normal placeholder this will be a
-     *     SoyValueProvider
-     * @param endPlaceholder The name of another placeholder that _must_ come _after_ this one.
-     */
-    @CanIgnoreReturnValue
-    @Nonnull
-    public MsgRenderer setPlaceholderAndOrdering(
-        String placeholderName, SoyValueProvider placeholderValue, String endPlaceholder) {
-      if (endPlaceholderToStartPlaceholder == null) {
-        startPlaceholders = new HashSet<>();
-        endPlaceholderToStartPlaceholder = HashMultimap.create();
-        startPlaceholderRenderCount = HashMultiset.create();
+      out.append(s, i, length);
+      if (returnToString) {
+        return out.toString();
       }
-      // We need to check that our ordering constraints make sense.
-      // the placeholderName shouldn't be the 'after' node of any other node and the endPlaceholder
-      // shouldn't be the before node of any other node.
-      // The edges in this ordering graph should create a forest of trees of depth 1.
-      if (endPlaceholderToStartPlaceholder.containsKey(placeholderName)) {
-        throw new IllegalArgumentException(
-            String.format(
-                "%s is supposed to come after %s but before %s. Order constraints should not be "
-                    + "transitive.",
-                placeholderName,
-                // just use one of them, there is normally only one
-                endPlaceholderToStartPlaceholder.get(placeholderName).iterator().next(),
-                endPlaceholder));
-      }
-      if (startPlaceholders.contains(endPlaceholder)) {
-        String beforePlaceholder = null;
-        // scan to find the placeholder that is supposed to come after this one.
-        for (Map.Entry<String, String> entry : endPlaceholderToStartPlaceholder.entries()) {
-          if (endPlaceholder.equals(entry.getValue())) {
-            beforePlaceholder = entry.getKey();
-            break;
-          }
-        }
-        throw new IllegalArgumentException(
-            String.format(
-                "%s is supposed to come after %s but before %s. Order constraints should not be "
-                    + "transitive.",
-                endPlaceholder, placeholderName, beforePlaceholder));
-      }
-      setPlaceholder(placeholderName, placeholderValue);
-      endPlaceholderToStartPlaceholder.put(endPlaceholder, placeholderName);
-      startPlaceholders.add(placeholderName);
-      return this;
+      return null;
     }
 
     @Override
@@ -418,6 +376,10 @@ public final class JbcSrcRuntime {
       return buffer.getAsStringData();
     }
 
+    SoyValueProvider getPlaceholder(PlaceholderName placeholderName) {
+      return placeholders.get(placeholderPositionFunction.applyAsInt(placeholderName));
+    }
+
     /** Renders the message to the given output stream incrementally. */
     @Override
     public RenderResult renderAndResolve(LoggingAdvisingAppendable out) throws IOException {
@@ -434,124 +396,117 @@ public final class JbcSrcRuntime {
         if (msgPart instanceof String) {
           String s = (String) msgPart;
           if (htmlEscape) {
-            s = escapeHtml(s);
+            maybeEscapeHtmlOnto(s, out);
+          } else {
+            out.append(s);
           }
-          out.append(s);
         } else {
-          String placeholderName = ((PlaceholderName) msgPart).name();
+          var placeholderName = (PlaceholderName) msgPart;
           if (endPlaceholderToStartPlaceholder != null) {
-            if (startPlaceholders.contains(placeholderName)) {
-              startPlaceholderRenderCount.add(placeholderName);
-            } else {
-              // check if it is an end tag
-              Set<String> startPlaceholders = endPlaceholderToStartPlaceholder.get(placeholderName);
-              if (!startPlaceholders.isEmpty()) {
-                // make sure the start tag has been rendered
-                boolean matched = false;
-                for (String startPlaceholder : startPlaceholders) {
-                  if (startPlaceholderRenderCount.remove(startPlaceholder)) {
-                    matched = true;
-                    break;
-                  }
-                }
-                if (!matched) {
-                  // uhoh
-                  throw new IllegalStateException(
-                      String.format(
-                          "Expected placeholder '%s' to come after one of %s, in message %d",
-                          placeholderName, startPlaceholders, msgId));
-                }
-              }
-            }
+            checkPlaceholderOrdering(placeholderName);
           }
-          SoyValueProvider placeholderValue = placeholders.get(placeholderName);
-          if (placeholderValue == null) {
-            throw new IllegalStateException(
-                "No value provided for placeholder: '"
-                    + placeholderName
-                    + "', expected one of "
-                    + placeholders.keySet());
-          }
-          try {
-            RenderResult result = placeholderValue.renderAndResolve(out);
-            if (!result.isDone()) {
-              partIndex = i + 1;
-              pendingRender = placeholderValue;
-              return result;
-            }
-          } catch (IllegalStateException e) {
-            throw new IllegalStateException(placeholderName, e);
+          SoyValueProvider placeholderValue = getPlaceholder(placeholderName);
+          RenderResult result = placeholderValue.renderAndResolve(out);
+          if (!result.isDone()) {
+            partIndex = i + 1;
+            pendingRender = placeholderValue;
+            return result;
           }
         }
       }
       if (startPlaceholderRenderCount != null && !startPlaceholderRenderCount.isEmpty()) {
         throw new IllegalStateException(
-            String.format(
-                "The following placeholders never had their matching placeholders rendered in"
-                    + " message %d: %s",
-                msgId, startPlaceholderRenderCount.elementSet()));
+            "The following placeholders never had their matching placeholders rendered: "
+                + startPlaceholderRenderCount.elementSet());
       }
       return RenderResult.done();
     }
 
+    private void checkPlaceholderOrdering(PlaceholderName placeholderName) {
+      if (endPlaceholderToStartPlaceholder.inverse().containsKey(placeholderName)) {
+        startPlaceholderRenderCount.add(placeholderName);
+      } else {
+        // check if it is an end tag
+        ImmutableSet<PlaceholderName> startPlaceholders =
+            endPlaceholderToStartPlaceholder.get(placeholderName);
+        if (!startPlaceholders.isEmpty()) {
+          // make sure the start tag has been rendered
+          boolean matched = false;
+          for (PlaceholderName startPlaceholder : startPlaceholders) {
+            if (startPlaceholderRenderCount.remove(startPlaceholder)) {
+              matched = true;
+              break;
+            }
+          }
+          if (!matched) {
+            // uhoh
+            throw new IllegalStateException(
+                String.format(
+                    "Expected placeholder '%s' to come after one of %s",
+                    placeholderName.name(),
+                    startPlaceholders.stream()
+                        .map(PlaceholderName::name)
+                        .collect(joining(",", "[", "]"))));
+          }
+        }
+      }
+    }
   }
 
   /** A MsgRenderer for plural or select style messages. */
   public static final class PlrSelMsgRenderer extends MsgRenderer {
     private boolean resolvedCases;
+    private final ULocale locale;
 
     public PlrSelMsgRenderer(
-        long msgId,
         SoyMsgRawParts msgParts,
-        @Nullable ULocale locale,
-        int numPlaceholders,
-        boolean htmlEscape) {
-      super(msgId, msgParts, locale, numPlaceholders, htmlEscape);
+        ToIntFunction<PlaceholderName> placeholderPositionFunction,
+        ImmutableList<SoyValueProvider> placeholders,
+        boolean htmlEscape,
+        ULocale locale,
+        @Nullable
+            ImmutableSetMultimap<PlaceholderName, PlaceholderName>
+                endPlaceholderToStartPlaceholder) {
+      super(
+          msgParts,
+          placeholderPositionFunction,
+          placeholders,
+          htmlEscape,
+          endPlaceholderToStartPlaceholder);
+      this.locale = locale;
     }
 
     @Override
     public RenderResult renderAndResolve(LoggingAdvisingAppendable out) throws IOException {
-      if (!resolvedCases) {
-        // plural/select messages always start with a sequence of plural and select values.
-        // Additionally, we are guaranteed (by contract with the gencode) that the plural/select
-        // variables are resolved.  So we need to do that now.
-        // NOTE: that in the most common case, this loop only executes once and at maximum it will
-        // loop 3 times.  We do know statically what the first iteration will be, but it is not
-        // possible to know anything beyond that.
-        SoyMsgRawParts parts = this.msgParts;
-        RenderResult caseSelectionResult = RenderResult.done();
-        while (true) {
-          if (parts instanceof SoyMsgSelectPartForRendering) {
-            SoyMsgSelectPartForRendering selectPart = (SoyMsgSelectPartForRendering) parts;
-            SoyValueProvider selectPlaceholder =
-                placeholders.get(selectPart.getSelectVarName().name());
-            caseSelectionResult = selectPlaceholder.status();
-            if (caseSelectionResult.isDone()) {
-              parts = selectPart.lookupCase(selectPlaceholder.resolve().coerceToString());
-            } else {
-              break;
-            }
-          } else if (parts instanceof SoyMsgPluralPartForRendering) {
-            SoyMsgPluralPartForRendering pluralPart = (SoyMsgPluralPartForRendering) parts;
-            SoyValueProvider pluralPlaceholder =
-                placeholders.get(pluralPart.getPluralVarName().name());
-            caseSelectionResult = pluralPlaceholder.status();
-            if (caseSelectionResult.isDone()) {
-              double pluralValue = pluralPlaceholder.resolve().numberValue();
-              parts = pluralPart.lookupCase(pluralValue, locale);
-            } else {
-              break;
-            }
+      // plural/select messages always start with a sequence of plural and select values.
+      // Additionally, we are guaranteed (by contract with the gencode) that the plural/select
+      // variables are resolved.  So we need to resolve those first.
+      // NOTE: that in the most common case, this loop only executes once and at maximum it will
+      // loop 3 times.
+      while (!resolvedCases) {
+        if (msgParts instanceof SoyMsgSelectPartForRendering) {
+          SoyMsgSelectPartForRendering selectPart = (SoyMsgSelectPartForRendering) msgParts;
+          SoyValueProvider selectPlaceholder = getPlaceholder(selectPart.getSelectVarName());
+          var caseSelectionResult = selectPlaceholder.status();
+          if (caseSelectionResult.isDone()) {
+            msgParts = selectPart.lookupCase(selectPlaceholder.resolve().coerceToString());
           } else {
-            break;
+            return caseSelectionResult;
           }
+        } else if (msgParts instanceof SoyMsgPluralPartForRendering) {
+          SoyMsgPluralPartForRendering pluralPart = (SoyMsgPluralPartForRendering) msgParts;
+          SoyValueProvider pluralPlaceholder = getPlaceholder(pluralPart.getPluralVarName());
+          var caseSelectionResult = pluralPlaceholder.status();
+          if (caseSelectionResult.isDone()) {
+            double pluralValue = pluralPlaceholder.resolve().numberValue();
+            msgParts = pluralPart.lookupCase(pluralValue, locale);
+          } else {
+            return caseSelectionResult;
+          }
+        } else {
+          resolvedCases = true;
+          break;
         }
-        // Store any progress we have made in calculating sub-parts.
-        this.msgParts = parts;
-        if (!caseSelectionResult.isDone()) {
-          return caseSelectionResult;
-        }
-        resolvedCases = true;
       }
       // render the cases.
       return super.renderAndResolve(out);

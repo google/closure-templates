@@ -41,5 +41,10 @@ public final class PlaceholderName {
     return name;
   }
 
+  @Override
+  public String toString() {
+    return "PlaceholderName{" + name + "}";
+  }
+
   // don't implement equals or hashcode, we want identity semantics.
 }

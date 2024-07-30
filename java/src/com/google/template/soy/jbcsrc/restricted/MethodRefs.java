@@ -24,6 +24,7 @@ import static com.google.template.soy.jbcsrc.restricted.MethodRef.createPureCons
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.UnsignedInts;
 import com.google.common.primitives.UnsignedLongs;
@@ -83,6 +84,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.function.ToIntFunction;
 
 /** Standard constant MethodRef instances shared throughout the compiler. */
 public final class MethodRefs {
@@ -452,17 +454,6 @@ public final class MethodRefs {
   public static final MethodRef RUNTIME_TIMES =
       createPure(SharedRuntime.class, "times", SoyValue.class, SoyValue.class);
 
-  public static final MethodRef MSG_RENDERER_SET_PLACEHOLDER =
-      createNonPure(
-          JbcSrcRuntime.MsgRenderer.class, "setPlaceholder", String.class, SoyValueProvider.class);
-
-  public static final MethodRef MSG_RENDERER_SET_PLACEHOLDER_AND_ORDERING =
-      createNonPure(
-          JbcSrcRuntime.MsgRenderer.class,
-          "setPlaceholderAndOrdering",
-          String.class,
-          SoyValueProvider.class,
-          String.class);
 
   public static final MethodRef HANDLE_BASIC_TRANSLATION_AND_ESCAPE_HTML =
       createPure(JbcSrcRuntime.class, "handleBasicTranslationAndEscapeHtml", String.class);
@@ -706,19 +697,20 @@ public final class MethodRefs {
   public static final MethodRef MSG_RENDERER =
       createPureConstructor(
           JbcSrcRuntime.MsgRenderer.class,
-          long.class,
           SoyMsgRawParts.class,
-          ULocale.class,
-          int.class,
-          boolean.class);
+          ToIntFunction.class,
+          ImmutableList.class,
+          boolean.class,
+          ImmutableSetMultimap.class);
   public static final MethodRef PLRSEL_MSG_RENDERER =
       createPureConstructor(
           JbcSrcRuntime.PlrSelMsgRenderer.class,
-          long.class,
           SoyMsgRawParts.class,
+          ToIntFunction.class,
+          ImmutableList.class,
+          boolean.class,
           ULocale.class,
-          int.class,
-          boolean.class);
+          ImmutableSetMultimap.class);
 
   public static final MethodRef ESCAPING_BUFFERED_RENDER_DONE_FN =
       createPureConstructor(JbcSrcRuntime.EscapingBufferedRenderDoneFn.class, ImmutableList.class);
