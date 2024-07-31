@@ -128,6 +128,7 @@ public class TemplateBasicNodeBuilder extends TemplateNodeBuilder<TemplateBasicN
 
   @Override
   public TemplateBasicNode build() {
+    validateBuild();
     Preconditions.checkState(id != null && cmdText != null);
     if (modifiable && hasModifies) {
       errorReporter.report(openTagLocation, MODIFIABLE_AND_MODIFIES_BOTH_SET);

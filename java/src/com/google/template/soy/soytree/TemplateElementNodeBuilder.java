@@ -44,9 +44,9 @@ public final class TemplateElementNodeBuilder
   private static final SoyErrorKind INVALID_ELEMENT_KIND =
       SoyErrorKind.of("Soy element kind must be html or html<...>.");
 
-  private List<CommandTagAttribute> attrs = ImmutableList.of();
-
-  /** @param soyFileHeaderInfo Info from the containing Soy file's header declarations. */
+  /**
+   * @param soyFileHeaderInfo Info from the containing Soy file's header declarations.
+   */
   public TemplateElementNodeBuilder(
       SoyFileHeaderInfo soyFileHeaderInfo, ErrorReporter errorReporter) {
     super(soyFileHeaderInfo, errorReporter);
@@ -56,7 +56,6 @@ public final class TemplateElementNodeBuilder
   @Override
   public TemplateElementNodeBuilder setCommandValues(
       Identifier templateName, List<CommandTagAttribute> attrs) {
-    this.attrs = attrs;
     this.cmdText = templateName.identifier() + " " + Joiner.on(' ').join(attrs);
     setCommonCommandValues(attrs);
 
@@ -96,6 +95,7 @@ public final class TemplateElementNodeBuilder
   @Override
   public TemplateElementNode build() {
     Preconditions.checkState(id != null && cmdText != null);
+    validateBuild();
     return new TemplateElementNode(this, soyFileHeaderInfo, params);
   }
 

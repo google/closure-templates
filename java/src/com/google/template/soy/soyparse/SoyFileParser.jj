@@ -150,6 +150,7 @@ import com.google.template.soy.soytree.TemplateElementNodeBuilder;
 import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateNodeBuilder;
+import com.google.template.soy.soytree.TemplateParamsNode;
 import com.google.template.soy.soytree.VeLogNode;
 import com.google.template.soy.soytree.WhitespaceMode;
 import com.google.template.soy.soytree.defn.AttrParam;
@@ -1077,8 +1078,8 @@ TOKEN_MGR_DECLS: {
 | < NAMESPACE_OPEN: "{namespace" <WS> > : IN_CMD_TAG
 | < MODNAME_OPEN: "{modname" <WS> > : IN_CMD_TAG
 | < IMPORT_OPEN: "import" >
-| < CONST_OPEN: "{" ("export ")? "const" <WS> > : EXPR
-| < TYPEDEF_OPEN: "{" ("export ")? "type" <WS> > : EXPR
+| < CONST_OPEN: "{" ("export ")? "const" <WS> > : IN_CMD_TAG
+| < TYPEDEF_OPEN: "{" ("export ")? "type" <WS> > : IN_CMD_TAG
 | < SEMICOLON: ";"      >
 | < DEFAULT_COMMA: "," >
 | < LCURLY: "{"      >
@@ -1190,6 +1191,7 @@ TOKEN_MGR_DECLS: {
 | < CMD_CLOSE_ELEMENT            : "{/element}" > { resetState(); } : DEFAULT
 
 | < DECL_BEGIN_PARAM             : "{@param"        > : IN_CMD_TAG
+| < DECL_BEGIN_PARAMS            : "{@params"       > : IN_CMD_TAG
 | < DECL_ATTRIBUTE_STAR          : "{@attribute *}" >
 | < DECL_BEGIN_ATTR              : "{@attribute"    > : IN_CMD_TAG
 | < DECL_BEGIN_OPT_ATTR          : "{@attribute?"   > : IN_CMD_TAG
@@ -1280,6 +1282,9 @@ TOKEN_MGR_DECLS: {
 | < CMD_EQ: "=" >
 | < CMD_DASH: "-" >
 | < CMD_DOT: "." >
+| < CMD_LBRACKET: "[" >
+| < CMD_RBRACKET: "]" >
+| < CMD_COMMA: "," >
 }
 
 
@@ -1711,10 +1716,10 @@ private AliasDeclaration Alias() :
 {
   (
     open = <ALIAS_OPEN>
-    namespace = Identifier()
+    namespace = DottedIdent()
     [
       <AS_OP>
-      alias = Identifier()
+      alias = DottedIdent()
     ]
     close = <CMD_END>
   )
@@ -2223,10 +2228,26 @@ private Identifier DottedIdent() :
   Token dot, name, next = null;
 }
 {
-  name = <NAME>
   (
-    dot = <CMD_DOT>
-    next = <NAME>
+    name = <NAME>
+  |
+    name = <IDENT>
+  )
+  // This is a no-op lookahead (it doesn't actually change the algorithm), but it suppresses a
+  // choice conflict warning.  The issue is that global() followed by field access is ambiguous
+  // with extending the global node.  By setting a LOOKAHEAD here, we are just saying 'prefer to
+  // extend the identifier over a field access', which is what we want.
+  ( LOOKAHEAD(1)
+    (
+      dot = <CMD_DOT>
+    |
+      dot = <DOT>
+    )
+    (
+      next = <NAME>
+    |
+      next = <IDENT>
+    )
     { if (sb == null) {
         sb = new StringBuilder();
         sb.append(name.image);
@@ -2345,73 +2366,76 @@ private RawTextNode TemplateHeader(TemplateNodeBuilder<?> templateBuilder, boole
   List<TemplateHeaderVarDefn> params = ImmutableList.of();
   RawTextNode whitespace = null;
   String soyDoc = null;
-
+  TemplateParamsNode paramsNode = null;
 }
 {
   ( LOOKAHEAD(1)  // prefer consuming whitespace here instead of in a subsequent RawTextNode
-    (
-      {
-        RawTextBuilder builder = new RawTextBuilder(filePath, nodeIdGen, whitespaceMode);
-      }
+    {
+      RawTextBuilder builder = new RawTextBuilder(filePath, nodeIdGen, whitespaceMode);
+    }
 
-      ( LOOKAHEAD(1)  // prefer staying in the loop
-        tok = <TOKEN_WS>
-        { if (tok.specialToken != null && tok.specialToken.kind == SOYDOC) {
-            if (docSinkParam != null) {
-              String desc = tok.specialToken.image;
-              desc = desc.substring(3, desc.length() - 2).trim();
-              docSinkParam.setDesc(desc);
-              docSinkParam = null;
-            } else {
-              soyDoc = tok.specialToken.image;
-            }
-          } else if (tok.image.contains("\n") || tok.image.contains("\r")) {
+    ( LOOKAHEAD(1)  // prefer staying in the loop
+      tok = <TOKEN_WS>
+      { if (tok.specialToken != null && tok.specialToken.kind == SOYDOC) {
+          if (docSinkParam != null) {
+            String desc = tok.specialToken.image;
+            desc = desc.substring(3, desc.length() - 2).trim();
+            docSinkParam.setDesc(desc);
             docSinkParam = null;
+          } else {
+            soyDoc = tok.specialToken.image;
           }
-          builder.addBasic(tok);
+        } else if (tok.image.contains("\n") || tok.image.contains("\r")) {
+          docSinkParam = null;
         }
-      )+
+        builder.addBasic(tok);
+      }
+    )+
 
-      { whitespace = builder.build(); }
+    { whitespace = builder.build(); }
+  |
+    (
+      tok = <DECL_ATTRIBUTE_STAR>
+      {
+        templateBuilder.setAllowExtraAttributes(createSrcLoc(tok));
+      }
     |
       (
-        tok = <DECL_ATTRIBUTE_STAR>
-        {
-          templateBuilder.setAllowExtraAttributes(createSrcLoc(tok));
-        }
-        |
-        (
-            param = ParamDecl(soyDoc)
-            |
-            param = AttrDecl(soyDoc)
-        )
-        {
-          docSinkParam = param;
-          switch (param.kind()) {
-            case PARAM:
-              // we just parsed a param, preceding whitespace/doc comments are not important
-              whitespace = null;
-              soyDoc = null;
-              if (params.isEmpty()) {
-                params = new ArrayList<TemplateHeaderVarDefn>();
-              }
-              params.add(param);
-              break;
-            case STATE:
-              if (params.isEmpty()) {
-                params = new ArrayList<TemplateHeaderVarDefn>();
-              }
-              if (allowState) {
-                params.add(param);
-              } else {
-                errorReporter.report(param.nameLocation(), STATE_IN_TEMPLATE);
-              }
-              break;
-            default:
-              throw new AssertionError("unexpected var kind: " + param.kind());
-          }
-        }
+          param = ParamDecl(soyDoc)
+          |
+          param = AttrDecl(soyDoc)
       )
+      {
+        docSinkParam = param;
+        switch (param.kind()) {
+          case PARAM:
+            // we just parsed a param, preceding whitespace/doc comments are not important
+            whitespace = null;
+            soyDoc = null;
+            if (params.isEmpty()) {
+              params = new ArrayList<TemplateHeaderVarDefn>();
+            }
+            params.add(param);
+            break;
+          case STATE:
+            if (params.isEmpty()) {
+              params = new ArrayList<TemplateHeaderVarDefn>();
+            }
+            if (allowState) {
+              params.add(param);
+            } else {
+              errorReporter.report(param.nameLocation(), STATE_IN_TEMPLATE);
+            }
+            break;
+          default:
+            throw new AssertionError("unexpected var kind: " + param.kind());
+        }
+      }
+    |
+      paramsNode = ParamsDecl()
+      {
+        templateBuilder.setParamsNode(paramsNode);
+      }
     )
   )*
   {
@@ -2502,6 +2526,48 @@ private TemplateHeaderVarDefn ParamDecl(@Nullable String desc) :
           desc,
           value);
     }
+  }
+}
+
+private TemplateParamsNode ParamsDecl() :
+{
+  Token tagBegin, name, tagEnd = null;
+  List<Identifier> ids = new ArrayList<Identifier>();
+  Identifier typeAlias;
+  ExprNode valueExpr = null;
+}
+{
+  tagBegin = <DECL_BEGIN_PARAMS>
+
+  <CMD_LBRACKET>
+  name = <NAME>
+  {
+    ids.add(Identifier.create(name.image, createSrcLoc(name)));
+  }
+  (
+    <CMD_COMMA>
+    name = <NAME>
+    {
+      ids.add(Identifier.create(name.image, createSrcLoc(name)));
+    }
+  )*
+  <CMD_RBRACKET>
+  <CMD_COLON>
+  typeAlias = DottedIdent()
+
+  (
+    <EQ>
+    valueExpr = Expr()
+  )?
+
+  tagEnd = <CMD_END>
+  {
+    return new TemplateParamsNode(
+        nodeIdGen.genId(),
+        createSrcLoc(tagBegin, tagEnd),
+        ids,
+        NamedTypeNode.create(typeAlias),
+        valueExpr != null ? new ExprRootNode(valueExpr) : null);
   }
 }
 
@@ -3312,6 +3378,7 @@ private ConstNode ConstStmt() :
   CommandTagAttribute attr = null;
   List<StandaloneNode> templateBlock = ImmutableList.of();
   boolean exported;
+  TypeNode type = null;
 }
 {
   tagBegin = <CONST_OPEN>
@@ -3320,23 +3387,21 @@ private ConstNode ConstStmt() :
   }
 
   try {
-    nameTok = <IDENT>
-  } catch (ParseException e) {
-    tagClose = reportTemplateBodyErrorAndSkipTo(e, CMD_SELF_CLOSE, CMD_END);
-    SourceLocation loc = createSrcLoc(tagBegin, tagClose);
-    return new ConstNode(-1, loc, "$error", loc, errorExpr(tagBegin), exported);
-  }
-
-  // Value expression
-  try {
+    nameTok = <NAME>
+    {
+      token_source.SwitchTo(EXPR);
+    }
+    (
+      <COLON>
+      type = TypeExpr()
+    )?
     <EQ>
     valueExpr = Expr()
     tagClose = <CMD_SELF_CLOSE>
   } catch (ParseException e) {
     tagClose = reportTemplateBodyErrorAndSkipTo(e, CMD_SELF_CLOSE, CMD_END);
-    if (valueExpr == null) {
-      valueExpr = errorExpr(tagClose);
-    }
+    SourceLocation loc = createSrcLoc(tagBegin, tagClose);
+    return new ConstNode(-1, loc, "$error", loc, errorExpr(tagBegin), exported, null);
   }
 
   {
@@ -3346,7 +3411,8 @@ private ConstNode ConstStmt() :
         nameTok.image,
         createSrcLoc(nameTok),
         valueExpr,
-        exported);
+        exported,
+        type);
   }
 }
 
@@ -3361,6 +3427,7 @@ private TypeDefNode TypeDefStmt() :
   CommandTagAttribute attr = null;
   List<StandaloneNode> templateBlock = ImmutableList.of();
   boolean exported;
+  Identifier superType = null;
 }
 {
   tagBegin = <TYPEDEF_OPEN>
@@ -3369,20 +3436,23 @@ private TypeDefNode TypeDefStmt() :
   }
 
   try {
-    nameTok = <IDENT>
-  } catch (ParseException e) {
-    tagClose = reportTemplateBodyErrorAndSkipTo(e, CMD_SELF_CLOSE, CMD_END);
-    SourceLocation loc = createSrcLoc(tagBegin, tagClose);
-    return new TypeDefNode(-1, loc, "$error", loc, null, exported);
-  }
+    nameTok = <NAME>
 
-  // Type Literal
-  try {
-    <EQ>
+    (
+      Keyword("extends")
+      superType = DottedIdent()
+    )?
+
+    <CMD_EQ>
+    {
+      token_source.SwitchTo(EXPR);
+    }
     type = TypeExpr()
     tagClose = <CMD_SELF_CLOSE>
   } catch (ParseException e) {
     tagClose = reportTemplateBodyErrorAndSkipTo(e, CMD_SELF_CLOSE, CMD_END);
+    SourceLocation loc = createSrcLoc(tagBegin, tagClose);
+    return new TypeDefNode(-1, loc, "$error", loc, null, exported, null);
   }
 
   {
@@ -3394,7 +3464,8 @@ private TypeDefNode TypeDefStmt() :
         nameTok.image,
         createSrcLoc(nameTok),
         valueExpr,
-        exported);
+        exported,
+        superType);
   }
 }
 
@@ -3828,12 +3899,6 @@ private CallParamNode CallParam() :
     return new CallParamValueNode(-1, createSrcLoc(tagBegin, tagClose), key, errorExpr(tagBegin));
   }
 
-  {
-    if (key.type() != Identifier.Type.SINGLE_IDENT) {
-      errorReporter.report(key.location(), INVALID_PARAM_NAME, key.identifier());
-    }
-  }
-
   (
     try {
       <COLON>
@@ -4151,7 +4216,7 @@ private ExprNode PrecExpr2(ExprState state) :
     { expr = Operator.NULL_COALESCING.createNode(
         createSrcLoc(expr, rightHand), createSrcLoc(op), expr, rightHand); }
   |
-    ( op = <BAR_BAR> 
+    ( op = <BAR_BAR>
     | op = <OR>
       {
         errorReporter.report(createSrcLoc(op), LEGACY_OR_ERROR);
@@ -4389,7 +4454,7 @@ private ExprNode PrecExpr8(ExprState state) :
       rightHand = PrecExpr9(state)
     |
       op = <INSTANCEOF>
-      type = Identifier()
+      type = DottedIdent()
       { rightHand = new TypeLiteralNode(NamedTypeNode.create(type)); }
     )
 
@@ -4967,36 +5032,22 @@ private StringNode StringLiteral() :
 
 
 /**
- * A helper to parse a dotted identifier.
+ * A helper to parse a non-dotted identifier.
  *
- * Identifier -> Ident ( "." Ident )*
+ * Identifier -> Ident
  */
 private Identifier Identifier() :
 {
-  Token first, next = null;
-  StringBuilder sb = null;  // lazily allocated
+  Token first;
 }
 {
-  first = <IDENT>
-  // This is a no-op lookahead (it doesn't actually change the algorithm), but it suppresses a
-  // choice conflict warning.  The issue is that global() followed by field access is ambiguous
-  // with extending the global node.  By setting a LOOKAHEAD here, we are just saying 'prefer to
-  // extend the identifier over a field access', which is what we want.
-  ( LOOKAHEAD(1)
-    <DOT>
-    next = <IDENT>
-    {
-      if (sb == null) {
-        sb = new StringBuilder();
-        sb.append(first.image);
-      }
-      sb.append('.').append(next.image);
-    }
-  )*
+  (
+    first = <NAME>
+  |
+    first = <IDENT>
+  )
   {
-    return sb == null
-      ? Identifier.create(first.image, createSrcLoc(first))
-      : Identifier.create(sb.toString(), createSrcLoc(first, next));
+    return Identifier.create(first.image, createSrcLoc(first));
   }
 }
 
@@ -5046,7 +5097,11 @@ private Token Keyword(String keyword) :
   Token ident;
 }
 {
-  ident = <IDENT>
+  (
+    ident = <IDENT>
+  |
+    ident = <NAME>
+  )
   {
     if (!ident.image.equals(keyword)) {
       throw generateParseException();

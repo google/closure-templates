@@ -17,34 +17,38 @@
 package com.google.template.soy.soytree;
 
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.basetree.CopyState;
-import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.TypeLiteralNode;
 import com.google.template.soy.types.SoyType;
+import javax.annotation.Nullable;
 
 /**
  * Node representing a 'type' statement. The type definition will be added to a new {@link
  * SoyTypeRegistry} for file typedefs.
  */
-public final class TypeDefNode extends AbstractSoyNode {
+public final class TypeDefNode extends AbstractCommandNode {
   private final String name;
 
   /** Expression root node that holds the type literal. */
-  private final ExprRootNode valueExpr;
+  private final TypeLiteralNode typeNode;
 
   private final boolean exported;
+  @Nullable private final Identifier superType;
 
   public TypeDefNode(
       int id,
       SourceLocation location,
       String varName,
       SourceLocation varNameLocation,
-      TypeLiteralNode expr,
-      boolean exported) {
-    super(id, location);
+      TypeLiteralNode typeNode,
+      boolean exported,
+      @Nullable Identifier superType) {
+    super(id, location, "type");
     this.name = varName;
-    this.valueExpr = new ExprRootNode(expr);
+    this.typeNode = typeNode;
     this.exported = exported;
+    this.superType = superType;
   }
 
   /**
@@ -55,8 +59,9 @@ public final class TypeDefNode extends AbstractSoyNode {
   private TypeDefNode(TypeDefNode orig, CopyState copyState) {
     super(orig, copyState);
     this.name = orig.name;
-    this.valueExpr = orig.valueExpr.copy(copyState);
+    this.typeNode = orig.typeNode.copy(copyState);
     this.exported = orig.exported;
+    this.superType = orig.superType;
   }
 
   public boolean isExported() {
@@ -70,13 +75,13 @@ public final class TypeDefNode extends AbstractSoyNode {
   }
 
   /** Returns the type literal as a SoyType. */
-  public ExprRootNode getExpr() {
-    return valueExpr;
+  public TypeLiteralNode getTypeNode() {
+    return typeNode;
   }
 
   /** Returns the type literal as a SoyType. */
   public SoyType getType() {
-    return valueExpr.getType();
+    return typeNode.getType();
   }
 
   public String getName() {
@@ -90,7 +95,17 @@ public final class TypeDefNode extends AbstractSoyNode {
 
   @Override
   public String toSourceString() {
-    return String.format("{type %s = %s}", name, valueExpr.toSourceString());
+    return String.format(
+        "{%s %s%s = %s}",
+        isExported() ? "export type" : "type",
+        name,
+        superType != null ? " extends " + superType : "",
+        typeNode.toSourceString());
+  }
+
+  @Nullable
+  public Identifier getSuperType() {
+    return superType;
   }
 
   @Override

@@ -23,6 +23,8 @@ import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.SoyNode.FileVarNode;
 import com.google.template.soy.soytree.defn.ConstVar;
+import com.google.template.soy.types.ast.TypeNode;
+import javax.annotation.Nullable;
 
 /** Node representing a 'const' statement with a value expression. */
 public final class ConstNode extends AbstractCommandNode implements FileVarNode {
@@ -33,6 +35,7 @@ public final class ConstNode extends AbstractCommandNode implements FileVarNode 
   private final ExprRootNode valueExpr;
 
   private final boolean exported;
+  @Nullable private final TypeNode typeNode;
 
   public ConstNode(
       int id,
@@ -40,11 +43,13 @@ public final class ConstNode extends AbstractCommandNode implements FileVarNode 
       String varName,
       SourceLocation varNameLocation,
       ExprNode expr,
-      boolean exported) {
+      boolean exported,
+      @Nullable TypeNode typeNode) {
     super(id, location, "const");
     this.var = new ConstVar(varName, varNameLocation, this, /* type= */ null);
     this.valueExpr = new ExprRootNode(expr);
     this.exported = exported;
+    this.typeNode = typeNode;
   }
 
   /**
@@ -57,6 +62,7 @@ public final class ConstNode extends AbstractCommandNode implements FileVarNode 
     this.var = new ConstVar(orig.var, this);
     this.valueExpr = orig.valueExpr.copy(copyState);
     this.exported = orig.exported;
+    this.typeNode = orig.typeNode != null ? orig.typeNode.copy() : null;
     copyState.updateRefs(orig.var, this.var);
   }
 
@@ -98,6 +104,11 @@ public final class ConstNode extends AbstractCommandNode implements FileVarNode 
   @Override
   public ImmutableList<ExprRootNode> getExprList() {
     return ImmutableList.of(valueExpr);
+  }
+
+  @Nullable
+  public TypeNode getTypeNode() {
+    return typeNode;
   }
 
   @Override

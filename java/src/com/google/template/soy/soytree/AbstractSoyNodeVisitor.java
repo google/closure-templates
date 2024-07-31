@@ -73,6 +73,9 @@ public abstract class AbstractSoyNodeVisitor<R> extends AbstractNodeVisitor<SoyN
       case TEMPLATE_DELEGATE_NODE:
         visitTemplateDelegateNode((TemplateDelegateNode) node);
         break;
+      case TEMPLATE_PARAMS_NODE:
+        visitTemplateParamsNode((TemplateParamsNode) node);
+        break;
 
       case RAW_TEXT_NODE:
         visitRawTextNode((RawTextNode) node);
@@ -279,6 +282,10 @@ public abstract class AbstractSoyNodeVisitor<R> extends AbstractNodeVisitor<SoyN
 
   protected void visitTemplateDelegateNode(TemplateDelegateNode node) {
     visitTemplateNode(node);
+  }
+
+  protected void visitTemplateParamsNode(TemplateParamsNode node) {
+    visitSoyNode(node);
   }
 
   protected void visitTemplateNode(TemplateNode node) {

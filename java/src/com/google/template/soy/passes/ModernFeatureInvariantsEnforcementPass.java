@@ -21,10 +21,8 @@ import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.internal.exemptions.NamespaceExemptions;
-import com.google.template.soy.soytree.ConstNode;
-import com.google.template.soy.soytree.ExternNode;
 import com.google.template.soy.soytree.SoyFileNode;
-import java.util.List;
+import com.google.template.soy.soytree.SoyNode;
 
 /**
  * Enforces certain conditions on Soy files that contain constants.
@@ -41,6 +39,7 @@ class ModernFeatureInvariantsEnforcementPass implements CompilerFileSetPass {
       SoyErrorKind.of("Feature {0} is only allowed in files with unique namespaces.");
 
   private final ErrorReporter errorReporter;
+  private boolean error = false;
 
   public ModernFeatureInvariantsEnforcementPass(ErrorReporter errorReporter) {
     this.errorReporter = errorReporter;
@@ -48,27 +47,22 @@ class ModernFeatureInvariantsEnforcementPass implements CompilerFileSetPass {
 
   @Override
   public Result run(ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator) {
-    boolean error = false;
+    error = false;
     for (SoyFileNode file : sourceFiles) {
       if (!NamespaceExemptions.isKnownDuplicateNamespace(file.getNamespace())) {
         continue;
       }
 
-      List<ConstNode> constants = file.getConstants();
-      if (!constants.isEmpty()) {
-        error = true;
-        constants.forEach(
-            c -> errorReporter.report(c.getSourceLocation(), UNIQUE_NS_REQUIRED, "{const}"));
-      }
-
-      List<ExternNode> externs = file.getExterns();
-      if (!externs.isEmpty()) {
-        error = true;
-        externs.forEach(
-            c -> errorReporter.report(c.getSourceLocation(), UNIQUE_NS_REQUIRED, "{extern}"));
-      }
+      file.getConstants().forEach(c -> report(c, "{const}"));
+      file.getExterns().forEach(c -> report(c, "{extern}"));
+      file.getTypeDefs().forEach(c -> report(c, "{type}"));
     }
 
     return error ? Result.STOP : Result.CONTINUE;
+  }
+
+  private void report(SoyNode node, String type) {
+    error = true;
+    errorReporter.report(node.getSourceLocation(), UNIQUE_NS_REQUIRED, type);
   }
 }
