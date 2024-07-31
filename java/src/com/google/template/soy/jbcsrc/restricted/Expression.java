@@ -783,6 +783,7 @@ public abstract class Expression extends BytecodeProducer {
         case UNKNOWN:
         case VE:
         case VE_DATA:
+        case NAMED:
           return Optional.empty();
         case UNION:
           if (type.equals(SoyTypes.NUMBER_TYPE)) {

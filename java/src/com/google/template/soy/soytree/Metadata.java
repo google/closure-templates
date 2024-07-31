@@ -30,6 +30,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.errorprone.annotations.concurrent.LazyInit;
 import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLogicalPath;
@@ -39,7 +40,9 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.shared.internal.DelTemplateSelector;
+import com.google.template.soy.types.DelegatingSoyTypeRegistry;
 import com.google.template.soy.types.FunctionType;
+import com.google.template.soy.types.NamedType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.TemplateType;
@@ -47,6 +50,7 @@ import com.google.template.soy.types.TemplateType.TemplateKind;
 import com.google.template.soy.types.UnionType;
 import com.google.template.soy.types.UnknownType;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -88,8 +92,36 @@ public final class Metadata {
       List<CompilationUnitAndKind> compilationUnits,
       ErrorReporter errorReporter,
       SoyTypeRegistry typeRegistry) {
-    return new AutoValue_Metadata_DepsFileSetMetadata(
-        ImmutableList.copyOf(compilationUnits), ParseContext.of(errorReporter, typeRegistry));
+    Set<NamedType> namedTypes = new HashSet<>();
+    typeRegistry =
+        new DelegatingSoyTypeRegistry(typeRegistry) {
+          @Override
+          public <T extends SoyType> T intern(T type) {
+            T interned = super.intern(type);
+            if (interned instanceof NamedType) {
+              namedTypes.add((NamedType) interned);
+            }
+            return interned;
+          }
+        };
+    DepsFileSetMetadata metadata =
+        new AutoValue_Metadata_DepsFileSetMetadata(
+                ImmutableList.copyOf(compilationUnits),
+                ParseContext.of(errorReporter, typeRegistry))
+            .nonLazy();
+    for (NamedType namedType : namedTypes) {
+      FileMetadata file = metadata.getFile(namedType.getNamespace());
+      if (file != null) {
+        FileMetadata.TypeDef typeDef = file.getTypeDef(namedType.getName());
+        if (typeDef != null) {
+          NamedType thatType = typeDef.getType();
+          namedType.resolve(thatType.getType(), thatType.getSuperType());
+          continue;
+        }
+      }
+      throw new RuntimeException("Could not resolve " + namedType);
+    }
+    return metadata;
   }
 
   /**
@@ -183,9 +215,15 @@ public final class Metadata {
 
     abstract ParseContext context();
 
+    @CanIgnoreReturnValue
+    public DepsFileSetMetadata nonLazy() {
+      fileIndex().values().forEach(DepsFileMetadata::nonLazy);
+      return this;
+    }
+
     @Memoized
-    protected ImmutableMap<SourceLogicalPath, FileMetadata> fileIndex() {
-      ImmutableMap.Builder<SourceLogicalPath, FileMetadata> builder = ImmutableMap.builder();
+    protected ImmutableMap<SourceLogicalPath, DepsFileMetadata> fileIndex() {
+      ImmutableMap.Builder<SourceLogicalPath, DepsFileMetadata> builder = ImmutableMap.builder();
       units()
           .forEach(
               u ->
@@ -198,6 +236,12 @@ public final class Metadata {
                                   new AutoValue_Metadata_DepsFileMetadata(
                                       f, u.fileKind(), context()))));
       return builder.buildOrThrow();
+    }
+
+    @Memoized
+    protected ImmutableMap<String, FileMetadata> fileNamespaceIndex() {
+      return fileIndex().values().stream()
+          .collect(toImmutableMap(PartialFileMetadata::getNamespace, f -> f));
     }
 
     @Memoized
@@ -226,6 +270,11 @@ public final class Metadata {
     @Override
     public FileMetadata getFile(SourceLogicalPath path) {
       return fileIndex().get(path);
+    }
+
+    @Override
+    public FileMetadata getFile(String namespace) {
+      return fileNamespaceIndex().get(namespace);
     }
 
     @Override
@@ -353,6 +402,12 @@ public final class Metadata {
       return fullFileIndex.get(path);
     }
 
+    @Nullable
+    @Override
+    public FileMetadata getFile(String namespace) {
+      throw new UnsupportedOperationException();
+    }
+
     @Override
     public ImmutableCollection<? extends FileMetadata> getAllFiles() {
       return fullFileIndex.values();
@@ -372,6 +427,8 @@ public final class Metadata {
     protected abstract ImmutableListMultimap<String, ? extends Extern> externIndex();
 
     protected abstract ImmutableMap<String, TemplateMetadata> templateIndex();
+
+    protected abstract ImmutableMap<String, ? extends TypeDef> typeDefIndex();
 
     @Override
     public Constant getConstant(String name) {
@@ -412,6 +469,21 @@ public final class Metadata {
     public Set<String> getExternNames() {
       return externIndex().keySet();
     }
+
+    @Override
+    public TypeDef getTypeDef(String name) {
+      return typeDefIndex().get(name);
+    }
+
+    @Override
+    public Collection<? extends TypeDef> getTypeDefs() {
+      return typeDefIndex().values();
+    }
+
+    @Override
+    public Set<String> getTypeDefNames() {
+      return typeDefIndex().keySet();
+    }
   }
 
   /** FileMetadata for deps. */
@@ -423,6 +495,15 @@ public final class Metadata {
     protected abstract SoyFileKind kind();
 
     protected abstract ParseContext context();
+
+    @CanIgnoreReturnValue
+    public DepsFileMetadata nonLazy() {
+      var unused1 = constantIndex();
+      var unused2 = getTemplates();
+      var unused3 = externIndex();
+      var unused4 = typeDefIndex();
+      return this;
+    }
 
     @Override
     @Memoized
@@ -502,6 +583,39 @@ public final class Metadata {
                   (t1, t2) -> t1) /* Will be reported as error elsewhere. */);
     }
 
+    @Memoized
+    @Override
+    protected ImmutableMap<String, TypeDefImpl> typeDefIndex() {
+      return proto().getTypeDefsList().stream()
+          .collect(
+              toImmutableMap(
+                  TypeDefP::getName,
+                  c -> {
+                    SoyType superType = null;
+                    if (c.hasSuperType()) {
+                      superType =
+                          TemplateMetadataSerializer.fromProto(
+                              c.getSuperType(),
+                              context().typeRegistry(),
+                              getPath(),
+                              context().errorReporter());
+                    }
+                    return TypeDefImpl.of(
+                        c.getName(),
+                        c.getExported(),
+                        NamedType.create(
+                            c.getName(),
+                            proto().getNamespace(),
+                            TemplateMetadataSerializer.fromProto(
+                                c.getType(),
+                                context().typeRegistry(),
+                                getPath(),
+                                context().errorReporter()),
+                            superType));
+                  },
+                  (t1, t2) -> t1) /* Will be reported as error elsewhere. */);
+    }
+
     @Override
     public String getNamespace() {
       return proto().getNamespace();
@@ -516,6 +630,7 @@ public final class Metadata {
     private final ImmutableSet<String> templateNames;
     private final ImmutableSet<String> constantNames;
     private final ImmutableSet<String> externNames;
+    private final ImmutableSet<String> typeDefNames;
 
     /** ASTs are mutable so we need to copy all data in the constructor. */
     public AstPartialFileMetadata(SoyFileNode ast) {
@@ -530,6 +645,8 @@ public final class Metadata {
               .filter(ConstNode::isExported)
               .map(c -> c.getVar().name())
               .collect(toImmutableSet());
+      this.typeDefNames =
+          ast.getTypeDefs().stream().map(TypeDefNode::getName).collect(toImmutableSet());
       this.externNames =
           ast.getExterns().stream()
               .filter(ExternNode::isExported)
@@ -561,6 +678,15 @@ public final class Metadata {
     public ImmutableSet<String> getExternNames() {
       return externNames;
     }
+
+    @Override
+    public Set<String> getTypeDefNames() {
+      return typeDefNames;
+    }
+  }
+
+  public static FileMetadata forAst(SoyFileNode file) {
+    return new AstFileMetadata(file);
   }
 
   /** FileMetadata for AST under compilation. */
@@ -569,6 +695,7 @@ public final class Metadata {
     private final SourceFilePath path;
     private final String namespace;
     private final ImmutableMap<String, ConstantImpl> constantIndex;
+    private final ImmutableMap<String, TypeDefImpl> typeDefIndex;
     private final ImmutableList<TemplateMetadata> allTemplates;
     private final ImmutableMap<String, TemplateMetadata> templateIndex;
     private final ImmutableListMultimap<String, ExternImpl> externIndex;
@@ -588,6 +715,13 @@ public final class Metadata {
                               c.getVar().name(),
                               // Type will not be set if type checking is off.
                               c.getVar().typeOrDefault(UnknownType.getInstance())),
+                      (t1, t2) -> t1 /* Will be reported as error elsewhere. */));
+      this.typeDefIndex =
+          ast.getTypeDefs().stream()
+              .collect(
+                  toImmutableMap(
+                      TypeDefNode::getName,
+                      c -> TypeDefImpl.of(c.getName(), c.isExported(), c.asNamedType()),
                       (t1, t2) -> t1 /* Will be reported as error elsewhere. */));
       this.externIndex =
           ast.getExterns().stream()
@@ -619,6 +753,11 @@ public final class Metadata {
     @Override
     protected ImmutableMap<String, ConstantImpl> constantIndex() {
       return constantIndex;
+    }
+
+    @Override
+    protected ImmutableMap<String, ? extends TypeDef> typeDefIndex() {
+      return typeDefIndex;
     }
 
     @Override
@@ -662,6 +801,23 @@ public final class Metadata {
   }
 
   @AutoValue
+  abstract static class TypeDefImpl implements FileMetadata.TypeDef {
+
+    private static TypeDefImpl of(String name, boolean exported, NamedType type) {
+      return new AutoValue_Metadata_TypeDefImpl(name, exported, type);
+    }
+
+    @Override
+    public abstract String getName();
+
+    @Override
+    public abstract boolean isExported();
+
+    @Override
+    public abstract NamedType getType();
+  }
+
+  @AutoValue
   abstract static class ExternImpl implements FileMetadata.Extern {
 
     private static ExternImpl of(String name, FunctionType signature) {
@@ -687,6 +843,7 @@ public final class Metadata {
 
     private final FileMetadata primary;
     private final ImmutableMap<String, Constant> constantIndex;
+    private final ImmutableMap<String, TypeDef> typeDefIndex;
     private final ImmutableMap<String, TemplateMetadata> templateIndex;
 
     public MergedFileMetadata(FileMetadata primary, FileMetadata secondary) {
@@ -696,6 +853,11 @@ public final class Metadata {
       secondary.getConstants().forEach(c -> constants.put(c.getName(), c));
       primary.getConstants().forEach(c -> constants.put(c.getName(), c));
       constantIndex = ImmutableMap.copyOf(constants);
+
+      Map<String, TypeDef> typeDefs = new LinkedHashMap<>();
+      secondary.getTypeDefs().forEach(c -> typeDefs.put(c.getName(), c));
+      primary.getTypeDefs().forEach(c -> typeDefs.put(c.getName(), c));
+      typeDefIndex = ImmutableMap.copyOf(typeDefs);
 
       Map<String, TemplateMetadata> templates = new LinkedHashMap<>();
       secondary.getTemplates().forEach(t -> templates.put(t.getTemplateName(), t));
@@ -722,6 +884,11 @@ public final class Metadata {
     @Override
     protected ImmutableMap<String, TemplateMetadata> templateIndex() {
       return templateIndex;
+    }
+
+    @Override
+    protected ImmutableMap<String, ? extends TypeDef> typeDefIndex() {
+      return typeDefIndex;
     }
 
     @Override

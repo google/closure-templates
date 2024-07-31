@@ -48,7 +48,7 @@ public abstract class NamedTypeNode extends TypeNode {
   @Override
   public NamedTypeNode copy() {
     NamedTypeNode copy = create(name());
-    copy.copyResolvedTypeFrom(this);
+    copy.copyInternal(this);
     return copy;
   }
 }

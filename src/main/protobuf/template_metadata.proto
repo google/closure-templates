@@ -99,6 +99,10 @@ message SoyTypeP {
 
     reserved 1, 2;
   }
+  message NamedTypeP {
+    string name = 1;
+    string namespace = 2;
+  }
   // discriminated union of the different type categories
   oneof TypeKind {
     PrimitiveTypeP primitive = 1;
@@ -116,15 +120,21 @@ message SoyTypeP {
     FunctionTypeP function = 13;
     bool message = 11;
     HtmlTypeP html = 12;
+    NamedTypeP named = 16;
   }
 }
 
-// An exported type definition.
+// Any exported or non-exported type definition.
 message TypeDefP {
   // The local name of the type definition.
   string name = 1;
-  // The type of the type definition.
-  SoyTypeP type = 2;
+  // Whether the typedef is exported. All typedefs need to be in the header
+  // since exported types may reference non-exported types.
+  bool exported = 2;
+  // The RHS of the type definition.
+  SoyTypeP type = 3;
+  // The optional extends value, should only be a NamedTypeP.
+  SoyTypeP super_type = 4;
 }
 
 // An exported constant.

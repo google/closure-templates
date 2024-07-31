@@ -28,6 +28,13 @@ public interface PartialFileMetadata {
 
   Set<String> getTemplateNames();
 
+  default boolean hasSymbol(String symbolName) {
+    return hasTemplate(symbolName)
+        || hasConstant(symbolName)
+        || hasExtern(symbolName)
+        || hasTypeDef(symbolName);
+  }
+
   default boolean hasTemplate(String shortName) {
     return getTemplateNames().contains(shortName);
   }
@@ -42,5 +49,11 @@ public interface PartialFileMetadata {
 
   default boolean hasExtern(String shortName) {
     return getExternNames().contains(shortName);
+  }
+
+  Set<String> getTypeDefNames();
+
+  default boolean hasTypeDef(String shortName) {
+    return getTypeDefNames().contains(shortName);
   }
 }

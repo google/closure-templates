@@ -117,6 +117,7 @@ public abstract class SoyType {
     VE,
     VE_DATA,
     // Imported symbol types
+    NAMED,
     CSS_TYPE,
     CSS_MODULE,
     TOGGLE_TYPE,
@@ -271,4 +272,8 @@ public abstract class SoyType {
   abstract void doToProto(SoyTypeP.Builder builder);
 
   public abstract <T> T accept(SoyTypeVisitor<T> visitor);
+
+  public SoyType getEffectiveType() {
+    return this;
+  }
 }

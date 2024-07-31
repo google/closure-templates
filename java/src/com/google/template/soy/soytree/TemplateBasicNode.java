@@ -17,13 +17,11 @@
 package com.google.template.soy.soytree;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
-import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.SoyTypes;
@@ -80,9 +78,8 @@ public final class TemplateBasicNode extends TemplateNode {
       Visibility visibility,
       boolean modifiable,
       @Nullable CommandTagAttribute legacyDeltemplateNamespaceAttr,
-      @Nullable CommandTagAttribute useVariantTypeAttr,
-      @Nullable ImmutableList<TemplateHeaderVarDefn> params) {
-    super(nodeBuilder, "template", soyFileHeaderInfo, visibility, params);
+      @Nullable CommandTagAttribute useVariantTypeAttr) {
+    super(nodeBuilder, "template", soyFileHeaderInfo, visibility);
     this.modifiable = modifiable;
     this.legacyDeltemplateNamespaceAttr = legacyDeltemplateNamespaceAttr;
     this.useVariantTypeAttr = useVariantTypeAttr;

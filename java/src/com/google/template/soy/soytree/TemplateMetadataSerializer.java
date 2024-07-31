@@ -36,6 +36,7 @@ import com.google.template.soy.types.FloatType;
 import com.google.template.soy.types.FunctionType;
 import com.google.template.soy.types.IntType;
 import com.google.template.soy.types.MessageType;
+import com.google.template.soy.types.NamedType;
 import com.google.template.soy.types.NullType;
 import com.google.template.soy.types.RecordType;
 import com.google.template.soy.types.SanitizedType;
@@ -94,9 +95,7 @@ public final class TemplateMetadataSerializer {
       file.getConstants().stream()
           .filter(ConstNode::isExported)
           .forEach(c -> fileBuilder.addConstants(protoFromConstant(c)));
-      file.getTypeDefs().stream()
-          .filter(TypeDefNode::isExported)
-          .forEach(t -> fileBuilder.addTypeDefs(protoFromTypeDef(t)));
+      file.getTypeDefs().forEach(t -> fileBuilder.addTypeDefs(protoFromTypeDef(t)));
       file.getExterns().stream()
           .filter(ExternNode::isExported)
           .forEach(e -> fileBuilder.addExterns(protoFromExtern(e)));
@@ -142,7 +141,15 @@ public final class TemplateMetadataSerializer {
   }
 
   private static TypeDefP protoFromTypeDef(TypeDefNode node) {
-    return TypeDefP.newBuilder().setName(node.getName()).setType(node.getType().toProto()).build();
+    var builder =
+        TypeDefP.newBuilder()
+            .setName(node.getName())
+            .setExported(node.isExported())
+            .setType(node.getType().toProto());
+    if (node.getSuperType() != null) {
+      builder.setSuperType(node.getSuperType().getResolvedType().toProto());
+    }
+    return builder.build();
   }
 
   private static ExternP protoFromExtern(ExternNode node) {
@@ -493,6 +500,9 @@ public final class TemplateMetadataSerializer {
         }
       case VE:
         return typeRegistry.getOrCreateVeType(proto.getVe());
+      case NAMED:
+        return typeRegistry.intern(
+            NamedType.pointer(proto.getNamed().getName(), proto.getNamed().getNamespace()));
       case TYPEKIND_NOT_SET:
         // fall-through
     }

@@ -17,7 +17,6 @@
 package com.google.template.soy.exprtree;
 
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.base.internal.SetOnce;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.ast.TypeNode;
@@ -32,18 +31,14 @@ public final class TypeLiteralNode extends AbstractPrimitiveNode {
   /** The boolean value. */
   private final TypeNode typeNode;
 
-  private final SetOnce<SoyType> type;
-
   public TypeLiteralNode(TypeNode typeNode) {
     super(typeNode.sourceLocation());
     this.typeNode = typeNode;
-    this.type = new SetOnce<>();
   }
 
   private TypeLiteralNode(TypeLiteralNode orig, CopyState copyState) {
     super(orig, copyState);
     this.typeNode = orig.typeNode.copy();
-    this.type = orig.type.copy();
   }
 
   public TypeNode getTypeNode() {
@@ -55,13 +50,9 @@ public final class TypeLiteralNode extends AbstractPrimitiveNode {
     return Kind.TYPE_LITERAL_NODE;
   }
 
-  public void setType(SoyType soyType) {
-    type.set(soyType);
-  }
-
   @Override
   public SoyType getType() {
-    return type.get();
+    return typeNode.getResolvedType();
   }
 
   @Override

@@ -372,6 +372,9 @@ final class ValidatorFactory extends JavaValueFactory {
       case UNKNOWN:
         expectedClasses = UNKNOWN_TYPES;
         break;
+      case NAMED:
+        expectedClasses = ImmutableSet.of();
+        break;
       case ATTRIBUTES:
       case CSS:
       case ELEMENT:

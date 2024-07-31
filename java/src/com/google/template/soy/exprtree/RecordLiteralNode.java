@@ -21,6 +21,7 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.exprtree.OperatorNodes.SpreadOpNode;
+import javax.annotation.Nullable;
 
 /**
  * A node representing a record literal (with keys and values as alternating children).
@@ -64,6 +65,16 @@ public final class RecordLiteralNode extends AbstractParentExprNode {
 
   public Identifier getKey(int i) {
     return keys.get(i);
+  }
+
+  @Nullable
+  public ExprNode getValue(String key) {
+    for (int i = 0; i < keys.size(); i++) {
+      if (keys.get(i).identifier().equals(key)) {
+        return getChild(i);
+      }
+    }
+    return null;
   }
 
   @Override

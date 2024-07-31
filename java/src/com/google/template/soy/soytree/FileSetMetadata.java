@@ -49,6 +49,9 @@ public interface FileSetMetadata extends PartialFileSetMetadata {
   @Nullable
   FileMetadata getFile(SourceLogicalPath path);
 
+  @Nullable
+  FileMetadata getFile(String namespace);
+
   Collection<? extends FileMetadata> getAllFiles();
 
   /**

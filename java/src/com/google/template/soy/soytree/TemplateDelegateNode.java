@@ -20,7 +20,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
@@ -30,7 +29,6 @@ import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.StringNode;
-import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import javax.annotation.Nullable;
 
 /**
@@ -92,15 +90,13 @@ public final class TemplateDelegateNode extends TemplateNode {
       TemplateDelegateNodeBuilder nodeBuilder,
       SoyFileHeaderInfo soyFileHeaderInfo,
       String delTemplateName,
-      Priority delPriority,
-      ImmutableList<TemplateHeaderVarDefn> params) {
+      Priority delPriority) {
 
     super(
         nodeBuilder,
         "deltemplate",
         soyFileHeaderInfo,
-        Visibility.PUBLIC /* deltemplate always has public visibility */,
-        params);
+        Visibility.PUBLIC /* deltemplate always has public visibility */);
     this.delTemplateName = checkNotNull(delTemplateName);
     this.delPriority = checkNotNull(delPriority);
   }

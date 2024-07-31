@@ -24,7 +24,6 @@ import com.google.template.soy.soytree.SoyNode.Kind;
 import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
 import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import com.google.template.soy.soytree.defn.TemplateStateVar;
-import javax.annotation.Nullable;
 
 /**
  * Node representing a Soy element.
@@ -41,11 +40,8 @@ public final class TemplateElementNode extends TemplateNode implements ExprHolde
    * @param soyFileHeaderInfo info from the containing Soy file's header declarations
    * @param params the params from template header or SoyDoc. Null if no decls and no SoyDoc.
    */
-  TemplateElementNode(
-      TemplateElementNodeBuilder nodeBuilder,
-      SoyFileHeaderInfo soyFileHeaderInfo,
-      @Nullable ImmutableList<TemplateHeaderVarDefn> params) {
-    super(nodeBuilder, "element", soyFileHeaderInfo, Visibility.PUBLIC, params);
+  TemplateElementNode(TemplateElementNodeBuilder nodeBuilder, SoyFileHeaderInfo soyFileHeaderInfo) {
+    super(nodeBuilder, "element", soyFileHeaderInfo, Visibility.PUBLIC);
   }
 
   /**

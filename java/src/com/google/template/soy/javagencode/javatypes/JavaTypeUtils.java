@@ -175,6 +175,7 @@ public final class JavaTypeUtils {
         throw new UnsupportedOperationException();
       case NULL:
       case UNDEFINED:
+      case NAMED:
         break;
     }
 

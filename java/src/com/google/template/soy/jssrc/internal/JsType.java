@@ -51,6 +51,7 @@ import com.google.template.soy.jssrc.dsl.GoogRequire;
 import com.google.template.soy.types.AbstractIterableType;
 import com.google.template.soy.types.LegacyObjectMapType;
 import com.google.template.soy.types.MapType;
+import com.google.template.soy.types.NamedType;
 import com.google.template.soy.types.RecordType;
 import com.google.template.soy.types.SanitizedType;
 import com.google.template.soy.types.SoyProtoEnumType;
@@ -614,6 +615,11 @@ public final class JsType {
           builder.setPredicate(GOOG_IS_FUNCTION);
           return builder.build();
         }
+      case NAMED:
+        NamedType namedType = (NamedType) soyType;
+        return builder()
+            .addType("!" + namedType.getNamespace() + "." + namedType.getName())
+            .build();
       case CSS_TYPE:
       case CSS_MODULE:
       case TOGGLE_TYPE:

@@ -63,7 +63,7 @@ public abstract class GenericTypeNode extends TypeNode {
       newArguments.add(arg.copy());
     }
     GenericTypeNode copy = create(sourceLocation(), identifier(), newArguments.build());
-    copy.copyResolvedTypeFrom(this);
+    copy.copyInternal(this);
     return copy;
   }
 }

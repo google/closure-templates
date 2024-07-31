@@ -166,6 +166,7 @@ final class KeyCommandPass implements CompilerFilePass {
         case VE_DATA:
         case ANY:
         case UNKNOWN:
+        case NAMED:
           isSupportedType = false;
           break;
         case UNION:

@@ -96,7 +96,7 @@ public final class TemplateElementNodeBuilder
   public TemplateElementNode build() {
     Preconditions.checkState(id != null && cmdText != null);
     validateBuild();
-    return new TemplateElementNode(this, soyFileHeaderInfo, params);
+    return new TemplateElementNode(this, soyFileHeaderInfo);
   }
 
   @Override

@@ -133,6 +133,7 @@ public abstract class SoyRuntimeType {
       case VE_DATA:
       case UNKNOWN:
       case ANY:
+      case NAMED:
         // no unique unboxed representation
         return null;
       case CSS_TYPE:

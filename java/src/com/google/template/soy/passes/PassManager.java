@@ -533,7 +533,9 @@ public final class PassManager {
           .add(new RestoreCompilerChecksPass(errorReporter))
           // needs to come early since it is necessary to create template metadata objects for
           // header compilation
-          .add(new ResolveDeclaredTypesPass(errorReporter, disableAllTypeChecking));
+          .add(
+              new ResolveDeclaredTypesPass(
+                  errorReporter, disableAllTypeChecking, accumulatedState::registryFromDeps));
 
       // needs to come before SoyConformancePass
       passes.add(new ResolvePluginsPass(pluginResolver));
