@@ -18,12 +18,9 @@ package com.google.template.soy.data;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
-import static com.google.common.collect.ImmutableList.toImmutableList;
-import static com.google.common.collect.ImmutableSet.toImmutableSet;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Streams;
 import com.google.common.html.types.SafeHtml;
 import com.google.common.html.types.SafeHtmlProto;
 import com.google.common.html.types.SafeScript;
@@ -44,9 +41,7 @@ import com.google.protobuf.ProtocolMessageEnum;
 import com.google.template.soy.data.internal.DictImpl;
 import com.google.template.soy.data.internal.EasyListImpl;
 import com.google.template.soy.data.internal.IterableImpl;
-import com.google.template.soy.data.internal.ListImpl;
 import com.google.template.soy.data.internal.RuntimeMapTypeTracker;
-import com.google.template.soy.data.internal.SetImpl;
 import com.google.template.soy.data.internal.SoyMapImpl;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
@@ -55,10 +50,7 @@ import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import java.io.IOException;
-import java.util.Collection;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.Future;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -207,21 +199,7 @@ public final class SoyValueConverter {
    * @return A new SoyList initialized from the given Java Collection.
    */
   private SoyIterable newIterableFromIterable(Iterable<?> items) {
-    if (items instanceof List) {
-      // Create a list backed by a Java list which has eagerly converted each value into a lazy
-      // value provider. Specifically, the list iteration is done eagerly so that the lazy value
-      // provider can cache its value.
-      return ListImpl.forProviderList(
-          ((Collection<?>) items).stream().map(this::convertLazy).collect(toImmutableList()));
-    }
-    if (items instanceof Set) {
-      // Must convert elements eagerly for set semantics.
-      return new SetImpl(
-          ((Collection<?>) items).stream().map(this::convert).collect(toImmutableSet()));
-    }
-
-    return new IterableImpl(
-        Streams.stream(items).map(this::convertLazy).collect(toImmutableList()));
+    return IterableImpl.forJavaIterable(items, this::convert);
   }
 
   // -----------------------------------------------------------------------------------------------

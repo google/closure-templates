@@ -132,3 +132,13 @@ import {Foo} from 'src/test/protobuf/test.proto';
     {$foo}{$foo2}
   {/if}
 {/template}
+
+{template testStreamIterable}
+  {@param itr: iterable<string|null>}
+  {for $item in $itr}
+    {if $item != null}
+      {$item}
+    {/if}
+  {/for}
+{/template}
+

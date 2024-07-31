@@ -257,7 +257,7 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
 
     protected static <T> SoyIterable asIterable(
         Iterable<T> iterable, Function<? super T, ? extends SoyValueProvider> mapper) {
-      return new IterableImpl(stream(iterable).map(mapper).collect(toImmutableList()));
+      return IterableImpl.forJavaIterable(iterable, mapper);
     }
 
     protected static <T> SoyValue asNullableIterable(

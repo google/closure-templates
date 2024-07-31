@@ -23,7 +23,6 @@ import static java.util.stream.Collectors.toList;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Streams;
 import com.google.common.html.types.SafeHtml;
 import com.google.common.html.types.SafeHtmlProto;
@@ -108,7 +107,7 @@ public final class JbcSrcExternRuntime {
     if (javaValues == null) {
       return null;
     }
-    return new IterableImpl(Iterables.transform(javaValues, SoyValueConverter.INSTANCE::convert));
+    return IterableImpl.forJavaIterable(javaValues, SoyValueConverter.INSTANCE::convert);
   }
 
   public static final MethodRef LIST_UNBOX_BOOLS = create("listUnboxBools", List.class);
