@@ -42,6 +42,8 @@ public final class SoyMsgBundleCompactor {
 
   private final ConcurrentMap<Object, Object> interner = new ConcurrentHashMap<>();
 
+  private final RenderOnlyMsgIndex index = new RenderOnlyMsgIndex();
+
   /**
    * Returns a more memory-efficient version of the internal message bundle.
    *
@@ -63,7 +65,7 @@ public final class SoyMsgBundleCompactor {
         }
       }
     }
-    return new RenderOnlySoyMsgBundleImpl(input.getLocaleString(), builder.build());
+    return new RenderOnlySoyMsgBundleImpl(index, input.getLocaleString(), builder.build());
   }
 
   /** Compacts a set of message parts. */
