@@ -522,11 +522,9 @@ final class TemplateCompiler {
         if (defaultValue != null) {
           localVariable = (LocalVariable) variableSet.getVariable(param.name());
           Expression initializer =
-              MethodRefs.RUNTIME_PARAM_OR_DEFAULT.invoke(localVariable, defaultValue.box());
+              MethodRefs.SOY_VALUE_PROVIDER_WITH_DEFAULT.invoke(localVariable, defaultValue.box());
           if (isExplicitlyReferenced) {
-            paramInitStatements.add(
-                localVariable.store(
-                    MethodRefs.RUNTIME_PARAM_OR_DEFAULT.invoke(localVariable, defaultValue.box())));
+            paramInitStatements.add(localVariable.store(initializer));
           } else {
             // If they aren't referenced just compute default on demand.
             templateScope.createTrivial(param.name(), initializer);

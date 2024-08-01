@@ -20,7 +20,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.isDefinitelyAssignableFrom;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.numericConversion;
 
-import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.exprtree.DataAccessNode;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
@@ -216,7 +215,7 @@ final class ExpressionToSoyValueProviderCompiler {
             left = compileToSoyValueProviderWithDetaching(node.getLeftChild());
           }
 
-          left = MethodRefs.SOY_VALUE_PROVIDER_OR_NULLISH.invoke(left);
+          left = MethodRefs.SOY_VALUE_PROVIDER_RESOLVE.invoke(left);
           return Optional.of(BytecodeUtils.firstSoyNonNullish(left, right));
         }
       }

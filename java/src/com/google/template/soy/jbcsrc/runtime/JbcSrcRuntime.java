@@ -131,13 +131,6 @@ public final class JbcSrcRuntime {
     }
   }
 
-  @Keep
-  @Nonnull
-  public static SoyValueProvider soyValueProviderOrNullish(SoyValueProvider provider) {
-    SoyValue value = provider.resolve();
-    // Nastiness needed for b/161534927
-    return value.isNullish() ? value : provider;
-  }
 
   @Keep
   @Nonnull
@@ -155,17 +148,6 @@ public final class JbcSrcRuntime {
       throw new NullPointerException("Attempted to access field '" + field.getName() + "' of null");
     }
     return ((SoyRecord) record).getPositionalParam(field);
-  }
-
-  /**
-   * Returns a passed parameter or its default value if no such parameter exists. Pass {@link
-   * UndefinedData} for {@code provider} to indicate no such parameter exists and the default should
-   * be applied. This behavior is coupled to {@link ParamStore#getParameter(RecordProperty)}.
-   */
-  @Keep
-  @Nonnull
-  public static SoyValueProvider paramOrDefault(SoyValueProvider provider, SoyValue defaultValue) {
-    return SoyValueProvider.withDefault(provider, defaultValue);
   }
 
   /**

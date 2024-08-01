@@ -380,8 +380,8 @@ public final class MethodRefs {
   public static final MethodRef PARAM_STORE_GET_PARAMETER_DEFAULT =
       createPure(ParamStore.class, "getParameter", RecordProperty.class, SoyValue.class);
 
-  public static final MethodRef RUNTIME_PARAM_OR_DEFAULT =
-      createPure(JbcSrcRuntime.class, "paramOrDefault", SoyValueProvider.class, SoyValue.class)
+  public static final MethodRef SOY_VALUE_PROVIDER_WITH_DEFAULT =
+      createPure(SoyValueProvider.class, "withDefault", SoyValueProvider.class, SoyValue.class)
           .asCheap();
 
   public static final MethodRef RUNTIME_GET_LIST_ITEM =
@@ -572,9 +572,6 @@ public final class MethodRefs {
 
   public static final MethodRef SOY_NULL_TO_JAVA_NULL =
       createNonPure(JbcSrcRuntime.class, "soyNullToJavaNull", SoyValue.class);
-
-  public static final MethodRef SOY_VALUE_PROVIDER_OR_NULLISH =
-      createNonPure(JbcSrcRuntime.class, "soyValueProviderOrNullish", SoyValueProvider.class);
 
   public static final MethodRef SOY_VALUE_PROVIDER_STATUS =
       createNonPure(SoyValueProvider.class, "status");

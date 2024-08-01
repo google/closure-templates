@@ -77,17 +77,21 @@ public interface SoyValueProvider {
    * Returns a SoyValueProvider whose resolved value will be {@code defaultValue} if {@code
    * delegate} is `null` or resolves to {@link UndefinedData}.
    */
+  @Nonnull
   static SoyValueProvider withDefault(@Nullable SoyValueProvider delegate, SoyValue defaultValue) {
     // Allow null so callers don't have to check if, e.g., they get delegate out of a map.
     if (delegate == null) {
       return defaultValue;
     }
 
-    // TODO(b/289390227): add back an optimistic test for isDone here to avoid wrapping
     if (delegate instanceof SoyValue) {
       return delegate == UndefinedData.INSTANCE ? defaultValue : delegate;
     }
-
+    // N.B. We could eagerly call `status` here to test for being resolved but we do not because
+    // 1. The jbcsrc gencode is already 'optimistically evaluating' most parameters, so it would be
+    // mostly redundant.
+    // 2. In the few cases we are not optimistically evaluating, This is because we are maintaining
+    // compatibility with existing patterns that break under optimistic evaluation.
     return new SoyAbstractCachingValueProvider() {
       @Override
       protected SoyValue compute() {

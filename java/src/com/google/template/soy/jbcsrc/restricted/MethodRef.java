@@ -132,9 +132,9 @@ public abstract class MethodRef {
     return new AutoValue_MethodRef(
         method instanceof Constructor
             ? Opcodes.INVOKESPECIAL
-            : clazz.isInterface()
-                ? Opcodes.INVOKEINTERFACE
-                : isStatic ? Opcodes.INVOKESTATIC : Opcodes.INVOKEVIRTUAL,
+            : isStatic
+                ? Opcodes.INVOKESTATIC
+                : clazz.isInterface() ? Opcodes.INVOKEINTERFACE : Opcodes.INVOKEVIRTUAL,
         ownerType,
         method instanceof java.lang.reflect.Method
             ? Method.getMethod((java.lang.reflect.Method) method)
