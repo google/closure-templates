@@ -131,5 +131,11 @@ public final class ExtraConstantBootstraps {
         });
   }
 
+  @Keep
+  public static ImmutableList<Object> constantList(
+      MethodHandles.Lookup lookup, String name, Class<?> type, Object... args) {
+    return ImmutableList.copyOf(args);
+  }
+
   private ExtraConstantBootstraps() {}
 }

@@ -239,6 +239,17 @@ public final class BytecodeUtils {
               Class.class,
               int.class)
           .asHandle();
+
+  private static final Handle CONSTANT_IMMUTABLE_LIST =
+      MethodRef.createPure(
+              ExtraConstantBootstraps.class,
+              "constantList",
+              MethodHandles.Lookup.class,
+              String.class,
+              Class.class,
+              Object[].class)
+          .asHandle();
+
   // Booleans are modeled as integers in the bytecode but in the constant dynamic api we
   // need to use actual boolean values
   public static final Expression.ConstantValue CONSTANT_FALSE =
@@ -964,14 +975,38 @@ public final class BytecodeUtils {
    */
   public static Expression asImmutableList(Iterable<? extends Expression> items) {
     ImmutableList<Expression> copy = ImmutableList.copyOf(items);
+    // Use a custom bootstrap for a constant list if all the items are constant. This is more
+    // efficient than the typical invoke helper that we might get and it scales to more parameters.
+    Expression.ConstantValue constantValue =
+        Expression.areAllConstant(copy)
+            ? Expression.ConstantValue.dynamic(
+                new ConstantDynamic(
+                    "constantList",
+                    BytecodeUtils.IMMUTABLE_LIST_TYPE.getDescriptor(),
+                    CONSTANT_IMMUTABLE_LIST,
+                    copy.stream().map(Expression::constantBytecodeValue).toArray(Object[]::new)),
+                BytecodeUtils.IMMUTABLE_LIST_TYPE,
+                /* isTrivialConstant= */ false)
+            : null;
+    Expression list;
     if (copy.size() < MethodRefs.IMMUTABLE_LIST_OF.size()) {
-      return MethodRefs.IMMUTABLE_LIST_OF.get(copy.size()).invoke(copy);
+      list = MethodRefs.IMMUTABLE_LIST_OF.get(copy.size()).invoke(copy);
+    } else {
+      ImmutableList<Expression> explicit = copy.subList(0, MethodRefs.IMMUTABLE_LIST_OF.size());
+      Expression remainder =
+          asArray(
+              OBJECT_ARRAY_TYPE, copy.subList(MethodRefs.IMMUTABLE_LIST_OF.size(), copy.size()));
+      list =
+          MethodRefs.IMMUTABLE_LIST_OF_ARRAY.invoke(
+              Iterables.concat(explicit, ImmutableList.of(remainder)));
     }
-    ImmutableList<Expression> explicit = copy.subList(0, MethodRefs.IMMUTABLE_LIST_OF.size());
-    Expression remainder =
-        asArray(OBJECT_ARRAY_TYPE, copy.subList(MethodRefs.IMMUTABLE_LIST_OF.size(), copy.size()));
-    return MethodRefs.IMMUTABLE_LIST_OF_ARRAY.invoke(
-        Iterables.concat(explicit, ImmutableList.of(remainder)));
+    if (constantValue != null) {
+      // Use our own constant value which is smaller and supports a broader range of sizes. (the
+      // IMMUTABLE_LIST_OF_ARRAY methodref is not currently constant foldable due to its array
+      // argument.)
+      list = list.withConstantValue(constantValue);
+    }
+    return list;
   }
 
   public static SoyExpression newRecordImplFromParamStore(
