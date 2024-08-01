@@ -146,6 +146,10 @@ public final class SoyTreeUtils {
     return TreeStreams.ancestor(root, Node::getParent);
   }
 
+  public static <T extends Node> boolean hasAncestorOfType(Node root, Class<T> classObject) {
+    return ancestors(root).anyMatch(classObject::isInstance);
+  }
+
   /** Returns a breadth-first stream traversal of the AST tree starting at {@code node}. */
   public static Stream<? extends Node> allNodes(Node node) {
     return allNodes(node, SoyTreeUtils::visitAll);
