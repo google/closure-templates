@@ -69,7 +69,7 @@ public abstract class UnionTypeNode extends TypeNode {
       newCandidates.add(candidate.copy());
     }
     UnionTypeNode copy = create(newCandidates.build());
-    copy.copyResolvedTypeFrom(this);
+    copy.copyInternal(this);
     return copy;
   }
 

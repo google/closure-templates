@@ -28,7 +28,6 @@ import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.AttrParam;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.soytree.defn.TemplateStateVar;
-import com.google.template.soy.types.FunctionType;
 import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.MapType;
 import com.google.template.soy.types.SetType;
@@ -60,34 +59,30 @@ final class ResolveDeclaredTypesPass implements CompilerFilePass {
             .build();
 
     for (ExternNode extern : file.getExterns()) {
-      extern.setType((FunctionType) converter.getOrCreateType(extern.typeNode()));
+      SoyType unused = converter.getOrCreateType(extern.typeNode());
     }
 
     SoyTreeUtils.allNodesOfType(file, TypeLiteralNode.class)
         .forEach(
             n -> {
               TypeNode typeNode = n.getTypeNode();
-              SoyType type;
               if (!typeNode.isTypeResolved()) {
                 String typeName = typeNode.toString();
                 // TypeNodeConverter doesn't tolerate these generic types without <>.
                 switch (typeName) {
                   case "list":
-                    type = ListType.ANY_LIST;
+                    typeNode.setResolvedType(ListType.ANY_LIST);
                     break;
                   case "set":
-                    type = SetType.ANY_SET;
+                    typeNode.setResolvedType(SetType.ANY_SET);
                     break;
                   case "map":
-                    type = MapType.ANY_MAP;
+                    typeNode.setResolvedType(MapType.ANY_MAP);
                     break;
                   default:
-                    type = converter.getOrCreateType(typeNode);
+                    SoyType unused = converter.getOrCreateType(typeNode);
                 }
-              } else {
-                type = typeNode.getResolvedType();
               }
-              n.setType(type);
             });
 
     for (TemplateNode template : file.getTemplates()) {

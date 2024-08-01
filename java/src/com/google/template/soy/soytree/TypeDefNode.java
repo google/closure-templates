@@ -19,8 +19,8 @@ package com.google.template.soy.soytree;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.basetree.CopyState;
-import com.google.template.soy.exprtree.TypeLiteralNode;
 import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.ast.TypeNode;
 import javax.annotation.Nullable;
 
 /**
@@ -28,24 +28,23 @@ import javax.annotation.Nullable;
  * SoyTypeRegistry} for file typedefs.
  */
 public final class TypeDefNode extends AbstractCommandNode {
-  private final String name;
+  private final Identifier name;
 
   /** Expression root node that holds the type literal. */
-  private final TypeLiteralNode typeNode;
+  private final TypeNode typeNode;
 
   private final boolean exported;
-  @Nullable private final Identifier superType;
+  @Nullable private final TypeNode superType;
 
   public TypeDefNode(
       int id,
       SourceLocation location,
-      String varName,
-      SourceLocation varNameLocation,
-      TypeLiteralNode typeNode,
+      Identifier name,
+      TypeNode typeNode,
       boolean exported,
-      @Nullable Identifier superType) {
+      @Nullable TypeNode superType) {
     super(id, location, "type");
-    this.name = varName;
+    this.name = name;
     this.typeNode = typeNode;
     this.exported = exported;
     this.superType = superType;
@@ -59,9 +58,9 @@ public final class TypeDefNode extends AbstractCommandNode {
   private TypeDefNode(TypeDefNode orig, CopyState copyState) {
     super(orig, copyState);
     this.name = orig.name;
-    this.typeNode = orig.typeNode.copy(copyState);
+    this.typeNode = orig.typeNode.copy();
     this.exported = orig.exported;
-    this.superType = orig.superType;
+    this.superType = orig.superType != null ? orig.superType.copy() : null;
   }
 
   public boolean isExported() {
@@ -75,17 +74,17 @@ public final class TypeDefNode extends AbstractCommandNode {
   }
 
   /** Returns the type literal as a SoyType. */
-  public TypeLiteralNode getTypeNode() {
+  public TypeNode getTypeNode() {
     return typeNode;
   }
 
   /** Returns the type literal as a SoyType. */
   public SoyType getType() {
-    return typeNode.getType();
+    return typeNode.getResolvedType();
   }
 
   public String getName() {
-    return name;
+    return name.identifier();
   }
 
   @Override
@@ -100,11 +99,11 @@ public final class TypeDefNode extends AbstractCommandNode {
         isExported() ? "export type" : "type",
         name,
         superType != null ? " extends " + superType : "",
-        typeNode.toSourceString());
+        typeNode);
   }
 
   @Nullable
-  public Identifier getSuperType() {
+  public TypeNode getSuperType() {
     return superType;
   }
 

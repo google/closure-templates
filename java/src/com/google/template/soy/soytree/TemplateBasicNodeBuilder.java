@@ -154,8 +154,7 @@ public class TemplateBasicNodeBuilder extends TemplateNodeBuilder<TemplateBasicN
         visibility,
         modifiable,
         legacyDeltemplateNamespaceAttr,
-        useVariantTypeAttr,
-        params);
+        useVariantTypeAttr);
   }
 
   @Override

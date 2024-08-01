@@ -181,7 +181,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
       this.usedAliases = new HashSet<>(orig.usedAliases);
     }
 
-    /** Resolves an potentially-aliased name against the aliases in this file. */
+    /** Resolves a potentially-aliased name against the aliases in this file. */
     public Identifier resolveAlias(Identifier identifier) {
       String fullName = identifier.identifier();
       SourceLocation sourceLocation = identifier.location();
@@ -343,17 +343,14 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
    * @param cmdName The command name.
    * @param soyFileHeaderInfo Info from the containing Soy file's header declarations.
    * @param visibility Visibility of this template.
-   * @param params The params from template header or SoyDoc. Null if no decls and no SoyDoc.
    */
   TemplateNode(
       TemplateNodeBuilder<?> nodeBuilder,
       String cmdName,
       SoyFileHeaderInfo soyFileHeaderInfo,
-      Visibility visibility,
-      ImmutableList<TemplateHeaderVarDefn> params) {
+      Visibility visibility) {
     super(nodeBuilder.getId(), nodeBuilder.sourceLocation, nodeBuilder.openTagLocation, cmdName);
-    checkNotNull(params);
-    this.headerParams = params == null ? ImmutableList.of() : params;
+    this.headerParams = ImmutableList.copyOf(nodeBuilder.params);
     this.paramsNode = nodeBuilder.getParamsNode();
     this.soyFileHeaderInfo = soyFileHeaderInfo;
     this.templateName = nodeBuilder.getTemplateName();

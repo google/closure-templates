@@ -79,7 +79,7 @@ public abstract class RecordTypeNode extends TypeNode {
       newProperties.add(property.copy());
     }
     RecordTypeNode copy = create(sourceLocation(), newProperties.build());
-    copy.copyResolvedTypeFrom(this);
+    copy.copyInternal(this);
     return copy;
   }
 }

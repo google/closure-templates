@@ -1537,7 +1537,7 @@ private SoyFileNode NonEmptySoyFile() :
         aliases.add(alias);
       }
     }
-|
+  |
     importNode = Import()
     {
       if (importNode != null) {
@@ -1553,18 +1553,14 @@ private SoyFileNode NonEmptySoyFile() :
         constants.add(constant);
       }
     }
-  )*
-
-  (
+  |
     typeDef = TypeDefStmt()
     {
       if (typeDef != null) {
         typeDefs.add(typeDef);
       }
     }
-  )*
-
-  (
+  |
     extern = ExternStmt()
     {
       if (extern != null) {
@@ -3423,7 +3419,6 @@ private TypeDefNode TypeDefStmt() :
 {
   Token tagBegin, tagClose, nameTok = null, tagBeginEnd = null;
   TypeNode type = null;
-  TypeLiteralNode valueExpr = null;
   CommandTagAttribute attr = null;
   List<StandaloneNode> templateBlock = ImmutableList.of();
   boolean exported;
@@ -3452,20 +3447,17 @@ private TypeDefNode TypeDefStmt() :
   } catch (ParseException e) {
     tagClose = reportTemplateBodyErrorAndSkipTo(e, CMD_SELF_CLOSE, CMD_END);
     SourceLocation loc = createSrcLoc(tagBegin, tagClose);
-    return new TypeDefNode(-1, loc, "$error", loc, null, exported, null);
+    return new TypeDefNode(-1, loc, Identifier.create("$error", loc), null, exported, null);
   }
 
   {
-    valueExpr = new TypeLiteralNode(type);
-
     return new TypeDefNode(
         nodeIdGen.genId(),
         createSrcLoc(tagBegin, tagClose),
-        nameTok.image,
-        createSrcLoc(nameTok),
-        valueExpr,
+        Identifier.create(nameTok.image, createSrcLoc(nameTok)),
+        type,
         exported,
-        superType);
+        superType != null ? NamedTypeNode.create(superType) : null);
   }
 }
 

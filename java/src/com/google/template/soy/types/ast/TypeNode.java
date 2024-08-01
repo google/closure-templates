@@ -16,17 +16,16 @@
 
 package com.google.template.soy.types.ast;
 
-import static com.google.common.base.Preconditions.checkState;
 
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.internal.SetOnce;
 import com.google.template.soy.types.SoyType;
 import java.util.stream.Stream;
-import javax.annotation.Nullable;
 
 /** The base class for an immutable node in the type AST. */
 public abstract class TypeNode {
 
-  @Nullable private SoyType resolvedType;
+  private SetOnce<SoyType> resolvedType = new SetOnce<>();
 
   TypeNode() {}
 
@@ -35,18 +34,22 @@ public abstract class TypeNode {
   public abstract <T> T accept(TypeNodeVisitor<T> visitor);
 
   public void setResolvedType(SoyType type) {
-    checkState(resolvedType == null, "type has already been set to %s", resolvedType);
-    resolvedType = type;
+    resolvedType.set(type);
+  }
+
+  public void setResolvedType(SoyType type, boolean reset) {
+    if (reset) {
+      resolvedType = new SetOnce<>();
+    }
+    resolvedType.set(type);
   }
 
   public SoyType getResolvedType() {
-    checkState(
-        resolvedType != null, "type hasn't been set yet on %s at %s", toString(), sourceLocation());
-    return resolvedType;
+    return resolvedType.get();
   }
 
   public boolean isTypeResolved() {
-    return resolvedType != null;
+    return resolvedType.isPresent();
   }
 
   /** Returns round-trippable (through the parser) source code for this node. */
@@ -55,8 +58,8 @@ public abstract class TypeNode {
 
   public abstract TypeNode copy();
 
-  void copyResolvedTypeFrom(TypeNode old) {
-    this.resolvedType = old.resolvedType;
+  void copyInternal(TypeNode old) {
+    this.resolvedType = old.resolvedType.copy();
   }
 
   public Stream<TypeNode> asStreamExpandingUnion() {

@@ -35,6 +35,7 @@ import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
 import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import com.google.template.soy.soytree.defn.TemplateParam;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -113,7 +114,7 @@ public abstract class TemplateNodeBuilder<T extends TemplateNodeBuilder<T>> {
   protected String soyDocDesc;
 
   /** The params from template header. Null if no decls. */
-  @Nullable protected ImmutableList<TemplateHeaderVarDefn> params;
+  protected List<TemplateHeaderVarDefn> params = new ArrayList<>();
 
   @Nullable protected TemplateParamsNode paramsNode;
 
@@ -261,9 +262,9 @@ public abstract class TemplateNodeBuilder<T extends TemplateNodeBuilder<T>> {
   /** This method is intended to be called at most once for header params. */
   @CanIgnoreReturnValue
   public T addVarDefns(Iterable<? extends TemplateHeaderVarDefn> varDefns) {
-    Preconditions.checkState(this.params == null);
+    Preconditions.checkState(this.params.isEmpty());
     Set<String> seenVarDefns = new HashSet<>();
-    this.params = ImmutableList.copyOf(varDefns);
+    varDefns.forEach(this.params::add);
 
     // Check new params.
     for (TemplateHeaderVarDefn param : varDefns) {

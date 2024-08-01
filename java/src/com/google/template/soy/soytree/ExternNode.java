@@ -38,7 +38,6 @@ public final class ExternNode extends AbstractParentCommandNode<ExternImplNode>
   private final SourceLocation openTagLocation;
   private final boolean exported;
   private final ExternVar var;
-  private FunctionType type;
 
   public ExternNode(
       int id,
@@ -112,11 +111,7 @@ public final class ExternNode extends AbstractParentCommandNode<ExternImplNode>
   }
 
   public FunctionType getType() {
-    return type;
-  }
-
-  public void setType(FunctionType type) {
-    this.type = type;
+    return (FunctionType) typeNode.getResolvedType();
   }
 
   public ExternVar getVar() {

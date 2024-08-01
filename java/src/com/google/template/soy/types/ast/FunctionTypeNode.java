@@ -80,7 +80,7 @@ public abstract class FunctionTypeNode extends TypeNode {
       newParameters.add(parameter.copy());
     }
     FunctionTypeNode copy = create(sourceLocation(), newParameters.build(), returnType().copy());
-    copy.copyResolvedTypeFrom(this);
+    copy.copyInternal(this);
     return copy;
   }
 }
