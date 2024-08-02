@@ -345,7 +345,7 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
         // worry about a legacy_object_map sneaking in through an inferred type because there is
         // no legacy_object_map literal syntax: http://b/79368576
         if (type != null) {
-          type.accept(new LegacyObjectMapFinder(errorReporter));
+          new LegacyObjectMapFinder(errorReporter).exec(type);
         }
       }
 

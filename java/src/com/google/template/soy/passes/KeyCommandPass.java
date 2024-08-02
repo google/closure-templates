@@ -145,42 +145,9 @@ final class KeyCommandPass implements CompilerFilePass {
           // these are all fine.
           // null should potentially be rejected, but it is often hard to avoid nullable expressions
           break;
-        case BOOL:
-        case HTML:
-        case ELEMENT:
-        case ATTRIBUTES:
-        case JS:
-        case CSS:
-        case URI:
-        case TRUSTED_RESOURCE_URI:
-        case ITERABLE:
-        case LIST:
-        case SET:
-        case RECORD:
-        case LEGACY_OBJECT_MAP:
-        case MAP:
-        case MESSAGE:
-        case PROTO:
-        case TEMPLATE:
-        case VE:
-        case VE_DATA:
-        case ANY:
-        case UNKNOWN:
+        default:
           isSupportedType = false;
           break;
-        case UNION:
-        case CSS_TYPE:
-        case CSS_MODULE:
-        case TOGGLE_TYPE:
-        case PROTO_TYPE:
-        case PROTO_ENUM_TYPE:
-        case PROTO_EXTENSION:
-        case PROTO_MODULE:
-        case TEMPLATE_TYPE:
-        case TEMPLATE_MODULE:
-        case FUNCTION:
-        case NEVER:
-          throw new AssertionError("impossible");
       }
     }
     if (!isSupportedType) {

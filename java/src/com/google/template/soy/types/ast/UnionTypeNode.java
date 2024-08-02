@@ -19,11 +19,13 @@ package com.google.template.soy.types.ast;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 
 import com.google.auto.value.AutoValue;
+import com.google.auto.value.extension.memoized.Memoized;
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Streams;
+import com.google.template.soy.base.SourceLocation;
 import java.util.stream.Stream;
 
 /** A union type (eg, a|b). */
@@ -40,17 +42,21 @@ public abstract class UnionTypeNode extends TypeNode {
                         : Stream.of(tn))
             .collect(toImmutableList());
     Preconditions.checkArgument(candidateList.size() > 1);
-    return new AutoValue_UnionTypeNode(
-        candidateList
-            .get(0)
-            .sourceLocation()
-            .extend(Iterables.getLast(candidateList).sourceLocation()),
-        candidateList);
+    return new AutoValue_UnionTypeNode(candidateList);
   }
 
   UnionTypeNode() {}
 
   public abstract ImmutableList<TypeNode> candidates();
+
+  @Memoized
+  @Override
+  public SourceLocation sourceLocation() {
+    return candidates()
+        .get(0)
+        .sourceLocation()
+        .extend(Iterables.getLast(candidates()).sourceLocation());
+  }
 
   @Override
   public final String toString() {
@@ -64,11 +70,8 @@ public abstract class UnionTypeNode extends TypeNode {
 
   @Override
   public UnionTypeNode copy() {
-    ImmutableList.Builder<TypeNode> newCandidates = ImmutableList.builder();
-    for (TypeNode candidate : candidates()) {
-      newCandidates.add(candidate.copy());
-    }
-    UnionTypeNode copy = create(newCandidates.build());
+    UnionTypeNode copy =
+        create(candidates().stream().map(TypeNode::copy).collect(toImmutableList()));
     copy.copyInternal(this);
     return copy;
   }
