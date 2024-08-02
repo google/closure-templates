@@ -102,7 +102,9 @@ public class RenderOnlySoyMsgBundleImplTest {
             createSelectMsg(6065559473112027469L));
     bundle =
         new RenderOnlySoyMsgBundleImpl(
-            LOCALE, testMessages.stream().map(RenderOnlySoyMsg::create).collect(toImmutableList()));
+            new RenderOnlyMsgIndex(),
+            LOCALE,
+            testMessages.stream().map(RenderOnlySoyMsg::create).collect(toImmutableList()));
   }
 
   @Test
@@ -114,10 +116,11 @@ public class RenderOnlySoyMsgBundleImplTest {
 
   @Test
   public void testIsRtl() {
-    assertThat(new RenderOnlySoyMsgBundleImpl("ar", ImmutableList.of()).isRtl()).isTrue();
-    assertThat(new RenderOnlySoyMsgBundleImpl("iw", ImmutableList.of()).isRtl()).isTrue();
-    assertThat(new RenderOnlySoyMsgBundleImpl("fr", ImmutableList.of()).isRtl()).isFalse();
-    assertThat(new RenderOnlySoyMsgBundleImpl("en", ImmutableList.of()).isRtl()).isFalse();
+    var index = new RenderOnlyMsgIndex();
+    assertThat(new RenderOnlySoyMsgBundleImpl(index, "ar", ImmutableList.of()).isRtl()).isTrue();
+    assertThat(new RenderOnlySoyMsgBundleImpl(index, "iw", ImmutableList.of()).isRtl()).isTrue();
+    assertThat(new RenderOnlySoyMsgBundleImpl(index, "fr", ImmutableList.of()).isRtl()).isFalse();
+    assertThat(new RenderOnlySoyMsgBundleImpl(index, "en", ImmutableList.of()).isRtl()).isFalse();
   }
 
   @Test
@@ -147,7 +150,7 @@ public class RenderOnlySoyMsgBundleImplTest {
   @Test
   public void testCopy() {
     // Take advantage of the fact that SoyMsgBundle actually implements Iterable<SoyMsg>.
-    SoyMsgBundle copy = new RenderOnlySoyMsgBundleImpl(LOCALE, bundle);
+    SoyMsgBundle copy = new RenderOnlySoyMsgBundleImpl(new RenderOnlyMsgIndex(), LOCALE, bundle);
     assertThat(copy.getLocaleString()).isEqualTo(LOCALE);
     assertThat(bundle).hasSize(testMessages.size());
     assertThat(copy).containsExactlyElementsIn(bundle).inOrder();
@@ -159,13 +162,16 @@ public class RenderOnlySoyMsgBundleImplTest {
     // Prior issue introduced the possibility of mistaken large allocations for empty bundles.
     // This tries to OOM the test in the presence of such issues.
     IntStream.range(1, 10000)
-        .mapToObj(i -> new RenderOnlySoyMsgBundleImpl("fr", ImmutableList.of()))
+        .mapToObj(
+            i -> new RenderOnlySoyMsgBundleImpl(new RenderOnlyMsgIndex(), "fr", ImmutableList.of()))
         .collect(toImmutableList());
   }
 
   @Test
   public void testEmptyBundlesGetMsgReturnsNull() {
-    assertThat(new RenderOnlySoyMsgBundleImpl("fr", ImmutableList.of()).getMsg(123L))
+    assertThat(
+            new RenderOnlySoyMsgBundleImpl(new RenderOnlyMsgIndex(), "fr", ImmutableList.of())
+                .getMsg(123L))
         .isNull();
   }
 
@@ -176,7 +182,9 @@ public class RenderOnlySoyMsgBundleImplTest {
         IntStream.range(1, 10000).mapToObj(this::createSimpleMsg).collect(toImmutableList());
     SoyMsgBundle largeBundle =
         new RenderOnlySoyMsgBundleImpl(
-            LOCALE, msgs.stream().map(RenderOnlySoyMsg::create).collect(toImmutableList()));
+            new RenderOnlyMsgIndex(),
+            LOCALE,
+            msgs.stream().map(RenderOnlySoyMsg::create).collect(toImmutableList()));
     for (var msg : msgs) {
       assertThat(largeBundle.getMsg(msg.getId())).isEqualTo(msg);
     }
@@ -186,6 +194,7 @@ public class RenderOnlySoyMsgBundleImplTest {
   public void dropsUnsupportedIcuMessages() {
     var bundle =
         new RenderOnlySoyMsgBundleImpl(
+            new RenderOnlyMsgIndex(),
             LOCALE,
             new SoyMsgBundleImpl(
                 LOCALE,
@@ -219,5 +228,30 @@ public class RenderOnlySoyMsgBundleImplTest {
                         .build())));
     assertThat(bundle.getMsg(1)).isNull();
     assertThat(bundle.getNumMsgs()).isEqualTo(0);
+  }
+
+  // Tests a bug where the message index contained a mapping for a message that one bundle didn't
+  // have.
+  @Test
+  public void testOutOfRangeMiss() {
+    var index = new RenderOnlyMsgIndex();
+    SoyMsgBundle smallBundle =
+        new RenderOnlySoyMsgBundleImpl(
+            index,
+            LOCALE,
+            IntStream.range(0, 2)
+                .mapToObj(this::createSimpleMsg)
+                .map(RenderOnlySoyMsg::create)
+                .collect(toImmutableList()));
+    SoyMsgBundle largeBundle =
+        new RenderOnlySoyMsgBundleImpl(
+            index,
+            LOCALE,
+            IntStream.range(2, 10)
+                .mapToObj(this::createSimpleMsg)
+                .map(RenderOnlySoyMsg::create)
+                .collect(toImmutableList()));
+    assertThat(smallBundle.getMsg(9L)).isNull();
+    assertThat(largeBundle.getMsg(9L)).isEqualTo(createSimpleMsg(9L));
   }
 }
