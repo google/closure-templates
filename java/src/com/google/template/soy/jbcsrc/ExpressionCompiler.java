@@ -597,7 +597,7 @@ final class ExpressionCompiler {
 
       Branch visitedFilter = filterExpr != null ? visit(filterExpr).compileToBranch() : null;
 
-      Statement exitScope = scope.exitScope();
+      var exitScope = scope.exitScopeMarker();
 
       /*
 
@@ -661,7 +661,7 @@ final class ExpressionCompiler {
 
               resultVar.gen(adapter); // "return" a_result;
               // exit the loop
-              exitScope.gen(adapter);
+              adapter.mark(exitScope);
             }
           });
     }

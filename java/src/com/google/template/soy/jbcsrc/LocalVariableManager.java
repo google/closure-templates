@@ -20,7 +20,7 @@ import com.google.errorprone.annotations.CheckReturnValue;
 import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
 import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.LocalVariable;
-import com.google.template.soy.jbcsrc.restricted.Statement;
+import org.objectweb.asm.Label;
 import org.objectweb.asm.Type;
 
 /** A class that can manage local variable lifetimes for a method. */
@@ -62,9 +62,9 @@ interface LocalVariableManager {
     LocalVariable createNamedLocal(String name, Type type);
 
     /**
-     * Exits the scope. After this point it is incorrect to reference the local variables. The
-     * returned Statement must be generated after the locals go out of scope.
+     * Marks the end of the scope. It is incorrect to reference variables fromwithin the scope after
+     * the scope.
      */
-    Statement exitScope();
+    Label exitScopeMarker();
   }
 }

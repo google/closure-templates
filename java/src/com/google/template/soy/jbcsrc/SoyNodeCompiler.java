@@ -253,7 +253,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     statements.add(
         // needs to go at the beginning but can only be generated after the whole method body.
         0, detachState.generateReattachTable());
-    return Statement.concat(statements);
+    return AppendableExpression.concat(statements);
   }
 
   Statement compileWithoutDetaches(
@@ -306,7 +306,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
 
   private Statement doCompile(
       RenderUnitNode node, ExtraCodeCompiler prefix, ExtraCodeCompiler suffix) {
-    return Statement.concat(
+    return AppendableExpression.concat(
         prefix.compile(exprCompiler, appendableExpression, detachState),
         visitChildrenInNewScope(node),
         suffix.compile(exprCompiler, appendableExpression, detachState));
@@ -400,10 +400,9 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     Scope prev = currentScope;
     currentScope = variables.enterScope();
     List<Statement> children = visitChildren(node);
-    Statement leave = currentScope.exitScope();
-    children.add(leave);
+    var leave = currentScope.exitScopeMarker();
     currentScope = prev;
-    return Statement.concat(children);
+    return AppendableExpression.concat(children).labelEnd(leave);
   }
 
   @Override
@@ -749,8 +748,9 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
         defaultBlock = Optional.of(visitChildrenInNewScope(defaultNode));
       }
     }
-    Statement exitScope = scope.exitScope();
-    return Statement.concat(initializer, ControlFlow.ifElseChain(cases, defaultBlock), exitScope);
+    var exitScope = scope.exitScopeMarker();
+    return Statement.concat(initializer, ControlFlow.ifElseChain(cases, defaultBlock))
+        .labelEnd(exitScope);
   }
 
   @Override
@@ -776,7 +776,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
             STORE);
     Expression hasNext = MethodRefs.ITERATOR_HAS_NEXT.invoke(iteratorVar.local());
     Statement loopBody = visitChildrenInNewScope(nonEmptyNode);
-    Statement exitScope = scope.exitScope();
+    var exitScope = scope.exitScopeMarker();
 
     return new Statement() {
       @Override
@@ -798,7 +798,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
           adapter.iinc(userIndexVar.local().index(), 1); // index++
         }
         adapter.goTo(loopStart);
-        exitScope.gen(adapter);
+        adapter.mark(exitScope);
         adapter.mark(loopEnd);
       }
     };
@@ -834,15 +834,18 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     // otherwise we need to apply some non-streaming print directives, or the expression would
     // require boxing to be a print directive (which usually means it is quite trivial).
     Label reattachPoint = new Label();
-    SoyExpression value = compilePrintNodeAsExpression(node, reattachPoint);
+    var detacher = detachState.createExpressionDetacher(reattachPoint);
+    SoyExpression value = compilePrintNodeAsExpression(node, detacher);
     if (value.isBoxed()) {
       return value
           .invokeVoid(MethodRefs.SOY_VALUE_RENDER, appendableExpression)
           .labelStart(reattachPoint);
     }
     // handle trivial unboxed values like numbers and strings.
-    AppendableExpression renderSoyValue =
-        appendableExpression.appendString(value.coerceToString()).labelStart(reattachPoint);
+    Expression renderSoyValue = appendableExpression.appendString(value.coerceToString());
+    if (detacher.hasDetaches()) {
+      renderSoyValue = renderSoyValue.labelStart(reattachPoint);
+    }
 
     return renderSoyValue.toStatement();
   }
@@ -856,27 +859,27 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
           parameterLookup.getRenderContext().getEscapingDirectiveAsFunction(child.getName()));
     }
     Label reattachPoint = new Label();
+    var detacher = detachState.createExpressionDetacher(reattachPoint);
     SoyFunctionSignature functionSignature =
         loggingFunction.getClass().getAnnotation(SoyFunctionSignature.class);
     checkNotNull(
         functionSignature,
         "LoggingFunction %s must be annotated with @SoyFunctionSignature",
         loggingFunction.getClass().getName());
-    return appendableExpression
-        .appendLoggingFunctionInvocation(
+    Expression appendLoggingFunction =
+        appendableExpression.appendLoggingFunctionInvocation(
             functionSignature.name(),
             loggingFunction.getPlaceholder(),
-            exprCompiler
-                .asBasicCompiler(detachState.createExpressionDetacher(reattachPoint))
-                .compileToList(fn.getParams()),
-            printDirectives)
-        .labelStart(reattachPoint)
-        .toStatement();
+            exprCompiler.asBasicCompiler(detacher).compileToList(fn.getParams()),
+            printDirectives);
+    if (detacher.hasDetaches()) {
+      appendLoggingFunction = appendLoggingFunction.labelStart(reattachPoint);
+    }
+    return appendLoggingFunction.toStatement();
   }
 
-  private SoyExpression compilePrintNodeAsExpression(PrintNode node, Label reattachPoint) {
-    BasicExpressionCompiler basic =
-        exprCompiler.asBasicCompiler(detachState.createExpressionDetacher(reattachPoint));
+  private SoyExpression compilePrintNodeAsExpression(PrintNode node, ExpressionDetacher detacher) {
+    BasicExpressionCompiler basic = exprCompiler.asBasicCompiler(detacher);
     SoyExpression value = basic.compile(node.getExpr());
     // We may have print directives, that means we need to pass the render value through a bunch of
     // SoyJavaPrintDirective.apply methods.  This means lots and lots of boxing.
@@ -995,8 +998,8 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
         requiresDetachLogic
             ? detachState.detachForRender(callRenderAndResolve)
             : detachState.assertFullyRenderered(callRenderAndResolve);
-    return Statement.concat(
-        initRenderee, initAppendable, doCall, clearAppendable, renderScope.exitScope());
+    return AppendableExpression.concat(initRenderee, initAppendable, doCall, clearAppendable)
+        .labelEnd(renderScope.exitScopeMarker());
   }
 
   @Override
@@ -1128,7 +1131,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
                       .toMaybeConstant())
               .toStatement();
     }
-    return Statement.concat(
+    return AppendableExpression.concat(
             enterStatement,
             visitChildrenInNewScope(node),
             appendableExpression.exitLoggableElement().toStatement())
@@ -1496,13 +1499,9 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     Statement callCallee = detachState.detachForRender(callRender);
     // We need to init the appendable after the parmas because initializing the params may require
     // rendering params into temporary buffers which may themselves use the currentAppendable local.
-    return Statement.concat(
-        initParams,
-        initCallee,
-        initAppendable,
-        callCallee,
-        flushAppendable,
-        renderScope.exitScope());
+    return AppendableExpression.concat(
+            initParams, initCallee, initAppendable, callCallee, flushAppendable)
+        .labelEnd(renderScope.exitScopeMarker());
   }
 
   /**
@@ -1805,7 +1804,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   @Override
   protected Statement visitMsgHtmlTagNode(MsgHtmlTagNode node) {
     // trivial node that is just a number of children surrounded by raw text nodes.
-    return Statement.concat(visitChildren(node));
+    return AppendableExpression.concat(visitChildren(node));
   }
 
   @Override

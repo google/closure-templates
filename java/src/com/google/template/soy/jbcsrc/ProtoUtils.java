@@ -42,6 +42,7 @@ import com.google.common.html.types.SafeStyleSheetProto;
 import com.google.common.html.types.SafeUrlProto;
 import com.google.common.html.types.TrustedResourceUrlProto;
 import com.google.common.primitives.UnsignedInts;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.DescriptorProtos.FieldOptions.JSType;
 import com.google.protobuf.Descriptors;
@@ -742,7 +743,7 @@ final class ProtoUtils {
       LocalVariable base =
           scope.createTemporary(fieldName + "__base", unboxedBaseExpr.resultType());
       Statement baseInit = base.initialize(unboxedBaseExpr);
-      Statement scopeExit = scope.exitScope();
+      var scopeExit = scope.exitScopeMarker();
 
       boolean foundBoxed = false;
       ImmutableSet<SoyType> members = ((UnionType) baseExpr.soyType()).getMembers();
@@ -819,7 +820,7 @@ final class ProtoUtils {
                 }
               }
               cb.mark(end);
-              scopeExit.gen(cb);
+              cb.mark(scopeExit);
             }
           });
     }
@@ -1092,7 +1093,7 @@ final class ProtoUtils {
           scope.createTemporary(field.getName() + "__mapEntry", iterNext.resultType());
       Statement initMapEntry = mapEntry.initialize(iterNext);
       // exitScope must be called after creating all the variables
-      Statement scopeExit = scope.exitScope();
+      var scopeExit = scope.exitScopeMarker();
 
       // Get type info of the map key/value
       MapType mapType = (MapType) mapArg.soyType();
@@ -1154,7 +1155,7 @@ final class ProtoUtils {
 
           // Return
           cb.mark(end);
-          scopeExit.gen(cb);
+          cb.mark(scopeExit);
         }
       };
     }
@@ -1268,7 +1269,7 @@ final class ProtoUtils {
               list.initialize(resolved), listSize.initialize(list.invoke(MethodRefs.LIST_SIZE)));
 
       // exitScope must be called after creating all the variables
-      Statement scopeExit = scope.exitScope();
+      Label scopeExit = scope.exitScopeMarker();
       // Expected type info of the list element
       SoyType elementSoyType = ((ListType) unboxed.soyType()).getElementType();
       SoyRuntimeType elementType = SoyRuntimeType.getBoxedType(elementSoyType);
@@ -1322,7 +1323,7 @@ final class ProtoUtils {
           // End loop
 
           cb.mark(listIsEmpty);
-          scopeExit.gen(cb);
+          cb.mark(scopeExit);
         }
       };
     }
@@ -1949,6 +1950,7 @@ final class ProtoUtils {
       throw new AssertionError("visit map key/value individually");
     }
 
+    @CanIgnoreReturnValue
     @Override
     protected Expression visitRepeated(Expression valueInterpreter) {
       return valueInterpreter;

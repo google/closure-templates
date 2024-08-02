@@ -336,13 +336,30 @@ final class LazyClosureCompiler {
                 MethodRefs.LOGGING_ADVISING_APPENDABLE_BUFFERING.invoke(
                     BytecodeUtils.constantSanitizedContentKindAsContentKind(
                         renderUnitNode.getContentKind()))));
-    Statement populateBuffer =
-        parent
-            .compilerWithNewAppendable(AppendableExpression.forExpression(variable))
-            .compileWithoutDetaches(renderUnitNode, prefix, suffix);
+    ImmutableList<Statement> populateBuffer =
+        Statement.concat(
+                initBuffer,
+                parent
+                    .compilerWithNewAppendable(AppendableExpression.forExpression(variable))
+                    .compileWithoutDetaches(renderUnitNode, prefix, suffix))
+            .asStatements();
 
-    return Statement.concat(initBuffer, populateBuffer, scope.exitScope())
-        .then(variable.invoke(getUnpackBufferingAppendableMethod(renderUnitNode.getContentKind())));
+    // Attempt to 'fuse' the unpack operation onto the last append operation if the last operation
+    // is an append.
+    Label scopeExitMarker = scope.exitScopeMarker();
+    if (Iterables.getLast(populateBuffer) instanceof AppendableExpression.AppendableStatement) {
+      return Statement.concat(populateBuffer.subList(0, populateBuffer.size() - 1))
+          .then(
+              ((AppendableExpression.AppendableStatement) Iterables.getLast(populateBuffer))
+                  .thenInvoke(
+                      variable,
+                      getUnpackBufferingAppendableMethod(renderUnitNode.getContentKind())))
+          .labelEnd(scopeExitMarker);
+    }
+
+    return Statement.concat(populateBuffer)
+        .then(variable.invoke(getUnpackBufferingAppendableMethod(renderUnitNode.getContentKind())))
+        .labelEnd(scopeExitMarker);
   }
 
   private static MethodRef getUnpackBufferingAppendableMethod(SanitizedContentKind kind) {
@@ -725,7 +742,10 @@ final class LazyClosureCompiler {
 
       SoyNodeCompiler soyNodeCompiler =
           parent.compilerForChildNode(
-              node, variableSet, lookup, AppendableExpression.forExpression(appendableParameter));
+              node,
+              variableSet,
+              lookup,
+              AppendableExpression.forStringBuilder(appendableParameter));
       Statement nodeBody = soyNodeCompiler.compile(renderUnit, prefix, suffix);
       boolean isEager = !soyNodeCompiler.detachState.hasDetaches() && canEagerlyRender(renderUnit);
 

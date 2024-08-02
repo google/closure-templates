@@ -19,6 +19,7 @@ package com.google.template.soy.jbcsrc.restricted;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.THROWABLE_TYPE;
 
+import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import java.io.IOException;
 import java.util.Arrays;
@@ -43,6 +44,11 @@ public abstract class Statement extends BytecodeProducer {
       new Statement() {
         @Override
         protected void doGen(CodeBuilder adapter) {}
+
+        @Override
+        public ImmutableList<Statement> asStatements() {
+          return ImmutableList.of();
+        }
       };
 
   public static final Statement RETURN =
@@ -63,13 +69,14 @@ public abstract class Statement extends BytecodeProducer {
     // TODO(lukes): it would be nice to do a checkType operation here to make sure that expression
     // is compatible with the return type of the method, but i don't know how to get that
     // information here (reasonably).  So it is the caller's responsibility.
-    return new Statement() {
+    class ReturnStatement extends Statement {
       @Override
       protected void doGen(CodeBuilder adapter) {
         expression.gen(adapter);
         adapter.returnValue();
       }
-    };
+    }
+    return new ReturnStatement();
   }
 
   /**
@@ -79,13 +86,14 @@ public abstract class Statement extends BytecodeProducer {
    */
   public static Statement throwExpression(Expression expression) {
     expression.checkAssignableTo(THROWABLE_TYPE);
-    return new Statement() {
+    class ThrowStatement extends Statement {
       @Override
       protected void doGen(CodeBuilder adapter) {
         expression.gen(adapter);
         adapter.throwException();
       }
     };
+    return new ThrowStatement();
   }
 
   /** Returns a statement that concatenates all the provided statements. */
@@ -96,14 +104,35 @@ public abstract class Statement extends BytecodeProducer {
   /** Returns a statement that concatenates all the provided statements. */
   public static Statement concat(Iterable<? extends Statement> statements) {
     checkNotNull(statements);
-    return new Statement() {
+    ImmutableList.Builder<Statement> builder = ImmutableList.builder();
+    for (Statement stmt : statements) {
+      if (stmt.equals(NULL_STATEMENT)) {
+        continue;
+      }
+      builder.addAll(stmt.asStatements());
+    }
+    ImmutableList<Statement> copy = builder.build();
+    if (copy.isEmpty()) {
+      return NULL_STATEMENT;
+    }
+    if (copy.size() == 1) {
+      return copy.get(0);
+    }
+    class ConcatStatement extends Statement {
+
       @Override
       protected void doGen(CodeBuilder adapter) {
-        for (Statement statement : statements) {
+        for (Statement statement : copy) {
           statement.gen(adapter);
         }
       }
-    };
+
+      @Override
+      public ImmutableList<Statement> asStatements() {
+        return copy;
+      }
+    }
+    return new ConcatStatement();
   }
 
   protected Statement() {
@@ -112,6 +141,11 @@ public abstract class Statement extends BytecodeProducer {
 
   protected Statement(SourceLocation location) {
     super(location);
+  }
+
+  /** If this statement is composed of multiple others this spreads them into a flat list. */
+  public ImmutableList<Statement> asStatements() {
+    return ImmutableList.of(this);
   }
 
   /**
@@ -164,52 +198,64 @@ public abstract class Statement extends BytecodeProducer {
    * the statement.
    */
   public final Statement labelStart(Label label) {
-    return new Statement() {
+    class LabelStartStatement extends Statement {
       @Override
       protected void doGen(CodeBuilder adapter) {
         adapter.mark(label);
         Statement.this.gen(adapter);
       }
     };
+    return new LabelStartStatement();
   }
 
   /**
    * Returns a new statement identical to this one but with the given label applied at the start of
    * the statement.
    */
-  public final Statement labelEnd(Label label) {
-    return new Statement() {
+  public Statement labelEnd(Label label) {
+    class LabelEndStatement extends Statement {
       @Override
       protected void doGen(CodeBuilder adapter) {
         Statement.this.gen(adapter);
         adapter.mark(label);
       }
     };
+    return new LabelEndStatement();
   }
 
   /** Returns a new {@link Statement} with the source location attached. */
-  public final Statement withSourceLocation(SourceLocation location) {
-    checkNotNull(location);
-    if (location.equals(this.location)) {
+  public Statement withSourceLocation(SourceLocation loc) {
+    checkNotNull(loc);
+    if (loc.equals(this.location)) {
       return this;
     }
-    return new Statement(location) {
+    class WithSourceLocation extends Statement {
+      WithSourceLocation() {
+        super(loc);
+      }
+
       @Override
       protected void doGen(CodeBuilder adapter) {
         Statement.this.gen(adapter);
       }
-    };
+    }
+    return new WithSourceLocation();
   }
 
   /** Returns an Expression that evaluates this statement followed by the given expression. */
-  public final Expression then(Expression expression) {
-    return new Expression(expression.resultType(), expression.features()) {
+  public Expression then(Expression expression) {
+    class ThenExpression extends Expression {
+      ThenExpression() {
+        super(expression.resultType(), expression.features());
+      }
+
       @Override
       protected void doGen(CodeBuilder adapter) {
         Statement.this.gen(adapter);
         expression.gen(adapter);
       }
-    };
+    }
+    return new ThenExpression();
   }
 
   @Override

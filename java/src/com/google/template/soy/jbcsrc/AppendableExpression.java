@@ -19,9 +19,12 @@ package com.google.template.soy.jbcsrc;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.BUFFERING_APPENDABLE_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.LOGGING_ADVISING_APPENDABLE_TYPE;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.MULTIPLEXING_APPENDABLE_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
+import static java.util.Arrays.asList;
 
 import com.google.common.collect.ImmutableList;
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.data.LogStatement;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
@@ -34,17 +37,100 @@ import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.MethodRefs;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.Statement;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
 import org.objectweb.asm.Label;
 
-/**
- * An expression for an {@link
- * com.google.template.soy.jbcsrc.api.AdvisingAppendable.AdvisingAppendable}.
- */
+/** An expression for an {@link com.google.template.soy.jbcsrc.api.AdvisingAppendable}. */
 final class AppendableExpression extends Expression {
+
+  static final class AppendableStatement extends Statement {
+    private final AppendableExpression expression;
+
+    AppendableStatement(AppendableExpression expression) {
+      this.expression = expression;
+    }
+
+    @Override
+    protected void doGen(CodeBuilder adapter) {
+      expression.gen(adapter);
+      adapter.pop();
+    }
+
+    @Override
+    public AppendableStatement withSourceLocation(SourceLocation sourceLocation) {
+      return new AppendableStatement(expression.withSourceLocation(sourceLocation));
+    }
+
+    @Override
+    public AppendableStatement labelEnd(Label label) {
+      return new AppendableStatement(expression.labelEnd(label));
+    }
+
+    public Expression thenInvoke(Expression delegate, MethodRef method) {
+      if (delegate == expression.delegate) {
+        Expression resolved = expression.resolved;
+        // LoggingAdvisingAppednable methods always 'return this' but it isn't always statically
+        // typed. So we may need to insert a cast operator.
+        if (!expression.resolved.resultType().equals(delegate.resultType())) {
+          resolved = resolved.checkedCast(delegate.resultType());
+        }
+        return resolved.invoke(method);
+      }
+      return super.then(delegate.invoke(method));
+    }
+  }
+
+  static Statement concat(Statement... statements) {
+    return concat(asList(statements));
+  }
+
+  static Statement concat(List<Statement> statements) {
+    List<Statement> output = new ArrayList<>();
+    AppendableStatement prev = null;
+    for (Statement maybeConcat : statements) {
+      for (Statement stmt : maybeConcat.asStatements()) {
+        if (stmt.equals(Statement.NULL_STATEMENT)) {
+          continue;
+        }
+        if (stmt instanceof AppendableStatement) {
+          var appendableStmt = (AppendableStatement) stmt;
+          if (prev == null) {
+            prev = appendableStmt;
+            continue;
+          }
+          var prevExpession = prev.expression;
+          var expr = appendableStmt.expression;
+          if (prevExpession.delegate == expr.delegate) {
+            // Fuse the two append operations together.
+            prev = new AppendableStatement(prevExpession.withNewDelegate(expr.op));
+            continue;
+          }
+          output.add(prev);
+          prev = appendableStmt;
+        } else {
+          if (prev != null) {
+            output.add(prev);
+            prev = null;
+          }
+          output.add(stmt);
+        }
+      }
+    }
+    // This means we are ending with an appendable statement, merge the prefix but keep the end
+    if (prev != null) {
+      if (output.isEmpty()) {
+        return prev;
+      }
+      output.add(prev);
+    }
+
+    return Statement.concat(output);
+  }
+
   private static final MethodRef APPEND =
       MethodRef.createNonPure(LoggingAdvisingAppendable.class, "append", CharSequence.class);
-
   private static final MethodRef APPEND_CHAR =
       MethodRef.createNonPure(LoggingAdvisingAppendable.class, "append", char.class);
 
@@ -78,31 +164,29 @@ final class AppendableExpression extends Expression {
       MethodRef.createNonPure(LoggingAdvisingAppendable.class, "flushBuffers", int.class);
 
   static AppendableExpression forExpression(Expression delegate) {
-    return new AppendableExpression(
-        delegate, /* hasSideEffects= */ false, /* supportsSoftLimiting= */ true);
+    return new AppendableExpression(delegate, e -> e, /* supportsSoftLimiting= */ true);
   }
 
   static AppendableExpression forStringBuilder(Expression delegate) {
-    checkArgument(delegate.resultType().equals(BUFFERING_APPENDABLE_TYPE));
-    return new AppendableExpression(
-        delegate, /* hasSideEffects= */ false, /* supportsSoftLimiting= */ false);
+    checkArgument(
+        delegate.resultType().equals(BUFFERING_APPENDABLE_TYPE)
+            || delegate.resultType().equals(MULTIPLEXING_APPENDABLE_TYPE));
+    return new AppendableExpression(delegate, e -> e, /* supportsSoftLimiting= */ false);
   }
 
   static AppendableExpression logger() {
     return new AppendableExpression(
-        MethodRefs.RUNTIME_LOGGER.invoke(),
-        /* hasSideEffects= */ false,
-        /* supportsSoftLimiting= */ false);
+        MethodRefs.RUNTIME_LOGGER.invoke(), e -> e, /* supportsSoftLimiting= */ false);
   }
 
   private final Expression delegate;
-  // Whether or not the expression contains operations with side effects (e.g. appends)
-  private final boolean hasSideEffects;
+  private final Expression resolved;
+  private final Function<Expression, Expression> op;
   // Whether or not the appendable could ever return true from softLimitReached
   private final boolean supportsSoftLimiting;
 
   private AppendableExpression(
-      Expression delegate, boolean hasSideEffects, boolean supportsSoftLimiting) {
+      Expression delegate, Function<Expression, Expression> op, boolean supportsSoftLimiting) {
     super(delegate.resultType(), delegate.features());
     delegate.checkAssignableTo(LOGGING_ADVISING_APPENDABLE_TYPE);
     checkArgument(
@@ -110,13 +194,14 @@ final class AppendableExpression extends Expression {
         "advising appendable expressions should always be non nullable: %s",
         delegate);
     this.delegate = delegate;
-    this.hasSideEffects = hasSideEffects;
+    this.resolved = op.apply(delegate);
+    this.op = op;
     this.supportsSoftLimiting = supportsSoftLimiting;
   }
 
   @Override
   protected void doGen(CodeBuilder adapter) {
-    delegate.gen(adapter);
+    resolved.gen(adapter);
   }
 
   /**
@@ -124,7 +209,7 @@ final class AppendableExpression extends Expression {
    * appended to it.
    */
   AppendableExpression appendString(Expression exp) {
-    return withNewDelegate(delegate.invoke(APPEND, exp), true);
+    return withNewDelegate(e -> e.invoke(APPEND, exp));
   }
 
   /**
@@ -132,7 +217,7 @@ final class AppendableExpression extends Expression {
    * appended to it.
    */
   AppendableExpression appendChar(Expression exp) {
-    return withNewDelegate(delegate.invoke(APPEND_CHAR, exp), true);
+    return withNewDelegate(e -> e.invoke(APPEND_CHAR, exp));
   }
 
   /** Returns an expression with the result of {@link AppendableExpression#softLimitReached}. */
@@ -143,12 +228,12 @@ final class AppendableExpression extends Expression {
 
   /** Invokes {@link LoggingAdvisingAppendable#enterLoggableElement} on the appendable. */
   AppendableExpression enterLoggableElement(Expression logStatement) {
-    return withNewDelegate(delegate.invoke(ENTER_LOGGABLE_STATEMENT, logStatement), true);
+    return withNewDelegate(e -> e.invoke(ENTER_LOGGABLE_STATEMENT, logStatement));
   }
 
   /** Invokes {@link LoggingAdvisingAppendable#enterLoggableElement} on the appendable. */
   AppendableExpression exitLoggableElement() {
-    return withNewDelegate(delegate.invoke(EXIT_LOGGABLE_STATEMENT), true);
+    return withNewDelegate(e -> e.invoke(EXIT_LOGGABLE_STATEMENT));
   }
 
   /**
@@ -160,28 +245,27 @@ final class AppendableExpression extends Expression {
       List<SoyExpression> args,
       List<Expression> escapingDirectives) {
     return withNewDelegate(
-        delegate.invoke(
-            APPEND_LOGGING_FUNCTION_INVOCATION,
-            LOGGING_FUNCTION_INVOCATION_CREATE
-                .invoke(
-                    constant(functionName),
-                    constant(placeholderValue),
-                    // TODO(lukes): nearly all implementations don't want `null`, change them to
-                    // accept
-                    // NullData and perform a regular boxing conversion here.
-                    SoyExpression.boxListWithSoyNullishAsJavaNull(args))
-                .toMaybeConstant(),
-            BytecodeUtils.asImmutableList(escapingDirectives)),
-        true);
+        e ->
+            e.invoke(
+                APPEND_LOGGING_FUNCTION_INVOCATION,
+                LOGGING_FUNCTION_INVOCATION_CREATE
+                    .invoke(
+                        constant(functionName),
+                        constant(placeholderValue),
+                        // TODO(lukes): nearly all implementations don't want `null`, change them to
+                        // accept NullData and perform a regular boxing conversion here.
+                        SoyExpression.boxListWithSoyNullishAsJavaNull(args))
+                    .toMaybeConstant(),
+                BytecodeUtils.asImmutableList(escapingDirectives)));
   }
 
   /** Invokes {@link LoggingAdvisingAppendable#setSanitizedContentKind} on the appendable. */
   AppendableExpression setSanitizedContentKindAndDirectionality(SanitizedContentKind kind) {
     return withNewDelegate(
-        delegate.invoke(
-            SET_SANITIZED_CONTENT_KIND_AND_DIRECTIONALITY,
-            BytecodeUtils.constantSanitizedContentKindAsContentKind(kind)),
-        true);
+        e ->
+            e.invoke(
+                SET_SANITIZED_CONTENT_KIND_AND_DIRECTIONALITY,
+                BytecodeUtils.constantSanitizedContentKindAsContentKind(kind)));
   }
 
   Statement flushBuffers(int depth) {
@@ -189,24 +273,29 @@ final class AppendableExpression extends Expression {
   }
 
   @Override
-  public AppendableExpression labelStart(Label label) {
-    return withNewDelegate(delegate.labelStart(label), this.hasSideEffects);
+  public Expression labelStart(Label label) {
+    // We cannot return an AppendableExpression in this case.  Because we intend to fuse the 'base'
+    // expression with other appends, the 'start' will change.
+    return super.labelStart(label);
   }
 
   @Override
-  public Statement toStatement() {
-    // .toStatement() by default just generates the expression and adds a 'POP' instruction
-    // to clear the stack. However, this is only necessary when the expression in question has a
-    // side effect worth preserving.  If we know that it does not we can just return the empty
-    // statement
-    if (hasSideEffects) {
-      return super.toStatement();
-    }
-    return Statement.NULL_STATEMENT;
+  public AppendableExpression labelEnd(Label label) {
+    return withNewDelegate(e -> e.labelEnd(label));
   }
 
-  private AppendableExpression withNewDelegate(Expression newDelegate, boolean hasSideEffects) {
-    return new AppendableExpression(newDelegate, hasSideEffects, supportsSoftLimiting);
+  @Override
+  public AppendableExpression withSourceLocation(SourceLocation location) {
+    return withNewDelegate(e -> e.withSourceLocation(location));
+  }
+
+  @Override
+  public AppendableStatement toStatement() {
+    return new AppendableStatement(this);
+  }
+
+  private AppendableExpression withNewDelegate(Function<Expression, Expression> op) {
+    return new AppendableExpression(delegate, this.op.andThen(op), supportsSoftLimiting);
   }
 
   /**

@@ -383,7 +383,7 @@ final class DetachState implements ExpressionDetacher.Factory {
         Statement.throwExpression(
                 MethodRefs.RUNTIME_UNEXPECTED_STATE_ERROR.invoke(tempStackFrameVar))
             .labelStart(unexpectedState));
-    var scopeExit = stackFrameScope.exitScope();
+    var scopeExit = stackFrameScope.exitScopeMarker();
     return Statement.concat(
             new Statement() {
               @Override
@@ -399,7 +399,7 @@ final class DetachState implements ExpressionDetacher.Factory {
                 // slightly off, e.g. a debugger may think that this variable is out of scope before
                 // it technically is.  But the most any case will access it is exactly once as the
                 // first instruction... so this is fine, if odd.
-                scopeExit.gen(adapter);
+                adapter.mark(scopeExit);
                 adapter.visitTableSwitchInsn(
                     /* min= */ 0,
                     /* max= */ reattaches.size(),

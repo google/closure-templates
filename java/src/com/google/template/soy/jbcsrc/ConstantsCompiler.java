@@ -205,7 +205,7 @@ public final class ConstantsCompiler {
       // Java
       // static memory) is necessary because constants can be initialized via externs that depend on
       // request scoped data (via type="instance").
-      var scopeExit = constScope.exitScope();
+      var scopeExit = constScope.exitScopeMarker();
       new Statement() {
         @Override
         protected void doGen(CodeBuilder adapter) {
@@ -230,7 +230,7 @@ public final class ConstantsCompiler {
           adapter.mark(end);
           returnValue.gen(adapter);
           adapter.returnValue();
-          scopeExit.gen(adapter);
+          adapter.mark(scopeExit);
           variableSet.generateTableEntries(adapter);
         }
       }.writeMethod(methodAccess(), method, writer);

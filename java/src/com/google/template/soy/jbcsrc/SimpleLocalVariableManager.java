@@ -27,7 +27,6 @@ import com.google.template.soy.jbcsrc.internal.JbcSrcNameGenerators;
 import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
 import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.LocalVariable;
-import com.google.template.soy.jbcsrc.restricted.Statement;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.BitSet;
@@ -193,7 +192,7 @@ final class SimpleLocalVariableManager implements LocalVariableManager {
       }
 
       @Override
-      public Statement exitScope() {
+      public Label exitScopeMarker() {
         checkState(!generated);
         checkState(!exited);
         exited = true;
@@ -202,7 +201,7 @@ final class SimpleLocalVariableManager implements LocalVariableManager {
           activeVariables.remove(var.variableName());
         }
         localNames.removeLast();
-        return Statement.NULL_STATEMENT.labelStart(scopeExit);
+        return scopeExit;
       }
     };
   }

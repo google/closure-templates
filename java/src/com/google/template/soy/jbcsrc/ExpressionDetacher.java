@@ -43,6 +43,8 @@ interface ExpressionDetacher {
     ExpressionDetacher createExpressionDetacher(Label reattachPoint);
   }
 
+  boolean hasDetaches();
+
   /**
    * Returns an expression for the SoyValue that is resolved by the given SoyValueProvider,
    * potentially detaching if it is not {@link SoyValueProvider#status() resolvable}.
@@ -80,6 +82,11 @@ interface ExpressionDetacher {
    */
   final class NullDetatcher implements ExpressionDetacher, Factory {
     static final NullDetatcher INSTANCE = new NullDetatcher();
+
+    @Override
+    public boolean hasDetaches() {
+      return false;
+    }
 
     @Override
     public NullDetatcher createExpressionDetacher(Label reattachPoint) {
@@ -139,6 +146,7 @@ interface ExpressionDetacher {
       this.saveOperationSupplier = Suppliers.memoize(saveOperationSupplier::get);
     }
 
+    @Override
     public boolean hasDetaches() {
       return hasDetaches;
     }

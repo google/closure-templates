@@ -20,7 +20,6 @@ import static com.google.common.truth.Truth.assertThat;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.LocalVariable;
-import com.google.template.soy.jbcsrc.restricted.Statement;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -45,7 +44,7 @@ public final class SimpleLocalVariableManagerTest {
     assertThat(bar.index()).isEqualTo(1);
     assertThat(bar.resultType().getSize()).isEqualTo(1);
 
-    Statement unused = inner.exitScope(); // will cause the slot for foo to be released
+    var unused = inner.exitScopeMarker(); // will cause the slot for foo to be released
     // this is too big to fit in the whole left by foo
     LocalVariable baz = outer.createTemporary("bar", Type.LONG_TYPE);
     assertThat(baz.index()).isEqualTo(2);

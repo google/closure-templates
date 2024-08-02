@@ -395,7 +395,7 @@ final class MsgCompiler {
               .toStatement()
               .labelStart(start);
     }
-    return Statement.concat(initMsgRenderer, render, scope.exitScope());
+    return Statement.concat(initMsgRenderer, render).labelEnd(scope.exitScopeMarker());
   }
 
   @AutoValue

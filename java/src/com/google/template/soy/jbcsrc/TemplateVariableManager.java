@@ -280,17 +280,17 @@ final class TemplateVariableManager implements LocalVariableManager {
         return var;
       }
 
-      @Override
-      public Statement exitScope() {
-        for (VarKey key : activeVariables) {
-          AbstractVariable var = variablesByKey.remove(key);
-          if (var == null) {
-            throw new IllegalStateException("no variable active for key: " + key);
-          }
+    @Override
+    public Label exitScopeMarker() {
+      for (VarKey key : activeVariables) {
+        AbstractVariable var = variablesByKey.remove(key);
+        if (var == null) {
+          throw new IllegalStateException("no variable active for key: " + key);
         }
-      TemplateVariableManager.this.activeScope = parent;
-        return delegateScope.exitScope();
       }
+      TemplateVariableManager.this.activeScope = parent;
+      return delegateScope.exitScopeMarker();
+    }
 
     Variable doCreate(String proposedName, Expression initExpr, VarKey key, SaveStrategy strategy) {
         Variable var =
@@ -348,18 +348,6 @@ final class TemplateVariableManager implements LocalVariableManager {
   }
 
   /**
-   * Looks up a user defined variable with the given name. The variable must have been created in a
-   * currently active scope.
-   */
-  public LocalVariable getMethodParameter(String name) {
-    return checkNotNull(
-        methodParameters.get(name),
-        "No such parameter: %s, expected one of %s",
-        name,
-        methodParameters.keySet());
-  }
-
-  /**
    * Looks up a synthetic variable with the given name. The variable must have been created in a
    * currently active scope.
    */
@@ -369,6 +357,18 @@ final class TemplateVariableManager implements LocalVariableManager {
 
   private Expression getVariable(VarKey varKey) {
     return activeScope.getVariable(varKey);
+  }
+
+  /**
+   * Looks up a user defined variable with the given name. The variable must have been created in a
+   * currently active scope.
+   */
+  public LocalVariable getMethodParameter(String name) {
+    return checkNotNull(
+        methodParameters.get(name),
+        "No such parameter: %s, expected one of %s",
+        name,
+        methodParameters.keySet());
   }
 
   /** Statements for saving and restoring local variables in class fields. */

@@ -618,6 +618,11 @@ public class ExpressionCompilerTest {
         label ->
             new ExpressionDetacher() {
               @Override
+              public boolean hasDetaches() {
+                return false;
+              }
+
+              @Override
               public Expression resolveSoyValueProvider(Expression soyValueProvider) {
                 if (variables.containsValue(soyValueProvider)) {
                   // This is hacky, but our variables are not SVPs, just SoyValues.  This is

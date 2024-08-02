@@ -537,7 +537,7 @@ final class TemplateCompiler {
             templateNode,
             /* prefix= */ ExtraCodeCompiler.NO_OP,
             /* suffix= */ ExtraCodeCompiler.NO_OP);
-    Statement exitTemplateScope = templateScope.exitScope();
+    Label exitTemplateScope = templateScope.exitScopeMarker();
     Statement returnDone = Statement.returnExpression(constantNull(BytecodeUtils.STACK_FRAME_TYPE));
     new Statement() {
       @Override
@@ -547,7 +547,7 @@ final class TemplateCompiler {
           paramInitStatement.gen(adapter);
         }
         methodBody.gen(adapter);
-        exitTemplateScope.gen(adapter);
+        adapter.mark(exitTemplateScope);
         adapter.mark(end);
         returnDone.gen(adapter);
 

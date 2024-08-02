@@ -24,6 +24,11 @@ public final class TestExpressionDetacher implements ExpressionDetacher {
   public TestExpressionDetacher() {}
 
   @Override
+  public boolean hasDetaches() {
+    return false;
+  }
+
+  @Override
   public Expression resolveSoyValueProvider(Expression soyValueProvider) {
     return MethodRefs.SOY_VALUE_PROVIDER_RESOLVE.invoke(soyValueProvider);
   }
