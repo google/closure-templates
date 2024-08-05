@@ -116,6 +116,9 @@ public final class TofuTypeChecks {
       case ANY:
       case UNKNOWN:
         return PASS;
+      case NAMED:
+      case INTERSECTION:
+        return doIsInstance(type.getEffectiveType(), value);
       case ATTRIBUTES:
         return isSanitizedofKind(value, ContentKind.ATTRIBUTES);
       case CSS:

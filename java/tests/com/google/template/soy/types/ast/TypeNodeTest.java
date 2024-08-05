@@ -217,6 +217,12 @@ public final class TypeNodeTest {
           }
 
           @Override
+          public Void visit(IntersectionTypeNode node) {
+            assertEquals(node.candidates(), ((IntersectionTypeNode) right).candidates());
+            return null;
+          }
+
+          @Override
           public Void visit(RecordTypeNode node) {
             assertThat(node.properties()).hasSize(((RecordTypeNode) right).properties().size());
             for (int i = 0; i < node.properties().size(); i++) {

@@ -50,6 +50,7 @@ import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import com.google.template.soy.types.ast.FunctionTypeNode;
 import com.google.template.soy.types.ast.GenericTypeNode;
+import com.google.template.soy.types.ast.IntersectionTypeNode;
 import com.google.template.soy.types.ast.NamedTypeNode;
 import com.google.template.soy.types.ast.RecordTypeNode;
 import com.google.template.soy.types.ast.RecordTypeNode.Property;
@@ -610,6 +611,11 @@ public final class SoyTreeUtils {
 
         @Override
         public ImmutableList<? extends TypeNode> visit(UnionTypeNode node) {
+          return node.candidates();
+        }
+
+        @Override
+        public ImmutableList<? extends TypeNode> visit(IntersectionTypeNode node) {
           return node.candidates();
         }
 

@@ -88,6 +88,9 @@ public abstract class SoyRuntimeType {
       case SET:
         // We have some minor support for unboxed sets
         return new PrimitiveSoyType(soyType, BytecodeUtils.SET_TYPE);
+      case INTERSECTION:
+      case NAMED:
+        return unboxedTypeImpl(soyType.getEffectiveType());
       case UNION:
         {
           // unions generally don't have a unique unboxed runtime type except in 2 special cases

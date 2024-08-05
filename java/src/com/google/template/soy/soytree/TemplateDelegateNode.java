@@ -177,8 +177,12 @@ public final class TemplateDelegateNode extends TemplateNode {
       // For this reason we also don't store the key, instead we just return it.
       return DelTemplateKey.create(delTemplateName, globalNode.getName());
     }
-    delTemplateKey =
-        DelTemplateKey.create(delTemplateName, TemplateNode.variantExprToString(exprNode));
+    String asString = TemplateNode.variantExprToString(exprNode);
+    if (asString == null) {
+      // Don't cache not-yet-resolved value.
+      return DelTemplateKey.create(delTemplateName, "");
+    }
+    delTemplateKey = DelTemplateKey.create(delTemplateName, asString);
     return delTemplateKey;
   }
 

@@ -801,6 +801,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
    * <p>Note we don't do validation of the variant values since that is handled by the
    * TemplateDelegateNodeBuilder during construction
    */
+  @Nullable
   protected static String variantExprToString(ExprNode exprNode) {
     if (exprNode instanceof IntegerNode) {
       long variantValue = ((IntegerNode) exprNode).getValue();
@@ -812,7 +813,8 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
     if (exprNode instanceof StringNode) {
       return ((StringNode) exprNode).getValue();
     }
-    // We must have already reported an error, just create an arbitrary variant expr.
-    return exprNode.toSourceString();
+    // We must have already reported an error. Return null to signal that callers should not cache
+    // this value.
+    return null;
   }
 }

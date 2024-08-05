@@ -21,6 +21,8 @@ import com.google.common.collect.Sets;
 import com.google.errorprone.annotations.ForOverride;
 import com.google.errorprone.annotations.concurrent.LazyInit;
 import com.google.template.soy.soytree.SoyTypeP;
+import java.util.ArrayDeque;
+import java.util.Deque;
 
 /**
  * Interface for all classes that describe a data type in Soy. These types are used to determine
@@ -113,9 +115,12 @@ public abstract class SoyType {
     PROTO_ENUM,
     TEMPLATE,
     FUNCTION,
-    UNION,
     VE,
     VE_DATA,
+    // Resolvable types
+    UNION,
+    INTERSECTION,
+    NAMED,
     // Imported symbol types
     CSS_TYPE,
     CSS_MODULE,
@@ -213,12 +218,30 @@ public abstract class SoyType {
 
   /** Internal helper method for assignment analysis. This should only be used by subclasses. */
   final boolean isAssignableFromInternal(SoyType soyType, UnknownAssignmentPolicy unknownPolicy) {
+    soyType = soyType.getEffectiveType();
     if (unknownPolicy == UnknownAssignmentPolicy.ALLOWED && soyType == UnknownType.getInstance()) {
       return true;
     }
-    // Handle unions generically.  A type is assignable from a union if it is assignable from _all_
-    // members.
-    for (SoyType type : SoyTypes.expandUnions(soyType)) {
+    if (soyType.getKind() != Kind.UNION) {
+      return doIsAssignableFromNonUnionType(soyType, unknownPolicy);
+    }
+    // Handle unions here with template methods rather than forcing all subclasses to handle. A type
+    // is assignable from a union if it is assignable from _all_ members.
+    Deque<SoyType> stack = new ArrayDeque<>();
+    stack.add(soyType);
+    while (!stack.isEmpty()) {
+      SoyType type = stack.removeLast();
+      // If a named type is itself a union we need to resolve that here.
+      if (type.getKind() == Kind.NAMED) {
+        SoyType effectiveType = type.getEffectiveType();
+        if (effectiveType.getKind() == Kind.UNION) {
+          type = effectiveType;
+        }
+      }
+      if (type.getKind() == Kind.UNION) {
+        stack.addAll(((UnionType) type).getMembers());
+        continue;
+      }
       if (!doIsAssignableFromNonUnionType(type, unknownPolicy)) {
         return false;
       }
@@ -271,4 +294,9 @@ public abstract class SoyType {
   abstract void doToProto(SoyTypeP.Builder builder);
 
   public abstract <T> T accept(SoyTypeVisitor<T> visitor);
+
+  /** Resolves named and intersection types. */
+  public SoyType getEffectiveType() {
+    return this;
+  }
 }

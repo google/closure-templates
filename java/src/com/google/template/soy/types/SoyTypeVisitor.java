@@ -40,6 +40,8 @@ public interface SoyTypeVisitor<T> {
 
   T visit(UnionType type);
 
+  T visit(IntersectionType type);
+
   T visit(VeType type);
 
   T visit(MessageType type);
@@ -47,4 +49,6 @@ public interface SoyTypeVisitor<T> {
   T visit(ImportType type);
 
   T visit(FunctionType type);
+
+  T visit(NamedType type);
 }

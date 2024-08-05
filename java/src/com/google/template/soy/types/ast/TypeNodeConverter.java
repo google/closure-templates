@@ -400,6 +400,15 @@ public final class TypeNodeConverter
   }
 
   @Override
+  public SoyType visit(IntersectionTypeNode node) {
+    SoyType type =
+        interner.getOrCreateIntersectionType(
+            node.candidates().stream().map(this).collect(toImmutableList()));
+    node.setResolvedType(type);
+    return type;
+  }
+
+  @Override
   public SoyType visit(RecordTypeNode node) {
     // LinkedHashMap insertion order iteration on values() is important here.
     Map<String, RecordType.Member> map = Maps.newLinkedHashMap();

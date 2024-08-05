@@ -25,6 +25,8 @@ public interface TypeNodeVisitor<T> {
 
   T visit(UnionTypeNode node);
 
+  T visit(IntersectionTypeNode node);
+
   T visit(RecordTypeNode node);
 
   T visit(TemplateTypeNode node);

@@ -70,7 +70,6 @@ public final class TemplateBasicNode extends TemplateNode {
    * @param nodeBuilder builder containing template initialization params
    * @param soyFileHeaderInfo info from the containing Soy file's header declarations
    * @param visibility visibility of this template
-   * @param params the params from template header or SoyDoc. Null if no decls and no SoyDoc.
    */
   TemplateBasicNode(
       TemplateBasicNodeBuilder nodeBuilder,
@@ -209,7 +208,11 @@ public final class TemplateBasicNode extends TemplateNode {
    * <p>TODO(b/233903316): Check the set of valid types.
    */
   private String resolveVariantExpression() {
-    variantString = TemplateNode.variantExprToString(getVariantExpr().getRoot());
+    String tmp = TemplateNode.variantExprToString(getVariantExpr().getRoot());
+    if (tmp == null) {
+      return ""; // Not yet resolved, don't cache.
+    }
+    variantString = tmp;
     return variantString;
   }
 

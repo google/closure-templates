@@ -258,8 +258,7 @@ public final class SoyTypes {
    * @param t1 Another type.
    * @return A type that is assignable from both t0 and t1.
    */
-  public static SoyType computeLowestCommonType(
-      SoyTypeRegistry typeRegistry, SoyType t0, SoyType t1) {
+  public static SoyType computeLowestCommonType(TypeInterner typeRegistry, SoyType t0, SoyType t1) {
     if (t0.isAssignableFromStrict(t1)) {
       return t0;
     } else if (t1.isAssignableFromStrict(t0)) {
@@ -278,7 +277,7 @@ public final class SoyTypes {
    * @return A type that is assignable from all of the listed types.
    */
   public static SoyType computeLowestCommonType(
-      SoyTypeRegistry typeRegistry, Collection<SoyType> types) {
+      TypeInterner typeRegistry, Collection<SoyType> types) {
     SoyType result = null;
     for (SoyType type : types) {
       result = (result == null) ? type : computeLowestCommonType(typeRegistry, result, type);

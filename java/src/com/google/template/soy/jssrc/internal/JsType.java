@@ -386,14 +386,14 @@ public final class JsType {
           // idom has a different strategy for handling these
           return IDOM_ATTRIBUTES;
         }
-        // fall through
+      // fall through
       case HTML:
       case ELEMENT:
         if (kind == JsTypeKind.IDOMSRC) {
           // idom has a different strategy for handling these
           return IDOM_HTML;
         }
-        // fall-through
+      // fall-through
       case CSS:
       case JS:
       case URI:
@@ -614,6 +614,8 @@ public final class JsType {
           builder.setPredicate(GOOG_IS_FUNCTION);
           return builder.build();
         }
+      case NAMED: // TODO(b/182265475)
+      case INTERSECTION: // TODO(b/182265475)
       case CSS_TYPE:
       case CSS_MODULE:
       case TOGGLE_TYPE:

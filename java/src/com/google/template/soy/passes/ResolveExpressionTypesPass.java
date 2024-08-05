@@ -184,7 +184,6 @@ import com.google.template.soy.soytree.SwitchDefaultNode;
 import com.google.template.soy.soytree.SwitchNode;
 import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateNode;
-import com.google.template.soy.soytree.TypeDefNode;
 import com.google.template.soy.soytree.defn.ImportedVar;
 import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import com.google.template.soy.soytree.defn.TemplateStateVar;
@@ -555,7 +554,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
       // params have a default value and no type declaration. Because we never infer types from
       // template types this is safe to do without regards to topological ordering of calls.
       node.getHeaderParams().stream()
-          .filter(headerVar -> headerVar.defaultValue() != null && headerVar.getTypeNode() == null)
+          .filter(headerVar -> headerVar.defaultValue() != null && !headerVar.hasType())
           .forEach(
               headerVar -> {
                 paramInfExprVisitor.exec(headerVar.defaultValue());
@@ -717,12 +716,6 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
       // Store the type of this constant in the index so that imports of this constant in other
       // files (topologically processed) can have their type set in #visitImportNode.
       constantsTypeLookup.put(node);
-    }
-
-    @Override
-    protected void visitTypeDefNode(TypeDefNode node) {
-      // TODO (user): Add to type registry. Add error handling for null types.
-      visitSoyNode(node);
     }
 
     @Override

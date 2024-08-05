@@ -137,6 +137,9 @@ public final class JavaTypeUtils {
       case UNION:
         types = convertSoyUnionTypeToJavaTypes((UnionType) soyType, skipSoyTypes);
         break;
+      case INTERSECTION:
+      case NAMED:
+        return getJavaTypes(soyType.getEffectiveType());
       case ANY:
       case UNKNOWN:
         // The Soy type system assumes any and ? include null and does not expand param? of these

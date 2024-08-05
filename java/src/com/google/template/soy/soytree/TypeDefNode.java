@@ -19,9 +19,10 @@ package com.google.template.soy.soytree;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.basetree.CopyState;
+import com.google.template.soy.types.NamedType;
 import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.ast.TypeNode;
-import javax.annotation.Nullable;
 
 /**
  * Node representing a 'type' statement. The type definition will be added to a new {@link
@@ -30,24 +31,17 @@ import javax.annotation.Nullable;
 public final class TypeDefNode extends AbstractCommandNode {
   private final Identifier name;
 
-  /** Expression root node that holds the type literal. */
+  /** The value of the type def. */
   private final TypeNode typeNode;
 
   private final boolean exported;
-  @Nullable private final TypeNode superType;
 
   public TypeDefNode(
-      int id,
-      SourceLocation location,
-      Identifier name,
-      TypeNode typeNode,
-      boolean exported,
-      @Nullable TypeNode superType) {
+      int id, SourceLocation location, Identifier name, TypeNode typeNode, boolean exported) {
     super(id, location, "type");
     this.name = name;
     this.typeNode = typeNode;
     this.exported = exported;
-    this.superType = superType;
   }
 
   /**
@@ -60,7 +54,6 @@ public final class TypeDefNode extends AbstractCommandNode {
     this.name = orig.name;
     this.typeNode = orig.typeNode.copy();
     this.exported = orig.exported;
-    this.superType = orig.superType != null ? orig.superType.copy() : null;
   }
 
   public boolean isExported() {
@@ -87,6 +80,10 @@ public final class TypeDefNode extends AbstractCommandNode {
     return name.identifier();
   }
 
+  public SourceLocation getNameLocation() {
+    return name.location();
+  }
+
   @Override
   public Kind getKind() {
     return Kind.TYPEDEF_NODE;
@@ -94,21 +91,18 @@ public final class TypeDefNode extends AbstractCommandNode {
 
   @Override
   public String toSourceString() {
-    return String.format(
-        "{%s %s%s = %s}",
-        isExported() ? "export type" : "type",
-        name,
-        superType != null ? " extends " + superType : "",
-        typeNode);
-  }
-
-  @Nullable
-  public TypeNode getSuperType() {
-    return superType;
+    return String.format("{%s %s = %s}", isExported() ? "export type" : "type", name, typeNode);
   }
 
   @Override
   public TypeDefNode copy(CopyState copyState) {
     return new TypeDefNode(this, copyState);
+  }
+
+  public NamedType asNamedType() {
+    return NamedType.create(
+        name.identifier(),
+        getNearestAncestor(SoyFileNode.class).getNamespace(),
+        typeNode.getResolvedType());
   }
 }

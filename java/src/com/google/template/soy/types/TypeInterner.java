@@ -95,6 +95,19 @@ public interface TypeInterner {
     return type;
   }
 
+  default SoyType getOrCreateIntersectionType(Collection<SoyType> members) {
+    SoyType type = IntersectionType.of(members);
+    if (type.getKind() == SoyType.Kind.INTERSECTION) {
+      type = intern(type);
+    }
+    return type;
+  }
+
+  default SoyType getOrCreateNamedType(String name, String namespace) {
+    // Cannot create a NamedType without its RHS type.
+    throw new UnsupportedOperationException();
+  }
+
   /** Factory function which creates a nullable type. */
   default SoyType getOrCreateNullishType(SoyType type) {
     return getOrCreateUnionType(ImmutableList.of(type, UndefinedType.getInstance()));

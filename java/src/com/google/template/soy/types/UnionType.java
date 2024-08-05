@@ -34,7 +34,7 @@ import java.util.function.Predicate;
 public final class UnionType extends SoyType {
 
   /** Comparator that defines the ordering of types. */
-  private static final Comparator<SoyType> MEMBER_ORDER = comparing(SoyType::toString);
+  static final Comparator<SoyType> MEMBER_ORDER = comparing(SoyType::toString);
 
   private final ImmutableSortedSet<SoyType> members;
 
@@ -116,7 +116,7 @@ public final class UnionType extends SoyType {
     return false;
   }
 
-  /** Returns a Soy type that is equivalent to this one but with 'null' removed. */
+  /** Returns a Soy type that is equivalent to this with certain members filtered out. */
   public SoyType filter(Predicate<SoyType> filter) {
     ImmutableSortedSet<SoyType> filtered =
         members.stream().filter(filter).collect(toImmutableSortedSet(MEMBER_ORDER));

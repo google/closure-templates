@@ -94,9 +94,7 @@ public final class TemplateMetadataSerializer {
       file.getConstants().stream()
           .filter(ConstNode::isExported)
           .forEach(c -> fileBuilder.addConstants(protoFromConstant(c)));
-      file.getTypeDefs().stream()
-          .filter(TypeDefNode::isExported)
-          .forEach(t -> fileBuilder.addTypeDefs(protoFromTypeDef(t)));
+      file.getTypeDefs().forEach(t -> fileBuilder.addTypeDefs(protoFromTypeDef(t)));
       file.getExterns().stream()
           .filter(ExternNode::isExported)
           .forEach(e -> fileBuilder.addExterns(protoFromExtern(e)));
@@ -142,7 +140,11 @@ public final class TemplateMetadataSerializer {
   }
 
   private static TypeDefP protoFromTypeDef(TypeDefNode node) {
-    return TypeDefP.newBuilder().setName(node.getName()).setType(node.getType().toProto()).build();
+    return TypeDefP.newBuilder()
+        .setName(node.getName())
+        .setExported(node.isExported())
+        .setType(node.getType().toProto())
+        .build();
   }
 
   private static ExternP protoFromExtern(ExternNode node) {
@@ -491,8 +493,19 @@ public final class TemplateMetadataSerializer {
           }
           return typeRegistry.getOrCreateUnionType(members);
         }
+      case INTERSECTION:
+        {
+          List<SoyType> members = new ArrayList<>(proto.getIntersection().getMemberCount());
+          for (SoyTypeP member : proto.getIntersection().getMemberList()) {
+            members.add(fromProto(member, typeRegistry, filePath, errorReporter));
+          }
+          return typeRegistry.getOrCreateIntersectionType(members);
+        }
       case VE:
         return typeRegistry.getOrCreateVeType(proto.getVe());
+      case NAMED:
+        return typeRegistry.getOrCreateNamedType(
+            proto.getNamed().getName(), proto.getNamed().getNamespace());
       case TYPEKIND_NOT_SET:
         // fall-through
     }

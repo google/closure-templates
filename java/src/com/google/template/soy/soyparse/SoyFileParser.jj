@@ -71,7 +71,6 @@ import com.google.template.soy.exprtree.BooleanNode;
 import com.google.template.soy.exprtree.CallableExprBuilder;
 import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
 import com.google.template.soy.exprtree.ExprNode;
-import com.google.template.soy.exprtree.SoyPrecedence;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.FloatNode;
@@ -87,9 +86,10 @@ import com.google.template.soy.exprtree.MethodCallNode;
 import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.exprtree.RecordLiteralNode;
+import com.google.template.soy.exprtree.SoyPrecedence;
 import com.google.template.soy.exprtree.StringNode;
-import com.google.template.soy.exprtree.TypeLiteralNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
+import com.google.template.soy.exprtree.TypeLiteralNode;
 import com.google.template.soy.exprtree.UndefinedNode;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
@@ -106,7 +106,6 @@ import com.google.template.soy.soytree.CaseOrDefaultNode;
 import com.google.template.soy.soytree.CommandTagAttribute;
 import com.google.template.soy.soytree.Comment;
 import com.google.template.soy.soytree.ConstNode;
-import com.google.template.soy.soytree.TypeDefNode;
 import com.google.template.soy.soytree.DebuggerNode;
 import com.google.template.soy.soytree.ExternImplNode;
 import com.google.template.soy.soytree.ExternNode;
@@ -151,6 +150,7 @@ import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateNodeBuilder;
 import com.google.template.soy.soytree.TemplateParamsNode;
+import com.google.template.soy.soytree.TypeDefNode;
 import com.google.template.soy.soytree.VeLogNode;
 import com.google.template.soy.soytree.WhitespaceMode;
 import com.google.template.soy.soytree.defn.AttrParam;
@@ -163,6 +163,7 @@ import com.google.template.soy.types.TemplateType.ParameterKind;
 import com.google.template.soy.types.TemplateType;
 import com.google.template.soy.types.ast.FunctionTypeNode;
 import com.google.template.soy.types.ast.GenericTypeNode;
+import com.google.template.soy.types.ast.IntersectionTypeNode;
 import com.google.template.soy.types.ast.NamedTypeNode;
 import com.google.template.soy.types.ast.RecordTypeNode;
 import com.google.template.soy.types.ast.TemplateTypeNode;
@@ -172,6 +173,7 @@ import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -3422,7 +3424,6 @@ private TypeDefNode TypeDefStmt() :
   CommandTagAttribute attr = null;
   List<StandaloneNode> templateBlock = ImmutableList.of();
   boolean exported;
-  Identifier superType = null;
 }
 {
   tagBegin = <TYPEDEF_OPEN>
@@ -3432,12 +3433,6 @@ private TypeDefNode TypeDefStmt() :
 
   try {
     nameTok = <NAME>
-
-    (
-      Keyword("extends")
-      superType = DottedIdent()
-    )?
-
     <CMD_EQ>
     {
       token_source.SwitchTo(EXPR);
@@ -3447,7 +3442,7 @@ private TypeDefNode TypeDefStmt() :
   } catch (ParseException e) {
     tagClose = reportTemplateBodyErrorAndSkipTo(e, CMD_SELF_CLOSE, CMD_END);
     SourceLocation loc = createSrcLoc(tagBegin, tagClose);
-    return new TypeDefNode(-1, loc, Identifier.create("$error", loc), null, exported, null);
+    return new TypeDefNode(-1, loc, Identifier.create("$error", loc), null, exported);
   }
 
   {
@@ -3456,8 +3451,7 @@ private TypeDefNode TypeDefStmt() :
         createSrcLoc(tagBegin, tagClose),
         Identifier.create(nameTok.image, createSrcLoc(nameTok)),
         type,
-        exported,
-        superType != null ? NamedTypeNode.create(superType) : null);
+        exported);
   }
 }
 
@@ -5132,9 +5126,21 @@ private TypeNode TypeExprInput() :
 
 
 /**
- * TypeExpr -> Primary ( "|" Primary )*
+ * TypeExpr -> TypeExprPrec1
  */
 private TypeNode TypeExpr() :
+{
+  TypeNode node;
+}
+{
+  node = TypeExprPrec1()
+  { return node; }
+}
+
+/**
+ * TypeExprPrec1 -> TypeExprPrec2 ( "|" TypeExprPrec2 )*
+ */
+private TypeNode TypeExprPrec1() :
 {
   TypeNode first;
   TypeNode next;
@@ -5142,11 +5148,11 @@ private TypeNode TypeExpr() :
   List<TypeNode> members = null;
 }
 {
-  first = PrimaryType()
+  first = TypeExprPrec2()
 
   (
     <VBAR>
-    next = PrimaryType()
+    next = TypeExprPrec2()
     {
       if (members == null) {
         members = new ArrayList<TypeNode>();
@@ -5155,17 +5161,44 @@ private TypeNode TypeExpr() :
       members.add(next);
     }
   )*
-
   {
     return members == null ? first : UnionTypeNode.create(members);
   }
 }
 
+/**
+ * TypeExprPrec2 -> TypeExprPrec3 ( "&" TypeExprPrec3 )*
+ */
+private TypeNode TypeExprPrec2() :
+{
+  TypeNode first;
+  TypeNode next;
+  // lazily allocate the list since most of the time this isn't actually a Union
+  List<TypeNode> members = null;
+}
+{
+  first = TypeExprPrec3()
+
+  (
+    <BITWISE_AND>
+    next = TypeExprPrec3()
+    {
+      if (members == null) {
+        members = new ArrayList<TypeNode>();
+        members.add(first);
+      }
+      members.add(next);
+    }
+  )*
+  {
+    return members == null ? first : IntersectionTypeNode.create(members);
+  }
+}
 
 /**
- * Primary -> NamedType | UnknownType | RecordType
+ * TypeExprPrec3 -> "null" | "undefined" | "?" | NamedType | RecordType | TemplateType
  */
-private TypeNode PrimaryType() :
+private TypeNode TypeExprPrec3() :
 {
   TypeNode type;
 }

@@ -784,6 +784,9 @@ public abstract class Expression extends BytecodeProducer {
         case VE:
         case VE_DATA:
           return Optional.empty();
+        case INTERSECTION:
+        case NAMED:
+          return doCheckedSoyCast(type.getEffectiveType());
         case UNION:
           if (type.equals(SoyTypes.NUMBER_TYPE)) {
             if (BytecodeUtils.isDefinitelyAssignableFrom(

@@ -323,6 +323,122 @@ public class SoyTypesTest {
   }
 
   @Test
+  public void testNamed() {
+    SoyTypeRegistry baseRegistry = SoyTypeRegistryBuilder.create();
+    SoyType stringAlias = NamedType.create("StringAlias", "-", StringType.getInstance());
+    SoyType intAlias = NamedType.create("IntAlias", "-", IntType.getInstance());
+    SoyType unionOfAliases =
+        NamedType.create("UnionOfAliases", "-", UnionType.of(stringAlias, intAlias));
+    SoyType anotherUnion =
+        NamedType.create("AnotherUnion", "-", UnionType.of(unionOfAliases, BoolType.getInstance()));
+
+    SoyTypeRegistry registry =
+        new DelegatingSoyTypeRegistry(baseRegistry) {
+          private final ImmutableMap<String, SoyType> namedTypes =
+              ImmutableMap.of(
+                  "StringAlias",
+                  stringAlias,
+                  "IntAlias",
+                  intAlias,
+                  "UnionOfAliases",
+                  unionOfAliases,
+                  "AnotherUnion",
+                  anotherUnion,
+                  "BoolOrNumber",
+                  NamedType.create("BoolOrNumber", "-", parseType("bool|int|float", baseRegistry)));
+
+          @Override
+          public SoyType getType(String typeName) {
+            if (namedTypes.containsKey(typeName)) {
+              return namedTypes.get(typeName);
+            }
+            return super.getType(typeName);
+          }
+        };
+
+    assertThatSoyType("StringAlias", registry).isEqualTo("StringAlias");
+    assertThatSoyType("StringAlias", registry).isNotEqualTo("IntAlias");
+
+    assertThatSoyType("StringAlias", registry).isAssignableFromStrict("StringAlias");
+    assertThatSoyType("StringAlias", registry).isAssignableFromStrict("string");
+    assertThatSoyType("string", registry).isAssignableFromStrict("StringAlias");
+    assertThatSoyType("IntAlias", registry).isAssignableFromStrict("IntAlias");
+    assertThatSoyType("IntAlias", registry).isNotAssignableFromStrict("StringAlias");
+    assertThatSoyType("StringAlias", registry).isNotAssignableFromStrict("IntAlias");
+
+    assertThatSoyType("UnionOfAliases", registry).isAssignableFromStrict("UnionOfAliases");
+    assertThatSoyType("UnionOfAliases", registry).isAssignableFromStrict("string|int");
+    assertThatSoyType("string|int", registry).isAssignableFromStrict("UnionOfAliases");
+    assertThatSoyType("UnionOfAliases", registry).isAssignableFromStrict("string");
+    assertThatSoyType("UnionOfAliases", registry).isAssignableFromStrict("int");
+    assertThatSoyType("UnionOfAliases", registry).isAssignableFromStrict("StringAlias");
+    assertThatSoyType("UnionOfAliases", registry).isAssignableFromStrict("IntAlias");
+
+    assertThatSoyType("AnotherUnion", registry).isAssignableFromStrict("AnotherUnion");
+    assertThatSoyType("AnotherUnion", registry).isAssignableFromStrict("UnionOfAliases");
+    assertThatSoyType("UnionOfAliases", registry).isNotAssignableFromStrict("AnotherUnion");
+    assertThatSoyType("AnotherUnion", registry).isAssignableFromStrict("string|int|bool");
+    assertThatSoyType("string|int|bool", registry).isAssignableFromStrict("AnotherUnion");
+
+    assertThatSoyType("BoolOrNumber", registry).isAssignableFromStrict("BoolOrNumber");
+    assertThatSoyType("BoolOrNumber", registry).isAssignableFromStrict("int");
+    assertThatSoyType("BoolOrNumber", registry).isAssignableFromStrict("IntAlias");
+    assertThatSoyType("int", registry).isNotAssignableFromStrict("BoolOrNumber");
+    assertThatSoyType("IntAlias", registry).isNotAssignableFromStrict("BoolOrNumber");
+  }
+
+  @Test
+  public void testIntersection() {
+    assertThatSoyType("[a: string] & [b: string]").isAssignableFromStrict("[a: string, b: string]");
+    assertThatSoyType("[a: string] & [b: string]")
+        .isAssignableFromStrict("[a: string, b: string, c: string]");
+    assertThatSoyType("[a: string] & [b: string]").isNotAssignableFromStrict("[a: string]");
+    assertThatSoyType("[a: string] & [b?: string]").isAssignableFromStrict("[a: string]");
+
+    // incompatible fields, never assignable
+    assertThatSoyType("[a: any]").isNotAssignableFromStrict("[a: string] & [a: bool]");
+
+    // not record types => never
+    assertThatSoyType("any").isNotAssignableFromStrict("string & bool");
+  }
+
+  @Test
+  public void testNamedIntersection() {
+    SoyTypeRegistry baseRegistry = SoyTypeRegistryBuilder.create();
+    SoyTypeRegistry registry =
+        new DelegatingSoyTypeRegistry(baseRegistry) {
+          private final ImmutableMap<String, SoyType> namedTypes =
+              ImmutableMap.of(
+                  "Rec1",
+                  NamedType.create("Rec1", "-", parseType("[a: string]", baseRegistry)),
+                  "Rec2",
+                  NamedType.create("Rec2", "-", parseType("[b: string]", baseRegistry)),
+                  "Rec3",
+                  NamedType.create(
+                      "Rec3", "-", parseType("[a: string, b: string, c: string]", baseRegistry)));
+
+          @Override
+          public SoyType getType(String typeName) {
+            if (namedTypes.containsKey(typeName)) {
+              return namedTypes.get(typeName);
+            }
+            return super.getType(typeName);
+          }
+        };
+
+    assertThatSoyType("Rec1", registry).isAssignableFromStrict("Rec1");
+    assertThatSoyType("Rec1", registry).isNotAssignableFromStrict("Rec2");
+    assertThatSoyType("Rec2", registry).isNotAssignableFromStrict("Rec1");
+    assertThatSoyType("Rec1", registry).isAssignableFromStrict("Rec3");
+    assertThatSoyType("Rec2", registry).isAssignableFromStrict("Rec3");
+
+    assertThatSoyType("Rec1 & Rec2", registry).isAssignableFromStrict("Rec3");
+    assertThatSoyType("Rec1 & Rec1", registry).isAssignableFromStrict("Rec1");
+    assertThatSoyType("Rec1 & Rec1", registry).isAssignableFromStrict("Rec3");
+    assertThatSoyType("Rec1 & Rec3", registry).isNotAssignableFromStrict("Rec2");
+  }
+
+  @Test
   public void testMapTypeAssignability() {
     assertThat(MapType.of(ANY_TYPE, ANY_TYPE).isAssignableFromStrict(UNKNOWN_TYPE)).isFalse();
     assertThat(UNKNOWN_TYPE.isAssignableFromStrict(MapType.of(ANY_TYPE, ANY_TYPE))).isFalse();
@@ -917,7 +1033,7 @@ public class SoyTypesTest {
       SoyType leftType = parseType(actual);
       SoyType rightType = parseType(other);
       if (!leftType.isAssignableFromLoose(rightType)) {
-        failWithActual("expected to be assignable from", other);
+        failWithActual("expected to be assignable from", formatType(rightType));
       }
     }
 
@@ -925,7 +1041,7 @@ public class SoyTypesTest {
       SoyType leftType = parseType(actual);
       SoyType rightType = parseType(other);
       if (leftType.isAssignableFromLoose(rightType)) {
-        failWithActual("expected not to be assignable from", other);
+        failWithActual("expected not to be assignable from", formatType(rightType));
       }
     }
 
@@ -933,7 +1049,7 @@ public class SoyTypesTest {
       SoyType leftType = parseType(actual);
       SoyType rightType = parseType(other);
       if (!leftType.isAssignableFromStrict(rightType)) {
-        failWithActual("expected to be strictly assignable from", other);
+        failWithActual("expected to be strictly assignable from", formatType(rightType));
       }
     }
 
@@ -941,8 +1057,16 @@ public class SoyTypesTest {
       SoyType leftType = parseType(actual);
       SoyType rightType = parseType(other);
       if (leftType.isAssignableFromStrict(rightType)) {
-        failWithActual("expected not to be strictly assignable from", other);
+        failWithActual("expected not to be strictly assignable from", formatType(rightType));
       }
+    }
+
+    Object formatType(SoyType type) {
+      SoyType effective = type.getEffectiveType();
+      if (effective != type) {
+        return type + " (" + effective + ")";
+      }
+      return type;
     }
 
     @Deprecated
