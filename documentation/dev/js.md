@@ -50,7 +50,7 @@ different kinds of data that a Soy template can use. It returns a
 [`SanitizedContent`][sanitized-content] object representing the rendered result.
 
 The exact return type of the generated JavaScript function depends on the
-template's [content kind](security#content_kinds). Most templates have a content
+template's [content kind](security.md#content_kinds). Most templates have a content
 kind of `html` or `html<[some_tag]>`, so most generated JavaScript functions
 return a [`SanitizedHtml`][sanitized-html] object, a subclass of
 `SanitizedContent`. The other `SanitizedContent` objects correspond to the other
@@ -122,9 +122,9 @@ Template Type             | JavaScript Type
 `map<K, V>`               | `Map`, `jspb.Map`
 `legacy_object_map<K, V>` | `Object`
 
-**Warning:** [Maps](../reference/types#map) and
-[legacy object maps](../reference/types#legacy_object_map) are distinct types in
-Soy's type system, and generate different JS code. Maps must be rendered with
+**Warning:** [Maps](../reference/types.md#map) and
+[legacy object maps](../reference/types.md#legacy_object_map) are distinct types
+in Soy's type system, and generate different JS code. Maps must be rendered with
 JavaScript `Map` or `jspb.Map` instances; legacy object maps must be rendered
 with plain JavaScript `Object` instances. Rendering a template with a `map`
 parameter using a plain JavaScript `Object`, or vice versa, will cause a runtime
