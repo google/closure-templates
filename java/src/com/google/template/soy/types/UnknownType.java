@@ -46,7 +46,8 @@ public final class UnknownType extends PrimitiveType {
     // as these types, so disallow converting them to unknown as there's no reason to do this.
     return srcType.getKind() != Kind.MAP
         && srcType.getKind() != Kind.VE
-        && srcType.getKind() != Kind.VE_DATA;
+        && srcType.getKind() != Kind.VE_DATA
+        && srcType.getKind() != Kind.NEVER;
   }
 
   @Override

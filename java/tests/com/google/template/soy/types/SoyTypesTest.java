@@ -17,7 +17,6 @@
 package com.google.template.soy.types;
 
 import static com.google.common.base.Strings.lenientFormat;
-import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.truth.Fact.simpleFact;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.template.soy.types.SoyTypes.NUMBER_TYPE;
@@ -25,19 +24,20 @@ import static com.google.template.soy.types.SoyTypes.makeNullable;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import com.google.common.truth.FailureMetadata;
 import com.google.common.truth.Subject;
 import com.google.common.truth.Truth;
+import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.soytree.TemplateNode;
-import com.google.template.soy.testing.SoyFileSetParserBuilder;
+import com.google.template.soy.soyparse.SoyFileParser;
 import com.google.template.soy.types.SanitizedType.ElementType;
 import com.google.template.soy.types.SanitizedType.HtmlType;
 import com.google.template.soy.types.SanitizedType.UriType;
 import com.google.template.soy.types.SoyType.Kind;
+import com.google.template.soy.types.ast.TypeNode;
+import com.google.template.soy.types.ast.TypeNodeConverter;
 import java.util.Set;
 import javax.annotation.Nullable;
 import org.junit.Test;
@@ -76,6 +76,17 @@ public class SoyTypesTest {
     assertThatSoyType("?").isAssignableFromStrict("?");
     assertThatSoyType("?").isAssignableFromStrict("string");
     assertThatSoyType("?").isAssignableFromStrict("int");
+  }
+
+  @Test
+  public void testNeverType() {
+    assertThatSoyType("never").isNotAssignableFromStrict("never");
+    assertThatSoyType("any").isNotAssignableFromStrict("never");
+    assertThatSoyType("?").isNotAssignableFromStrict("never");
+    assertThatSoyType("null").isNotAssignableFromStrict("never");
+    assertThatSoyType("never").isNotAssignableFromStrict("any");
+    assertThatSoyType("never").isNotAssignableFromStrict("?");
+    assertThatSoyType("never").isNotAssignableFromStrict("null");
   }
 
   @Test
@@ -982,29 +993,19 @@ public class SoyTypesTest {
     }
 
     private SoyType parseType(String input) {
-      TemplateNode template =
-          (TemplateNode)
-              SoyFileSetParserBuilder.forTemplateContents(
-                      "{@param p: " + input + "|string}\n{$p ? 't' : 'f'}")
-                  .typeRegistry(registry)
-                  .errorReporter(
-                      ErrorReporter
-                          .explodeOnErrorsAndIgnoreWarnings()) // ignore optional/nullable mismatch
-                  .parse()
-                  .fileSet()
-                  .getChild(0)
-                  .getChild(0);
-      SoyType type = Iterables.getOnlyElement(template.getAllParams()).type();
-      if (type.equals(StringType.getInstance())
-          || type.equals(UnknownType.getInstance())
-          || type.equals(AnyType.getInstance())) {
-        return type;
-      }
-      return UnionType.of(
-          ((UnionType) type)
-              .getMembers().stream()
-                  .filter(t -> !t.equals(StringType.getInstance()))
-                  .collect(toImmutableList()));
+      return SoyTypesTest.parseType(input, registry);
     }
+  }
+
+  private static SoyType parseType(String input, SoyTypeRegistry registry) {
+    TypeNode typeNode =
+        SoyFileParser.parseType(
+            input, SourceFilePath.create("-", "-" + ""), ErrorReporter.exploding());
+    return typeNode != null
+        ? TypeNodeConverter.builder(ErrorReporter.exploding())
+            .setTypeRegistry(registry)
+            .build()
+            .getOrCreateType(typeNode)
+        : UnknownType.getInstance();
   }
 }

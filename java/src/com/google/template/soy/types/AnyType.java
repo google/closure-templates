@@ -37,7 +37,7 @@ public final class AnyType extends PrimitiveType {
 
   @Override
   boolean doIsAssignableFromNonUnionType(SoyType srcType) {
-    return true;
+    return srcType.getKind() != Kind.NEVER;
   }
 
   @Override
