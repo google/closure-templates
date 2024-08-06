@@ -48,12 +48,10 @@ public final class StreamingEscaper extends LoggingAdvisingAppendable {
 
   private final LoggingAdvisingAppendable delegate;
   private final CrossLanguageStringXform transform;
-  private final Appendable escapedAppendable;
 
   private StreamingEscaper(LoggingAdvisingAppendable delegate, CrossLanguageStringXform transform) {
     this.delegate = checkNotNull(delegate);
     this.transform = checkNotNull(transform);
-    this.escapedAppendable = transform.escape(delegate);
   }
 
   // Note we never propagate calls to setSanitizedContentKind to the delegate.  This is because
@@ -63,21 +61,21 @@ public final class StreamingEscaper extends LoggingAdvisingAppendable {
   @CanIgnoreReturnValue
   @Override
   public LoggingAdvisingAppendable append(CharSequence csq) throws IOException {
-    escapedAppendable.append(csq);
+    transform.escapeOnto(csq, delegate);
     return this;
   }
 
   @CanIgnoreReturnValue
   @Override
   public LoggingAdvisingAppendable append(CharSequence csq, int start, int end) throws IOException {
-    escapedAppendable.append(csq, start, end);
+    transform.escapeOnto(csq, delegate, start, end);
     return this;
   }
 
   @CanIgnoreReturnValue
   @Override
   public LoggingAdvisingAppendable append(char c) throws IOException {
-    escapedAppendable.append(c);
+    transform.escapeOnto(c, delegate);
     return this;
   }
 
@@ -86,8 +84,7 @@ public final class StreamingEscaper extends LoggingAdvisingAppendable {
   public LoggingAdvisingAppendable appendLoggingFunctionInvocation(
       LoggingFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers)
       throws IOException {
-    escapedAppendable.append(escapePlaceholder(funCall.placeholderValue(), escapers));
-    return this;
+    return append(escapePlaceholder(funCall.placeholderValue(), escapers));
   }
 
   @Override

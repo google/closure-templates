@@ -16,13 +16,8 @@
 package com.google.template.soy.bididirectives;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
-import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.data.Dir;
-import com.google.template.soy.data.ForwardingLoggingAdvisingAppendable;
-import com.google.template.soy.data.LogStatement;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
-import com.google.template.soy.data.LoggingFunctionInvocation;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyValue;
@@ -33,9 +28,7 @@ import com.google.template.soy.internal.i18n.BidiFormatter;
 import com.google.template.soy.internal.i18n.BidiFormatter.BidiWrappingText;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import java.io.IOException;
-import java.util.function.Function;
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
 /** Java implementations of the bididirectives. */
 public final class BidiDirectivesRuntime {
@@ -113,69 +106,17 @@ public final class BidiDirectivesRuntime {
     UNICODE
   }
 
-  private static final class BidiWrapAppendable extends ForwardingLoggingAdvisingAppendable {
+  private static final class BidiWrapAppendable
+      extends LoggingAdvisingAppendable.BufferingAppendable {
+    private final LoggingAdvisingAppendable delegate;
     private final BidiGlobalDir globalDir;
     private final WrapType wrapType;
-    private final BufferingAppendable commandBuffer;
 
     BidiWrapAppendable(
         LoggingAdvisingAppendable delegate, BidiGlobalDir globalDir, WrapType wrapType) {
-      super(delegate);
+      this.delegate = delegate;
       this.globalDir = globalDir;
       this.wrapType = Preconditions.checkNotNull(wrapType);
-      commandBuffer = LoggingAdvisingAppendable.buffering();
-    }
-
-    @Override
-    protected LoggingAdvisingAppendable notifyKindAndDirectionality(
-        ContentKind kind, @Nullable Dir dir) {
-      commandBuffer.setKindAndDirectionality(kind, dir);
-      return this;
-    }
-
-    @CanIgnoreReturnValue
-    @Override
-    public LoggingAdvisingAppendable enterLoggableElement(LogStatement statement) {
-      commandBuffer.enterLoggableElement(statement);
-      return this;
-    }
-
-    @CanIgnoreReturnValue
-    @Override
-    public LoggingAdvisingAppendable exitLoggableElement() {
-      commandBuffer.exitLoggableElement();
-      return this;
-    }
-
-    @CanIgnoreReturnValue
-    @Override
-    public LoggingAdvisingAppendable appendLoggingFunctionInvocation(
-        LoggingFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers)
-        throws IOException {
-      commandBuffer.appendLoggingFunctionInvocation(funCall, escapers);
-      return this;
-    }
-
-    @CanIgnoreReturnValue
-    @Override
-    public LoggingAdvisingAppendable append(char c) throws IOException {
-      commandBuffer.append(c);
-      return this;
-    }
-
-    @CanIgnoreReturnValue
-    @Override
-    public LoggingAdvisingAppendable append(CharSequence csq) throws IOException {
-      commandBuffer.append(csq);
-      return this;
-    }
-
-    @CanIgnoreReturnValue
-    @Override
-    public LoggingAdvisingAppendable append(CharSequence csq, int start, int end)
-        throws IOException {
-      commandBuffer.append(csq, start, end);
-      return this;
     }
 
     @Override
@@ -186,24 +127,24 @@ public final class BidiDirectivesRuntime {
         case SPAN:
           wrappingText =
               formatter.spanWrappingText(
-                  getSanitizedContentDirectionality(),
-                  commandBuffer.toString(),
-                  /* isHtml= */ true);
+                  getSanitizedContentDirectionality(), super.toString(), /* isHtml= */ true);
           break;
         case UNICODE:
           wrappingText =
               formatter.unicodeWrappingText(
                   getSanitizedContentDirectionality(),
-                  commandBuffer.toString(),
+                  super.toString(),
                   getSanitizedContentKind() == ContentKind.HTML);
           break;
         default:
           throw new IllegalArgumentException("invalid wrap type: " + wrapType);
       }
       delegate.append(wrappingText.beforeText());
-      commandBuffer.replayOn(delegate);
+      replayOn(delegate);
       delegate.append(wrappingText.afterText());
-      super.flushBuffers(depth);
+      if (depth > 0) {
+        delegate.flushBuffers(depth - 1);
+      }
     }
   }
 }

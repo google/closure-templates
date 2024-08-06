@@ -68,48 +68,6 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
     return new BufferingAppendable(kind);
   }
 
-  /**
-   * An implementation that only delegates {@link #append} calls. This has the effect of coercing
-   * the content to a string by dropping all the strict content directives.
-   */
-  @Nonnull
-  public static LoggingAdvisingAppendable stringCoercing(LoggingAdvisingAppendable delegate) {
-    return new StringCoercingAppendable(delegate);
-  }
-
-  private static final class StringCoercingAppendable extends ForwardingLoggingAdvisingAppendable {
-    StringCoercingAppendable(LoggingAdvisingAppendable delegate) {
-      super(delegate);
-    }
-
-    @Override
-    protected LoggingAdvisingAppendable notifyKindAndDirectionality(
-        ContentKind kind, @Nullable Dir direction) {
-      delegate.setKindAndDirectionality(kind, direction);
-      if (kind == ContentKind.TEXT) {
-        return delegate;
-      }
-      return this;
-    }
-
-    @Override
-    public LoggingAdvisingAppendable enterLoggableElement(LogStatement statement) {
-      return this;
-    }
-
-    @Override
-    public LoggingAdvisingAppendable exitLoggableElement() {
-      return this;
-    }
-
-    @Override
-    public LoggingAdvisingAppendable appendLoggingFunctionInvocation(
-        LoggingFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers)
-        throws IOException {
-      return append(escapePlaceholder(funCall.placeholderValue(), escapers));
-    }
-  }
-
   // covariant overrides
 
   @Override

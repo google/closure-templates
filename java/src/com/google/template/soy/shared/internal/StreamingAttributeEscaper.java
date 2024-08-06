@@ -19,6 +19,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
+import com.google.template.soy.data.Dir;
 import com.google.template.soy.data.LogStatement;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.LoggingFunctionInvocation;
@@ -26,6 +27,7 @@ import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.shared.internal.EscapingConventions.CrossLanguageStringXform;
 import java.io.IOException;
 import java.util.function.Function;
+import javax.annotation.Nullable;
 
 /**
  * A StreamingAttributeEscaper is a decorator for a {@link LoggingAdvisingAppendable} that applies
@@ -52,45 +54,57 @@ public final class StreamingAttributeEscaper extends LoggingAdvisingAppendable {
 
   private final LoggingAdvisingAppendable delegate;
   private final CrossLanguageStringXform transform;
-  private final Appendable escapedAppendable;
   private StringBuilder buffer = null;
 
   private StreamingAttributeEscaper(
       LoggingAdvisingAppendable delegate, CrossLanguageStringXform transform) {
     this.delegate = checkNotNull(delegate);
     this.transform = transform;
-    this.escapedAppendable = transform.escape(delegate);
   }
 
-  private Appendable getAppendable() {
-    if (getSanitizedContentKind() == ContentKind.HTML) {
-      if (buffer == null) {
-        buffer = new StringBuilder();
-      }
-      return buffer;
-    } else {
-      return escapedAppendable;
+  @Override
+  protected LoggingAdvisingAppendable notifyKindAndDirectionality(
+      ContentKind kind, @Nullable Dir direction) {
+    delegate.setKindAndDirectionality(kind, direction);
+    if (kind == ContentKind.HTML) {
+      buffer = new StringBuilder();
     }
+    return this;
   }
 
   @CanIgnoreReturnValue
   @Override
   public LoggingAdvisingAppendable append(CharSequence csq) throws IOException {
-    getAppendable().append(csq);
+    var buffer = this.buffer;
+    if (buffer != null) {
+      buffer.append(csq);
+      return this;
+    }
+    transform.escapeOnto(csq, delegate);
     return this;
   }
 
   @CanIgnoreReturnValue
   @Override
   public LoggingAdvisingAppendable append(CharSequence csq, int start, int end) throws IOException {
-    getAppendable().append(csq, start, end);
+    var buffer = this.buffer;
+    if (buffer != null) {
+      buffer.append(csq, start, end);
+      return this;
+    }
+    transform.escapeOnto(csq, delegate, start, end);
     return this;
   }
 
   @CanIgnoreReturnValue
   @Override
   public LoggingAdvisingAppendable append(char c) throws IOException {
-    getAppendable().append(c);
+    var buffer = this.buffer;
+    if (buffer != null) {
+      buffer.append(c);
+      return this;
+    }
+    transform.escapeOnto(c, delegate);
     return this;
   }
 
@@ -99,8 +113,9 @@ public final class StreamingAttributeEscaper extends LoggingAdvisingAppendable {
   public LoggingAdvisingAppendable appendLoggingFunctionInvocation(
       LoggingFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers)
       throws IOException {
-    if (getSanitizedContentKind() == ContentKind.HTML) {
-      getAppendable().append(escapePlaceholder(funCall.placeholderValue(), escapers));
+    var buffer = this.buffer;
+    if (buffer != null) {
+      buffer.append(escapePlaceholder(funCall.placeholderValue(), escapers));
     } else {
       delegate.appendLoggingFunctionInvocation(
           funCall,

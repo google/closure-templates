@@ -165,23 +165,55 @@ public final class Sanitizers {
     return new CleanHtmlAppendable(delegate, optionalSafeTags);
   }
 
-  private static final class CleanHtmlAppendable extends AbstractStreamingHtmlEscaper {
+  private static final class CleanHtmlAppendable extends LoggingAdvisingAppendable {
     private final Collection<? extends OptionalSafeTag> optionalSafeTags;
+    private final LoggingAdvisingAppendable delegate;
+    private final StringBuilder buffer = new StringBuilder();
 
     CleanHtmlAppendable(
         LoggingAdvisingAppendable delegate,
         Collection<? extends OptionalSafeTag> optionalSafeTags) {
-      super(delegate, new StringBuilder());
+      this.delegate = delegate;
       this.optionalSafeTags = optionalSafeTags;
     }
 
     @Override
     protected LoggingAdvisingAppendable notifyKindAndDirectionality(
         ContentKind kind, @Nullable Dir contentDir) {
-      if (isInHtml()) {
+      if (kind == ContentKind.HTML) {
         delegate.setKindAndDirectionality(kind, contentDir);
-        activeAppendable = delegate;
         return delegate;
+      }
+      return this;
+    }
+
+    @Override
+    public LoggingAdvisingAppendable append(char c) throws IOException {
+      if (!isInHtml()) {
+        buffer.append(c);
+      } else {
+        delegate.append(c);
+      }
+      return this;
+    }
+
+    @Override
+    public LoggingAdvisingAppendable append(CharSequence csq, int start, int end)
+        throws IOException {
+      if (!isInHtml()) {
+        buffer.append(csq, start, end);
+      } else {
+        delegate.append(csq, start, end);
+      }
+      return this;
+    }
+
+    @Override
+    public LoggingAdvisingAppendable append(CharSequence csq) throws IOException {
+      if (!isInHtml()) {
+        buffer.append(csq);
+      } else {
+        delegate.append(csq);
       }
       return this;
     }
@@ -224,14 +256,25 @@ public final class Sanitizers {
     @Override
     public void flushBuffers(int depth) throws IOException {
       if (!isInHtml()) {
-        StringBuilder buffer = (StringBuilder) activeAppendable;
+        StringBuilder buffer = this.buffer;
         if (buffer.length() > 0) {
           cleanHtml(buffer.toString(), getSanitizedContentDirectionality(), optionalSafeTags)
               .render(delegate);
           buffer.setLength(0);
         }
       }
-      super.flushBuffers(depth);
+      if (depth > 0) {
+        delegate.flushBuffers(depth - 1);
+      }
+    }
+
+    @Override
+    public boolean softLimitReached() {
+      return delegate.softLimitReached();
+    }
+
+    private boolean isInHtml() {
+      return getSanitizedContentKind() == ContentKind.HTML;
     }
   }
 
@@ -264,25 +307,16 @@ public final class Sanitizers {
 
   private static final class StreamingHtmlRcDataEscaper extends AbstractStreamingHtmlEscaper {
     private StreamingHtmlRcDataEscaper(LoggingAdvisingAppendable delegate) {
-      super(delegate, EscapingConventions.EscapeHtml.INSTANCE.escape(delegate));
+      super(delegate, EscapingConventions.EscapeHtml.INSTANCE);
     }
 
     @Override
     protected LoggingAdvisingAppendable notifyKindAndDirectionality(
         ContentKind kind, @Nullable Dir directionality) {
       if (isInHtml()) {
-        activeAppendable = EscapingConventions.NormalizeHtml.INSTANCE.escape(delegate);
+        transform = EscapingConventions.NormalizeHtml.INSTANCE;
       }
       delegate.setKindAndDirectionality(kind, directionality);
-      return this;
-    }
-
-    @CanIgnoreReturnValue
-    @Override
-    public LoggingAdvisingAppendable appendLoggingFunctionInvocation(
-        LoggingFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers)
-        throws IOException {
-      activeAppendable.append(escapePlaceholder(funCall.placeholderValue(), escapers));
       return this;
     }
 
@@ -1044,13 +1078,17 @@ public final class Sanitizers {
     @CanIgnoreReturnValue
     @Override
     public LoggingAdvisingAppendable append(CharSequence csq) throws IOException {
+      var appendable = getActiveAppendable();
       if (first && csq.length() > 0 && getSanitizedContentKind() == ContentKind.ATTRIBUTES) {
         if (csq.charAt(0) != ' ') {
-          getActiveAppendable().append(" ");
+          appendable.append(" ");
         }
         first = false;
+        appendable.append(csq);
+      } else {
+        appendable.append(csq);
       }
-      getActiveAppendable().append(csq);
+
       return this;
     }
 
@@ -1058,24 +1096,29 @@ public final class Sanitizers {
     @Override
     public LoggingAdvisingAppendable append(CharSequence csq, int start, int end)
         throws IOException {
+      var appendable = getActiveAppendable();
       if (first && csq.length() > 0 && getSanitizedContentKind() == ContentKind.ATTRIBUTES) {
         if (csq.charAt(0) != ' ') {
-          getActiveAppendable().append(" ");
+          appendable.append(' ');
         }
         first = false;
+        appendable.append(csq, start, end);
+      } else {
+        appendable.append(csq, start, end);
       }
-      getActiveAppendable().append(csq, start, end);
       return this;
     }
 
     @CanIgnoreReturnValue
     @Override
     public LoggingAdvisingAppendable append(char c) throws IOException {
+      var appendable = getActiveAppendable();
       if (first && c != ' ' && getSanitizedContentKind() == ContentKind.ATTRIBUTES) {
-        getActiveAppendable().append(" ");
         first = false;
+        appendable.append(" " + c);
+      } else {
+        appendable.append(c);
       }
-      getActiveAppendable().append(c);
       return this;
     }
 
@@ -1099,11 +1142,13 @@ public final class Sanitizers {
     public LoggingAdvisingAppendable appendLoggingFunctionInvocation(
         LoggingFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers)
         throws IOException {
+      // NOTE: this cannot be 'first' since logging function invocations are only allowed in
+      // attribute values.
       if (getSanitizedContentKind() == ContentKind.ATTRIBUTES) {
         delegate.appendLoggingFunctionInvocation(funCall, escapers);
       } else {
         String placeholder = escapePlaceholder(funCall.placeholderValue(), escapers);
-        getActiveAppendable().append(placeholder);
+        activeAppendable.append(placeholder);
       }
       return this;
     }
@@ -1116,7 +1161,11 @@ public final class Sanitizers {
     @Override
     public void flushBuffers(int depth) throws IOException {
       if (getSanitizedContentKind() != ContentKind.ATTRIBUTES) {
-        delegate.append(whitespaceHtmlAttributes(getActiveAppendable().toString()));
+        var activeAppendable = this.activeAppendable;
+        // it will be null if nothing was rendered.
+        if (activeAppendable != null) {
+          delegate.append(whitespaceHtmlAttributes(((StringBuilder) activeAppendable).toString()));
+        }
       }
       if (depth > 0) {
         delegate.flushBuffers(depth - 1);

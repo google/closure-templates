@@ -64,31 +64,25 @@ public class EscapingConventionsTest {
 
     StringBuilder sb;
 
-    // And the Appendable version.
+    // And the streaming version.
     sb = new StringBuilder();
-    EscapingConventions.EscapeUri.INSTANCE
-        .escape(sb)
-        .append("Hello")
-        .append("\nletters\u0085\u1234\u2028");
+    EscapingConventions.EscapeUri.INSTANCE.escapeOnto("Hello", sb);
+    EscapingConventions.EscapeUri.INSTANCE.escapeOnto("\nletters\u0085\u1234\u2028", sb);
     assertThat(sb.toString()).isEqualTo("Hello%0Aletters%C2%85%E1%88%B4%E2%80%A8");
 
     // And the Appendable substring version.
     sb = new StringBuilder();
-    EscapingConventions.EscapeUri.INSTANCE
-        .escape(sb)
-        .append("--Hello--", 2, 7)
-        .append("--\nletters\u0085\u1234\u2028--", 2, 13);
+    EscapingConventions.EscapeUri.INSTANCE.escapeOnto("--Hello--", sb, 2, 7);
+    EscapingConventions.EscapeUri.INSTANCE.escapeOnto("--\nletters\u0085\u1234\u2028--", sb, 2, 13);
     assertThat(sb.toString()).isEqualTo("Hello%0Aletters%C2%85%E1%88%B4%E2%80%A8");
 
     // And the Appendable char version.
     sb = new StringBuilder();
-    EscapingConventions.EscapeUri.INSTANCE
-        .escape(sb)
-        .append('H')
-        .append('i')
-        .append('\n')
-        .append('\u0085')
-        .append('\u1234');
+    EscapingConventions.EscapeUri.INSTANCE.escapeOnto('H', sb);
+    EscapingConventions.EscapeUri.INSTANCE.escapeOnto('i', sb);
+    EscapingConventions.EscapeUri.INSTANCE.escapeOnto('\n', sb);
+    EscapingConventions.EscapeUri.INSTANCE.escapeOnto('\u0085', sb);
+    EscapingConventions.EscapeUri.INSTANCE.escapeOnto('\u1234', sb);
     assertThat(sb.toString()).isEqualTo("Hi%0A%C2%85%E1%88%B4");
   }
 

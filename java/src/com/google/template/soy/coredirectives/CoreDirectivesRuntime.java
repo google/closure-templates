@@ -15,12 +15,10 @@
  */
 package com.google.template.soy.coredirectives;
 
-import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.data.Dir;
 import com.google.template.soy.data.LogStatement;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
-import com.google.template.soy.data.LoggingFunctionInvocation;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyValue;
@@ -28,8 +26,6 @@ import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.shared.internal.AbstractStreamingHtmlEscaper;
 import com.google.template.soy.shared.internal.EscapingConventions;
-import java.io.IOException;
-import java.util.function.Function;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
@@ -69,7 +65,7 @@ public final class CoreDirectivesRuntime {
 
   private static final class StreamingHtmlEscaper extends AbstractStreamingHtmlEscaper {
     private StreamingHtmlEscaper(LoggingAdvisingAppendable delegate) {
-      super(delegate, EscapingConventions.EscapeHtml.INSTANCE.escape(delegate));
+      super(delegate, EscapingConventions.EscapeHtml.INSTANCE);
     }
 
     @Override
@@ -77,24 +73,12 @@ public final class CoreDirectivesRuntime {
         ContentKind kind, @Nullable Dir dir) {
       delegate.setKindAndDirectionality(kind, dir);
       if (kind == ContentKind.HTML) {
-        activeAppendable = delegate;
+        transform = null;
         return delegate;
       }
       return this;
     }
 
-    @CanIgnoreReturnValue
-    @Override
-    public LoggingAdvisingAppendable appendLoggingFunctionInvocation(
-        LoggingFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers)
-        throws IOException {
-      if (isInHtml()) {
-        delegate.appendLoggingFunctionInvocation(funCall, escapers);
-      } else {
-        activeAppendable.append(escapePlaceholder(funCall.placeholderValue(), escapers));
-      }
-      return this;
-    }
 
     // TODO(lukes): We only pass these through if we are in HTML.  This is sort
     // of confusing and may require revisiting in the future once we have more examples of how

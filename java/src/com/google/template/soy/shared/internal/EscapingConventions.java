@@ -16,6 +16,7 @@
 
 package com.google.template.soy.shared.internal;
 
+import static com.google.common.base.Preconditions.checkState;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.google.common.base.Ascii;
@@ -120,7 +121,8 @@ public final class EscapingConventions {
    *       like {@code zzz}.
    * </dl>
    */
-  public abstract static class CrossLanguageStringXform extends Escaper {
+  public abstract static class CrossLanguageStringXform {
+    private static final String[] EMPTY_ASCII_ESCAPES_ARRAY = new String[0x80];
     private final String directiveName;
     @Nullable private final Pattern valueFilter;
     private final ImmutableList<Escape> escapes;
@@ -129,18 +131,17 @@ public final class EscapingConventions {
      * A dense mapping mirroring escapes. I.e. for each element of {@link #escapes} {@code e} such
      * that {@code e.plainText < 0x80}, {@code escapesByCodeUnit[e.plainText] == e.escaped}.
      */
-    private final String[] escapesByCodeUnit;
+    protected final String[] escapesByCodeUnit;
 
     /** Keys in a sparse mapping for the non ASCII {@link #escapes}. */
-    private final char[] nonAsciiCodeUnits;
+    @Nullable protected final char[] nonAsciiCodeUnits;
 
     /** Values in a sparse mapping corresponding to {@link #nonAsciiCodeUnits}. */
-    private final String[] nonAsciiEscapes;
+    @Nullable protected final String[] nonAsciiEscapes;
 
-    /**
-     * @see #getNonAsciiPrefix
-     */
-    @Nullable private final String nonAsciiPrefix;
+    protected CrossLanguageStringXform() {
+      this(null);
+    }
 
     /**
      * @param valueFilter {@code null} if the directive accepts all strings as inputs. Otherwise a
@@ -149,8 +150,7 @@ public final class EscapingConventions {
      *     escape non-ASCII code units not in the sparse mapping. If null, then non-ASCII code units
      *     outside the sparse map can appear unescaped.
      */
-    protected CrossLanguageStringXform(
-        @Nullable Pattern valueFilter, @Nullable String nonAsciiPrefix) {
+    protected CrossLanguageStringXform(@Nullable Pattern valueFilter) {
       String simpleName = getClass().getSimpleName();
       // EscapeHtml -> |escapeHtml
       this.directiveName =
@@ -168,12 +168,12 @@ public final class EscapingConventions {
       }
       // Create the dense ASCII map.
       if (numAsciiEscapes != 0) {
-        escapesByCodeUnit = new String[escapes.get(numAsciiEscapes - 1).plainText + 1];
+        escapesByCodeUnit = new String[0x80];
         for (Escape escape : escapes.subList(0, numAsciiEscapes)) {
           escapesByCodeUnit[escape.plainText] = escape.escaped;
         }
       } else {
-        escapesByCodeUnit = new String[0];
+        escapesByCodeUnit = EMPTY_ASCII_ESCAPES_ARRAY; // save a little memory by reusing this.
       }
       // Create the sparse non-ASCII map.
       if (numEscapes != numAsciiEscapes) {
@@ -186,12 +186,9 @@ public final class EscapingConventions {
           nonAsciiEscapes[i] = esc.escaped;
         }
       } else {
-        nonAsciiCodeUnits = new char[0];
-        nonAsciiEscapes = new String[0];
+        nonAsciiCodeUnits = null;
+        nonAsciiEscapes = null;
       }
-
-      // The fallback mode if neither the ASCII nor non-ASCII escaping maps contain a mapping.
-      this.nonAsciiPrefix = nonAsciiPrefix;
     }
 
     /** Returns the escapes used for this escaper. */
@@ -212,8 +209,8 @@ public final class EscapingConventions {
      * can appear unescaped.
      */
     @Nullable
-    public final String getNonAsciiPrefix() {
-      return nonAsciiPrefix;
+    public String getNonAsciiPrefix() {
+      return null;
     }
 
     /**
@@ -246,12 +243,29 @@ public final class EscapingConventions {
       return INNOCUOUS_OUTPUT;
     }
 
-    // Methods that satisfy the Escaper interface.
-    @Override
-    public final String escape(String string) {
-      // We pass null so that we don't unnecessarily allocate (and zero) or copy char arrays.
-      StringBuilder sb = maybeEscapeOnto(string, null);
-      return sb != null ? sb.toString() : string;
+    /**
+     * Escapes the given string.
+     *
+     * <p>If the string is already escaped, this method will return the original string.
+     */
+    public String escape(String string) {
+      var escapesByCodeUnit = this.escapesByCodeUnit;
+      var nonAsciiCodeUnits = this.nonAsciiCodeUnits;
+      for (int i = 0, n = string.length(); i < n; ++i) {
+        char c = string.charAt(i);
+        if (c < 0x80) { // Use the dense map.
+          String esc = escapesByCodeUnit[c];
+          if (esc != null) {
+            return escapeOntoStringBuilderStartingAt(string, i);
+          }
+        } else { // Use the sparse map.
+          int index = nonAsciiCodeUnits != null ? Arrays.binarySearch(nonAsciiCodeUnits, c) : -1;
+          if (index >= 0) {
+            return escapeOntoStringBuilderStartingAt(string, i);
+          }
+        }
+      }
+      return string;
     }
 
     /**
@@ -259,64 +273,66 @@ public final class EscapingConventions {
      *
      * <p>This is guaranteed to not do any buffering, each {@link Appendable#append} operation will
      * directly pass through into a series of {@code append} operations on the delegate.
+     *
+     * @deprecated Use {@link #escapeOnto(CharSequence, Appendable)} instead.
      */
+    @Deprecated
     public final Appendable escape(Appendable out) {
       return new Appendable() {
         @CanIgnoreReturnValue
         @Override
         public Appendable append(CharSequence csq) throws IOException {
-          maybeEscapeOnto(csq, out, 0, csq.length());
+          escapeOnto(csq, out, 0, csq.length());
           return this;
         }
 
         @CanIgnoreReturnValue
         @Override
         public Appendable append(CharSequence csq, int start, int end) throws IOException {
-          maybeEscapeOnto(csq, out, start, end);
+          escapeOnto(csq, out, start, end);
           return this;
         }
 
         @CanIgnoreReturnValue
         @Override
         public Appendable append(char c) throws IOException {
-          if (c < escapesByCodeUnit.length) { // Use the dense map.
-            String esc = escapesByCodeUnit[c];
-            if (esc != null) {
-              out.append(esc);
-              return this;
-            }
-          } else if (c >= 0x80) {
-            int index = Arrays.binarySearch(nonAsciiCodeUnits, c);
-            if (index >= 0) { // Found in the sparse map.
-              out.append(nonAsciiEscapes[index]);
-              return this;
-            }
-            if (nonAsciiPrefix != null) { // Fallback for non-ASCII code units.
-              escapeUsingPrefix(c, out);
-              return this;
-            }
-          }
-          out.append(c);
+          escapeOnto(c, out);
           return this;
         }
       };
     }
 
-    /**
-     * Escapes the given char sequence onto the given buffer iff it contains characters that need to
-     * be escaped.
-     *
-     * @return null if no output buffer was passed in, and s contains no characters that need
-     *     escaping. Otherwise out, or a StringBuilder if one needed to be allocated.
-     */
-    @Nullable
-    private StringBuilder maybeEscapeOnto(CharSequence s, @Nullable StringBuilder out) {
+    /** Helper to escape the string starting from a given point. */
+    final String escapeOntoStringBuilderStartingAt(String string, int start) {
+      int length = string.length();
       try {
-        return (StringBuilder) maybeEscapeOnto(s, out, 0, s.length());
-      } catch (IOException ex) {
-        // StringBuilders should not throw IOExceptions.
-        throw new AssertionError(ex);
+        return escapeOnto(
+                string, new StringBuilder(length + 32).append(string, 0, start), start, length)
+            .toString();
+      } catch (IOException e) {
+        throw new AssertionError(e); // impossible
       }
+    }
+
+    @CanIgnoreReturnValue
+    public Appendable escapeOnto(char c, Appendable out) throws IOException {
+      if (c < 0x80) { // Use the dense map.
+        String esc = escapesByCodeUnit[c];
+        if (esc != null) {
+          return out.append(esc);
+        }
+      } else {
+        int index = Arrays.binarySearch(nonAsciiCodeUnits, c);
+        if (index >= 0) { // Found in the sparse map.
+          return out.append(nonAsciiEscapes[index]);
+        }
+      }
+      return out.append(c);
+    }
+
+    @CanIgnoreReturnValue
+    public final Appendable escapeOnto(CharSequence s, Appendable out) throws IOException {
+      return escapeOnto(s, out, 0, s.length());
     }
 
     /**
@@ -326,86 +342,78 @@ public final class EscapingConventions {
      * @return null if no output buffer was passed in, and s contains no characters that need
      *     escaping. Otherwise out, or a StringBuilder if one needed to be allocated.
      */
-    @Nullable
-    private Appendable maybeEscapeOnto(CharSequence s, @Nullable Appendable out, int start, int end)
+    @CanIgnoreReturnValue
+    public Appendable escapeOnto(CharSequence s, Appendable out, int start, int end)
         throws IOException {
       int pos = start;
+      var escapesByCodeUnit = this.escapesByCodeUnit;
+      var nonAsciiCodeUnits = this.nonAsciiCodeUnits;
       for (int i = start; i < end; ++i) {
         char c = s.charAt(i);
-        if (c < escapesByCodeUnit.length) { // Use the dense map.
+        if (c < 0x80) { // Use the dense map.
           String esc = escapesByCodeUnit[c];
           if (esc != null) {
-            if (out == null) {
-              // Create a new buffer if we need to escape a character in s.
-              // We add 32 to the size to leave a decent amount of space for escape characters.
-              out = new StringBuilder(end - start + 32);
-            }
             out.append(s, pos, i).append(esc);
             pos = i + 1;
           }
-        } else if (c >= 0x80) { // Use the sparse map.
+        } else { // Use the sparse map.
           int index = Arrays.binarySearch(nonAsciiCodeUnits, c);
           if (index >= 0) {
-            if (out == null) {
-              out = new StringBuilder(end - start + 32);
-            }
             out.append(s, pos, i).append(nonAsciiEscapes[index]);
-            pos = i + 1;
-          } else if (nonAsciiPrefix != null) { // Fallback to the prefix based escaping.
-            if (out == null) {
-              out = new StringBuilder(end - start + 32);
-            }
-            out.append(s, pos, i);
-            escapeUsingPrefix(c, out);
             pos = i + 1;
           }
         }
       }
-      if (out != null) {
-        out.append(s, pos, end);
-      }
-      return out;
+      return out.append(s, pos, end);
+    }
+  }
+
+  private abstract static class AsciiOnlyCrossLanguageStringXform extends CrossLanguageStringXform {
+    AsciiOnlyCrossLanguageStringXform() {
+      this(null);
     }
 
-    /**
-     * Appends a hex representation of the given code unit to out preceded by the {@link
-     * #nonAsciiPrefix}.
-     *
-     * @param c A code unit greater than or equal to 0x80.
-     * @param out written to.
-     */
-    private void escapeUsingPrefix(char c, Appendable out) throws IOException {
-      if ("%".equals(nonAsciiPrefix)) { // Use a UTF-8
-        if (c < 0x800) {
-          out.append('%');
-          appendHexPair(((c >>> 6) & 0x1f) | 0xc0, out);
-        } else {
-          out.append('%');
-          appendHexPair(((c >>> 12) & 0xf) | 0xe0, out);
-          out.append('%');
-          appendHexPair(((c >>> 6) & 0x3f) | 0x80, out);
-        }
-        out.append('%');
-        appendHexPair((c & 0x3f) | 0x80, out);
-      } else {
-        out.append(nonAsciiPrefix);
-        appendHexPair((c >>> 8) & 0xff, out);
-        appendHexPair(c & 0xff, out);
-        if ("\\".equals(nonAsciiPrefix)) {
-          // Append with a space so that CSS escape doesn't pull in any hex digits following.
-          out.append(' ');
-        }
-      }
+    AsciiOnlyCrossLanguageStringXform(@Nullable Pattern valueFilter) {
+      super(valueFilter);
+      checkState(nonAsciiCodeUnits == null);
     }
 
-    private static final char[] HEX_DIGITS = {
-      '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F',
-    };
+    @Override
+    public final String escape(String string) {
+      for (int i = 0, n = string.length(); i < n; ++i) {
+        char c = string.charAt(i);
+        if (c < 0x80 && escapesByCodeUnit[c] != null) {
+          return escapeOntoStringBuilderStartingAt(string, i);
+        }
+      }
+      return string;
+    }
 
-    /** Given {@code 0x20} appends {@code "20"} to the given output buffer. */
-    private void appendHexPair(int b, Appendable out) throws IOException {
-      out.append(HEX_DIGITS[b >>> 4]);
-      out.append(HEX_DIGITS[b & 0xf]);
+    @Override
+    @CanIgnoreReturnValue
+    public final Appendable escapeOnto(char c, Appendable out) throws IOException {
+      String escape;
+      if (c < 0x80 && (escape = escapesByCodeUnit[c]) != null) {
+        return out.append(escape);
+      }
+      return out.append(c);
+    }
+
+    @Override
+    @CanIgnoreReturnValue
+    public final Appendable escapeOnto(CharSequence s, Appendable out, int start, int end)
+        throws IOException {
+      int pos = start;
+      var localEscapes = this.escapesByCodeUnit;
+      for (int i = start; i < end; ++i) {
+        char c = s.charAt(i);
+        String escape;
+        if (c < 0x80 && (escape = localEscapes[c]) != null) {
+          out.append(s, pos, i).append(escape);
+          pos = i + 1;
+        }
+      }
+      return out.append(s, pos, end);
     }
   }
 
@@ -489,12 +497,12 @@ public final class EscapingConventions {
   // Each also provides a singleton INSTANCE member.
 
   /** Implements the {@code |escapeHtml} directive. */
-  public static final class EscapeHtml extends CrossLanguageStringXform {
+  public static final class EscapeHtml extends AsciiOnlyCrossLanguageStringXform {
     /** Implements the {@code |escapeHtml} directive. */
     public static final EscapeHtml INSTANCE = new EscapeHtml();
 
     private EscapeHtml() {
-      super(null, null);
+      super(/* valueFilter= */ null);
     }
 
     @Override
@@ -545,13 +553,11 @@ public final class EscapingConventions {
    * So all HTML special characters can be escaped, except ampersand, since escaping that would lead
    * to overescaping of legitimate HTML entities.
    */
-  public static final class NormalizeHtml extends CrossLanguageStringXform {
+  public static final class NormalizeHtml extends AsciiOnlyCrossLanguageStringXform {
     /** Implements the {@code |normalizeHtml} directive. */
     public static final NormalizeHtml INSTANCE = new NormalizeHtml();
 
-    private NormalizeHtml() {
-      super(null, null);
-    }
+    private NormalizeHtml() {}
 
     @Override
     protected ImmutableList<Escape> defineEscapes() {
@@ -573,9 +579,7 @@ public final class EscapingConventions {
     /** Implements the {@code |escapeHtmlNospace} directive. */
     public static final EscapeHtmlNospace INSTANCE = new EscapeHtmlNospace();
 
-    private EscapeHtmlNospace() {
-      super(null, null);
-    }
+    private EscapeHtmlNospace() {}
 
     @Override
     protected ImmutableList<Escape> defineEscapes() {
@@ -634,7 +638,7 @@ public final class EscapingConventions {
           //
           // We supplement that set with the quotes and equal sign which have special
           // meanings in attributes, and with the XML normalized spaces.
-          .escapeAll("\u0000\u0009\n\u000B\u000C\r '-/=\u0060\u0085\u00a0\u2028\u2029")
+          .escapeAll("\u0000\u0009\n\u000B\u000C\r '-/=`\u0085\u00a0\u2028\u2029")
           .build();
     }
   }
@@ -647,9 +651,7 @@ public final class EscapingConventions {
     /** Implements the {@code |normalizeHtml} directive. */
     public static final NormalizeHtmlNospace INSTANCE = new NormalizeHtmlNospace();
 
-    private NormalizeHtmlNospace() {
-      super(null, null);
-    }
+    private NormalizeHtmlNospace() {}
 
     @Override
     protected ImmutableList<Escape> defineEscapes() {
@@ -679,8 +681,19 @@ public final class EscapingConventions {
     /** Implements the {@code |escapeJsString} directive. */
     public static final EscapeJsString INSTANCE = new EscapeJsString();
 
-    private EscapeJsString() {
-      super(null, null); // TODO(msamuel): Maybe use goog.string.quote
+    private EscapeJsString() { // TODO(msamuel): Maybe use goog.string.quote
+
+      // Ensure that the hardcoded escape function covers the set of escapes exactly.
+      for (var escape : defineEscapes()) {
+        var actual = escapeChar(escape.plainText);
+        checkState(
+            escape.escaped.equals(actual),
+            "expected '%s' (\\x%s) to escape to '%s', got '%s'",
+            escape.plainText,
+            Integer.toString(escape.plainText, 16),
+            escape.escaped,
+            actual);
+      }
     }
 
     @Override
@@ -723,6 +736,96 @@ public final class EscapingConventions {
           .escapeAll("{}[]")
           .build();
     }
+
+    @Override
+    public final String escape(String string) {
+      for (int i = 0, n = string.length(); i < n; ++i) {
+        var escaped = escapeChar(string.charAt(i));
+        if (escaped != null) {
+          return escapeOntoStringBuilderStartingAt(string, i);
+        }
+      }
+      return string;
+    }
+
+    @Override
+    @CanIgnoreReturnValue
+    public final Appendable escapeOnto(char c, Appendable out) throws IOException {
+      String escape = escapeChar(c);
+      if (escape != null) {
+        return out.append(escape);
+      }
+      return out.append(c);
+    }
+
+    @Override
+    @CanIgnoreReturnValue
+    public final Appendable escapeOnto(CharSequence s, Appendable out, int start, int end)
+        throws IOException {
+      int pos = start;
+
+      for (int i = start; i < end; ++i) {
+        char c = s.charAt(i);
+        String escape = escapeChar(c);
+        if (escape != null) {
+          out.append(s, pos, i).append(escape);
+          pos = i + 1;
+        }
+      }
+      return out.append(s, pos, end);
+    }
+
+    @Nullable
+    private String escapeChar(char c) {
+      switch (c) {
+        case '\u0000':
+          return "\\x00";
+        case '\b':
+          return "\\x08";
+        case '\t':
+          return "\\t";
+        case '\n':
+          return "\\n";
+        case '\u000b':
+          return "\\x0b";
+        case '\f':
+          return "\\f";
+        case '\r':
+          return "\\r";
+        case '\\':
+          return "\\\\";
+        case '"':
+          return "\\x22";
+        case '\'':
+          return "\\x27";
+        case '/':
+          return "\\/";
+        case '&':
+          return "\\x26";
+        case '<':
+          return "\\x3c";
+        case '=':
+          return "\\x3d";
+        case '>':
+          return "\\x3e";
+        case '[':
+          return "\\x5b";
+        case ']':
+          return "\\x5d";
+        case '{':
+          return "\\x7b";
+        case '}':
+          return "\\x7d";
+        case '\u0085':
+          return "\\x85";
+        case '\u2028':
+          return "\\u2028";
+        case '\u2029':
+          return "\\u2029";
+        default:
+          return null;
+      }
+    }
   }
 
   /**
@@ -736,7 +839,6 @@ public final class EscapingConventions {
     private EscapeJsRegex() {
       // TODO(msamuel): maybe use goog.string.regExpEscape after fixing it to escape
       // [\r\n\u2028\u2029]
-      super(null, null);
     }
 
     @Override
@@ -785,9 +887,7 @@ public final class EscapingConventions {
     /** Implements the {@code |escapeCssString} directive. */
     public static final EscapeCssString INSTANCE = new EscapeCssString();
 
-    private EscapeCssString() {
-      super(null, null);
-    }
+    private EscapeCssString() {}
 
     @Override
     protected ImmutableList<Escape> defineEscapes() {
@@ -899,7 +999,7 @@ public final class EscapingConventions {
     public static final FilterCssValue INSTANCE = new FilterCssValue();
 
     private FilterCssValue() {
-      super(CSS_WORD, null);
+      super(/* valueFilter= */ CSS_WORD);
     }
 
     @Override
@@ -937,9 +1037,7 @@ public final class EscapingConventions {
     /** Implements the {@code |normalizeUri} directive. */
     public static final NormalizeUri INSTANCE = new NormalizeUri();
 
-    private NormalizeUri() {
-      super(null, null);
-    }
+    private NormalizeUri() {}
 
     @Override
     protected ImmutableList<Escape> defineEscapes() {
@@ -1006,9 +1104,9 @@ public final class EscapingConventions {
           // Pattern for the scheme: https://url.spec.whatwg.org/#scheme-state
           // Must have an alphanumeric (or +-.) scheme that is not javascript, or no scheme. Case
           // insensitive.
-          Pattern.compile(
-              "^(?!javascript:)(?:[a-z0-9+.-]+:|[^&:/?#]*(?:[/?#]|\\z))", Pattern.CASE_INSENSITIVE),
-          null);
+          /* valueFilter= */ Pattern.compile(
+              "^(?!javascript:)(?:[a-z0-9+.-]+:|[^&:/?#]*(?:[/?#]|\\z))",
+              Pattern.CASE_INSENSITIVE));
     }
 
     @Override
@@ -1044,7 +1142,7 @@ public final class EscapingConventions {
       // We don't worry about sequences of "/../" here, because path traversal isn't a worry for
       // images, and detecting /../ sequences would add unnecessary complexity here.
       super(
-          Pattern.compile(
+          /* valueFilter= */ Pattern.compile(
               // Allow relative URIs.
               "^[^&:/?#]*(?:[/?#]|\\z)"
                   // Allow http, https and ftp URIs.
@@ -1058,8 +1156,7 @@ public final class EscapingConventions {
                   // Blob URIs -- while there's no saying what's in them, (a) they are created on
                   // the same origin, and (b) no worse than loading a random http/https link.
                   + "|^blob:",
-              Pattern.CASE_INSENSITIVE),
-          null);
+              Pattern.CASE_INSENSITIVE));
     }
 
     @Override
@@ -1094,10 +1191,9 @@ public final class EscapingConventions {
 
     private FilterImageDataUri() {
       super(
-          Pattern.compile(
+          /* valueFilter= */ Pattern.compile(
               "^data:image/(?:bmp|gif|jpe?g|png|tiff|webp|x-icon);base64,[a-z0-9+/]+=*\\z",
-              Pattern.CASE_INSENSITIVE),
-          null);
+              Pattern.CASE_INSENSITIVE));
     }
 
     @Override
@@ -1130,8 +1226,8 @@ public final class EscapingConventions {
 
     private FilterSipUri() {
       super(
-          Pattern.compile("^sip:[0-9a-z;=\\-+._!~*' /():&$#?@,]+\\z", Pattern.CASE_INSENSITIVE),
-          null);
+          /* valueFilter= */ Pattern.compile(
+              "^sip:[0-9a-z;=\\-+._!~*' /():&$#?@,]+\\z", Pattern.CASE_INSENSITIVE));
     }
 
     @Override
@@ -1163,8 +1259,8 @@ public final class EscapingConventions {
 
     private FilterSmsUri() {
       super(
-          Pattern.compile("^sms:[0-9a-z;=\\-+._!~*' /():&$#?@,]+\\z", Pattern.CASE_INSENSITIVE),
-          null);
+          /* valueFilter= */ Pattern.compile(
+              "^sms:[0-9a-z;=\\-+._!~*' /():&$#?@,]+\\z", Pattern.CASE_INSENSITIVE));
     }
 
     @Override
@@ -1193,7 +1289,7 @@ public final class EscapingConventions {
 
     private FilterTelUri() {
       super(
-          Pattern.compile(
+          /* valueFilter= */ Pattern.compile(
               "^tel:(?:[0-9a-z;=\\-+._!~*' /():&$#?@,]"
                   // Percent encoded '#'
                   + "|%23"
@@ -1202,8 +1298,7 @@ public final class EscapingConventions {
                   // Percent encoded ';'
                   + "|%3B"
                   + ")+\\z",
-              Pattern.CASE_INSENSITIVE),
-          null);
+              Pattern.CASE_INSENSITIVE));
     }
 
     @Override
@@ -1230,7 +1325,12 @@ public final class EscapingConventions {
     public static final EscapeUri INSTANCE = new EscapeUri();
 
     private EscapeUri() {
-      super(null, "%");
+      checkState(this.nonAsciiCodeUnits == null);
+    }
+
+    @Override
+    public String getNonAsciiPrefix() {
+      return "%";
     }
 
     @Override
@@ -1264,6 +1364,101 @@ public final class EscapingConventions {
       }
       return super.getLangFunctionNames(language);
     }
+
+    @Override
+    public final String escape(String string) {
+      var escapesByCodeUnit = this.escapesByCodeUnit;
+      for (int i = 0, n = string.length(); i < n; ++i) {
+        char c = string.charAt(i);
+        if (c < 0x80) { // Use the dense map.
+          String esc = escapesByCodeUnit[c];
+          if (esc != null) {
+            return escapeOntoStringBuilderStartingAt(string, i);
+          }
+        } else {
+          return escapeOntoStringBuilderStartingAt(string, i);
+        }
+      }
+      return string;
+    }
+
+    @Override
+    @CanIgnoreReturnValue
+    public final Appendable escapeOnto(char c, Appendable out) throws IOException {
+      if (c < 0x80) { // Use the dense map.
+        String esc = escapesByCodeUnit[c];
+        if (esc != null) {
+          return out.append(esc);
+        }
+      } else {
+        escapeUsingPercent(c, out);
+        return out;
+      }
+      return out.append(c);
+    }
+
+    @Override
+    @CanIgnoreReturnValue
+    public final Appendable escapeOnto(CharSequence s, Appendable out, int start, int end)
+        throws IOException {
+      int pos = start;
+      var escapesByCodeUnit = this.escapesByCodeUnit;
+      for (int i = start; i < end; ++i) {
+        char c = s.charAt(i);
+        if (c < 0x80) { // Use the dense map.
+          String esc = escapesByCodeUnit[c];
+          if (esc != null) {
+            out.append(s, pos, i).append(esc);
+            pos = i + 1;
+          }
+        } else { // use the prefix
+          out.append(s, pos, i);
+          escapeUsingPercent(c, out);
+          pos = i + 1;
+        }
+      }
+      return out.append(s, pos, end);
+    }
+
+    /**
+     * Appends a percent-encoded version of the given code unit to the given appendable.
+     *
+     * @param c A code unit greater than or equal to 0x80.
+     * @param out written to.
+     */
+    private void escapeUsingPercent(char c, Appendable out) throws IOException {
+      // User larger appends to reduce overhead.  These strings are trivial for the runtime to
+      // construct.
+      // Use a UTF-8
+      int trailing = (c & 0x3f) | 0x80;
+      if (c < 0x800) {
+        int leading = ((c >>> 6) & 0x1f) | 0xc0;
+        out.append(
+            "%"
+                + HEX_DIGITS[leading >>> 4]
+                + HEX_DIGITS[leading & 0xf]
+                + '%'
+                + HEX_DIGITS[trailing >>> 4]
+                + HEX_DIGITS[trailing & 0xf]);
+      } else {
+        int upper = ((c >>> 12) & 0xf) | 0xe0;
+        int middle = ((c >>> 6) & 0x3f) | 0x80;
+        out.append(
+            "%"
+                + HEX_DIGITS[upper >>> 4]
+                + HEX_DIGITS[upper & 0xf]
+                + '%'
+                + HEX_DIGITS[middle >>> 4]
+                + HEX_DIGITS[middle & 0xf]
+                + '%'
+                + HEX_DIGITS[trailing >>> 4]
+                + HEX_DIGITS[trailing & 0xf]);
+      }
+    }
+
+    private static final char[] HEX_DIGITS = {
+      '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F',
+    };
   }
 
   /**
@@ -1276,7 +1471,7 @@ public final class EscapingConventions {
 
     private FilterHtmlAttributes() {
       super(
-          Pattern.compile(
+          /* valueFilter= */ Pattern.compile(
               "^"
                   // Disallow on* and src* attribute names.
                   + "(?!on|src|"
@@ -1288,8 +1483,7 @@ public final class EscapingConventions {
                   + "[a-z0-9_$:-]*"
                   // Match until the end.
                   + ")\\z",
-              Pattern.CASE_INSENSITIVE),
-          null);
+              Pattern.CASE_INSENSITIVE));
     }
 
     @Override
@@ -1308,13 +1502,12 @@ public final class EscapingConventions {
 
     private FilterHtmlElementName() {
       super(
-          Pattern.compile(
+          /* valueFilter= */ Pattern.compile(
               "^"
                   // Disallow special element names.
                   + "(?!base|iframe|link|noframes|noscript|object|script|style|textarea|title|xmp)"
                   + "[a-z0-9_$:-]*\\z",
-              Pattern.CASE_INSENSITIVE),
-          null);
+              Pattern.CASE_INSENSITIVE));
     }
 
     @Override
@@ -1355,7 +1548,7 @@ public final class EscapingConventions {
     public static final FilterCspNonceValue INSTANCE = new FilterCspNonceValue();
 
     private FilterCspNonceValue() {
-      super(Pattern.compile("^[a-zA-Z0-9+/_-]+={0,2}$"), null);
+      super(/* valueFilter= */ Pattern.compile("^[a-zA-Z0-9+/_-]+={0,2}$"));
     }
 
     @Override
@@ -1464,4 +1657,6 @@ public final class EscapingConventions {
     }
     return sb.toString();
   }
+
+  private EscapingConventions() {}
 }

@@ -17,11 +17,15 @@ package com.google.template.soy.shared.internal;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.data.Dir;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
+import com.google.template.soy.data.LoggingFunctionInvocation;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
+import com.google.template.soy.shared.internal.EscapingConventions.CrossLanguageStringXform;
 import java.io.IOException;
+import java.util.function.Function;
 import javax.annotation.Nullable;
 
 /**
@@ -37,18 +41,23 @@ import javax.annotation.Nullable;
 public abstract class AbstractStreamingHtmlEscaper extends LoggingAdvisingAppendable {
 
   protected final LoggingAdvisingAppendable delegate;
-  protected Appendable activeAppendable;
+  @Nullable protected CrossLanguageStringXform transform;
 
   protected AbstractStreamingHtmlEscaper(
-      LoggingAdvisingAppendable delegate, Appendable escapingAppendable) {
+      LoggingAdvisingAppendable delegate, CrossLanguageStringXform transform) {
     this.delegate = checkNotNull(delegate);
-    activeAppendable = checkNotNull(escapingAppendable);
+    this.transform = checkNotNull(transform);
   }
 
   @CanIgnoreReturnValue
   @Override
   public final LoggingAdvisingAppendable append(CharSequence csq) throws IOException {
-    activeAppendable.append(csq);
+    var transform = this.transform;
+    if (transform != null) {
+      transform.escapeOnto(csq, delegate);
+    } else {
+      delegate.append(csq);
+    }
     return this;
   }
 
@@ -56,14 +65,38 @@ public abstract class AbstractStreamingHtmlEscaper extends LoggingAdvisingAppend
   @Override
   public final LoggingAdvisingAppendable append(CharSequence csq, int start, int end)
       throws IOException {
-    activeAppendable.append(csq, start, end);
+    var transform = this.transform;
+    if (transform != null) {
+      transform.escapeOnto(csq, delegate, start, end);
+    } else {
+      delegate.append(csq, start, end);
+    }
     return this;
   }
 
   @CanIgnoreReturnValue
   @Override
   public final LoggingAdvisingAppendable append(char c) throws IOException {
-    activeAppendable.append(c);
+    var transform = this.transform;
+    if (transform != null) {
+      transform.escapeOnto(c, delegate);
+    } else {
+      delegate.append(c);
+    }
+    return this;
+  }
+
+  @CanIgnoreReturnValue
+  @Override
+  public final LoggingAdvisingAppendable appendLoggingFunctionInvocation(
+      LoggingFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers)
+      throws IOException {
+    var transform = this.transform;
+    if (transform != null) {
+      transform.escapeOnto(escapePlaceholder(funCall.placeholderValue(), escapers), delegate);
+    } else {
+      delegate.appendLoggingFunctionInvocation(funCall, escapers);
+    }
     return this;
   }
 
@@ -74,7 +107,7 @@ public abstract class AbstractStreamingHtmlEscaper extends LoggingAdvisingAppend
 
   /**
    * Override this to set the appendable for the {@code append} methods to delegate to, based on the
-   * content kind.
+   * content kind. Force subtypes to override by marking abstract
    */
   @Override
   protected abstract LoggingAdvisingAppendable notifyKindAndDirectionality(
