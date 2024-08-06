@@ -101,6 +101,7 @@ import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
 import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.Expression.Feature;
 import com.google.template.soy.jbcsrc.restricted.Expression.Features;
+import com.google.template.soy.jbcsrc.restricted.FieldRef;
 import com.google.template.soy.jbcsrc.restricted.LocalVariable;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.MethodRef.MethodPureness;
@@ -669,6 +670,9 @@ final class ExpressionCompiler {
     @Override
     protected SoyExpression visitRecordLiteralNode(RecordLiteralNode node) {
       Expression paramStore;
+      if (node.numChildren() == 0) {
+        return SoyExpression.forSoyValue(node.getType(), FieldRef.EMPTY_RECORD.accessor());
+      }
       if (node.containsSpreads()) {
         // The size here is just a guess.
         paramStore = MethodRefs.PARAM_STORE_SIZE.invoke(constant(node.numChildren()));

@@ -486,12 +486,8 @@ public class SoyFileParser {
       SoyErrorKind.of("Invalid param name ''{0}''.");
   private static final SoyErrorKind UNEXPECTED_PIPE =
       SoyErrorKind.of("Unexpected ''|''. Print directives should not have whitespace after ''|''.");
-  private static final SoyErrorKind EMPTY_RECORD_LITERAL =
-      SoyErrorKind.of("Empty record literal.");
   private static final SoyErrorKind RECORD_NAMED_PARAMS =
       SoyErrorKind.of("Record literals require named parameters.");
-  private static final SoyErrorKind EMPTY_RECORD_TYPE =
-      SoyErrorKind.of("Empty record type.");
   // TODO(b/314845158): Remove legacy and/or from parser.
   private static final SoyErrorKind LEGACY_AND_ERROR =
       SoyErrorKind.of("Found use of deprecated ''and'', use the ''&&'' operator instead.");
@@ -4764,10 +4760,7 @@ private ExprNode VarRefOrFunctionCallLike(ExprState state) :
       CallableExprBuilder callBuilder = CallableExprBuilder.builder();
       if ("record".equals(identToken.image)) {
         RecordLiteralNode node;
-        if (callArgs.values.isEmpty()) {
-          errorReporter.report(ident.location(), EMPTY_RECORD_LITERAL);
-          node = new RecordLiteralNode(ident, ImmutableList.of(), loc);
-        } else if (callArgs.isNamedOrSpread()) {
+        if (callArgs.isNamedOrSpread()) {
           for (Identifier name : callArgs.getNames(errorReporter)) {
             // CallArgs already reported error for non-dotted ident.
             if (name.type() != Identifier.Type.SINGLE_IDENT) {
@@ -5382,12 +5375,7 @@ private TypeNode RecordType() :
   close = <RBRACKET>
 
   {
-    SourceLocation srcLoc = createSrcLoc(open, close);
-    if (properties.isEmpty()) {
-      errorReporter.report(srcLoc, EMPTY_RECORD_TYPE);
-    }
-
-    return RecordTypeNode.create(srcLoc, properties);
+    return RecordTypeNode.create(createSrcLoc(open, close), properties);
   }
 }
 

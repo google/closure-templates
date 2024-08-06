@@ -193,7 +193,6 @@ public final class ParseExpressionTest {
 
   @Test
   public void testRecognizeRecordLiterals() {
-    assertThatExpression("record()").isNotValidExpression();
     assertThatExpression("record(,)").isNotValidExpression();
     assertThatExpression("record(aa: 55)").isValidExpression();
     assertThatExpression("record(aa: 55,)").isValidExpression();

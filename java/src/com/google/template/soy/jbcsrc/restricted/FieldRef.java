@@ -22,6 +22,7 @@ import static com.google.common.base.Preconditions.checkState;
 import com.google.auto.value.AutoValue;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.data.internal.ParamStore;
+import com.google.template.soy.data.internal.SoyRecordImpl;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.StringData;
@@ -73,6 +74,8 @@ public abstract class FieldRef {
       staticFieldReference(BooleanData.class, "FALSE").asNonJavaNullable();
   public static final FieldRef BOOLEAN_DATA_TRUE =
       staticFieldReference(BooleanData.class, "TRUE").asNonJavaNullable();
+  public static final FieldRef EMPTY_RECORD =
+      staticFieldReference(SoyRecordImpl.class, "EMPTY").asNonJavaNullable();
 
   public static final FieldRef STACK_FRAME_STATE_NUMBER =
       instanceFieldReference(StackFrame.class, "stateNumber");

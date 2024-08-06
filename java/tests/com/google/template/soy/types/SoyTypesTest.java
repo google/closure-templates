@@ -477,6 +477,11 @@ public class SoyTypesTest {
 
   @Test
   public void testRecordTypeAssignment() {
+    assertThatSoyType("[]").isAssignableFromStrict("[]");
+    assertThatSoyType("[a?:int]").isAssignableFromStrict("[]");
+    assertThatSoyType("[]").isAssignableFromStrict("[a:int, b:any]");
+    assertThatSoyType("[a:int, b:any]").isNotAssignableFromStrict("[]");
+
     // Same
     assertThatSoyType("[a:int, b:any]").isAssignableFromStrict("[a:int, b:any]");
 
@@ -497,7 +502,7 @@ public class SoyTypesTest {
     assertThatSoyType("[a:int, b?:string|null]").isAssignableFromStrict("[a:int, b?:string|null]");
     assertThatSoyType("[a:int, b?:string|null]").isAssignableFromStrict("[a:int, b:string]");
     assertThatSoyType("[a:int, b?:string|null]").isNotAssignableFromStrict("[a:int, b:int]");
-    assertThatSoyType("[a:int]").isAssignableFromStrict("[a:int, b?:string|null" + "]");
+    assertThatSoyType("[a:int]").isAssignableFromStrict("[a:int, b?:string|null]");
   }
 
   @Test

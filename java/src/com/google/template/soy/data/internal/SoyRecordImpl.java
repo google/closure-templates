@@ -32,6 +32,8 @@ import java.util.function.BiConsumer;
  */
 public final class SoyRecordImpl extends SoyAbstractValue implements SoyRecord {
 
+  public static final SoyRecordImpl EMPTY = new SoyRecordImpl(new ParamStore());
+
   private final ParamStore map;
 
   public SoyRecordImpl(ParamStore map) {

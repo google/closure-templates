@@ -142,8 +142,6 @@ identifier. For example,
 
 *   `record(aaa: 'blah', bbb: 123, ccc: $foo)`
 
-Empty records are not allowed.
-
 You can use the `...` operator to spread one or more records inside a record
 literal.
 

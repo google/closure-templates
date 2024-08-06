@@ -18,7 +18,6 @@ package com.google.template.soy.javagencode.javatypes;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -190,7 +189,9 @@ public final class JavaTypeUtils {
 
   private static ImmutableList<JavaType> trySimpleRecordType(
       RecordType recordType, boolean list, Set<SoyType.Kind> skipSoyTypes) {
-    Preconditions.checkArgument(!recordType.getMembers().isEmpty());
+    if (recordType.getMembers().isEmpty()) {
+      return ImmutableList.of();
+    }
 
     // No records of records.
     if (Streams.stream(SoyTypes.getTypeTraverser(recordType, null))

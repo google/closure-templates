@@ -33,7 +33,6 @@ import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_VELOG;
 import static com.google.template.soy.jssrc.internal.JsRuntime.sanitizedContentType;
 
 import com.google.common.base.Joiner;
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedSet;
@@ -497,7 +496,6 @@ public final class JsType {
       case RECORD:
         {
           RecordType recordType = (RecordType) soyType;
-          Preconditions.checkArgument(!recordType.getMembers().isEmpty());
           Builder builder = builder();
           Map<String, String> members = new LinkedHashMap<>();
           for (RecordType.Member member : recordType.getMembers()) {
@@ -508,7 +506,10 @@ public final class JsType {
           }
           return builder
               // trailing comma is important to prevent parsing ambiguity for the unknown type
-              .addType("{" + Joiner.on(", ").withKeyValueSeparator(": ").join(members) + ",}")
+              .addType(
+                  members.isEmpty()
+                      ? "!Object"
+                      : "{" + Joiner.on(", ").withKeyValueSeparator(": ").join(members) + ",}")
               .setPredicate(GOOG_IS_OBJECT)
               .build();
         }
