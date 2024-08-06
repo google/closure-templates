@@ -474,6 +474,25 @@ public final class ProtoSupportTest {
     }
   }
 
+  @Test
+  public void testEmulateJavaSemantics() {
+    // Excercises some special cases for when users emulate java semantics.
+    assertThatTemplateBody(
+            "{@param proto : KvPair = KvPair()}", "{$proto.getKeyOrUndefined() ?? ''}")
+        .rendersAs("");
+    assertThatTemplateBody(
+            "{@param proto : KvPair = KvPair()}", "{$proto.getAnotherValueOrUndefined() ?? 0}")
+        .rendersAs("0");
+    assertThatTemplateBody(
+            "{@param proto : ExampleExtendable = ExampleExtendable()}",
+            "{$proto.getLongFieldJstypeStringOrUndefined() ?? '0'}")
+        .rendersAs("0");
+    assertThatTemplateBody(
+            "{@param proto : ExampleExtendable = ExampleExtendable()}",
+            "{$proto.getSomeEmbeddedMessage()?.getSomeEmbeddedNumOrUndefined() ?? 0}")
+        .rendersAs("0");
+  }
+
   private CompiledTemplateSubject assertThatTemplateBody(String... body) {
     try {
       SoyFileSetParserBuilder builder =

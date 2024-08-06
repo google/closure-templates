@@ -1583,7 +1583,7 @@ final class ProtoUtils {
     }
   }
 
-  private static boolean shouldConvertBetweenStringAndLong(
+  static boolean shouldConvertBetweenStringAndLong(
       FieldDescriptor descriptor, boolean forceStringConversion) {
     if (forceStringConversion) {
       return true;

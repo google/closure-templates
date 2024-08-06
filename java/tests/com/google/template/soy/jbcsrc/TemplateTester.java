@@ -315,7 +315,7 @@ public final class TemplateTester {
     }
 
     private ParamStore asParams(Map<String, ?> params) {
-      return ParamStore.fromRecord((SoyRecord) SoyValueConverter.INSTANCE.convert(params));
+      return ParamStore.fromRecord(SoyValueConverter.INSTANCE.convert(params).resolve());
     }
 
     @CanIgnoreReturnValue

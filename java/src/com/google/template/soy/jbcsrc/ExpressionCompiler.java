@@ -1209,6 +1209,7 @@ final class ExpressionCompiler {
         // it is dead code.
         return left;
       }
+
       // It is extremely common for a user to write '<complex-expression> ?? <primitive-expression>
       // so try to generate code that doesn't involve unconditionally boxing the right hand side.
       SoyExpression right = visit(node.getRightChild());
