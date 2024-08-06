@@ -69,7 +69,7 @@ public final class RecordLiteralNode extends AbstractParentExprNode {
 
   @Nullable
   public ExprNode getValue(String key) {
-    for (int i = 0; i < keys.size(); i++) {
+    for (int i = 0, n = numChildren(); i < n; i++) {
       if (keys.get(i).identifier().equals(key)) {
         return getChild(i);
       }

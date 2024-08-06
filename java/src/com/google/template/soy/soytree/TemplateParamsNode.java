@@ -23,6 +23,7 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.types.ast.TypeNode;
 import java.util.List;
 import javax.annotation.Nullable;
@@ -32,7 +33,7 @@ import javax.annotation.Nullable;
  *
  * <pre>{@params {p1, p2, p3}: Type = record(...)}</pre>
  */
-public final class TemplateParamsNode extends AbstractCommandNode {
+public final class TemplateParamsNode extends AbstractCommandNode implements ExprHolderNode {
 
   private final ImmutableList<Identifier> names;
   private final TypeNode typeNode;
@@ -78,6 +79,11 @@ public final class TemplateParamsNode extends AbstractCommandNode {
   @Override
   public SoyNode copy(CopyState copyState) {
     return new TemplateParamsNode(this, copyState);
+  }
+
+  @Override
+  public ImmutableList<ExprRootNode> getExprList() {
+    return defaultValue != null ? ImmutableList.of(defaultValue) : ImmutableList.of();
   }
 
   @Override

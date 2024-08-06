@@ -714,7 +714,7 @@ public final class SoyFileSet {
     } catch (SoyCompilationException | SoyInternalCompilerException e) {
       throw e;
     } catch (RuntimeException e) {
-      if (errorReporter.hasErrorsOrWarnings()) {
+      if (errorReporter != null && errorReporter.hasErrorsOrWarnings()) {
         throw new SoyInternalCompilerException(
             Iterables.concat(errorReporter.getErrors(), errorReporter.getWarnings()),
             getErrorFormatterWithSnippets(),

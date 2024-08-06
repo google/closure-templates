@@ -65,7 +65,11 @@ public abstract class DataAccessNode extends AbstractParentExprNode
 
   @Override
   public final SourceLocation getSourceLocation() {
-    return getBaseExprChild().getSourceLocation().extend(getAccessSourceLocation());
+    try {
+      return getBaseExprChild().getSourceLocation().extend(getAccessSourceLocation());
+    } catch (IllegalArgumentException e) {
+      return getAccessSourceLocation();
+    }
   }
 
   public final SourceLocation getAccessSourceLocation() {

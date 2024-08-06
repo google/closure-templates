@@ -184,6 +184,7 @@ import com.google.template.soy.soytree.SwitchDefaultNode;
 import com.google.template.soy.soytree.SwitchNode;
 import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateNode;
+import com.google.template.soy.soytree.TemplateParamsNode;
 import com.google.template.soy.soytree.defn.ImportedVar;
 import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import com.google.template.soy.soytree.defn.TemplateStateVar;
@@ -329,6 +330,9 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
   private static final SoyErrorKind DECLARED_DEFAULT_TYPE_MISMATCH =
       SoyErrorKind.of(
           "The initializer for ''{0}'' has type ''{1}'' which is not assignable to type ''{2}''.");
+  private static final SoyErrorKind PARAMS_DEFAULT_TYPE_MISMATCH =
+      SoyErrorKind.of(
+          "The default params value has type ''{0}'' which is not assignable to type ''{1}''.");
   private static final SoyErrorKind PARAM_DEPENDS_ON_PARAM =
       SoyErrorKind.of("Param initializers may not depend on other params.");
   private static final SoyErrorKind PARAM_DEPENDS_ON_FUNCTION =
@@ -601,6 +605,11 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
       List<TemplateStateVar> allStateVars = new ArrayList<>();
       SetMultimap<TemplateStateVar, TemplateStateVar> stateToStateDeps = HashMultimap.create();
 
+      TemplateParamsNode paramsNode = node.getParamsNode();
+      if (paramsNode != null) {
+        visit(paramsNode);
+      }
+
       // need to visit expressions first so parameters with inferred types have their expressions
       // analyzed
       List<TemplateHeaderVarDefn> headerVars = node.getHeaderParams();
@@ -697,6 +706,21 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
         exprVisitor.exec(expr);
       }
       visitChildren(node);
+    }
+
+    @Override
+    protected void visitTemplateParamsNode(TemplateParamsNode node) {
+      super.visitTemplateParamsNode(node);
+      ExprNode defaultValue = node.getDefaultValue();
+      if (defaultValue != null) {
+        if (!node.getTypeNode().getResolvedType().isAssignableFromStrict(defaultValue.getType())) {
+          errorReporter.report(
+              defaultValue.getSourceLocation(),
+              PARAMS_DEFAULT_TYPE_MISMATCH,
+              defaultValue.getType(),
+              node.getTypeNode().getResolvedType());
+        }
+      }
     }
 
     @Override
@@ -2610,6 +2634,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
      */
     private SoyType getFieldType(
         SoyType baseType, String fieldName, SourceLocation sourceLocation) {
+      baseType = baseType.getEffectiveType();
       switch (baseType.getKind()) {
         case UNKNOWN:
           // If we don't know anything about the base type, then make no assumptions

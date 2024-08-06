@@ -37,7 +37,7 @@ import com.google.template.soy.soytree.SoyFileNode;
 final class EnforceExperimentalFeaturesPass implements CompilerFilePass {
 
   private static final ImmutableSet<String> ALL_EXPERIMENTAL_FEATURES =
-      ImmutableSet.of("testonly_throw_on_warnings", "testonly_typedefs");
+      ImmutableSet.of("testonly_throw_on_warnings");
 
   private static final SoyErrorKind INVALID_EXPERIMENTAL_FEATURE =
       SoyErrorKind.of("Invalid Soy experimental feature(s): {0}.");
