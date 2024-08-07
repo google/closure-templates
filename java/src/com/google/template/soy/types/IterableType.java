@@ -22,6 +22,7 @@ import com.google.template.soy.soytree.SoyTypeP;
 public final class IterableType extends AbstractIterableType {
 
   private static final IterableType EMPTY = new IterableType(UnknownType.getInstance());
+  public static final IterableType ANY_ITERABLE = new IterableType(AnyType.getInstance());
 
   public static IterableType empty() {
     return EMPTY;
