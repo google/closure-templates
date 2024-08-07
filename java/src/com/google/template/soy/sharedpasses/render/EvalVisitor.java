@@ -148,7 +148,7 @@ import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
-import com.google.template.soy.types.UnionType;
+import com.google.template.soy.types.SoyTypes;
 import com.ibm.icu.util.ULocale;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -554,18 +554,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
   }
 
   private static boolean isProtoOrUnionOfProtos(SoyType type) {
-    if (type.getKind() == SoyType.Kind.PROTO) {
-      return true;
-    }
-    if (type.getKind() == SoyType.Kind.UNION) {
-      for (SoyType memberType : ((UnionType) type).getMembers()) {
-        if (memberType.getKind() != SoyType.Kind.PROTO && !memberType.isNullOrUndefined()) {
-          return false;
-        }
-      }
-      return true;
-    }
-    return false;
+    return SoyTypes.isKindOrUnionOfKind(SoyTypes.tryRemoveNullish(type), SoyType.Kind.PROTO);
   }
 
   private SoyValue visitItemAccessNode(ItemAccessNode itemAccess, SoyValue base, boolean nullSafe) {

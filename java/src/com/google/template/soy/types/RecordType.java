@@ -35,6 +35,8 @@ import javax.annotation.Nullable;
  */
 public final class RecordType extends SoyType {
 
+  public static final RecordType EMPTY_RECORD = new RecordType(ImmutableList.of());
+
   /** The {name, type} pair that is a record member. */
   @AutoValue
   public abstract static class Member {

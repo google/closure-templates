@@ -194,6 +194,7 @@ import com.google.template.soy.types.FloatType;
 import com.google.template.soy.types.FunctionType;
 import com.google.template.soy.types.FunctionType.Parameter;
 import com.google.template.soy.types.IntType;
+import com.google.template.soy.types.IterableType;
 import com.google.template.soy.types.LegacyObjectMapType;
 import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.MapType;
@@ -1137,8 +1138,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
       SoyType listExprType = node.getListExpr().getType();
 
       // Report an error if listExpr did not actually evaluate to a list.
-      if (!SoyTypes.isKindOrUnionOfKind(listExprType, AbstractIterableType.class)
-          && listExprType.getKind() != SoyType.Kind.UNKNOWN) {
+      if (!IterableType.ANY_ITERABLE.isAssignableFromLoose(listExprType)) {
         errorReporter.report(
             node.getListExpr().getSourceLocation(),
             BAD_LIST_COMP_TYPE,

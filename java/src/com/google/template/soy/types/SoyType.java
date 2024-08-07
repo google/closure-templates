@@ -148,9 +148,6 @@ public abstract class SoyType {
         Sets.immutableEnumSet(
             Kind.ITERABLE, Kind.LIST, Kind.SET, Kind.LEGACY_OBJECT_MAP, Kind.MAP, Kind.RECORD);
 
-    public static final ImmutableSet<Kind> ITERABLE_KINDS =
-        Sets.immutableEnumSet(Kind.ITERABLE, Kind.LIST, Kind.SET);
-
     /** Returns true for SoyTypes that are plain strings or sanitized subtypes of strings. */
     public boolean isKnownStringOrSanitizedContent() {
       return STRING_KINDS.contains(this);

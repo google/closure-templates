@@ -27,9 +27,13 @@ import com.google.template.soy.types.AbstractIterableType;
 import com.google.template.soy.types.BoolType;
 import com.google.template.soy.types.FloatType;
 import com.google.template.soy.types.IntType;
+import com.google.template.soy.types.IterableType;
 import com.google.template.soy.types.ListType;
+import com.google.template.soy.types.MapType;
+import com.google.template.soy.types.MessageType;
 import com.google.template.soy.types.SanitizedType.AttributesType;
 import com.google.template.soy.types.SanitizedType.HtmlType;
+import com.google.template.soy.types.SetType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
@@ -257,15 +261,15 @@ public abstract class SoyRuntimeType {
   }
 
   public final boolean isKnownListOrUnionOfLists() {
-    return SoyTypes.isKindOrUnionOfKind(soyType, Kind.LIST);
+    return ListType.ANY_LIST.isAssignableFromStrict(soyType);
   }
 
   public final boolean isKnownSet() {
-    return SoyTypes.isKindOrUnionOfKind(soyType, Kind.SET);
+    return SetType.ANY_SET.isAssignableFromStrict(soyType);
   }
 
   public final boolean isKnownIterable() {
-    return SoyTypes.isKindOrUnionOfKinds(soyType, SoyType.Kind.ITERABLE_KINDS);
+    return IterableType.ANY_ITERABLE.isAssignableFromStrict(soyType);
   }
 
   public final ListType asListType() {
@@ -290,7 +294,7 @@ public abstract class SoyRuntimeType {
   }
 
   public final boolean isKnownMapOrUnionOfMaps() {
-    return SoyTypes.isKindOrUnionOfKind(soyType, Kind.MAP);
+    return MapType.ANY_MAP.isAssignableFromStrict(soyType);
   }
 
   public final boolean isKnownBool() {
@@ -298,7 +302,7 @@ public abstract class SoyRuntimeType {
   }
 
   public final boolean isKnownProtoOrUnionOfProtos() {
-    return SoyTypes.isKindOrUnionOfKind(soyType, Kind.PROTO);
+    return MessageType.getInstance().isAssignableFromStrict(soyType);
   }
 
   /**

@@ -99,16 +99,8 @@ public final class SoyTypes {
           .add(Kind.BOOL)
           .build();
 
-  private static final ImmutableSet<Kind> STRING_OR_NUMBER_UNION_KIND =
-      new ImmutableSet.Builder<Kind>().add(Kind.STRING).addAll(SoyTypes.NUMERIC_PRIMITIVES).build();
-
   public static boolean isIntFloatOrNumber(SoyType type) {
-    return isKindOrUnionOfKinds(type, ARITHMETIC_PRIMITIVES);
-  }
-
-  public static boolean isStringNumberUnion(SoyType type) {
-    return (type.getKind() == Kind.UNION
-        && isKindOrUnionOfKinds(type, STRING_OR_NUMBER_UNION_KIND));
+    return SoyTypes.NUMBER_TYPE.isAssignableFromStrict(type);
   }
 
   /**
@@ -363,10 +355,6 @@ public final class SoyTypes {
    */
   public static boolean isKindOrUnionOfKind(SoyType type, Kind kind) {
     return expandUnions(type).stream().allMatch((t) -> kind == t.getKind());
-  }
-
-  public static boolean isKindOrUnionOfKind(SoyType type, Class<? extends SoyType> kind) {
-    return expandUnions(type).stream().allMatch(kind::isInstance);
   }
 
   /**

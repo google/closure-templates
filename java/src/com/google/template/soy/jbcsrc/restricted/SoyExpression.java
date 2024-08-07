@@ -138,7 +138,7 @@ public final class SoyExpression extends Expression {
   }
 
   public static SoyExpression forBoxedList(SoyType listType, Expression delegate) {
-    Preconditions.checkArgument(SoyTypes.isKindOrUnionOfKind(listType, Kind.LIST));
+    Preconditions.checkArgument(ListType.ANY_LIST.isAssignableFromStrict(listType));
     return new SoyExpression(SoyRuntimeType.getBoxedType(listType), delegate);
   }
 

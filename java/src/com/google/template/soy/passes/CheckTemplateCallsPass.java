@@ -52,6 +52,7 @@ import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.TemplateParam;
+import com.google.template.soy.types.RecordType;
 import com.google.template.soy.types.SanitizedType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypes;
@@ -151,7 +152,7 @@ final class CheckTemplateCallsPass implements CompilerFileSetPass {
         }
         for (CallDelegateNode callNode :
             SoyTreeUtils.getAllNodesOfType(template, CallDelegateNode.class)) {
-          helper.checkCall(file, template, callNode, file.getFilePath().path());
+          helper.checkCall(file, template, callNode);
         }
       }
     }
@@ -226,11 +227,7 @@ final class CheckTemplateCallsPass implements CompilerFileSetPass {
       }
     }
 
-    void checkCall(
-        SoyFileNode file,
-        TemplateNode callerTemplate,
-        CallDelegateNode node,
-        String callerFilename) {
+    void checkCall(SoyFileNode file, TemplateNode callerTemplate, CallDelegateNode node) {
       ImmutableList<TemplateMetadata> potentialCallees =
           fileSetMetadata
               .getDelTemplateSelector()
@@ -376,8 +373,7 @@ final class CheckTemplateCallsPass implements CompilerFileSetPass {
         } else {
           ExprNode dataExpr = call.getDataExpr();
           // TODO(b/168852179): enforce that the correct set of properties are present
-          if (!SoyTypes.isKindOrUnionOfKind(dataExpr.getType(), SoyType.Kind.RECORD)
-              && dataExpr.getType().getKind() != SoyType.Kind.UNKNOWN
+          if (!RecordType.EMPTY_RECORD.isAssignableFromLoose(dataExpr.getType())
               && dataExpr.getType().getKind() != SoyType.Kind.ANY) {
             errorReporter.report(
                 dataExpr.getSourceLocation(), INVALID_DATA_EXPR, dataExpr.getType());

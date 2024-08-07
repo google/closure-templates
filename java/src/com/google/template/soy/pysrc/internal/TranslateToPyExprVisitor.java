@@ -87,6 +87,7 @@ import com.google.template.soy.soytree.TemplateBasicNode;
 import com.google.template.soy.soytree.TemplateElementNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.TemplateParam;
+import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypes;
@@ -402,7 +403,7 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
       ItemAccessNode itemAccess = (ItemAccessNode) dataAccess;
       SoyType baseType = SoyTypes.tryRemoveNullish(itemAccess.getBaseExprChild().getType());
       PyExpr keyPyExpr = visit(itemAccess.getKeyExprChild());
-      if (SoyTypes.isKindOrUnionOfKind(baseType, Kind.LIST)) {
+      if (ListType.ANY_LIST.isAssignableFromStrict(baseType)) {
         return genCodeForKeyAccess(base, keyPyExpr, NotFoundBehavior.returnNone());
       } else if (SoyTypes.isKindOrUnionOfKinds(
           baseType, ImmutableSet.of(Kind.LEGACY_OBJECT_MAP, Kind.RECORD))) {

@@ -42,6 +42,8 @@ import com.google.template.soy.shared.restricted.SoyMethod;
 import com.google.template.soy.types.AbstractMapType;
 import com.google.template.soy.types.BoolType;
 import com.google.template.soy.types.ListType;
+import com.google.template.soy.types.MapType;
+import com.google.template.soy.types.MessageType;
 import com.google.template.soy.types.ProtoExtensionImportType;
 import com.google.template.soy.types.RecordType;
 import com.google.template.soy.types.SoyProtoType;
@@ -145,7 +147,7 @@ public enum BuiltinMethod implements SoyMethod {
     @Override
     public boolean appliesToBase(SoyType baseType) {
       Preconditions.checkArgument(!SoyTypes.isNullish(baseType));
-      return SoyTypes.isKindOrUnionOfKind(baseType, SoyType.Kind.PROTO);
+      return MessageType.getInstance().isAssignableFromStrict(baseType);
     }
 
     @Override
@@ -183,7 +185,7 @@ public enum BuiltinMethod implements SoyMethod {
     @Override
     public boolean appliesToBase(SoyType baseType) {
       Preconditions.checkArgument(!SoyTypes.isNullish(baseType));
-      return SoyTypes.isKindOrUnionOfKind(baseType, SoyType.Kind.PROTO);
+      return MessageType.getInstance().isAssignableFromStrict(baseType);
     }
 
     @Override
@@ -226,7 +228,7 @@ public enum BuiltinMethod implements SoyMethod {
     @Override
     public boolean appliesToBase(SoyType baseType) {
       Preconditions.checkArgument(!SoyTypes.isNullish(baseType));
-      return SoyTypes.isKindOrUnionOfKind(baseType, SoyType.Kind.PROTO);
+      return MessageType.getInstance().isAssignableFromStrict(baseType);
     }
 
     @Override
@@ -270,7 +272,7 @@ public enum BuiltinMethod implements SoyMethod {
     @Override
     public boolean appliesToBase(SoyType baseType) {
       Preconditions.checkArgument(!SoyTypes.isNullish(baseType));
-      return SoyTypes.isKindOrUnionOfKind(baseType, SoyType.Kind.PROTO);
+      return MessageType.getInstance().isAssignableFromStrict(baseType);
     }
 
     @Override
@@ -312,7 +314,7 @@ public enum BuiltinMethod implements SoyMethod {
     @Override
     public boolean appliesToBase(SoyType baseType) {
       Preconditions.checkArgument(!SoyTypes.isNullish(baseType));
-      return SoyTypes.isKindOrUnionOfKind(baseType, SoyType.Kind.MAP);
+      return MapType.ANY_MAP.isAssignableFromStrict(baseType);
     }
 
     @Override
