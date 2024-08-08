@@ -118,6 +118,7 @@ public final class TofuTypeChecks {
         return PASS;
       case NAMED:
       case INTERSECTION:
+      case INDEXED:
         return doIsInstance(type.getEffectiveType(), value);
       case ATTRIBUTES:
         return isSanitizedofKind(value, ContentKind.ATTRIBUTES);

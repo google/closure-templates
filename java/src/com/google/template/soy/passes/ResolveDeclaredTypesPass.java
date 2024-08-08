@@ -279,7 +279,7 @@ final class ResolveDeclaredTypesPass
 
   private void visitTypeNode(@Nullable TypeNode typeNode) {
     if (typeNode != null) {
-      SoyType unused = typeNode.accept(converter);
+      SoyType unused = converter.exec(typeNode);
     }
   }
 }

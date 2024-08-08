@@ -64,11 +64,6 @@ public abstract class UnionTypeNode extends TypeNode {
   }
 
   @Override
-  public <T> T accept(TypeNodeVisitor<T> visitor) {
-    return visitor.visit(this);
-  }
-
-  @Override
   public UnionTypeNode copy() {
     UnionTypeNode copy =
         create(candidates().stream().map(TypeNode::copy).collect(toImmutableList()));

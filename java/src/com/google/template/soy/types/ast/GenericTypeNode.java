@@ -52,11 +52,6 @@ public abstract class GenericTypeNode extends TypeNode {
   }
 
   @Override
-  public <T> T accept(TypeNodeVisitor<T> visitor) {
-    return visitor.visit(this);
-  }
-
-  @Override
   public GenericTypeNode copy() {
     ImmutableList.Builder<TypeNode> newArguments = ImmutableList.builder();
     for (TypeNode arg : arguments()) {

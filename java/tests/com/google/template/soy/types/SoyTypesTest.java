@@ -388,6 +388,45 @@ public class SoyTypesTest {
   }
 
   @Test
+  public void testIndexed() {
+    SoyTypeRegistry baseRegistry = SoyTypeRegistryBuilder.create();
+    SoyType stringAlias = NamedType.create("StringAlias", "-", StringType.getInstance());
+    SoyType rec1 =
+        NamedType.create(
+            "Rec1",
+            "-",
+            parseType("[a: string, b: number, c: bool, d: string|bool]", baseRegistry));
+
+    SoyTypeRegistry registry =
+        new DelegatingSoyTypeRegistry(baseRegistry) {
+          private final ImmutableMap<String, SoyType> namedTypes =
+              ImmutableMap.of("StringAlias", stringAlias, "Rec1", rec1);
+
+          @Override
+          public SoyType getType(String typeName) {
+            if (namedTypes.containsKey(typeName)) {
+              return namedTypes.get(typeName);
+            }
+            return super.getType(typeName);
+          }
+        };
+
+    assertThatSoyType("Rec1['a']", registry).isAssignableFromStrict("string");
+    assertThatSoyType("string", registry).isAssignableFromStrict("Rec1['a']");
+
+    assertThatSoyType("Rec1['b']", registry).isAssignableFromStrict("number");
+    assertThatSoyType("Rec1['c']", registry).isAssignableFromStrict("bool");
+    assertThatSoyType("Rec1['d']", registry).isAssignableFromStrict("string");
+    assertThatSoyType("Rec1['d']", registry).isAssignableFromStrict("bool");
+
+    assertThatSoyType("Rec1['d']", registry).isAssignableFromStrict("Rec1['a']");
+    assertThatSoyType("Rec1['a']", registry).isNotAssignableFromStrict("Rec1['d']");
+
+    assertThatSoyType("any", registry).isNotAssignableFromStrict("Rec1['xyz']");
+    assertThatSoyType("any", registry).isNotAssignableFromStrict("StringAlias['a']");
+  }
+
+  @Test
   public void testIntersection() {
     assertThatSoyType("[a: string] & [b: string]").isAssignableFromStrict("[a: string, b: string]");
     assertThatSoyType("[a: string] & [b: string]")

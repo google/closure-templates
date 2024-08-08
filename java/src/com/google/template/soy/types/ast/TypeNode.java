@@ -31,8 +31,6 @@ public abstract class TypeNode {
 
   public abstract SourceLocation sourceLocation();
 
-  public abstract <T> T accept(TypeNodeVisitor<T> visitor);
-
   public void setResolvedType(SoyType type) {
     resolvedType.set(type);
   }

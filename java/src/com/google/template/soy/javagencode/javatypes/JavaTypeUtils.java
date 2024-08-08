@@ -138,6 +138,7 @@ public final class JavaTypeUtils {
         break;
       case INTERSECTION:
       case NAMED:
+      case INDEXED:
         return getJavaTypes(soyType.getEffectiveType());
       case ANY:
       case UNKNOWN:

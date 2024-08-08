@@ -34,6 +34,7 @@ import com.google.template.soy.types.AnyType;
 import com.google.template.soy.types.BoolType;
 import com.google.template.soy.types.FloatType;
 import com.google.template.soy.types.FunctionType;
+import com.google.template.soy.types.IndexedType;
 import com.google.template.soy.types.IntType;
 import com.google.template.soy.types.MessageType;
 import com.google.template.soy.types.NullType;
@@ -506,6 +507,11 @@ public final class TemplateMetadataSerializer {
       case NAMED:
         return typeRegistry.getOrCreateNamedType(
             proto.getNamed().getName(), proto.getNamed().getNamespace());
+      case INDEXED:
+        return typeRegistry.intern(
+            IndexedType.create(
+                fromProto(proto.getIndexed().getType(), typeRegistry, filePath, errorReporter),
+                proto.getIndexed().getProperty()));
       case TYPEKIND_NOT_SET:
         // fall-through
     }

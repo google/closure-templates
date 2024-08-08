@@ -121,6 +121,7 @@ public abstract class SoyType {
     UNION,
     INTERSECTION,
     NAMED,
+    INDEXED,
     // Imported symbol types
     CSS_TYPE,
     CSS_MODULE,
@@ -229,7 +230,7 @@ public abstract class SoyType {
     while (!stack.isEmpty()) {
       SoyType type = stack.removeLast();
       // If a named type is itself a union we need to resolve that here.
-      if (type.getKind() == Kind.NAMED) {
+      if (type.getKind() == Kind.NAMED || type.getKind() == Kind.INDEXED) {
         SoyType effectiveType = type.getEffectiveType();
         if (effectiveType.getKind() == Kind.UNION) {
           type = effectiveType;

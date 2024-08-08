@@ -94,6 +94,7 @@ public abstract class SoyRuntimeType {
         return new PrimitiveSoyType(soyType, BytecodeUtils.SET_TYPE);
       case INTERSECTION:
       case NAMED:
+      case INDEXED:
         return unboxedTypeImpl(soyType.getEffectiveType());
       case UNION:
         {

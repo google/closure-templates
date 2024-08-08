@@ -162,6 +162,7 @@ import com.google.template.soy.types.TemplateType.ParameterKind;
 import com.google.template.soy.types.TemplateType;
 import com.google.template.soy.types.ast.FunctionTypeNode;
 import com.google.template.soy.types.ast.GenericTypeNode;
+import com.google.template.soy.types.ast.IndexedTypeNode;
 import com.google.template.soy.types.ast.IntersectionTypeNode;
 import com.google.template.soy.types.ast.NamedTypeNode;
 import com.google.template.soy.types.ast.RecordTypeNode;
@@ -5147,7 +5148,7 @@ private TypeNode TypeExprPrec3() :
 }
 {
   (
-    type = NamedType()
+    type = NamedOrIndexedType()
   | type = NullType()
   | type = UndefinedType()
   | type = UnknownType()
@@ -5376,6 +5377,24 @@ private TypeNode UndefinedType() : {
   tok = <UNDEFINED>
   {
     return NamedTypeNode.create(createSrcLoc(tok), tok.image);
+  }
+}
+
+private TypeNode NamedOrIndexedType() :
+{
+  TypeNode named;
+  StringNode property = null;
+  Token end = null;
+}
+{
+  named = NamedType()
+  [
+    <LBRACKET>
+    property = StringLiteral()
+    end = <RBRACKET>
+  ]
+  {
+    return property != null ? IndexedTypeNode.create(named.sourceLocation().extend(createSrcLoc(end)), named, property) : named;
   }
 }
 

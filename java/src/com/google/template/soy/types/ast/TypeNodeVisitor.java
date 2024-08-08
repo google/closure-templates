@@ -16,10 +16,32 @@
 
 package com.google.template.soy.types.ast;
 
-
 /** A visitor / rewriter interface for type AST nodes. */
 public interface TypeNodeVisitor<T> {
+  default T exec(TypeNode node) {
+    if (node instanceof NamedTypeNode) {
+      return visit((NamedTypeNode) node);
+    } else if (node instanceof IndexedTypeNode) {
+      return visit((IndexedTypeNode) node);
+    } else if (node instanceof GenericTypeNode) {
+      return visit((GenericTypeNode) node);
+    } else if (node instanceof UnionTypeNode) {
+      return visit((UnionTypeNode) node);
+    } else if (node instanceof IntersectionTypeNode) {
+      return visit((IntersectionTypeNode) node);
+    } else if (node instanceof RecordTypeNode) {
+      return visit((RecordTypeNode) node);
+    } else if (node instanceof TemplateTypeNode) {
+      return visit((TemplateTypeNode) node);
+    } else if (node instanceof FunctionTypeNode) {
+      return visit((FunctionTypeNode) node);
+    }
+    throw new IllegalArgumentException(node.getClass().getName());
+  }
+
   T visit(NamedTypeNode node);
+
+  T visit(IndexedTypeNode node);
 
   T visit(GenericTypeNode node);
 

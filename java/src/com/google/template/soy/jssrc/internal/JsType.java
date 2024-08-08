@@ -616,6 +616,7 @@ public final class JsType {
           return builder.build();
         }
       case NAMED: // TODO(b/182265475)
+      case INDEXED: // TODO(b/182265475)
       case INTERSECTION: // TODO(b/182265475)
       case CSS_TYPE:
       case CSS_MODULE:

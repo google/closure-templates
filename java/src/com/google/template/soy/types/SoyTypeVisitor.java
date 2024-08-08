@@ -51,4 +51,6 @@ public interface SoyTypeVisitor<T> {
   T visit(FunctionType type);
 
   T visit(NamedType type);
+
+  T visit(IndexedType type);
 }

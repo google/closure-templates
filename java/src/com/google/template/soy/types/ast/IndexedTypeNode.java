@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Google Inc.
+ * Copyright 2024 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,32 +18,28 @@ package com.google.template.soy.types.ast;
 
 import com.google.auto.value.AutoValue;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.base.internal.Identifier;
+import com.google.template.soy.basetree.CopyState;
+import com.google.template.soy.exprtree.StringNode;
 
-/** A simple named type (may be an intrinsic type, '?', or a custom type). */
+/** An indexed type, e.g. NamedType["property"]. */
 @AutoValue
-public abstract class NamedTypeNode extends TypeNode {
-  public static NamedTypeNode create(Identifier identifier) {
-    return new AutoValue_NamedTypeNode(identifier.location(), identifier);
+public abstract class IndexedTypeNode extends TypeNode {
+  public static IndexedTypeNode create(
+      SourceLocation location, TypeNode type, StringNode property) {
+    return new AutoValue_IndexedTypeNode(location, type, property);
   }
 
-  public static NamedTypeNode create(SourceLocation sourceLocation, String name) {
-    return create(Identifier.create(name, sourceLocation));
-  }
+  public abstract TypeNode type();
 
-  NamedTypeNode() {}
-
-  public abstract Identifier name();
+  public abstract StringNode property();
 
   @Override
   public final String toString() {
-    return name().identifier();
+    return type().toString() + "[\"" + property() + "\"]";
   }
 
   @Override
-  public NamedTypeNode copy() {
-    NamedTypeNode copy = create(name());
-    copy.copyInternal(this);
-    return copy;
+  public IndexedTypeNode copy() {
+    return create(sourceLocation(), type().copy(), property().copy(new CopyState()));
   }
 }

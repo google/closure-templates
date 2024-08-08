@@ -50,6 +50,7 @@ import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import com.google.template.soy.types.ast.FunctionTypeNode;
 import com.google.template.soy.types.ast.GenericTypeNode;
+import com.google.template.soy.types.ast.IndexedTypeNode;
 import com.google.template.soy.types.ast.IntersectionTypeNode;
 import com.google.template.soy.types.ast.NamedTypeNode;
 import com.google.template.soy.types.ast.RecordTypeNode;
@@ -184,10 +185,6 @@ public final class SoyTreeUtils {
         rootSoyNode,
         classObject,
         exploreExpressions ? SoyTreeUtils::visitAll : SoyTreeUtils::visitNonExpr);
-  }
-
-  public static Stream<ExprRootNode> allExprRootNodes(SoyNode root) {
-    return allNodesOfType(root, ExprHolderNode.class).flatMap(n -> n.getExprList().stream());
   }
 
   /**
@@ -605,6 +602,11 @@ public final class SoyTreeUtils {
         }
 
         @Override
+        public ImmutableList<? extends TypeNode> visit(IndexedTypeNode node) {
+          return ImmutableList.of(node.type());
+        }
+
+        @Override
         public ImmutableList<? extends TypeNode> visit(GenericTypeNode node) {
           return node.arguments();
         }
@@ -643,7 +645,7 @@ public final class SoyTreeUtils {
 
   /** Returns a breadth-first stream starting at root and containing all nested type nodes. */
   public static Stream<? extends TypeNode> allTypeNodes(TypeNode root) {
-    return TreeStreams.breadthFirst(root, next -> next.accept(TRAVERSING));
+    return TreeStreams.breadthFirst(root, TRAVERSING::exec);
   }
 
   /** Returns a stream of all the type nodes contained in a Soy node branch. */
@@ -695,14 +697,6 @@ public final class SoyTreeUtils {
         node = node.getParent();
       }
       return getHolder((ExprRootNode) node);
-    }
-
-    @Nullable
-    public ExprHolderNode getNullableHolder(ExprNode node) {
-      while (node.getParent() != null) {
-        node = node.getParent();
-      }
-      return index.get((ExprRootNode) node);
     }
   }
 

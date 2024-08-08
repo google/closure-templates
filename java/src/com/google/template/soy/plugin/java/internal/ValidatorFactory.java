@@ -374,6 +374,7 @@ final class ValidatorFactory extends JavaValueFactory {
         break;
       case INTERSECTION:
       case NAMED:
+      case INDEXED:
         return isValidClassForType(clazz, type.getEffectiveType());
       case ATTRIBUTES:
       case CSS:

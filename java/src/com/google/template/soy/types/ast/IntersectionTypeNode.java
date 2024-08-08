@@ -64,11 +64,6 @@ public abstract class IntersectionTypeNode extends TypeNode {
   }
 
   @Override
-  public <T> T accept(TypeNodeVisitor<T> visitor) {
-    return visitor.visit(this);
-  }
-
-  @Override
   public IntersectionTypeNode copy() {
     IntersectionTypeNode copy =
         create(candidates().stream().map(TypeNode::copy).collect(toImmutableList()));

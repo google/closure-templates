@@ -786,6 +786,7 @@ public abstract class Expression extends BytecodeProducer {
           return Optional.empty();
         case INTERSECTION:
         case NAMED:
+        case INDEXED:
           return doCheckedSoyCast(type.getEffectiveType());
         case UNION:
           if (type.equals(SoyTypes.NUMBER_TYPE)) {

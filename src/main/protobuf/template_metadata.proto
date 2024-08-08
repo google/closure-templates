@@ -106,6 +106,10 @@ message SoyTypeP {
     string name = 1;
     string namespace = 2;
   }
+  message IndexedTypeP {
+    SoyTypeP type = 1;
+    string property = 2;
+  }
   // discriminated union of the different type categories
   oneof TypeKind {
     PrimitiveTypeP primitive = 1;
@@ -125,6 +129,7 @@ message SoyTypeP {
     bool message = 11;
     HtmlTypeP html = 12;
     NamedTypeP named = 17;
+    IndexedTypeP indexed = 18;
   }
 }
 

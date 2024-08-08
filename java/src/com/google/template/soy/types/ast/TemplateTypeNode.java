@@ -77,11 +77,6 @@ public abstract class TemplateTypeNode extends TypeNode {
   }
 
   @Override
-  public <T> T accept(TypeNodeVisitor<T> visitor) {
-    return visitor.visit(this);
-  }
-
-  @Override
   public TemplateTypeNode copy() {
     ImmutableList.Builder<Parameter> newParameters = ImmutableList.builder();
     for (Parameter parameter : parameters()) {

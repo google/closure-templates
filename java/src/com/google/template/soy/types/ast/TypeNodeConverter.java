@@ -32,6 +32,7 @@ import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.error.SoyErrors;
 import com.google.template.soy.types.FunctionType;
+import com.google.template.soy.types.IndexedType;
 import com.google.template.soy.types.ProtoTypeRegistry;
 import com.google.template.soy.types.RecordType;
 import com.google.template.soy.types.SanitizedType;
@@ -282,7 +283,7 @@ public final class TypeNodeConverter
    * <p>If any errors are encountered they are reported to the error reporter.
    */
   public SoyType getOrCreateType(TypeNode node) {
-    return node.accept(this);
+    return exec(node);
   }
 
   @Override
@@ -335,6 +336,11 @@ public final class TypeNodeConverter
     }
     node.setResolvedType(type);
     return type;
+  }
+
+  @Override
+  public SoyType visit(IndexedTypeNode node) {
+    return interner.intern(IndexedType.create(exec(node.type()), node.property().getValue()));
   }
 
   @Override
@@ -413,7 +419,7 @@ public final class TypeNodeConverter
     // LinkedHashMap insertion order iteration on values() is important here.
     Map<String, RecordType.Member> map = Maps.newLinkedHashMap();
     for (RecordTypeNode.Property property : node.properties()) {
-      SoyType propertyType = property.type().accept(this);
+      SoyType propertyType = exec(property.type());
       RecordType.Member duplicatePropertyNameMember =
           map.put(
               property.name(),
@@ -437,7 +443,7 @@ public final class TypeNodeConverter
           TemplateType.Parameter.builder()
               .setName(parameter.name())
               .setKind(parameter.kind())
-              .setType(parameter.type().accept(this))
+              .setType(exec(parameter.type()))
               .setRequired(parameter.required())
               .setImplicit(false)
               .build();
@@ -474,13 +480,13 @@ public final class TypeNodeConverter
       FunctionType.Parameter oldParameter =
           map.put(
               parameter.name(),
-              FunctionType.Parameter.of(parameter.name(), parameter.type().accept(this)));
+              FunctionType.Parameter.of(parameter.name(), exec(parameter.type())));
       if (oldParameter != null) {
         errorReporter.report(parameter.nameLocation(), DUPLICATE_FUNCTION_PARAM, parameter.name());
         map.put(parameter.name(), oldParameter);
       }
     }
-    SoyType type = interner.intern(FunctionType.of(map.values(), node.returnType().accept(this)));
+    SoyType type = interner.intern(FunctionType.of(map.values(), exec(node.returnType())));
     node.setResolvedType(type);
     return type;
   }
@@ -489,12 +495,12 @@ public final class TypeNodeConverter
     if (node instanceof GenericTypeNode) {
       return visit((GenericTypeNode) node, GENERIC_TYPES_WITH_ELEMENT);
     }
-    return node.accept(this);
+    return exec(node);
   }
 
   @DoNotCall
   @Override
   public SoyType apply(TypeNode node) {
-    return node.accept(this);
+    return exec(node);
   }
 }

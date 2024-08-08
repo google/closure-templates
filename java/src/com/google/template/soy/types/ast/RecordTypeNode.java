@@ -68,11 +68,6 @@ public abstract class RecordTypeNode extends TypeNode {
   }
 
   @Override
-  public <T> T accept(TypeNodeVisitor<T> visitor) {
-    return visitor.visit(this);
-  }
-
-  @Override
   public RecordTypeNode copy() {
     ImmutableList.Builder<Property> newProperties = ImmutableList.builder();
     for (Property property : properties()) {

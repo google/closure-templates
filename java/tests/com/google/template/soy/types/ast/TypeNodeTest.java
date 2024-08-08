@@ -193,75 +193,80 @@ public final class TypeNodeTest {
   }
 
   static void assertEquals(TypeNode left, TypeNode right) {
-    left.accept(
-        new TypeNodeVisitor<Void>() {
+    new TypeNodeVisitor<Void>() {
 
-          @Override
-          public Void visit(NamedTypeNode node) {
-            assertThat(((NamedTypeNode) right).name().identifier())
-                .isEqualTo(node.name().identifier());
-            return null;
-          }
+      @Override
+      public Void visit(NamedTypeNode node) {
+        assertThat(((NamedTypeNode) right).name().identifier()).isEqualTo(node.name().identifier());
+        return null;
+      }
 
-          @Override
-          public Void visit(GenericTypeNode node) {
-            assertThat(((GenericTypeNode) right).name()).isEqualTo(node.name());
-            assertEquals(node.arguments(), ((GenericTypeNode) right).arguments());
-            return null;
-          }
+      @Override
+      public Void visit(IndexedTypeNode node) {
+        assertEquals(node.type(), ((IndexedTypeNode) right).type());
+        assertThat(((IndexedTypeNode) right).property().getValue())
+            .isEqualTo(node.property().getValue());
+        return null;
+      }
 
-          @Override
-          public Void visit(UnionTypeNode node) {
-            assertEquals(node.candidates(), ((UnionTypeNode) right).candidates());
-            return null;
-          }
+      @Override
+      public Void visit(GenericTypeNode node) {
+        assertThat(((GenericTypeNode) right).name()).isEqualTo(node.name());
+        assertEquals(node.arguments(), ((GenericTypeNode) right).arguments());
+        return null;
+      }
 
-          @Override
-          public Void visit(IntersectionTypeNode node) {
-            assertEquals(node.candidates(), ((IntersectionTypeNode) right).candidates());
-            return null;
-          }
+      @Override
+      public Void visit(UnionTypeNode node) {
+        assertEquals(node.candidates(), ((UnionTypeNode) right).candidates());
+        return null;
+      }
 
-          @Override
-          public Void visit(RecordTypeNode node) {
-            assertThat(node.properties()).hasSize(((RecordTypeNode) right).properties().size());
-            for (int i = 0; i < node.properties().size(); i++) {
-              Property leftProp = node.properties().get(i);
-              Property rightProp = ((RecordTypeNode) right).properties().get(i);
-              assertThat(leftProp.name()).isEqualTo(rightProp.name());
-              assertEquals(leftProp.type(), rightProp.type());
-            }
-            return null;
-          }
+      @Override
+      public Void visit(IntersectionTypeNode node) {
+        assertEquals(node.candidates(), ((IntersectionTypeNode) right).candidates());
+        return null;
+      }
 
-          @Override
-          public Void visit(TemplateTypeNode node) {
-            assertThat(node.parameters()).hasSize(((TemplateTypeNode) right).parameters().size());
-            ImmutableMap<String, TypeNode> leftArgumentMap =
-                node.parameters().stream()
+      @Override
+      public Void visit(RecordTypeNode node) {
+        assertThat(node.properties()).hasSize(((RecordTypeNode) right).properties().size());
+        for (int i = 0; i < node.properties().size(); i++) {
+          Property leftProp = node.properties().get(i);
+          Property rightProp = ((RecordTypeNode) right).properties().get(i);
+          assertThat(leftProp.name()).isEqualTo(rightProp.name());
+          assertEquals(leftProp.type(), rightProp.type());
+        }
+        return null;
+      }
+
+      @Override
+      public Void visit(TemplateTypeNode node) {
+        assertThat(node.parameters()).hasSize(((TemplateTypeNode) right).parameters().size());
+        ImmutableMap<String, TypeNode> leftArgumentMap =
+            node.parameters().stream()
+                .collect(
+                    toImmutableMap(
+                        TemplateTypeNode.Parameter::name, TemplateTypeNode.Parameter::type));
+        ImmutableMap<String, TypeNode> rightArgumentMap =
+            ((TemplateTypeNode) right)
+                .parameters().stream()
                     .collect(
                         toImmutableMap(
                             TemplateTypeNode.Parameter::name, TemplateTypeNode.Parameter::type));
-            ImmutableMap<String, TypeNode> rightArgumentMap =
-                ((TemplateTypeNode) right)
-                    .parameters().stream()
-                        .collect(
-                            toImmutableMap(
-                                TemplateTypeNode.Parameter::name,
-                                TemplateTypeNode.Parameter::type));
-            assertThat(leftArgumentMap.keySet()).isEqualTo(rightArgumentMap.keySet());
-            for (String key : leftArgumentMap.keySet()) {
-              assertEquals(leftArgumentMap.get(key), rightArgumentMap.get(key));
-            }
-            assertEquals(node.returnType(), ((TemplateTypeNode) right).returnType());
-            return null;
-          }
+        assertThat(leftArgumentMap.keySet()).isEqualTo(rightArgumentMap.keySet());
+        for (String key : leftArgumentMap.keySet()) {
+          assertEquals(leftArgumentMap.get(key), rightArgumentMap.get(key));
+        }
+        assertEquals(node.returnType(), ((TemplateTypeNode) right).returnType());
+        return null;
+      }
 
-          @Override
-          public Void visit(FunctionTypeNode node) {
-            return null;
-          }
-        });
+      @Override
+      public Void visit(FunctionTypeNode node) {
+        return null;
+      }
+    }.exec(left);
   }
 
   private TypeNode parse(String typeString) {
