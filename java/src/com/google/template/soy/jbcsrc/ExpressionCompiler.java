@@ -2300,12 +2300,7 @@ final class ExpressionCompiler {
     @Override
     protected Boolean visitMethodCallNode(MethodCallNode node) {
       if (node.getMethodName().toString().equals("bind")) {
-        for (Boolean childRequiresDetach : visitChildren(node)) {
-          if (childRequiresDetach) {
-            return true;
-          }
-        }
-        return false;
+        return anyChildMatches(node);
       }
       return true;
     }
@@ -2315,20 +2310,13 @@ final class ExpressionCompiler {
       if (!analysis.isResolved(node)) {
         return true;
       }
-      for (ExprNode child : node.getChildren()) {
-        if (visit(child)) {
-          return true;
-        }
-      }
-      return false;
+      return anyChildMatches(node);
     }
 
     @Override
     protected Boolean visitProtoInitFunction(FunctionNode node) {
-      for (Boolean i : visitChildren(node)) {
-        if (i) {
-          return true;
-        }
+      if (anyChildMatches(node)) {
+        return true;
       }
 
       // Proto init calls require detach if any of the specified fields are repeated.
@@ -2366,10 +2354,15 @@ final class ExpressionCompiler {
     @Override
     protected Boolean visitExprNode(ExprNode node) {
       if (node instanceof ParentExprNode) {
-        for (Boolean i : visitChildren((ParentExprNode) node)) {
-          if (i) {
-            return true;
-          }
+        return anyChildMatches((ParentExprNode) node);
+      }
+      return false;
+    }
+
+    private boolean anyChildMatches(ParentExprNode node) {
+      for (ExprNode child : node.getChildren()) {
+        if (visit(child)) {
+          return true;
         }
       }
       return false;
