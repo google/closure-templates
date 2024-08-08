@@ -535,8 +535,7 @@ public final class PassManager {
           // header compilation
           .add(
               new ResolveDeclaredTypesPass(
-                  errorReporter, disableAllTypeChecking, accumulatedState::registryFromDeps))
-          .add(new ExpandRecordParamsPass(errorReporter));
+                  errorReporter, disableAllTypeChecking, accumulatedState::registryFromDeps));
 
       // needs to come before SoyConformancePass
       passes.add(new ResolvePluginsPass(pluginResolver));

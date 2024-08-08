@@ -320,8 +320,6 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
 
   private ImmutableList<TemplateHeaderVarDefn> headerParams;
 
-  @Nullable private final TemplateParamsNode paramsNode;
-
   /** Used for formatting */
   private final List<CommandTagAttribute> attributes;
 
@@ -351,7 +349,6 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
       Visibility visibility) {
     super(nodeBuilder.getId(), nodeBuilder.sourceLocation, nodeBuilder.openTagLocation, cmdName);
     this.headerParams = ImmutableList.copyOf(nodeBuilder.params);
-    this.paramsNode = nodeBuilder.getParamsNode();
     this.soyFileHeaderInfo = soyFileHeaderInfo;
     this.templateName = nodeBuilder.getTemplateName();
     this.partialTemplateName = nodeBuilder.getPartialTemplateName();
@@ -380,7 +377,6 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
   protected TemplateNode(TemplateNode orig, CopyState copyState) {
     super(orig, copyState);
     this.headerParams = copyParams(orig.headerParams, copyState);
-    this.paramsNode = copyState.copyNullable(orig.paramsNode);
     this.soyFileHeaderInfo = orig.soyFileHeaderInfo.copy();
     this.templateName = orig.templateName;
     this.partialTemplateName = orig.partialTemplateName;
@@ -682,11 +678,6 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
     return this.headerParams;
   }
 
-  @Nullable
-  public TemplateParamsNode getParamsNode() {
-    return paramsNode;
-  }
-
   @Override
   public String toSourceString() {
     StringBuilder sb = new StringBuilder();
@@ -727,14 +718,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
   protected void appendHeaderVarDecl(
       ImmutableList<? extends TemplateHeaderVarDefn> headerVars, StringBuilder sb) {
 
-    if (paramsNode != null) {
-      sb.append("  ").append(paramsNode.toSourceString());
-    }
-
     for (TemplateHeaderVarDefn headerVar : headerVars) {
-      if (paramsNode != null && headerVar instanceof TemplateParam) {
-        continue;
-      }
       sb.append("  {").append(getDeclName(headerVar));
       if (!headerVar.isRequired()) {
         sb.append("?");

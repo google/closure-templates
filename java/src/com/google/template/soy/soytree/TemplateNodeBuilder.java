@@ -34,14 +34,12 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
 import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
-import com.google.template.soy.soytree.defn.TemplateParam;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
-import javax.annotation.Nullable;
 
 /**
  * Builder for TemplateNode.
@@ -59,8 +57,6 @@ public abstract class TemplateNodeBuilder<T extends TemplateNodeBuilder<T>> {
   // TODO: Print out which line contained the declared variable.
   private static final SoyErrorKind PARAM_ALREADY_DECLARED =
       SoyErrorKind.of("''{0}'' already declared.");
-  private static final SoyErrorKind PARAM_OR_PARAMS =
-      SoyErrorKind.of("@params not compatible with @param or @attribute.");
 
   /** Info from the containing Soy file's header declarations. */
   protected final SoyFileHeaderInfo soyFileHeaderInfo;
@@ -115,8 +111,6 @@ public abstract class TemplateNodeBuilder<T extends TemplateNodeBuilder<T>> {
 
   /** The params from template header. Null if no decls. */
   protected List<TemplateHeaderVarDefn> params = new ArrayList<>();
-
-  @Nullable protected TemplateParamsNode paramsNode;
 
   protected boolean strictHtmlDisabled;
 
@@ -282,19 +276,7 @@ public abstract class TemplateNodeBuilder<T extends TemplateNodeBuilder<T>> {
     return self();
   }
 
-  @CanIgnoreReturnValue
-  public T setParamsNode(@Nullable TemplateParamsNode paramsNode) {
-    this.paramsNode = paramsNode;
-    return self();
-  }
-
   protected void validateBuild() {
-    if (paramsNode != null) {
-      if (allowExtraAttributesLoc != null
-          || params.stream().anyMatch(TemplateParam.class::isInstance)) {
-        errorReporter.report(paramsNode.getSourceLocation(), PARAM_OR_PARAMS);
-      }
-    }
   }
 
   /** Builds the template node. Will error if not enough info as been set on this builder. */
@@ -382,11 +364,6 @@ public abstract class TemplateNodeBuilder<T extends TemplateNodeBuilder<T>> {
 
   protected Identifier getPartialTemplateName() {
     return partialTemplateName;
-  }
-
-  @Nullable
-  public TemplateParamsNode getParamsNode() {
-    return paramsNode;
   }
 
   protected abstract T self();

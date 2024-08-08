@@ -40,7 +40,6 @@ import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.TemplateElementNode;
 import com.google.template.soy.soytree.TemplateNode;
-import com.google.template.soy.soytree.TemplateParamsNode;
 import com.google.template.soy.soytree.TypeDefNode;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.soytree.defn.TemplateStateVar;
@@ -182,11 +181,6 @@ final class ResolveDeclaredTypesPass
 
     @Override
     protected void visitTemplateNode(TemplateNode node) {
-      TemplateParamsNode paramsNode = node.getParamsNode();
-      if (paramsNode != null) {
-        visitTypeNode(paramsNode.getTypeNode());
-      }
-
       for (TemplateParam param : node.getAllParams()) {
         if (param.getTypeNode() != null) {
           SoyType paramType = converter.getOrCreateType(param.getTypeNode());

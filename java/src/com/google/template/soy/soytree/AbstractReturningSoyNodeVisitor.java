@@ -64,8 +64,6 @@ public abstract class AbstractReturningSoyNodeVisitor<R>
         return visitTemplateBasicNode((TemplateBasicNode) node);
       case TEMPLATE_DELEGATE_NODE:
         return visitTemplateDelegateNode((TemplateDelegateNode) node);
-      case TEMPLATE_PARAMS_NODE:
-        return visitTemplateParamsNode((TemplateParamsNode) node);
 
       case RAW_TEXT_NODE:
         return visitRawTextNode((RawTextNode) node);
@@ -191,10 +189,6 @@ public abstract class AbstractReturningSoyNodeVisitor<R>
 
   protected R visitTemplateDelegateNode(TemplateDelegateNode node) {
     return visitTemplateNode(node);
-  }
-
-  protected R visitTemplateParamsNode(TemplateParamsNode node) {
-    return visitSoyNode(node);
   }
 
   protected R visitTemplateNode(TemplateNode node) {

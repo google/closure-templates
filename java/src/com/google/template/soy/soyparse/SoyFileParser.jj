@@ -149,7 +149,6 @@ import com.google.template.soy.soytree.TemplateElementNodeBuilder;
 import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateNodeBuilder;
-import com.google.template.soy.soytree.TemplateParamsNode;
 import com.google.template.soy.soytree.TypeDefNode;
 import com.google.template.soy.soytree.VeLogNode;
 import com.google.template.soy.soytree.WhitespaceMode;
@@ -1189,7 +1188,6 @@ TOKEN_MGR_DECLS: {
 | < CMD_CLOSE_ELEMENT            : "{/element}" > { resetState(); } : DEFAULT
 
 | < DECL_BEGIN_PARAM             : "{@param"        > : IN_CMD_TAG
-| < DECL_BEGIN_PARAMS            : "{@params"       > : IN_CMD_TAG
 | < DECL_ATTRIBUTE_STAR          : "{@attribute *}" >
 | < DECL_BEGIN_ATTR              : "{@attribute"    > : IN_CMD_TAG
 | < DECL_BEGIN_OPT_ATTR          : "{@attribute?"   > : IN_CMD_TAG
@@ -2360,7 +2358,6 @@ private RawTextNode TemplateHeader(TemplateNodeBuilder<?> templateBuilder, boole
   List<TemplateHeaderVarDefn> params = ImmutableList.of();
   RawTextNode whitespace = null;
   String soyDoc = null;
-  TemplateParamsNode paramsNode = null;
 }
 {
   ( LOOKAHEAD(1)  // prefer consuming whitespace here instead of in a subsequent RawTextNode
@@ -2424,11 +2421,6 @@ private RawTextNode TemplateHeader(TemplateNodeBuilder<?> templateBuilder, boole
           default:
             throw new AssertionError("unexpected var kind: " + param.kind());
         }
-      }
-    |
-      paramsNode = ParamsDecl()
-      {
-        templateBuilder.setParamsNode(paramsNode);
       }
     )
   )*
@@ -2520,48 +2512,6 @@ private TemplateHeaderVarDefn ParamDecl(@Nullable String desc) :
           desc,
           value);
     }
-  }
-}
-
-private TemplateParamsNode ParamsDecl() :
-{
-  Token tagBegin, name, tagEnd = null;
-  List<Identifier> ids = new ArrayList<Identifier>();
-  Identifier typeAlias;
-  ExprNode valueExpr = null;
-}
-{
-  tagBegin = <DECL_BEGIN_PARAMS>
-
-  <CMD_LBRACKET>
-  name = <NAME>
-  {
-    ids.add(Identifier.create(name.image, createSrcLoc(name)));
-  }
-  (
-    <CMD_COMMA>
-    name = <NAME>
-    {
-      ids.add(Identifier.create(name.image, createSrcLoc(name)));
-    }
-  )*
-  <CMD_RBRACKET>
-  <CMD_COLON>
-  typeAlias = DottedIdent()
-
-  (
-    <EQ>
-    valueExpr = Expr()
-  )?
-
-  tagEnd = <CMD_END>
-  {
-    return new TemplateParamsNode(
-        nodeIdGen.genId(),
-        createSrcLoc(tagBegin, tagEnd),
-        ids,
-        NamedTypeNode.create(typeAlias),
-        valueExpr != null ? new ExprRootNode(valueExpr) : null);
   }
 }
 
