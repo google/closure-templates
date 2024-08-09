@@ -613,9 +613,7 @@ public final class PassManager {
                     allowMissingSoyDeps,
                     astRewrites.rewriteShortFormCalls(),
                     accumulatedState::registryFromDeps))
-            .add(new VeDefValidationPass(errorReporter))
-            .add(new RewriteNullishChecksPass());
-
+            .add(new VeDefValidationPass(errorReporter));
         if (astRewrites.isAll()) {
           passes.add(new SimplifyAssertNonNullPass());
         }
