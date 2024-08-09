@@ -152,27 +152,27 @@ public final class SharedRuntime {
 
   @Nonnull
   public static NumberData shiftRight(SoyValue operand0, SoyValue operand1) {
-    return IntegerData.forValue(toLongForNumericOp(operand0) >> (int) toLongForNumericOp(operand1));
+    return IntegerData.forValue(toLongForBitwiseOp(operand0) >> (int) toLongForBitwiseOp(operand1));
   }
 
   @Nonnull
   public static NumberData shiftLeft(SoyValue operand0, SoyValue operand1) {
-    return IntegerData.forValue(toLongForNumericOp(operand0) << (int) toLongForNumericOp(operand1));
+    return IntegerData.forValue(toLongForBitwiseOp(operand0) << (int) toLongForBitwiseOp(operand1));
   }
 
   @Nonnull
   public static NumberData bitwiseOr(SoyValue operand0, SoyValue operand1) {
-    return IntegerData.forValue(toLongForNumericOp(operand0) | toLongForNumericOp(operand1));
+    return IntegerData.forValue(toLongForBitwiseOp(operand0) | toLongForBitwiseOp(operand1));
   }
 
   @Nonnull
   public static NumberData bitwiseXor(SoyValue operand0, SoyValue operand1) {
-    return IntegerData.forValue(toLongForNumericOp(operand0) ^ toLongForNumericOp(operand1));
+    return IntegerData.forValue(toLongForBitwiseOp(operand0) ^ toLongForBitwiseOp(operand1));
   }
 
   @Nonnull
   public static NumberData bitwiseAnd(SoyValue operand0, SoyValue operand1) {
-    return IntegerData.forValue(toLongForNumericOp(operand0) & toLongForNumericOp(operand1));
+    return IntegerData.forValue(toLongForBitwiseOp(operand0) & toLongForBitwiseOp(operand1));
   }
 
   /** Performs the {@code <} operator on the two values. */
@@ -207,6 +207,13 @@ public final class SharedRuntime {
     }
     if (value instanceof FloatData) {
       return (long) value.floatValue();
+    }
+    return value.longValue();
+  }
+
+  private static long toLongForBitwiseOp(SoyValue value) {
+    if (value.isNullish()) {
+      return 0;
     }
     return value.longValue();
   }
