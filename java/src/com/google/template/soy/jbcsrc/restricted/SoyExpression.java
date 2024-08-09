@@ -313,16 +313,22 @@ public final class SoyExpression extends Expression {
     return delegate.location();
   }
 
-  public boolean assignableToNullableInt() {
-    return soyRuntimeType.assignableToNullableInt();
+  public boolean isRuntimeInt() {
+    return soyRuntimeType.runtimeType().getSort() == Type.INT
+        || soyRuntimeType.runtimeType().getSort() == Type.LONG;
   }
 
-  public boolean assignableToNullableFloat() {
-    return soyRuntimeType.assignableToNullableFloat();
+  public boolean isRuntimeFloat() {
+    return soyRuntimeType.runtimeType().getSort() == Type.FLOAT
+        || soyRuntimeType.runtimeType().getSort() == Type.DOUBLE;
   }
 
-  public boolean assignableToNullableNumber() {
-    return soyRuntimeType.assignableToNullableNumber();
+  public boolean isRuntimeNumber() {
+    return isRuntimeInt() || isRuntimeFloat();
+  }
+
+  public boolean isKnownString() {
+    return soyRuntimeType.isKnownString();
   }
 
   public boolean assignableToNullableString() {

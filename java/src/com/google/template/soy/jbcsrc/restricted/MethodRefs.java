@@ -454,6 +454,8 @@ public final class MethodRefs {
   public static final MethodRef RUNTIME_TIMES =
       createPure(SharedRuntime.class, "times", SoyValue.class, SoyValue.class);
 
+  public static final MethodRef RUNTIME_DIVIDED_BY =
+      createPure(SharedRuntime.class, "dividedBy", SoyValue.class, SoyValue.class);
 
   public static final MethodRef HANDLE_BASIC_TRANSLATION_AND_ESCAPE_HTML =
       createPure(JbcSrcRuntime.class, "handleBasicTranslationAndEscapeHtml", String.class);

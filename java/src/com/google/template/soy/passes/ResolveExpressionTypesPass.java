@@ -1795,7 +1795,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
     @Override
     protected void visitNegativeOpNode(NegativeOpNode node) {
       visitChildren(node);
-      SoyType childType = node.getChild(0).getType();
+      SoyType childType = SoyTypes.tryRemoveNull(node.getChild(0).getType());
       if (SoyTypes.isNumericOrUnknown(childType)) {
         node.setType(childType);
       } else {
@@ -1855,8 +1855,8 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
     private void visitLongOnlyOpNode(AbstractOperatorNode node) {
       visitChildren(node);
       SoyType result = IntType.getInstance();
-      SoyType left = node.getChild(0).getType();
-      SoyType right = node.getChild(1).getType();
+      SoyType left = SoyTypes.tryRemoveNull(node.getChild(0).getType());
+      SoyType right = SoyTypes.tryRemoveNull(node.getChild(1).getType());
       if (left.getKind() != Kind.INT || right.getKind() != Kind.INT) {
         errorReporter.report(
             node.getOperatorLocation(),
@@ -2573,6 +2573,8 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
       SoyType result =
           SoyTypes.getSoyTypeForBinaryOperator(
               left, right, new SoyTypes.SoyTypeArithmeticOperator());
+      // We should probably flag 'undefined' here for all arithmetic operators, as it results in an
+      //  exception in JbcSrc. In JavaScript it always turns into NaN, which we don't have in Soy.
       if (result == null) {
         errorReporter.report(
             node.getOperatorLocation(),

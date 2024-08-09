@@ -698,7 +698,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
 
   @Override
   protected SoyValue visitDivideByOpNode(DivideByOpNode node) {
-    return FloatData.forValue(dividedBy(visit(node.getChild(0)), visit(node.getChild(1))));
+    return dividedBy(visit(node.getChild(0)), visit(node.getChild(1)));
   }
 
   @Override

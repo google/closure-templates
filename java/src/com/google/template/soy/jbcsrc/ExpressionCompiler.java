@@ -130,6 +130,7 @@ import com.google.template.soy.soytree.defn.ConstVar;
 import com.google.template.soy.soytree.defn.ImportedVar;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
+import com.google.template.soy.types.FloatType;
 import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.SetType;
 import com.google.template.soy.types.SoyProtoType;
@@ -846,11 +847,11 @@ final class ExpressionCompiler {
     protected SoyExpression visitLessThanOpNode(LessThanOpNode node) {
       SoyExpression left = visit(node.getChild(0));
       SoyExpression right = visit(node.getChild(1));
-      if (left.assignableToNullableInt() && right.assignableToNullableInt()) {
+      if (left.isRuntimeInt() && right.isRuntimeInt()) {
         return SoyExpression.forBool(
             Branch.compare(Opcodes.IFLT, left.unboxAsLong(), right.unboxAsLong()).asBoolean());
       }
-      if (left.assignableToNullableNumber() && right.assignableToNullableNumber()) {
+      if (left.isRuntimeNumber() && right.isRuntimeNumber()) {
         return SoyExpression.forBool(
             Branch.compare(Opcodes.IFLT, left.coerceToDouble(), right.coerceToDouble())
                 .asBoolean());
@@ -865,11 +866,11 @@ final class ExpressionCompiler {
     protected SoyExpression visitGreaterThanOpNode(GreaterThanOpNode node) {
       SoyExpression left = visit(node.getChild(0));
       SoyExpression right = visit(node.getChild(1));
-      if (left.assignableToNullableInt() && right.assignableToNullableInt()) {
+      if (left.isRuntimeInt() && right.isRuntimeInt()) {
         return SoyExpression.forBool(
             Branch.compare(Opcodes.IFGT, left.unboxAsLong(), right.unboxAsLong()).asBoolean());
       }
-      if (left.assignableToNullableNumber() && right.assignableToNullableNumber()) {
+      if (left.isRuntimeNumber() && right.isRuntimeNumber()) {
         return SoyExpression.forBool(
             Branch.compare(Opcodes.IFGT, left.coerceToDouble(), right.coerceToDouble())
                 .asBoolean());
@@ -885,11 +886,11 @@ final class ExpressionCompiler {
     protected SoyExpression visitLessThanOrEqualOpNode(LessThanOrEqualOpNode node) {
       SoyExpression left = visit(node.getChild(0));
       SoyExpression right = visit(node.getChild(1));
-      if (left.assignableToNullableInt() && right.assignableToNullableInt()) {
+      if (left.isRuntimeInt() && right.isRuntimeInt()) {
         return SoyExpression.forBool(
             Branch.compare(Opcodes.IFLE, left.unboxAsLong(), right.unboxAsLong()).asBoolean());
       }
-      if (left.assignableToNullableNumber() && right.assignableToNullableNumber()) {
+      if (left.isRuntimeNumber() && right.isRuntimeNumber()) {
         return SoyExpression.forBool(
             Branch.compare(Opcodes.IFLE, left.coerceToDouble(), right.coerceToDouble())
                 .asBoolean());
@@ -905,11 +906,11 @@ final class ExpressionCompiler {
     protected SoyExpression visitGreaterThanOrEqualOpNode(GreaterThanOrEqualOpNode node) {
       SoyExpression left = visit(node.getChild(0));
       SoyExpression right = visit(node.getChild(1));
-      if (left.assignableToNullableInt() && right.assignableToNullableInt()) {
+      if (left.isRuntimeInt() && right.isRuntimeInt()) {
         return SoyExpression.forBool(
             Branch.compare(Opcodes.IFGE, left.unboxAsLong(), right.unboxAsLong()).asBoolean());
       }
-      if (left.assignableToNullableNumber() && right.assignableToNullableNumber()) {
+      if (left.isRuntimeNumber() && right.isRuntimeNumber()) {
         return SoyExpression.forBool(
             Branch.compare(Opcodes.IFGE, left.coerceToDouble(), right.coerceToDouble())
                 .asBoolean());
@@ -942,24 +943,19 @@ final class ExpressionCompiler {
     @Override
     protected SoyExpression visitPlusOpNode(PlusOpNode node) {
       SoyExpression left = visit(node.getChild(0));
-      SoyRuntimeType leftRuntimeType = left.soyRuntimeType();
       SoyExpression right = visit(node.getChild(1));
-      SoyRuntimeType rightRuntimeType = right.soyRuntimeType();
       // They are both definitely numbers
-      if (leftRuntimeType.assignableToNullableNumber()
-          && rightRuntimeType.assignableToNullableNumber()) {
-        if (leftRuntimeType.assignableToNullableInt()
-            && rightRuntimeType.assignableToNullableInt()) {
+      if (left.isRuntimeNumber() && right.isRuntimeNumber()) {
+        if (left.isRuntimeInt() && right.isRuntimeInt()) {
           return applyBinaryIntOperator(Opcodes.LADD, left, right);
         }
         // if either is definitely a float, then we are definitely coercing so just do it now
-        if (leftRuntimeType.assignableToNullableFloat()
-            || rightRuntimeType.assignableToNullableFloat()) {
+        if (left.isRuntimeFloat() || right.isRuntimeFloat()) {
           return applyBinaryFloatOperator(Opcodes.DADD, left, right);
         }
       }
       // '+' is overloaded for string arguments to mean concatenation.
-      if (leftRuntimeType.isKnownString() || rightRuntimeType.isKnownString()) {
+      if (left.isKnownString() || right.isKnownString()) {
         SoyExpression leftString = left.coerceToString();
         SoyExpression rightString = right.coerceToString();
         return SoyExpression.forString(
@@ -974,12 +970,12 @@ final class ExpressionCompiler {
       SoyExpression left = visit(node.getChild(0));
       SoyExpression right = visit(node.getChild(1));
       // They are both definitely numbers
-      if (left.assignableToNullableNumber() && right.assignableToNullableNumber()) {
-        if (left.assignableToNullableInt() && right.assignableToNullableInt()) {
+      if (left.isRuntimeNumber() && right.isRuntimeNumber()) {
+        if (left.isRuntimeInt() && right.isRuntimeInt()) {
           return applyBinaryIntOperator(longOpcode, left, right);
         }
         // if either is definitely a float, then we are definitely coercing so just do it now
-        if (left.assignableToNullableFloat() || right.assignableToNullableFloat()) {
+        if (left.isRuntimeFloat() || right.isRuntimeFloat()) {
           return applyBinaryFloatOperator(doubleOpcode, left, right);
         }
       }
@@ -1001,8 +997,13 @@ final class ExpressionCompiler {
     protected SoyExpression visitDivideByOpNode(DivideByOpNode node) {
       // Note: Soy always performs floating-point division, even on two integers (like JavaScript).
       // Note that this *will* lose precision for longs.
-      return applyBinaryFloatOperator(
-          Opcodes.DDIV, visit(node.getChild(0)), visit(node.getChild(1)));
+      SoyExpression left = visit(node.getChild(0));
+      SoyExpression right = visit(node.getChild(1));
+      if (left.isRuntimeNumber() && right.isRuntimeNumber()) {
+        return applyBinaryFloatOperator(Opcodes.DDIV, left, right);
+      }
+      return SoyExpression.forSoyValue(
+          FloatType.getInstance(), MethodRefs.RUNTIME_DIVIDED_BY.invoke(left.box(), right.box()));
     }
 
     @Override
@@ -1046,7 +1047,7 @@ final class ExpressionCompiler {
       SoyExpression lhe = visit(node.getChild(0));
       SoyExpression rhe = visit(node.getChild(1));
 
-      if (lhe.assignableToNullableInt() && rhe.assignableToNullableInt()) {
+      if (lhe.isRuntimeInt() && rhe.isRuntimeInt()) {
         Expression left = lhe.unboxAsLong();
         // Shift operators require INT on right side.
         Expression right = numericConversion(rhe.unboxAsLong(), rht);
@@ -1100,7 +1101,7 @@ final class ExpressionCompiler {
     @Override
     protected SoyExpression visitNegativeOpNode(NegativeOpNode node) {
       SoyExpression child = visit(node.getChild(0));
-      if (child.assignableToNullableInt()) {
+      if (child.isRuntimeInt()) {
         SoyExpression intExpr = child.unboxAsLong();
         return SoyExpression.forInt(
             new Expression(Type.LONG_TYPE, child.features()) {
@@ -1111,7 +1112,7 @@ final class ExpressionCompiler {
               }
             });
       }
-      if (child.assignableToNullableFloat()) {
+      if (child.isRuntimeFloat()) {
         SoyExpression floatExpr = child.unboxAsDouble();
         return SoyExpression.forFloat(
             new Expression(Type.DOUBLE_TYPE, child.features()) {

@@ -162,7 +162,7 @@ public class ExpressionCompilerTest {
 
     variables.put("foo", untypedBoxedSoyExpression(SoyExpression.forFloat(constant(3.0))));
     variables.put("bar", untypedBoxedSoyExpression(SoyExpression.forFloat(constant(2.0))));
-    assertExpression("$foo / $bar").evaluatesTo(1.5);
+    assertExpression("$foo / $bar").evaluatesTo(FloatData.forValue(1.5));
   }
 
   @Test
@@ -427,9 +427,6 @@ public class ExpressionCompilerTest {
     assertExpression("$list[1]").evaluatesTo(IntegerData.forValue(1));
     assertExpression("$list[2]").evaluatesTo(IntegerData.forValue(2));
 
-    // However, they will be unboxed if possible
-    assertExpression("$list[0] + 1").evaluatesTo(1L);
-
     // null, not IndexOutOfBoundsException
     assertExpression("$list[3]").evaluatesTo(UndefinedData.INSTANCE);
     assertExpression("$list[3] + 1").throwsException(SoyDataException.class);
@@ -437,8 +434,6 @@ public class ExpressionCompilerTest {
     // even if the index type is not known, it still works
     variables.put("anInt", untypedBoxedSoyExpression(SoyExpression.forInt(constant(1L))));
     assertExpression("$list[$anInt]").evaluatesTo(IntegerData.forValue(1));
-    // And we can still unbox the return value
-    assertExpression("$list[$anInt] + 1").evaluatesTo(2L);
     variables.put("anInt", untypedBoxedSoyExpression(SoyExpression.forInt(constant(3L))));
     assertExpression("$list[$anInt]").evaluatesTo(UndefinedData.INSTANCE);
   }
@@ -484,9 +479,6 @@ public class ExpressionCompilerTest {
     assertExpression("$record.a").evaluatesTo(IntegerData.forValue(0));
     assertExpression("$record.b").evaluatesTo(IntegerData.forValue(1));
     assertExpression("$record.c").evaluatesTo(IntegerData.forValue(2));
-
-    // However, they will be unboxed if possible
-    assertExpression("$record.a + 1").evaluatesTo(1L);
   }
 
   @Test

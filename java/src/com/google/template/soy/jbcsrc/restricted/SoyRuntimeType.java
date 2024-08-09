@@ -179,18 +179,6 @@ public abstract class SoyRuntimeType {
     return runtimeType;
   }
 
-  public boolean assignableToNullableInt() {
-    return assignableToNullableType(IntType.getInstance());
-  }
-
-  public boolean assignableToNullableFloat() {
-    return assignableToNullableType(FloatType.getInstance());
-  }
-
-  public boolean assignableToNullableNumber() {
-    return assignableToNullableType(SoyTypes.NUMBER_TYPE);
-  }
-
   public boolean assignableToNullableString() {
     return soyType.getKind().isKnownStringOrSanitizedContent()
         || (soyType.getKind() == Kind.UNION
@@ -201,12 +189,6 @@ public abstract class SoyRuntimeType {
     var type = SoyTypes.tryRemoveNullish(soyType);
     return type.isAssignableFromLoose(HtmlType.getInstance())
         || type.isAssignableFromLoose(AttributesType.getInstance());
-  }
-
-  private boolean assignableToNullableType(SoyType type) {
-    return type.isAssignableFromStrict(soyType)
-        || (soyType.getKind() == Kind.UNION
-            && type.isAssignableFromStrict(SoyTypes.tryRemoveNullish(soyType)));
   }
 
   /**

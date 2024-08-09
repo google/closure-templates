@@ -287,18 +287,20 @@ public final class SoyTypes {
    *     meaning a subtype of 'number' or unknown.
    */
   public static Optional<SoyType> computeLowestCommonTypeArithmetic(SoyType t0, SoyType t1) {
+    SoyType left = tryRemoveNull(t0);
+    SoyType right = tryRemoveNull(t1);
     // If either of the types isn't numeric or unknown, then this isn't valid for an arithmetic
     // operation.
-    if (!isNumericOrUnknown(t0) || !isNumericOrUnknown(t1)) {
+    if (!isNumericOrUnknown(left) || !isNumericOrUnknown(right)) {
       return Optional.empty();
     }
 
     // Note: everything is assignable to unknown and itself.  So the first two conditions take care
     // of all cases but a mix of float and int.
-    if (t0.isAssignableFromStrict(t1)) {
-      return Optional.of(t0);
-    } else if (t1.isAssignableFromStrict(t0)) {
-      return Optional.of(t1);
+    if (left.isAssignableFromStrict(right)) {
+      return Optional.of(left);
+    } else if (right.isAssignableFromStrict(left)) {
+      return Optional.of(right);
     } else {
       // If we get here then we know that we have a mix of float and int.  In this case arithmetic
       // ops always 'upgrade' to float.  So just return that.
