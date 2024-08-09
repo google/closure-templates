@@ -2612,6 +2612,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
      */
     private SoyType getFieldType(
         SoyType baseType, String fieldName, SourceLocation sourceLocation) {
+      baseType = baseType.getEffectiveType();
       switch (baseType.getKind()) {
         case UNKNOWN:
           // If we don't know anything about the base type, then make no assumptions

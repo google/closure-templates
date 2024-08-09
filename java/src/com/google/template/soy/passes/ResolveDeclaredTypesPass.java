@@ -38,6 +38,7 @@ import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
+import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateElementNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TypeDefNode;
@@ -53,6 +54,7 @@ import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.UnknownType;
+import com.google.template.soy.types.ast.IntersectionTypeNode;
 import com.google.template.soy.types.ast.TypeNode;
 import com.google.template.soy.types.ast.TypeNodeConverter;
 import java.util.HashMap;
@@ -79,6 +81,9 @@ final class ResolveDeclaredTypesPass
 
   private static final SoyErrorKind TYPE_NAME_COLLISION =
       SoyErrorKind.of("Type ''{0}'' is already defined in this file.");
+
+  private static final SoyErrorKind INTERSECTION_NOT_ALLOWED =
+      SoyErrorKind.of("An intersection type is not allowed here. Extract into a '{type}' instead.");
 
   public ResolveDeclaredTypesPass(
       ErrorReporter errorReporter,
@@ -183,6 +188,11 @@ final class ResolveDeclaredTypesPass
     protected void visitTemplateNode(TemplateNode node) {
       for (TemplateParam param : node.getAllParams()) {
         if (param.getTypeNode() != null) {
+          // Disallow inline intersection types because there's no way to model them inline in JSC
+          // annotations. Params are part of the JS template API so it's important to not type them
+          // as `?`. We could allow this if we extract all inline defs into local named types.
+          noIntersection(param.getTypeNode());
+
           SoyType paramType = converter.getOrCreateType(param.getTypeNode());
           if (param.isExplicitlyOptional()) {
             paramType = SoyTypes.makeUndefinable(paramType);
@@ -204,6 +214,7 @@ final class ResolveDeclaredTypesPass
     protected void visitTemplateElementNode(TemplateElementNode node) {
       for (TemplateStateVar state : node.getStateVars()) {
         if (state.getTypeNode() != null) {
+          noIntersection(state.getTypeNode());
           state.setType(converter.getOrCreateType(state.getTypeNode()));
         }
       }
@@ -218,6 +229,13 @@ final class ResolveDeclaredTypesPass
       if (node instanceof ParentSoyNode) {
         visitChildren((ParentSoyNode<?>) node);
       }
+    }
+
+    private void noIntersection(TypeNode node) {
+      SoyTreeUtils.allTypeNodes(node)
+          .filter(IntersectionTypeNode.class::isInstance)
+          .findFirst()
+          .ifPresent(n -> errorReporter.report(n.sourceLocation(), INTERSECTION_NOT_ALLOWED));
     }
   }
 
