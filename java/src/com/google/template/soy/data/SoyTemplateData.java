@@ -46,6 +46,7 @@ public final class SoyTemplateData {
       data = new ParamStore();
     }
 
+    @CanIgnoreReturnValue
     private Builder setParamInternal(SoyTemplateParam<?> param, Object value) {
       if (data.isFrozen()) {
         this.data = new ParamStore(data, 1);
