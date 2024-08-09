@@ -200,7 +200,7 @@ public final class GenerateBuildersVisitor
 
     // Add the file name and contents to the list of generated files to write.
     String fileName = javaClassNameForSoyFile + ".java";
-    generatedFiles.add(GeneratedFile.create("", fileName, ilb.toString() + kytheComment));
+    generatedFiles.add(GeneratedFile.create("", fileName, ilb + kytheComment));
     ilb = null;
   }
 
@@ -451,7 +451,12 @@ public final class GenerateBuildersVisitor
     // Constructor for Foo.Builder.
     ilb.appendLine("private Builder() {");
     ilb.increaseIndent();
-    ilb.appendLine("super(", nonInjectedParams.size(), ");");
+    ilb.appendLine(
+        "super(",
+        nonInjectedParams.size(),
+        ", "
+            + nonInjectedParams.stream().filter(pi -> pi.required() && !pi.indirect()).count()
+            + ");");
     appendRecordListInitializations(ilb, nonInjectedParams);
     ilb.decreaseIndent();
     ilb.appendLine("}");
@@ -469,11 +474,27 @@ public final class GenerateBuildersVisitor
     ilb.appendLine("}");
     ilb.appendLine();
 
-    // #buildInternal() for FooTemplate.Builder.
+    // #build() for FooTemplate.Builder.
     ilb.appendLine("@java.lang.Override");
-    ilb.appendLine("protected " + templateParamsClassname + " buildInternal() {");
+    ilb.appendLine("public " + templateParamsClassname + " build() {");
     ilb.increaseIndent();
+    // Flush any accumulator parameters.
+    if (anyAccumulatorParameters) {
+      ilb.appendLine("prepareDataForBuild();");
+    }
     ilb.appendLine("return new " + templateParamsClassname + "(this);");
+    ilb.decreaseIndent();
+    ilb.appendLine("}");
+    ilb.appendLine();
+
+    // #buildPartial() for FooTemplate.Builder.
+    ilb.appendLine("@java.lang.Override");
+    ilb.appendLine("public com.google.template.soy.data.PartialSoyTemplate buildPartial() {");
+    ilb.increaseIndent();
+    if (anyAccumulatorParameters) {
+      ilb.appendLine("prepareDataForBuild();");
+    }
+    ilb.appendLine("return doBuildPartial(" + TEMPLATE_NAME_FIELD + ");");
     ilb.decreaseIndent();
     ilb.appendLine("}");
 

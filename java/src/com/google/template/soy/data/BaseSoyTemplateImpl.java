@@ -20,10 +20,9 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.Streams.stream;
+import static java.util.stream.Collectors.joining;
 
-import com.google.common.base.Joiner;
 import com.google.common.base.MoreObjects;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.html.types.SafeHtml;
@@ -32,7 +31,6 @@ import com.google.common.html.types.SafeUrl;
 import com.google.common.html.types.TrustedResourceUrl;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
-import com.google.errorprone.annotations.CheckReturnValue;
 import com.google.errorprone.annotations.ForOverride;
 import com.google.protobuf.Message;
 import com.google.protobuf.ProtocolMessageEnum;
@@ -70,6 +68,7 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
   protected final ParamStore data;
 
   protected BaseSoyTemplateImpl(AbstractBuilder<?, ?> builder) {
+    builder.checkAllRequiredParamsProvided();
     this.data = builder.data.freeze();
   }
 
@@ -132,54 +131,46 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
     //  One downside is that they have less efficient entrySet() implementations, but we can
     // easily workaround that by calling forEach instead.
     private ParamStore data;
+    // Tracks how many required parameters are still missing.
+    private int numRequiredParamsRemaining;
 
-    protected AbstractBuilder(int numParams) {
+    protected AbstractBuilder(int numParams, int numRequiredParams) {
       this.data = new ParamStore(/* size= */ numParams);
+      this.numRequiredParamsRemaining = numRequiredParams;
     }
 
-    @CheckReturnValue
-    @Override
-    public final T build() {
-      prepareData(/* checkRequired= */ true);
-      return buildInternal();
-    }
+    private static final class PartialSoyTemplateImpl implements PartialSoyTemplate {
+      private final String templateName;
 
-    private static class PartialSoyTemplateImpl<T extends SoyTemplate>
-        implements PartialSoyTemplate {
-      private final T soyTemplate;
+      private final ParamStore data;
 
-      PartialSoyTemplateImpl(T soyTemplate) {
-        this.soyTemplate = soyTemplate;
+      PartialSoyTemplateImpl(String templateName, AbstractBuilder<?, ?> builder) {
+        this.templateName = templateName;
+        this.data = builder.data.freeze();
       }
 
       @Override
       public String getTemplateName() {
-        return soyTemplate.getTemplateName();
+        return templateName;
       }
 
       @Override
-      @SuppressWarnings("unchecked")
-      public Map<String, SoyValueProvider> getParamsAsMap() {
-        return (Map<String, SoyValueProvider>) soyTemplate.getParamsAsMap();
+      public ImmutableMap<String, SoyValueProvider> getParamsAsMap() {
+        return data.asStringMap();
       }
 
       @Override
       public Object getParamsAsRecord() {
-        return soyTemplate.getParamsAsRecord();
+        return data;
       }
     }
 
-    @Override
-    public final PartialSoyTemplate buildPartial() {
-      prepareData(/* checkRequired= */ false);
-      return new PartialSoyTemplateImpl<T>(buildInternal());
+    protected final PartialSoyTemplate doBuildPartial(String templateName) {
+      return new PartialSoyTemplateImpl(templateName, this);
     }
 
     @ForOverride
     protected abstract ImmutableSet<SoyTemplateParam<?>> allParams();
-
-    @ForOverride
-    protected abstract T buildInternal();
 
     /**
      * Sets an arbitrary parameter to an arbitrary value.
@@ -195,6 +186,9 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
       if (data.isFrozen()) {
         // This happens when someone calls build, followed by another setter.
         data = new ParamStore(data, 1);
+      }
+      if (name.isRequired() && !name.isIndirect() && !data.hasField(name.getSymbol())) {
+        --numRequiredParamsRemaining;
       }
       data.setField(name.getSymbol(), soyValue);
       return (B) this;
@@ -474,37 +468,18 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
       return TemplateValue.createFromTemplate(template);
     }
 
-    @ForOverride
-    void prepareDataForBuild() {}
-
     /**
      * @param checkRequired Whether or not to enforce that all required parameters are set. =
      */
-    private void prepareData(boolean checkRequired) {
-      prepareDataForBuild();
-      // checkRequired=false could be used in the future for "build partial"
-      if (checkRequired) {
-        List<String> missingParams = getMissingParamNames();
-        if (!missingParams.isEmpty()) {
-          throw new IllegalStateException(
-              "Missing required params: " + Joiner.on(", ").join(missingParams));
-        }
+    private void checkAllRequiredParamsProvided() {
+      if (numRequiredParamsRemaining > 0) {
+        throw new IllegalStateException(
+            "Missing required params: "
+                + allParams().stream()
+                    .filter(p -> p.isRequired() && !p.isIndirect() && !data.hasField(p.getSymbol()))
+                    .map(SoyTemplateParam::getName)
+                    .collect(joining(", ")));
       }
-    }
-
-    private List<String> getMissingParamNames() {
-      List<String> missing = ImmutableList.of();
-      ImmutableList<SoyTemplateParam<?>> params = allParams().asList();
-      for (int i = 0; i < params.size(); i++) {
-        SoyTemplateParam<?> param = params.get(i);
-        if (param.isRequired() && !param.isIndirect() && !data.containsKey(param.getSymbol())) {
-          if (missing.isEmpty()) {
-            missing = new ArrayList<>();
-          }
-          missing.add(param.getName());
-        }
-      }
-      return missing;
     }
   }
 
@@ -522,12 +497,11 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
     private final IdentityHashMap<SoyTemplateParam<?>, List<SoyValueProvider>> accummulatorData =
         new IdentityHashMap<>();
 
-    protected AbstractBuilderWithAccumulatorParameters(int numParams) {
-      super(numParams);
+    protected AbstractBuilderWithAccumulatorParameters(int numParams, int numRequiredParams) {
+      super(numParams, numRequiredParams);
     }
 
-    @Override
-    void prepareDataForBuild() {
+    protected final void prepareDataForBuild() {
       accummulatorData.forEach((k, v) -> setParamInternal(k, ListImpl.forProviderList(v)));
     }
 
