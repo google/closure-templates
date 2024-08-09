@@ -1855,8 +1855,8 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
     private void visitLongOnlyOpNode(AbstractOperatorNode node) {
       visitChildren(node);
       SoyType result = IntType.getInstance();
-      SoyType left = SoyTypes.tryRemoveNull(node.getChild(0).getType());
-      SoyType right = SoyTypes.tryRemoveNull(node.getChild(1).getType());
+      SoyType left = SoyTypes.tryRemoveNullish(node.getChild(0).getType());
+      SoyType right = SoyTypes.tryRemoveNullish(node.getChild(1).getType());
       if (left.getKind() != Kind.INT || right.getKind() != Kind.INT) {
         errorReporter.report(
             node.getOperatorLocation(),
