@@ -88,6 +88,9 @@ public final class TypeNodeConverter
   public static final SoyErrorKind SAFE_PROTO_TYPE =
       SoyErrorKind.of("Please use Soy''s native ''{0}'' type instead of the ''{1}'' type.");
 
+  public static final SoyErrorKind INDEXED_BASE_NOT_NAMED =
+      SoyErrorKind.of("The base of an indexed type must be a named type.");
+
   public static final SoyErrorKind DASH_NOT_ALLOWED =
       SoyErrorKind.of(
           "parse error at ''-'': expected identifier",
@@ -340,7 +343,11 @@ public final class TypeNodeConverter
 
   @Override
   public SoyType visit(IndexedTypeNode node) {
-    return interner.intern(IndexedType.create(exec(node.type()), node.property().getValue()));
+    SoyType base = exec(node.type());
+    if (base.getKind() != Kind.NAMED) {
+      errorReporter.report(node.sourceLocation(), INDEXED_BASE_NOT_NAMED);
+    }
+    return interner.intern(IndexedType.create(base, node.property().getValue()));
   }
 
   @Override
