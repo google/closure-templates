@@ -223,6 +223,11 @@ public final class SoyTypes {
     return containsKinds(type, NULLISH_KINDS);
   }
 
+  /** Return true if value can't be nullish. taking "any" into account. */
+  public static boolean isDefinitelyNonNullish(SoyType type) {
+    return !isNullish(type) && type.getKind() != Kind.UNKNOWN && type.getKind() != Kind.ANY;
+  }
+
   /** Returns true if the type is null, undefined, or null|undefined. */
   public static boolean isNullOrUndefined(SoyType type) {
     return isKindOrUnionOfKinds(type, NULLISH_KINDS);
