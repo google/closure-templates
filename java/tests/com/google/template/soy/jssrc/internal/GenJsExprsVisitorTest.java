@@ -27,6 +27,7 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.jssrc.dsl.FormatOptions;
 import com.google.template.soy.jssrc.dsl.Precedence;
+import com.google.template.soy.jssrc.internal.GenJsCodeVisitor.ScopedJsTypeRegistry;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
@@ -235,7 +236,8 @@ public final class GenJsExprsVisitorTest {
                     JsSrcNameGenerators.forLocalVariables()),
                 AliasUtils.IDENTITY_ALIASES,
                 boom,
-                OPT_DATA);
+                OPT_DATA,
+                ScopedJsTypeRegistry.PASSTHROUGH);
     return visitor.exec(node);
   }
 }

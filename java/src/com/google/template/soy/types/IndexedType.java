@@ -27,6 +27,10 @@ public abstract class IndexedType extends SoyType {
     return new AutoValue_IndexedType(type, property);
   }
 
+  public static String jsSynthenticTypeDefName(String namedTypeName, String propertyName) {
+    return namedTypeName + "__" + propertyName;
+  }
+
   public abstract SoyType getType();
 
   public abstract String getProperty();

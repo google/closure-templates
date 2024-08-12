@@ -18,6 +18,7 @@ package com.google.template.soy.incrementaldomsrc;
 
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.jssrc.dsl.Expression;
+import com.google.template.soy.jssrc.internal.GenJsCodeVisitor.ScopedJsTypeRegistry;
 import com.google.template.soy.jssrc.internal.GenJsExprsVisitor;
 import com.google.template.soy.jssrc.internal.GenJsExprsVisitor.GenJsExprsVisitorFactory;
 import com.google.template.soy.jssrc.internal.JavaScriptValueFactoryImpl;
@@ -48,7 +49,8 @@ public final class GenIncrementalDomExprsVisitor extends GenJsExprsVisitor {
         TranslationContext translationContext,
         TemplateAliases templateAliases,
         ErrorReporter errorReporter,
-        Expression dataSource) {
+        Expression dataSource,
+        ScopedJsTypeRegistry jsTypeRegistry) {
       return new GenIncrementalDomExprsVisitor(
           javaScriptValueFactory,
           (IncrementalDomGenCallCodeUtils) genCallCodeUtils.get(),
@@ -57,7 +59,8 @@ public final class GenIncrementalDomExprsVisitor extends GenJsExprsVisitor {
           translationContext,
           errorReporter,
           templateAliases,
-          dataSource);
+          dataSource,
+          jsTypeRegistry);
     }
   }
 
@@ -69,7 +72,8 @@ public final class GenIncrementalDomExprsVisitor extends GenJsExprsVisitor {
       TranslationContext translationContext,
       ErrorReporter errorReporter,
       TemplateAliases templateAliases,
-      Expression dataSource) {
+      Expression dataSource,
+      ScopedJsTypeRegistry jsTypeRegistry) {
     super(
         javaScriptValueFactory,
         genCallCodeUtils,
@@ -78,7 +82,8 @@ public final class GenIncrementalDomExprsVisitor extends GenJsExprsVisitor {
         translationContext,
         errorReporter,
         templateAliases,
-        dataSource);
+        dataSource,
+        jsTypeRegistry);
   }
 
   @Override
@@ -91,6 +96,11 @@ public final class GenIncrementalDomExprsVisitor extends GenJsExprsVisitor {
   @Override
   protected TranslateExprNodeVisitor getExprTranslator() {
     return new IncrementalDomTranslateExprNodeVisitor(
-        javaScriptValueFactory, translationContext, templateAliases, errorReporter, dataSource);
+        javaScriptValueFactory,
+        translationContext,
+        templateAliases,
+        errorReporter,
+        dataSource,
+        jsTypeRegistry);
   }
 }

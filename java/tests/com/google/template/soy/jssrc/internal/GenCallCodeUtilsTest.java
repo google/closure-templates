@@ -30,6 +30,7 @@ import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.Expressions;
 import com.google.template.soy.jssrc.dsl.FormatOptions;
+import com.google.template.soy.jssrc.internal.GenJsCodeVisitor.ScopedJsTypeRegistry;
 import com.google.template.soy.shared.internal.InternalPlugins;
 import com.google.template.soy.shared.internal.NoOpScopedData;
 import com.google.template.soy.soytree.CallNode;
@@ -175,7 +176,8 @@ public final class GenCallCodeUtilsTest {
             translationContext,
             AliasUtils.IDENTITY_ALIASES,
             errorReporter,
-            OPT_DATA);
+            OPT_DATA,
+            ScopedJsTypeRegistry.PASSTHROUGH);
     CodeChunk call =
         genCallCodeUtils.gen(
             callNode,

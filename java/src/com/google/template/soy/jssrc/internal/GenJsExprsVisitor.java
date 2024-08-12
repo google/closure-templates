@@ -28,6 +28,7 @@ import com.google.template.soy.jssrc.dsl.ConditionalExpressionBuilder;
 import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.jssrc.dsl.Expressions;
 import com.google.template.soy.jssrc.dsl.SoyJsPluginUtils;
+import com.google.template.soy.jssrc.internal.GenJsCodeVisitor.ScopedJsTypeRegistry;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcPrintDirective;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
@@ -81,7 +82,8 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<Expression>> 
         TranslationContext translationContext,
         TemplateAliases templateAliases,
         ErrorReporter errorReporter,
-        Expression dataSource) {
+        Expression dataSource,
+        ScopedJsTypeRegistry jsTypeRegistry) {
       return new GenJsExprsVisitor(
           javaScriptValueFactory,
           genCallCodeUtils.get(),
@@ -90,7 +92,8 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<Expression>> 
           translationContext,
           errorReporter,
           templateAliases,
-          dataSource);
+          dataSource,
+          jsTypeRegistry);
     }
   }
 
@@ -109,6 +112,7 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<Expression>> 
   protected List<Expression> chunks;
 
   protected final Expression dataSource;
+  protected final ScopedJsTypeRegistry jsTypeRegistry;
 
   /**
    * Used for looking up the local name for a given template call to a fully qualified template
@@ -117,7 +121,6 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<Expression>> 
   protected final TemplateAliases templateAliases;
 
   /**
-   * @param jsExprTranslator Instance of JsExprTranslator to use.
    * @param genCallCodeUtils Instance of GenCallCodeUtils to use.
    * @param isComputableAsJsExprsVisitor The IsComputableAsJsExprsVisitor used by this instance
    *     (when needed).
@@ -134,7 +137,8 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<Expression>> 
       TranslationContext translationContext,
       ErrorReporter errorReporter,
       TemplateAliases templateAliases,
-      Expression dataSource) {
+      Expression dataSource,
+      ScopedJsTypeRegistry jsTypeRegistry) {
     this.javaScriptValueFactory = javaScriptValueFactory;
     this.genCallCodeUtils = genCallCodeUtils;
     this.isComputableAsJsExprsVisitor = isComputableAsJsExprsVisitor;
@@ -144,6 +148,7 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<Expression>> 
     this.errorReporter = errorReporter;
     this.templateAliases = templateAliases;
     this.dataSource = dataSource;
+    this.jsTypeRegistry = jsTypeRegistry;
   }
 
   @Override
@@ -273,7 +278,12 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<Expression>> 
 
   protected TranslateExprNodeVisitor getExprTranslator() {
     return new TranslateExprNodeVisitor(
-        javaScriptValueFactory, translationContext, templateAliases, errorReporter, dataSource);
+        javaScriptValueFactory,
+        translationContext,
+        templateAliases,
+        errorReporter,
+        dataSource,
+        jsTypeRegistry);
   }
 
   private Expression translateExpr(ExprRootNode argNode) {
@@ -301,11 +311,10 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<Expression>> 
    */
   @Override
   protected void visitIfNode(IfNode node) {
-
     // Create another instance of this visitor class for generating JS expressions from children.
     GenJsExprsVisitor genJsExprsVisitor =
         genJsExprsVisitorFactory.create(
-            translationContext, templateAliases, errorReporter, dataSource);
+            translationContext, templateAliases, errorReporter, dataSource, jsTypeRegistry);
     CodeChunk.Generator generator = translationContext.codeGenerator();
 
     List<Expression> ifs = new ArrayList<>();

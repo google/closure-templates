@@ -40,6 +40,7 @@ import com.google.template.soy.exprtree.ProtoEnumValueNode;
 import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.jssrc.dsl.Expressions;
 import com.google.template.soy.jssrc.dsl.GoogRequire;
+import com.google.template.soy.jssrc.internal.GenJsCodeVisitor.ScopedJsTypeRegistry;
 import com.google.template.soy.jssrc.internal.JavaScriptValueFactoryImpl;
 import com.google.template.soy.jssrc.internal.JsType;
 import com.google.template.soy.jssrc.internal.TemplateAliases;
@@ -60,8 +61,15 @@ public class IncrementalDomTranslateExprNodeVisitor extends TranslateExprNodeVis
       TranslationContext translationContext,
       TemplateAliases templateAliases,
       ErrorReporter errorReporter,
-      Expression dataSource) {
-    super(javaScriptValueFactory, translationContext, templateAliases, errorReporter, dataSource);
+      Expression dataSource,
+      ScopedJsTypeRegistry jsTypeRegistry) {
+    super(
+        javaScriptValueFactory,
+        translationContext,
+        templateAliases,
+        errorReporter,
+        dataSource,
+        jsTypeRegistry);
   }
 
   @Override

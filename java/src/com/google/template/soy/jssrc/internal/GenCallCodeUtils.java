@@ -39,6 +39,7 @@ import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.jssrc.dsl.Expressions;
 import com.google.template.soy.jssrc.dsl.FormatOptions;
 import com.google.template.soy.jssrc.dsl.GoogRequire;
+import com.google.template.soy.jssrc.internal.GenJsCodeVisitor.ScopedJsTypeRegistry;
 import com.google.template.soy.jssrc.internal.GenJsExprsVisitor.GenJsExprsVisitorFactory;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcPrintDirective;
@@ -458,7 +459,8 @@ public class GenCallCodeUtils {
                       translationContext,
                       templateAliases,
                       errorReporter,
-                      exprTranslator.getDataSource())
+                      exprTranslator.getDataSource(),
+                      ScopedJsTypeRegistry.PASSTHROUGH)
                   .exec(cpcn);
           value = Expressions.concatForceString(chunks);
         } else {

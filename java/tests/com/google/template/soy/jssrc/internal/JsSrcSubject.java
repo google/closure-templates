@@ -41,6 +41,7 @@ import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.jssrc.dsl.FormatOptions;
 import com.google.template.soy.jssrc.dsl.Precedence;
+import com.google.template.soy.jssrc.internal.GenJsCodeVisitor.ScopedJsTypeRegistry;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyFileNode;
@@ -253,7 +254,8 @@ abstract class JsSrcSubject<T extends Subject> extends Subject {
                   AliasUtils.createTemplateAliases(
                       parseResult.fileSet().getChild(0), parseResult.registry()),
                   errorReporter,
-                  OPT_DATA)
+                  OPT_DATA,
+                  ScopedJsTypeRegistry.PASSTHROUGH)
               .exec(exprNode);
     }
 

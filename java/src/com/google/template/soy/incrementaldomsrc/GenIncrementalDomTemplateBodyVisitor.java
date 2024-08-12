@@ -81,6 +81,7 @@ import com.google.template.soy.jssrc.dsl.VariableDeclaration;
 import com.google.template.soy.jssrc.internal.CanInitOutputVarVisitor;
 import com.google.template.soy.jssrc.internal.GenCallCodeUtils;
 import com.google.template.soy.jssrc.internal.GenJsCodeVisitor;
+import com.google.template.soy.jssrc.internal.GenJsCodeVisitor.ScopedJsTypeRegistry;
 import com.google.template.soy.jssrc.internal.GenJsCodeVisitorAssistantForMsgs;
 import com.google.template.soy.jssrc.internal.GenJsExprsVisitor;
 import com.google.template.soy.jssrc.internal.GenJsTemplateBodyVisitor;
@@ -189,7 +190,8 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
       List<Statement> staticVarDeclarations,
       boolean generatePositionalParamsSignature,
       FileSetMetadata fileSetMetadata,
-      String alias) {
+      String alias,
+      ScopedJsTypeRegistry jsTypeRegistry) {
     super(
         outputVars,
         jsSrcOptions,
@@ -200,7 +202,8 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
         genJsExprsVisitor,
         errorReporter,
         templateTranslationContext,
-        templateAliases);
+        templateAliases,
+        jsTypeRegistry);
     this.contentKind = contentKind;
     this.staticVarDeclarations = staticVarDeclarations;
     this.generatePositionalParamsSignature = generatePositionalParamsSignature;
@@ -554,7 +557,8 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
         templateTranslationContext,
         templateAliases,
         errorReporter,
-        OPT_DATA);
+        OPT_DATA,
+        jsTypeRegistry);
   }
 
   @Override

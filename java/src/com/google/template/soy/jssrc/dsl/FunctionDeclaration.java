@@ -81,8 +81,12 @@ public abstract class FunctionDeclaration extends Expression
     ctx.append("function(");
     ctx.append(generateParamList(jsDoc(), false));
     ctx.append(") ");
-    try (FormattingContext ignored = ctx.enterBlock()) {
-      ctx.appendAll(body());
+    if (body().equals(Statements.EMPTY)) {
+      ctx.append("{}");
+    } else {
+      try (FormattingContext ignored = ctx.enterBlock()) {
+        ctx.appendAll(body());
+      }
     }
   }
 }

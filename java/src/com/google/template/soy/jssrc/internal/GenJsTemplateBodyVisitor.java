@@ -47,6 +47,7 @@ import com.google.template.soy.jssrc.dsl.Statements;
 import com.google.template.soy.jssrc.dsl.SwitchBuilder;
 import com.google.template.soy.jssrc.dsl.TryCatch;
 import com.google.template.soy.jssrc.dsl.VariableDeclaration;
+import com.google.template.soy.jssrc.internal.GenJsCodeVisitor.ScopedJsTypeRegistry;
 import com.google.template.soy.shared.RangeArgs;
 import com.google.template.soy.soytree.AbstractReturningSoyNodeVisitor;
 import com.google.template.soy.soytree.CallNode;
@@ -121,6 +122,8 @@ public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<St
    */
   protected final TemplateAliases templateAliases;
 
+  protected final ScopedJsTypeRegistry jsTypeRegistry;
+
   protected GenJsTemplateBodyVisitor(
       OutputVarHandler outputVars,
       SoyJsSrcOptions jsSrcOptions,
@@ -131,7 +134,8 @@ public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<St
       GenJsExprsVisitor genJsExprsVisitor,
       ErrorReporter errorReporter,
       TranslationContext templateTranslationContext,
-      TemplateAliases templateAliases) {
+      TemplateAliases templateAliases,
+      ScopedJsTypeRegistry jsTypeRegistry) {
     this.outputVars = outputVars;
     this.jsSrcOptions = jsSrcOptions;
     this.javaScriptValueFactory = javaScriptValueFactory;
@@ -142,6 +146,7 @@ public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<St
     this.errorReporter = errorReporter;
     this.templateTranslationContext = templateTranslationContext;
     this.templateAliases = templateAliases;
+    this.jsTypeRegistry = jsTypeRegistry;
   }
 
   @Override
@@ -272,7 +277,7 @@ public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<St
     // Generate code to define the local var.
     Expression value = translateExpr(node.getExpr());
     if (value.equals(Expressions.LITERAL_NULL)) {
-      JsType type = JsType.forJsSrc().get(node.getVar().type());
+      JsType type = jsTypeRegistry.getWithDelegate(JsType.forJsSrc(), node.getVar().type());
       value =
           value.castAs(
               type.typeExpr(),
@@ -488,7 +493,8 @@ public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<St
         templateTranslationContext,
         templateAliases,
         errorReporter,
-        OPT_DATA);
+        OPT_DATA,
+        jsTypeRegistry);
   }
 
   protected Expression translateExpr(ExprNode expr) {

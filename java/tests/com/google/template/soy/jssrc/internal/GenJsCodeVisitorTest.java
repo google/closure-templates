@@ -31,6 +31,7 @@ import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.jssrc.dsl.JsCodeBuilder;
+import com.google.template.soy.jssrc.internal.GenJsCodeVisitor.ScopedJsTypeRegistry;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.testing.SharedTestUtils;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
@@ -1047,7 +1048,12 @@ public final class GenJsCodeVisitorTest {
     genJsCodeVisitor.templateTranslationContext = translationContext;
     genJsCodeVisitor.genJsExprsVisitor =
         JsSrcTestUtils.createGenJsExprsVisitorFactory()
-            .create(translationContext, TEMPLATE_ALIASES, ErrorReporter.exploding(), OPT_DATA);
+            .create(
+                translationContext,
+                TEMPLATE_ALIASES,
+                ErrorReporter.exploding(),
+                OPT_DATA,
+                ScopedJsTypeRegistry.PASSTHROUGH);
 
     genJsCodeVisitor.jsCodeBuilder.append(
         genJsCodeVisitor.visitTemplateNodeChildren(templateNode, ErrorReporter.exploding()));

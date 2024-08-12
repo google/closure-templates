@@ -121,6 +121,7 @@ import com.google.template.soy.jssrc.dsl.Expressions;
 import com.google.template.soy.jssrc.dsl.GoogRequire;
 import com.google.template.soy.jssrc.dsl.JsDoc;
 import com.google.template.soy.jssrc.dsl.SoyJsPluginUtils;
+import com.google.template.soy.jssrc.internal.GenJsCodeVisitor.ScopedJsTypeRegistry;
 import com.google.template.soy.jssrc.internal.NullSafeAccumulator.FieldAccess;
 import com.google.template.soy.jssrc.internal.NullSafeAccumulator.ProtoCall;
 import com.google.template.soy.jssrc.restricted.JsExpr;
@@ -229,17 +230,21 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
    */
   private final Expression dataSource;
 
+  private final ScopedJsTypeRegistry jsTypeRegistry;
+
   public TranslateExprNodeVisitor(
       JavaScriptValueFactoryImpl javascriptValueFactory,
       TranslationContext translationContext,
       TemplateAliases templateAliases,
       ErrorReporter errorReporter,
-      Expression dataSource) {
+      Expression dataSource,
+      ScopedJsTypeRegistry jsTypeRegistry) {
     this.javascriptValueFactory = javascriptValueFactory;
     this.errorReporter = errorReporter;
     this.translationContext = translationContext;
     this.templateAliases = templateAliases;
     this.dataSource = dataSource;
+    this.jsTypeRegistry = jsTypeRegistry;
   }
 
   public Expression getDataSource() {
@@ -1203,11 +1208,11 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
   }
 
   protected JsType jsTypeForStrict(SoyType type) {
-    return JsType.forJsSrcStrict().get(type);
+    return jsTypeRegistry.getWithDelegate(JsType.forJsSrcStrict(), type);
   }
 
   protected JsType jsTypeFor(SoyType type) {
-    return JsType.forJsSrc().get(type);
+    return jsTypeRegistry.getWithDelegate(JsType.forJsSrc(), type);
   }
 
   private Expression visitCheckNotNullFunction(FunctionNode node) {

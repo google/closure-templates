@@ -33,10 +33,9 @@ import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_VELOG;
 import static com.google.template.soy.jssrc.internal.JsRuntime.sanitizedContentType;
 
 import com.google.common.base.Joiner;
-import com.google.common.collect.ImmutableMap;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedSet;
-import com.google.common.collect.Maps;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.base.SoyBackendKind;
 import com.google.template.soy.base.internal.SanitizedContentKind;
@@ -48,16 +47,22 @@ import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.jssrc.dsl.Expressions;
 import com.google.template.soy.jssrc.dsl.GoogRequire;
 import com.google.template.soy.types.AbstractIterableType;
+import com.google.template.soy.types.IndexedType;
+import com.google.template.soy.types.IntersectionType;
 import com.google.template.soy.types.LegacyObjectMapType;
 import com.google.template.soy.types.MapType;
+import com.google.template.soy.types.NamedType;
 import com.google.template.soy.types.RecordType;
 import com.google.template.soy.types.SanitizedType;
 import com.google.template.soy.types.SoyProtoEnumType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.TemplateType;
 import com.google.template.soy.types.UnionType;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.EnumMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -131,9 +136,6 @@ public final class JsType {
                   Optional.of(value.tripleEquals(Expressions.LITERAL_UNDEFINED)))
           .build();
 
-  private static final ImmutableMap<SanitizedContentKind, JsType> SANITIZED_TYPES;
-  private static final ImmutableMap<SanitizedContentKind, JsType> SANITIZED_TYPES_STRICT;
-
   private static final JsType IDOM_ATTRIBUTES =
       builder()
           .addType("function()")
@@ -193,6 +195,9 @@ public final class JsType {
           .setPredicate(instanceofTypePredicate(JsRuntime.SOY_VISUAL_ELEMENT_DATA))
           .build();
 
+  private static final JsTypeProducer SANITIZED_LOOSE;
+  private static final JsTypeProducer SANITIZED_STRICT;
+
   static {
     EnumMap<SanitizedContentKind, JsType> types = new EnumMap<>(SanitizedContentKind.class);
     EnumMap<SanitizedContentKind, JsType> typesStrict = new EnumMap<>(SanitizedContentKind.class);
@@ -200,61 +205,64 @@ public final class JsType {
       types.put(kind, createSanitized(kind, /* isStrict= */ false));
       typesStrict.put(kind, createSanitized(kind, /* isStrict= */ true));
     }
-    SANITIZED_TYPES = Maps.immutableEnumMap(types);
-    SANITIZED_TYPES_STRICT = Maps.immutableEnumMap(typesStrict);
+    SANITIZED_LOOSE =
+        (type) -> Preconditions.checkNotNull(types.get(((SanitizedType) type).getContentKind()));
+    SANITIZED_STRICT =
+        (type) ->
+            Preconditions.checkNotNull(typesStrict.get(((SanitizedType) type).getContentKind()));
   }
 
   /** Returns a JS type with looser rules, allowing 1/0 for bools. */
-  public static JsTypeProducer forJsSrc() {
-    return new JsTypeRegistryImpl(
+  public static RecursiveJsTypeProducer forJsSrc() {
+    return new RecursiveJsTypeProducerImpl(
         JsTypeKind.JSSRC, /* isStrict= */ false, ArrayTypeMode.ARRAY_OR_READONLY_ARRAY);
   }
 
   /** Returns a JS type for internal type checks and assertions. */
-  public static JsTypeProducer forJsTypeCheck() {
-    return new JsTypeRegistryImpl(
+  public static RecursiveJsTypeProducer forJsTypeCheck() {
+    return new RecursiveJsTypeProducerImpl(
         JsTypeKind.JSSRC, /* isStrict= */ false, ArrayTypeMode.READONLY_ARRAY);
   }
 
   /** Returns a JS type with strict rules. */
-  public static JsTypeProducer forJsSrcStrict() {
-    return new JsTypeRegistryImpl(
+  public static RecursiveJsTypeProducer forJsSrcStrict() {
+    return new RecursiveJsTypeProducerImpl(
         JsTypeKind.JSSRC, /* isStrict= */ true, ArrayTypeMode.ARRAY_OR_READONLY_ARRAY);
   }
 
   /** Returns a JS type for idom with looser rules, allowing 1/0 for bools. */
-  public static JsTypeProducer forIncrementalDom() {
-    return new JsTypeRegistryImpl(
+  public static RecursiveJsTypeProducer forIncrementalDom() {
+    return new RecursiveJsTypeProducerImpl(
         JsTypeKind.IDOMSRC, /* isStrict= */ false, ArrayTypeMode.ARRAY_OR_READONLY_ARRAY);
   }
 
   /** Returns a JS type for idom with looser rules, allowing 1/0 for bools. */
-  public static JsTypeProducer forIncrementalDomTypeChecks() {
-    return new JsTypeRegistryImpl(
+  public static RecursiveJsTypeProducer forIncrementalDomTypeChecks() {
+    return new RecursiveJsTypeProducerImpl(
         JsTypeKind.IDOMSRC, /* isStrict= */ false, ArrayTypeMode.READONLY_ARRAY);
   }
 
   /** Returns a JS type for idom with strict rules. */
-  public static JsTypeProducer forIncrementalDomGetters() {
-    return new JsTypeRegistryImpl(
+  public static RecursiveJsTypeProducer forIncrementalDomGetters() {
+    return new RecursiveJsTypeProducerImpl(
         JsTypeKind.IDOMSRC, /* isStrict= */ true, ArrayTypeMode.READONLY_ARRAY);
   }
 
   /** Returns a JS type for idom with strict rules. */
-  public static JsTypeProducer forIncrementalDomSetters() {
-    return new JsTypeRegistryImpl(
+  public static RecursiveJsTypeProducer forIncrementalDomSetters() {
+    return new RecursiveJsTypeProducerImpl(
         JsTypeKind.IDOMSRC, /* isStrict= */ true, ArrayTypeMode.ARRAY_OR_READONLY_ARRAY);
   }
 
   /** Returns a JS type for idom template type decls. */
-  public static JsTypeProducer forIncrementalDomDeclarations() {
-    return new JsTypeRegistryImpl(
+  public static RecursiveJsTypeProducer forIncrementalDomDeclarations() {
+    return new RecursiveJsTypeProducerImpl(
         JsTypeKind.IDOMSRC, /* isStrict= */ true, ArrayTypeMode.ARRAY_OR_READONLY_ARRAY);
   }
 
   /** Returns a JS type for idom with strict rules. */
-  public static JsTypeProducer forIncrementalDomState() {
-    return new JsTypeRegistryImpl(
+  public static RecursiveJsTypeProducer forIncrementalDomState() {
+    return new RecursiveJsTypeProducerImpl(
         JsTypeKind.IDOMSRC, /* isStrict= */ true, ArrayTypeMode.READONLY_ARRAY);
   }
 
@@ -292,18 +300,25 @@ public final class JsType {
     JsType get(SoyType type);
   }
 
-  abstract static class JsTypeRegistry implements JsTypeProducer {
-    public abstract JsType get(SoyType type, JsTypeProducer forRecursion);
+  /** A {@link JsTypeProducer} with special hooks to support composition with recursion. */
+  public interface RecursiveJsTypeProducer extends JsTypeProducer {
+
+    /**
+     * A version of {@link #get(SoyType)} with pluggable recursion. The implementation of this
+     * function should always call `forRecursion.get()` rather than `this.get()` to recurse. This
+     * allows implementations of `JsTypeProducer` to support composition patterns.
+     */
+    JsType get(SoyType type, JsTypeProducer forRecursion);
 
     @Override
-    public JsType get(SoyType type) {
+    default JsType get(SoyType type) {
       return get(type, this);
     }
   }
 
-  static final class JsTypeRegistryImpl extends JsTypeRegistry {
+  static final class RecursiveJsTypeProducerImpl implements RecursiveJsTypeProducer {
     private final JsTypeKind kind;
-    private final boolean isStrict;
+    private final JsTypeProducer sanitizedProducer;
     private ArrayTypeMode arrayTypeMode;
 
     /**
@@ -311,9 +326,10 @@ public final class JsType {
      * @param isStrict If true, generates stricter sanitized content types.
      * @param arrayTypeMode describes our typing convention for arrays.
      */
-    public JsTypeRegistryImpl(JsTypeKind kind, boolean isStrict, ArrayTypeMode arrayTypeMode) {
+    public RecursiveJsTypeProducerImpl(
+        JsTypeKind kind, boolean isStrict, ArrayTypeMode arrayTypeMode) {
       this.kind = kind;
-      this.isStrict = isStrict;
+      this.sanitizedProducer = isStrict ? SANITIZED_STRICT : SANITIZED_LOOSE;
       this.arrayTypeMode = arrayTypeMode;
     }
 
@@ -337,6 +353,7 @@ public final class JsType {
           return ANY_TYPE;
 
         case UNKNOWN:
+        case INTERSECTION: // Closure compiler can't model intersections.
           return UNKNOWN_TYPE;
 
         case BOOL:
@@ -376,9 +393,7 @@ public final class JsType {
         case JS:
         case URI:
         case TRUSTED_RESOURCE_URI:
-          return isStrict
-              ? SANITIZED_TYPES_STRICT.get(((SanitizedType) soyType).getContentKind())
-              : SANITIZED_TYPES.get(((SanitizedType) soyType).getContentKind());
+          return sanitizedProducer.get(soyType);
 
         case ITERABLE:
           SoyType itElmType = ((AbstractIterableType) soyType).getElementType();
@@ -579,9 +594,50 @@ public final class JsType {
             builder.setPredicate(GOOG_IS_FUNCTION);
             return builder.build();
           }
-        case NAMED: // TODO(b/182265475)
-        case INDEXED: // TODO(b/182265475)
-        case INTERSECTION: // TODO(b/182265475)
+        case NAMED:
+          NamedType namedType = (NamedType) soyType;
+          String namespace =
+              kind == JsTypeKind.IDOMSRC
+                  ? namedType.getNamespace() + ".incrementaldom"
+                  : namedType.getNamespace();
+          String fullName = namespace + "." + namedType.getName();
+          return builder()
+              .addType(fullName)
+              .addRequire(GoogRequire.create(namespace))
+              .setPredicate(TypePredicate.NO_OP)
+              .build();
+        case INDEXED:
+          IndexedType indexedType = (IndexedType) soyType;
+          String type = "?";
+          // Find the named type that originally declared this property. We need to do this because
+          // the typedef for the member is only declared relative to the {typedef} in which it's
+          // defined, not copied to every {typedef} that extends it.
+          Deque<SoyType> stack = new ArrayDeque<>();
+          stack.add(indexedType.getType());
+          while (!stack.isEmpty()) {
+            SoyType member = stack.removeLast();
+            if (member.getKind() != Kind.NAMED) {
+              continue;
+            }
+            NamedType namedMember = (NamedType) member;
+            SoyType namedValue = namedMember.getType();
+            if (namedValue instanceof RecordType) {
+              if (((RecordType) namedValue).getMember(indexedType.getProperty()) != null) {
+                type =
+                    IndexedType.jsSynthenticTypeDefName(
+                        forRecursion.get(namedMember).typeExpr(), indexedType.getProperty());
+                break;
+              }
+            } else if (namedValue instanceof IntersectionType) {
+              stack.addAll(((IntersectionType) namedValue).getMembers());
+            }
+          }
+          JsType baseType = forRecursion.get(indexedType.getType());
+          return builder()
+              .addType(type)
+              .addRequires(baseType.getGoogRequires())
+              .setPredicate(TypePredicate.NO_OP)
+              .build();
         case CSS_TYPE:
         case CSS_MODULE:
         case TOGGLE_TYPE:
@@ -819,6 +875,10 @@ public final class JsType {
             (value, codeGenerator) ->
                 Optional.of(sanitizedContentType(kind).dotAccess(compatibleWithString).call(value)))
         .build();
+  }
+
+  public static JsType localTypedef(String symbol) {
+    return builder().addType(symbol).setPredicate(TypePredicate.NO_OP).build();
   }
 
   private static Builder builder() {
