@@ -141,12 +141,12 @@ public class IncrementalDomTranslateExprNodeVisitor extends TranslateExprNodeVis
 
   @Override
   protected JsType jsTypeForStrict(SoyType type) {
-    return JsType.forIncrementalDomState(type);
+    return JsType.forIncrementalDomState().get(type);
   }
 
   @Override
   protected JsType jsTypeFor(SoyType type) {
-    return JsType.forIncrementalDom(type);
+    return JsType.forIncrementalDom().get(type);
   }
 
   @Override

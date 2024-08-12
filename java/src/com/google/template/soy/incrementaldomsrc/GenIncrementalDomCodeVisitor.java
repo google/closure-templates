@@ -119,17 +119,17 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
 
   @Override
   protected JsType getJsTypeForParamForDeclaration(SoyType paramType) {
-    return JsType.forIncrementalDomDeclarations(paramType);
+    return JsType.forIncrementalDomDeclarations().get(paramType);
   }
 
   @Override
   protected JsType getJsTypeForParam(SoyType paramType) {
-    return JsType.forIncrementalDom(paramType);
+    return JsType.forIncrementalDom().get(paramType);
   }
 
   @Override
   protected JsType getJsTypeForParamTypeCheck(SoyType paramType) {
-    return JsType.forIncrementalDomTypeChecks(paramType);
+    return JsType.forIncrementalDomTypeChecks().get(paramType);
   }
 
   @Override
@@ -266,7 +266,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     ImmutableList.Builder<Statement> stateVarInitializations = ImmutableList.builder();
     JsCodeBuilder jsCodeBuilder = getJsCodeBuilder();
     for (TemplateStateVar stateVar : node.getStateVars()) {
-      JsType jsType = JsType.forIncrementalDomState(stateVar.type());
+      JsType jsType = JsType.forIncrementalDomState().get(stateVar.type());
       for (GoogRequire require : jsType.getGoogRequires()) {
         jsCodeBuilder.addGoogRequire(require);
       }
@@ -688,8 +688,8 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     ImmutableList.Builder<MethodDeclaration> methods = ImmutableList.builder();
     ByteSpan byteSpan = SoyTreeUtils.getByteSpan(currentTemplateNode, stateVar.nameLocation());
 
-    JsType typeForState = JsType.forIncrementalDomDeclarations(stateVar.type());
-    JsType typeForGetters = JsType.forIncrementalDomGetters(stateVar.type());
+    JsType typeForState = JsType.forIncrementalDomDeclarations().get(stateVar.type());
+    JsType typeForGetters = JsType.forIncrementalDomGetters().get(stateVar.type());
     String stateAccessorSuffix =
         Ascii.toUpperCase(stateVar.name().substring(0, 1)) + stateVar.name().substring(1);
     try (var unused = templateTranslationContext.enterSoyAndJsScope()) {
@@ -712,7 +712,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     try (var unused = templateTranslationContext.enterSoyAndJsScope()) {
 
       ImmutableList.Builder<Statement> setStateMethodStatements = ImmutableList.builder();
-      JsType typeForSetters = JsType.forIncrementalDomSetters(stateVar.type());
+      JsType typeForSetters = JsType.forIncrementalDomSetters().get(stateVar.type());
       Optional<Expression> typeAssertion =
           typeForSetters.getSoyParamTypeAssertion(
               id(stateVar.name()),
@@ -745,7 +745,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
   /** Generates `get[X]` for a given parameter value. */
   private MethodDeclaration generateGetParamMethodForSoyElementClass(
       TemplateParam param, boolean isAbstract, boolean isInjected) {
-    JsType jsType = JsType.forIncrementalDomGetters(param.type());
+    JsType jsType = JsType.forIncrementalDomGetters().get(param.type());
     String accessorSuffix =
         Ascii.toUpperCase(param.name().substring(0, 1)) + param.name().substring(1);
     ByteSpan byteSpan = SoyTreeUtils.getByteSpan(currentTemplateNode, param.nameLocation());
@@ -765,7 +765,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
       Expression value =
           maybeCastAs(
               id("this").dotAccess(isInjected ? "ijData" : "data").dotAccess(param.name()),
-              JsType.forIncrementalDomState(param.type()),
+              JsType.forIncrementalDomState().get(param.type()),
               jsType);
       if (param.hasDefault()) {
         value =
@@ -828,8 +828,8 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     SoyType stateVarType = stateVar.typeOrDefault(null);
     return maybeCastAs(
         Expressions.THIS.dotAccess(STATE_PREFIX + stateVar.name()),
-        JsType.forIncrementalDomState(stateVarType),
-        JsType.forIncrementalDomTypeChecks(stateVarType));
+        JsType.forIncrementalDomState().get(stateVarType),
+        JsType.forIncrementalDomTypeChecks().get(stateVarType));
   }
 
   private static Expression maybeCastAs(

@@ -193,7 +193,8 @@ public final class JsTypeTest {
   }
 
   private static String getTypeAssertion(SoyType instance, String varName) {
-    return forJsSrc(instance)
+    return forJsSrc()
+        .get(instance)
         .getTypeAssertion(
             id(varName), CodeChunk.Generator.create(JsSrcNameGenerators.forLocalVariables()))
         .get()
@@ -202,7 +203,8 @@ public final class JsTypeTest {
   }
 
   private String getSoyTypeAssertionStrict(SoyType instance, String varName) {
-    return forIncrementalDomState(instance)
+    return forIncrementalDomState()
+        .get(instance)
         .getSoyParamTypeAssertion(
             id(varName),
             varName,
@@ -214,18 +216,18 @@ public final class JsTypeTest {
   }
 
   private StringSubject assertThatTypeExpr(SoyType soyType) {
-    return assertThat(forJsSrc(soyType).typeExpr());
+    return assertThat(forJsSrc().get(soyType).typeExpr());
   }
 
   private StringSubject assertThatTypeExprStrict(SoyType soyType) {
-    return assertThat(forIncrementalDomState(soyType).typeExpr());
+    return assertThat(forIncrementalDomState().get(soyType).typeExpr());
   }
 
   private StringSubject assertThatTypeExprForRecordMember(SoyType soyType) {
-    return assertThat(forJsSrc(soyType).typeExprForRecordMember(/* isOptional= */ false));
+    return assertThat(forJsSrc().get(soyType).typeExprForRecordMember(/* isOptional= */ false));
   }
 
   private StringSubject assertThatTypeExprForOptionalRecordMember(SoyType soyType) {
-    return assertThat(forJsSrc(soyType).typeExprForRecordMember(/* isOptional= */ true));
+    return assertThat(forJsSrc().get(soyType).typeExprForRecordMember(/* isOptional= */ true));
   }
 }

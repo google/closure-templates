@@ -1203,11 +1203,11 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
   }
 
   protected JsType jsTypeForStrict(SoyType type) {
-    return JsType.forJsSrcStrict(type);
+    return JsType.forJsSrcStrict().get(type);
   }
 
   protected JsType jsTypeFor(SoyType type) {
-    return JsType.forJsSrc(type);
+    return JsType.forJsSrc().get(type);
   }
 
   private Expression visitCheckNotNullFunction(FunctionNode node) {

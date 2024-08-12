@@ -1574,17 +1574,17 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
   /** Gets the type to use for a parameter in record type declarations. */
   protected JsType getJsTypeForParamForDeclaration(SoyType paramType) {
-    return JsType.forJsSrc(paramType);
+    return JsType.forJsSrc().get(paramType);
   }
 
   /** Gets the effective type of a positional parameter. */
   protected JsType getJsTypeForParam(SoyType paramType) {
-    return JsType.forJsSrc(paramType);
+    return JsType.forJsSrc().get(paramType);
   }
 
   /** Gets the type to use for a parameter in runtime assertions. */
   protected JsType getJsTypeForParamTypeCheck(SoyType paramType) {
-    return JsType.forJsTypeCheck(paramType);
+    return JsType.forJsTypeCheck().get(paramType);
   }
 
   /**

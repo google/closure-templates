@@ -205,57 +205,57 @@ public final class JsType {
   }
 
   /** Returns a JS type with looser rules, allowing 1/0 for bools. */
-  public static JsType forJsSrc(SoyType soyType) {
-    return forSoyType(
-        soyType, JsTypeKind.JSSRC, /* isStrict= */ false, ArrayTypeMode.ARRAY_OR_READONLY_ARRAY);
+  public static JsTypeProducer forJsSrc() {
+    return new JsTypeRegistryImpl(
+        JsTypeKind.JSSRC, /* isStrict= */ false, ArrayTypeMode.ARRAY_OR_READONLY_ARRAY);
   }
 
   /** Returns a JS type for internal type checks and assertions. */
-  public static JsType forJsTypeCheck(SoyType soyType) {
-    return forSoyType(
-        soyType, JsTypeKind.JSSRC, /* isStrict= */ false, ArrayTypeMode.READONLY_ARRAY);
+  public static JsTypeProducer forJsTypeCheck() {
+    return new JsTypeRegistryImpl(
+        JsTypeKind.JSSRC, /* isStrict= */ false, ArrayTypeMode.READONLY_ARRAY);
   }
 
   /** Returns a JS type with strict rules. */
-  public static JsType forJsSrcStrict(SoyType soyType) {
-    return forSoyType(
-        soyType, JsTypeKind.JSSRC, /* isStrict= */ true, ArrayTypeMode.ARRAY_OR_READONLY_ARRAY);
+  public static JsTypeProducer forJsSrcStrict() {
+    return new JsTypeRegistryImpl(
+        JsTypeKind.JSSRC, /* isStrict= */ true, ArrayTypeMode.ARRAY_OR_READONLY_ARRAY);
   }
 
   /** Returns a JS type for idom with looser rules, allowing 1/0 for bools. */
-  public static JsType forIncrementalDom(SoyType soyType) {
-    return forSoyType(
-        soyType, JsTypeKind.IDOMSRC, /* isStrict= */ false, ArrayTypeMode.ARRAY_OR_READONLY_ARRAY);
+  public static JsTypeProducer forIncrementalDom() {
+    return new JsTypeRegistryImpl(
+        JsTypeKind.IDOMSRC, /* isStrict= */ false, ArrayTypeMode.ARRAY_OR_READONLY_ARRAY);
   }
 
   /** Returns a JS type for idom with looser rules, allowing 1/0 for bools. */
-  public static JsType forIncrementalDomTypeChecks(SoyType soyType) {
-    return forSoyType(
-        soyType, JsTypeKind.IDOMSRC, /* isStrict= */ false, ArrayTypeMode.READONLY_ARRAY);
+  public static JsTypeProducer forIncrementalDomTypeChecks() {
+    return new JsTypeRegistryImpl(
+        JsTypeKind.IDOMSRC, /* isStrict= */ false, ArrayTypeMode.READONLY_ARRAY);
   }
 
   /** Returns a JS type for idom with strict rules. */
-  public static JsType forIncrementalDomGetters(SoyType soyType) {
-    return forSoyType(
-        soyType, JsTypeKind.IDOMSRC, /* isStrict= */ true, ArrayTypeMode.READONLY_ARRAY);
+  public static JsTypeProducer forIncrementalDomGetters() {
+    return new JsTypeRegistryImpl(
+        JsTypeKind.IDOMSRC, /* isStrict= */ true, ArrayTypeMode.READONLY_ARRAY);
   }
 
   /** Returns a JS type for idom with strict rules. */
-  public static JsType forIncrementalDomSetters(SoyType soyType) {
-    return forSoyType(
-        soyType, JsTypeKind.IDOMSRC, /* isStrict= */ true, ArrayTypeMode.ARRAY_OR_READONLY_ARRAY);
+  public static JsTypeProducer forIncrementalDomSetters() {
+    return new JsTypeRegistryImpl(
+        JsTypeKind.IDOMSRC, /* isStrict= */ true, ArrayTypeMode.ARRAY_OR_READONLY_ARRAY);
   }
 
   /** Returns a JS type for idom template type decls. */
-  public static JsType forIncrementalDomDeclarations(SoyType soyType) {
-    return forSoyType(
-        soyType, JsTypeKind.IDOMSRC, /* isStrict= */ true, ArrayTypeMode.ARRAY_OR_READONLY_ARRAY);
+  public static JsTypeProducer forIncrementalDomDeclarations() {
+    return new JsTypeRegistryImpl(
+        JsTypeKind.IDOMSRC, /* isStrict= */ true, ArrayTypeMode.ARRAY_OR_READONLY_ARRAY);
   }
 
   /** Returns a JS type for idom with strict rules. */
-  public static JsType forIncrementalDomState(SoyType soyType) {
-    return forSoyType(
-        soyType, JsTypeKind.IDOMSRC, /* isStrict= */ true, ArrayTypeMode.READONLY_ARRAY);
+  public static JsTypeProducer forIncrementalDomState() {
+    return new JsTypeRegistryImpl(
+        JsTypeKind.IDOMSRC, /* isStrict= */ true, ArrayTypeMode.READONLY_ARRAY);
   }
 
   private enum JsTypeKind {
@@ -287,290 +287,323 @@ public final class JsType {
     }
   }
 
-  /**
-   * Returns a {@link JsType} corresponding to the given {@link SoyType}
-   *
-   * <p>TODO(lukes): consider adding a cache for all the computed types. The same type is probably
-   * accessed many many times.
-   *
-   * @param soyType the soy type
-   * @param kind JS backend type
-   * @param isStrict If true, generates stricter types than default (e.g. boolean values cannot be 0
-   *     or 1).
-   * @param arrayTypeMode describes our typing convention for arrays.
-   */
-  private static JsType forSoyType(
-      SoyType soyType, JsTypeKind kind, boolean isStrict, ArrayTypeMode arrayTypeMode) {
-    switch (soyType.getKind()) {
-      case NULL:
-        return NULL_TYPE;
-      case UNDEFINED:
-        return UNDEFINED_TYPE;
+  /** An object that converts {@link SoyType} to {@link JsType}. */
+  public interface JsTypeProducer {
+    JsType get(SoyType type);
+  }
 
-      case ANY:
-        return ANY_TYPE;
+  abstract static class JsTypeRegistry implements JsTypeProducer {
+    public abstract JsType get(SoyType type, JsTypeProducer forRecursion);
 
-      case UNKNOWN:
-        return UNKNOWN_TYPE;
-
-      case BOOL:
-        return BOOLEAN_TYPE;
-
-      case PROTO_ENUM:
-        SoyProtoEnumType enumType = (SoyProtoEnumType) soyType;
-        String enumTypeName = enumType.getNameForBackend(SoyBackendKind.JS_SRC);
-        JsType.Builder enumBuilder =
-            builder()
-                .addType("!" + enumTypeName)
-                .addRequire(GoogRequire.createTypeRequire(enumTypeName))
-                .setPredicate(typeofTypePredicate("number"));
-        return enumBuilder.build();
-
-      case FLOAT:
-      case INT:
-        return NUMBER_TYPE;
-
-      case STRING:
-        return STRING_TYPE;
-
-      case ATTRIBUTES:
-        if (kind == JsTypeKind.IDOMSRC) {
-          // idom has a different strategy for handling these
-          return IDOM_ATTRIBUTES;
-        }
-      // fall through
-      case HTML:
-      case ELEMENT:
-        if (kind == JsTypeKind.IDOMSRC) {
-          // idom has a different strategy for handling these
-          return IDOM_HTML;
-        }
-      // fall-through
-      case CSS:
-      case JS:
-      case URI:
-      case TRUSTED_RESOURCE_URI:
-        return isStrict
-            ? SANITIZED_TYPES_STRICT.get(((SanitizedType) soyType).getContentKind())
-            : SANITIZED_TYPES.get(((SanitizedType) soyType).getContentKind());
-
-      case ITERABLE:
-        SoyType itElmType = ((AbstractIterableType) soyType).getElementType();
-        JsType jsItElmType = forSoyType(itElmType, kind, isStrict, arrayTypeMode);
-        return builder()
-            .addType(String.format("!Iterable<%s>", jsItElmType.typeExpr()))
-            .addRequires(jsItElmType.getGoogRequires())
-            .setPredicate(JsRuntime.SOY_IS_ITERABLE)
-            .build();
-
-      case LIST:
-        AbstractIterableType listType = (AbstractIterableType) soyType;
-        if (listType.isEmpty() || listType.getElementType().getKind() == SoyType.Kind.ANY) {
-          return RAW_ARRAY_TYPE;
-        }
-        JsType element = forSoyType(listType.getElementType(), kind, isStrict, arrayTypeMode);
-
-        return builder()
-            .addType(ArrayTypeMode.formatArrayType(arrayTypeMode, element.typeExpr()))
-            .addRequires(element.getGoogRequires())
-            .setPredicate(ARRAY_IS_ARRAY)
-            .build();
-
-      case SET:
-        SoyType elmType = ((AbstractIterableType) soyType).getElementType();
-        JsType jsElmType = forSoyType(elmType, kind, isStrict, arrayTypeMode);
-        return builder()
-            .addType(String.format("!Set<%s>", jsElmType.typeExpr()))
-            .addRequires(jsElmType.getGoogRequires())
-            .setPredicate(instanceofTypePredicate(id("Set")))
-            .build();
-
-      case LEGACY_OBJECT_MAP:
-        {
-          LegacyObjectMapType mapType = (LegacyObjectMapType) soyType;
-          if (mapType.getKeyType().getKind() == SoyType.Kind.ANY
-              && mapType.getValueType().getKind() == SoyType.Kind.ANY) {
-            return RAW_OBJECT_TYPE;
-          }
-          JsType keyTypeName = forSoyType(mapType.getKeyType(), kind, isStrict, arrayTypeMode);
-          JsType valueTypeName = forSoyType(mapType.getValueType(), kind, isStrict, arrayTypeMode);
-          return builder()
-              .addType(
-                  String.format("!Object<%s,%s>", keyTypeName.typeExpr(), valueTypeName.typeExpr()))
-              .addRequires(keyTypeName.getGoogRequires())
-              .addRequires(valueTypeName.getGoogRequires())
-              .setPredicate(GOOG_IS_OBJECT)
-              .build();
-        }
-      case MAP:
-        {
-          MapType mapType = (MapType) soyType;
-          SoyType keyType = mapType.getKeyType();
-          SoyType.Kind keyKind = keyType.getKind();
-          // Soy key type of string should translate to a JS key type of string.
-          // forSoyType(StringType.getInstance()) normally translates to
-          // string|!goog.soy.data.UnsanitizedText, but ES6 Maps always use instance equality for
-          // lookups. Using UnsanitizedText instances as keys in Soy maps would cause unexpected
-          // behavior (usually a failed map lookup), so don't generate signatures that allow it.
-          JsType keyTypeName =
-              keyKind == SoyType.Kind.STRING
-                  ? STRING_TYPE
-                  : forSoyType(keyType, kind, isStrict, arrayTypeMode);
-          JsType valueTypeName = forSoyType(mapType.getValueType(), kind, isStrict, arrayTypeMode);
-          return builder()
-              .addType(
-                  String.format(
-                      "!ReadonlyMap<%s,%s>", keyTypeName.typeExpr(), valueTypeName.typeExpr()))
-              .addRequires(keyTypeName.getGoogRequires())
-              .addRequires(valueTypeName.getGoogRequires())
-              .addRequire(GoogRequire.create("soy.map"))
-              .setPredicate(instanceofTypePredicate(id("Map")))
-              .build();
-        }
-      case MESSAGE:
-        return MESSAGE_TYPE;
-      case PROTO:
-        SoyProtoType protoType = (SoyProtoType) soyType;
-        String protoTypeName = protoType.getJsName(ProtoUtils.MutabilityMode.READONLY);
-        return builder()
-            .addType("!" + protoTypeName)
-            .addRequire(GoogRequire.createTypeRequire(protoTypeName))
-            .setPredicate(instanceofTypePredicate(JsRuntime.protoConstructor(protoType)))
-            .build();
-
-      case RECORD:
-        {
-          RecordType recordType = (RecordType) soyType;
-          Builder builder = builder();
-          Map<String, String> members = new LinkedHashMap<>();
-          for (RecordType.Member member : recordType.getMembers()) {
-            JsType forSoyType = forSoyType(member.checkedType(), kind, isStrict, arrayTypeMode);
-            builder.addRequires(forSoyType.getGoogRequires());
-            members.put(member.name(), forSoyType.typeExprForRecordMember(/* isOptional= */ false));
-          }
-          return builder
-              // trailing comma is important to prevent parsing ambiguity for the unknown type
-              .addType(
-                  members.isEmpty()
-                      ? "!Object"
-                      : "{" + Joiner.on(", ").withKeyValueSeparator(": ").join(members) + ",}")
-              .setPredicate(GOOG_IS_OBJECT)
-              .build();
-        }
-
-      case UNION:
-        {
-          UnionType unionType = (UnionType) soyType;
-          Builder builder = builder();
-          Set<JsType> types = new LinkedHashSet<>();
-          boolean isNullable = SoyTypes.isNullable(unionType);
-          boolean isUndefinable = SoyTypes.isUndefinable(unionType);
-          // handle null first so that if other type tests dereference the param they won't fail
-          if (isNullable) {
-            if (isUndefinable) {
-              builder.addTypes(NULL_OR_UNDEFINED_TYPE.typeExpressions);
-              types.add(NULL_OR_UNDEFINED_TYPE);
-            } else {
-              builder.addTypes(NULL_TYPE.typeExpressions);
-              types.add(NULL_TYPE);
-            }
-          } else if (isUndefinable) {
-            builder.addTypes(UNDEFINED_TYPE.typeExpressions);
-            types.add(UNDEFINED_TYPE);
-          }
-          for (SoyType member : unionType.getMembers()) {
-            if (member.isNullOrUndefined()) {
-              continue; // handled above
-            }
-            JsType memberType = forSoyType(member, kind, isStrict, arrayTypeMode);
-            builder.addRequires(memberType.extraRequires);
-            builder.addTypes(memberType.typeExpressions);
-            types.add(memberType);
-          }
-          return builder
-              .setPredicate(
-                  (value, codeGenerator) -> {
-                    Expression result = null;
-                    // TODO(lukes): this will cause reevaluations, resolve by conditionally
-                    // bouncing into a a temporary variable or augmenting the codechunk api to do
-                    // this automatically.
-                    for (JsType memberType : types) {
-                      Optional<Expression> typeAssertion =
-                          memberType.getTypeAssertion(value, codeGenerator);
-                      if (!typeAssertion.isPresent()) {
-                        return Optional.empty();
-                      }
-                      if (result == null) {
-                        result = typeAssertion.get();
-                      } else {
-                        result = result.or(typeAssertion.get(), codeGenerator);
-                      }
-                    }
-                    return Optional.of(result);
-                  })
-              .build();
-        }
-      case VE:
-        return VE_TYPE;
-      case VE_DATA:
-        return VE_DATA_TYPE;
-      case TEMPLATE:
-        {
-          TemplateType templateType = (TemplateType) soyType;
-          Builder builder = builder();
-          Map<String, String> parameters = new LinkedHashMap<>();
-          for (TemplateType.Parameter parameter : templateType.getParameters()) {
-            JsType forSoyType =
-                forSoyType(
-                    parameter.getType(), kind, isStrict, ArrayTypeMode.ARRAY_OR_READONLY_ARRAY);
-            builder.addRequires(forSoyType.getGoogRequires());
-            parameters.put(
-                parameter.getName(),
-                forSoyType.typeExprForRecordMember(/* isOptional= */ !parameter.isRequired()));
-          }
-          JsType forReturnType = templateReturnType(templateType.getContentKind(), kind);
-          builder.addRequires(forReturnType.getGoogRequires());
-          // Trailing comma is important to prevent parsing ambiguity for the unknown type
-          String parametersType =
-              parameters.isEmpty()
-                  ? "null"
-                  : "{" + Joiner.on(", ").withKeyValueSeparator(": ").join(parameters) + ",}";
-          String returnType = forReturnType.typeExpr();
-          if (kind == JsTypeKind.IDOMSRC
-              && templateType.getContentKind().getSanitizedContentKind()
-                  != SanitizedContentKind.TEXT) {
-            builder.addRequire(
-                GoogRequire.createWithAlias(
-                    "google3.javascript.template.soy.api_idom", "incrementaldomlib"));
-            builder.addType(
-                String.format(
-                    "function(!incrementaldomlib.IncrementalDomRenderer, %s, %s):(%s)",
-                    parametersType, "?(goog.soy.IjData)=", returnType));
-          } else {
-            builder.addType(
-                String.format(
-                    "function(%s, %s):(%s)", parametersType, "?(goog.soy.IjData)=", returnType));
-            builder.addRequire(JsRuntime.GOOG_SOY.toRequireType());
-          }
-          builder.setPredicate(GOOG_IS_FUNCTION);
-          return builder.build();
-        }
-      case NAMED: // TODO(b/182265475)
-      case INDEXED: // TODO(b/182265475)
-      case INTERSECTION: // TODO(b/182265475)
-      case CSS_TYPE:
-      case CSS_MODULE:
-      case TOGGLE_TYPE:
-      case PROTO_TYPE:
-      case PROTO_ENUM_TYPE:
-      case PROTO_EXTENSION:
-      case PROTO_MODULE:
-      case TEMPLATE_TYPE:
-      case TEMPLATE_MODULE:
-      case FUNCTION:
-      case NEVER:
+    @Override
+    public JsType get(SoyType type) {
+      return get(type, this);
     }
-    throw new AssertionError("unhandled soytype: " + soyType);
+  }
+
+  static final class JsTypeRegistryImpl extends JsTypeRegistry {
+    private final JsTypeKind kind;
+    private final boolean isStrict;
+    private ArrayTypeMode arrayTypeMode;
+
+    /**
+     * @param kind JS backend type
+     * @param isStrict If true, generates stricter sanitized content types.
+     * @param arrayTypeMode describes our typing convention for arrays.
+     */
+    public JsTypeRegistryImpl(JsTypeKind kind, boolean isStrict, ArrayTypeMode arrayTypeMode) {
+      this.kind = kind;
+      this.isStrict = isStrict;
+      this.arrayTypeMode = arrayTypeMode;
+    }
+
+    /**
+     * Returns a {@link JsType} corresponding to the given {@link SoyType}
+     *
+     * <p>TODO(lukes): consider adding a cache for all the computed types. The same type is probably
+     * accessed many many times.
+     *
+     * @param soyType the soy type
+     */
+    @Override
+    public JsType get(SoyType soyType, JsTypeProducer forRecursion) {
+      switch (soyType.getKind()) {
+        case NULL:
+          return NULL_TYPE;
+        case UNDEFINED:
+          return UNDEFINED_TYPE;
+
+        case ANY:
+          return ANY_TYPE;
+
+        case UNKNOWN:
+          return UNKNOWN_TYPE;
+
+        case BOOL:
+          return BOOLEAN_TYPE;
+
+        case PROTO_ENUM:
+          SoyProtoEnumType enumType = (SoyProtoEnumType) soyType;
+          String enumTypeName = enumType.getNameForBackend(SoyBackendKind.JS_SRC);
+          JsType.Builder enumBuilder =
+              builder()
+                  .addType("!" + enumTypeName)
+                  .addRequire(GoogRequire.createTypeRequire(enumTypeName))
+                  .setPredicate(typeofTypePredicate("number"));
+          return enumBuilder.build();
+
+        case FLOAT:
+        case INT:
+          return NUMBER_TYPE;
+
+        case STRING:
+          return STRING_TYPE;
+
+        case ATTRIBUTES:
+          if (kind == JsTypeKind.IDOMSRC) {
+            // idom has a different strategy for handling these
+            return IDOM_ATTRIBUTES;
+          }
+        // fall through
+        case HTML:
+        case ELEMENT:
+          if (kind == JsTypeKind.IDOMSRC) {
+            // idom has a different strategy for handling these
+            return IDOM_HTML;
+          }
+        // fall-through
+        case CSS:
+        case JS:
+        case URI:
+        case TRUSTED_RESOURCE_URI:
+          return isStrict
+              ? SANITIZED_TYPES_STRICT.get(((SanitizedType) soyType).getContentKind())
+              : SANITIZED_TYPES.get(((SanitizedType) soyType).getContentKind());
+
+        case ITERABLE:
+          SoyType itElmType = ((AbstractIterableType) soyType).getElementType();
+          JsType jsItElmType = forRecursion.get(itElmType);
+          return builder()
+              .addType(String.format("!Iterable<%s>", jsItElmType.typeExpr()))
+              .addRequires(jsItElmType.getGoogRequires())
+              .setPredicate(JsRuntime.SOY_IS_ITERABLE)
+              .build();
+
+        case LIST:
+          AbstractIterableType listType = (AbstractIterableType) soyType;
+          if (listType.isEmpty() || listType.getElementType().getKind() == SoyType.Kind.ANY) {
+            return RAW_ARRAY_TYPE;
+          }
+          JsType element = forRecursion.get(listType.getElementType());
+
+          return builder()
+              .addType(ArrayTypeMode.formatArrayType(arrayTypeMode, element.typeExpr()))
+              .addRequires(element.getGoogRequires())
+              .setPredicate(ARRAY_IS_ARRAY)
+              .build();
+
+        case SET:
+          SoyType elmType = ((AbstractIterableType) soyType).getElementType();
+          JsType jsElmType = forRecursion.get(elmType);
+          return builder()
+              .addType(String.format("!Set<%s>", jsElmType.typeExpr()))
+              .addRequires(jsElmType.getGoogRequires())
+              .setPredicate(instanceofTypePredicate(id("Set")))
+              .build();
+
+        case LEGACY_OBJECT_MAP:
+          {
+            LegacyObjectMapType mapType = (LegacyObjectMapType) soyType;
+            if (mapType.getKeyType().getKind() == SoyType.Kind.ANY
+                && mapType.getValueType().getKind() == SoyType.Kind.ANY) {
+              return RAW_OBJECT_TYPE;
+            }
+            JsType keyTypeName = forRecursion.get(mapType.getKeyType());
+            JsType valueTypeName = forRecursion.get(mapType.getValueType());
+            return builder()
+                .addType(
+                    String.format(
+                        "!Object<%s,%s>", keyTypeName.typeExpr(), valueTypeName.typeExpr()))
+                .addRequires(keyTypeName.getGoogRequires())
+                .addRequires(valueTypeName.getGoogRequires())
+                .setPredicate(GOOG_IS_OBJECT)
+                .build();
+          }
+        case MAP:
+          {
+            MapType mapType = (MapType) soyType;
+            SoyType keyType = mapType.getKeyType();
+            SoyType.Kind keyKind = keyType.getKind();
+            // Soy key type of string should translate to a JS key type of string.
+            // get(StringType.getInstance()) normally translates to
+            // string|!goog.soy.data.UnsanitizedText, but ES6 Maps always use instance equality for
+            // lookups. Using UnsanitizedText instances as keys in Soy maps would cause unexpected
+            // behavior (usually a failed map lookup), so don't generate signatures that allow it.
+            JsType keyTypeName =
+                keyKind == SoyType.Kind.STRING ? STRING_TYPE : forRecursion.get(keyType);
+            JsType valueTypeName = forRecursion.get(mapType.getValueType());
+            return builder()
+                .addType(
+                    String.format(
+                        "!ReadonlyMap<%s,%s>", keyTypeName.typeExpr(), valueTypeName.typeExpr()))
+                .addRequires(keyTypeName.getGoogRequires())
+                .addRequires(valueTypeName.getGoogRequires())
+                .addRequire(GoogRequire.create("soy.map"))
+                .setPredicate(instanceofTypePredicate(id("Map")))
+                .build();
+          }
+        case MESSAGE:
+          return MESSAGE_TYPE;
+        case PROTO:
+          SoyProtoType protoType = (SoyProtoType) soyType;
+          String protoTypeName = protoType.getJsName(ProtoUtils.MutabilityMode.READONLY);
+          return builder()
+              .addType("!" + protoTypeName)
+              .addRequire(GoogRequire.createTypeRequire(protoTypeName))
+              .setPredicate(instanceofTypePredicate(JsRuntime.protoConstructor(protoType)))
+              .build();
+
+        case RECORD:
+          {
+            RecordType recordType = (RecordType) soyType;
+            Builder builder = builder();
+            Map<String, String> members = new LinkedHashMap<>();
+            for (RecordType.Member member : recordType.getMembers()) {
+              JsType memberType = forRecursion.get(member.checkedType());
+              builder.addRequires(memberType.getGoogRequires());
+              members.put(
+                  member.name(), memberType.typeExprForRecordMember(/* isOptional= */ false));
+            }
+            return builder
+                .addType(
+                    members.isEmpty()
+                        ? "!Object"
+                        : "{" + Joiner.on(", ").withKeyValueSeparator(": ").join(members) + ",}")
+                .setPredicate(GOOG_IS_OBJECT)
+                .build();
+          }
+
+        case UNION:
+          {
+            UnionType unionType = (UnionType) soyType;
+            Builder builder = builder();
+            Set<JsType> types = new LinkedHashSet<>();
+            boolean isNullable = SoyTypes.isNullable(unionType);
+            boolean isUndefinable = SoyTypes.isUndefinable(unionType);
+            // handle null first so that if other type tests dereference the param they won't fail
+            if (isNullable) {
+              if (isUndefinable) {
+                builder.addTypes(NULL_OR_UNDEFINED_TYPE.typeExpressions);
+                types.add(NULL_OR_UNDEFINED_TYPE);
+              } else {
+                builder.addTypes(NULL_TYPE.typeExpressions);
+                types.add(NULL_TYPE);
+              }
+            } else if (isUndefinable) {
+              builder.addTypes(UNDEFINED_TYPE.typeExpressions);
+              types.add(UNDEFINED_TYPE);
+            }
+            for (SoyType member : unionType.getMembers()) {
+              if (member.isNullOrUndefined()) {
+                continue; // handled above
+              }
+              JsType memberType = forRecursion.get(member);
+              builder.addRequires(memberType.extraRequires);
+              builder.addTypes(memberType.typeExpressions);
+              types.add(memberType);
+            }
+            return builder
+                .setPredicate(
+                    (value, codeGenerator) -> {
+                      Expression result = null;
+                      // TODO(lukes): this will cause reevaluations, resolve by conditionally
+                      // bouncing into a a temporary variable or augmenting the codechunk api to do
+                      // this automatically.
+                      for (JsType memberType : types) {
+                        Optional<Expression> typeAssertion =
+                            memberType.getTypeAssertion(value, codeGenerator);
+                        if (!typeAssertion.isPresent()) {
+                          return Optional.empty();
+                        }
+                        if (result == null) {
+                          result = typeAssertion.get();
+                        } else {
+                          result = result.or(typeAssertion.get(), codeGenerator);
+                        }
+                      }
+                      return Optional.of(result);
+                    })
+                .build();
+          }
+        case VE:
+          return VE_TYPE;
+        case VE_DATA:
+          return VE_DATA_TYPE;
+        case TEMPLATE:
+          {
+            TemplateType templateType = (TemplateType) soyType;
+            Builder builder = builder();
+            Map<String, String> parameters = new LinkedHashMap<>();
+            for (TemplateType.Parameter parameter : templateType.getParameters()) {
+              JsType forSoyType =
+                  getWithArrayMode(ArrayTypeMode.ARRAY_OR_READONLY_ARRAY, parameter.getType());
+              builder.addRequires(forSoyType.getGoogRequires());
+              parameters.put(
+                  parameter.getName(),
+                  forSoyType.typeExprForRecordMember(/* isOptional= */ !parameter.isRequired()));
+            }
+            JsType forReturnType = templateReturnType(templateType.getContentKind(), kind);
+            builder.addRequires(forReturnType.getGoogRequires());
+            // Trailing comma is important to prevent parsing ambiguity for the unknown type
+            String parametersType =
+                parameters.isEmpty()
+                    ? "null"
+                    : "{" + Joiner.on(", ").withKeyValueSeparator(": ").join(parameters) + ",}";
+            String returnType = forReturnType.typeExpr();
+            if (kind == JsTypeKind.IDOMSRC
+                && templateType.getContentKind().getSanitizedContentKind()
+                    != SanitizedContentKind.TEXT) {
+              builder.addRequire(
+                  GoogRequire.createWithAlias(
+                      "google3.javascript.template.soy.api_idom", "incrementaldomlib"));
+              builder.addType(
+                  String.format(
+                      "function(!incrementaldomlib.IncrementalDomRenderer, %s, %s):(%s)",
+                      parametersType, "?(goog.soy.IjData)=", returnType));
+            } else {
+              builder.addType(
+                  String.format(
+                      "function(%s, %s):(%s)", parametersType, "?(goog.soy.IjData)=", returnType));
+              builder.addRequire(JsRuntime.GOOG_SOY.toRequireType());
+            }
+            builder.setPredicate(GOOG_IS_FUNCTION);
+            return builder.build();
+          }
+        case NAMED: // TODO(b/182265475)
+        case INDEXED: // TODO(b/182265475)
+        case INTERSECTION: // TODO(b/182265475)
+        case CSS_TYPE:
+        case CSS_MODULE:
+        case TOGGLE_TYPE:
+        case PROTO_TYPE:
+        case PROTO_ENUM_TYPE:
+        case PROTO_EXTENSION:
+        case PROTO_MODULE:
+        case TEMPLATE_TYPE:
+        case TEMPLATE_MODULE:
+        case FUNCTION:
+        case NEVER:
+      }
+      throw new AssertionError("unhandled soytype: " + soyType);
+    }
+
+    private JsType getWithArrayMode(ArrayTypeMode mode, SoyType type) {
+      ArrayTypeMode oldMode = arrayTypeMode;
+      arrayTypeMode = mode;
+      JsType rv = get(type); // This breaks the recursion contract.
+      arrayTypeMode = oldMode;
+      return rv;
+    }
   }
 
   public static String toRecord(Map<String, String> record) {
@@ -631,8 +664,8 @@ public final class JsType {
 
     /**
      * Returns a code chunk that evaluates to {@code true} if the given chunk matches the predicate
-     * and {@code false} otherwise. Returns {@link Optional#absent()} if there is no validation to
-     * be done.
+     * and {@code false} otherwise. Returns {@link Optional#empty()} if there is no validation to be
+     * done.
      */
     Optional<Expression> maybeCheck(Expression value, Generator codeGenerator);
   }
@@ -694,7 +727,7 @@ public final class JsType {
 
   /**
    * Returns a code chunk that generates a 'test' for whether or not the given value has this type,
-   * or {@link Optional#absent()} if no test is necessary.
+   * or {@link Optional#empty()} if no test is necessary.
    */
   Optional<Expression> getTypeAssertion(Expression value, Generator codeGenerator) {
     return predicate.maybeCheck(value, codeGenerator);
@@ -702,7 +735,7 @@ public final class JsType {
 
   /**
    * Returns a Soy assertion expression that asserts that the given value has this type, or {@link
-   * Optional#absent()} if no assertion is necessary.
+   * Optional#empty()} if no assertion is necessary.
    */
   public Optional<Expression> getSoyParamTypeAssertion(
       Expression value, String valueName, String paramKind, Generator codeGenerator) {
