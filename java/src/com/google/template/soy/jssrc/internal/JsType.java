@@ -612,8 +612,12 @@ public final class JsType {
           // Find the named type that originally declared this property. We need to do this because
           // the typedef for the member is only declared relative to the {typedef} in which it's
           // defined, not copied to every {typedef} that extends it.
+          // If the same property is defined in multiple type defs the behavior of this algorithm is
+          // undefined. Incompatible types will have been resolved as `never` and should have failed
+          // compilation.
           Deque<SoyType> stack = new ArrayDeque<>();
           stack.add(indexedType.getType());
+          WHILE:
           while (!stack.isEmpty()) {
             SoyType member = stack.removeLast();
             if (member.getKind() != Kind.NAMED) {
@@ -621,15 +625,24 @@ public final class JsType {
             }
             NamedType namedMember = (NamedType) member;
             SoyType namedValue = namedMember.getType();
+            ImmutableSet<SoyType> components = ImmutableSet.of();
             if (namedValue instanceof RecordType) {
-              if (((RecordType) namedValue).getMember(indexedType.getProperty()) != null) {
-                type =
-                    IndexedType.jsSynthenticTypeDefName(
-                        forRecursion.get(namedMember).typeExpr(), indexedType.getProperty());
-                break;
-              }
+              components = ImmutableSet.of(namedValue);
             } else if (namedValue instanceof IntersectionType) {
-              stack.addAll(((IntersectionType) namedValue).getMembers());
+              components = ((IntersectionType) namedValue).getMembers();
+            }
+
+            for (SoyType component : components) {
+              if (component instanceof NamedType) {
+                stack.add(component);
+              } else if (component instanceof RecordType) {
+                if (((RecordType) component).hasMember(indexedType.getProperty())) {
+                  type =
+                      IndexedType.jsSynthenticTypeDefName(
+                          forRecursion.get(namedMember).typeExpr(), indexedType.getProperty());
+                  break WHILE;
+                }
+              }
             }
           }
           JsType baseType = forRecursion.get(indexedType.getType());

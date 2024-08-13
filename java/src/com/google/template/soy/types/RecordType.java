@@ -16,16 +16,15 @@
 
 package com.google.template.soy.types;
 
+import static com.google.common.collect.ImmutableList.toImmutableList;
+
 import com.google.auto.value.AutoValue;
 import com.google.auto.value.extension.memoized.Memoized;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Streams;
 import com.google.template.soy.soytree.SoyTypeP;
 import java.util.NavigableMap;
-import java.util.Objects;
-import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
 /**
@@ -33,9 +32,10 @@ import javax.annotation.Nullable;
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  */
-public final class RecordType extends SoyType {
+@AutoValue
+public abstract class RecordType extends SoyType {
 
-  public static final RecordType EMPTY_RECORD = new RecordType(ImmutableList.of());
+  public static final RecordType EMPTY_RECORD = of(ImmutableList.of());
 
   /** The {name, type} pair that is a record member. */
   @AutoValue
@@ -57,13 +57,11 @@ public final class RecordType extends SoyType {
     return new AutoValue_RecordType_Member(name, optional, type);
   }
 
-  private final ImmutableList<Member> members;
-  private final ImmutableMap<String, Member> memberIndex;
+  public abstract ImmutableList<Member> getMembers();
 
-  private RecordType(Iterable<Member> members) {
-    this.members = ImmutableList.copyOf(members);
-    this.memberIndex =
-        Streams.stream(members).collect(ImmutableMap.toImmutableMap(Member::name, m -> m));
+  @Memoized
+  protected ImmutableMap<String, Member> getMemberIndex() {
+    return getMembers().stream().collect(ImmutableMap.toImmutableMap(Member::name, m -> m));
   }
 
   /**
@@ -72,14 +70,14 @@ public final class RecordType extends SoyType {
    */
   public static RecordType of(ImmutableMap<String, ? extends SoyType> members) {
     Preconditions.checkArgument(!(members instanceof NavigableMap)); // Insertion-order only, please
-    return new RecordType(
+    return of(
         members.entrySet().stream()
             .map(e -> memberOf(e.getKey(), false, e.getValue()))
-            .collect(Collectors.toList()));
+            .collect(toImmutableList()));
   }
 
   public static RecordType of(Iterable<Member> members) {
-    return new RecordType(members);
+    return new AutoValue_RecordType(ImmutableList.copyOf(members));
   }
 
   @Override
@@ -93,7 +91,7 @@ public final class RecordType extends SoyType {
       RecordType srcRecord = (RecordType) srcType;
       // The source record must have at least all of the members in the dest
       // record.
-      for (Member mine : members) {
+      for (Member mine : getMembers()) {
         SoyType theirType = srcRecord.getMemberType(mine.name());
         if (theirType == null) {
           if (!mine.optional()) {
@@ -108,31 +106,32 @@ public final class RecordType extends SoyType {
     return false;
   }
 
-  public ImmutableList<Member> getMembers() {
-    return members;
+  public boolean hasMember(String fieldName) {
+    return getMemberIndex().containsKey(fieldName);
   }
 
   @Nullable
   public Member getMember(String fieldName) {
-    return memberIndex.get(fieldName);
+    return getMemberIndex().get(fieldName);
   }
 
   @Nullable
   public SoyType getMemberType(String fieldName) {
-    Member member = memberIndex.get(fieldName);
+    Member member = getMemberIndex().get(fieldName);
     return member != null ? member.checkedType() : null;
   }
 
+  @Memoized
   public Iterable<String> getMemberNames() {
-    return members.stream().map(Member::name).collect(Collectors.toList());
+    return getMembers().stream().map(Member::name).collect(toImmutableList());
   }
 
   @Override
-  public String toString() {
+  public final String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("[");
     boolean first = true;
-    for (Member member : members) {
+    for (Member member : getMembers()) {
       if (first) {
         first = false;
       } else {
@@ -152,25 +151,13 @@ public final class RecordType extends SoyType {
   @Override
   void doToProto(SoyTypeP.Builder builder) {
     SoyTypeP.RecordTypeP.Builder recordBuilder = builder.getRecordBuilder();
-    for (Member member : members) {
+    for (Member member : getMembers()) {
       recordBuilder.addMembers(
           SoyTypeP.RecordMemberP.newBuilder()
               .setName(member.name())
               .setOptional(member.optional())
               .setType(member.declaredType().toProto()));
     }
-  }
-
-  @Override
-  public boolean equals(Object other) {
-    return other != null
-        && other.getClass() == this.getClass()
-        && ((RecordType) other).members.equals(members);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(this.getClass(), members);
   }
 
   @Override
