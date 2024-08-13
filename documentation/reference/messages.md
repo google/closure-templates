@@ -85,9 +85,7 @@ Here are details on how Soy generates placeholders in messages:
 
 -   If a message contains multiple placeholders that would result in the same
     placeholder name, then the compiler appends number suffixes to distinguish
-    them, e.g. `START_LINK_1`, `START_LINK_2`. If any of these are explicitly
-    provided via `phname`, a compiler error will instruct the caller to change
-    it.
+    them, e.g. `START_LINK_1`, `START_LINK_2`.
 
 -   Template commands for control flow (`if`, `switch`, `for`) are not allowed
     in `msg` blocks. However, you can put them in a `let` block and then print
