@@ -18,6 +18,7 @@ package com.google.template.soy.jssrc.dsl;
 
 import com.google.auto.value.AutoValue;
 import com.google.errorprone.annotations.Immutable;
+import java.util.Objects;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
@@ -57,6 +58,6 @@ public abstract class ExpressionStatement extends Statement {
 
   @Override
   Stream<? extends CodeChunk> childrenStream() {
-    return Stream.of(expr());
+    return Stream.of(expr(), jsDoc()).filter(Objects::nonNull);
   }
 }
