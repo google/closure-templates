@@ -24,7 +24,6 @@ import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.exprtree.AbstractVarDefn;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
-import com.google.template.soy.types.IndexedType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.ast.TypeNode;
 import javax.annotation.Nullable;
@@ -128,11 +127,7 @@ public class TemplateParam extends AbstractVarDefn implements TemplateHeaderVarD
 
   @Override
   public boolean isRequired() {
-    return defaultValue == null
-        && !isExplicitlyOptional
-        // Special support for indexed types implying optional. Allows you to omit the '?' of
-        // {param?} if the field of the original record type is optional.
-        && !(type instanceof IndexedType && ((IndexedType) type).isOriginallyOptional());
+    return defaultValue == null && !isExplicitlyOptional;
   }
 
   @Override

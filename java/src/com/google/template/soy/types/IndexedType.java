@@ -17,7 +17,6 @@
 package com.google.template.soy.types;
 
 import com.google.auto.value.AutoValue;
-import com.google.auto.value.extension.memoized.Memoized;
 import com.google.template.soy.soytree.SoyTypeP;
 
 /** An "indexed access type". Resolves to the type of a property of a record type. */
@@ -57,7 +56,6 @@ public abstract class IndexedType extends SoyType {
   }
 
   @Override
-  @Memoized
   public SoyType getEffectiveType() {
     SoyType baseType = getType().getEffectiveType();
     if (baseType instanceof RecordType) {
@@ -67,19 +65,6 @@ public abstract class IndexedType extends SoyType {
       }
     }
     return NeverType.getInstance();
-  }
-
-  /**
-   * Returns whether the field represented by this type is optional in the record type where it is
-   * defined.
-   */
-  public boolean isOriginallyOptional() {
-    SoyType baseType = getType().getEffectiveType();
-    if (baseType instanceof RecordType) {
-      RecordType.Member member = ((RecordType) baseType).getMember(getProperty());
-      return member != null && member.optional();
-    }
-    return false;
   }
 
   @Override
