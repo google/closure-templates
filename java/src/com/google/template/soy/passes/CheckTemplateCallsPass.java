@@ -365,15 +365,16 @@ final class CheckTemplateCallsPass implements CompilerFileSetPass {
               checkArgumentAgainstParamType(
                   call.getSourceLocation(),
                   paramName,
-                  callerParam.type(),
+                  callerParam.authoredType(),
                   formalType,
                   calleeParamTypes);
             }
           }
         } else {
           ExprNode dataExpr = call.getDataExpr();
+          SoyType dataExprType = dataExpr.getAuthoredType();
           // TODO(b/168852179): enforce that the correct set of properties are present
-          if (!RecordType.EMPTY_RECORD.isAssignableFromLoose(dataExpr.getType())
+          if (!RecordType.EMPTY_RECORD.isAssignableFromLoose(dataExprType)
               && dataExpr.getType().getKind() != SoyType.Kind.ANY) {
             errorReporter.report(
                 dataExpr.getSourceLocation(), INVALID_DATA_EXPR, dataExpr.getType());
@@ -401,16 +402,17 @@ final class CheckTemplateCallsPass implements CompilerFileSetPass {
       // We use loose assignability because soy templates generate runtime type checking code for
       // parameter types.  So passing loosely typed values will generally be checked at runtime.
       // Our runtime type checking code isn't perfect and varies by backend.
+
+      // Special case for indirect params: Allow a nullable type to be assigned
+      // to a non-nullable type if the non-nullable type is an indirect parameter type.
+      // The reason is that without flow analysis, we can't know whether
+      // there are if-statements preventing null from being passed as an indirect
+      // param, so we assume all indirect params are optional.
+      if (calleeParams.isIndirect(paramName)) {
+        argType = SoyTypes.tryRemoveNullish(argType.getEffectiveType());
+      }
+
       if (!formalType.isAssignableFromLoose(argType)) {
-        if (calleeParams.isIndirect(paramName)
-            && formalType.isAssignableFromLoose(SoyTypes.tryRemoveNullish(argType))) {
-          // Special case for indirect params: Allow a nullable type to be assigned
-          // to a non-nullable type if the non-nullable type is an indirect parameter type.
-          // The reason is because without flow analysis, we can't know whether or not
-          // there are if-statements preventing null from being passed as an indirect
-          // param, so we assume all indirect params are optional.
-          return;
-        }
         errorReporter.report(location, ARGUMENT_TYPE_MISMATCH, paramName, formalType, argType);
       }
     }
@@ -557,13 +559,16 @@ final class CheckTemplateCallsPass implements CompilerFileSetPass {
       }
       if (calleeType.getUseVariantType().isNullOrUndefined()) {
         errorReporter.report(node.getSourceLocation(), NO_USEVARIANTTYPE);
-      } else if (!SoyTypes.makeNullish(calleeType.getUseVariantType())
-          .isAssignableFromStrict(node.getVariantExpr().getType())) {
-        errorReporter.report(
-            node.getVariantExpr().getSourceLocation(),
-            BAD_VARIANT_TYPE,
-            calleeType.getUseVariantType(),
-            node.getVariantExpr().getType());
+      } else {
+        SoyType variantType = node.getVariantExpr().getAuthoredType();
+        if (!SoyTypes.makeNullish(calleeType.getUseVariantType())
+            .isAssignableFromStrict(variantType)) {
+          errorReporter.report(
+              node.getVariantExpr().getSourceLocation(),
+              BAD_VARIANT_TYPE,
+              calleeType.getUseVariantType(),
+              variantType);
+        }
       }
     }
   }

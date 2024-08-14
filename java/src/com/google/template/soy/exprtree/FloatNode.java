@@ -55,7 +55,7 @@ public final class FloatNode extends AbstractPrimitiveNode {
   }
 
   @Override
-  public FloatType getType() {
+  public FloatType getAuthoredType() {
     return FloatType.getInstance();
   }
 

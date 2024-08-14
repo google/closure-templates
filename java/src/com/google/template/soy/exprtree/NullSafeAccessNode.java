@@ -234,7 +234,7 @@ public final class NullSafeAccessNode extends AbstractParentExprNode {
           isBaseNullish = false;
         }
         if (isBaseNullish) {
-          ((DataAccessNode) base).setType(SoyTypes.makeUndefinable(base.getType()));
+          ((DataAccessNode) base).setType(SoyTypes.makeUndefinable(base.getAuthoredType()));
         }
         base = base.getParent();
       }

@@ -39,11 +39,18 @@ public abstract class SoyError implements Comparable<SoyError> {
   public abstract boolean isWarning();
 
   public String message() {
-    return errorKind().format(getArgs().toArray());
+    return errorKind().format(getArgs().stream().map(SoyError::mapArg).toArray());
   }
 
   @Override
   public int compareTo(SoyError o) {
     return comparing(SoyError::location).thenComparing(SoyError::message).compare(this, o);
+  }
+
+  private static Object mapArg(Object arg) {
+    if (arg instanceof ErrorArg) {
+      return ((ErrorArg) arg).toErrorArgString();
+    }
+    return arg;
   }
 }

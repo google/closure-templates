@@ -372,10 +372,6 @@ final class ValidatorFactory extends JavaValueFactory {
       case UNKNOWN:
         expectedClasses = UNKNOWN_TYPES;
         break;
-      case INTERSECTION:
-      case NAMED:
-      case INDEXED:
-        return isValidClassForType(clazz, type.getEffectiveType());
       case ATTRIBUTES:
       case CSS:
       case ELEMENT:
@@ -461,6 +457,9 @@ final class ValidatorFactory extends JavaValueFactory {
       case TEMPLATE_TYPE:
       case TEMPLATE_MODULE:
       case FUNCTION:
+      case INTERSECTION:
+      case NAMED:
+      case INDEXED:
       case NEVER:
         throw new IllegalStateException(
             "Cannot have " + type.getKind() + " from function signature");

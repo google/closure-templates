@@ -22,6 +22,7 @@ SEMI_PUBLIC_SOURCES = [
     "SoyError.java",
     "SoyErrors.java",
     "SoyErrorKind.java",
+    "ErrorArg.java",
     "ErrorFormatter.java",
 ]
 

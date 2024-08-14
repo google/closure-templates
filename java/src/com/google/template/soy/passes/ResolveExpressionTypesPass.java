@@ -559,7 +559,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
           .forEach(
               headerVar -> {
                 paramInfExprVisitor.exec(headerVar.defaultValue());
-                headerVar.setType(headerVar.defaultValue().getRoot().getType());
+                headerVar.setType(headerVar.defaultValue().getRoot().getAuthoredType());
               });
 
       // These template types only contain the information from passes that run before this. There
@@ -667,9 +667,9 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
           .forEach(
               headerVar -> {
                 exprVisitor.exec(headerVar.defaultValue());
-                SoyType actualType = headerVar.defaultValue().getRoot().getType();
+                SoyType actualType = headerVar.defaultValue().getRoot().getAuthoredType();
 
-                SoyType declaredType = headerVar.type();
+                SoyType declaredType = headerVar.authoredType();
                 if (!declaredType.isAssignableFromStrict(actualType)) {
                   actualType =
                       RuntimeTypeCoercion.maybeCoerceType(
@@ -1066,7 +1066,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
     protected void visitExprRootNode(ExprRootNode node) {
       visitChildren(node);
       ExprNode expr = node.getRoot();
-      node.setType(expr.getType());
+      node.setType(expr.getAuthoredType());
       tryApplySubstitution(node);
     }
 
@@ -1181,7 +1181,8 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
       // Resolve the type of the itemMapExpr, and use it to determine the comprehension's resulting
       // list type.
       visit(node.getListItemTransformExpr());
-      node.setType(typeRegistry.getOrCreateListType(node.getListItemTransformExpr().getType()));
+      node.setType(
+          typeRegistry.getOrCreateListType(node.getListItemTransformExpr().getAuthoredType()));
 
       // Return the type substitutions to their state before narrowing the list item type.
       substitutions.restore(savedSubstitutions);
@@ -2011,7 +2012,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
     @Override
     protected void visitSpreadOpNode(SpreadOpNode node) {
       visit(node.getChild(0));
-      node.setType(node.getChild(0).getType()); // Must be spread in context to be valid.
+      node.setType(node.getChild(0).getAuthoredType()); // Must be spread in context to be valid.
     }
 
     @Override
@@ -2086,11 +2087,11 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
       if (node.getChild(1) instanceof StringNode
           && ((StringNode) node.getChild(1)).getValue().isEmpty()
           && tryRemoveNullish(node.getChild(2).getType()).getKind() == Kind.ATTRIBUTES) {
-        node.setType(node.getChild(2).getType());
+        node.setType(node.getChild(2).getAuthoredType());
       } else if (node.getChild(2) instanceof StringNode
           && ((StringNode) node.getChild(2)).getValue().isEmpty()
           && tryRemoveNullish(node.getChild(1).getType()).getKind() == Kind.ATTRIBUTES) {
-        node.setType(node.getChild(1).getType());
+        node.setType(node.getChild(1).getAuthoredType());
       } else {
         node.setType(
             SoyTypes.computeLowestCommonType(
@@ -2449,7 +2450,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
         FunctionNode resolvedNode =
             CallableExprBuilder.builder(node).setParamNames(resolvedIdentifiers).buildFunction();
         resolvedNode.setSoyFunction(node.getSoyFunction());
-        resolvedNode.setType(node.getType());
+        resolvedNode.setType(node.getAuthoredType());
         node.getParent().replaceChild(node, resolvedNode);
         node = resolvedNode;
       }
@@ -2612,7 +2613,6 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
      */
     private SoyType getFieldType(
         SoyType baseType, String fieldName, SourceLocation sourceLocation) {
-      baseType = baseType.getEffectiveType();
       switch (baseType.getKind()) {
         case UNKNOWN:
           // If we don't know anything about the base type, then make no assumptions
@@ -2950,7 +2950,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
       if (externRef.path().path().endsWith("java/soy/plugins/functions.soy")
           && externRef.name().equals("unpackAny")) {
         ExprNode secondParam = node.getParam(1);
-        node.setType(secondParam.getType());
+        node.setType(secondParam.getAuthoredType());
       }
     }
 

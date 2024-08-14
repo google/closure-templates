@@ -62,7 +62,7 @@ public abstract class AbstractParentExprNode extends AbstractExprNode implements
   }
 
   @Override
-  public SoyType getType() {
+  public SoyType getAuthoredType() {
     return type;
   }
 

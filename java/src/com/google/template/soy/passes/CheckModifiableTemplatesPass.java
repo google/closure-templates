@@ -158,7 +158,7 @@ final class CheckModifiableTemplatesPass implements CompilerFilePass {
     }
     TemplateType modifiedTemplateType =
         (TemplateType) templateBasicNode.getModifiesExpr().getRoot().getType();
-    SoyType variantType = templateBasicNode.getVariantExpr().getRoot().getType();
+    SoyType variantType = templateBasicNode.getVariantExpr().getRoot().getAuthoredType();
     if (!modifiedTemplateType.getUseVariantType().isAssignableFromStrict(variantType)) {
       errorReporter.report(
           templateBasicNode.getVariantExpr().getSourceLocation(),

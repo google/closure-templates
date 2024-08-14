@@ -74,7 +74,7 @@ public final class StringNode extends AbstractPrimitiveNode {
   }
 
   @Override
-  public StringType getType() {
+  public StringType getAuthoredType() {
     return StringType.getInstance();
   }
 

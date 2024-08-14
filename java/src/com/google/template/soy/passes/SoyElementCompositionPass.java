@@ -273,7 +273,7 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
       }
       closeTag.getParent().removeChild(closeTag);
     }
-    call.getCalleeExpr().setType(printNode.getExpr().getType());
+    call.getCalleeExpr().setType(printNode.getExpr().getAuthoredType());
     call.setHtmlContext(HtmlContext.HTML_PCDATA);
     tagNode.getParent().replaceChild(tagNode, call);
 
@@ -393,7 +393,7 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
           new IfCondNode(
               nodeIdGen.genId(), unknown, unknown, "if", conditional.get().copy(new CopyState()));
       ifNode.addChild(ifCondNode);
-      ifCondNode.getExpr().setType(conditional.get().getType());
+      ifCondNode.getExpr().setType(conditional.get().getAuthoredType());
       ifCondNode.addChild(attrNode.copy(new CopyState()));
       attributesNode.addChild(ifNode);
     } else {
@@ -559,7 +559,7 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
                 "if",
                 condition.get().copy(new CopyState()));
         ifNode.addChild(ifCondNode);
-        ifCondNode.getExpr().setType(condition.get().getType());
+        ifCondNode.getExpr().setType(condition.get().getAuthoredType());
         valueParent = ifCondNode;
       }
       for (StandaloneNode node : attrValue.getChildren()) {
@@ -598,7 +598,7 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
         new IfCondNode(
             nodeIdGen.genId(), unknown, unknown, "if", condition.get().copy(new CopyState()));
     ifNode.addChild(ifCondNode);
-    ifCondNode.getExpr().setType(condition.get().getType());
+    ifCondNode.getExpr().setType(condition.get().getAuthoredType());
     CopyState copyState = new CopyState();
     for (StandaloneNode node : attrValue.getChildren()) {
       ifCondNode.addChild(node.copy(copyState));
@@ -619,7 +619,7 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
                 BuiltinFunction.EMPTY_TO_UNDEFINED.getName(), val.getSourceLocation()),
             BuiltinFunction.EMPTY_TO_UNDEFINED,
             val.getSourceLocation());
-    functionNode.setType(UnionType.of(UndefinedType.getInstance(), val.getType()));
+    functionNode.setType(UnionType.of(UndefinedType.getInstance(), val.getAuthoredType()));
     functionNode.addChild(val);
     return functionNode;
   }

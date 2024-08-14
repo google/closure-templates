@@ -115,7 +115,6 @@ final class VeLogInstrumentationVisitor extends AbstractSoyNodeVisitor<Void> {
     }
     FunctionNode fnNode = (FunctionNode) printNode.getExpr().getRoot();
     if (fnNode.getSoyFunction() instanceof LoggingFunction) {
-      CopyState copyState = new CopyState();
       return new AutoValue_VeLogInstrumentationVisitor_LoggingFunctionInfo(
           fnNode, condition == null ? null : condition);
     }
@@ -185,7 +184,7 @@ final class VeLogInstrumentationVisitor extends AbstractSoyNodeVisitor<Void> {
                 callParamContentNode.getSourceLocation(),
                 "if",
                 info.condition().copy(new CopyState()));
-        ifCondNode.getExpr().setType(info.condition().getType());
+        ifCondNode.getExpr().setType(info.condition().getAuthoredType());
         ifCondNode.addChild(loggingFunctionAttribute);
         ifNode.addChild(ifCondNode);
         loggingFunctionAttribute = ifNode;

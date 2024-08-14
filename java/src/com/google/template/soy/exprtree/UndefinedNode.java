@@ -42,7 +42,7 @@ public final class UndefinedNode extends AbstractPrimitiveNode {
   }
 
   @Override
-  public UndefinedType getType() {
+  public UndefinedType getAuthoredType() {
     return UndefinedType.getInstance();
   }
 

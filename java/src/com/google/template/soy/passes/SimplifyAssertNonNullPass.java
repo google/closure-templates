@@ -52,9 +52,9 @@ final class SimplifyAssertNonNullPass implements CompilerFilePass {
       if (node.getParent() instanceof DataAccessNode) {
         ExprNode firstChild = node.getChild(0);
         if (firstChild instanceof AbstractParentExprNode) {
-          ((AbstractParentExprNode) firstChild).setType(node.getType());
+          ((AbstractParentExprNode) firstChild).setType(node.getAuthoredType());
         } else if (firstChild instanceof VarRefNode) {
-          ((VarRefNode) firstChild).setSubstituteType(node.getType());
+          ((VarRefNode) firstChild).setSubstituteType(node.getAuthoredType());
         } else if (SoyTypes.isNullish(firstChild.getType())) {
           continue;
         }

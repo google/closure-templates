@@ -66,7 +66,7 @@ public final class IntegerNode extends AbstractPrimitiveNode {
   }
 
   @Override
-  public IntType getType() {
+  public IntType getAuthoredType() {
     return IntType.getInstance();
   }
 

@@ -20,6 +20,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.google.errorprone.annotations.ForOverride;
 import com.google.errorprone.annotations.concurrent.LazyInit;
+import com.google.template.soy.error.ErrorArg;
 import com.google.template.soy.soytree.SoyTypeP;
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -37,7 +38,7 @@ import java.util.Deque;
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  */
-public abstract class SoyType {
+public abstract class SoyType implements ErrorArg {
 
   /**
    * Enum that identifies the kind of type this is.
@@ -276,6 +277,15 @@ public abstract class SoyType {
   @Override
   public abstract String toString();
 
+  @Override
+  public final String toErrorArgString() {
+    SoyType effective = getEffectiveType();
+    if (effective != this) {
+      return this + " (" + effective.toErrorArgString() + ")";
+    }
+    return toString();
+  }
+
   /** The type represented in proto format. For template metadata protos. */
   public final SoyTypeP toProto() {
     SoyTypeP local = protoDual;
@@ -293,7 +303,10 @@ public abstract class SoyType {
 
   public abstract <T> T accept(SoyTypeVisitor<T> visitor);
 
-  /** Resolves named and intersection types. */
+  /**
+   * Resolves NAMED, INDEXED, and INTERSECTION types. The returned value is a shallow resolution,
+   * guaranteed not to be one of the listed types but which may contain those types.
+   */
   public SoyType getEffectiveType() {
     return this;
   }

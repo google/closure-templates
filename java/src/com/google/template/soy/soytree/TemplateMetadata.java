@@ -152,7 +152,7 @@ public abstract class TemplateMetadata {
         .setName(param.name())
         .setKind(param instanceof AttrParam ? ParameterKind.ATTRIBUTE : ParameterKind.PARAM)
         // Proto imports when compiler is not given proto descriptors will cause type to be unset.
-        .setType(param.typeOrDefault(UnknownType.getInstance()))
+        .setType(param.hasType() ? param.authoredType() : UnknownType.getInstance())
         .setRequired(param.isRequired())
         .setImplicit(param.isImplicit())
         .setDescription(param.desc())

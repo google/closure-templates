@@ -277,7 +277,7 @@ public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<St
     // Generate code to define the local var.
     Expression value = translateExpr(node.getExpr());
     if (value.equals(Expressions.LITERAL_NULL)) {
-      JsType type = jsTypeRegistry.getWithDelegate(JsType.forJsSrc(), node.getVar().type());
+      JsType type = jsTypeRegistry.getWithDelegate(JsType.forJsSrc(), node.getVar().authoredType());
       value =
           value.castAs(
               type.typeExpr(),

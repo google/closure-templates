@@ -16,23 +16,26 @@
 
 package com.google.template.soy.exprtree;
 
+import com.google.common.base.Preconditions;
 import com.google.protobuf.Descriptors.EnumValueDescriptor;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.types.SoyProtoEnumType;
+import com.google.template.soy.types.SoyType;
 
 /** Node representing a proto enum value. */
 public final class ProtoEnumValueNode extends AbstractPrimitiveNode {
 
   private final Identifier id;
-  private final SoyProtoEnumType type;
+  private final SoyType type;
   private final int enumNumber;
 
-  public ProtoEnumValueNode(Identifier id, SoyProtoEnumType type, int enumNumber) {
+  public ProtoEnumValueNode(Identifier id, SoyType type, int enumNumber) {
     super(id.location());
     this.id = id;
     this.type = type;
     this.enumNumber = enumNumber;
+    Preconditions.checkArgument(type.getEffectiveType() instanceof SoyProtoEnumType);
   }
 
   private ProtoEnumValueNode(ProtoEnumValueNode orig, CopyState copyState) {
@@ -53,6 +56,11 @@ public final class ProtoEnumValueNode extends AbstractPrimitiveNode {
 
   @Override
   public SoyProtoEnumType getType() {
+    return (SoyProtoEnumType) type.getEffectiveType();
+  }
+
+  @Override
+  public SoyType getAuthoredType() {
     return type;
   }
 
@@ -66,7 +74,7 @@ public final class ProtoEnumValueNode extends AbstractPrimitiveNode {
   }
 
   public EnumValueDescriptor getEnumValueDescriptor() {
-    return type.getDescriptor().findValueByNumber(enumNumber);
+    return getType().getDescriptor().findValueByNumber(enumNumber);
   }
 
   @Override

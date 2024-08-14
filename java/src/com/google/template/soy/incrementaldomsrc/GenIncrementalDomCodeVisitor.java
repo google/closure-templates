@@ -267,7 +267,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     JsCodeBuilder jsCodeBuilder = getJsCodeBuilder();
     for (TemplateStateVar stateVar : node.getStateVars()) {
       JsType jsType =
-          jsTypeRegistry.getWithDelegate(JsType.forIncrementalDomState(), stateVar.type());
+          jsTypeRegistry.getWithDelegate(JsType.forIncrementalDomState(), stateVar.authoredType());
       for (GoogRequire require : jsType.googRequires()) {
         jsCodeBuilder.addGoogRequire(require);
       }
@@ -326,7 +326,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     addIjDataParam(jsDocBuilder, /* forPositionalSignature= */ true);
     maybeAddRenderer(jsDocBuilder, node);
     for (TemplateParam param : paramsInOrder(node)) {
-      JsType jsType = getJsTypeForParamForDeclaration(param.type());
+      JsType jsType = getJsTypeForParamForDeclaration(param.authoredType());
       jsDocBuilder.addParam(
           GenJsCodeVisitor.getPositionalParamName(param),
           jsType.typeExpr() + (param.isRequired() ? "" : "="));
@@ -691,9 +691,10 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     ByteSpan byteSpan = SoyTreeUtils.getByteSpan(currentTemplateNode, stateVar.nameLocation());
 
     JsType typeForState =
-        jsTypeRegistry.getWithDelegate(JsType.forIncrementalDomDeclarations(), stateVar.type());
+        jsTypeRegistry.getWithDelegate(
+            JsType.forIncrementalDomDeclarations(), stateVar.authoredType());
     JsType typeForGetters =
-        jsTypeRegistry.getWithDelegate(JsType.forIncrementalDomGetters(), stateVar.type());
+        jsTypeRegistry.getWithDelegate(JsType.forIncrementalDomGetters(), stateVar.authoredType());
     String stateAccessorSuffix =
         Ascii.toUpperCase(stateVar.name().substring(0, 1)) + stateVar.name().substring(1);
     try (var unused = templateTranslationContext.enterSoyAndJsScope()) {
@@ -717,7 +718,8 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
 
       ImmutableList.Builder<Statement> setStateMethodStatements = ImmutableList.builder();
       JsType typeForSetters =
-          jsTypeRegistry.getWithDelegate(JsType.forIncrementalDomSetters(), stateVar.type());
+          jsTypeRegistry.getWithDelegate(
+              JsType.forIncrementalDomSetters(), stateVar.authoredType());
       Optional<Expression> typeAssertion =
           typeForSetters.getSoyParamTypeAssertion(
               id(stateVar.name()),
@@ -750,7 +752,8 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
   /** Generates `get[X]` for a given parameter value. */
   private MethodDeclaration generateGetParamMethodForSoyElementClass(
       TemplateParam param, boolean isAbstract, boolean isInjected) {
-    JsType jsType = jsTypeRegistry.getWithDelegate(JsType.forIncrementalDomGetters(), param.type());
+    JsType jsType =
+        jsTypeRegistry.getWithDelegate(JsType.forIncrementalDomGetters(), param.authoredType());
     String accessorSuffix =
         Ascii.toUpperCase(param.name().substring(0, 1)) + param.name().substring(1);
     ByteSpan byteSpan = SoyTreeUtils.getByteSpan(currentTemplateNode, param.nameLocation());
@@ -770,7 +773,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
       Expression value =
           maybeCastAs(
               id("this").dotAccess(isInjected ? "ijData" : "data").dotAccess(param.name()),
-              jsTypeRegistry.getWithDelegate(JsType.forIncrementalDomState(), param.type()),
+              jsTypeRegistry.getWithDelegate(JsType.forIncrementalDomState(), param.authoredType()),
               jsType);
       if (param.hasDefault()) {
         value =

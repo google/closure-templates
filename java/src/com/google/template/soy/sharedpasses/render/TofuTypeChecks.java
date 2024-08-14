@@ -116,10 +116,6 @@ public final class TofuTypeChecks {
       case ANY:
       case UNKNOWN:
         return PASS;
-      case NAMED:
-      case INTERSECTION:
-      case INDEXED:
-        return doIsInstance(type.getEffectiveType(), value);
       case ATTRIBUTES:
         return isSanitizedofKind(value, ContentKind.ATTRIBUTES);
       case CSS:
@@ -196,6 +192,9 @@ public final class TofuTypeChecks {
       case TEMPLATE_TYPE:
       case TEMPLATE_MODULE:
       case FUNCTION:
+      case NAMED:
+      case INTERSECTION:
+      case INDEXED:
       case NEVER:
         throw new UnsupportedOperationException();
     }

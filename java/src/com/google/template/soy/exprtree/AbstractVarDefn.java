@@ -65,6 +65,10 @@ public abstract class AbstractVarDefn implements VarDefn {
 
   @Override
   public SoyType type() {
+    return authoredType().getEffectiveType();
+  }
+
+  public SoyType authoredType() {
     checkState(type != null, "type of %s is null @%s", name(), nameLocation());
     return type;
   }

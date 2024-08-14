@@ -448,12 +448,12 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     Map<String, SoyType> params = new LinkedHashMap<>();
     for (TemplateNode template : node.getTemplates()) {
       for (TemplateParam param : template.getInjectedParams()) {
-        SoyType oldType = params.put(param.name(), param.type());
+        SoyType oldType = params.put(param.name(), param.authoredType());
         if (oldType != null) {
           // merge the types
           params.put(
               param.name(),
-              typeRegistry.getOrCreateUnionType(Arrays.asList(param.type(), oldType)));
+              typeRegistry.getOrCreateUnionType(Arrays.asList(param.authoredType(), oldType)));
         }
       }
     }
@@ -735,7 +735,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
   protected void visitConstNode(ConstNode node) {
     ConstVar var = node.getVar();
 
-    JsType varType = getJsTypeForParamForDeclaration(var.type());
+    JsType varType = getJsTypeForParamForDeclaration(var.authoredType());
 
     JsDoc.Builder jsDoc =
         JsDoc.builder()
@@ -1214,7 +1214,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     addInternalCallerParam(jsDocBuilder);
     addIjDataParam(jsDocBuilder, /* forPositionalSignature= */ true);
     for (TemplateParam param : paramsInOrder(node)) {
-      JsType jsType = getJsTypeForParamForDeclaration(param.type());
+      JsType jsType = getJsTypeForParamForDeclaration(param.authoredType());
       jsDocBuilder.addParam(
           getPositionalParamName(param), jsType.typeExpr() + (param.isRequired() ? "" : "="));
       // TODO(lukes): this should add goog.requires for the referenced types
@@ -1577,7 +1577,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       if (param.isImplicit()) {
         continue;
       }
-      JsType jsType = getJsTypeForParamForDeclaration(param.type());
+      JsType jsType = getJsTypeForParamForDeclaration(param.authoredType());
       record.put(
           genParamPropAlias(param.name()),
           jsType.typeExprForRecordMember(/* isOptional= */ !param.isRequired()));
@@ -1649,7 +1649,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     ImmutableList.Builder<Statement> declarations = ImmutableList.builder();
     for (TemplateParam param : node.getAllParams()) {
       String paramName = param.name();
-      SoyType paramType = param.type();
+      SoyType paramType = param.authoredType();
       // injected params are always referenced from the opt_ijData parameter
       boolean isThisParamPositional = isPositionalStyle && !param.isInjected();
       CodeChunk.Generator generator = templateTranslationContext.codeGenerator();

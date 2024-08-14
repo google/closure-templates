@@ -62,7 +62,7 @@ public final class GlobalNode extends AbstractExprNode {
   }
 
   @Override
-  public SoyType getType() {
+  public SoyType getAuthoredType() {
     return UnknownType.getInstance();
   }
 
