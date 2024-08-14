@@ -101,6 +101,7 @@ final class CheckBadContextualUsagePass implements CompilerFileSetPass {
           if (isTrustedResourceUri(node.getEscapingDirectives())
               && calleeContentKind.isPresent()
               && calleeContentKind.get() != SanitizedContentKind.TRUSTED_RESOURCE_URI) {
+            node.getParent().removeChild(node); // avoid flogger spam in tests
             errorReporter.report(node.getSourceLocation(), CALLS_NON_TRU_FROM_TRU);
           }
         }
@@ -111,6 +112,7 @@ final class CheckBadContextualUsagePass implements CompilerFileSetPass {
                   Lists.transform(node.getChildren(), PrintDirectiveNode::getPrintDirective))
               && !SanitizedType.TrustedResourceUriType.getInstance()
                   .isAssignableFromLoose(node.getExpr().getType())) {
+            node.getParent().removeChild(node); // avoid flogger spam in tests
             errorReporter.report(node.getSourceLocation(), PRINTS_NON_TRU_FROM_TRU);
           }
         }
