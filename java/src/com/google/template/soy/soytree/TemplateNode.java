@@ -656,9 +656,8 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
   public ImmutableList<ExprRootNode> getExprList() {
     ImmutableList.Builder<ExprRootNode> exprs = ImmutableList.builder();
     for (TemplateHeaderVarDefn param : getParams()) {
-      ExprRootNode defaultValue = param.defaultValue();
-      if (defaultValue != null) {
-        exprs.add(defaultValue);
+      if (param.hasDefault()) {
+        exprs.add(param.defaultValue());
       }
     }
     for (CommandTagAttribute attribute : attributes) {

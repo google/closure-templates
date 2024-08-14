@@ -78,6 +78,8 @@ public interface VarDefn {
    */
   SoyType type();
 
+  SoyType authoredType();
+
   default SoyType typeOrDefault(@Nullable SoyType defaultValue) {
     return hasType() ? type() : defaultValue;
   }

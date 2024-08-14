@@ -40,7 +40,9 @@ public interface TemplateHeaderVarDefn extends VarDefn, Copyable<TemplateHeaderV
 
   ExprRootNode defaultValue();
 
-  SoyType authoredType();
+  default boolean hasDefault() {
+    return defaultValue() != null;
+  }
 
   void setType(SoyType type);
 

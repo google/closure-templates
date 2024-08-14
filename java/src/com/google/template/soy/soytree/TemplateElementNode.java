@@ -74,7 +74,7 @@ public final class TemplateElementNode extends TemplateNode implements ExprHolde
     ImmutableList.Builder<ExprRootNode> builder = ImmutableList.builder();
     builder.addAll(super.getExprList());
     for (TemplateStateVar state : getStateVars()) {
-      if (state.defaultValue() != null) {
+      if (state.hasDefault()) {
         builder.add(state.defaultValue());
       }
     }

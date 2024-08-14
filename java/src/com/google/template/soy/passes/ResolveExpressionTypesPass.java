@@ -555,7 +555,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
       // params have a default value and no type declaration. Because we never infer types from
       // template types this is safe to do without regards to topological ordering of calls.
       node.getHeaderParams().stream()
-          .filter(headerVar -> headerVar.defaultValue() != null && !headerVar.hasType())
+          .filter(headerVar -> headerVar.hasDefault() && !headerVar.hasType())
           .forEach(
               headerVar -> {
                 paramInfExprVisitor.exec(headerVar.defaultValue());
@@ -612,11 +612,10 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
         if (headerVar instanceof TemplateStateVar) {
           allStateVars.add((TemplateStateVar) headerVar);
         }
-        // TODO(lukes): there are more nonsensical declarations than just 'null'
         if (headerVar.getTypeNode() != null && headerVar.type().isNullOrUndefined()) {
           errorReporter.report(headerVar.getTypeNode().sourceLocation(), EXPLICIT_NULL);
         }
-        if (headerVar.defaultValue() == null) {
+        if (!headerVar.hasDefault()) {
           continue;
         }
         for (ExprNode nonConstantChild :
@@ -663,7 +662,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
       // is just to check for type conflicts. We can't do this in CollectTemplateTypesVisitor
       // because the default value may in fact be a template literal.
       node.getHeaderParams().stream()
-          .filter(headerVar -> headerVar.defaultValue() != null && headerVar.getTypeNode() != null)
+          .filter(headerVar -> headerVar.hasDefault() && headerVar.getTypeNode() != null)
           .forEach(
               headerVar -> {
                 exprVisitor.exec(headerVar.defaultValue());
@@ -2613,7 +2612,8 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
      */
     private SoyType getFieldType(
         SoyType baseType, String fieldName, SourceLocation sourceLocation) {
-      switch (baseType.getKind()) {
+      SoyType effectiveType = baseType.getEffectiveType();
+      switch (effectiveType.getKind()) {
         case UNKNOWN:
           // If we don't know anything about the base type, then make no assumptions
           // about the field type.
@@ -2621,7 +2621,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
 
         case RECORD:
           {
-            RecordType recordType = (RecordType) baseType;
+            RecordType recordType = (RecordType) effectiveType;
             SoyType fieldType = recordType.getMemberType(fieldName);
             if (fieldType != null) {
               return fieldType;
@@ -2650,7 +2650,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
             // If it's a union, then do the field type calculation for each member of
             // the union and combine the result.
             ErrorReporter.Checkpoint cp = errorReporter.checkpoint();
-            UnionType unionType = (UnionType) baseType;
+            UnionType unionType = (UnionType) effectiveType;
             List<SoyType> fieldTypes = new ArrayList<>(unionType.getMembers().size());
             for (SoyType unionMember : unionType.getMembers()) {
               // TODO:(b/246982549): Remove this if-statement, as is this means you can freely

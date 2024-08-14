@@ -280,7 +280,7 @@ final class CheckTemplateCallsPass implements CompilerFileSetPass {
     }
 
     /**
-     * Checks that the parameters being passed have compatble types and reports errors if they do
+     * Checks that the parameters being passed have compatible types and reports errors if they do
      * not.
      */
     private void checkCallParamTypes(
@@ -409,7 +409,7 @@ final class CheckTemplateCallsPass implements CompilerFileSetPass {
       // there are if-statements preventing null from being passed as an indirect
       // param, so we assume all indirect params are optional.
       if (calleeParams.isIndirect(paramName)) {
-        argType = SoyTypes.tryRemoveNullish(argType.getEffectiveType());
+        argType = SoyTypes.tryRemoveNullish(argType);
       }
 
       if (!formalType.isAssignableFromLoose(argType)) {

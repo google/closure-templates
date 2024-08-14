@@ -242,7 +242,7 @@ final class LocalVariablesNodeVisitor {
       localVariables.enterScope();
       // Add all header params to the param scope.
       for (TemplateHeaderVarDefn param : node.getHeaderParams()) {
-        if (param.defaultValue() != null) {
+        if (param.hasDefault()) {
           getExprVisitor().exec(param.defaultValue(), localVariables);
         }
         localVariables.define(param, node);

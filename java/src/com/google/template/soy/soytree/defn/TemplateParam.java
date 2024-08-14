@@ -157,10 +157,6 @@ public class TemplateParam extends AbstractVarDefn implements TemplateHeaderVarD
     return defaultValue;
   }
 
-  public boolean hasDefault() {
-    return defaultValue != null;
-  }
-
   @Override
   public String toString() {
     return getClass().getSimpleName() + "{name = " + name() + ", desc = " + desc + "}";

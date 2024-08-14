@@ -119,7 +119,8 @@ public interface ExprNode extends Node {
    * Returns the data type of this node. This is the effective type after named, indexed, and
    * intersection types are resolved.
    */
-  default @Nullable SoyType getType() {
+  @Nullable
+  default SoyType getType() {
     SoyType authored = getAuthoredType();
     return authored != null ? authored.getEffectiveType() : null;
   }
