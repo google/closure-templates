@@ -268,7 +268,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     for (TemplateStateVar stateVar : node.getStateVars()) {
       JsType jsType =
           jsTypeRegistry.getWithDelegate(JsType.forIncrementalDomState(), stateVar.type());
-      for (GoogRequire require : jsType.getGoogRequires()) {
+      for (GoogRequire require : jsType.googRequires()) {
         jsCodeBuilder.addGoogRequire(require);
       }
 
@@ -276,7 +276,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
       if (isConstantExpr(stateVar.defaultValue())) {
         rhsValue = translateExpr(stateVar.defaultValue());
         if (!rhsValue.hasOuterCast()) {
-          rhsValue = rhsValue.castAs(jsType.typeExpr(), jsType.getGoogRequires());
+          rhsValue = rhsValue.castAs(jsType.typeExpr(), jsType.googRequires());
         }
       } else {
         rhsValue = Expressions.LITERAL_UNDEFINED.castAsUnknown();
@@ -840,7 +840,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
   private static Expression maybeCastAs(
       Expression expression, JsType currentType, JsType desiredType) {
     if (!currentType.typeExpr().equals(desiredType.typeExpr())) {
-      expression = expression.castAs(desiredType.typeExpr(), desiredType.getGoogRequires());
+      expression = expression.castAs(desiredType.typeExpr(), desiredType.googRequires());
     }
     return expression;
   }

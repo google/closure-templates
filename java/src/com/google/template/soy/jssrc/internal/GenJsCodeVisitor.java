@@ -296,7 +296,8 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
     if (node.getConstants().isEmpty()
         && node.getExterns().isEmpty()
-        && node.getTemplates().isEmpty()) {
+        && node.getTemplates().isEmpty()
+        && node.getTypeDefs().isEmpty()) {
       // Special support for empty Soy files created with NamespaceDeclaration.EMPTY.
       jsFilesContents.add(jsCodeBuilder.getCode().toString());
       return;
@@ -377,7 +378,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
                     .addParameterizedAnnotation("type", type.typeExpr() + "|undefined")
                     .build())
             .addGoogRequires(
-                type.getGoogRequires().stream()
+                type.googRequires().stream()
                     .map(GoogRequire::toRequireType)
                     .collect(toImmutableList()));
         jsCodeBuilder.append(
@@ -689,15 +690,18 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     Expression lhs = topLevelLhs(node, node.isExported(), node.getName());
     for (SoyType member : recordMembers) {
       if (member.getKind() == Kind.NAMED) {
-        jsDoc.addAnnotation("extends", getJsTypeForParam(member).typeExpr());
+        JsType memberType = getJsTypeForParam(member);
+        jsDoc.addAnnotation("extends", memberType.typeExpr()).addGoogRequires(memberType);
       } else if (member.getKind() == Kind.RECORD) {
         for (Member recordMember : ((RecordType) member).getMembers()) {
           propertyTypeDefs.put(recordMember, recordMember.checkedType());
           SoyType propType = IndexedType.create(thisNamedType, recordMember.name());
+          JsType propJsType = getJsTypeForParam(propType);
           JsDoc memberDoc =
               JsDoc.builder()
-                  .addAnnotation("type", getJsTypeForParam(propType).typeExpr())
+                  .addAnnotation("type", propJsType.typeExpr())
                   .addAnnotation("public")
+                  .addGoogRequires(propJsType)
                   .build();
           properties.add(
               lhs.dotAccess("prototype").dotAccess(recordMember.name()).asStatement(memberDoc));
@@ -707,14 +711,15 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
     // We create a @typedef for every field of a record type so that we can implement IndexedType.
     for (Entry<Member, SoyType> p : propertyTypeDefs.entrySet()) {
+      JsType pJsType = getJsTypeForParam(p.getValue());
       jsCodeBuilder.append(
           topLevelDecl(
               node,
               node.isExported(),
               IndexedType.jsSynthenticTypeDefName(node.getName(), p.getKey().name()),
               JsDoc.builder()
-                  .addParameterizedAnnotation(
-                      "typedef", getJsTypeForParam(p.getValue()).typeExpr())));
+                  .addParameterizedAnnotation("typedef", pJsType.typeExpr())
+                  .addGoogRequires(pJsType)));
     }
     jsCodeBuilder.append(
         topLevelAssignment(
@@ -750,7 +755,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
     jsCodeBuilder.append(
         topLevelAssignment(node, node.isExported(), partialName, jsDoc, constantExpr));
-    for (GoogRequire require : varType.getGoogRequires()) {
+    for (GoogRequire require : varType.googRequires()) {
       jsCodeBuilder.addGoogRequire(require);
     }
   }
@@ -1270,7 +1275,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
   protected final void addReturnTypeAndAnnotations(TemplateNode node, JsDoc.Builder jsDocBuilder) {
     var returnType = getTemplateReturnType(node);
     jsDocBuilder.addParameterizedAnnotation("return", returnType.typeExpr());
-    jsDocBuilder.addGoogRequires(returnType.getGoogRequires());
+    jsDocBuilder.addGoogRequires(returnType.googRequires());
     if (node.getVisibility() == Visibility.PRIVATE) {
       jsDocBuilder.addAnnotation("private");
     }
@@ -1576,7 +1581,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       record.put(
           genParamPropAlias(param.name()),
           jsType.typeExprForRecordMember(/* isOptional= */ !param.isRequired()));
-      for (GoogRequire require : jsType.getGoogRequires()) {
+      for (GoogRequire require : jsType.googRequires()) {
         // TODO(lukes): switch these to requireTypes
         jsCodeBuilder.addGoogRequire(require);
       }
@@ -1606,7 +1611,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       SoyType indirectParamType = SoyTypes.makeNullable(combinedType);
       JsType jsType = getJsTypeForParamForDeclaration(indirectParamType);
       jsCodeBuilder.addGoogRequires(
-          jsType.getGoogRequires().stream()
+          jsType.googRequires().stream()
               .map(GoogRequire::toRequireType)
               .collect(toImmutableList()));
       record.put(indirectParamName, jsType.typeExprForRecordMember(/* isOptional= */ true));
@@ -1629,7 +1634,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
                 translateExpr(param.defaultValue()))
             .setElse(paramTempVar)
             .build(codeGenerator)
-            .castAs(typeForCast.typeExpr(), typeForCast.getGoogRequires()));
+            .castAs(typeForCast.typeExpr(), typeForCast.googRequires()));
   }
 
   /**
@@ -1676,16 +1681,16 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       JsType declType = getJsTypeForParamForDeclaration(paramType);
       if (!jsType.typeExpr().equals(declType.typeExpr()) && !JsSrcUtils.isReservedWord(paramName)) {
         // TODO(b/256679865): rename JS builtins here.
-        initializer = initializer.castAs(jsType.typeExpr(), jsType.getGoogRequires());
+        initializer = initializer.castAs(jsType.typeExpr(), jsType.googRequires());
       }
 
-      VariableDeclaration.Builder declarationBuilder =
+      VariableDeclaration declaration =
           VariableDeclaration.builder(paramAlias)
               .setRhs(initializer)
-              .setRequires(jsType.getGoogRequires());
-      declarationBuilder.setJsDoc(
-          JsDoc.builder().addParameterizedAnnotation("const", jsType.typeExpr()).build());
-      VariableDeclaration declaration = declarationBuilder.build();
+              .setRequires(jsType.googRequires())
+              .setJsDoc(
+                  JsDoc.builder().addParameterizedAnnotation("const", jsType.typeExpr()).build())
+              .build();
       declarations.add(declaration);
 
       templateTranslationContext

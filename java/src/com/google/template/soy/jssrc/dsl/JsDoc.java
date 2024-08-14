@@ -80,6 +80,11 @@ public abstract class JsDoc extends SpecialToken implements CodeChunk.HasRequire
     }
 
     @CanIgnoreReturnValue
+    public Builder addGoogRequires(HasRequires requires) {
+      return addGoogRequires(requires.googRequires());
+    }
+
+    @CanIgnoreReturnValue
     public abstract Builder setOverviewComment(String string);
 
     @CanIgnoreReturnValue

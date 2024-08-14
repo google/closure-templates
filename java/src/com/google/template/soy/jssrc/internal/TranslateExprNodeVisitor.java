@@ -392,12 +392,12 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
           node.getIndexVar() == null
               ? JsDoc.builder()
                   .addParam(listIterVarTranslation, elementJsType.typeExpr())
-                  .addGoogRequires(elementJsType.getGoogRequires())
+                  .addGoogRequires(elementJsType.googRequires())
                   .build()
               : JsDoc.builder()
                   .addParam(listIterVarTranslation, elementJsType.typeExpr())
                   .addParam(indexVarTranslation, "number")
-                  .addGoogRequires(elementJsType.getGoogRequires())
+                  .addGoogRequires(elementJsType.googRequires())
                   .build();
 
       if (node.getFilterExpr() != null && node.getIndexVar() != null) {
@@ -474,8 +474,8 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
           map.castAs(
               String.format("!Map<%s, %s>", keyType.typeExpr(), valueType.typeExpr()),
               ImmutableSet.<GoogRequire>builder()
-                  .addAll(keyType.getGoogRequires())
-                  .addAll(valueType.getGoogRequires())
+                  .addAll(keyType.googRequires())
+                  .addAll(valueType.googRequires())
                   .build());
     }
 

@@ -54,7 +54,7 @@ import java.util.stream.Stream;
 public abstract class CodeChunk {
 
   /** A code chunk that requires imported symbols in order to be valid. */
-  interface HasRequires {
+  public interface HasRequires {
     ImmutableSet<GoogRequire> googRequires();
   }
 

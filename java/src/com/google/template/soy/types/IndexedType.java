@@ -63,7 +63,7 @@ public abstract class IndexedType extends SoyType {
     if (baseType instanceof RecordType) {
       SoyType memberType = ((RecordType) baseType).getMemberType(getProperty());
       if (memberType != null) {
-        return memberType;
+        return memberType.getEffectiveType();
       }
     }
     return NeverType.getInstance();

@@ -281,7 +281,7 @@ public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<St
       value =
           value.castAs(
               type.typeExpr(),
-              type.getGoogRequires().stream()
+              type.googRequires().stream()
                   .map(GoogRequire::toRequireType)
                   .collect(toImmutableSet()));
     }

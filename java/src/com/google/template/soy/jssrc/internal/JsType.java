@@ -42,6 +42,7 @@ import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.base.internal.TemplateContentKind;
 import com.google.template.soy.data.internalutils.NodeContentKinds;
 import com.google.template.soy.internal.proto.ProtoUtils;
+import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.CodeChunk.Generator;
 import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.jssrc.dsl.Expressions;
@@ -77,7 +78,7 @@ import javax.annotation.Nullable;
  * <p>This is geared toward generating jscompiler compatible type expressions for the purpose of
  * declarations and cast operators.
  */
-public final class JsType {
+public final class JsType implements CodeChunk.HasRequires {
 
   // TODO(lukes): use this consistently throughout jssrc.  We should consider inserting type
   // expressions when extracting list items/map items/record items.  Also at all of those points we
@@ -400,7 +401,7 @@ public final class JsType {
           JsType jsItElmType = forRecursion.get(itElmType);
           return builder()
               .addType(String.format("!Iterable<%s>", jsItElmType.typeExpr()))
-              .addRequires(jsItElmType.getGoogRequires())
+              .addRequires(jsItElmType.googRequires())
               .setPredicate(JsRuntime.SOY_IS_ITERABLE)
               .build();
 
@@ -413,7 +414,7 @@ public final class JsType {
 
           return builder()
               .addType(ArrayTypeMode.formatArrayType(arrayTypeMode, element.typeExpr()))
-              .addRequires(element.getGoogRequires())
+              .addRequires(element.googRequires())
               .setPredicate(ARRAY_IS_ARRAY)
               .build();
 
@@ -422,7 +423,7 @@ public final class JsType {
           JsType jsElmType = forRecursion.get(elmType);
           return builder()
               .addType(String.format("!Set<%s>", jsElmType.typeExpr()))
-              .addRequires(jsElmType.getGoogRequires())
+              .addRequires(jsElmType.googRequires())
               .setPredicate(instanceofTypePredicate(id("Set")))
               .build();
 
@@ -439,8 +440,8 @@ public final class JsType {
                 .addType(
                     String.format(
                         "!Object<%s,%s>", keyTypeName.typeExpr(), valueTypeName.typeExpr()))
-                .addRequires(keyTypeName.getGoogRequires())
-                .addRequires(valueTypeName.getGoogRequires())
+                .addRequires(keyTypeName.googRequires())
+                .addRequires(valueTypeName.googRequires())
                 .setPredicate(GOOG_IS_OBJECT)
                 .build();
           }
@@ -461,8 +462,8 @@ public final class JsType {
                 .addType(
                     String.format(
                         "!ReadonlyMap<%s,%s>", keyTypeName.typeExpr(), valueTypeName.typeExpr()))
-                .addRequires(keyTypeName.getGoogRequires())
-                .addRequires(valueTypeName.getGoogRequires())
+                .addRequires(keyTypeName.googRequires())
+                .addRequires(valueTypeName.googRequires())
                 .addRequire(GoogRequire.create("soy.map"))
                 .setPredicate(instanceofTypePredicate(id("Map")))
                 .build();
@@ -485,7 +486,7 @@ public final class JsType {
             Map<String, String> members = new LinkedHashMap<>();
             for (RecordType.Member member : recordType.getMembers()) {
               JsType memberType = forRecursion.get(member.checkedType());
-              builder.addRequires(memberType.getGoogRequires());
+              builder.addRequires(memberType.googRequires());
               members.put(
                   member.name(), memberType.typeExprForRecordMember(/* isOptional= */ false));
             }
@@ -562,13 +563,13 @@ public final class JsType {
             for (TemplateType.Parameter parameter : templateType.getParameters()) {
               JsType forSoyType =
                   getWithArrayMode(ArrayTypeMode.ARRAY_OR_READONLY_ARRAY, parameter.getType());
-              builder.addRequires(forSoyType.getGoogRequires());
+              builder.addRequires(forSoyType.googRequires());
               parameters.put(
                   parameter.getName(),
                   forSoyType.typeExprForRecordMember(/* isOptional= */ !parameter.isRequired()));
             }
             JsType forReturnType = templateReturnType(templateType.getContentKind(), kind);
-            builder.addRequires(forReturnType.getGoogRequires());
+            builder.addRequires(forReturnType.googRequires());
             // Trailing comma is important to prevent parsing ambiguity for the unknown type
             String parametersType =
                 parameters.isEmpty()
@@ -648,7 +649,7 @@ public final class JsType {
           JsType baseType = forRecursion.get(indexedType.getType());
           return builder()
               .addType(type)
-              .addRequires(baseType.getGoogRequires())
+              .addRequires(baseType.googRequires())
               .setPredicate(TypePredicate.NO_OP)
               .build();
         case CSS_TYPE:
@@ -790,7 +791,8 @@ public final class JsType {
     return typeExpr();
   }
 
-  public ImmutableSet<GoogRequire> getGoogRequires() {
+  @Override
+  public ImmutableSet<GoogRequire> googRequires() {
     return extraRequires;
   }
 
