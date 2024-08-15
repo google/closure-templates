@@ -959,20 +959,21 @@ public final class Metadata {
     @Override
     public SoyType getOrCreateNamedType(String name, String namespace) {
       String key = namespace + "." + name;
-      return cache.computeIfAbsent(
-          key,
-          k -> {
-            TypeDefP typeDef = namedTypes.get(k);
-            SoyType fullType =
-                typeDef != null
-                    ? TemplateMetadataSerializer.fromProto(
-                        typeDef.getType(),
-                        this,
-                        SourceFilePath.create(namespace, namespace), // fake
-                        errorReporter)
-                    : UnknownType.getInstance();
-            return intern(NamedType.create(name, namespace, fullType));
-          });
+      NamedType cachedVal = cache.get(key);
+      if (cachedVal == null) {
+        TypeDefP typeDef = namedTypes.get(key);
+        SoyType fullType =
+            typeDef != null
+                ? TemplateMetadataSerializer.fromProto(
+                    typeDef.getType(),
+                    this,
+                    SourceFilePath.create(namespace, namespace), // fake
+                    errorReporter)
+                : UnknownType.getInstance();
+        cachedVal = intern(NamedType.create(name, namespace, fullType));
+        cache.put(key, cachedVal);
+      }
+      return cachedVal;
     }
   }
 }

@@ -412,7 +412,7 @@ final class ElementAttributePass implements CompilerFileSetPass {
         }
         if (!SoyTypes.tryRemoveNullish(param.type())
                 .equals(SanitizedType.AttributesType.getInstance())
-            || !param.isExplicitlyOptional()) {
+            || param.isRequired()) {
           errorReporter.report(
               param.getSourceLocation(),
               EXTRA_ROOT_ELEMENT_ATTRIBUTES_TYPE,

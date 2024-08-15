@@ -196,6 +196,9 @@ final class ResolveDeclaredTypesPass
           SoyType paramType = converter.getOrCreateType(param.getTypeNode());
           if (param.isExplicitlyOptional()) {
             paramType = SoyTypes.makeUndefinable(paramType);
+          } else if (param.hasDefault()
+              && param.defaultValue().getRoot().getKind() != ExprNode.Kind.UNDEFINED_NODE) {
+            paramType = SoyTypes.tryRemoveUndefined(paramType);
           }
           param.setType(paramType);
         } else if (disableAllTypeChecking) {

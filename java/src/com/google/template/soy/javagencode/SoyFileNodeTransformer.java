@@ -270,7 +270,7 @@ public class SoyFileNodeTransformer {
     }
 
     public SoyType type() {
-      return param().getType();
+      return param().getType().getEffectiveType();
     }
 
     public Iterable<JavaType> futureTypes() {

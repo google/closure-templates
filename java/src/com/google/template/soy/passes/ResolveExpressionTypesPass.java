@@ -1830,8 +1830,8 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
     @Override
     protected void visitPlusOpNode(PlusOpNode node) {
       visitChildren(node);
-      SoyType left = node.getChild(0).getType();
-      SoyType right = node.getChild(1).getType();
+      SoyType left = node.getChild(0).getAuthoredType();
+      SoyType right = node.getChild(1).getAuthoredType();
       SoyType result =
           SoyTypes.getSoyTypeForBinaryOperator(left, right, new SoyTypes.SoyTypePlusOperator());
       if (result == null) {
@@ -1862,8 +1862,8 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
             node.getOperatorLocation(),
             INCOMPATIBLE_ARITHMETIC_OP,
             node.getOperator().getTokenString(),
-            left,
-            right);
+            node.getChild(0).getAuthoredType(),
+            node.getChild(1).getAuthoredType());
         result = UnknownType.getInstance();
       }
       node.setType(result);
@@ -2542,8 +2542,8 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
 
     private void visitComparisonOpNode(AbstractOperatorNode node) {
       visitChildren(node);
-      SoyType left = node.getChild(0).getType();
-      SoyType right = node.getChild(1).getType();
+      SoyType left = node.getChild(0).getAuthoredType();
+      SoyType right = node.getChild(1).getAuthoredType();
       SoyType result =
           SoyTypes.getSoyTypeForBinaryOperator(left, right, new SoyTypes.SoyTypeComparisonOp());
       if (result == null) {
@@ -2554,8 +2554,8 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
 
     private void visitEqualComparisonOpNode(AbstractOperatorNode node) {
       visitChildren(node);
-      SoyType left = node.getChild(0).getType();
-      SoyType right = node.getChild(1).getType();
+      SoyType left = node.getChild(0).getAuthoredType();
+      SoyType right = node.getChild(1).getAuthoredType();
       SoyType result =
           SoyTypes.getSoyTypeForBinaryOperator(
               left, right, new SoyTypes.SoyTypeEqualComparisonOp());
@@ -2568,8 +2568,8 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
     private void visitArithmeticOpNode(AbstractOperatorNode node) {
       visitChildren(node);
       boolean isDivide = node instanceof DivideByOpNode;
-      SoyType left = node.getChild(0).getType();
-      SoyType right = node.getChild(1).getType();
+      SoyType left = node.getChild(0).getAuthoredType();
+      SoyType right = node.getChild(1).getAuthoredType();
       SoyType result =
           SoyTypes.getSoyTypeForBinaryOperator(
               left, right, new SoyTypes.SoyTypeArithmeticOperator());

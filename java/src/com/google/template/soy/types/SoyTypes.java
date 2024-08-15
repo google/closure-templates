@@ -15,7 +15,6 @@
  */
 package com.google.template.soy.types;
 
-import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
@@ -41,6 +40,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
@@ -130,34 +130,29 @@ public final class SoyTypes {
   }
 
   public static SoyType removeNull(SoyType type) {
-    checkNotNull(type);
-    checkArgument(!NullType.getInstance().equals(type), "Can't remove null from null");
-    if (type.getKind() == Kind.UNION) {
-      return ((UnionType) type).filter(t -> t != NullType.getInstance());
-    }
-    return type;
+    return modifyUnion(type, t -> t != NullType.getInstance());
   }
 
   public static SoyType removeUndefined(SoyType type) {
-    checkNotNull(type);
-    if (type.getKind() == Kind.UNION) {
-      return ((UnionType) type).filter(t -> t != UndefinedType.getInstance());
-    }
-    return type;
+    return modifyUnion(type, t -> t != UndefinedType.getInstance());
   }
 
   public static SoyType removeNullish(SoyType type) {
-    checkNotNull(type);
-    if (type.getKind() == Kind.UNION) {
-      return ((UnionType) type).filter(t -> !NULLISH_KINDS.contains(t.getKind()));
-    }
-    return type;
+    return modifyUnion(type, t -> !NULLISH_KINDS.contains(t.getKind()));
   }
 
   private static SoyType keepNullish(SoyType type) {
+    return modifyUnion(type, t -> NULLISH_KINDS.contains(t.getKind()));
+  }
+
+  private static SoyType modifyUnion(SoyType type, Predicate<SoyType> filter) {
     checkNotNull(type);
-    if (type.getKind() == Kind.UNION) {
-      return ((UnionType) type).filter(t -> NULLISH_KINDS.contains(t.getKind()));
+    SoyType effective = type.getEffectiveType();
+    if (effective.getKind() == Kind.UNION) {
+      SoyType newUnion = ((UnionType) effective).filter(filter);
+      if (newUnion != effective) {
+        return newUnion;
+      }
     }
     return type;
   }
@@ -343,8 +338,8 @@ public final class SoyTypes {
   public static SoyType getSoyTypeForBinaryOperator(
       SoyType t0, SoyType t1, SoyTypeBinaryOperator operator) {
     // None of the operators covered by SoyTypeBinaryOperator can evaluate to null/undefined.
-    SoyType left = tryRemoveNullish(t0);
-    SoyType right = tryRemoveNullish(t1);
+    SoyType left = tryRemoveNullish(t0.getEffectiveType()).getEffectiveType();
+    SoyType right = tryRemoveNullish(t1.getEffectiveType()).getEffectiveType();
     if (left.getKind() == Kind.UNION) {
       return getSoyTypeFromUnionForBinaryOperator((UnionType) left, right, operator);
     }
@@ -486,8 +481,8 @@ public final class SoyTypes {
   }
 
   /**
-   * Type resolver for For <, >, <=, and >= operators. The resolver returns null if two {@code
-   * SoyType} instances are not comparable, otherwise always return {@code BoolType}.
+   * Type resolver for <, >, <=, and >= operators. The resolver returns null if two {@code SoyType}
+   * instances are not comparable, otherwise always return {@code BoolType}.
    *
    * <p>In particular,
    *
@@ -685,7 +680,7 @@ public final class SoyTypes {
             }
             return ImmutableList.of(protoType);
           }
-          // fall through
+        // fall through
         default:
           return ImmutableList.of();
       }

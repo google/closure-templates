@@ -199,7 +199,7 @@ public final class ExternCompiler {
    * implementation.
    */
   static SoyRuntimeType getRuntimeType(SoyType type) {
-    SoyType nonNullable = SoyTypes.tryRemoveNullish(type);
+    SoyType nonNullable = SoyTypes.tryRemoveNullish(type.getEffectiveType());
     SoyRuntimeType runtimeType =
         SoyRuntimeType.getUnboxedType(nonNullable)
             .orElseGet(() -> SoyRuntimeType.getBoxedType(nonNullable));
