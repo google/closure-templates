@@ -25,9 +25,12 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Streams;
 import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.base.internal.BaseUtils;
+import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.javagencode.javatypes.JavaType;
 import com.google.template.soy.javagencode.javatypes.JavaTypeUtils;
 import com.google.template.soy.passes.IndirectParamsCalculator;
@@ -40,6 +43,8 @@ import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.Visibility;
 import com.google.template.soy.soytree.defn.TemplateParam;
+import com.google.template.soy.types.SoyProtoEnumType;
+import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.SoyTypes;
@@ -50,6 +55,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -66,9 +72,7 @@ public class SoyFileNodeTransformer {
 
   // Soy types that are not supported for invocation builders.
   private static final ImmutableSet<SoyType.Kind> UNSUPPORTED_SOY_TYPES =
-      ImmutableSet.of(
-          SoyType.Kind.VE,
-          SoyType.Kind.VE_DATA);
+      ImmutableSet.of(SoyType.Kind.VE, SoyType.Kind.VE_DATA);
 
   /** The transformed {@link SoyFileNode}. */
   @AutoValue
@@ -293,10 +297,13 @@ public class SoyFileNodeTransformer {
 
   private final String javaPackage;
   private final FileSetMetadata registry;
+  private final SoyTypeRegistry typeRegistry;
 
-  public SoyFileNodeTransformer(String javaPackage, FileSetMetadata registry) {
+  public SoyFileNodeTransformer(
+      String javaPackage, FileSetMetadata registry, SoyTypeRegistry typeRegistry) {
     this.javaPackage = javaPackage;
     this.registry = registry;
+    this.typeRegistry = typeRegistry;
   }
 
   public FileInfo transform(SoyFileNode node) {
@@ -372,11 +379,6 @@ public class SoyFileNodeTransformer {
       if (!superType.isPresent()) {
         params.put(paramName, ParamInfo.of(param, ParamStatus.INDIRECT_INCOMPATIBLE_TYPES, true));
         continue;
-      } else if (SoyTypes.hasProtoDep(superType.get())) {
-        // Temporarily skip any indirect params with proto dependencies since they can cause java
-        // build errors.
-        params.put(paramName, ParamInfo.of(param, ParamStatus.INDIRECT_PROTO, true));
-        continue;
       }
 
       // Create a new indirect parameter.
@@ -394,7 +396,7 @@ public class SoyFileNodeTransformer {
     }
   }
 
-  private static void updateParamStatuses(Map<String, ParamInfo> params) {
+  private void updateParamStatuses(Map<String, ParamInfo> params) {
     HashSet<String> setterNames = new HashSet<>();
     for (Map.Entry<String, ParamInfo> entry : params.entrySet()) {
       String paramName = entry.getKey();
@@ -402,6 +404,27 @@ public class SoyFileNodeTransformer {
 
       if (JavaTypeUtils.isJavaIncompatible(param.type())) {
         changeParamStatus(params, paramName, ParamStatus.JAVA_INCOMPATIBLE);
+        continue;
+      }
+
+      if (Streams.stream(SoyTypes.getTypeTraverser(param.type(), null))
+          .map(
+              t -> {
+                if (t instanceof SoyProtoType) {
+                  return ((SoyProtoType) t).getDescriptor().getFile().getFullName();
+                } else if (t instanceof SoyProtoEnumType) {
+                  return ((SoyProtoEnumType) t).getDescriptor().getFile().getFullName();
+                } else {
+                  return null;
+                }
+              })
+          .filter(Objects::nonNull)
+          .distinct()
+          .map(SourceLogicalPath::create)
+          .anyMatch(path -> typeRegistry.getProtoRegistry().getDepKind(path) != SoyFileKind.DEP)) {
+        // Skip any params with proto dependencies that are not direct dependency of the soy
+        // library, since they can cause java build errors.
+        changeParamStatus(params, paramName, ParamStatus.INDIRECT_PROTO);
         continue;
       }
 

@@ -57,6 +57,7 @@ import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
+import com.google.template.soy.types.SoyTypeRegistry;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -86,8 +87,8 @@ public final class GenerateBuildersVisitor
               + " setter generated.");
   private static final SoyErrorKind INDIRECT_PROTO =
       SoyErrorKind.of(
-          "Indirect parameter ''{0}'' in {1} is of type proto or proto enum. No parameter setter"
-              + " generated.");
+          "Parameter ''{0}'' in {1} depends on a proto or proto enum that is not a direct"
+              + " dependency of this library. No parameter setter generated.");
   private static final SoyErrorKind TEMPLATE_NAME_COLLISION =
       SoyErrorKind.of(
           "When generating Soy Java Template Builders, the template: {0} generated the same Java"
@@ -132,10 +133,11 @@ public final class GenerateBuildersVisitor
       ErrorReporter errorReporter,
       String javaPackage,
       KytheMode kytheMode,
-      FileSetMetadata registry) {
+      FileSetMetadata registry,
+      SoyTypeRegistry typeRegistry) {
     this.errorReporter = errorReporter;
     this.kytheMode = kytheMode;
-    this.transformer = new SoyFileNodeTransformer(javaPackage, registry);
+    this.transformer = new SoyFileNodeTransformer(javaPackage, registry, typeRegistry);
   }
 
   @Override

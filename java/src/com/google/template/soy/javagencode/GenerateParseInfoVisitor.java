@@ -61,6 +61,7 @@ import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.Visibility;
 import com.google.template.soy.soytree.defn.TemplateParam;
+import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.TemplateType;
 import com.google.template.soy.types.TemplateType.Parameter;
 import java.util.Collection;
@@ -179,7 +180,8 @@ public final class GenerateParseInfoVisitor
       String javaPackage,
       KytheMode kytheMode,
       String javaClassNameSource,
-      FileSetMetadata registry) {
+      FileSetMetadata registry,
+      SoyTypeRegistry typeRegistry) {
     this.javaPackage = javaPackage;
     this.kytheMode = kytheMode;
     this.fileSetMetadata = registry;
@@ -200,7 +202,7 @@ public final class GenerateParseInfoVisitor
                 + "\""
                 + " (valid values are \"filename\", \"namespace\", and \"generic\").");
     }
-    soyFileNodeTransformer = new SoyFileNodeTransformer(javaPackage, registry);
+    soyFileNodeTransformer = new SoyFileNodeTransformer(javaPackage, registry, typeRegistry);
   }
 
   @Override

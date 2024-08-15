@@ -756,7 +756,7 @@ public final class SoyFileSet {
 
           // Generate template invocation builders for the soy tree.
           return new GenerateBuildersVisitor(
-                  errorReporter, javaPackage, kytheMode, result.registry())
+                  errorReporter, javaPackage, kytheMode, result.registry(), typeRegistry)
               .exec(soyTree);
         });
   }
@@ -783,7 +783,8 @@ public final class SoyFileSet {
           FileSetMetadata registry = result.registry();
 
           // Do renaming of package-relative class names.
-          return new GenerateParseInfoVisitor(javaPackage, kytheMode, javaClassNameSource, registry)
+          return new GenerateParseInfoVisitor(
+                  javaPackage, kytheMode, javaClassNameSource, registry, typeRegistry)
               .exec(soyTree);
         });
   }
