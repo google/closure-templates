@@ -653,6 +653,11 @@ public final class SoyTypes {
       switch (type.getKind()) {
         case UNION:
           return ((UnionType) type).getMembers();
+        case INTERSECTION:
+          return ((IntersectionType) type).getMembers();
+        case INDEXED:
+        case NAMED:
+          return ImmutableList.of(type.getEffectiveType());
 
         case ITERABLE:
         case LIST:

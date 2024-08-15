@@ -17,6 +17,7 @@
 package com.google.template.soy.types;
 
 import com.google.auto.value.AutoValue;
+import com.google.common.base.Preconditions;
 import com.google.template.soy.soytree.SoyTypeP;
 
 /** A type that is a reference to a Soy `{type}` command. */
@@ -24,14 +25,23 @@ import com.google.template.soy.soytree.SoyTypeP;
 public abstract class NamedType extends SoyType {
 
   public static NamedType create(String name, String namespace, SoyType type) {
-    return new AutoValue_NamedType(name, namespace, type);
+    NamedType rv = new AutoValue_NamedType(name, namespace);
+    rv.type = Preconditions.checkNotNull(type);
+    return rv;
   }
+
+  // Prevents type from affecting equals/hashCode. Allows you to look up interned type without
+  // knowing the resolve type. However, may cause you to intern a non-resolved type. Only tests
+  // should depend on this behavior.
+  private SoyType type;
 
   public abstract String getName();
 
   public abstract String getNamespace();
 
-  public abstract SoyType getType();
+  public SoyType getType() {
+    return type;
+  }
 
   public String getFqn() {
     return getNamespace() + "." + getName();
