@@ -29,6 +29,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.io.ByteSink;
 import com.google.common.io.CharSource;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
+import com.google.errorprone.annotations.InlineMe;
 import com.google.protobuf.Descriptors.GenericDescriptor;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.base.SourceFilePath;
@@ -514,20 +515,25 @@ public final class SoyFileSet {
     /**
      * @deprecated Use {@link #addProtoDescriptors(SoyFileKind, GenericDescriptor...)} instead.
      */
+    @InlineMe(
+        replacement = "this.addProtoDescriptors(SoyFileKind.DEP, descriptors)",
+        imports = "com.google.template.soy.base.internal.SoyFileKind")
     @CanIgnoreReturnValue
     @Deprecated
     public Builder addProtoDescriptors(GenericDescriptor... descriptors) {
-      return addProtoDescriptors(SoyFileKind.DEP, Arrays.asList(descriptors));
+      return addProtoDescriptors(SoyFileKind.DEP, descriptors);
     }
 
     /**
      * @deprecated Use {@link #addProtoDescriptors(SoyFileKind, Iterable)} instead.
      */
+    @InlineMe(
+        replacement = "this.addProtoDescriptors(SoyFileKind.DEP, descriptors)",
+        imports = "com.google.template.soy.base.internal.SoyFileKind")
     @CanIgnoreReturnValue
     @Deprecated
     public Builder addProtoDescriptors(Iterable<? extends GenericDescriptor> descriptors) {
-      typeRegistryBuilder.addDescriptors(SoyFileKind.DEP, descriptors);
-      return this;
+      return addProtoDescriptors(SoyFileKind.DEP, descriptors);
     }
 
     /** Registers a conformance config proto. */
@@ -756,7 +762,7 @@ public final class SoyFileSet {
 
           // Generate template invocation builders for the soy tree.
           return new GenerateBuildersVisitor(
-                  errorReporter, javaPackage, kytheMode, result.registry(), typeRegistry)
+                  errorReporter, javaPackage, kytheMode, result.registry())
               .exec(soyTree);
         });
   }
@@ -783,8 +789,7 @@ public final class SoyFileSet {
           FileSetMetadata registry = result.registry();
 
           // Do renaming of package-relative class names.
-          return new GenerateParseInfoVisitor(
-                  javaPackage, kytheMode, javaClassNameSource, registry, typeRegistry)
+          return new GenerateParseInfoVisitor(javaPackage, kytheMode, javaClassNameSource, registry)
               .exec(soyTree);
         });
   }

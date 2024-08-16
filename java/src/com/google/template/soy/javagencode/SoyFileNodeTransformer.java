@@ -113,10 +113,6 @@ public class SoyFileNodeTransformer {
     public TemplateInfo findTemplate(TemplateNode node) {
       return templates().stream().filter(t -> t.template().equals(node)).findFirst().get();
     }
-
-    public Set<String> getProtoTypes(SoyTypeRegistry typeRegistry) {
-      return JavaGenerationUtils.getProtoTypes(fileNode(), typeRegistry);
-    }
   }
 
   /** Status categories for {@link TemplateInfo}. */
@@ -297,16 +293,15 @@ public class SoyFileNodeTransformer {
 
   private final String javaPackage;
   private final FileSetMetadata registry;
-  private final SoyTypeRegistry typeRegistry;
+  private SoyTypeRegistry typeRegistry;
 
-  public SoyFileNodeTransformer(
-      String javaPackage, FileSetMetadata registry, SoyTypeRegistry typeRegistry) {
+  public SoyFileNodeTransformer(String javaPackage, FileSetMetadata registry) {
     this.javaPackage = javaPackage;
     this.registry = registry;
-    this.typeRegistry = typeRegistry;
   }
 
   public FileInfo transform(SoyFileNode node) {
+    typeRegistry = node.getSoyTypeRegistry();
     String fqClassName = javaPackage + "." + convertSoyFileNameToJavaClassName(node);
     List<TemplateInfo> templates = new ArrayList<>();
 

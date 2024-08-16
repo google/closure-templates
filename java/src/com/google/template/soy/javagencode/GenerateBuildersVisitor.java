@@ -57,7 +57,6 @@ import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
-import com.google.template.soy.types.SoyTypeRegistry;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -133,11 +132,10 @@ public final class GenerateBuildersVisitor
       ErrorReporter errorReporter,
       String javaPackage,
       KytheMode kytheMode,
-      FileSetMetadata registry,
-      SoyTypeRegistry typeRegistry) {
+      FileSetMetadata registry) {
     this.errorReporter = errorReporter;
     this.kytheMode = kytheMode;
-    this.transformer = new SoyFileNodeTransformer(javaPackage, registry, typeRegistry);
+    this.transformer = new SoyFileNodeTransformer(javaPackage, registry);
   }
 
   @Override

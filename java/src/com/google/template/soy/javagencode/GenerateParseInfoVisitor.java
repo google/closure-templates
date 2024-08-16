@@ -24,6 +24,7 @@ import static com.google.template.soy.shared.internal.gencode.JavaGenerationUtil
 import static com.google.template.soy.shared.internal.gencode.JavaGenerationUtils.appendImmutableSet;
 import static com.google.template.soy.shared.internal.gencode.JavaGenerationUtils.appendJavadoc;
 import static com.google.template.soy.shared.internal.gencode.JavaGenerationUtils.makeUpperCamelCase;
+import static java.util.Comparator.naturalOrder;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Ascii;
@@ -32,6 +33,7 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Lists;
@@ -44,6 +46,7 @@ import com.google.template.soy.base.SourceLocation.ByteSpan;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.base.internal.KytheMode;
 import com.google.template.soy.exprtree.StringNode;
+import com.google.template.soy.internal.proto.ProtoUtils;
 import com.google.template.soy.passes.IndirectParamsCalculator;
 import com.google.template.soy.passes.IndirectParamsCalculator.IndirectParamsInfo;
 import com.google.template.soy.shared.internal.BuiltinFunction;
@@ -61,7 +64,6 @@ import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.Visibility;
 import com.google.template.soy.soytree.defn.TemplateParam;
-import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.TemplateType;
 import com.google.template.soy.types.TemplateType.Parameter;
 import java.util.Collection;
@@ -180,8 +182,7 @@ public final class GenerateParseInfoVisitor
       String javaPackage,
       KytheMode kytheMode,
       String javaClassNameSource,
-      FileSetMetadata registry,
-      SoyTypeRegistry typeRegistry) {
+      FileSetMetadata registry) {
     this.javaPackage = javaPackage;
     this.kytheMode = kytheMode;
     this.fileSetMetadata = registry;
@@ -202,7 +203,7 @@ public final class GenerateParseInfoVisitor
                 + "\""
                 + " (valid values are \"filename\", \"namespace\", and \"generic\").");
     }
-    soyFileNodeTransformer = new SoyFileNodeTransformer(javaPackage, registry, typeRegistry);
+    soyFileNodeTransformer = new SoyFileNodeTransformer(javaPackage, registry);
   }
 
   @Override
@@ -277,8 +278,10 @@ public final class GenerateParseInfoVisitor
         }
       }
     }
-    SortedSet<String> protoTypes =
-        Sets.newTreeSet(JavaGenerationUtils.getProtoTypes(node, node.getSoyTypeRegistry()));
+    ImmutableSortedSet<String> protoTypes =
+        JavaGenerationUtils.getProtoTypes(node, node.getSoyTypeRegistry()).stream()
+            .map(ProtoUtils::getQualifiedOuterClassname)
+            .collect(toImmutableSortedSet(naturalOrder()));
     // allParamKeysMap is a map from upper-underscore key to original key.
     SortedMap<String, String> allParamKeysMap = Maps.newTreeMap();
     for (String key : allParamKeys) {
@@ -361,10 +364,8 @@ public final class GenerateParseInfoVisitor
       ilb.appendLine("@Override public ImmutableList<FileDescriptor> getProtoDescriptors() {");
       ilb.increaseIndent();
       // Note we use fully-qualified names instead of imports to avoid potential collisions.
-      List<String> defaultInstances = Lists.newArrayList();
-      defaultInstances.addAll(protoTypes);
       ilb.appendLineStart("return ");
-      appendImmutableListInline(ilb, /* typeParamSnippet= */ "", defaultInstances);
+      appendImmutableListInline(ilb, /* typeParamSnippet= */ "", protoTypes);
       ilb.appendLineEnd(";");
       ilb.decreaseIndent();
       ilb.appendLine("}");

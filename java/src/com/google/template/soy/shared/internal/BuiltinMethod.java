@@ -30,6 +30,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor.JavaType;
+import com.google.protobuf.Descriptors.GenericDescriptor;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
@@ -37,7 +38,6 @@ import com.google.template.soy.error.SoyErrors;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.MethodCallNode;
 import com.google.template.soy.internal.proto.Field;
-import com.google.template.soy.internal.proto.ProtoUtils;
 import com.google.template.soy.shared.restricted.SoyMethod;
 import com.google.template.soy.types.AbstractMapType;
 import com.google.template.soy.types.BoolType;
@@ -581,15 +581,14 @@ public enum BuiltinMethod implements SoyMethod {
     return ImmutableList.of(name);
   }
 
-  public List<String> getProtoDependencyTypes(MethodCallNode methodNode) {
+  public List<GenericDescriptor> getProtoDependencyTypes(MethodCallNode methodNode) {
     switch (this) {
       case GET_EXTENSION:
       case HAS_EXTENSION:
       case GET_READONLY_EXTENSION:
         return ImmutableList.of(
-            ProtoUtils.getQualifiedOuterClassname(
-                ((SoyProtoType) SoyTypes.tryRemoveNullish(methodNode.getBaseExprChild().getType()))
-                    .getFieldDescriptor(getProtoExtensionIdFromMethodCall(methodNode))));
+            ((SoyProtoType) SoyTypes.tryRemoveNullish(methodNode.getBaseExprChild().getType()))
+                .getFieldDescriptor(getProtoExtensionIdFromMethodCall(methodNode)));
       case HAS_PROTO_FIELD:
       case GET_PROTO_FIELD:
       case GET_PROTO_FIELD_OR_UNDEFINED:

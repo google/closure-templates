@@ -15,8 +15,8 @@
  */
 package com.google.template.soy.shared.internal.gencode;
 
+import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static com.google.common.collect.Streams.stream;
-import static java.util.stream.Collectors.toSet;
 
 import com.google.common.base.Ascii;
 import com.google.common.base.Joiner;
@@ -26,9 +26,11 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Streams;
 import com.google.protobuf.Descriptors.FieldDescriptor;
+import com.google.protobuf.Descriptors.GenericDescriptor;
+import com.google.template.soy.base.SourceLogicalPath;
+import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.MethodCallNode;
-import com.google.template.soy.internal.proto.ProtoUtils;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.shared.internal.BuiltinMethod;
 import com.google.template.soy.soytree.ImportNode.ImportType;
@@ -45,7 +47,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -331,9 +332,10 @@ public final class JavaGenerationUtils {
     ilb.decreaseIndent(2);
   }
 
-  public static Set<String> getProtoTypes(SoyFileNode node, SoyTypeRegistry typeRegistry) {
+  public static ImmutableSet<GenericDescriptor> getProtoTypes(
+      SoyFileNode node, SoyTypeRegistry typeRegistry) {
     // Get any enums or messages from imports. Extensions are handled by the global pass.
-    Stream<String> fromImports =
+    Stream<GenericDescriptor> fromImports =
         node.getImports().stream()
             .filter(i -> i.getImportType() == ImportType.PROTO)
             .flatMap(i -> i.getIdentifiers().stream())
@@ -342,11 +344,11 @@ public final class JavaGenerationUtils {
             .map(
                 type -> {
                   if (type.getKind() == Kind.PROTO) {
-                    return ((SoyProtoType) type).getDescriptorExpression();
+                    return ((SoyProtoType) type).getDescriptor();
                   } else if (type.getKind() == Kind.PROTO_ENUM) {
-                    return ((SoyProtoEnumType) type).getDescriptorExpression();
+                    return ((SoyProtoEnumType) type).getDescriptor();
                   } else if (type.getKind() == Kind.PROTO_EXTENSION) {
-                    return ((SoyProtoEnumType) type).getDescriptorExpression();
+                    return ((SoyProtoEnumType) type).getDescriptor();
                   }
                   return null;
                 })
@@ -354,7 +356,7 @@ public final class JavaGenerationUtils {
 
     // Collect the following:
     // + for any params whose type is a proto, get the proto name and Java class name.
-    Stream<String> fromHeader =
+    Stream<GenericDescriptor> fromHeader =
         node.getTemplates().stream()
             .flatMap(t -> t.getHeaderParams().stream())
             .flatMap(varDefn -> findProtoTypes(varDefn.type(), typeRegistry));
@@ -362,7 +364,7 @@ public final class JavaGenerationUtils {
     // anything else that may have a type now or in the future.
 
     // Add references for return types of getExtension method.
-    Stream<String> fromCall =
+    Stream<GenericDescriptor> fromCall =
         SoyTreeUtils.allNodesOfType(node, MethodCallNode.class)
             .filter(MethodCallNode::isMethodResolved)
             .filter(n -> n.getSoyMethod() instanceof BuiltinMethod)
@@ -372,7 +374,7 @@ public final class JavaGenerationUtils {
                         .getProtoDependencyTypes(methodNode).stream());
 
     // Add proto init
-    Stream<String> fromProtoInit =
+    Stream<GenericDescriptor> fromProtoInit =
         SoyTreeUtils.allNodesOfType(node, FunctionNode.class)
             .filter(fctNode -> fctNode.getSoyFunction() == BuiltinFunction.PROTO_INIT)
             .filter(fctNode -> fctNode.getType().getKind() == Kind.PROTO)
@@ -380,26 +382,34 @@ public final class JavaGenerationUtils {
                 fctNode -> {
                   SoyProtoType proto = (SoyProtoType) fctNode.getType();
                   return Streams.concat(
-                      Stream.of(proto.getDescriptorExpression()),
+                      Stream.of(proto.getDescriptor()),
                       fctNode.getParamNames().stream()
                           .map(paramName -> proto.getFieldDescriptor(paramName.identifier()))
-                          .filter(FieldDescriptor::isExtension)
-                          .map(ProtoUtils::getQualifiedOuterClassname));
+                          .filter(FieldDescriptor::isExtension));
                 });
 
-    return Streams.concat(fromImports, fromHeader, fromCall, fromProtoInit).collect(toSet());
+    return Streams.concat(fromImports, fromHeader, fromCall, fromProtoInit)
+        .distinct()
+        .filter(
+            d ->
+                typeRegistry
+                        .getProtoRegistry()
+                        .getDepKind(SourceLogicalPath.create(d.getFile().getFullName()))
+                    == SoyFileKind.DEP)
+        .collect(toImmutableSet());
   }
 
   /** Recursively search for protocol buffer types within the given type. */
-  private static Stream<String> findProtoTypes(SoyType root, SoyTypeRegistry typeRegistry) {
+  private static Stream<GenericDescriptor> findProtoTypes(
+      SoyType root, SoyTypeRegistry typeRegistry) {
     return stream(typeIterator(root, typeRegistry))
         .map(
             type -> {
               switch (type.getKind()) {
                 case PROTO:
-                  return ((SoyProtoType) type).getDescriptorExpression();
+                  return ((SoyProtoType) type).getDescriptor();
                 case PROTO_ENUM:
-                  return ((SoyProtoEnumType) type).getDescriptorExpression();
+                  return ((SoyProtoEnumType) type).getDescriptor();
                 default:
                   return null;
               }

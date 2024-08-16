@@ -227,8 +227,7 @@ public final class GenerateParseInfoVisitorTest {
     FileSetMetadata registry = parseResult.registry();
 
     ImmutableList<GeneratedFile> parseInfos =
-        new GenerateParseInfoVisitor(
-                "com.google.gpivtest", KytheMode.TEXT, "filename", registry, typeRegistry)
+        new GenerateParseInfoVisitor("com.google.gpivtest", KytheMode.TEXT, "filename", registry)
             .exec(parseResult.fileSet());
 
     // Verify that exactly one generated file has the name "NoPathSoyInfo.java", and return it.

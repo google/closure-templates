@@ -234,16 +234,6 @@ public final class SoyProtoType extends SoyType {
     return typeDescriptor;
   }
 
-  /**
-   * For ParseInfo generation, return a string that represents the Java source expression for the
-   * static descriptor constant.
-   *
-   * @return The Java source expression for this type's descriptor.
-   */
-  public String getDescriptorExpression() {
-    return ProtoUtils.getQualifiedOuterClassname(typeDescriptor);
-  }
-
   /** Returns the {@link FieldDescriptor} of the given field. */
   public FieldDescriptor getFieldDescriptor(String fieldName) {
     FieldWithType field = fields.get(fieldName);
