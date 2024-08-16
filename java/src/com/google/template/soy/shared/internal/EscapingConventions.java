@@ -929,6 +929,7 @@ public final class EscapingConventions {
             "linear-gradient",
             "max",
             "min",
+            "repeat",
             "rgb",
             "rgba",
             "rotate",
