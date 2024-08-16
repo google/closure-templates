@@ -15,7 +15,6 @@
  */
 package com.google.template.soy.passes;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Table;
 import com.google.template.soy.base.SourceLogicalPath;
@@ -50,7 +49,6 @@ import com.google.template.soy.types.MapType;
 import com.google.template.soy.types.NamedType;
 import com.google.template.soy.types.SetType;
 import com.google.template.soy.types.SoyType;
-import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.UnknownType;
@@ -282,7 +280,6 @@ final class ResolveDeclaredTypesPass
     }
 
     public boolean addTypeAlias(String alias, NamedType type) {
-      Preconditions.checkArgument(type.getType().getKind() != Kind.UNKNOWN);
       SoyType previous = localTypes.put(alias, type);
       return previous == null;
     }
