@@ -31,20 +31,21 @@ public interface SoyTypeRegistry extends TypeRegistry, TypeInterner {
    *     proper type registry.
    */
   @Deprecated
-  SoyTypeRegistry DEFAULT_UNKNOWN =
-      new DelegatingSoyTypeRegistry(SoyTypeRegistryBuilder.create()) {
-        @Nullable
-        @Override
-        public SoyType getType(String typeName) {
-          SoyType type = super.getType(typeName);
-          return type != null ? type : UnknownType.getInstance();
-        }
+  static SoyTypeRegistry defaultUnknown() {
+    return new DelegatingSoyTypeRegistry(SoyTypeRegistryBuilder.create()) {
+      @Nullable
+      @Override
+      public SoyType getType(String typeName) {
+        SoyType type = super.getType(typeName);
+        return type != null ? type : UnknownType.getInstance();
+      }
 
-        @Override
-        public ProtoTypeRegistry getProtoRegistry() {
-          return (fqn) -> UnknownType.getInstance();
-        }
-      };
+      @Override
+      public ProtoTypeRegistry getProtoRegistry() {
+        return (fqn) -> UnknownType.getInstance();
+      }
+    };
+  }
 
   /** Returns the list of proto file descriptors with which this registry was created. */
   default ImmutableSet<FileDescriptor> getProtoDescriptors() {
