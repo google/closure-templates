@@ -93,6 +93,11 @@ public abstract class DelegatingSoyTypeRegistry implements SoyTypeRegistry {
   }
 
   @Override
+  public boolean hasType(String typeName) {
+    return delegate.hasType(typeName);
+  }
+
+  @Override
   public Iterable<String> getAllSortedTypeNames() {
     return delegate.getAllSortedTypeNames();
   }

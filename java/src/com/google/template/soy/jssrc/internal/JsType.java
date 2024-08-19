@@ -36,6 +36,7 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedSet;
+import com.google.common.collect.Iterables;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.base.SoyBackendKind;
 import com.google.template.soy.base.internal.SanitizedContentKind;
@@ -603,7 +604,7 @@ public final class JsType implements CodeChunk.HasRequires {
                   : namedType.getNamespace();
           String fullName = namespace + "." + namedType.getName();
           return builder()
-              .addType(fullName)
+              .addType("!" + fullName)
               .addRequire(GoogRequire.create(namespace))
               .setPredicate(TypePredicate.NO_OP)
               .build();
@@ -637,10 +638,14 @@ public final class JsType implements CodeChunk.HasRequires {
               if (component instanceof NamedType) {
                 stack.add(component);
               } else if (component instanceof RecordType) {
-                if (((RecordType) component).hasMember(indexedType.getProperty())) {
+                RecordType.Member recMember =
+                    ((RecordType) component).getMember(indexedType.getProperty());
+                if (recMember != null) {
+                  String prefix = SoyTypes.isNullish(recMember.checkedType()) ? "" : "!";
                   type =
-                      IndexedType.jsSynthenticTypeDefName(
-                          forRecursion.get(namedMember).typeExpr(), indexedType.getProperty());
+                      prefix
+                          + IndexedType.jsSynthenticTypeDefName(
+                              forRecursion.get(namedMember).typeExpr(), indexedType.getProperty());
                   break WHILE;
                 }
               }
@@ -765,6 +770,13 @@ public final class JsType implements CodeChunk.HasRequires {
   /** Returns a type expression. */
   public String typeExpr() {
     return Joiner.on('|').join(typeExpressions);
+  }
+
+  public String typeExprForExtends() {
+    // Cannot have "!" in "@extends T".
+    Preconditions.checkState(typeExpressions.size() == 1);
+    String type = Iterables.getOnlyElement(typeExpressions);
+    return type.startsWith("!") ? type.substring(1) : type;
   }
 
   /**

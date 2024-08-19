@@ -236,6 +236,11 @@ public final class TypeRegistries {
     }
 
     @Override
+    public boolean hasType(String typeName) {
+      return typeRegistry.hasType(typeName);
+    }
+
+    @Override
     public Iterable<String> getAllSortedTypeNames() {
       return typeRegistry.getAllSortedTypeNames();
     }

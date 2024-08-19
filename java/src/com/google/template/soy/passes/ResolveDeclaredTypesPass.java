@@ -15,8 +15,6 @@
  */
 package com.google.template.soy.passes;
 
-import com.google.common.collect.HashBasedTable;
-import com.google.common.collect.Table;
 import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
@@ -67,15 +65,13 @@ final class ResolveDeclaredTypesPass
   private final boolean disableAllTypeChecking;
   private final Supplier<FileSetMetadata> fileSetMetadataFromDeps;
 
-  // Indexed by file NS and then typedef name.
-  private final Table<String, String, TypeDefNode> typeDefIndex = HashBasedTable.create();
   private final Map<SourceLogicalPath, SoyFileNode> pathToFileNode = new HashMap<>();
 
   private AccumulatingTypeRegistry typeRegistry;
   private TypeNodeConverter converter;
 
   private static final SoyErrorKind TYPE_NAME_BUILTIN_COLLISION =
-      SoyErrorKind.of("Type ''{0}'' name is already a built-in or imported type.");
+      SoyErrorKind.of("Type ''{0}'' name is already a built-in or imported type {1}.");
 
   private static final SoyErrorKind TYPE_NAME_COLLISION =
       SoyErrorKind.of("Type ''{0}'' is already defined in this file.");
@@ -168,11 +164,14 @@ final class ResolveDeclaredTypesPass
     protected void visitTypeDefNode(TypeDefNode node) {
       visitTypeNode(node.getTypeNode());
 
-      SoyFileNode fileNode = node.getNearestAncestor(SoyFileNode.class);
-      typeDefIndex.put(fileNode.getNamespace(), node.getName(), node);
-
-      if (typeRegistry.getType(node.getName()) != null) {
-        errorReporter.report(node.getNameLocation(), TYPE_NAME_BUILTIN_COLLISION, node.getName());
+      if (typeRegistry.hasType(node.getName())) {
+        errorReporter.report(
+            node.getNameLocation(),
+            TYPE_NAME_BUILTIN_COLLISION,
+            node.getName(),
+            typeRegistry.getType(node.getName()).getKind()
+                + " "
+                + typeRegistry.getType(node.getName()));
       } else {
         NamedType namedType = typeRegistry.intern(node.asNamedType());
         if (!typeRegistry.addTypeAlias(node.getName(), namedType)) {

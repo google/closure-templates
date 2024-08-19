@@ -29,6 +29,10 @@ public interface TypeRegistry {
   @Nullable
   SoyType getType(String typeName);
 
+  default boolean hasType(String typeName) {
+    return getType(typeName) != null;
+  }
+
   /** Returns the sorted set of all types in this registry. */
   Iterable<String> getAllSortedTypeNames();
 

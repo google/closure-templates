@@ -115,7 +115,6 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -659,7 +658,8 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
   protected void visitTypeDefNode(TypeDefNode node) {
     NamedType thisNamedType = node.asNamedType();
     jsTypeRegistry.addTypeMap(
-        thisNamedType, JsType.localTypedef(topLevelName(node, node.isExported(), node.getName())));
+        thisNamedType,
+        JsType.localTypedef("!" + topLevelName(node, node.isExported(), node.getName())));
 
     SoyType type = node.getType();
 
@@ -682,30 +682,47 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     JsDoc.Builder jsDoc = JsDoc.builder().addAnnotation("record");
 
     List<Statement> properties = new ArrayList<>();
-    Map<RecordType.Member, SoyType> propertyTypeDefs = new LinkedHashMap<>();
+    // Map<RecordType.Member, SoyType> propertyTypeDefs = new LinkedHashMap<>();
 
     Expression lhs = topLevelLhs(node, node.isExported(), node.getName());
     for (SoyType member : recordMembers) {
       if (member.getKind() == Kind.NAMED) {
         JsType memberType = getJsTypeForParam(member);
-        jsDoc.addAnnotation("extends", memberType.typeExpr()).addGoogRequires(memberType);
+        jsDoc.addAnnotation("extends", memberType.typeExprForExtends()).addGoogRequires(memberType);
       } else if (member.getKind() == Kind.RECORD) {
         for (Member recordMember : ((RecordType) member).getMembers()) {
-          propertyTypeDefs.put(recordMember, recordMember.checkedType());
-          SoyType propType = IndexedType.create(thisNamedType, recordMember.name());
-          jsTypeRegistry.addTypeMap(
-              propType,
-              JsType.localTypedef(
-                  topLevelName(
-                      node,
-                      true,
-                      IndexedType.jsSynthenticTypeDefName(node.getName(), recordMember.name()))));
-          JsType propJsType = getJsTypeForParam(propType);
+          SoyType checkedType = recordMember.checkedType();
+
+          // For every member create a @typedef so that we can implement IndexedType.
+          String memberTypedefName =
+              IndexedType.jsSynthenticTypeDefName(node.getName(), recordMember.name());
+          JsType memberTypedefType = getJsTypeForParam(checkedType);
+          jsCodeBuilder.append(
+              topLevelDecl(
+                  node,
+                  true, // Must always be public because of indexed types. We could do flow
+                  // analysis...
+                  memberTypedefName,
+                  JsDoc.builder()
+                      .addParameterizedAnnotation("typedef", memberTypedefType.typeExpr())
+                      .addGoogRequires(memberTypedefType)));
+
+          // For every member, define a prototype property of the @record. The type of the property
+          // points back to the member @typedef.
+          SoyType indexedPropType = IndexedType.create(thisNamedType, recordMember.name());
+          String memberSymbol = topLevelName(node, true, memberTypedefName);
+          if (!SoyTypes.isNullish(checkedType)) {
+            // JSC gets confused by ! when it references a @typedef. The ! needs to match whether
+            // the source typedef is `|null` or `|undefined`.
+            memberSymbol = "!" + memberSymbol;
+          }
+          jsTypeRegistry.addTypeMap(indexedPropType, JsType.localTypedef(memberSymbol));
+          JsType indexedPropJsType = getJsTypeForParam(indexedPropType);
           JsDoc memberDoc =
               JsDoc.builder()
-                  .addAnnotation("type", propJsType.typeExpr())
+                  .addAnnotation("type", indexedPropJsType.typeExpr())
                   .addAnnotation("public")
-                  .addGoogRequires(propJsType)
+                  .addGoogRequires(indexedPropJsType)
                   .build();
           properties.add(
               lhs.dotAccess("prototype").dotAccess(recordMember.name()).asStatement(memberDoc));
@@ -713,18 +730,6 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       }
     }
 
-    // We create a @typedef for every field of a record type so that we can implement IndexedType.
-    for (Entry<Member, SoyType> p : propertyTypeDefs.entrySet()) {
-      JsType pJsType = getJsTypeForParam(p.getValue());
-      jsCodeBuilder.append(
-          topLevelDecl(
-              node,
-              true, // Must always be public because of indexed types. We could do flow analysis...
-              IndexedType.jsSynthenticTypeDefName(node.getName(), p.getKey().name()),
-              JsDoc.builder()
-                  .addParameterizedAnnotation("typedef", pJsType.typeExpr())
-                  .addGoogRequires(pJsType)));
-    }
     jsCodeBuilder.append(
         topLevelAssignment(
             node,
