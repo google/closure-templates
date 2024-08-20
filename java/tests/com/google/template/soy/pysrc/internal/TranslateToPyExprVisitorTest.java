@@ -94,7 +94,7 @@ public class TranslateToPyExprVisitorTest {
   @Test
   public void testBasicOperators() {
     assertThatSoyExpr("!$boo || true && $foo")
-        .translatesTo("not data.get('boo') or True and data.get('foo')", Operator.OR);
+        .translatesTo("not data.get('boo') or True and data.get('foo')", Operator.BAR_BAR);
   }
 
   @Test

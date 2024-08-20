@@ -73,7 +73,6 @@ public final class ExprNodes {
       case NOT_OP_NODE:
         return true;
       case NULL_COALESCING_OP_NODE:
-      case OR_OP_NODE:
         return isNonNullishLiteral(((ParentExprNode) node).getChild(1));
       default:
         return false;

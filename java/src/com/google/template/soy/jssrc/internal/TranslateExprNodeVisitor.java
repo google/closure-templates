@@ -97,7 +97,6 @@ import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.exprtree.NullSafeAccessNode;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.exprtree.OperatorNodes.AmpAmpOpNode;
-import com.google.template.soy.exprtree.OperatorNodes.AndOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.AsOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.AssertNonNullOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.BarBarOpNode;
@@ -107,7 +106,6 @@ import com.google.template.soy.exprtree.OperatorNodes.InstanceOfOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NotEqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NotOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
-import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
 import com.google.template.soy.exprtree.ProtoEnumValueNode;
 import com.google.template.soy.exprtree.RecordLiteralNode;
 import com.google.template.soy.exprtree.StringNode;
@@ -820,32 +818,6 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
     Expression consequent = operands.get(0);
     Expression alternate = operands.get(1);
     return consequent.nullishCoalesce(alternate, translationContext.codeGenerator());
-  }
-
-  @Override
-  protected Expression visitAndOpNode(AndOpNode node) {
-    Preconditions.checkArgument(node.numChildren() == 2);
-    ExprNode lhOperand = node.getChild(0);
-    ExprNode rhOperand = node.getChild(1);
-    // Explicit coercion is necessary for 2 reasons:
-    // 1. Some soy values don't have proper js truthy semantics (SanitizedContent types) so we need
-    //    an explicit coercion where we expect a boolean value.
-    // 2. The soy 'and' operator is a boolean operator whereas the JS && operator has more complex
-    //    semantics, so explicit coercions are necessary to ensure we get a boolean value.
-    Expression lhChunk = maybeCoerceToBoolean(lhOperand.getType(), visit(lhOperand), true);
-    Expression rhChunk = maybeCoerceToBoolean(rhOperand.getType(), visit(rhOperand), true);
-    return lhChunk.and(rhChunk, translationContext.codeGenerator());
-  }
-
-  @Override
-  protected Expression visitOrOpNode(OrOpNode node) {
-    Preconditions.checkArgument(node.numChildren() == 2);
-    ExprNode lhOperand = node.getChild(0);
-    ExprNode rhOperand = node.getChild(1);
-    // See comments in visitAndOpNode for why explicit coercions are required.
-    Expression lhChunk = maybeCoerceToBoolean(lhOperand.getType(), visit(lhOperand), true);
-    Expression rhChunk = maybeCoerceToBoolean(rhOperand.getType(), visit(rhOperand), true);
-    return lhChunk.or(rhChunk, translationContext.codeGenerator());
   }
 
   @Override

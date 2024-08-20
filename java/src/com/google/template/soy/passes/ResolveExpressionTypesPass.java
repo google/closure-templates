@@ -106,7 +106,6 @@ import com.google.template.soy.exprtree.MethodCallNode;
 import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.exprtree.NullSafeAccessNode;
 import com.google.template.soy.exprtree.OperatorNodes.AmpAmpOpNode;
-import com.google.template.soy.exprtree.OperatorNodes.AndOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.AsOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.AssertNonNullOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.BarBarOpNode;
@@ -127,7 +126,6 @@ import com.google.template.soy.exprtree.OperatorNodes.NegativeOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NotEqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NotOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
-import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ShiftLeftOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ShiftRightOpNode;
@@ -305,12 +303,6 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
       SoyErrorKind.of("Missing Soy type for node {0}.");
   private static final SoyErrorKind NOT_PROTO_INIT =
       SoyErrorKind.of("Expected a protocol buffer for the second argument.");
-  private static final SoyErrorKind OR_OPERATOR_HAS_CONSTANT_OPERAND =
-      SoyErrorKind.of(
-          "Constant operand ''{0}'' used with ''or'' operator. "
-              + "Consider simplifying or using the ?? operator, see "
-              + "go/soy/reference/expressions.md#logical-operators",
-          StyleAllowance.NO_PUNCTUATION);
   private static final SoyErrorKind UNDEFINED_FIELD_FOR_RECORD_TYPE =
       SoyErrorKind.of(
           "Undefined field ''{0}'' for record type {1}.{2}", StyleAllowance.NO_PUNCTUATION);
@@ -1935,20 +1927,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
     }
 
     @Override
-    protected void visitAndOpNode(AndOpNode node) {
-      processAnd(node);
-      node.setType(BoolType.getInstance());
-    }
-
-    @Override
     protected void visitAmpAmpOpNode(AmpAmpOpNode node) {
-      processAnd(node);
-      node.setType(
-          SoyTypes.computeLowestCommonType(
-              typeRegistry, node.getChild(0).getType(), node.getChild(1).getType()));
-    }
-
-    private void processAnd(AbstractOperatorNode node) {
       visit(node.getChild(0)); // Assign normal types to left child
 
       // Save the state of substitutions.
@@ -1965,26 +1944,15 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
 
       // Restore substitutions to previous state
       substitutions.restore(savedSubstitutionState);
-    }
 
-    @Override
-    protected void visitOrOpNode(OrOpNode node) {
-      processOr(node, true);
-      node.setType(BoolType.getInstance());
+      node.setType(
+          SoyTypes.computeLowestCommonType(
+              typeRegistry, node.getChild(0).getType(), node.getChild(1).getType()));
     }
 
     @Override
     protected void visitBarBarOpNode(BarBarOpNode node) {
-      processOr(node, false);
-      setTypeNullCoalesceNodeOrNode(node);
-    }
-
-    private void processOr(AbstractOperatorNode node, boolean includeConstantChecks) {
       ExprNode lhs = node.getChild(0);
-      if (includeConstantChecks && SoyTreeUtils.isConstantExpr(lhs)) {
-        errorReporter.warn(
-            node.getOperatorLocation(), OR_OPERATOR_HAS_CONSTANT_OPERAND, lhs.toSourceString());
-      }
       visit(lhs); // Assign normal types to left child
 
       // Save the state of substitutions.
@@ -1999,13 +1967,11 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
       substitutions.addAll(visitor.negativeTypeConstraints);
       ExprNode rhs = node.getChild(1);
       visit(rhs);
-      if (includeConstantChecks && SoyTreeUtils.isConstantExpr(rhs)) {
-        errorReporter.warn(
-            node.getOperatorLocation(), OR_OPERATOR_HAS_CONSTANT_OPERAND, rhs.toSourceString());
-      }
 
       // Restore substitutions to previous state
       substitutions.restore(savedSubstitutionState);
+
+      setTypeNullCoalesceNodeOrNode(node);
     }
 
     @Override

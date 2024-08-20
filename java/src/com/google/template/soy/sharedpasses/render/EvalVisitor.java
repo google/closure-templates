@@ -90,7 +90,6 @@ import com.google.template.soy.exprtree.MethodCallNode;
 import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.exprtree.NullSafeAccessNode;
 import com.google.template.soy.exprtree.OperatorNodes.AmpAmpOpNode;
-import com.google.template.soy.exprtree.OperatorNodes.AndOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.AsOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.AssertNonNullOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.BarBarOpNode;
@@ -111,7 +110,6 @@ import com.google.template.soy.exprtree.OperatorNodes.NegativeOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NotEqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NotOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
-import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ShiftLeftOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ShiftRightOpNode;
@@ -783,32 +781,6 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
   @Override
   protected SoyValue visitTripleNotEqualOpNode(TripleNotEqualOpNode node) {
     return convertResult(!tripleEqual(visit(node.getChild(0)), visit(node.getChild(1))));
-  }
-
-  @Override
-  protected SoyValue visitAndOpNode(AndOpNode node) {
-
-    // Note: Short-circuit evaluation.
-    SoyValue operand0 = visit(node.getChild(0));
-    if (!operand0.coerceToBoolean()) {
-      return convertResult(false);
-    } else {
-      SoyValue operand1 = visit(node.getChild(1));
-      return convertResult(operand1.coerceToBoolean());
-    }
-  }
-
-  @Override
-  protected SoyValue visitOrOpNode(OrOpNode node) {
-
-    // Note: Short-circuit evaluation.
-    SoyValue operand0 = visit(node.getChild(0));
-    if (operand0.coerceToBoolean()) {
-      return convertResult(true);
-    } else {
-      SoyValue operand1 = visit(node.getChild(1));
-      return convertResult(operand1.coerceToBoolean());
-    }
   }
 
   @Override

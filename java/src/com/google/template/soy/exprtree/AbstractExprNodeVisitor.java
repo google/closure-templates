@@ -22,7 +22,6 @@ import com.google.template.soy.exprtree.ExprNode.OperatorNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
 import com.google.template.soy.exprtree.OperatorNodes.AmpAmpOpNode;
-import com.google.template.soy.exprtree.OperatorNodes.AndOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.AsOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.AssertNonNullOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.BarBarOpNode;
@@ -43,7 +42,6 @@ import com.google.template.soy.exprtree.OperatorNodes.NegativeOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NotEqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NotOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
-import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ShiftLeftOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ShiftRightOpNode;
@@ -196,14 +194,8 @@ public abstract class AbstractExprNodeVisitor<R> extends AbstractNodeVisitor<Exp
       case TRIPLE_NOT_EQUAL_OP_NODE:
         visitTripleNotEqualOpNode((TripleNotEqualOpNode) node);
         break;
-      case AND_OP_NODE:
-        visitAndOpNode((AndOpNode) node);
-        break;
       case AMP_AMP_OP_NODE:
         visitAmpAmpOpNode((AmpAmpOpNode) node);
-        break;
-      case OR_OP_NODE:
-        visitOrOpNode((OrOpNode) node);
         break;
       case BAR_BAR_OP_NODE:
         visitBarBarOpNode((BarBarOpNode) node);
@@ -448,15 +440,7 @@ public abstract class AbstractExprNodeVisitor<R> extends AbstractNodeVisitor<Exp
     visitOperatorNode(node);
   }
 
-  protected void visitAndOpNode(AndOpNode node) {
-    visitOperatorNode(node);
-  }
-
   protected void visitAmpAmpOpNode(AmpAmpOpNode node) {
-    visitOperatorNode(node);
-  }
-
-  protected void visitOrOpNode(OrOpNode node) {
     visitOperatorNode(node);
   }
 

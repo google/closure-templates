@@ -337,8 +337,7 @@ public final class Expressions {
 
   public static Expression operation(Operator op, List<Expression> operands) {
     Preconditions.checkArgument(operands.size() == op.getNumOperands());
-    Preconditions.checkArgument(
-        op != Operator.AND && op != Operator.OR && op != Operator.CONDITIONAL);
+    Preconditions.checkArgument(op != Operator.CONDITIONAL);
     switch (op.getNumOperands()) {
       case 1:
         return UnaryOperation.create(op, operands.get(0));

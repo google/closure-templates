@@ -426,50 +426,6 @@ public class OperatorNodes {
     }
   }
 
-  /** Node representing the 'and' operator. */
-  public static final class AndOpNode extends AbstractOperatorNode {
-
-    public AndOpNode(SourceLocation sourceLocation, SourceLocation operatorLocation) {
-      super(sourceLocation, Operator.AND, operatorLocation);
-    }
-
-    private AndOpNode(AndOpNode orig, CopyState copyState) {
-      super(orig, copyState);
-    }
-
-    @Override
-    public Kind getKind() {
-      return Kind.AND_OP_NODE;
-    }
-
-    @Override
-    public AndOpNode copy(CopyState copyState) {
-      return new AndOpNode(this, copyState);
-    }
-  }
-
-  /** Node representing the 'or' operator. */
-  public static final class OrOpNode extends AbstractOperatorNode {
-
-    public OrOpNode(SourceLocation sourceLocation, SourceLocation operatorLocation) {
-      super(sourceLocation, Operator.OR, operatorLocation);
-    }
-
-    private OrOpNode(OrOpNode orig, CopyState copyState) {
-      super(orig, copyState);
-    }
-
-    @Override
-    public Kind getKind() {
-      return Kind.OR_OP_NODE;
-    }
-
-    @Override
-    public OrOpNode copy(CopyState copyState) {
-      return new OrOpNode(this, copyState);
-    }
-  }
-
   /** Node representing the '&&' operator. */
   public static final class AmpAmpOpNode extends AbstractOperatorNode {
 

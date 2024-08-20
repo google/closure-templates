@@ -82,9 +82,7 @@ public final class PyExprUtils {
           .put(Operator.TRIPLE_EQUAL, 5)
           .put(Operator.TRIPLE_NOT_EQUAL, 5)
           .put(Operator.NOT, 4)
-          .put(Operator.AND, 3)
           .put(Operator.AMP_AMP, 3)
-          .put(Operator.OR, 2)
           .put(Operator.BAR_BAR, 2)
           .put(Operator.NULL_COALESCING, 1)
           .put(Operator.CONDITIONAL, 1)
@@ -283,7 +281,7 @@ public final class PyExprUtils {
             // https://docs.python.org/3/reference/expressions.html#grammar-token-comprehension
             // takes an 'or_test' expression which is basically any expression except
             // conditional expression
-            + maybeProtect(listExpr, pyPrecedenceForOperator(Operator.OR)).getText()
+            + maybeProtect(listExpr, pyPrecedenceForOperator(Operator.BAR_BAR)).getText()
             + "}";
     return new PyExpr(genCodeString, Integer.MAX_VALUE);
   }
@@ -306,7 +304,7 @@ public final class PyExprUtils {
                 // https://docs.python.org/3/reference/expressions.html#grammar-token-comprehension
                 // takes an 'or_test' expression which is basically any expression except
                 // conditional expression
-                + maybeProtect(listExpr, pyPrecedenceForOperator(Operator.OR)).getText()
+                + maybeProtect(listExpr, pyPrecedenceForOperator(Operator.BAR_BAR)).getText()
             : "["
                 + transformExpr.getText()
                 + " for "
@@ -324,7 +322,7 @@ public final class PyExprUtils {
       // takes an 'expression_nocond' expression which is basically any expression except a
       // conditional expression
       genCodeString +=
-          " if " + maybeProtect(filterExpr, pyPrecedenceForOperator(Operator.OR)).getText();
+          " if " + maybeProtect(filterExpr, pyPrecedenceForOperator(Operator.BAR_BAR)).getText();
     }
 
     // Close the list comprehension.

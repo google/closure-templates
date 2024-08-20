@@ -25,11 +25,9 @@ abstract class Operation extends Expression implements OperatorInterface {
 
   public static String getOperatorToken(Operator soyOperator) {
     switch (soyOperator) {
-      case AND:
       case AMP_AMP:
         return "&&";
       case BAR_BAR:
-      case OR:
         return "||";
       case NULL_COALESCING:
       case ASSERT_NON_NULL:

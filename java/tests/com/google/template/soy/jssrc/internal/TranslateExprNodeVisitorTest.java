@@ -16,8 +16,8 @@
 
 package com.google.template.soy.jssrc.internal;
 
+import static com.google.template.soy.exprtree.Operator.BAR_BAR;
 import static com.google.template.soy.exprtree.Operator.CONDITIONAL;
-import static com.google.template.soy.exprtree.Operator.OR;
 import static com.google.template.soy.exprtree.Operator.PLUS;
 import static com.google.template.soy.jssrc.dsl.Expressions.id;
 import static com.google.template.soy.jssrc.internal.JsSrcSubject.assertThatSoyExpr;
@@ -141,7 +141,7 @@ public final class TranslateExprNodeVisitorTest {
     assertThatSoyExpr("!$boo || true && $goo")
         .withInitialLocalVarTranslations(LOCAL_VAR_TRANSLATIONS)
         .generatesCode("!opt_data.boo || true && gooData8;")
-        .withPrecedence(OR);
+        .withPrecedence(BAR_BAR);
 
     assertThatSoyExpr("( (8-4) + (2-1) )").generatesCode("8 - 4 + (2 - 1);").withPrecedence(PLUS);
   }

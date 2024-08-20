@@ -16,8 +16,8 @@
 package com.google.template.soy.jssrc.dsl;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
-import static com.google.template.soy.exprtree.Operator.AND;
-import static com.google.template.soy.exprtree.Operator.OR;
+import static com.google.template.soy.exprtree.Operator.AMP_AMP;
+import static com.google.template.soy.exprtree.Operator.BAR_BAR;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -224,7 +224,7 @@ public abstract class Expression extends CodeChunk {
    *     evaluates as true).
    */
   public final Expression and(Expression rhs, Generator codeGenerator) {
-    return shortCircuiting(rhs, codeGenerator, AND, e -> e);
+    return shortCircuiting(rhs, codeGenerator, AMP_AMP, e -> e);
   }
 
   /**
@@ -236,7 +236,7 @@ public abstract class Expression extends CodeChunk {
    *     evaluates as false).
    */
   public final Expression or(Expression rhs, Generator codeGenerator) {
-    return shortCircuiting(rhs, codeGenerator, OR, Expressions::not);
+    return shortCircuiting(rhs, codeGenerator, BAR_BAR, Expressions::not);
   }
 
   private Expression shortCircuiting(

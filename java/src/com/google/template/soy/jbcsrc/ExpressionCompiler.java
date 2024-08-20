@@ -60,7 +60,6 @@ import com.google.template.soy.exprtree.MethodCallNode;
 import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.exprtree.NullSafeAccessNode;
 import com.google.template.soy.exprtree.OperatorNodes.AmpAmpOpNode;
-import com.google.template.soy.exprtree.OperatorNodes.AndOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.AsOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.AssertNonNullOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.BarBarOpNode;
@@ -81,7 +80,6 @@ import com.google.template.soy.exprtree.OperatorNodes.NegativeOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NotEqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NotOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
-import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ShiftLeftOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ShiftRightOpNode;
@@ -1140,11 +1138,6 @@ final class ExpressionCompiler {
       return SoyExpression.forBool(visit(node.getChild(0)).compileToBranch().negate().asBoolean());
     }
 
-    @Override
-    protected SoyExpression visitAndOpNode(AndOpNode node) {
-      return doSimpleAnd(node);
-    }
-
     private SoyExpression doSimpleAnd(AbstractOperatorNode node) {
       SoyExpression left = visit(node.getChild(0));
       SoyExpression right = visit(node.getChild(1));
@@ -1159,11 +1152,6 @@ final class ExpressionCompiler {
         return doSimpleAnd(node);
       }
       return rewriteAsConditional(node);
-    }
-
-    @Override
-    protected SoyExpression visitOrOpNode(OrOpNode node) {
-      return doSimpleOr(node);
     }
 
     private SoyExpression doSimpleOr(AbstractOperatorNode node) {

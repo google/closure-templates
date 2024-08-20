@@ -33,7 +33,6 @@ import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
-import com.google.template.soy.exprtree.AbstractOperatorNode;
 import com.google.template.soy.exprtree.BooleanNode;
 import com.google.template.soy.exprtree.DataAccessNode;
 import com.google.template.soy.exprtree.ExprEquivalence;
@@ -52,13 +51,11 @@ import com.google.template.soy.exprtree.MapLiteralNode;
 import com.google.template.soy.exprtree.MethodCallNode;
 import com.google.template.soy.exprtree.NullSafeAccessNode;
 import com.google.template.soy.exprtree.OperatorNodes.AmpAmpOpNode;
-import com.google.template.soy.exprtree.OperatorNodes.AndOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.AsOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.BarBarOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ConditionalOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.InstanceOfOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
-import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
 import com.google.template.soy.exprtree.RecordLiteralNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.UndefinedNode;
@@ -127,16 +124,7 @@ final class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
   // Implementations for operators.
 
   @Override
-  protected void visitAndOpNode(AndOpNode node) {
-    processAnd(node, /* booleanCoerce= */ true);
-  }
-
-  @Override
   protected void visitAmpAmpOpNode(AmpAmpOpNode node) {
-    processAnd(node, /* booleanCoerce= */ false);
-  }
-
-  private void processAnd(AbstractOperatorNode node, boolean booleanCoerce) {
     // Recurse.
     visitChildren(node);
 
@@ -144,26 +132,12 @@ final class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
     SoyValue operand0 = getConstantOrNull(node.getChild(0));
     if (operand0 != null) {
       ExprNode replacementNode = operand0.coerceToBoolean() ? node.getChild(1) : node.getChild(0);
-      node.getParent()
-          .replaceChild(
-              node,
-              booleanCoerce && replacementNode.getType().getKind() != SoyType.Kind.BOOL
-                  ? booleanCoerce(replacementNode)
-                  : replacementNode);
+      node.getParent().replaceChild(node, replacementNode);
     }
   }
 
   @Override
-  protected void visitOrOpNode(OrOpNode node) {
-    processOr(node, /* booleanCoerce= */ true);
-  }
-
-  @Override
   protected void visitBarBarOpNode(BarBarOpNode node) {
-    processOr(node, /* booleanCoerce= */ false);
-  }
-
-  private void processOr(AbstractOperatorNode node, boolean booleanCoerce) {
     // Recurse.
     visitChildren(node);
 
@@ -171,12 +145,7 @@ final class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
     SoyValue operand0 = getConstantOrNull(node.getChild(0));
     if (operand0 != null) {
       ExprNode replacementNode = operand0.coerceToBoolean() ? node.getChild(0) : node.getChild(1);
-      node.getParent()
-          .replaceChild(
-              node,
-              booleanCoerce && replacementNode.getType().getKind() != SoyType.Kind.BOOL
-                  ? booleanCoerce(replacementNode)
-                  : replacementNode);
+      node.getParent().replaceChild(node, replacementNode);
     }
   }
 

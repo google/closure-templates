@@ -738,7 +738,7 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
             + ".is_msg_available("
             + fallbackMsgId
             + ")",
-        PyExprUtils.pyPrecedenceForOperator(Operator.OR));
+        PyExprUtils.pyPrecedenceForOperator(Operator.BAR_BAR));
   }
 
   /**
