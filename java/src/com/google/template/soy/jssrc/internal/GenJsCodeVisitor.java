@@ -43,6 +43,7 @@ import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_GET_DELTEMPLA
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_MAKE_EMPTY_TEMPLATE_FN;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_REGISTER_DELEGATE_FN;
 import static com.google.template.soy.jssrc.internal.JsRuntime.sanitizedContentOrdainerFunction;
+import static com.google.template.soy.jssrc.internal.JsType.matchNullishToBang;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
@@ -710,12 +711,11 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
           // For every member, define a prototype property of the @record. The type of the property
           // points back to the member @typedef.
           SoyType indexedPropType = IndexedType.create(thisNamedType, recordMember.name());
-          String memberSymbol = topLevelName(node, true, memberTypedefName);
-          if (!SoyTypes.isNullish(checkedType)) {
-            // JSC gets confused by ! when it references a @typedef. The ! needs to match whether
-            // the source typedef is `|null` or `|undefined`.
-            memberSymbol = "!" + memberSymbol;
-          }
+          // JSC gets confused by ! when it references a @typedef. The ! needs to match whether
+          // the source typedef is `|null` or `|undefined`.
+          String memberSymbol =
+              matchNullishToBang(
+                  topLevelName(node, true, memberTypedefName), SoyTypes.isNullish(checkedType));
           jsTypeRegistry.addTypeMap(indexedPropType, JsType.localTypedef(memberSymbol));
           JsType indexedPropJsType = getJsTypeForParam(indexedPropType);
           JsDoc memberDoc =

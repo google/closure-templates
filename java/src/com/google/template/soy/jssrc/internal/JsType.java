@@ -641,11 +641,11 @@ public final class JsType implements CodeChunk.HasRequires {
                 RecordType.Member recMember =
                     ((RecordType) component).getMember(indexedType.getProperty());
                 if (recMember != null) {
-                  String prefix = SoyTypes.isNullish(recMember.checkedType()) ? "" : "!";
                   type =
-                      prefix
-                          + IndexedType.jsSynthenticTypeDefName(
-                              forRecursion.get(namedMember).typeExpr(), indexedType.getProperty());
+                      matchNullishToBang(
+                          IndexedType.jsSynthenticTypeDefName(
+                              forRecursion.get(namedMember).typeExpr(), indexedType.getProperty()),
+                          SoyTypes.isNullish(recMember.checkedType()));
                   break WHILE;
                 }
               }
@@ -679,6 +679,19 @@ public final class JsType implements CodeChunk.HasRequires {
       arrayTypeMode = oldMode;
       return rv;
     }
+  }
+
+  static String matchNullishToBang(String type, boolean nullish) {
+    if (nullish) {
+      if (type.startsWith("!")) {
+        return type.substring(1);
+      }
+    } else {
+      if (!type.startsWith("!")) {
+        return "!" + type;
+      }
+    }
+    return type;
   }
 
   public static String toRecord(Map<String, String> record) {
