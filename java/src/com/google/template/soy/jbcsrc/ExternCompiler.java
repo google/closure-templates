@@ -435,7 +435,7 @@ public final class ExternCompiler {
     } else if (externType.equals(BytecodeUtils.OBJECT.type())
         || externType.equals(BytecodeUtils.NUMBER_TYPE)) {
       checkState(soyReturnType.getKind() != SoyType.Kind.MAP);
-      return JbcSrcExternRuntime.CONVERT_OBJECT_TO_SOY_VALUE_PROVIDER.invoke(externCall);
+      return JbcSrcExternRuntime.CONVERT_OBJECT_TO_SOY_VALUE.invoke(externCall);
     } else if (BytecodeUtils.isDefinitelyAssignableFrom(BytecodeUtils.MAP_TYPE, externType)) {
       // When Soy sees a map, it defaults to thinking it's a legacy_object_map, which only allow
       // string keys. We know that's not the case here (because the Soy return type of the extern
@@ -443,7 +443,7 @@ public final class ExternCompiler {
       if (soyReturnType.getKind() == SoyType.Kind.MAP) {
         externCall = JbcSrcExternRuntime.MARK_AS_SOY_MAP.invoke(externCall);
       }
-      return JbcSrcExternRuntime.CONVERT_OBJECT_TO_SOY_VALUE_PROVIDER.invoke(externCall);
+      return JbcSrcExternRuntime.CONVERT_OBJECT_TO_SOY_VALUE.invoke(externCall);
     } else if (BytecodeUtils.isDefinitelyAssignableFrom(
         BytecodeUtils.COLLECTION_TYPE, externType)) {
       return JbcSrcExternRuntime.LIST_BOX_VALUES.invoke(externCall);
@@ -474,7 +474,7 @@ public final class ExternCompiler {
         // do that first if needed.
         externCall = BytecodeUtils.boxJavaPrimitive(externCall.resultType(), externCall);
       }
-      return JbcSrcExternRuntime.CONVERT_OBJECT_TO_SOY_VALUE_PROVIDER.invoke(externCall);
+      return JbcSrcExternRuntime.CONVERT_OBJECT_TO_SOY_VALUE.invoke(externCall);
     }
     return externCall;
   }
