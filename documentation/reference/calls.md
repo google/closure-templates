@@ -314,7 +314,7 @@ call a template in a different file, you must
 using the usual syntax:
 
 ```soy
-import {button, dialog} from 'path/to/soy/file/foo.soy'
+import {button, dialog} from 'path/to/soy/file/foo.soy';
 
 {template myTemplate}
   {call button /}
@@ -328,7 +328,7 @@ In case of naming collisions, or if the imported template name is unclear from a
 readability perspective (e.g. "content"), you can alias the imported template:
 
 ```soy
-import {content as hotelReviewContent} from 'path/to/soy/file/bar.soy'
+import {content as hotelReviewContent} from 'path/to/soy/file/bar.soy';
 
 {template myTemplate}
   {call hotelReviewContent /}
