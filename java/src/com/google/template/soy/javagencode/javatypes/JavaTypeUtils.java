@@ -139,7 +139,7 @@ public final class JavaTypeUtils {
       case INTERSECTION:
       case NAMED:
       case INDEXED:
-        return getJavaTypes(soyType.getEffectiveType());
+        return getJavaTypes(soyType.getEffectiveType(), skipSoyTypes);
       case ANY:
       case UNKNOWN:
         // The Soy type system assumes any and ? include null and does not expand param? of these
