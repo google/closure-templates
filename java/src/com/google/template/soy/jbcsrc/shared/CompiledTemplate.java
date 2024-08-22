@@ -24,7 +24,7 @@ import javax.annotation.Nullable;
 
 /** A compiled Soy template. Each instance is suitable for being rendered exactly once. */
 @Immutable
-public interface CompiledTemplate {
+public abstract class CompiledTemplate {
 
   /**
    * Renders the template.
@@ -39,7 +39,7 @@ public interface CompiledTemplate {
    *     rendering cannot be continued.
    */
   @Nullable
-  StackFrame render(
+  public abstract StackFrame render(
       @Nullable StackFrame frame,
       ParamStore params,
       LoggingAdvisingAppendable appendable,

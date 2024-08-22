@@ -50,8 +50,8 @@ public final class CompiledTemplateMetaFactory {
           RenderContext.class);
   private static final MethodType FACTORY_TYPE = methodType(CompiledTemplate.class);
 
-  private static final String[] COMPILED_TEMPLATE =
-      new String[] {Type.getType(CompiledTemplate.class).getInternalName()};
+  private static final String COMPILED_TEMPLATE =
+      Type.getType(CompiledTemplate.class).getInternalName();
   private static final String CONSTRUCTOR_DESCRIPTOR =
       methodType(void.class).toMethodDescriptorString();
   private static final Type CONTENT_KIND_TYPE = Type.getType(SanitizedContent.ContentKind.class);
@@ -90,8 +90,8 @@ public final class CompiledTemplateMetaFactory {
         Opcodes.ACC_SUPER + Opcodes.ACC_FINAL + Opcodes.ACC_SYNTHETIC,
         generatedClassInternalName,
         /* signature= */ null,
-        /* superName= */ JAVA_LANG_OBJECT,
-        /* interfaces= */ COMPILED_TEMPLATE);
+        /* superName= */ COMPILED_TEMPLATE,
+        /* interfaces= */ null);
 
     {
       MethodVisitor constructor =
@@ -105,7 +105,7 @@ public final class CompiledTemplateMetaFactory {
       constructor.visitVarInsn(Opcodes.ALOAD, 0); // this
       constructor.visitMethodInsn(
           Opcodes.INVOKESPECIAL,
-          JAVA_LANG_OBJECT,
+          COMPILED_TEMPLATE,
           "<init>",
           CONSTRUCTOR_DESCRIPTOR,
           /* isInterface= */ false);

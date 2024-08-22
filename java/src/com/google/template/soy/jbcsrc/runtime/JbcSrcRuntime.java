@@ -642,7 +642,7 @@ public final class JbcSrcRuntime {
 
   /** Wraps a compiled template with a buffer. */
   @Immutable
-  private static final class BufferedCompiledTemplate implements CompiledTemplate {
+  private static final class BufferedCompiledTemplate extends CompiledTemplate {
     private final CompiledTemplate delegate;
 
     private final boolean ignoreExceptions;
@@ -807,7 +807,7 @@ public final class JbcSrcRuntime {
   }
 
   @Immutable
-  private static final class BoundTemplate implements CompiledTemplate {
+  private static final class BoundTemplate extends CompiledTemplate {
     static class SaveRestoreState {
       static final MethodHandle SAVE_STATE_METHOD_HANDLE;
       static final MethodHandle RESTORE_TEMPLATE_HANDLE;
