@@ -21,6 +21,7 @@ import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.internal.proto.ProtoUtils;
+import com.google.template.soy.jbcsrc.api.RenderResult;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
@@ -31,16 +32,18 @@ import javax.annotation.ParametersAreNonnullByDefault;
 
 /** Superinterface of all Soy value interfaces/classes. */
 @ParametersAreNonnullByDefault
-public interface SoyValue extends SoyValueProvider {
+public abstract class SoyValue implements SoyValueProvider {
 
   /** Convenience method for testing nullishness. */
-  static boolean isNullish(@Nullable SoyValue value) {
-    return value == null || value.isNullish();
+  @SuppressWarnings("ReferenceEquality") // This is safe since we own the definition of nullish
+  public static boolean isNullish(@Nullable SoyValue value) {
+    return value == null || value == UndefinedData.INSTANCE || value == NullData.INSTANCE;
   }
 
   /** If this is Soy null or Soy undefined. */
-  default boolean isNullish() {
-    return isNull() || isUndefined();
+  @SuppressWarnings("ReferenceEquality") // This is safe since we own the definition of nullish
+  public final boolean isNullish() {
+    return this == UndefinedData.INSTANCE || this == NullData.INSTANCE;
   }
 
   /**
@@ -50,28 +53,34 @@ public interface SoyValue extends SoyValueProvider {
    * @return True if this value is equal to the other in the sense of Soy.
    */
   @Override
-  boolean equals(Object other);
+  public abstract boolean equals(Object other);
+
+  // Force subtypes to implement hashCode
+  @Override
+  public abstract int hashCode();
 
   /**
    * Coerces this value into a boolean.
    *
    * @return This value coerced into a boolean.
    */
-  boolean coerceToBoolean();
+  public abstract boolean coerceToBoolean();
 
   /**
    * Coerces this value into a string.
    *
    * @return This value coerced into a string.
    */
-  String coerceToString();
+  public abstract String coerceToString();
 
   /**
    * Performs a Java number to `long` coercion on the wrapped value. Compared with {@link
    * #longValue()} this method is expected to succeed for any {@link
    * com.google.template.soy.data.restricted.NumberData}.
    */
-  long coerceToLong();
+  public long coerceToLong() {
+    throw new SoyDataException("'" + this + "' cannot be coerced to long");
+  }
 
   /**
    * Returns whether this value is truthy. For SanitizedContent, this checks if the content is
@@ -79,7 +88,7 @@ public interface SoyValue extends SoyValueProvider {
    *
    * @return This value coerced into a boolean.
    */
-  default boolean isTruthyNonEmpty() {
+  public boolean isTruthyNonEmpty() {
     return coerceToBoolean();
   }
 
@@ -89,7 +98,7 @@ public interface SoyValue extends SoyValueProvider {
    *
    * @return This value coerced into a boolean.
    */
-  default boolean hasContent() {
+  public boolean hasContent() {
     return coerceToBoolean();
   }
 
@@ -102,7 +111,7 @@ public interface SoyValue extends SoyValueProvider {
    * @param appendable The appendable to render to.
    * @throws IOException
    */
-  void render(LoggingAdvisingAppendable appendable) throws IOException;
+  public abstract void render(LoggingAdvisingAppendable appendable) throws IOException;
 
   // -----------------------------------------------------------------------------------------------
   // Convenience methods for retrieving a known primitive type.
@@ -114,7 +123,9 @@ public interface SoyValue extends SoyValueProvider {
    * @return The boolean value of this boolean object.
    * @throws SoyDataException If this object is not actually a boolean.
    */
-  boolean booleanValue();
+  public boolean booleanValue() {
+    throw new SoyDataException(classCastErrorMessage(this, "bool"));
+  }
 
   /**
    * Precondition: Only call this method if you know that this SoyValue object is a 32-bit integer.
@@ -123,7 +134,9 @@ public interface SoyValue extends SoyValueProvider {
    * @return The integer value of this integer object.
    * @throws SoyDataException If this object is not actually an integer.
    */
-  int integerValue();
+  public int integerValue() {
+    throw new SoyDataException(classCastErrorMessage(this, "int"));
+  }
 
   /**
    * Precondition: Only call this method if you know that this SoyValue object is an integer or
@@ -132,7 +145,9 @@ public interface SoyValue extends SoyValueProvider {
    * @return The integer value of this integer object.
    * @throws SoyDataException If this object is not actually an integer.
    */
-  long longValue();
+  public long longValue() {
+    throw new SoyDataException(classCastErrorMessage(this, "long"));
+  }
 
   /**
    * Precondition: Only call this method if you know that this SoyValue object is a float. This
@@ -141,7 +156,9 @@ public interface SoyValue extends SoyValueProvider {
    * @return The float value of this float object.
    * @throws SoyDataException If this object is not actually a float.
    */
-  double floatValue();
+  public double floatValue() {
+    throw new SoyDataException(classCastErrorMessage(this, "float"));
+  }
 
   /**
    * Precondition: Only call this method if you know that this SoyValue object is a number. This
@@ -150,7 +167,9 @@ public interface SoyValue extends SoyValueProvider {
    * @return The float value of this number object.
    * @throws SoyDataException If this object is not actually a number.
    */
-  double numberValue();
+  public double numberValue() {
+    throw new SoyDataException(classCastErrorMessage(this, "number"));
+  }
 
   /**
    * Precondition: Only call this method if you know that this SoyValue object is a string. This
@@ -160,66 +179,69 @@ public interface SoyValue extends SoyValueProvider {
    * @throws SoyDataException If this object is not actually a string.
    */
   @Nonnull
-  String stringValue();
+  public String stringValue() {
+    throw new SoyDataException(classCastErrorMessage(this, "string"));
+  }
 
   /** Returns null is this value is nullish, otherwise {@link #stringValue()}. */
   @Nullable
-  default String stringValueOrNull() {
+  public final String stringValueOrNull() {
     return isNullish() ? null : stringValue();
   }
 
   /** If this is Soy null (NullData). */
-  default boolean isNull() {
+  public final boolean isNull() {
     return this == NullData.INSTANCE;
   }
 
   /** If this is Soy undefined (UndefinedData). */
-  default boolean isUndefined() {
+  public final boolean isUndefined() {
     return this == UndefinedData.INSTANCE;
   }
 
   /** Returns this value, coalescing UndefinedData to NullData. */
-  default SoyValue nullishToNull() {
+  public final SoyValue nullishToNull() {
     return this == UndefinedData.INSTANCE ? NullData.INSTANCE : this;
   }
 
   /** Returns this value, coalescing NullData to UndefinedData. */
-  default SoyValue nullishToUndefined() {
+  public final SoyValue nullishToUndefined() {
     return this == NullData.INSTANCE ? UndefinedData.INSTANCE : this;
   }
 
   @Nonnull
-  default Message getProto() {
+  public Message getProto() {
     throw new SoyDataException(classCastErrorMessage(this, "Message"));
   }
 
   /** Returns null is this value is nullish, otherwise {@link #getProto()}. */
   @Nullable
-  default Message getProtoOrNull() {
+  public final Message getProtoOrNull() {
     return isNullish() ? null : getProto();
   }
 
   @Nonnull
-  default List<? extends SoyValueProvider> asJavaList() {
+  public List<? extends SoyValueProvider> asJavaList() {
     throw new SoyDataException(classCastErrorMessage(this, "list"));
   }
 
   @Nullable
-  default List<? extends SoyValueProvider> asJavaListOrNull() {
+  public final List<? extends SoyValueProvider> asJavaListOrNull() {
     return isNullish() ? null : asJavaList();
   }
 
   @Nonnull
-  default Iterator<? extends SoyValueProvider> javaIterator() {
+  public Iterator<? extends SoyValueProvider> javaIterator() {
     return asJavaList().iterator();
   }
 
   @Nonnull
-  default Map<? extends SoyValue, ? extends SoyValueProvider> asJavaMap() {
+  public Map<? extends SoyValue, ? extends SoyValueProvider> asJavaMap() {
     throw new SoyDataException(classCastErrorMessage(this, "map"));
   }
 
-  default SoyRecord asSoyRecord() {
+  @Nonnull
+  public SoyRecord asSoyRecord() {
     throw new ClassCastException(classCastErrorMessage(this, "record"));
   }
 
@@ -229,32 +251,32 @@ public interface SoyValue extends SoyValueProvider {
    * @throws ClassCastException if this value is not null, undefined, or an instance of {@code
    *     type}.
    */
-  default SoyValue checkNullishType(Class<? extends SoyValue> type) {
+  public SoyValue checkNullishType(Class<? extends SoyValue> type) {
     return type.cast(this);
   }
 
   /** A runtime type check for this boxed Soy value. */
-  default SoyValue checkNullishInt() {
+  public SoyValue checkNullishInt() {
     throw new ClassCastException(classCastErrorMessage(this, "int"));
   }
 
   /** A runtime type check for this boxed Soy value. */
-  default SoyValue checkNullishFloat() {
+  public SoyValue checkNullishFloat() {
     throw new ClassCastException(classCastErrorMessage(this, "float"));
   }
 
   /** A runtime type check for this boxed Soy value. */
-  default SoyValue checkNullishNumber() {
+  public SoyValue checkNullishNumber() {
     throw new ClassCastException(classCastErrorMessage(this, "number"));
   }
 
   /** A runtime type check for this boxed Soy value. */
-  default SoyValue checkNullishBoolean() {
+  public SoyValue checkNullishBoolean() {
     throw new ClassCastException(classCastErrorMessage(this, "bool"));
   }
 
   /** A runtime type check for this boxed Soy value. */
-  default SoyValue checkNullishString() {
+  public SoyValue checkNullishString() {
     throw new ClassCastException(classCastErrorMessage(this, "string"));
   }
 
@@ -264,7 +286,7 @@ public interface SoyValue extends SoyValueProvider {
    * @throws ClassCastException if this value is not null, undefined, or an instance of {@link
    *     SanitizedContent} whose content kind is equal to {@code contentKind}.
    */
-  default SoyValue checkNullishSanitizedContent(ContentKind contentKind) {
+  public SoyValue checkNullishSanitizedContent(ContentKind contentKind) {
     throw new ClassCastException(classCastErrorMessage(this, contentKind.getSoyTypeName()));
   }
 
@@ -274,18 +296,18 @@ public interface SoyValue extends SoyValueProvider {
    * @throws ClassCastException if this value is not null, undefined, or an instance of {@link
    *     SoyProtoValue} whose unboxed proto is an instance of {@code messageType}.
    */
-  default SoyValue checkNullishProto(Class<? extends Message> messageType) {
+  public SoyValue checkNullishProto(Class<? extends Message> messageType) {
     throw new ClassCastException(
         classCastErrorMessage(this, ProtoUtils.getProtoTypeName(messageType)));
   }
 
   /** Returns true if this value is a sanitized content with kind equal to `contentKind`. */
-  default boolean isSanitizedContentKind(ContentKind contentKind) {
+  public boolean isSanitizedContentKind(ContentKind contentKind) {
     return false;
   }
 
   /** Returns true if this value is a proto of type `messageType`. */
-  default boolean isProtoInstance(Class<? extends Message> messageType) {
+  public boolean isProtoInstance(Class<? extends Message> messageType) {
     return false;
   }
 
@@ -293,7 +315,27 @@ public interface SoyValue extends SoyValueProvider {
    * Returns a human-readable string representation of the Soy type contained by this value, for use
    * in error messages.
    */
-  String getSoyTypeName();
+  public abstract String getSoyTypeName();
+
+  // SoyValueProvider methods
+  @Override
+  @Nonnull
+  public final SoyValue resolve() {
+    return this;
+  }
+
+  @Override
+  @Nonnull
+  public final RenderResult status() {
+    return RenderResult.done();
+  }
+
+  @Override
+  public final RenderResult renderAndResolve(LoggingAdvisingAppendable appendable)
+      throws IOException {
+    render(appendable);
+    return RenderResult.done();
+  }
 
   private static String classCastErrorMessage(SoyValue value, String requiredSoyType) {
     return String.format("expected %s, got %s", requiredSoyType, value.getSoyTypeName());

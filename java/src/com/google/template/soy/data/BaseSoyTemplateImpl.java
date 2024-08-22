@@ -287,7 +287,7 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
     /**
      * Used in code generated for Soy record types. The parameters are interleaved key-value pairs.
      */
-    protected static SoyRecord asRecord(
+    protected static SoyRecordImpl asRecord(
         String firstKey, SoyValueProvider firstValue, Object... more) {
       checkArgument((more.length % 2) == 0);
       ParamStore map = new ParamStore(1 + more.length / 2);
@@ -426,7 +426,7 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
       return css == null ? NullData.INSTANCE : asCss(css);
     }
 
-    protected static <K, V> SoyMap asMap(
+    protected static <K, V> SoyMapImpl asMap(
         Map<K, V> map,
         Function<? super K, ? extends SoyValue> keyMapper,
         Function<? super V, ? extends SoyValueProvider> valueMapper) {
@@ -443,7 +443,7 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
       return map == null ? NullData.INSTANCE : asMap(map, keyMapper, valueMapper);
     }
 
-    protected static <V> SoyLegacyObjectMap asLegacyObjectMap(
+    protected static <V> SoyLegacyObjectMapImpl asLegacyObjectMap(
         Map<?, V> map, Function<? super V, ? extends SoyValueProvider> valueMapper) {
       ImmutableMap.Builder<String, SoyValueProvider> builder =
           ImmutableMap.builderWithExpectedSize(map.size());
@@ -468,9 +468,7 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
       return TemplateValue.createFromTemplate(template);
     }
 
-    /**
-     * @param checkRequired Whether or not to enforce that all required parameters are set. =
-     */
+    /** Throws if not required parameters are set. */
     private void checkAllRequiredParamsProvided() {
       if (numRequiredParamsRemaining > 0) {
         throw new IllegalStateException(

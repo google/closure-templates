@@ -59,7 +59,10 @@ public final class ParamStore extends IdentityHashMap<RecordProperty, SoyValuePr
   }
 
   public static ParamStore fromRecord(SoyValue value) {
-    SoyRecord record = value.asSoyRecord();
+    return fromRecord(value.asSoyRecord());
+  }
+
+  public static ParamStore fromRecord(SoyRecord record) {
     if (record instanceof SoyRecordImpl) {
       return ((SoyRecordImpl) record).getParamStore();
     }

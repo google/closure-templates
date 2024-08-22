@@ -16,8 +16,14 @@
 
 package com.google.template.soy.data;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
+import com.google.template.soy.data.restricted.IntegerData;
+import com.google.template.soy.data.restricted.StringData;
+import java.io.IOException;
 import java.util.List;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 
 /**
@@ -27,14 +33,14 @@ import javax.annotation.ParametersAreNonnullByDefault;
  * the form of IntegerData.
  */
 @ParametersAreNonnullByDefault
-public interface SoyList extends SoyLegacyObjectMap, SoyIterable {
+public abstract class SoyList extends SoyIterable {
 
   /**
    * Gets the length of this SoyList.
    *
    * @return The length.
    */
-  int length();
+  public abstract int length();
 
   /**
    * Gets a Java list of all value providers in this SoyList. Note that value providers are often
@@ -44,7 +50,7 @@ public interface SoyList extends SoyLegacyObjectMap, SoyIterable {
    */
   @Nonnull
   @Override
-  List<? extends SoyValueProvider> asJavaList();
+  public abstract List<? extends SoyValueProvider> asJavaList();
 
   /**
    * Gets a Java list all values in this SoyList. All value providers will be eagerly resolved.
@@ -52,7 +58,9 @@ public interface SoyList extends SoyLegacyObjectMap, SoyIterable {
    * @return A Java list of all resolved values.
    */
   @Nonnull
-  List<? extends SoyValue> asResolvedJavaList();
+  public List<? extends SoyValue> asResolvedJavaList() {
+    return Lists.transform(asJavaList(), SoyValueProvider::resolve);
+  }
 
   /**
    * Gets a value of this SoyList.
@@ -60,7 +68,11 @@ public interface SoyList extends SoyLegacyObjectMap, SoyIterable {
    * @param index The index to get.
    * @return The value for the given index, or null if no such index.
    */
-  SoyValue get(int index);
+  @Nullable
+  public SoyValue get(int index) {
+    SoyValueProvider valueProvider = getProvider(index);
+    return (valueProvider != null) ? valueProvider.resolve() : null;
+  }
 
   /**
    * Gets a provider of a value of this SoyList.
@@ -68,5 +80,102 @@ public interface SoyList extends SoyLegacyObjectMap, SoyIterable {
    * @param index The index to get.
    * @return A provider of the value for the given index, or null if no such index.
    */
-  SoyValueProvider getProvider(int index);
+  public abstract SoyValueProvider getProvider(int index);
+
+  // -----------------------------------------------------------------------------------------------
+  // SoyLegacyObjectMap methods
+
+  @Override
+  public final int getItemCnt() {
+    return length();
+  }
+
+  @Override
+  @Nonnull
+  public final ImmutableList<IntegerData> getItemKeys() {
+    ImmutableList.Builder<IntegerData> indicesBuilder = ImmutableList.builder();
+    for (int i = 0, n = length(); i < n; i++) {
+      indicesBuilder.add(IntegerData.forValue(i));
+    }
+    return indicesBuilder.build();
+  }
+
+  @Override
+  public final boolean hasItem(SoyValue key) {
+    int index = getIntegerIndex(key);
+    return 0 <= index && index < length();
+  }
+
+  @Override
+  public final SoyValue getItem(SoyValue key) {
+    return get(getIntegerIndex(key));
+  }
+
+  @Override
+  public final SoyValueProvider getItemProvider(SoyValue key) {
+    return getProvider(getIntegerIndex(key));
+  }
+
+  /**
+   * Gets the integer index out of a SoyValue key, or throws SoyDataException if the key is not an
+   * integer.
+   *
+   * @param key The SoyValue key.
+   * @return The index.
+   */
+  private static int getIntegerIndex(SoyValue key) {
+    if (key instanceof StringData) {
+      try {
+        // TODO(gboyer): Remove this case as non-compliant code is fixed. However, since this works
+        // in Javascript, it is particularly difficult to fix callers.  (internal) b/11416037
+        return Integer.parseInt(key.stringValue());
+      } catch (IllegalArgumentException e) {
+        throw new SoyDataException("\"" + key + "\" is not a valid list index (must be an int)", e);
+      }
+    } else {
+      return key.integerValue();
+    }
+  }
+
+  // -----------------------------------------------------------------------------------------------
+  // SoyValue methods
+
+  @Override
+  public final String coerceToString() {
+
+    LoggingAdvisingAppendable listStr = LoggingAdvisingAppendable.buffering();
+    try {
+      render(listStr);
+    } catch (IOException e) {
+      throw new AssertionError(e); // impossible
+    }
+    return listStr.toString();
+  }
+
+  @Override
+  public final void render(LoggingAdvisingAppendable appendable) throws IOException {
+    appendable.append('[');
+
+    boolean isFirst = true;
+    for (SoyValueProvider valueProvider : asJavaList()) {
+      if (isFirst) {
+        isFirst = false;
+      } else {
+        appendable.append(", ");
+      }
+      valueProvider.resolve().render(appendable);
+    }
+
+    appendable.append(']');
+  }
+
+  @Override
+  public final String toString() {
+    return coerceToString();
+  }
+
+  @Override
+  public final String getSoyTypeName() {
+    return "list";
+  }
 }

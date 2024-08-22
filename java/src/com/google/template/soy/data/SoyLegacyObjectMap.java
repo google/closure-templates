@@ -16,6 +16,7 @@
 
 package com.google.template.soy.data;
 
+import com.google.common.collect.ImmutableList;
 import javax.annotation.ParametersAreNonnullByDefault;
 
 /**
@@ -28,14 +29,16 @@ import javax.annotation.ParametersAreNonnullByDefault;
  */
 @Deprecated
 @ParametersAreNonnullByDefault
-public interface SoyLegacyObjectMap extends SoyValue {
+public abstract class SoyLegacyObjectMap extends SoyValue {
 
   /**
    * Gets the number of items in this SoyMap.
    *
    * @return The number of items.
    */
-  int getItemCnt();
+  public int getItemCnt() {
+    return 0;
+  }
 
   /**
    * Gets an iterable over all item keys in this SoyMap.
@@ -44,7 +47,9 @@ public interface SoyLegacyObjectMap extends SoyValue {
    *
    * @return An iterable over all item keys.
    */
-  Iterable<? extends SoyValue> getItemKeys();
+  public Iterable<? extends SoyValue> getItemKeys() {
+    return ImmutableList.of();
+  }
 
   /**
    * Checks whether this SoyMap has an item with the given key.
@@ -52,7 +57,9 @@ public interface SoyLegacyObjectMap extends SoyValue {
    * @param key The item key to check.
    * @return Whether this SoyMap has an item with the given key.
    */
-  boolean hasItem(SoyValue key);
+  public boolean hasItem(SoyValue key) {
+    return false;
+  }
 
   /**
    * Gets an item value of this SoyMap.
@@ -60,7 +67,9 @@ public interface SoyLegacyObjectMap extends SoyValue {
    * @param key The item key to get.
    * @return The item value for the given item key, or null if no such item key.
    */
-  SoyValue getItem(SoyValue key);
+  public SoyValue getItem(SoyValue key) {
+    return null;
+  }
 
   /**
    * Gets a provider of an item value of this SoyMap.
@@ -68,5 +77,12 @@ public interface SoyLegacyObjectMap extends SoyValue {
    * @param key The item key to get.
    * @return A provider of the item value for the given item key, or null if no such item key.
    */
-  SoyValueProvider getItemProvider(SoyValue key);
+  public SoyValueProvider getItemProvider(SoyValue key) {
+    return null;
+  }
+
+  @Override
+  public final boolean coerceToBoolean() {
+    return true;
+  }
 }

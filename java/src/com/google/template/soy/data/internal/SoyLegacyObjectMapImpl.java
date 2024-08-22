@@ -20,7 +20,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
-import com.google.template.soy.data.SoyAbstractValue;
 import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.data.SoyLegacyObjectMap;
 import com.google.template.soy.data.SoyValue;
@@ -34,7 +33,7 @@ import java.util.Map;
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  */
-public final class SoyLegacyObjectMapImpl extends SoyAbstractValue implements SoyLegacyObjectMap {
+public final class SoyLegacyObjectMapImpl extends SoyLegacyObjectMap {
   private final ImmutableMap<String, SoyValueProvider> map;
 
   public SoyLegacyObjectMapImpl(ImmutableMap<String, SoyValueProvider> map) {
@@ -67,10 +66,6 @@ public final class SoyLegacyObjectMapImpl extends SoyAbstractValue implements So
     return map.get(getStringKey(key));
   }
 
-  @Override
-  public boolean coerceToBoolean() {
-    return true;
-  }
 
   @Override
   public String coerceToString() {

@@ -22,7 +22,7 @@ import java.io.IOException;
 
 /** Soy's runtime representation of objects of the Soy {@code ve} type. */
 @AutoValue
-public abstract class SoyVisualElement extends SoyAbstractValue {
+public abstract class SoyVisualElement extends SoyValue {
 
   private static final LoggableElementMetadata EMPTY_METADATA =
       LoggableElementMetadata.getDefaultInstance();

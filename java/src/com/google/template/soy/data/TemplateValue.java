@@ -22,7 +22,7 @@ import javax.annotation.Nonnull;
 
 /** Runtime type for templates. */
 @AutoValue
-public abstract class TemplateValue extends SoyAbstractValue {
+public abstract class TemplateValue extends SoyValue {
   @Nonnull
   public static TemplateValue create(String templateName) {
     return createWithBoundParameters(templateName, ParamStore.EMPTY_INSTANCE);

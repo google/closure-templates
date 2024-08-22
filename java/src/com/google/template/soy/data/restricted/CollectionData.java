@@ -17,7 +17,6 @@
 package com.google.template.soy.data.restricted;
 
 import com.google.common.collect.Lists;
-import com.google.template.soy.data.SoyAbstractValue;
 import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.data.SoyListData;
 import com.google.template.soy.data.SoyMapData;
@@ -29,14 +28,18 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
 /**
- * Abstract superclass for a node in a Soy data tree that represents a collection of data (i.e. an
+ * Mixin interface for a node in a Soy data tree that represents a collection of data (i.e. an
  * internal node).
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  * <p>Important: Even though this class is not marked 'final', do not extend this class.
+ *
+ * @deprecated all uses of these methods should migrate to normal java collections and the
+ *     SoyValueConverter.
  */
-public abstract class CollectionData extends SoyAbstractValue {
+@Deprecated
+public interface CollectionData {
 
   /**
    * Creates SoyValue objects from standard Java data structures.
@@ -50,7 +53,7 @@ public abstract class CollectionData extends SoyAbstractValue {
    *     runtime and need SoyValue objects, use SoyValueConverter instead.
    */
   @Deprecated
-  protected static SoyValue createFromExistingData(Object obj) {
+  static SoyValue createFromExistingData(Object obj) {
     if (obj instanceof SoyValue) {
       return (SoyValue) obj;
     } else if (obj instanceof Map<?, ?>) {
@@ -86,7 +89,7 @@ public abstract class CollectionData extends SoyAbstractValue {
    * @throws SoyDataException When attempting to add an invalid varargs list or a mapping containing
    *     an invalid key.
    */
-  public void put(Object... data) {
+  public default void put(Object... data) {
 
     // TODO: Perhaps change to only convert varargs to Map, and do put(Map) elsewhere.
     if (data.length % 2 != 0) {
@@ -113,7 +116,7 @@ public abstract class CollectionData extends SoyAbstractValue {
    *     Indicates the path to the location within this data tree.
    * @param value The data to put at the specified location.
    */
-  public void put(String keyStr, SoyValue value) {
+  public default void put(String keyStr, SoyValue value) {
 
     List<String> keys = split(keyStr, '.');
     int numKeys = keys.size();
@@ -133,7 +136,7 @@ public abstract class CollectionData extends SoyAbstractValue {
         // first char is sufficient).
         nextCollectionData =
              Character.isDigit(keys.get(i + 1).charAt(0)) ? new SoyListData() : new SoyMapData();
-        collectionData.putSingle(keys.get(i), nextCollectionData);
+        collectionData.putSingle(keys.get(i), (SoyValue) nextCollectionData);
       }
       collectionData = nextCollectionData;
     }
@@ -148,7 +151,7 @@ public abstract class CollectionData extends SoyAbstractValue {
    *     Indicates the path to the location within this data tree.
    * @param value The data to put at the specified location.
    */
-  public void put(String keyStr, boolean value) {
+  public default void put(String keyStr, boolean value) {
     put(keyStr, BooleanData.forValue(value));
   }
 
@@ -159,7 +162,7 @@ public abstract class CollectionData extends SoyAbstractValue {
    *     Indicates the path to the location within this data tree.
    * @param value The data to put at the specified location.
    */
-  public void put(String keyStr, int value) {
+  public default void put(String keyStr, int value) {
     put(keyStr, IntegerData.forValue(value));
   }
 
@@ -170,7 +173,7 @@ public abstract class CollectionData extends SoyAbstractValue {
    *     Indicates the path to the location within this data tree.
    * @param value The data to put at the specified location.
    */
-  public void put(String keyStr, long value) {
+  public default void put(String keyStr, long value) {
     put(keyStr, IntegerData.forValue(value));
   }
 
@@ -181,7 +184,7 @@ public abstract class CollectionData extends SoyAbstractValue {
    *     Indicates the path to the location within this data tree.
    * @param value The data to put at the specified location.
    */
-  public void put(String keyStr, double value) {
+  public default void put(String keyStr, double value) {
     put(keyStr, FloatData.forValue(value));
   }
 
@@ -192,7 +195,7 @@ public abstract class CollectionData extends SoyAbstractValue {
    *     Indicates the path to the location within this data tree.
    * @param value The data to put at the specified location.
    */
-  public void put(String keyStr, String value) {
+  public default void put(String keyStr, String value) {
     put(keyStr, StringData.forValue(value));
   }
 
@@ -204,7 +207,7 @@ public abstract class CollectionData extends SoyAbstractValue {
    * @param keyStr One or more map keys and/or list indices (separated by '.' if multiple parts).
    *     Indicates the path to the location within this data tree.
    */
-  public void remove(String keyStr) {
+  public default void remove(String keyStr) {
 
     List<String> keys = split(keyStr, '.');
     int numKeys = keys.size();
@@ -230,7 +233,7 @@ public abstract class CollectionData extends SoyAbstractValue {
    *     Indicates the path to the location within this data tree.
    * @return The data at the specified key string, or null if there's no data at the location.
    */
-  public SoyValue get(String keyStr) {
+  public default SoyValue get(String keyStr) {
 
     List<String> keys = split(keyStr, '.');
     int numKeys = keys.size();
@@ -255,7 +258,7 @@ public abstract class CollectionData extends SoyAbstractValue {
    *     Indicates the path to the location within this data tree.
    * @return The SoyMapData at the specified key string, or null if no data is stored there.
    */
-  public SoyMapData getMapData(String keyStr) {
+  public default SoyMapData getMapData(String keyStr) {
     return (SoyMapData) get(keyStr);
   }
 
@@ -267,7 +270,7 @@ public abstract class CollectionData extends SoyAbstractValue {
    *     Indicates the path to the location within this data tree.
    * @return The SoyListData at the specified key string, or null if no data is stored there.
    */
-  public SoyListData getListData(String keyStr) {
+  public default SoyListData getListData(String keyStr) {
     return (SoyListData) get(keyStr);
   }
 
@@ -280,7 +283,7 @@ public abstract class CollectionData extends SoyAbstractValue {
    * @return The boolean at the specified key string.
    * @throws IllegalArgumentException If no data is stored at the specified key.
    */
-  public boolean getBoolean(String keyStr) {
+  public default boolean getBoolean(String keyStr) {
     SoyValue valueData = get(keyStr);
     if (valueData == null) {
       throw new IllegalArgumentException("Missing key: " + keyStr);
@@ -297,7 +300,7 @@ public abstract class CollectionData extends SoyAbstractValue {
    * @return The integer at the specified key string.
    * @throws IllegalArgumentException If no data is stored at the specified key.
    */
-  public int getInteger(String keyStr) {
+  public default int getInteger(String keyStr) {
     SoyValue valueData = get(keyStr);
     if (valueData == null) {
       throw new IllegalArgumentException("Missing key: " + keyStr);
@@ -314,7 +317,7 @@ public abstract class CollectionData extends SoyAbstractValue {
    * @return The long at the specified key string.
    * @throws IllegalArgumentException If no data is stored at the specified key.
    */
-  public long getLong(String keyStr) {
+  public default long getLong(String keyStr) {
     SoyValue valueData = get(keyStr);
     if (valueData == null) {
       throw new IllegalArgumentException("Missing key: " + keyStr);
@@ -331,7 +334,7 @@ public abstract class CollectionData extends SoyAbstractValue {
    * @return The float at the specified key string.
    * @throws IllegalArgumentException If no data is stored at the specified key.
    */
-  public double getFloat(String keyStr) {
+  public default double getFloat(String keyStr) {
     SoyValue valueData = get(keyStr);
     if (valueData == null) {
       throw new IllegalArgumentException("Missing key: " + keyStr);
@@ -348,7 +351,7 @@ public abstract class CollectionData extends SoyAbstractValue {
    * @return The string at the specified key string.
    * @throws IllegalArgumentException If no data is stored at the specified key.
    */
-  public String getString(String keyStr) {
+  public default String getString(String keyStr) {
     SoyValue valueData = get(keyStr);
     if (valueData == null) {
       throw new IllegalArgumentException("Missing key: " + keyStr);
@@ -367,7 +370,7 @@ public abstract class CollectionData extends SoyAbstractValue {
    * @param key An individual key.
    * @param value The data to put at the specified key.
    */
-  public abstract void putSingle(String key, SoyValue value);
+  public void putSingle(String key, SoyValue value);
 
   /**
    * Important: Do not use outside of Soy code (treat as superpackage-private).
@@ -376,7 +379,7 @@ public abstract class CollectionData extends SoyAbstractValue {
    *
    * @param key An individual key.
    */
-  public abstract void removeSingle(String key);
+  public void removeSingle(String key);
 
   /**
    * Important: Do not use outside of Soy code (treat as superpackage-private).
@@ -386,7 +389,7 @@ public abstract class CollectionData extends SoyAbstractValue {
    * @param key An individual key.
    * @return The data at the specified key, or null if the key is not defined.
    */
-  public abstract SoyValue getSingle(String key);
+  public SoyValue getSingle(String key);
 
   // -----------------------------------------------------------------------------------------------
   // Protected/private helpers.
@@ -398,7 +401,7 @@ public abstract class CollectionData extends SoyAbstractValue {
    * @param value The value to ensure validity for.
    * @return The given value if it's not null, or NullData if it is null.
    */
-  protected static SoyValue ensureValidValue(SoyValue value) {
+  static SoyValue ensureValidValue(SoyValue value) {
     return (value != null) ? value : NullData.INSTANCE;
   }
 

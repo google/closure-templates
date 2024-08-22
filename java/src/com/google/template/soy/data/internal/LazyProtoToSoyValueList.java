@@ -17,6 +17,7 @@
 package com.google.template.soy.data.internal;
 
 import com.google.template.soy.data.ProtoFieldInterpreter;
+import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
 import java.util.Arrays;
@@ -27,7 +28,7 @@ import javax.annotation.Nonnull;
  * A SoyList interface to a native Java List (from a proto) that lazily converts values to {@link
  * SoyValue}s as they're accessed.
  */
-public final class LazyProtoToSoyValueList<E> extends AbstractSoyList {
+public final class LazyProtoToSoyValueList<E> extends SoyList {
 
   private final List<E> rawValues;
   private final ProtoFieldInterpreter valueInterpreter;
@@ -88,5 +89,18 @@ public final class LazyProtoToSoyValueList<E> extends AbstractSoyList {
   @Override
   public SoyValueProvider getProvider(int index) {
     return get(index);
+  }
+
+  @Override
+  public int hashCode() {
+    return System.identityHashCode(rawValues);
+  }
+
+  @Override
+  public boolean equals(Object other) {
+    if (other instanceof LazyProtoToSoyValueList) {
+      return rawValues == ((LazyProtoToSoyValueList) other).rawValues;
+    }
+    return false;
   }
 }

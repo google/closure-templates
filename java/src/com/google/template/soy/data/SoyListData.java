@@ -16,14 +16,12 @@
 
 package com.google.template.soy.data;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.CollectionData;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.StringData;
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
@@ -39,7 +37,7 @@ import javax.annotation.Nonnull;
  *     over those APIs.
  */
 @Deprecated
-public final class SoyListData extends CollectionData implements Iterable<SoyValue>, SoyList {
+public final class SoyListData extends SoyList implements Iterable<SoyValue>, CollectionData {
   /** The underlying list. */
   private final List<SoyValue> list;
 
@@ -77,61 +75,6 @@ public final class SoyListData extends CollectionData implements Iterable<SoyVal
   }
 
   /**
-   * {@inheritDoc}
-   *
-   * <p>This method should only be used for debugging purposes.
-   */
-  @Override
-  public String toString() {
-    LoggingAdvisingAppendable sb = LoggingAdvisingAppendable.buffering();
-    try {
-      render(sb);
-    } catch (IOException e) {
-      throw new RuntimeException(e); // impossible
-    }
-    return sb.toString();
-  }
-
-  @Override
-  public void render(LoggingAdvisingAppendable appendable) throws IOException {
-    appendable.append("[");
-    int size = list.size();
-    if (size != 0) {
-      list.get(0).render(appendable);
-      for (int i = 1; i < size; i++) {
-        appendable.append(", ");
-        list.get(i).render(appendable);
-      }
-    }
-    appendable.append("]");
-  }
-
-  /**
-   * {@inheritDoc}
-   *
-   * <p>A list is always truthy.
-   */
-  @Override
-  public boolean coerceToBoolean() {
-    return true;
-  }
-
-  @Override
-  public String coerceToString() {
-    return toString();
-  }
-
-  @Override
-  public boolean equals(Object other) {
-    return this == other; // fall back to object equality
-  }
-
-  @Override
-  public int hashCode() {
-    return System.identityHashCode(this);
-  }
-
-  /**
    * Gets the length of this list.
    *
    * @return The length of this list.
@@ -157,7 +100,7 @@ public final class SoyListData extends CollectionData implements Iterable<SoyVal
 
     for (Object el : data) {
       try {
-        add(createFromExistingData(el));
+        add(CollectionData.createFromExistingData(el));
 
       } catch (SoyDataException sde) {
         sde.prependIndexToDataPath(list.size());
@@ -181,7 +124,7 @@ public final class SoyListData extends CollectionData implements Iterable<SoyVal
    * @param value The data to add.
    */
   public void add(SoyValue value) {
-    list.add(ensureValidValue(value));
+    list.add(CollectionData.ensureValidValue(value));
   }
 
   /**
@@ -239,9 +182,9 @@ public final class SoyListData extends CollectionData implements Iterable<SoyVal
    */
   public void set(int index, SoyValue value) {
     if (index == list.size()) {
-      list.add(ensureValidValue(value));
+      list.add(CollectionData.ensureValidValue(value));
     } else {
-      list.set(index, ensureValidValue(value));
+      list.set(index, CollectionData.ensureValidValue(value));
     }
   }
 
@@ -446,66 +389,13 @@ public final class SoyListData extends CollectionData implements Iterable<SoyVal
     return get(index);
   }
 
-  // -----------------------------------------------------------------------------------------------
-  // SoyMap.
-
   @Override
-  public int getItemCnt() {
-    return length();
+  public int hashCode() {
+    return System.identityHashCode(this);
   }
 
   @Override
-  @Nonnull
-  public Iterable<? extends SoyValue> getItemKeys() {
-    ImmutableList.Builder<IntegerData> indexesBuilder = ImmutableList.builder();
-    for (int i = 0, n = length(); i < n; i++) {
-      indexesBuilder.add(IntegerData.forValue(i));
-    }
-    return indexesBuilder.build();
-  }
-
-  @Override
-  public boolean hasItem(SoyValue key) {
-    int index = getIntegerIndex(key);
-    return 0 <= index && index < length();
-  }
-
-  @Override
-  public SoyValue getItem(SoyValue key) {
-    return get(getIntegerIndex(key));
-  }
-
-  @Override
-  public SoyValueProvider getItemProvider(SoyValue key) {
-    return get(getIntegerIndex(key));
-  }
-
-  /**
-   * Gets the integer index out of a SoyValue key, or throws SoyDataException if the key is not an
-   * integer.
-   *
-   * @param key The SoyValue key.
-   * @return The index.
-   */
-  private int getIntegerIndex(SoyValue key) {
-    try {
-      return key.integerValue();
-    } catch (ClassCastException cce) {
-      try {
-        // TODO: Remove this old bad behavior after existing code is compliant.
-        return Integer.parseInt(key.coerceToString());
-      } catch (NumberFormatException nfe) {
-        throw new SoyDataException(
-            "SoyList accessed with non-integer key (got key type "
-                + key.getClass().getName()
-                + ").",
-            nfe);
-      }
-    }
-  }
-
-  @Override
-  public String getSoyTypeName() {
-    return "list";
+  public boolean equals(Object other) {
+    return other == this;
   }
 }

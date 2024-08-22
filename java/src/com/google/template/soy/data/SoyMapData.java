@@ -22,9 +22,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.template.soy.data.restricted.CollectionData;
 import com.google.template.soy.data.restricted.StringData;
-import java.io.IOException;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -43,7 +41,7 @@ import javax.annotation.Nonnull;
  *     over those APIs.
  */
 @Deprecated
-public class SoyMapData extends CollectionData implements SoyDict, SoyMap {
+public class SoyMapData extends SoyDict implements CollectionData {
 
   /** Underlying map. */
   private final Map<String, SoyValue> map;
@@ -71,7 +69,7 @@ public class SoyMapData extends CollectionData implements SoyDict, SoyMap {
       Object value = entry.getValue();
 
       try {
-        map.put(key, createFromExistingData(value));
+        map.put(key, CollectionData.createFromExistingData(value));
       } catch (SoyDataException sde) {
         sde.prependKeyToDataPath(key);
         throw sde;
@@ -108,64 +106,6 @@ public class SoyMapData extends CollectionData implements SoyDict, SoyMap {
     return Collections.unmodifiableSet(map.keySet());
   }
 
-  /**
-   * {@inheritDoc}
-   *
-   * <p>This method should only be used for debugging purposes.
-   */
-  @Override
-  public String toString() {
-    LoggingAdvisingAppendable sb = LoggingAdvisingAppendable.buffering();
-    try {
-      render(sb);
-    } catch (IOException e) {
-      throw new RuntimeException(e); // impossible
-    }
-    return sb.toString();
-  }
-
-  @Override
-  public void render(LoggingAdvisingAppendable appendable) throws IOException {
-    appendable.append('{');
-    Iterator<Map.Entry<String, SoyValue>> iterator = map.entrySet().iterator();
-    if (iterator.hasNext()) {
-      Map.Entry<String, SoyValue> entry = iterator.next();
-      appendable.append(entry.getKey()).append(": ");
-      entry.getValue().render(appendable);
-      while (iterator.hasNext()) {
-        appendable.append(", ");
-        entry = iterator.next();
-        appendable.append(entry.getKey()).append(": ");
-        entry.getValue().render(appendable);
-      }
-    }
-    appendable.append('}');
-  }
-
-  /**
-   * {@inheritDoc}
-   *
-   * <p>A map is always truthy.
-   */
-  @Override
-  public boolean coerceToBoolean() {
-    return true;
-  }
-
-  @Override
-  public String coerceToString() {
-    return toString();
-  }
-
-  @Override
-  public final boolean equals(Object other) {
-    return this == other; // fall back to object equality
-  }
-
-  @Override
-  public final int hashCode() {
-    return System.identityHashCode(this);
-  }
 
   // -----------------------------------------------------------------------------------------------
   // Superpackage-private methods.
@@ -349,5 +289,15 @@ public class SoyMapData extends CollectionData implements SoyDict, SoyMap {
   @Override
   public String getSoyTypeName() {
     return "map";
+  }
+
+  @Override
+  public int hashCode() {
+    return System.identityHashCode(this);
+  }
+
+  @Override
+  public boolean equals(Object other) {
+    return other == this;
   }
 }

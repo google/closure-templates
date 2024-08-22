@@ -18,18 +18,24 @@ package com.google.template.soy.data.internal;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.google.template.soy.data.ProtoFieldInterpreter;
+import com.google.template.soy.data.RecordProperty;
+import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyValue;
+import com.google.template.soy.data.SoyValueProvider;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiConsumer;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 /**
  * A SoyMap interface to a native Java Map (from a proto) that lazily converts keys and values to
  * {@link SoyValue}s as they're accessed.
  */
-public final class LazyProtoToSoyValueMap<K, V> extends AbstractSoyMap {
+public final class LazyProtoToSoyValueMap<K, V> extends SoyMap {
 
   private final Map<K, V> rawMap;
 
@@ -123,5 +129,49 @@ public final class LazyProtoToSoyValueMap<K, V> extends AbstractSoyMap {
       return null;
     }
     return keyFieldInterpreter.protoFromSoy(soyValue);
+  }
+
+  // SoyRecord methods
+  @Override
+  public int recordSize() {
+    return 0;
+  }
+
+  @Override
+  public ImmutableMap<String, SoyValueProvider> recordAsMap() {
+    return ImmutableMap.of();
+  }
+
+  @Override
+  public boolean hasField(RecordProperty name) {
+    return false;
+  }
+
+  @Nullable
+  @Override
+  public SoyValueProvider getFieldProvider(RecordProperty name) {
+    return null;
+  }
+
+  @Nullable
+  @Override
+  public SoyValue getField(RecordProperty name) {
+    return null;
+  }
+
+  @Override
+  public void forEach(BiConsumer<RecordProperty, ? super SoyValueProvider> action) {}
+
+  @Override
+  public int hashCode() {
+    return System.identityHashCode(rawMap);
+  }
+
+  @Override
+  public boolean equals(Object other) {
+    if (other instanceof LazyProtoToSoyValueMap) {
+      return rawMap == ((LazyProtoToSoyValueMap) other).rawMap;
+    }
+    return false;
   }
 }

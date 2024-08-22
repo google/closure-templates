@@ -18,7 +18,6 @@ package com.google.template.soy.data.internal;
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.RecordProperty;
-import com.google.template.soy.data.SoyAbstractValue;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
@@ -30,7 +29,7 @@ import java.util.function.BiConsumer;
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  */
-public final class SoyRecordImpl extends SoyAbstractValue implements SoyRecord {
+public final class SoyRecordImpl extends SoyRecord {
 
   public static final SoyRecordImpl EMPTY = new SoyRecordImpl(new ParamStore());
 
@@ -55,10 +54,6 @@ public final class SoyRecordImpl extends SoyAbstractValue implements SoyRecord {
     return map.size();
   }
 
-  @Override
-  public boolean coerceToBoolean() {
-    return true;
-  }
 
   @Override
   public String coerceToString() {
@@ -124,5 +119,10 @@ public final class SoyRecordImpl extends SoyAbstractValue implements SoyRecord {
   @Override
   public String getSoyTypeName() {
     return "record";
+  }
+
+  @Override
+  public String toString() {
+    return coerceToString();
   }
 }

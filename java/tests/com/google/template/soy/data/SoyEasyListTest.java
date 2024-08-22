@@ -14,15 +14,11 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.data.internal;
+package com.google.template.soy.data;
 
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.collect.ImmutableList;
-import com.google.template.soy.data.SoyEasyList;
-import com.google.template.soy.data.SoyList;
-import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.data.SoyValueConverterUtility;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.StringData;
@@ -30,20 +26,18 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-/**
- * Unit tests for EasyListImpl.
- */
+/** Unit tests for SoyEasyList. */
 @RunWith(JUnit4.class)
-public class EasyListImplTest {
+public class SoyEasyListTest {
 
   @Test
   public void testSoyValueMethods() {
 
-    SoyValue val1 = new EasyListImpl();
-    assertThat(val1.coerceToBoolean()).isTrue(); // EasyListImpl is always truthy.
+    SoyValue val1 = new SoyEasyList();
+    assertThat(val1.coerceToBoolean()).isTrue(); // SoyEasyList is always truthy.
     assertThat(val1.coerceToString()).isEqualTo("[]");
-    SoyValue val2 = new EasyListImpl();
-    assertThat(val1.equals(val2)).isFalse(); // EasyListImpl uses object identity.
+    SoyValue val2 = new SoyEasyList();
+    assertThat(val1.equals(val2)).isFalse(); // SoyEasyList uses object identity.
 
     SoyValue val3 = SoyValueConverterUtility.newList(111, true);
     assertThat(val3.coerceToBoolean()).isTrue();
@@ -57,7 +51,7 @@ public class EasyListImplTest {
     FloatData PI = FloatData.forValue(3.14);
     SoyValue BLAH_2 = StringData.forValue("blah");
 
-    SoyEasyList list = new EasyListImpl();
+    SoyEasyList list = new SoyEasyList();
     assertThat(list.length()).isEqualTo(0);
     assertThat(list.asJavaList()).isEmpty();
     assertThat(list.asResolvedJavaList()).isEmpty();
@@ -68,7 +62,7 @@ public class EasyListImplTest {
     list.add(BLAH_2);
     // At this point, list should be [BLAH_0, PI, BLAH_2].
     assertThat(list.length()).isEqualTo(3);
-    assertThat(list.asJavaList()).isEqualTo(ImmutableList.of(BLAH_0, PI, BLAH_2));
+    assertThat(list.asJavaList()).containsExactly(BLAH_0, PI, BLAH_2).inOrder();
     assertThat(list.asResolvedJavaList()).isEqualTo(ImmutableList.of(BLAH_0, PI, BLAH_2));
     assertThat(list.get(0)).isSameInstanceAs(BLAH_0);
     assertThat(list.get(0)).isNotSameInstanceAs(BLAH_2);

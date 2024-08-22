@@ -23,7 +23,6 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.RecordProperty;
-import com.google.template.soy.data.SoyAbstractValue;
 import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.data.SoyDict;
 import com.google.template.soy.data.SoyMap;
@@ -77,7 +76,7 @@ import javax.annotation.ParametersAreNonnullByDefault;
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  */
 @ParametersAreNonnullByDefault
-public final class DictImpl extends SoyAbstractValue implements SoyDict, SoyMap {
+public final class DictImpl extends SoyDict {
 
   /**
    * Creates a SoyDict implementation for a particular underlying provider map.
@@ -231,7 +230,7 @@ public final class DictImpl extends SoyAbstractValue implements SoyDict, SoyMap 
     for (Map.Entry<String, ? extends SoyValueProvider> entry : providerMap.entrySet()) {
       builder.put(StringData.forValue(entry.getKey()), entry.getValue());
     }
-    return builder.build();
+    return builder.buildOrThrow();
   }
 
   private String getStringKey(SoyValue key) {
@@ -244,21 +243,6 @@ public final class DictImpl extends SoyAbstractValue implements SoyDict, SoyMap 
     }
   }
 
-  @Override
-  public boolean coerceToBoolean() {
-    return true;
-  }
-
-  @Override
-  public String coerceToString() {
-    LoggingAdvisingAppendable mapStr = LoggingAdvisingAppendable.buffering();
-    try {
-      render(mapStr);
-    } catch (IOException e) {
-      throw new AssertionError(e); // impossible
-    }
-    return mapStr.toString();
-  }
 
   @Override
   public void render(LoggingAdvisingAppendable appendable) throws IOException {
@@ -285,10 +269,13 @@ public final class DictImpl extends SoyAbstractValue implements SoyDict, SoyMap 
     appendable.append('}');
   }
 
+  public RuntimeMapTypeTracker.Type getMapType() {
+    return typeTracker.type();
+  }
+
   @Override
-  public boolean equals(Object other) {
-    // Instance equality, to match Javascript behavior.
-    return this == other;
+  public String getSoyTypeName() {
+    return "dict";
   }
 
   @Override
@@ -297,19 +284,7 @@ public final class DictImpl extends SoyAbstractValue implements SoyDict, SoyMap 
   }
 
   @Override
-  public String toString() {
-    // TODO(gboyer): Remove this override, and instead change RenderVisitor to use coerceToString()
-    // instead of simply toString().  Alternately, have SoyAbstractValue ensure that toString()
-    // always matchse coerceToString().
-    return coerceToString();
-  }
-
-  public RuntimeMapTypeTracker.Type getMapType() {
-    return typeTracker.type();
-  }
-
-  @Override
-  public String getSoyTypeName() {
-    return "dict";
+  public boolean equals(Object other) {
+    return other == this;
   }
 }

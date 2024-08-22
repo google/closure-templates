@@ -17,9 +17,9 @@
 package com.google.template.soy.data;
 
 /** Soy wrapper for a Java Set. */
-public interface SoySet extends SoyIterable {
+public abstract class SoySet extends SoyIterable {
 
-  boolean contains(SoyValue value);
+  public abstract boolean contains(SoyValue value);
 
-  int size();
+  public abstract int size();
 }

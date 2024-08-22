@@ -26,7 +26,7 @@ import javax.annotation.ParametersAreNonnullByDefault;
  * value is a SoyValue (can be unresolved).
  */
 @ParametersAreNonnullByDefault
-public interface SoyRecord extends SoyValue {
+public abstract class SoyRecord extends SoyLegacyObjectMap {
 
   /**
    * Checks whether this SoyRecord has a field of the given name.
@@ -34,13 +34,13 @@ public interface SoyRecord extends SoyValue {
    * @param name The field name to check.
    * @return Whether this SoyRecord has a field of the given name.
    */
-  boolean hasField(RecordProperty name);
+  public abstract boolean hasField(RecordProperty name);
 
   /**
    * @deprecated Call {@link #hasField(RecordSymbol)} instead
    */
   @Deprecated
-  default boolean hasField(String name) {
+  public final boolean hasField(String name) {
     return hasField(RecordProperty.get(name));
   }
 
@@ -50,13 +50,13 @@ public interface SoyRecord extends SoyValue {
    * @param name The field name to get.
    * @return The field value for the given field name, or null if no such field name.
    */
-  SoyValue getField(RecordProperty name);
+  public abstract SoyValue getField(RecordProperty name);
 
   /**
    * @deprecated Call {@link #getField(RecordSymbol)} instead
    */
   @Deprecated
-  default SoyValue getField(String name) {
+  public final SoyValue getField(String name) {
     return getField(RecordProperty.get(name));
   }
 
@@ -66,13 +66,13 @@ public interface SoyRecord extends SoyValue {
    * @param name The field name to get.
    * @return A provider of the field value for the given field name, or null if no such field name.
    */
-  SoyValueProvider getFieldProvider(RecordProperty name);
+  public abstract SoyValueProvider getFieldProvider(RecordProperty name);
 
   /**
    * @deprecated Call {@link #getFieldProvider(RecordSymbol)} instead
    */
   @Deprecated
-  default SoyValueProvider getFieldProvider(String name) {
+  public final SoyValueProvider getFieldProvider(String name) {
     return getFieldProvider(RecordProperty.get(name));
   }
 
@@ -82,20 +82,20 @@ public interface SoyRecord extends SoyValue {
    * record, indicating that the parameter default should be applied in the positional template
    * method.
    */
-  default SoyValueProvider getPositionalParam(RecordProperty name) {
+  public final SoyValueProvider getPositionalParam(RecordProperty name) {
     SoyValueProvider provider = getFieldProvider(name);
     return provider != null ? provider : UndefinedData.INSTANCE;
   }
 
   /** Returns a view of this object as a java map. */
-  ImmutableMap<String, SoyValueProvider> recordAsMap();
+  public abstract ImmutableMap<String, SoyValueProvider> recordAsMap();
 
-  void forEach(BiConsumer<RecordProperty, ? super SoyValueProvider> action);
+  public abstract void forEach(BiConsumer<RecordProperty, ? super SoyValueProvider> action);
 
-  int recordSize();
+  public abstract int recordSize();
 
   @Override
-  default SoyRecord asSoyRecord() {
+  public final SoyRecord asSoyRecord() {
     return this;
   }
 }

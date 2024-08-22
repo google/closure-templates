@@ -32,7 +32,6 @@ import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SanitizedContent;
-import com.google.template.soy.data.SoyAbstractValue;
 import com.google.template.soy.data.SoyDict;
 import com.google.template.soy.data.SoyInjector;
 import com.google.template.soy.data.SoyList;
@@ -1511,7 +1510,7 @@ public class RenderVisitorTest {
   }
 
   private static SoyValue createToStringTestValue() {
-    return new SoyAbstractValue() {
+    return new SoyValue() {
       @Override
       public String toString() {
         // NOTE: Soy should not print the toString() values, only the coerceToString() values.

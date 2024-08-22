@@ -57,6 +57,7 @@ java_library(
     srcs = RECORD_PROPERTY,
     visibility = ["//visibility:public"],
 )
+
 java_library(
     name = "template",
     srcs = TEMPLATE,
@@ -126,6 +127,7 @@ java_library(
     srcs = ACTUAL_INTERNAL,
     deps = [
         ":data",
+        ":record_property",
         "@maven//:com_google_code_findbugs_jsr305",
         "@maven//:com_google_guava_guava",
     ],
@@ -148,10 +150,10 @@ java_library(
     srcs = CODE_GENERATION,
     visibility = ["//visibility:public"],
     deps = [
-        ":record_property",
         ":data",
+        ":record_property",
         "//java/src/com/google/template/soy/jbcsrc/api:helpers",
-        "//java/src/com/google/template/soy/jbcsrc/shared:shared",
+        "//java/src/com/google/template/soy/jbcsrc/shared",
         "@com_google_auto_value_auto_value",
         "@com_google_protobuf//:protobuf_java",
         "@maven//:com_google_code_findbugs_jsr305",

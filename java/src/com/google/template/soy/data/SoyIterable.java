@@ -20,4 +20,4 @@ package com.google.template.soy.data;
  * Marker interface for iterable value. Implementations of this should allow calls on {@link
  * SoyValue#javaIterator()}.
  */
-public interface SoyIterable extends SoyValue {}
+public abstract class SoyIterable extends SoyLegacyObjectMap {}

@@ -16,23 +16,65 @@
 
 package com.google.template.soy.data;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 
 /**
  * A mutable list with additional methods for ease-of-use.
  *
- * <p>Important: Do not use. Use java.util.List instead.
+ * @deprecated Do not use. Use java.util.List instead for mutability. SoyList for everything else.
  */
 @Deprecated
 @ParametersAreNonnullByDefault
-public interface SoyEasyList extends SoyList, SoyLegacyObjectMap {
+public final class SoyEasyList extends SoyList {
+
+  private final List<SoyValueProvider> providerList;
+
+  /** Important: Do not use outside of Soy code (treat as superpackage-private). */
+  public SoyEasyList() {
+    this.providerList = new ArrayList<>();
+  }
 
   /**
    * Adds a value to the end of this SoyList.
    *
    * @param valueProvider A provider of the value to add. Note that this is often just the value
    *     itself, since all values are also providers.
+   * @deprecated SoyValues should never be mutated, it invalidates assumptions made by the runtime.
    */
   @Deprecated
-  void add(SoyValueProvider valueProvider);
+  public void add(SoyValueProvider valueProvider) {
+    providerList.add(checkNotNull(valueProvider));
+  }
+
+  @Override
+  public int length() {
+    return providerList.size();
+  }
+
+  @Nullable
+  @Override
+  public SoyValueProvider getProvider(int index) {
+    return index < 0 || index >= providerList.size() ? null : providerList.get(index);
+  }
+
+  @Override
+  public List<SoyValueProvider> asJavaList() {
+    return Collections.unmodifiableList(providerList);
+  }
+
+  @Override
+  public int hashCode() {
+    return System.identityHashCode(this);
+  }
+
+  @Override
+  public boolean equals(Object other) {
+    return other == this;
+  }
 }

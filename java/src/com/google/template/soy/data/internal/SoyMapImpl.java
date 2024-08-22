@@ -19,10 +19,14 @@ package com.google.template.soy.data.internal;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.template.soy.data.RecordProperty;
+import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
 import java.util.Map;
+import java.util.function.BiConsumer;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 
 /**
@@ -34,7 +38,7 @@ import javax.annotation.ParametersAreNonnullByDefault;
  * object.
  */
 @ParametersAreNonnullByDefault
-public final class SoyMapImpl extends AbstractSoyMap {
+public final class SoyMapImpl extends SoyMap {
   public static final SoyMapImpl EMPTY = new SoyMapImpl(ImmutableMap.of());
 
   /** Creates a SoyDict implementation for a particular underlying provider map. */
@@ -99,5 +103,46 @@ public final class SoyMapImpl extends AbstractSoyMap {
   @Override
   public Map<? extends SoyValue, ? extends SoyValueProvider> asJavaMap() {
     return providerMap;
+  }
+
+  // SoyRecord methods
+  @Override
+  public int recordSize() {
+    return 0;
+  }
+
+  @Override
+  public ImmutableMap<String, SoyValueProvider> recordAsMap() {
+    return ImmutableMap.of();
+  }
+
+  @Override
+  public boolean hasField(RecordProperty name) {
+    return false;
+  }
+
+  @Nullable
+  @Override
+  public SoyValueProvider getFieldProvider(RecordProperty name) {
+    return null;
+  }
+
+  @Nullable
+  @Override
+  public SoyValue getField(RecordProperty name) {
+    return null;
+  }
+
+  @Override
+  public void forEach(BiConsumer<RecordProperty, ? super SoyValueProvider> action) {}
+
+  @Override
+  public int hashCode() {
+    return System.identityHashCode(this);
+  }
+
+  @Override
+  public boolean equals(Object other) {
+    return other == this;
   }
 }

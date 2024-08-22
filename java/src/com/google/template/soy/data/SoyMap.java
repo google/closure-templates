@@ -17,6 +17,7 @@
 package com.google.template.soy.data;
 
 import com.google.template.soy.data.restricted.PrimitiveData;
+import java.io.IOException;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
@@ -39,14 +40,14 @@ import javax.annotation.ParametersAreNonnullByDefault;
  * later via a different set of APIs, a run time exception will be thrown.
  */
 @ParametersAreNonnullByDefault
-public interface SoyMap extends SoyValue {
+public abstract class SoyMap extends SoyRecord {
 
   /**
    * Gets the number of items in this SoyMap.
    *
    * @return The number of items.
    */
-  int size();
+  public abstract int size();
 
   /**
    * Gets an iterable over all item keys in this SoyMap.
@@ -56,15 +57,15 @@ public interface SoyMap extends SoyValue {
    * @return An iterable over all item keys.
    */
   @Nonnull
-  default Iterable<? extends SoyValue> keys() {
+  public Iterable<? extends SoyValue> keys() {
     return asJavaMap().keySet();
   }
 
-  default Collection<? extends SoyValueProvider> values() {
+  public Collection<? extends SoyValueProvider> values() {
     return asJavaMap().values();
   }
 
-  default Set<? extends Map.Entry<? extends SoyValue, ? extends SoyValueProvider>> entrySet() {
+  public Set<? extends Map.Entry<? extends SoyValue, ? extends SoyValueProvider>> entrySet() {
     return asJavaMap().entrySet();
   }
 
@@ -74,7 +75,7 @@ public interface SoyMap extends SoyValue {
    * @param key The item key to check.
    * @return Whether this SoyMap has an item with the given key.
    */
-  boolean containsKey(SoyValue key);
+  public abstract boolean containsKey(SoyValue key);
 
   /**
    * Gets an item value of this SoyMap.
@@ -82,7 +83,7 @@ public interface SoyMap extends SoyValue {
    * @param key The item key to get.
    * @return The item value for the given item key, or null if no such item key.
    */
-  SoyValue get(SoyValue key);
+  public abstract SoyValue get(SoyValue key);
 
   /**
    * Gets a provider of an item value of this SoyMap.
@@ -90,20 +91,50 @@ public interface SoyMap extends SoyValue {
    * @param key The item key to get.
    * @return A provider of the item value for the given item key, or null if no such item key.
    */
-  SoyValueProvider getProvider(SoyValue key);
+  public abstract SoyValueProvider getProvider(SoyValue key);
 
-  /**
-   * Gets a Java map of all items in this SoyMap, where mappings are value to value provider. Note
-   * that value providers are often just the values themselves, since all values are also providers.
-   *
-   * @return A Java map of all items, where mappings are value to value provider.
-   */
-  @Nonnull
   @Override
-  Map<? extends SoyValue, ? extends SoyValueProvider> asJavaMap();
+  public final String coerceToString() {
+    LoggingAdvisingAppendable mapStr = LoggingAdvisingAppendable.buffering();
+    try {
+      render(mapStr);
+    } catch (IOException e) {
+      throw new AssertionError(e); // impossible
+    }
+    return mapStr.toString();
+  }
+
+  @Override
+  public void render(LoggingAdvisingAppendable appendable) throws IOException {
+    appendable.append('{');
+
+    boolean isFirst = true;
+    for (SoyValue key : keys()) {
+      SoyValue value = get(key);
+      if (isFirst) {
+        isFirst = false;
+      } else {
+        appendable.append(", ");
+      }
+      key.render(appendable);
+      appendable.append(": ");
+      value.render(appendable);
+    }
+    appendable.append('}');
+  }
+
+  @Override
+  public String toString() {
+    return coerceToString();
+  }
+
+  @Override
+  public String getSoyTypeName() {
+    return "map";
+  }
 
   // LINT.IfChange(allowed_soy_map_key_types)
-  static boolean isAllowedKeyType(SoyValue key) {
+  public static boolean isAllowedKeyType(SoyValue key) {
     return key instanceof PrimitiveData && !key.isNullish();
   }
   // LINT.ThenChange(../types/MapType.java:allowed_soy_map_key_types)

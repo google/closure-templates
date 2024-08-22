@@ -45,7 +45,7 @@ public class SoyMapsTest {
                 DictImpl.forProviderMap(ImmutableMap.of(), RuntimeMapTypeTracker.Type.UNKNOWN)))
         .isTrue();
     assertThat(isMapOrLegacyObjectMap(StringData.EMPTY_STRING)).isFalse();
-    assertThat(isMapOrLegacyObjectMap(new SoyRecordImpl(ParamStore.EMPTY_INSTANCE))).isFalse();
+    assertThat(isMapOrLegacyObjectMap(new SoyRecordImpl(ParamStore.EMPTY_INSTANCE))).isTrue();
   }
 
   @Test

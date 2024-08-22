@@ -39,7 +39,6 @@ import com.google.protobuf.Descriptors.EnumValueDescriptor;
 import com.google.protobuf.Message;
 import com.google.protobuf.ProtocolMessageEnum;
 import com.google.template.soy.data.internal.DictImpl;
-import com.google.template.soy.data.internal.EasyListImpl;
 import com.google.template.soy.data.internal.IterableImpl;
 import com.google.template.soy.data.internal.RuntimeMapTypeTracker;
 import com.google.template.soy.data.internal.SoyMapImpl;
@@ -128,7 +127,7 @@ public final class SoyValueConverter {
    * Creates a Soy dictionary from a Java string map. While this is O(n) in the map's shallow size,
    * the Java values are converted into Soy values lazily and only once.
    */
-  SoyDict newDictFromMap(Map<?, ?> javaStringMap) {
+  DictImpl newDictFromMap(Map<?, ?> javaStringMap) {
     // Create a dictionary backed by a map which has eagerly converted each value into a lazy
     // value provider. Specifically, the map iteration is done eagerly so that the lazy value
     // provider can cache its value.
@@ -148,7 +147,7 @@ public final class SoyValueConverter {
    * Creates a Soy map from a Java map. While this is O(n) in the map's shallow size, the Java
    * values are converted into Soy values lazily and only once. The keys are converted eagerly.
    */
-  private SoyMap newSoyMapFromJavaMap(Map<?, ?> javaMap) {
+  private SoyMapImpl newSoyMapFromJavaMap(Map<?, ?> javaMap) {
     Map<SoyValue, SoyValueProvider> map = Maps.newHashMapWithExpectedSize(javaMap.size());
     for (Map.Entry<?, ?> entry : javaMap.entrySet()) {
       map.put(convert(entry.getKey()).resolve(), convertLazy(entry.getValue()));
@@ -180,10 +179,11 @@ public final class SoyValueConverter {
    *
    * @param list The list of initial values.
    * @return A new SoyEasyList initialized from the given SoyList.
+   * @deprecated Soy values should never be mutated
    */
   @Deprecated
   public SoyEasyList newEasyListFromList(SoyList list) {
-    EasyListImpl result = new EasyListImpl();
+    SoyEasyList result = new SoyEasyList();
     for (SoyValueProvider provider : list.asJavaList()) {
       result.add(provider);
     }

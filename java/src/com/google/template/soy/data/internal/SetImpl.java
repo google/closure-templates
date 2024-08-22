@@ -17,11 +17,10 @@
 package com.google.template.soy.data.internal;
 
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
+import static com.google.common.collect.Streams.stream;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Streams;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
-import com.google.template.soy.data.SoyAbstractValue;
 import com.google.template.soy.data.SoySet;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
@@ -32,7 +31,7 @@ import javax.annotation.ParametersAreNonnullByDefault;
 
 /** A Set implementation. */
 @ParametersAreNonnullByDefault
-public final class SetImpl extends SoyAbstractValue implements SoySet {
+public final class SetImpl extends SoySet {
 
   private final ImmutableSet<SoyValue> providerSet;
 
@@ -45,7 +44,7 @@ public final class SetImpl extends SoyAbstractValue implements SoySet {
   }
 
   public SetImpl(Iterator<? extends SoyValueProvider> iterator) {
-    providerSet = Streams.stream(iterator).map(SoyValueProvider::resolve).collect(toImmutableSet());
+    providerSet = stream(iterator).map(SoyValueProvider::resolve).collect(toImmutableSet());
   }
 
   @Override
@@ -70,12 +69,7 @@ public final class SetImpl extends SoyAbstractValue implements SoySet {
 
   @Override
   public int hashCode() {
-    return providerSet.hashCode();
-  }
-
-  @Override
-  public boolean coerceToBoolean() {
-    return true;
+    return System.identityHashCode(this);
   }
 
   @Override

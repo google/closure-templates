@@ -23,7 +23,7 @@ import javax.annotation.Nullable;
 
 /** Soy's runtime representation of objects of the Soy {@code ve_data} type. */
 @AutoValue
-public abstract class SoyVisualElementData extends SoyAbstractValue {
+public abstract class SoyVisualElementData extends SoyValue {
   public static SoyVisualElementData create(SoyValue ve) {
     return create(ve, null);
   }

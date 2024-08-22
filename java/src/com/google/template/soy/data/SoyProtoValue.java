@@ -21,7 +21,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.errorprone.annotations.concurrent.LazyInit;
@@ -37,7 +36,6 @@ import com.google.template.soy.internal.proto.ProtoUtils;
 import com.google.template.soy.jbcsrc.shared.Names;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
-import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.function.BiConsumer;
@@ -56,7 +54,7 @@ import javax.annotation.Nonnull;
  * occurs. In the long run we will switch to either throwing exception or always returning null from
  * these methods.
  */
-public final class SoyProtoValue extends SoyAbstractValue implements SoyLegacyObjectMap, SoyRecord {
+public final class SoyProtoValue extends SoyRecord {
   private static final Logger logger = Logger.getLogger(SoyProtoValue.class.getName());
 
   private static final class ProtoClass {
@@ -287,40 +285,41 @@ public final class SoyProtoValue extends SoyAbstractValue implements SoyLegacyOb
   }
 
   // -----------------------------------------------------------------------------------------------
-  // SoyMap.
+  // SoyLegacyObjectMap.
 
   @Deprecated
   @Override
   public int getItemCnt() {
-    return getItemKeys().size();
+    asMap();
+    return super.getItemCnt();
   }
 
   @Deprecated
   @Override
-  public Collection<SoyValue> getItemKeys() {
+  public Iterable<? extends SoyValue> getItemKeys() {
     asMap();
-    return ImmutableList.of();
+    return super.getItemKeys();
   }
 
   @Deprecated
   @Override
   public boolean hasItem(SoyValue key) {
     asMap();
-    return false;
+    return super.hasItem(key);
   }
 
   @Deprecated
   @Override
   public SoyValue getItem(SoyValue key) {
     asMap();
-    return null;
+    return super.getItem(key);
   }
 
   @Deprecated
   @Override
   public SoyValueProvider getItemProvider(SoyValue key) {
     asMap();
-    return null;
+    return super.getItemProvider(key);
   }
 
   private void asMap() {
@@ -381,8 +380,8 @@ public final class SoyProtoValue extends SoyAbstractValue implements SoyLegacyOb
   }
 
   @Override
-  public boolean coerceToBoolean() {
-    return true; // matches JS behavior
+  public int hashCode() {
+    return this.proto.hashCode();
   }
 
   @Override
@@ -397,6 +396,7 @@ public final class SoyProtoValue extends SoyAbstractValue implements SoyLegacyOb
     TextFormat.printer().print(proto, appendable);
   }
 
+  @SuppressWarnings("ReturnValueIgnored")
   @Override
   public SoyValue checkNullishProto(Class<? extends Message> messageType) {
     messageType.cast(proto);
@@ -424,10 +424,7 @@ public final class SoyProtoValue extends SoyAbstractValue implements SoyLegacyOb
             : "not-empty");
   }
 
-  @Override
-  public int hashCode() {
-    return this.proto.hashCode();
-  }
+
 
   /**
    * Provides an interface for constructing a SoyProtoValue. Used by the tofu renderer only.

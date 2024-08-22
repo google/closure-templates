@@ -26,7 +26,7 @@ import javax.annotation.ParametersAreNonnullByDefault;
  * <p>In map usage, the item keys are the record field names in the form of StringData.
  */
 @ParametersAreNonnullByDefault
-public interface SoyDict extends SoyRecord, SoyLegacyObjectMap {
+public abstract class SoyDict extends SoyMap {
 
   /**
    * Gets a Java map of all items in this SoyDict, where mappings are string to value provider. Note
@@ -35,7 +35,7 @@ public interface SoyDict extends SoyRecord, SoyLegacyObjectMap {
    * @return A Java map of all items, where mappings are string to value provider.
    */
   @Nonnull
-  Map<String, ? extends SoyValueProvider> asJavaStringMap();
+  public abstract Map<String, ? extends SoyValueProvider> asJavaStringMap();
 
   /**
    * Gets a Java map of all items in this SoyDict, where mappings are string to value. All value
@@ -44,5 +44,5 @@ public interface SoyDict extends SoyRecord, SoyLegacyObjectMap {
    * @return A Java map of all items, where mappings are string to value.
    */
   @Nonnull
-  Map<String, ? extends SoyValue> asResolvedJavaStringMap();
+  public abstract Map<String, ? extends SoyValue> asResolvedJavaStringMap();
 }

@@ -21,7 +21,6 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
-import com.google.template.soy.data.SoyAbstractValue;
 import com.google.template.soy.data.SoyIterable;
 import com.google.template.soy.data.SoyValueProvider;
 import java.io.IOException;
@@ -34,7 +33,7 @@ import javax.annotation.ParametersAreNonnullByDefault;
 
 /** A Set implementation. */
 @ParametersAreNonnullByDefault
-public final class IterableImpl extends SoyAbstractValue implements SoyIterable {
+public final class IterableImpl extends SoyIterable {
 
   public static final SoyIterable EMPTY_ITERABLE = forIterable(ImmutableList.of());
 
@@ -114,17 +113,12 @@ public final class IterableImpl extends SoyAbstractValue implements SoyIterable 
 
   @Override
   public boolean equals(Object other) {
-    return this == other;
+    return other == this;
   }
 
   @Override
   public int hashCode() {
-    return impl.hashCode();
-  }
-
-  @Override
-  public boolean coerceToBoolean() {
-    return true;
+    return System.identityHashCode(this);
   }
 
   @Override

@@ -17,11 +17,13 @@
 package com.google.template.soy.data.internal;
 
 import com.google.common.collect.ImmutableList;
+import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.SoyValueProvider;
 import java.util.Iterator;
 import java.util.List;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 
 /**
@@ -31,7 +33,7 @@ import javax.annotation.ParametersAreNonnullByDefault;
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  */
 @ParametersAreNonnullByDefault
-public final class ListImpl extends ListBackedList {
+public final class ListImpl extends SoyList {
 
   /** Creates a Soy list implementation backed by the given list. */
   @Nonnull
@@ -45,8 +47,10 @@ public final class ListImpl extends ListBackedList {
     return new ListImpl(providerList);
   }
 
+  private final ImmutableList<? extends SoyValueProvider> providerList;
+
   private ListImpl(ImmutableList<? extends SoyValueProvider> providerList) {
-    super(providerList);
+    this.providerList = providerList;
   }
 
   // Override to avoid some indirection and unmodifiable list creation.
@@ -57,7 +61,28 @@ public final class ListImpl extends ListBackedList {
   }
 
   @Override
+  public int length() {
+    return providerList.size();
+  }
+
+  @Nullable
+  @Override
+  public SoyValueProvider getProvider(int index) {
+    return index < 0 || index >= providerList.size() ? null : providerList.get(index);
+  }
+
+  @Override
   public Iterator<? extends SoyValueProvider> javaIterator() {
     return providerList.iterator();
+  }
+
+  @Override
+  public int hashCode() {
+    return System.identityHashCode(this);
+  }
+
+  @Override
+  public boolean equals(Object other) {
+    return other == this;
   }
 }
