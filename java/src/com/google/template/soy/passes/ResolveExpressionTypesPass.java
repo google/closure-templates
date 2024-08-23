@@ -377,6 +377,8 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
               + " sole child of a print statement.");
   private static final SoyErrorKind CONSTANTS_CANT_BE_NULLABLE =
       SoyErrorKind.of("Type calculated type, {0}, is nullable, which is not allowed for const.");
+  private static final SoyErrorKind CONSTANTS_DECLARED_MISMATCH =
+      SoyErrorKind.of("Inferred type, {0}, is not assignable to declared type {1}.");
   private static final SoyErrorKind NOT_ALLOWED_IN_CONSTANT_VALUE =
       SoyErrorKind.of("This operation is not allowed inside a const value definition.");
   private static final SoyErrorKind ILLEGAL_SWITCH_EXPRESSION_TYPE =
@@ -700,11 +702,22 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
     @Override
     protected void visitConstNode(ConstNode node) {
       constExprVisitor.exec(node.getExpr());
-      SoyType type = node.getExpr().getType();
-      if (isNullish(type)) {
-        errorReporter.report(node.getSourceLocation(), CONSTANTS_CANT_BE_NULLABLE, type);
+      SoyType inferredType = node.getExpr().getType();
+      if (isNullish(inferredType)) {
+        errorReporter.report(node.getSourceLocation(), CONSTANTS_CANT_BE_NULLABLE, inferredType);
       }
-      node.getVar().setType(type);
+      if (node.getTypeNode() != null) {
+        SoyType declaredType = node.getTypeNode().getResolvedType();
+        if (!declaredType.isAssignableFromStrict(inferredType)) {
+          errorReporter.report(
+              node.getExpr().getSourceLocation(),
+              CONSTANTS_DECLARED_MISMATCH,
+              inferredType,
+              declaredType);
+        }
+        inferredType = declaredType;
+      }
+      node.getVar().setType(inferredType);
       // Store the type of this constant in the index so that imports of this constant in other
       // files (topologically processed) can have their type set in #visitImportNode.
       constantsTypeLookup.put(node);
