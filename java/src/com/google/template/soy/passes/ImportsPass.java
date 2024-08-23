@@ -159,7 +159,7 @@ final class ImportsPass implements CompilerFileSetPass {
         SoyErrors.getDidYouMeanMessage(validSymbols, incorrectName));
   }
 
-  private static final ImmutableSet<String> NEW_TYPES =
+  static final ImmutableSet<String> NEW_TYPES =
       ImmutableSet.of("list", "set", "map", "record", "iterable");
 
   /**

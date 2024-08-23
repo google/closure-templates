@@ -21,9 +21,6 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.soytree.AliasDeclaration;
 import com.google.template.soy.soytree.SoyFileNode;
-import com.google.template.soy.types.SoyProtoEnumType;
-import com.google.template.soy.types.SoyProtoType;
-import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.TypeRegistries;
 import com.google.template.soy.types.TypeRegistry;
 
@@ -45,26 +42,14 @@ final class ValidateAliasesPass implements CompilerFilePass {
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
     TypeRegistry registry = TypeRegistries.builtinTypeRegistry();
     for (AliasDeclaration alias : file.getAliasDeclarations()) {
-      SoyType type = registry.getType(alias.alias().identifier());
-      // When running with a dummy type provider that parses all types as unknown, ignore that.
-      if (type != null && type.getKind() != SoyType.Kind.UNKNOWN) {
-        // Temporarily, while we migrate all proto aliases to imports, ignore aliases that are
-        // identical to proto imports. They don't conflict and Tricorder will remove the aliases.
-        if (!alias.namespace().identifier().equals(getFqProtoName(type))) {
-          errorReporter.report(
-              alias.alias().location(), ALIAS_CONFLICTS_WITH_TYPE_NAME, alias.alias());
+      String aliasName = alias.alias().identifier();
+      if (registry.hasType(aliasName)) {
+        if (ImportsPass.NEW_TYPES.contains(aliasName)) {
+          errorReporter.warn(alias.alias().location(), ALIAS_CONFLICTS_WITH_TYPE_NAME, aliasName);
+        } else {
+          errorReporter.report(alias.alias().location(), ALIAS_CONFLICTS_WITH_TYPE_NAME, aliasName);
         }
       }
-    }
-  }
-
-  private static String getFqProtoName(SoyType type) {
-    if (type instanceof SoyProtoType) {
-      return ((SoyProtoType) type).getDescriptor().getFullName();
-    } else if (type instanceof SoyProtoEnumType) {
-      return ((SoyProtoEnumType) type).getDescriptor().getFullName();
-    } else {
-      return null;
     }
   }
 }
