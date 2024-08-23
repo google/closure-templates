@@ -23,6 +23,7 @@ import static java.util.stream.Collectors.toCollection;
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMultimap;
+import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.base.internal.IdGenerator;
@@ -158,6 +159,9 @@ final class ImportsPass implements CompilerFileSetPass {
         SoyErrors.getDidYouMeanMessage(validSymbols, incorrectName));
   }
 
+  private static final ImmutableSet<String> NEW_TYPES =
+      ImmutableSet.of("list", "set", "map", "record", "iterable");
+
   /**
    * Reports naming collisions with built-in types, globals, VEs, etc.
    *
@@ -179,8 +183,12 @@ final class ImportsPass implements CompilerFileSetPass {
     // Name conflicts with a built-in type.
     SoyType type = TypeRegistries.builtinTypeRegistry().getType(importSymbolName);
     if (type != null) {
-      foundErrors = true;
-      errorReporter.report(nameLocation, IMPORT_CONFLICTS_WITH_TYPE_NAME, importSymbolName);
+      if (NEW_TYPES.contains(importSymbolName)) {
+        errorReporter.warn(nameLocation, IMPORT_CONFLICTS_WITH_TYPE_NAME, importSymbolName);
+      } else {
+        foundErrors = true;
+        errorReporter.report(nameLocation, IMPORT_CONFLICTS_WITH_TYPE_NAME, importSymbolName);
+      }
     }
 
     return foundErrors;

@@ -252,10 +252,10 @@ This can be very useful when handling values with union, `any`, or `?` types.
 {/if}
 ```
 
-The left hand side of the operator may be any of these values:
+The right hand side of the operator may be any of these values:
 
 *   Primitive types: `number`, `string`, `bool`
-*   Collection types: `list`, `map` (omitting generics)
+*   Collection types: `list`, `set`, `iterable`, `map`, `[]` (omitting generics)
 *   Sanitized content types: `html`, `attributes`, `css`, `js`, `uri`,
     `trusted_resource_uri`
 *   Protobuf types: `Message`, a specific protobuf message type

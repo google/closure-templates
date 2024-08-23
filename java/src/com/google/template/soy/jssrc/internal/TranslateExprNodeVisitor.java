@@ -901,10 +901,14 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
           return value.typeOf().tripleEquals(stringLiteral("number"));
         }
         break;
+      case RECORD:
+        return JsRuntime.IS_RECORD.call(value);
       case LIST:
         return JsRuntime.ARRAY_IS_ARRAY.call(value);
       case SET:
         return value.instanceOf(id("Set"));
+      case ITERABLE:
+        return JsRuntime.SOY_IS_ITERABLE.call(value);
       case MAP:
         return value.instanceOf(id("Map"));
       case PROTO:

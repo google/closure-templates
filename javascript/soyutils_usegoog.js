@@ -519,13 +519,15 @@ const $$coerceToBoolean = function(arg) {
 
 
 /**
- * Returns whether `it` is a JavaScript iterable.
+ * Returns whether `it` is a Soy iterable.
  *
  * @param {*} it The argument to test.
  * @return {boolean}
  */
 const $$isIterable = function(it) {
-  return it != null && typeof it[Symbol.iterator] === 'function';
+  return it != null && typeof it === 'object' &&  // omit string
+      typeof it[Symbol.iterator] === 'function' &&
+      !(it instanceof Map);  // omit map
 };
 
 
@@ -2656,6 +2658,13 @@ function $$isURI(value) {
       $$isTrustedResourceURI(value);
 }
 
+/**
+ * @param {?} value
+ * @return {boolean}
+ */
+function $$isRecord(value) {
+  return value && value.constructor === Object;
+}
 
 exports = {
   $$maybeMakeImmutableProto,
@@ -2757,12 +2766,13 @@ exports = {
   $$areYouAnInternalCaller,
   // The following are exported just for tests
   $$balanceTags_,
-  $$isAttribute,
+  $$isRecord,
   $$isHtml,
   $$isURI,
   $$isTrustedResourceURI,
   $$isCss,
   $$isJS,
+  $$isAttribute,
 };
 // -----------------------------------------------------------------------------
 // Generated code.

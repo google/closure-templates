@@ -42,10 +42,7 @@ import com.google.template.soy.soytree.TypeDefNode;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.soytree.defn.TemplateStateVar;
 import com.google.template.soy.types.DelegatingSoyTypeRegistry;
-import com.google.template.soy.types.ListType;
-import com.google.template.soy.types.MapType;
 import com.google.template.soy.types.NamedType;
-import com.google.template.soy.types.SetType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.SoyTypes;
@@ -246,22 +243,7 @@ final class ResolveDeclaredTypesPass
 
     @Override
     protected void visitTypeLiteralNode(TypeLiteralNode node) {
-      TypeNode typeNode = node.getTypeNode();
-      String typeName = typeNode.toString();
-      // TypeNodeConverter doesn't tolerate these generic types without <>.
-      switch (typeName) {
-        case "list":
-          typeNode.setResolvedType(ListType.ANY_LIST);
-          break;
-        case "set":
-          typeNode.setResolvedType(SetType.ANY_SET);
-          break;
-        case "map":
-          typeNode.setResolvedType(MapType.ANY_MAP);
-          break;
-        default:
-          visitTypeNode(typeNode);
-      }
+      visitTypeNode(node.getTypeNode());
     }
 
     @Override

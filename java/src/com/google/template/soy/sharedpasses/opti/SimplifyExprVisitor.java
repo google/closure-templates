@@ -467,11 +467,20 @@ final class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
         break;
       case LIST_LITERAL_NODE:
       case LIST_COMPREHENSION_NODE:
-        staticValue = rhs.getKind() == SoyType.Kind.LIST;
+        staticValue = rhs.getKind() == SoyType.Kind.LIST || rhs.getKind() == SoyType.Kind.ITERABLE;
+        break;
+      case FUNCTION_NODE:
+        FunctionNode fNode = (FunctionNode) lhs;
+        if (fNode.isResolved() && fNode.getSoyFunction() == BuiltinFunction.NEW_SET) {
+          staticValue = rhs.getKind() == SoyType.Kind.SET || rhs.getKind() == SoyType.Kind.ITERABLE;
+        }
         break;
       case MAP_LITERAL_NODE:
       case MAP_LITERAL_FROM_LIST_NODE:
         staticValue = rhs.getKind() == SoyType.Kind.MAP;
+        break;
+      case RECORD_LITERAL_NODE:
+        staticValue = rhs.getKind() == SoyType.Kind.RECORD;
         break;
       default:
         break;

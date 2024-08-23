@@ -203,6 +203,11 @@ public final class TypeRegistries {
             .put("js", JsType.getInstance())
             .put("ve_data", VeDataType.getInstance())
             .put("Message", MessageType.getInstance())
+            .put("record", RecordType.EMPTY_RECORD)
+            .put("list", ListType.ANY_LIST)
+            .put("set", SetType.ANY_SET)
+            .put("iterable", IterableType.ANY_ITERABLE)
+            .put("map", MapType.ANY_MAP)
             .buildOrThrow();
 
     private BuiltinTypeRegistry() {}

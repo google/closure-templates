@@ -751,6 +751,9 @@ public final class SoyTypes {
       case MESSAGE:
       case PROTO:
         return true;
+      case RECORD:
+        return type.equals(RecordType.EMPTY_RECORD);
+      case ITERABLE:
       case LIST:
       case SET:
         return ((AbstractIterableType) type).getElementType().equals(AnyType.getInstance());

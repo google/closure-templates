@@ -50,7 +50,6 @@ public final class JsRuntime {
   private static final GoogRequire GOOG_STRING = GoogRequire.create("goog.string");
 
   static final GoogRequire SOY = GoogRequire.create("soy");
-  private static final GoogRequire SOY_MAP = GoogRequire.create("soy.map");
   private static final GoogRequire SOY_NEWMAPS = GoogRequire.create("soy.newmaps");
   public static final GoogRequire SOY_VELOG = GoogRequire.create("soy.velog");
   public static final GoogRequire GOOG_SOY_ALIAS =
@@ -60,6 +59,7 @@ public final class JsRuntime {
 
   public static final GoogRequire GOOG_SOY = GoogRequire.create("goog.soy");
 
+  public static final Expression IS_RECORD = SOY.dotAccess("$$isRecord");
   public static final Expression IS_JS = SOY.dotAccess("$$isJS");
   public static final Expression IS_HTML = SOY.dotAccess("$$isHtml");
   public static final Expression IS_CSS = SOY.dotAccess("$$isCss");

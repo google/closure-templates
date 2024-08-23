@@ -842,6 +842,9 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
   @Override
   protected SoyValue visitInstanceOfOpNode(InstanceOfOpNode node) {
     SoyValue operand0 = visit(node.getChild(0));
+    if (node.getChild(1).getType().getKind() == SoyType.Kind.RECORD) {
+      return BooleanData.forValue(operand0 instanceof SoyRecordImpl);
+    }
     return BooleanData.forValue(TofuTypeChecks.isInstance(node.getChild(1).getType(), operand0));
   }
 

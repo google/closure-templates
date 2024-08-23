@@ -157,6 +157,7 @@ public final class TofuTypeChecks {
         // TODO(lukes): this should also assert that the value is in range
         return CheckResult.fromBool(value instanceof IntegerData);
       case RECORD:
+        // This allows casting a map or proto to a record.
         return CheckResult.fromBool(value instanceof SoyRecord);
       case STRING:
         return CheckResult.fromBool(value instanceof StringData);

@@ -21,9 +21,11 @@ import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.BOOLEAN_DATA_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.NUMBER_DATA_TYPE;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_ITERABLE_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_LIST_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_MAP_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_PROTO_VALUE_TYPE;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_RECORD_IMPL_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_SET_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_VALUE_PROVIDER_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.STRING_DATA_TYPE;
@@ -899,11 +901,17 @@ public final class SoyExpression extends Expression {
           type = NUMBER_DATA_TYPE;
         }
         break;
+      case RECORD:
+        type = SOY_RECORD_IMPL_TYPE;
+        break;
       case LIST:
         type = SOY_LIST_TYPE;
         break;
       case SET:
         type = SOY_SET_TYPE;
+        break;
+      case ITERABLE:
+        type = SOY_ITERABLE_TYPE;
         break;
       case MAP:
         type = SOY_MAP_TYPE;
