@@ -63,6 +63,7 @@ final class ResolveDeclaredTypesPass
     implements CompilerFilePass, CompilerFileSetPass.TopologicallyOrdered {
   private final ErrorReporter errorReporter;
   private final boolean disableAllTypeChecking;
+  private final boolean allowMissingSoyDeps;
   private final Supplier<FileSetMetadata> fileSetMetadataFromDeps;
 
   private final Map<SourceLogicalPath, SoyFileNode> pathToFileNode = new HashMap<>();
@@ -82,9 +83,11 @@ final class ResolveDeclaredTypesPass
   public ResolveDeclaredTypesPass(
       ErrorReporter errorReporter,
       boolean disableAllTypeChecking,
+      boolean allowMissingSoyDeps,
       Supplier<FileSetMetadata> fileSetMetadataFromDeps) {
     this.errorReporter = errorReporter;
     this.disableAllTypeChecking = disableAllTypeChecking;
+    this.allowMissingSoyDeps = allowMissingSoyDeps;
     this.fileSetMetadataFromDeps = fileSetMetadataFromDeps;
   }
 
@@ -94,7 +97,7 @@ final class ResolveDeclaredTypesPass
     converter =
         TypeNodeConverter.builder(errorReporter)
             .setTypeRegistry(typeRegistry)
-            .setDisableAllTypeChecking(disableAllTypeChecking)
+            .setReportMissingTypes(!disableAllTypeChecking && !allowMissingSoyDeps)
             .build();
     pathToFileNode.put(file.getFilePath().asLogicalPath(), file);
 

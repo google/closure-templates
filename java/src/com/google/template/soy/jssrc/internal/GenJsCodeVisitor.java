@@ -31,6 +31,7 @@ import static com.google.template.soy.jssrc.dsl.Statements.assign;
 import static com.google.template.soy.jssrc.dsl.Statements.ifStatement;
 import static com.google.template.soy.jssrc.dsl.Statements.returnValue;
 import static com.google.template.soy.jssrc.dsl.Whitespace.BLANK_LINE;
+import static com.google.template.soy.jssrc.internal.JsRuntime.EXPORTS;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_DEBUG;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_MODULE_GET;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_REQUIRE;
@@ -663,6 +664,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
         JsType.localTypedef("!" + topLevelName(node, node.isExported(), node.getName())));
 
     SoyType type = node.getType();
+    ByteSpan imputesSpan = SoyTreeUtils.getByteSpan(node, node.getNameLocation());
 
     ImmutableSet<SoyType> recordMembers;
     if (type.getKind() == Kind.INTERSECTION) {
@@ -674,7 +676,8 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       JsType jsType = getJsTypeForParam(type);
       JsDoc.Builder jsDoc =
           JsDoc.builder().addParameterizedAnnotation("typedef", jsType.typeExpr());
-      jsCodeBuilder.append(topLevelDecl(node, node.isExported(), node.getName(), jsDoc));
+      jsCodeBuilder.append(
+          topLevelDecl(node, node.isExported(), node.getName(), jsDoc, imputesSpan));
       return;
     }
 
@@ -685,7 +688,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     List<Statement> properties = new ArrayList<>();
     // Map<RecordType.Member, SoyType> propertyTypeDefs = new LinkedHashMap<>();
 
-    Expression lhs = topLevelLhs(node, node.isExported(), node.getName());
+    Expression recordClass = topLevelLhs(node, node.isExported(), node.getName(), null);
     for (SoyType member : recordMembers) {
       if (member.getKind() == Kind.NAMED) {
         JsType memberType = getJsTypeForParam(member);
@@ -706,7 +709,8 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
                   memberTypedefName,
                   JsDoc.builder()
                       .addParameterizedAnnotation("typedef", memberTypedefType.typeExpr())
-                      .addGoogRequires(memberTypedefType)));
+                      .addGoogRequires(memberTypedefType),
+                  null));
 
           // For every member, define a prototype property of the @record. The type of the property
           // points back to the member @typedef.
@@ -725,7 +729,10 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
                   .addGoogRequires(indexedPropJsType)
                   .build();
           properties.add(
-              lhs.dotAccess("prototype").dotAccess(recordMember.name()).asStatement(memberDoc));
+              recordClass
+                  .dotAccess("prototype")
+                  .dotAccess(recordMember.name())
+                  .asStatement(memberDoc));
         }
       }
     }
@@ -736,6 +743,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
             node.isExported(),
             node.getName(),
             jsDoc,
+            imputesSpan,
             Expressions.function(JsDoc.getDefaultInstance(), Statements.EMPTY)));
     jsCodeBuilder.append(Statements.of(properties));
   }
@@ -743,6 +751,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
   @Override
   protected void visitConstNode(ConstNode node) {
     ConstVar var = node.getVar();
+    ByteSpan imputesSpan = SoyTreeUtils.getByteSpan(node, var.nameLocation());
 
     JsType varType = getJsTypeForParamForDeclaration(var.authoredType());
 
@@ -763,7 +772,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
             .prepend(JsDoc.builder().setOverviewComment("@pureOrBreakMyCode").build());
 
     jsCodeBuilder.append(
-        topLevelAssignment(node, node.isExported(), partialName, jsDoc, constantExpr));
+        topLevelAssignment(node, node.isExported(), partialName, jsDoc, imputesSpan, constantExpr));
     for (GoogRequire require : varType.googRequires()) {
       jsCodeBuilder.addGoogRequire(require);
     }
@@ -782,8 +791,19 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     }
   }
 
-  private Expression topLevelLhs(SoyNode node, boolean exported, String partialName) {
-    return dottedIdNoRequire(topLevelName(node, exported, partialName));
+  private Expression topLevelLhs(
+      SoyNode node, boolean exported, String partialName, @Nullable ByteSpan byteSpan) {
+    Expression nameExpr = id(partialName).withByteSpan(byteSpan);
+    if (jsSrcOptions.shouldGenerateGoogModules()) {
+      if (exported) {
+        return EXPORTS.dotAccess(nameExpr);
+      } else {
+        return nameExpr;
+      }
+    } else {
+      SoyFileNode file = node.getNearestAncestor(SoyFileNode.class);
+      return dottedIdNoRequire(getGoogModuleNamespace(file.getNamespace())).dotAccess(nameExpr);
+    }
   }
 
   /**
@@ -802,27 +822,33 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       boolean exported,
       String partialName,
       JsDoc.Builder jsDoc,
+      @Nullable ByteSpan byteSpan,
       @Nullable Expression value) {
     if (jsSrcOptions.shouldGenerateGoogModules()) {
       if (exported) {
-        Expression lhs = topLevelLhs(node, exported, partialName);
+        Expression lhs = topLevelLhs(node, exported, partialName, byteSpan);
         return value != null ? assign(lhs, value, jsDoc.build()) : lhs.asStatement(jsDoc.build());
       } else {
         return VariableDeclaration.builder(partialName)
             .setJsDoc(jsDoc.build())
             .setRhs(value)
+            .setByteSpan(byteSpan)
             .build();
       }
     } else {
       jsDoc.addAnnotation(exported ? "public" : "private");
-      Expression lhs = topLevelLhs(node, exported, partialName);
+      Expression lhs = topLevelLhs(node, exported, partialName, byteSpan);
       return value != null ? assign(lhs, value, jsDoc.build()) : lhs.asStatement(jsDoc.build());
     }
   }
 
   private Statement topLevelDecl(
-      SoyNode node, boolean exported, String partialName, JsDoc.Builder jsDoc) {
-    return topLevelAssignment(node, exported, partialName, jsDoc, null);
+      SoyNode node,
+      boolean exported,
+      String partialName,
+      JsDoc.Builder jsDoc,
+      @Nullable ByteSpan byteSpan) {
+    return topLevelAssignment(node, exported, partialName, jsDoc, byteSpan, null);
   }
 
   private Expression getLocalConstantExpr(ConstNode node) {

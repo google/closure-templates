@@ -215,7 +215,7 @@ public final class TypeNodeConverter
     private TypeInterner interner;
     private TypeRegistry typeRegistry;
     private ProtoTypeRegistry protoRegistry;
-    private boolean disableAllTypeChecking = false;
+    private boolean reportMissingTypes = true;
     private boolean systemExternal = false;
 
     private Builder() {}
@@ -227,8 +227,8 @@ public final class TypeNodeConverter
     }
 
     @CanIgnoreReturnValue
-    public Builder setDisableAllTypeChecking(boolean disableAllTypeChecking) {
-      this.disableAllTypeChecking = disableAllTypeChecking;
+    public Builder setReportMissingTypes(boolean reportMissingTypes) {
+      this.reportMissingTypes = reportMissingTypes;
       return this;
     }
 
@@ -257,7 +257,7 @@ public final class TypeNodeConverter
           interner,
           systemExternal ? TypeRegistries.builtinTypeRegistry() : typeRegistry,
           systemExternal ? protoRegistry : null,
-          disableAllTypeChecking);
+          reportMissingTypes);
     }
   }
 
@@ -265,19 +265,19 @@ public final class TypeNodeConverter
   private final TypeInterner interner;
   private final TypeRegistry typeRegistry;
   private final ProtoTypeRegistry protoRegistry;
-  private final boolean disableAllTypeChecking;
+  private final boolean reportMissingTypes;
 
   private TypeNodeConverter(
       ErrorReporter errorReporter,
       TypeInterner interner,
       TypeRegistry typeRegistry,
       ProtoTypeRegistry protoRegistry,
-      boolean disableAllTypeChecking) {
+      boolean reportMissingTypes) {
     this.errorReporter = errorReporter;
     this.interner = interner;
     this.typeRegistry = typeRegistry;
     this.protoRegistry = protoRegistry;
-    this.disableAllTypeChecking = disableAllTypeChecking;
+    this.reportMissingTypes = reportMissingTypes;
   }
 
   /**
@@ -319,7 +319,7 @@ public final class TypeNodeConverter
             name,
             genericType.formatNumTypeParams());
       } else {
-        if (!disableAllTypeChecking) {
+        if (reportMissingTypes) {
           errorReporter.report(
               node.sourceLocation(),
               UNKNOWN_TYPE,
