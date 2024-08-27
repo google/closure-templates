@@ -63,7 +63,7 @@ import javax.annotation.Nullable;
  * <p>This class name purposefully does not end with "Params" so that it cannot collide with the
  * names of generated subclasses.
  */
-public abstract class BaseSoyTemplateImpl implements SoyTemplate {
+public abstract class BaseSoyTemplateImpl extends SoyTemplate {
 
   protected final ParamStore data;
 
@@ -123,7 +123,7 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
    */
   public abstract static class AbstractBuilder<
           B extends AbstractBuilder<?, T>, T extends SoyTemplate>
-      implements Builder<T> {
+      extends Builder<T> {
     // Use IdentityHashMaps instead of HashMaps since:
     //  1. They use less memory internally
     //  2. We have an appropriate key object that we know will be a singleton
@@ -139,7 +139,7 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
       this.numRequiredParamsRemaining = numRequiredParams;
     }
 
-    private static final class PartialSoyTemplateImpl implements PartialSoyTemplate {
+    private static final class PartialSoyTemplateImpl extends PartialSoyTemplate {
       private final String templateName;
 
       private final ParamStore data;

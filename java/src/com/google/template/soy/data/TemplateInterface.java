@@ -22,16 +22,16 @@ import java.util.Map;
  * An invocation of a Soy template, encapsulating both the template name and some the data
  * parameters passed to the template.
  */
-public interface TemplateInterface {
+public abstract class TemplateInterface {
 
   /** Returns the name of the Soy template that this params object renders. */
-  String getTemplateName();
+  public abstract String getTemplateName();
 
   /**
    * Returns the parameters as a map. This method is only intended to be called by the Soy
    * framework.
    */
-  Map<String, ?> getParamsAsMap();
+  public abstract Map<String, ?> getParamsAsMap();
 
-  Object getParamsAsRecord();
+  public abstract Object getParamsAsRecord();
 }

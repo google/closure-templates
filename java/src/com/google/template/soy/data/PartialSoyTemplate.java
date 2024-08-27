@@ -21,4 +21,4 @@ package com.google.template.soy.data;
  * parameters passed to the template. Note that this is allowed to have some of its parameters not
  * fully added, but it cannot be used for rendering.
  */
-public interface PartialSoyTemplate extends TemplateInterface {}
+public abstract class PartialSoyTemplate extends TemplateInterface {}

@@ -66,6 +66,7 @@ java_library(
         ":record_property",
         "@com_google_auto_value_auto_value",
         "@maven//:com_google_common_html_types_types",
+        "@maven//:com_google_errorprone_error_prone_annotations",
         "@maven//:com_google_guava_guava",
     ],
 )

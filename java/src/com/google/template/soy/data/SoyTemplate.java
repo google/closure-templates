@@ -17,34 +17,35 @@
 package com.google.template.soy.data;
 
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 
 /**
  * An invocation of a Soy template, encapsulating both the template name and all the data parameters
  * passed to the template.
  *
  */
-public interface SoyTemplate extends TemplateInterface {
+public abstract class SoyTemplate extends TemplateInterface {
 
   /**
    * The superclass of all generated builders.
    *
    * @param <T> the type of template that this builder builds.
    */
-  interface Builder<T extends SoyTemplate> {
+  public abstract static class Builder<T extends SoyTemplate> {
 
     /**
      * Builds and returns an immutable `SoyTemplate` instance from the state of this builder.
      *
      * @throws IllegalStateException if any required, non-indirect parameter is unset.
      */
-    T build();
+    public abstract T build();
 
     /**
      * Builds and returns a `SoyTemplate` that is partially filled. This can be passed into another
      * template that can fill in the rest of the values, but cannot be used directly in an
      * invocation.
      */
-    PartialSoyTemplate buildPartial();
+    public abstract PartialSoyTemplate buildPartial();
 
     /**
      * Sets any template parameter of this builder. SoyTemplateParam ensures type safety.
@@ -52,7 +53,8 @@ public interface SoyTemplate extends TemplateInterface {
      * @throws IllegalArgumentException if the template corresponding to this builder does not have
      *     a parameter equal to {@code param}.
      */
-    <V> Builder<T> setParam(SoyTemplateParam<? super V> param, V value);
+    @CanIgnoreReturnValue
+    public abstract <V> Builder<T> setParam(SoyTemplateParam<? super V> param, V value);
 
     /**
      * Sets any template parameter of this builder to a future value. SoyTemplateParam ensures type
@@ -61,20 +63,22 @@ public interface SoyTemplate extends TemplateInterface {
      * @throws IllegalArgumentException if the template corresponding to this builder does not have
      *     a parameter equal to {@code param}.
      */
-    <V> Builder<T> setParamFuture(SoyTemplateParam<? super V> param, ListenableFuture<V> value);
+    @CanIgnoreReturnValue
+    public abstract <V> Builder<T> setParamFuture(
+        SoyTemplateParam<? super V> param, ListenableFuture<V> value);
 
     /**
      * Returns whether this builder has a param equal to {@code param}. If this method returns true
      * then {@link #setParam} should not throw an {@link IllegalArgumentException}.
      */
-    boolean hasParam(SoyTemplateParam<?> param);
+    public abstract boolean hasParam(SoyTemplateParam<?> param);
   }
 
   /**
    * Wraps a {@link SoyTemplate} but grants synchronous access to {@link #getTemplateName()}. This
    * method should only be called by generated implementations of TemplateParameters.
    */
-  final class AsyncWrapper<T extends SoyTemplate> {
+  public static final class AsyncWrapper<T extends SoyTemplate> {
 
     private final String templateName;
     private final ListenableFuture<T> templateFuture;
