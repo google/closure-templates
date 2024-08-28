@@ -70,24 +70,29 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
 
   // covariant overrides
 
+  @CanIgnoreReturnValue
   @Override
   @Nonnull
   public abstract LoggingAdvisingAppendable append(CharSequence csq) throws IOException;
 
+  @CanIgnoreReturnValue
   @Override
   @Nonnull
   public abstract LoggingAdvisingAppendable append(CharSequence csq, int start, int end)
       throws IOException;
 
+  @CanIgnoreReturnValue
   @Override
   @Nonnull
   public abstract LoggingAdvisingAppendable append(char c) throws IOException;
 
   /** Called whenever a loggable element is entered. */
+  @CanIgnoreReturnValue
   @Nonnull
   public abstract LoggingAdvisingAppendable enterLoggableElement(LogStatement statement);
 
   /** Called whenever a loggable element is exited. */
+  @CanIgnoreReturnValue
   @Nonnull
   public abstract LoggingAdvisingAppendable exitLoggableElement();
 
@@ -226,7 +231,7 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
   }
 
   /** A {@link LoggingAdvisingAppendable} that renders to a string builder. */
-  public static class BufferingAppendable extends AbstractLoggingAdvisingAppendable {
+  public static class BufferingAppendable extends LoggingAdvisingAppendable {
 
     private static final Object EXIT_LOG_STATEMENT_MARKER = new Object();
     // lazily allocated list that contains one of 7 types of objects, each which corresponds to one
@@ -249,19 +254,25 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
       return false;
     }
 
+    @CanIgnoreReturnValue
     @Override
-    protected void doAppend(CharSequence s) throws IOException {
+    public LoggingAdvisingAppendable append(CharSequence s) throws IOException {
       builder.append(s);
+      return this;
     }
 
+    @CanIgnoreReturnValue
     @Override
-    protected void doAppend(CharSequence s, int start, int end) throws IOException {
+    public LoggingAdvisingAppendable append(CharSequence s, int start, int end) throws IOException {
       builder.append(s, start, end);
+      return this;
     }
 
     @Override
-    protected void doAppend(char c) throws IOException {
+    @CanIgnoreReturnValue
+    public LoggingAdvisingAppendable append(char c) throws IOException {
       builder.append(c);
+      return this;
     }
 
     /**
@@ -281,22 +292,28 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
     }
 
     /** Called whenever a loggable element is entered. */
+    @CanIgnoreReturnValue
     @Override
-    protected void doEnterLoggableElement(LogStatement statement) {
+    public LoggingAdvisingAppendable enterLoggableElement(LogStatement statement) {
       getCommandsAndAddPendingStringData().add(statement);
+      return this;
     }
 
     /** Called whenever a loggable element is exited. */
+    @CanIgnoreReturnValue
     @Override
-    protected void doExitLoggableElement() {
+    public LoggingAdvisingAppendable exitLoggableElement() {
       getCommandsAndAddPendingStringData().add(EXIT_LOG_STATEMENT_MARKER);
+      return this;
     }
 
+    @CanIgnoreReturnValue
     @Override
-    protected void doAppendLoggingFunctionInvocation(
+    public LoggingAdvisingAppendable appendLoggingFunctionInvocation(
         LoggingFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers)
         throws IOException {
       getCommandsAndAddPendingStringData().add(LoggingFunctionCommand.create(funCall, escapers));
+      return this;
     }
 
     public void replayOn(LoggingAdvisingAppendable appendable) throws IOException {

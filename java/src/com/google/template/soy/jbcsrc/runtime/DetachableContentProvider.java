@@ -17,6 +17,7 @@
 package com.google.template.soy.jbcsrc.runtime;
 
 import com.google.common.collect.ImmutableList;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.data.LogStatement;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.LoggingAdvisingAppendable.BufferingAppendable;
@@ -163,44 +164,49 @@ public abstract class DetachableContentProvider implements SoyValueProvider {
       }
     }
 
-
+    @CanIgnoreReturnValue
     @Override
-    protected void doAppend(CharSequence csq) throws IOException {
-      super.doAppend(csq);
+    public LoggingAdvisingAppendable append(CharSequence csq) throws IOException {
+      super.append(csq);
       var delegates = this.delegates;
       if (delegates == null) {
-        return;
+        return this;
       }
       int size = delegates.size();
       for (int i = 0; i < size; i++) {
         delegates.get(i).append(csq);
       }
+      return this;
     }
 
+    @CanIgnoreReturnValue
     @Override
-    protected void doAppend(CharSequence csq, int start, int end) throws IOException {
-      super.doAppend(csq, start, end);
+    public LoggingAdvisingAppendable append(CharSequence csq, int start, int end)
+        throws IOException {
+      super.append(csq, start, end);
       var delegates = this.delegates;
       if (delegates == null) {
-        return;
+        return this;
       }
       int size = delegates.size();
       for (int i = 0; i < size; i++) {
         delegates.get(i).append(csq, start, end);
       }
+      return this;
     }
 
     @Override
-    protected void doAppend(char c) throws IOException {
-      super.doAppend(c);
+    public LoggingAdvisingAppendable append(char c) throws IOException {
+      super.append(c);
       var delegates = this.delegates;
       if (delegates == null) {
-        return;
+        return this;
       }
       int size = delegates.size();
       for (int i = 0; i < size; i++) {
         delegates.get(i).append(c);
       }
+      return this;
     }
 
     @Override
@@ -226,45 +232,51 @@ public abstract class DetachableContentProvider implements SoyValueProvider {
       throw new AssertionError("should not be called");
     }
 
+    @CanIgnoreReturnValue
     @Override
-    protected void doEnterLoggableElement(LogStatement statement) {
-      super.doEnterLoggableElement(statement);
+    public LoggingAdvisingAppendable enterLoggableElement(LogStatement statement) {
+      super.enterLoggableElement(statement);
       var delegates = this.delegates;
       if (delegates == null) {
-        return;
+        return this;
       }
       int size = delegates.size();
       for (int i = 0; i < size; i++) {
         delegates.get(i).enterLoggableElement(statement);
       }
+      return this;
     }
 
+    @CanIgnoreReturnValue
     @Override
-    protected void doExitLoggableElement() {
-      super.doExitLoggableElement();
+    public LoggingAdvisingAppendable exitLoggableElement() {
+      super.exitLoggableElement();
       var delegates = this.delegates;
       if (delegates == null) {
-        return;
+        return this;
       }
       int size = delegates.size();
       for (int i = 0; i < size; i++) {
         delegates.get(i).exitLoggableElement();
       }
+      return this;
     }
 
+    @CanIgnoreReturnValue
     @Override
-    protected void doAppendLoggingFunctionInvocation(
+    public LoggingAdvisingAppendable appendLoggingFunctionInvocation(
         LoggingFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers)
         throws IOException {
-      super.doAppendLoggingFunctionInvocation(funCall, escapers);
+      super.appendLoggingFunctionInvocation(funCall, escapers);
       var delegates = this.delegates;
       if (delegates == null) {
-        return;
+        return this;
       }
       int size = delegates.size();
       for (int i = 0; i < size; i++) {
         delegates.get(i).appendLoggingFunctionInvocation(funCall, escapers);
       }
+      return this;
     }
   }
 }

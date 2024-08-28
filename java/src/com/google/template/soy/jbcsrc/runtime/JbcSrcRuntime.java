@@ -36,7 +36,6 @@ import com.google.errorprone.annotations.Keep;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.ExtensionLite;
 import com.google.protobuf.GeneratedMessage.ExtendableMessage;
-import com.google.template.soy.data.AbstractLoggingAdvisingAppendable;
 import com.google.template.soy.data.LogStatement;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.LoggingAdvisingAppendable.BufferingAppendable;
@@ -496,41 +495,49 @@ public final class JbcSrcRuntime {
   }
 
   private static final LoggingAdvisingAppendable LOGGER =
-      new AbstractLoggingAdvisingAppendable() {
+      new LoggingAdvisingAppendable() {
         @Override
         public boolean softLimitReached() {
           return false;
         }
 
         @Override
-        protected void doAppend(char c) {
+        public LoggingAdvisingAppendable append(char c) {
           System.out.append(c);
+          return this;
         }
 
         @Override
-        protected void doAppend(CharSequence csq, int start, int end) {
+        public LoggingAdvisingAppendable append(CharSequence csq, int start, int end) {
           System.out.append(csq, start, end);
+          return this;
         }
 
         @Override
-        protected void doAppend(CharSequence csq) {
+        public LoggingAdvisingAppendable append(CharSequence csq) {
           System.out.append(csq);
+          return this;
         }
 
         @Override
-        protected void doEnterLoggableElement(LogStatement statement) {}
+        public LoggingAdvisingAppendable enterLoggableElement(LogStatement statement) {
+          return this;
+        }
 
         @Override
-        protected void doExitLoggableElement() {}
+        public LoggingAdvisingAppendable exitLoggableElement() {
+          return this;
+        }
 
         @Override
-        protected void doAppendLoggingFunctionInvocation(
+        public LoggingAdvisingAppendable appendLoggingFunctionInvocation(
             LoggingFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers) {
           String val = funCall.placeholderValue();
           for (Function<String, String> directive : escapers) {
             val = directive.apply(val);
           }
           System.out.append(val);
+          return this;
         }
 
         @Override
