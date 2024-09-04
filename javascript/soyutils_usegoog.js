@@ -2667,6 +2667,14 @@ function $$isRecord(value) {
   return value && value.constructor === Object;
 }
 
+/**
+ * @param {?} value
+ * @return {boolean}
+ */
+function $$isBigInt(value) {
+  return typeof value === 'bigint';
+}
+
 exports = {
   $$maybeMakeImmutableProto,
   $$emptyProto,
@@ -2681,6 +2689,7 @@ exports = {
   $$parseInt,
   $$equals,
   $$isFunction,
+  $$isBigInt,
   $$parseFloat,
   $$randomInt,
   $$round,
