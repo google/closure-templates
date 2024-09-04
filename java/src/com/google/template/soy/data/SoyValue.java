@@ -32,7 +32,7 @@ import javax.annotation.ParametersAreNonnullByDefault;
 
 /** Superinterface of all Soy value interfaces/classes. */
 @ParametersAreNonnullByDefault
-public abstract class SoyValue implements SoyValueProvider {
+public abstract class SoyValue extends SoyValueProvider {
 
   /** Convenience method for testing nullishness. */
   @SuppressWarnings("ReferenceEquality") // This is safe since we own the definition of nullish

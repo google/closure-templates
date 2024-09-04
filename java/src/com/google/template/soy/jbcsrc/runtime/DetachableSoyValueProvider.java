@@ -33,7 +33,7 @@ import java.io.IOException;
  * resolve to a {@link SoyValueProvider} to call {@link SoyValueProvider#renderAndResolve}, use
  * {@link DetachableSoyValueProviderProvider} instead.
  */
-public abstract class DetachableSoyValueProvider implements SoyValueProvider {
+public abstract class DetachableSoyValueProvider extends SoyValueProvider {
   private SoyValue resolvedValue;
 
   @Override
@@ -63,7 +63,8 @@ public abstract class DetachableSoyValueProvider implements SoyValueProvider {
   }
 
   @Override
-  public RenderResult renderAndResolve(LoggingAdvisingAppendable appendable) throws IOException {
+  public final RenderResult renderAndResolve(LoggingAdvisingAppendable appendable)
+      throws IOException {
     RenderResult status = status();
     if (status.isDone()) {
       resolvedValue.render(appendable);

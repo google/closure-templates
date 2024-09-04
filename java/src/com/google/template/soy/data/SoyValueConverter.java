@@ -280,7 +280,7 @@ public final class SoyValueConverter {
             + ").");
   }
 
-  private static final class LazyProvider implements SoyValueProvider {
+  private static final class LazyProvider extends SoyValueProvider {
     Supplier<SoyValueProvider> delegateProvider;
     SoyValueProvider delegate;
 

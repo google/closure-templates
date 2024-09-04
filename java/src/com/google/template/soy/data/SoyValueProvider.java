@@ -31,7 +31,7 @@ import javax.annotation.ParametersAreNonnullByDefault;
  * should itself be a provider (of itself).
  */
 @ParametersAreNonnullByDefault
-public interface SoyValueProvider {
+public abstract class SoyValueProvider {
 
   /**
    * Usually, this method is a no-op that simply returns this object. However, if this value needs
@@ -40,7 +40,7 @@ public interface SoyValueProvider {
    * @return The resolved value.
    */
   @Nonnull
-  SoyValue resolve();
+  public abstract SoyValue resolve();
 
   /**
    * Returns {@link RenderResult#done()} if the value provider can be {@link #resolve() resolved}
@@ -53,7 +53,7 @@ public interface SoyValueProvider {
    * RenderResult}
    */
   @Nonnull
-  RenderResult status();
+  public abstract RenderResult status();
 
   /**
    * Renders this value to the given {@link com.google.template.soy.data.LoggingAdvisingAppendable},
@@ -71,14 +71,16 @@ public interface SoyValueProvider {
    * @throws IOException If the appendable throws an IOException
    */
   @Nonnull
-  RenderResult renderAndResolve(LoggingAdvisingAppendable appendable) throws IOException;
+  public abstract RenderResult renderAndResolve(LoggingAdvisingAppendable appendable)
+      throws IOException;
 
   /**
    * Returns a SoyValueProvider whose resolved value will be {@code defaultValue} if {@code
    * delegate} is `null` or resolves to {@link UndefinedData}.
    */
   @Nonnull
-  static SoyValueProvider withDefault(@Nullable SoyValueProvider delegate, SoyValue defaultValue) {
+  public static SoyValueProvider withDefault(
+      @Nullable SoyValueProvider delegate, SoyValue defaultValue) {
     // Allow null so callers don't have to check if, e.g., they get delegate out of a map.
     if (delegate == null) {
       return defaultValue;

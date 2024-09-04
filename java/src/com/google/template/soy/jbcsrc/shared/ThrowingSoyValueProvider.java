@@ -32,7 +32,7 @@ import java.util.Set;
  * <p>TODO(b/289390227): This is a temporary hack to preserve the error semantics. We should
  * probably just throw a SoyDataException directly in the evaluator.
  */
-final class ThrowingSoyValueProvider implements SoyValueProvider {
+final class ThrowingSoyValueProvider extends SoyValueProvider {
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
 
   private static final class SuppressedDeferredException extends RuntimeException {

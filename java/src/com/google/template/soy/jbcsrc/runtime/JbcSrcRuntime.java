@@ -252,7 +252,7 @@ public final class JbcSrcRuntime {
    * message parts and can dynamically render them. This manages a small state machine that allows
    * for rendering to proceed.
    */
-  public static class MsgRenderer implements SoyValueProvider {
+  public static class MsgRenderer extends SoyValueProvider {
     SoyMsgRawParts msgParts;
     private int partIndex;
     private SoyValueProvider pendingRender;

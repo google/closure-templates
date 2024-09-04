@@ -38,7 +38,7 @@ import javax.annotation.Nullable;
  * jbcsrc} implementations of the generated {@code LetContentNode} and {@code CallParamContentNode}
  * implementations.
  */
-public abstract class DetachableContentProvider implements SoyValueProvider {
+public abstract class DetachableContentProvider extends SoyValueProvider {
 
   // Will be either a SanitizedContent, a StringData.
   private SoyValue resolvedValue;
@@ -83,7 +83,8 @@ public abstract class DetachableContentProvider implements SoyValueProvider {
   }
 
   @Override
-  public RenderResult renderAndResolve(LoggingAdvisingAppendable appendable) throws IOException {
+  public final RenderResult renderAndResolve(LoggingAdvisingAppendable appendable)
+      throws IOException {
     if (isDone()) {
       this.appendable.replayFinishedOn(appendable);
       return RenderResult.done();

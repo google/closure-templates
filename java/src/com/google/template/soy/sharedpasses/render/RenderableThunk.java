@@ -37,7 +37,7 @@ import javax.annotation.Nonnull;
  *
  * <p>This is analagous to {@code DetachableContentProvider} in the {@code jbcsrc} backend.
  */
-public abstract class RenderableThunk implements SoyValueProvider {
+public abstract class RenderableThunk extends SoyValueProvider {
   private String content;
   private SoyValue resolved;
   private final ContentKind kind;

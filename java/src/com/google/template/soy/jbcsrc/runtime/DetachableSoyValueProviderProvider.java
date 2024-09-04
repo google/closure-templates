@@ -32,7 +32,7 @@ import java.io.IOException;
  * DetachableSoyValueProvider} instead, which resolves to a {@link SoyValue} and calls {@link
  * SoyValue#render}.
  */
-public abstract class DetachableSoyValueProviderProvider implements SoyValueProvider {
+public abstract class DetachableSoyValueProviderProvider extends SoyValueProvider {
   private SoyValueProvider resolvedValueProvider;
 
   @Override
@@ -59,7 +59,8 @@ public abstract class DetachableSoyValueProviderProvider implements SoyValueProv
   }
 
   @Override
-  public RenderResult renderAndResolve(LoggingAdvisingAppendable appendable) throws IOException {
+  public final RenderResult renderAndResolve(LoggingAdvisingAppendable appendable)
+      throws IOException {
     SoyValueProvider local = resolvedValueProvider;
     if (local == null) {
       // This is `status()` inlined so we can call `renderAndResolve` on the SVP instead of

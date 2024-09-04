@@ -163,7 +163,7 @@ public final class JbcSrcRuntimeTest {
     assertRendersAs(renderer, "<a href='./foo'>Hello </a><a href='./bar'>world.</a>");
   }
 
-  static class FakeProvider implements SoyValueProvider {
+  static class FakeProvider extends SoyValueProvider {
     RenderResult result;
     int calls;
 
