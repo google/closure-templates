@@ -36,7 +36,7 @@ const googFormat = goog.require('goog.format');
 const googSoy = goog.requireType('goog.soy');
 const googString = goog.require('goog.string');
 const {Message} = goog.requireType('jspb');
-const {SafeHtml, SafeScript, SafeStyle, SafeStyleSheet, SafeUrl, TrustedResourceUrl, unwrapHtml, unwrapResourceUrl, unwrapScript, unwrapStyle, unwrapStyleSheet, unwrapUrl} = goog.require('safevalues');
+const {SafeHtml, SafeScript, SafeStyleSheet, TrustedResourceUrl, isStyle, isUrl, unwrapHtml, unwrapResourceUrl, unwrapScript, unwrapStyle, unwrapStyleSheet, unwrapUrl} = goog.require('safevalues');
 const {SanitizedContent, SanitizedContentKind, SanitizedCss, SanitizedHtml, SanitizedHtmlAttribute, SanitizedJs, SanitizedTrustedResourceUri, SanitizedUri} = goog.require('goog.soy.data');
 const {defaultImmutableInstance} = goog.require('jspb.immutable_message');
 const {htmlSafeByReview} = goog.require('safevalues.restricted.reviewed');
@@ -1592,7 +1592,7 @@ const $$filterNormalizeUri = function(value) {
   if ($$isURI(value)) {
     return $$normalizeUri(value);
   }
-  if (value instanceof SafeUrl) {
+  if (isUrl(value)) {
     return $$normalizeUri(unwrapUrl(value));
   }
   if (value instanceof TrustedResourceUrl) {
@@ -1616,7 +1616,7 @@ const $$filterNormalizeMediaUri = function(value) {
   if ($$isURI(value)) {
     return $$normalizeUri(value);
   }
-  if (value instanceof SafeUrl) {
+  if (isUrl(value)) {
     return $$normalizeUri(unwrapUrl(value));
   }
   if (value instanceof TrustedResourceUrl) {
@@ -1731,7 +1731,7 @@ const $$filterCssValue = function(value) {
   if (value == null) {
     return '';
   }
-  if (value instanceof SafeStyle) {
+  if (isStyle(value)) {
     return $$embedCssIntoHtml_(unwrapStyle(value));
   }
   // Note: SoyToJsSrcCompiler uses $$filterCssValue both for the contents of
