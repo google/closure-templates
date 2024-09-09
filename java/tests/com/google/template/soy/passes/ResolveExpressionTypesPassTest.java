@@ -1076,8 +1076,8 @@ public final class ResolveExpressionTypesPassTest {
                     "",
                     "{let $protoCorrect: Proto2ImplicitDefaults() /}",
                     "{assertType('string', $protoCorrect.getString())}",
-                    "{assertType('string|undefined', $protoCorrect.getStringOrUndefined())}",
-                    "{assertType('int', $protoCorrect.getLongWithDefaultJsType())}"
+                    "{assertType('string|undefined', $protoCorrect.getStringOrUndefined())}"
+
                     ),
                 ExampleExtendable.getDescriptor(),
                 Proto2ImplicitDefaults.getDescriptor())

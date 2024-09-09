@@ -246,6 +246,14 @@ public enum BuiltinMethod implements SoyMethod {
         // Jspb doesn't have OrUndefined accessors for messages, so neither does soy.
         return false;
       }
+
+      // begin:moe_strip
+      // TODO: b/319288438 - Remove this once we are ready to return gbigint for 64-bit ints.
+      if (fd.getJavaType() == JavaType.LONG) {
+        return false;
+      }
+      // end:moe_strip
+
       return fd.hasPresence();
     }
 
