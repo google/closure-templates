@@ -5,7 +5,6 @@
  * Functions necessary to interact with the Soy-Idom runtime.
  */
 
-import * as log from 'goog:goog.log';
 import {ordainSanitizedHtml} from 'goog:soydata.VERY_UNSAFE'; // from //javascript/template/soy:soy_usegoog_js
 import * as soy from 'google3/javascript/template/soy/soyutils_usegoog';
 import {
@@ -13,6 +12,7 @@ import {
   ElementMetadata,
   Logger,
 } from 'google3/javascript/template/soy/soyutils_velog';
+import * as log from 'google3/third_party/javascript/closure/log/log';
 import {SanitizedHtml} from 'google3/third_party/javascript/closure/soy/data';
 import * as googSoy from 'google3/third_party/javascript/closure/soy/soy';
 import {truncate} from 'google3/third_party/javascript/closure/string/string';
