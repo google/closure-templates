@@ -7,8 +7,6 @@
 
 import * as log from 'goog:goog.log';
 import {ordainSanitizedHtml} from 'goog:soydata.VERY_UNSAFE'; // from //javascript/template/soy:soy_usegoog_js
-import {toObjectForTesting} from 'google3/javascript/apps/jspb/debug';
-import {Message} from 'google3/javascript/apps/jspb/message';
 import * as soy from 'google3/javascript/template/soy/soyutils_usegoog';
 import {
   $$VisualElementData,
@@ -683,21 +681,7 @@ export function isMatchingKey(
 }
 
 function maybeReportErrors(el: HTMLElement, data: unknown) {
-  // Serializes JSPB protos using toObjectForTesting. This is important as
-  // jspb protos modify themselves sometimes just by reading them (e.g. when a
-  // nested proto is created it will fill in empty repeated fields
-  // into the internal array).
-  // Note that we can't use the replacer argument of JSON.stringify as Message
-  // contains a toJSON method, which prevents the message instance to be passed
-  // to the JSON.stringify replacer.
-  // tslint:disable-next-line:no-any Replace private function.
-  const msgProto = Message.prototype as any;
-  const msgProtoToJSON = msgProto['toJSON'];
-  msgProto['toJSON'] = function (this: Message) {
-    return toObjectForTesting(this);
-  };
   const stringifiedParams = JSON.stringify(data, null, 2);
-  msgProto['toJSON'] = msgProtoToJSON;
   if (!el.__lastParams) {
     el.__lastParams = stringifiedParams;
     return;
