@@ -767,7 +767,11 @@ def build_attr(attr_name, *values):
       if attr_name == 'class'
       else build_attr_value(*values)
   )
-  content = attr_name + '="' + value + '"' if value else ''
+  content = (
+      attr_name + '="' + sanitize.escape_html_attribute(value) + '"'
+      if value
+      else ''
+  )
   return sanitize.SanitizedHtmlAttribute(
       content,
       sanitize.IActuallyUnderstandSoyTypeSafetyAndHaveSecurityApproval(

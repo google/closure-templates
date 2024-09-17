@@ -1866,7 +1866,8 @@ const $$buildAttr = function(attrName, ...values) {
   if (!joined) {
     return VERY_UNSAFE.ordainSanitizedHtmlAttribute('');
   }
-  return VERY_UNSAFE.ordainSanitizedHtmlAttribute(`${attrName}="${joined}"`);
+    return VERY_UNSAFE.ordainSanitizedHtmlAttribute(
+      `${attrName}="${$$escapeHtmlAttribute(joined)}"`);
 };
 
 /**

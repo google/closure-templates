@@ -332,6 +332,7 @@ public final class BasicFunctionsRuntime {
       return FloatData.forValue(Math.max(arg0.numberValue(), arg1.numberValue()));
     }
   }
+
   /** Returns the numeric minimum of the two arguments. */
   public static NumberData min(SoyValue arg0, SoyValue arg1) {
     if (arg0 instanceof IntegerData && arg1 instanceof IntegerData) {
@@ -602,7 +603,9 @@ public final class BasicFunctionsRuntime {
   public static SanitizedContent buildAttr(String attrName, List<SoyValue> values) {
     String attrValue = attrName.equals("class") ? buildClassValue(values) : buildAttrValue(values);
     return UnsafeSanitizedContentOrdainer.ordainAsSafe(
-        attrValue.isEmpty() ? "" : String.format("%s=\"%s\"", attrName, attrValue),
+        attrValue.isEmpty()
+            ? ""
+            : String.format("%s=\"%s\"", attrName, Sanitizers.escapeHtmlAttribute(attrValue)),
         ContentKind.ATTRIBUTES);
   }
 }
