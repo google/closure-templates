@@ -492,9 +492,10 @@ For example,
 
 *   `$foo ? 1 : 2`
 
-NOTE: The checks done by the binary operator `?:` and the ternary operator `? :`
-are different. Specifically, `$a ?: $b` is not equivalent to `$a ? $a : $b`.
-Rather, the former expression is equivalent to `$a != null ? $a : $b`.
+NOTE: The checks done by the nullish coalescing operator `??` and the ternary
+operator `? :` are different. Specifically, `$a ?? $b` is not equivalent to `$a
+? $a : $b`. Rather, the former expression is equivalent to `$a != null ? $a :
+$b`.
 
 ## List comprehensions
 
