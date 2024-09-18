@@ -191,12 +191,10 @@ public final class SoyValueConverter {
   }
 
   /**
-   * Creates a SoyList from a Java Iterable.
+   * Creates a SoyList, SoySet, or SoyIterable from a Java Iterable, based on the actual type of
+   * `items`.
    *
    * <p>Values are converted into Soy types lazily and only once.
-   *
-   * @param items The collection of Java values
-   * @return A new SoyList initialized from the given Java Collection.
    */
   private SoyIterable newIterableFromIterable(Iterable<?> items) {
     return IterableImpl.forJavaIterable(items, this::convert);
