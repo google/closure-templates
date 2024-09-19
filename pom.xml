@@ -82,7 +82,7 @@
     <guava.version>32.1.1-jre</guava.version>
     <asm.version>9.5</asm.version>
     <autovalue.version>1.10.2</autovalue.version>
-    <proto.version>3.21.7</proto.version>
+    <proto.version>3.25.5</proto.version>
     <truth.version>1.4.0</truth.version>
     <flogger.version>0.7.4</flogger.version>
     <soy.examples.path>examples</soy.examples.path>
@@ -263,7 +263,7 @@
     <dependency>
       <groupId>org.json</groupId>
       <artifactId>json</artifactId>
-      <version>20230618</version>
+      <version>20231013</version>
     </dependency>
 
     <!-- soy build-time dependency only. see maven-antrun-plugin:generated-soyutils -->
