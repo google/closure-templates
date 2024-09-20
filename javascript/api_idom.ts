@@ -6,8 +6,6 @@
  */
 
 import {ordainSanitizedHtml} from 'goog:soydata.VERY_UNSAFE'; // from //javascript/template/soy:soy_usegoog_js
-import {toObjectForTesting} from 'google3/javascript/apps/jspb/debug';
-import {Message} from 'google3/javascript/apps/jspb/message';
 import * as soy from 'google3/javascript/template/soy/soyutils_usegoog';
 import {
   $$VisualElementData,
@@ -34,6 +32,7 @@ const logger = log.getLogger('api_idom');
 declare global {
   interface Node {
     __lastParams: string | undefined;
+    __lastParamsPretty: string | undefined;
     __hasBeenRendered?: boolean;
   }
 }
@@ -682,24 +681,27 @@ export function isMatchingKey(
   return false;
 }
 
+function debugReplacerIgnoringSerializationChanges(
+  k: unknown,
+  v: unknown,
+): unknown {
+  if (v == null) return undefined;
+  // Allow booleans represented as numbers.
+  if (typeof v === 'boolean') v = +v;
+  // Allow numbers represented as strings.
+  if (typeof v === 'number') v = `${v}`;
+  return v;
+}
+
 function maybeReportErrors(el: HTMLElement, data: unknown) {
-  // Serializes JSPB protos using toObjectForTesting. This is important as
-  // jspb protos modify themselves sometimes just by reading them (e.g. when a
-  // nested proto is created it will fill in empty repeated fields
-  // into the internal array).
-  // Note that we can't use the replacer argument of JSON.stringify as Message
-  // contains a toJSON method, which prevents the message instance to be passed
-  // to the JSON.stringify replacer.
-  // tslint:disable-next-line:no-any Replace private function.
-  const msgProto = Message.prototype as any;
-  const msgProtoToJSON = msgProto['toJSON'];
-  msgProto['toJSON'] = function (this: Message) {
-    return toObjectForTesting(this);
-  };
-  const stringifiedParams = JSON.stringify(data, null, 2);
-  msgProto['toJSON'] = msgProtoToJSON;
+  const stringifiedParams = JSON.stringify(
+    data,
+    debugReplacerIgnoringSerializationChanges,
+  );
+  const stringifiedParamsPretty = JSON.stringify(data, undefined, 2);
   if (!el.__lastParams) {
     el.__lastParams = stringifiedParams;
+    el.__lastParamsPretty = stringifiedParamsPretty;
     return;
   }
   if (stringifiedParams !== el.__lastParams) {
@@ -708,8 +710,8 @@ Tried to rerender a {skip} template with different parameters!
 Make sure that you never pass a parameter that can change to a template that has
 {skip}, since changes to that parameter won't affect the skipped content.
 
-Old parameters: ${el.__lastParams}
-New parameters: ${stringifiedParams}
+Old parameters: ${el.__lastParamsPretty}
+New parameters: ${stringifiedParamsPretty}
 
 Element:
 ${el.dataset['debugSoy'] || truncate(el.outerHTML, 256)}`);
