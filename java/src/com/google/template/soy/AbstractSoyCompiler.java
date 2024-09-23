@@ -134,6 +134,12 @@ public abstract class AbstractSoyCompiler {
   private ListMultimap<String, SoySourceFunction> sourceFunctions = ArrayListMultimap.create();
 
   @Option(
+      name = "--warnings",
+      usage = "Enable warning output if true, defaults to true.",
+      handler = SoyCmdLineParser.BooleanOptionHandler.class)
+  private Boolean warnings = true;
+
+  @Option(
       name = "--directProtoDeps",
       usage =
           "Location of protocol buffer definitions in the form of a file descriptor set. These are"
@@ -349,11 +355,14 @@ public abstract class AbstractSoyCompiler {
       }
     }
     sfsBuilder
-        .setWarningSink(err)
         .setJavaPluginValidator(new DelegatingMethodChecker(builder.build()))
         // Set experimental features that are not generally available.
         .setExperimentalFeatures(experimentalFeatures)
         .setSoyAstCache(cache.astCache());
+
+    if (warnings) {
+       sfsBuilder.setWarningSink(err);
+    }
 
     Set<File> directProtoFiles = ImmutableSet.copyOf(protoDescDirectDeps);
     Set<File> allProtoFiles =
