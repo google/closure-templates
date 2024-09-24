@@ -774,7 +774,7 @@ value:
 > callee template prints the parameter in multiple places (which should be
 > rare).
 
-### `undefinedToNullForMigration(expr)` and `undefinedToNullForSsrMigration(expr)` {#undefinedToNullForMigration} {#undefinedToNullForSsrMigration}
+### <span id="undefinedToNullForSsrMigration"></span>`undefinedToNullForMigration(expr)` and `undefinedToNullForSsrMigration(expr)` {#undefinedToNullForMigration}
 
 Converts `undefined` to `null` to aid in the introduction of `undefined` to the
 Soy language. The `undefinedToNullForSsrMigration` variant affects server side
