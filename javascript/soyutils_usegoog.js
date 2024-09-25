@@ -36,7 +36,7 @@ const googFormat = goog.require('goog.format');
 const googSoy = goog.requireType('goog.soy');
 const googString = goog.require('goog.string');
 const {Message} = goog.requireType('jspb');
-const {SafeHtml, SafeScript, SafeStyleSheet, TrustedResourceUrl, isStyle, isUrl, unwrapHtml, unwrapResourceUrl, unwrapScript, unwrapStyle, unwrapStyleSheet, unwrapUrl} = goog.require('safevalues');
+const {SafeHtml, SafeScript, SafeStyleSheet, TrustedResourceUrl, isUrl, unwrapHtml, unwrapResourceUrl, unwrapScript, unwrapStyleSheet, unwrapUrl} = goog.require('safevalues');
 const {SanitizedContent, SanitizedContentKind, SanitizedCss, SanitizedHtml, SanitizedHtmlAttribute, SanitizedJs, SanitizedTrustedResourceUri, SanitizedUri} = goog.require('goog.soy.data');
 const {defaultImmutableInstance} = goog.require('jspb.immutable_message');
 const {htmlSafeByReview} = goog.require('safevalues.restricted.reviewed');
@@ -1247,15 +1247,32 @@ function $$replaceHtmlTags_(s, callback) {
 // LINT.ThenChange(//depot/google3/third_party/java_src/soy/java/com/google/template/soy/shared/internal/Sanitizers.java)
 
 /**
- * Make sure that tag boundaries are not broken by Safe CSS when embedded in a
- * `<style>` element.
+ * Escapes tokens that are not allowed for interpolated style values.
+ *
+ * When stringMode is false, the value is considered a trusted stylesheet values
+ * that follows the SafeStyleSheet contract. In which case, it escapes enough to
+ * prevent the value from closing the style element.
+ * When stringMode is true, the value is considered a string that is
+ * interpolated into a style value. Such values are not allowed to create CSS
+ * declaration blocks. In addition to the previous escaping, this mode escapes
+ * enough '{', '}', '/*' and adds a space after a potential trailing backslash.
+ * This ensures that values cannot mess with the trusted CSS they are embedded
+ * in.
  * @param {string} css
+ * @param {boolean} stringMode
  * @return {string}
  */
-const $$embedCssIntoHtml_ = function(css) {
+const $$embedCssIntoHtml_ = function(css, stringMode) {
   // Port of a method of the same name in
   // com.google.template.soy.shared.restricted.Sanitizers
-  return css.replace(/<\//g, '<\\/').replace(/\]\]>/g, ']]\\>');
+  const htmlEscaped = css.replace(/<\//g, '<\\/').replace(/\]\]>/g, ']]\\>');
+  if (stringMode) {
+    return htmlEscaped.replace(/{/g, ' \\{')
+        .replace(/}/g, ' \\}')
+        .replace(/\/\*/g, '/ *')
+        .replace(/\\$/, '\\ ');
+  }
+  return htmlEscaped;
 };
 
 
@@ -1725,14 +1742,11 @@ const $$escapeCssString = function(value) {
  */
 const $$filterCssValue = function(value) {
   if ($$isCss(value)) {
-    return $$embedCssIntoHtml_(value.getContent());
+    return $$embedCssIntoHtml_(value.getContent(), false);
   }
   // Uses == to intentionally match null and undefined for Java compatibility.
   if (value == null) {
     return '';
-  }
-  if (isStyle(value)) {
-    return $$embedCssIntoHtml_(unwrapStyle(value));
   }
   // Note: SoyToJsSrcCompiler uses $$filterCssValue both for the contents of
   // <style> (list of rules) and for the contents of style="" (one set of
@@ -1740,9 +1754,9 @@ const $$filterCssValue = function(value) {
   // it also wrongly allows it inside style="". We should instead change
   // SoyToJsSrcCompiler to use a different function inside <style>.
   if (value instanceof SafeStyleSheet) {
-    return $$embedCssIntoHtml_(unwrapStyleSheet(value));
+    return $$embedCssIntoHtml_(unwrapStyleSheet(value), false);
   }
-  return $$filterCssValueHelper(value);
+  return $$embedCssIntoHtml_(String(value), true);
 };
 
 /**
@@ -1866,7 +1880,7 @@ const $$buildAttr = function(attrName, ...values) {
   if (!joined) {
     return VERY_UNSAFE.ordainSanitizedHtmlAttribute('');
   }
-    return VERY_UNSAFE.ordainSanitizedHtmlAttribute(
+  return VERY_UNSAFE.ordainSanitizedHtmlAttribute(
       `${attrName}="${$$escapeHtmlAttribute(joined)}"`);
 };
 
@@ -3051,12 +3065,6 @@ const $$MATCHER_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI__AND__FILTER_NORMAL
  * A pattern that vets values produced by the named directives.
  * @type {!RegExp}
  */
-const $$FILTER_FOR_FILTER_CSS_VALUE_ = /^(?!-*(?:expression|(?:moz-)?binding))(?:(?:[.#]?-?(?:[_a-z0-9-]+)(?:-[_a-z0-9-]+)*-?|(?:calc|cubic-bezier|drop-shadow|hsl|hsla|hue-rotate|invert|linear-gradient|max|min|repeat|rgb|rgba|rotate|rotateZ|translate|translate3d|translateX|translateY|var)\((?:(?:(?:(?:\/(?![\/\*]))|(?:\*(?!\/)))?[-\u0020\t,+.!#%_0-9a-zA-Z]+)*|(?:calc|cubic-bezier|drop-shadow|hsl|hsla|hue-rotate|invert|linear-gradient|max|min|repeat|rgb|rgba|rotate|rotateZ|translate|translate3d|translateX|translateY|var)\((?:(?:(?:\/(?![\/\*]))|(?:\*(?!\/)))?[-\u0020\t,+.!#%_0-9a-zA-Z]+)*\))+\)|[-+]?(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)(?:e-?[0-9]+)?(?:[a-z]{1,4}|%)?|(?:(?:\/(?![\/\*]))|(?:\*(?!\/)))|!important)(?:\s*[,\u0020]\s*|$))*$/i;
-
-/**
- * A pattern that vets values produced by the named directives.
- * @type {!RegExp}
- */
 const $$FILTER_FOR_FILTER_NORMALIZE_URI_ = /^(?!javascript:)(?:[a-z0-9+.-]+:|[^&:\/?#]*(?:[\/?#]|$))/i;
 
 /**
@@ -3189,20 +3197,6 @@ const $$escapeCssStringHelper = function(value) {
   return str.replace(
       $$MATCHER_FOR_ESCAPE_CSS_STRING_,
       $$REPLACER_FOR_ESCAPE_CSS_STRING_);
-};
-
-/**
- * A helper for the Soy directive |filterCssValue
- * @param {?} value Can be of any type but will be coerced to a string.
- * @return {string} The escaped text.
- */
-const $$filterCssValueHelper = function(value) {
-  const str = String(value);
-  if (!$$FILTER_FOR_FILTER_CSS_VALUE_.test(str)) {
-    asserts.fail('Bad value `%s` for |filterCssValue', [str]);
-    return 'zSoyz';
-  }
-  return str;
 };
 
 /**

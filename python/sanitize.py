@@ -82,8 +82,23 @@ _HTML_RAW_CONTENT_HAZARD_RE = re.compile(r'<\/|\]\]>')
 # Replacement strings for matches of _HTML_RAW_CONTENT_HAZARD_RE
 # that are semantically equivalent in CSS stylesheets.
 # See Sanitizers.java for a more detailed analysis.
-_HTML_RAW_CONTENT_HAZARD_REPLACEMENTS = {'</': r'<\/', ']]>': r']]\>'}
+_HTML_RAW_CONTENT_HAZARD_REPLACEMENTS = {
+    '</': r'<\/',
+    ']]>': r']]\>',
+}
 
+# Regex for finding patterns that could start/end CSS declaration blocks or mess
+# with following CSS.
+_CSS_STRING_VALUE_RE = re.compile(r'\{|\}|/\*|\\$')
+
+# Replacement strings for matches of _CSS_STRING_VALUE_RE
+# See Sanitizers.java for a more detailed analysis.
+_CSS_STRING_VALUE_REPLACEMENTS = {
+    '{': r' \{',
+    '}': r' \}',
+    '/*': r'/ *',
+    '\\$': r'\ ',
+}
 
 #######################################
 # Soy public directives and functions #
@@ -340,12 +355,12 @@ def escape_uri(value):
 def filter_css_value(value):
   css = _get_content_of_kind(value, CONTENT_KIND.CSS)
   if css is not None:
-    return _embed_css_into_html(css)
+    return _embed_css_into_html(css, False)
 
   if value is None:
     return ''
 
-  return generated_sanitize.filter_css_value_helper(value)
+  return _embed_css_into_html(str(value), True)
 
 
 def filter_html_attributes(value):
@@ -592,22 +607,32 @@ def _strip_html_tags(value, tag_whitelist=None):
   return html + final_close_tags
 
 
-def _embed_css_into_html(css):
-  """
-  Make sure that tag boundaries are not broken by Safe CSS when embedded in an
-  HTML <style> element.
+def _embed_css_into_html(css, string_mode):
+  """Escape tokens that are not allowed for interpolated style values.
 
   Args:
     css: Safe CSS content
+    string_mode: applies additional escaping for string values
+
   Returns:
     Embeddable safe CSS content
   """
-  return _HTML_RAW_CONTENT_HAZARD_RE.sub(_defang_raw_content_hazard, css)
+  html_escaped = _HTML_RAW_CONTENT_HAZARD_RE.sub(
+      _defang_raw_content_hazard, css
+  )
+  if string_mode:
+    return _CSS_STRING_VALUE_RE.sub(_escape_css_string_value, html_escaped)
+  return html_escaped
 
 
 def _defang_raw_content_hazard(match):
-  """Maps _HTML_RAW_CONTENT_HAZARD_RE matches to safe alternatives"""
+  """Map _HTML_RAW_CONTENT_HAZARD_RE matches to safe alternatives."""
   return _HTML_RAW_CONTENT_HAZARD_REPLACEMENTS[match.group(0)]
+
+
+def _escape_css_string_value(match):
+  """Map _CSS_STRING_VALUE_REPLACEMENTS matches to safe alternatives."""
+  return _CSS_STRING_VALUE_REPLACEMENTS[match.group(0)]
 
 
 def _tag_sub_handler(tag_whitelist, tags, match):

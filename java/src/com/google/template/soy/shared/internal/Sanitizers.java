@@ -19,6 +19,7 @@ package com.google.template.soy.shared.internal;
 import static com.google.common.flogger.StackSize.MEDIUM;
 import static com.google.template.soy.shared.internal.EscapingConventions.HTML_TAG_FIRST_TOKEN;
 import static java.lang.Math.min;
+import static java.util.Comparator.naturalOrder;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Ascii;
@@ -54,6 +55,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
@@ -583,22 +585,18 @@ public final class Sanitizers {
       //   |filterCssValue:attrib
       // for style attributes and thread the parameter here so that
       // we can skip this check when its unnecessary.
-      return embedCssIntoHtml(value.coerceToString());
+      return embedCssIntoHtml(value.coerceToString(), false);
     }
     return value.isNullish() ? "" : filterCssValue(value.coerceToString());
   }
 
   /**
-   * Makes sure that the input is a valid CSS identifier part, CLASS or ID part, quantity, or CSS
-   * keyword part.
+   * Escapes string values embedded in an HTML CSS context. Values can insert CSS declarations (e.g.
+   * {@code color:red;}), but not CSS declaration blocks.
    */
   @Nonnull
   public static String filterCssValue(String value) {
-    if (EscapingConventions.FilterCssValue.INSTANCE.getValueFilter().matcher(value).find()) {
-      return value;
-    }
-    logger.atWarning().withStackTrace(MEDIUM).log("|filterCssValue received bad value '%s'", value);
-    return EscapingConventions.FilterCssValue.INSTANCE.getInnocuousOutput();
+    return embedCssIntoHtml(value, true);
   }
 
   /** Converts the input to a piece of a URI by percent encoding the value as UTF-8 bytes. */
@@ -1497,16 +1495,29 @@ public final class Sanitizers {
       new PercentEscaper(SAFECHARS_URLENCODER, false);
 
   /**
-   * Make sure that tag boundaries are not broken by Safe CSS when embedded in a {@code <style>}
-   * element.
+   * Escapes tokens that are not allowed for interpolated style values.
+   *
+   * <p>When stringMode is false, the value is considered a trusted stylesheet values that follows
+   * the SafeStyleSheet contract. In which case, it escapes enough to prevent the value from closing
+   * the style element. When stringMode is true, the value is considered a string that is
+   * interpolated into a style value. Such values are not allowed to create CSS declaration blocks.
+   * In addition to the previous escaping, this mode escapes enough '{', '}', '/*' and adds a space
+   * after a potential trailing backslash. This ensures that values cannot mess with the trusted CSS
+   * they are embedded in.
    */
   @VisibleForTesting
-  static String embedCssIntoHtml(String css) {
+  static String embedCssIntoHtml(String css, boolean stringMode) {
     // `</style` can close a containing style element in HTML.
     // `]]>` can similarly close a CDATA element in XHTML.
+    // '{' can open a style block in CSS, which is not allowed for string values.
+    // '}' can close a style block in CSS, which is not allowed for string values
+    // '/*' can open a comment in CSS, which is not allowed for string values as it could silence
+    // following legitimate CSS.
 
     // Scan for "</" and "]]>" and escape enough to remove the token seen by
     // the HTML parser.
+    // Similiarly, scan for "{", "}" and "/*" and escape enough to remove the token seen by
+    // the CSS parser.
 
     // For well-formed CSS, these string might validly appear in a few contexts:
     // 1. comments
@@ -1518,23 +1529,36 @@ public final class Sanitizers {
     // The substring "]>" can validly appear in a selector
     //   a[href]>b
     // but the substring "]]>" cannot.
+    // The substrings "{" and "}" may legitimatly but rarely appear in a string. The escaping adds
+    // an extra space in these cases, which is generally fine.
 
     // This should not affect how a CSS parser recovers from syntax errors.
     int indexOfEndTag = css.indexOf("</");
     int indexOfEndCData = css.indexOf("]]>");
-    if (indexOfEndTag != -1) {
-      if (indexOfEndCData != -1) {
-        return embedCssIntoHtmlSlow(
-            css,
-            min(indexOfEndTag, indexOfEndCData),
-            /* searchForEndCData= */ true,
-            /* searchForEndTag= */ true);
-      }
+    int indexOfOpenStyleBlock = stringMode ? css.indexOf("{") : -1;
+    int indexOfCloseStyleBlock = stringMode ? css.indexOf("}") : -1;
+    int indexOfCommentOpenings = stringMode ? css.indexOf("/*") : -1;
+    boolean endsTrailingBackslash = stringMode && css.endsWith("\\");
+    int nextReplacementIndex =
+        Stream.of(
+                indexOfEndTag,
+                indexOfEndCData,
+                indexOfOpenStyleBlock,
+                indexOfCloseStyleBlock,
+                indexOfCommentOpenings)
+            .filter(i -> i != -1)
+            .min(naturalOrder())
+            .orElse(-1);
+    if (nextReplacementIndex != -1 || endsTrailingBackslash) {
       return embedCssIntoHtmlSlow(
-          css, indexOfEndTag, /* searchForEndCData= */ false, /* searchForEndTag= */ true);
-    } else if (indexOfEndCData != -1) {
-      return embedCssIntoHtmlSlow(
-          css, indexOfEndCData, /* searchForEndCData= */ true, /* searchForEndTag= */ false);
+          css,
+          nextReplacementIndex,
+          /* searchForEndCData= */ indexOfEndCData != -1,
+          /* searchForEndTag= */ indexOfEndTag != -1,
+          /* searchForOpenStyleBlock= */ indexOfOpenStyleBlock != -1,
+          /* searchForCloseStyleBlock= */ indexOfCloseStyleBlock != -1,
+          /* searchForCommentOpenings= */ indexOfCommentOpenings != -1,
+          /* defuseTrailingBackslash= */ endsTrailingBackslash);
     }
     return css;
   }
@@ -1542,17 +1566,28 @@ public final class Sanitizers {
   /**
    * Called when we know we need to make a replacement.
    *
-   * <p>At least one of {@code searchForEndCData} or {@code searchForEndTag} will be {@code true}.
+   * <p>At least one of {@code searchForEndCData}, {@code searchForEndTag}, {@code
+   * searchForOpenStyleBlock} or {@code searchForCloseStyleBlock} will be {@code true}.
    *
    * @param css The css string to modify
    * @param nextReplacement The location of the first replacement
    * @param searchForEndCData Whether there are any sequences of {@code ]]>}
    * @param searchForEndTag Whether there are any sequences of {@code </}
+   * @param searchForOpenStyleBlock Whether there are any sequences of &#123;
+   * @param searchForCloseStyleBlock Whether there are any sequences of &#125;
+   * @param searchForCommentOpenings Whether there are any sequences of {@code /* }
+   * @param defuseTrailingBackslash Whether to escape a possible trailing {@code \\ }
    * @return The modified string.
    */
   private static String embedCssIntoHtmlSlow(
-      String css, int nextReplacement, boolean searchForEndCData, boolean searchForEndTag) {
-    // use an array instead of a stringbuilder so we can take advantage of the bulk copying
+      String css,
+      int nextReplacement,
+      boolean searchForEndCData,
+      boolean searchForEndTag,
+      boolean searchForOpenStyleBlock,
+      boolean searchForCloseStyleBlock,
+      boolean searchForCommentOpenings,
+      boolean defuseTrailingBackslash) {
     // routine (String.getChars).  For some reason StringBuilder doesn't do this.
     char[] buf = new char[css.length() + 16];
     int endOfPreviousReplacement = 0;
@@ -1568,12 +1603,22 @@ public final class Sanitizers {
         buf[bufIndex++] = ']';
         buf[bufIndex++] = '\\';
         buf[bufIndex++] = '>';
-        endOfPreviousReplacement = nextReplacement + 3;
+        endOfPreviousReplacement = nextReplacement + "]]>".length();
       } else if (c == '<') {
         buf[bufIndex++] = '<';
         buf[bufIndex++] = '\\';
         buf[bufIndex++] = '/';
-        endOfPreviousReplacement = nextReplacement + 2;
+        endOfPreviousReplacement = nextReplacement + "</".length();
+      } else if (c == '{' || c == '}') {
+        buf[bufIndex++] = ' ';
+        buf[bufIndex++] = '\\';
+        buf[bufIndex++] = c;
+        endOfPreviousReplacement = nextReplacement + "{".length();
+      } else if (c == '/') {
+        buf[bufIndex++] = '/';
+        buf[bufIndex++] = ' ';
+        buf[bufIndex++] = '*';
+        endOfPreviousReplacement = nextReplacement + "/*".length();
       } else {
         throw new AssertionError();
       }
@@ -1595,12 +1640,50 @@ public final class Sanitizers {
               nextReplacement == -1 ? indexOfEndCData : min(nextReplacement, indexOfEndCData);
         }
       }
+      if (searchForOpenStyleBlock) {
+        int indexOfOpenStyleBlock = css.indexOf("{", endOfPreviousReplacement);
+        if (indexOfOpenStyleBlock == -1) {
+          searchForOpenStyleBlock = false;
+        } else {
+          nextReplacement =
+              nextReplacement == -1
+                  ? indexOfOpenStyleBlock
+                  : min(nextReplacement, indexOfOpenStyleBlock);
+        }
+      }
+      if (searchForCloseStyleBlock) {
+        int indexOfCloseStyleBlock = css.indexOf("}", endOfPreviousReplacement);
+        if (indexOfCloseStyleBlock == -1) {
+          searchForCloseStyleBlock = false;
+        } else {
+          nextReplacement =
+              nextReplacement == -1
+                  ? indexOfCloseStyleBlock
+                  : min(nextReplacement, indexOfCloseStyleBlock);
+        }
+      }
+      if (searchForCommentOpenings) {
+        int indexOfCommentOpening = css.indexOf("/*", endOfPreviousReplacement);
+        if (indexOfCommentOpening == -1) {
+          searchForCommentOpenings = false;
+        } else {
+          nextReplacement =
+              nextReplacement == -1
+                  ? indexOfCommentOpening
+                  : min(nextReplacement, indexOfCommentOpening);
+        }
+      }
     } while (nextReplacement != -1);
     // copy tail
     int charsToCopy = css.length() - endOfPreviousReplacement;
     buf = Chars.ensureCapacity(buf, bufIndex + charsToCopy, 16);
     css.getChars(endOfPreviousReplacement, css.length(), buf, bufIndex);
     bufIndex += charsToCopy;
+
+    // Add a trailing space if the original string ends with a backslash
+    if (defuseTrailingBackslash) {
+      buf[bufIndex++] = ' ';
+    }
     return new String(buf, 0, bufIndex);
   }
 

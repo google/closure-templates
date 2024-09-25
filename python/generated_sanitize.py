@@ -213,8 +213,6 @@ _MATCHER_FOR_ESCAPE_CSS_STRING = re.compile(r'[\x00\x08-\x0d\x22\x26-\x2a\/\x3a-
 
 _MATCHER_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI__AND__FILTER_NORMALIZE_MEDIA_URI = re.compile(r'[\x00- \x22\x27-\x29\x3c\x3e\\\x7b\x7d\x7f\x85\xa0\u2028\u2029\uff01\uff03\uff04\uff06-\uff0c\uff0f\uff1a\uff1b\uff1d\uff1f\uff20\uff3b\uff3d]', re.U)
 
-_FILTER_FOR_FILTER_CSS_VALUE = re.compile(r"""^(?!-*(?:expression|(?:moz-)?binding))(?:(?:[.#]?-?(?:[_a-z0-9-]+)(?:-[_a-z0-9-]+)*-?|(?:calc|cubic-bezier|drop-shadow|hsl|hsla|hue-rotate|invert|linear-gradient|max|min|repeat|rgb|rgba|rotate|rotateZ|translate|translate3d|translateX|translateY|var)\((?:(?:(?:(?:\/(?![\/\*]))|(?:\*(?!\/)))?[- 	,+.!#%_0-9a-zA-Z]+)*|(?:calc|cubic-bezier|drop-shadow|hsl|hsla|hue-rotate|invert|linear-gradient|max|min|repeat|rgb|rgba|rotate|rotateZ|translate|translate3d|translateX|translateY|var)\((?:(?:(?:\/(?![\/\*]))|(?:\*(?!\/)))?[- 	,+.!#%_0-9a-zA-Z]+)*\))+\)|[-+]?(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)(?:e-?[0-9]+)?(?:[a-z]{1,4}|%)?|(?:(?:\/(?![\/\*]))|(?:\*(?!\/)))|!important)(?:\s*[, ]\s*|\Z))*\Z""", re.U | re.I)
-
 _FILTER_FOR_FILTER_NORMALIZE_URI = re.compile(r"""^(?!javascript:)(?:[a-z0-9+.-]+:|[^&:/?#]*(?:[/?#]|\Z))""", re.U | re.I)
 
 _FILTER_FOR_FILTER_NORMALIZE_MEDIA_URI = re.compile(r"""^[^&:/?#]*(?:[/?#]|\Z)|^https?:|^ftp:|^data:image/[a-z0-9+-]+;base64,[a-z0-9+/]+=*\Z|^blob:""", re.U | re.I)
@@ -273,14 +271,6 @@ def escape_css_string_helper(value):
   value = str(value)
   return _MATCHER_FOR_ESCAPE_CSS_STRING.sub(
       _replacer_for_escape_css_string, value)
-
-
-def filter_css_value_helper(value):
-  value = str(value)
-  if not _FILTER_FOR_FILTER_CSS_VALUE.search(value):
-    return 'zSoyz'
-
-  return value
 
 
 def normalize_uri_helper(value):

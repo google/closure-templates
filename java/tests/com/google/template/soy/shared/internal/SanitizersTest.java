@@ -20,7 +20,6 @@ import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 import static org.junit.Assert.assertEquals;
 
-import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.data.Dir;
 import com.google.template.soy.data.SanitizedContent;
@@ -55,8 +54,11 @@ public class SanitizersTest {
   private static final SoyValue ASCII_CHARS_SOYDATA = StringData.forValue(ASCII_CHARS);
 
   /** Substrings that might change the parsing mode of scripts they are embedded in. */
-  private static final String[] EMBEDDING_HAZARDS =
+  private static final String[] EMBEDDING_HAZARDS_SCRIPTS =
       new String[] {"</script", "</style", "<!--", "-->", "<![CDATA[", "]]>"};
+
+  /** Substrings that might change the parsing mode of stylesheets they are embedded in. */
+  private static final String[] EMBEDDING_HAZARDS_CSS = new String[] {"</script", "</style", "]]>"};
 
   @Test
   public void testEscapeJsString() {
@@ -65,7 +67,7 @@ public class SanitizersTest {
     assertThat(Sanitizers.escapeJsString("\u0000 \" \' \\ \r \n \u2028 \u2029"))
         .isEqualTo("\\x00 \\x22 \\x27 \\\\ \\r \\n \\u2028 \\u2029");
 
-    for (String hazard : EMBEDDING_HAZARDS) {
+    for (String hazard : EMBEDDING_HAZARDS_SCRIPTS) {
       assertWithMessage(hazard).that(Sanitizers.escapeJsString(hazard)).doesNotContain(hazard);
     }
 
@@ -95,7 +97,7 @@ public class SanitizersTest {
             " \\x24\\x5e\\x2a\\x28\\x29\\x2d\\x2b\\x7b\\x7d\\x5b\\x5d\\x7c\\x3f",
         Sanitizers.escapeJsRegex("\u0000 \" \' \\ / \r \n \u2028 \u2029 $^*()-+{}[]|?"));
 
-    for (String hazard : EMBEDDING_HAZARDS) {
+    for (String hazard : EMBEDDING_HAZARDS_SCRIPTS) {
       assertWithMessage(hazard).that(Sanitizers.escapeJsRegex(hazard)).doesNotContain(hazard);
     }
 
@@ -145,7 +147,7 @@ public class SanitizersTest {
     assertThat(Sanitizers.escapeCssString("\u0000 \" \' \\ \n \u000c \r"))
         .isEqualTo("\\0  \\22  \\27  \\5c  \\a  \\c  \\d ");
 
-    for (String hazard : EMBEDDING_HAZARDS) {
+    for (String hazard : EMBEDDING_HAZARDS_SCRIPTS) {
       assertWithMessage(hazard).that(Sanitizers.escapeCssString(hazard)).doesNotContain(hazard);
     }
 
@@ -168,55 +170,33 @@ public class SanitizersTest {
     assertThat(Sanitizers.filterCssValue("33px")).isEqualTo("33px");
     assertThat(Sanitizers.filterCssValue(StringData.forValue("33px"))).isEqualTo("33px");
     assertThat(Sanitizers.filterCssValue("-.5em")).isEqualTo("-.5em");
-    assertThat(Sanitizers.filterCssValue("inherit")).isEqualTo("inherit");
-    assertThat(Sanitizers.filterCssValue("display")).isEqualTo("display");
-    assertThat(Sanitizers.filterCssValue("none")).isEqualTo("none");
     assertThat(Sanitizers.filterCssValue("#id")).isEqualTo("#id");
     assertThat(Sanitizers.filterCssValue(".class")).isEqualTo(".class");
-    assertThat(Sanitizers.filterCssValue("red")).isEqualTo("red");
     assertThat(Sanitizers.filterCssValue("#aabbcc")).isEqualTo("#aabbcc");
     assertThat(Sanitizers.filterCssValue("0px 5px 10px  rgba(0,0,0, 0.3)"))
         .isEqualTo("0px 5px 10px  rgba(0,0,0, 0.3)");
     assertThat(Sanitizers.filterCssValue("hello, goodbye")).isEqualTo("hello, goodbye");
     assertThat(Sanitizers.filterCssValue("hello, goodbye, ")).isEqualTo("hello, goodbye, ");
-    assertThat(Sanitizers.filterCssValue("hello,goodbye")).isEqualTo("hello,goodbye");
-    assertThat(Sanitizers.filterCssValue("hello, goodbye,")).isEqualTo("hello, goodbye,");
     assertThat(Sanitizers.filterCssValue("rgb(1,2,3),hsl(4,5,6)"))
         .isEqualTo("rgb(1,2,3),hsl(4,5,6)");
     assertThat(Sanitizers.filterCssValue("rgb(1,2,3) 14px")).isEqualTo("rgb(1,2,3) 14px");
-    assertThat(Sanitizers.filterCssValue("hello  ,  maybe ,goodbye , "))
-        .isEqualTo("hello  ,  maybe ,goodbye , ");
     assertThat(Sanitizers.filterCssValue("calc(100% - 30px)")).isEqualTo("calc(100% - 30px)");
 
-    assertThat(Sanitizers.filterCssValue(" ")).isEqualTo("zSoyz");
-    assertThat(Sanitizers.filterCssValue("expression")).isEqualTo("zSoyz");
-    assertThat(Sanitizers.filterCssValue(StringData.forValue("expression"))).isEqualTo("zSoyz");
-    assertThat(Sanitizers.filterCssValue("Expression")).isEqualTo("zSoyz");
-    assertThat(Sanitizers.filterCssValue("\\65xpression")).isEqualTo("zSoyz");
-    assertThat(Sanitizers.filterCssValue("\\65 xpression")).isEqualTo("zSoyz");
-    assertThat(Sanitizers.filterCssValue("-moz-binding")).isEqualTo("zSoyz");
     assertThat(Sanitizers.filterCssValue("</style><script>alert('foo')</script>/*"))
-        .isEqualTo("zSoyz");
-    assertThat(Sanitizers.filterCssValue("color:expression('whatever')")).isEqualTo("zSoyz");
-    assertThat(Sanitizers.filterCssValue(",hello")).isEqualTo("zSoyz");
-    assertThat(Sanitizers.filterCssValue("rgb(1,2,3)14px")).isEqualTo("zSoyz");
-    assertThat(Sanitizers.filterCssValue("calc(no & no)")).isEqualTo("zSoyz");
-    assertThat(Sanitizers.filterCssValue("calc(3px * 8)")).isEqualTo("calc(3px * 8)");
+        .isEqualTo("<\\/style><script>alert('foo')<\\/script>/ *");
+    assertThat(Sanitizers.filterCssValue("color:expression('whatever')"))
+        .isEqualTo("color:expression('whatever')");
     assertThat(Sanitizers.filterCssValue("calc(5px * 8 / 2)")).isEqualTo("calc(5px * 8 / 2)");
-    assertThat(Sanitizers.filterCssValue("calc(3rem / 4)")).isEqualTo("calc(3rem / 4)");
-    assertThat(Sanitizers.filterCssValue("calc(1px // 3)")).isEqualTo("zSoyz");
-    assertThat(Sanitizers.filterCssValue("calc(36px /* 9)")).isEqualTo("zSoyz");
-    assertThat(Sanitizers.filterCssValue("calc(56px + 28 //)")).isEqualTo("zSoyz");
-    assertThat(Sanitizers.filterCssValue("calc(3; vuln")).isEqualTo("zSoyz");
-    assertThat(Sanitizers.filterCssValue("calc(3); vuln")).isEqualTo("zSoyz");
+    assertThat(Sanitizers.filterCssValue("calc(1px // 3)")).isEqualTo("calc(1px // 3)");
+    assertThat(Sanitizers.filterCssValue("calc(36px /* 9)")).isEqualTo("calc(36px / * 9)");
 
     assertThat(
             Sanitizers.filterCssValue(
                 UnsafeSanitizedContentOrdainer.ordainAsSafe(
-                    "color:expression('whatever')", SanitizedContent.ContentKind.CSS)))
-        .isEqualTo("color:expression('whatever')");
+                    ".foo { color: red; }", SanitizedContent.ContentKind.CSS)))
+        .isEqualTo(".foo { color: red; }");
 
-    for (String hazard : EMBEDDING_HAZARDS) {
+    for (String hazard : EMBEDDING_HAZARDS_CSS) {
       assertWithMessage(hazard).that(Sanitizers.filterCssValue(hazard).contains(hazard)).isFalse();
     }
   }
@@ -245,7 +225,7 @@ public class SanitizersTest {
                     "foo=\"bar\" checked ", SanitizedContent.ContentKind.ATTRIBUTES)))
         .isEqualTo("foo=\"bar\" checked ");
 
-    for (String hazard : EMBEDDING_HAZARDS) {
+    for (String hazard : EMBEDDING_HAZARDS_SCRIPTS) {
       assertWithMessage(hazard)
           .that(Sanitizers.filterHtmlAttributes(hazard).contains(hazard))
           .isFalse();
@@ -263,7 +243,7 @@ public class SanitizersTest {
         .isEqualTo("zSoyz");
     assertThat(Sanitizers.filterHtmlElementName(StringData.forValue("<h1>"))).isEqualTo("zSoyz");
 
-    for (String hazard : EMBEDDING_HAZARDS) {
+    for (String hazard : EMBEDDING_HAZARDS_SCRIPTS) {
       assertWithMessage(hazard)
           .that(Sanitizers.filterHtmlElementName(hazard))
           .doesNotContain(hazard);
@@ -277,7 +257,7 @@ public class SanitizersTest {
     assertThat(Sanitizers.escapeUri("\u0000\n\f\r\"#&'/:=?@"))
         .isEqualTo("%00%0A%0C%0D%22%23%26%27%2F%3A%3D%3F%40");
 
-    for (String hazard : EMBEDDING_HAZARDS) {
+    for (String hazard : EMBEDDING_HAZARDS_SCRIPTS) {
       assertWithMessage(hazard).that(Sanitizers.escapeUri(hazard)).doesNotContain(hazard);
     }
 
@@ -316,7 +296,7 @@ public class SanitizersTest {
     // This test contains an ANSI escape sequence. (\u000e). If the logger is logging to a terminal,
     // the terminal will be corrupted. As a workaround, silence logs below the WARNING level.
     Logger.getLogger(Sanitizers.class.getName()).setLevel(Level.SEVERE);
-    for (String hazard : EMBEDDING_HAZARDS) {
+    for (String hazard : EMBEDDING_HAZARDS_SCRIPTS) {
       assertWithMessage(hazard).that(Sanitizers.normalizeUri(hazard)).doesNotContain(hazard);
       assertWithMessage(hazard).that(Sanitizers.filterNormalizeUri(hazard)).doesNotContain(hazard);
     }
@@ -787,25 +767,65 @@ public class SanitizersTest {
   }
 
   @Test
-  public void testEmbedCssIntoHtml() {
-    assertThat(Sanitizers.embedCssIntoHtml("")).isEmpty();
-    assertThat(Sanitizers.embedCssIntoHtml("foo")).isEqualTo("foo");
-    assertThat(Sanitizers.embedCssIntoHtml("a[foo]>b")).isEqualTo("a[foo]>b");
-    assertThat(Sanitizers.embedCssIntoHtml("/* </style> */")).isEqualTo("/* <\\/style> */");
-    assertThat(Sanitizers.embedCssIntoHtml(Strings.repeat("/* </style> */", 100)))
-        .isEqualTo(Strings.repeat("/* <\\/style> */", 100));
+  public void testEmbedCssIntoHtmlStyleSheetMode() {
+    assertThat(Sanitizers.embedCssIntoHtml("", false)).isEmpty();
+    assertThat(Sanitizers.embedCssIntoHtml("foo", false)).isEqualTo("foo");
+    assertThat(Sanitizers.embedCssIntoHtml("a[foo]>b", false)).isEqualTo("a[foo]>b");
+    assertThat(Sanitizers.embedCssIntoHtml("/* </style> */", false)).isEqualTo("/* <\\/style> */");
+    assertThat(Sanitizers.embedCssIntoHtml("/* </style> */".repeat(100), false))
+        .isEqualTo("/* <\\/style> */".repeat(100));
     assertEquals(
         "content: '<\\/STYLE >'", // Semantically equivalent
-        Sanitizers.embedCssIntoHtml("content: '</STYLE >'"));
+        Sanitizers.embedCssIntoHtml("content: '</STYLE >'", false));
     assertEquals(
         "background: url(<\\/style/>)", // Semantically equivalent
-        Sanitizers.embedCssIntoHtml("background: url(</style/>)"));
+        Sanitizers.embedCssIntoHtml("background: url(</style/>)", false));
 
     // boundary conditions, replacements at the beginning and end of the string.
-    assertThat(Sanitizers.embedCssIntoHtml("]]>")).isEqualTo("]]\\>");
-    assertThat(Sanitizers.embedCssIntoHtml("]]>]]>]]>")).isEqualTo("]]\\>]]\\>]]\\>");
-    assertThat(Sanitizers.embedCssIntoHtml("</")).isEqualTo("<\\/");
-    assertThat(Sanitizers.embedCssIntoHtml("</</</")).isEqualTo("<\\/<\\/<\\/");
+    assertThat(Sanitizers.embedCssIntoHtml("]]>", false)).isEqualTo("]]\\>");
+    assertThat(Sanitizers.embedCssIntoHtml("]]>]]>]]>", false)).isEqualTo("]]\\>]]\\>]]\\>");
+    assertThat(Sanitizers.embedCssIntoHtml("</", false)).isEqualTo("<\\/");
+    assertThat(Sanitizers.embedCssIntoHtml("</</</", false)).isEqualTo("<\\/<\\/<\\/");
+  }
+
+  @Test
+  public void testEmbedCssIntoHtmlStringMode() {
+    assertThat(Sanitizers.embedCssIntoHtml("", true)).isEmpty();
+    assertThat(Sanitizers.embedCssIntoHtml("foo", true)).isEqualTo("foo");
+    assertThat(Sanitizers.embedCssIntoHtml("a[foo]>b", true)).isEqualTo("a[foo]>b");
+    assertThat(Sanitizers.embedCssIntoHtml("/* </style> */", true)).isEqualTo("/ * <\\/style> */");
+    assertThat(Sanitizers.embedCssIntoHtml("/* </style> */".repeat(100), true))
+        .isEqualTo("/ * <\\/style> */".repeat(100));
+    assertEquals(
+        "content: '<\\/STYLE >'", // Semantically equivalent
+        Sanitizers.embedCssIntoHtml("content: '</STYLE >'", true));
+    assertEquals(
+        "background: url(<\\/style/>)", // Semantically equivalent
+        Sanitizers.embedCssIntoHtml("background: url(</style/>)", true));
+
+    // boundary conditions, replacements at the beginning and end of the string.
+    assertThat(Sanitizers.embedCssIntoHtml("]]>", true)).isEqualTo("]]\\>");
+    assertThat(Sanitizers.embedCssIntoHtml("]]>]]>]]>", true)).isEqualTo("]]\\>]]\\>]]\\>");
+    assertThat(Sanitizers.embedCssIntoHtml("</", true)).isEqualTo("<\\/");
+    assertThat(Sanitizers.embedCssIntoHtml("</</</", true)).isEqualTo("<\\/<\\/<\\/");
+
+    // Valid values are preserved.
+    assertThat(Sanitizers.embedCssIntoHtml("Arial,'Roboto Medium'", true))
+        .isEqualTo("Arial,'Roboto Medium'");
+    assertThat(Sanitizers.embedCssIntoHtml("Arial,\"Roboto Medium\"", true))
+        .isEqualTo("Arial,\"Roboto Medium\"");
+    assertThat(Sanitizers.embedCssIntoHtml("calc(3px /* 2 */ 2)", true))
+        .isEqualTo("calc(3px / * 2 */ 2)");
+    assertThat(Sanitizers.embedCssIntoHtml("calc(3px // 2)", true)).isEqualTo("calc(3px // 2)");
+    assertThat(Sanitizers.embedCssIntoHtml("6 / 9 */", true)).isEqualTo("6 / 9 */");
+    assertThat(Sanitizers.embedCssIntoHtml("var(--cssvar)", true)).isEqualTo("var(--cssvar)");
+    assertThat(Sanitizers.embedCssIntoHtml("var(--cssvar, #000)", true))
+        .isEqualTo("var(--cssvar, #000)");
+    assertThat(
+            Sanitizers.embedCssIntoHtml(
+                "calc(20px / 2 * 10 * calc(2px * 3 + 12px / 3) / calc(20px / 5 - 2))", true))
+        .isEqualTo("calc(20px / 2 * 10 * calc(2px * 3 + 12px / 3) / calc(20px / 5 - 2))");
+    assertThat(Sanitizers.embedCssIntoHtml("6 / 9", true)).isEqualTo("6 / 9");
   }
 
   @Test

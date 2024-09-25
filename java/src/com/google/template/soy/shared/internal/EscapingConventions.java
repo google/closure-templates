@@ -20,9 +20,7 @@ import static com.google.common.base.Preconditions.checkState;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.google.common.base.Ascii;
-import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.escape.Escaper;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
@@ -909,106 +907,6 @@ public final class EscapingConventions {
     }
   }
 
-  /**
-   * Implements the {@code |filterCssValue} directive which filters out strings that are not valid
-   * CSS property names, keyword values, quantities, hex colors, or ID or class literals.
-   */
-  public static final class FilterCssValue extends CrossLanguageStringXform {
-
-    /** CSS functions are safe to call and allow through the escaper. */
-    private static final ImmutableSet<String> ALLOWED_CSS_FUNCTIONS =
-        ImmutableSet.of(
-            // go/keep-sorted started
-            "calc",
-            "cubic-bezier",
-            "drop-shadow",
-            "hsl",
-            "hsla",
-            "hue-rotate",
-            "invert",
-            "linear-gradient",
-            "max",
-            "min",
-            "repeat",
-            "rgb",
-            "rgba",
-            "rotate",
-            "rotateZ",
-            "translate",
-            "translate3d",
-            "translateX",
-            "translateY",
-            "var"
-            // go/keep-sorted end
-            );
-
-    private static final String ALLOWED_IN_FUNCTIONS = "[- \t,+.!#%_0-9a-zA-Z]";
-
-    /**
-     * Matches a forward slash that is not followed by another forward slash and an asterisk that is
-     * not preceded or followed by a forward slash.
-     *
-     * <p>Note, this is more verbose than necessary in order to support JavaScript conversion.
-     */
-    private static final String ALLOW_MULTIPLICATION_AND_DIVISION =
-        "(?:(?:\\/(?![\\/\\*]))|(?:\\*(?!\\/)))";
-
-    /**
-     * Matches a CSS token that can appear unquoted as part of an ID, class, font-family-name, or
-     * CSS keyword value.
-     */
-    private static final Pattern CSS_WORD =
-        Pattern.compile(
-            // See
-            // https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html#rule-4---css-escape-and-strictly-validate-before-inserting-untrusted-data-into-html-style-property-values
-            // for an explanation of why expression and moz-binding are bad.
-            "^(?!-*(?:expression|(?:moz-)?binding))"
-                + "(?:(?:"
-                + // A latin class name or ID, CSS identifier, hex color or unicode range.
-                "[.#]?-?(?:[_a-z0-9-]+)(?:-[_a-z0-9-]+)*-?|"
-                + // A CSS function call. This allows the same characters as
-                "(?:"
-                + Joiner.on('|').join(ALLOWED_CSS_FUNCTIONS)
-                + ")\\((?:(?:"
-                + ALLOW_MULTIPLICATION_AND_DIVISION
-                + "?"
-                + ALLOWED_IN_FUNCTIONS
-                + "+)*"
-                + "|(?:"
-                // Allow function call in a function call (1 layer)
-                // e.g. linear-gradient(... rgb(...) ...)
-                + Joiner.on('|').join(ALLOWED_CSS_FUNCTIONS)
-                + ")\\((?:"
-                + ALLOW_MULTIPLICATION_AND_DIVISION
-                + "?"
-                + ALLOWED_IN_FUNCTIONS
-                + "+)*"
-                + "\\))+\\)|"
-                + // A quantity, with an optional unit
-                // Note that this matches "1." even though that is not valid per the spec.
-                "[-+]?(?:[0-9]+(?:\\.[0-9]*)?|\\.[0-9]+)(?:e-?[0-9]+)?(?:[a-z]{1,4}|%)?|"
-                + ALLOW_MULTIPLICATION_AND_DIVISION
-                + "|"
-                + // The special value !important.
-                "!important)"
-                + // Spaces and commas (for property value lists).
-                "(?:\\s*[, ]\\s*|\\z)"
-                + ")*\\z",
-            Pattern.CASE_INSENSITIVE);
-
-    /** Implements the {@code |filterCssValue} directive. */
-    public static final FilterCssValue INSTANCE = new FilterCssValue();
-
-    private FilterCssValue() {
-      super(/* valueFilter= */ CSS_WORD);
-    }
-
-    @Override
-    protected ImmutableList<Escape> defineEscapes() {
-      return ImmutableList.of();
-    }
-  }
-
   /** Escapes using URI percent encoding : {@code 'A' => "%41"} */
   private static final class UriEscapeListBuilder extends EscapeListBuilder {
     @Override
@@ -1574,7 +1472,6 @@ public final class EscapingConventions {
         EscapeJsString.INSTANCE,
         EscapeJsRegex.INSTANCE,
         EscapeCssString.INSTANCE,
-        FilterCssValue.INSTANCE,
         EscapeUri.INSTANCE,
         NormalizeUri.INSTANCE,
         FilterNormalizeUri.INSTANCE,

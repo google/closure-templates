@@ -131,17 +131,18 @@ public class BasicEscapeDirectiveTest extends AbstractSoyPrintDirectiveTestCase 
     BasicEscapeDirective filterCssValue = new BasicEscapeDirective.FilterCssValue();
     assertTofuOutput("", "", filterCssValue);
     assertTofuOutput("green", "green", filterCssValue);
-    assertTofuOutput("zSoyz", "color:expression('foo')", filterCssValue);
+    assertTofuOutput("color:expression('foo')", "color:expression('foo')", filterCssValue);
+    assertTofuOutput("selector,  \\{custom:style \\}", "selector, {custom:style}", filterCssValue);
     assertTofuOutput(
-        "zSoyz",
+        "selector,  \\{custom:style \\}",
         // NOTE: HTML content kind should not override CSS filtering :-)
         UnsafeSanitizedContentOrdainer.ordainAsSafe(
-            "color:expression('foo')", SanitizedContent.ContentKind.HTML),
+            "selector, {custom:style}", SanitizedContent.ContentKind.HTML),
         filterCssValue);
     assertTofuOutput(
-        "color:expression('foo')",
+        "selector, {custom:style}",
         UnsafeSanitizedContentOrdainer.ordainAsSafe(
-            "color:expression('foo')", SanitizedContent.ContentKind.CSS),
+            "selector, {custom:style}", SanitizedContent.ContentKind.CSS),
         filterCssValue);
 
     // Source: https://developer.mozilla.org/en-US/docs/Web/CSS/number

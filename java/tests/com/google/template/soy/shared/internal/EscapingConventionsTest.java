@@ -124,40 +124,4 @@ public class EscapingConventionsTest {
       assertThat(uri).matches(EscapingConventions.FilterTelUri.INSTANCE.getValueFilter());
     }
   }
-
-  @Test
-  public void testFilterCss() {
-    String[] shouldReject =
-        new String[] {
-          "linear-gradient(rgba(calc())",
-          "Arial,'Roboto Medium'",
-          "Arial,\"Roboto Medium\"",
-          "calc(3px /* 2 */ 2)",
-          "calc(3px // 2)",
-          "6 // 9",
-          "6 / 9 */"
-        };
-
-    String[] shouldAccept =
-        new String[] {
-          "drop-shadow(1px 2px 3px #000)",
-          "linear-gradient(180deg, rgba(0, 0, 0, 0) 55%, rgba(0, 0, 0, 0.5) 80%,rgba(0, 0, 0,"
-              + " 0.75) 100%)",
-          "invert(1) hue-rotate(180deg)",
-          "translateY(-50%) translate(0) translate3d(-10px, 40px, 0)",
-          "translateX(calc(-10.55% - 8px))",
-          "rotateZ(180deg) rotate(90deg)",
-          "var(--cssvar)",
-          "var(--cssvar, #000)",
-          "calc(20px / 2 * 10 * calc(2px * 3 + 12px / 3) / calc(20px / 5 - 2))",
-          "6 / 9"
-        };
-
-    for (String uri : shouldReject) {
-      assertThat(uri).doesNotMatch(EscapingConventions.FilterCssValue.INSTANCE.getValueFilter());
-    }
-    for (String uri : shouldAccept) {
-      assertThat(uri).matches(EscapingConventions.FilterCssValue.INSTANCE.getValueFilter());
-    }
-  }
 }
