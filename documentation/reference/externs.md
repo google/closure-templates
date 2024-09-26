@@ -63,6 +63,11 @@ where:
     `static_interface`. Optional. `static` is the default. See
     [Creating an External Function](../dev/externs.md) for more information.
 
+The Java types in the `params` and `return` attributes may also include
+parameterized types in the form `FQN<FQN, ...>`, for example,
+`java.util.List<java.lang.String>`. If the type parameters are added to the
+declaration then the Soy compiler checks them against the Java implementation.
+
 ### JavaScript implementation {#jsimpl}
 
 Syntax:

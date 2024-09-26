@@ -16,6 +16,7 @@
 
 package com.google.template.soy.passes;
 
+import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.ImmutableListMultimap.toImmutableListMultimap;
 
 import com.google.common.base.Strings;
@@ -34,6 +35,7 @@ import com.google.common.primitives.Primitives;
 import com.google.protobuf.Message;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
+import com.google.template.soy.base.internal.TypeReference;
 import com.google.template.soy.data.PartialSoyTemplate;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SoyTemplate;
@@ -113,6 +115,8 @@ class ValidateExternsPass implements CompilerFilePass {
       SoyErrorKind.of("Return type of method ''{0}'' must be one of [{1}].");
   private static final SoyErrorKind IMPLICIT_PARAM_ORDER =
       SoyErrorKind.of("Implicit Java parameter {0} must come at the end of the parameter list.");
+  private static final SoyErrorKind GENERICS_DONT_MATCH =
+      SoyErrorKind.of("Declared type {0} does not match actual type {1}.");
 
   // Additions to this should be minimal as this circumvents Soy's compile time VE checks. Please
   private static final ImmutableSetMultimap<String, String> ALLOWED_VE_EXTERNS =
@@ -195,11 +199,14 @@ class ValidateExternsPass implements CompilerFilePass {
       errorReporter.report(java.getSourceLocation(), ATTRIBUTE_REQUIRED, JavaImplNode.METHOD);
     }
 
-    if (Strings.isNullOrEmpty(java.returnType())) {
+    TypeReference returnType = java.returnType();
+    ImmutableList<TypeReference> lookupParams = java.paramTypes();
+
+    if (java.returnType() == null) {
       errorReporter.report(java.getSourceLocation(), ATTRIBUTE_REQUIRED, JavaImplNode.RETURN);
     } else {
       validateTypes(
-          java.returnType(),
+          returnType,
           extern.getType().getReturnType(),
           INCOMPATIBLE_RETURN_TYPE,
           () -> java.getAttributeValueLocation(JavaImplNode.RETURN),
@@ -207,17 +214,18 @@ class ValidateExternsPass implements CompilerFilePass {
           Mode.EXTENDS);
     }
 
-    List<String> paramTypes = new ArrayList<>(java.params());
+    List<TypeReference> paramTypes = new ArrayList<>(lookupParams);
+
     boolean inTail = true;
     for (int i = paramTypes.size() - 1; i >= 0; i--) {
-      if (JavaImplNode.isParamImplicit(paramTypes.get(i))) {
-        paramTypes.remove(i);
+      if (JavaImplNode.isParamImplicit(paramTypes.get(i).className())) {
         if (!inTail) {
           errorReporter.report(
               java.getAttributeValueLocation(JavaImplNode.PARAMS),
               IMPLICIT_PARAM_ORDER,
               paramTypes.get(i));
         }
+        paramTypes.remove(i);
       } else {
         inTail = false;
       }
@@ -229,9 +237,8 @@ class ValidateExternsPass implements CompilerFilePass {
           java.getAttributeValueLocation(JavaImplNode.PARAMS), ARITY_MISMATCH, requiredParamCount);
     } else {
       for (int i = 0; i < paramTypes.size(); i++) {
-        String paramType = paramTypes.get(i);
         validateTypes(
-            paramType,
+            paramTypes.get(i),
             extern.getType().getParameters().get(i).getType(),
             INCOMPATIBLE_PARAM_TYPE,
             () -> java.getAttributeValueLocation(JavaImplNode.PARAMS),
@@ -250,7 +257,12 @@ class ValidateExternsPass implements CompilerFilePass {
     }
 
     MethodChecker.Response response =
-        checker.findMethod(java.className(), java.methodName(), java.returnType(), java.params());
+        checker.findMethod(
+            java.className(),
+            java.methodName(),
+            returnType.className(),
+            lookupParams.stream().map(TypeReference::className).collect(toImmutableList()));
+
     switch (response.getCode()) {
       case EXISTS:
         ReadMethodData method = response.getMethod();
@@ -275,6 +287,19 @@ class ValidateExternsPass implements CompilerFilePass {
             loc = java.getSourceLocation();
           }
           errorReporter.report(loc, JAVA_METHOD_TYPE_MISMATCH, actualType);
+        }
+
+        // MethodChecker should only return a method that matches the raw-types of the params and
+        // return type. Run additional checks here that any generic type declarations also match.
+        checkGenericType(
+            method.returnTypeData(),
+            returnType,
+            () -> java.getAttributeValueLocation(JavaImplNode.RETURN));
+        for (int i = 0; i < lookupParams.size(); i++) {
+          checkGenericType(
+              method.paramsTypeData().get(i),
+              lookupParams.get(i),
+              () -> java.getAttributeValueLocation(JavaImplNode.PARAMS));
         }
         break;
       case NO_SUCH_CLASS:
@@ -310,25 +335,37 @@ class ValidateExternsPass implements CompilerFilePass {
     }
   }
 
+  private void checkGenericType(
+      TypeReference actual, TypeReference specified, Supplier<SourceLocation> loc) {
+    if (!actual.isAssignableFrom(specified)) {
+      errorReporter.report(loc.get(), GENERICS_DONT_MATCH, specified, actual);
+    }
+  }
+
   private enum Mode {
     EXTENDS,
     SUPER
   }
 
   private void validateTypes(
-      String javaTypeName,
+      TypeReference javaTypeName,
       SoyType soyType,
       SoyErrorKind compatibleErrorKind,
       Supplier<SourceLocation> loc,
       ExternNode extern,
       Mode mode) {
-    Class<?> javaType = getType(javaTypeName);
+    String className =
+        javaTypeName.parameters().size() == 1
+                && JavaImplNode.isSupportedFutureClassName(javaTypeName.className())
+            ? javaTypeName.parameters().get(0).className()
+            : javaTypeName.className();
+    Class<?> javaType = getType(className);
     if (javaType != null) {
       // Verify that the soy param type and the java param type are compatible.
       if (!typesAreCompatible(javaType, soyType, extern, mode)) {
         errorReporter.report(loc.get(), compatibleErrorKind, javaType.getName(), soyType);
       }
-    } else if (!protoTypesAreCompatible(javaTypeName, soyType)) {
+    } else if (!protoTypesAreCompatible(javaTypeName.className(), soyType)) {
       // Protos won't be loaded but we can make sure they are compatible via the descriptor.
       errorReporter.report(loc.get(), UNKNOWN_TYPE, javaTypeName);
     }

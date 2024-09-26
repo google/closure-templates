@@ -152,6 +152,7 @@ public final class TemplateMetadataSerializer {
     return ExternP.newBuilder()
         .setName(node.getIdentifier().identifier())
         .setSignature(node.getType().toProto().getFunction())
+        .setJavaAsync(node.isJavaImplAsync())
         .build();
   }
 

@@ -158,6 +158,9 @@ message ExternP {
   string name = 1;
   // The function signature.
   FunctionTypeP signature = 2;
+  // Whether this extern's Java implementation returns a SoyValueProvider, which
+  // may require detaching.
+  bool java_async = 3;
 }
 
 // A single declared template parameter

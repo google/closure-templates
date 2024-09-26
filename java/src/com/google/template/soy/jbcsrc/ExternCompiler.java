@@ -79,7 +79,8 @@ public final class ExternCompiler {
               buildMemberMethod(
                   extern.getIdentifier().identifier(),
                   extern.getType(),
-                  /* requiresRenderContext= */ false),
+                  /* requiresRenderContext= */ false,
+                  extern.isJavaImplAsync()),
               writer);
       return;
     }
@@ -89,7 +90,8 @@ public final class ExternCompiler {
         buildMemberMethod(
             extern.getIdentifier().identifier(),
             extern.getType(),
-            javaImpl.requiresRenderContext());
+            javaImpl.requiresRenderContext(),
+            extern.isJavaImplAsync());
     int declaredMethodArgs = extern.getType().getParameters().size();
 
     ImmutableList.Builder<String> paramNamesBuilder = ImmutableList.builder();
@@ -104,10 +106,10 @@ public final class ExternCompiler {
     ImmutableList<String> paramNames = paramNamesBuilder.build();
 
     TypeInfo externClass = TypeInfo.create(javaImpl.className(), javaImpl.isInterface());
-    TypeInfo returnType = getTypeInfoLoadedIfPossible(javaImpl.returnType());
+    TypeInfo returnType = getTypeInfoLoadedIfPossible(javaImpl.returnType().className());
     TypeInfo[] paramTypesInfos =
-        javaImpl.params().stream()
-            .map(ExternCompiler::getTypeInfoLoadedIfPossible)
+        javaImpl.paramTypes().stream()
+            .map(d -> getTypeInfoLoadedIfPossible(d.className()))
             .toArray(TypeInfo[]::new);
     Type[] paramTypes = stream(paramTypesInfos).map(TypeInfo::type).toArray(Type[]::new);
 
@@ -148,7 +150,7 @@ public final class ExternCompiler {
               extern.getType().getParameters().get(i).getType()));
     }
     // Add implicit params.
-    for (int i = declaredMethodArgs; i < javaImpl.params().size(); i++) {
+    for (int i = declaredMethodArgs; i < javaImpl.paramTypes().size(); i++) {
       adaptedParams.add(adaptImplicitParameter(vars, paramTypesInfos[i]));
     }
 
@@ -166,7 +168,7 @@ public final class ExternCompiler {
 
     Expression body =
         adaptReturnType(
-            memberMethod.getReturnType(),
+            returnType.type(),
             extern.getType().getReturnType(),
             extMethodRef.invoke(adaptedParams));
 
@@ -210,7 +212,8 @@ public final class ExternCompiler {
     return runtimeType;
   }
 
-  static Method buildMemberMethod(String symbol, FunctionType type, boolean requiresRenderContext) {
+  static Method buildMemberMethod(
+      String symbol, FunctionType type, boolean requiresRenderContext, boolean async) {
     Type[] args =
         Streams.concat(
                 requiresRenderContext
@@ -218,7 +221,11 @@ public final class ExternCompiler {
                     : Stream.empty(),
                 type.getParameters().stream().map(p -> getRuntimeType(p.getType()).runtimeType()))
             .toArray(Type[]::new);
-    return new Method(symbol, getRuntimeType(type.getReturnType()).runtimeType(), args);
+    Type returnType =
+        async
+            ? BytecodeUtils.SOY_VALUE_PROVIDER_TYPE
+            : getRuntimeType(type.getReturnType()).runtimeType();
+    return new Method(symbol, returnType, args);
   }
 
   private static TypeInfo getTypeInfoLoadedIfPossible(String s) {
@@ -422,6 +429,10 @@ public final class ExternCompiler {
   static Expression adaptReturnType(Type returnType, SoyType soyReturnType, Expression externCall) {
     boolean nullish = SoyTypes.isNullish(soyReturnType);
     Type externType = externCall.resultType();
+
+    if (BytecodeUtils.isDefinitelyAssignableFrom(BytecodeUtils.FUTURE_TYPE, returnType)) {
+      return JbcSrcExternRuntime.CONVERT_OBJECT_TO_SOY_VALUE_PROVIDER.invoke(externCall);
+    }
 
     if (!nullish && externType.equals(BytecodeUtils.BOXED_INTEGER_TYPE)) {
       return JbcSrcExternRuntime.UNBOX_INTEGER.invoke(externCall);

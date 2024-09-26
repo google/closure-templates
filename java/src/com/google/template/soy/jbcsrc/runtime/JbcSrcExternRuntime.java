@@ -66,10 +66,19 @@ public final class JbcSrcExternRuntime {
   public static final MethodRef CONVERT_OBJECT_TO_SOY_VALUE =
       create("convertObjectToSoyValue", Object.class);
 
+  public static final MethodRef CONVERT_OBJECT_TO_SOY_VALUE_PROVIDER =
+      create("convertObjectToSoyValueProvider", Object.class);
+
   @Keep
   @Nonnull
   public static SoyValue convertObjectToSoyValue(Object o) {
     return SoyValueConverter.INSTANCE.convert(o).resolve();
+  }
+
+  @Keep
+  @Nonnull
+  public static SoyValueProvider convertObjectToSoyValueProvider(Object o) {
+    return SoyValueConverter.INSTANCE.convert(o);
   }
 
   public static final MethodRef CONVERT_SAFE_HTML_PROTO_TO_SOY_VALUE_PROVIDER =

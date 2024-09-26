@@ -22,6 +22,7 @@ import static com.google.template.soy.jbcsrc.TemplateTester.getDefaultContext;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
 import com.google.protobuf.Descriptors.GenericDescriptor;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
@@ -33,6 +34,7 @@ import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
 import com.google.template.soy.jbcsrc.shared.StackFrame;
+import com.google.template.soy.plugin.java.PluginInstances;
 import com.google.template.soy.testing.Foo;
 import java.io.IOException;
 import org.junit.Test;
@@ -581,5 +583,54 @@ public final class DetachStateTest {
     assertThat(renderer.render(result)).isNull();
     assertThat(output.toString())
         .isEqualTo("<top><pre><a>2</a></pre>expr:text(<a>2</a>)expr</top>");
+  }
+
+  public static final class ExternRuntime {
+
+    private final SettableFuture<String> value;
+
+    public ExternRuntime(SettableFuture<String> value) {
+      this.value = value;
+    }
+
+    public ListenableFuture<String> futureMessage() {
+      return value;
+    }
+  }
+
+  @Test
+  public void testAsyncExtern() throws IOException {
+    CompiledTemplates templates =
+        TemplateTester.compileFile(
+            "{namespace ns}",
+            "{extern futureReturn: () => string}",
+            "  {javaimpl class='" + ExternRuntime.class.getName() + "'",
+            "    method='futureMessage' params='' type='instance'",
+            "    return='com.google.common.util.concurrent.ListenableFuture<java.lang.String>' /}",
+            "{/extern}",
+            "{template c}",
+            "  <span>{futureReturn()}</span>",
+            "{/template}");
+
+    CompiledTemplate template = templates.getTemplate("ns.c");
+
+    SettableFuture<String> pending = SettableFuture.create();
+    ExternRuntime runtime = new ExternRuntime(pending);
+
+    RenderContext context =
+        getDefaultContext(templates).toBuilder()
+            .withPluginInstances(
+                PluginInstances.of(ImmutableMap.of(ExternRuntime.class.getName(), () -> runtime)))
+            .build();
+
+    BufferingAppendable output = LoggingAdvisingAppendable.buffering();
+    TemplateRenderer renderer =
+        (frame) -> template.render(frame, ParamStore.EMPTY_INSTANCE, output, context);
+    var result = renderer.render();
+    assertThat(result.asRenderResult()).isEqualTo(RenderResult.continueAfter(pending));
+    assertThat(output.toString()).isEqualTo("<span>");
+    pending.set("a message from the future");
+    assertThat(renderer.render(result)).isNull();
+    assertThat(output.toString()).isEqualTo("<span>a message from the future</span>");
   }
 }

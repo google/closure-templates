@@ -501,12 +501,12 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
                         TemplateModuleImportType moduleType = (TemplateModuleImportType) parentType;
                         String symbol = var.getSymbol();
                         if (moduleType.getExternNames().contains(symbol)) {
-                          List<FunctionType> types =
-                              externsTypeLookup.get(moduleType.getPath(), symbol);
+                          ImmutableList<ExternRef> types =
+                              externsTypeLookup.getRefs(moduleType.getPath(), symbol);
                           // The return type is what's important here, and extern overloads are
                           // required to have the same return type, so it's okay to just grab the
                           // first one.
-                          var.setType(types.get(0));
+                          var.setType(types.get(0).signature());
                         }
                       }
                     }));
@@ -3322,19 +3322,19 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
       this.deps = deps;
     }
 
-    List<ExternRef> getRefs(SourceLogicalPath path, String name) {
-      return get(path, name).stream().map(type -> ExternRef.of(path, name, type)).collect(toList());
-    }
-
-    List<FunctionType> get(SourceLogicalPath path, String name) {
+    ImmutableList<ExternRef> getRefs(SourceLogicalPath path, String name) {
       List<ExternNode> fromSources = sources.get(path, name);
       if (fromSources != null) {
-        return fromSources.stream().map(ExternNode::getType).collect(toList());
+        return fromSources.stream()
+            .map(n -> ExternRef.of(path, name, n.getType(), n.isJavaImplAsync()))
+            .collect(toImmutableList());
       }
       FileMetadata fromDeps = deps.get().getFile(path);
       if (fromDeps != null) {
-        List<? extends FileMetadata.Extern> e = fromDeps.getExterns(name);
-        return e.stream().map(FileMetadata.Extern::getSignature).collect(toList());
+        List<? extends FileMetadata.Extern> exts = fromDeps.getExterns(name);
+        return exts.stream()
+            .map(e -> ExternRef.of(path, name, e.getSignature(), e.isJavaAsync()))
+            .collect(toImmutableList());
       }
       return ImmutableList.of();
     }

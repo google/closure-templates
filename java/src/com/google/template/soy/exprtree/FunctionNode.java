@@ -57,8 +57,9 @@ public final class FunctionNode extends AbstractParentExprNode implements ExprNo
   /** All the information a runtime needs to execute a call to an extern. */
   @AutoValue
   public abstract static class ExternRef {
-    public static ExternRef of(SourceLogicalPath path, String name, FunctionType signature) {
-      return new AutoValue_FunctionNode_ExternRef(path, name, signature);
+    public static ExternRef of(
+        SourceLogicalPath path, String name, FunctionType signature, boolean javaAsync) {
+      return new AutoValue_FunctionNode_ExternRef(path, name, signature, javaAsync);
     }
 
     public abstract SourceLogicalPath path();
@@ -66,6 +67,8 @@ public final class FunctionNode extends AbstractParentExprNode implements ExprNo
     public abstract String name();
 
     public abstract FunctionType signature();
+
+    public abstract boolean javaAsync();
   }
 
   /**

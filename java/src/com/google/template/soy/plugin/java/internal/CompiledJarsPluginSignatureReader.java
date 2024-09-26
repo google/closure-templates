@@ -24,6 +24,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
+import com.google.template.soy.base.internal.TypeReference;
 import com.google.template.soy.jbcsrc.restricted.TypeInfo;
 import com.google.template.soy.plugin.java.MethodChecker;
 import com.google.template.soy.plugin.java.ReadMethodData;
@@ -33,6 +34,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.ParameterizedType;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -51,6 +54,8 @@ import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
+import org.objectweb.asm.signature.SignatureReader;
+import org.objectweb.asm.signature.SignatureVisitor;
 
 /**
  * Reads signatures for plugins from jar files, optionally falling back to reflection (on the
@@ -107,24 +112,6 @@ public class CompiledJarsPluginSignatureReader implements PluginSignatureReader,
     }.findMethod(className, methodName, returnType, arguments);
   }
 
-  public static boolean hasMatchingMethod(
-      ClassSignatures signature, String methodName, String returnType, List<String> arguments) {
-    // Get all the possible methods for the partial signature.
-    MethodSignatures methodsForSig =
-        signature.forPartial(PartialSignature.create(methodName, ImmutableList.copyOf(arguments)));
-    // If we have an exact matching method for that return type, return it.
-    if (methodsForSig.hasReturnType(returnType)) {
-      return true;
-    }
-    // If a matching sig exists w/o a matching return type, return an arbitrary method so we can
-    // display a decent error message.
-    if (!methodsForSig.isEmpty()) {
-      return false;
-    }
-    // Otherwise, nothing matches at all: return null.
-    return false;
-  }
-
   /**
    * Tries to index the available public methods in the class from reading jars. If reading jars
    * fails, falls back to using reflection.
@@ -173,11 +160,30 @@ public class CompiledJarsPluginSignatureReader implements PluginSignatureReader,
                 classIsPublic && Modifier.isPublic(m.getModifiers()),
                 !Modifier.isStatic(m.getModifiers()),
                 clazz.isInterface(),
-                m.getReturnType().getName()));
+                m.getReturnType().getName(),
+                forType(m.getGenericReturnType()),
+                Arrays.stream(m.getGenericParameterTypes())
+                    .map(CompiledJarsPluginSignatureReader::forType)
+                    .collect(toImmutableList())));
       }
       return signatures.build();
     } catch (ClassNotFoundException | SecurityException e) {
       return ClassSignatures.EMPTY;
+    }
+  }
+
+  private static TypeReference forType(java.lang.reflect.Type type) {
+    if (type instanceof Class) {
+      return TypeReference.create(((Class<?>) type).getName());
+    } else if (type instanceof ParameterizedType) {
+      ParameterizedType pType = (ParameterizedType) type;
+      return TypeReference.create(
+          ((Class<?>) pType.getRawType()).getName(),
+          Arrays.stream(pType.getActualTypeArguments())
+              .map(CompiledJarsPluginSignatureReader::forType)
+              .collect(toImmutableList()));
+    } else {
+      return TypeReference.create(type.toString());
     }
   }
 
@@ -207,14 +213,100 @@ public class CompiledJarsPluginSignatureReader implements PluginSignatureReader,
     public MethodVisitor visitMethod(
         int access, String name, String descriptor, String signature, String[] exceptions) {
       Type methodType = Type.getMethodType(descriptor);
+
+      TypeReference returnType;
+      ImmutableList<TypeReference> paramTypes;
+
+      if (signature != null) {
+        SignatureReader signatureReader = new SignatureReader(signature);
+        SigVisitor sigVisitor = new SigVisitor(this.api);
+        signatureReader.accept(sigVisitor);
+        returnType = sigVisitor.returnType.getType();
+        paramTypes =
+            sigVisitor.paramTypes.stream().map(TypeVisitor::getType).collect(toImmutableList());
+      } else {
+        returnType = TypeReference.create(methodType.getReturnType().getClassName());
+        paramTypes =
+            Arrays.stream(methodType.getArgumentTypes())
+                .map(t -> TypeReference.create(t.getClassName()))
+                .collect(toImmutableList());
+      }
+
       signatures.add(
           PartialSignature.create(name, methodType),
           ReadMethodData.create(
               classIsPublic && Modifier.isPublic(access),
               !Modifier.isStatic(access),
               classIsInterface,
-              methodType.getReturnType().getClassName()));
+              methodType.getReturnType().getClassName(),
+              returnType,
+              paramTypes));
       return null;
+    }
+  }
+
+  private static final class SigVisitor extends SignatureVisitor {
+    private TypeVisitor returnType;
+    private final List<TypeVisitor> paramTypes = new ArrayList<>();
+
+    SigVisitor(int api) {
+      super(api);
+    }
+
+    @Override
+    public SignatureVisitor visitParameterType() {
+      TypeVisitor next = new TypeVisitor(this.api);
+      paramTypes.add(next);
+      return next;
+    }
+
+    @Override
+    public SignatureVisitor visitReturnType() {
+      returnType = new TypeVisitor(this.api);
+      return returnType;
+    }
+  }
+
+  private static final class TypeVisitor extends SignatureVisitor {
+    private String baseType = "";
+    private final List<TypeVisitor> genericTypes = new ArrayList<>();
+
+    TypeVisitor(int api) {
+      super(api);
+    }
+
+    public TypeReference getType() {
+      return TypeReference.create(
+          baseType, genericTypes.stream().map(TypeVisitor::getType).collect(toImmutableList()));
+    }
+
+    @Override
+    public void visitBaseType(char descriptor) {
+      baseType += Type.getType("" + descriptor).getClassName();
+    }
+
+    @Override
+    public void visitClassType(String name) {
+      baseType += name.replace('/', '.');
+    }
+
+    @Override
+    public void visitInnerClassType(final String name) {
+      baseType += "." + name.replace('/', '.');
+    }
+
+    @Override
+    public void visitTypeArgument() {
+      TypeVisitor next = new TypeVisitor(this.api);
+      next.baseType = "?";
+      genericTypes.add(next);
+    }
+
+    @Override
+    public SignatureVisitor visitTypeArgument(char tag) {
+      TypeVisitor next = new TypeVisitor(this.api);
+      genericTypes.add(next);
+      return next;
     }
   }
 

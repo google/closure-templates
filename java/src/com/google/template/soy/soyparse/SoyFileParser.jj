@@ -1688,7 +1688,8 @@ private JavaImplNode JavaImplStmt() :
   {
     SourceLocation srcLoc = createSrcLoc(open, close);
     validateAttributes(null, attributes, errorReporter);
-    return new JavaImplNode(nodeIdGen.genId(), srcLoc, attributes, errorReporter);
+    return new JavaImplNode(nodeIdGen.genId(), srcLoc, attributes,
+        errorReporter, TypeReferenceParser.parser(), TypeReferenceParser.listParser());
   }
 }
 

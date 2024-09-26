@@ -98,6 +98,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.Future;
 import java.util.function.Consumer;
 import java.util.function.IntFunction;
 import java.util.function.ToIntFunction;
@@ -164,6 +165,7 @@ public final class BytecodeUtils {
   public static final Type IMMUTABLE_SET_MULTIMAP_TYPE = Type.getType(ImmutableSetMultimap.class);
   public static final Type IMMUTABLE_MAP_TYPE = Type.getType(ImmutableMap.class);
   public static final Type MAP_TYPE = Type.getType(Map.class);
+  public static final Type FUTURE_TYPE = Type.getType(Future.class);
   public static final Type TO_INT_FUNCTION_TYPE = Type.getType(ToIntFunction.class);
   public static final Type MAP_ENTRY_TYPE = Type.getType(Map.Entry.class);
   public static final Type MESSAGE_TYPE = Type.getType(Message.class);

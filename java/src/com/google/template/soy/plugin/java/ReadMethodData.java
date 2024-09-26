@@ -17,6 +17,8 @@
 package com.google.template.soy.plugin.java;
 
 import com.google.auto.value.AutoValue;
+import com.google.common.collect.ImmutableList;
+import com.google.template.soy.base.internal.TypeReference;
 
 /** Information about a method that was read. */
 @AutoValue
@@ -34,8 +36,18 @@ public abstract class ReadMethodData {
   /** The return type of the method. */
   public abstract String returnType();
 
+  public abstract TypeReference returnTypeData();
+
+  public abstract ImmutableList<TypeReference> paramsTypeData();
+
   public static ReadMethodData create(
-      boolean isPublic, boolean instance, boolean classIsInterface, String returnType) {
-    return new AutoValue_ReadMethodData(isPublic, instance, classIsInterface, returnType);
+      boolean isPublic,
+      boolean instance,
+      boolean classIsInterface,
+      String returnType,
+      TypeReference returnTypeData,
+      ImmutableList<TypeReference> paramsTypeData) {
+    return new AutoValue_ReadMethodData(
+        isPublic, instance, classIsInterface, returnType, returnTypeData, paramsTypeData);
   }
 }

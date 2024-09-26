@@ -946,13 +946,13 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
       throw RenderException.createF("No java implementation for extern '%s'.", soyFunction.name());
     }
     JavaImplNode java = impl.get();
-    int numJavaParams = java.params().size();
+    int numJavaParams = java.paramTypes().size();
     MethodSignature method;
     try {
-      Class<?> rt = MethodSignature.forName(java.returnType());
+      Class<?> rt = MethodSignature.forName(java.returnType().className());
       Class<?>[] args = new Class<?>[numJavaParams];
       for (int i = 0; i < numJavaParams; i++) {
-        args[i] = MethodSignature.forName(java.params().get(i));
+        args[i] = MethodSignature.forName(java.paramTypes().get(i).className());
       }
       method =
           java.isInterface()

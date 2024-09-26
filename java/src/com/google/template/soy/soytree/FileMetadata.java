@@ -42,6 +42,8 @@ public interface FileMetadata extends PartialFileMetadata {
     String getName();
 
     FunctionType getSignature();
+
+    boolean isJavaAsync();
   }
 
   /** Java object version of {@link TypeDefP}. */

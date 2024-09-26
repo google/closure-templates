@@ -214,6 +214,17 @@ template types         | `com.google.template.soy.data.SoyTemplate`, `com.google
 
 \* If the Soy type is nullable then the primitive Java type is not allowed.
 
+### Asynchronous Java implementations
+
+In addition to the allowed types above, an extern may return a Java `Future`
+wrapping any of the above types. The `return` attribute of `{javaimpl}` must be
+in the form `FutureType<DataType>`, for example
+`java.util.concurrent.Future<java.lang.String>`. `FutureType` must be one of
+`java.util.concurrent.Future` or
+`com.google.common.util.concurrent.ListenableFuture`.
+
+Note that the parameters passed to an extern are always non-Future values.
+
 ### Implicit Java Parameters
 
 Some values passed to the Java implementation of an extern function come from

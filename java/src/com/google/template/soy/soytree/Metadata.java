@@ -501,7 +501,8 @@ public final class Metadata {
                                   SoyTypeP.newBuilder().setFunction(e.getSignature()).build(),
                                   context().typeRegistry(),
                                   getPath(),
-                                  context().errorReporter()))));
+                                  context().errorReporter()),
+                          e.getJavaAsync())));
     }
 
     @Override
@@ -659,7 +660,9 @@ public final class Metadata {
               .collect(
                   toImmutableListMultimap(
                       e -> e.getIdentifier().identifier(),
-                      e -> ExternImpl.of(e.getIdentifier().identifier(), e.getType())));
+                      e ->
+                          ExternImpl.of(
+                              e.getIdentifier().identifier(), e.getType(), e.isJavaImplAsync())));
 
       ImmutableList.Builder<TemplateMetadata> templates = ImmutableList.builder();
       Map<String, TemplateMetadata> index = new LinkedHashMap<>();
@@ -749,8 +752,8 @@ public final class Metadata {
   @AutoValue
   abstract static class ExternImpl implements FileMetadata.Extern {
 
-    private static ExternImpl of(String name, FunctionType signature) {
-      return new AutoValue_Metadata_ExternImpl(name, signature);
+    private static ExternImpl of(String name, FunctionType signature, boolean boxed) {
+      return new AutoValue_Metadata_ExternImpl(name, signature, boxed);
     }
 
     @Override
@@ -758,6 +761,9 @@ public final class Metadata {
 
     @Override
     public abstract FunctionType getSignature();
+
+    @Override
+    public abstract boolean isJavaAsync();
   }
 
   private static FileMetadata merge(FileMetadata primary, FileMetadata secondary) {

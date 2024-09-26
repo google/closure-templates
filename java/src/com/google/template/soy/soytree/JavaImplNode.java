@@ -21,12 +21,17 @@ import static java.util.stream.Collectors.joining;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.internal.TypeReference;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.Future;
+import java.util.function.Function;
+import javax.annotation.Nullable;
 
 /** Java implementation for an extern. */
 public final class JavaImplNode extends ExternImplNode {
@@ -66,18 +71,28 @@ public final class JavaImplNode extends ExternImplNode {
   private CommandTagAttribute className;
   private CommandTagAttribute methodName;
   private CommandTagAttribute params;
-  private ImmutableList<String> parsedParams = ImmutableList.of();
   private CommandTagAttribute returnType;
   private CommandTagAttribute type;
+  private TypeReference parsedReturnType;
+  private ImmutableList<TypeReference> parsedParamTypes = ImmutableList.of();
 
   public JavaImplNode(
       int id,
       SourceLocation sourceLocation,
       List<CommandTagAttribute> attributes,
-      ErrorReporter errorReporter) {
+      ErrorReporter errorReporter,
+      Function<String, TypeReference> typeParser,
+      Function<String, ImmutableList<TypeReference>> typeListParser) {
     super(id, sourceLocation, "javaimpl");
     this.attributes = ImmutableList.copyOf(attributes);
     initAttributes(errorReporter);
+
+    if (returnType != null) {
+      this.parsedReturnType = typeParser.apply(returnType.getValue());
+    }
+    if (params != null) {
+      this.parsedParamTypes = typeListParser.apply(params.getValue());
+    }
   }
 
   /**
@@ -93,6 +108,8 @@ public final class JavaImplNode extends ExternImplNode {
             .map(origAttr -> origAttr.copy(copyState))
             .collect(toImmutableList());
     initAttributes(ErrorReporter.devnull());
+    this.parsedReturnType = orig.parsedReturnType;
+    this.parsedParamTypes = orig.parsedParamTypes;
   }
 
   /**
@@ -107,9 +124,6 @@ public final class JavaImplNode extends ExternImplNode {
         this.methodName = attr;
       } else if (attr.hasName(PARAMS)) {
         this.params = attr;
-        if (!attr.getValue().isEmpty()) {
-          this.parsedParams = ImmutableList.copyOf(attr.getValue().split("\\s*,\\s*"));
-        }
       } else if (attr.hasName(RETURN)) {
         this.returnType = attr;
       } else if (attr.hasName(TYPE)) {
@@ -168,8 +182,8 @@ public final class JavaImplNode extends ExternImplNode {
     return TYPE_INTERFACE.equals(t) || TYPE_STATIC_INTERFACE.equals(t);
   }
 
-  public ImmutableList<String> params() {
-    return parsedParams;
+  public ImmutableList<TypeReference> paramTypes() {
+    return parsedParamTypes;
   }
 
   public static boolean isParamImplicit(String param) {
@@ -177,15 +191,15 @@ public final class JavaImplNode extends ExternImplNode {
   }
 
   private boolean hasImplicitParams() {
-    return params().stream().anyMatch(IMPLICIT_PARAMS::contains);
+    return parsedParamTypes.stream().anyMatch(p -> IMPLICIT_PARAMS.contains(p.className()));
   }
 
   public boolean requiresRenderContext() {
     return !isStatic() || hasImplicitParams();
   }
 
-  public String returnType() {
-    return returnType.getValue();
+  public TypeReference returnType() {
+    return parsedReturnType;
   }
 
   @Override
@@ -202,6 +216,25 @@ public final class JavaImplNode extends ExternImplNode {
     Optional<CommandTagAttribute> attr =
         attributes.stream().filter(a -> paramName.equals(a.getName().identifier())).findFirst();
     return attr.isPresent() ? attr.get().getValueLocation() : SourceLocation.UNKNOWN;
+  }
+
+  @Nullable
+  public String getRawAttributeValue(String paramName) {
+    Optional<CommandTagAttribute> attr =
+        attributes.stream().filter(a -> paramName.equals(a.getName().identifier())).findFirst();
+    return attr.map(CommandTagAttribute::getValue).orElse(null);
+  }
+
+  public boolean isAsync() {
+    return parsedReturnType.isGeneric() && isSupportedFutureClassName(returnType().className());
+  }
+
+  /** Only these exact future classes are supported in the implementation's method declaration. */
+  private static final ImmutableSet<String> FUTURE_CLASS_NAMES =
+      ImmutableSet.of(Future.class.getName(), ListenableFuture.class.getName());
+
+  public static boolean isSupportedFutureClassName(String s) {
+    return FUTURE_CLASS_NAMES.contains(s);
   }
 
   @Override

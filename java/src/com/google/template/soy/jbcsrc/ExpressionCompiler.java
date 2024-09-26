@@ -1888,6 +1888,9 @@ final class ExpressionCompiler {
       TypeInfo externOwner = TypeInfo.createClass(Names.javaClassNameFromSoyNamespace(namespace));
       SoyRuntimeType soyReturnType =
           ExternCompiler.getRuntimeType(extern.signature().getReturnType());
+      if (extern.javaAsync()) {
+        soyReturnType = soyReturnType.box();
+      }
       List<Expression> args = new ArrayList<>();
       for (int i = 0; i < params.size(); i++) {
         args.add(
@@ -1896,6 +1899,8 @@ final class ExpressionCompiler {
       }
       // Dispatch directly for locally defined externs
       var soyFileNode = context.getNearestAncestor(SoyFileNode.class);
+
+      Expression externCall;
       if (namespace.equals(soyFileNode.getNamespace())) {
         var externNode =
             soyFileNode.getExterns().stream()
@@ -1912,35 +1917,47 @@ final class ExpressionCompiler {
         }
         Method asmMethod =
             ExternCompiler.buildMemberMethod(
-                extern.name(), extern.signature(), javaImplRequiresRenderContext);
+                extern.name(),
+                extern.signature(),
+                javaImplRequiresRenderContext,
+                extern.javaAsync());
         MethodRef ref =
             MethodRef.createStaticMethod(externOwner, asmMethod, MethodPureness.NON_PURE);
-        return SoyExpression.forRuntimeType(soyReturnType, ref.invoke(args));
+        externCall = ref.invoke(args);
+      } else {
+
+        // For externs defined in other files use invokeDynamic so that we can support the
+        // classloader fallback.
+        // To support those, we always need to pass the render context even when not otherwise
+        // required, so that we can dynamically resolve the target.
+        Method asmMethod =
+            ExternCompiler.buildMemberMethod(
+                extern.name(),
+                extern.signature(),
+                /* requiresRenderContext= */ true,
+                extern.javaAsync());
+        args.add(0, parameters.getRenderContext());
+        externCall =
+            new Expression(soyReturnType.runtimeType()) {
+              @Override
+              protected void doGen(CodeBuilder adapter) {
+                for (var arg : args) {
+                  arg.gen(adapter);
+                }
+                adapter.visitInvokeDynamicInsn(
+                    "call",
+                    asmMethod.getDescriptor(),
+                    CALL_EXTERN_HANDLE,
+                    externOwner.className(),
+                    asmMethod.getName());
+              }
+            };
       }
 
-      // For externs defined in other files use invokeDynamic so that we can support the
-      // classloader fallback.
-      // To support those, we always need to pass the render context even when not otherwise
-      // required, so that we can dynamically resolve the target.
-      Method asmMethod =
-          ExternCompiler.buildMemberMethod(
-              extern.name(), extern.signature(), /* requiresRenderContext= */ true);
-      args.add(0, parameters.getRenderContext());
-      Expression externCall =
-          new Expression(soyReturnType.runtimeType()) {
-            @Override
-            protected void doGen(CodeBuilder adapter) {
-              for (var arg : args) {
-                arg.gen(adapter);
-              }
-              adapter.visitInvokeDynamicInsn(
-                  "call",
-                  asmMethod.getDescriptor(),
-                  CALL_EXTERN_HANDLE,
-                  externOwner.className(),
-                  asmMethod.getName());
-            }
-          };
+      if (extern.javaAsync()) {
+        externCall =
+            detacher.resolveSoyValueProvider(externCall).checkedCast(soyReturnType.runtimeType());
+      }
       return SoyExpression.forRuntimeType(soyReturnType, externCall);
     }
 
@@ -2335,6 +2352,10 @@ final class ExpressionCompiler {
           if (Future.class.isAssignableFrom(methodSignature.returnType())) {
             return true;
           }
+        }
+      } else if (fn instanceof ExternRef) {
+        if (((ExternRef) fn).javaAsync()) {
+          return true;
         }
       }
       return node.getParams().stream().anyMatch(this::visit);
