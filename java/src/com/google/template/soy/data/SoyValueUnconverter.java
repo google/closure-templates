@@ -41,7 +41,7 @@ public final class SoyValueUnconverter {
 
   static {
     CONVERTERS.put(NullData.class, v -> null);
-    CONVERTERS.put(UndefinedData.class, v -> null);
+    CONVERTERS.put(UndefinedData.class, v -> v);
     CONVERTERS.put(BooleanData.class, BooleanData::getValue);
     CONVERTERS.put(IntegerData.class, IntegerData::getValue);
     CONVERTERS.put(FloatData.class, FloatData::getValue);

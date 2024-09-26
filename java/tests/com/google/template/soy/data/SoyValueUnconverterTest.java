@@ -35,7 +35,9 @@ import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.StringData;
+import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.testing.SomeEmbeddedMessage;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -44,9 +46,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-/**
- * Unit tests for SoyValueConverter.
- */
+/** Unit tests for SoyValueConverter. */
 @RunWith(JUnit4.class)
 public class SoyValueUnconverterTest {
 
@@ -55,6 +55,7 @@ public class SoyValueUnconverterTest {
   @Test
   public void testUnconvert() {
     assertThat(unconvert(NullData.INSTANCE)).isNull();
+    assertThat(unconvert(UndefinedData.INSTANCE)).isEqualTo(UndefinedData.INSTANCE);
     assertThat(unconvert(StringData.forValue("boo"))).isEqualTo("boo");
     assertThat(unconvert(BooleanData.TRUE)).isEqualTo(true);
     assertThat(unconvert(IntegerData.forValue(8))).isEqualTo(8L);
@@ -94,5 +95,16 @@ public class SoyValueUnconverterTest {
 
     SafeUrl url = ordainAsSafe("https://google.com/a", ContentKind.URI).toSafeUrl();
     assertThat(unconvert(CONVERTER.convert(url))).isEqualTo(url);
+  }
+
+  @Test
+  public void roundTrip() {
+    for (Object orig : Arrays.asList(null, UndefinedData.INSTANCE, true, false, 1L, 2.1D, "abc")) {
+      SoyValueProvider rt0 = SoyValueConverter.INSTANCE.convert(orig);
+      Object rt1 = unconvert(rt0);
+      assertThat(rt1).isEqualTo(orig);
+      SoyValueProvider rt2 = SoyValueConverter.INSTANCE.convert(rt1);
+      assertThat(rt2).isEqualTo(rt0);
+    }
   }
 }

@@ -25,6 +25,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.StringData;
+import com.google.template.soy.data.restricted.UndefinedData;
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.Test;
@@ -75,6 +76,7 @@ public class SoyValueConverterTest {
   @Test
   public void testConvertBasic() {
     assertThat(CONVERTER.convert(null)).isEqualTo(NullData.INSTANCE);
+    assertThat(CONVERTER.convert(UndefinedData.INSTANCE)).isEqualTo(UndefinedData.INSTANCE);
     assertThat(CONVERTER.convert(StringData.forValue("boo")).resolve().stringValue())
         .isEqualTo("boo");
     assertThat(CONVERTER.convert("boo").resolve().stringValue()).isEqualTo("boo");
