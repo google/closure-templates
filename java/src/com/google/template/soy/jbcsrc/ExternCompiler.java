@@ -416,21 +416,22 @@ public final class ExternCompiler {
    * <p>In some cases (e.g. List) we happen to tolerate the extern returning null.
    */
   static Expression adaptReturnType(Type returnType, SoyType soyReturnType, Expression externCall) {
+    boolean nullish = SoyTypes.isNullish(soyReturnType);
     Type externType = externCall.resultType();
 
-    if (externType.equals(BytecodeUtils.BOXED_INTEGER_TYPE)) {
+    if (!nullish && externType.equals(BytecodeUtils.BOXED_INTEGER_TYPE)) {
       return JbcSrcExternRuntime.UNBOX_INTEGER.invoke(externCall);
     } else if (externType.equals(Type.INT_TYPE)) {
       return BytecodeUtils.numericConversion(externCall, Type.LONG_TYPE);
-    } else if (externType.equals(BytecodeUtils.BOXED_LONG_TYPE)) {
+    } else if (!nullish && externType.equals(BytecodeUtils.BOXED_LONG_TYPE)) {
       return JbcSrcExternRuntime.UNBOX_LONG.invoke(externCall);
-    } else if (externType.equals(BytecodeUtils.BOXED_DOUBLE_TYPE)) {
+    } else if (!nullish && externType.equals(BytecodeUtils.BOXED_DOUBLE_TYPE)) {
       return JbcSrcExternRuntime.UNBOX_DOUBLE.invoke(externCall);
     } else if (externType.equals(Type.FLOAT_TYPE)) {
       return BytecodeUtils.numericConversion(externCall, Type.DOUBLE_TYPE);
-    } else if (externType.equals(BytecodeUtils.BOXED_FLOAT_TYPE)) {
+    } else if (!nullish && externType.equals(BytecodeUtils.BOXED_FLOAT_TYPE)) {
       return JbcSrcExternRuntime.UNBOX_FLOAT.invoke(externCall);
-    } else if (externType.equals(BytecodeUtils.BOXED_BOOLEAN_TYPE)) {
+    } else if (!nullish && externType.equals(BytecodeUtils.BOXED_BOOLEAN_TYPE)) {
       return JbcSrcExternRuntime.UNBOX_BOOLEAN.invoke(externCall);
     } else if (externType.equals(BytecodeUtils.OBJECT.type())
         || externType.equals(BytecodeUtils.NUMBER_TYPE)) {
