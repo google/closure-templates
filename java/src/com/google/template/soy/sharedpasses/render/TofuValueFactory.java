@@ -41,7 +41,6 @@ import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyProtoValue;
-import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.SoyValueProvider;
@@ -55,6 +54,7 @@ import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.internal.proto.JavaQualifiedNames;
 import com.google.template.soy.plugin.internal.JavaPluginExecContext;
 import com.google.template.soy.plugin.java.PluginInstances;
+import com.google.template.soy.plugin.java.SharedExternRuntime;
 import com.google.template.soy.plugin.java.restricted.JavaValue;
 import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
 import com.google.template.soy.plugin.java.restricted.MethodSignature;
@@ -349,10 +349,11 @@ class TofuValueFactory extends JavaValueFactory {
       } else if (Map.class.isAssignableFrom(type) && isExternApi) {
         SoyType paramType = externSig.getParameters().get(i).getType();
         if (paramType.getKind() == Kind.RECORD) {
-          ImmutableMap.Builder<String, Object> builder = ImmutableMap.builder();
-          ((SoyRecord) value)
-              .forEach((s, v) -> builder.put(s.getName(), SoyValueUnconverter.unconvert(v)));
-          return builder.buildOrThrow();
+          if (ImmutableMap.class.isAssignableFrom(type)) {
+            return SharedExternRuntime.recordToImmutableMap(value);
+          } else {
+            return SharedExternRuntime.recordToMap(value);
+          }
         }
         MapType mapType = (MapType) paramType;
         return ((SoyMap) value)

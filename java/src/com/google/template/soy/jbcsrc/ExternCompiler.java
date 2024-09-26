@@ -368,14 +368,18 @@ public final class ExternCompiler {
           if (SoyTypes.NUMBER_TYPE.equals(elmType)) {
             return JbcSrcExternRuntime.LIST_UNBOX_NUMBERS.invoke(unboxedList);
           }
-          // fall through
+        // fall through
         default:
           throw new AssertionError("ValidateExternsPass should prevent this.");
       }
     } else if (javaType.equals(BytecodeUtils.MAP_TYPE)
         || javaType.equals(BytecodeUtils.IMMUTABLE_MAP_TYPE)) {
       if (nonNullableSoyType.getKind() == Kind.RECORD) {
-        return JbcSrcExternRuntime.UNBOX_RECORD.invoke(actualParam);
+        if (javaType.equals(BytecodeUtils.MAP_TYPE)) {
+          return JbcSrcExternRuntime.RECORD_TO_MAP.invoke(actualParam);
+        } else {
+          return JbcSrcExternRuntime.RECORD_TO_IMMUTABLE_MAP.invoke(actualParam);
+        }
       }
       SoyType keyType = SoyTypes.getMapKeysType(nonNullableSoyType);
       SoyType valueType = SoyTypes.getMapValuesType(nonNullableSoyType);

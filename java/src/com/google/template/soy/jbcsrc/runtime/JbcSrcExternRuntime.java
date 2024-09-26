@@ -40,7 +40,6 @@ import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContents;
 import com.google.template.soy.data.SoyIterable;
 import com.google.template.soy.data.SoyMap;
-import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.SoyValueProvider;
@@ -48,10 +47,10 @@ import com.google.template.soy.data.SoyValueUnconverter;
 import com.google.template.soy.data.internal.IterableImpl;
 import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
+import com.google.template.soy.plugin.java.SharedExternRuntime;
 import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
@@ -312,18 +311,10 @@ public final class JbcSrcExternRuntime {
   public static final MethodRef UNBOX_OBJECT =
       MethodRef.createPure(SoyValueUnconverter.class, "unconvert", SoyValueProvider.class);
 
-  public static final MethodRef UNBOX_RECORD = create("unboxRecord", SoyValue.class);
-
-  @Keep
-  @Nullable
-  public static ImmutableMap<?, ?> unboxRecord(SoyValue value) {
-    if (value.isNullish()) {
-      return null;
-    }
-    SoyRecord map = (SoyRecord) value;
-    return map.recordAsMap().entrySet().stream()
-        .collect(toImmutableMap(Entry::getKey, e -> SoyValueUnconverter.unconvert(e.getValue())));
-  }
+  public static final MethodRef RECORD_TO_MAP =
+      MethodRef.createPure(SharedExternRuntime.class, "recordToMap", SoyValue.class);
+  public static final MethodRef RECORD_TO_IMMUTABLE_MAP =
+      MethodRef.createPure(SharedExternRuntime.class, "recordToImmutableMap", SoyValue.class);
 
   public static final MethodRef UNBOX_SAFE_HTML = create("unboxSafeHtml", SoyValue.class);
 

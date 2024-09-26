@@ -369,6 +369,8 @@ class ValidateExternsPass implements CompilerFilePass {
           .add(SoyType.Kind.CSS)
           .add(SoyType.Kind.ANY)
           .add(SoyType.Kind.UNKNOWN)
+          .add(SoyType.Kind.NULL)
+          .add(SoyType.Kind.UNDEFINED)
           .build();
 
   private static boolean typesAreCompatible(
@@ -434,10 +436,8 @@ class ValidateExternsPass implements CompilerFilePass {
       case RECORD:
         RecordType recordType = (RecordType) soyType;
         if (!recordType.getMembers().stream()
-            .map(
-                m ->
-                    (m.optional() ? SoyTypes.tryRemoveNull(m.declaredType()) : m.declaredType())
-                        .getKind())
+            .flatMap(m -> SoyTypes.expandUnions(m.checkedType()).stream())
+            .map(SoyType::getKind)
             .allMatch(ALLOWED_RECORD_MEMBERS::contains)) {
           return false;
         }
