@@ -31,7 +31,6 @@ import static com.google.template.soy.shared.internal.gencode.JavaGenerationUtil
 import static com.google.template.soy.shared.internal.gencode.JavaGenerationUtils.makeLowerCamelCase;
 import static java.util.stream.Collectors.counting;
 import static java.util.stream.Collectors.groupingBy;
-import static java.util.stream.Collectors.toList;
 
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
@@ -355,7 +354,7 @@ public final class GenerateBuildersVisitor
 
     // Will contain handled and unhandled params. We include some types of unhandled params so that
     // they still end up in the generated list of params.
-    List<ParamInfo> combinedParams =
+    ImmutableList<ParamInfo> combinedParams =
         template.params().stream()
             .filter(
                 info -> {
@@ -390,12 +389,12 @@ public final class GenerateBuildersVisitor
                   }
                   return false;
                 })
-            .collect(toList());
+            .collect(toImmutableList());
 
     appendParamConstants(ilb, template, combinedParams);
 
-    List<ParamInfo> nonInjectedParams =
-        combinedParams.stream().filter(p -> !p.injected()).collect(toList());
+    ImmutableList<ParamInfo> nonInjectedParams =
+        combinedParams.stream().filter(p -> !p.injected()).collect(toImmutableList());
 
     if (nonInjectedParams.stream().noneMatch(ParamInfo::requiredAndNotIndirect)) {
       // Invoke the constructor directly. For these templates it could allow callers to avoid
@@ -538,7 +537,7 @@ public final class GenerateBuildersVisitor
       // TemplateParamModule, SoyTemplateData, AbstractBuilder, and tests. Union types, records, and
       // CSS params will be private since they can't be represented as a single specific type
       // literal.
-      String visibility = !"?".equals(genericType) ? "public" : "private";
+      String visibility = !genericType.equals("?") ? "public" : "private";
 
       // These values correspond to static factory methods on SoyTemplateParam.
       CodeGenUtils.Member factory = STANDARD_P;
@@ -556,7 +555,7 @@ public final class GenerateBuildersVisitor
       }
 
       String typeToken =
-          "?".equals(genericType)
+          genericType.equals("?")
               // TODO(jcg): this should probably be a wildcard type
               ? "com.google.common.reflect.TypeToken.of(java.lang.Object.class)"
               : (genericType.matches("(\\.|\\w)+")
@@ -670,13 +669,11 @@ public final class GenerateBuildersVisitor
       writeRecordSetter(param, template, (RecordJavaType) javaType);
     } else {
       String javaTypeString = javaType.toJavaTypeString();
-      boolean nullable = javaType.isNullable();
 
       ilb.appendLine("@com.google.errorprone.annotations.CanIgnoreReturnValue");
       ilb.appendLineStart("public Builder ")
           .appendImputee(param.setterName(), getByteSpan(template, param))
-          .appendLineEnd(
-              "(", (nullable ? "@javax.annotation.Nullable " : ""), javaTypeString, " value) {");
+          .appendLineEnd("(", javaTypeString, " value) {");
       ilb.increaseIndent();
 
       String newVariableName = javaType.asInlineCast("value");
@@ -699,7 +696,7 @@ public final class GenerateBuildersVisitor
             type.isList() ? param.adderName() : param.setterName(), getByteSpan(template, param))
         .appendLineMiddle("(");
 
-    List<String> paramNames = type.getJavaTypeMap().keySet().asList();
+    ImmutableList<String> paramNames = type.getJavaTypeMap().keySet().asList();
     List<String> javaParamNames = new ArrayList<>();
 
     boolean first = true;
@@ -711,9 +708,6 @@ public final class GenerateBuildersVisitor
         ilb.appendLineMiddle(", ");
       }
       JavaType paramType = entry.getValue();
-      if (paramType.isNullable()) {
-        ilb.appendLineMiddle("@javax.annotation.Nullable ");
-      }
       ilb.appendLineMiddle(paramType.toJavaTypeString(), " ", paramName);
       first = false;
     }

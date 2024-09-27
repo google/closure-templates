@@ -28,7 +28,9 @@ public final class VeDataJavaType extends JavaType {
 
   @Override
   public String toJavaTypeString() {
-    return "com.google.template.soy.testing.metadata.placeholdertypes.VeDataPlaceholderType";
+    return "com.google.template.soy.testing.metadata.placeholdertypes."
+        + (isNullable() ? "Nullable " : "")
+        + "VeDataPlaceholderType";
   }
 
   @Override

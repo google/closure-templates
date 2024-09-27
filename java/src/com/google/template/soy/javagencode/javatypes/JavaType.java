@@ -106,4 +106,17 @@ public abstract class JavaType {
   public boolean isTypeLiteralSupported() {
     return true;
   }
+
+  static String spliceInNullableAnnotation(String typeString) {
+    int dotIndex = typeString.lastIndexOf('.');
+    if (dotIndex == -1) {
+      if (typeString.isEmpty()) {
+        return typeString;
+      }
+      return "@org.jspecify.annotations.Nullable " + typeString;
+    }
+    return typeString.substring(0, dotIndex)
+        + ".@org.jspecify.annotations.Nullable "
+        + typeString.substring(dotIndex + 1);
+  }
 }

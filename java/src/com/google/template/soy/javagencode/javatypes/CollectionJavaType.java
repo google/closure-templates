@@ -78,7 +78,11 @@ public final class CollectionJavaType extends JavaType {
 
   @Override
   public String toJavaTypeString() {
-    return "java.lang.Iterable<" + elementType.asGenericsTypeArgumentString() + ">";
+    return "java.lang."
+        + (isNullable() ? "@org.jspecify.annotations.Nullable " : "")
+        + "Iterable<"
+        + elementType.asGenericsTypeArgumentString()
+        + ">";
   }
 
   @Override

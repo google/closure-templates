@@ -53,7 +53,9 @@ public final class MapJavaType extends JavaType {
 
   @Override
   public String toJavaTypeString() {
-    return "java.util.Map<"
+    return "java.util."
+        + (isNullable() ? "@org.jspecify.annotations.Nullable " : "")
+        + "Map<"
         + keyType.asGenericsTypeArgumentString()
         + ", "
         + valueType.asGenericsTypeArgumentString()

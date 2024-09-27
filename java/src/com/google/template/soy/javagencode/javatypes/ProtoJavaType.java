@@ -36,7 +36,12 @@ public final class ProtoJavaType extends JavaType {
 
   @Override
   public String toJavaTypeString() {
-    return JavaQualifiedNames.getQualifiedName(protoDescriptor);
+    String name = JavaQualifiedNames.getQualifiedName(protoDescriptor);
+    if (isNullable()) {
+      return spliceInNullableAnnotation(name);
+    } else {
+      return name;
+    }
   }
 
   @Override

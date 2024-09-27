@@ -38,9 +38,13 @@ public final class TemplateJavaType extends JavaType {
   @Override
   public String toJavaTypeString() {
     if (this.type.getParameters().isEmpty()) {
-      return "com.google.template.soy.data.SoyTemplate";
+      return "com.google.template.soy.data."
+          + (isNullable() ? "@org.jspecify.annotations.Nullable " : "")
+          + "SoyTemplate";
     }
-    return "com.google.template.soy.data.PartialSoyTemplate";
+    return "com.google.template.soy.data."
+        + (isNullable() ? "@org.jspecify.annotations.Nullable " : "")
+        + "PartialSoyTemplate";
   }
 
   @Override

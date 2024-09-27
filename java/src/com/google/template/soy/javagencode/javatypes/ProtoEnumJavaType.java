@@ -36,7 +36,12 @@ public final class ProtoEnumJavaType extends JavaType {
 
   @Override
   public String toJavaTypeString() {
-    return JavaQualifiedNames.getQualifiedName(enumDescriptor);
+    String name = JavaQualifiedNames.getQualifiedName(enumDescriptor);
+    if (isNullable()) {
+      return spliceInNullableAnnotation(name);
+    } else {
+      return name;
+    }
   }
 
   @Override

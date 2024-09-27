@@ -44,11 +44,14 @@ public class RecordJavaType extends JavaType {
   @Override
   public String toJavaTypeString() {
     // Invocation builder code special cases this type and avoids calling this method altogether.
-    return "java.util.Map<String, ?>";
+    return "java.util."
+        + (isNullable() ? "@org.jspecify.annotations.Nullable " : "")
+        + "Map<String, ?>";
   }
 
   @Override
   public JavaType asNullable() {
+    // TODO(lukes): throw UnsupportedOperationException?
     return this;
   }
 

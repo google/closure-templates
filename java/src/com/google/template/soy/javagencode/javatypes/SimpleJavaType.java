@@ -151,12 +151,14 @@ public class SimpleJavaType extends JavaType {
 
   @Override
   public String toJavaTypeString() {
-    return javaTypeString;
+    return isNullable() ? spliceInNullableAnnotation(javaTypeString) : javaTypeString;
   }
 
   @Override
   String asGenericsTypeArgumentString() {
-    return genericsTypeArgumentString;
+    return isNullable()
+        ? spliceInNullableAnnotation(genericsTypeArgumentString)
+        : genericsTypeArgumentString;
   }
 
   @Override
@@ -213,12 +215,12 @@ public class SimpleJavaType extends JavaType {
 
     @Override
     public String asTypeLiteralString() {
-      return boxedType;
+      return isNullable() ? spliceInNullableAnnotation(boxedType) : boxedType;
     }
 
     @Override
     String asGenericsTypeArgumentString() {
-      return genericType;
+      return isNullable() ? spliceInNullableAnnotation(genericType) : genericType;
     }
 
     @Override
