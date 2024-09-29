@@ -72,7 +72,7 @@ The `Renderer` has setter methods to let you further configure your render:
     to use instead of the originals in the template.
 -   `setExpectedContentKind()` Specifies the expected content kind for this
     template (for details, please see
-    [Strict Autoescaping](security#autoescaping)).
+    [Strict Autoescaping](security.md#autoescaping)).
 
 Here is an example template:
 
@@ -110,13 +110,13 @@ Template Type             | Java Type
 `map<K, V>`               | `java.util.Map<K, V>`
 `legacy_object_map<K, V>` | `java.util.Map<K, V>`
 
-[Maps](../reference/types#map) and
-[legacy object maps](../reference/types#legacy_object_map) can both be rendered
+[Maps](../reference/types.md#map) and
+[legacy object maps](../reference/types.md#legacy_object_map) can both be rendered
 using `java.util.Map`s. Soy can usually infer which kind of map is intended.
 This means that if you change a template parameter from `legacy_object_map` to
 `map`, you do not need to change its backing value in Java. (This is different
 from the situation in JavaScript, where you *do* need to
-[change the backing value](js#template-data).)
+[change the backing value](js.md#template-data).)
 
 Maps can contain non-string keys (ints, proto enums, etc.), while legacy object
 maps cannot.

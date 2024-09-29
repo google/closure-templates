@@ -5,7 +5,7 @@ Soy methods, fields, and functions are called from within Soy
 
 The table below lists basic Soy methods, fields, and functions that are
 available by default. For Soy functions related to bidirectional text, see
-[Bidi Support](../dev/localization#bidi_functions). For information on writing
+[Bidi Support](../dev/localization.md#bidi_functions). For information on writing
 custom external functions, see
 [Creating an External Function](../dev/externs.md).
 

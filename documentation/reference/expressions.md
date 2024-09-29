@@ -153,10 +153,10 @@ literal.
 
 Parameters and locals are introduced by:
 
-*   [param declarations](templates#param)
-*   [inject declarations](templates#inject)
-*   [let declarations](let)
-*   [for loops](control-flow#for)
+*   [param declarations](templates.md#param)
+*   [inject declarations](templates.md#inject)
+*   [let declarations](let.md)
+*   [for loops](control-flow.md#for)
 
 To reference a variable, use a dollar sign `$` followed by the variable name.
 For example: `$foo`
@@ -287,7 +287,7 @@ and `undefined` from the type of the operand.
 
 NOTE: This does NOT insert a runtime check, so could allow `null` to sneak into
 variables that are typed as non-nullable. Use the
-[`checkNotNull`](functions#checkNotNull) function instead if you'd also like a
+[`checkNotNull`](functions.md#checkNotNull) function instead if you'd also like a
 runtime check.
 
 For example,
@@ -327,7 +327,7 @@ For example,
 Numeric division.
 
 NOTE: this always performs floating point division. For integer division
-consider using the [`floor`](functions#floor),
+consider using the [`floor`](functions.md#floor),
 [`ceiling`](functions.md#ceiling), or [`round`](functions.md#round) functions to
 process the result of a division.
 
