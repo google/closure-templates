@@ -2891,7 +2891,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
           }
           break;
         case EMPTY_TO_UNDEFINED:
-          throw new AssertionError("impossible, this is only used by desuraging passes: " + node);
+          node.setType(SoyTypes.makeUndefinable(node.getParam(0).getType()));
       }
     }
 
