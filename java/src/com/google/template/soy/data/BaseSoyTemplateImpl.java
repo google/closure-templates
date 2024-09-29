@@ -279,7 +279,6 @@ public abstract class BaseSoyTemplateImpl extends SoyTemplate {
       return StringData.forValue(s);
     }
 
-
     protected static SoyValue asNullableString(@Nullable String s) {
       return s == null ? NullData.INSTANCE : asString(s);
     }

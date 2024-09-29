@@ -44,6 +44,7 @@ import com.google.template.soy.jbcsrc.shared.Names;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypes;
+import java.math.BigInteger;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Optional;
@@ -101,7 +102,17 @@ public abstract class Expression extends BytecodeProducer {
           if (javaValue == null) {
             break;
           }
-          checkType(javaValue, String.class);
+          if (!(javaValue instanceof String || javaValue instanceof BigInteger)) {
+            throw new IllegalStateException(
+                "expected "
+                    + javaValue
+                    + " a "
+                    + javaValue.getClass()
+                    + " to be either a "
+                    + String.class
+                    + " or "
+                    + BigInteger.class);
+          }
           break;
         case Type.BOOLEAN:
           checkType(javaValue, Boolean.class);
@@ -636,8 +647,6 @@ public abstract class Expression extends BytecodeProducer {
         });
   }
 
-
-
   /**
    * A simple helper that calls through to {@link MethodRef#invoke(Expression...)}, but allows a
    * more natural fluent call style.
@@ -827,6 +836,7 @@ public abstract class Expression extends BytecodeProducer {
             return Optional.empty();
           }
           return Optional.of(MethodRefs.CHECK_INT.invoke(this));
+
         case JS:
           return Optional.of(MethodRefs.CHECK_CONTENT_KIND.invoke(this, constant(ContentKind.JS)));
         case ITERABLE:
