@@ -40,7 +40,6 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.data.SoyMap;
-import com.google.template.soy.data.SoyProtoValue;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.SoyValueProvider;
@@ -119,16 +118,6 @@ class TofuValueFactory extends JavaValueFactory {
     return callStaticMethod(methodSig, null, params);
   }
 
-  @Override
-  public JavaValue callJavaValueMethod(Method method, JavaValue instance, JavaValue... params) {
-    SoyValue soyValue = ((TofuJavaValue) instance).soyValue();
-    try {
-      return wrapInTofuValue(method, method.invoke(soyValue, adaptParams(method, params)), null);
-    } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
-      throw RenderException.create("Unexpected exception", e);
-    }
-  }
-
   TofuJavaValue callStaticMethod(Method method, @Nullable SoyType returnType, JavaValue... params) {
     try {
       return wrapInTofuValue(method, method.invoke(null, adaptParams(method, params)), returnType);
@@ -140,6 +129,16 @@ class TofuValueFactory extends JavaValueFactory {
   @Override
   public TofuJavaValue callStaticMethod(Method method, JavaValue... params) {
     return callStaticMethod(method, null, params);
+  }
+
+  @Override
+  public JavaValue callJavaValueMethod(Method method, JavaValue instance, JavaValue... params) {
+    SoyValue soyValue = ((TofuJavaValue) instance).soyValue();
+    try {
+      return wrapInTofuValue(method, method.invoke(soyValue, adaptParams(method, params)), null);
+    } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+      throw RenderException.create("Unexpected exception", e);
+    }
   }
 
   TofuJavaValue callInstanceMethod(
@@ -423,7 +422,7 @@ class TofuValueFactory extends JavaValueFactory {
       case BOOL:
         return val.coerceToBoolean();
       case PROTO:
-        return ((SoyProtoValue) val).getProto();
+        return val.getProto();
       case PROTO_ENUM:
         String javaClass =
             JavaQualifiedNames.getClassName(((SoyProtoEnumType) elmType).getDescriptor());
@@ -435,7 +434,7 @@ class TofuValueFactory extends JavaValueFactory {
           throw RenderException.create("Invalid parameter: " + item, roe);
         }
       default:
-        throw new AssertionError();
+        return SoyValueUnconverter.unconvert(item);
     }
   }
 }
