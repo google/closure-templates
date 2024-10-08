@@ -510,6 +510,8 @@ class ValidateExternsPass implements CompilerFilePass {
                 && templateType.getParameters().stream().noneMatch(p -> p.isRequired()))
             || (javaType == PartialSoyTemplate.class
                 && templateType.getParameters().stream().anyMatch(p -> p.isRequired()));
+      case JS:
+        return javaType == SanitizedContent.class;
       default:
         return false;
     }
