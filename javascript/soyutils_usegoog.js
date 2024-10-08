@@ -40,6 +40,7 @@ const {SafeHtml, SafeScript, SafeStyleSheet, TrustedResourceUrl, isUrl, unwrapHt
 const {SanitizedContent, SanitizedContentKind, SanitizedCss, SanitizedHtml, SanitizedHtmlAttribute, SanitizedJs, SanitizedTrustedResourceUri, SanitizedUri} = goog.require('goog.soy.data');
 const {defaultImmutableInstance} = goog.require('jspb.immutable_message');
 const {htmlSafeByReview} = goog.require('safevalues.restricted.reviewed');
+const {isReadonly} = goog.require('google3.javascript.apps.jspb.types.is_readonly');
 
 // -----------------------------------------------------------------------------
 // soydata: Defines typed strings, e.g. an HTML string `"a<b>c"` is
@@ -2681,6 +2682,17 @@ function $$isRecord(value) {
   return value && value.constructor === Object;
 }
 
+/**
+ * Wrapper for JSPB's isReadonly.
+ * @param {?} ctor JSPB constructor.
+ * @param {?} msg JSPB instance.
+ * @return {boolean}
+ */
+const $$isReadonly = function(ctor, msg) {
+  const guard = /** @type {function(?): boolean} */ (isReadonly(ctor));
+  return guard(msg);
+};
+
 exports = {
   $$maybeMakeImmutableProto,
   $$emptyProto,
@@ -2788,6 +2800,7 @@ exports = {
   $$isCss,
   $$isJS,
   $$isAttribute,
+  $$isReadonly,
 };
 // -----------------------------------------------------------------------------
 // Generated code.

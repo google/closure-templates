@@ -66,6 +66,7 @@ public final class JsRuntime {
   public static final Expression IS_ATTRIBUTE = SOY.dotAccess("$$isAttribute");
   public static final Expression IS_TRUSTED_RESOURCE_URI = SOY.dotAccess("$$isTrustedResourceURI");
   public static final Expression IS_URI = SOY.dotAccess("$$isURI");
+  public static final Expression IS_READONLY = SOY.dotAccess("$$isReadonly");
 
   public static final Expression SOY_STUBS_MAP = SOY.dotAccess("$$stubsMap");
 

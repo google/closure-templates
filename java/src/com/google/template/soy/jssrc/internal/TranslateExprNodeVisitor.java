@@ -913,7 +913,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
         return value.instanceOf(id("Map"));
       case PROTO:
         SoyProtoType protoType = (SoyProtoType) operand;
-        return protoConstructor(protoType).dotAccess("hasInstance").call(value);
+        return JsRuntime.IS_READONLY.call(protoConstructor(protoType), value);
       case MESSAGE:
         return value.instanceOf(GoogRequire.create("jspb.Message").reference());
       case JS:
