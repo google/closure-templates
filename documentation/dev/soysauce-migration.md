@@ -3,8 +3,8 @@
 The SoySauce backend for server side rendered Soy has a number of benefits over
 the Tofu interpreter
 
-*   Advanced support for asynchronous IO (see [Advanced Java
-    rendering](adv-java.md) for details)
+*   Advanced support for asynchronous IO (see
+    [Advanced Java rendering](adv-java.md) for details)
 *   It allocates less memory and consumes less CPU to render the same templates
     *   Benchmarks show speedups on the low end at 40% though the actual results
         you will see depend on exactly what your templates are doing
@@ -45,10 +45,11 @@ the `.soy` source files at runtime, so it requires you to pass all the Soy files
 to `SoyFileSet` at runtime in your application. SoySauce also supports this mode
 for compatibility reasons (and it is also useful to implement dynamic
 recompilation for an edit/refresh style of development), but because it is a
-compiler it is signficantly slower the Tofu (you can expect `compileTemplates()`
-to take about 50% longer than an identical call to `compileToTofu()`). For this
-reason, there is an ahead of time compiler for `SoySauce`. See
-[how to compile your template](dir.md#java) for more information.
+compiler it is significantly slower than Tofu (you can expect
+`compileTemplates()` to take about 50% longer than an identical call to
+`compileToTofu()`). For this reason, there is an ahead of time compiler for
+`SoySauce`. See [how to compile your template](dir.md#java) for more
+information.
 
 Once you have precompiled all your templates, you can construct a `SoySauce`
 object at runtime without `SoyFileSet` using 2 strategies.
