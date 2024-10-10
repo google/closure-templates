@@ -197,16 +197,19 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
   @Immutable
   public static final class CommandBuffer {
     // There is no common supertype of all the commands but they are all deeply immutable.
+    // The array is never mutated after construction.
     @SuppressWarnings("Immutable")
-    private final ImmutableList<Object> commands;
+    private final Object[] commands;
 
-    private CommandBuffer(ImmutableList<Object> commands) {
-      checkArgument(!commands.isEmpty());
+    private CommandBuffer(Object[] commands) {
+      checkArgument(commands.length != 0);
       this.commands = commands;
     }
 
     public void replayOn(LoggingAdvisingAppendable appendable) throws IOException {
-      BufferingAppendable.replayOn(commands, appendable);
+      for (Object command : commands) {
+        BufferingAppendable.replayCommandOn(command, appendable);
+      }
     }
 
     boolean hasContent() {
@@ -225,7 +228,9 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
     @Override
     public String toString() {
       StringBuilder builder = new StringBuilder();
-      BufferingAppendable.appendCommandsToBuilder(commands, builder);
+      for (Object command : commands) {
+        BufferingAppendable.appendCommandToBuilder(command, builder);
+      }
       return builder.toString();
     }
   }
@@ -335,17 +340,22 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
     private static void replayOn(List<Object> commands, LoggingAdvisingAppendable appendable)
         throws IOException {
       for (Object o : commands) {
-        if (o instanceof String) {
-          appendable.append((String) o);
-        } else if (o instanceof LoggingFunctionCommand) {
-          ((LoggingFunctionCommand) o).replayOn(appendable);
-        } else if (o == EXIT_LOG_STATEMENT_MARKER) {
-          appendable.exitLoggableElement();
-        } else if (o instanceof LogStatement) {
-          appendable.enterLoggableElement((LogStatement) o);
-        } else {
-          throw new AssertionError("unexpected command object: " + o);
-        }
+        replayCommandOn(o, appendable);
+      }
+    }
+
+    private static void replayCommandOn(Object o, LoggingAdvisingAppendable appendable)
+        throws IOException {
+      if (o instanceof String) {
+        appendable.append((String) o);
+      } else if (o instanceof LoggingFunctionCommand) {
+        ((LoggingFunctionCommand) o).replayOn(appendable);
+      } else if (o == EXIT_LOG_STATEMENT_MARKER) {
+        appendable.exitLoggableElement();
+      } else if (o instanceof LogStatement) {
+        appendable.enterLoggableElement((LogStatement) o);
+      } else {
+        throw new AssertionError("unexpected command object: " + o);
       }
     }
 
@@ -390,9 +400,7 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
           return SanitizedContent.create(builder.toString(), kind, dir);
         }
         return SanitizedContent.create(
-            new CommandBuffer(ImmutableList.copyOf(getCommandsAndAddPendingStringData())),
-            kind,
-            dir);
+            new CommandBuffer(getCommandsAndAddPendingStringData().toArray()), kind, dir);
       } else {
         return SanitizedContent.create(toString(), kind, dir);
       }
@@ -407,8 +415,7 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
       }
       // This case is entirely about soy element style calls passing logging functions to
       // callees.  Possibly we should disallow that?
-      return StringData.forValue(
-          new CommandBuffer(ImmutableList.copyOf(getCommandsAndAddPendingStringData())));
+      return StringData.forValue(new CommandBuffer(getCommandsAndAddPendingStringData().toArray()));
     }
 
     @Override
@@ -427,14 +434,21 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
 
     private static void appendCommandsToBuilder(List<Object> commands, StringBuilder builder) {
       for (Object o : commands) {
-        if (o instanceof String) {
-          builder.append((String) o);
-        } else if (o instanceof LoggingFunctionCommand) {
-          LoggingFunctionCommand command = (LoggingFunctionCommand) o;
-          builder.append(escapePlaceholder(command.fn().placeholderValue(), command.escapers()));
-        }
-        // ignore the logging statements
+        appendCommandToBuilder(o, builder);
       }
+    }
+
+    private static void appendCommandToBuilder(Object command, StringBuilder builder) {
+      if (command instanceof String) {
+        builder.append((String) command);
+      } else if (command instanceof LoggingFunctionCommand) {
+        var loggingFunctionCommand = (LoggingFunctionCommand) command;
+        builder.append(
+            escapePlaceholder(
+                loggingFunctionCommand.fn().placeholderValue(), loggingFunctionCommand.escapers()));
+      }
+      // ignore the logging statements
+
     }
   }
 

@@ -1326,7 +1326,7 @@ public final class EscapingConventions {
      * @param out written to.
      */
     private void escapeUsingPercent(char c, Appendable out) throws IOException {
-      // User larger appends to reduce overhead.  These strings are trivial for the runtime to
+      // Use larger appends to reduce overhead.  These strings are trivial for the runtime to
       // construct.
       // Use a UTF-8
       int trailing = (c & 0x3f) | 0x80;
