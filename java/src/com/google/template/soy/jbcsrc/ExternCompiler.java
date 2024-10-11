@@ -377,7 +377,9 @@ public final class ExternCompiler {
           }
         // fall through
         default:
-          throw new AssertionError("ValidateExternsPass should prevent this.");
+          return actualParam.isBoxed()
+              ? JbcSrcExternRuntime.UNBOX_OBJECT.invoke(actualParam)
+              : JbcSrcExternRuntime.DEEP_UNBOX_LIST.invoke(actualParam);
       }
     } else if (javaType.equals(BytecodeUtils.MAP_TYPE)
         || javaType.equals(BytecodeUtils.IMMUTABLE_MAP_TYPE)) {

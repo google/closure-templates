@@ -18,6 +18,7 @@ package com.google.template.soy.jbcsrc.runtime;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.ImmutableMap.toImmutableMap;
+import static com.google.template.soy.data.SoyValueUnconverter.unconvert;
 import static java.util.stream.Collectors.toList;
 
 import com.google.common.base.Preconditions;
@@ -325,6 +326,28 @@ public final class JbcSrcExternRuntime {
   public static final MethodRef RECORD_TO_IMMUTABLE_MAP =
       MethodRef.createPure(SharedExternRuntime.class, "recordToImmutableMap", SoyValue.class);
 
+  public static final MethodRef DEEP_UNBOX_LIST = create("unboxList", List.class);
+
+  @Keep
+  @Nullable
+  public static ImmutableList<?> unboxList(List<?> value) {
+    if (value == null) {
+      return null;
+    }
+    return value.stream()
+        .map(
+            v -> {
+              if (v instanceof List) {
+                return unboxList((List<?>) v);
+              } else if (v instanceof SoyValueProvider) {
+                return unconvert((SoyValueProvider) v);
+              } else {
+                return v;
+              }
+            })
+        .collect(toImmutableList());
+  }
+
   public static final MethodRef UNBOX_SAFE_HTML = create("unboxSafeHtml", SoyValue.class);
 
   @Keep
@@ -410,7 +433,7 @@ public final class JbcSrcExternRuntime {
     } else if (ProtocolMessageEnum.class.isAssignableFrom(type)) {
       return getEnumValue(type, value.integerValue());
     } else {
-      throw new IllegalArgumentException("unsupported type: " + type);
+      return unconvert(value);
     }
   }
 

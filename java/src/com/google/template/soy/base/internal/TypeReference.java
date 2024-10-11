@@ -36,11 +36,22 @@ public abstract class TypeReference {
   }
 
   public static TypeReference create(String type, List<TypeReference> parameters) {
+    if (type.equals("?")) {
+      type = "java.lang.Object";
+    }
     return new AutoValue_TypeReference(type, ImmutableList.copyOf(parameters));
   }
 
   public boolean isGeneric() {
     return !parameters().isEmpty();
+  }
+
+  public int arity() {
+    return parameters().size();
+  }
+
+  public TypeReference getParameter(int i) {
+    return parameters().get(i);
   }
 
   /** Returns true if `other` is the same as or a raw-types version of this. */
@@ -51,11 +62,11 @@ public abstract class TypeReference {
     if (!other.isGeneric()) {
       return true;
     }
-    if (parameters().size() != other.parameters().size()) {
+    if (arity() != other.arity()) {
       return false;
     }
-    for (int i = 0; i < parameters().size(); i++) {
-      if (!parameters().get(i).isAssignableFrom(other.parameters().get(i))) {
+    for (int i = 0; i < arity(); i++) {
+      if (!getParameter(i).isAssignableFrom(other.getParameter(i))) {
         return false;
       }
     }
@@ -64,7 +75,7 @@ public abstract class TypeReference {
 
   @Override
   public final String toString() {
-    if (parameters().isEmpty()) {
+    if (!isGeneric()) {
       return className();
     }
     return className() + "<" + Joiner.on(", ").join(parameters()) + ">";

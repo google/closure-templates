@@ -766,4 +766,9 @@ public final class SoyTypes {
         return false;
     }
   }
+
+  public static SoyType getRecordMembersType(RecordType type) {
+    return UnionType.of(
+        type.getMembers().stream().map(RecordType.Member::checkedType).collect(toImmutableList()));
+  }
 }

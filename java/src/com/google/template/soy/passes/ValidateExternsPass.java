@@ -21,10 +21,10 @@ import static com.google.common.collect.ImmutableListMultimap.toImmutableListMul
 
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSetMultimap;
-import com.google.common.collect.ListMultimap;
 import com.google.common.html.types.SafeHtml;
 import com.google.common.html.types.SafeHtmlProto;
 import com.google.common.html.types.SafeUrl;
@@ -54,18 +54,17 @@ import com.google.template.soy.soytree.ExternNode;
 import com.google.template.soy.soytree.JavaImplNode;
 import com.google.template.soy.soytree.JsImplNode;
 import com.google.template.soy.soytree.SoyFileNode;
+import com.google.template.soy.types.AbstractIterableType;
+import com.google.template.soy.types.AbstractMapType;
 import com.google.template.soy.types.FunctionType;
-import com.google.template.soy.types.IterableType;
-import com.google.template.soy.types.ListType;
-import com.google.template.soy.types.MapType;
 import com.google.template.soy.types.RecordType;
-import com.google.template.soy.types.SetType;
 import com.google.template.soy.types.SoyProtoEnumType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypes;
+import com.google.template.soy.types.StringType;
 import com.google.template.soy.types.TemplateType;
-import com.google.template.soy.types.UnionType;
+import com.google.template.soy.types.TemplateType.Parameter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -136,7 +135,7 @@ class ValidateExternsPass implements CompilerFilePass {
 
   @Override
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
-    ListMultimap<String, ExternNode> externIndex =
+    ImmutableListMultimap<String, ExternNode> externIndex =
         file.getExterns().stream()
             .collect(toImmutableListMultimap(e -> e.getIdentifier().identifier(), e -> e));
     for (Entry<String, Collection<ExternNode>> entry : externIndex.asMap().entrySet()) {
@@ -199,23 +198,11 @@ class ValidateExternsPass implements CompilerFilePass {
       errorReporter.report(java.getSourceLocation(), ATTRIBUTE_REQUIRED, JavaImplNode.METHOD);
     }
 
-    TypeReference returnType = java.returnType();
-    ImmutableList<TypeReference> lookupParams = java.paramTypes();
-
     if (java.returnType() == null) {
       errorReporter.report(java.getSourceLocation(), ATTRIBUTE_REQUIRED, JavaImplNode.RETURN);
-    } else {
-      validateTypes(
-          returnType,
-          extern.getType().getReturnType(),
-          INCOMPATIBLE_RETURN_TYPE,
-          () -> java.getAttributeValueLocation(JavaImplNode.RETURN),
-          extern,
-          Mode.EXTENDS);
     }
 
-    List<TypeReference> paramTypes = new ArrayList<>(lookupParams);
-
+    List<TypeReference> paramTypes = new ArrayList<>(java.paramTypes());
     boolean inTail = true;
     for (int i = paramTypes.size() - 1; i >= 0; i--) {
       if (JavaImplNode.isParamImplicit(paramTypes.get(i).className())) {
@@ -235,16 +222,6 @@ class ValidateExternsPass implements CompilerFilePass {
     if (paramTypes.size() != requiredParamCount) {
       errorReporter.report(
           java.getAttributeValueLocation(JavaImplNode.PARAMS), ARITY_MISMATCH, requiredParamCount);
-    } else {
-      for (int i = 0; i < paramTypes.size(); i++) {
-        validateTypes(
-            paramTypes.get(i),
-            extern.getType().getParameters().get(i).getType(),
-            INCOMPATIBLE_PARAM_TYPE,
-            () -> java.getAttributeValueLocation(JavaImplNode.PARAMS),
-            extern,
-            Mode.SUPER);
-      }
     }
 
     if (!validateJavaMethods) {
@@ -260,69 +237,33 @@ class ValidateExternsPass implements CompilerFilePass {
         checker.findMethod(
             java.className(),
             java.methodName(),
-            returnType.className(),
-            lookupParams.stream().map(TypeReference::className).collect(toImmutableList()));
+            java.returnType().className(),
+            java.paramTypes().stream().map(TypeReference::className).collect(toImmutableList()));
 
     switch (response.getCode()) {
       case EXISTS:
-        ReadMethodData method = response.getMethod();
-        if (method.instanceMethod() == java.isStatic()
-            || method.classIsInterface() != java.isInterface()) {
-          String actualType;
-          if (method.instanceMethod()) {
-            if (method.classIsInterface()) {
-              actualType = JavaImplNode.TYPE_INTERFACE;
-            } else {
-              actualType = JavaImplNode.TYPE_INSTANCE;
-            }
-          } else {
-            if (method.classIsInterface()) {
-              actualType = JavaImplNode.TYPE_STATIC_INTERFACE;
-            } else {
-              actualType = JavaImplNode.TYPE_STATIC;
-            }
-          }
-          SourceLocation loc = java.getAttributeValueLocation(JavaImplNode.TYPE);
-          if (loc.equals(SourceLocation.UNKNOWN)) {
-            loc = java.getSourceLocation();
-          }
-          errorReporter.report(loc, JAVA_METHOD_TYPE_MISMATCH, actualType);
-        }
-
-        // MethodChecker should only return a method that matches the raw-types of the params and
-        // return type. Run additional checks here that any generic type declarations also match.
-        checkGenericType(
-            method.returnTypeData(),
-            returnType,
-            () -> java.getAttributeValueLocation(JavaImplNode.RETURN));
-        for (int i = 0; i < lookupParams.size(); i++) {
-          checkGenericType(
-              method.paramsTypeData().get(i),
-              lookupParams.get(i),
-              () -> java.getAttributeValueLocation(JavaImplNode.PARAMS));
-        }
         break;
       case NO_SUCH_CLASS:
         errorReporter.report(
             java.getAttributeValueLocation(JavaImplNode.CLASS), NO_SUCH_JAVA_CLASS);
-        break;
+        return;
       case NOT_PUBLIC:
         errorReporter.report(java.getAttributeValueLocation(JavaImplNode.METHOD), NOT_PUBLIC);
-        break;
+        return;
       case NO_SUCH_METHOD_SIG:
         errorReporter.report(
             java.getAttributeValueLocation(JavaImplNode.PARAMS),
             JAVA_METHOD_SIG_MISMATCH,
             java.methodName(),
             String.join(", ", response.getSuggesions()));
-        break;
+        return;
       case NO_SUCH_RETURN_TYPE:
         errorReporter.report(
             java.getAttributeValueLocation(JavaImplNode.RETURN),
             JAVA_METHOD_RETURN_TYPE_MISMATCH,
             java.methodName(),
             String.join(", ", response.getSuggesions()));
-        break;
+        return;
       case NO_SUCH_METHOD_NAME:
         String didYouMean =
             SoyErrors.getDidYouMeanMessage(response.getSuggesions(), java.methodName());
@@ -331,7 +272,72 @@ class ValidateExternsPass implements CompilerFilePass {
             NO_SUCH_JAVA_METHOD_NAME,
             java.methodName(),
             didYouMean);
-        break;
+        return;
+    }
+
+    ReadMethodData method = response.getMethod();
+    if (method.instanceMethod() == java.isStatic()
+        || method.classIsInterface() != java.isInterface()) {
+      String actualType;
+      if (method.instanceMethod()) {
+        if (method.classIsInterface()) {
+          actualType = JavaImplNode.TYPE_INTERFACE;
+        } else {
+          actualType = JavaImplNode.TYPE_INSTANCE;
+        }
+      } else {
+        if (method.classIsInterface()) {
+          actualType = JavaImplNode.TYPE_STATIC_INTERFACE;
+        } else {
+          actualType = JavaImplNode.TYPE_STATIC;
+        }
+      }
+      SourceLocation loc = java.getAttributeValueLocation(JavaImplNode.TYPE);
+      if (loc.equals(SourceLocation.UNKNOWN)) {
+        loc = java.getSourceLocation();
+      }
+      errorReporter.report(loc, JAVA_METHOD_TYPE_MISMATCH, actualType);
+    }
+
+    TypeReference javaReturnType = method.returnTypeData();
+    ImmutableList<TypeReference> javaParamTypes = method.paramsTypeData();
+
+    // MethodChecker has validated the declared raw-types against the Java implementation.
+    // If the Soy dev added generic types in the declaration, check them here.
+
+    checkGenericType(
+        javaReturnType,
+        java.returnType(),
+        () -> java.getAttributeValueLocation(JavaImplNode.RETURN));
+    for (int i = 0; i < javaParamTypes.size(); i++) {
+      checkGenericType(
+          javaParamTypes.get(i),
+          java.paramTypes().get(i),
+          () -> java.getAttributeValueLocation(JavaImplNode.PARAMS));
+    }
+
+    // Now check the declared soy types against the actual parameterized types from the Java
+    // implementation.
+
+    validateTypes(
+        javaReturnType,
+        extern.getType().getReturnType(),
+        INCOMPATIBLE_RETURN_TYPE,
+        () -> java.getAttributeValueLocation(JavaImplNode.RETURN),
+        extern,
+        Mode.EXTENDS);
+
+    for (int i = 0; i < javaParamTypes.size(); i++) {
+      if (JavaImplNode.isParamImplicit(javaParamTypes.get(i).className())) {
+        continue;
+      }
+      validateTypes(
+          javaParamTypes.get(i),
+          extern.getType().getParameters().get(i).getType(),
+          INCOMPATIBLE_PARAM_TYPE,
+          () -> java.getAttributeValueLocation(JavaImplNode.PARAMS),
+          extern,
+          Mode.SUPER);
     }
   }
 
@@ -343,7 +349,9 @@ class ValidateExternsPass implements CompilerFilePass {
   }
 
   private enum Mode {
+    /** Check for return type. */
     EXTENDS,
+    /** Check for param type. */
     SUPER
   }
 
@@ -354,20 +362,14 @@ class ValidateExternsPass implements CompilerFilePass {
       Supplier<SourceLocation> loc,
       ExternNode extern,
       Mode mode) {
-    String className =
-        javaTypeName.parameters().size() == 1
+    TypeReference className =
+        javaTypeName.arity() == 1
                 && JavaImplNode.isSupportedFutureClassName(javaTypeName.className())
-            ? javaTypeName.parameters().get(0).className()
-            : javaTypeName.className();
-    Class<?> javaType = getType(className);
-    if (javaType != null) {
-      // Verify that the soy param type and the java param type are compatible.
-      if (!typesAreCompatible(javaType, soyType, extern, mode)) {
-        errorReporter.report(loc.get(), compatibleErrorKind, javaType.getName(), soyType);
-      }
-    } else if (!protoTypesAreCompatible(javaTypeName.className(), soyType)) {
-      // Protos won't be loaded but we can make sure they are compatible via the descriptor.
-      errorReporter.report(loc.get(), UNKNOWN_TYPE, javaTypeName);
+            ? javaTypeName.getParameter(0)
+            : javaTypeName;
+    // Verify that the soy param type and the java param type are compatible.
+    if (!typesAreCompatible(className, soyType, extern, mode)) {
+      errorReporter.report(loc.get(), compatibleErrorKind, className, soyType);
     }
   }
 
@@ -382,43 +384,35 @@ class ValidateExternsPass implements CompilerFilePass {
     }
   }
 
-  private static final ImmutableSet<SoyType.Kind> ALLOWED_PARAMETERIZED_TYPES =
-      ImmutableSet.of(
-          SoyType.Kind.INT,
-          SoyType.Kind.FLOAT,
-          SoyType.Kind.STRING,
-          SoyType.Kind.BOOL,
-          SoyType.Kind.MESSAGE,
-          SoyType.Kind.PROTO,
-          SoyType.Kind.PROTO_ENUM);
+  private boolean typesAreCompatible(
+      TypeReference parameterizedType, SoyType soyType, ExternNode extern, Mode mode) {
+    return typesAreCompatible(parameterizedType, soyType, extern, mode, false);
+  }
 
-  private static final ImmutableSet<SoyType.Kind> ALLOWED_UNION_MEMBERS =
-      ImmutableSet.<SoyType.Kind>builder()
-          .addAll(ALLOWED_PARAMETERIZED_TYPES)
-          .add(SoyType.Kind.HTML)
-          .add(SoyType.Kind.TRUSTED_RESOURCE_URI)
-          .add(SoyType.Kind.URI)
-          .build();
+  private boolean typesAreCompatible(
+      TypeReference parameterizedType,
+      SoyType soyType,
+      ExternNode extern,
+      Mode mode,
+      boolean preserveUndefined) {
+    Class<?> javaType = getType(parameterizedType.className());
+    if (javaType == null) {
+      boolean result = protoTypesAreCompatible(parameterizedType.className(), soyType);
+      if (!result) {
+        errorReporter.report(
+            extern.getSourceLocation(), UNKNOWN_TYPE, parameterizedType.className());
+      }
+      return result;
+    }
 
-  private static final ImmutableSet<SoyType.Kind> ALLOWED_RECORD_MEMBERS =
-      ImmutableSet.<SoyType.Kind>builder()
-          .addAll(ALLOWED_UNION_MEMBERS)
-          .add(SoyType.Kind.CSS)
-          .add(SoyType.Kind.ANY)
-          .add(SoyType.Kind.UNKNOWN)
-          .add(SoyType.Kind.NULL)
-          .add(SoyType.Kind.UNDEFINED)
-          .build();
-
-  private static boolean typesAreCompatible(
-      Class<?> javaType, SoyType soyType, ExternNode extern, Mode mode) {
     boolean nullable = SoyTypes.isNullish(soyType);
     boolean isPrimitive = Primitives.allPrimitiveTypes().contains(javaType);
     if (nullable && isPrimitive) {
       return false;
     }
 
-    soyType = SoyTypes.tryRemoveNullish(soyType);
+    soyType =
+        preserveUndefined ? SoyTypes.tryRemoveNull(soyType) : SoyTypes.tryRemoveNullish(soyType);
     javaType = Primitives.wrap(javaType);
     switch (soyType.getKind()) {
       case INT:
@@ -433,54 +427,47 @@ class ValidateExternsPass implements CompilerFilePass {
         if (soyType.equals(SoyTypes.NUMBER_TYPE)) {
           return javaType == Number.class || javaType == Double.class;
         }
-        if (((UnionType) soyType)
-            .getMembers().stream().anyMatch(t -> !ALLOWED_UNION_MEMBERS.contains(t.getKind()))) {
-          return false;
-        }
       // fallthrough
       case ANY:
       case UNKNOWN:
         return javaType == Object.class || javaType == SoyValue.class;
       case ITERABLE:
-        return mode == Mode.EXTENDS
+        // This was added to not break iterable semantics in externs?
+        if (mode == Mode.SUPER && javaType == SoyValue.class) {
+          return true;
+        }
+        if (!(mode == Mode.EXTENDS
             ? Iterable.class.isAssignableFrom(javaType)
-            : (isAllowedParameterizedType(((IterableType) soyType).getElementType(), extern)
-                    && javaType == Iterable.class)
-                || javaType == SoyValue.class;
+            : javaType == Iterable.class)) {
+          return false;
+        }
+        return collectionTypeIsCompatible(soyType, parameterizedType, extern, mode);
       case LIST:
-        return mode == Mode.EXTENDS
+        // This was added to not break iterable semantics in externs?
+        if (mode == Mode.SUPER && javaType == SoyValue.class) {
+          return true;
+        }
+        if (!(mode == Mode.EXTENDS
             ? Iterable.class.isAssignableFrom(javaType)
-            : (isAllowedParameterizedType(((ListType) soyType).getElementType(), extern)
-                    && !javaType.equals(Object.class)
-                    && javaType.isAssignableFrom(ImmutableList.class))
-                || javaType == SoyValue.class;
+            : !javaType.equals(Object.class) && javaType.isAssignableFrom(ImmutableList.class))) {
+          return false;
+        }
+        return collectionTypeIsCompatible(soyType, parameterizedType, extern, mode);
       case SET:
-        if (!isAllowedParameterizedType(((SetType) soyType).getElementType(), extern)) {
-          return false;
-        }
-        return mode == Mode.EXTENDS
+        if (!(mode == Mode.EXTENDS
             ? Iterable.class.isAssignableFrom(javaType)
-            : (!javaType.equals(Object.class) && javaType.isAssignableFrom(ImmutableSet.class));
+            : (!javaType.equals(Object.class) && javaType.isAssignableFrom(ImmutableSet.class)))) {
+          return false;
+        }
+        return collectionTypeIsCompatible(soyType, parameterizedType, extern, mode);
       case MAP:
-        MapType mapType = (MapType) soyType;
-        if (!ALLOWED_PARAMETERIZED_TYPES.contains(mapType.getKeyType().getKind())
-            || !ALLOWED_PARAMETERIZED_TYPES.contains(mapType.getValueType().getKind())) {
-          return false;
-        }
-        return mode == Mode.EXTENDS
-            ? Map.class.isAssignableFrom(javaType)
-            : javaType == Map.class || javaType == ImmutableMap.class;
       case RECORD:
-        RecordType recordType = (RecordType) soyType;
-        if (!recordType.getMembers().stream()
-            .flatMap(m -> SoyTypes.expandUnions(m.checkedType()).stream())
-            .map(SoyType::getKind)
-            .allMatch(ALLOWED_RECORD_MEMBERS::contains)) {
+        if (!(mode == Mode.EXTENDS
+            ? Map.class.isAssignableFrom(javaType)
+            : javaType == Map.class || javaType == ImmutableMap.class)) {
           return false;
         }
-        return mode == Mode.EXTENDS
-            ? Map.class.isAssignableFrom(javaType)
-            : javaType == Map.class || javaType == ImmutableMap.class;
+        return collectionTypeIsCompatible(soyType, parameterizedType, extern, mode);
       case MESSAGE:
         return mode == Mode.EXTENDS
             ? Message.class.isAssignableFrom(javaType)
@@ -495,8 +482,8 @@ class ValidateExternsPass implements CompilerFilePass {
         return javaType == SafeHtml.class || javaType == SafeHtmlProto.class;
       case PROTO:
         SoyProtoType protoType = (SoyProtoType) soyType;
-        return JavaQualifiedNames.getClassName(protoType.getDescriptor())
-            .equals(javaType.getName());
+        return JavaQualifiedNames.getClassName(protoType.getDescriptor()).equals(javaType.getName())
+            || (mode == Mode.SUPER && javaType == Message.class);
       case PROTO_ENUM:
         SoyProtoEnumType protoEnumType = (SoyProtoEnumType) soyType;
         return JavaQualifiedNames.getClassName(protoEnumType.getDescriptor())
@@ -507,9 +494,9 @@ class ValidateExternsPass implements CompilerFilePass {
         TemplateType templateType = (TemplateType) soyType;
         return javaType == TemplateValue.class
             || (javaType == SoyTemplate.class
-                && templateType.getParameters().stream().noneMatch(p -> p.isRequired()))
+                && templateType.getParameters().stream().noneMatch(Parameter::isRequired))
             || (javaType == PartialSoyTemplate.class
-                && templateType.getParameters().stream().anyMatch(p -> p.isRequired()));
+                && templateType.getParameters().stream().anyMatch(Parameter::isRequired));
       case JS:
         return javaType == SanitizedContent.class;
       default:
@@ -517,9 +504,40 @@ class ValidateExternsPass implements CompilerFilePass {
     }
   }
 
-  private static boolean isAllowedParameterizedType(SoyType type, ExternNode extern) {
-    return ALLOWED_PARAMETERIZED_TYPES.contains(type.getKind())
-        || SoyTypes.NUMBER_TYPE.equals(type);
+  private boolean collectionTypeIsCompatible(
+      SoyType soyType, TypeReference parameterizedType, ExternNode extern, Mode mode) {
+    if (soyType instanceof AbstractIterableType) {
+      return parameterizedType.arity() == 1
+          && typesAreCompatible(
+              parameterizedType.getParameter(0),
+              ((AbstractIterableType) soyType).getElementType(),
+              extern,
+              mode);
+    } else if (soyType instanceof AbstractMapType) {
+      return parameterizedType.arity() == 2
+          && typesAreCompatible(
+              parameterizedType.getParameter(0),
+              ((AbstractMapType) soyType).getKeyType(),
+              extern,
+              mode)
+          && typesAreCompatible(
+              parameterizedType.getParameter(1),
+              ((AbstractMapType) soyType).getValueType(),
+              extern,
+              mode);
+    } else if (soyType instanceof RecordType) {
+      return parameterizedType.arity() == 2
+          && typesAreCompatible(
+              parameterizedType.getParameter(0), StringType.getInstance(), extern, mode)
+          && typesAreCompatible(
+              parameterizedType.getParameter(1),
+              SoyTypes.getRecordMembersType((RecordType) soyType),
+              extern,
+              mode,
+              true);
+    } else {
+      throw new AssertionError();
+    }
   }
 
   private static boolean isAllowedVeExtern(ExternNode extern) {
