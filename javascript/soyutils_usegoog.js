@@ -2438,9 +2438,12 @@ const assertParamType = function(
     condition, paramName, param, paramKind, jsDocTypeStr) {
   if (asserts.ENABLE_ASSERTS && !condition) {
     if (goog.DEBUG) {
+      const paramDebug = googDebug.deepExpose(param);
       asserts.fail(
           'expected ' + paramKind + ' ' + paramName + ' of type ' +
-          jsDocTypeStr + ', but got ' + googDebug.runtimeType(param) + '.');
+          jsDocTypeStr + ', but got ' + googDebug.runtimeType(param) + ' (' +
+          (paramDebug.constructor ? paramDebug.constructor.name + ' ' : '') +
+          paramDebug + '). ' + JSON.stringify(param));
     }
     asserts.fail('parameter type error. Enable DEBUG to see details.');
   }
