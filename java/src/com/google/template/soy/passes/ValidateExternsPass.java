@@ -362,14 +362,10 @@ class ValidateExternsPass implements CompilerFilePass {
       Supplier<SourceLocation> loc,
       ExternNode extern,
       Mode mode) {
-    TypeReference className =
-        javaTypeName.arity() == 1
-                && JavaImplNode.isSupportedFutureClassName(javaTypeName.className())
-            ? javaTypeName.getParameter(0)
-            : javaTypeName;
+    javaTypeName = maybeUnwrapFuture(javaTypeName);
     // Verify that the soy param type and the java param type are compatible.
-    if (!typesAreCompatible(className, soyType, extern, mode)) {
-      errorReporter.report(loc.get(), compatibleErrorKind, className, soyType);
+    if (!typesAreCompatible(javaTypeName, soyType, extern, mode)) {
+      errorReporter.report(loc.get(), compatibleErrorKind, javaTypeName, soyType);
     }
   }
 
@@ -395,6 +391,7 @@ class ValidateExternsPass implements CompilerFilePass {
       ExternNode extern,
       Mode mode,
       boolean preserveUndefined) {
+    // Validate after eliminating any Future<> box
     Class<?> javaType = getType(parameterizedType.className());
     if (javaType == null) {
       boolean result = protoTypesAreCompatible(parameterizedType.className(), soyType);
@@ -504,33 +501,43 @@ class ValidateExternsPass implements CompilerFilePass {
     }
   }
 
+  private static TypeReference maybeUnwrapFuture(TypeReference parameterizedType) {
+    // Validate after eliminating any Future<> box
+    return parameterizedType.arity() == 1
+            && JavaImplNode.isSupportedFutureClassName(parameterizedType.className())
+        ? parameterizedType.getParameter(0)
+        : parameterizedType;
+  }
+
   private boolean collectionTypeIsCompatible(
       SoyType soyType, TypeReference parameterizedType, ExternNode extern, Mode mode) {
     if (soyType instanceof AbstractIterableType) {
       return parameterizedType.arity() == 1
           && typesAreCompatible(
-              parameterizedType.getParameter(0),
+              maybeUnwrapFuture(parameterizedType.getParameter(0)),
               ((AbstractIterableType) soyType).getElementType(),
               extern,
               mode);
     } else if (soyType instanceof AbstractMapType) {
       return parameterizedType.arity() == 2
           && typesAreCompatible(
+              // We don't allow futures in map key position
               parameterizedType.getParameter(0),
               ((AbstractMapType) soyType).getKeyType(),
               extern,
               mode)
           && typesAreCompatible(
-              parameterizedType.getParameter(1),
+              maybeUnwrapFuture(parameterizedType.getParameter(1)),
               ((AbstractMapType) soyType).getValueType(),
               extern,
               mode);
     } else if (soyType instanceof RecordType) {
       return parameterizedType.arity() == 2
+          // We don't allow futures in record key position
           && typesAreCompatible(
               parameterizedType.getParameter(0), StringType.getInstance(), extern, mode)
           && typesAreCompatible(
-              parameterizedType.getParameter(1),
+              maybeUnwrapFuture(parameterizedType.getParameter(1)),
               SoyTypes.getRecordMembersType((RecordType) soyType),
               extern,
               mode,
