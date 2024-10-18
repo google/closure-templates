@@ -35,7 +35,6 @@ import com.google.template.soy.exprtree.AbstractLocalVarDefn;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.exprtree.VarRefNode;
-import com.google.template.soy.internal.exemptions.NamespaceExemptions;
 import com.google.template.soy.jbcsrc.ExpressionCompiler.BasicExpressionCompiler;
 import com.google.template.soy.jbcsrc.internal.InnerMethods;
 import com.google.template.soy.jbcsrc.internal.SoyClassWriter;
@@ -197,13 +196,7 @@ final class TemplateCompiler {
             // TODO(b/180904763): private templates need to have default access so they can be
             // called by our other templates in the same file when we are compiling templates to
             // multiple files.
-            : (NamespaceExemptions.isKnownDuplicateNamespace(
-                    templateNode.getSoyFileHeaderInfo().getNamespace())
-                ? /* default access */ 0
-                // private templates need to have default access so they can be called by our
-                // runtime generated Compiledtemplate subtypes.  We can eliminate this once jdk21 is
-                // available and we can generate these classes as a private nestmate.
-                : 0))
+            : 0)
         | Opcodes.ACC_STATIC;
   }
 
