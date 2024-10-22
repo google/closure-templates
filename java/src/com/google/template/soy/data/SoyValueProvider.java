@@ -16,6 +16,7 @@
 
 package com.google.template.soy.data;
 
+import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import java.io.IOException;
@@ -73,6 +74,28 @@ public abstract class SoyValueProvider {
   @Nonnull
   public abstract RenderResult renderAndResolve(LoggingAdvisingAppendable appendable)
       throws IOException;
+
+  /**
+   * Coerces the given SoyValueProvider to a SoyValueProvider that always provides a BooleanData.
+   *
+   * <p>This is useful if coercing this SoyValue to truthy is less complicated than fully resolving
+   * the SoyValue.
+   */
+  public SoyValueProvider coerceToBooleanProvider() {
+    var delegate = this;
+
+    return new SoyAbstractCachingValueProvider() {
+      @Override
+      public RenderResult status() {
+        return delegate.status();
+      }
+
+      @Override
+      public SoyValue compute() {
+        return delegate.resolve().coerceToBoolean() ? BooleanData.TRUE : BooleanData.FALSE;
+      }
+    };
+  }
 
   /**
    * Returns a SoyValueProvider whose resolved value will be {@code defaultValue} if {@code

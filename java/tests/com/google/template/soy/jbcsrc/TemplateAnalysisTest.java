@@ -126,23 +126,21 @@ public final class TemplateAnalysisTest {
 
   @Test
   public void testIf() {
-    // conditions are refed prior to the blocks they control
-    // if there is an {else} then anything refed in all branches is refed after the if
     runTest(
         "{@param p1 : string}",
         "{@param p2 : string}",
         "{@param p3 : string}",
         "{if $p1}",
-        "  {refed($p1)}",
+        "  {notrefed($p1)}",
         "  {notrefed($p2)}",
         "  {$p3}",
         "{elseif $p2}",
-        "  {refed($p1)}",
-        "  {refed($p2)}",
+        "  {notrefed($p1)}",
+        "  {notrefed($p2)}",
         "  {$p3}",
         "{else}",
-        "  {refed($p1)}",
-        "  {refed($p2)}",
+        "  {notrefed($p1)}",
+        "  {notrefed($p2)}",
         "  {$p3}",
         "{/if}",
         "{refed($p3)}");
@@ -153,12 +151,12 @@ public final class TemplateAnalysisTest {
         "{@param b2 : bool}",
         "{if $b1}",
         "  {$p}",
-        "  {refed($b1)}",
+        "  {notrefed($b1)}",
         "  {notrefed($b2)}",
         "{elseif $b2}",
         "  {$p}",
-        "  {refed($b1)}",
-        "  {refed($b2)}",
+        "  {notrefed($b1)}",
+        "  {notrefed($b2)}",
         "{/if}",
         "{notrefed($p)}");
   }

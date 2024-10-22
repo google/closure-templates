@@ -25,6 +25,7 @@ import com.google.template.soy.data.LoggingFunctionInvocation;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
+import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.shared.StackFrame;
 import java.io.IOException;
@@ -99,6 +100,61 @@ public abstract class DetachableContentProvider extends SoyValueProvider {
       return RenderResult.done();
     }
     return local.asRenderResult();
+  }
+
+  @Override
+  public SoyValueProvider coerceToBooleanProvider() {
+    var kind = appendable.getSanitizedContentKind();
+    if (kind != null && kind != ContentKind.TEXT) {
+      // SanitizedContent is always truthy.
+      return BooleanData.TRUE;
+    }
+    if (resolvedValue != null) {
+      // If already resolved, coerce to boolean.
+      return BooleanData.forValue(resolvedValue.coerceToBoolean());
+    }
+
+    var delegate = this;
+
+    // Fall back to evaluating truthy as soon as there's any content.
+    return new SoyValueProvider() {
+      private BooleanData resolvedValue;
+
+      @Override
+      public SoyValue resolve() {
+        if (resolvedValue != null) {
+          return resolvedValue;
+        }
+        JbcSrcRuntime.awaitProvider(this);
+        return resolvedValue;
+      }
+
+      @Override
+      public RenderResult status() {
+        var status = delegate.status();
+
+        if (status.isDone()) {
+          resolvedValue =
+              delegate.resolve().coerceToBoolean() ? BooleanData.TRUE : BooleanData.FALSE;
+          return RenderResult.done();
+        }
+        if (!delegate.appendable.isEmpty()) {
+          resolvedValue = BooleanData.TRUE;
+          return RenderResult.done();
+        }
+        return status;
+      }
+
+      @Override
+      public RenderResult renderAndResolve(LoggingAdvisingAppendable appendable)
+          throws IOException {
+        RenderResult result = status();
+        if (result.isDone()) {
+          resolve().render(appendable);
+        }
+        return result;
+      }
+    };
   }
 
   private boolean isDone() {
