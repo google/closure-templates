@@ -23,6 +23,7 @@ import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContents;
 import com.google.template.soy.data.SoyValue;
+import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.shared.StackFrame;
 import java.io.IOException;
@@ -172,4 +173,92 @@ public final class DetachableContentProviderTest {
         .isEqualTo(SanitizedContents.constantCss("start\nfuture1: hello\nfuture2: goodbye\nend\n"));
   }
 
+  @Test
+  public void testCoerceToBooleanProvider_resolvesAfterFirstChunk() {
+    SettableFuture<String> future1 = SettableFuture.create();
+    SettableFuture<String> future2 = SettableFuture.create();
+    DetachableContentProvider provider = new TestDetachableContentProvider(future1, future2);
+    var booleanProvider = provider.coerceToBooleanProvider();
+    var status = provider.status();
+    assertThat(status).isEqualTo(RenderResult.continueAfter(future1));
+
+    future1.set("hello");
+    status = provider.status();
+    assertThat(status).isEqualTo(RenderResult.continueAfter(future2));
+    assertThat(booleanProvider.resolve()).isEqualTo(BooleanData.TRUE);
+
+    future2.set("goodbye");
+    status = provider.status();
+    assertThat(status).isEqualTo(RenderResult.done());
+  }
+
+  @Test
+  public void testCoerceToBooleanProvider_resolvesAfterFirstContentfulChunk() {
+    SettableFuture<String> future1 = SettableFuture.create();
+    SettableFuture<String> future2 = SettableFuture.create();
+
+    DetachableContentProvider provider =
+        new DetachableContentProvider(SanitizedContent.ContentKind.TEXT) {
+          @Override
+          protected StackFrame doRender(
+              StackFrame stack, DetachableContentProvider.MultiplexingAppendable appendable) {
+            try {
+              switch (stack == null ? 0 : stack.stateNumber) {
+                case 0:
+                // fall-through
+                case 1:
+                  if (future1.isDone()) {
+                    appendable.append(Futures.getUnchecked(future1));
+                  } else {
+                    return StackFrame.create(RenderResult.continueAfter(future1), 1);
+                  }
+                // fall-through
+                case 2:
+                  if (future2.isDone()) {
+                    appendable.append(Futures.getUnchecked(future2));
+                  } else {
+                    return StackFrame.create(RenderResult.continueAfter(future2), 2);
+                  }
+                  return null;
+                default:
+                  throw new IllegalStateException();
+              }
+            } catch (IOException e) {
+              throw new RuntimeException(e);
+            }
+          }
+        };
+    var booleanProvider = provider.coerceToBooleanProvider();
+    var status = provider.status();
+    assertThat(status).isEqualTo(RenderResult.continueAfter(future1));
+
+    future1.set("");
+    status = provider.status();
+    assertThat(status).isEqualTo(RenderResult.continueAfter(future2));
+    assertThat(booleanProvider.status()).isEqualTo(RenderResult.continueAfter(future2));
+
+    future2.set("goodbye");
+    status = provider.status();
+    assertThat(status).isEqualTo(RenderResult.done());
+    assertThat(booleanProvider.resolve()).isEqualTo(BooleanData.TRUE);
+  }
+
+  @Test
+  public void testCoerceToBooleanProvider_falseForEmptyString() {
+    DetachableContentProvider provider =
+        new DetachableContentProvider(SanitizedContent.ContentKind.TEXT) {
+          @Override
+          protected StackFrame doRender(
+              StackFrame stack, DetachableContentProvider.MultiplexingAppendable appendable) {
+            try {
+              appendable.append("");
+              return null;
+            } catch (IOException e) {
+              throw new RuntimeException(e);
+            }
+          }
+        };
+    var booleanData = provider.coerceToBooleanProvider().resolve();
+    assertThat(booleanData).isEqualTo(BooleanData.FALSE);
+  }
 }

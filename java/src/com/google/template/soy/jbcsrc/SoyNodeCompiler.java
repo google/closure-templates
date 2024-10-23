@@ -118,6 +118,7 @@ import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.VeLogNode;
 import com.google.template.soy.soytree.Visibility;
 import com.google.template.soy.soytree.defn.TemplateParam;
+import com.google.template.soy.types.BoolType;
 import com.google.template.soy.types.TemplateType;
 import com.google.template.soy.types.UnknownType;
 import java.lang.invoke.MethodHandles;
@@ -412,8 +413,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     for (SoyNode child : node.getChildren()) {
       if (child instanceof IfCondNode) {
         IfCondNode icn = (IfCondNode) child;
-        Branch cond =
-            exprCompiler.compileRootExpression(icn.getExpr(), detachState).compileToBranch();
+        Branch cond = compileIfCondNode(icn);
         Statement block = visitChildrenInNewScope(icn);
         ifs.add(IfBlock.create(cond, block));
       } else {
@@ -422,6 +422,28 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       }
     }
     return ControlFlow.ifElseChain(ifs, elseBlock);
+  }
+
+  private Branch compileIfCondNode(IfCondNode node) {
+    if (exprCompiler.requiresDetach(node.getExpr())) {
+      Label reattachPoint = new Label();
+      var asSoyValueProvider =
+          expressionToSoyValueProviderCompiler.compileToSoyValueProviderIfUsefulToPreserveStreaming(
+              node.getExpr(), detachState.createExpressionDetacher(reattachPoint));
+      if (asSoyValueProvider.isPresent()) {
+        var booleanProviderExpression =
+            MethodRefs.SOY_VALUE_PROVIDER_COERCE_TO_BOOLEAN_PROVIDER.invoke(
+                asSoyValueProvider.get());
+        return SoyExpression.forSoyValue(
+                BoolType.getInstance(),
+                detachState
+                    .createExpressionDetacher(reattachPoint)
+                    .resolveSoyValueProvider(booleanProviderExpression))
+            .labelStart(reattachPoint)
+            .compileToBranch();
+      }
+    }
+    return exprCompiler.compileRootExpression(node.getExpr(), detachState).compileToBranch();
   }
 
   /** Returns an integer that is not in the set of sorted integers. */

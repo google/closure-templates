@@ -580,6 +580,9 @@ public final class MethodRefs {
   public static final MethodRef SOY_VALUE_PROVIDER_RESOLVE =
       createNonPure(SoyValueProvider.class, "resolve");
 
+  public static final MethodRef SOY_VALUE_PROVIDER_COERCE_TO_BOOLEAN_PROVIDER =
+      createNonPure(SoyValueProvider.class, "coerceToBooleanProvider");
+
   public static final MethodRef STRING_CONCAT =
       createPure(String.class, "concat", String.class).asNonJavaNullable();
 

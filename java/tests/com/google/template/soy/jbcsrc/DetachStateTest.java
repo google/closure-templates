@@ -633,4 +633,40 @@ public final class DetachStateTest {
     assertThat(renderer.render(result)).isNull();
     assertThat(output.toString()).isEqualTo("<span>a message from the future</span>");
   }
+
+  @Test
+  public void testIf_withDetach() throws IOException {
+    CompiledTemplates templates =
+        TemplateTester.compileFile(
+            "{namespace ns}",
+            "",
+            "{template t}",
+            "{@inject future:?}",
+            "",
+            "{call c}",
+            "{param h kind='html'}",
+            "something {$future} something else",
+            "{/param}",
+            "{/call}",
+            "{/template}",
+            "",
+            "{template c}{@param h:html}{if $h}{$h}{/if}{/template}");
+
+    CompiledTemplate template = templates.getTemplate("ns.t");
+
+    SettableFuture<String> pending = SettableFuture.create();
+    RenderContext context =
+        getDefaultContext(templates).toBuilder()
+            .withIj(SoyInjector.fromStringMap(ImmutableMap.of("future", pending)))
+            .build();
+    BufferingAppendable output = LoggingAdvisingAppendable.buffering();
+    TemplateRenderer renderer =
+        frame -> template.render(frame, ParamStore.EMPTY_INSTANCE, output, context);
+    var result = renderer.render();
+    assertThat(result.asRenderResult()).isEqualTo(RenderResult.continueAfter(pending));
+    assertThat(output.toString()).isEqualTo("something ");
+    pending.set("blocked");
+    assertThat(renderer.render(result)).isNull();
+    assertThat(output.toString()).isEqualTo("something blocked something else");
+  }
 }
