@@ -32,7 +32,7 @@ const ReadonlyLoggableElementMetadata = goog.requireType('proto.soy.ReadonlyLogg
 const {Message} = goog.require('jspb');
 const {assert} = goog.require('goog.asserts');
 const {safeAttrPrefix} = goog.require('safevalues');
-const {safeElement} = goog.require('safevalues.dom');
+const {setElementPrefixedAttribute} = goog.require('safevalues.dom');
 const {startsWith} = goog.require('goog.string');
 
 /** @final */
