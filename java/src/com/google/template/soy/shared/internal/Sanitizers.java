@@ -19,7 +19,6 @@ package com.google.template.soy.shared.internal;
 import static com.google.common.flogger.StackSize.MEDIUM;
 import static com.google.template.soy.shared.internal.EscapingConventions.HTML_TAG_FIRST_TOKEN;
 import static java.lang.Math.min;
-import static java.util.Comparator.naturalOrder;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Ascii;
@@ -55,7 +54,6 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Stream;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
@@ -1494,6 +1492,12 @@ public final class Sanitizers {
   private static final Escaper URI_ESCAPER_NO_PLUS =
       new PercentEscaper(SAFECHARS_URLENCODER, false);
 
+  private static int nextReplacementIndex(int nextReplacementIndex, int index) {
+    return index == -1
+        ? nextReplacementIndex
+        : nextReplacementIndex == -1 ? index : min(nextReplacementIndex, index);
+  }
+
   /**
    * Escapes tokens that are not allowed for interpolated style values.
    *
@@ -1535,20 +1539,17 @@ public final class Sanitizers {
     // This should not affect how a CSS parser recovers from syntax errors.
     int indexOfEndTag = css.indexOf("</");
     int indexOfEndCData = css.indexOf("]]>");
-    int indexOfOpenStyleBlock = stringMode ? css.indexOf("{") : -1;
-    int indexOfCloseStyleBlock = stringMode ? css.indexOf("}") : -1;
+    int indexOfOpenStyleBlock = stringMode ? css.indexOf('{') : -1;
+    int indexOfCloseStyleBlock = stringMode ? css.indexOf('}') : -1;
     int indexOfCommentOpenings = stringMode ? css.indexOf("/*") : -1;
-    boolean endsTrailingBackslash = stringMode && css.endsWith("\\");
-    int nextReplacementIndex =
-        Stream.of(
-                indexOfEndTag,
-                indexOfEndCData,
-                indexOfOpenStyleBlock,
-                indexOfCloseStyleBlock,
-                indexOfCommentOpenings)
-            .filter(i -> i != -1)
-            .min(naturalOrder())
-            .orElse(-1);
+    boolean endsTrailingBackslash =
+        stringMode && css.length() > 0 && css.charAt(css.length() - 1) == '\\';
+    int nextReplacementIndex = indexOfEndTag;
+    nextReplacementIndex = nextReplacementIndex(nextReplacementIndex, indexOfEndCData);
+    nextReplacementIndex = nextReplacementIndex(nextReplacementIndex, indexOfOpenStyleBlock);
+    nextReplacementIndex = nextReplacementIndex(nextReplacementIndex, indexOfCloseStyleBlock);
+    nextReplacementIndex = nextReplacementIndex(nextReplacementIndex, indexOfCommentOpenings);
+
     if (nextReplacementIndex != -1 || endsTrailingBackslash) {
       return embedCssIntoHtmlSlow(
           css,
@@ -1641,7 +1642,7 @@ public final class Sanitizers {
         }
       }
       if (searchForOpenStyleBlock) {
-        int indexOfOpenStyleBlock = css.indexOf("{", endOfPreviousReplacement);
+        int indexOfOpenStyleBlock = css.indexOf('{', endOfPreviousReplacement);
         if (indexOfOpenStyleBlock == -1) {
           searchForOpenStyleBlock = false;
         } else {
@@ -1652,7 +1653,7 @@ public final class Sanitizers {
         }
       }
       if (searchForCloseStyleBlock) {
-        int indexOfCloseStyleBlock = css.indexOf("}", endOfPreviousReplacement);
+        int indexOfCloseStyleBlock = css.indexOf('}', endOfPreviousReplacement);
         if (indexOfCloseStyleBlock == -1) {
           searchForCloseStyleBlock = false;
         } else {
@@ -1676,7 +1677,7 @@ public final class Sanitizers {
     } while (nextReplacement != -1);
     // copy tail
     int charsToCopy = css.length() - endOfPreviousReplacement;
-    buf = Chars.ensureCapacity(buf, bufIndex + charsToCopy, 16);
+    buf = Chars.ensureCapacity(buf, bufIndex + charsToCopy + (defuseTrailingBackslash ? 1 : 0), 0);
     css.getChars(endOfPreviousReplacement, css.length(), buf, bufIndex);
     bufIndex += charsToCopy;
 
