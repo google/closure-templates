@@ -34,8 +34,14 @@ final class ControlFlow {
   @AutoValue
   abstract static class IfBlock {
     static IfBlock create(Branch cond, Statement block) {
-      return new AutoValue_ControlFlow_IfBlock(cond, block);
+      return new AutoValue_ControlFlow_IfBlock(Optional.empty(), cond, block);
     }
+
+    static IfBlock create(Label startLabel, Branch cond, Statement block) {
+      return new AutoValue_ControlFlow_IfBlock(Optional.of(startLabel), cond, block);
+    }
+
+    abstract Optional<Label> startLabel();
 
     abstract Branch condition();
 
@@ -66,6 +72,7 @@ final class ControlFlow {
           } else {
             next = new Label();
           }
+          curr.startLabel().ifPresent(adapter::mark);
           curr.condition().negate().branchTo(adapter, next);
           curr.block().gen(adapter);
           if (end != next) {

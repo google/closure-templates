@@ -1124,6 +1124,20 @@ public class BytecodeCompilerTest {
     tester.rendersAs("2", ImmutableMap.of("b", false));
   }
 
+  // Regression test for b/375681066.
+  @Test
+  public void testDeadIf() {
+    CompiledTemplateSubject tester =
+        assertThatTemplateBody(
+            "{@param p : ?}",
+            "{let $record: record(a: null, p: $p) /}",
+            "{if $record.a}",
+            "  {$record.p}",
+            "{/if}",
+            "");
+    tester.rendersAs("", ImmutableMap.of("b", "hello"));
+  }
+
   @SuppressWarnings("unused")
   public static int acceptsInt(int x) {
     throw new IllegalStateException("shouldn't call this");

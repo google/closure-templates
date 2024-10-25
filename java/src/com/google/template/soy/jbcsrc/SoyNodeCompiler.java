@@ -412,10 +412,16 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     for (SoyNode child : node.getChildren()) {
       if (child instanceof IfCondNode) {
         IfCondNode icn = (IfCondNode) child;
+        Label reattachLabel = new Label();
         Branch cond =
-            exprCompiler.compileRootExpression(icn.getExpr(), detachState).compileToBranch();
+            exprCompiler
+                .compileSubExpression(
+                    icn.getExpr(), detachState.createExpressionDetacher(reattachLabel))
+                .compileToBranch();
         Statement block = visitChildrenInNewScope(icn);
-        ifs.add(IfBlock.create(cond, block));
+        // TODO: b/375681066 - tag the label here instead of on the expression since the compiler
+        // occasionally prove the condition to be trivial and remove the branch expression.
+        ifs.add(IfBlock.create(reattachLabel, cond, block));
       } else {
         IfElseNode ien = (IfElseNode) child;
         elseBlock = Optional.of(visitChildrenInNewScope(ien));
