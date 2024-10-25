@@ -291,10 +291,6 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
           "Use the ''mapKeys'' function instead of ''keys'' for objects of type ''map''.");
   private static final SoyErrorKind EMPTY_LIST_ACCESS =
       SoyErrorKind.of("Accessing item in empty list.");
-  private static final SoyErrorKind EMPTY_COLLECTION_FOREACH =
-      SoyErrorKind.of("Cannot iterate over an empty collection.");
-  private static final SoyErrorKind EMPTY_LIST_COMPREHENSION =
-      SoyErrorKind.of("Cannot use list comprehension over empty list.");
   private static final SoyErrorKind EMPTY_MAP_ACCESS =
       SoyErrorKind.of("Accessing item in empty map.");
   private static final SoyErrorKind INVALID_TYPE_SUBSTITUTION =
@@ -993,7 +989,6 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
       case SET:
         AbstractIterableType iterableType = (AbstractIterableType) collectionType;
         if (iterableType.isEmpty()) {
-          errorReporter.report(node.getExpr().getSourceLocation(), EMPTY_COLLECTION_FOREACH);
           return UnknownType.getInstance();
         }
         return iterableType.getElementType();
@@ -1154,8 +1149,6 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
       } else {
         if (listExprType instanceof AbstractIterableType
             && ((AbstractIterableType) listExprType).isEmpty()) {
-          // Report an error if listExpr was the empty list
-          errorReporter.report(node.getListExpr().getSourceLocation(), EMPTY_LIST_COMPREHENSION);
           node.getListIterVar().setType(UnknownType.getInstance());
         } else {
           // Otherwise, use the list element type to set the type of the iterator ($var in this
