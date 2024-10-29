@@ -21,11 +21,11 @@
  */
 goog.module('google3.javascript.template.soy.element_lib_idom');
 var module = module || { id: 'javascript/template/soy/element_lib_idom.js' };
-var tsickle_module_1_ = goog.require('google3.javascript.template.soy.skiphandler');
-var goog_goog_asserts_1 = goog.require('goog.asserts'); // from //javascript/closure/asserts
-var incrementaldom = goog.require('google3.third_party.javascript.incremental_dom.index'); // from //third_party/javascript/incremental_dom:incrementaldom
-var api_idom_1 = goog.require('google3.javascript.template.soy.api_idom');
-var global_1 = goog.require('google3.javascript.template.soy.global');
+const tsickle_module_1_ = goog.require('google3.javascript.template.soy.skiphandler');
+const goog_goog_asserts_1 = goog.require('goog.asserts');  // from //javascript/closure/asserts
+const incrementaldom = goog.require('google3.third_party.javascript.incremental_dom.index');  // from //third_party/javascript/incremental_dom:incrementaldom
+const api_idom_1 = goog.require('google3.javascript.template.soy.api_idom');
+const global_1 = goog.require('google3.javascript.template.soy.global');
 /**  Getter for skip handler */
 function getSkipHandler(el) {
     return el.__soy_skip_handler;
@@ -58,40 +58,44 @@ var SoyElement = /** @class */ (function () {
      * @param renderer Allows injecting a subclass of IncrementalDomRenderer
      *                 to customize the behavior of patches.
      */
-    SoyElement.prototype.render = function (renderer) {
-        var _this = this;
-        if (renderer === void 0) { renderer = new api_idom_1.IncrementalDomRendererImpl(); }
-        goog_goog_asserts_1.assert(this.node);
-        // It is possible that this Soy element has a skip handler on it. When
-        // render() is called, ignore the skip handler.
-        var skipHandler = this.skipHandler;
-        this.skipHandler = null;
-        api_idom_1.patchOuter(this.node, function () {
-            // If there are parameters, they must already be specified.
-            _this.renderInternal(renderer, _this.data);
-        });
-        this.skipHandler = skipHandler;
+    SoyElement.prototype.render = function(renderer) {
+      const _this = this;
+      if (renderer === void 0) {
+        renderer = new api_idom_1.IncrementalDomRendererImpl();
+      }
+      goog_goog_asserts_1.assert(this.node);
+      // It is possible that this Soy element has a skip handler on it. When
+      // render() is called, ignore the skip handler.
+      const skipHandler = this.skipHandler;
+      this.skipHandler = null;
+      api_idom_1.patchOuter(this.node, function() {
+        // If there are parameters, they must already be specified.
+        _this.renderInternal(renderer, _this.data);
+      });
+      this.skipHandler = skipHandler;
     };
     /**
      * Replaces the next open call such that it executes Soy element runtime
      * and then replaces itself with the old variant. This relies on compile
      * time validation that the Soy element contains a single open/close tag.
      */
-    SoyElement.prototype.queueSoyElement = function (renderer, data) {
-        var _this = this;
-        var oldOpen = renderer.open;
-        renderer.open = function (nameOrCtor, key) {
-            if (key === void 0) { key = ''; }
-            var el = incrementaldom.open(nameOrCtor, renderer.getNewKey(key));
-            renderer.open = oldOpen;
-            var maybeSkip = _this.handleSoyElementRuntime(el, data);
-            if (!maybeSkip) {
-                renderer.visit(el);
-                return el;
-            }
-            // This token is passed to ./api_idom.maybeSkip to indicate skipping.
-            return api_idom_1.SKIP_TOKEN;
-        };
+    SoyElement.prototype.queueSoyElement = function(renderer, data) {
+      const _this = this;
+      const oldOpen = renderer.open;
+      renderer.open = function(nameOrCtor, key) {
+        if (key === void 0) {
+          key = '';
+        }
+        const el = incrementaldom.open(nameOrCtor, renderer.getNewKey(key));
+        renderer.open = oldOpen;
+        const maybeSkip = _this.handleSoyElementRuntime(el, data);
+        if (!maybeSkip) {
+          renderer.visit(el);
+          return el;
+        }
+        // This token is passed to ./api_idom.maybeSkip to indicate skipping.
+        return api_idom_1.SKIP_TOKEN;
+      };
     };
     /**
      * Handles synchronization between the Soy element stashed in the DOM and
@@ -108,13 +112,13 @@ var SoyElement = /** @class */ (function () {
         }
         this.node = node;
         node.__soy = this;
-        var newNode = new this.constructor(data);
+        const newNode = new this.constructor(data);
         // Users may configure a skip handler to avoid patching DOM in certain
         // cases.
-        var maybeSkipHandler = getSkipHandler(node);
+        const maybeSkipHandler = getSkipHandler(node);
         if (this.skipHandler || maybeSkipHandler) {
             goog_goog_asserts_1.assert(!this.skipHandler || !maybeSkipHandler, 'Do not set skip handlers twice.');
-            var skipHandler = this.skipHandler || maybeSkipHandler;
+            const skipHandler = this.skipHandler || maybeSkipHandler;
             if (skipHandler(this, newNode)) {
                 return true;
             }

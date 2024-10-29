@@ -23,7 +23,7 @@
  */
 goog.module('google3.javascript.template.soy.global');
 var module = module || { id: 'javascript/template/soy/global.js' };
-var goog_goog_asserts_1 = goog.require('goog.asserts'); // from //javascript/closure/asserts
+const goog_goog_asserts_1 = goog.require('goog.asserts');  // from //javascript/closure/asserts
 /**
  * Retrieves the Soy element in a type-safe way.
  *
@@ -31,11 +31,12 @@ var goog_goog_asserts_1 = goog.require('goog.asserts'); // from //javascript/clo
  * throw an Error if this is not true.
  */
 function getSoy(node, elementCtor, message) {
-    var soyEl = goog_goog_asserts_1.assertInstanceof(getSoyUntyped(node), elementCtor, message);
-    // We disable state syncing by default when elements are accessed on the
-    // theory that the application wants to take control now.
-    soyEl.setSyncState(false);
-    return soyEl;
+  const soyEl = goog_goog_asserts_1.assertInstanceof(
+      getSoyUntyped(node), elementCtor, message);
+  // We disable state syncing by default when elements are accessed on the
+  // theory that the application wants to take control now.
+  soyEl.setSyncState(false);
+  return soyEl;
 }
 exports.getSoy = getSoy;
 /** Retrieves the Soy element in a type-safe way, or null if it doesn't exist */
@@ -57,9 +58,9 @@ exports.tagForSkip = tagForSkip;
  * Once a soy element has been tagged, reset the tag.
  */
 function isTaggedForSkip(node) {
-    var isTaggedForSkip = node.__soy_tagged_for_skip;
-    node.__soy_tagged_for_skip = false;
-    return isTaggedForSkip;
+  const isTaggedForSkip = node.__soy_tagged_for_skip;
+  node.__soy_tagged_for_skip = false;
+  return isTaggedForSkip;
 }
 exports.isTaggedForSkip = isTaggedForSkip;
 /** Retrieves an untyped Soy element, or null if it doesn't exist. */
