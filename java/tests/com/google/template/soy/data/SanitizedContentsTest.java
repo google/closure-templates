@@ -421,6 +421,12 @@ public class SanitizedContentsTest {
   }
 
   @Test
+  public void testParseAttributes_withUppercase() {
+    assertThat(parseAttributes("CLASS=foo viewBox='1 2 3 4'"))
+        .isEqualTo(ImmutableMap.of("class", "foo", "viewbox", "1 2 3 4"));
+  }
+
+  @Test
   public void testParseAttributes_errors() {
     assertThrows(IllegalArgumentException.class, () -> parseAttributes("a="));
     assertThrows(IllegalArgumentException.class, () -> parseAttributes("a='"));
