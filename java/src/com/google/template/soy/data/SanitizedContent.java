@@ -675,7 +675,8 @@ public abstract class SanitizedContent extends SoyValue {
       // passes in the common case of no upper case characters.
       char[] chars = new char[position - start];
       content.getChars(start, position, chars, 0);
-      for (int i = 0; i < chars.length; i++) {
+      // Start at the first upper case character and convert the rest to lower case.
+      for (int i = upperCaseStartPos - start; i < chars.length; i++) {
         chars[i] = Ascii.toLowerCase(chars[i]);
       }
       return String.valueOf(chars);
