@@ -50,12 +50,24 @@ public abstract class HtmlTag extends Expression implements CodeChunk.HasRequire
     return create(stringLiteral(tagName), Type.OPEN, attributes.stream());
   }
 
+  public static HtmlTag createOpen(Expression tagName, List<? extends CodeChunk> attributes) {
+    return create(tagName, Type.OPEN, attributes.stream());
+  }
+
   public static HtmlTag createOpen(String tagName, CodeChunk... attributes) {
     return create(stringLiteral(tagName), Type.OPEN, Stream.of(attributes));
   }
 
+  public static HtmlTag createOpen(Expression tagName, CodeChunk... attributes) {
+    return create(tagName, Type.OPEN, Stream.of(attributes));
+  }
+
   public static HtmlTag createClose(String tagName, CodeChunk... attributes) {
     return create(stringLiteral(tagName), Type.CLOSE, Stream.of(attributes));
+  }
+
+  public static HtmlTag createClose(Expression tagName, CodeChunk... attributes) {
+    return create(tagName, Type.CLOSE, Stream.of(attributes));
   }
 
   public static HtmlTag create(
@@ -68,17 +80,17 @@ public abstract class HtmlTag extends Expression implements CodeChunk.HasRequire
     return create(tagName, type, Streams.stream(attributes));
   }
 
-  public HtmlTag withExtraAttributes(Iterable<? extends CodeChunk> attributes) {
-    return create(
-        tagName(), type(), Streams.concat(attributes().stream(), Streams.stream(attributes)));
-  }
-
   private static HtmlTag create(
       Expression tagName, Type type, Stream<? extends CodeChunk> attributes) {
     return new AutoValue_HtmlTag(
         tagName,
         type,
         mergeLineComments(attributes).flatMap(HtmlTag::wrapChild).collect(toImmutableList()));
+  }
+
+  public HtmlTag withExtraAttributes(Iterable<? extends CodeChunk> attributes) {
+    return create(
+        tagName(), type(), Streams.concat(attributes().stream(), Streams.stream(attributes)));
   }
 
   private static Stream<CodeChunk> wrapChild(CodeChunk chunk) {
@@ -105,6 +117,10 @@ public abstract class HtmlTag extends Expression implements CodeChunk.HasRequire
   abstract ImmutableList<? extends CodeChunk> attributes();
 
   public HtmlTag copyWithTagName(String newTagName) {
+    return create(newTagName, type(), attributes());
+  }
+
+  public HtmlTag copyWithTagName(Expression newTagName) {
     return create(newTagName, type(), attributes());
   }
 

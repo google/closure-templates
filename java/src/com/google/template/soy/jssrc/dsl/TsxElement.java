@@ -56,6 +56,11 @@ public abstract class TsxElement extends Expression {
         openTag().copyWithTagName(newTagName), closeTag().copyWithTagName(newTagName), body());
   }
 
+  public TsxElement copyWithTagName(Expression newTagName) {
+    return create(
+        openTag().copyWithTagName(newTagName), closeTag().copyWithTagName(newTagName), body());
+  }
+
   public TsxElement copyWithMoreBody(CodeChunk... bodyToAppend) {
     return create(
         openTag(),
