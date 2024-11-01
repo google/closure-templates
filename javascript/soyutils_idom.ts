@@ -446,7 +446,7 @@ function isTruthy(expr: unknown): boolean {
   return !!expr;
 }
 
-let isInFalsinessRenderer = false;
+let inFalsinessRendererDepth = 0;
 function isTruthyNonEmpty(expr: unknown): boolean {
   if (!expr) return false;
 
@@ -454,10 +454,10 @@ function isTruthyNonEmpty(expr: unknown): boolean {
   if ((expr as IdomFunction).isInvokableFn) {
     const renderer = new FalsinessRenderer();
     try {
-      isInFalsinessRenderer = true;
+      inFalsinessRendererDepth++;
       (expr as IdomFunction).invoke(renderer);
     } finally {
-      isInFalsinessRenderer = false;
+      inFalsinessRendererDepth--;
     }
     return renderer.didRender();
   }
@@ -493,7 +493,9 @@ class IdHolderForDebug implements IdHolder {
     if (!this.backing) {
       // b/235271145: When checking idom blocks for truthiness, the attribute is
       // skipped.  Ignore this error in this case.
-      if (isInFalsinessRenderer) return 'zSoyz: Fake ID in FalsyRenderer';
+      if (inFalsinessRendererDepth > 0) {
+        return 'zSoyz: Fake ID in FalsyRenderer';
+      }
       throw new Error(
         `
         Cannot read 'idHolder.id' until the element with the 'uniqueAttribute()' call is
