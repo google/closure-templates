@@ -126,13 +126,48 @@ public final class TemplateAnalysisTest {
 
   @Test
   public void testIf() {
-    // conditions are refed prior to the blocks they control
-    // if there is an {else} then anything refed in all branches is refed after the if
     runTest(
         "{@param p1 : string}",
         "{@param p2 : string}",
         "{@param p3 : string}",
         "{if $p1}",
+        "  {notrefed($p1)}",
+        "  {notrefed($p2)}",
+        "  {$p3}",
+        "{elseif $p2}",
+        "  {notrefed($p1)}",
+        "  {notrefed($p2)}",
+        "  {$p3}",
+        "{else}",
+        "  {notrefed($p1)}",
+        "  {notrefed($p2)}",
+        "  {$p3}",
+        "{/if}",
+        "{refed($p3)}");
+
+    runTest(
+        "{@param p : string}",
+        "{@param b1 : bool}",
+        "{@param b2 : bool}",
+        "{if $b1}",
+        "  {$p}",
+        "  {notrefed($b1)}",
+        "  {notrefed($b2)}",
+        "{elseif $b2}",
+        "  {$p}",
+        "  {notrefed($b1)}",
+        "  {notrefed($b2)}",
+        "{/if}",
+        "{notrefed($p)}");
+  }
+
+  @Test
+  public void testIfInAttributes() {
+    runTest(
+        "{@param p1 : string}",
+        "{@param p2 : string}",
+        "{@param p3 : string}",
+        "<div class=\"{if $p1}",
         "  {refed($p1)}",
         "  {notrefed($p2)}",
         "  {$p3}",
@@ -145,22 +180,22 @@ public final class TemplateAnalysisTest {
         "  {refed($p2)}",
         "  {$p3}",
         "{/if}",
-        "{refed($p3)}");
+        "\">",
+        "{refed($p3)}",
+        "</div>");
 
     runTest(
         "{@param p : string}",
-        "{@param b1 : bool}",
-        "{@param b2 : bool}",
-        "{if $b1}",
+        "{@param b1 : string}",
+        "{@param b2 : string}",
+        "<div class=\"{if $b1}",
         "  {$p}",
-        "  {refed($b1)}",
-        "  {notrefed($b2)}",
         "{elseif $b2}",
         "  {$p}",
-        "  {refed($b1)}",
-        "  {refed($b2)}",
         "{/if}",
-        "{notrefed($p)}");
+        "\">",
+        "{notrefed($p)}",
+        "</div>");
   }
 
   @Test

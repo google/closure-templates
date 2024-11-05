@@ -354,27 +354,37 @@ final class TemplateAnalysisImpl implements TemplateAnalysis {
 
     @Override
     protected void visitIfNode(IfNode node) {
-      // For ifs we always evaluate the first condition and if there is an 'else' clause at least
-      // one of the branches.  Things get trickier if we have multiple conditions.  for example,
-      // {if $p1}W{elseif $p2}X{else}Y{/if}Z
-      // at position W $p1 has been ref'd
-      // at position X $p1 and $p2 have been ref'd
-      // at position Y $p1 and $p2 have been ref'd
-      // at position Z only $p1 has definitely been ref'd
-      // To handle all these cases we need to manage a bunch of forks
-      Block conditionFork = null;
+      var detachable = DetachState.ifCondNodeDetachableContext(node.getHtmlContext());
+      Block conditionFork = detachable ? this.current : null;
       List<Block> branchEnds = new ArrayList<>();
       boolean hasElse = false;
       for (SoyNode child : node.getChildren()) {
         if (child instanceof IfCondNode) {
           IfCondNode icn = (IfCondNode) child;
           ExprRootNode conditionExpression = icn.getExpr();
-          if (conditionFork == null) {
-            // first condition is always evaluated
-            evalInline(conditionExpression);
-            conditionFork = this.current;
+          if (detachable) {
+            // If detachable, each if/else condition is in its own branch.
+            // Soy runtime may choose to not fully evaluate if/else conditions, so if/else blocks
+            // cannot assume that any value used in a condition is fully evaluated.
+            this.current = evalInBlock(conditionFork.addBranch(), conditionExpression);
           } else {
-            conditionFork = exprVisitor.eval(conditionFork.addBranch(), conditionExpression);
+            // For ifs we always evaluate the first condition and if there is an 'else' clause at
+            // least
+            // one of the branches.  Things get trickier if we have multiple conditions.  for
+            // example,
+            // {if $p1}W{elseif $p2}X{else}Y{/if}Z
+            // at position W $p1 has been ref'd
+            // at position X $p1 and $p2 have been ref'd
+            // at position Y $p1 and $p2 have been ref'd
+            // at position Z only $p1 has definitely been ref'd
+            // To handle all these cases we need to manage a bunch of forks
+            if (conditionFork == null) {
+              // first condition is always evaluated
+              evalInline(conditionExpression);
+              conditionFork = this.current;
+            } else {
+              conditionFork = exprVisitor.eval(conditionFork.addBranch(), conditionExpression);
+            }
           }
           Block branch = conditionFork.addBranch();
           branch = exec(branch, icn);

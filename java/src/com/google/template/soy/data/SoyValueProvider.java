@@ -16,6 +16,7 @@
 
 package com.google.template.soy.data;
 
+import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import java.io.IOException;
@@ -73,6 +74,48 @@ public abstract class SoyValueProvider {
   @Nonnull
   public abstract RenderResult renderAndResolve(LoggingAdvisingAppendable appendable)
       throws IOException;
+
+  /**
+   * Coerces the given SoyValueProvider to a SoyValueProvider that always provides a BooleanData.
+   *
+   * <p>This is useful if coercing this SoyValue to truthy is less complicated than fully resolving
+   * the SoyValue.
+   *
+   * <p>TODO(b/376283967): This does not necessarily need to return a `SoyValueProvider`, it could
+   * instead return a custom class that represents truthiness that is closer to a ternary: true,
+   * false, and needs to resolve further. `SoyValueProvider` is a superset of this functionality,
+   * but it costs more allocations to use it.
+   */
+  public SoyValueProvider coerceToBooleanProvider() {
+    if (status().isDone()) {
+      return BooleanData.forValue(resolve().coerceToBoolean());
+    }
+
+    return new SoyValueProvider() {
+      @Override
+      public SoyValue resolve() {
+        return BooleanData.forValue(SoyValueProvider.this.resolve().coerceToBoolean());
+      }
+
+      @Override
+      public RenderResult status() {
+        return SoyValueProvider.this.status();
+      }
+
+      @Override
+      public RenderResult renderAndResolve(LoggingAdvisingAppendable appendable)
+          throws IOException {
+        // renderAndResolve is necessary to provide a concrete subclass of `SoyValueProvider` but
+        // this method should never actually be used. The trivial implementation is provided
+        // instead of throwing an `Error`.
+        RenderResult result = status();
+        if (result.isDone()) {
+          resolve().render(appendable);
+        }
+        return result;
+      }
+    };
+  }
 
   /**
    * Returns a SoyValueProvider whose resolved value will be {@code defaultValue} if {@code

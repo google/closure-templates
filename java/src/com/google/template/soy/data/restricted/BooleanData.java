@@ -19,6 +19,7 @@ package com.google.template.soy.data.restricted;
 import com.google.common.primitives.Booleans;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.data.SoyValue;
+import com.google.template.soy.data.SoyValueProvider;
 import javax.annotation.Nonnull;
 
 /**
@@ -52,6 +53,11 @@ public final class BooleanData extends PrimitiveData {
   @Nonnull
   public static BooleanData forValue(boolean value) {
     return value ? TRUE : FALSE;
+  }
+
+  @Override
+  public SoyValueProvider coerceToBooleanProvider() {
+    return this;
   }
 
   /** Returns the boolean value. */

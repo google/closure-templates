@@ -18,6 +18,7 @@ package com.google.template.soy.data;
 
 import com.google.protobuf.Message;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
+import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.internal.proto.ProtoUtils;
@@ -72,6 +73,11 @@ public abstract class SoyValue extends SoyValueProvider {
    * @return This value coerced into a string.
    */
   public abstract String coerceToString();
+
+  @Override
+  public SoyValueProvider coerceToBooleanProvider() {
+    return BooleanData.forValue(this.coerceToBoolean());
+  }
 
   /**
    * Performs a Java number to `long` coercion on the wrapped value. Compared with {@link

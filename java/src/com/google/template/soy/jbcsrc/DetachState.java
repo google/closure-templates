@@ -22,6 +22,8 @@ import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.STACK_FRAM
 import static com.google.template.soy.jbcsrc.restricted.Statement.returnExpression;
 
 import com.google.auto.value.AutoValue;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 import com.google.template.soy.jbcsrc.TemplateVariableManager.SaveRestoreState;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
@@ -35,6 +37,7 @@ import com.google.template.soy.jbcsrc.restricted.Statement;
 import com.google.template.soy.jbcsrc.runtime.JbcSrcRuntime;
 import com.google.template.soy.jbcsrc.shared.ExtraConstantBootstraps;
 import com.google.template.soy.jbcsrc.shared.StackFrame;
+import com.google.template.soy.soytree.HtmlContext;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
@@ -167,6 +170,17 @@ final class DetachState implements ExpressionDetacher.Factory {
           CALL_SITE_KEY_HANDLE,
           counter.getAndIncrement());
     }
+  }
+
+  private static final ImmutableSet<HtmlContext> DETACHABLE_HTML_CONTEXTS =
+      Sets.immutableEnumSet(
+          HtmlContext.HTML_PCDATA,
+          HtmlContext.HTML_RCDATA,
+          HtmlContext.HTML_SCRIPT_PHRASING_DATA,
+          HtmlContext.TEXT);
+
+  public static boolean ifCondNodeDetachableContext(HtmlContext htmlContext) {
+    return DETACHABLE_HTML_CONTEXTS.contains(htmlContext);
   }
 
   private final TemplateVariableManager variables;

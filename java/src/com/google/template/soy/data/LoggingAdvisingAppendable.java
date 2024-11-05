@@ -259,6 +259,17 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
       return false;
     }
 
+    public boolean isEmpty() {
+      if (commands != null) {
+        for (var command : commands) {
+          if (command instanceof String) {
+            return false;
+          }
+        }
+      }
+      return builder.length() == 0;
+    }
+
     @CanIgnoreReturnValue
     @Override
     public LoggingAdvisingAppendable append(CharSequence s) throws IOException {
