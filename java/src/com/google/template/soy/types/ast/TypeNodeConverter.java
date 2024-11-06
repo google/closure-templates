@@ -91,6 +91,9 @@ public final class TypeNodeConverter
   public static final SoyErrorKind INDEXED_BASE_NOT_NAMED =
       SoyErrorKind.of("The base of an indexed type must be a named type.");
 
+  private static final SoyErrorKind BAD_INDEXED =
+      SoyErrorKind.of("Type ''{1}'' does not have field ''{0}''.");
+
   public static final SoyErrorKind DASH_NOT_ALLOWED =
       SoyErrorKind.of(
           "parse error at ''-'': expected identifier",
@@ -347,7 +350,11 @@ public final class TypeNodeConverter
     if (base.getKind() != Kind.NAMED) {
       errorReporter.report(node.sourceLocation(), INDEXED_BASE_NOT_NAMED);
     }
-    return interner.intern(IndexedType.create(base, node.property().getValue()));
+    IndexedType rv = interner.intern(IndexedType.create(base, node.property().getValue()));
+    if (rv.getEffectiveType().getKind() == Kind.NEVER) {
+      errorReporter.report(node.sourceLocation(), BAD_INDEXED, rv.getProperty(), rv.getType());
+    }
+    return rv;
   }
 
   @Override

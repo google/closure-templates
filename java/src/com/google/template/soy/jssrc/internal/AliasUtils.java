@@ -39,7 +39,7 @@ final class AliasUtils {
     }
 
     @Override
-    public String get(String fullyQualifiedName) {
+    public String getNullable(String fullyQualifiedName) {
       String alias = aliasMapping.get(fullyQualifiedName);
       if (alias != null) {
         return alias;
@@ -48,7 +48,11 @@ final class AliasUtils {
       checkState(lastDotPosition != -1);
       String namespace = fullyQualifiedName.substring(0, lastDotPosition);
       String relativeName = fullyQualifiedName.substring(lastDotPosition + 1);
-      return getNamespaceAlias(namespace) + '.' + relativeName;
+      String namespaceAlias = getNamespaceAlias(namespace);
+      if (namespaceAlias == null) {
+        return null;
+      }
+      return namespaceAlias + '.' + relativeName;
     }
 
     @Override
@@ -64,6 +68,11 @@ final class AliasUtils {
         @Override
         public String get(String fullyQualifiedName) {
           return fullyQualifiedName;
+        }
+
+        @Override
+        public String getNullable(String fullyQualifiedName) {
+          return null;
         }
 
         @Override

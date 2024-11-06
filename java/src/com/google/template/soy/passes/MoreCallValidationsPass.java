@@ -18,7 +18,6 @@ package com.google.template.soy.passes;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.ImmutableMap.toImmutableMap;
-import static com.google.common.collect.Streams.stream;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -187,7 +186,7 @@ final class MoreCallValidationsPass implements CompilerFileSetPass {
                   return;
                 }
               }
-              stream(SoyTypes.getTypeTraverser(templateNode.getType(), null))
+              SoyTypes.allTypes(templateNode.getType(), null)
                   .filter(t -> t.getKind() == SoyType.Kind.TEMPLATE)
                   .map(TemplateType.class::cast)
                   .filter(

@@ -25,7 +25,6 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Streams;
 import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SourceLogicalPath;
@@ -402,7 +401,7 @@ public class SoyFileNodeTransformer {
         continue;
       }
 
-      if (Streams.stream(SoyTypes.getTypeTraverser(param.type(), null))
+      if (SoyTypes.allTypesWithDeps(param.type(), null)
           .map(
               t -> {
                 if (t instanceof SoyProtoType) {

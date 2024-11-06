@@ -55,6 +55,7 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SourceLocation.ByteSpan;
 import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.base.internal.SanitizedContentKind;
+import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprNode;
@@ -507,7 +508,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
    * @param soyNamespace The namespace as declared by the user.
    */
   protected String getGoogModuleNamespace(String soyNamespace) {
-    return soyNamespace;
+    return Preconditions.checkNotNull(soyNamespace);
   }
 
   /**
@@ -1641,6 +1642,23 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
         // template with the param. This matches what do for the Java builders.
         continue;
       }
+      // Skip named types from indirect deps.
+      if (SoyTypes.allTypes(combinedType, typeRegistry)
+          .anyMatch(
+              t -> {
+                if (t instanceof NamedType) {
+                  NamedType namedType = (NamedType) t;
+                  SourceLogicalPath path =
+                      fileSetMetadata.getPathForNamespace(namedType.getNamespace());
+                  if (path == null) {
+                    return true;
+                  }
+                  return fileSetMetadata.getFile(path).getSoyFileKind() == SoyFileKind.INDIRECT_DEP;
+                }
+                return false;
+              })) {
+        continue;
+      }
       // TODO: detect cases where nullable is not needed (requires flow
       // analysis to determine if the template is always called.)
       SoyType indirectParamType = SoyTypes.makeNullable(combinedType);
@@ -1814,7 +1832,10 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       }
       if (type instanceof NamedType) {
         NamedType namedType = (NamedType) type;
-        return JsType.localTypedef(templateAliases.get(namedType.getFqn()));
+        String alias = templateAliases.getNullable(namedType.getFqn());
+        if (alias != null) {
+          return JsType.localTypedef(alias);
+        }
       }
       return delegate.get(type, this);
     }

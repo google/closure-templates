@@ -22,7 +22,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Streams;
 import com.google.template.soy.types.AbstractIterableType;
 import com.google.template.soy.types.AbstractMapType;
 import com.google.template.soy.types.FloatType;
@@ -195,7 +194,7 @@ public final class JavaTypeUtils {
     }
 
     // No records of records.
-    if (Streams.stream(SoyTypes.getTypeTraverser(recordType, null))
+    if (SoyTypes.allTypes(recordType, null)
         .anyMatch(t -> t.getKind() == Kind.RECORD && t != recordType)) {
       return ImmutableList.of();
     }

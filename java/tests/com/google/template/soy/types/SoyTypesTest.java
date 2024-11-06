@@ -421,9 +421,6 @@ public class SoyTypesTest {
 
     assertThatSoyType("Rec1['d']", registry).isAssignableFromStrict("Rec1['a']");
     assertThatSoyType("Rec1['a']", registry).isNotAssignableFromStrict("Rec1['d']");
-
-    assertThatSoyType("any", registry).isNotAssignableFromStrict("Rec1['xyz']");
-    assertThatSoyType("any", registry).isNotAssignableFromStrict("StringAlias['a']");
   }
 
   @Test

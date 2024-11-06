@@ -16,7 +16,6 @@
 package com.google.template.soy.shared.internal.gencode;
 
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
-import static com.google.common.collect.Streams.stream;
 
 import com.google.common.base.Ascii;
 import com.google.common.base.Joiner;
@@ -43,7 +42,6 @@ import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.SoyTypes;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -402,7 +400,7 @@ public final class JavaGenerationUtils {
   /** Recursively search for protocol buffer types within the given type. */
   private static Stream<GenericDescriptor> findProtoTypes(
       SoyType root, SoyTypeRegistry typeRegistry) {
-    return stream(typeIterator(root, typeRegistry))
+    return SoyTypes.allTypesWithDeps(root, typeRegistry)
         .map(
             type -> {
               switch (type.getKind()) {
@@ -415,11 +413,6 @@ public final class JavaGenerationUtils {
               }
             })
         .filter(Objects::nonNull);
-  }
-
-  private static Iterator<? extends SoyType> typeIterator(
-      SoyType root, SoyTypeRegistry typeRegistry) {
-    return SoyTypes.getTypeTraverser(root, typeRegistry);
   }
 
   /** Returns whether the given symbol is a keyword reserved by the Java language. */

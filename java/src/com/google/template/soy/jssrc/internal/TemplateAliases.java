@@ -16,6 +16,9 @@
 
 package com.google.template.soy.jssrc.internal;
 
+import com.google.common.base.Preconditions;
+import javax.annotation.Nullable;
+
 /**
  * Provides a way to look up local variable aliases for the JavaScript function that corresponds to
  * a given Soy template.
@@ -25,8 +28,14 @@ public interface TemplateAliases {
    * @param fullyQualifiedName The full name, including the namespace, of a Soy template.
    * @return The variable that should be used when referring to the template.
    */
-  String get(String fullyQualifiedName);
+  default String get(String fullyQualifiedName) {
+    return Preconditions.checkNotNull(getNullable(fullyQualifiedName));
+  }
+
+  @Nullable
+  String getNullable(String fullyQualifiedName);
 
   /** Returns the symbol that should be used as an alias for the soy template namespace. */
+  @Nullable
   String getNamespaceAlias(String namespace);
 }

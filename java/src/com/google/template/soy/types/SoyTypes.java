@@ -23,7 +23,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
-import com.google.common.collect.Streams;
 import com.google.common.html.types.SafeHtmlProto;
 import com.google.common.html.types.SafeScriptProto;
 import com.google.common.html.types.SafeStyleProto;
@@ -34,7 +33,6 @@ import com.google.template.soy.internal.util.TreeStreams;
 import com.google.template.soy.types.SoyType.Kind;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -42,6 +40,7 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
 /** Utility methods for operating on {@link SoyType} instances. */
@@ -574,13 +573,20 @@ public final class SoyTypes {
   }
 
   /**
-   * Returns an iterator that traverses a soy type graph starting at {@code root} and following any
-   * union, list, map, record, or other composite type. The optional type registry parameter is used
-   * for resolving VE types.
+   * Returns an stream that traverses a soy type graph starting at {@code root} and following any
+   * union, list, map, record, or other composite type.
+   *
+   * <p>The optional type registry parameter is used for resolving VE types.
    */
-  public static Iterator<? extends SoyType> getTypeTraverser(
+  public static Stream<? extends SoyType> allTypes(
       SoyType root, @Nullable SoyTypeRegistry registry) {
-    return TreeStreams.breadthFirst(root, new SoyTypeSuccessorsFunction(registry)).iterator();
+    return TreeStreams.breadthFirst(root, new SoyTypeSuccessorsFunction(registry));
+  }
+
+  /** Like {@link #allTypes} but navigates to the effective types of INDEXED and NAMED. */
+  public static Stream<? extends SoyType> allTypesWithDeps(
+      SoyType root, @Nullable SoyTypeRegistry registry) {
+    return TreeStreams.breadthFirst(root, new SoyTypeDepsSuccessorsFunction(registry));
   }
 
   /**
@@ -656,8 +662,11 @@ public final class SoyTypes {
         case INTERSECTION:
           return ((IntersectionType) type).getMembers();
         case INDEXED:
+          return ImmutableList.of(((IndexedType) type).getType());
         case NAMED:
-          return ImmutableList.of(type.getEffectiveType());
+          // Use SoyTypeDepsSuccessorsFunction below if you need to navigate to the effective record
+          // type.
+          return ImmutableList.of();
 
         case ITERABLE:
         case LIST:
@@ -692,8 +701,27 @@ public final class SoyTypes {
     }
   }
 
+  /** Implementation of SuccessorsFunction that traverses a graph rooted at a SoyType. */
+  private static class SoyTypeDepsSuccessorsFunction extends SoyTypeSuccessorsFunction {
+
+    public SoyTypeDepsSuccessorsFunction(@Nullable SoyTypeRegistry typeRegistry) {
+      super(typeRegistry);
+    }
+
+    @Override
+    public Iterable<? extends SoyType> apply(SoyType type) {
+      switch (type.getKind()) {
+        case INDEXED:
+        case NAMED:
+          return ImmutableList.of(type.getEffectiveType());
+        default:
+          return super.apply(type);
+      }
+    }
+  }
+
   public static boolean hasProtoDep(SoyType type) {
-    return Streams.stream(SoyTypes.getTypeTraverser(type, null))
+    return SoyTypes.allTypes(type, null)
         .anyMatch(t -> t.getKind() == Kind.PROTO || t.getKind() == Kind.PROTO_ENUM);
   }
 

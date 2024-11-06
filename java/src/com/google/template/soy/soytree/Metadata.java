@@ -245,6 +245,14 @@ public final class Metadata {
           .flatMap(f -> f.getTemplates().stream())
           .collect(toImmutableList());
     }
+
+    @Override
+    @Memoized
+    public ImmutableMap<String, SourceLogicalPath> getNamespaceIndex() {
+      return getAllFiles().stream()
+          .collect(
+              toImmutableMap(PartialFileMetadata::getNamespace, f -> f.getPath().asLogicalPath()));
+    }
   }
 
   /** PartialFileSetMetadata for AST under compilation. */
@@ -285,6 +293,7 @@ public final class Metadata {
     @LazyInit private ImmutableMap<String, TemplateMetadata> lazyFullTemplateIndex;
     @LazyInit private ImmutableList<TemplateMetadata> lazyAllTemplatesWithCollisions;
     @LazyInit private DelTemplateSelector<TemplateMetadata> delTemplateSelector;
+    @LazyInit private ImmutableMap<String, SourceLogicalPath> namespaceIndex;
 
     /** ASTs are mutable so we need to copy all data in the constructor. */
     public AstFileSetMetadata(FileSetMetadata deps, List<SoyFileNode> ast, ParseContext context) {
@@ -367,6 +376,20 @@ public final class Metadata {
     public ImmutableCollection<TemplateMetadata> getAllTemplates() {
       templateIndex(); // init lazyAllTemplatesWithCollisions
       return lazyAllTemplatesWithCollisions;
+    }
+
+    @Override
+    public ImmutableMap<String, SourceLogicalPath> getNamespaceIndex() {
+      ImmutableMap<String, SourceLogicalPath> tmp = namespaceIndex;
+      if (tmp == null) {
+        tmp =
+            getAllFiles().stream()
+                .collect(
+                    toImmutableMap(
+                        PartialFileMetadata::getNamespace, f -> f.getPath().asLogicalPath()));
+        namespaceIndex = tmp;
+      }
+      return tmp;
     }
   }
 
@@ -964,7 +987,7 @@ public final class Metadata {
 
     @Override
     public SoyType getOrCreateNamedType(String name, String namespace) {
-      String key = namespace + "." + name;
+      String key = Preconditions.checkNotNull(namespace) + "." + name;
       NamedType cachedVal = cache.get(key);
       if (cachedVal == null) {
         TypeDefP typeDef = namedTypes.get(key);

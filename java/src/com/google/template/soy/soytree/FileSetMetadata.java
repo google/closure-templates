@@ -16,7 +16,9 @@
 
 package com.google.template.soy.soytree;
 
+
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.shared.internal.DelTemplateSelector;
 import com.google.template.soy.types.TemplateType.TemplateKind;
@@ -72,5 +74,11 @@ public interface FileSetMetadata extends PartialFileSetMetadata {
     }
     TemplateKind kind = metadata.getTemplateType().getTemplateKind();
     return kind == TemplateKind.BASIC || kind == TemplateKind.ELEMENT ? metadata : null;
+  }
+
+  ImmutableMap<String, SourceLogicalPath> getNamespaceIndex();
+
+  default SourceLogicalPath getPathForNamespace(String namespace) {
+    return getNamespaceIndex().get(namespace);
   }
 }

@@ -237,7 +237,10 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
       HtmlTagNode closeTag = tagNode.getTaggedPairs().get(0);
       List<String> params =
           templateType.getParameters().stream()
-              .filter(p -> SoyTypes.transitivelyContainsKind(p.getType(), SoyType.Kind.HTML))
+              .filter(
+                  p ->
+                      SoyTypes.transitivelyContainsKind(
+                          p.getType().getEffectiveType(), SoyType.Kind.HTML))
               .map(Parameter::getName)
               .collect(toCollection(ArrayList::new));
       StandaloneNode next = (StandaloneNode) SoyTreeUtils.nextSibling(tagNode);
