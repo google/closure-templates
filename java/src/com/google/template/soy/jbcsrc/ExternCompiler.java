@@ -306,11 +306,13 @@ public final class ExternCompiler {
     // For protocol enums, we need to call forNumber on the type w/ the param (as casted to an int).
     // This is because Soy internally stores enums as ints. We know this is safe because we
     // already validated that the enum type matches the signature.
-    if (soyType.getKind() == Kind.PROTO_ENUM) {
+    if (nonNullableSoyType.getKind() == Kind.PROTO_ENUM) {
       if (soyTypeBoxed) {
-        return JbcSrcExternRuntime.SOY_VALUE_TO_ENUM.invoke(
-            actualParam,
-            BytecodeUtils.constant(BytecodeUtils.getTypeForClassName(javaType.getClassName())));
+        return JbcSrcExternRuntime.SOY_VALUE_TO_ENUM
+            .invoke(
+                actualParam,
+                BytecodeUtils.constant(BytecodeUtils.getTypeForClassName(javaType.getClassName())))
+            .checkedCast(javaType);
       }
       return MethodRef.createStaticMethod(
               javaTypeInfo,
