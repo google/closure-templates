@@ -203,6 +203,13 @@ public enum BuiltinMethod implements SoyMethod {
       if (fd.getJavaType() == JavaType.MESSAGE) {
         return true;
       }
+
+      if (fd.isMapField()
+          && (fd.getMessageType().findFieldByNumber(0).getJavaType() == JavaType.LONG
+              || fd.getMessageType().findFieldByNumber(1).getJavaType() == JavaType.LONG)) {
+        return false;
+      }
+
       return true;
     }
 
