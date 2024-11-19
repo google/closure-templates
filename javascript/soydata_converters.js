@@ -46,7 +46,7 @@ const {ByteString} = goog.require('jspb.bytestring');
 const {SanitizedCss, SanitizedHtml, SanitizedJs, SanitizedTrustedResourceUri, SanitizedUri} = goog.require('goog.soy.data');
 const {htmlSafeByReview, resourceUrlSafeByReview, scriptSafeByReview, styleSafeByReview, styleSheetSafeByReview, urlSafeByReview} = goog.require('safevalues.restricted.reviewed');
 const {htmlToProto, protoToHtml, protoToResourceUrl, protoToScript, protoToStyle, protoToStyleSheet, protoToUrl, resourceUrlToProto, scriptToProto, styleSheetToProto, styleToProto, urlToProto} = goog.require('safevalues.conversions.jspb');
-const {unwrapHtml, unwrapResourceUrl, unwrapScript, unwrapStyle, unwrapStyleSheet, unwrapUrl} = goog.require('safevalues');
+const {unwrapHtml, unwrapResourceUrl, unwrapScript, unwrapStyleSheet, unwrapUrl} = goog.require('safevalues');
 
 /**
  * Converts a CSS Sanitized Content object to a corresponding Safe Style Proto.
@@ -233,7 +233,7 @@ exports.unpackProtoToSanitizedCss = function(x) {
   let safeCss;
   if (x instanceof SafeStyleProto) {
     safeCss = protoToStyle(x);
-    safeCss = safeCss ? unwrapStyle(safeCss) : '';
+    safeCss = safeCss ? safeCss : '';
     return soy.VERY_UNSAFE.ordainSanitizedCss(safeCss);
   } else if (x instanceof SafeStyleSheetProto) {
     safeCss = protoToStyleSheet(x);
