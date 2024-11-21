@@ -68,6 +68,17 @@ public abstract class SoyTemplate extends TemplateInterface {
         SoyTemplateParam<? super V> param, ListenableFuture<V> value);
 
     /**
+     * Sets any template parameter of this builder to an unchecked value. SoyTemplateParam is used
+     * purely to indicate the parameter name. The internal implementation should ensure correct
+     * conversion of the {@code value} object to an appropriate {@link SoyValueProvider}.
+     *
+     * @throws IllegalArgumentException if the template corresponding to this builder does not have
+     *     a parameter equal to {@code param}.
+     */
+    @CanIgnoreReturnValue
+    public abstract <V> Builder<T> setParamUnchecked(SoyTemplateParam<?> param, Object value);
+
+    /**
      * Returns whether this builder has a param equal to {@code param}. If this method returns true
      * then {@link #setParam} should not throw an {@link IllegalArgumentException}.
      */

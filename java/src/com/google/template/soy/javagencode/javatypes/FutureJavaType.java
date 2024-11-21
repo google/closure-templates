@@ -36,7 +36,7 @@ public final class FutureJavaType extends JavaType {
 
   @Override
   String asGenericsTypeArgumentString() {
-    return null;
+    return "? extends " + toJavaTypeString();
   }
 
   public JavaType getType() {

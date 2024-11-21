@@ -100,8 +100,12 @@ public final class CollectionJavaType extends JavaType {
         + ")";
   }
 
-  JavaType getElementType() {
+  public JavaType getElementType() {
     return elementType;
+  }
+
+  public Subtype getSubtype() {
+    return subtype;
   }
 
   @Override

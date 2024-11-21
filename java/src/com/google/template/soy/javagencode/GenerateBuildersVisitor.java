@@ -29,6 +29,7 @@ import static com.google.template.soy.shared.internal.gencode.JavaGenerationUtil
 import static com.google.template.soy.shared.internal.gencode.JavaGenerationUtils.appendJavadoc;
 import static com.google.template.soy.shared.internal.gencode.JavaGenerationUtils.isReservedKeyword;
 import static com.google.template.soy.shared.internal.gencode.JavaGenerationUtils.makeLowerCamelCase;
+import static com.google.template.soy.shared.internal.gencode.JavaGenerationUtils.makeUpperCamelCase;
 import static java.util.stream.Collectors.counting;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toList;
@@ -44,6 +45,7 @@ import com.google.template.soy.javagencode.SoyFileNodeTransformer.ParamInfo;
 import com.google.template.soy.javagencode.SoyFileNodeTransformer.ParamStatus;
 import com.google.template.soy.javagencode.SoyFileNodeTransformer.TemplateInfo;
 import com.google.template.soy.javagencode.javatypes.CodeGenUtils;
+import com.google.template.soy.javagencode.javatypes.CollectionJavaType;
 import com.google.template.soy.javagencode.javatypes.FutureJavaType;
 import com.google.template.soy.javagencode.javatypes.JavaType;
 import com.google.template.soy.javagencode.javatypes.RecordJavaType;
@@ -644,6 +646,17 @@ public final class GenerateBuildersVisitor
       case HANDLED:
         for (JavaType futureType : param.futureTypes()) {
           writeFutureSetter(ilb, param, template, new FutureJavaType(futureType));
+          if (futureType instanceof CollectionJavaType) {
+            CollectionJavaType collectionType = (CollectionJavaType) futureType;
+            writeCollectionFutureSetter(
+                ilb,
+                param,
+                template,
+                new CollectionJavaType(
+                    collectionType.getSubtype(),
+                    new FutureJavaType(collectionType.getElementType()),
+                    collectionType.isNullable()));
+          }
         }
         break;
       case NAME_COLLISION:
@@ -774,11 +787,52 @@ public final class GenerateBuildersVisitor
     ilb.appendLine("}");
   }
 
+  /** Writes a setter method for the given param and java type. */
+  private void writeCollectionFutureSetter(
+      IndentedLinesBuilder ilb,
+      ParamInfo param,
+      TemplateInfo template,
+      CollectionJavaType javaType) {
+
+    ilb.appendLine();
+    appendJavadoc(
+        ilb,
+        "Future compatible collection version of {@link #"
+            + param.setterName()
+            + "("
+            + stripGenerics(javaType.toJavaTypeString())
+            + ")}.",
+        /* forceMultiline= */ false,
+        /* wrapAt100Chars= */ true);
+    ilb.appendLine("@com.google.errorprone.annotations.CanIgnoreReturnValue");
+
+    String variableName = makeLowerCamelCase(javaType.getSubtype().name());
+
+    ilb.appendLineStart("public Builder ")
+        .appendImputee(
+            param.futureSetterName() + makeUpperCamelCase(javaType.getSubtype().name()),
+            getByteSpan(template, param))
+        .appendLineEnd("(", javaType.toJavaTypeString(), " " + variableName + ") {");
+
+    ilb.increaseIndent();
+
+    ilb.appendLine(
+        "return "
+            + SET_PARAM_INTERNAL
+            + "("
+            + param.constantFieldName()
+            + ", "
+            + javaType.asInlineCast(variableName)
+            + ");");
+    ilb.decreaseIndent();
+    ilb.appendLine("}");
+  }
+
   private static String stripGenerics(String type) {
     String newType = type;
     do {
       type = newType;
-      newType = type.replaceAll("<[^>]*>", "");
+      newType = type.replaceAll("<[^>]*>*", "");
     } while (!newType.equals(type));
     return newType;
   }

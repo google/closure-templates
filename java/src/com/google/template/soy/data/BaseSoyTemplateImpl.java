@@ -218,6 +218,16 @@ public abstract class BaseSoyTemplateImpl extends SoyTemplate {
       return setParamInternal(param, SoyValueConverter.INSTANCE.convert(value));
     }
 
+    @CanIgnoreReturnValue
+    @Override
+    public final <V> B setParamUnchecked(SoyTemplateParam<?> param, Object value) {
+      if (!allParams().contains(param)) {
+        throw new IllegalArgumentException(
+            "No param in " + this.getClass().getName() + " like " + param);
+      }
+      return setParamInternal(param, SoyValueConverter.INSTANCE.convert(value));
+    }
+
     @Override
     public final boolean hasParam(SoyTemplateParam<?> param) {
       return allParams().contains(param);
