@@ -76,7 +76,7 @@ public abstract class SoyTemplate extends TemplateInterface {
      *     a parameter equal to {@code param}.
      */
     @CanIgnoreReturnValue
-    public abstract <V> Builder<T> setParamUnchecked(SoyTemplateParam<?> param, Object value);
+    public abstract Builder<T> setParamUnchecked(SoyTemplateParam<?> param, Object value);
 
     /**
      * Returns whether this builder has a param equal to {@code param}. If this method returns true

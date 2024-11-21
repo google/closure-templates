@@ -220,7 +220,7 @@ public abstract class BaseSoyTemplateImpl extends SoyTemplate {
 
     @CanIgnoreReturnValue
     @Override
-    public final <V> B setParamUnchecked(SoyTemplateParam<?> param, Object value) {
+    public final B setParamUnchecked(SoyTemplateParam<?> param, Object value) {
       if (!allParams().contains(param)) {
         throw new IllegalArgumentException(
             "No param in " + this.getClass().getName() + " like " + param);
