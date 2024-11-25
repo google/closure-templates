@@ -123,10 +123,7 @@ The syntax for calling imported templates is:
 
 </section>
 
-## alias (DEPRECATED; will be deleted soon) {#alias}
-
-**Warning:** The `alias` command will be deprecated soon. Use
-[`import`](#import) instead.
+## alias
 
 Syntax:
 
@@ -137,13 +134,7 @@ Syntax:
 
 This command belongs at the start of the file, after the `namespace` tag. You
 can include any number of `alias` declarations. Each declaration aliases the
-given namespace to an identifier. For the first syntax form above, the alias is
-the last identifier in the namespace. For the second syntax form, the alias is
-the identifier you specify. When you `call` a template in an aliased namespace,
-you don't need to type the whole namespace, only the alias plus the template's
-partial name.
-
-This deprecated feature still works for the ID parameter to the
+given namespace to an identifier. This feature works for the ID parameter to the
 [`xid()` function](functions#xid).
 
 ## modname {#modname}
