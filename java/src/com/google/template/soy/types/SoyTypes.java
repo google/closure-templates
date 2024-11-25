@@ -52,6 +52,19 @@ public final class SoyTypes {
   public static final SoyType NUMBER_TYPE =
       UnionType.of(IntType.getInstance(), FloatType.getInstance());
 
+  public static final SoyType GBIGINT = GbigintType.getInstance();
+
+  // TODO: b/319288438 - Remove these types once soy setters are migrated to gbigint.
+  //
+  // The gbigint or number/string types are for use by setters during the migration to gbigint. JSPB
+  // setters in JS normally accept gbigint|number|string regardless of any jstype annotations. This
+  // has not historically been the case in Soy, so we need to smooth over the difference.
+  public static final SoyType GBIGINT_OR_NUMBER_FOR_MIGRATION =
+      UnionType.of(GbigintType.getInstance(), NUMBER_TYPE);
+
+  public static final SoyType GBIGINT_OR_STRING_FOR_MIGRATION =
+      UnionType.of(GbigintType.getInstance(), StringType.getInstance());
+
   public static final SoyType NULL_OR_UNDEFINED =
       UnionType.of(NullType.getInstance(), UndefinedType.getInstance());
 

@@ -124,6 +124,7 @@ import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.exprtree.UndefinedNode;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
+import com.google.template.soy.jbcsrc.api.Int64ConversionMode;
 import com.google.template.soy.logging.LoggingFunction;
 import com.google.template.soy.logging.SoyLogger;
 import com.google.template.soy.msgs.SoyMsgBundle;
@@ -627,7 +628,9 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
       switch (builtinMethod) {
         case GET_EXTENSION:
           return ((SoyProtoValue) base)
-              .getProtoField(BuiltinMethod.getProtoExtensionIdFromMethodCall(methodNode));
+              .getProtoField(
+                  BuiltinMethod.getProtoExtensionIdFromMethodCall(methodNode),
+                  Int64ConversionMode.FORCE_GBIGINT);
         case HAS_EXTENSION:
           return BooleanData.forValue(
               ((SoyProtoValue) base)
@@ -641,13 +644,17 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
                   .hasProtoField(BuiltinMethod.getProtoFieldNameFromMethodCall(methodNode)));
         case GET_PROTO_FIELD:
           return ((SoyProtoValue) base)
-              .getProtoField(BuiltinMethod.getProtoFieldNameFromMethodCall(methodNode));
+              .getProtoField(
+                  BuiltinMethod.getProtoFieldNameFromMethodCall(methodNode),
+                  Int64ConversionMode.FORCE_GBIGINT);
         case GET_READONLY_PROTO_FIELD:
           return ((SoyProtoValue) base)
               .getReadonlyProtoField(BuiltinMethod.getProtoFieldNameFromMethodCall(methodNode));
         case GET_PROTO_FIELD_OR_UNDEFINED:
           return ((SoyProtoValue) base)
-              .getProtoFieldOrNull(BuiltinMethod.getProtoFieldNameFromMethodCall(methodNode));
+              .getProtoFieldOrNull(
+                  BuiltinMethod.getProtoFieldNameFromMethodCall(methodNode),
+                  Int64ConversionMode.FORCE_GBIGINT);
         case MAP_GET:
           SoyValue key = visit(methodNode.getParam(0));
           SoyValue value = ((SoyMap) base).get(key);

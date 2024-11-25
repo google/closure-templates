@@ -96,9 +96,11 @@ public abstract class FieldVisitor<T> {
   /** Visits a doubble valued field that should be interpreted as a soy float. */
   @ForOverride
   protected abstract T visitDoubleAsFloat();
+
   /** Visits a float valued field that should be interpreted as a soy float. */
   @ForOverride
   protected abstract T visitFloat();
+
   /** Visits a SafeHtmlProto field that should be interpreted as a soy html object. */
   @ForOverride
   protected abstract T visitSafeHtml();

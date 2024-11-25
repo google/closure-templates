@@ -104,7 +104,13 @@ public final class SoyFileSetParserBuilder {
       String namespace, String contents, GenericDescriptor... descriptors) {
     Preconditions.checkArgument(namespace.startsWith("{namespace "));
     SoyFileSetParserBuilder builder =
-        forFileContents(namespace + "\n" + importStatements(descriptors) + contents);
+        forFileContents(
+            namespace
+                + "\n"
+                + importStatements(descriptors)
+                + "\n"
+                + "\n"
+                + contents);
     builder.typeRegistry =
         new SoyTypeRegistryBuilder()
             .addDescriptors(SoyFileKind.DEP, Arrays.asList(descriptors))

@@ -118,7 +118,7 @@ public abstract class SoyRuntimeType {
             return new PrimitiveSoyType(soyType, memberType.runtimeType());
           }
         }
-        // fall-through
+      // fall-through
       case NULL:
       case UNDEFINED:
       case ATTRIBUTES:

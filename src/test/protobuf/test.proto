@@ -46,6 +46,7 @@ message Foo {
   optional string string_field = 18;
   optional int32 int_field = 19;
   optional int64 long_field = 20;
+  optional uint64 ulong_field = 32 [(jspb.jstype) = INT52];
   map<string, string> map_field = 21;
   map<int32, InnerMessage> map_message_field = 22;
   map<string, InnerMessage> map_string_message_field = 23;
@@ -127,6 +128,20 @@ message JsType {
       ;
   repeated int64 repeated_long_with_number_js_type = 7
       ;
+
+  optional uint64 ulong_with_int52_js_type = 8
+      ;
+  optional uint64 ulong_with_string_js_type = 9
+      ;
+  optional uint64 ulong_with_number_js_type = 10
+      ;
+
+  repeated uint64 repeated_ulong_with_int52_js_type = 11
+      ;
+  repeated uint64 repeated_ulong_with_string_js_type = 12
+      ;
+  repeated uint64 repeated_ulong_with_number_js_type = 13
+      ;
 }
 
 message Repeated {
@@ -141,6 +156,14 @@ message Repeated {
   repeated Item msg_field = 21;
 }
 
+message GbigintMap {
+  map<int64, int32> long_to_int_with_jstype = 1 [(jspb.jstype) = GBIGINT];
+  map<int32, int64> int_to_long_with_jstype = 2 [(jspb.jstype) = GBIGINT];
+
+  map<int64, int32> long_to_int = 3;
+  map<int32, int64> int_to_long = 4;
+}
+
 message Defaults {
   optional int32 int_with_default = 1 [default = 1234];
   optional int64 long_with_default = 2 [default = 5678];
@@ -150,6 +173,9 @@ message Defaults {
   optional bool bool_with_default = 6 [default = true];
   optional bytes bytes_with_default = 7
       [default = 'bytes'];  // 'Ynl0ZXM=' in b64
+
+  optional uint64 ulong_with_default = 8
+      [(jspb.jstype) = INT52, default = 5678];
 }
 
 message Proto2ImplicitDefaults {

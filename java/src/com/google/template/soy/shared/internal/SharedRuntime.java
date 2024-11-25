@@ -27,6 +27,7 @@ import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.internal.SoyMapImpl;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
+import com.google.template.soy.data.restricted.GbigintData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.NumberData;
@@ -65,6 +66,7 @@ public final class SharedRuntime {
   /**
    * Custom strict equality operator that smooths out differences between different Soy runtimes.
    */
+  @SuppressWarnings("ReferenceEquality")
   public static boolean tripleEqual(SoyValue operand0, SoyValue operand1) {
     if (operand0 instanceof BooleanData && operand1 instanceof BooleanData) {
       return operand0.booleanValue() == operand1.booleanValue();
@@ -74,6 +76,9 @@ public final class SharedRuntime {
     }
     if (operand0 instanceof StringData && operand1 instanceof StringData) {
       return operand0.stringValue().equals(operand1.stringValue());
+    }
+    if (operand0 instanceof GbigintData && operand1 instanceof GbigintData) {
+      return operand0.equals(operand1);
     }
     return operand0 == operand1;
   }

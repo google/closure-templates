@@ -19,6 +19,23 @@ Explicitly
 [coerces](http://go/soy/reference/coercions?polyglot=call-command#boolean-coercions)
 the argument to a boolean.
 
+Warning: `Boolean()` does not work correctly for gbigint 0 values. Please use
+`gbigintToBoolean()` instead.
+
+### `gbigintToBoolean(gbigint)` {#gbigintToBoolean}
+
+This mirrors the
+[TS/JS platform function](http:go/bigint#converting-gbigint-values-to-boolean)
+of the same name. Safely coerces a `gbigint` to a `boolean` when the underlying
+browser may not natively support `bigint`.
+
+### `isSafeInt52(gbigint)` {#isSafeInt52}
+
+This mirrors the
+[TS/JS platform function](go/bigint#converting-gbigint-values-to-number) of the
+same name. Returns true if the `gbigint` value is within the safe JavaScript
+integer range and can be coerced to `number` type without loss of precision.
+
 ### `hasContent(value)` {#hasContent}
 
 Value must be one of the sanitized content types (`html`, `attributes`, `uri`,

@@ -65,6 +65,7 @@ import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.StringType;
 import com.google.template.soy.types.TemplateType;
 import com.google.template.soy.types.TemplateType.Parameter;
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -420,6 +421,8 @@ class ValidateExternsPass implements CompilerFilePass {
         return javaType == String.class;
       case BOOL:
         return javaType == Boolean.class;
+      case GBIGINT:
+        return javaType == BigInteger.class;
       case UNION:
         if (soyType.equals(SoyTypes.NUMBER_TYPE)) {
           return javaType == Number.class || javaType == Double.class;

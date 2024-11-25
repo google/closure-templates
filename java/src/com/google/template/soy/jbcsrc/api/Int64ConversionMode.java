@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Google Inc.
+ * Copyright 2024 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,15 +14,11 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.jbcsrc.restricted;
+package com.google.template.soy.jbcsrc.api;
 
-/** Holds flags controlling compiler behavior. */
-public final class Flags {
-  /**
-   * Controls extra debug checks in the compiler that are generally redundant with bytecode
-   * verification. Currently only enabled in tests.
-   */
-  public static final boolean DEBUG = true; // DO NOT SUBMIT
-
-  private Flags() {}
+/** Enum for specifying how JSPB getter return types. */
+public enum Int64ConversionMode {
+  FOLLOW_JS_TYPE,
+  FORCE_GBIGINT,
+  FORCE_STRING
 }
