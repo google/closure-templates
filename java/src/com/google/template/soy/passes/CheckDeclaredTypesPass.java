@@ -42,7 +42,7 @@ final class CheckDeclaredTypesPass implements CompilerFilePass {
   static final SoyErrorKind BAD_MAP_OR_SET_KEY_TYPE =
       SoyErrorKind.of(
           "''{0}'' is not allowed as a map or set key type. Allowed key types: "
-              + "bool, int, float, number, string, proto enum.");
+              + "bool, int, float, gbigint, number, string, proto enum.");
   private static final SoyErrorKind VE_BAD_DATA_TYPE =
       SoyErrorKind.of("Illegal VE metadata type ''{0}''. The metadata must be a proto.");
 

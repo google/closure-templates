@@ -636,8 +636,6 @@ public abstract class Expression extends BytecodeProducer {
         });
   }
 
-
-
   /**
    * A simple helper that calls through to {@link MethodRef#invoke(Expression...)}, but allows a
    * more natural fluent call style.
@@ -827,6 +825,7 @@ public abstract class Expression extends BytecodeProducer {
             return Optional.empty();
           }
           return Optional.of(MethodRefs.CHECK_INT.invoke(this));
+
         case JS:
           return Optional.of(MethodRefs.CHECK_CONTENT_KIND.invoke(this, constant(ContentKind.JS)));
         case ITERABLE:

@@ -29,6 +29,7 @@ import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Multiset;
 import com.google.common.collect.Sets;
 import com.google.common.io.BaseEncoding;
+import com.google.common.primitives.UnsignedLong;
 import com.google.common.util.concurrent.Futures;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.errorprone.annotations.Immutable;
@@ -52,6 +53,7 @@ import com.google.template.soy.data.SoyVisualElementData;
 import com.google.template.soy.data.TemplateValue;
 import com.google.template.soy.data.internal.LazyProtoToSoyValueList;
 import com.google.template.soy.data.internal.ParamStore;
+import com.google.template.soy.data.restricted.GbigintData;
 import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.data.restricted.UndefinedData;
@@ -1093,6 +1095,28 @@ public final class JbcSrcRuntime {
     }
 
     private EveryDetachStateForTesting() {}
+  }
+
+  public static long convertSoyValueToProtoLong(SoyValue value) {
+    if (value instanceof GbigintData) {
+      return ((GbigintData) value).longValue();
+    }
+    if (value instanceof NumberData) {
+      return ((NumberData) value).coerceToLong();
+    }
+
+    return Long.parseLong(value.stringValue());
+  }
+
+  public static long convertSoyValueToProtoUnsignedLong(SoyValue value) {
+    if (value instanceof GbigintData) {
+      return ((GbigintData) value).unsignedLongValue();
+    }
+    if (value instanceof NumberData) {
+      return ((NumberData) value).coerceToLong();
+    }
+
+    return UnsignedLong.valueOf(value.stringValue()).longValue();
   }
 
   private JbcSrcRuntime() {}

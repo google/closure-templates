@@ -60,7 +60,7 @@ public final class MapType extends AbstractMapType {
   }
 
   private static final ImmutableSet<Kind> ALLOWED_KINDS =
-      ImmutableSet.of(Kind.BOOL, Kind.INT, Kind.FLOAT, Kind.STRING, Kind.PROTO_ENUM);
+  ImmutableSet.of(Kind.BOOL, Kind.INT, Kind.FLOAT, Kind.STRING, Kind.PROTO_ENUM);
 
   /** Whether the type is permissible as a key in a declared map type literal. */
   // LINT.IfChange(allowed_soy_map_key_types)

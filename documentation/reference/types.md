@@ -511,12 +511,12 @@ See the [dev guide](../dev/protos.md) for more information on how protos work.
 Protocol buffers are supported in Soy. They can be accessed as though they were
 `record` types with the `.` operator.
 
-Protocol Buffers in Soy have the same semantics as `protocolbuffers-javascript`,
-not `Java` protos.
+Protocol Buffers in Soy have the same semantics as
+[Apps JSPB JS](http://go/jspb), not `Java` protos.
 
 See the [dev guide](../dev/protos.md) for more information on how protos work.
 
-NOTE: currently, protos are _not supported_ in the Python backend.
+NOTE: currently, protos are *not supported* in the Python backend.
 
 <br>
 

@@ -93,6 +93,7 @@ import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.exprtree.UndefinedNode;
 import com.google.template.soy.exprtree.VarRefNode;
+import com.google.template.soy.jbcsrc.api.Int64ConversionMode;
 import com.google.template.soy.jbcsrc.restricted.Branch;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
@@ -1575,8 +1576,7 @@ final class ExpressionCompiler {
       // NOTE: It is the responsibility of method implementations to null check receiver types.
       // Doing it here, generically will be a code size and performance regression.
       SoyMethod function = node.getSoyMethod();
-      if (function instanceof BuiltinMethod) {
-        BuiltinMethod builtinMethod = (BuiltinMethod) function;
+      if (function instanceof BuiltinMethod builtinMethod) {
         switch (builtinMethod) {
           case GET_EXTENSION:
             return ProtoUtils.accessExtensionField(
@@ -1603,7 +1603,7 @@ final class ExpressionCompiler {
                 node.getType(),
                 ProtoUtils.SingularFieldAccessMode.DEFAULT_IF_UNSET,
                 varManager,
-                /* forceStringConversion= */ false);
+                Int64ConversionMode.FOLLOW_JS_TYPE);
           case GET_PROTO_FIELD:
             return ProtoUtils.accessField(
                 baseExpr,
@@ -1611,7 +1611,7 @@ final class ExpressionCompiler {
                 node.getType(),
                 ProtoUtils.SingularFieldAccessMode.DEFAULT_IF_UNSET_UNLESS_MESSAGE_VALUED,
                 varManager,
-                /* forceStringConversion= */ false);
+                Int64ConversionMode.FORCE_GBIGINT);
           case GET_PROTO_FIELD_OR_UNDEFINED:
             return ProtoUtils.accessField(
                 baseExpr,
@@ -1619,7 +1619,7 @@ final class ExpressionCompiler {
                 node.getType(),
                 ProtoUtils.SingularFieldAccessMode.NULL_IF_UNSET,
                 varManager,
-                /* forceStringConversion= */ false);
+                Int64ConversionMode.FORCE_GBIGINT);
           case MAP_GET:
             Expression expr = getMapGetExpression(baseExpr, node, visit(node.getParam(0)));
             return SoyExpression.forSoyValue(node.getType(), expr.checkedSoyCast(node.getType()));

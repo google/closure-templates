@@ -87,6 +87,7 @@ import java.io.Closeable;
 import java.lang.invoke.ConstantBootstraps;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Array;
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -138,6 +139,7 @@ public final class BytecodeUtils {
   public static final Type PRIMITIVE_DATA_TYPE = Type.getType(PrimitiveData.class);
   public static final Type NUMBER_DATA_TYPE = Type.getType(NumberData.class);
   public static final Type INTEGER_DATA_TYPE = Type.getType(IntegerData.class);
+  public static final Type BIG_INTEGER_TYPE = Type.getType(BigInteger.class);
   public static final Type FLOAT_DATA_TYPE = Type.getType(FloatData.class);
   public static final Type BOOLEAN_DATA_TYPE = Type.getType(BooleanData.class);
   public static final Type STRING_DATA_TYPE = Type.getType(StringData.class);
@@ -1369,6 +1371,8 @@ public final class BytecodeUtils {
       case PROTO_ENUM:
         return getTypeForClassName(
             JavaQualifiedNames.getClassName(((SoyProtoEnumType) type).getDescriptor()));
+      case GBIGINT:
+        return BIG_INTEGER_TYPE;
       default:
         throw new IllegalArgumentException("unsupported type: " + type);
     }

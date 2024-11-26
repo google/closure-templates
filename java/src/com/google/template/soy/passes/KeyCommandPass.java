@@ -142,6 +142,7 @@ final class KeyCommandPass implements CompilerFilePass {
         case FLOAT:
         case STRING:
         case PROTO_ENUM:
+        case GBIGINT:
           // these are all fine.
           // null should potentially be rejected, but it is often hard to avoid nullable expressions
           break;

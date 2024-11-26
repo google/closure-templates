@@ -47,6 +47,7 @@ import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypes;
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -291,6 +292,8 @@ public final class ExternCompiler {
           BytecodeUtils.numericConversion(actualParam.coerceToDouble(), Type.FLOAT_TYPE));
     } else if (javaType.equals(BytecodeUtils.NUMBER_TYPE)) {
       return actualParam.unboxAsNumberOrJavaNull();
+    } else if (javaType.equals(Type.getType(BigInteger.class))) {
+      return JbcSrcExternRuntime.CONVERT_SOY_VALUE_TO_BIG_INTEGER.invoke(actualParam);
     }
 
     SoyType nonNullableSoyType = SoyTypes.tryRemoveNullish(soyType);
@@ -452,6 +455,8 @@ public final class ExternCompiler {
       return JbcSrcExternRuntime.UNBOX_FLOAT.invoke(externCall);
     } else if (!nullish && externType.equals(BytecodeUtils.BOXED_BOOLEAN_TYPE)) {
       return JbcSrcExternRuntime.UNBOX_BOOLEAN.invoke(externCall);
+    } else if (!nullish && externType.equals(BytecodeUtils.BIG_INTEGER_TYPE)) {
+      return JbcSrcExternRuntime.GBIGINT_FOR_VALUE.invoke(externCall);
     } else if (externType.equals(BytecodeUtils.OBJECT.type())
         || externType.equals(BytecodeUtils.NUMBER_TYPE)) {
       checkState(soyReturnType.getKind() != SoyType.Kind.MAP);

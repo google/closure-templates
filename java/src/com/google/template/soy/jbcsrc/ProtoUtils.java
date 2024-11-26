@@ -32,6 +32,8 @@ import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.isPrimitive;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.numericConversion;
 
+import com.google.apps.jspb.Jspb;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -75,6 +77,7 @@ import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.internal.proto.FieldVisitor;
 import com.google.template.soy.internal.proto.JavaQualifiedNames;
+import com.google.template.soy.jbcsrc.api.Int64ConversionMode;
 import com.google.template.soy.jbcsrc.restricted.BytecodeProducer;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
@@ -94,6 +97,7 @@ import com.google.template.soy.soytree.defn.TemplateStateVar;
 import com.google.template.soy.types.AbstractIterableType;
 import com.google.template.soy.types.AbstractMapType;
 import com.google.template.soy.types.BoolType;
+import com.google.template.soy.types.GbigintType;
 import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.MapType;
 import com.google.template.soy.types.SoyProtoType;
@@ -149,6 +153,15 @@ final class ProtoUtils {
           .asNonJavaNullable()
           .asCheap();
 
+  public static final MethodRef CONVERT_SOY_VALUE_TO_PROTO_LONG =
+      MethodRef.createPure(JbcSrcRuntime.class, "convertSoyValueToProtoLong", SoyValue.class)
+          .asCheap();
+
+  public static final MethodRef CONVERT_SOY_VALUE_TO_PROTO_UNSIGNED_LONG =
+      MethodRef.createPure(
+              JbcSrcRuntime.class, "convertSoyValueToProtoUnsignedLong", SoyValue.class)
+          .asCheap();
+
   // We use the full name as the key instead of the descriptor, since descriptors use identity
   // semantics for equality and we may load the descriptors for these protos from multiple sources
   // depending on our configuration.
@@ -202,10 +215,13 @@ final class ProtoUtils {
           .buildOrThrow();
 
   private static final RepeatedFieldInterpreter REPEATED_FIELD_INTERPRETER =
-      new RepeatedFieldInterpreter(/* forceStringConversion= */ false);
+      new RepeatedFieldInterpreter(Int64ConversionMode.FOLLOW_JS_TYPE);
+
+  private static final RepeatedFieldInterpreter FORCE_GBIGINT_REPEATED_FIELD_INTERPRETER =
+      new RepeatedFieldInterpreter(Int64ConversionMode.FORCE_GBIGINT);
 
   private static final RepeatedFieldInterpreter FORCE_STRING_REPEATED_FIELD_INTERPRETER =
-      new RepeatedFieldInterpreter(/* forceStringConversion= */ true);
+      new RepeatedFieldInterpreter(Int64ConversionMode.FORCE_STRING);
 
   enum SingularFieldAccessMode {
     DEFAULT_IF_UNSET,
@@ -220,11 +236,10 @@ final class ProtoUtils {
       SoyType fieldType,
       SingularFieldAccessMode mode,
       LocalVariableManager varManager,
-      boolean forceStringConversion) {
+      Int64ConversionMode int64Mode) {
     SoyType type = baseExpr.soyType();
     if (type.getKind() == SoyType.Kind.PROTO) {
-      return accessField(
-          (SoyProtoType) type, baseExpr, fieldName, fieldType, mode, forceStringConversion);
+      return accessField((SoyProtoType) type, baseExpr, fieldName, fieldType, mode, int64Mode);
     } else {
       return accessProtoUnionField(
           baseExpr,
@@ -237,9 +252,9 @@ final class ProtoUtils {
                 protoType,
                 expr,
                 fieldName,
-                protoType.getFieldType(fieldName),
+                protoType.getFieldType(fieldName, int64Mode),
                 mode,
-                forceStringConversion);
+                int64Mode);
           });
     }
   }
@@ -254,9 +269,8 @@ final class ProtoUtils {
       String fieldName,
       SoyType fieldType,
       SingularFieldAccessMode mode,
-      boolean forceStringConversion) {
-    return new AccessorGenerator(
-            protoType, baseExpr, fieldName, fieldType, mode, forceStringConversion)
+      Int64ConversionMode int64Mode) {
+    return new AccessorGenerator(protoType, baseExpr, fieldName, fieldType, mode, int64Mode)
         .generate();
   }
 
@@ -293,7 +307,9 @@ final class ProtoUtils {
   static SoyExpression accessExtensionField(
       SoyExpression baseExpr, MethodCallNode node, String fieldName, SingularFieldAccessMode mode) {
     SoyProtoType protoType = (SoyProtoType) baseExpr.soyType();
-    return new AccessorGenerator(protoType, baseExpr, fieldName, node.getType(), mode).generate();
+    return new AccessorGenerator(
+            protoType, baseExpr, fieldName, node.getType(), mode, Int64ConversionMode.FORCE_GBIGINT)
+        .generate();
   }
 
   /**
@@ -343,16 +359,7 @@ final class ProtoUtils {
     final SoyType fieldType;
     final FieldDescriptor descriptor;
     final boolean reinterpretAbsenceAsNullable;
-    final boolean forceStringConversion;
-
-    AccessorGenerator(
-        SoyProtoType protoType,
-        SoyExpression baseExpr,
-        String fieldName,
-        SoyType fieldType,
-        SingularFieldAccessMode mode) {
-      this(protoType, baseExpr, fieldName, fieldType, mode, /* forceStringConversion= */ false);
-    }
+    final Int64ConversionMode int64Mode;
 
     AccessorGenerator(
         SoyProtoType protoType,
@@ -360,11 +367,11 @@ final class ProtoUtils {
         String fieldName,
         SoyType fieldType,
         SingularFieldAccessMode mode,
-        boolean forceStringConversion) {
+        Int64ConversionMode int64Mode) {
       super(SoyRuntimeType.getUnboxedType(protoType).get(), baseExpr);
       this.fieldType = fieldType;
       this.descriptor = protoType.getFieldDescriptor(fieldName);
-      this.forceStringConversion = forceStringConversion;
+      this.int64Mode = int64Mode;
       switch (mode) {
         case NULL_IF_UNSET:
           reinterpretAbsenceAsNullable = descriptor.hasPresence();
@@ -400,11 +407,7 @@ final class ProtoUtils {
             fieldType,
             MethodRefs.LAZY_PROTO_TO_SOY_VALUE_LIST_FOR_LIST.invoke(
                 typedBaseExpr.invoke(getMethodRef),
-                FieldVisitor.visitField(
-                    descriptor,
-                    forceStringConversion
-                        ? FORCE_STRING_REPEATED_FIELD_INTERPRETER
-                        : REPEATED_FIELD_INTERPRETER)));
+                FieldVisitor.visitField(descriptor, getRepeatedFieldInterpreter())));
       }
 
       // To implement jspb semantics for proto nullability we need to call has<Field>() methods for
@@ -413,7 +416,7 @@ final class ProtoUtils {
       // support for protos in our integration tests.
       if (!reinterpretAbsenceAsNullable) {
         // Simple case, just call .get and interpret the result
-        return interpretField(typedBaseExpr.invoke(getMethodRef), forceStringConversion);
+        return interpretField(typedBaseExpr.invoke(getMethodRef), int64Mode);
       } else {
         Label hasFieldLabel = new Label();
         BytecodeProducer hasCheck;
@@ -463,7 +466,7 @@ final class ProtoUtils {
                     // adapter.dup();
                   }
                 },
-                forceStringConversion);
+                int64Mode);
 
         Label endLabel = new Label();
         return SoyExpression.forSoyValue(
@@ -507,6 +510,31 @@ final class ProtoUtils {
       }
     }
 
+    private RepeatedFieldInterpreter getRepeatedFieldInterpreter() {
+      switch (int64Mode) {
+        case FORCE_GBIGINT:
+          return FORCE_GBIGINT_REPEATED_FIELD_INTERPRETER;
+        case FORCE_STRING:
+          return FORCE_STRING_REPEATED_FIELD_INTERPRETER;
+        case FOLLOW_JS_TYPE:
+          return REPEATED_FIELD_INTERPRETER;
+      }
+      throw new AssertionError();
+    }
+
+    // TODO: b/373956531 - Remove this once gbigint is the default for 64-bit int maps.
+    private RepeatedFieldInterpreter getMapFieldInterpreter(FieldDescriptor mapField) {
+      Preconditions.checkState(int64Mode == Int64ConversionMode.FORCE_GBIGINT);
+      // Map accesses stem from a suffix-less getter, so our int64 handling will already be in
+      // GBIGINT mode. Therefore, we need to revert back to legacy handling-mode unless the map has
+      // been marked for migration.
+      if (mapField.getOptions().getExtension(Jspb.jstype) == Jspb.JsType.GBIGINT) {
+        return FORCE_GBIGINT_REPEATED_FIELD_INTERPRETER;
+      }
+
+      return REPEATED_FIELD_INTERPRETER;
+    }
+
     private SoyExpression handleMapField(Expression typedBaseExpr, MethodRef getMethodRef) {
       List<FieldDescriptor> mapFields = descriptor.getMessageType().getFields();
       FieldDescriptor keyDescriptor = mapFields.get(0);
@@ -515,11 +543,11 @@ final class ProtoUtils {
           (MapType) fieldType,
           MethodRefs.LAZY_PROTO_TO_SOY_VALUE_MAP_FOR_MAP.invoke(
               typedBaseExpr.invoke(getMethodRef),
-              FieldVisitor.visitField(keyDescriptor, REPEATED_FIELD_INTERPRETER),
-              FieldVisitor.visitField(valueDescriptor, REPEATED_FIELD_INTERPRETER)));
+              FieldVisitor.visitField(keyDescriptor, getMapFieldInterpreter(descriptor)),
+              FieldVisitor.visitField(valueDescriptor, getMapFieldInterpreter(descriptor))));
     }
 
-    private SoyExpression interpretField(Expression field, boolean forceStringConversion) {
+    private SoyExpression interpretField(Expression field, Int64ConversionMode int64Mode) {
       // Depending on types we may need to do a trivial conversion
       // (e.g. int->long, float->double, enum->int)
       switch (descriptor.getJavaType()) {
@@ -544,7 +572,20 @@ final class ProtoUtils {
             return SoyExpression.forInt(numericConversion(field, Type.LONG_TYPE));
           }
         case LONG:
-          if (shouldConvertBetweenStringAndLong(descriptor, forceStringConversion)) {
+          if (int64Mode == Int64ConversionMode.FORCE_GBIGINT) {
+            if (isUnsigned(descriptor)) {
+              return SoyExpression.forRuntimeType(
+                  SoyRuntimeType.getBoxedType(GbigintType.getInstance()),
+                  MethodRefs.GBIGINT_DATA_FOR_UNSIGNED_LONG_VALUE.invoke(field));
+            } else {
+              return SoyExpression.forRuntimeType(
+                  SoyRuntimeType.getBoxedType(GbigintType.getInstance()),
+                  MethodRefs.GBIGINT_DATA_FOR_LONG_VALUE.invoke(field));
+            }
+          }
+
+          if (shouldConvertBetweenStringAndLong(
+              descriptor, int64Mode == Int64ConversionMode.FORCE_STRING)) {
             if (isUnsigned(descriptor)) {
               return SoyExpression.forString(MethodRefs.UNSIGNED_LONGS_TO_STRING.invoke(field));
             } else {
@@ -582,7 +623,7 @@ final class ProtoUtils {
             MethodRefs.GET_EXTENSION_LIST.invoke(
                 typedBaseExpr,
                 extensionFieldAccessor,
-                FieldVisitor.visitField(descriptor, REPEATED_FIELD_INTERPRETER)));
+                FieldVisitor.visitField(descriptor, FORCE_GBIGINT_REPEATED_FIELD_INTERPRETER)));
       }
 
       if (!descriptor.hasDefaultValue() && reinterpretAbsenceAsNullable) {
@@ -653,17 +694,18 @@ final class ProtoUtils {
                 field.checkedCast(Integer.class).invoke(MethodRefs.NUMBER_LONG_VALUE));
           }
         case LONG:
-          if (shouldConvertBetweenStringAndLong(descriptor, /* forceStringConversion= */ false)) {
-            if (isUnsigned(descriptor)) {
-              return SoyExpression.forString(
-                  MethodRefs.UNSIGNED_LONGS_TO_STRING.invoke(
-                      field.checkedCast(Long.class).invoke(MethodRefs.NUMBER_LONG_VALUE)));
-            } else {
-              return SoyExpression.forString(field.invoke(MethodRefs.OBJECT_TO_STRING));
-            }
+          SoyRuntimeType gbigintType = SoyRuntimeType.getBoxedType(GbigintType.getInstance());
+          if (isUnsigned(descriptor)) {
+            return SoyExpression.forRuntimeType(
+                gbigintType,
+                MethodRefs.GBIGINT_DATA_FOR_UNSIGNED_LONG_VALUE.invoke(
+                    field.checkedCast(Long.class).invoke(MethodRefs.NUMBER_LONG_VALUE)));
+          } else {
+            return SoyExpression.forRuntimeType(
+                gbigintType,
+                MethodRefs.GBIGINT_DATA_FOR_LONG_VALUE.invoke(
+                    field.checkedCast(Long.class).invoke(MethodRefs.NUMBER_LONG_VALUE)));
           }
-          return SoyExpression.forInt(
-              field.checkedCast(Number.class).invoke(MethodRefs.NUMBER_LONG_VALUE));
         case BOOLEAN:
           return SoyExpression.forBool(
               field.checkedCast(Boolean.class).invoke(MethodRefs.BOOLEAN_VALUE));
@@ -1447,7 +1489,7 @@ final class ProtoUtils {
       Type currentType;
       if (!isSafeProto(field)) {
         if (runtimeType.isBoxed()) {
-          currentType = unboxUnchecked(cb, runtimeType, classToUnboxTo(field));
+          currentType = unboxUnchecked(cb, runtimeType, classToUnboxTo(field), field);
         } else {
           currentType = runtimeType.runtimeType();
         }
@@ -1468,11 +1510,8 @@ final class ProtoUtils {
           return double.class;
         case INT:
         case ENUM:
-          return long.class;
         case LONG:
-          return shouldConvertBetweenStringAndLong(field, /* forceStringConversion= */ false)
-              ? String.class
-              : long.class;
+          return long.class;
         case STRING:
         case BYTE_STRING:
           return String.class;
@@ -1521,7 +1560,8 @@ final class ProtoUtils {
           }
           break;
         case LONG:
-          if (shouldConvertBetweenStringAndLong(field, /* forceStringConversion= */ false)) {
+          if (shouldConvertBetweenStringAndLong(field, /* forceStringConversion= */ false)
+              && currentType.equals(BytecodeUtils.STRING_TYPE)) {
             // These methods require a String arg
             if (isUnsigned(field)) {
               MethodRefs.UNSIGNED_LONGS_PARSE_UNSIGNED_LONG.invokeUnchecked(cb);
@@ -1555,6 +1595,18 @@ final class ProtoUtils {
       if (field.isExtension()) {
         // primitive extensions need to be boxed since the api is generic
         Type fieldType = getRuntimeType(field);
+        if (field.getJavaType() == JavaType.LONG) {
+          if (shouldConvertBetweenStringAndLong(field, /* forceStringConversion= */ false)
+              && currentType.equals(BytecodeUtils.STRING_TYPE)) {
+            // These methods require a String arg
+            if (isUnsigned(field)) {
+              MethodRefs.UNSIGNED_LONGS_PARSE_UNSIGNED_LONG.invokeUnchecked(cb);
+            } else {
+              MethodRefs.LONG_PARSE_LONG.invokeUnchecked(cb);
+            }
+          }
+        }
+
         if (isPrimitive(fieldType)) {
           cb.valueOf(fieldType);
         }
@@ -1829,7 +1881,8 @@ final class ProtoUtils {
    *
    * @return the type of the result of the unbox operation
    */
-  private static Type unboxUnchecked(CodeBuilder cb, SoyRuntimeType soyType, Class<?> asType) {
+  private static Type unboxUnchecked(
+      CodeBuilder cb, SoyRuntimeType soyType, Class<?> asType, FieldDescriptor field) {
     checkArgument(soyType.isBoxed(), "Expected %s to be a boxed type", soyType);
     Type fromType = soyType.runtimeType();
     checkArgument(
@@ -1849,7 +1902,11 @@ final class ProtoUtils {
     }
 
     if (asType.equals(long.class)) {
-      MethodRefs.SOY_VALUE_COERCE_TO_LONG.invokeUnchecked(cb);
+      if (isUnsigned(field)) {
+        CONVERT_SOY_VALUE_TO_PROTO_UNSIGNED_LONG.invokeUnchecked(cb);
+      } else {
+        CONVERT_SOY_VALUE_TO_PROTO_LONG.invokeUnchecked(cb);
+      }
       return Type.LONG_TYPE;
     }
 
@@ -1893,8 +1950,14 @@ final class ProtoUtils {
     private static final FieldRef UNSIGNEDLONG_AS_STRING =
         FieldRef.staticFieldReference(ProtoFieldInterpreter.class, "UNSIGNEDLONG_AS_STRING");
 
+    private static final FieldRef UNSIGNEDLONG_AS_GBIGINT =
+        FieldRef.staticFieldReference(ProtoFieldInterpreter.class, "UNSIGNEDLONG_AS_GBIGINT");
+
     private static final FieldRef LONG_AS_STRING =
         FieldRef.staticFieldReference(ProtoFieldInterpreter.class, "LONG_AS_STRING");
+
+    private static final FieldRef LONG_AS_GBIGINT =
+        FieldRef.staticFieldReference(ProtoFieldInterpreter.class, "LONG_AS_GBIGINT");
 
     private static final FieldRef BOOL =
         FieldRef.staticFieldReference(ProtoFieldInterpreter.class, "BOOL");
@@ -1938,10 +2001,10 @@ final class ProtoUtils {
     private static final FieldRef ENUM_FROM_PROTO =
         FieldRef.staticFieldReference(ProtoFieldInterpreter.class, "ENUM_FROM_PROTO");
 
-    private final boolean forceStringConversion;
+    private final Int64ConversionMode int64Mode;
 
-    RepeatedFieldInterpreter(boolean forceStringConversion) {
-      this.forceStringConversion = forceStringConversion;
+    RepeatedFieldInterpreter(Int64ConversionMode int64Mode) {
+      this.int64Mode = int64Mode;
     }
 
     @Override
@@ -1958,21 +2021,43 @@ final class ProtoUtils {
 
     @Override
     protected Expression visitLongAsInt() {
-      return forceStringConversion ? LONG_AS_STRING.accessor() : LONG_AS_INT.accessor();
+      switch (int64Mode) {
+        case FORCE_STRING:
+          return LONG_AS_STRING.accessor();
+        case FORCE_GBIGINT:
+          return LONG_AS_GBIGINT.accessor();
+        case FOLLOW_JS_TYPE:
+          return LONG_AS_INT.accessor();
+      }
+      throw new AssertionError();
     }
 
     @Override
     protected Expression visitUnsignedInt() {
-      return forceStringConversion ? UNSIGNEDLONG_AS_STRING.accessor() : UNSIGNED_INT.accessor();
+      switch (int64Mode) {
+        case FORCE_STRING:
+          return UNSIGNEDLONG_AS_STRING.accessor();
+        case FORCE_GBIGINT:
+          return UNSIGNEDLONG_AS_GBIGINT.accessor();
+        case FOLLOW_JS_TYPE:
+          return UNSIGNED_INT.accessor();
+      }
+      throw new AssertionError();
     }
 
     @Override
     protected Expression visitUnsignedLongAsString() {
+      if (int64Mode == Int64ConversionMode.FORCE_GBIGINT) {
+        return UNSIGNEDLONG_AS_GBIGINT.accessor();
+      }
       return UNSIGNEDLONG_AS_STRING.accessor();
     }
 
     @Override
     protected Expression visitLongAsString() {
+      if (int64Mode == Int64ConversionMode.FORCE_GBIGINT) {
+        return LONG_AS_GBIGINT.accessor();
+      }
       return LONG_AS_STRING.accessor();
     }
 

@@ -20,6 +20,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static com.google.template.soy.types.SoyTypes.NUMBER_TYPE;
 
+import com.google.apps.jspb.Jspb;
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -29,6 +30,7 @@ import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.template.soy.internal.proto.Field;
 import com.google.template.soy.internal.proto.FieldVisitor;
 import com.google.template.soy.internal.proto.ProtoUtils;
+import com.google.template.soy.jbcsrc.api.Int64ConversionMode;
 import com.google.template.soy.soytree.SoyTypeP;
 import java.util.Set;
 import javax.annotation.Nullable;
@@ -41,11 +43,17 @@ public final class SoyProtoType extends SoyType {
     private final TypeInterner interner;
     private final ProtoTypeRegistry registry;
     private final boolean setterField;
+    private final Int64ConversionMode int64Mode;
 
-    TypeVisitor(TypeInterner interner, ProtoTypeRegistry registry, boolean setterField) {
+    TypeVisitor(
+        TypeInterner interner,
+        ProtoTypeRegistry registry,
+        boolean setterField,
+        Int64ConversionMode int64Mode) {
       this.interner = interner;
       this.registry = registry;
       this.setterField = setterField;
+      this.int64Mode = int64Mode;
     }
 
     @Override
@@ -76,7 +84,19 @@ public final class SoyProtoType extends SoyType {
 
     @Override
     protected SoyType visitLongAsInt() {
-      return setterField ? NUMBER_TYPE : IntType.getInstance();
+      if (setterField) {
+        return SoyTypes.GBIGINT_OR_NUMBER_FOR_MIGRATION;
+      }
+
+      switch (int64Mode) {
+        case FORCE_STRING:
+          return StringType.getInstance();
+        case FORCE_GBIGINT:
+          return GbigintType.getInstance();
+        case FOLLOW_JS_TYPE:
+          return IntType.getInstance();
+      }
+      throw new AssertionError();
     }
 
     @Override
@@ -86,12 +106,35 @@ public final class SoyProtoType extends SoyType {
 
     @Override
     protected SoyType visitUnsignedLongAsString() {
-      return StringType.getInstance();
+      if (setterField) {
+        return SoyTypes.GBIGINT_OR_STRING_FOR_MIGRATION;
+      }
+
+      switch (int64Mode) {
+        case FORCE_GBIGINT:
+          return GbigintType.getInstance();
+        case FORCE_STRING:
+        case FOLLOW_JS_TYPE:
+          return StringType.getInstance();
+      }
+      throw new AssertionError();
     }
 
     @Override
     protected SoyType visitLongAsString() {
-      return StringType.getInstance();
+      if (setterField) {
+        return SoyTypes.GBIGINT_OR_STRING_FOR_MIGRATION;
+      }
+
+      switch (int64Mode) {
+        case FORCE_GBIGINT:
+          return GbigintType.getInstance();
+
+        case FORCE_STRING:
+        case FOLLOW_JS_TYPE:
+          return StringType.getInstance();
+      }
+      throw new AssertionError();
     }
 
     @Override
@@ -161,6 +204,12 @@ public final class SoyProtoType extends SoyType {
     SoyType type;
 
     @GuardedBy("this")
+    SoyType asGbigintType;
+
+    @GuardedBy("this")
+    SoyType asStringType;
+
+    @GuardedBy("this")
     SoyType setterType;
 
     @GuardedBy("this")
@@ -174,18 +223,56 @@ public final class SoyProtoType extends SoyType {
       this.registry = registry;
     }
 
-    synchronized SoyType getType() {
-      if (type == null) {
-        type = FieldVisitor.visitField(getDescriptor(), new TypeVisitor(interner, registry, false));
-        checkNotNull(type, "Couldn't find a type for: %s", getDescriptor());
+    synchronized SoyType getType(Int64ConversionMode int64Mode) {
+      if (getDescriptor().isMapField()
+          && getDescriptor().getOptions().getExtension(Jspb.jstype) != Jspb.JsType.GBIGINT) {
+        int64Mode = Int64ConversionMode.FOLLOW_JS_TYPE;
       }
-      return type;
+      switch (int64Mode) {
+        case FORCE_STRING:
+          if (asStringType == null) {
+            asStringType =
+                FieldVisitor.visitField(
+                    getDescriptor(), new TypeVisitor(interner, registry, false, int64Mode));
+            checkNotNull(asStringType, "Couldn't find a type for: %s", getDescriptor());
+          }
+
+          return asStringType;
+
+        case FORCE_GBIGINT:
+          if (asGbigintType == null) {
+            asGbigintType =
+                FieldVisitor.visitField(
+                    getDescriptor(), new TypeVisitor(interner, registry, false, int64Mode));
+            checkNotNull(asGbigintType, "Couldn't find a type for: %s", getDescriptor());
+          }
+
+          return asGbigintType;
+
+        case FOLLOW_JS_TYPE:
+          if (type == null) {
+            type =
+                FieldVisitor.visitField(
+                    getDescriptor(),
+                    new TypeVisitor(interner, registry, /* setterField= */ false, int64Mode));
+            checkNotNull(type, "Couldn't find a type for: %s", getDescriptor());
+          }
+          return type;
+      }
+
+      throw new AssertionError();
     }
 
     synchronized SoyType getSetterType() {
       if (setterType == null) {
         setterType =
-            FieldVisitor.visitField(getDescriptor(), new TypeVisitor(interner, registry, true));
+            FieldVisitor.visitField(
+                getDescriptor(),
+                new TypeVisitor(
+                    interner,
+                    registry,
+                    /* setterField= */ true,
+                    Int64ConversionMode.FOLLOW_JS_TYPE));
         checkNotNull(setterType, "Couldn't find a setter type for: %s", getDescriptor());
       }
       return setterType;
@@ -248,9 +335,9 @@ public final class SoyProtoType extends SoyType {
 
   /** Returns the {@link SoyType} of the given field, or null if the field does not exist. */
   @Nullable
-  public SoyType getFieldType(String fieldName) {
+  public SoyType getFieldType(String fieldName, Int64ConversionMode int64Mode) {
     FieldWithType field = fields.get(fieldName);
-    return field != null ? field.getType() : null;
+    return field != null ? field.getType(int64Mode) : null;
   }
 
   /** Setter methods may take types that are looser than the type of the corresponding getter. */

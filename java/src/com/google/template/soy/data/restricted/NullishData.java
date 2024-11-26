@@ -56,7 +56,6 @@ public abstract class NullishData extends PrimitiveData {
     return toString();
   }
 
-
   @Override
   public final SoyValue checkNullishType(Class<? extends SoyValue> type) {
     return this;

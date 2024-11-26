@@ -46,6 +46,7 @@ import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.SoyValueUnconverter;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
+import com.google.template.soy.data.restricted.GbigintData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.NumberData;
@@ -66,6 +67,7 @@ import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -332,6 +334,8 @@ class TofuValueFactory extends JavaValueFactory {
         return (float) value.numberValue();
       } else if (type == String.class) {
         return value.stringValue();
+      } else if (type == BigInteger.class) {
+        return ((GbigintData) value).getValue();
       } else if (Iterable.class.isAssignableFrom(type)) {
         if (isExternApi) {
           return value.asJavaList().stream()
@@ -405,7 +409,8 @@ class TofuValueFactory extends JavaValueFactory {
                 + type
                 + ", but actual value is a `"
                 + value
-                + "`");
+                + "` of type "
+                + value.getClass().getName());
       }
     }
   }
@@ -421,6 +426,8 @@ class TofuValueFactory extends JavaValueFactory {
         return val.coerceToString();
       case BOOL:
         return val.coerceToBoolean();
+      case GBIGINT:
+        return ((GbigintData) val).getValue();
       case PROTO:
         return val.getProto();
       case PROTO_ENUM:
