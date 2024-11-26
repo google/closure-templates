@@ -1137,6 +1137,15 @@ public final class SoyFileSet {
         });
   }
 
+  List<String> compileToSassHeaders() {
+    return entryPoint(
+        () -> {
+          SoyFileSetNode files = parse(passManagerBuilder()).fileSet();
+          throwIfErrorsPresent();
+          return new SassHeaderGenerator().genSassHeaders(files);
+        });
+  }
+
   @AutoValue
   abstract static class HeaderResult {
     abstract SoyFileSetNode fileSet();
