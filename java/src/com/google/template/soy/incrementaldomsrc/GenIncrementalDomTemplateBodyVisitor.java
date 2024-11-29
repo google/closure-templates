@@ -168,7 +168,7 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
 
   private final Deque<SanitizedContentKind> contentKind;
   private final List<Statement> staticVarDeclarations;
-  private final boolean generatePositionalParamsSignature;
+  private final boolean genPosParamsSig;
   private final FileSetMetadata fileSetMetadata;
   private final String alias;
 
@@ -188,7 +188,7 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
       TemplateAliases templateAliases,
       Deque<SanitizedContentKind> contentKind,
       List<Statement> staticVarDeclarations,
-      boolean generatePositionalParamsSignature,
+      boolean genPosParamsSig,
       FileSetMetadata fileSetMetadata,
       String alias,
       ScopedJsTypeRegistry jsTypeRegistry) {
@@ -206,7 +206,7 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
         jsTypeRegistry);
     this.contentKind = contentKind;
     this.staticVarDeclarations = staticVarDeclarations;
-    this.generatePositionalParamsSignature = generatePositionalParamsSignature;
+    this.genPosParamsSig = genPosParamsSig;
     this.fileSetMetadata = fileSetMetadata;
     this.alias = alias;
   }
@@ -774,7 +774,7 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
     List<Expression> args = new ArrayList<>();
     if (node.isElementRoot() && !node.isSkipChildrenRoot()) {
       Expression paramsObject;
-      if (generatePositionalParamsSignature) {
+      if (genPosParamsSig) {
         paramsObject =
             Expressions.arrayLiteral(
                 node.getNearestAncestor(TemplateNode.class).getParams().stream()
