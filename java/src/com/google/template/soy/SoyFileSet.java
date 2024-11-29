@@ -1324,14 +1324,8 @@ public final class SoyFileSet {
   }
 
   private void throwIfErrorsPresent() {
-    if (errorReporter.hasErrors()) {
-      // if we are reporting errors we should report warnings at the same time.
-      Iterable<SoyError> errors =
-          Iterables.concat(errorReporter.getErrors(), errorReporter.getWarnings());
-      // clear the field to ensure that error reporters can't leak between compilations
-      errorReporter = null;
-      throw new SoyCompilationException(errors, getErrorFormatterWithSnippets());
-    }
+    Iterable<SoyError> errors = errorReporter.throwableErrors();
+    throw new SoyCompilationException(errors, getErrorFormatterWithSnippets());
   }
 
   /**
