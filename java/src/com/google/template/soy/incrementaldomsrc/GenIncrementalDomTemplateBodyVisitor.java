@@ -1019,6 +1019,17 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
    * <p>For HTML, if the variable is of kind HTML, it is invoked. Any other kind of variable gets
    * wrapped in a call to {@code incrementalDom.text}, resulting in a Text node.
    */
+
+  protected boolean isDomPrintIncremental (PrintNode node) {
+    return (node.numChildren() > 0
+            && node.getChild(node.numChildren() - 1).getPrintDirective()
+            instanceof SanitizedContentOperator
+            && ((SanitizedContentOperator)
+            node.getChild(node.numChildren() - 1).getPrintDirective())
+            .getContentKind()
+            == SanitizedContent.ContentKind.HTML);
+  }
+
   @Override
   protected Statement visitPrintNode(PrintNode node) {
     List<Expression> chunks = genJsExprsVisitor.exec(node);
@@ -1032,13 +1043,7 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
       case CSS:
         // fall through
       case HTML_PCDATA:
-        if (node.numChildren() > 0
-            && node.getChild(node.numChildren() - 1).getPrintDirective()
-                instanceof SanitizedContentOperator
-            && ((SanitizedContentOperator)
-                        node.getChild(node.numChildren() - 1).getPrintDirective())
-                    .getContentKind()
-                == SanitizedContent.ContentKind.HTML) {
+        if (isDomPrintIncremental(node)) {
           return INCREMENTAL_DOM_PRINT
               .call(Expressions.concat(chunks), Expressions.LITERAL_TRUE)
               .asStatement();
