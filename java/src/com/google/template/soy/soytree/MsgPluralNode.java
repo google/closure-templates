@@ -49,9 +49,6 @@ public final class MsgPluralNode extends AbstractParentCommandNode<CaseOrDefault
         ExprHolderNode,
         CommandTagAttributesHolder {
 
-
-
-
   private static final SoyErrorKind PLURAL_OFFSET_OUT_OF_BOUNDS =
       SoyErrorKind.of("The ''offset'' for plural must be a positive integer.");
 
