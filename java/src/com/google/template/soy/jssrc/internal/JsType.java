@@ -878,8 +878,7 @@ public final class JsType implements CodeChunk.HasRequires {
     // content.  using these wide unions everywhere is confusing.
     switch (kind) {
       case CSS:
-        builder.addType("!safevalues.SafeStyle");
-        builder.addRequire(GoogRequire.createTypeRequire("safevalues"));
+        builder.addType("string");
         break;
       case HTML_ELEMENT:
       case HTML:

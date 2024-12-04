@@ -44,7 +44,7 @@ const googString = goog.require('goog.string');
 const soy = goog.require('soy');
 const {ByteString} = goog.require('jspb.bytestring');
 const {SanitizedCss, SanitizedHtml, SanitizedJs, SanitizedTrustedResourceUri, SanitizedUri} = goog.require('goog.soy.data');
-const {htmlSafeByReview, resourceUrlSafeByReview, scriptSafeByReview, styleSafeByReview, styleSheetSafeByReview, urlSafeByReview} = goog.require('safevalues.restricted.reviewed');
+const {htmlSafeByReview, resourceUrlSafeByReview, scriptSafeByReview, styleSheetSafeByReview, urlSafeByReview} = goog.require('safevalues.restricted.reviewed');
 const {htmlToProto, protoToHtml, protoToResourceUrl, protoToScript, protoToStyle, protoToStyleSheet, protoToUrl, resourceUrlToProto, scriptToProto, styleSheetToProto, styleToProto, urlToProto} = goog.require('safevalues.conversions.jspb');
 const {unwrapHtml, unwrapResourceUrl, unwrapScript, unwrapStyleSheet, unwrapUrl} = goog.require('safevalues');
 
@@ -72,11 +72,9 @@ exports.packSanitizedCssToSafeStyleProtoSoyRuntimeOnly = function(
     throw new Error('Consider using packSanitizedCssToSafeStyleSheetProto().');
   }
 
-  const safeStyle = styleSafeByReview(
-      sanitizedCss ?
-          /** @type {!SanitizedCss} */ (sanitizedCss).getContent() :
-          '',
-      {justification: 'from Soy SanitizedCss object'});
+  const safeStyle = sanitizedCss ?
+      /** @type {!SanitizedCss} */ (sanitizedCss).getContent() :
+      '';
   return styleToProto(safeStyle);
 };
 

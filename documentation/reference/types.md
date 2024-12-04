@@ -262,7 +262,7 @@ change in the future.
 
 Backend    | type in host language
 ---------- | ---------------------------------------------------------
-JavaScript | `goog.soy.data.SanitizedCss`, `safevalues.SafeStyle`
+JavaScript | `goog.soy.data.SanitizedCss`, `string`
 SoySauce   | `string`, `com.google.template.soy.data.SanitizedContent`
 Tofu       | `com.google.template.soy.data.SanitizedContent`
 Python     | `sanitize.SanitizedCss`, `html_types.SafeStyleSheet`
