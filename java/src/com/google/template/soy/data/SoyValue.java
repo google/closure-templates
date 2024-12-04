@@ -276,6 +276,10 @@ public abstract class SoyValue extends SoyValueProvider {
     throw new ClassCastException(classCastErrorMessage(this, "number"));
   }
 
+  public SoyValue checkNullishGbigint() {
+    throw new ClassCastException(classCastErrorMessage(this, "gbigint"));
+  }
+
   /** A runtime type check for this boxed Soy value. */
   public SoyValue checkNullishBoolean() {
     throw new ClassCastException(classCastErrorMessage(this, "bool"));

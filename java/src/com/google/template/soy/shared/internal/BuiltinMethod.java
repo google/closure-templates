@@ -38,10 +38,10 @@ import com.google.template.soy.error.SoyErrors;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.MethodCallNode;
 import com.google.template.soy.internal.proto.Field;
+import com.google.template.soy.internal.proto.Int64ConversionMode;
 import com.google.template.soy.shared.restricted.SoyMethod;
 import com.google.template.soy.types.AbstractMapType;
 import com.google.template.soy.types.BoolType;
-import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.MapType;
 import com.google.template.soy.types.MessageType;
 import com.google.template.soy.types.ProtoExtensionImportType;
@@ -50,7 +50,6 @@ import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.SoyTypes;
-import com.google.template.soy.types.StringType;
 import com.google.template.soy.types.TemplateBindingUtil;
 import com.google.template.soy.types.UndefinedType;
 import com.google.template.soy.types.UnknownType;
@@ -84,7 +83,8 @@ public enum BuiltinMethod implements SoyMethod {
       }
       // getExtension is incorrectly typed as non-nullable even though it can be null for singular
       // message fields.
-      return SoyTypes.tryRemoveNullish(protoType.getFieldType(extType.get().getFieldName()));
+      return SoyTypes.tryRemoveNullish(
+          protoType.getFieldType(extType.get().getFieldName(), Int64ConversionMode.FORCE_GBIGINT));
     }
   },
   GET_READONLY_EXTENSION("getReadonlyExtension", 1) {
@@ -112,7 +112,8 @@ public enum BuiltinMethod implements SoyMethod {
             params.get(0).getSourceLocation(),
             GET_READONLY_EXTENSION_MAY_ONLY_BE_CALLED_ON_MESSAGE_EXTENSIONS);
       }
-      return SoyTypes.tryRemoveNullish(protoType.getFieldType(extType.get().getFieldName()));
+      return SoyTypes.tryRemoveNullish(
+          protoType.getFieldType(extType.get().getFieldName(), Int64ConversionMode.FOLLOW_JS_TYPE));
     }
   },
   HAS_EXTENSION("hasExtension", 1) {
@@ -214,7 +215,8 @@ public enum BuiltinMethod implements SoyMethod {
         SoyTypeRegistry soyTypeRegistry,
         ErrorReporter errorReporter) {
       String fieldName = getGetterFieldName(methodName).get();
-      return computeTypeForProtoFieldName(baseType, fieldName, soyTypeRegistry);
+      return computeTypeForProtoFieldName(
+          baseType, fieldName, soyTypeRegistry, Int64ConversionMode.FORCE_GBIGINT);
     }
 
     @Override
@@ -247,13 +249,6 @@ public enum BuiltinMethod implements SoyMethod {
         return false;
       }
 
-      // begin:moe_strip
-      // TODO: b/319288438 - Remove this once we are ready to return gbigint for 64-bit ints.
-      if (fd.getJavaType() == JavaType.LONG) {
-        return false;
-      }
-      // end:moe_strip
-
       return fd.hasPresence();
     }
 
@@ -266,7 +261,10 @@ public enum BuiltinMethod implements SoyMethod {
         ErrorReporter errorReporter) {
       return SoyTypes.makeUndefinable(
           computeTypeForProtoFieldName(
-              baseType, getGetOrUndefinedFieldName(methodName).get(), soyTypeRegistry));
+              baseType,
+              getGetOrUndefinedFieldName(methodName).get(),
+              soyTypeRegistry,
+              Int64ConversionMode.FORCE_GBIGINT));
     }
 
     @Override
@@ -306,7 +304,10 @@ public enum BuiltinMethod implements SoyMethod {
         ErrorReporter errorReporter) {
       return SoyTypes.tryRemoveNullish(
           computeTypeForProtoFieldName(
-              baseType, getGetReadonlyFieldName(methodName).get(), soyTypeRegistry));
+              baseType,
+              getGetReadonlyFieldName(methodName).get(),
+              soyTypeRegistry,
+              Int64ConversionMode.FOLLOW_JS_TYPE));
     }
 
     @Override
@@ -722,32 +723,13 @@ public enum BuiltinMethod implements SoyMethod {
   }
 
   private static SoyType computeTypeForProtoFieldName(
-      SoyType baseType, String fieldName, SoyTypeRegistry soyTypeRegistry) {
-    return computeTypeForProtoFieldName(
-        baseType, fieldName, soyTypeRegistry, /* is64BitIntStringType= */ false);
-  }
-
-  private static SoyType computeTypeForProtoFieldName(
       SoyType baseType,
       String fieldName,
       SoyTypeRegistry soyTypeRegistry,
-      boolean is64BitIntStringType) {
+      Int64ConversionMode int64Mode) {
     var types = new ArrayList<SoyType>();
     for (SoyType type : SoyTypes.expandUnions(baseType)) {
-      var defaultType = ((SoyProtoType) type).getFieldType(fieldName);
-
-      if (is64BitIntStringType) {
-        // When is64BitIntStringType is true, we are computing the type for the _asString alternate
-        // accessor of a 64-bit int field. These accessors are special in that they force the type
-        // to string, regardless of any jstype. For example, a field with JS_NUMBER will be forced
-        // to return a string value whenever the _asString accessor is used.
-        if ((defaultType instanceof ListType)) {
-          defaultType = soyTypeRegistry.getOrCreateListType(StringType.getInstance());
-        } else {
-          defaultType = StringType.getInstance();
-        }
-      }
-
+      SoyType defaultType = ((SoyProtoType) type).getFieldType(fieldName, int64Mode);
       types.add(defaultType);
     }
 

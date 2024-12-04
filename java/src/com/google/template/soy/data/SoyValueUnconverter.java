@@ -22,6 +22,7 @@ import com.google.template.soy.data.SoyValueConverter.TypeMap;
 import com.google.template.soy.data.internal.IterableImpl;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
+import com.google.template.soy.data.restricted.GbigintData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.StringData;
@@ -46,6 +47,7 @@ public final class SoyValueUnconverter {
     CONVERTERS.put(IntegerData.class, IntegerData::getValue);
     CONVERTERS.put(FloatData.class, FloatData::getValue);
     CONVERTERS.put(StringData.class, StringData::getValue);
+    CONVERTERS.put(GbigintData.class, GbigintData::getValue);
     CONVERTERS.put(
         SoyList.class,
         v ->

@@ -58,6 +58,7 @@ public abstract class SoyType implements ErrorArg {
    *         <li>BOOL
    *         <li>INT
    *         <li>FLOAT
+   *         <li>GBIGINT
    *         <li>STRING
    *       </ul>
    *   <li>Sanitized types (subtypes of string):
@@ -96,6 +97,7 @@ public abstract class SoyType implements ErrorArg {
     INT,
     FLOAT,
     STRING,
+    GBIGINT,
     // Sanitized types (subtypes of string)
     HTML,
     ELEMENT,

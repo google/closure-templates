@@ -1088,6 +1088,23 @@ public final class ResolveExpressionTypesPassTest {
   }
 
   @Test
+  public void testProto64BitIntTyping() {
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forTemplateAndImports(
+                constructTemplateSource(
+                    "{let $proto: ExampleExtendable(longWithDefaultJsType: 0) /}",
+                    "{assertType('gbigint|undefined',"
+                        + " $proto.getLongWithDefaultJsTypeOrUndefined())}"
+                    ),
+                ExampleExtendable.getDescriptor(),
+                Proto2ImplicitDefaults.getDescriptor())
+            .addSoyFunction(ASSERT_TYPE_FUNCTION)
+            .parse()
+            .fileSet();
+    assertTypes(soyTree);
+  }
+
+  @Test
   public void testBadForEach() {
     assertResolveExpressionTypesFails(
         "Cannot iterate over $p of type int.",

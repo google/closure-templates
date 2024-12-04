@@ -30,6 +30,8 @@ public interface SoyTypeVisitor<T> {
 
   T visit(PrimitiveType type);
 
+  T visit(GbigintType type);
+
   T visit(RecordType type);
 
   T visit(SoyProtoEnumType type);

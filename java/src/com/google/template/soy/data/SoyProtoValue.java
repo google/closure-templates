@@ -31,6 +31,7 @@ import com.google.protobuf.Message;
 import com.google.protobuf.TextFormat;
 import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.internal.proto.Field;
+import com.google.template.soy.internal.proto.Int64ConversionMode;
 import com.google.template.soy.internal.proto.JavaQualifiedNames;
 import com.google.template.soy.internal.proto.ProtoUtils;
 import com.google.template.soy.jbcsrc.shared.Names;
@@ -79,30 +80,47 @@ public final class SoyProtoValue extends SoyRecord {
 
   private static final class FieldWithInterpreter extends Field {
     @LazyInit ProtoFieldInterpreter interpreter;
+    @LazyInit ProtoFieldInterpreter asGbigintInterpreter;
+    @LazyInit ProtoFieldInterpreter asStringInterpreter;
 
     FieldWithInterpreter(FieldDescriptor fieldDesc) {
       super(fieldDesc);
     }
 
-    private ProtoFieldInterpreter impl(boolean forceStringConversion) {
-      ProtoFieldInterpreter local = interpreter;
-      if (local == null) {
-        local = ProtoFieldInterpreter.create(getDescriptor(), forceStringConversion);
+    private ProtoFieldInterpreter impl(Int64ConversionMode int64Mode) {
+      ProtoFieldInterpreter local;
+      switch (int64Mode) {
+        case FOLLOW_JS_TYPE:
+          local = interpreter;
+          if (local == null) {
+            local = ProtoFieldInterpreter.create(getDescriptor(), int64Mode);
+            interpreter = local;
+          }
+          return local;
+        case FORCE_GBIGINT:
+          local = asGbigintInterpreter;
+          if (local == null) {
+            local = ProtoFieldInterpreter.create(getDescriptor(), int64Mode);
+          }
+          return local;
+        case FORCE_STRING:
+          local = asStringInterpreter;
+          if (local == null) {
+            local = ProtoFieldInterpreter.create(getDescriptor(), int64Mode);
+          }
+          return local;
       }
-      return local;
+
+      throw new AssertionError();
     }
 
-    public SoyValue interpretField(Message message) {
-      return interpretField(message, /* forceStringConversion= */ false);
-    }
-
-    private SoyValue interpretField(Message message, boolean forceStringConversion) {
-      return impl(forceStringConversion).soyFromProto(message.getField(getDescriptor()));
+    private SoyValue interpretField(Message message, Int64ConversionMode int64Mode) {
+      return impl(int64Mode).soyFromProto(message.getField(getDescriptor()));
     }
 
     public void assignField(Message.Builder builder, SoyValue value) {
       builder.setField(
-          getDescriptor(), impl(/* forceStringConversion= */ false).protoFromSoy(value));
+          getDescriptor(), impl(Int64ConversionMode.FOLLOW_JS_TYPE).protoFromSoy(value));
     }
   }
 
@@ -170,10 +188,10 @@ public final class SoyProtoValue extends SoyRecord {
   }
 
   public SoyValue getProtoField(String name) {
-    return getProtoField(name, /* forceStringConversion= */ false);
+    return getProtoField(name, Int64ConversionMode.FOLLOW_JS_TYPE);
   }
 
-  public SoyValue getProtoField(String name, boolean forceStringConversion) {
+  public SoyValue getProtoField(String name, Int64ConversionMode int64Mode) {
     FieldWithInterpreter field = clazz().fields.get(name);
     if (field == null) {
       throw new IllegalArgumentException(
@@ -184,7 +202,7 @@ public final class SoyProtoValue extends SoyRecord {
       // Unset singular message fields are always null to match JSPB semantics.
       return UndefinedData.INSTANCE;
     }
-    return field.interpretField(proto, forceStringConversion);
+    return field.interpretField(proto, int64Mode);
   }
 
   public SoyValue getReadonlyProtoField(String name) {
@@ -197,7 +215,7 @@ public final class SoyProtoValue extends SoyRecord {
     if (fd.isRepeated() || fd.getJavaType() != JavaType.MESSAGE) {
       throw new AssertionError("impossible");
     }
-    return field.interpretField(proto);
+    return field.interpretField(proto, Int64ConversionMode.FOLLOW_JS_TYPE);
   }
 
   /**
@@ -206,7 +224,7 @@ public final class SoyProtoValue extends SoyRecord {
    * null.
    */
   public SoyValue getProtoFieldOrNull(String name) {
-    return getProtoFieldOrNull(name, /* forceStringConversion= */ false);
+    return getProtoFieldOrNull(name, Int64ConversionMode.FOLLOW_JS_TYPE);
   }
 
   /**
@@ -214,7 +232,7 @@ public final class SoyProtoValue extends SoyRecord {
    * For fields with no presence semantics (i.e., there's no hasser method), the value is never
    * null.
    */
-  public SoyValue getProtoFieldOrNull(String name, boolean forceStringConversion) {
+  public SoyValue getProtoFieldOrNull(String name, Int64ConversionMode int64Mode) {
     FieldWithInterpreter field = clazz().fields.get(name);
     if (field == null) {
       throw new IllegalArgumentException(
@@ -224,7 +242,7 @@ public final class SoyProtoValue extends SoyRecord {
     if (fd.hasPresence() && !proto.hasField(fd)) {
       return UndefinedData.INSTANCE;
     }
-    return field.interpretField(proto, forceStringConversion);
+    return field.interpretField(proto, int64Mode);
   }
 
   public boolean hasProtoField(String name) {
@@ -423,8 +441,6 @@ public final class SoyProtoValue extends SoyRecord {
             ? (proto == proto.getDefaultInstanceForType() ? "empty(default)" : "empty")
             : "not-empty");
   }
-
-
 
   /**
    * Provides an interface for constructing a SoyProtoValue. Used by the tofu renderer only.

@@ -46,10 +46,12 @@ import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.SoyValueUnconverter;
 import com.google.template.soy.data.internal.IterableImpl;
+import com.google.template.soy.data.restricted.GbigintData;
 import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.plugin.java.SharedExternRuntime;
 import java.lang.reflect.Method;
+import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
 import javax.annotation.Nonnull;
@@ -98,6 +100,21 @@ public final class JbcSrcExternRuntime {
           SanitizedContents.class, "fromTrustedResourceUrl", TrustedResourceUrl.class);
 
   public static final MethodRef LIST_BOX_VALUES = create("listBoxValues", Iterable.class);
+
+  public static final MethodRef CONVERT_SOY_VALUE_TO_BIG_INTEGER =
+      MethodRef.createPure(
+          JbcSrcExternRuntime.class, "convertSoyValueToBigInteger", SoyValue.class);
+
+  @Nullable
+  public static BigInteger convertSoyValueToBigInteger(SoyValue value) {
+    if (value.isNullish()) {
+      return null;
+    }
+    return ((GbigintData) value).getValue();
+  }
+
+  public static final MethodRef GBIGINT_FOR_VALUE =
+      MethodRef.createPure(GbigintData.class, "forValue", BigInteger.class);
 
   @Keep
   @Nullable
@@ -417,6 +434,7 @@ public final class JbcSrcExternRuntime {
     return TrustedResourceUrls.toProto(((SanitizedContent) value).toTrustedResourceUrl());
   }
 
+  @Nullable
   private static Object unboxMapItem(SoyValue value, Class<?> type) {
     if (value == null || value.isNullish()) {
       return null;
@@ -428,6 +446,8 @@ public final class JbcSrcExternRuntime {
       return value.coerceToBoolean();
     } else if (type == Double.class) {
       return value.floatValue();
+    } else if (type == GbigintData.class) {
+      return value;
     } else if (Message.class.isAssignableFrom(type)) {
       return value.getProto();
     } else if (ProtocolMessageEnum.class.isAssignableFrom(type)) {

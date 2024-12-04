@@ -41,9 +41,12 @@ import com.google.template.soy.data.internal.ListImpl;
 import com.google.template.soy.data.internal.SoyMapImpl;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
+import com.google.template.soy.data.restricted.GbigintData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.internal.proto.FieldVisitor;
+import com.google.template.soy.internal.proto.Int64ConversionMode;
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -55,36 +58,60 @@ import java.util.Map;
  */
 public abstract class ProtoFieldInterpreter {
   private static final FieldVisitor<ProtoFieldInterpreter> VISITOR =
-      new Visitor(/* forceStringConversion= */ false);
+      new Visitor(Int64ConversionMode.FOLLOW_JS_TYPE);
+
+  private static final FieldVisitor<ProtoFieldInterpreter> GBIGINT_VISITOR =
+      new Visitor(Int64ConversionMode.FORCE_GBIGINT);
 
   private static final FieldVisitor<ProtoFieldInterpreter> FORCE_STRING_VISITOR =
-      new Visitor(/* forceStringConversion= */ true);
+      new Visitor(Int64ConversionMode.FORCE_STRING);
 
   private static final class Visitor extends FieldVisitor<ProtoFieldInterpreter> {
-    private final boolean forceStringConversion;
+    private final Int64ConversionMode int64Mode;
 
-    Visitor(boolean forceStringConversion) {
+    Visitor(Int64ConversionMode int64Mode) {
       super();
-      this.forceStringConversion = forceStringConversion;
+      this.int64Mode = int64Mode;
     }
 
     @Override
     protected ProtoFieldInterpreter visitLongAsInt() {
-      return forceStringConversion ? LONG_AS_STRING : LONG_AS_INT;
+      switch (int64Mode) {
+        case FORCE_STRING:
+          return LONG_AS_STRING;
+        case FORCE_GBIGINT:
+          return LONG_AS_GBIGINT;
+        case FOLLOW_JS_TYPE:
+          return LONG_AS_INT;
+      }
+
+      throw new AssertionError();
     }
 
     @Override
     protected ProtoFieldInterpreter visitUnsignedInt() {
-      return forceStringConversion ? UNSIGNEDLONG_AS_STRING : UNSIGNED_INT;
+      if (int64Mode == Int64ConversionMode.FORCE_STRING) {
+        return UNSIGNEDLONG_AS_STRING;
+      }
+
+      return UNSIGNED_INT;
     }
 
     @Override
     protected ProtoFieldInterpreter visitUnsignedLongAsString() {
+      if (int64Mode == Int64ConversionMode.FORCE_GBIGINT) {
+        return UNSIGNEDLONG_AS_GBIGINT;
+      }
+
       return UNSIGNEDLONG_AS_STRING;
     }
 
     @Override
     protected ProtoFieldInterpreter visitLongAsString() {
+      if (int64Mode == Int64ConversionMode.FORCE_GBIGINT) {
+        return LONG_AS_GBIGINT;
+      }
+
       return LONG_AS_STRING;
     }
 
@@ -174,9 +201,18 @@ public abstract class ProtoFieldInterpreter {
 
   /** Creates a {@link ProtoFieldInterpreter} for the given field. */
   static ProtoFieldInterpreter create(
-      FieldDescriptor fieldDescriptor, boolean forceStringConversion) {
-    return FieldVisitor.visitField(
-        fieldDescriptor, forceStringConversion ? FORCE_STRING_VISITOR : VISITOR);
+      FieldDescriptor fieldDescriptor, Int64ConversionMode int64Mode) {
+
+    switch (int64Mode) {
+      case FORCE_STRING:
+        return FieldVisitor.visitField(fieldDescriptor, FORCE_STRING_VISITOR);
+      case FORCE_GBIGINT:
+        return FieldVisitor.visitField(fieldDescriptor, GBIGINT_VISITOR);
+      case FOLLOW_JS_TYPE:
+        return FieldVisitor.visitField(fieldDescriptor, VISITOR);
+    }
+
+    throw new AssertionError();
   }
 
   private static ProtoFieldInterpreter getListType(ProtoFieldInterpreter local) {
@@ -310,6 +346,9 @@ public abstract class ProtoFieldInterpreter {
 
         @Override
         public Object protoFromSoy(SoyValue field) {
+          if (field instanceof GbigintData) {
+            return ((GbigintData) field).longValue();
+          }
           return field.coerceToLong();
         }
       };
@@ -324,7 +363,27 @@ public abstract class ProtoFieldInterpreter {
 
         @Override
         public Object protoFromSoy(SoyValue field) {
+          if (field instanceof GbigintData) {
+            return ((GbigintData) field).longValue();
+          }
           return Long.parseLong(field.stringValue());
+        }
+      };
+
+  /** A {@link ProtoFieldInterpreter} for int64 typed fields interpreted as soy gbigint. */
+  public static final ProtoFieldInterpreter LONG_AS_GBIGINT =
+      new ProtoFieldInterpreter() {
+        @Override
+        public SoyValue soyFromProto(Object field) {
+          return GbigintData.forValue(BigInteger.valueOf((Long) field));
+        }
+
+        @Override
+        public Object protoFromSoy(SoyValue field) {
+          if (field instanceof StringData) {
+            return GbigintData.forStringValue(field.stringValue());
+          }
+          return field.longValue();
         }
       };
 
@@ -342,6 +401,33 @@ public abstract class ProtoFieldInterpreter {
 
         @Override
         public Object protoFromSoy(SoyValue field) {
+          if (field instanceof GbigintData) {
+            return ((GbigintData) field).unsignedLongValue();
+          }
+          return UnsignedLongs.parseUnsignedLong(field.stringValue());
+        }
+      };
+
+  /**
+   * A {@link ProtoFieldInterpreter} for uint64 typed fields interpreted as soy gbigint.
+   *
+   * <p>TODO(lukes): when soy fully switches to java8 use the methods on java.lang.Long
+   */
+  public static final ProtoFieldInterpreter UNSIGNEDLONG_AS_GBIGINT =
+      new ProtoFieldInterpreter() {
+        @Override
+        public SoyValue soyFromProto(Object field) {
+          if (field instanceof Integer) {
+            return GbigintData.forUnsignedLongValue(((Integer) field).longValue());
+          }
+          return GbigintData.forUnsignedLongValue((Long) field);
+        }
+
+        @Override
+        public Object protoFromSoy(SoyValue field) {
+          if (field instanceof GbigintData) {
+            return ((GbigintData) field).unsignedLongValue();
+          }
           return UnsignedLongs.parseUnsignedLong(field.stringValue());
         }
       };

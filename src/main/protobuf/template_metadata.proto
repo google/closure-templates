@@ -63,6 +63,7 @@ message SoyTypeP {
     URI = 12;
     TRUSTED_RESOURCE_URI = 13;
     VE_DATA = 14;
+    GBIGINT = 16;
   }
   message HtmlTypeP {
     bool is_element = 1;

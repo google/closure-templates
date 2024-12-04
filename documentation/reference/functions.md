@@ -19,6 +19,10 @@ Explicitly
 [coerces](http://go/soy/reference/coercions?polyglot=call-command#boolean-coercions)
 the argument to a boolean.
 
+Warning: `Boolean()` does not work correctly for gbigint 0 values since it may
+be represented as the string `"0"` in goog.DEBUG or if `bigint` is not
+available. Please use `gbigintToBoolean()` instead.
+
 ### `hasContent(value)` {#hasContent}
 
 Value must be one of the sanitized content types (`html`, `attributes`, `uri`,
@@ -785,6 +789,92 @@ Both variants change the type of the expression, replacing `undefined` with
 `null` if the expression type is a union type containing `undefined`. Note that
 in the case of `undefinedToNullForSsrMigration` and client side rendering this
 could result in a value of `undefined` for an expression of type `T|null`.
+
+## gbigint Functions
+
+64-bit int proto fields use [gbigint](http://go/gbigint) typed values that must
+be explicitly converted to `number` types in order to perform operations like
+numeric comparisons, math, etc.
+
+### `toGbigint(number|string)` {#toGbigint}
+
+Converts the value to [gbigint](http://go/gbigint). `gbigint` does not support
+any mathematical operations. Additionally, its type cannot be checked with
+`instanceof` or `typeof`.
+
+When in `goog.DEBUG` and native `bigint` is available in the JS platform,
+`gbigint` will be randomly represented by either `bigint` or `string`.
+Therefore, it is important that values passed to APIs expecting `gbigint` first
+go through `toGbigint` to have their representation synchronized with the
+randomness.
+
+When `bigint` is not available in the JS platform, `string` will always be used.
+
+Note: `toGbigint` can only be applied to `strings` representing decimal integers
+and `number` values within the JS safe integer range. `toGbigint` will throw on
+all other values.
+
+### `isGbigint(?)` {#isGbigint}
+
+Returns true if the provided value is recognized as a `gbigint`.
+
+When in `goog.DEBUG` and native `bigint` is available in the platform, either
+odd or even `gbigint` values will be randomly selected to be represented by
+`string`. Numerical `string` values that are coincidentally in the value range
+for `gbigint` to be backed by `string` representations will erroneously be
+considered `gbigints` by `isGbigint`. Therefore, it is important to normalize
+all values intended to be treated as `gbigints` through `toGbigint`.
+
+In other words:
+
+```ts
+// Assume in goog.DEBUG and native bigint is available. Suppose ODD numbers have
+// been randomly selected by the gbigint platform to be represented by string.
+
+const a = toGbigint('1');
+const b = '1';
+
+assert(a, isGbigint); // true
+assert(b, isGbigint); // true
+
+const c = toGbigint('2');
+const d = '2';
+
+assert(c, isGbigint); // true
+assert(d, isGbigint); // false
+```
+
+### `gbigintToBoolean(gbigint)` {#gbigintToBoolean}
+
+This mirrors the
+[TS/JS platform function](http:go/bigint#converting-gbigint-values-to-boolean)
+of the same name. Safely coerces a `gbigint` to a `boolean` when the underlying
+browser may not natively support `bigint`.
+
+### `gbigintToNumber(gbigint)` {#gbigintToNumber}
+
+Converts the provided `gbigint` into a `number` typed value. Asserts that the
+input is actually a `gbigint` and that its value is within the JavaScript safe
+integer range.
+
+### `gbigintToNumberOrNull(gbigint|null|undefined)` {#gbigintToNumberOrNull}
+
+Converts the provided `gbigint` into a `number` typed value. If a nullish value
+is provided, this function is guaranteed to return `null`.
+
+Asserts the value is within the JavaScript safe integer range.
+
+### `gbigintToNumberArray(list<gbigint>)` {#gbigintToNumberArray}
+
+Returns an array created by calling `gbigintToNumber` on each element of the
+input.
+
+### `isSafeInt52(gbigint)` {#isSafeInt52}
+
+This mirrors the
+[TS/JS platform function](go/bigint#converting-gbigint-values-to-number) of the
+same name. Returns true if the `gbigint` value is within the safe JavaScript
+integer range and can be coerced to `number` type without loss of precision.
 
 ## Localization (l10n) Functions
 

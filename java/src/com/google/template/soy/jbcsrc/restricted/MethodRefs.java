@@ -58,6 +58,7 @@ import com.google.template.soy.data.internal.SoyMapImpl;
 import com.google.template.soy.data.internal.SoyRecordImpl;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
+import com.google.template.soy.data.restricted.GbigintData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.data.restricted.StringData;
@@ -75,6 +76,7 @@ import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.ibm.icu.util.ULocale;
 import java.io.Closeable;
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -607,6 +609,18 @@ public final class MethodRefs {
       createPure(JbcSrcRuntime.class, "isNonSoyNullish", SoyValueProvider.class);
   public static final MethodRef IS_SOY_NON_NULL =
       createPure(JbcSrcRuntime.class, "isNonSoyNull", SoyValueProvider.class);
+
+  public static final MethodRef GBIGINT_DATA_FOR_VALUE =
+      createPure(GbigintData.class, "forValue", BigInteger.class).asCheap();
+
+  public static final MethodRef GBIGINT_DATA_FOR_STRING_VALUE =
+      createPure(GbigintData.class, "forStringValue", String.class).asCheap();
+
+  public static final MethodRef GBIGINT_DATA_FOR_LONG_VALUE =
+      createPure(GbigintData.class, "forValue", long.class).asCheap();
+
+  public static final MethodRef GBIGINT_DATA_FOR_UNSIGNED_LONG_VALUE =
+      createPure(GbigintData.class, "forUnsignedLongValue", long.class).asCheap();
 
   public static final MethodRef STRING_DATA_FOR_VALUE =
       createPure(StringData.class, "forValue", String.class).asCheap();

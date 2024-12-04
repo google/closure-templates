@@ -37,8 +37,8 @@ public class SimpleJavaType extends JavaType {
       new PrimitiveJavaType(
           /* boxedType= */ "java.lang.Boolean",
           /* primitiveType= */ "boolean",
-          /* genericType=*/ "java.lang.Boolean",
-          /* isNullable=*/ false,
+          /* genericType= */ "java.lang.Boolean",
+          /* isNullable= */ false,
           castFunction("asBool"),
           castFunction("asBool"),
           castFunction("asNullableBool"));
@@ -47,8 +47,8 @@ public class SimpleJavaType extends JavaType {
       new PrimitiveJavaType(
           /* boxedType= */ "java.lang.Long",
           /* primitiveType= */ "long",
-          /* genericType=*/ "? extends java.lang.Number",
-          /* isNullable=*/ false,
+          /* genericType= */ "? extends java.lang.Number",
+          /* isNullable= */ false,
           castFunction("asInt"),
           castFunction("asBoxedInt"),
           castFunction("asNullableInt"));
@@ -57,8 +57,8 @@ public class SimpleJavaType extends JavaType {
       new PrimitiveJavaType(
           /* boxedType= */ "java.lang.Double",
           /* primitiveType= */ "double",
-          /* genericType=*/ "? extends java.lang.Number",
-          /* isNullable=*/ false,
+          /* genericType= */ "? extends java.lang.Number",
+          /* isNullable= */ false,
           castFunction("asFloat"),
           castFunction("asBoxedFloat"),
           castFunction("asNullableFloat"));
@@ -67,7 +67,7 @@ public class SimpleJavaType extends JavaType {
       new SimpleJavaType(
           "java.lang.Number",
           "? extends java.lang.Number",
-          /* isNullable=*/ false,
+          /* isNullable= */ false,
           castFunction("asNumber"),
           castFunction("asNullableNumber"));
 
@@ -92,37 +92,37 @@ public class SimpleJavaType extends JavaType {
   public static final SimpleJavaType TRUSTED_RESOURCE_URL =
       new SimpleJavaType(
           "com.google.common.html.types.TrustedResourceUrl",
-          /* asReference=*/ castFunction("asTrustedResourceUri"),
-          /* asNullableReference=*/ castFunction("asNullableTrustedResourceUri"));
+          /* asReference= */ castFunction("asTrustedResourceUri"),
+          /* asNullableReference= */ castFunction("asNullableTrustedResourceUri"));
 
   public static final SimpleJavaType STRING =
       new SimpleJavaType(
           "java.lang.String",
-          /* asReference=*/ castFunction("asString"),
-          /* asNullableReference=*/ castFunction("asNullableString"));
+          /* asReference= */ castFunction("asString"),
+          /* asNullableReference= */ castFunction("asNullableString"));
 
   private static final CodeGenUtils.Member AS_SOY_VALUE = castFunction("asSoyValue");
 
   public static final SimpleJavaType OBJECT =
       new SimpleJavaType(
-          "java.lang.Object", "?", /* isNullable=*/ false, AS_SOY_VALUE, AS_SOY_VALUE);
+          "java.lang.Object", "?", /* isNullable= */ false, AS_SOY_VALUE, AS_SOY_VALUE);
 
   public static final SimpleJavaType ATTRIBUTES =
       new SimpleJavaType(
           "com.google.template.soy.data.SanitizedContent",
-          /* asReference=*/ castFunction("asAttributes"),
-          /* asNullableReference=*/ castFunction("asNullableAttributes"));
+          /* asReference= */ castFunction("asAttributes"),
+          /* asNullableReference= */ castFunction("asNullableAttributes"));
   public static final SimpleJavaType CSS =
       new SimpleJavaType(
           "com.google.template.soy.data.CssParam",
-          /* asReference=*/ castFunction("asCss"),
-          /* asNullableReference=*/ castFunction("asNullableCss"));
+          /* asReference= */ castFunction("asCss"),
+          /* asNullableReference= */ castFunction("asNullableCss"));
 
   public static final SimpleJavaType MESSAGE =
       new SimpleJavaType(
           "com.google.protobuf.Message",
-          /* asReference=*/ castFunction("asProto"),
-          /* asNullableReference=*/ castFunction("asNullableProto"));
+          /* asReference= */ castFunction("asProto"),
+          /* asNullableReference= */ castFunction("asNullableProto"));
 
   private final String javaTypeString;
   private final String genericsTypeArgumentString;
@@ -133,7 +133,7 @@ public class SimpleJavaType extends JavaType {
       String javaTypeString,
       CodeGenUtils.Member asReference,
       CodeGenUtils.Member asNullableReference) {
-    this(javaTypeString, javaTypeString, /* isNullable=*/ false, asReference, asNullableReference);
+    this(javaTypeString, javaTypeString, /* isNullable= */ false, asReference, asNullableReference);
   }
 
   private SimpleJavaType(
