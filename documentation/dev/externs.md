@@ -197,6 +197,7 @@ Soy type               | Allowed Java types                                     
 `int`                  | `int`\*, `java.lang.Integer`, `long`\*, `java.lang.Long`                                                                                                           | Integer overflow throws a runtime error.
 `float`                | `double`\*, `java.lang.Double`, `float`\*, `java.lang.Float`                                                                                                       |
 `number`               | `double`\*, `java.lang.Double`, `java.lang.Number`                                                                                                                 | `number` is an alias for `int\|float`.
+`gbigint`              | `java.math.BigInteger`                                                                                                                                             |
 `string`               | `java.lang.String`                                                                                                                                                 |
 `bool`                 | `boolean`*, `java.lang.Boolean`                                                                                                                                    |
 `Message`              | `com.google.protobuf.Message`                                                                                                                                      |

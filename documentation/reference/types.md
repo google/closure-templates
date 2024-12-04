@@ -90,6 +90,19 @@ Python     | `float`
 An alias for `int|float`. (Technically a [composite type](#union), not a
 primitive.)
 
+### `gbigint` {#gbigint}
+
+An arbitrarily sized integer value. `gbigint` does not support math operations
+without an explicit coercion.
+
+Backend    | type in host language
+---------- | -------------------------------------------------------------
+JavaScript | `gbigint`
+SoySauce   | `long`, `com.google.template.soy.data.restricted.GbigintData`
+Tofu       | `com.google.template.soy.data.restricted.GbigintData`
+
+See [go/gbigint](http://go/gbigint) for more information.
+
 ### `string` {#string}
 
 `string` is one of the most common types in Soy. In addition to plain strings
