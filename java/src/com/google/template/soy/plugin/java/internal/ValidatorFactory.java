@@ -43,6 +43,7 @@ import com.google.template.soy.data.SoyVisualElement;
 import com.google.template.soy.data.SoyVisualElementData;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
+import com.google.template.soy.data.restricted.GbigintData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.NumberData;
@@ -63,6 +64,7 @@ import com.google.template.soy.types.StringType;
 import com.google.template.soy.types.UnionType;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.math.BigInteger;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -92,6 +94,9 @@ final class ValidatorFactory extends JavaValueFactory {
   private static final ImmutableSet<Class<?>> INT_TYPES =
       ImmutableSet.of(
           SoyValue.class, long.class, IntegerData.class, NumberData.class, int.class, double.class);
+
+  private static final ImmutableSet<Class<?>> GBIGINT_TYPES =
+      ImmutableSet.of(SoyValue.class, BigInteger.class, GbigintData.class);
 
   @SuppressWarnings("deprecation") // SoyLegacyObjectMap is deprecated
   private static final ImmutableSet<Class<?>> LEGACY_OBJECT_MAP_TYPES =

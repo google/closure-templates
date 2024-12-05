@@ -87,6 +87,11 @@ public abstract class NullishData extends PrimitiveData {
   }
 
   @Override
+  public final SoyValue checkNullishGbigint() {
+    return this;
+  }
+
+  @Override
   public final SoyValue checkNullishSanitizedContent(ContentKind contentKind) {
     return this;
   }

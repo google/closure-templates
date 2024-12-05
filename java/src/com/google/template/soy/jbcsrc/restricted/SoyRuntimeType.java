@@ -119,6 +119,7 @@ public abstract class SoyRuntimeType {
           }
         }
       // fall-through
+      case GBIGINT:
       case NULL:
       case UNDEFINED:
       case ATTRIBUTES:
@@ -201,6 +202,10 @@ public abstract class SoyRuntimeType {
    */
   public boolean isKnownString() {
     return soyType.getKind() == Kind.STRING;
+  }
+
+  public boolean isKnownGbigint() {
+    return soyType.getKind() == Kind.GBIGINT;
   }
 
   public boolean isKnownStringOrSanitizedContent() {

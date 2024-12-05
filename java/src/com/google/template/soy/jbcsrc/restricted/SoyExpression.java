@@ -58,6 +58,7 @@ import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.StringType;
 import com.google.template.soy.types.UndefinedType;
 import com.google.template.soy.types.UnknownType;
+import java.math.BigInteger;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
@@ -445,6 +446,8 @@ public final class SoyExpression extends Expression {
       MethodRefs.ORDAIN_AS_SAFE.invokeUnchecked(adapter);
     } else if (type.isKnownString()) {
       MethodRefs.STRING_DATA_FOR_VALUE.invokeUnchecked(adapter);
+    } else if (type.isKnownGbigint()) {
+      MethodRefs.GBIGINT_DATA_FOR_VALUE.invokeUnchecked(adapter);
     } else if (type.isKnownListOrUnionOfLists()) {
       MethodRefs.LIST_IMPL_FOR_PROVIDER_LIST.invokeUnchecked(adapter);
     } else if (type.isKnownSet()) {
@@ -484,6 +487,8 @@ public final class SoyExpression extends Expression {
         }
       }
       return MethodRefs.STRING_DATA_FOR_VALUE.invoke(delegate).toMaybeConstant();
+    } else if (type.isKnownGbigint()) {
+      return MethodRefs.GBIGINT_DATA_FOR_VALUE.invoke(delegate).toMaybeConstant();
     } else if (type.isKnownListOrUnionOfLists()) {
       return MethodRefs.LIST_IMPL_FOR_PROVIDER_LIST.invoke(delegate);
     } else if (type.isKnownSet()) {
@@ -869,6 +874,9 @@ public final class SoyExpression extends Expression {
         break;
       case SET:
         staticValue = alreadyUnboxed(Set.class);
+        break;
+      case GBIGINT:
+        staticValue = alreadyUnboxed(BigInteger.class);
         break;
       default:
         break;

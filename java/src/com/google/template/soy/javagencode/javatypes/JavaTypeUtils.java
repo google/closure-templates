@@ -76,6 +76,9 @@ public final class JavaTypeUtils {
       case STRING:
         types = ImmutableList.of(SimpleJavaType.STRING);
         break;
+      case GBIGINT:
+        types = ImmutableList.of(SimpleJavaType.BIGINT);
+        break;
       case ELEMENT:
       case HTML:
         types = ImmutableList.of(SimpleJavaType.HTML);

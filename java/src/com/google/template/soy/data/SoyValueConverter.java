@@ -44,11 +44,13 @@ import com.google.template.soy.data.internal.RuntimeMapTypeTracker;
 import com.google.template.soy.data.internal.SoyMapImpl;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
+import com.google.template.soy.data.restricted.GbigintData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import java.io.IOException;
+import java.math.BigInteger;
 import java.util.Map;
 import java.util.concurrent.Future;
 import java.util.function.Function;
@@ -84,6 +86,7 @@ public final class SoyValueConverter {
     cheapConverterMap.put(Boolean.class, BooleanData::forValue);
     cheapConverterMap.put(Integer.class, input -> IntegerData.forValue(input.longValue()));
     cheapConverterMap.put(Long.class, IntegerData::forValue);
+    cheapConverterMap.put(BigInteger.class, GbigintData::forValue);
 
     cheapConverterMap.put(Float.class, input -> FloatData.forValue(input.doubleValue()));
     cheapConverterMap.put(Double.class, FloatData::forValue);

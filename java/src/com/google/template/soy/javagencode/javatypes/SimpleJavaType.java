@@ -71,6 +71,14 @@ public class SimpleJavaType extends JavaType {
           castFunction("asNumber"),
           castFunction("asNullableNumber"));
 
+  public static final SimpleJavaType BIGINT =
+      new SimpleJavaType(
+          "java.math.BigInteger",
+          "? extends java.math.BigInteger",
+          /* isNullable= */ false,
+          castFunction("asGbigint"),
+          castFunction("asNullableGbigint"));
+
   public static final SimpleJavaType HTML =
       new SimpleJavaType(
           "com.google.common.html.types.SafeHtml",

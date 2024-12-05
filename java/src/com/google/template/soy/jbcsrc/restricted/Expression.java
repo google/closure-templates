@@ -38,6 +38,7 @@ import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoySet;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.TemplateValue;
+import com.google.template.soy.data.restricted.GbigintData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.internal.proto.JavaQualifiedNames;
 import com.google.template.soy.jbcsrc.shared.Names;
@@ -826,6 +827,9 @@ public abstract class Expression extends BytecodeProducer {
           }
           return Optional.of(MethodRefs.CHECK_INT.invoke(this));
 
+        case GBIGINT:
+          expectedClass = GbigintData.class;
+          break;
         case JS:
           return Optional.of(MethodRefs.CHECK_CONTENT_KIND.invoke(this, constant(ContentKind.JS)));
         case ITERABLE:

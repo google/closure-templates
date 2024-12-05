@@ -43,10 +43,12 @@ import com.google.template.soy.data.internal.SoyMapImpl;
 import com.google.template.soy.data.internal.SoyRecordImpl;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
+import com.google.template.soy.data.restricted.GbigintData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.data.restricted.StringData;
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
@@ -334,6 +336,14 @@ public abstract class BaseSoyTemplateImpl extends SoyTemplate {
     /** Converts a {@code Number} into a number type supported by Soy. */
     protected static SoyValue asNullableInt(@Nullable Number n) {
       return n == null ? NullData.INSTANCE : asInt(n.longValue());
+    }
+
+    protected static GbigintData asGbigint(BigInteger n) {
+      return GbigintData.forValue(n);
+    }
+
+    protected static SoyValue asNullableGbigint(@Nullable BigInteger n) {
+      return n == null ? NullData.INSTANCE : asGbigint(n);
     }
 
     protected static FloatData asFloat(double n) {

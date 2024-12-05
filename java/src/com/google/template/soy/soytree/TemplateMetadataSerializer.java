@@ -34,6 +34,7 @@ import com.google.template.soy.types.AnyType;
 import com.google.template.soy.types.BoolType;
 import com.google.template.soy.types.FloatType;
 import com.google.template.soy.types.FunctionType;
+import com.google.template.soy.types.GbigintType;
 import com.google.template.soy.types.IndexedType;
 import com.google.template.soy.types.IntType;
 import com.google.template.soy.types.MessageType;
@@ -346,6 +347,8 @@ public final class TemplateMetadataSerializer {
             return FloatType.getInstance();
           case STRING:
             return StringType.getInstance();
+          case GBIGINT:
+            return GbigintType.getInstance();
           case ATTRIBUTES:
             return AttributesType.getInstance();
           case JS:

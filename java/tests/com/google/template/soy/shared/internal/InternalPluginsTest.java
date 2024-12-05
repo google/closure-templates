@@ -57,11 +57,7 @@ public final class InternalPluginsTest {
       assertThat(function).isInstanceOf(SoyJavaScriptSourceFunction.class);
       assertThat(function).isInstanceOf(SoyJavaSourceFunction.class);
       if (!function.getClass().getName().contains("Proto")
-          && !function.getClass().getName().contains("VeHasSameIdMethod")
-          && !function.getClass().getName().contains("Gbigint")
-          && !function.getClass().getName().contains("IsSafeInt52")
-          && !function.getClass().getName().contains("NumberFunction")
-          && !function.getClass().getName().contains("StringFunction")) {
+          && !function.getClass().getName().contains("VeHasSameIdMethod")) {
         assertThat(function).isInstanceOf(SoyPythonSourceFunction.class);
       }
       // Internal functions should no longer implement SoyJavaFunction or SoyJsSrcFunction
