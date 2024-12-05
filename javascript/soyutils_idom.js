@@ -33,11 +33,9 @@
 /** @fileoverview @suppress {lintChecks} */
 goog.module('google3.javascript.template.soy.soyutils_idom');
 var module = module || { id: 'javascript/template/soy/soyutils_idom.js' };
+const {SanitizedContent, SanitizedContentKind, SanitizedHtml} = goog.require('goog.soy.data');
 var tslib_1 = goog.require('google3.third_party.javascript.tslib.tslib');
 var googSoy = goog.require('goog.soy'); // from //javascript/closure/soy
-var goog_goog_soy_data_SanitizedContent_1 = goog.require('goog.soy.data.SanitizedContent');  // from //javascript/closure/soy:data
-var goog_goog_soy_data_SanitizedContentKind_1 = goog.require('goog.soy.data.SanitizedContentKind'); // from //javascript/closure/soy:data
-var goog_goog_soy_data_SanitizedHtml_1 = goog.require('goog.soy.data.SanitizedHtml'); // from //javascript/closure/soy:data
 var googString = goog.require('goog.string'); // from //javascript/closure/string
 var soy = goog.require('soy'); // from //javascript/template/soy:soy_usegoog_js
 var goog_soydata_VERY_UNSAFE_1 = goog.require('soydata.VERY_UNSAFE'); // from //javascript/template/soy:soy_usegoog_js
@@ -115,7 +113,7 @@ function makeHtml(idomFn) {
     idomFn.toBoolean = function() {
       return isTruthy(idomFn);
     };
-    idomFn.contentKind = goog_goog_soy_data_SanitizedContentKind_1.HTML;
+    idomFn.contentKind = SanitizedContentKind.HTML;
     return idomFn;
 }
 exports.$$makeHtml = makeHtml;
@@ -125,7 +123,7 @@ function makeAttributes(idomFn) {
     idomFn.toBoolean = function() {
       return isTruthy(idomFn);
     };
-    idomFn.contentKind = goog_goog_soy_data_SanitizedContentKind_1.ATTRIBUTES;
+    idomFn.contentKind = SanitizedContentKind.ATTRIBUTES;
     return idomFn;
 }
 exports.$$makeAttributes = makeAttributes;
@@ -206,23 +204,21 @@ function callDynamicAttributes(incrementaldom,
 expr, data, ij) {
     // tslint:disable-next-line:no-any Attaching arbitrary attributes to function.
     var type = expr.contentKind;
-    if (type === goog_goog_soy_data_SanitizedContentKind_1.ATTRIBUTES) {
-        expr(incrementaldom, data, ij);
-    }
-    else {
-        var val = void 0;
-        if (type === goog_goog_soy_data_SanitizedContentKind_1.HTML) {
-            // This effectively negates the value of splitting a string. However,
-            // This can be removed if Soy decides to treat attribute printing
-            // and attribute names differently.
-            val = soy.$$filterHtmlAttributes(htmlToString(function () {
-                expr(defaultIdomRenderer, data, ij);
-            }));
-        }
-        else {
-            val = expr(data, ij);
-        }
-        printDynamicAttr(incrementaldom, val);
+    if (type === SanitizedContentKind.ATTRIBUTES) {
+      expr(incrementaldom, data, ij);
+    } else {
+      var val = void 0;
+      if (type === SanitizedContentKind.HTML) {
+        // This effectively negates the value of splitting a string. However,
+        // This can be removed if Soy decides to treat attribute printing
+        // and attribute names differently.
+        val = soy.$$filterHtmlAttributes(htmlToString(function() {
+          expr(defaultIdomRenderer, data, ij);
+        }));
+      } else {
+        val = expr(data, ij);
+      }
+      printDynamicAttr(incrementaldom, val);
     }
 }
 exports.$$callDynamicAttributes = callDynamicAttributes;
@@ -236,8 +232,7 @@ exports.$$callDynamicAttributes = callDynamicAttributes;
 function printDynamicAttr(incrementaldom, expr) {
     var e_1, _a;
     if (typeof expr === 'function' &&
-        expr.contentKind ===
-            goog_goog_soy_data_SanitizedContentKind_1.ATTRIBUTES) {
+        expr.contentKind === SanitizedContentKind.ATTRIBUTES) {
       // tslint:disable-next-line:no-any
       expr(incrementaldom);
       return;
@@ -272,18 +267,16 @@ exports.$$printDynamicAttr = printDynamicAttr;
 function callDynamicHTML(incrementaldom, expr, data, ij) {
     // tslint:disable-next-line:no-any Attaching arbitrary attributes to function.
     var type = expr.contentKind;
-    if (type === goog_goog_soy_data_SanitizedContentKind_1.HTML) {
-        expr(incrementaldom, data, ij);
-    }
-    else if (type === goog_goog_soy_data_SanitizedContentKind_1.ATTRIBUTES) {
-        var val = attributesToString(function () {
-            expr(defaultIdomRenderer, data, ij);
-        });
-        incrementaldom.text(val);
-    }
-    else {
-        var val = expr(data, ij);
-        incrementaldom.text(String(val));
+    if (type === SanitizedContentKind.HTML) {
+      expr(incrementaldom, data, ij);
+    } else if (type === SanitizedContentKind.ATTRIBUTES) {
+      var val = attributesToString(function() {
+        expr(defaultIdomRenderer, data, ij);
+      });
+      incrementaldom.text(val);
+    } else {
+      var val = expr(data, ij);
+      incrementaldom.text(String(val));
     }
 }
 exports.$$callDynamicHTML = callDynamicHTML;
@@ -312,18 +305,16 @@ expr, data, ij, escFn) {
     // tslint:disable-next-line:no-any Attaching arbitrary attributes to function.
     var type = expr.contentKind;
     var val;
-    if (type === goog_goog_soy_data_SanitizedContentKind_1.HTML) {
-        val = transformFn(htmlToString(function () {
-            expr(defaultIdomRenderer, data, ij);
-        }));
-    }
-    else if (type === goog_goog_soy_data_SanitizedContentKind_1.ATTRIBUTES) {
-        val = transformFn(attributesToString(function () {
-            expr(defaultIdomRenderer, data, ij);
-        }));
-    }
-    else {
-        val = expr(data, ij);
+    if (type === SanitizedContentKind.HTML) {
+      val = transformFn(htmlToString(function() {
+        expr(defaultIdomRenderer, data, ij);
+      }));
+    } else if (type === SanitizedContentKind.ATTRIBUTES) {
+      val = transformFn(attributesToString(function() {
+        expr(defaultIdomRenderer, data, ij);
+      }));
+    } else {
+      val = expr(data, ij);
     }
     return val;
 }
@@ -332,28 +323,27 @@ exports.$$callDynamicText = callDynamicText;
  * Prints an expression depending on its type.
  */
 function print(incrementaldom, expr, isSanitizedContent) {
-    if (expr instanceof goog_goog_soy_data_SanitizedHtml_1 || isSanitizedContent) {
-        var content = String(expr);
-        // If the string has no < or &, it's definitely not HTML. Otherwise
-        // proceed with caution.
-        if (content.indexOf('<') < 0 && content.indexOf('&') < 0) {
-            incrementaldom.text(content);
-        }
-        else {
-            // For HTML content we need to insert a custom element where we can place
-            // the content without incremental dom modifying it.
-            var el = incrementaldom.open('html-blob');
-            if (el && el.__innerHTML !== content) {
-                googSoy.renderHtml(el, goog_soydata_VERY_UNSAFE_1.ordainSanitizedHtml(content));
-                el.__innerHTML = content;
-            }
-            incrementaldom.skip();
-            incrementaldom.close();
-        }
+  if (expr instanceof SanitizedHtml || isSanitizedContent) {
+    var content = String(expr);
+    // If the string has no < or &, it's definitely not HTML. Otherwise
+    // proceed with caution.
+    if (content.indexOf('<') < 0 && content.indexOf('&') < 0) {
+      incrementaldom.text(content);
+    } else {
+      // For HTML content we need to insert a custom element where we can place
+      // the content without incremental dom modifying it.
+      var el = incrementaldom.open('html-blob');
+      if (el && el.__innerHTML !== content) {
+        googSoy.renderHtml(
+            el, goog_soydata_VERY_UNSAFE_1.ordainSanitizedHtml(content));
+        el.__innerHTML = content;
+      }
+      incrementaldom.skip();
+      incrementaldom.close();
     }
-    else {
-        renderDynamicContent(incrementaldom, expr);
-    }
+  } else {
+    renderDynamicContent(incrementaldom, expr);
+  }
 }
 exports.$$print = print;
 function visitHtmlCommentNode(incrementaldom, val) {
@@ -374,8 +364,7 @@ function visitHtmlCommentNode(incrementaldom, val) {
 exports.$$visitHtmlCommentNode = visitHtmlCommentNode;
 function isTruthy(expr) {
   if (!expr) return false;
-  if (expr instanceof goog_goog_soy_data_SanitizedContent_1)
-    return !!expr.getContent();
+  if (expr instanceof SanitizedContent) return !!expr.getContent();
   // idom callbacks.
   if (typeof expr === 'function') {
     var renderer = new api_idom_1.FalsinessRenderer();

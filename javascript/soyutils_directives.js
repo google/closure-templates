@@ -33,7 +33,7 @@
 
 goog.module('google3.javascript.template.soy.soyutils_directives');
 var module = module || { id: 'javascript/template/soy/soyutils_directives.js' };
-var goog_goog_soy_data_SanitizedContentKind_1 = goog.require('goog.soy.data.SanitizedContentKind'); // from //javascript/closure/soy:data
+const {SanitizedContentKind} = goog.require('goog.soy.data');
 var soy = goog.require('soy'); // from //javascript/template/soy:soy_usegoog_js
 var goog_soydata_VERY_UNSAFE_1 = goog.require('soydata.VERY_UNSAFE'); // from //javascript/template/soy:soy_usegoog_js
 function isIdomFunctionType(
@@ -49,8 +49,7 @@ exports.$$isIdomFunctionType = isIdomFunctionType;
  */
 // tslint:disable-next-line:no-any
 function filterHtmlAttributes(value) {
-  if (isIdomFunctionType(
-          value, goog_goog_soy_data_SanitizedContentKind_1.ATTRIBUTES) ||
+  if (isIdomFunctionType(value, SanitizedContentKind.ATTRIBUTES) ||
       soy.$$isAttribute(value)) {
     return value;
   }
@@ -64,9 +63,10 @@ exports.$$filterHtmlAttributes = filterHtmlAttributes;
  */
 // tslint:disable-next-line:no-any
 function escapeHtml(value, renderer) {
-    if (isIdomFunctionType(value, goog_goog_soy_data_SanitizedContentKind_1.HTML)) {
-        return goog_soydata_VERY_UNSAFE_1.ordainSanitizedHtml(value.toString(renderer));
-    }
+  if (isIdomFunctionType(value, SanitizedContentKind.HTML)) {
+    return goog_soydata_VERY_UNSAFE_1.ordainSanitizedHtml(
+        value.toString(renderer));
+  }
     return soy.$$escapeHtml(value);
 }
 exports.$$escapeHtml = escapeHtml;
@@ -78,9 +78,12 @@ exports.$$escapeHtml = escapeHtml;
 function bidiUnicodeWrap(
 // tslint:disable-next-line:no-any
 bidiGlobalDir, value, renderer) {
-    if (isIdomFunctionType(value, goog_goog_soy_data_SanitizedContentKind_1.HTML)) {
-        return soy.$$bidiUnicodeWrap(bidiGlobalDir, goog_soydata_VERY_UNSAFE_1.ordainSanitizedHtml(value.toString(renderer)));
-    }
+  if (isIdomFunctionType(value, SanitizedContentKind.HTML)) {
+    return soy.$$bidiUnicodeWrap(
+        bidiGlobalDir,
+        goog_soydata_VERY_UNSAFE_1.ordainSanitizedHtml(
+            value.toString(renderer)));
+  }
     return soy.$$bidiUnicodeWrap(bidiGlobalDir, value);
 }
 exports.$$bidiUnicodeWrap = bidiUnicodeWrap;
