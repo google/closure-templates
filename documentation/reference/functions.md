@@ -196,7 +196,7 @@ function does not remove duplicate records or protobufs. Only primitive types
 (null, undefined, bool, int, float, number, string) are successfully
 deduplicated.
 
-<span id="list-string|number_join"></span>
+<span id="list-string|number|gbigint_join"></span>
 
 ### `list.join(separator)` {#join}
 
