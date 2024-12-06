@@ -22,6 +22,11 @@ import com.google.common.base.Preconditions;
 @AutoValue
 public abstract class TemplateImportType extends ImportType {
 
+  @Override
+  public TemplateType getTemplateType() {
+    return ((TemplateImportType) this).getBasicTemplateType();
+  }
+
   public static TemplateImportType create(String fqn) {
     return new AutoValue_TemplateImportType(fqn);
   }

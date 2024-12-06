@@ -19,6 +19,7 @@ package com.google.template.soy.error;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.google.errorprone.annotations.ForOverride;
 import com.google.template.soy.base.SourceLocation;
 
@@ -188,6 +189,16 @@ public abstract class ErrorReporter {
   /** Returns all the errors reported so far. */
   public ImmutableList<SoyError> getErrors() {
     return getReports().stream().filter(r -> !r.isWarning()).collect(toImmutableList());
+  }
+
+  public Iterable<SoyError> throwableErrors(){
+
+    if(this.hasErrors()){
+      Iterable<SoyError> errors =
+              Iterables.concat(this.getErrors(), this.getWarnings());
+      return errors;
+    }
+    return  null;
   }
 
   /** Returns all the warnings reported so far. */

@@ -40,6 +40,10 @@ import java.util.Deque;
  */
 public abstract class SoyType implements ErrorArg {
 
+  public TemplateType getTemplateType(){
+    return null;
+  }
+
   /**
    * Enum that identifies the kind of type this is.
    *

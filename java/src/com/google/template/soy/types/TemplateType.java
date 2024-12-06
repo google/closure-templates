@@ -41,6 +41,12 @@ import javax.annotation.Nullable;
 @AutoValue
 public abstract class TemplateType extends SoyType {
 
+
+  @Override
+  public TemplateType getTemplateType() {
+    return (TemplateType) this;
+  }
+
   public static final String EXTRA_ROOT_ELEMENT_ATTRIBUTES = "extraRootElementAttributes";
   public static final String KEY_HIDDEN_ATTRIBUTE_NAME = "ssk";
   private static final Parameter EXTRA_ROOT_ELEMENT_ATTRIBUTES_PARAM =
