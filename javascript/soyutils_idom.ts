@@ -491,11 +491,6 @@ class IdHolderForDebug implements IdHolder {
   backing?: string;
   get id(): string | undefined {
     if (!this.backing) {
-      // b/235271145: When checking idom blocks for truthiness, the attribute is
-      // skipped.  Ignore this error in this case.
-      if (inFalsinessRendererDepth > 0) {
-        return 'zSoyz: Fake ID in FalsyRenderer';
-      }
       throw new Error(
         `
         Cannot read 'idHolder.id' until the element with the 'uniqueAttribute()' call is
@@ -576,6 +571,12 @@ function stableUniqueAttribute(
  * Note: This returns a mutable object; this implementation is a bit hacky.
  */
 function stableUniqueAttributeIdHolder(): IdHolder {
+  // b/235271145: When creating an IdHolder from inside an {if $html} block, the
+  // actual uniqueAttribute() may be skipped.  If the IdHolder is read later on,
+  // don't fail.
+  if (inFalsinessRendererDepth > 0) {
+    return {id: 'zSoyz: Fake ID in FalsyRenderer'};
+  }
   return goog.DEBUG ? new IdHolderForDebug() : {};
 }
 
