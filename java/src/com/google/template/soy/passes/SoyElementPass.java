@@ -218,9 +218,6 @@ final class SoyElementPass implements CompilerFileSetPass {
             break; // skip reporting additional errors
           }
           openTag = maybeOpenTagNode;
-        } else if (isElmOrHtml) {
-          this.errorReporter.report(template.getSourceLocation(), ELEMENT_TEMPLATE_EXACTLY_ONE_TAG);
-          reportedSingleHtmlElmError = true;
         } else {
           List<CallBasicNode> callNodes =
               veLogNode.getChildren().stream()
@@ -239,6 +236,10 @@ final class SoyElementPass implements CompilerFileSetPass {
                 visited);
           } else if (isSoyElement) {
             this.errorReporter.report(veLogNode.getSourceLocation(), SOY_ELEMENT_EXACTLY_ONE_TAG);
+            reportedSingleHtmlElmError = true;
+          } else if (isElmOrHtml) {
+            this.errorReporter.report(
+                template.getSourceLocation(), ELEMENT_TEMPLATE_EXACTLY_ONE_TAG);
             reportedSingleHtmlElmError = true;
           }
         }
