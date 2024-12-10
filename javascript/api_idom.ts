@@ -688,8 +688,8 @@ function debugReplacerIgnoringSerializationChanges(
   if (v == null) return undefined;
   // Allow booleans represented as numbers.
   if (typeof v === 'boolean') v = +v;
-  // Allow numbers represented as strings.
-  if (typeof v === 'number') v = `${v}`;
+  // Allow numbers/bigints represented as strings.
+  if (typeof v === 'number' || typeof v === 'bigint') v = `${v}`;
   return v;
 }
 
