@@ -542,6 +542,47 @@ function $$getVeMetadata(veData) {
   return $$getMetadata(veData.getVe());
 }
 
+/**
+ * Returns a logger that does nothing.  Occasionally useful for testing.
+ * @return {!Logger}
+ */
+function getNullLogger() {
+  /** @implements {Logger} */
+  class NullLogger {
+    /**
+     * @override
+     * @param {!ElementMetadata} metaData
+     */
+    enter(metaData) {}
+
+    /** @override */
+    exit() {}
+
+    /**
+     * @override
+     * @param {!Element} el
+     * @param {!Function} fn
+     * @return {void}
+     */
+    logGraft(el, fn) {
+      fn();
+    }
+    /**
+     * @override
+     * @param {string} name
+     * @param {!Array<?>} args
+     * @return {string}
+     */
+    evalLoggingFunction(name, args) {
+      return '';
+    }
+    /** @override */
+    resetBuilder() {}
+  }
+  return new NullLogger();
+}
+
+
 exports = {
   $$hasMetadata,
   $$getLoggingAttribute,
@@ -562,4 +603,5 @@ exports = {
   $$getMetadata,
   $$getVeMetadata,
   $$veHasSameId,
+  getNullLogger,
 };
