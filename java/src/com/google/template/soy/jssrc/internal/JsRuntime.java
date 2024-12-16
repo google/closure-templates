@@ -154,7 +154,6 @@ public final class JsRuntime {
 
   public static final Expression SOY_DEBUG_SOY_TEMPLATE_INFO =
       SOY.dotAccess("$$getDebugSoyTemplateInfo");
-
   public static final Expression SOY_ARE_YOU_AN_INTERNAL_CALLER =
       SOY.dotAccess("$$areYouAnInternalCaller");
   public static final Expression SOY_INTERNAL_CALL_MARKER =
@@ -173,6 +172,9 @@ public final class JsRuntime {
       Expressions.group(SOY_VELOG.googModuleGet().dotAccess("$$VisualElement"));
   public static final Expression SOY_VISUAL_ELEMENT_DATA =
       Expressions.group(SOY_VELOG.googModuleGet().dotAccess("$$VisualElementData"));
+
+  public static final Expression SOY_VISUAL_ELEMENT_FLUSH_PENDING_LOGGING_ATTRIBUTES =
+      SOY_VELOG.googModuleGet().dotAccess("$$flushPendingLoggingAttributes");
 
   public static final Expression WINDOW_CONSOLE_LOG = dottedIdNoRequire("window.console.log");
 

@@ -300,6 +300,7 @@ public final class PassManager {
     private ValidatedConformanceConfig conformanceConfig = ValidatedConformanceConfig.EMPTY;
     private boolean insertEscapingDirectives = true;
     private boolean addHtmlAttributesForDebugging = true;
+    private boolean addHtmlAttributesForLogging = true;
     private AstRewrites astRewrites = AstRewrites.ALL;
     private final Map<Class<? extends CompilerPass>, PassContinuationRule>
         passContinuationRegistry = Maps.newHashMap();
@@ -450,6 +451,12 @@ public final class PassManager {
     @CanIgnoreReturnValue
     public Builder addHtmlAttributesForDebugging(boolean addHtmlAttributesForDebugging) {
       this.addHtmlAttributesForDebugging = addHtmlAttributesForDebugging;
+      return this;
+    }
+
+    @CanIgnoreReturnValue
+    public Builder addHtmlAttributesForLogging(boolean addHtmlAttributesForLogging) {
+      this.addHtmlAttributesForLogging = addHtmlAttributesForLogging;
       return this;
     }
 
@@ -713,7 +720,6 @@ public final class PassManager {
         }
       } else {
         if (astRewrites.combineTextNodes()) {
-
           passes.add(new CombineConsecutiveRawTextNodesPass());
         }
         passes.add(
@@ -723,6 +729,9 @@ public final class PassManager {
                 insertEscapingDirectives,
                 accumulatedState::registryFull));
         passes.add(new IncrementalDomKeysPass(disableAllTypeChecking));
+      }
+      if (addHtmlAttributesForLogging) {
+        passes.add(new AddFlushPendingLoggingAttributesPass());
       }
       passes.add(new CallAnnotationPass());
 

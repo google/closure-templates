@@ -688,6 +688,7 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
         return new PyExpr("{" + spread.getText() + "}", Integer.MAX_VALUE);
       case MSG_WITH_ID:
       case REMAINDER:
+      case FLUSH_PENDING_LOGGING_ATTRIBUTES:
         // should have been removed earlier in the compiler
         throw new AssertionError();
       case PROTO_INIT:

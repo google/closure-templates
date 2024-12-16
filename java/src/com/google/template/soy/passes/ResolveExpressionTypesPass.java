@@ -2884,7 +2884,8 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
           }
           break;
         case EMPTY_TO_UNDEFINED:
-          throw new AssertionError("impossible, this is only used by desuraging passes: " + node);
+        case FLUSH_PENDING_LOGGING_ATTRIBUTES:
+          throw new AssertionError("impossible, this is only used by later passes: " + node);
       }
     }
 

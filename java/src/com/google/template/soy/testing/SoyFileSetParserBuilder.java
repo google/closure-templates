@@ -92,6 +92,7 @@ public final class SoyFileSetParserBuilder {
   // By default, do not modify the AST to add the HTML comments, since many unit tests depend on
   // the order of the nodes in the AST.
   private boolean addHtmlAttributesForDebugging = false;
+  private boolean addHtmlAttributesForLogging = false;
   private final PassManager.Builder passManager = new PassManager.Builder();
   private boolean disableAllTypeChecking = false;
 
@@ -353,6 +354,17 @@ public final class SoyFileSetParserBuilder {
     return this;
   }
 
+  /**
+   * Tests can use this method to force running {@code AddLoggingAttributesPass}. By default, this
+   * compiler pass is disabled for tests, since it modifies the AST structure and will break a lot
+   * of unit tests that rely on particular structure.
+   */
+  @CanIgnoreReturnValue
+  public SoyFileSetParserBuilder addHtmlAttributesForLogging(boolean addHtmlAttributesForLogging) {
+    this.addHtmlAttributesForLogging = addHtmlAttributesForLogging;
+    return this;
+  }
+
   @CanIgnoreReturnValue
   public SoyFileSetParserBuilder disableAllTypeChecking(boolean disableAllTypeChecking) {
     this.disableAllTypeChecking = disableAllTypeChecking;
@@ -428,7 +440,8 @@ public final class SoyFileSetParserBuilder {
                 errorReporter))
         .insertEscapingDirectives(runAutoescaper)
         .optimize(runOptimizer)
-        .addHtmlAttributesForDebugging(addHtmlAttributesForDebugging);
+        .addHtmlAttributesForDebugging(addHtmlAttributesForDebugging)
+        .addHtmlAttributesForLogging(addHtmlAttributesForLogging);
     if (allowUnboundGlobals) {
       passManager.allowUnknownGlobals();
     }

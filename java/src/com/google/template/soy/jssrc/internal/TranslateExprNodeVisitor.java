@@ -1138,6 +1138,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
           return hasContent(visit(node.getParam(0)));
         case NEW_SET:
           return visitNewSetFunction(node);
+        case FLUSH_PENDING_LOGGING_ATTRIBUTES:
         case LEGACY_DYNAMIC_TAG:
         case REMAINDER:
         case MSG_WITH_ID:

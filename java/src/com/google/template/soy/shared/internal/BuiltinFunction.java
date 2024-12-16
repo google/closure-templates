@@ -68,7 +68,8 @@ public enum BuiltinFunction implements SoyFunction {
   BOOLEAN("Boolean"),
   HAS_CONTENT("hasContent"),
   IS_TRUTHY_NON_EMPTY("isTruthyNonEmpty"),
-  NEW_SET("Set");
+  NEW_SET("Set"),
+  FLUSH_PENDING_LOGGING_ATTRIBUTES("$$flushPendingLoggingAttributes");
 
   /** The function name. */
   private final String functionName;
@@ -92,6 +93,7 @@ public enum BuiltinFunction implements SoyFunction {
       case IS_PRIMARY_MSG_IN_USE:
         return ImmutableSet.of(3);
       case DEBUG_SOY_TEMPLATE_INFO:
+      case FLUSH_PENDING_LOGGING_ATTRIBUTES:
         return ImmutableSet.of(0);
       case SOY_SERVER_KEY:
       case CHECK_NOT_NULL:
@@ -175,6 +177,7 @@ public enum BuiltinFunction implements SoyFunction {
       case IS_PRIMARY_MSG_IN_USE: // implicitly depends on a message bundle
       case DEBUG_SOY_TEMPLATE_INFO: // implicitly depends on a renderer param or js compiler flag
       case VE_DEF:
+      case FLUSH_PENDING_LOGGING_ATTRIBUTES: // implicitly depends on ephemeral state
         return false;
     }
     throw new AssertionError(this);

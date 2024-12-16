@@ -96,6 +96,12 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
   @Nonnull
   public abstract LoggingAdvisingAppendable exitLoggableElement();
 
+  /** Flushes all pending logging attributes. */
+  public final LoggingAdvisingAppendable flushPendingLoggingAttributes() {
+    // TODO(b/383661457): Implement this.
+    return this;
+  }
+
   /**
    * Flushes all intermediate buffers stored within the appendable.
    *

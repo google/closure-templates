@@ -24,6 +24,8 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.basicdirectives.BasicEscapeDirective;
+import com.google.template.soy.exprtree.FunctionNode;
+import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallNode;
@@ -203,6 +205,7 @@ public final class DesugarHtmlNodesPass implements CompilerFileSetPass {
 
       ImmutableList.Builder<StandaloneNode> builder = ImmutableList.builder();
       boolean needsDynamicSpace = node.getStaticKey() == null && !node.hasValue();
+      boolean isFlushPendingLoggingAttribute = false;
       if (needsSpaceForAttribute && !needsDynamicSpace) {
         // prefix the value with a single whitespace character when the attribute is static. This
         // makes it unambiguous with the preceding attribute/tag name.
@@ -212,16 +215,24 @@ public final class DesugarHtmlNodesPass implements CompilerFileSetPass {
         // use a print directive to conditionally add a whitespace for dynamic attributes.
         SoyPrintDirective whitespaceDirective =
             new BasicEscapeDirective.WhitespaceHtmlAttributesDirective();
-        if (node.getChild(0) instanceof PrintNode) {
+        var first = node.getChild(0);
+        if (first instanceof PrintNode) {
+          var printNode = (PrintNode) first;
+          if (printNode.getExpr().getRoot() instanceof FunctionNode
+              && ((FunctionNode) printNode.getExpr().getRoot()).getSoyFunction()
+                  == BuiltinFunction.FLUSH_PENDING_LOGGING_ATTRIBUTES) {
+            isFlushPendingLoggingAttribute = true;
+          } else {
           PrintDirectiveNode whitespaceDirectiveNode =
               PrintDirectiveNode.createSyntheticNode(
                   idGenerator.genId(),
                   Identifier.create("|whitespaceHtmlAttributes", node.getSourceLocation()),
                   node.getSourceLocation());
           whitespaceDirectiveNode.setPrintDirective(whitespaceDirective);
-          ((PrintNode) node.getChild(0)).addChild(whitespaceDirectiveNode);
-        } else if (node.getChild(0) instanceof CallNode) {
-          CallNode typed = (CallNode) node.getChild(0);
+            printNode.addChild(whitespaceDirectiveNode);
+          }
+        } else if (first instanceof CallNode) {
+          CallNode typed = (CallNode) first;
           typed.setEscapingDirectives(
               ImmutableList.<SoyPrintDirective>builder()
                   .addAll(typed.getEscapingDirectives())
@@ -241,7 +252,7 @@ public final class DesugarHtmlNodesPass implements CompilerFileSetPass {
         // normally there would only be 1 child, but rewriting may have split it into multiple
         builder.addAll(node.getChildren().subList(1, node.numChildren()));
       }
-      if (!node.hasValue() && node.getStaticKey() == null) {
+      if (!node.hasValue() && node.getStaticKey() == null && !isFlushPendingLoggingAttribute) {
         // Add a space after the last attribute if it is dynamic and the tag is self-closing. If the
         // attribute value isn't quoted, a space is needed to disambiguate with the "/" character.
         needsSpaceSelfClosingTag = true;

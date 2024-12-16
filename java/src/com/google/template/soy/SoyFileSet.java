@@ -927,7 +927,7 @@ public final class SoyFileSet {
   public SoyTofu compileToTofu(Map<String, ? extends Supplier<Object>> pluginInstances) {
     return entryPoint(
         () -> {
-          ServerCompilationPrimitives primitives = compileForServerRendering();
+          ServerCompilationPrimitives primitives = compileForServerRendering(/* isTofu= */ true);
           throwIfErrorsPresent();
           return doCompileToTofu(primitives, pluginInstances);
         });
@@ -974,7 +974,7 @@ public final class SoyFileSet {
   public SoySauce compileTemplates(Map<String, ? extends Supplier<Object>> pluginInstances) {
     return entryPoint(
         () -> {
-          ServerCompilationPrimitives primitives = compileForServerRendering();
+          ServerCompilationPrimitives primitives = compileForServerRendering(/* isTofu= */ false);
           throwIfErrorsPresent();
           return doCompileSoySauce(primitives, PluginInstances.of(pluginInstances));
         });
@@ -994,7 +994,7 @@ public final class SoyFileSet {
   void compileToJar(ByteSink jarTarget, Optional<ByteSink> srcJarTarget) {
     entryPointVoid(
         () -> {
-          ServerCompilationPrimitives primitives = compileForServerRendering();
+          ServerCompilationPrimitives primitives = compileForServerRendering(/* isTofu= */ false);
           try {
             BytecodeCompiler.compileToJar(
                 primitives.soyTree, errorReporter, typeRegistry, jarTarget, primitives.registry);
@@ -1035,15 +1035,15 @@ public final class SoyFileSet {
   }
 
   /** Runs common compiler logic shared by tofu and jbcsrc backends. */
-  private ServerCompilationPrimitives compileForServerRendering() {
-    ParseResult result = parse();
+  private ServerCompilationPrimitives compileForServerRendering(boolean isTofu) {
+    ParseResult result = parse(passManagerBuilder().addHtmlAttributesForLogging(!isTofu));
     throwIfErrorsPresent();
 
     SoyFileSetNode soyTree = result.fileSet();
     FileSetMetadata registry = result.registry();
     // Clear the SoyDoc strings because they use unnecessary memory, unless we have a cache, in
     // which case it is pointless.
-    if (cache == null) {
+    if (cache == null && isTofu) {
       new ClearSoyDocStringsVisitor().exec(soyTree);
     }
 
@@ -1078,6 +1078,8 @@ public final class SoyFileSet {
               passManagerBuilder()
                   .allowUnknownJsGlobals()
                   .desugarHtmlNodes(false)
+                  // Because we log by iterating the dom, this is not needed.
+                  .addHtmlAttributesForLogging(false)
                   .validateJavaMethods(false);
           ParseResult result = parse(builder);
           throwIfErrorsPresent();
@@ -1108,6 +1110,8 @@ public final class SoyFileSet {
                       .desugarHtmlNodes(false)
                       .allowUnknownJsGlobals()
                       .desugarIdomFeatures(false)
+                      // Because we log while producing the dom, this is not needed.
+                      .addHtmlAttributesForLogging(false)
                       .validateJavaMethods(false));
           throwIfErrorsPresent();
           return new IncrementalDomSrcMain(scopedData.enterable(), typeRegistry)
@@ -1127,7 +1131,12 @@ public final class SoyFileSet {
     return entryPoint(
         () -> {
           try {
-            ParseResult result = parse(passManagerBuilder().validateJavaMethods(false));
+            ParseResult result =
+                parse(
+                    passManagerBuilder()
+                        .validateJavaMethods(false)
+                        // pysrc doesn't support velogging
+                        .addHtmlAttributesForLogging(false));
             throwIfErrorsPresent();
             return new PySrcMain(scopedData.enterable())
                 .genPyFiles(result.fileSet(), result.registry(), pySrcOptions, errorReporter);
@@ -1227,6 +1236,7 @@ public final class SoyFileSet {
         .astRewrites(astRewrites)
         // skip adding extra attributes
         .addHtmlAttributesForDebugging(false)
+        .addHtmlAttributesForLogging(false)
         // skip the autoescaper
         .insertEscapingDirectives(false)
         .desugarHtmlNodes(false)

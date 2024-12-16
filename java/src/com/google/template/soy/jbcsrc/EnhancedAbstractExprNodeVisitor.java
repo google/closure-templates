@@ -122,6 +122,8 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
           return visitIsTruthyNonEmptyFunction(node);
         case NEW_SET:
           return visitNewSetFunction(node);
+        case FLUSH_PENDING_LOGGING_ATTRIBUTES:
+          return visitFlushPendingLoggingAttributesFunction(node);
         case MSG_WITH_ID:
         case REMAINDER:
           // should have been removed earlier in the compiler
@@ -229,6 +231,10 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
   }
 
   T visitNewSetFunction(FunctionNode node) {
+    return visitExprNode(node);
+  }
+
+  T visitFlushPendingLoggingAttributesFunction(FunctionNode node) {
     return visitExprNode(node);
   }
 }

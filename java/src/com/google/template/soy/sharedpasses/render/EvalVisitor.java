@@ -911,6 +911,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
           return visitNewSetFunction(node);
         case MSG_WITH_ID:
         case REMAINDER:
+        case FLUSH_PENDING_LOGGING_ATTRIBUTES:
           // should have been removed earlier in the compiler
           throw new AssertionError();
       }

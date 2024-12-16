@@ -74,6 +74,7 @@ import com.google.template.soy.logging.LoggingFunction;
 import com.google.template.soy.msgs.internal.MsgUtils;
 import com.google.template.soy.msgs.internal.MsgUtils.MsgPartsAndIds;
 import com.google.template.soy.passes.IndirectParamsCalculator;
+import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.AbstractReturningSoyNodeVisitor;
@@ -840,6 +841,9 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       FunctionNode fn = (FunctionNode) node.getExpr().getRoot();
       if (fn.getSoyFunction() instanceof LoggingFunction) {
         return visitLoggingFunction(node, fn, (LoggingFunction) fn.getSoyFunction());
+      }
+      if (fn.getSoyFunction() == BuiltinFunction.FLUSH_PENDING_LOGGING_ATTRIBUTES) {
+        return appendableExpression.flushPendingLoggingAttributes().toStatement();
       }
     }
     // First check our special case where all print directives are streamable and an expression that
