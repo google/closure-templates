@@ -53,6 +53,10 @@ public abstract class ParamDecls extends Expression {
     return new AutoValue_ParamDecls(ImmutableList.copyOf(params), false, null);
   }
 
+  public RecordType asRecordType() {
+    return RecordType.create(params());
+  }
+
   @Override
   void doFormatOutputExpr(FormattingContext ctx) {
     if (namedStyle()) {
