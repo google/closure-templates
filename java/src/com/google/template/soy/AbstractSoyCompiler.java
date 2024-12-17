@@ -43,6 +43,7 @@ import com.google.template.soy.CacheLoaders.CachedDescriptorSet;
 import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.base.internal.KytheMode;
+import com.google.template.soy.base.internal.SourceMapMode;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.error.SoyCompilationException;
 import com.google.template.soy.plugin.java.DelegatingMethodChecker;
@@ -213,6 +214,11 @@ public abstract class AbstractSoyCompiler {
       name = "--kythe_mode",
       usage = "The kythe mode for generating kythe imputation metadata. Used by some compilers.")
   protected KytheMode kytheMode = KytheMode.DISABLED;
+
+  @Option(
+      name = "--sourcemap_mode",
+      usage = "The mode for generating sourcemap metadata. Used by some compilers.")
+  protected SourceMapMode sourceMapMode = SourceMapMode.DISABLED;
 
   /** The remaining arguments after parsing command-line flags. */
   @Argument private List<String> arguments = new ArrayList<>();

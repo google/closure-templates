@@ -20,6 +20,7 @@ import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.base.internal.KytheMode;
+import com.google.template.soy.base.internal.SourceMapMode;
 
 /** Compilation options for the JS Src output target (backend). */
 @AutoValue
@@ -90,6 +91,8 @@ public abstract class SoyJsSrcOptions {
 
   public abstract KytheMode kytheMode();
 
+  public abstract SourceMapMode sourceMapMode();
+
   public static Builder builder() {
     return new AutoValue_SoyJsSrcOptions.Builder()
         .setDepsStrategy(JsDepsStrategy.NAMESPACES)
@@ -98,7 +101,8 @@ public abstract class SoyJsSrcOptions {
         .setGoogMsgsAreExternal(false)
         .setBidiGlobalDir(0)
         .setUseGoogIsRtlForBidiGlobalDir(false)
-        .setKytheMode(KytheMode.DISABLED);
+        .setKytheMode(KytheMode.DISABLED)
+        .setSourceMapMode(SourceMapMode.DISABLED);
   }
 
   public abstract Builder toBuilder();
@@ -193,6 +197,8 @@ public abstract class SoyJsSrcOptions {
     public abstract Builder setUseGoogIsRtlForBidiGlobalDir(boolean useGoogIsRtlForBidiGlobalDir);
 
     public abstract Builder setKytheMode(KytheMode kytheMode);
+
+    public abstract Builder setSourceMapMode(SourceMapMode sourceMapMode);
 
     abstract SoyJsSrcOptions autoBuild();
 

@@ -18,6 +18,7 @@ package com.google.template.soy.incrementaldomsrc;
 
 import com.google.auto.value.AutoValue;
 import com.google.template.soy.base.internal.KytheMode;
+import com.google.template.soy.base.internal.SourceMapMode;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 
 /** Compilation options for incrementaldomsrc. */
@@ -32,11 +33,14 @@ public abstract class SoyIncrementalDomSrcOptions {
 
   public abstract KytheMode kytheMode();
 
+  public abstract SourceMapMode sourceMapMode();
+
   public static Builder builder() {
     return new AutoValue_SoyIncrementalDomSrcOptions.Builder()
         .setDependOnCssHeader(false)
         .setGoogMsgsAreExternal(true)
-        .setKytheMode(KytheMode.DISABLED);
+        .setKytheMode(KytheMode.DISABLED)
+        .setSourceMapMode(SourceMapMode.DISABLED);
   }
 
   public abstract Builder toBuilder();
@@ -60,6 +64,8 @@ public abstract class SoyIncrementalDomSrcOptions {
 
     public abstract Builder setKytheMode(KytheMode kytheMode);
 
+    public abstract Builder setSourceMapMode(SourceMapMode sourceMapMode);
+
     public abstract SoyIncrementalDomSrcOptions build();
   }
 
@@ -77,6 +83,7 @@ public abstract class SoyIncrementalDomSrcOptions {
         .setUseGoogIsRtlForBidiGlobalDir(true)
         .setDependOnCssHeader(dependOnCssHeader())
         .setKytheMode(kytheMode())
+        .setSourceMapMode(sourceMapMode())
         .build();
   }
 }
