@@ -25,8 +25,8 @@ import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.IN
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_ATTR;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_CLOSE;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_ELEMENT_CLOSE;
-import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_ENTER;
-import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_EXIT;
+import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_ENTER_VELOG;
+import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_EXIT_VELOG;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_KEEP_GOING;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_LOGGING_FUNCTION_ATTR;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_OPEN;
@@ -38,9 +38,6 @@ import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.IN
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_PUSH_KEY;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_PUSH_MANUAL_KEY;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_TEXT;
-import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_TODEFAULT;
-import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_TONULL;
-import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_VERIFY_LOGONLY;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_VISIT_HTML_COMMENT;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_CALL_DYNAMIC_ATTRIBUTES;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_CALL_DYNAMIC_CSS;
@@ -139,33 +136,6 @@ import javax.annotation.Nullable;
  * print the function calls and changing how statements are combined.
  */
 public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBodyVisitor {
-
-  /**
-   * Class that contains the state generated from visiting the beginning of a velogging statement.
-   * This allows one to generate code such as
-   *
-   * <pre>
-   *   var velog_1 = foobar;
-   *   if (velog_1) {
-   *     idom = idom.toNullRenderer();
-   *   }
-   *   idom.enter(new Metadata(...));
-   *   ...
-   *   if (velog_1) {
-   *     idom = idom.toDefaultRenderer();
-   *   }
-   * </pre>
-   */
-  static class VeLogStateHolder {
-    Expression logOnlyConditional; // Holds the variable reference to velog_1
-    Statement enterStatement; // Contains the idom.enter(...) statement
-
-    public VeLogStateHolder(Expression logOnlyConditional, Statement enterStatement) {
-      this.logOnlyConditional = logOnlyConditional;
-      this.enterStatement = enterStatement;
-    }
-  }
-
   private final Deque<SanitizedContentKind> contentKind;
   private final List<Statement> staticVarDeclarations;
   private final boolean generatePositionalParamsSignature;
@@ -1080,45 +1050,29 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
   @Override
   protected Statement visitVeLogNode(VeLogNode node) {
     List<Statement> statements = new ArrayList<>();
-    VeLogStateHolder state = openVeLogNode(node);
-    statements.add(state.enterStatement);
+    statements.add(openVeLogNode(node));
     statements.addAll(visitChildren(node));
-    statements.add(exitVeLogNode(node, state.logOnlyConditional));
+    statements.add(exitVeLogNode(node));
     return Statements.of(statements);
   }
 
-  VeLogStateHolder openVeLogNode(VeLogNode node) {
-    Expression isLogOnly = Expressions.LITERAL_FALSE;
-    VariableDeclaration isLogOnlyVar;
-    Expression isLogOnlyReference = null;
-    List<Statement> stmts = new ArrayList<>();
-    if (node.getLogonlyExpression() != null) {
-      String idName = "velog_" + staticsCounter++;
-      isLogOnlyReference = id(idName);
-      isLogOnly = getExprTranslator().exec(node.getLogonlyExpression());
-      isLogOnlyVar = VariableDeclaration.builder(idName).setRhs(isLogOnly).build();
-      stmts.add(isLogOnlyVar);
-      stmts.add(
-          Statements.ifStatement(
-                  INCREMENTAL_DOM_VERIFY_LOGONLY.call(isLogOnlyVar.ref()),
-                  Statements.assign(INCREMENTAL_DOM, INCREMENTAL_DOM_TONULL.call()))
-              .build());
-    }
+  Statement openVeLogNode(VeLogNode node) {
     Expression veData = getExprTranslator().exec(node.getVeDataExpression());
-    stmts.add(INCREMENTAL_DOM_ENTER.call(veData, isLogOnly).asStatement());
-    return new VeLogStateHolder(isLogOnlyReference, Statements.of(stmts));
+    if (node.getLogonlyExpression() != null) {
+      return Statements.assign(
+          INCREMENTAL_DOM,
+          INCREMENTAL_DOM_ENTER_VELOG.call(
+              veData, getExprTranslator().exec(node.getLogonlyExpression())));
+    }
+    return INCREMENTAL_DOM_ENTER_VELOG.call(veData).asStatement();
   }
 
-  Statement exitVeLogNode(VeLogNode node, @Nullable Expression isLogOnly) {
-    Statement exit = INCREMENTAL_DOM_EXIT.call().asStatement();
-    if (isLogOnly != null) {
-      return Statements.of(
-          exit,
-          Statements.ifStatement(
-                  isLogOnly, Statements.assign(INCREMENTAL_DOM, INCREMENTAL_DOM_TODEFAULT.call()))
-              .build());
+  Statement exitVeLogNode(VeLogNode node) {
+    var exit = INCREMENTAL_DOM_EXIT_VELOG.call();
+    if (node.getLogonlyExpression() != null) {
+      return Statements.assign(INCREMENTAL_DOM, exit);
     }
-    return exit;
+    return exit.asStatement();
   }
 
   @Override

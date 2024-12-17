@@ -52,7 +52,7 @@ export abstract class SoyElement<TData extends {} | null, TInterface extends {}>
   private patchHandler: ((prev: TInterface, next: TInterface) => void) | null =
     null;
   private syncState = true;
-  private loggerPrivate: Logger | null = null;
+  private loggerPrivate: Logger | undefined;
   // Marker so that future element accesses can find this Soy element from the
   // DOM
   key: string = '';
@@ -79,7 +79,7 @@ export abstract class SoyElement<TData extends {} | null, TInterface extends {}>
    * is called with a Renderer that has its own Logger, Renderer's Logger is
    * used instead.
    */
-  setLogger(logger: Logger | null): this {
+  setLogger(logger: Logger | undefined): this {
     this.loggerPrivate = logger;
     return this;
   }

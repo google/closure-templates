@@ -70,18 +70,11 @@ final class IncrementalDomRuntime {
   public static final Expression INCREMENTAL_DOM_APPLY_ATTRS =
       INCREMENTAL_DOM.dotAccess("applyAttrs");
 
-  public static final Expression INCREMENTAL_DOM_ENTER = INCREMENTAL_DOM.dotAccess("enter");
+  public static final Expression INCREMENTAL_DOM_ENTER_VELOG =
+      INCREMENTAL_DOM.dotAccess("enterVeLog");
 
-  public static final Expression INCREMENTAL_DOM_EXIT = INCREMENTAL_DOM.dotAccess("exit");
-
-  public static final Expression INCREMENTAL_DOM_VERIFY_LOGONLY =
-      INCREMENTAL_DOM.dotAccess("verifyLogOnly");
-
-  public static final Expression INCREMENTAL_DOM_TODEFAULT =
-      INCREMENTAL_DOM.dotAccess("toDefaultRenderer");
-
-  public static final Expression INCREMENTAL_DOM_TONULL =
-      INCREMENTAL_DOM.dotAccess("toNullRenderer");
+  public static final Expression INCREMENTAL_DOM_EXIT_VELOG =
+      INCREMENTAL_DOM.dotAccess("exitVeLog");
 
   public static final Expression INCREMENTAL_DOM_TEXT = INCREMENTAL_DOM.dotAccess("text");
   public static final Expression INCREMENTAL_DOM_PRINT = INCREMENTAL_DOM.dotAccess("print");

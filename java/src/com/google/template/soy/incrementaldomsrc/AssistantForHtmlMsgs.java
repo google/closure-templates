@@ -195,14 +195,10 @@ final class AssistantForHtmlMsgs extends GenJsCodeVisitorAssistantForMsgs {
       if (phNode.getParent() instanceof VeLogNode) {
         VeLogNode parent = (VeLogNode) phNode.getParent();
         if (parent.getChild(0) == phNode) {
-          GenIncrementalDomTemplateBodyVisitor.VeLogStateHolder state =
-              idomTemplateBodyVisitor.openVeLogNode(parent);
-          // It is a compiler failure to have a logOnly in a message node.
-          Preconditions.checkState(state.logOnlyConditional == null);
-          value = Statements.of(state.enterStatement, value);
+          value = Statements.of(idomTemplateBodyVisitor.openVeLogNode(parent), value);
         }
         if (parent.getChild(parent.numChildren() - 1) == phNode) {
-          value = Statements.of(value, idomTemplateBodyVisitor.exitVeLogNode(parent, null));
+          value = Statements.of(value, idomTemplateBodyVisitor.exitVeLogNode(parent));
         }
       }
       switchBuilder.addCase(Expressions.stringLiteral(ph.getKey()), value);

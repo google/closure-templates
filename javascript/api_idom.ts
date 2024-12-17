@@ -1,5 +1,4 @@
 /**
-
  * @fileoverview
  *
  * Functions necessary to interact with the Soy-Idom runtime.
@@ -113,13 +112,13 @@ export interface IncrementalDomRenderer {
   skipNode(): void;
   applyAttrs(): void;
   applyStatics(statics: incrementaldom.Statics): void;
-  enter(veData: $$VisualElementData, logOnly: boolean): void;
-  exit(): void;
-  toNullRenderer(): IncrementalDomRenderer;
-  toDefaultRenderer(): IncrementalDomRenderer;
-  setLogger(logger: Logger | null): void;
-  getLogger(): Logger | null;
-  verifyLogOnly(logOnly: boolean): boolean;
+  enterVeLog(
+    veData: $$VisualElementData,
+    logOnly?: boolean,
+  ): IncrementalDomRenderer;
+  exitVeLog(): IncrementalDomRenderer;
+  setLogger(logger: Logger | undefined): void;
+  getLogger(): Logger | undefined;
   evalLoggingFunction(
     name: string,
     args: Array<{}>,
@@ -159,7 +158,7 @@ export class IncrementalDomRendererImpl implements IncrementalDomRenderer {
   // Note that for performance, the "stack" is implemented as a string with
   // the items being `${SIZE OF KEY}${DELIMITER}${KEY}`.
   private readonly keyStackHolder: string[] = [];
-  private logger: Logger | null = null;
+  private logger: Logger | undefined;
 
   /**
    * Pushes/pops the given key from `keyStack` (versus `Array#concat`)
@@ -436,58 +435,42 @@ export class IncrementalDomRendererImpl implements IncrementalDomRenderer {
   /**
    * Called when a `{velog}` statement is entered.
    */
-  enter(veData: $$VisualElementData, logOnly: boolean) {
-    if (this.logger) {
-      this.logger.enter(
-        new ElementMetadata(veData.getVe().getId(), veData.getData(), logOnly),
+  enterVeLog(
+    veData: $$VisualElementData,
+    logOnly?: boolean,
+  ): IncrementalDomRenderer {
+    const logger = this.logger;
+    if (logger) {
+      logger.enter(
+        new ElementMetadata(
+          veData.getVe().getId(),
+          veData.getData(),
+          !!logOnly,
+        ),
+      );
+    } else if (logOnly) {
+      throw new Error(
+        'Cannot set logonly="true" unless there is a logger configured',
       );
     }
+    return logOnly ? new NullRenderer(this) : this;
   }
 
   /**
    * Called when a `{velog}` statement is exited.
    */
-  exit() {
-    if (this.logger) {
-      this.logger.exit();
-    }
-  }
-
-  /**
-   * Switches runtime to produce incremental dom calls that do not traverse
-   * the DOM. This happens when logOnly in a velogging node is set to true.
-   */
-  toNullRenderer(): IncrementalDomRenderer {
-    const nullRenderer = new NullRenderer(this);
-    return nullRenderer;
-  }
-
-  toDefaultRenderer(): IncrementalDomRenderer {
-    throw new Error(
-      'Cannot transition a default renderer to a default renderer',
-    );
+  exitVeLog(): IncrementalDomRenderer {
+    this.logger?.exit();
+    return this;
   }
 
   /** Called by user code to configure logging */
-  setLogger(logger: Logger | null) {
+  setLogger(logger: Logger | undefined) {
     this.logger = logger;
   }
 
   getLogger() {
     return this.logger;
-  }
-
-  /**
-   * Used to trigger the requirement that logOnly can only be true when a
-   * logger is configured. Otherwise, it is a passthrough function.
-   */
-  verifyLogOnly(logOnly: boolean) {
-    if (!this.logger && logOnly) {
-      throw new Error(
-        'Cannot set logonly="true" unless there is a logger configured',
-      );
-    }
-    return logOnly;
   }
 
   /*
@@ -598,6 +581,7 @@ export class IncrementalDomRendererImpl implements IncrementalDomRenderer {
  * Renderer that mutes all IDOM commands and returns void.
  */
 export class NullRenderer extends IncrementalDomRendererImpl {
+  private depth = 1;
   constructor(private readonly renderer: IncrementalDomRenderer) {
     super();
     this.setLogger(renderer.getLogger());
@@ -639,10 +623,23 @@ export class NullRenderer extends IncrementalDomRendererImpl {
 
   override skipNode() {}
 
+  override enterVeLog(
+    data: $$VisualElementData,
+    logOnly?: boolean,
+  ): IncrementalDomRenderer {
+    super.enterVeLog(data, logOnly);
+    this.depth++;
+    return this;
+  }
+
   /** Returns to the default renderer which will traverse the DOM. */
-  override toDefaultRenderer() {
-    this.renderer.setLogger(this.getLogger());
-    return this.renderer;
+  override exitVeLog(): IncrementalDomRenderer {
+    super.exitVeLog();
+    this.depth--;
+    if (this.depth === 0) {
+      return this.renderer;
+    }
+    return this;
   }
 }
 
@@ -729,15 +726,17 @@ export class FalsinessRenderer extends IncrementalDomRendererImpl {
   override popManualKey(): void {}
   override pushKey(key: string): void {}
   override popKey(): void {}
-  override enter(): void {}
-  override exit(): void {}
-  override setLogger(logger: Logger | null): void {}
-  override getLogger(): Logger | null {
-    return null;
+  override enterVeLog(): IncrementalDomRenderer {
+    return this;
   }
-  override verifyLogOnly(logOnly: boolean): boolean {
-    return logOnly;
+  override exitVeLog(): IncrementalDomRenderer {
+    return this;
   }
+  override setLogger(logger: Logger | undefined): void {}
+  override getLogger(): Logger | undefined {
+    return undefined;
+  }
+
   override evalLoggingFunction(
     name: string,
     args: Array<{}>,
@@ -838,8 +837,8 @@ const noArgCallConsts = {
   popKey: (actual: IncrementalDomRenderer) => {
     actual.popKey();
   },
-  exit: (actual: IncrementalDomRenderer) => {
-    actual.exit();
+  exitVeLog: (actual: IncrementalDomRenderer) => {
+    actual.exitVeLog();
   },
   close: (actual: IncrementalDomRenderer) => {
     actual.close();
@@ -885,34 +884,29 @@ export class BufferingIncrementalDomRenderer implements IncrementalDomRenderer {
   popKey(): void {
     this.buffer.push(noArgCallConsts.popKey);
   }
-  enter(veData: $$VisualElementData, logOnly: boolean): void {
+  enterVeLog(
+    veData: $$VisualElementData,
+    logOnly?: boolean,
+  ): IncrementalDomRenderer {
     this.buffer.push((actual) => {
-      actual.enter(veData, logOnly);
+      actual.enterVeLog(veData, logOnly);
     });
+    return logOnly ? new NullRenderer(this) : this;
   }
-  exit(): void {
-    this.buffer.push(noArgCallConsts.exit);
+  exitVeLog(): IncrementalDomRenderer {
+    this.buffer.push(noArgCallConsts.exitVeLog);
+    return this;
   }
-  toNullRenderer(): IncrementalDomRenderer {
-    return new NullRenderer(this);
-  }
-  toDefaultRenderer(): IncrementalDomRenderer {
-    throw new Error(
-      'Cannot transition a buffered renderer to a default renderer',
-    );
-  }
-  setLogger(logger: Logger | null): void {
+
+  setLogger(logger: Logger | undefined): void {
     throw new Error(
       'Tried to call setLogger on BufferingIncrementalDomRenderer.',
     );
   }
-  getLogger(): Logger | null {
+  getLogger(): Logger | undefined {
     throw new Error(
       'Tried to call getLogger on BufferingIncrementalDomRenderer.',
     );
-  }
-  verifyLogOnly(logOnly: boolean): boolean {
-    return logOnly;
   }
   evalLoggingFunction(
     name: string,

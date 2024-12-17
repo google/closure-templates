@@ -124,7 +124,7 @@ final class VeLogInstrumentationVisitor extends AbstractSoyNodeVisitor<Void> {
   /**
    * Element composition calls are deconstructed into call nodes. However, some of the attributes
    * contain velogging functions. This takes those attributes and puts them on a wrapping `veAttr`
-   * element, which the runtime libarary then manages. So the overall DOM structure becomes
+   * element, which the runtime library then manages. So the overall DOM structure becomes
    *
    * <pre>{@code
    * <velog>
