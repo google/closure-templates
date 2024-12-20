@@ -50,8 +50,8 @@ public final class OutputAppendableTest {
         }
 
         @Override
-        public Optional<SafeHtml> enter(LogStatement statement) {
-          return Optional.empty();
+        public EnterData enter(LogStatement statement) {
+          return EnterData.EMPTY;
         }
       };
 

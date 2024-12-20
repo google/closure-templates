@@ -241,6 +241,16 @@ public final class Sanitizers {
 
     @CanIgnoreReturnValue
     @Override
+    public LoggingAdvisingAppendable flushPendingLoggingAttributes(boolean isAnchorTag)
+        throws IOException {
+      if (isInHtml()) {
+        delegate.flushPendingLoggingAttributes(isAnchorTag);
+      }
+      return this;
+    }
+
+    @CanIgnoreReturnValue
+    @Override
     public LoggingAdvisingAppendable appendLoggingFunctionInvocation(
         LoggingFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers)
         throws IOException {
@@ -327,6 +337,11 @@ public final class Sanitizers {
 
     @Override
     public LoggingAdvisingAppendable exitLoggableElement() {
+      return this;
+    }
+
+    @Override
+    public LoggingAdvisingAppendable flushPendingLoggingAttributes(boolean isAnchorTag) {
       return this;
     }
   }
@@ -962,6 +977,11 @@ public final class Sanitizers {
       return this;
     }
 
+    @Override
+    public LoggingAdvisingAppendable flushPendingLoggingAttributes(boolean isAnchorTag) {
+      return this;
+    }
+
     @CanIgnoreReturnValue
     @Override
     public LoggingAdvisingAppendable appendLoggingFunctionInvocation(
@@ -1145,6 +1165,16 @@ public final class Sanitizers {
       } else {
         String placeholder = escapePlaceholder(funCall.placeholderValue(), escapers);
         activeAppendable.append(placeholder);
+      }
+      return this;
+    }
+
+    @CanIgnoreReturnValue
+    @Override
+    public LoggingAdvisingAppendable flushPendingLoggingAttributes(boolean isAnchorTag)
+        throws IOException {
+      if (getSanitizedContentKind() == ContentKind.ATTRIBUTES) {
+        delegate.flushPendingLoggingAttributes(isAnchorTag);
       }
       return this;
     }
