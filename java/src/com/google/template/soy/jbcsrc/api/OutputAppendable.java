@@ -54,6 +54,7 @@ public final class OutputAppendable extends LoggingAdvisingAppendable {
   @Nullable private final SoyLogger logger;
   private final Appendable outputAppendable;
   private int logOnlyDepth;
+  @Nullable private SoyLogger.LoggingAttrs loggingAttrs;
 
   private OutputAppendable(Appendable outputAppendable, @Nullable SoyLogger logger) {
     this.outputAppendable = checkNotNull(outputAppendable);
@@ -139,7 +140,9 @@ public final class OutputAppendable extends LoggingAdvisingAppendable {
       }
       logOnlyDepth = depth;
     }
-    appendDebugOutput(logger.enter(statement));
+    var enterData = logger.enter(statement);
+    appendDebugOutput(enterData.debugHtml());
+    this.loggingAttrs = enterData.loggingAttrs().orElse(null);
     return this;
   }
 
@@ -156,12 +159,33 @@ public final class OutputAppendable extends LoggingAdvisingAppendable {
     }
     // should debug output be guarded by logonly?
     appendDebugOutput(logger.exit());
+    // If we somehow didn't render them clear it out so they don't leak into the next element.
+    this.loggingAttrs = null;
     return this;
   }
 
   @Override
-  public void flushBuffers(int depth) {
-    throw new AssertionError("shouldn't be called");
+  public LoggingAdvisingAppendable flushPendingLoggingAttributes(boolean isAnchorTag)
+      throws IOException {
+    var loggingAttrs = this.loggingAttrs;
+    if (loggingAttrs != null) {
+      var outputAppendable = this.outputAppendable;
+      for (var entry : loggingAttrs.attrs().entrySet()) {
+        var name = entry.getKey();
+        if (!isAnchorTag && (name.equals("href") || name.equals("ping"))) {
+          throw new IllegalStateException(
+              "logger cannot set href or ping attributes on non-anchor tags");
+        }
+        outputAppendable
+            .append(' ')
+            .append(name)
+            .append("=\"")
+            .append(entry.getValue())
+            .append('"');
+      }
+      this.loggingAttrs = null;
+    }
+    return this;
   }
 
   private void appendDebugOutput(Optional<SafeHtml> veDebugOutput) {

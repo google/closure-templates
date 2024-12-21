@@ -88,6 +88,11 @@ public final class StreamingEscaper extends LoggingAdvisingAppendable {
   }
 
   @Override
+  public LoggingAdvisingAppendable flushPendingLoggingAttributes(boolean isAnchorTag) {
+    return this;
+  }
+
+  @Override
   public boolean softLimitReached() {
     return delegate.softLimitReached();
   }
