@@ -10,6 +10,7 @@ import {
   $$VisualElementData,
   ElementMetadata,
   Logger,
+  LoggingAttrs,
 } from 'google3/javascript/template/soy/soyutils_velog';
 import * as log from 'google3/third_party/javascript/closure/log/log';
 import {SanitizedHtml} from 'google3/third_party/javascript/closure/soy/data';
@@ -159,6 +160,7 @@ export class IncrementalDomRendererImpl implements IncrementalDomRenderer {
   // the items being `${SIZE OF KEY}${DELIMITER}${KEY}`.
   private readonly keyStackHolder: string[] = [];
   private logger: Logger | undefined;
+  private pendingAttrs: LoggingAttrs | undefined;
 
   /**
    * Pushes/pops the given key from `keyStack` (versus `Array#concat`)
@@ -426,6 +428,14 @@ export class IncrementalDomRendererImpl implements IncrementalDomRenderer {
 
   applyAttrs() {
     incrementaldom.applyAttrs(attributes);
+    const pendingAttrs = this.pendingAttrs;
+    if (pendingAttrs) {
+      const el = this.currentElement()!;
+      // If we have already been rendered, then we can overwrite the attrs.
+      pendingAttrs.applyToInternalOnly(el as HTMLElement, el.__hasBeenRendered);
+      el.__hasBeenRendered = true;
+      this.pendingAttrs = undefined;
+    }
   }
 
   applyStatics(statics: incrementaldom.Statics) {
@@ -441,7 +451,7 @@ export class IncrementalDomRendererImpl implements IncrementalDomRenderer {
   ): IncrementalDomRenderer {
     const logger = this.logger;
     if (logger) {
-      logger.enter(
+      this.pendingAttrs = logger.enter(
         new ElementMetadata(
           veData.getVe().getId(),
           veData.getData(),
@@ -461,6 +471,10 @@ export class IncrementalDomRendererImpl implements IncrementalDomRenderer {
    */
   exitVeLog(): IncrementalDomRenderer {
     this.logger?.exit();
+    // If we somehow fail to apply to an element just clear them out.  This
+    // would naturally happen for a logonly block, but could also happen if
+    // the developer simply failed to nest an element.
+    this.pendingAttrs = undefined;
     return this;
   }
 
