@@ -160,8 +160,10 @@ public final class OutputAppendable extends LoggingAdvisingAppendable {
   }
 
   @Override
-  public void flushBuffers(int depth) {
-    throw new AssertionError("shouldn't be called");
+  public LoggingAdvisingAppendable flushPendingLoggingAttributes(boolean isAnchorTag)
+      throws IOException {
+    // TODO: b/383661457 - implement this.
+    return this;
   }
 
   private void appendDebugOutput(Optional<SafeHtml> veDebugOutput) {

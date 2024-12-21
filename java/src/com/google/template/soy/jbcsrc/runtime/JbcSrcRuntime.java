@@ -532,6 +532,11 @@ public final class JbcSrcRuntime {
         }
 
         @Override
+        public LoggingAdvisingAppendable flushPendingLoggingAttributes(boolean isAnchorTag) {
+          return this;
+        }
+
+        @Override
         public LoggingAdvisingAppendable appendLoggingFunctionInvocation(
             LoggingFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers) {
           String val = funCall.placeholderValue();

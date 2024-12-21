@@ -148,6 +148,11 @@ public final class BasicDirectivesRuntime {
     }
 
     @Override
+    public LoggingAdvisingAppendable flushPendingLoggingAttributes(boolean isAnchorTag) {
+      return this;
+    }
+
+    @Override
     public boolean softLimitReached() {
       return false;
     }

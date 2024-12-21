@@ -37,7 +37,6 @@ import com.google.template.soy.data.RecordProperty;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.SoyValueConverterUtility;
-import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
@@ -455,6 +454,13 @@ public final class StreamingPrintDirectivesTest {
     @Override
     public LoggingAdvisingAppendable exitLoggableElement() {
       delegate.exitLoggableElement();
+      return this;
+    }
+
+    @Override
+    public LoggingAdvisingAppendable flushPendingLoggingAttributes(boolean isAnchorTag)
+        throws IOException {
+      delegate.flushPendingLoggingAttributes(isAnchorTag);
       return this;
     }
 
