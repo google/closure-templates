@@ -164,14 +164,58 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     contentKind.pop();
     currentTemplateNode = null;
   }
+  private String getAlias(TemplateNode node) {
+    if (node instanceof TemplateDelegateNode) {
+      return node.getPartialTemplateName();
+    } else {
+      return templateAliases.get(node.getTemplateName());
+    }
+  }
+
+  private Expression getType(SanitizedContentKind kind) {
+    if (kind.isHtml()) {
+      return SOY_IDOM_TYPE_HTML;
+    } else {
+      return SOY_IDOM_TYPE_ATTRIBUTE;
+    }
+  }
+
+  private void setContentKind(String alias, Expression type) {
+    getJsCodeBuilder()
+            .append(
+                    Statements.assign(
+                            id(alias)
+                                    .castAs(
+                                            "!" + ELEMENT_LIB_IDOM.alias() + ".IdomFunction",
+                                            ImmutableSet.of(ELEMENT_LIB_IDOM))
+                                    .dotAccess("contentKind"),
+                            type));
+  }
+
+  private void handleSanitizedContentKind(TemplateNode node, String alias, SanitizedContentKind kind) {
+    Expression type = getType(kind);
+    setContentKind(alias, type);
+
+    if (isModifiable(node) && !node.getChildren().isEmpty()) {
+      setContentKind(alias + modifiableDefaultImplSuffix, type);
+    }
+  }
+
+  private void processTemplateElementNode(TemplateElementNode element, String alias) {
+    String elementName = this.getSoyElementClassName(alias);
+    String elementAccessor = elementName + "Interface";
+
+    getJsCodeBuilder().append(BLANK_LINE);
+    getJsCodeBuilder().append(generateAccessorInterface(elementAccessor, element));
+    getJsCodeBuilder().append(generateRenderInternal(element, alias));
+    getJsCodeBuilder().append(generateSyncInternal(element, alias));
+    getJsCodeBuilder().append(generateClassForSoyElement(elementName, element, alias));
+  }
+
+
 
   private void visitTemplateNodeInternal(TemplateNode node) {
-    String alias;
-    if (node instanceof TemplateDelegateNode) {
-      alias = node.getPartialTemplateName();
-    } else {
-      alias = templateAliases.get(node.getTemplateName());
-    }
+    String alias = getAlias(node);
 
     if (node instanceof TemplateElementNode) {
       hasNonConstantState = calcHasNonConstantState((TemplateElementNode) node);
@@ -183,45 +227,14 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     }
     SanitizedContentKind kind = node.getContentKind();
     if (kind.isHtml() || kind == SanitizedContentKind.ATTRIBUTES) {
-      Expression type;
-      if (kind.isHtml()) {
-        type = SOY_IDOM_TYPE_HTML;
-      } else {
-        type = SOY_IDOM_TYPE_ATTRIBUTE;
-      }
-      getJsCodeBuilder()
-          .append(
-              Statements.assign(
-                  id(alias)
-                      .castAs(
-                          "!" + ELEMENT_LIB_IDOM.alias() + ".IdomFunction",
-                          ImmutableSet.of(ELEMENT_LIB_IDOM))
-                      .dotAccess("contentKind"),
-                  type));
-      if (isModifiable(node) && !node.getChildren().isEmpty()) {
-        getJsCodeBuilder()
-            .append(
-                Statements.assign(
-                    id(alias + modifiableDefaultImplSuffix)
-                        .castAs(
-                            "!" + ELEMENT_LIB_IDOM.alias() + ".IdomFunction",
-                            ImmutableSet.of(ELEMENT_LIB_IDOM))
-                        .dotAccess("contentKind"),
-                    type));
-      }
+      handleSanitizedContentKind(node, alias, kind);
     }
 
     if (node instanceof TemplateElementNode) {
-      TemplateElementNode element = (TemplateElementNode) node;
-      String elementName = this.getSoyElementClassName(alias);
-      String elementAccessor = elementName + "Interface";
-      getJsCodeBuilder().append(BLANK_LINE);
-      getJsCodeBuilder().append(generateAccessorInterface(elementAccessor, element));
-      getJsCodeBuilder().append(generateRenderInternal(element, alias));
-      getJsCodeBuilder().append(generateSyncInternal(element, alias));
-      getJsCodeBuilder().append(generateClassForSoyElement(elementName, element, alias));
+      processTemplateElementNode((TemplateElementNode) node, alias);
     }
   }
+
 
   private Statement generateRenderInternal(TemplateElementNode node, String alias) {
     String paramsType = hasOnlyImplicitParams(node) ? "null" : "!" + alias + ".Params";

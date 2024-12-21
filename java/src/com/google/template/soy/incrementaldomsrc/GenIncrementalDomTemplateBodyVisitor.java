@@ -138,7 +138,7 @@ import javax.annotation.Nullable;
 public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBodyVisitor {
   private final Deque<SanitizedContentKind> contentKind;
   private final List<Statement> staticVarDeclarations;
-  private final boolean generatePositionalParamsSignature;
+  private final boolean genPosParamsSig;
   private final FileSetMetadata fileSetMetadata;
   private final String alias;
 
@@ -158,7 +158,7 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
       TemplateAliases templateAliases,
       Deque<SanitizedContentKind> contentKind,
       List<Statement> staticVarDeclarations,
-      boolean generatePositionalParamsSignature,
+      boolean genPosParamsSig,
       FileSetMetadata fileSetMetadata,
       String alias,
       ScopedJsTypeRegistry jsTypeRegistry) {
@@ -176,7 +176,7 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
         jsTypeRegistry);
     this.contentKind = contentKind;
     this.staticVarDeclarations = staticVarDeclarations;
-    this.generatePositionalParamsSignature = generatePositionalParamsSignature;
+    this.genPosParamsSig = genPosParamsSig;
     this.fileSetMetadata = fileSetMetadata;
     this.alias = alias;
   }
@@ -744,7 +744,7 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
     List<Expression> args = new ArrayList<>();
     if (node.isElementRoot() && !node.isSkipChildrenRoot()) {
       Expression paramsObject;
-      if (generatePositionalParamsSignature) {
+      if (genPosParamsSig) {
         paramsObject =
             Expressions.arrayLiteral(
                 node.getNearestAncestor(TemplateNode.class).getParams().stream()
@@ -989,6 +989,17 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
    * <p>For HTML, if the variable is of kind HTML, it is invoked. Any other kind of variable gets
    * wrapped in a call to {@code incrementalDom.text}, resulting in a Text node.
    */
+
+  protected boolean isDomPrintIncremental (PrintNode node) {
+    return (node.numChildren() > 0
+            && node.getChild(node.numChildren() - 1).getPrintDirective()
+            instanceof SanitizedContentOperator
+            && ((SanitizedContentOperator)
+            node.getChild(node.numChildren() - 1).getPrintDirective())
+            .getContentKind()
+            == SanitizedContent.ContentKind.HTML);
+  }
+
   @Override
   protected Statement visitPrintNode(PrintNode node) {
     List<Expression> chunks = genJsExprsVisitor.exec(node);
@@ -1002,13 +1013,7 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
       case CSS:
         // fall through
       case HTML_PCDATA:
-        if (node.numChildren() > 0
-            && node.getChild(node.numChildren() - 1).getPrintDirective()
-                instanceof SanitizedContentOperator
-            && ((SanitizedContentOperator)
-                        node.getChild(node.numChildren() - 1).getPrintDirective())
-                    .getContentKind()
-                == SanitizedContent.ContentKind.HTML) {
+        if (isDomPrintIncremental(node)) {
           return INCREMENTAL_DOM_PRINT
               .call(Expressions.concat(chunks), Expressions.LITERAL_TRUE)
               .asStatement();
