@@ -164,8 +164,7 @@ final class AppendableExpression extends Expression {
       MethodRef.createNonPure(LoggingAdvisingAppendable.class, "flushBuffers", int.class);
 
   private static final MethodRef FLUSH_PENDING_LOGGING_ATTRBIUTES =
-      MethodRef.createNonPure(
-          LoggingAdvisingAppendable.class, "flushPendingLoggingAttributes", boolean.class);
+      MethodRef.createNonPure(LoggingAdvisingAppendable.class, "flushPendingLoggingAttributes");
 
   static AppendableExpression forExpression(Expression delegate) {
     return new AppendableExpression(delegate, e -> e, /* supportsSoftLimiting= */ true);
@@ -272,8 +271,8 @@ final class AppendableExpression extends Expression {
                 BytecodeUtils.constantSanitizedContentKindAsContentKind(kind)));
   }
 
-  AppendableExpression flushPendingLoggingAttributes(boolean isAnchorTag) {
-    return withNewDelegate(e -> e.invoke(FLUSH_PENDING_LOGGING_ATTRBIUTES, constant(isAnchorTag)));
+  AppendableExpression flushPendingLoggingAttributes() {
+    return withNewDelegate(e -> e.invoke(FLUSH_PENDING_LOGGING_ATTRBIUTES));
   }
 
   Statement flushBuffers(int depth) {

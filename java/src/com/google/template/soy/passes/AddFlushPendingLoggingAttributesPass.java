@@ -20,8 +20,6 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.exprtree.BooleanNode;
-import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.soytree.HtmlAttributeNode;
@@ -94,7 +92,6 @@ final class AddFlushPendingLoggingAttributesPass implements CompilerFilePass {
                 BuiltinFunction.FLUSH_PENDING_LOGGING_ATTRIBUTES.name(), SourceLocation.UNKNOWN),
             BuiltinFunction.FLUSH_PENDING_LOGGING_ATTRIBUTES,
             SourceLocation.UNKNOWN);
-    functionCall.addChild(getTagIsAnchorNode(openTag));
     functionCall.setType(AttributesType.getInstance());
     var printNode =
         new PrintNode(
@@ -113,13 +110,5 @@ final class AddFlushPendingLoggingAttributesPass implements CompilerFilePass {
             /* isSoyAttr= */ false);
     attributeNode.addChild(printNode);
     openTag.addChild(attributeNode);
-  }
-
-  private static ExprNode getTagIsAnchorNode(HtmlOpenTagNode openTag) {
-    var tagName = openTag.getTagName();
-    return new BooleanNode(
-        // If the tag is dynamic we assume it isn't an anchor
-        tagName.isStatic() && tagName.getStaticTagNameAsLowerCase().equals("a"),
-        tagName.getTagLocation());
   }
 }

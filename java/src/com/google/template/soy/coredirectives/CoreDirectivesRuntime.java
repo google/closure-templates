@@ -26,7 +26,6 @@ import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.shared.internal.AbstractStreamingHtmlEscaper;
 import com.google.template.soy.shared.internal.EscapingConventions;
-import java.io.IOException;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
@@ -99,16 +98,6 @@ public final class CoreDirectivesRuntime {
     public LoggingAdvisingAppendable exitLoggableElement() {
       if (isInHtml()) {
         delegate.exitLoggableElement();
-      }
-      return this;
-    }
-
-    @CanIgnoreReturnValue
-    @Override
-    public LoggingAdvisingAppendable flushPendingLoggingAttributes(boolean isAnchorTag)
-        throws IOException {
-      if (isInHtml()) {
-        delegate.flushPendingLoggingAttributes(isAnchorTag);
       }
       return this;
     }

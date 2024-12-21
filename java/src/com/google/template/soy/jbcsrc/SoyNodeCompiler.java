@@ -638,7 +638,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
               asSwitchableInt(switchExpr, casesByKey.navigableKeySet()), casesByKey, defaultBlock));
 
     } else {
-      // Otherwise we need more complex matching logic that we outsource to an invoke dynamic
+      // Otherwise we need more complex matching logic that we outsource to an invoke dyanmic
       // bootstrap.  Create a fake key for each case and then rely on the bootstrap to figure it
       // out.
       // update the map with the pseudo keys, so that the loops below can find them
@@ -843,9 +843,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
         return visitLoggingFunction(node, fn, (LoggingFunction) fn.getSoyFunction());
       }
       if (fn.getSoyFunction() == BuiltinFunction.FLUSH_PENDING_LOGGING_ATTRIBUTES) {
-        return appendableExpression
-            .flushPendingLoggingAttributes(((BooleanNode) fn.getParams().get(0)).getValue())
-            .toStatement();
+        return appendableExpression.flushPendingLoggingAttributes().toStatement();
       }
     }
     // First check our special case where all print directives are streamable and an expression that
@@ -1051,7 +1049,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
 
   @Override
   protected Statement visitDebuggerNode(DebuggerNode node) {
-    // Call JbcSrcRuntime.debugger.  This logs a stack trace by default and is an obvious place to
+    // Call JbcSrcRuntime.debuggger.  This logs a stack trace by default and is an obvious place to
     // put a breakpoint.
     return MethodRefs.RUNTIME_DEBUGGER.invokeVoid(
         constant(node.getSourceLocation().getFilePath().path()),

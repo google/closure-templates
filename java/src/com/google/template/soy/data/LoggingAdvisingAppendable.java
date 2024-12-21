@@ -97,10 +97,10 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
   public abstract LoggingAdvisingAppendable exitLoggableElement();
 
   /** Flushes all pending logging attributes. */
-  @CanIgnoreReturnValue
-  @Nonnull
-  public abstract LoggingAdvisingAppendable flushPendingLoggingAttributes(boolean isAnchorTag)
-      throws IOException;
+  public final LoggingAdvisingAppendable flushPendingLoggingAttributes() {
+    // TODO(b/383661457): Implement this.
+    return this;
+  }
 
   /**
    * Flushes all intermediate buffers stored within the appendable.
@@ -245,15 +245,11 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
   public static class BufferingAppendable extends LoggingAdvisingAppendable {
 
     private static final Object EXIT_LOG_STATEMENT_MARKER = new Object();
-    private static final Object FLUSH_PENDING_LOGGING_ATTRBUTES_TRUE_MARKER = new Object();
-    private static final Object FLUSH_PENDING_LOGGING_ATTRBUTES_FALSE_MARKER = new Object();
     // lazily allocated list that contains one of 7 types of objects, each which corresponds to one
     // of the callback methods.
     // - String literal string content -> corresponds to a contiguous sequence of append calls
     // - LogStatement -> corresponds to enterLoggableElement
     // - EXIT_LOG_STATEMENT_MARKER -> corresponds to exitLoggableElement
-    // - FLUSH_PENDING_LOGGING_(TRUE|FALSE)_ATTRBUTES_MARKER -> corresponds to
-    // flushPendingLoggingAttributes(true|false)
     // - LoggingFunctionInvocation -> corresponds to appendLoggingFunctionInvocation
     private List<Object> commands;
     private final StringBuilder builder = new StringBuilder();
@@ -333,16 +329,6 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
       return this;
     }
 
-    @Override
-    public LoggingAdvisingAppendable flushPendingLoggingAttributes(boolean isAnchor) {
-      getCommandsAndAddPendingStringData()
-          .add(
-              isAnchor
-                  ? FLUSH_PENDING_LOGGING_ATTRBUTES_TRUE_MARKER
-                  : FLUSH_PENDING_LOGGING_ATTRBUTES_FALSE_MARKER);
-      return this;
-    }
-
     @CanIgnoreReturnValue
     @Override
     public LoggingAdvisingAppendable appendLoggingFunctionInvocation(
@@ -383,9 +369,6 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
         ((LoggingFunctionCommand) o).replayOn(appendable);
       } else if (o == EXIT_LOG_STATEMENT_MARKER) {
         appendable.exitLoggableElement();
-      } else if (o == FLUSH_PENDING_LOGGING_ATTRBUTES_TRUE_MARKER
-          || o == FLUSH_PENDING_LOGGING_ATTRBUTES_FALSE_MARKER) {
-        appendable.flushPendingLoggingAttributes(o == FLUSH_PENDING_LOGGING_ATTRBUTES_TRUE_MARKER);
       } else if (o instanceof LogStatement) {
         appendable.enterLoggableElement((LogStatement) o);
       } else {

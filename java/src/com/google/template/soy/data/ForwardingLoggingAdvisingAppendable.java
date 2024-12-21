@@ -87,13 +87,6 @@ public abstract class ForwardingLoggingAdvisingAppendable extends LoggingAdvisin
   }
 
   @Override
-  public LoggingAdvisingAppendable flushPendingLoggingAttributes(boolean isAnchorTag)
-      throws IOException {
-    delegate.flushPendingLoggingAttributes(isAnchorTag);
-    return this;
-  }
-
-  @Override
   public void flushBuffers(int depth) throws IOException {
     if (depth > 0) {
       delegate.flushBuffers(depth - 1);

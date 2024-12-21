@@ -127,17 +127,6 @@ public final class StreamingAttributeEscaper extends LoggingAdvisingAppendable {
     return this;
   }
 
-  @CanIgnoreReturnValue
-  @Override
-  public LoggingAdvisingAppendable flushPendingLoggingAttributes(boolean isAnchorTag)
-      throws IOException {
-    var buffer = this.buffer;
-    if (buffer == null) {
-      delegate.flushPendingLoggingAttributes(isAnchorTag);
-    }
-    return this;
-  }
-
   @Override
   public boolean softLimitReached() {
     return delegate.softLimitReached();
