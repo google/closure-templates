@@ -205,7 +205,8 @@ protos                 | Return: the proto message Java type<br/> Param: the exa
 proto enums            | the proto enum Java type                                                                                                                                           |
 `uri`                  | `com.google.common.html.types.SafeUrl`, `com.google.common.html.types.SafeUrlProto`                                                                                |
 `trusted_resource_uri` | `com.google.common.html.types.TrustedResourceUrl`, `com.google.common.html.types.TrustedResourceUrlProto`                                                          |
-`html`                 | `com.google.common.html.types.SafeHtml`, `com.google.common.html.types.SafeHtmlProto`                                                                              |
+`html`                 | `com.google.common.html.types.SafeHtml`, `com.google.common.html.types.SafeHtmlProto`, `com.google.template.soy.data.SanitizedContent`                             |
+`attributes`           | `com.google.template.soy.data.SanitizedContent`                                                                                                                    |
 `iterable<?>`          | Return: `? extends java.lang.Iterable`<br/> Param: `java.lang.Iterable` or `com.google.template.soy.data.SoyValue`                                                 |
 `list<?>`              | Return: `? extends java.lang.Iterable`<br/> Param: `? super com.google.common.collect.ImmutableList` (excluding `Object`), `com.google.template.soy.data.SoyValue` |
 `set<?>`               | Return: `? extends java.lang.Iterable`<br/> Param: `? super com.google.common.collect.ImmutableSet` (excluding `Object`)                                           |

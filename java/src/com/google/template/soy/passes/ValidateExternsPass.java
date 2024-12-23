@@ -479,7 +479,9 @@ class ValidateExternsPass implements CompilerFilePass {
       case ATTRIBUTES:
         return javaType == SanitizedContent.class;
       case HTML:
-        return javaType == SafeHtml.class || javaType == SafeHtmlProto.class;
+        return javaType == SafeHtml.class
+            || javaType == SafeHtmlProto.class
+            || javaType == SanitizedContent.class;
       case PROTO:
         SoyProtoType protoType = (SoyProtoType) soyType;
         return JavaQualifiedNames.getClassName(protoType.getDescriptor()).equals(javaType.getName())
