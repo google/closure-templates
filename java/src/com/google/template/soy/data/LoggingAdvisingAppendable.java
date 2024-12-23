@@ -97,9 +97,13 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
   public abstract LoggingAdvisingAppendable exitLoggableElement();
 
   /** Flushes all pending logging attributes. */
-  public final LoggingAdvisingAppendable flushPendingLoggingAttributes() {
-    // TODO(b/383661457): Implement this.
-    return this;
+  public final LoggingAdvisingAppendable flushPendingLoggingAttributes(boolean isAnchor)
+      throws IOException {
+    return appendLoggingFunctionInvocation(
+        isAnchor
+            ? LoggingFunctionInvocation.FLUSH_PENDING_ATTRIBUTES_FOR_ANCHOR
+            : LoggingFunctionInvocation.FLUSH_PENDING_ATTRIBUTES_FOR_NON_ANCHOR,
+        ImmutableList.of());
   }
 
   /**

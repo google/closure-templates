@@ -20,6 +20,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.types.AnyType;
+import com.google.template.soy.types.BoolType;
 import com.google.template.soy.types.IterableType;
 import com.google.template.soy.types.NullType;
 import com.google.template.soy.types.SanitizedType;
@@ -93,7 +94,6 @@ public enum BuiltinFunction implements SoyFunction {
       case IS_PRIMARY_MSG_IN_USE:
         return ImmutableSet.of(3);
       case DEBUG_SOY_TEMPLATE_INFO:
-      case FLUSH_PENDING_LOGGING_ATTRIBUTES:
         return ImmutableSet.of(0);
       case SOY_SERVER_KEY:
       case CHECK_NOT_NULL:
@@ -110,6 +110,7 @@ public enum BuiltinFunction implements SoyFunction {
       case IS_TRUTHY_NON_EMPTY:
       case HAS_CONTENT:
       case NEW_SET:
+      case FLUSH_PENDING_LOGGING_ATTRIBUTES:
         return ImmutableSet.of(1);
       case PROTO_INIT:
         throw new UnsupportedOperationException();
@@ -135,6 +136,8 @@ public enum BuiltinFunction implements SoyFunction {
                     StringType.getInstance(),
                     NullType.getInstance(),
                     UndefinedType.getInstance())));
+      case FLUSH_PENDING_LOGGING_ATTRIBUTES:
+        return Optional.of(ImmutableList.of(BoolType.getInstance()));
       case NEW_SET:
         // This is further constrained in ResolveExpressionTypesPass.
         return Optional.of(ImmutableList.of(IterableType.of(AnyType.getInstance())));

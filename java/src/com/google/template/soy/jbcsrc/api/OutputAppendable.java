@@ -103,8 +103,18 @@ public final class OutputAppendable extends LoggingAdvisingAppendable {
       LoggingFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers)
       throws IOException {
     if (!isLogOnly()) {
-      String value =
-          logger == null ? funCall.placeholderValue() : logger.evalLoggingFunction(funCall);
+      String value;
+      if (logger == null) {
+        value = funCall.placeholderValue();
+      } else {
+        if (funCall.isFlushPendingAttributes()) {
+          // For now, just no-op these calls.
+          // TODO-b/383661457: implement this.
+          value = "";
+        } else {
+          value = logger.evalLoggingFunction(funCall);
+        }
+      }
       for (Function<String, String> directive : escapers) {
         value = directive.apply(value);
       }
@@ -115,7 +125,9 @@ public final class OutputAppendable extends LoggingAdvisingAppendable {
       if (consumer.isPresent()) {
         consumer.get().accept(value);
       } else {
-        outputAppendable.append(value);
+        if (!value.isEmpty()) {
+          outputAppendable.append(value);
+        }
       }
     }
     return this;
@@ -159,10 +171,6 @@ public final class OutputAppendable extends LoggingAdvisingAppendable {
     return this;
   }
 
-  @Override
-  public void flushBuffers(int depth) {
-    throw new AssertionError("shouldn't be called");
-  }
 
   private void appendDebugOutput(Optional<SafeHtml> veDebugOutput) {
     if (veDebugOutput.isPresent()) {

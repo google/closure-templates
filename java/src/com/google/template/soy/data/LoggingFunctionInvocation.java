@@ -16,6 +16,8 @@
 package com.google.template.soy.data;
 
 import com.google.auto.value.AutoValue;
+import com.google.common.collect.ImmutableList;
+import com.google.template.soy.data.restricted.BooleanData;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -24,12 +26,31 @@ import javax.annotation.Nonnull;
 /** The result of executing the logging function. */
 @AutoValue
 public abstract class LoggingFunctionInvocation {
+  static final LoggingFunctionInvocation FLUSH_PENDING_ATTRIBUTES_FOR_ANCHOR =
+      new AutoValue_LoggingFunctionInvocation(
+          "$$flushPendingAttributes",
+          "",
+          ImmutableList.of(BooleanData.FALSE),
+          /* isFlushPendingAttributes= */ true,
+          Optional.<Consumer<String>>empty());
+
+  static final LoggingFunctionInvocation FLUSH_PENDING_ATTRIBUTES_FOR_NON_ANCHOR =
+      new AutoValue_LoggingFunctionInvocation(
+          "$$flushPendingAttributes",
+          "",
+          ImmutableList.of(BooleanData.FALSE),
+          /* isFlushPendingAttributes= */ true,
+          Optional.<Consumer<String>>empty());
 
   @Nonnull
   public static LoggingFunctionInvocation create(
       String functionName, String placeholderValue, List<SoyValue> args) {
     return new AutoValue_LoggingFunctionInvocation(
-        functionName, placeholderValue, args, Optional.<Consumer<String>>empty());
+        functionName,
+        placeholderValue,
+        args,
+        /* isFlushPendingAttributes= */ false,
+        Optional.<Consumer<String>>empty());
   }
 
   /**
@@ -47,6 +68,14 @@ public abstract class LoggingFunctionInvocation {
   public abstract List<SoyValue> args();
 
   /**
+   * Returns whether the function is a special case that should flush pending attributes.
+   *
+   * <p>This is a special case for the {@code $$flushPendingAttributes} function. User logger
+   * implementations should never see this set to true.
+   */
+  public abstract boolean isFlushPendingAttributes();
+
+  /**
    * When set, informs the ultimate logger that the content should be sent to the consumer instead
    * of the output.
    */
@@ -55,11 +84,15 @@ public abstract class LoggingFunctionInvocation {
   /** Returns a new invocation that will send the result to the given consumer. */
   LoggingFunctionInvocation withResultConsumer(Consumer<String> resultConsumer) {
     if (resultConsumer().isPresent()) {
-      // There is no known usecase where multiple consumers are needed.  If they are it is trivial
-      // to compose `Consumer` objects via `Consumer.andThen
+      // There is no known use case where multiple consumers are needed.  If we discover one then we
+      // can compose `Consumer` objects via `Consumer.andThen`.
       throw new IllegalStateException("resultConsumer already set");
     }
     return new AutoValue_LoggingFunctionInvocation(
-        functionName(), placeholderValue(), args(), Optional.of(resultConsumer));
+        functionName(),
+        placeholderValue(),
+        args(),
+        isFlushPendingAttributes(),
+        Optional.of(resultConsumer));
   }
 }
