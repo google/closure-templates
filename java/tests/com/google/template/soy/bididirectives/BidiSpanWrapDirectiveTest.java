@@ -25,7 +25,9 @@ import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
-import com.google.template.soy.jssrc.restricted.JsExpr;
+import com.google.template.soy.jssrc.dsl.Expression;
+import com.google.template.soy.jssrc.dsl.Expressions;
+import com.google.template.soy.jssrc.dsl.FormatOptions;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyStringExpr;
 import com.google.template.soy.testing.AbstractSoyPrintDirectiveTestCase;
@@ -33,9 +35,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-/**
- * Unit tests for BidiSpanWrapDirective.
- */
+/** Unit tests for BidiSpanWrapDirective. */
 @RunWith(JUnit4.class)
 public class BidiSpanWrapDirectiveTest extends AbstractSoyPrintDirectiveTestCase {
 
@@ -102,22 +102,22 @@ public class BidiSpanWrapDirectiveTest extends AbstractSoyPrintDirectiveTestCase
 
   @Test
   public void testApplyForJsSrc() {
-    JsExpr dataRef = new JsExpr("opt_data.myKey", Integer.MAX_VALUE);
+    Expression dataRef = Expressions.dottedIdNoRequire("opt_data.myKey");
     assertThat(
             BIDI_SPAN_WRAP_DIRECTIVE_FOR_STATIC_LTR
                 .applyForJsSrc(dataRef, ImmutableList.of())
-                .getText())
-        .isEqualTo("soy.$$bidiSpanWrap(1, opt_data.myKey)");
+                .getCode(FormatOptions.JSSRC))
+        .isEqualTo("soy.$$bidiSpanWrap(1, opt_data.myKey);");
     assertThat(
             BIDI_SPAN_WRAP_DIRECTIVE_FOR_STATIC_RTL
                 .applyForJsSrc(dataRef, ImmutableList.of())
-                .getText())
-        .isEqualTo("soy.$$bidiSpanWrap(-1, opt_data.myKey)");
+                .getCode(FormatOptions.JSSRC))
+        .isEqualTo("soy.$$bidiSpanWrap(-1, opt_data.myKey);");
 
     BidiSpanWrapDirective codeSnippet =
         new BidiSpanWrapDirective(BidiTestUtils.BIDI_GLOBAL_DIR_FOR_JS_ISRTL_CODE_SNIPPET_SUPPLIER);
-    assertThat(codeSnippet.applyForJsSrc(dataRef, ImmutableList.of()).getText())
-        .isEqualTo("soy.$$bidiSpanWrap(IS_RTL?-1:1, opt_data.myKey)");
+    assertThat(codeSnippet.applyForJsSrc(dataRef, ImmutableList.of()).getCode(FormatOptions.JSSRC))
+        .isEqualTo("soy.$$bidiSpanWrap(IS_RTL?-1:1, opt_data.myKey);");
   }
 
   @Test

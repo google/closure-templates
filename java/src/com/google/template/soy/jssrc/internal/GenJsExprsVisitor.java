@@ -29,6 +29,7 @@ import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.jssrc.dsl.Expressions;
 import com.google.template.soy.jssrc.dsl.SoyJsPluginUtils;
 import com.google.template.soy.jssrc.internal.GenJsCodeVisitor.ScopedJsTypeRegistry;
+import com.google.template.soy.jssrc.restricted.ModernSoyJsSrcPrintDirective;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcPrintDirective;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
@@ -248,7 +249,8 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<Expression>> 
 
       // Get directive.
       SoyPrintDirective directive = directiveNode.getPrintDirective();
-      if (!(directive instanceof SoyJsSrcPrintDirective)) {
+      if (!(directive instanceof SoyJsSrcPrintDirective
+          || directive instanceof ModernSoyJsSrcPrintDirective)) {
         errorReporter.report(
             node.getSourceLocation(), UNKNOWN_SOY_JS_SRC_PRINT_DIRECTIVE, directiveNode.getName());
         return;
@@ -263,14 +265,18 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<Expression>> 
         argChunks.add(translateExpr(argNode));
       }
 
-      // Apply directive.
-      expr =
-          SoyJsPluginUtils.applyDirective(
-              expr,
-              (SoyJsSrcPrintDirective) directive,
-              argChunks,
-              node.getSourceLocation(),
-              errorReporter);
+      if (directive instanceof ModernSoyJsSrcPrintDirective) {
+        expr = ((ModernSoyJsSrcPrintDirective) directive).applyForJsSrc(expr, argChunks);
+      } else {
+        // Apply directive.
+        expr =
+            SoyJsPluginUtils.applyDirective(
+                expr,
+                (SoyJsSrcPrintDirective) directive,
+                argChunks,
+                node.getSourceLocation(),
+                errorReporter);
+      }
     }
 
     chunks.add(expr);

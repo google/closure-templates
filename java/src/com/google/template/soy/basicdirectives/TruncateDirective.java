@@ -27,8 +27,8 @@ import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcPrintDirective;
-import com.google.template.soy.jssrc.restricted.JsExpr;
-import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcPrintDirective;
+import com.google.template.soy.jssrc.dsl.Expressions;
+import com.google.template.soy.jssrc.restricted.ModernSoyJsSrcPrintDirective;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyFunctionExprBuilder;
 import com.google.template.soy.pysrc.restricted.SoyPySrcPrintDirective;
@@ -45,7 +45,7 @@ import org.objectweb.asm.Type;
 @SoyPurePrintDirective
 final class TruncateDirective
     implements SoyJavaPrintDirective,
-        SoyLibraryAssistedJsSrcPrintDirective,
+        ModernSoyJsSrcPrintDirective,
         SoyPySrcPrintDirective,
         SoyJbcSrcPrintDirective.Streamable {
 
@@ -122,24 +122,11 @@ final class TruncateDirective
   }
 
   @Override
-  public JsExpr applyForJsSrc(JsExpr value, List<JsExpr> args) {
-    String maxLenExprText = args.get(0).getText();
-    String doAddEllipsisExprText = (args.size() == 2) ? args.get(1).getText() : "true" /*default*/;
-
-    return new JsExpr(
-        "soy.$$truncate("
-            + value.getText()
-            + ", "
-            + maxLenExprText
-            + ", "
-            + doAddEllipsisExprText
-            + ")",
-        Integer.MAX_VALUE);
-  }
-
-  @Override
-  public ImmutableSet<String> getRequiredJsLibNames() {
-    return ImmutableSet.of("soy");
+  public com.google.template.soy.jssrc.dsl.Expression applyForJsSrc(
+      com.google.template.soy.jssrc.dsl.Expression value,
+      List<com.google.template.soy.jssrc.dsl.Expression> args) {
+    return SOY.dotAccess("$$truncate")
+        .call(value, args.get(0), args.size() == 2 ? args.get(1) : Expressions.LITERAL_TRUE);
   }
 
   @Override

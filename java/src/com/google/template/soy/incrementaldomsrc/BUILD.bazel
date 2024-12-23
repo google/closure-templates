@@ -52,6 +52,7 @@ java_library(
         "//java/src/com/google/template/soy/jssrc/dsl",
         "//java/src/com/google/template/soy/jssrc/internal",
         "//java/src/com/google/template/soy/jssrc/restricted",
+        "//java/src/com/google/template/soy/jssrc/restricted:internal",
         "//java/src/com/google/template/soy/logging:public",
         "//java/src/com/google/template/soy/passes",
         "//java/src/com/google/template/soy/shared/internal",

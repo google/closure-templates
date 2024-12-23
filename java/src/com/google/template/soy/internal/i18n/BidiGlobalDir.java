@@ -150,6 +150,7 @@ public final class BidiGlobalDir {
    * or empty.
    */
   public String getCodeSnippet() {
+    // TODO(jcg): Fork Python from JS and make JS version an Expression rather than a string.
     return codeSnippet;
   }
 

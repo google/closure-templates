@@ -29,7 +29,7 @@ java_library(
         "//java/src/com/google/template/soy/coredirectives",
         "//java/src/com/google/template/soy/data",
         "//java/src/com/google/template/soy/data:unsafesanitizedcontentordainer_testonly",
-        "//java/src/com/google/template/soy/jssrc/restricted",
+        "//java/src/com/google/template/soy/jssrc/dsl",
         "//java/src/com/google/template/soy/pysrc/restricted",
         "//java/src/com/google/template/soy/testing:abstract_soy_print_directive_test_case",
         "@maven//:com_google_guava_guava",

@@ -25,7 +25,6 @@ import com.google.template.soy.basetree.NodeVisitor;
 import com.google.template.soy.data.SanitizedContentOperator;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
-import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcPrintDirective;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.EscapingMode;
@@ -53,7 +52,7 @@ import com.google.template.soy.soytree.SoyTreeUtils.VisitDirective;
  */
 final class RemoveUnnecessaryEscapingDirectives {
 
-  private final ImmutableMap<String, SoyLibraryAssistedJsSrcPrintDirective> directives;
+  private final ImmutableMap<String, SoyPrintDirective> directives;
 
   private static final String BIDI_UNICODE_WRAP = "|bidiUnicodeWrap";
 

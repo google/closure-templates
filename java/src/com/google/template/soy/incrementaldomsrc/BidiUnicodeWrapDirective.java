@@ -15,22 +15,27 @@
  */
 package com.google.template.soy.incrementaldomsrc;
 
-import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_PARAM_NAME;
+import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
+import com.google.template.soy.jssrc.dsl.Expression;
+import com.google.template.soy.jssrc.dsl.Expressions;
 import com.google.template.soy.jssrc.restricted.JsExpr;
-import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcPrintDirective;
+import com.google.template.soy.jssrc.restricted.ModernSoyJsSrcPrintDirective;
 import java.util.List;
 import java.util.Set;
 
 /** Implements the |bidiUnicodeWrap directive for incremental dom only. */
-final class BidiUnicodeWrapDirective implements SoyLibraryAssistedJsSrcPrintDirective {
+final class BidiUnicodeWrapDirective implements ModernSoyJsSrcPrintDirective {
 
   /** Supplier for the current bidi global directionality. */
   private final BidiGlobalDir bidiGlobalDir;
 
-  /** @param bidiGlobalDir Current bidi global directionality. */
+  /**
+   * @param bidiGlobalDir Current bidi global directionality.
+   */
   BidiUnicodeWrapDirective(BidiGlobalDir bidiGlobalDir) {
     this.bidiGlobalDir = bidiGlobalDir;
   }
@@ -57,19 +62,10 @@ final class BidiUnicodeWrapDirective implements SoyLibraryAssistedJsSrcPrintDire
   }
 
   @Override
-  public JsExpr applyForJsSrc(JsExpr value, List<JsExpr> args) {
-    return new JsExpr(
-        String.format(
-            "goog.module.get('%s').$$bidiUnicodeWrap(%s, %s, %s)",
-            "google3.javascript.template.soy.soyutils_directives",
-            bidiGlobalDir.getCodeSnippet(),
-            value.getText(),
-            INCREMENTAL_DOM_PARAM_NAME),
-        Integer.MAX_VALUE);
-  }
-
-  @Override
-  public ImmutableSet<String> getRequiredJsLibNames() {
-    return ImmutableSet.of("google3.javascript.template.soy.soyutils_directives");
+  public Expression applyForJsSrc(Expression value, List<Expression> args) {
+    Expression dir =
+        Expressions.fromExpr(
+            new JsExpr(bidiGlobalDir.getCodeSnippet(), Integer.MAX_VALUE), ImmutableList.of());
+    return SOYUTILS_DIRECTIVES.dotAccess("$$bidiUnicodeWrap").call(dir, value, INCREMENTAL_DOM);
   }
 }

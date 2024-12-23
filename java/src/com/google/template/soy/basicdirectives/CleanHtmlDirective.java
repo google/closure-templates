@@ -33,8 +33,10 @@ import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcPrintDirective;
-import com.google.template.soy.jssrc.restricted.JsExpr;
-import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcPrintDirective;
+import com.google.template.soy.jssrc.dsl.Expressions;
+import com.google.template.soy.jssrc.dsl.FormatOptions;
+import com.google.template.soy.jssrc.dsl.StringLiteral;
+import com.google.template.soy.jssrc.restricted.ModernSoyJsSrcPrintDirective;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.SoyPySrcPrintDirective;
 import com.google.template.soy.shared.internal.Sanitizers;
@@ -60,7 +62,7 @@ import java.util.Set;
 @SoyPurePrintDirective
 final class CleanHtmlDirective
     implements SoyJavaPrintDirective,
-        SoyLibraryAssistedJsSrcPrintDirective,
+        ModernSoyJsSrcPrintDirective,
         SoyPySrcPrintDirective,
         SoyJbcSrcPrintDirective.Streamable {
 
@@ -132,15 +134,28 @@ final class CleanHtmlDirective
   }
 
   @Override
-  public JsExpr applyForJsSrc(JsExpr value, List<JsExpr> args) {
-    String optionalSafeTagsArg = generateOptionalSafeTagsArg(args);
-    return new JsExpr(
-        "soy.$$cleanHtml(" + value.getText() + optionalSafeTagsArg + ")", Integer.MAX_VALUE);
-  }
-
-  @Override
-  public ImmutableSet<String> getRequiredJsLibNames() {
-    return ImmutableSet.of("soy");
+  public com.google.template.soy.jssrc.dsl.Expression applyForJsSrc(
+      com.google.template.soy.jssrc.dsl.Expression value,
+      List<com.google.template.soy.jssrc.dsl.Expression> args) {
+    List<com.google.template.soy.jssrc.dsl.Expression> callArgs = new ArrayList<>();
+    callArgs.add(value);
+    if (!args.isEmpty()) {
+      for (com.google.template.soy.jssrc.dsl.Expression tagName : args) {
+        if (tagName instanceof StringLiteral) {
+          OptionalSafeTag.fromTagName(((StringLiteral) tagName).literalValue());
+        } else {
+          throw new IllegalArgumentException(
+              String.format(
+                  "The cleanHtml directive expects arguments to be tag name string "
+                      + "literals, such as 'span'. Encountered: %s",
+                  tagName.getClass().getSimpleName()
+                      + ": "
+                      + tagName.singleExprOrName(FormatOptions.JSSRC).getText()));
+        }
+      }
+      callArgs.add(Expressions.arrayLiteral(args));
+    }
+    return SOY.dotAccess("$$cleanHtml").call(callArgs);
   }
 
   @Override

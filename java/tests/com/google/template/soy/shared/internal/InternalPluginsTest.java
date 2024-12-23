@@ -19,6 +19,7 @@ import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcPrintDirective;
+import com.google.template.soy.jssrc.restricted.ModernSoyJsSrcPrintDirective;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcPrintDirective;
 import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
@@ -43,7 +44,10 @@ public final class InternalPluginsTest {
   public void testBuiltinPluginsSupportAllBackends() throws Exception {
     for (SoyPrintDirective directive :
         InternalPlugins.internalDirectives(NoOpScopedData.INSTANCE)) {
-      assertThat(directive).isInstanceOf(SoyJsSrcPrintDirective.class);
+      assertThat(
+              directive instanceof SoyJsSrcPrintDirective
+                  || directive instanceof ModernSoyJsSrcPrintDirective)
+          .isTrue();
       assertThat(directive).isInstanceOf(SoyJavaPrintDirective.class);
       assertThat(directive).isInstanceOf(SoyJbcSrcPrintDirective.class);
       assertThat(directive).isInstanceOf(SoyPySrcPrintDirective.class);

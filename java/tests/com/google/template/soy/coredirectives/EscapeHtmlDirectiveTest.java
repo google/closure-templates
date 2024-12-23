@@ -21,16 +21,15 @@ import static com.google.common.truth.Truth.assertThat;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
-import com.google.template.soy.jssrc.restricted.JsExpr;
+import com.google.template.soy.jssrc.dsl.Expressions;
+import com.google.template.soy.jssrc.dsl.FormatOptions;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.testing.AbstractSoyPrintDirectiveTestCase;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-/**
- * Unit tests for EscapeHtmlDirective.
- */
+/** Unit tests for EscapeHtmlDirective. */
 @RunWith(JUnit4.class)
 public class EscapeHtmlDirectiveTest extends AbstractSoyPrintDirectiveTestCase {
 
@@ -66,9 +65,11 @@ public class EscapeHtmlDirectiveTest extends AbstractSoyPrintDirectiveTestCase {
   @Test
   public void testApplyForJsSrc() {
     EscapeHtmlDirective escapeHtmlDirective = new EscapeHtmlDirective();
-    JsExpr dataRef = new JsExpr("opt_data.myKey", Integer.MAX_VALUE);
-    assertThat(escapeHtmlDirective.applyForJsSrc(dataRef, ImmutableList.of()).getText())
-        .isEqualTo("soy.$$escapeHtml(opt_data.myKey)");
+    assertThat(
+            escapeHtmlDirective
+                .applyForJsSrc(Expressions.dottedIdNoRequire("opt_data.myKey"), ImmutableList.of())
+                .getCode(FormatOptions.JSSRC))
+        .isEqualTo("soy.$$escapeHtml(opt_data.myKey);");
   }
 
   @Test

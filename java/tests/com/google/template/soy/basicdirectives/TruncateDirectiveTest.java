@@ -19,7 +19,9 @@ package com.google.template.soy.basicdirectives;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.collect.ImmutableList;
-import com.google.template.soy.jssrc.restricted.JsExpr;
+import com.google.template.soy.jssrc.dsl.Expression;
+import com.google.template.soy.jssrc.dsl.Expressions;
+import com.google.template.soy.jssrc.dsl.FormatOptions;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyStringExpr;
 import com.google.template.soy.testing.AbstractSoyPrintDirectiveTestCase;
@@ -58,25 +60,25 @@ public class TruncateDirectiveTest extends AbstractSoyPrintDirectiveTestCase {
   public void testApplyForJsSrc() {
     TruncateDirective truncateDirective = new TruncateDirective();
 
-    JsExpr dataRefJsExpr = new JsExpr("opt_data.myKey", Integer.MAX_VALUE);
-    JsExpr maxLenJsExpr = new JsExpr("8", Integer.MAX_VALUE);
-    JsExpr trueJsExpr = new JsExpr("true", Integer.MAX_VALUE);
-    JsExpr falseJsExpr = new JsExpr("false", Integer.MAX_VALUE);
+    Expression dataRefJsExpr = Expressions.dottedIdNoRequire("opt_data.myKey");
+    Expression maxLenJsExpr = Expressions.number(8);
+    Expression trueJsExpr = Expressions.LITERAL_TRUE;
+    Expression falseJsExpr = Expressions.LITERAL_FALSE;
     assertThat(
             truncateDirective
                 .applyForJsSrc(dataRefJsExpr, ImmutableList.of(maxLenJsExpr))
-                .getText())
-        .isEqualTo("soy.$$truncate(opt_data.myKey, 8, true)");
+                .getCode(FormatOptions.JSSRC))
+        .isEqualTo("soy.$$truncate(opt_data.myKey, 8, true);");
     assertThat(
             truncateDirective
                 .applyForJsSrc(dataRefJsExpr, ImmutableList.of(maxLenJsExpr, trueJsExpr))
-                .getText())
-        .isEqualTo("soy.$$truncate(opt_data.myKey, 8, true)");
+                .getCode(FormatOptions.JSSRC))
+        .isEqualTo("soy.$$truncate(opt_data.myKey, 8, true);");
     assertThat(
             truncateDirective
                 .applyForJsSrc(dataRefJsExpr, ImmutableList.of(maxLenJsExpr, falseJsExpr))
-                .getText())
-        .isEqualTo("soy.$$truncate(opt_data.myKey, 8, false)");
+                .getCode(FormatOptions.JSSRC))
+        .isEqualTo("soy.$$truncate(opt_data.myKey, 8, false);");
   }
   @Test
   public void testApplyForPySrc() {

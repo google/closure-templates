@@ -16,6 +16,7 @@
 
 package com.google.template.soy.bididirectives;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
@@ -28,8 +29,9 @@ import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcPrintDirective;
+import com.google.template.soy.jssrc.dsl.Expressions;
 import com.google.template.soy.jssrc.restricted.JsExpr;
-import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcPrintDirective;
+import com.google.template.soy.jssrc.restricted.ModernSoyJsSrcPrintDirective;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.SoyPySrcPrintDirective;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
@@ -46,14 +48,16 @@ import javax.annotation.Nonnull;
 final class BidiSpanWrapDirective
     implements SanitizedContentOperator,
         SoyJavaPrintDirective,
-        SoyLibraryAssistedJsSrcPrintDirective,
+        ModernSoyJsSrcPrintDirective,
         SoyPySrcPrintDirective,
         SoyJbcSrcPrintDirective.Streamable {
 
   /** Supplier for the current bidi global directionality. */
   private final Supplier<BidiGlobalDir> bidiGlobalDirProvider;
 
-  /** @param bidiGlobalDirProvider Supplier for the current bidi global directionality. */
+  /**
+   * @param bidiGlobalDirProvider Supplier for the current bidi global directionality.
+   */
   BidiSpanWrapDirective(Supplier<BidiGlobalDir> bidiGlobalDirProvider) {
     this.bidiGlobalDirProvider = bidiGlobalDirProvider;
   }
@@ -109,15 +113,14 @@ final class BidiSpanWrapDirective
   }
 
   @Override
-  public JsExpr applyForJsSrc(JsExpr value, List<JsExpr> args) {
-    String codeSnippet = bidiGlobalDirProvider.get().getCodeSnippet();
-    return new JsExpr(
-        "soy.$$bidiSpanWrap(" + codeSnippet + ", " + value.getText() + ")", Integer.MAX_VALUE);
-  }
-
-  @Override
-  public ImmutableSet<String> getRequiredJsLibNames() {
-    return ImmutableSet.of("soy");
+  public com.google.template.soy.jssrc.dsl.Expression applyForJsSrc(
+      com.google.template.soy.jssrc.dsl.Expression value,
+      List<com.google.template.soy.jssrc.dsl.Expression> args) {
+    com.google.template.soy.jssrc.dsl.Expression dir =
+        Expressions.fromExpr(
+            new JsExpr(bidiGlobalDirProvider.get().getCodeSnippet(), Integer.MAX_VALUE),
+            ImmutableList.of());
+    return SOY.dotAccess("$$bidiSpanWrap").call(dir, value);
   }
 
   @Override

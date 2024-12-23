@@ -34,6 +34,7 @@ java_library(
         "//java/src/com/google/template/soy/exprtree",
         "//java/src/com/google/template/soy/jbcsrc/restricted",
         "//java/src/com/google/template/soy/jssrc/restricted",
+        "//java/src/com/google/template/soy/jssrc/restricted:internal",
         "//java/src/com/google/template/soy/plugin/java/restricted",
         "//java/src/com/google/template/soy/plugin/javascript/restricted",
         "//java/src/com/google/template/soy/plugin/python/restricted",

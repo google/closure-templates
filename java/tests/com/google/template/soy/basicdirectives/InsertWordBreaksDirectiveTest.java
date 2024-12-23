@@ -19,15 +19,15 @@ package com.google.template.soy.basicdirectives;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.collect.ImmutableList;
-import com.google.template.soy.jssrc.restricted.JsExpr;
+import com.google.template.soy.jssrc.dsl.Expression;
+import com.google.template.soy.jssrc.dsl.Expressions;
+import com.google.template.soy.jssrc.dsl.FormatOptions;
 import com.google.template.soy.testing.AbstractSoyPrintDirectiveTestCase;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-/**
- * Unit tests for InsertWordBreaksDirective.
- */
+/** Unit tests for InsertWordBreaksDirective. */
 @RunWith(JUnit4.class)
 public class InsertWordBreaksDirectiveTest extends AbstractSoyPrintDirectiveTestCase {
   @Test
@@ -47,13 +47,16 @@ public class InsertWordBreaksDirectiveTest extends AbstractSoyPrintDirectiveTest
         insertWordBreaksDirective,
         maxCharsBetweenBreaks);
   }
+
   @Test
   public void testApplyForJsSrc() {
-
     InsertWordBreaksDirective insertWordBreaksDirective = new InsertWordBreaksDirective();
-    JsExpr dataRef = new JsExpr("opt_data.myKey", Integer.MAX_VALUE);
-    JsExpr arg = new JsExpr("8", Integer.MAX_VALUE);
-    assertThat(insertWordBreaksDirective.applyForJsSrc(dataRef, ImmutableList.of(arg)).getText())
-        .isEqualTo("soy.$$insertWordBreaks(opt_data.myKey, 8)");
+    Expression dataRef = Expressions.dottedIdNoRequire("opt_data.myKey");
+    Expression arg = Expressions.number(8);
+    assertThat(
+            insertWordBreaksDirective
+                .applyForJsSrc(dataRef, ImmutableList.of(arg))
+                .getCode(FormatOptions.JSSRC))
+        .isEqualTo("soy.$$insertWordBreaks(opt_data.myKey, 8);");
   }
 }

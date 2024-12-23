@@ -31,8 +31,7 @@ import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcPrintDirective;
 import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcPrintDirective.Streamable.AppendableAndOptions;
-import com.google.template.soy.jssrc.restricted.JsExpr;
-import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcPrintDirective;
+import com.google.template.soy.jssrc.restricted.ModernSoyJsSrcPrintDirective;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.SoyPySrcPrintDirective;
 import com.google.template.soy.shared.internal.Sanitizers;
@@ -53,7 +52,7 @@ import java.util.List;
  */
 public abstract class BasicEscapeDirective
     implements SoyJavaPrintDirective,
-        SoyLibraryAssistedJsSrcPrintDirective,
+        ModernSoyJsSrcPrintDirective,
         SoyPySrcPrintDirective,
         SoyJbcSrcPrintDirective {
 
@@ -65,7 +64,9 @@ public abstract class BasicEscapeDirective
   @LazyInit private IdentityHashMap<Class<?>, MethodRef> javaSanitizerByParamType;
   @LazyInit private MethodRef javaStreamingSanitizer;
 
-  /** @param name E.g. {@code |escapeUri}. */
+  /**
+   * @param name E.g. {@code |escapeUri}.
+   */
   public BasicEscapeDirective(String name) {
     this.name = name;
   }
@@ -99,14 +100,10 @@ public abstract class BasicEscapeDirective
   }
 
   @Override
-  public JsExpr applyForJsSrc(JsExpr value, List<JsExpr> args) {
-    return new JsExpr(
-        "soy.$$" + name.substring(1) + "(" + value.getText() + ")", Integer.MAX_VALUE);
-  }
-
-  @Override
-  public ImmutableSet<String> getRequiredJsLibNames() {
-    return ImmutableSet.of("soy");
+  public com.google.template.soy.jssrc.dsl.Expression applyForJsSrc(
+      com.google.template.soy.jssrc.dsl.Expression value,
+      List<com.google.template.soy.jssrc.dsl.Expression> args) {
+    return SOY.dotAccess("$$" + name.substring(1)).call(value);
   }
 
   @Override

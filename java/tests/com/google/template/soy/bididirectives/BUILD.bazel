@@ -31,7 +31,7 @@ java_library(
         "//java/src/com/google/template/soy/data",
         "//java/src/com/google/template/soy/data:unsafesanitizedcontentordainer",
         "//java/src/com/google/template/soy/internal/i18n",
-        "//java/src/com/google/template/soy/jssrc/restricted",
+        "//java/src/com/google/template/soy/jssrc/dsl",
         "//java/src/com/google/template/soy/pysrc/restricted",
         "//java/src/com/google/template/soy/testing:abstract_soy_print_directive_test_case",
         "@maven//:com_google_guava_guava",

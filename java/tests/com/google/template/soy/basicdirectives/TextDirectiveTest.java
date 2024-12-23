@@ -22,7 +22,9 @@ import com.google.common.collect.ImmutableList;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.data.restricted.IntegerData;
-import com.google.template.soy.jssrc.restricted.JsExpr;
+import com.google.template.soy.jssrc.dsl.Expression;
+import com.google.template.soy.jssrc.dsl.Expressions;
+import com.google.template.soy.jssrc.dsl.FormatOptions;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyStringExpr;
 import com.google.template.soy.testing.AbstractSoyPrintDirectiveTestCase;
@@ -30,9 +32,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-/**
- * Unit tests for TextDirective.
- */
+/** Unit tests for TextDirective. */
 @RunWith(JUnit4.class)
 public class TextDirectiveTest extends AbstractSoyPrintDirectiveTestCase {
   @Test
@@ -49,13 +49,15 @@ public class TextDirectiveTest extends AbstractSoyPrintDirectiveTestCase {
         textDirective);
     assertTofuOutput(IntegerData.forValue(123), IntegerData.forValue(123), textDirective);
   }
+
   @Test
   public void testApplyForJsSrc() {
     TextDirective textDirective = new TextDirective();
-    JsExpr jsExpr = new JsExpr("whatever", Integer.MAX_VALUE);
-    assertThat(textDirective.applyForJsSrc(jsExpr, ImmutableList.of()).getText())
-        .isEqualTo("'' + whatever");
+    Expression jsExpr = Expressions.id("whatever");
+    assertThat(textDirective.applyForJsSrc(jsExpr, ImmutableList.of()).getCode(FormatOptions.JSSRC))
+        .isEqualTo("'' + whatever;");
   }
+
   @Test
   public void testApplyForPySrc() {
     TextDirective textDirective = new TextDirective();

@@ -16,16 +16,14 @@
 
 package com.google.template.soy.basicdirectives;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcPrintDirective;
-import com.google.template.soy.jssrc.restricted.JsExpr;
-import com.google.template.soy.jssrc.restricted.JsExprUtils;
-import com.google.template.soy.jssrc.restricted.SoyJsSrcPrintDirective;
+import com.google.template.soy.jssrc.dsl.Expressions;
+import com.google.template.soy.jssrc.restricted.ModernSoyJsSrcPrintDirective;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.SoyPySrcPrintDirective;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
@@ -42,7 +40,7 @@ import java.util.Set;
 @SoyPurePrintDirective
 final class TextDirective
     implements SoyJavaPrintDirective,
-        SoyJsSrcPrintDirective,
+        ModernSoyJsSrcPrintDirective,
         SoyPySrcPrintDirective,
         SoyJbcSrcPrintDirective.Streamable {
 
@@ -77,10 +75,10 @@ final class TextDirective
   }
 
   @Override
-  public JsExpr applyForJsSrc(JsExpr value, List<JsExpr> args) {
-    // Coerce to string, since sometimes this will be the root of an expression and will be used as
-    // a return value or let-block assignment.
-    return JsExprUtils.concatJsExprs(ImmutableList.of(new JsExpr("''", Integer.MAX_VALUE), value));
+  public com.google.template.soy.jssrc.dsl.Expression applyForJsSrc(
+      com.google.template.soy.jssrc.dsl.Expression value,
+      List<com.google.template.soy.jssrc.dsl.Expression> args) {
+    return Expressions.stringLiteral("").plus(value);
   }
 
   @Override

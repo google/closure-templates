@@ -22,7 +22,9 @@ import com.google.common.collect.ImmutableList;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
-import com.google.template.soy.jssrc.restricted.JsExpr;
+import com.google.template.soy.jssrc.dsl.Expression;
+import com.google.template.soy.jssrc.dsl.Expressions;
+import com.google.template.soy.jssrc.dsl.FormatOptions;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.testing.AbstractSoyPrintDirectiveTestCase;
 import org.junit.Test;
@@ -40,13 +42,15 @@ public class FilterImageDataUriDirectiveTest extends AbstractSoyPrintDirectiveTe
         sanitizedUri("data:image/png;base64,abc="), "data:image/png;base64,abc=", directive);
     assertTofuOutput(sanitizedUri("data:image/gif;base64,zSoyz"), "not really valid", directive);
   }
+
   @Test
   public void testApplyForJsSrc() {
     FilterImageDataUriDirective cleanHtml = new FilterImageDataUriDirective();
-    JsExpr dataRef = new JsExpr("opt_data.myKey", Integer.MAX_VALUE);
-    assertThat(cleanHtml.applyForJsSrc(dataRef, ImmutableList.of()).getText())
-        .isEqualTo("soy.$$filterImageDataUri(opt_data.myKey)");
+    Expression dataRef = Expressions.dottedIdNoRequire("opt_data.myKey");
+    assertThat(cleanHtml.applyForJsSrc(dataRef, ImmutableList.of()).getCode(FormatOptions.JSSRC))
+        .isEqualTo("soy.$$filterImageDataUri(opt_data.myKey);");
   }
+
   @Test
   public void testApplyForPySrc() {
     FilterImageDataUriDirective cleanHtml = new FilterImageDataUriDirective();

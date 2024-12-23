@@ -28,8 +28,7 @@ import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcPrintDirective;
-import com.google.template.soy.jssrc.restricted.JsExpr;
-import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcPrintDirective;
+import com.google.template.soy.jssrc.restricted.ModernSoyJsSrcPrintDirective;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.SoyPySrcPrintDirective;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
@@ -52,7 +51,7 @@ import org.objectweb.asm.Type;
 final class InsertWordBreaksDirective
     implements SanitizedContentOperator,
         SoyJavaPrintDirective,
-        SoyLibraryAssistedJsSrcPrintDirective,
+        ModernSoyJsSrcPrintDirective,
         SoyPySrcPrintDirective,
         SoyJbcSrcPrintDirective.Streamable {
 
@@ -118,16 +117,10 @@ final class InsertWordBreaksDirective
   }
 
   @Override
-  public JsExpr applyForJsSrc(JsExpr value, List<JsExpr> args) {
-
-    return new JsExpr(
-        "soy.$$insertWordBreaks(" + value.getText() + ", " + args.get(0).getText() + ")",
-        Integer.MAX_VALUE);
-  }
-
-  @Override
-  public ImmutableSet<String> getRequiredJsLibNames() {
-    return ImmutableSet.of("soy");
+  public com.google.template.soy.jssrc.dsl.Expression applyForJsSrc(
+      com.google.template.soy.jssrc.dsl.Expression value,
+      List<com.google.template.soy.jssrc.dsl.Expression> args) {
+    return SOY.dotAccess("$$insertWordBreaks").call(value, args.get(0));
   }
 
   @Override

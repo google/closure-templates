@@ -38,6 +38,7 @@ import com.google.template.soy.jssrc.dsl.SoyJsPluginUtils;
 import com.google.template.soy.jssrc.dsl.Statement;
 import com.google.template.soy.jssrc.dsl.Statements;
 import com.google.template.soy.jssrc.dsl.VariableDeclaration;
+import com.google.template.soy.jssrc.restricted.ModernSoyJsSrcPrintDirective;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcPrintDirective;
 import com.google.template.soy.msgs.internal.IcuSyntaxUtils;
 import com.google.template.soy.msgs.internal.MsgUtils;
@@ -167,13 +168,18 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractReturningSoyNodeVi
     }
     // handle escaping
     for (SoyPrintDirective printDirective : node.getEscapingDirectives()) {
-      msg =
-          SoyJsPluginUtils.applyDirective(
-              msg,
-              (SoyJsSrcPrintDirective) printDirective,
-              /* args= */ ImmutableList.of(),
-              node.getSourceLocation(),
-              errorReporter);
+      if (printDirective instanceof ModernSoyJsSrcPrintDirective) {
+        msg =
+            ((ModernSoyJsSrcPrintDirective) printDirective).applyForJsSrc(msg, ImmutableList.of());
+      } else {
+        msg =
+            SoyJsPluginUtils.applyDirective(
+                msg,
+                (SoyJsSrcPrintDirective) printDirective,
+                /* args= */ ImmutableList.of(),
+                node.getSourceLocation(),
+                errorReporter);
+      }
     }
     return msg;
   }

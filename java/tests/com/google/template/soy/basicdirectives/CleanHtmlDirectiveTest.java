@@ -26,7 +26,9 @@ import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.data.restricted.StringData;
-import com.google.template.soy.jssrc.restricted.JsExpr;
+import com.google.template.soy.jssrc.dsl.Expression;
+import com.google.template.soy.jssrc.dsl.Expressions;
+import com.google.template.soy.jssrc.dsl.FormatOptions;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.shared.internal.TagWhitelist.OptionalSafeTag;
 import com.google.template.soy.testing.AbstractSoyPrintDirectiveTestCase;
@@ -94,43 +96,45 @@ public class CleanHtmlDirectiveTest extends AbstractSoyPrintDirectiveTestCase {
   @Test
   public void testApplyForJsSrc() {
     CleanHtmlDirective cleanHtml = new CleanHtmlDirective();
-    JsExpr dataRef = new JsExpr("opt_data.myKey", Integer.MAX_VALUE);
-    assertThat(cleanHtml.applyForJsSrc(dataRef, ImmutableList.of()).getText())
-        .isEqualTo("soy.$$cleanHtml(opt_data.myKey)");
+    Expression dataRef = Expressions.dottedIdNoRequire("opt_data.myKey");
+    assertThat(cleanHtml.applyForJsSrc(dataRef, ImmutableList.of()).getCode(FormatOptions.JSSRC))
+        .isEqualTo("soy.$$cleanHtml(opt_data.myKey);");
   }
 
   @Test
   public void testApplyForJsSrc_optionalSafeTags() {
     CleanHtmlDirective cleanHtml = new CleanHtmlDirective();
-    JsExpr dataRef = new JsExpr("opt_data.myKey", Integer.MAX_VALUE);
+    Expression dataRef = Expressions.dottedIdNoRequire("opt_data.myKey");
 
     // All possible OptionalSafeTags.
-    ImmutableList<JsExpr> optionalSafeTagsAsJsExprs =
+    ImmutableList<Expression> optionalSafeTagsAsJsExprs =
         Arrays.stream(OptionalSafeTag.values())
             .map(OptionalSafeTag::getTagName)
-            .map(input -> new JsExpr(String.format("'%s'", input), Integer.MAX_VALUE))
+            .map(Expressions::stringLiteral)
             .collect(toImmutableList());
 
-    assertThat(cleanHtml.applyForJsSrc(dataRef, optionalSafeTagsAsJsExprs).getText())
-        .isEqualTo("soy.$$cleanHtml(opt_data.myKey, ['hr', 'li', 'ol', 'span', 'ul'])");
+    assertThat(
+            cleanHtml
+                .applyForJsSrc(dataRef, optionalSafeTagsAsJsExprs)
+                .getCode(FormatOptions.JSSRC))
+        .isEqualTo("soy.$$cleanHtml(opt_data.myKey, ['hr', 'li', 'ol', 'span', 'ul']);");
 
     // Only the specified optional safe tags are passed to $$cleanHtml.
     assertThat(
             cleanHtml
-                .applyForJsSrc(dataRef, ImmutableList.of(new JsExpr("'span'", Integer.MAX_VALUE)))
-                .getText())
-        .isEqualTo("soy.$$cleanHtml(opt_data.myKey, ['span'])");
+                .applyForJsSrc(dataRef, ImmutableList.of(Expressions.stringLiteral("span")))
+                .getCode(FormatOptions.JSSRC))
+        .isEqualTo("soy.$$cleanHtml(opt_data.myKey, ['span']);");
 
     // Invalid optional safe tags.
     try {
-      cleanHtml.applyForJsSrc(
-          dataRef, ImmutableList.of(new JsExpr("'unsupported'", Integer.MAX_VALUE)));
+      cleanHtml.applyForJsSrc(dataRef, ImmutableList.of(Expressions.stringLiteral("unsupported")));
       fail();
     } catch (IllegalArgumentException e) {
       // Test passes.
     }
     try {
-      cleanHtml.applyForJsSrc(dataRef, ImmutableList.of(new JsExpr("'li, ul'", Integer.MAX_VALUE)));
+      cleanHtml.applyForJsSrc(dataRef, ImmutableList.of(Expressions.stringLiteral("li, ul")));
       fail();
     } catch (IllegalArgumentException e) {
       // Test passes.
@@ -139,16 +143,15 @@ public class CleanHtmlDirectiveTest extends AbstractSoyPrintDirectiveTestCase {
     // Invalid parameter syntax.
     try {
       cleanHtml.applyForJsSrc(
-          dataRef, ImmutableList.of(new JsExpr("$myExtraSafeTags", Integer.MAX_VALUE)));
+          dataRef, ImmutableList.of(Expressions.stringLiteral("$myExtraSafeTags")));
       fail();
     } catch (IllegalArgumentException e) {
       assertThat(e)
           .hasMessageThat()
-          .isEqualTo(
-              "The cleanHtml directive expects arguments to be tag name string "
-                  + "literals, such as 'span'. Encountered: $myExtraSafeTags");
+          .isEqualTo("$myExtraSafeTags is not a valid optional safe tag.");
     }
   }
+
   @Test
   public void testApplyForPySrc() {
     CleanHtmlDirective cleanHtml = new CleanHtmlDirective();
@@ -157,6 +160,7 @@ public class CleanHtmlDirectiveTest extends AbstractSoyPrintDirectiveTestCase {
     assertThat(cleanHtml.applyForPySrc(data, ImmutableList.of()).getText())
         .isEqualTo("sanitize.clean_html('data')");
   }
+
   @Test
   public void testApplyForPySrc_optionalSafeTags() {
     CleanHtmlDirective cleanHtml = new CleanHtmlDirective();

@@ -42,6 +42,7 @@ import com.google.template.soy.jssrc.dsl.GoogRequire;
 import com.google.template.soy.jssrc.internal.GenJsCodeVisitor.ScopedJsTypeRegistry;
 import com.google.template.soy.jssrc.internal.GenJsExprsVisitor.GenJsExprsVisitorFactory;
 import com.google.template.soy.jssrc.restricted.JsExpr;
+import com.google.template.soy.jssrc.restricted.ModernSoyJsSrcPrintDirective;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcPrintDirective;
 import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcPrintDirective;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
@@ -61,9 +62,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-/**
- * Generates JS code for {call}s and {delcall}s.
- */
+/** Generates JS code for {call}s and {delcall}s. */
 public class GenCallCodeUtils {
   /**
    * Returns true if the given template has a positional signature where all explicit {@code @param}
@@ -266,26 +265,32 @@ public class GenCallCodeUtils {
     // The print directive system continues to use JsExpr, as it is a publicly available API and
     // migrating it to CodeChunk would be a major change. Therefore, we convert our CodeChunks
     // to JsExpr and back here.
-    JsExpr callResult = call.singleExprOrName(FormatOptions.JSSRC);
-    ImmutableSet.Builder<GoogRequire> requiresBuilder = ImmutableSet.builder();
-    call.collectRequires(requiresBuilder::add);
     for (SoyPrintDirective directive : callNode.getEscapingDirectives()) {
-      checkState(
-          directive instanceof SoyJsSrcPrintDirective,
-          "Contextual autoescaping produced a bogus directive: %s",
-          directive.getName());
-      callResult =
-          ((SoyJsSrcPrintDirective) directive).applyForJsSrc(callResult, ImmutableList.of());
-      if (directive instanceof SoyLibraryAssistedJsSrcPrintDirective) {
-        for (String name :
-            ((SoyLibraryAssistedJsSrcPrintDirective) directive).getRequiredJsLibNames()) {
-          requiresBuilder.add(GoogRequire.create(name));
+      if (directive instanceof ModernSoyJsSrcPrintDirective) {
+        call = ((ModernSoyJsSrcPrintDirective) directive).applyForJsSrc(call, ImmutableList.of());
+      } else if (directive instanceof SoyJsSrcPrintDirective) {
+        JsExpr callResult = call.singleExprOrName(FormatOptions.JSSRC);
+        ImmutableSet.Builder<GoogRequire> requiresBuilder = ImmutableSet.builder();
+        call.collectRequires(requiresBuilder::add);
+        if (directive instanceof SoyLibraryAssistedJsSrcPrintDirective) {
+          for (String name :
+              ((SoyLibraryAssistedJsSrcPrintDirective) directive).getRequiredJsLibNames()) {
+            requiresBuilder.add(GoogRequire.create(name));
+          }
         }
+        callResult =
+            ((SoyJsSrcPrintDirective) directive).applyForJsSrc(callResult, ImmutableList.of());
+        call =
+            fromExpr(callResult, requiresBuilder.build())
+                .withInitialStatements(call.allInitialStatementsInTopScope());
+      } else {
+        throw new IllegalStateException(
+            String.format(
+                "Contextual autoescaping produced a bogus directive: %s", directive.getName()));
       }
     }
 
-    return fromExpr(callResult, requiresBuilder.build())
-        .withInitialStatements(call.allInitialStatementsInTopScope());
+    return call;
   }
 
   /** Represents a callable function symbol. */

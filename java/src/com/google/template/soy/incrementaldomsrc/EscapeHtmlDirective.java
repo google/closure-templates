@@ -15,16 +15,16 @@
  */
 package com.google.template.soy.incrementaldomsrc;
 
-import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_PARAM_NAME;
+import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.template.soy.jssrc.restricted.JsExpr;
-import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcPrintDirective;
+import com.google.template.soy.jssrc.dsl.Expression;
+import com.google.template.soy.jssrc.restricted.ModernSoyJsSrcPrintDirective;
 import java.util.List;
 import java.util.Set;
 
 /** Implements the |escapeHtml directive for incremental dom only. */
-final class EscapeHtmlDirective implements SoyLibraryAssistedJsSrcPrintDirective {
+final class EscapeHtmlDirective implements ModernSoyJsSrcPrintDirective {
 
   /**
    * Gets the name of the Soy print directive.
@@ -48,18 +48,7 @@ final class EscapeHtmlDirective implements SoyLibraryAssistedJsSrcPrintDirective
   }
 
   @Override
-  public JsExpr applyForJsSrc(JsExpr value, List<JsExpr> args) {
-    return new JsExpr(
-        String.format(
-            "goog.module.get('%s').$$escapeHtml(%s, %s)",
-            "google3.javascript.template.soy.soyutils_directives",
-            value.getText(),
-            INCREMENTAL_DOM_PARAM_NAME),
-        Integer.MAX_VALUE);
-  }
-
-  @Override
-  public ImmutableSet<String> getRequiredJsLibNames() {
-    return ImmutableSet.of("google3.javascript.template.soy.soyutils_directives");
+  public Expression applyForJsSrc(Expression value, List<Expression> args) {
+    return SOYUTILS_DIRECTIVES.dotAccess("$$escapeHtml").call(value, INCREMENTAL_DOM);
   }
 }
