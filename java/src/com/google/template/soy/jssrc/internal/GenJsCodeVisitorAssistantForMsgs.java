@@ -33,6 +33,7 @@ import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.jssrc.dsl.Expressions;
+import com.google.template.soy.jssrc.dsl.Id;
 import com.google.template.soy.jssrc.dsl.JsDoc;
 import com.google.template.soy.jssrc.dsl.SoyJsPluginUtils;
 import com.google.template.soy.jssrc.dsl.Statement;
@@ -78,6 +79,7 @@ import javax.annotation.Nullable;
 public class GenJsCodeVisitorAssistantForMsgs extends AbstractReturningSoyNodeVisitor<Statement> {
 
   private static final Pattern LINE_BOUNDARY_PATTERN = Pattern.compile("\\s*?(\\n|\\r)\\s*");
+
   /** Regex pattern for an underscore-number suffix. */
   private static final Pattern UNDERSCORE_NUMBER_SUFFIX = Pattern.compile("_[0-9]+$");
 
@@ -329,7 +331,7 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractReturningSoyNodeVi
 
     // Generate goog.getMsg() call.
     VariableDeclaration.Builder builder =
-        VariableDeclaration.builder(googMsgVarName).setJsDoc(jsDocBuilder.build());
+        VariableDeclaration.builder(Id.create(googMsgVarName)).setJsDoc(jsDocBuilder.build());
     if (msgNode.getEscapingMode() == EscapingMode.ESCAPE_HTML) {
       // In HTML, we always pass three arguments to goog.getMsg().
       builder.setRhs(
@@ -407,6 +409,7 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractReturningSoyNodeVi
 
   private static final class GoogMsgCodeGenInfo {
     final Expression googMsgVar;
+
     /**
      * Placeholders that still need to be applied, if any. This is only relevant in plrsel messages
      * which require a different formatting method to be called.

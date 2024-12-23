@@ -190,7 +190,7 @@ public final class CodeChunkTest {
     Expression increment = number(10);
     Statement body = id("fn").call().asStatement();
 
-    Statement forChunk = forLoop(localVar, initial, limit, increment, body);
+    Statement forChunk = forLoop(Id.create(localVar), initial, limit, increment, body);
     assertThat(forChunk.getCode(JSSRC))
         .isEqualTo(
             JOINER.join("for (let myVar = 100; myVar < 300; myVar += 10) {", "  fn();", "}"));
@@ -200,7 +200,7 @@ public final class CodeChunkTest {
     increment = id("incrementFn").call();
     body = id("fn").call().asStatement();
 
-    forChunk = forLoop(localVar, initial, limit, increment, body);
+    forChunk = forLoop(Id.create(localVar), initial, limit, increment, body);
     assertThat(forChunk.getCode(JSSRC))
         .isEqualTo(
             JOINER.join(
@@ -224,7 +224,7 @@ public final class CodeChunkTest {
 
     Statement body = Statements.of(id("fn").call().asStatement(), id("fn2").call().asStatement());
 
-    Statement forChunk = forLoop(localVar, initial, limit, increment, body);
+    Statement forChunk = forLoop(Id.create(localVar), initial, limit, increment, body);
 
     assertThat(forChunk.getCode(JSSRC))
         .isEqualTo(
@@ -928,7 +928,7 @@ public final class CodeChunkTest {
     jsDocBuilder.addParam("num", "number");
     Statement body = returnValue(id("num").plus(number(1)));
     MethodDeclaration method =
-        MethodDeclaration.builder("addOne", body).setJsDoc(jsDocBuilder.build()).build();
+        MethodDeclaration.builder(Id.create("addOne"), body).setJsDoc(jsDocBuilder.build()).build();
     ClassExpression fooClass = ClassExpression.builder().addMethod(method).build();
     VariableDeclaration fooClassExpression =
         VariableDeclaration.builder("FooClassTemplate").setRhs(fooClass).build();

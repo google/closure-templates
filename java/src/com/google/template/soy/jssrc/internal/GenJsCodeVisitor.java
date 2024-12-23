@@ -66,6 +66,7 @@ import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.jssrc.dsl.Expressions;
 import com.google.template.soy.jssrc.dsl.GoogRequire;
+import com.google.template.soy.jssrc.dsl.Id;
 import com.google.template.soy.jssrc.dsl.JsArrowFunction;
 import com.google.template.soy.jssrc.dsl.JsCodeBuilder;
 import com.google.template.soy.jssrc.dsl.JsDoc;
@@ -678,7 +679,8 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       JsDoc.Builder jsDoc =
           JsDoc.builder().addParameterizedAnnotation("typedef", jsType.typeExpr());
       jsCodeBuilder.append(
-          topLevelDecl(node, node.isExported(), node.getName(), jsDoc, imputesSpan));
+          topLevelDecl(
+              node, node.isExported(), node.getName(), node.getNameLocation(), jsDoc, imputesSpan));
       return;
     }
 
@@ -689,7 +691,8 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     List<Statement> properties = new ArrayList<>();
     // Map<RecordType.Member, SoyType> propertyTypeDefs = new LinkedHashMap<>();
 
-    Expression recordClass = topLevelLhs(node, node.isExported(), node.getName(), null);
+    Expression recordClass =
+        topLevelLhs(node, node.isExported(), node.getName(), node.getNameLocation(), null);
     for (SoyType member : recordMembers) {
       if (member.getKind() == Kind.NAMED) {
         JsType memberType = getJsTypeForParam(member);
@@ -708,6 +711,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
                   true, // Must always be public because of indexed types. We could do flow
                   // analysis...
                   memberTypedefName,
+                  null,
                   JsDoc.builder()
                       .addParameterizedAnnotation("typedef", memberTypedefType.typeExpr())
                       .addGoogRequires(memberTypedefType),
@@ -743,6 +747,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
             node,
             node.isExported(),
             node.getName(),
+            node.getNameLocation(),
             jsDoc,
             imputesSpan,
             Expressions.function(JsDoc.getDefaultInstance(), Statements.EMPTY)));
@@ -773,7 +778,14 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
             .prepend(JsDoc.builder().setOverviewComment("@pureOrBreakMyCode").build());
 
     jsCodeBuilder.append(
-        topLevelAssignment(node, node.isExported(), partialName, jsDoc, imputesSpan, constantExpr));
+        topLevelAssignment(
+            node,
+            node.isExported(),
+            partialName,
+            node.getVar().nameLocation(),
+            jsDoc,
+            imputesSpan,
+            constantExpr));
     for (GoogRequire require : varType.googRequires()) {
       jsCodeBuilder.addGoogRequire(require);
     }
@@ -793,8 +805,12 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
   }
 
   private Expression topLevelLhs(
-      SoyNode node, boolean exported, String partialName, @Nullable ByteSpan byteSpan) {
-    Expression nameExpr = id(partialName).withByteSpan(byteSpan);
+      SoyNode node,
+      boolean exported,
+      String partialName,
+      SourceLocation nameLocation,
+      @Nullable ByteSpan byteSpan) {
+    Expression nameExpr = Id.builder(partialName).setSpan(byteSpan).build();
     if (jsSrcOptions.shouldGenerateGoogModules()) {
       if (exported) {
         return EXPORTS.dotAccess(nameExpr);
@@ -822,23 +838,23 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       SoyNode node,
       boolean exported,
       String partialName,
+      SourceLocation nameLocation,
       JsDoc.Builder jsDoc,
       @Nullable ByteSpan byteSpan,
       @Nullable Expression value) {
     if (jsSrcOptions.shouldGenerateGoogModules()) {
       if (exported) {
-        Expression lhs = topLevelLhs(node, exported, partialName, byteSpan);
+        Expression lhs = topLevelLhs(node, exported, partialName, nameLocation, byteSpan);
         return value != null ? assign(lhs, value, jsDoc.build()) : lhs.asStatement(jsDoc.build());
       } else {
-        return VariableDeclaration.builder(partialName)
+        return VariableDeclaration.builder(Id.builder(partialName).setSpan(byteSpan).build())
             .setJsDoc(jsDoc.build())
             .setRhs(value)
-            .setByteSpan(byteSpan)
             .build();
       }
     } else {
       jsDoc.addAnnotation(exported ? "public" : "private");
-      Expression lhs = topLevelLhs(node, exported, partialName, byteSpan);
+      Expression lhs = topLevelLhs(node, exported, partialName, nameLocation, byteSpan);
       return value != null ? assign(lhs, value, jsDoc.build()) : lhs.asStatement(jsDoc.build());
     }
   }
@@ -847,9 +863,10 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       SoyNode node,
       boolean exported,
       String partialName,
+      SourceLocation nameLocation,
       JsDoc.Builder jsDoc,
       @Nullable ByteSpan byteSpan) {
-    return topLevelAssignment(node, exported, partialName, jsDoc, byteSpan, null);
+    return topLevelAssignment(node, exported, partialName, nameLocation, jsDoc, byteSpan, null);
   }
 
   private Expression getLocalConstantExpr(ConstNode node) {
@@ -1001,7 +1018,10 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
         JsDoc jsDoc = generateEmptyFunctionJsDoc(node);
         if (jsSrcOptions.shouldGenerateGoogModules()) {
           declarations.add(
-              VariableDeclaration.builder(alias).setJsDoc(jsDoc).setRhs(emptyFnCall).build());
+              VariableDeclaration.builder(Id.create(alias))
+                  .setJsDoc(jsDoc)
+                  .setRhs(emptyFnCall)
+                  .build());
         } else {
           declarations.add(Statements.assign(aliasExp, emptyFnCall, jsDoc));
         }
@@ -1033,14 +1053,13 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
         if (jsSrcOptions.shouldGenerateGoogModules()) {
           VariableDeclaration publicDeclaration =
-              VariableDeclaration.builder(alias)
+              VariableDeclaration.builder(Id.builder(alias).setSpan(imputesSpan).build())
                   .setJsDoc(jsDoc)
                   .setRhs(publicFunction)
-                  .setByteSpan(imputesSpan)
                   .build();
           declarations.add(publicDeclaration);
           VariableDeclaration positionalDeclaration =
-              VariableDeclaration.builder(alias + "$")
+              VariableDeclaration.builder(Id.create(alias + "$"))
                   .setJsDoc(positionalFunctionDoc)
                   .setRhs(positionalFunction)
                   .build();
@@ -1050,7 +1069,8 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
               && node.getVisibility() == Visibility.PUBLIC) {
             declarations.add(
                 assign(
-                    JsRuntime.EXPORTS.dotAccess(id(partialName).withByteSpan(imputesSpan)),
+                    JsRuntime.EXPORTS.dotAccess(
+                        Id.builder(partialName).setSpan(imputesSpan).build()),
                     publicDeclaration.ref()));
             declarations.add(
                 assign(
@@ -1087,9 +1107,8 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
         if (jsSrcOptions.shouldGenerateGoogModules()) {
           declarations.add(
-              VariableDeclaration.builder(alias)
+              VariableDeclaration.builder(Id.builder(alias).setSpan(imputesSpan).build())
                   .setJsDoc(jsDoc)
-                  .setByteSpan(imputesSpan)
                   .setRhs(function)
                   .build());
           // don't export deltemplates or private templates
@@ -1097,7 +1116,8 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
               && node.getVisibility() == Visibility.PUBLIC) {
             declarations.add(
                 assign(
-                    JsRuntime.EXPORTS.dotAccess(id(partialName).withByteSpan(imputesSpan)),
+                    JsRuntime.EXPORTS.dotAccess(
+                        Id.builder(partialName).setSpan(imputesSpan).build()),
                     aliasExp));
           }
         } else {
@@ -1157,7 +1177,10 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
                     /* addStubMapLogic= */ false));
         if (jsSrcOptions.shouldGenerateGoogModules()) {
           declarations.add(
-              VariableDeclaration.builder(defaultImplName).setJsDoc(jsDoc).setRhs(impl).build());
+              VariableDeclaration.builder(Id.create(defaultImplName))
+                  .setJsDoc(jsDoc)
+                  .setRhs(impl)
+                  .build());
         } else {
           declarations.add(Statements.assign(dottedIdNoRequire(defaultImplName), impl, jsDoc));
         }
@@ -1325,7 +1348,8 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
               node.getParams().stream()
                   .collect(
                       toImmutableMap(
-                          p -> genParamPropAlias(p.name()), p -> id(getPositionalParamName(p))))),
+                          p -> genParamPropAlias(p.name()),
+                          p -> Id.create(getPositionalParamName(p))))),
           JsRuntime.IJ_DATA);
     }
     return ImmutableList.of(JsRuntime.OPT_DATA, JsRuntime.IJ_DATA);
@@ -1440,7 +1464,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     } else {
       List<Expression> callParams = new ArrayList<>(getFixedParamsToPositionalCall(node));
       for (TemplateParam param : paramsInOrder(node)) {
-        callParams.add(id(genParamAlias(param.name())));
+        callParams.add(Id.create(genParamAlias(param.name())));
       }
       bodyStatements.add(returnValue(delegateFn.call(callParams)));
     }
@@ -1709,7 +1733,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       String paramAlias = genParamAlias(paramName);
       Expression paramChunk =
           isThisParamPositional
-              ? id(getPositionalParamName(param))
+              ? Id.create(getPositionalParamName(param))
               : genCodeForParamAccess(paramName, param);
       JsType jsType = getJsTypeForParamTypeCheck(paramType);
       // TODO(lukes): for positional style params we should switch to inline defaults in the
@@ -1738,7 +1762,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       }
 
       VariableDeclaration declaration =
-          VariableDeclaration.builder(paramAlias)
+          VariableDeclaration.builder(Id.create(paramAlias))
               .setRhs(initializer)
               .setRequires(jsType.googRequires())
               .setJsDoc(
@@ -1750,7 +1774,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
           .soyToJsVariableMappings()
           // TODO(lukes): this should really be declartion.ref() but we cannot do that until
           // everything is on the code chunk api.
-          .put(param, id(paramAlias));
+          .put(param, declaration.varName());
     }
     return Statements.of(declarations.build());
   }

@@ -18,7 +18,7 @@ package com.google.template.soy.jssrc.dsl;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
-import com.google.template.soy.base.SourceLocation.ByteSpan;
+import java.util.Objects;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
@@ -38,7 +38,7 @@ public abstract class ClassExpression extends Expression
     implements Expression.InitialStatementsScope {
 
   @Nullable
-  abstract String name();
+  abstract Id name();
 
   @Nullable
   abstract Expression baseClass();
@@ -47,18 +47,16 @@ public abstract class ClassExpression extends Expression
 
   @Override
   Stream<? extends CodeChunk> childrenStream() {
-    Stream<? extends CodeChunk> children = methods().stream();
-    if (baseClass() != null) {
-      children = Stream.concat(Stream.of(baseClass()), children);
-    }
-    return children;
+    return Stream.concat(
+        Stream.of(name(), baseClass()).filter(Objects::nonNull), methods().stream());
   }
 
   @Override
   void doFormatOutputExpr(FormattingContext ctx) {
     ctx.append("class");
     if (name() != null) {
-      ctx.append(" " + name());
+      ctx.append(" ");
+      ctx.appendOutputExpression(name());
     }
     if (baseClass() != null) {
       ctx.append(" extends ");
@@ -83,7 +81,7 @@ public abstract class ClassExpression extends Expression
   @AutoValue.Builder
   public abstract static class Builder {
 
-    public abstract Builder setName(String value);
+    public abstract Builder setName(Id value);
 
     public abstract Builder setBaseClass(Expression value);
 
@@ -110,10 +108,7 @@ public abstract class ClassExpression extends Expression
   @AutoValue
   public abstract static class MethodDeclaration extends Expression
       implements Expression.InitialStatementsScope {
-    abstract String name();
-
-    @Nullable
-    abstract ByteSpan byteSpan();
+    abstract Id name();
 
     abstract JsDoc jsDoc();
 
@@ -121,14 +116,14 @@ public abstract class ClassExpression extends Expression
 
     @Override
     Stream<? extends CodeChunk> childrenStream() {
-      return Stream.of(jsDoc(), body());
+      return Stream.of(jsDoc(), name(), body());
     }
 
     @Override
     void doFormatOutputExpr(FormattingContext ctx) {
       ctx.appendAll(jsDoc());
       ctx.endLine();
-      ctx.appendImputee(name(), byteSpan());
+      ctx.appendOutputExpression(name());
       ctx.append("(");
       ctx.append(
           FunctionDeclaration.generateParamList(jsDoc(), /* addInlineTypeAnnotations= */ false));
@@ -138,7 +133,7 @@ public abstract class ClassExpression extends Expression
       }
     }
 
-    public static Builder builder(String name, Statement body) {
+    public static Builder builder(Id name, Statement body) {
       return new AutoValue_ClassExpression_MethodDeclaration.Builder()
           .setName(name)
           .setBody(body)
@@ -149,9 +144,7 @@ public abstract class ClassExpression extends Expression
     @AutoValue.Builder
     public abstract static class Builder {
 
-      public abstract Builder setName(String value);
-
-      public abstract Builder setByteSpan(ByteSpan value);
+      public abstract Builder setName(Id value);
 
       public abstract Builder setJsDoc(JsDoc value);
 

@@ -124,8 +124,11 @@ public abstract class Expression extends CodeChunk {
   }
 
   public Expression withByteSpan(@Nullable ByteSpan byteSpan) {
-    if (byteSpan == null) {
+    if (byteSpan == null || !byteSpan.isKnown()) {
       return this;
+    }
+    if (this instanceof Id) {
+      return ((Id) this).toBuilder().setSpan(byteSpan).build();
     }
     return ExpressionWithSpan.create(this, byteSpan);
   }

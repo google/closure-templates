@@ -25,13 +25,13 @@ import java.util.stream.Stream;
 @Immutable
 abstract class ForOf extends Statement {
 
-  abstract String localVar();
+  abstract Id localVar();
 
   abstract Expression collection();
 
   abstract Statement body();
 
-  static ForOf create(String localVar, Expression collection, Statement body) {
+  static ForOf create(Id localVar, Expression collection, Statement body) {
     return new AutoValue_ForOf(localVar, collection, body);
   }
 
@@ -44,7 +44,8 @@ abstract class ForOf extends Statement {
   void doFormatStatement(FormattingContext ctx) {
     ctx.appendInitialStatements(collection());
 
-    ctx.append("for (const " + localVar())
+    ctx.append("for (const ")
+        .appendOutputExpression(localVar())
         .append(" of ")
         .appendOutputExpression(collection())
         .append(") ");

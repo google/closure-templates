@@ -66,17 +66,17 @@ public final class Statements {
 
   /** Creates a code chunk representing a for loop. */
   public static Statement forLoop(
-      String localVar, Expression initial, Expression limit, Expression increment, Statement body) {
+      Id localVar, Expression initial, Expression limit, Expression increment, Statement body) {
     return For.create(localVar, initial, limit, increment, body);
   }
 
   /** Creates a code chunk representing a for loop, with default values for initial & increment. */
-  public static Statement forLoop(String localVar, Expression limit, Statement body) {
+  public static Statement forLoop(Id localVar, Expression limit, Statement body) {
     return For.create(localVar, Expressions.number(0), limit, Expressions.number(1), body);
   }
 
   /** Creates a code chunk representing a for of loop. */
-  public static Statement forOf(String localVar, Expression collection, Statement body) {
+  public static Statement forOf(Id localVar, Expression collection, Statement body) {
     return ForOf.create(localVar, collection, body);
   }
 

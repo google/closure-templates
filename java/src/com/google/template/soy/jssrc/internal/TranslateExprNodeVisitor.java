@@ -71,6 +71,7 @@ import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SoyBackendKind;
+import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.AbstractReturningExprNodeVisitor;
@@ -117,6 +118,7 @@ import com.google.template.soy.internal.proto.ProtoUtils;
 import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.jssrc.dsl.Expressions;
 import com.google.template.soy.jssrc.dsl.GoogRequire;
+import com.google.template.soy.jssrc.dsl.Id;
 import com.google.template.soy.jssrc.dsl.JsDoc;
 import com.google.template.soy.jssrc.dsl.SoyJsPluginUtils;
 import com.google.template.soy.jssrc.internal.GenJsCodeVisitor.ScopedJsTypeRegistry;
@@ -344,7 +346,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
     String module = node.getType().getNameForBackend(SoyBackendKind.JS_SRC);
     return GoogRequire.create(module)
         .reference()
-        .dotAccess(Ascii.toUpperCase(node.getEnumValueDescriptor().getName()));
+        .dotAccess(Id.create(Ascii.toUpperCase(node.getEnumValueDescriptor().getName())));
   }
 
   // -----------------------------------------------------------------------------------------------
@@ -415,7 +417,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
         base =
             JsRuntime.SOY_AS_READONLY
                 .call(base)
-                .dotAccess("filter")
+                .dotAccess(Id.create("filter"))
                 .call(
                     arrowFunction(
                         doc,
@@ -436,7 +438,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
       base =
           JsRuntime.SOY_AS_READONLY
               .call(base)
-              .dotAccess("map")
+              .dotAccess(Id.create("map"))
               .call(arrowFunction(doc, visit(node.getListItemTransformExpr())));
       return base;
     }
@@ -483,7 +485,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
       // Constructing a map literal with a null key is a runtime error.
       Expression key = assertNonNull(keyNode);
       Expression value = visit(node.getChild(i + 1));
-      map = map.dotAccess("set").call(key, value);
+      map = map.dotAccess(Id.create("set")).call(key, value);
     }
 
     return map;
@@ -1007,7 +1009,8 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
     }
     Expression proto = construct(protoConstructor(type));
     for (int i = 0; i < node.numParams(); i++) {
-      String fieldName = node.getParamName(i).identifier();
+      Identifier fieldNameId = node.getParamName(i);
+      String fieldName = fieldNameId.identifier();
       FieldDescriptor fieldDesc = type.getFieldDescriptor(fieldName);
       ExprNode child = node.getParam(i);
       if (fieldDesc.isMapField() && child.getKind() == ExprNode.Kind.MAP_LITERAL_NODE) {
@@ -1026,7 +1029,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
                   ProtoUtils.getMapValueFieldDescriptor(fieldDesc),
                   visit(mapLiteral.getChild(j + 1)),
                   false);
-          proto = proto.dotAccess(fnName).call(key, value);
+          proto = proto.dotAccess(Id.create(fnName)).call(key, value);
         }
       } else if (fieldDesc.isRepeated()
           && !fieldDesc.isExtension()
@@ -1042,14 +1045,14 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
         for (int j = 0; j < listLiteral.numChildren(); j++) {
           proto =
               proto
-                  .dotAccess(fnName)
+                  .dotAccess(Id.create(fnName))
                   .call(protoInitFieldValue(fieldDesc, visit(listLiteral.getChild(j)), true));
         }
       } else {
         Expression fieldValue = protoInitFieldValue(fieldDesc, visit(child), false);
         if (fieldDesc.isExtension()) {
           Expression extInfo = extensionField(fieldDesc);
-          proto = proto.dotAccess("setExtension").call(extInfo, fieldValue);
+          proto = proto.dotAccess(Id.create("setExtension")).call(extInfo, fieldValue);
         } else if (fieldDesc.isMapField()) {
           if (ProtoUtils.isSanitizedContentMap(fieldDesc)) {
             Expression sanitizedContentPackFn =
@@ -1064,18 +1067,19 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
           proto =
               proto
                   .dotAccess(
-                      "putAll"
-                          + LOWER_CAMEL
-                              .to(UPPER_CAMEL, fieldName)
-                              .substring(0, fieldName.length() - 3)
-                          + ProtoUtils.getJsFieldSpecificSuffix(fieldDesc))
+                      Id.create(
+                          "putAll"
+                              + LOWER_CAMEL
+                                  .to(UPPER_CAMEL, fieldName)
+                                  .substring(0, fieldName.length() - 3)
+                              + ProtoUtils.getJsFieldSpecificSuffix(fieldDesc)))
                   .call(fieldValue);
         } else {
           String setFn =
               "set"
                   + LOWER_CAMEL.to(UPPER_CAMEL, fieldName)
                   + ProtoUtils.getJsFieldSpecificSuffix(fieldDesc);
-          proto = proto.dotAccess(setFn).call(fieldValue);
+          proto = proto.dotAccess(Id.create(setFn)).call(fieldValue);
         }
       }
     }

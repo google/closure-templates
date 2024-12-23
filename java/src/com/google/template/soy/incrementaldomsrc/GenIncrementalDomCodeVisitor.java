@@ -52,6 +52,7 @@ import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.jssrc.dsl.Expressions;
 import com.google.template.soy.jssrc.dsl.GoogRequire;
+import com.google.template.soy.jssrc.dsl.Id;
 import com.google.template.soy.jssrc.dsl.JsCodeBuilder;
 import com.google.template.soy.jssrc.dsl.JsDoc;
 import com.google.template.soy.jssrc.dsl.Statement;
@@ -603,7 +604,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     ClassExpression.Builder classBuilder =
         ClassExpression.builder()
             .setBaseClass(SOY_IDOM.dotAccess("$SoyElement"))
-            .setName(soyElementClassName);
+            .setName(Id.create(soyElementClassName));
     try (var unused = templateTranslationContext.enterSoyAndJsScope()) {
       ImmutableList.Builder<Statement> stateVarInitializations = ImmutableList.builder();
       stateVarInitializations.add(generateInitInternal(node));
@@ -618,7 +619,8 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
           Statements.of(
               id("super").call().asStatement(), Statements.of(stateVarInitializations.build()));
       MethodDeclaration constructorMethod =
-          MethodDeclaration.builder("constructor", ctorBody).setByteSpan(byteSpan).build();
+          MethodDeclaration.builder(Id.builder("constructor").setSpan(byteSpan).build(), ctorBody)
+              .build();
       classBuilder.addMethod(constructorMethod);
     }
     for (TemplateStateVar stateVar : node.getStateVars()) {
@@ -704,12 +706,12 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
               id("this").dotAccess(STATE_PREFIX + stateVar.name()), typeForState, typeForGetters);
       methods.add(
           MethodDeclaration.builder(
-                  "get" + stateAccessorSuffix, Statements.returnValue(getterStateValue))
+                  Id.builder("get" + stateAccessorSuffix).setSpan(byteSpan).build(),
+                  Statements.returnValue(getterStateValue))
               .setJsDoc(
                   JsDoc.builder()
                       .addParameterizedAnnotation("return", typeForGetters.typeExpr())
                       .build())
-              .setByteSpan(byteSpan)
               .build());
     }
 
@@ -736,13 +738,13 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
           setterStateValue.assign(setterParam).asStatement(), Statements.returnValue(id("this")));
       methods.add(
           MethodDeclaration.builder(
-                  "set" + stateAccessorSuffix, Statements.of(setStateMethodStatements.build()))
+                  Id.builder("set" + stateAccessorSuffix).setSpan(byteSpan).build(),
+                  Statements.of(setStateMethodStatements.build()))
               .setJsDoc(
                   JsDoc.builder()
                       .addParam(stateVar.name(), typeForSetters.typeExpr())
                       .addParameterizedAnnotation("return", "!" + soyElementClassName)
                       .build())
-              .setByteSpan(byteSpan)
               .build());
     }
 
@@ -758,14 +760,15 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
         Ascii.toUpperCase(param.name().substring(0, 1)) + param.name().substring(1);
     ByteSpan byteSpan = SoyTreeUtils.getByteSpan(currentTemplateNode, param.nameLocation());
     if (isAbstract) {
-      return MethodDeclaration.builder("get" + accessorSuffix, Statements.of(ImmutableList.of()))
+      return MethodDeclaration.builder(
+              Id.builder("get" + accessorSuffix).setSpan(byteSpan).build(),
+              Statements.of(ImmutableList.of()))
           .setJsDoc(
               JsDoc.builder()
                   .addAnnotation("abstract")
                   // Injected params are marked as optional, see:
                   .addParameterizedAnnotation("return", jsType.typeExpr())
                   .build())
-          .setByteSpan(byteSpan)
           .build();
     }
     try (var unused = templateTranslationContext.enterSoyAndJsScope()) {
@@ -799,9 +802,9 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
                   templateTranslationContext.codeGenerator())
               : Optional.empty();
       return MethodDeclaration.builder(
-              "get" + accessorSuffix, Statements.returnValue(typeAssertion.orElse(value)))
+              Id.builder("get" + accessorSuffix).setSpan(byteSpan).build(),
+              Statements.returnValue(typeAssertion.orElse(value)))
           .setJsDoc(JsDoc.builder().addAnnotation("override").addAnnotation("public").build())
-          .setByteSpan(byteSpan)
           .build();
     }
   }

@@ -42,6 +42,7 @@ import com.google.template.soy.jssrc.dsl.ConditionalBuilder;
 import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.jssrc.dsl.Expressions;
 import com.google.template.soy.jssrc.dsl.GoogRequire;
+import com.google.template.soy.jssrc.dsl.Id;
 import com.google.template.soy.jssrc.dsl.Statement;
 import com.google.template.soy.jssrc.dsl.Statements;
 import com.google.template.soy.jssrc.dsl.SwitchBuilder;
@@ -271,7 +272,6 @@ public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<St
    */
   @Override
   protected Statement visitLetValueNode(LetValueNode node) {
-
     String generatedVarName = node.getUniqueVarName();
 
     // Generate code to define the local var.
@@ -289,7 +289,7 @@ public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<St
     // Add a mapping for generating future references to this local var.
     templateTranslationContext.soyToJsVariableMappings().put(node.getVar(), id(generatedVarName));
 
-    return VariableDeclaration.builder(generatedVarName).setRhs(value).build();
+    return VariableDeclaration.builder(Id.create(generatedVarName)).setRhs(value).build();
   }
 
   /**
@@ -330,7 +330,7 @@ public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<St
       // variable (SanitizedContent vs String) and this will enable optimizations in the jscompiler
       String wrappedVarName = node.getVarName() + "__wrapped" + node.getId();
       statements.add(
-          VariableDeclaration.builder(wrappedVarName)
+          VariableDeclaration.builder(Id.create(wrappedVarName))
               .setRhs(sanitizedContentOrdainerFunction(node.getContentKind()).call(generatedVar))
               .build());
       generatedVar = id(wrappedVarName);
@@ -561,7 +561,7 @@ public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<St
       Expression dataRef = translateExpr(node.getExpr());
       String listVarName = varPrefix + "List";
       Expression listVar =
-          VariableDeclaration.builder(listVarName)
+          VariableDeclaration.builder(Id.create(listVarName))
               .setRhs(
                   // We must cast as readonly since if this ends up being a type union, the value
                   // will be typed as `?` and we can have disambiguation errors.
@@ -631,20 +631,19 @@ public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<St
 
     try (var scope = templateTranslationContext.enterSoyAndJsScope()) {
 
-    // Populate the local var translations with the translations from this node.
-    templateTranslationContext.soyToJsVariableMappings().put(refPrefix, id(dataName));
+      // Populate the local var translations with the translations from this node.
+      templateTranslationContext.soyToJsVariableMappings().put(refPrefix, id(dataName));
 
-    if (node.getIndexVar() != null) {
-      templateTranslationContext
-          .soyToJsVariableMappings()
-          .put(node.getIndexVar(), id(loopIndexName));
-    }
+      Id loopIndexId = Id.create(loopIndexName);
+      if (node.getIndexVar() != null) {
+        templateTranslationContext.soyToJsVariableMappings().put(node.getIndexVar(), loopIndexId);
+      }
 
       // Generate the loop body.
       Statement foreachBody = Statements.of(data, Statements.of(visitChildren(node)));
 
-    // Create the entire for block.
-    return forLoop(loopIndexName, limit, foreachBody);
+      // Create the entire for block.
+      return forLoop(loopIndexId, limit, foreachBody);
     }
   }
 
@@ -698,7 +697,7 @@ public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<St
             node, templateAliases, templateTranslationContext, errorReporter, getExprTranslator());
     if (node.isErrorFallbackSkip()) {
       VariableDeclaration callResult =
-          VariableDeclaration.builder("call_" + node.getId()).setRhs(call).build();
+          VariableDeclaration.builder(Id.create("call_" + node.getId())).setRhs(call).build();
       return Statements.of(
           outputVars.initOutputVarIfNecessary().orElse(Statements.EMPTY),
           TryCatch.create(

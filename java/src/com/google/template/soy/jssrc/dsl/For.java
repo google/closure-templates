@@ -26,7 +26,7 @@ import java.util.stream.Stream;
 @Immutable
 abstract class For extends Statement {
 
-  abstract String localVar();
+  abstract Id localVar();
 
   abstract Expression initial();
 
@@ -37,7 +37,7 @@ abstract class For extends Statement {
   abstract Statement body();
 
   static For create(
-      String localVar, Expression initial, Expression limit, Expression increment, Statement body) {
+      Id localVar, Expression initial, Expression limit, Expression increment, Statement body) {
     return new AutoValue_For(localVar, initial, limit, increment, body);
   }
 
@@ -52,16 +52,20 @@ abstract class For extends Statement {
         .appendInitialStatements(limit())
         .appendInitialStatements(increment());
 
-    ctx.append("for (let " + localVar() + " = ")
+    ctx.append("for (let ")
+        .appendOutputExpression(localVar())
+        .append(" = ")
         .appendOutputExpression(initial())
-        .append("; " + localVar() + " < ")
+        .append("; ")
+        .appendOutputExpression(localVar())
+        .append(" < ")
         .appendOutputExpression(limit())
         .append("; ");
 
     if (Objects.equals(Expressions.getLeafText(increment()), "1")) {
-      ctx.append(localVar() + "++");
+      ctx.appendOutputExpression(localVar()).append("++");
     } else {
-      ctx.append(localVar() + " += ").appendOutputExpression(increment());
+      ctx.appendOutputExpression(localVar()).append(" += ").appendOutputExpression(increment());
     }
 
     ctx.append(") ");

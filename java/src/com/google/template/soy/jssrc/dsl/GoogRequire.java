@@ -139,7 +139,7 @@ public abstract class GoogRequire implements Comparable<GoogRequire> {
   /** Returns a code chunk that can act as a reference to the required symbol. */
   public Expression reference() {
     if (chunk() instanceof VariableDeclaration) {
-      return id(((VariableDeclaration) chunk()).varName(), ImmutableSet.of(this));
+      return id(((VariableDeclaration) chunk()).varName().id(), ImmutableSet.of(this));
     } else {
       return dottedIdWithRequires(symbol(), ImmutableSet.of(this));
     }

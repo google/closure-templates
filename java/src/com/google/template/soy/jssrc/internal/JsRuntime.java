@@ -49,7 +49,7 @@ public final class JsRuntime {
   private static final GoogRequire GOOG_ASSERTS = GoogRequire.create("goog.asserts");
   private static final GoogRequire GOOG_STRING = GoogRequire.create("goog.string");
 
-  static final GoogRequire SOY = GoogRequire.create("soy");
+  public static final GoogRequire SOY = GoogRequire.create("soy");
   private static final GoogRequire SOY_NEWMAPS = GoogRequire.create("soy.newmaps");
   public static final GoogRequire SOY_VELOG = GoogRequire.create("soy.velog");
   public static final GoogRequire GOOG_SOY_ALIAS =

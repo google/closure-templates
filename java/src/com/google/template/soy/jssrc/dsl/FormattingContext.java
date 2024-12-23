@@ -27,6 +27,7 @@ import java.util.ArrayDeque;
 import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.Set;
+import java.util.function.Consumer;
 import javax.annotation.Nullable;
 
 /**
@@ -44,7 +45,11 @@ class FormattingContext implements AutoCloseable {
   private boolean nextAppendShouldStartNewLine = false;
   private boolean nextAppendShouldNeverStartNewLine = false;
   private final ArrayDeque<LexicalState> lexicalStateStack;
+
   private int currentByteOffset = 0;
+
+  /** Will be called each time a non-whitespace string is printed. */
+  private TokenConsumer nextNonWhitespace = NOOP;
 
   public enum LexicalState {
     JS,
@@ -80,9 +85,10 @@ class FormattingContext implements AutoCloseable {
             parent.append(this.getBuffer());
           }
         };
-    // Propagate the Kythe builder but set kytheMode=DISABLED so that toString() doesn't include
-    // the kythe comment.
+
     context.setKytheHelper(kytheHelper);
+    context.currentByteOffset = currentByteOffset;
+
     context.lexicalStateStack.push(this.lexicalStateStack.peek());
     return context;
   }
@@ -198,29 +204,30 @@ class FormattingContext implements AutoCloseable {
 
   @CanIgnoreReturnValue
   FormattingContext appendImputee(String stuff, @Nullable ByteSpan soyOffsetSpan) {
-    appendImputee(() -> append(stuff), soyOffsetSpan, stuff);
+    appendImputee(() -> append(stuff), soyOffsetSpan);
     return this;
   }
 
   @CanIgnoreReturnValue
   FormattingContext appendImputee(Expression stuff, @Nullable ByteSpan soyOffsetSpan) {
-    appendImputee(() -> stuff.doFormatOutputExpr(this), soyOffsetSpan, "fakeId");
+    appendImputee(() -> stuff.doFormatOutputExpr(this), soyOffsetSpan);
     return this;
   }
 
-  private void appendImputee(Runnable stuff, @Nullable ByteSpan soyOffsetSpan, String nextToken) {
-    if (soyOffsetSpan == null || !soyOffsetSpan.isKnown() || kytheHelper == null) {
+  private void appendImputee(Runnable stuff, @Nullable ByteSpan soyOffsetSpan) {
+    if (soyOffsetSpan != null && soyOffsetSpan.isKnown() && kytheHelper != null) {
+      Snapshot start = new Snapshot();
+      nextNonWhitespace = and(nextNonWhitespace, start);
       stuff.run();
-    } else {
-      // Can't have any whitespace be included in the byte offsets, so force a line break + indent
-      // now before calculating the starting byte offset.
-      forceOutputWhitespace(nextToken);
-      int targetStart = currentByteOffset;
-      stuff.run();
-      int targetEnd = currentByteOffset;
+
+      if (start.byteOffset < 0) {
+        throw new IllegalStateException("No non-whitespace printed?");
+      }
 
       kytheHelper.addKytheLinkTo(
-          soyOffsetSpan.getStart(), soyOffsetSpan.getEnd(), targetStart, targetEnd);
+          soyOffsetSpan.getStart(), soyOffsetSpan.getEnd(), start.byteOffset, currentByteOffset);
+    } else {
+      stuff.run();
     }
   }
 
@@ -247,6 +254,10 @@ class FormattingContext implements AutoCloseable {
 
   @CanIgnoreReturnValue
   FormattingContext appendToBuffer(CharSequence stuff) {
+    if (nextNonWhitespace != NOOP && !stuff.codePoints().allMatch(Character::isWhitespace)) {
+      nextNonWhitespace.accept(stuff);
+      nextNonWhitespace = NOOP;
+    }
     buf.append(stuff);
     currentByteOffset += Utf8.encodedLength(stuff);
     return this;
@@ -254,8 +265,13 @@ class FormattingContext implements AutoCloseable {
 
   @CanIgnoreReturnValue
   FormattingContext appendToBuffer(char c) {
+    String asString = String.valueOf(c);
+    if (nextNonWhitespace != NOOP && !Character.isWhitespace(c)) {
+      nextNonWhitespace.accept(asString);
+      nextNonWhitespace = NOOP;
+    }
     buf.append(c);
-    currentByteOffset += Utf8.encodedLength(String.valueOf(c));
+    currentByteOffset += Utf8.encodedLength(asString);
     return this;
   }
 
@@ -531,6 +547,32 @@ class FormattingContext implements AutoCloseable {
 
     private boolean alreadyAppended(CodeChunk chunk) {
       return appendedChunks.contains(chunk) || (parent != null && parent.alreadyAppended(chunk));
+    }
+  }
+
+  /** An object that can be called when the next non-whitespace is printed. */
+  interface TokenConsumer extends Consumer<CharSequence> {}
+
+  private static final TokenConsumer NOOP = (s) -> {};
+
+  private static TokenConsumer and(TokenConsumer r1, TokenConsumer r2) {
+    if (r1 == NOOP) {
+      return r2;
+    }
+    return (s) -> {
+      r1.accept(s);
+      r2.accept(s);
+    };
+  }
+
+  private class Snapshot implements TokenConsumer {
+    int byteOffset = -1;
+    CharSequence token;
+
+    @Override
+    public void accept(CharSequence token) {
+      byteOffset = currentByteOffset;
+      this.token = token;
     }
   }
 }

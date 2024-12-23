@@ -167,8 +167,7 @@ public final class Expressions {
    * @throws IllegalArgumentException if {@code id} is not a valid JavaScript identifier.
    */
   public static Expression id(String id) {
-    CodeChunks.checkId(id);
-    return Leaf.create(id, /* isCheap= */ true);
+    return Id.create(id);
   }
 
   /**
@@ -177,13 +176,11 @@ public final class Expressions {
    * @throws IllegalArgumentException if {@code id} is not a valid JavaScript identifier.
    */
   public static Expression id(String id, Iterable<GoogRequire> requires) {
-    CodeChunks.checkId(id);
-    return Leaf.create(id, /* isCheap= */ true, requires);
+    return Id.builder(id).setGoogRequires(ImmutableSet.copyOf(requires)).build();
   }
 
   public static Expression id(String id, GoogRequire... requires) {
-    CodeChunks.checkId(id);
-    return Leaf.create(id, /* isCheap= */ true, ImmutableList.copyOf(requires));
+    return Id.builder(id).setGoogRequires(ImmutableSet.copyOf(requires)).build();
   }
 
   public static Expression importedId(String id, String path) {
@@ -228,7 +225,10 @@ public final class Expressions {
     // be instead associated with the last dot. Or perhaps with the 'whole' expression somehow.
     // This is a minor philosophical concern but it should be fine in practice because nothing would
     // ever split apart a code chunk into sub-chunks.  So the requires could really go anywhere.
-    Expression tail = id(Iterables.getLast(ids), requires).withByteSpan(byteSpan);
+    Id tail = (Id) id(Iterables.getLast(ids), requires);
+    if (byteSpan != null) {
+      tail = tail.toBuilder().setSpan(byteSpan).build();
+    }
 
     if (ids.size() == 1) {
       return tail;
@@ -449,7 +449,13 @@ public final class Expressions {
 
   @Nullable
   static String getLeafText(Expression expr) {
-    return expr instanceof Leaf ? ((Leaf) expr).value().getText() : null;
+    if (expr instanceof Id) {
+      return ((Id) expr).id();
+    }
+    if (expr instanceof Leaf) {
+      return ((Leaf) expr).value().getText();
+    }
+    return null;
   }
 
   /**
@@ -460,9 +466,8 @@ public final class Expressions {
     if (expr instanceof Call) {
       Expression receiver = ((Call) expr).receiver();
       if (receiver instanceof Dot) {
-        Expression dotKeyExpression = ((Dot) receiver).key();
-        if (dotKeyExpression instanceof Leaf
-            && ((Leaf) dotKeyExpression).value().getText().equals(name)) {
+        String leafText = getLeafText(((Dot) receiver).key());
+        if (name.equals(leafText)) {
           return ((Dot) receiver).receiver();
         }
       }
@@ -470,25 +475,22 @@ public final class Expressions {
     return null;
   }
 
-  @AutoValue
-  abstract static class ExpressionWithSpan extends Expression {
+  static final class ExpressionWithSpan extends DelegatingExpression {
 
     public static Expression create(Expression expr, ByteSpan byteSpan) {
-      return new AutoValue_Expressions_ExpressionWithSpan(expr, byteSpan);
+      return new ExpressionWithSpan(expr, byteSpan);
     }
 
-    abstract Expression expr();
+    private final ByteSpan byteSpan;
 
-    abstract ByteSpan byteSpan();
+    private ExpressionWithSpan(Expression delegate, ByteSpan byteSpan) {
+      super(delegate);
+      this.byteSpan = byteSpan;
+    }
 
     @Override
     void doFormatOutputExpr(FormattingContext ctx) {
-      ctx.appendImputee(expr(), byteSpan());
-    }
-
-    @Override
-    Stream<? extends CodeChunk> childrenStream() {
-      return expr().childrenStream();
+      ctx.appendImputee(delegate, byteSpan);
     }
   }
 

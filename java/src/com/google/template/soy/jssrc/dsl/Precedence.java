@@ -40,7 +40,8 @@ public enum Precedence {
   P15,
   P16,
   P17,
-  P18;
+  P18,
+  MAX;
 
   /** Enum for a JS operator's associativity. */
   public enum Associativity {

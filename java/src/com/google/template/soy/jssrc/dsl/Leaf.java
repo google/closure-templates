@@ -29,19 +29,6 @@ import java.util.stream.Stream;
 @AutoValue
 @Immutable
 abstract class Leaf extends Expression implements CodeChunk.HasRequires {
-  static Leaf create(String text, boolean isCheap, Iterable<GoogRequire> require) {
-    return create(
-        new JsExpr(text, Integer.MAX_VALUE),
-        isCheap,
-        ImmutableSet.copyOf(require),
-        /* initialExpressionIsObjectLiteral= */ false,
-        false);
-  }
-
-  static Leaf create(String text, boolean isCheap) {
-    return create(text, isCheap, ImmutableSet.of());
-  }
-
   static Leaf createNonNull(String text, boolean isCheap) {
     return create(new JsExpr(text, Integer.MAX_VALUE), isCheap, ImmutableSet.of(), false, true);
   }

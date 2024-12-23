@@ -18,7 +18,6 @@ package com.google.template.soy.jssrc.dsl;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Streams;
-import com.google.template.soy.base.SourceLocation.ByteSpan;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -36,7 +35,7 @@ import javax.annotation.Nullable;
 @AutoValue
 public abstract class NamedFunctionDeclaration extends Statement {
 
-  abstract String name();
+  abstract Id name();
 
   abstract ParamDecls params();
 
@@ -51,10 +50,7 @@ public abstract class NamedFunctionDeclaration extends Statement {
 
   abstract boolean isDeclaration();
 
-  @Nullable
-  abstract ByteSpan byteSpan();
-
-  public static Builder builder(String name, ParamDecls params, Expression returnType) {
+  public static Builder builder(Id name, ParamDecls params, Expression returnType) {
     return new AutoValue_NamedFunctionDeclaration.Builder()
         .setName(name)
         .setParams(params)
@@ -62,12 +58,10 @@ public abstract class NamedFunctionDeclaration extends Statement {
         .setJsDoc(Optional.empty())
         .setBodyStmts(null)
         .setIsExported(false)
-        .setIsDeclaration(false)
-        .setByteSpan(null);
+        .setIsDeclaration(false);
   }
 
-  public static Builder builder(
-      String name, ParamDecls params, Expression returnType, JsDoc jsDoc) {
+  public static Builder builder(Id name, ParamDecls params, Expression returnType, JsDoc jsDoc) {
     return new AutoValue_NamedFunctionDeclaration.Builder()
         .setName(name)
         .setParams(params)
@@ -75,8 +69,7 @@ public abstract class NamedFunctionDeclaration extends Statement {
         .setJsDoc(Optional.ofNullable(jsDoc))
         .setBodyStmts(null)
         .setIsExported(false)
-        .setIsDeclaration(false)
-        .setByteSpan(null);
+        .setIsDeclaration(false);
   }
 
   @Override
@@ -92,7 +85,7 @@ public abstract class NamedFunctionDeclaration extends Statement {
       ctx.append("declare ");
     }
     ctx.append("function ");
-    ctx.appendImputee(name(), byteSpan());
+    ctx.appendOutputExpression(name());
     ctx.append("(");
     ctx.appendOutputExpression(params());
     ctx.append("): ").appendOutputExpression(returnType());
@@ -114,14 +107,14 @@ public abstract class NamedFunctionDeclaration extends Statement {
   Stream<? extends CodeChunk> childrenStream() {
     return Streams.concat(
         bodyStmts() != null ? bodyStmts().stream() : Stream.of(),
-        Stream.of(params(), returnType(), jsDoc().orElse(null)).filter(Objects::nonNull));
+        Stream.of(name(), params(), returnType(), jsDoc().orElse(null)).filter(Objects::nonNull));
   }
 
   /** A builder for a {@link NamedFunctionDeclaration}. */
   @AutoValue.Builder
   public abstract static class Builder {
 
-    public abstract Builder setName(String name);
+    public abstract Builder setName(Id name);
 
     public abstract Builder setParams(ParamDecls params);
 
@@ -134,8 +127,6 @@ public abstract class NamedFunctionDeclaration extends Statement {
     public abstract Builder setIsExported(boolean isExported);
 
     public abstract Builder setIsDeclaration(boolean isDeclaration);
-
-    public abstract Builder setByteSpan(ByteSpan soySpan);
 
     public abstract NamedFunctionDeclaration build();
   }

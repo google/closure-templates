@@ -21,7 +21,6 @@ import com.google.auto.value.extension.memoized.Memoized;
 import com.google.common.collect.ImmutableSet;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.errorprone.annotations.Immutable;
-import com.google.template.soy.base.SourceLocation.ByteSpan;
 import java.util.Objects;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
@@ -32,17 +31,20 @@ import javax.annotation.Nullable;
 public abstract class VariableDeclaration extends Statement implements CodeChunk.HasRequires {
 
   public static Builder builder(String name) {
+    return builder(Id.create(name));
+  }
+
+  public static Builder builder(Id name) {
     return new AutoValue_VariableDeclaration.Builder()
         .setVarName(name)
         .setRequires(ImmutableSet.of())
         // All variables should be const by default
         .setIsMutable(false)
         .setIsExported(false)
-        .setIsDeclaration(false)
-        .setByteSpan(null);
+        .setIsDeclaration(false);
   }
 
-  public abstract String varName();
+  public abstract Id varName();
 
   @Nullable
   abstract Expression rhs();
@@ -60,9 +62,6 @@ public abstract class VariableDeclaration extends Statement implements CodeChunk
 
   @Nullable
   abstract Expression type();
-
-  @Nullable
-  abstract ByteSpan byteSpan();
 
   /** Returns an {@link Expression} representing a reference to this declared variable. */
   public Expression ref() {
@@ -86,10 +85,10 @@ public abstract class VariableDeclaration extends Statement implements CodeChunk
     }
 
     // variables without initializing expressions cannot be const
-    if (!varName().contains(".")) {
+    if (!varName().id().contains(".")) {
       ctx.append((isMutable() || (rhs() == null && !isDeclaration())) ? "let " : "const ");
     }
-    ctx.appendImputee(varName(), byteSpan());
+    ctx.appendOutputExpression(varName());
 
     if (type() != null) {
       ctx.noBreak().append(": ").appendOutputExpression(type());
@@ -102,7 +101,7 @@ public abstract class VariableDeclaration extends Statement implements CodeChunk
 
   @Override
   Stream<? extends CodeChunk> childrenStream() {
-    return Stream.of(rhs(), jsDoc(), type()).filter(Objects::nonNull);
+    return Stream.of(varName(), rhs(), jsDoc(), type()).filter(Objects::nonNull);
   }
 
   // A cache of all the transitive requires.  Necessary because every time we traverse a variable
@@ -130,7 +129,7 @@ public abstract class VariableDeclaration extends Statement implements CodeChunk
   @AutoValue.Builder
   public abstract static class Builder {
 
-    abstract Builder setVarName(String name);
+    abstract Builder setVarName(Id name);
 
     public abstract Builder setJsDoc(JsDoc jsDoc);
 
@@ -154,8 +153,6 @@ public abstract class VariableDeclaration extends Statement implements CodeChunk
     public abstract Builder setIsDeclaration(boolean isDeclaration);
 
     public abstract Builder setType(Expression type);
-
-    public abstract Builder setByteSpan(ByteSpan soySpan);
 
     public abstract VariableDeclaration build();
   }
