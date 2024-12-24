@@ -30,10 +30,165 @@ goog.module('soy.velog');
 const ImmutableLoggableElementMetadata = goog.require('proto.soy.ImmutableLoggableElementMetadata');
 const ReadonlyLoggableElementMetadata = goog.requireType('proto.soy.ReadonlyLoggableElementMetadata');
 const {Message} = goog.require('jspb');
-const {assert} = goog.require('goog.asserts');
-const {safeAttrPrefix} = goog.require('safevalues');
-const {setElementPrefixedAttribute} = goog.require('safevalues.dom');
+const {SafeUrl, safeAttrPrefix, trySanitizeUrl} = goog.require('safevalues');
+const {assert, assertString} = goog.require('goog.asserts');
+const {setAnchorHref, setElementPrefixedAttribute} = goog.require('safevalues.dom');
 const {startsWith} = goog.require('goog.string');
+
+
+/**
+ * @param {string} match The full match
+ * @param {string} g The captured group
+ * @return {string} The replaced string
+ */
+function camelCaseReplacer(match, g) {
+  return g.toUpperCase();
+}
+
+/**
+ * @param {string} key The data attribute key
+ * @return {string} The corresponding dataset property key
+ */
+function dataAttrToDataSetProperty(key) {
+  assert(key.startsWith('data-'), 'key must start with data-');
+  // turn data-foo-bar into fooBar
+  return key.substring(5).toLowerCase().replace(/-([a-z])/g, camelCaseReplacer);
+}
+
+/**
+ * @param {!HTMLElement} el
+ * @return {!HTMLAnchorElement}
+ */
+function asAnchor(el) {
+  if (el.tagName !== 'A') {
+    throw new Error(
+        'logger attempted to add anchor attributes to a non-anchor element.');
+  }
+  return /** @type {!HTMLAnchorElement} */ (el);
+}
+
+
+/**
+ * Checks if the given attribute already exists on the element.
+ * @param {!HTMLElement} element
+ * @param {string} attrName
+ */
+function checkNotDuplicate(element, attrName) {
+  if (element.hasAttribute(attrName)) {
+    throw new Error(
+        'logger attempted to override an attribute ' + attrName +
+        ' that already exists.');
+  }
+}
+
+/**
+ * A type-safe wrapper for a set of attributes to be added to an element.
+ *
+ * Logger implementations can return this to add attributes to the root element
+ * of the VE tree.  If for some reason the root element is not well defined,
+ * then neither is this.
+ * @final
+ */
+class LoggingAttrs {
+  constructor() {
+    /** @private @const {!Array<string|(function(!HTMLElement):void)>} */
+    this.setters = [];
+  }
+  /**
+   * Adds a `data-` attribute to the list of attributes to be added to the
+   * element.
+   * @param {string} key Must start with `data-`
+   * @param {string} value Can be any string
+   * @return {!LoggingAttrs} returns this
+   */
+  addDataAttr(key, value) {
+    assertString(key, 'key');
+    assertString(value, 'value');
+    // turn data-foo-bar into fooBar
+    const propertyName = dataAttrToDataSetProperty(key);
+    this.setters.push(key, (/** !HTMLElement */ el) => {
+      el.dataset[propertyName] = value;
+    });
+    return this;
+  }
+  /**
+   * Adds an `href` attribute to the list of attributes to be added to the
+   * element.  The element must be an anchor.
+   * @param {string|!SafeUrl} value Can be any string
+   * @return {!LoggingAttrs} returns this
+   */
+  addAnchorHrefAttr(value) {
+    const checkedValue = trySanitizeUrl(value);
+    if (checkedValue == null) {
+      throw new Error('Invalid href attribute: ' + value);
+    }
+    // help out the type inference system.
+    const nonNullCheckedValue = checkedValue;
+    this.setters.push('href', (/** !HTMLElement */ el) => {
+      a.setAttribute('href', String(nonNullCheckedValue));
+    });
+    return this;
+  }
+
+  /**
+   * Adds a `ping` attribute to the list of attributes to be added to the
+   * element.  The element must be an anchor.
+   * @param {...(string|!SafeUrl)} value Can be any string
+   * @return {!LoggingAttrs} returns this
+   */
+  addAnchorPingAttr(...value) {
+    const final = value
+                      .map(v => {
+                        v = trySanitizeUrl(v);
+                        if (v == null) {
+                          throw new Error('Invalid ping attribute: ' + v);
+                        }
+                        return v;
+                      })
+                      .join(' ');
+    this.setters.push('ping', (/** !HTMLElement */ el) => {
+      asAnchor(el).setAttribute('ping', final);
+    });
+    return this;
+  }
+
+  /**
+   * Returns a string representation of the attributes to be added to the
+   * element.
+   * @package
+   * @return {string}
+   */
+  toDebugStringForTesting() {
+    if (!goog.DEBUG) {
+      throw new Error();
+    }
+    const a = /** @type {!HTMLAnchorElement} */ (document.createElement('a'));
+    this.applyToInternalOnly(a, true);
+    const attrs = [];
+    a.getAttributeNames().forEach((attr) => {
+      attrs.push(attr + '=' + JSON.stringify(a.getAttribute(attr)));
+    });
+    return attrs.join(' ');
+  }
+
+  /**
+   * Applies the attributes to the element.
+   *
+   * @param {!HTMLElement} element The element to apply the attributes to.
+   * @param {boolean=} allowOverwrites Whether to allow overwriting existing
+   *     attributes.
+   * @package
+   */
+  applyToInternalOnly(element, allowOverwrites) {
+    const setters = this.setters;
+    for (let i = 0; i < setters.length; i += 2) {
+      if (!allowOverwrites) {
+        checkNotDuplicate(element, /** @type {string} */ (setters[i]));
+      }
+      /** @type {function(!HTMLElement)} */ (setters[i + 1])(element);
+    }
+  }
+}
 
 /** @final */
 class ElementMetadata {
@@ -234,15 +389,16 @@ function emitLoggingCommands(element, logger) {
  *     element as is).
  */
 function visit(element, logger) {
-  let logIndex = -1;
   if (!(element instanceof Element)) {
     return [element];
   }
+  let logIndex = -1;
+  let pendingAttrs = undefined;
   if (element.hasAttribute(ELEMENT_ATTR)) {
     logIndex = getDataAttribute(element, ELEMENT_ATTR);
     assert(metadata.elements.length > logIndex, 'Invalid logging attribute.');
     if (logIndex != -1) {
-      logger.enter(metadata.elements[logIndex]);
+      pendingAttrs = logger.enter(metadata.elements[logIndex]);
     }
   }
   replaceFunctionAttributes(element, logger);
@@ -266,13 +422,16 @@ function visit(element, logger) {
   if (metadata.elements[logIndex].logOnly) {
     return [];
   }
+  let result = [element];
   if (element.tagName !== 'VELOG') {
     element.removeAttribute(ELEMENT_ATTR);
-    return [element];
   } else if (element.childNodes) {
-    return Array.from(element.childNodes);
+    result = Array.from(element.childNodes);
   }
-  return [element];
+  if (pendingAttrs && result.length > 0) {
+    pendingAttrs.applyToInternalOnly(result[0]);
+  }
+  return result;
 }
 
 /**
@@ -306,38 +465,45 @@ function replaceChild(parent, oldChild, newChildren) {
  * @param {!Logger} logger
  */
 function replaceFunctionAttributes(element, logger) {
-  const attributeMap = {};
+  let /** !Array<string>|undefined */ newAttrs;
   // Iterates from the end to the beginning, since we are removing attributes
   // in place.
-  let elementWithAttribute = element;
+  let elementToAddTo = element;
   if (element.tagName === 'VEATTR') {
     // The attribute being replaced belongs on the direct child.
-    elementWithAttribute = /** @type {!Element} */ (element.firstElementChild);
+    elementToAddTo = /** @type {!Element} */ (element.firstElementChild);
   }
-  for (let i = element.attributes.length - 1; i >= 0; --i) {
-    const attributeName = element.attributes[i].name;
+  const attrs = element.attributes;
+  for (let i = attrs.length - 1; i >= 0; --i) {
+    const attr = attrs[i];
+    const attributeName = attr.name;
     if (startsWith(attributeName, FUNCTION_ATTR)) {
       // Delay evaluation of the attributes until we reach the element itself.
-      if (elementWithAttribute.hasAttribute(ELEMENT_ATTR) &&
+      if (elementToAddTo.hasAttribute(ELEMENT_ATTR) &&
           element.tagName === 'VEATTR') {
-        elementWithAttribute.setAttribute(
-            attributeName, element.attributes[i].value);
+        elementToAddTo.setAttribute(
+            attributeName, attr.value);
         continue;
       }
-      const funcIndex = parseInt(element.attributes[i].value, 10);
+      const funcIndex = parseInt(attr.value, 10);
       assert(
           !Number.isNaN(funcIndex) && funcIndex < metadata.functions.length,
           'Invalid logging attribute.');
       const funcMetadata = metadata.functions[funcIndex];
-      const attr = attributeName.substring(FUNCTION_ATTR.length);
-      attributeMap[attr] =
-          logger.evalLoggingFunction(funcMetadata.name, funcMetadata.args);
-      elementWithAttribute.removeAttribute(attributeName);
+      const actualAttrName = attributeName.substring(FUNCTION_ATTR.length);
+      (newAttrs ??= [])
+          .push(
+              actualAttrName,
+              logger.evalLoggingFunction(funcMetadata.name, funcMetadata.args));
+      elementToAddTo.removeAttribute(attributeName);
     }
   }
-  for (const attributeName in attributeMap) {
-    elementWithAttribute.setAttribute(
-        attributeName, attributeMap[attributeName]);
+  if (newAttrs) {
+    for (let i = 0; i < newAttrs.length; i += 2) {
+      const attrName = newAttrs[i];
+      const attrValue = newAttrs[i + 1];
+      elementToAddTo.setAttribute(attrName, attrValue);
+    }
   }
 }
 
@@ -367,6 +533,7 @@ class Logger {
   /**
    * Called when a `{velog}` statement is entered.
    * @param {!ElementMetadata} elementMetadata
+   * @return {!LoggingAttrs|undefined}
    */
   enter(elementMetadata) {}
 
@@ -604,4 +771,5 @@ exports = {
   $$getVeMetadata,
   $$veHasSameId,
   getNullLogger,
+  LoggingAttrs,
 };
