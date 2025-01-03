@@ -17,7 +17,8 @@ import {SanitizedHtml} from 'google3/third_party/javascript/closure/soy/data';
 import * as googSoy from 'google3/third_party/javascript/closure/soy/soy';
 import {truncate} from 'google3/third_party/javascript/closure/string/string';
 import * as incrementaldom from 'incrementaldom'; // from //third_party/javascript/incremental_dom:incrementaldom
-import {SafeHtml, unwrapHtml} from 'safevalues';
+import {SafeHtml, unwrapHtml, unwrapResourceUrl} from 'safevalues';
+import {resourceUrlSafeByReview} from 'safevalues/restricted/reviewed';
 import {attributes} from './api_idom_attributes';
 import {IdomFunction, SoyElement} from './element_lib_idom';
 import {getSoyUntyped} from './global';
@@ -161,6 +162,7 @@ export class IncrementalDomRendererImpl implements IncrementalDomRenderer {
   private readonly keyStackHolder: string[] = [];
   private logger: Logger | undefined;
   private pendingAttrs: LoggingAttrs | undefined;
+  private currentElementIsScript = false;
 
   /**
    * Pushes/pops the given key from `keyStack` (versus `Array#concat`)
@@ -176,12 +178,14 @@ export class IncrementalDomRendererImpl implements IncrementalDomRenderer {
   ): HTMLElement | void {
     const el = incrementaldom.open(nameOrCtor, this.getNewKey(key));
     this.visit(el);
+    this.currentElementIsScript = nameOrCtor === 'script';
     return el;
   }
 
   openSimple(nameOrCtor: string, key?: string): void {
     const el = incrementaldom.open(nameOrCtor, key);
     this.visit(el);
+    this.currentElementIsScript = nameOrCtor === 'script';
   }
 
   keepGoing(
@@ -279,6 +283,7 @@ export class IncrementalDomRendererImpl implements IncrementalDomRenderer {
   }
 
   protected closeInternal(): Element | void {
+    this.currentElementIsScript = false;
     return incrementaldom.close();
   }
 
@@ -407,7 +412,22 @@ export class IncrementalDomRendererImpl implements IncrementalDomRenderer {
   }
 
   attr(name: string, value: string) {
-    incrementaldom.attr(name, value);
+    // We're assigning to `script#src` and in order to be compatible with
+    // go/trusted-types we have to wrap the value in a TrustedScriptUrl. This
+    // is safe from a security POV since this value has already been sanitized
+    // by soy. See b/217214585.
+    if (this.currentElementIsScript && name === 'src') {
+      incrementaldom.attr(
+        name,
+        unwrapResourceUrl(
+          resourceUrlSafeByReview(value, {
+            justification: 'Value has been pre-sanitized by Soy.',
+          }),
+        ),
+      );
+    } else {
+      incrementaldom.attr(name, value);
+    }
   }
 
   currentPointer(): Node | null {
