@@ -30,7 +30,7 @@ public abstract class LoggingFunctionInvocation {
       new AutoValue_LoggingFunctionInvocation(
           "$$flushPendingAttributes",
           "",
-          ImmutableList.of(BooleanData.FALSE),
+          ImmutableList.of(BooleanData.TRUE),
           /* isFlushPendingAttributes= */ true,
           Optional.<Consumer<String>>empty());
 

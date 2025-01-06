@@ -231,6 +231,9 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
         // NOTE: we don't need to check logging functions, because CommandBuffers are only created
         // for HTML and ATTRIBUTES, and logging functions are only used for attribute_values.  So to
         // see one we must have already seen at least an `=` character and returned above.
+        // The other option is for there to be a `flushPendingAttributes` which is completely
+        // ambiguous on its own and again will only appear on an html element and thus there must
+        // have been a preceding string.
       }
       return false;
     }

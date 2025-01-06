@@ -19,6 +19,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
+import com.google.common.flogger.StackSize;
 import com.google.common.html.types.SafeHtml;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.data.LogStatement;
@@ -36,7 +37,6 @@ import javax.annotation.Nullable;
  * <p>This object is for soy internal use only. Do not use.
  */
 public final class OutputAppendable extends LoggingAdvisingAppendable {
-
   public static OutputAppendable create(Appendable outputAppendable, @Nullable SoyLogger logger) {
     return new OutputAppendable(outputAppendable, logger);
   }
@@ -54,6 +54,7 @@ public final class OutputAppendable extends LoggingAdvisingAppendable {
   @Nullable private final SoyLogger logger;
   private final Appendable outputAppendable;
   private int logOnlyDepth;
+  @Nullable private SoyLogger.LoggingAttrs loggingAttrs;
 
   private OutputAppendable(Appendable outputAppendable, @Nullable SoyLogger logger) {
     this.outputAppendable = checkNotNull(outputAppendable);
@@ -108,9 +109,8 @@ public final class OutputAppendable extends LoggingAdvisingAppendable {
         value = funCall.placeholderValue();
       } else {
         if (funCall.isFlushPendingAttributes()) {
-          // For now, just no-op these calls.
-          // TODO-b/383661457: implement this.
-          value = "";
+          maybeFlushPendingAttributes(funCall);
+          return this;
         } else {
           value = logger.evalLoggingFunction(funCall);
         }
@@ -133,6 +133,25 @@ public final class OutputAppendable extends LoggingAdvisingAppendable {
     return this;
   }
 
+  private void maybeFlushPendingAttributes(LoggingFunctionInvocation funCall) throws IOException {
+    var loggingAttrs = this.loggingAttrs;
+    var consumer = funCall.resultConsumer();
+    if (loggingAttrs != null) {
+      this.loggingAttrs = null;
+      boolean isAnchorTag = funCall.args().get(0).booleanValue();
+      if (consumer.isPresent()) {
+        StringBuilder sb = new StringBuilder();
+        loggingAttrs.writeTo(isAnchorTag, sb);
+        consumer.get().accept(sb.toString());
+      } else {
+        loggingAttrs.writeTo(isAnchorTag, outputAppendable);
+      }
+    } else if (consumer.isPresent()) {
+      // We have to ensure the consumer is always filled.
+      consumer.get().accept("");
+    }
+  }
+
   @CanIgnoreReturnValue
   @Override
   public LoggingAdvisingAppendable enterLoggableElement(LogStatement statement) {
@@ -151,7 +170,13 @@ public final class OutputAppendable extends LoggingAdvisingAppendable {
       }
       logOnlyDepth = depth;
     }
-    appendDebugOutput(logger.enter(statement));
+    var enterData = logger.enter(statement);
+    appendDebugOutput(enterData.debugHtml());
+    var loggingAttrs = enterData.loggingAttrs().orElse(null);
+    if (loggingAttrs != null && depth > 0) {
+      loggingAttrs = null; // we cannot render them when logonly is set, so drop them now.
+    }
+    setLoggingAttrs(loggingAttrs);
     return this;
   }
 
@@ -166,11 +191,20 @@ public final class OutputAppendable extends LoggingAdvisingAppendable {
       depth--;
       logOnlyDepth = depth;
     }
+    setLoggingAttrs(null);
     // should debug output be guarded by logonly?
     appendDebugOutput(logger.exit());
     return this;
   }
 
+  private void setLoggingAttrs(@Nullable SoyLogger.LoggingAttrs loggingAttrs) {
+    if (this.loggingAttrs != null) {
+      googleLogger.atWarning().withStackTrace(StackSize.SMALL).log(
+          "a logger configured logging attrs that were not rendered onto an element. Your {velog}"
+              + " command must not be wrapping an element, this is undefined behavior.");
+    }
+    this.loggingAttrs = loggingAttrs;
+  }
 
   private void appendDebugOutput(Optional<SafeHtml> veDebugOutput) {
     if (veDebugOutput.isPresent()) {

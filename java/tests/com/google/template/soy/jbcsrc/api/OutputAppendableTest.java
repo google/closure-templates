@@ -33,9 +33,12 @@ import org.junit.runners.JUnit4;
 /** Tests for {@link OutputAppendableTest} */
 @RunWith(JUnit4.class)
 public final class OutputAppendableTest {
+
   private static final LogStatement LOGONLY = LogStatement.create(1, null, /* logOnly= */ true);
   private static final LogStatement NOT_LOGONLY =
       LogStatement.create(1, null, /* logOnly= */ false);
+  private static final LogStatement LOGGING_ATTRS =
+      LogStatement.create(2, null, /* logOnly= */ false);
 
   private static final SoyLogger LOGGER =
       new SoyLogger() {
@@ -50,8 +53,12 @@ public final class OutputAppendableTest {
         }
 
         @Override
-        public Optional<SafeHtml> enter(LogStatement statement) {
-          return Optional.empty();
+        public EnterData enter(LogStatement statement) {
+          if (statement == LOGGING_ATTRS) {
+            return EnterData.create(
+                LoggingAttrs.builder().addDataAttribute("data-foo", "bar").build());
+          }
+          return EnterData.EMPTY;
         }
       };
 
@@ -135,5 +142,21 @@ public final class OutputAppendableTest {
         LoggingFunctionInvocation.create("foo", "placeholder", ImmutableList.of()),
         ImmutableList.of(Functions.forMap(ImmutableMap.of("placeholder", "replacement"))));
     assertThat(buffer.toString()).isEqualTo("replacement");
+  }
+
+  @Test
+  public void testLoggingAttrs_anchor() throws IOException {
+    var buffer = new StringBuilder();
+    OutputAppendable buffering = OutputAppendable.create(buffer, LOGGER);
+    buffering.append("<a").flushPendingLoggingAttributes(true).append("></a>");
+    assertThat(buffer.toString()).isEqualTo("<a></a>");
+    buffer.setLength(0);
+    buffering
+        .enterLoggableElement(LOGGING_ATTRS)
+        .append("<a")
+        .flushPendingLoggingAttributes(false)
+        .append("></a>")
+        .exitLoggableElement();
+    assertThat(buffer.toString()).isEqualTo("<a data-foo=\"bar\"></a>");
   }
 }

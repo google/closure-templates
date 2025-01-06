@@ -16,11 +16,13 @@
 package com.google.template.soy.jbcsrc;
 
 import static com.google.common.truth.Truth.assertThat;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.fail;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.html.types.SafeHtml;
+import com.google.common.html.types.SafeUrls;
 import com.google.template.soy.SoyFileSetParser;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.data.LogStatement;
@@ -32,11 +34,13 @@ import com.google.template.soy.jbcsrc.shared.RenderContext;
 import com.google.template.soy.jbcsrc.shared.StackFrame;
 import com.google.template.soy.logging.LoggingFunction;
 import com.google.template.soy.logging.SoyLogger;
+import com.google.template.soy.logging.SoyLogger.LoggingAttrs;
 import com.google.template.soy.shared.restricted.Signature;
 import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 import com.google.template.soy.testing.Foo;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import org.junit.Test;
@@ -49,16 +53,21 @@ public final class VeLoggingTest {
 
   private static class TestLogger implements SoyLogger {
     final StringBuilder builder = new StringBuilder();
+    final HashMap<Long, LoggingAttrs> attrsMap = new HashMap<>();
     int depth;
 
     @Override
-    public Optional<SafeHtml> enter(LogStatement statement) {
+    public EnterData enter(LogStatement statement) {
       if (builder.length() > 0) {
         builder.append('\n');
       }
       builder.append("  ".repeat(depth)).append(statement);
       depth++;
-      return Optional.empty();
+      LoggingAttrs attrs = attrsMap.get(statement.id());
+      if (attrs != null) {
+        return EnterData.create(attrs);
+      }
+      return EnterData.EMPTY;
     }
 
     @Override
@@ -277,6 +286,46 @@ public final class VeLoggingTest {
     assertThat(sb.toString()).isEqualTo("<div>hello</div>");
   }
 
+  @Test
+  public void testLoggingAttributes_basic() throws Exception {
+    StringBuilder sb = new StringBuilder();
+    TestLogger testLogger = new TestLogger();
+    testLogger.attrsMap.put(1L, LoggingAttrs.builder().addDataAttribute("data-foo", "bar").build());
+    renderTemplate(
+        OutputAppendable.create(sb, testLogger), "{velog FooVe}<div>hello</div>{/velog}");
+    assertThat(testLogger.builder.toString()).isEqualTo("velog{id=1}");
+    assertThat(sb.toString()).isEqualTo("<div data-foo=\"bar\">hello</div>");
+  }
+
+  @Test
+  public void testLoggingAttributes_anchor() throws Exception {
+    StringBuilder sb = new StringBuilder();
+    TestLogger testLogger = new TestLogger();
+    testLogger.attrsMap.put(
+        1L, LoggingAttrs.builder().addAnchorHref(SafeUrls.fromConstant("./go")).build());
+    renderTemplate(OutputAppendable.create(sb, testLogger), "{velog FooVe}<a>hello</a>{/velog}");
+    assertThat(testLogger.builder.toString()).isEqualTo("velog{id=1}");
+    assertThat(sb.toString()).isEqualTo("<a href=\"./go\">hello</a>");
+  }
+
+  @Test
+  public void testLoggingAttributes_hrefToNonAnchor() throws Exception {
+    StringBuilder sb = new StringBuilder();
+    TestLogger testLogger = new TestLogger();
+    testLogger.attrsMap.put(
+        1L, LoggingAttrs.builder().addAnchorHref(SafeUrls.fromConstant("./go")).build());
+    var t =
+        assertThrows(
+            IllegalStateException.class,
+            () ->
+                renderTemplate(
+                    OutputAppendable.create(sb, testLogger),
+                    "{velog FooVe}<div>hello</div>{/velog}"));
+    assertThat(t)
+        .hasMessageThat()
+        .isEqualTo("logger attempted to add anchor attributes to a non-anchor element.");
+  }
+
   private void renderTemplate(OutputAppendable output, String... templateBodyLines)
       throws IOException {
     renderTemplate(ImmutableMap.of(), output, templateBodyLines);
@@ -296,6 +345,7 @@ public final class VeLoggingTest {
                     + "\n{/template}",
                 Foo.getDescriptor())
             .addSoySourceFunction(new DepthFunction())
+            .addHtmlAttributesForLogging(true)
             .runAutoescaper(true);
     SoyFileSetParser parser = builder.build();
     ParseResult parseResult = parser.parse();
