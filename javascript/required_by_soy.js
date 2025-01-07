@@ -32,7 +32,6 @@ goog.require('goog.i18n.BidiFormatter');
 goog.require('goog.i18n.MessageFormat');
 goog.require('goog.i18n.NumberFormat');
 goog.require('goog.i18n.bidi');
-goog.require('goog.i18n.bidi.Dir');
 goog.require('goog.object');
 goog.require('goog.soy');
 goog.require('goog.soy.data');
