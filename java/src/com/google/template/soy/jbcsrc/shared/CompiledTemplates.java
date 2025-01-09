@@ -50,7 +50,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
-import javax.annotation.concurrent.GuardedBy;
 
 /** The result of template compilation. */
 public class CompiledTemplates {
@@ -386,10 +385,8 @@ public class CompiledTemplates {
     // If for some reason we have contention on these locks, we can switch to a double-checked
     // locking protocol
 
-    @GuardedBy("this")
     MethodHandle renderMethod;
 
-    @GuardedBy("this")
     MethodHandle positionalRenderMethod;
 
     final String soyTemplateName;
@@ -400,7 +397,6 @@ public class CompiledTemplates {
     @LazyInit CompiledTemplate template;
 
     // lazily initialized since it is not always needed
-    @GuardedBy("this")
     TemplateValue templateValue;
 
     // many of these fields should probably be only lazily calculated
