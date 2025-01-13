@@ -1400,7 +1400,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
               OPT_DATA,
               OPT_DATA.or(EMPTY_OBJECT_LITERAL, templateTranslationContext.codeGenerator())));
     }
-    bodyStatements.add(redeclareIjData());
+    bodyStatements.add(redeclareIjData(templateNode));
     List<Expression> callParams = new ArrayList<>(getFixedParamsToPositionalCall(templateNode));
     for (TemplateParam param : paramsInOrder(templateNode)) {
       callParams.add(genCodeForParamAccess(genParamPropAlias(param.name()), param));
@@ -1427,14 +1427,23 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     return ImmutableList.of(OPT_DATA, id(StandardNames.DOLLAR_IJDATA));
   }
 
+  private boolean hasOnlyOptionalInjects(TemplateNode templateNode) {
+    ImmutableList<TemplateParam> injects = templateNode.getInjectedParams();
+    return !injects.isEmpty() && injects.stream().allMatch(p -> p.isExplicitlyOptional());
+  }
+
   /**
    * Generates a statement that that assigns {@code opt_ijData} to {@code $ijData} to adjust types.
    */
-  protected final Statement redeclareIjData() {
+  protected final Statement redeclareIjData(TemplateNode templateNode) {
     GoogRequire googSoy = jsSrcOptions.shouldGenerateGoogModules() ? GOOG_SOY_ALIAS : GOOG_SOY;
     return VariableDeclaration.builder(StandardNames.DOLLAR_IJDATA)
         .setRhs(
-            id(StandardNames.OPT_IJDATA)
+            (hasOnlyOptionalInjects(templateNode)
+                    ? id(StandardNames.OPT_IJDATA)
+                        .nullishCoalesce(
+                            EMPTY_OBJECT_LITERAL, templateTranslationContext.codeGenerator())
+                    : id(StandardNames.OPT_IJDATA))
                 .castAs("!" + googSoy.alias() + ".IjData", ImmutableSet.of(googSoy)))
         .build();
   }
@@ -1444,7 +1453,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       TemplateNode node, String alias, CodeChunk.Generator codeGenerator) {
     ImmutableList.Builder<Statement> bodyStatements = ImmutableList.builder();
     if (!generatePositionalParamsSignature) {
-      bodyStatements.add(redeclareIjData());
+      bodyStatements.add(redeclareIjData(node));
     } else {
       bodyStatements.add(
           JsRuntime.SOY_ARE_YOU_AN_INTERNAL_CALLER
@@ -1478,7 +1487,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     boolean isPositionalStyle = objectParamName == null;
     ImmutableList.Builder<Statement> bodyStatements = ImmutableList.builder();
     if (!isPositionalStyle) {
-      bodyStatements.add(redeclareIjData());
+      bodyStatements.add(redeclareIjData(node));
     } else {
       bodyStatements.add(
           JsRuntime.SOY_ARE_YOU_AN_INTERNAL_CALLER

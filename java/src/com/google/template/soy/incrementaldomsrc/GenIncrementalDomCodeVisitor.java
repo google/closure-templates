@@ -458,7 +458,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     ImmutableList.Builder<Statement> bodyStatements = ImmutableList.builder();
     boolean isPositionalStyle = objectParamName == null;
     if (!isPositionalStyle) {
-      bodyStatements.add(redeclareIjData());
+      bodyStatements.add(redeclareIjData(node));
     } else {
       bodyStatements.add(
           JsRuntime.SOY_ARE_YOU_AN_INTERNAL_CALLER
