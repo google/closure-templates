@@ -27,11 +27,7 @@ import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
 import java.util.List;
 
-/**
- * Builder for TemplateElementNode.
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- */
+/** Builder for TemplateElementNode. */
 public final class TemplateElementNodeBuilder
     extends TemplateNodeBuilder<TemplateElementNodeBuilder> {
 

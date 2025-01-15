@@ -24,11 +24,7 @@ import java.util.concurrent.Future;
 import java.util.function.Function;
 import javax.annotation.Nonnull;
 
-/**
- * Important: Do not use outside of Soy code (treat as superpackage-private).
- *
- * <p>SoyValueProvider implementation that represents a wrapped future.
- */
+/** SoyValueProvider implementation that represents a wrapped future. */
 public final class SoyFutureValueProvider extends SoyAbstractCachingValueProvider {
 
   /**
@@ -38,8 +34,6 @@ public final class SoyFutureValueProvider extends SoyAbstractCachingValueProvide
    * to block on the future (because {@link Future#isDone()} is {@code false}), then it will call
    * the currently registered block callback immediately prior blocking. See {@code
    * RenderVisitor.exec} for the motivating usecase for this hook.
-   *
-   * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
    */
   public static final ThreadLocal<FutureBlockCallback> futureBlockCallback =
       ThreadLocal.withInitial(() -> () -> {});
@@ -54,7 +48,9 @@ public final class SoyFutureValueProvider extends SoyAbstractCachingValueProvide
     void beforeBlock();
   }
 
-  /** @param future The underlying Future object. */
+  /**
+   * @param future The underlying Future object.
+   */
   public SoyFutureValueProvider(Future<?> future, Function<Object, SoyValueProvider> converter) {
     this.future = checkNotNull(future);
     this.converter = checkNotNull(converter);

@@ -35,8 +35,6 @@ import java.util.Deque;
  * before the value is used, the future type is invisible as far as the template is concerned.
  *
  * <p>All type objects are immutable.
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  */
 public abstract class SoyType implements ErrorArg {
 

@@ -161,8 +161,6 @@ import javax.annotation.Nullable;
 /**
  * Visitor for evaluating the expression rooted at a given ExprNode.
  *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  * <p>{@link #exec} may be called on any expression. The result of evaluating the expression (in the
  * context of the {@code data} and {@code env} passed into the constructor) is returned as a {@code
  * SoyValue} object.

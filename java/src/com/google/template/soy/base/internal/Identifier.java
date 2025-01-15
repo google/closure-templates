@@ -92,7 +92,7 @@ public abstract class Identifier {
    * Gets the part after the last dot in a dotted identifier. If there are no dots, returns the
    * whole identifier.
    *
-   * <p><b>Important:</b> The input must be a dotted identifier. This is not checked.
+   * <p>The input must be a dotted identifier. This is not checked.
    */
   public Identifier extractPartAfterLastDot() {
     String part = BaseUtils.extractPartAfterLastDot(identifier());

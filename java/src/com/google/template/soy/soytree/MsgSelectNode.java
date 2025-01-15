@@ -36,11 +36,7 @@ import java.util.List;
 import java.util.Optional;
 import javax.annotation.Nullable;
 
-/**
- * Node representing a 'select' block.
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- */
+/** Node representing a 'select' block. */
 public final class MsgSelectNode extends AbstractParentCommandNode<CaseOrDefaultNode>
     implements MsgSubstUnitNode,
         SplitLevelTopNode<CaseOrDefaultNode>,

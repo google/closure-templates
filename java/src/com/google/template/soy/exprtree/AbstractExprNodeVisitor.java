@@ -57,18 +57,16 @@ import com.google.template.soy.exprtree.OperatorNodes.TripleNotEqualOpNode;
  * <p>Same as {@link AbstractReturningExprNodeVisitor} except that in this class, internal {@code
  * visit()} calls do not return a value.
  *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  * <p>To create a visitor:
  *
  * <ol>
- *   <li> Subclass this class.
- *   <li> Implement {@code visit*Node()} methods for some specific node types.
- *   <li> Implement fallback methods for node types not specifically handled. The most general
+ *   <li>Subclass this class.
+ *   <li>Implement {@code visit*Node()} methods for some specific node types.
+ *   <li>Implement fallback methods for node types not specifically handled. The most general
  *       fallback method is {@link #visitExprNode visitExprNode()}, which is usually needed. Other
  *       fallback methods include {@code visitPrimitiveNode()} and {@code visitOperatorNode()}.
- *   <li> Maybe implement a constructor, taking appropriate parameters for your visitor call.
- *   <li> Maybe implement {@link #exec exec()} if this visitor needs to return a non-null final
+ *   <li>Maybe implement a constructor, taking appropriate parameters for your visitor call.
+ *   <li>Maybe implement {@link #exec exec()} if this visitor needs to return a non-null final
  *       result and/or if this visitor has state that needs to be setup/reset before each unrelated
  *       use of {@code visit()}.
  * </ol>
@@ -242,7 +240,6 @@ public abstract class AbstractExprNodeVisitor<R> extends AbstractNodeVisitor<Exp
       case ASSERT_NON_NULL_OP_NODE:
         visitAssertNonNullOpNode((AssertNonNullOpNode) node);
         break;
-
     }
   }
 
@@ -509,7 +506,9 @@ public abstract class AbstractExprNodeVisitor<R> extends AbstractNodeVisitor<Exp
   // -----------------------------------------------------------------------------------------------
   // Fallback implementation.
 
-  /** @param node The node being visited. */
+  /**
+   * @param node The node being visited.
+   */
   protected void visitExprNode(ExprNode node) {
     throw new UnsupportedOperationException("no implementation for: " + node);
   }

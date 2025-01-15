@@ -28,11 +28,7 @@ import com.google.template.soy.soytree.SoyNode.LocalVarBlockNode;
 import com.google.template.soy.soytree.defn.LocalVar;
 import javax.annotation.Nullable;
 
-/**
- * Node representing the loop portion of a 'for' statement.
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- */
+/** Node representing the loop portion of a 'for' statement. */
 public final class ForNonemptyNode extends AbstractBlockNode
     implements ConditionalBlockNode, LocalVarBlockNode {
 

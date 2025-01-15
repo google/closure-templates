@@ -155,8 +155,6 @@ public class SoyMsgBundleHandler {
    * Generates extracted messages (source messages to be translated) from a given message bundle,
    * and writes it out.
    *
-   * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
-   *
    * @param msgBundle The message bundle to write.
    * @param options The options for generating the output extracted messages (depending on the
    *     message plugin being used, none or some of the options may be applicable).

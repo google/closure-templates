@@ -24,8 +24,6 @@ import java.io.Reader;
 /**
  * Record for one input Soy file. Contains a {@link CharSource} to supply a {@code Reader} for the
  * file content, and also the file path.
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  */
 public final class StableSoyFileSupplier extends AbstractSoyFileSupplier {
 

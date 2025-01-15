@@ -25,8 +25,6 @@ import java.util.Optional;
 /**
  * A node that may have children in the parse tree.
  *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  * <p>The parameter N represents the interface or class that is the superclass of all possible
  * children for this ParentNode. E.g. for a Soy parse tree node, N is usually SoyNode, but for
  * SoyFileSetNode N is SoyFileNode, for SoyFileNode N is TemplateNode, etc; for a Soy expression

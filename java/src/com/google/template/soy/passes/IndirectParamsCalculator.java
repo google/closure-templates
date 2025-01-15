@@ -40,8 +40,6 @@ import java.util.Set;
 /**
  * Visitor for finding the indirect params of a given template.
  *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  * <p>{@link #exec} should be called on a {@code TemplateNode}.
  */
 public final class IndirectParamsCalculator {
@@ -194,7 +192,9 @@ public final class IndirectParamsCalculator {
    */
   private boolean mayHaveIndirectParamsInExternalDelCalls;
 
-  /** @param fileSetMetadata Map from template name to TemplateNode to use during the pass. */
+  /**
+   * @param fileSetMetadata Map from template name to TemplateNode to use during the pass.
+   */
   public IndirectParamsCalculator(FileSetMetadata fileSetMetadata) {
     this.fileSetMetadata = checkNotNull(fileSetMetadata);
   }

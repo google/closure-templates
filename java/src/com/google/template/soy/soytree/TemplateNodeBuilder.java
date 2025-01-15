@@ -41,11 +41,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
 
-/**
- * Builder for TemplateNode.
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- */
+/** Builder for TemplateNode. */
 public abstract class TemplateNodeBuilder<T extends TemplateNodeBuilder<T>> {
   // TODO(b/78790262): Remove once people get used to it.
   private static final SoyErrorKind SOYDOC_PARAM =
@@ -121,7 +117,9 @@ public abstract class TemplateNodeBuilder<T extends TemplateNodeBuilder<T>> {
   SourceLocation openTagLocation;
   SourceLocation closeTagLocation;
 
-  /** @param soyFileHeaderInfo Info from the containing Soy file's header declarations. */
+  /**
+   * @param soyFileHeaderInfo Info from the containing Soy file's header declarations.
+   */
   protected TemplateNodeBuilder(SoyFileHeaderInfo soyFileHeaderInfo, ErrorReporter errorReporter) {
     this.soyFileHeaderInfo = soyFileHeaderInfo;
     this.errorReporter = errorReporter;
@@ -276,8 +274,7 @@ public abstract class TemplateNodeBuilder<T extends TemplateNodeBuilder<T>> {
     return self();
   }
 
-  protected void validateBuild() {
-  }
+  protected void validateBuild() {}
 
   /** Builds the template node. Will error if not enough info as been set on this builder. */
   public abstract TemplateNode build();
@@ -289,27 +286,37 @@ public abstract class TemplateNodeBuilder<T extends TemplateNodeBuilder<T>> {
     this.contentKind = contentKind;
   }
 
-  /** @return the id for this node. */
+  /**
+   * @return the id for this node.
+   */
   Integer getId() {
     return id;
   }
 
-  /** @return The command text. */
+  /**
+   * @return The command text.
+   */
   String getCmdText() {
     return cmdText;
   }
 
-  /** @return The full SoyDoc, including the start/end tokens, or null. */
+  /**
+   * @return The full SoyDoc, including the start/end tokens, or null.
+   */
   String getSoyDoc() {
     return soyDoc;
   }
 
-  /** @return The description portion of the SoyDoc (before declarations), or null. */
+  /**
+   * @return The description portion of the SoyDoc (before declarations), or null.
+   */
   String getSoyDocDesc() {
     return soyDocDesc;
   }
 
-  /** @return Strict mode context. */
+  /**
+   * @return Strict mode context.
+   */
   public TemplateContentKind getContentKind() {
     return contentKind;
   }
@@ -319,7 +326,9 @@ public abstract class TemplateNodeBuilder<T extends TemplateNodeBuilder<T>> {
     return whitespaceMode;
   }
 
-  /** @return Required CSS namespaces. */
+  /**
+   * @return Required CSS namespaces.
+   */
   protected ImmutableList<String> getRequiredCssNamespaces() {
     return Preconditions.checkNotNull(requiredCssNamespaces);
   }
@@ -328,7 +337,9 @@ public abstract class TemplateNodeBuilder<T extends TemplateNodeBuilder<T>> {
     this.requiredCssNamespaces = Preconditions.checkNotNull(requiredCssNamespaces);
   }
 
-  /** @return Base CSS namespace for package-relative CSS selectors. */
+  /**
+   * @return Base CSS namespace for package-relative CSS selectors.
+   */
   protected String getCssBaseNamespace() {
     return cssBaseNamespace;
   }

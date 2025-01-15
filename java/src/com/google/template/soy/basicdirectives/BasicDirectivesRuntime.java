@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.google.template.soy.basicdirectives;
 
 import com.google.common.collect.ImmutableList;
@@ -310,8 +311,10 @@ public final class BasicDirectivesRuntime {
 
     /** Whether we're inside an HTML tag. */
     private boolean isInTag;
+
     /** Whether we might be inside an HTML entity. */
     private boolean isMaybeInEntity;
+
     /** The number of characters since the last word break. */
     private int numCharsWithoutBreak;
 
@@ -354,20 +357,20 @@ public final class BasicDirectivesRuntime {
 
       } else if (isMaybeInEntity) {
         switch (codePoint) {
-            // If maybe inside an entity and we see ';', it's the end of the entity. The entity
-            // that just ended counts as one char, so increment numCharsWithoutBreak.
+          // If maybe inside an entity and we see ';', it's the end of the entity. The entity
+          // that just ended counts as one char, so increment numCharsWithoutBreak.
           case ';':
             isMaybeInEntity = false;
             ++numCharsWithoutBreak;
             break;
-            // If maybe inside an entity and we see '<', we weren't actually in an entity. But
-            // now we're inside an HTML tag.
+          // If maybe inside an entity and we see '<', we weren't actually in an entity. But
+          // now we're inside an HTML tag.
           case '<':
             isMaybeInEntity = false;
             isInTag = true;
             break;
-            // If maybe inside an entity and we see ' ', we weren't actually in an entity. Just
-            // correct the state and reset the numCharsWithoutBreak since we just saw a space.
+          // If maybe inside an entity and we see ' ', we weren't actually in an entity. Just
+          // correct the state and reset the numCharsWithoutBreak since we just saw a space.
           case ' ':
             isMaybeInEntity = false;
             numCharsWithoutBreak = 0;
@@ -377,19 +380,19 @@ public final class BasicDirectivesRuntime {
 
       } else { // !isInTag && !isInEntity
         switch (codePoint) {
-            // When not within a tag or an entity and we see '<', we're now inside an HTML tag.
+          // When not within a tag or an entity and we see '<', we're now inside an HTML tag.
           case '<':
             isInTag = true;
             break;
-            // When not within a tag or an entity and we see '&', we might be inside an entity.
+          // When not within a tag or an entity and we see '&', we might be inside an entity.
           case '&':
             isMaybeInEntity = true;
             break;
-            // When we see a space, reset the numCharsWithoutBreak count.
+          // When we see a space, reset the numCharsWithoutBreak count.
           case ' ':
             numCharsWithoutBreak = 0;
             break;
-            // When we see a non-space, increment the numCharsWithoutBreak.
+          // When we see a non-space, increment the numCharsWithoutBreak.
           default:
             ++numCharsWithoutBreak;
             break;

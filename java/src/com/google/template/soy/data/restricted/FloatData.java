@@ -20,11 +20,7 @@ import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.data.SoyValue;
 import javax.annotation.Nonnull;
 
-/**
- * Float data.
- *
- * <p>Important: This class may only be used in implementing plugins (e.g. functions, directives).
- */
+/** Float data. */
 @Immutable
 public final class FloatData extends NumberData {
 

@@ -22,11 +22,7 @@ import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.UnknownType;
 
-/**
- * Node representing a global.
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- */
+/** Node representing a global. */
 public final class GlobalNode extends AbstractExprNode {
   private static GlobalNode error(SourceLocation location) {
     return new GlobalNode(Identifier.create("error", "error", location));

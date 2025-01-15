@@ -66,11 +66,7 @@ import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
-/**
- * Shared utilities for the 'soytree' package.
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- */
+/** Shared utilities for the 'soytree' package. */
 public final class SoyTreeUtils {
 
   static final ImmutableSet<SoyNode.Kind> NODES_THAT_DONT_CONTRIBUTE_OUTPUT =

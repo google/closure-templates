@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.google.template.soy.data.internal;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -28,11 +29,7 @@ import com.google.template.soy.data.restricted.StringData;
 import java.io.IOException;
 import java.util.Map;
 
-/**
- * A simple legacy_object_map implementation.
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- */
+/** A simple legacy_object_map implementation. */
 public final class SoyLegacyObjectMapImpl extends SoyLegacyObjectMap {
   private final ImmutableMap<String, SoyValueProvider> map;
 
@@ -65,7 +62,6 @@ public final class SoyLegacyObjectMapImpl extends SoyLegacyObjectMap {
   public SoyValueProvider getItemProvider(SoyValue key) {
     return map.get(getStringKey(key));
   }
-
 
   @Override
   public String coerceToString() {

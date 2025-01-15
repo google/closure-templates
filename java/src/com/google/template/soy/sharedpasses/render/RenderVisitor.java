@@ -106,8 +106,6 @@ import javax.annotation.Nullable;
 /**
  * Visitor for rendering the template subtree rooted at a given SoyNode.
  *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  * <p>The rendered output will be appended to the Appendable provided to the constructor.
  */
 public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {

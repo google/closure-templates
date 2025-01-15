@@ -25,8 +25,6 @@ import java.util.List;
  * Mixin implementation of the parent-specific aspect of the ParentNode interface. Requires the
  * master to be a ParentNode.
  *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  * <p>The parameter N represents the interface or class that is the superclass of all possible
  * children for the master ParentNode. E.g. for a Soy parse tree node, N is usually SoyNode, but for
  * SoyFileSetNode N is SoyFileNode, for SoyFileNode N is TemplateNode, etc; for a Soy expression
@@ -43,7 +41,9 @@ public final class MixinParentNode<N extends Node> {
   /** The children of the master node (accessed via this instance). */
   private final List<N> children;
 
-  /** @param master The master node that delegates to this instance. */
+  /**
+   * @param master The master node that delegates to this instance.
+   */
   public MixinParentNode(ParentNode<N> master) {
     this.master = checkNotNull(master);
     this.children = Lists.newArrayList();

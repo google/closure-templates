@@ -23,11 +23,7 @@ import com.google.template.soy.basetree.Node;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import java.util.List;
 
-/**
- * Abstract implementation of a ParentNode and CommandNode.
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- */
+/** Abstract implementation of a ParentNode and CommandNode. */
 abstract class AbstractParentCommandNode<N extends SoyNode> extends AbstractCommandNode
     implements ParentSoyNode<N> {
 

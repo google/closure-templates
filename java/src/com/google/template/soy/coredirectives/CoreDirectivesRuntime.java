@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.google.template.soy.coredirectives;
 
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
@@ -78,7 +79,6 @@ public final class CoreDirectivesRuntime {
       }
       return this;
     }
-
 
     // TODO(lukes): We only pass these through if we are in HTML.  This is sort
     // of confusing and may require revisiting in the future once we have more examples of how

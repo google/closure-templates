@@ -22,11 +22,7 @@ import com.google.template.soy.msgs.SoyMsgBundle;
 import java.util.ArrayDeque;
 import javax.annotation.Nullable;
 
-/**
- * Stores thread-local data for Soy usage.
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- */
+/** Stores thread-local data for Soy usage. */
 public final class SoySimpleScope implements SoyScopedData, SoyScopedData.Enterable {
   /**
    * An autoclosable object that can be used to seed and exit scopes.

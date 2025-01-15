@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.google.template.soy.soytree;
 
 import com.google.template.soy.base.SourceLocation;
@@ -23,8 +24,6 @@ import com.google.template.soy.soytree.SoyNode.StatementNode;
 /**
  * Node representing a 'skip' statement, e.g. {@code <div {skip}></div>}. This configures DOM nodes
  * to be unconditionally skipped in incremental dom.
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  */
 public final class SkipNode extends AbstractParentCommandNode<StandaloneNode>
     implements StatementNode {

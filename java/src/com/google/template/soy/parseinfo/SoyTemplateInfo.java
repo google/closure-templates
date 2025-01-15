@@ -42,10 +42,7 @@ public class SoyTemplateInfo {
   private final ImmutableMap<String, ParamRequisiteness> paramMap;
 
   /**
-   * Constructor for internal use only, for the general case.
-   *
-   * <p>Important: Do not construct SoyTemplateInfo objects outside of Soy internal or Soy-generated
-   * code. User code that constructs SoyTemplateInfo objects will be broken by future Soy changes.
+   * Constructor for internal use only. Do not call, do not subclass.
    *
    * @param name The full template name.
    * @param paramMap Map from each param to whether it's required for this template.

@@ -22,8 +22,6 @@ import com.google.common.collect.ImmutableSet;
  * Interface for a Soy print directive with more Closure Library requirements than typical Soy
  * templates, implemented for the JS Source backend.
  *
- * <p>Important: This may only be used in implementing print directive plugins.
- *
  * @deprecated Use Soy functions instead
  */
 @Deprecated

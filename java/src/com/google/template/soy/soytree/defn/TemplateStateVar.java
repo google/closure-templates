@@ -26,11 +26,7 @@ import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.ast.TypeNode;
 import javax.annotation.Nullable;
 
-/**
- * An explicitly declared template state variable.
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- */
+/** An explicitly declared template state variable. */
 public final class TemplateStateVar extends AbstractVarDefn implements TemplateHeaderVarDefn {
   private String desc;
   private final SourceLocation sourceLocation;

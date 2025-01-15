@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.google.template.soy.jbcsrc.shared;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -136,5 +137,4 @@ public final class DetachableProviderFactoryTest {
     assertThat(provider.status()).isEqualTo(RenderResult.done());
     assertThat(provider.resolve()).isEqualTo(SanitizedContents.constantHtml("render me please"));
   }
-
 }

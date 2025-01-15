@@ -75,11 +75,7 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
-/**
- * Represents a compiled Soy file set. This is the result of compiling Soy to a Java object.
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- */
+/** Represents a compiled Soy file set. This is the result of compiling Soy to a Java object. */
 public final class BaseTofu implements SoyTofu {
 
   /** The scope object that manages the API call scope. */
@@ -94,7 +90,9 @@ public final class BaseTofu implements SoyTofu {
 
   private final PluginInstances pluginInstances;
 
-  /** @param apiCallScope The scope object that manages the API call scope. */
+  /**
+   * @param apiCallScope The scope object that manages the API call scope.
+   */
   public BaseTofu(
       SoyScopedData.Enterable apiCallScope,
       SoyFileSetNode fileSet,

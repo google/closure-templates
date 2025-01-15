@@ -31,11 +31,7 @@ import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.StringNode;
 import javax.annotation.Nullable;
 
-/**
- * Node representing a delegate template.
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- */
+/** Node representing a delegate template. */
 public final class TemplateDelegateNode extends TemplateNode {
 
   private static final SoyErrorKind INVALID_VARIANT_STRING =

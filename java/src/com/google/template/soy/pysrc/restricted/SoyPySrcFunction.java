@@ -22,8 +22,6 @@ import java.util.List;
 /**
  * Interface for a Soy function implemented for the Python Source backend.
  *
- * <p>Important: This may only be used in implementing function plugins.
- *
  * @deprecated use SoyPythonSourceFunction instead.
  */
 @Deprecated

@@ -20,11 +20,7 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.types.FloatType;
 
-/**
- * Node representing a float value.
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- */
+/** Node representing a float value. */
 public final class FloatNode extends AbstractPrimitiveNode {
 
   /** The float value */

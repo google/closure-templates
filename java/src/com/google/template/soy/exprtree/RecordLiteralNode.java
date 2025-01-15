@@ -23,11 +23,7 @@ import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.exprtree.OperatorNodes.SpreadOpNode;
 import javax.annotation.Nullable;
 
-/**
- * A node representing a record literal (with keys and values as alternating children).
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- */
+/** A node representing a record literal (with keys and values as alternating children). */
 public final class RecordLiteralNode extends AbstractParentExprNode {
 
   private final Identifier recordIdentifier;

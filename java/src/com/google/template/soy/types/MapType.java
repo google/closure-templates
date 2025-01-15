@@ -24,8 +24,6 @@ import com.google.template.soy.soytree.SoyTypeP;
  * Map type - generalized mapping type with key and value type arguments.
  *
  * <p>Note: This map type is designed for working with proto maps or ES6 Maps.
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  */
 public final class MapType extends AbstractMapType {
 

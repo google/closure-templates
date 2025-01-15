@@ -39,11 +39,7 @@ import java.util.List;
 import java.util.Optional;
 import javax.annotation.Nullable;
 
-/**
- * A node representing a function (with args as children).
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- */
+/** A node representing a function (with args as children). */
 public final class FunctionNode extends AbstractParentExprNode implements ExprNode.CallableExpr {
 
   public static final SoySourceFunction UNRESOLVED =

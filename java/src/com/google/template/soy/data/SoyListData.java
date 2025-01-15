@@ -64,12 +64,7 @@ public final class SoyListData extends SoyList implements Iterable<SoyValue>, Co
     this(Arrays.asList(values));
   }
 
-  /**
-   * Important: Please treat this method as superpackage-private. Do not call this method from
-   * outside the 'tofu' and 'data' packages.
-   *
-   * <p>Returns a view of this SoyListData object as a List.
-   */
+  /** Returns a view of this SoyListData object as a List. */
   public List<SoyValue> asList() {
     return Collections.unmodifiableList(list);
   }
@@ -332,9 +327,7 @@ public final class SoyListData extends SoyList implements Iterable<SoyValue>, Co
   // Superpackage-private methods.
 
   /**
-   * Important: Do not use outside of Soy code (treat as superpackage-private).
-   *
-   * <p>Puts data into this data object at the specified key.
+   * Puts data into this data object at the specified key.
    *
    * @param key An individual key.
    * @param value The data to put at the specified key.
@@ -345,9 +338,7 @@ public final class SoyListData extends SoyList implements Iterable<SoyValue>, Co
   }
 
   /**
-   * Important: Do not use outside of Soy code (treat as superpackage-private).
-   *
-   * <p>Removes the data at the specified key.
+   * Removes the data at the specified key.
    *
    * @param key An individual key.
    */
@@ -357,9 +348,7 @@ public final class SoyListData extends SoyList implements Iterable<SoyValue>, Co
   }
 
   /**
-   * Important: Do not use outside of Soy code (treat as superpackage-private).
-   *
-   * <p>Gets the data at the specified key.
+   * Gets the data at the specified key.
    *
    * @param key An individual key.
    * @return The data at the specified key, or null if the key is not defined.

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.google.template.soy.plugin.restricted;
 
 /** A value that resolves to either a SoyValue or a supported native type at render time. */

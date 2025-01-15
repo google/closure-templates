@@ -20,11 +20,7 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.types.BoolType;
 
-/**
- * Node representing a boolean value.
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- */
+/** Node representing a boolean value. */
 public final class BooleanNode extends AbstractPrimitiveNode {
 
   /** The boolean value. */

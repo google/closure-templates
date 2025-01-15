@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.google.template.soy.data.internal;
 
 import com.google.common.collect.ImmutableMap;
@@ -24,11 +25,7 @@ import com.google.template.soy.data.SoyValueProvider;
 import java.io.IOException;
 import java.util.function.BiConsumer;
 
-/**
- * A record implementation.
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- */
+/** A record implementation. */
 public final class SoyRecordImpl extends SoyRecord {
 
   public static final SoyRecordImpl EMPTY = new SoyRecordImpl(new ParamStore());
@@ -53,7 +50,6 @@ public final class SoyRecordImpl extends SoyRecord {
   public int recordSize() {
     return map.size();
   }
-
 
   @Override
   public String coerceToString() {

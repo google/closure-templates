@@ -24,8 +24,6 @@ import com.google.template.soy.soytree.TemplateNode;
 /**
  * Visitor for removing SoyDoc strings from {@code TemplateNode}s (saves memory when they're not
  * needed).
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  */
 public final class ClearSoyDocStringsVisitor extends AbstractSoyNodeVisitor<Void> {
   // -----------------------------------------------------------------------------------------------

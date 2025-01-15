@@ -28,11 +28,7 @@ import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyNode.StatementNode;
 import javax.annotation.Nullable;
 
-/**
- * Node representing an 'if' statement.
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- */
+/** Node representing an 'if' statement. */
 public final class IfNode extends AbstractParentSoyNode<BlockNode>
     implements HtmlContext.HtmlContextHolder,
         StandaloneNode,
@@ -42,13 +38,11 @@ public final class IfNode extends AbstractParentSoyNode<BlockNode>
   @Nullable private HtmlContext htmlContext;
   private final SourceLocation closeTagLocation;
 
-  /** @param id The id for this node. */
   public IfNode(int id, SourceLocation closeTagLocation, SourceLocation sourceLocation) {
     super(id, sourceLocation);
     this.closeTagLocation = closeTagLocation;
   }
 
-  /** @param id The id for this node. */
   public IfNode(int id, SourceLocation sourceLocation) {
     super(id, sourceLocation);
     this.closeTagLocation = SourceLocation.UNKNOWN;

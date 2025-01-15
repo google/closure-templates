@@ -37,11 +37,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 
-/**
- * Node representing a contiguous raw text section.
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- */
+/** Node representing a contiguous raw text section. */
 public final class RawTextNode extends AbstractSoyNode
     implements HtmlContext.HtmlContextHolder, StandaloneNode {
 

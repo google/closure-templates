@@ -31,11 +31,7 @@ import com.google.template.soy.types.UndefinedType;
 import java.util.Optional;
 import javax.annotation.Nullable;
 
-/**
- * Node representing a basic template.
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- */
+/** Node representing a basic template. */
 public final class TemplateBasicNode extends TemplateNode {
 
   public static final SoyErrorKind INVALID_USEVARIANTTYPE =

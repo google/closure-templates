@@ -27,8 +27,6 @@ import java.util.function.Function;
 /**
  * Utility to compact message bundles.
  *
- * <p>Important: Only use this class from message plugins!
- *
  * <p>This instance will canonicalize different parts of messages to avoid storing the same objects
  * in memory multiple times, at the expense of static use of memory.
  *

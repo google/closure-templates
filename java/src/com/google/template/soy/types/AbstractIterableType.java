@@ -19,11 +19,7 @@ package com.google.template.soy.types;
 import com.google.common.base.Preconditions;
 import java.util.Objects;
 
-/**
- * Represents the type of a list, a sequential random-access container keyed by integer.
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- */
+/** Represents the type of a list, a sequential random-access container keyed by integer. */
 public abstract class AbstractIterableType extends SoyType {
 
   protected final SoyType elementType;

@@ -26,8 +26,6 @@ import javax.annotation.Nullable;
 
 /**
  * A node representing a list comprehension expr (e.g. "$a+$i for $a, $i in $myList if $a >= 0").
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  */
 public final class ListComprehensionNode extends AbstractParentExprNode {
   private final ComprehensionVarDefn listIterVar;

@@ -20,14 +20,9 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.soytree.SoyNode.MsgBlockNode;
 
-/**
- * Node representing the 'default' block in a 'select' block.
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- */
+/** Node representing the 'default' block in a 'select' block. */
 public final class MsgSelectDefaultNode extends CaseOrDefaultNode implements MsgBlockNode {
 
-  /** @param id The id for this node. */
   public MsgSelectDefaultNode(
       int id, SourceLocation sourceLocation, SourceLocation openTagLocation) {
     super(id, sourceLocation, openTagLocation, "default");

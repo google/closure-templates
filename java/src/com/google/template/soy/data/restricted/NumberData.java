@@ -20,13 +20,7 @@ import com.google.common.primitives.Longs;
 import com.google.template.soy.data.SoyValue;
 import javax.annotation.Nonnull;
 
-/**
- * Abstract superclass for number data (integers and floats).
- *
- * <p>Important: This class may only be used in implementing plugins (e.g. functions, directives).
- *
- * <p>Important: Even though this class is not marked 'final', do not extend this class.
- */
+/** Abstract superclass for number data (integers and floats). */
 public abstract class NumberData extends PrimitiveData {
 
   /**

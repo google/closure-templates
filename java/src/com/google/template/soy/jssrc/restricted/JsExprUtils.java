@@ -26,11 +26,7 @@ import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.jssrc.dsl.Precedence;
 import java.util.List;
 
-/**
- * Common utilities for dealing with JS expressions.
- *
- * <p>Important: This class may only be used in implementing plugins (e.g. functions, directives).
- */
+/** Common utilities for dealing with JS expressions. */
 public class JsExprUtils {
 
   /** Expression constant for empty string. */

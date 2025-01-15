@@ -22,11 +22,7 @@ import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.soytree.CommandTagAttribute.CommandTagAttributesHolder;
 import com.google.template.soy.soytree.SoyNode.ConditionalBlockNode;
 
-/**
- * Node representing the 'default' block in a 'switch' statement.
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- */
+/** Node representing the 'default' block in a 'switch' statement. */
 public final class SwitchDefaultNode extends CaseOrDefaultNode
     implements ConditionalBlockNode, CommandTagAttributesHolder {
 

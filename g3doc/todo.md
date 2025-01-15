@@ -28,20 +28,7 @@ Cons:
 *   we may not be able to delete as much code as we would hope due to how this
     works in the optimizer
 
-## Open source `af_soy_library` and rename to `soy_library`
-
-A prerequisite for maybe bazel-ifying it
-
-pros:
-
-*   a shorter name,
-*   no longer a 'labs' filename,
-*   moved to a package without real build rules which should make presubmits run
-    faster
-
-Cons:
-
-*   none really except the work, which is fairly automatable.
+## Create an open source build macro
 
 ## goog.module
 
@@ -62,7 +49,7 @@ The fix will be first detect all the symbols we need to generate and then assign
 names, mangling as needed to avoid conflicts. To do this we will probably need
 to enhance the `CodeChunk` API and eliminate `JsCodeBuilder`, see next item.
 
-## Elimninate JsCodeBuilder
+## Eliminate JsCodeBuilder
 
 The JavaScript backends use two strategies for building their code.
 

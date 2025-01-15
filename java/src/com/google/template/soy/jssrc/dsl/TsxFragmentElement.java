@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.google.template.soy.jssrc.dsl;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
@@ -37,6 +38,7 @@ public abstract class TsxFragmentElement extends Expression implements CodeChunk
 
   /** Special import representing @jsx pragma. */
   public static final GoogRequire ELEMENT = GoogRequire.create("__element__");
+
   /** Special import representing @jsxFragment pragma. */
   public static final GoogRequire FRAGMENT = GoogRequire.create("__fragment__");
 

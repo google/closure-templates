@@ -33,11 +33,7 @@ import java.util.List;
 import java.util.Optional;
 import javax.annotation.Nullable;
 
-/**
- * Node representing a 'param' with content.
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- */
+/** Node representing a 'param' with content. */
 public final class CallParamContentNode extends CallParamNode
     implements RenderUnitNode, CommandTagAttributesHolder {
 

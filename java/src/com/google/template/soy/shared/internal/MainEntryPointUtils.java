@@ -22,8 +22,6 @@ import javax.annotation.Nullable;
 /**
  * Private shared utils for main entry point classes (e.g. JsSrcMain) or classes with a main()
  * method.
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  */
 public class MainEntryPointUtils {
 

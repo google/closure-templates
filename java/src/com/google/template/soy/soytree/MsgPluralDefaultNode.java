@@ -20,11 +20,7 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.soytree.SoyNode.MsgBlockNode;
 
-/**
- * Node representing the 'default' block in a 'plural' block.
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- */
+/** Node representing the 'default' block in a 'plural' block. */
 public final class MsgPluralDefaultNode extends CaseOrDefaultNode implements MsgBlockNode {
 
   /**

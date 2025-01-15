@@ -33,11 +33,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Common utilities for dealing with Python expressions.
- *
- * <p>Important: This class may only be used in implementing plugins (e.g. functions, directives).
- */
+/** Common utilities for dealing with Python expressions. */
 public final class PyExprUtils {
 
   /** The variable name used to reference the current translator instance. */

@@ -21,11 +21,7 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.soytree.SoyNode.MsgBlockNode;
 
-/**
- * Node representing a 'case' block in a 'plural' block.
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- */
+/** Node representing a 'case' block in a 'plural' block. */
 public final class MsgPluralCaseNode extends CaseOrDefaultNode implements MsgBlockNode {
 
   /** The number for this case. Plural 'case' nodes can only have numbers. */

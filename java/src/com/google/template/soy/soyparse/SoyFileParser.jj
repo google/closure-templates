@@ -186,8 +186,6 @@ import javax.annotation.Nullable;
  * into SoyFileParser.java. To modify this parser, please edit SoyFileParser.jj. Do not edit
  * SoyFileParser.java directly.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  * <pre>
  * This parser parses the following Soy file structure:
  *
@@ -2341,7 +2339,7 @@ private RawTextNode RawText() :
 
 
 /**
- * Important: The template header consists of a sequence of ParamDecls() separated by optional
+ * The template header consists of a sequence of ParamDecls() separated by optional
  * whitespace.
  *
  * TemplateHeader -> ( Whitespace() | ParamDecl() )*

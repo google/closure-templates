@@ -46,11 +46,7 @@ import java.util.Objects;
 import java.util.Optional;
 import javax.annotation.Nullable;
 
-/**
- * Node representing a 'print' statement.
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- */
+/** Node representing a 'print' statement. */
 public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNode>
     implements StandaloneNode,
         SplitLevelTopNode<PrintDirectiveNode>,

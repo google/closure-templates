@@ -24,8 +24,6 @@ import com.google.template.soy.soytree.SoyNode.SplitLevelTopNode;
 /**
  * Node representing a set of Soy files.
  *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  * <p>TODO(lukes): consider replacing this with just passing a {@code List<SoyFileNode>} around
  */
 public final class SoyFileSetNode extends AbstractParentSoyNode<SoyFileNode>
@@ -34,7 +32,9 @@ public final class SoyFileSetNode extends AbstractParentSoyNode<SoyFileNode>
   /** The node id generator for this parse tree. */
   private final IdGenerator nodeIdGen;
 
-  /** @param nodeIdGen The node id generator for this parse tree. */
+  /**
+   * @param nodeIdGen The node id generator for this parse tree.
+   */
   public SoyFileSetNode(IdGenerator nodeIdGen) {
     super(nodeIdGen.genId(), /* sourceLocation= */ null);
     this.nodeIdGen = nodeIdGen;
@@ -66,7 +66,9 @@ public final class SoyFileSetNode extends AbstractParentSoyNode<SoyFileNode>
     throw new UnsupportedOperationException("SoyFileSets don't have source locations");
   }
 
-  /** @deprecated SoyFileSetNodes don't have source locations. */
+  /**
+   * @deprecated SoyFileSetNodes don't have source locations.
+   */
   @Deprecated
   @Override
   public SourceLocation getSourceLocation() {

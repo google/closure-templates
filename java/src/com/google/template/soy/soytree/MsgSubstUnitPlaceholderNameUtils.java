@@ -38,8 +38,6 @@ import java.util.List;
 /**
  * Static helpers for generating base names for msg substitution units (i.e. placeholder names and
  * plural/select vars).
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  */
 public final class MsgSubstUnitPlaceholderNameUtils {
 

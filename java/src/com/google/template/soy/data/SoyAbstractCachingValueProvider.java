@@ -26,8 +26,6 @@ import javax.annotation.Nullable;
  *
  * <p>SoyAbstractCachingValueProvider is thread-safe, but in a race condition, may compute its value
  * twice.
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  */
 public abstract class SoyAbstractCachingValueProvider extends SoyValueProvider {
 

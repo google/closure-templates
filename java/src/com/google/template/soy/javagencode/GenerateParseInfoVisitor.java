@@ -81,8 +81,6 @@ import java.util.TreeSet;
 /**
  * Visitor for generating Java classes containing the parse info.
  *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  * <p>{@link #exec} should be called on a full parse tree.
  *
  * <p>For an example Soy file and its corresponding generated code, see

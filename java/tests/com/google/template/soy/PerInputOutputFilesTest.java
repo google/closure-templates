@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.google.template.soy;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -34,7 +35,7 @@ public final class PerInputOutputFilesTest {
 
   @Before
   public void constructParser() {
-    cmdLineParser = new SoyCmdLineParser(/*loader=*/ null);
+    cmdLineParser = new SoyCmdLineParser(/* loader= */ null);
     cmdLineParser.registerFlagsObject(outputFiles);
   }
 
@@ -68,10 +69,12 @@ public final class PerInputOutputFilesTest {
   @Test
   public void testGetOutputPath_inputRoots() throws Exception {
     cmdLineParser.parseArgument("--outputDirectory", "out", "--inputRoots", "root");
-    assertThat(outputFiles.getOutputPath(new File("root/foo/bar.soy"), /*locale=*/ null).toString())
+    assertThat(
+            outputFiles.getOutputPath(new File("root/foo/bar.soy"), /* locale= */ null).toString())
         .isEqualTo("out/foo/bar.soy.js");
     // files not under a root are copied as is
-    assertThat(outputFiles.getOutputPath(new File("src/foo/bar.soy"), /*locale=*/ null).toString())
+    assertThat(
+            outputFiles.getOutputPath(new File("src/foo/bar.soy"), /* locale= */ null).toString())
         .isEqualTo("out/src/foo/bar.soy.js");
   }
 
@@ -79,7 +82,8 @@ public final class PerInputOutputFilesTest {
   @Test
   public void testGetOutputPath_outputPathFormat() throws Exception {
     cmdLineParser.parseArgument("--outputPathFormat", "foo.js");
-    assertThat(outputFiles.getOutputPath(new File("root/foo/bar.soy"), /*locale=*/ null).toString())
+    assertThat(
+            outputFiles.getOutputPath(new File("root/foo/bar.soy"), /* locale= */ null).toString())
         .isEqualTo("foo.js");
   }
 }

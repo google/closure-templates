@@ -20,11 +20,7 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
 
-/**
- * Abstract implementation of a PrimitiveNode.
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- */
+/** Abstract implementation of a PrimitiveNode. */
 abstract class AbstractPrimitiveNode extends AbstractExprNode implements PrimitiveNode {
 
   protected AbstractPrimitiveNode(SourceLocation sourceLocation) {

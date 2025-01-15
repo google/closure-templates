@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.google.template.soy.jbcsrc.shared;
 
 import static com.google.common.base.Preconditions.checkArgument;
@@ -179,7 +180,7 @@ public final class MsgDefaultConstantFactory {
   }
 
   private static ImmutableList<SoyMsgPart> parseParts(PeekingIterator<Object> rawParts) {
-    return parseParts(rawParts, /* isCase=*/ false);
+    return parseParts(rawParts, /* isCase= */ false);
   }
 
   private static ImmutableList<SoyMsgPart> parseParts(
@@ -245,7 +246,7 @@ public final class MsgDefaultConstantFactory {
       Tag next = Tag.fromRaw(rawParts.next());
       if (next == Tag.BEGIN_CASE) {
         T spec = specFactory.apply(rawParts.next());
-        cases.add(Case.create(spec, parseParts(rawParts, /* isCase=*/ true)));
+        cases.add(Case.create(spec, parseParts(rawParts, /* isCase= */ true)));
       } else if (next == Tag.END) {
         break;
       } else {

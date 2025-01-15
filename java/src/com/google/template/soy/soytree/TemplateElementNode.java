@@ -25,11 +25,7 @@ import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
 import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import com.google.template.soy.soytree.defn.TemplateStateVar;
 
-/**
- * Node representing a Soy element.
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- */
+/** Node representing a Soy element. */
 public final class TemplateElementNode extends TemplateNode implements ExprHolderNode {
 
   /**

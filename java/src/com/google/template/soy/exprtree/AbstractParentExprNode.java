@@ -24,11 +24,7 @@ import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import com.google.template.soy.types.SoyType;
 import java.util.List;
 
-/**
- * Abstract implementation of a ParentExprNode.
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- */
+/** Abstract implementation of a ParentExprNode. */
 public abstract class AbstractParentExprNode extends AbstractExprNode implements ParentExprNode {
 
   /** The mixin object that implements the ParentNode functionality. */

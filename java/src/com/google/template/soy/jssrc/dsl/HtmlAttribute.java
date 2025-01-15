@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.google.template.soy.jssrc.dsl;
 
 import static com.google.template.soy.jssrc.dsl.Expressions.stringLiteral;
@@ -59,5 +60,4 @@ public abstract class HtmlAttribute extends Expression {
   Stream<? extends CodeChunk> childrenStream() {
     return value() != null ? Stream.of(value()) : Stream.empty();
   }
-
 }

@@ -32,15 +32,12 @@ import java.util.Optional;
 import java.util.function.BiFunction;
 import javax.annotation.Nullable;
 
-/**
- * Represents a full set of messages in some language/locale.
- *
- * <p>Important: Only use this class from message plugins!
- */
+/** Represents a full set of messages in some language/locale. */
 @Immutable
 public class SoyMsgBundleImpl extends SoyMsgBundle {
   /** The language/locale string of this bundle's messages. */
   private final String localeString;
+
   private final ULocale locale;
   private final boolean isRtl;
 
@@ -64,6 +61,7 @@ public class SoyMsgBundleImpl extends SoyMsgBundle {
           throw new IllegalStateException("Found 2 messages with id: " + m1.getId());
         });
   }
+
   /**
    * Note: If there exist duplicate message ids in the {@code msgs} list, the first one wins.
    * However, the source paths from subsequent duplicates will be added to the source paths for the
@@ -101,7 +99,6 @@ public class SoyMsgBundleImpl extends SoyMsgBundle {
 
     msgMap = ImmutableMap.copyOf(tempMsgMap);
   }
-
 
   @Override
   public String getLocaleString() {

@@ -23,8 +23,6 @@ import java.util.Objects;
  * Value class to represent an expression in the target source (JS, Python, etc.). Includes the text
  * of the expression as well as the precedence of the top-most operator.
  *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  * <p>Note that even though the precedence numbers we use are for Soy (see {@link
  * com.google.template.soy.exprtree.Operator#getPrecedence}), the precedence ordering of the Soy
  * expression operators matches that of JS, Python, and Java, so the precedence numbers are correct

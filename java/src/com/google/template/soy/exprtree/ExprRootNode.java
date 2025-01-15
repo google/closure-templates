@@ -26,8 +26,6 @@ import com.google.template.soy.basetree.CopyState;
  * Dummy node that serves as the root of an expression tree so that the tree can be arbitrarily
  * changed without needing to change the reference to the tree.
  *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  * <p>This node should always have exactly one child.
  */
 public final class ExprRootNode extends AbstractParentExprNode {

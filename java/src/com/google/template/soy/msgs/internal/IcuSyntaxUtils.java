@@ -32,11 +32,7 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/**
- * Utilities for building msg parts with ICU syntax.
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- */
+/** Utilities for building msg parts with ICU syntax. */
 public class IcuSyntaxUtils {
 
   private IcuSyntaxUtils() {}
@@ -248,7 +244,6 @@ public class IcuSyntaxUtils {
     matcher.appendTail(escapedTextSb);
     return escapedTextSb.toString();
   }
-
 
   // ------ Plural related strings. ------
 

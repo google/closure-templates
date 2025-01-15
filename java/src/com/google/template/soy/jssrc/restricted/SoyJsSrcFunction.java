@@ -22,8 +22,6 @@ import java.util.List;
 /**
  * Interface for a Soy function implemented for the JS Source backend.
  *
- * <p>Important: This may only be used in implementing function plugins.
- *
  * @deprecated Switch to using SoyJavaScriptSourceFunction. It has the ability to depend on {@code
  *     goog.module} symbols and is a safer, more typesafe API.
  */

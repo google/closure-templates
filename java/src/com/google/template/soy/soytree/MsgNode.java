@@ -69,8 +69,6 @@ import javax.annotation.Nullable;
  *   <li>A single {@link MsgPluralNode}
  *   <li>A single {@link MsgSelectNode}
  * </ul>
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  */
 public final class MsgNode extends AbstractBlockCommandNode
     implements ExprHolderNode, MsgBlockNode, CommandTagAttributesHolder {

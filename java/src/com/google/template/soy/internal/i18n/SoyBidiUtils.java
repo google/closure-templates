@@ -25,8 +25,6 @@ import java.util.regex.Pattern;
  *
  * <p>This is separate from {@link BidiUtils} for ease of unforking the latter, if we ever decide to
  * do so.
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  */
 public class SoyBidiUtils {
 
@@ -40,6 +38,7 @@ public class SoyBidiUtils {
    * direction is rtl.
    */
   private static final String GOOG_IS_RTL_CODE_SNIPPET = "soy.$$IS_LOCALE_RTL";
+
   private static final String GOOG_IS_RTL_CODE_SNIPPET_NAMESPACE = "soy";
 
   /**

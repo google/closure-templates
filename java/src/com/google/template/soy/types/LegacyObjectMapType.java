@@ -25,8 +25,6 @@ import com.google.template.soy.soytree.SoyTypeP;
  * <p>Note: This map type does not interoperate with proto maps or ES6 Maps. We are introducing a
  * second map type to handle these cases. We intend to migrate everyone to the new map type and
  * eventually delete LegacyObjectMapType. See b/69046114.
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  */
 public final class LegacyObjectMapType extends AbstractMapType {
 

@@ -47,11 +47,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
 
-/**
- * Visitor for generating Python expressions for parse tree nodes.
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- */
+/** Visitor for generating Python expressions for parse tree nodes. */
 public final class GenPyExprsVisitor extends AbstractSoyNodeVisitor<List<PyExpr>> {
   private static final SoyErrorKind UNKNOWN_SOY_PY_SRC_PRINT_DIRECTIVE =
       SoyErrorKind.of("Unknown SoyPySrcPrintDirective ''{0}''.");
@@ -214,7 +210,7 @@ public final class GenPyExprsVisitor extends AbstractSoyNodeVisitor<List<PyExpr>
 
   @Override
   protected void visitMsgFallbackGroupNode(MsgFallbackGroupNode node) {
-    PyExpr msg = generateMsgFunc(node.getMsg(), /* useAlternateId=*/ false);
+    PyExpr msg = generateMsgFunc(node.getMsg(), /* useAlternateId= */ false);
     String ternaryExpression =
         "(%s) if (translator_impl.is_msg_available(%d) or not"
             + " translator_impl.is_msg_available(%d)) else (%s)";
@@ -229,7 +225,7 @@ public final class GenPyExprsVisitor extends AbstractSoyNodeVisitor<List<PyExpr>
                 msg.getText(),
                 msgId,
                 node.getMsg().getAlternateId().getAsLong(),
-                generateMsgFunc(node.getMsg(), /* useAlternateId=*/ true).getText())
+                generateMsgFunc(node.getMsg(), /* useAlternateId= */ true).getText())
             : msg.getText();
     String pyExprText = "";
 
@@ -237,7 +233,7 @@ public final class GenPyExprsVisitor extends AbstractSoyNodeVisitor<List<PyExpr>
     // Priority is the msg id > alternate id > fallback id > fallback alternate id.
     if (node.hasFallbackMsg()) {
       long fallbackId = MsgUtils.computeMsgIdForDualFormat(node.getFallbackMsg());
-      PyExpr fallbackMsg = generateMsgFunc(node.getFallbackMsg(), /* useAlternateId=*/ false);
+      PyExpr fallbackMsg = generateMsgFunc(node.getFallbackMsg(), /* useAlternateId= */ false);
       String useFbOrFbAlternateMsg =
           node.getFallbackMsg().getAlternateId().isPresent()
               ? String.format(
@@ -245,7 +241,7 @@ public final class GenPyExprsVisitor extends AbstractSoyNodeVisitor<List<PyExpr>
                   fallbackMsg.getText(),
                   fallbackId,
                   node.getFallbackMsg().getAlternateId().getAsLong(),
-                  generateMsgFunc(node.getFallbackMsg(), /* useAlternateId=*/ true).getText())
+                  generateMsgFunc(node.getFallbackMsg(), /* useAlternateId= */ true).getText())
               : fallbackMsg.getText();
       if (node.getMsg().getAlternateId().isPresent()) {
         alternateId = node.getMsg().getAlternateId().getAsLong();

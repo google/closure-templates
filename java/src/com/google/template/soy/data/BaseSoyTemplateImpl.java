@@ -60,7 +60,7 @@ import javax.annotation.Nullable;
 
 /**
  * The abstract superclass for generated per-template parameters classes. Each public template will
- * have a corresponding generated subtype of this class. Do not extend outside of the Soy compiler.
+ * have a corresponding generated subtype of this class.
  *
  * <p>This class name purposefully does not end with "Params" so that it cannot collide with the
  * names of generated subclasses.
@@ -118,8 +118,7 @@ public abstract class BaseSoyTemplateImpl extends SoyTemplate {
 
   /**
    * The abstract superclass for generated per-template parameter builders. Each public template
-   * will have a corresponding generated subtype of this class. Do not extend outside of Soy
-   * compiler.
+   * will have a corresponding generated subtype of this class.
    *
    * <p>Instances of this abstract class are not thread safe.
    */

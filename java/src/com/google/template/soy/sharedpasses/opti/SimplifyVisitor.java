@@ -98,11 +98,7 @@ import java.util.Map;
 import java.util.TreeMap;
 import javax.annotation.Nullable;
 
-/**
- * Visitor for simplifying subtrees based on constant values known at compile time.
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- */
+/** Visitor for simplifying subtrees based on constant values known at compile time. */
 public final class SimplifyVisitor {
 
   /** Creates a new simplify visitor. */
@@ -171,7 +167,7 @@ public final class SimplifyVisitor {
         return !(node.getParent() instanceof MsgBlockNode);
 
       case LOG_NODE:
-        // msg nodes cannot (directly) hold lets
+      // msg nodes cannot (directly) hold lets
       case MSG_FALLBACK_GROUP_NODE:
       case MSG_NODE:
       case MSG_PLURAL_NODE:
@@ -439,7 +435,7 @@ public final class SimplifyVisitor {
         FunctionNode functionNode = (FunctionNode) expr;
         if (functionNode.getSoyFunction() instanceof BuiltinFunction) {
           switch ((BuiltinFunction) functionNode.getSoyFunction()) {
-              // These 2 are glorified strings
+            // These 2 are glorified strings
             case XID:
             case CSS:
               return true;

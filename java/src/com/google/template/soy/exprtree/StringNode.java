@@ -23,11 +23,7 @@ import com.google.template.soy.base.internal.QuoteStyle;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.types.StringType;
 
-/**
- * Node representing a string value.
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- */
+/** Node representing a string value. */
 public final class StringNode extends AbstractPrimitiveNode {
 
   /** The string value. */

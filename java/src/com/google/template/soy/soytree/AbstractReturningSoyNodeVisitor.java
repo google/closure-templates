@@ -26,8 +26,6 @@ import com.google.template.soy.soytree.SoyNode.MsgSubstUnitNode;
  * <p>Same as {@link AbstractSoyNodeVisitor} except that in this class, internal {@code visit()}
  * calls return a value.
  *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  * <p>To create a visitor:
  *
  * <ol>
@@ -382,7 +380,9 @@ public abstract class AbstractReturningSoyNodeVisitor<R>
   // -----------------------------------------------------------------------------------------------
   // Fallback implementation.
 
-  /** @param node the visited node. */
+  /**
+   * @param node the visited node.
+   */
   protected R visitSoyNode(SoyNode node) {
     throw new UnsupportedOperationException(
         "no implementation for: "

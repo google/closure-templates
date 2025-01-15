@@ -22,11 +22,7 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.basetree.CopyState;
 
-/**
- * Abstract node representing a 'param'.
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- */
+/** Abstract node representing a 'param'. */
 public abstract class CallParamNode extends AbstractCommandNode {
 
   /** The param key. */

@@ -31,10 +31,6 @@ import java.util.concurrent.Future;
  * Mixin interface for a node in a Soy data tree that represents a collection of data (i.e. an
  * internal node).
  *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
- * <p>Important: Even though this class is not marked 'final', do not extend this class.
- *
  * @deprecated all uses of these methods should migrate to normal java collections and the
  *     SoyValueConverter.
  */
@@ -135,7 +131,7 @@ public interface CollectionData {
         // part of keys[i+1] to know whether to create a SoyMapData or SoyListData (checking the
         // first char is sufficient).
         nextCollectionData =
-             Character.isDigit(keys.get(i + 1).charAt(0)) ? new SoyListData() : new SoyMapData();
+            Character.isDigit(keys.get(i + 1).charAt(0)) ? new SoyListData() : new SoyMapData();
         collectionData.putSingle(keys.get(i), (SoyValue) nextCollectionData);
       }
       collectionData = nextCollectionData;
@@ -363,9 +359,7 @@ public interface CollectionData {
   // Superpackage-private methods.
 
   /**
-   * Important: Do not use outside of Soy code (treat as superpackage-private).
-   *
-   * <p>Puts data into this data object at the specified key.
+   * Puts data into this data object at the specified key.
    *
    * @param key An individual key.
    * @param value The data to put at the specified key.
@@ -373,18 +367,14 @@ public interface CollectionData {
   public void putSingle(String key, SoyValue value);
 
   /**
-   * Important: Do not use outside of Soy code (treat as superpackage-private).
-   *
-   * <p>Removes the data at the specified key.
+   * Removes the data at the specified key.
    *
    * @param key An individual key.
    */
   public void removeSingle(String key);
 
   /**
-   * Important: Do not use outside of Soy code (treat as superpackage-private).
-   *
-   * <p>Gets the data at the specified key.
+   * Gets the data at the specified key.
    *
    * @param key An individual key.
    * @return The data at the specified key, or null if the key is not defined.

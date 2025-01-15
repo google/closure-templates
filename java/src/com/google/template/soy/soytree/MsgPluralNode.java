@@ -38,11 +38,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.OptionalInt;
 
-/**
- * Node representing a 'plural' block.
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- */
+/** Node representing a 'plural' block. */
 public final class MsgPluralNode extends AbstractParentCommandNode<CaseOrDefaultNode>
     implements MsgSubstUnitNode,
         SplitLevelTopNode<CaseOrDefaultNode>,

@@ -35,16 +35,10 @@ import com.google.template.soy.exprtree.ExprRootNode;
  * some subset of these interfaces.
  *
  * <p>The top level definition is the base node interface.
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  */
 public interface SoyNode extends Node {
 
-  /**
-   * Enum of specific node kinds (corresponding to specific node types).
-   *
-   * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
-   */
+  /** Enum of specific node kinds (corresponding to specific node types). */
   enum Kind {
     SOY_FILE_SET_NODE,
     SOY_FILE_NODE,

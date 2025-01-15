@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.google.template.soy.soytree;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -167,7 +168,7 @@ public final class VeLogNode extends AbstractBlockCommandNode
   @Nullable
   public HtmlOpenTagNode getOpenTagNode() {
     if (numChildren() > 0) {
-      return (HtmlOpenTagNode) getNodeAsHtmlTagNode(getChild(0), /*openTag=*/ true);
+      return (HtmlOpenTagNode) getNodeAsHtmlTagNode(getChild(0), /* openTag= */ true);
     }
     return null;
   }
@@ -177,7 +178,7 @@ public final class VeLogNode extends AbstractBlockCommandNode
   public HtmlCloseTagNode getCloseTagNode() {
     if (numChildren() > 1) {
       return (HtmlCloseTagNode)
-          getNodeAsHtmlTagNode(getChild(numChildren() - 1), /*openTag=*/ false);
+          getNodeAsHtmlTagNode(getChild(numChildren() - 1), /* openTag= */ false);
     }
     return null;
   }

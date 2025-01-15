@@ -23,11 +23,7 @@ import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyNode.StatementNode;
 import com.google.template.soy.soytree.defn.LocalVar;
 
-/**
- * Abstract node representing a 'let' statement.
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- */
+/** Abstract node representing a 'let' statement. */
 public abstract class LetNode extends AbstractCommandNode
     implements StandaloneNode, StatementNode, LocalVarInlineNode {
 

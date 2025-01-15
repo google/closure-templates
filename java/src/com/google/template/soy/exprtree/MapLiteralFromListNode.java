@@ -23,11 +23,7 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.basetree.CopyState;
 
-/**
- * A node representing a list to map conversion expr (e.g. "map(l)").
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- */
+/** A node representing a list to map conversion expr (e.g. "map(l)"). */
 public final class MapLiteralFromListNode extends AbstractParentExprNode {
   public static final String KEY_STRING = "key";
   public static final String VALUE_STRING = "value";

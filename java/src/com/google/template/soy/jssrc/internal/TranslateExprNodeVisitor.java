@@ -156,8 +156,6 @@ import java.util.function.Function;
  * Visitor for translating a Soy expression (in the form of an {@code ExprNode}) into an equivalent
  * chunk of JavaScript code.
  *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  * <h3>Types and Dependencies</h3>
  *
  * Types are used to allow reflective access to protobuf values even after JSCompiler has rewritten

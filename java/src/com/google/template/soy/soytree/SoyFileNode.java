@@ -34,11 +34,7 @@ import com.google.template.soy.types.SoyTypeRegistry;
 import java.util.Optional;
 import javax.annotation.Nullable;
 
-/**
- * Node representing a Soy file.
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- */
+/** Node representing a Soy file. */
 public final class SoyFileNode extends AbstractParentSoyNode<SoyNode>
     implements SplitLevelTopNode<SoyNode> {
 

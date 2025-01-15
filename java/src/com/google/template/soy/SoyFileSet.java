@@ -391,7 +391,7 @@ public final class SoyFileSet {
     /**
      * Adds an input Soy file, given a resource {@code URL}.
      *
-     * <p>Important: This function assumes that the desired file path is returned by {@code
+     * <p>This function assumes that the desired file path is returned by {@code
      * inputFileUrl.toString()}. If this is not the case, please use {@link #add(URL, String)}
      * instead.
      *

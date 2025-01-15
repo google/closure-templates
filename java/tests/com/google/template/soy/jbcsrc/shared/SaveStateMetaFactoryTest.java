@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.google.template.soy.jbcsrc.shared;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -184,5 +185,4 @@ public final class SaveStateMetaFactoryTest {
   private static Field getField(StackFrame frame, int num) throws Exception {
     return frame.getClass().getField("f_" + num);
   }
-
 }

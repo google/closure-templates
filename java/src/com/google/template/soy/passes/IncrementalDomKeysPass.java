@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.google.template.soy.passes;
 
 import com.google.template.soy.base.internal.IdGenerator;
@@ -73,6 +74,7 @@ final class IncrementalDomKeysPass implements CompilerFilePass {
       templateContainsUnpredictableContent = false;
       visitBlockNode(templateNode);
     }
+
     /**
      * For all dynamic content, the exact number of nodes produced is unknown and could change from
      * render to render. thus, we need to key all content within the block AND all content after the
@@ -97,6 +99,7 @@ final class IncrementalDomKeysPass implements CompilerFilePass {
         htmlKeyStack.push(true);
       }
     }
+
     /**
      * We don't know how this content is going to be used, so key everything. But because we haven't
      * rendered this let block yet, we don't set any mustEmitKeyNodes values after.

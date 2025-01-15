@@ -21,8 +21,6 @@ import com.google.errorprone.annotations.Immutable;
 /**
  * Null data.
  *
- * <p>Important: This class may only be used in implementing plugins (e.g. functions, directives).
- *
  * <p>NullData is only used by Tofu, jbcsrc internally represents null as {@code null}. Ideally,
  * Tofu would switch to using {@code null} also, but that may be infeasible.
  */

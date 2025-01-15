@@ -23,11 +23,7 @@ import com.google.template.soy.basetree.AbstractNode;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.basetree.Node;
 
-/**
- * Abstract implementation of an ExprNode.
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- */
+/** Abstract implementation of an ExprNode. */
 public abstract class AbstractExprNode extends AbstractNode implements ExprNode {
 
   private final SourceLocation sourceLocation;

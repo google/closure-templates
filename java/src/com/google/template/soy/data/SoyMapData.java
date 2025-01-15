@@ -33,15 +33,13 @@ import javax.annotation.Nonnull;
 /**
  * A map data node in a Soy data tree.
  *
- * <p>Important: Even though this class is not marked 'final', do not extend this class.
- *
  * @deprecated Users of this class should use normal {@code java.util.Map}s instead. The Soy
  *     rendering APIs can automatically handle conversion of native Java types and Soy plugin users
  *     can directly use {@link SoyValueConverter#convert(Object)}. This class offers no benefits
  *     over those APIs.
  */
 @Deprecated
-public class SoyMapData extends SoyDict implements CollectionData {
+public final class SoyMapData extends SoyDict implements CollectionData {
 
   /** Underlying map. */
   private final Map<String, SoyValue> map;
@@ -87,12 +85,7 @@ public class SoyMapData extends SoyDict implements CollectionData {
     put(data);
   }
 
-  /**
-   * Important: Please treat this method as superpackage-private. Do not call this method from
-   * outside the 'tofu' and 'data' packages.
-   *
-   * <p>Returns a view of this SoyMapData object as a Map.
-   */
+  /** Returns a view of this SoyMapData object as a Map. */
   public Map<String, SoyValue> asMap() {
     return Collections.unmodifiableMap(map);
   }
@@ -106,14 +99,11 @@ public class SoyMapData extends SoyDict implements CollectionData {
     return Collections.unmodifiableSet(map.keySet());
   }
 
-
   // -----------------------------------------------------------------------------------------------
   // Superpackage-private methods.
 
   /**
-   * Important: Do not use outside of Soy code (treat as superpackage-private).
-   *
-   * <p>Puts data into this data object at the specified key.
+   * Puts data into this data object at the specified key.
    *
    * @param key An individual key.
    * @param value The data to put at the specified key.
@@ -124,9 +114,7 @@ public class SoyMapData extends SoyDict implements CollectionData {
   }
 
   /**
-   * Important: Do not use outside of Soy code (treat as superpackage-private).
-   *
-   * <p>Removes the data at the specified key.
+   * Removes the data at the specified key.
    *
    * @param key An individual key.
    */
@@ -136,9 +124,7 @@ public class SoyMapData extends SoyDict implements CollectionData {
   }
 
   /**
-   * Important: Do not use outside of Soy code (treat as superpackage-private).
-   *
-   * <p>Gets the data at the specified key.
+   * Gets the data at the specified key.
    *
    * @param key An individual key.
    * @return The data at the specified key, or null if the key is not defined.

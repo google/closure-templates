@@ -30,11 +30,7 @@ import com.google.template.soy.soytree.TemplateNode;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
-/**
- * Default implementation of EvalVisitorFactory.
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- */
+/** Default implementation of EvalVisitorFactory. */
 public final class EvalVisitorFactoryImpl implements EvalVisitorFactory {
 
   @Override

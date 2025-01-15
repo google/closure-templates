@@ -23,11 +23,7 @@ import com.google.template.soy.data.SoyValue;
 import java.io.IOException;
 import javax.annotation.Nonnull;
 
-/**
- * String data.
- *
- * <p>Important: This class may only be used in implementing plugins (e.g. functions, directives).
- */
+/** String data. */
 @Immutable
 public abstract class StringData extends PrimitiveData {
 

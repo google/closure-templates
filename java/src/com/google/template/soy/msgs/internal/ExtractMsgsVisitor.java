@@ -42,8 +42,6 @@ import java.util.regex.Pattern;
 /**
  * Visitor for extracting messages from a Soy parse tree.
  *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  * <p>{@link #exec} should be called on a full parse tree. All messages will be extracted and
  * returned in a {@code SoyMsgBundle} (locale "en").
  */
@@ -97,6 +95,7 @@ public final class ExtractMsgsVisitor extends AbstractSoyNodeVisitor<SoyMsgBundl
     }
     return attributes.toString();
   }
+
   // -----------------------------------------------------------------------------------------------
   // Implementations for specific nodes.
 

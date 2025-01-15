@@ -30,11 +30,7 @@ import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
 import java.util.List;
 import javax.annotation.Nullable;
 
-/**
- * Builder for TemplateDelegateNode.
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- */
+/** Builder for TemplateDelegateNode. */
 public class TemplateDelegateNodeBuilder extends TemplateNodeBuilder<TemplateDelegateNodeBuilder> {
 
   /** The delegate template name. */
@@ -46,7 +42,9 @@ public class TemplateDelegateNodeBuilder extends TemplateNodeBuilder<TemplateDel
   /** The delegate priority. */
   private Priority delPriority;
 
-  /** @param soyFileHeaderInfo Info from the containing Soy file's header declarations. */
+  /**
+   * @param soyFileHeaderInfo Info from the containing Soy file's header declarations.
+   */
   public TemplateDelegateNodeBuilder(
       SoyFileHeaderInfo soyFileHeaderInfo, ErrorReporter errorReporter) {
     super(soyFileHeaderInfo, errorReporter);

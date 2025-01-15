@@ -33,18 +33,16 @@ import java.util.List;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
-/**
- * Main entry point for the JS Src backend (output target).
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- */
+/** Main entry point for the JS Src backend (output target). */
 public class JsSrcMain {
   /** The scope object that manages the API call scope. */
   private final SoyScopedData.Enterable apiCallScope;
 
   private final SoyTypeRegistry typeRegistry;
 
-  /** @param apiCallScope The scope object that manages the API call scope. */
+  /**
+   * @param apiCallScope The scope object that manages the API call scope.
+   */
   public JsSrcMain(SoyScopedData.Enterable apiCallScope, SoyTypeRegistry typeRegistry) {
     this.apiCallScope = apiCallScope;
     this.typeRegistry = typeRegistry;

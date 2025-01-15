@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.google.template.soy.jbcsrc.runtime;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -70,14 +71,14 @@ public final class DetachableContentProviderTest {
         switch (stack == null ? 0 : stack.stateNumber) {
           case 0:
             appendable.append("start\n");
-            // fall-through
+          // fall-through
           case 1:
             if (future1.isDone()) {
               appendable.append("future1: ").append(Futures.getUnchecked(future1)).append("\n");
             } else {
               return StackFrame.create(RenderResult.continueAfter(future1), 1);
             }
-            // fall-through
+          // fall-through
           case 2:
             if (future2.isDone()) {
               appendable.append("future2: ").append(Futures.getUnchecked(future2)).append("\n");

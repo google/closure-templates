@@ -22,11 +22,7 @@ import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
 import javax.annotation.Nonnull;
 
-/**
- * Boolean data.
- *
- * <p>Important: This class may only be used in implementing plugins (e.g. functions, directives).
- */
+/** Boolean data. */
 @Immutable
 public final class BooleanData extends PrimitiveData {
 
@@ -39,7 +35,9 @@ public final class BooleanData extends PrimitiveData {
   /** The boolean value. */
   private final boolean value;
 
-  /** @param value The boolean value. */
+  /**
+   * @param value The boolean value.
+   */
   private BooleanData(boolean value) {
     this.value = value;
   }

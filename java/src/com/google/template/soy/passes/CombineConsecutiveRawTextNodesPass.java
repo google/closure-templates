@@ -29,8 +29,6 @@ import java.util.List;
 /**
  * Visitor for combining any consecutive sequences of {@code RawTextNode}s into one equivalent
  * {@code RawTextNode}.
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  */
 public final class CombineConsecutiveRawTextNodesPass
     implements CompilerFilePass, CompilerFileSetPass {

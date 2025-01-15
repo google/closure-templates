@@ -62,11 +62,7 @@ import com.google.template.soy.exprtree.SoyPrecedence.Associativity;
 import java.util.List;
 import javax.annotation.Nullable;
 
-/**
- * Enum of Soy expression operators.
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- */
+/** Enum of Soy expression operators. */
 public enum Operator {
   // SoyPrecedence values must agree with SoyFileParser.jj.
   // Relative order borrowed as much as possible from JavaScript:

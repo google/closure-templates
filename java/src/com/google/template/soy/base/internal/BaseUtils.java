@@ -25,11 +25,7 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.regex.Pattern;
 
-/**
- * Base utilities for Soy code.
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- */
+/** Base utilities for Soy code. */
 public final class BaseUtils {
 
   private BaseUtils() {}
@@ -132,7 +128,7 @@ public final class BaseUtils {
    * Gets the part after the last dot in a dotted identifier. If there are no dots, returns the
    * whole input string.
    *
-   * <p>Important: The input must be a dotted identifier. This is not checked.
+   * <p>The input must be a dotted identifier. This is not checked.
    */
   public static String extractPartAfterLastDot(String dottedIdent) {
     int lastDotIndex = dottedIdent.lastIndexOf('.');

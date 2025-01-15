@@ -52,7 +52,7 @@ public abstract class SoyMap extends SoyRecord {
   /**
    * Gets an iterable over all item keys in this SoyMap.
    *
-   * <p>Important: Iteration order is undefined.
+   * <p>Iteration order is undefined.
    *
    * @return An iterable over all item keys.
    */

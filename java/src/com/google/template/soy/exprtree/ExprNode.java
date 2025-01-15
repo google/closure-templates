@@ -34,16 +34,10 @@ import javax.annotation.Nullable;
  * implements some subset of these interfaces.
  *
  * <p>The top level definition is the base ExprNode interface.
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  */
 public interface ExprNode extends Node {
 
-  /**
-   * Enum of specific node kinds (corresponding to specific node types).
-   *
-   * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
-   */
+  /** Enum of specific node kinds (corresponding to specific node types). */
   enum Kind {
     EXPR_ROOT_NODE,
 

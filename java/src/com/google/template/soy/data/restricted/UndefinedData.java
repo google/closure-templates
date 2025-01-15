@@ -18,11 +18,7 @@ package com.google.template.soy.data.restricted;
 
 import com.google.errorprone.annotations.Immutable;
 
-/**
- * Undefined data. Used only by Tofu, not jbcsrc.
- *
- * <p>Important: This class may only be used in implementing plugins (e.g. functions, directives).
- */
+/** Undefined data. Used only by Tofu, not jbcsrc. */
 @Immutable
 public final class UndefinedData extends NullishData {
 

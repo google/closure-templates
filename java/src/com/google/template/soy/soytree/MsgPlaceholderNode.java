@@ -23,8 +23,6 @@ import com.google.template.soy.soytree.SoyNode.MsgSubstUnitNode;
 /**
  * A node that is the direct child of a MsgBlockNode and will turn into a placeholder.
  *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  * <p>Note: there is no guarantee that the child of this node is a {@link
  * SoyNode.MsgPlaceholderInitialNode}, the optimizer may inline and replace constant placeholders as
  * {@link RawTextNode}s.

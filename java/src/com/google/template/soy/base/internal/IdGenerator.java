@@ -16,11 +16,7 @@
 
 package com.google.template.soy.base.internal;
 
-/**
- * A generator of int ids. Implementations can generate fixed ids, unique ids, or anything else.
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- */
+/** A generator of int ids. Implementations can generate fixed ids, unique ids, or anything else. */
 public interface IdGenerator {
 
   /**

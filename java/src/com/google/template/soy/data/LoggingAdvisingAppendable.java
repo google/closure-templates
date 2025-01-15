@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.google.template.soy.data;
 
 import static com.google.common.base.Preconditions.checkArgument;
@@ -39,8 +40,6 @@ import javax.annotation.Nullable;
  * An {@link AdvisingAppendable} that can also process log statements.
  *
  * <p>NOTE: all the logging functionality is currently stubbed out.
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  */
 public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
 

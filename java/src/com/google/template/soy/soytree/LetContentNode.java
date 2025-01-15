@@ -35,11 +35,7 @@ import java.util.List;
 import java.util.Optional;
 import javax.annotation.Nullable;
 
-/**
- * Node representing a 'let' statement with content.
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- */
+/** Node representing a 'let' statement with content. */
 public final class LetContentNode extends LetNode
     implements RenderUnitNode, CommandTagAttributesHolder {
 

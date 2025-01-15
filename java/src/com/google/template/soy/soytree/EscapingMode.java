@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.google.template.soy.soytree;
 
 import com.google.common.base.CaseFormat;
@@ -43,7 +44,7 @@ public enum EscapingMode {
    * https://html.spec.whatwg.org/multipage/scripting.html#restrictions-for-contents-of-script-elements
    * which describes the character sequences which must be escaped inside of a s
    */
-  FILTER_HTML_SCRIPT_PHRASING_DATA(false, null, /* internalOnly=*/ true),
+  FILTER_HTML_SCRIPT_PHRASING_DATA(false, null, /* internalOnly= */ true),
 
   /**
    * Encodes HTML special characters, including quotes, so that the value can appear as part of a

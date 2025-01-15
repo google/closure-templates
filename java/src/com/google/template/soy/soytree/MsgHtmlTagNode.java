@@ -35,11 +35,7 @@ import com.google.template.soy.soytree.SoyNode.MsgPlaceholderInitialNode;
 import java.util.Optional;
 import javax.annotation.Nullable;
 
-/**
- * Node representing an HTML tag within a {@code msg} statement/block.
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- */
+/** Node representing an HTML tag within a {@code msg} statement/block. */
 public final class MsgHtmlTagNode extends AbstractBlockNode implements MsgPlaceholderInitialNode {
 
   private static final SoyErrorKind DYNAMIC_TAG_NAME_IN_MSG_BLOCK =

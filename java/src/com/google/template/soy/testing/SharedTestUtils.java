@@ -64,11 +64,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.junit.Test;
 
-/**
- * Shared utilities for unit tests.
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- */
+/** Shared utilities for unit tests. */
 public final class SharedTestUtils {
 
   public static final String NS = "{namespace brittle.test.ns}\n";

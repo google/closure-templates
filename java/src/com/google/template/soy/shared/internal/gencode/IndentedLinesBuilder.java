@@ -26,8 +26,6 @@ import javax.annotation.Nullable;
 /**
  * A wrapped StringBuilder used for building text with indented lines.
  *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  * <p>The maximum indent length is 24.
  */
 public class IndentedLinesBuilder implements CharSequence {

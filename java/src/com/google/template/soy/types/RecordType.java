@@ -27,11 +27,7 @@ import com.google.template.soy.soytree.SoyTypeP;
 import java.util.NavigableMap;
 import javax.annotation.Nullable;
 
-/**
- * Dict type - classic dictionary type with string keys. Only works with field (dot) access.
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- */
+/** Dict type - classic dictionary type with string keys. Only works with field (dot) access. */
 @AutoValue
 public abstract class RecordType extends SoyType {
 

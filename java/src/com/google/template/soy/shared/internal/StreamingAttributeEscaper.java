@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.google.template.soy.shared.internal;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -147,7 +148,7 @@ public final class StreamingAttributeEscaper extends LoggingAdvisingAppendable {
     if (buffer != null) {
       delegate.append(
           Sanitizers.stripHtmlTags(
-              /* value=*/ buffer.toString(), /* safeTags=*/ null, /* rawSpacesAllowed=*/ true));
+              /* value= */ buffer.toString(), /* safeTags= */ null, /* rawSpacesAllowed= */ true));
     }
     if (depth > 0) {
       delegate.flushBuffers(depth - 1);

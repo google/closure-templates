@@ -30,11 +30,7 @@ import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyNode.StatementNode;
 import javax.annotation.Nullable;
 
-/**
- * Node representing a 'for' statement. Should always contain a ForNonemptyNode as only child.
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- */
+/** Node representing a 'for' statement. Should always contain a ForNonemptyNode as only child. */
 public final class ForNode extends AbstractParentCommandNode<BlockNode>
     implements StandaloneNode,
         SplitLevelTopNode<BlockNode>,

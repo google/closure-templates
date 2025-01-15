@@ -38,9 +38,6 @@ import javax.annotation.Nullable;
 /**
  * SoyTofu is the public interface for a Java object that represents a compiled Soy file set.
  *
- * <p>Important: If you're a user of Soy, you should use the methods here (on a SoyTofu object
- * created by Soy), but should not create your own implementations of this interface.
- *
  * @deprecated Use SoySauce instead. All users should be able to switch from
  *     SoyFileSet.compileToTofu() to SoyFileSet.compileTemplates(). To use the support for
  *     precompilation (outside of apps/framework) see SoySauceBuilder.
@@ -125,12 +122,7 @@ public interface SoyTofu {
   // -----------------------------------------------------------------------------------------------
   // Renderer interface.
 
-  /**
-   * Renderer for a template.
-   *
-   * <p>Important: If you're a user of Soy, you should use the methods here (on a Renderer object
-   * created by Soy), but should not create your own implementations of this interface.
-   */
+  /** Renderer for a template. */
   interface Renderer {
 
     /** Sets the data to call the template with. Can be null if the template has no parameters. */

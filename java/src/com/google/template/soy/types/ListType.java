@@ -18,11 +18,7 @@ package com.google.template.soy.types;
 
 import com.google.template.soy.soytree.SoyTypeP;
 
-/**
- * Represents the type of a list, a sequential random-access container keyed by integer.
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- */
+/** Represents the type of a list, a sequential random-access container keyed by integer. */
 public final class ListType extends AbstractIterableType {
 
   /** Special instance used to track empty lists. Only valid with == equality. */

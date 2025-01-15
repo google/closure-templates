@@ -23,16 +23,14 @@ import com.google.template.soy.exprtree.OperatorNodes.SpreadOpNode;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * A node representing a list literal (with items as children).
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- */
+/** A node representing a list literal (with items as children). */
 public final class ListLiteralNode extends AbstractParentExprNode {
 
   private final Optional<ImmutableList<SourceLocation.Point>> commaLocations;
 
-  /** @param items The expressions for the items in this list. */
+  /**
+   * @param items The expressions for the items in this list.
+   */
   public ListLiteralNode(
       List<ExprNode> items,
       SourceLocation sourceLocation,
@@ -42,7 +40,9 @@ public final class ListLiteralNode extends AbstractParentExprNode {
     this.commaLocations = Optional.of(ImmutableList.copyOf(commaLocations));
   }
 
-  /** @param items The expressions for the items in this list. */
+  /**
+   * @param items The expressions for the items in this list.
+   */
   public ListLiteralNode(List<ExprNode> items, SourceLocation sourceLocation) {
     super(sourceLocation);
     addChildren(items);

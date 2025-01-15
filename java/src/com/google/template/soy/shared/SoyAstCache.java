@@ -31,8 +31,6 @@ import javax.inject.Inject;
  * over and over if the contents have not changed. This helps the development experience when there
  * are a large number of files, most of which aren't changing during the edit/reflect loop. This
  * does not help in a production startup-compilation setup; instead, this will just use more memory.
- *
- * <p>Please treat the internals as Soy superpackage-private.
  */
 public final class SoyAstCache {
   /** A {@link SoyFileNode} with an associated {@link Version}. */
@@ -57,8 +55,6 @@ public final class SoyAstCache {
   /**
    * Stores a cached version of the AST.
    *
-   * <p>Please treat this as superpackage-private for Soy internals.
-   *
    * @param fileName The name of the file.
    * @param version The version of the file
    * @param file The parsed file. Caution this is stored as is, callers should take care to make
@@ -70,8 +66,6 @@ public final class SoyAstCache {
 
   /**
    * Retrieves a cached version of this file supplier AST, if any.
-   *
-   * <p>Please treat this as superpackage-private for Soy internals.
    *
    * @param fileName The name of the file
    * @param version The current file version.

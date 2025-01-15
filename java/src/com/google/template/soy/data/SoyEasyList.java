@@ -35,7 +35,6 @@ public final class SoyEasyList extends SoyList {
 
   private final List<SoyValueProvider> providerList;
 
-  /** Important: Do not use outside of Soy code (treat as superpackage-private). */
   public SoyEasyList() {
     this.providerList = new ArrayList<>();
   }

@@ -22,8 +22,6 @@ import com.google.template.soy.internal.targetexpr.TargetExpr;
  * Value class to represent a Python expression. Includes the text of the expression as well as the
  * precedence of the top-most operator.
  *
- * <p>Important: This class may only be used in implementing plugins (e.g. functions, directives).
- *
  * <p>Since the type information is rather generic it could potentially be shared with the JsExpr,
  * but as JS doesn't currently have any uses, and Python types do differ in some aspects (such as
  * with numbers), it's kept separate.

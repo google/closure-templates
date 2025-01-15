@@ -34,11 +34,7 @@ import com.google.template.soy.types.TemplateType;
 import java.util.List;
 import javax.annotation.Nullable;
 
-/**
- * Node representing a call to a basic template.
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- */
+/** Node representing a call to a basic template. */
 public final class CallBasicNode extends CallNode {
 
   /**
@@ -135,7 +131,6 @@ public final class CallBasicNode extends CallNode {
   public void setCalleeExpr(ExprRootNode calleeExpr) {
     this.calleeExpr = calleeExpr;
   }
-
 
   public void setOriginalShortFormExprEquivalence(
       ExprEquivalence.Wrapper originalShortFormExprEquivalence) {

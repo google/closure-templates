@@ -22,11 +22,7 @@ import com.google.template.soy.types.TemplateType.Parameter;
 import com.google.template.soy.types.ast.TypeNode;
 import javax.annotation.Nullable;
 
-/**
- * An explicitly declared template state attribute.
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- */
+/** An explicitly declared template state attribute. */
 public final class AttrParam extends TemplateParam implements TemplateHeaderVarDefn {
 
   private final String originalAttributeName;

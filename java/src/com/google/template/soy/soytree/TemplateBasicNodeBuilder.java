@@ -26,11 +26,7 @@ import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
 import java.util.List;
 
-/**
- * Builder for TemplateBasicNode.
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- */
+/** Builder for TemplateBasicNode. */
 public class TemplateBasicNodeBuilder extends TemplateNodeBuilder<TemplateBasicNodeBuilder> {
 
   public static final SoyErrorKind MODIFIABLE_AND_MODIFIES_BOTH_SET =
@@ -66,7 +62,9 @@ public class TemplateBasicNodeBuilder extends TemplateNodeBuilder<TemplateBasicN
   /** The "usevarianttype" attribute. */
   private CommandTagAttribute useVariantTypeAttr;
 
-  /** @param soyFileHeaderInfo Info from the containing Soy file's header declarations. */
+  /**
+   * @param soyFileHeaderInfo Info from the containing Soy file's header declarations.
+   */
   public TemplateBasicNodeBuilder(
       SoyFileHeaderInfo soyFileHeaderInfo, ErrorReporter errorReporter) {
     super(soyFileHeaderInfo, errorReporter);

@@ -24,11 +24,7 @@ import java.io.IOException;
 import java.math.BigInteger;
 import javax.annotation.Nonnull;
 
-/**
- * gbigint data.
- *
- * <p>Important: This class may only be used in implementing plugins (e.g. functions, directives).
- */
+/** gbigint data. */
 @Immutable
 public final class GbigintData extends PrimitiveData {
   public static final BigInteger LONG_MIN_VALUE = BigInteger.valueOf(Long.MIN_VALUE);

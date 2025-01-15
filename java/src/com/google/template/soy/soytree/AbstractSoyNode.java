@@ -22,11 +22,7 @@ import com.google.template.soy.basetree.AbstractNode;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.basetree.Node;
 
-/**
- * Abstract implementation of a SoyNode.
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- */
+/** Abstract implementation of a SoyNode. */
 public abstract class AbstractSoyNode extends AbstractNode implements SoyNode {
 
   /** The id for this node. */

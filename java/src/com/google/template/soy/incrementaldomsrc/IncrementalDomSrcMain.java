@@ -32,11 +32,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.Supplier;
 
-/**
- * Main entry point for the Incremental DOM JS Src backend (output target).
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- */
+/** Main entry point for the Incremental DOM JS Src backend (output target). */
 public class IncrementalDomSrcMain {
 
   /** The scope object that manages the API call scope. */

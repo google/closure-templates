@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.google.template.soy;
 
 import static com.google.common.base.Preconditions.checkState;
@@ -128,11 +129,11 @@ final class PerInputOutputFiles {
   }
 
   void writeFiles(List<File> srcs, List<String> outFileContents) {
-    writeFiles(srcs, outFileContents, /* locale= */ null, /* omitIfEmpty = */ false);
+    writeFiles(srcs, outFileContents, /* locale= */ null, /* omitIfEmpty= */ false);
   }
 
   void writeFiles(List<File> srcs, List<String> outFileContents, @Nullable String locale) {
-    writeFiles(srcs, outFileContents, locale, /* omitIfEmpty = */ false);
+    writeFiles(srcs, outFileContents, locale, /* omitIfEmpty= */ false);
   }
 
   /**

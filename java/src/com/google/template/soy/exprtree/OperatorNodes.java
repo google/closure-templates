@@ -20,11 +20,7 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.exprtree.ExprNode.AccessChainComponentNode;
 
-/**
- * Container of nodes representing operators.
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- */
+/** Container of nodes representing operators. */
 public class OperatorNodes {
 
   private OperatorNodes() {}

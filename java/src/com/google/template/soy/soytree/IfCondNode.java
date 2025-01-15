@@ -28,8 +28,6 @@ import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 /**
  * Node representing a block within an 'if' statement that has a conditional expression (i.e. either
  * the 'if' block or an 'elseif' block).
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  */
 public final class IfCondNode extends AbstractBlockCommandNode
     implements ConditionalBlockNode, ExprHolderNode {

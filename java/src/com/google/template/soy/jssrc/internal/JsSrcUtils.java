@@ -19,11 +19,7 @@ package com.google.template.soy.jssrc.internal;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.internal.BaseUtils;
 
-/**
- * Shared utilities specific to the JS Src backend.
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- */
+/** Shared utilities specific to the JS Src backend. */
 public final class JsSrcUtils {
 
   private JsSrcUtils() {}

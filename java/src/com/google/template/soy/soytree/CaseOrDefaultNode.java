@@ -23,8 +23,6 @@ import com.google.template.soy.basetree.CopyState;
 /**
  * Abstract node representing a 'case' or 'default' block in 'select', 'switch' or 'plural'
  * statements.
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  */
 public abstract class CaseOrDefaultNode extends AbstractBlockCommandNode {
 

@@ -33,16 +33,12 @@ import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import java.util.List;
 import javax.annotation.Nullable;
 
-/**
- * Node representing a 'print' directive.
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- */
+/** Node representing a 'print' directive. */
 public final class PrintDirectiveNode extends AbstractSoyNode implements ExprHolderNode {
 
   public static PrintDirectiveNode createSyntheticNode(
       int id, Identifier name, SourceLocation location) {
-    return new PrintDirectiveNode(id, name, location, ImmutableList.of(), /* isSynthetic=*/ true);
+    return new PrintDirectiveNode(id, name, location, ImmutableList.of(), /* isSynthetic= */ true);
   }
 
   public static PrintDirectiveNode createSyntheticNode(
@@ -67,7 +63,7 @@ public final class PrintDirectiveNode extends AbstractSoyNode implements ExprHol
 
   public PrintDirectiveNode(
       int id, Identifier name, SourceLocation location, ImmutableList<ExprNode> args) {
-    this(id, name, location, args, /* isSynthetic=*/ false);
+    this(id, name, location, args, /* isSynthetic= */ false);
   }
 
   private PrintDirectiveNode(

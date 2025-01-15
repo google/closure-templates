@@ -32,11 +32,7 @@ import java.util.List;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
-/**
- * Node representing a call to a delegate template.
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- */
+/** Node representing a call to a delegate template. */
 public final class CallDelegateNode extends CallNode {
 
   private final Identifier sourceDelCalleeName;

@@ -20,9 +20,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.protobuf.Descriptors.FileDescriptor;
 
-/**
- * Parsed info about a Soy file.
- */
+/** Parsed info about a Soy file. */
 public class SoyFileInfo {
 
   /** The source Soy file's name. */
@@ -38,16 +36,13 @@ public class SoyFileInfo {
   private final ImmutableSet<String> cssNames;
 
   /**
-   * Constructor for internal use only.
-   *
-   * <p>Important: Do not construct SoyFileInfo objects outside of Soy internal or Soy-generated
-   * code. User code that constructs SoyFileInfo objects will be broken by future Soy changes.
+   * Constructor for internal use only. Do not call, do not subclass.
    *
    * @param fileName The source Soy file's name.
    * @param namespace The Soy file's namespace.
    * @param templates List of templates in this Soy file.
    */
-  public SoyFileInfo(
+  protected SoyFileInfo(
       String fileName,
       String namespace,
       ImmutableList<SoyTemplateInfo> templates,

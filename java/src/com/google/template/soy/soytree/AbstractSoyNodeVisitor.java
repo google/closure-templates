@@ -28,8 +28,6 @@ import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
  * <p>Same as {@link AbstractReturningSoyNodeVisitor} except that in this class, internal {@code
  * visit()} calls do not return a value.
  *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  * <p>To create a visitor:
  *
  * <ol>
@@ -460,7 +458,9 @@ public abstract class AbstractSoyNodeVisitor<R> extends AbstractNodeVisitor<SoyN
   // -----------------------------------------------------------------------------------------------
   // Fallback implementation.
 
-  /** @param node the visited node. */
+  /**
+   * @param node the visited node.
+   */
   protected void visitSoyNode(SoyNode node) {
     throw new UnsupportedOperationException("no implementation for: " + node);
   }

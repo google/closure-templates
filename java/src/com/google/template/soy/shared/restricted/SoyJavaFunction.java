@@ -24,8 +24,6 @@ import java.util.List;
  * interface will be used during Tofu rendering, and may also be used during optimization passes if
  * the function is also marked with annotation {@code @SoyPureFunction}.
  *
- * <p>Important: This may only be used in implementing function plugins.
- *
  * @deprecated Use SoyJavaSourceFunction instead
  */
 @Deprecated

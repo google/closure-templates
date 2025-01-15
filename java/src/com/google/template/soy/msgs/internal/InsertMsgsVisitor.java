@@ -51,8 +51,6 @@ import javax.annotation.Nullable;
  * exception is plural/select messages. This pass currently does not replace MsgFallbackGroupNodes
  * that contain plural/select messages.
  *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  * <p>If the Soy tree doesn't contain plural/select messages, then after this pass, the Soy tree
  * should no longer contain MsgFallbackGroupNodes, MsgNodes, MsgPlaceholderNodes, or
  * MsgHtmlTagNodes. If the Soy tree contains plural/select messages, then the only messages left in

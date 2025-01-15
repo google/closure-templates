@@ -21,11 +21,7 @@ import com.google.template.soy.base.SoyBackendKind;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import java.util.function.Supplier;
 
-/**
- * Shared utilities for unit tests.
- *
- * <p>Important: This class may only be used when testing plugins (e.g. functions, directives).
- */
+/** Shared utilities for unit tests. */
 public class BidiTestUtils {
 
   private static final BidiGlobalDir BIDI_GLOBAL_DIR_FOR_JS_ISRTL_CODE_SNIPPET =

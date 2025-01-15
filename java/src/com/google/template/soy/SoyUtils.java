@@ -34,8 +34,6 @@ public final class SoyUtils {
    * <p>The generated lines will follow the iteration order of the provided map. Map keys will be
    * converted to valid Soy single identifiers, replacing '.' with '_' if necessary.
    *
-   * <p>Important: When you write the output to a file, be sure to use UTF-8 encoding.
-   *
    * @param namespace The namespace of the generated Soy file.
    * @param constantNameToJavaValue Map from compile-time global name to value. The values can be
    *     any of the Soy primitive types: null, boolean, integer, float (Java double), or string.

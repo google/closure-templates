@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.google.template.soy.soytree;
 
 import com.google.common.collect.ImmutableList;
@@ -27,8 +28,6 @@ import com.google.template.soy.soytree.SoyNode.StatementNode;
 /**
  * Node representing a 'key' statement, e.g. {@code <div {key $foo}></div>}. This keys DOM nodes for
  * incremental dom.
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  */
 public final class KeyNode extends AbstractCommandNode
     implements StandaloneNode, StatementNode, ExprHolderNode {

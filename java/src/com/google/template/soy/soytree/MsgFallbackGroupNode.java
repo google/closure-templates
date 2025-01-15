@@ -33,8 +33,6 @@ import javax.annotation.Nullable;
  *
  * <p>Only one {@code fallbackmsg} is allowed by the parser.
  *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  * <p>All children are {@code MsgNode}s. And conversely, all {@code MsgNode}s must be children of
  * {@code MsgFallbackGroupNode}s through parsing and middle-end passes. (Backends may have their own
  * special structure for messages).

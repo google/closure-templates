@@ -25,8 +25,6 @@ import java.util.List;
  * <p>Same as {@link AbstractNodeVisitor} except that in this class, internal {@code visit()} calls
  * return a value.
  *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  * @param <N> A more specific subinterface of Node, or just Node if not applicable.
  * @param <R> The return type of this visitor.
  * @see AbstractNodeVisitor

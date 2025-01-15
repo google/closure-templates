@@ -28,8 +28,6 @@ import javax.annotation.Nullable;
 /**
  * Bidi global direction, which is either a "static" integer value (ltr=1, rtl=-1), or a code
  * snippet yielding such a value when evaluated at template runtime.
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  */
 @Immutable
 public final class BidiGlobalDir {
@@ -43,6 +41,7 @@ public final class BidiGlobalDir {
    * a static bidi global direction.) The code snippet should never be null or empty.
    */
   private final String codeSnippet;
+
   /** An optional {@code goog.require} namespace associated with the snippet. */
   @Nullable private final String namespace;
 

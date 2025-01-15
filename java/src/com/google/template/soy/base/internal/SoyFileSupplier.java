@@ -30,8 +30,6 @@ import java.net.URL;
 /**
  * Record for one input Soy file.
  *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  * <p>TODO(lukes): This should either be a subtype of CharSource or hold a CharSource
  */
 public interface SoyFileSupplier {
@@ -80,11 +78,7 @@ public interface SoyFileSupplier {
   /** Returns the version of the Soy file read. */
   Version getVersion();
 
-  /**
-   * Container for factory methods for {@link SoyFileSupplier}s.
-   *
-   * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
-   */
+  /** Container for factory methods for {@link SoyFileSupplier}s. */
   final class Factory {
 
     /**

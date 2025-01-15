@@ -31,11 +31,7 @@ import com.google.template.soy.soytree.TemplateNode;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
-/**
- * A factory for creating PreevalVisitor objects.
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- */
+/** A factory for creating PreevalVisitor objects. */
 final class PreevalVisitorFactory implements EvalVisitorFactory {
 
   @Override

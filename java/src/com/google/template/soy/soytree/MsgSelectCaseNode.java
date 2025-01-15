@@ -22,11 +22,7 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.soytree.SoyNode.MsgBlockNode;
 
-/**
- * Node representing a 'case' block in a 'select' block.
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- */
+/** Node representing a 'case' block in a 'select' block. */
 public final class MsgSelectCaseNode extends CaseOrDefaultNode implements MsgBlockNode {
 
   /** The value for this case. */

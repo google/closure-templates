@@ -23,10 +23,6 @@ import java.io.IOException;
 /**
  * Abstract superclass for a node in a Soy data tree that represents a piece of primitive data (i.e.
  * a leaf node).
- *
- * <p>Important: This class may only be used in implementing plugins (e.g. functions, directives).
- *
- * <p>Important: Even though this class is not marked 'final', do not extend this class.
  */
 public abstract class PrimitiveData extends SoyValue {
   @Override

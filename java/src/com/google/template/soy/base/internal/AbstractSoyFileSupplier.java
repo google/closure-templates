@@ -21,11 +21,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import com.google.template.soy.base.SourceFilePath;
 import java.util.Objects;
 
-/**
- * Abstract base implementation of SoyFileSupplier.
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- */
+/** Abstract base implementation of SoyFileSupplier. */
 public abstract class AbstractSoyFileSupplier implements SoyFileSupplier {
 
   /** Returns the file path (used for messages only). */

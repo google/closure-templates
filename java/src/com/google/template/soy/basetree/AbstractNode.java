@@ -16,19 +16,13 @@
 
 package com.google.template.soy.basetree;
 
-
-/**
- * Abstract implementation of a Node.
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- */
+/** Abstract implementation of a Node. */
 public abstract class AbstractNode implements Node {
 
   /** The parent of this node. */
   private ParentNode<?> parent;
 
-  protected AbstractNode() {
-  }
+  protected AbstractNode() {}
 
   /**
    * Copy constructor.

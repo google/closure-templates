@@ -22,8 +22,6 @@ import java.util.List;
 /**
  * Interface for a Soy print directive implemented for the JS Source backend.
  *
- * <p>Important: This may only be used in implementing print directive plugins.
- *
  * @deprecated Use Soy functions instead
  */
 @Deprecated

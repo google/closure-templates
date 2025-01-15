@@ -21,11 +21,7 @@ import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.data.SoyValue;
 import javax.annotation.Nonnull;
 
-/**
- * Integer data.
- *
- * <p>Important: This class may only be used in implementing plugins (e.g. functions, directives).
- */
+/** Integer data. */
 @Immutable
 public final class IntegerData extends NumberData {
 

@@ -16,11 +16,7 @@
 
 package com.google.template.soy.base.internal;
 
-/**
- * A generator of incrementing unique integer ids, starting from 0.
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- */
+/** A generator of incrementing unique integer ids, starting from 0. */
 public final class IncrementingIdGenerator implements IdGenerator {
 
   /** The current next id value to generate. */

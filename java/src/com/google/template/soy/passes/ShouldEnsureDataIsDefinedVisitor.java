@@ -28,11 +28,7 @@ import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.TemplateParam;
 
-/**
- * Visitor for determining whether a template needs to ensure that its data is defined.
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- */
+/** Visitor for determining whether a template needs to ensure that its data is defined. */
 public final class ShouldEnsureDataIsDefinedVisitor {
 
   /** Runs this pass on the given template. */

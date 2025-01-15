@@ -29,11 +29,7 @@ import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.ast.TypeNode;
 import javax.annotation.Nullable;
 
-/**
- * An explicitly declared template parameter.
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- */
+/** An explicitly declared template parameter. */
 public class TemplateParam extends AbstractVarDefn implements TemplateHeaderVarDefn {
   private final TypeNode typeNode;
   private String desc;

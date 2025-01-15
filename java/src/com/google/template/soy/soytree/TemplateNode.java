@@ -56,11 +56,7 @@ import java.util.Map;
 import java.util.Set;
 import javax.annotation.Nullable;
 
-/**
- * Node representing a template.
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- */
+/** Node representing a template. */
 public abstract class TemplateNode extends AbstractBlockCommandNode
     implements RenderUnitNode, ExprHolderNode, CommandTagAttributesHolder {
 
@@ -104,8 +100,6 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
 
   /**
    * Info from the containing Soy file's {@code modname} and {@code namespace} declarations.
-   *
-   * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
    *
    * <p>Note: Currently, there are only 2 delegate priority values: 0 and 1. Delegate templates that
    * are not in a delegate package are given priority 0 (lowest). Delegate templates in a delegate

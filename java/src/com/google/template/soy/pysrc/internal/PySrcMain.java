@@ -44,11 +44,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
 
-/**
- * Main entry point for the Python Src backend (output target).
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- */
+/** Main entry point for the Python Src backend (output target). */
 public final class PySrcMain {
 
   private static final SoyErrorKind DUPLICATE_NAMESPACE_ERROR =

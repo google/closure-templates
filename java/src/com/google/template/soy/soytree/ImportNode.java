@@ -32,11 +32,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.BiConsumer;
 
-/**
- * Node representing a 'import' statement with a value expression.
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- */
+/** Node representing a 'import' statement with a value expression. */
 public final class ImportNode extends AbstractSoyNode {
 
   /** The value expression that the variable is set to. */
@@ -44,6 +40,7 @@ public final class ImportNode extends AbstractSoyNode {
 
   private final StringNode path;
   private ImportType importType;
+
   /**
    * If this is NOT a module import (* as) then store the {@link
    * com.google.template.soy.types.TemplateModuleImportType} or {@link

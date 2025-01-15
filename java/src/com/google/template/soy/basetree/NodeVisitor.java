@@ -20,8 +20,6 @@ package com.google.template.soy.basetree;
  * External interface for a node visitor. A visitor is basically a function implemented for some or
  * all node classes, where the implementation can be different for each specific node class.
  *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  * @param <N> A more specific subinterface of Node, or just Node if not applicable.
  * @param <R> The return type of this visitor.
  */

@@ -26,8 +26,6 @@ import javax.annotation.Nonnull;
  * optimization passes if the directive is also marked with annotation
  * {@code @SoyPurePrintDirective}.
  *
- * <p>Important: This may only be used in implementing print directive plugins.
- *
  * @deprecated Use Soy functions instead
  */
 @Deprecated

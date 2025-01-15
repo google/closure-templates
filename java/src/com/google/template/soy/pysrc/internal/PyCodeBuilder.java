@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.google.template.soy.pysrc.internal;
 
 import com.google.auto.value.AutoValue;
@@ -79,14 +80,19 @@ final class PyCodeBuilder {
 
   /** The size of a single indent level. */
   private static final int INDENT_SIZE = 2;
+
   /** A buffer to accumulate the generated code. */
   private final StringBuilder code;
+
   /** The current indent (some even number of spaces). */
   private String indent;
+
   /** The current stack of output variables. */
   private final Deque<OutputVar> outputVars;
+
   /** The current output variable name. */
   private String currOutputVarName;
+
   /** Whether the current output variable is initialized. */
   private boolean currOutputVarIsInited;
 
@@ -284,7 +290,9 @@ final class PyCodeBuilder {
     return this;
   }
 
-  /** @return The generated code. */
+  /**
+   * @return The generated code.
+   */
   public String getCode() {
     return code.toString();
   }

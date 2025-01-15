@@ -25,11 +25,7 @@ import com.google.template.soy.exprtree.Operator.SyntaxElement;
 import com.google.template.soy.exprtree.Operator.Token;
 import java.util.List;
 
-/**
- * Abstract implementation of an OperatorNode.
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- */
+/** Abstract implementation of an OperatorNode. */
 public abstract class AbstractOperatorNode extends AbstractParentExprNode implements OperatorNode {
 
   /** The operator. */

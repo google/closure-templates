@@ -32,11 +32,7 @@ import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyNode.StatementNode;
 import javax.annotation.Nullable;
 
-/**
- * Node representing a 'switch' statement.
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- */
+/** Node representing a 'switch' statement. */
 public final class SwitchNode extends AbstractParentCommandNode<CaseOrDefaultNode>
     implements StandaloneNode,
         HtmlContext.HtmlContextHolder,
