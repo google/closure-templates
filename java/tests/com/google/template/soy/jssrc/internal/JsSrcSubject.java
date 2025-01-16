@@ -18,7 +18,6 @@ package com.google.template.soy.jssrc.internal;
 
 import static com.google.common.truth.Truth.assertAbout;
 import static com.google.common.truth.Truth.assertThat;
-import static com.google.template.soy.jssrc.internal.JsRuntime.OPT_DATA;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
@@ -254,7 +253,6 @@ abstract class JsSrcSubject<T extends Subject> extends Subject {
                   AliasUtils.createTemplateAliases(
                       parseResult.fileSet().getChild(0), parseResult.registry()),
                   errorReporter,
-                  OPT_DATA,
                   ScopedJsTypeRegistry.PASSTHROUGH)
               .exec(exprNode);
     }

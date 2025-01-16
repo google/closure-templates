@@ -35,9 +35,9 @@ import com.google.template.soy.jssrc.dsl.VariableDeclaration;
 import com.google.template.soy.jssrc.internal.GenCallCodeUtils;
 import com.google.template.soy.jssrc.internal.GenJsCodeVisitorAssistantForMsgs;
 import com.google.template.soy.jssrc.internal.GenJsExprsVisitor;
+import com.google.template.soy.jssrc.internal.GenJsTemplateBodyVisitor;
 import com.google.template.soy.jssrc.internal.IsComputableAsJsExprsVisitor;
 import com.google.template.soy.jssrc.internal.OutputVarHandler;
-import com.google.template.soy.jssrc.internal.TemplateAliases;
 import com.google.template.soy.jssrc.internal.TranslationContext;
 import com.google.template.soy.soytree.HtmlContext;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;
@@ -75,14 +75,13 @@ final class AssistantForHtmlMsgs extends GenJsCodeVisitorAssistantForMsgs {
   private static final String PLACEHOLDER_REGEX = "/\\x01\\d+\\x01/g";
 
   private final String staticDecl;
-  private final GenIncrementalDomTemplateBodyVisitor idomTemplateBodyVisitor;
+  private final GenJsTemplateBodyVisitor idomTemplateBodyVisitor;
 
   AssistantForHtmlMsgs(
-      GenIncrementalDomTemplateBodyVisitor idomTemplateBodyVisitor,
+      GenJsTemplateBodyVisitor idomTemplateBodyVisitor,
       SoyJsSrcOptions jsSrcOptions,
       GenCallCodeUtils genCallCodeUtils,
       IsComputableAsJsExprsVisitor isComputableAsJsExprsVisitor,
-      TemplateAliases functionAliases,
       GenJsExprsVisitor genJsExprsVisitor,
       TranslationContext translationContext,
       ErrorReporter errorReporter,
@@ -93,7 +92,6 @@ final class AssistantForHtmlMsgs extends GenJsCodeVisitorAssistantForMsgs {
         jsSrcOptions,
         genCallCodeUtils,
         isComputableAsJsExprsVisitor,
-        functionAliases,
         genJsExprsVisitor,
         translationContext,
         errorReporter,
@@ -197,10 +195,18 @@ final class AssistantForHtmlMsgs extends GenJsCodeVisitorAssistantForMsgs {
       if (phNode.getParent() instanceof VeLogNode) {
         VeLogNode parent = (VeLogNode) phNode.getParent();
         if (parent.getChild(0) == phNode) {
-          value = Statements.of(idomTemplateBodyVisitor.openVeLogNode(parent), value);
+          value =
+              Statements.of(
+                  ((GenIncrementalDomTemplateBodyVisitor) idomTemplateBodyVisitor)
+                      .openVeLogNode(parent),
+                  value);
         }
         if (parent.getChild(parent.numChildren() - 1) == phNode) {
-          value = Statements.of(value, idomTemplateBodyVisitor.exitVeLogNode(parent));
+          value =
+              Statements.of(
+                  value,
+                  ((GenIncrementalDomTemplateBodyVisitor) idomTemplateBodyVisitor)
+                      .exitVeLogNode(parent));
         }
       }
       switchBuilder.addCase(Expressions.stringLiteral(ph.getKey()), value);

@@ -56,20 +56,18 @@ import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.TemplateType;
 
 /** Translates expressions, overriding methods for special-case idom behavior. */
-public class IncrementalDomTranslateExprNodeVisitor extends TranslateExprNodeVisitor {
+final class IncrementalDomTranslateExprNodeVisitor extends TranslateExprNodeVisitor {
   public IncrementalDomTranslateExprNodeVisitor(
       JavaScriptValueFactoryImpl javaScriptValueFactory,
       TranslationContext translationContext,
       TemplateAliases templateAliases,
       ErrorReporter errorReporter,
-      Expression dataSource,
       ScopedJsTypeRegistry jsTypeRegistry) {
     super(
         javaScriptValueFactory,
         translationContext,
         templateAliases,
         errorReporter,
-        dataSource,
         jsTypeRegistry);
   }
 
@@ -96,7 +94,7 @@ public class IncrementalDomTranslateExprNodeVisitor extends TranslateExprNodeVis
     }
     // Use module syntax when generating toggle code for IDOM
     if (soyFunction instanceof BuiltinFunction) {
-      if ((BuiltinFunction) soyFunction == BuiltinFunction.EVAL_TOGGLE) {
+      if (soyFunction == BuiltinFunction.EVAL_TOGGLE) {
         return super.visitToggleFunction(node, true);
       }
     }

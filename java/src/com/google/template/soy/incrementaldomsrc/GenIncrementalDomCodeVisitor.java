@@ -44,7 +44,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.SourceLocation.ByteSpan;
 import com.google.template.soy.base.internal.SanitizedContentKind;
-import com.google.template.soy.incrementaldomsrc.GenIncrementalDomExprsVisitor.GenIncrementalDomExprsVisitorFactory;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.dsl.ClassExpression;
 import com.google.template.soy.jssrc.dsl.ClassExpression.MethodDeclaration;
@@ -59,10 +58,13 @@ import com.google.template.soy.jssrc.dsl.Statement;
 import com.google.template.soy.jssrc.dsl.Statements;
 import com.google.template.soy.jssrc.dsl.VariableDeclaration;
 import com.google.template.soy.jssrc.internal.CanInitOutputVarVisitor;
+import com.google.template.soy.jssrc.internal.DelTemplateNamer;
 import com.google.template.soy.jssrc.internal.GenJsCodeVisitor;
+import com.google.template.soy.jssrc.internal.IsComputableAsJsExprsVisitor;
 import com.google.template.soy.jssrc.internal.JavaScriptValueFactoryImpl;
 import com.google.template.soy.jssrc.internal.JsRuntime;
 import com.google.template.soy.jssrc.internal.JsType;
+import com.google.template.soy.jssrc.internal.OutputVarHandler;
 import com.google.template.soy.jssrc.internal.StandardNames;
 import com.google.template.soy.jssrc.internal.TranslateExprNodeVisitor;
 import com.google.template.soy.passes.ShouldEnsureDataIsDefinedVisitor;
@@ -98,23 +100,23 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
   private TemplateNode currentTemplateNode;
 
   GenIncrementalDomCodeVisitor(
+      IdomVisitorsState state,
       SoyJsSrcOptions jsSrcOptions,
       JavaScriptValueFactoryImpl javaScriptValueFactory,
-      IncrementalDomDelTemplateNamer incrementalDomDelTemplateNamer,
-      IncrementalDomGenCallCodeUtils genCallCodeUtils,
-      IsComputableAsIncrementalDomExprsVisitor isComputableAsJsExprsVisitor,
+      DelTemplateNamer incrementalDomDelTemplateNamer,
+      IsComputableAsJsExprsVisitor isComputableAsJsExprsVisitor,
       CanInitOutputVarVisitor canInitOutputVarVisitor,
-      GenIncrementalDomExprsVisitorFactory genIncrementalDomExprsVisitorFactory,
-      SoyTypeRegistry typeRegistry) {
+      SoyTypeRegistry typeRegistry,
+      OutputVarHandler outputVarHandler) {
     super(
+        state,
         jsSrcOptions,
         javaScriptValueFactory,
         incrementalDomDelTemplateNamer,
-        genCallCodeUtils,
         isComputableAsJsExprsVisitor,
         canInitOutputVarVisitor,
-        genIncrementalDomExprsVisitorFactory,
-        typeRegistry);
+        typeRegistry,
+        outputVarHandler);
     contentKind = new ArrayDeque<>();
   }
 
@@ -203,7 +205,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
         getJsCodeBuilder()
             .append(
                 Statements.assign(
-                    id(alias + modifiableDefaultImplSuffix)
+                    id(alias + MODIFIABLE_DEFAULT_IMPL_SUFFIX)
                         .castAs(
                             "!" + ELEMENT_LIB_IDOM.alias() + ".IdomFunction",
                             ImmutableSet.of(ELEMENT_LIB_IDOM))
@@ -538,25 +540,12 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
       outputVars.pushOutputVar("output");
       outputVars.setOutputVarInited();
     }
-    var visitor =
-        new GenIncrementalDomTemplateBodyVisitor(
-            outputVars,
-            jsSrcOptions,
-            javaScriptValueFactory,
-            genCallCodeUtils,
-            isComputableAsJsExprsVisitor,
-            canInitOutputVarVisitor,
-            genJsExprsVisitor,
-            errorReporter,
-            templateTranslationContext,
-            templateAliases,
-            contentKind,
-            staticVarDeclarations,
-            generatePositionalParamsSignature,
-            fileSetMetadata,
-            alias,
-            jsTypeRegistry);
+    ((IdomVisitorsState) state).enterCall(alias, contentKind);
+    GenIncrementalDomTemplateBodyVisitor visitor =
+        (GenIncrementalDomTemplateBodyVisitor) state.createTemplateBodyVisitor(genJsExprsVisitor);
     Statement body = Statements.of(visitor.visitChildren(node));
+    staticVarDeclarations.addAll(visitor.getStaticVarDeclarations());
+    ((IdomVisitorsState) state).exitCall();
 
     if (isTextTemplate) {
       VariableDeclaration declare =
@@ -853,13 +842,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
 
   @Override
   protected TranslateExprNodeVisitor getExprTranslator() {
-    return new IncrementalDomTranslateExprNodeVisitor(
-        javaScriptValueFactory,
-        templateTranslationContext,
-        templateAliases,
-        errorReporter,
-        OPT_DATA,
-        jsTypeRegistry);
+    return state.createTranslateExprNodeVisitor();
   }
 
   @Override

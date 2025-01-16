@@ -17,10 +17,12 @@
 package com.google.template.soy.incrementaldomsrc;
 
 import com.google.template.soy.base.internal.SanitizedContentKind;
-import com.google.template.soy.incrementaldomsrc.GenIncrementalDomExprsVisitor.GenIncrementalDomExprsVisitorFactory;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.Expression;
+import com.google.template.soy.jssrc.internal.DelTemplateNamer;
 import com.google.template.soy.jssrc.internal.GenCallCodeUtils;
+import com.google.template.soy.jssrc.internal.IsComputableAsJsExprsVisitor;
+import com.google.template.soy.jssrc.internal.VisitorsState;
 import com.google.template.soy.soytree.CallParamContentNode;
 
 /**
@@ -30,13 +32,10 @@ import com.google.template.soy.soytree.CallParamContentNode;
  */
 final class IncrementalDomGenCallCodeUtils extends GenCallCodeUtils {
   IncrementalDomGenCallCodeUtils(
-      IncrementalDomDelTemplateNamer incrementalDomDelTemplateNamer,
-      IsComputableAsIncrementalDomExprsVisitor isComputableAsIncrementalDomExprsVisitor,
-      GenIncrementalDomExprsVisitorFactory genIncrementalDomExprsVisitorFactory) {
-    super(
-        incrementalDomDelTemplateNamer,
-        isComputableAsIncrementalDomExprsVisitor,
-        genIncrementalDomExprsVisitorFactory);
+      VisitorsState state,
+      DelTemplateNamer incrementalDomDelTemplateNamer,
+      IsComputableAsJsExprsVisitor isComputableAsIncrementalDomExprsVisitor) {
+    super(state, incrementalDomDelTemplateNamer, isComputableAsIncrementalDomExprsVisitor);
   }
 
   /** Never wrap contents as SanitizedContent if HTML or ATTRIBUTES. */

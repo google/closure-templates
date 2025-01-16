@@ -18,71 +18,35 @@ package com.google.template.soy.incrementaldomsrc;
 
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.jssrc.dsl.Expression;
+import com.google.template.soy.jssrc.internal.GenCallCodeUtils;
 import com.google.template.soy.jssrc.internal.GenJsCodeVisitor.ScopedJsTypeRegistry;
 import com.google.template.soy.jssrc.internal.GenJsExprsVisitor;
-import com.google.template.soy.jssrc.internal.GenJsExprsVisitor.GenJsExprsVisitorFactory;
-import com.google.template.soy.jssrc.internal.JavaScriptValueFactoryImpl;
+import com.google.template.soy.jssrc.internal.IsComputableAsJsExprsVisitor;
 import com.google.template.soy.jssrc.internal.TemplateAliases;
-import com.google.template.soy.jssrc.internal.TranslateExprNodeVisitor;
 import com.google.template.soy.jssrc.internal.TranslationContext;
+import com.google.template.soy.jssrc.internal.VisitorsState;
 import com.google.template.soy.soytree.SoyNode;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Supplier;
 
 /** Overrides the base class to provide the correct helpers classes. */
 public final class GenIncrementalDomExprsVisitor extends GenJsExprsVisitor {
 
-  /** Injectable factory for creating an instance of this class. */
-  public static final class GenIncrementalDomExprsVisitorFactory extends GenJsExprsVisitorFactory {
-
-    @SuppressWarnings("unchecked")
-    GenIncrementalDomExprsVisitorFactory(
-        JavaScriptValueFactoryImpl javaScriptValueFactory,
-        Supplier<IncrementalDomGenCallCodeUtils> genCallCodeUtils,
-        IsComputableAsIncrementalDomExprsVisitor isComputableAsJsExprsVisitor) {
-      super(javaScriptValueFactory, (Supplier) genCallCodeUtils, isComputableAsJsExprsVisitor);
-    }
-
-    @Override
-    public GenIncrementalDomExprsVisitor create(
-        TranslationContext translationContext,
-        TemplateAliases templateAliases,
-        ErrorReporter errorReporter,
-        Expression dataSource,
-        ScopedJsTypeRegistry jsTypeRegistry) {
-      return new GenIncrementalDomExprsVisitor(
-          javaScriptValueFactory,
-          (IncrementalDomGenCallCodeUtils) genCallCodeUtils.get(),
-          (IsComputableAsIncrementalDomExprsVisitor) isComputableAsJsExprsVisitor,
-          this,
-          translationContext,
-          errorReporter,
-          templateAliases,
-          dataSource,
-          jsTypeRegistry);
-    }
-  }
-
   public GenIncrementalDomExprsVisitor(
-      JavaScriptValueFactoryImpl javaScriptValueFactory,
-      IncrementalDomGenCallCodeUtils genCallCodeUtils,
-      IsComputableAsIncrementalDomExprsVisitor isComputableAsJsExprsVisitor,
-      GenIncrementalDomExprsVisitorFactory genIncrementalDomExprsVisitorFactory,
+      VisitorsState state,
+      GenCallCodeUtils genCallCodeUtils,
+      IsComputableAsJsExprsVisitor isComputableAsJsExprsVisitor,
       TranslationContext translationContext,
       ErrorReporter errorReporter,
       TemplateAliases templateAliases,
-      Expression dataSource,
       ScopedJsTypeRegistry jsTypeRegistry) {
     super(
-        javaScriptValueFactory,
+        state,
         genCallCodeUtils,
         isComputableAsJsExprsVisitor,
-        genIncrementalDomExprsVisitorFactory,
         translationContext,
         errorReporter,
         templateAliases,
-        dataSource,
         jsTypeRegistry);
   }
 
@@ -91,16 +55,5 @@ public final class GenIncrementalDomExprsVisitor extends GenJsExprsVisitor {
     chunks = new ArrayList<>();
     visit(node);
     return chunks;
-  }
-
-  @Override
-  protected TranslateExprNodeVisitor getExprTranslator() {
-    return new IncrementalDomTranslateExprNodeVisitor(
-        javaScriptValueFactory,
-        translationContext,
-        templateAliases,
-        errorReporter,
-        dataSource,
-        jsTypeRegistry);
   }
 }

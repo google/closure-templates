@@ -16,6 +16,7 @@
 
 package com.google.template.soy.jssrc.internal;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static com.google.template.soy.jssrc.dsl.Expressions.dottedIdNoRequire;
 import static com.google.template.soy.jssrc.dsl.Expressions.id;
@@ -24,7 +25,6 @@ import static com.google.template.soy.jssrc.dsl.Statements.forLoop;
 import static com.google.template.soy.jssrc.dsl.Statements.ifStatement;
 import static com.google.template.soy.jssrc.dsl.Statements.switchValue;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_IS_OBJECT;
-import static com.google.template.soy.jssrc.internal.JsRuntime.OPT_DATA;
 import static com.google.template.soy.jssrc.internal.JsRuntime.WINDOW_CONSOLE_LOG;
 import static com.google.template.soy.jssrc.internal.JsRuntime.sanitizedContentOrdainerFunction;
 
@@ -92,6 +92,8 @@ import java.util.function.Function;
  */
 public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<Statement> {
 
+  protected final VisitorsState state;
+
   protected final OutputVarHandler outputVars;
 
   /** The options for generating JS source code. */
@@ -126,6 +128,7 @@ public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<St
   protected final ScopedJsTypeRegistry jsTypeRegistry;
 
   protected GenJsTemplateBodyVisitor(
+      VisitorsState state,
       OutputVarHandler outputVars,
       SoyJsSrcOptions jsSrcOptions,
       JavaScriptValueFactoryImpl javaScriptValueFactory,
@@ -137,17 +140,18 @@ public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<St
       TranslationContext templateTranslationContext,
       TemplateAliases templateAliases,
       ScopedJsTypeRegistry jsTypeRegistry) {
-    this.outputVars = outputVars;
-    this.jsSrcOptions = jsSrcOptions;
-    this.javaScriptValueFactory = javaScriptValueFactory;
-    this.genCallCodeUtils = genCallCodeUtils;
-    this.isComputableAsJsExprsVisitor = isComputableAsJsExprsVisitor;
-    this.canInitOutputVarVisitor = canInitOutputVarVisitor;
-    this.genJsExprsVisitor = genJsExprsVisitor;
-    this.errorReporter = errorReporter;
-    this.templateTranslationContext = templateTranslationContext;
-    this.templateAliases = templateAliases;
-    this.jsTypeRegistry = jsTypeRegistry;
+    this.state = checkNotNull(state);
+    this.outputVars = checkNotNull(outputVars);
+    this.jsSrcOptions = checkNotNull(jsSrcOptions);
+    this.javaScriptValueFactory = checkNotNull(javaScriptValueFactory);
+    this.genCallCodeUtils = checkNotNull(genCallCodeUtils);
+    this.isComputableAsJsExprsVisitor = checkNotNull(isComputableAsJsExprsVisitor);
+    this.canInitOutputVarVisitor = checkNotNull(canInitOutputVarVisitor);
+    this.genJsExprsVisitor = checkNotNull(genJsExprsVisitor);
+    this.errorReporter = checkNotNull(errorReporter);
+    this.templateTranslationContext = checkNotNull(templateTranslationContext);
+    this.templateAliases = checkNotNull(templateAliases);
+    this.jsTypeRegistry = checkNotNull(jsTypeRegistry);
   }
 
   @Override
@@ -224,17 +228,7 @@ public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<St
 
   protected GenJsCodeVisitorAssistantForMsgs getAssistantForMsgs() {
     if (assistantForMsgs == null) {
-      assistantForMsgs =
-          new GenJsCodeVisitorAssistantForMsgs(
-              /* master= */ this,
-              jsSrcOptions,
-              genCallCodeUtils,
-              isComputableAsJsExprsVisitor,
-              templateAliases,
-              genJsExprsVisitor,
-              templateTranslationContext,
-              errorReporter,
-              outputVars);
+      assistantForMsgs = state.createVisitorAssistantForMsgs(this, genJsExprsVisitor);
     }
     return assistantForMsgs;
   }
@@ -363,7 +357,7 @@ public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<St
   protected Statement visitIfNode(IfNode node) {
 
     if (isComputableAsJsExprsVisitor.exec(node)) {
-      return outputVars.addChunksToOutputVar(genJsExprsVisitor.exec(node));
+      return outputVars.addChunksToOutputVar(state.createJsExprsVisitor().exec(node));
     } else {
       return generateNonExpressionIfNode(node);
     }
@@ -379,7 +373,7 @@ public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<St
 
         // Convert predicate.
         Expression predicate =
-            getExprTranslator()
+            createExprTranslator()
                 .maybeCoerceToBoolean(
                     condNode.getExpr().getType(), translateExpr(condNode.getExpr()), false);
         // Convert body.
@@ -487,18 +481,12 @@ public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<St
     return switchOn;
   }
 
-  protected TranslateExprNodeVisitor getExprTranslator() {
-    return new TranslateExprNodeVisitor(
-        javaScriptValueFactory,
-        templateTranslationContext,
-        templateAliases,
-        errorReporter,
-        OPT_DATA,
-        jsTypeRegistry);
+  protected TranslateExprNodeVisitor createExprTranslator() {
+    return state.createTranslateExprNodeVisitor();
   }
 
   protected Expression translateExpr(ExprNode expr) {
-    return getExprTranslator().exec(expr);
+    return createExprTranslator().exec(expr);
   }
 
   /**
@@ -692,9 +680,7 @@ public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<St
     }
 
     // Add the call's result to the current output var.
-    Expression call =
-        genCallCodeUtils.gen(
-            node, templateAliases, templateTranslationContext, errorReporter, getExprTranslator());
+    Expression call = genCallCodeUtils.gen(node, createExprTranslator());
     if (node.isErrorFallbackSkip()) {
       VariableDeclaration callResult =
           VariableDeclaration.builder(Id.create("call_" + node.getId())).setRhs(call).build();
@@ -814,7 +800,7 @@ public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<St
         outputVars.addChunksToOutputVar(
             ImmutableList.of(
                 Expressions.stringLiteral("<velog"),
-                getExprTranslator().exec(funcNode),
+                createExprTranslator().exec(funcNode),
                 Expressions.stringLiteral(">"))));
     statements.addAll(visitChildren(node));
     statements.add(outputVars.addChunkToOutputVar(Expressions.stringLiteral("</velog>")));

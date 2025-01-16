@@ -17,11 +17,10 @@
 package com.google.template.soy.incrementaldomsrc;
 
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.incrementaldomsrc.GenIncrementalDomExprsVisitor.GenIncrementalDomExprsVisitorFactory;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.internal.i18n.SoyBidiUtils;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
-import com.google.template.soy.jssrc.internal.CanInitOutputVarVisitor;
+import com.google.template.soy.jssrc.internal.GenJsCodeVisitor;
 import com.google.template.soy.jssrc.internal.JavaScriptValueFactoryImpl;
 import com.google.template.soy.passes.CombineConsecutiveRawTextNodesPass;
 import com.google.template.soy.shared.internal.SoyScopedData;
@@ -30,7 +29,6 @@ import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.types.SoyTypeRegistry;
 import java.util.Collections;
 import java.util.List;
-import java.util.function.Supplier;
 
 /** Main entry point for the Incremental DOM JS Src backend (output target). */
 public class IncrementalDomSrcMain {
@@ -90,42 +88,15 @@ public class IncrementalDomSrcMain {
     }
   }
 
-  static GenIncrementalDomCodeVisitor createVisitor(
+  static GenJsCodeVisitor createVisitor(
       SoyJsSrcOptions options,
       SoyTypeRegistry typeRegistry,
       BidiGlobalDir dir,
       ErrorReporter errorReporter) {
-    IncrementalDomDelTemplateNamer delTemplateNamer = new IncrementalDomDelTemplateNamer();
-    IsComputableAsIncrementalDomExprsVisitor isComputableAsJsExprsVisitor =
-        new IsComputableAsIncrementalDomExprsVisitor();
     JavaScriptValueFactoryImpl javaScriptValueFactory =
         new JavaScriptValueFactoryImpl(dir, errorReporter);
-    CanInitOutputVarVisitor canInitOutputVarVisitor =
-        new CanInitOutputVarVisitor(isComputableAsJsExprsVisitor);
-    // TODO(lukes): eliminate this supplier.  See commend in JsSrcMain for more information.
-    class GenCallCodeUtilsSupplier implements Supplier<IncrementalDomGenCallCodeUtils> {
-      GenIncrementalDomExprsVisitorFactory factory;
-
-      @Override
-      public IncrementalDomGenCallCodeUtils get() {
-        return new IncrementalDomGenCallCodeUtils(
-            delTemplateNamer, isComputableAsJsExprsVisitor, factory);
-      }
-    }
-    GenCallCodeUtilsSupplier supplier = new GenCallCodeUtilsSupplier();
-    GenIncrementalDomExprsVisitorFactory genJsExprsVisitorFactory =
-        new GenIncrementalDomExprsVisitorFactory(
-            javaScriptValueFactory, supplier, isComputableAsJsExprsVisitor);
-    supplier.factory = genJsExprsVisitorFactory;
-
-    return new GenIncrementalDomCodeVisitor(
-        options,
-        javaScriptValueFactory,
-        delTemplateNamer,
-        supplier.get(),
-        isComputableAsJsExprsVisitor,
-        canInitOutputVarVisitor,
-        genJsExprsVisitorFactory,
-        typeRegistry);
+    IdomVisitorsState visitorsState =
+        new IdomVisitorsState(options, javaScriptValueFactory, typeRegistry);
+    return visitorsState.createGenJsCodeVisitor();
   }
 }

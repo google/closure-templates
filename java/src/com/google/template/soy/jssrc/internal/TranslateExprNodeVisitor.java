@@ -40,6 +40,7 @@ import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_GET_CSS_NAME
 import static com.google.template.soy.jssrc.internal.JsRuntime.IJ_DATA;
 import static com.google.template.soy.jssrc.internal.JsRuntime.JS_TO_PROTO_PACK_FN;
 import static com.google.template.soy.jssrc.internal.JsRuntime.MARK_TEMPLATE;
+import static com.google.template.soy.jssrc.internal.JsRuntime.OPT_DATA;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SERIALIZE_KEY;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_CHECK_NOT_NULL;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_COERCE_TO_BOOLEAN;
@@ -212,22 +213,10 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
   private static final SoyErrorKind SOY_JS_SRC_BAD_LIST_TO_MAP_CONSTRUCTOR =
       SoyErrorKind.of("List to map constructor encloses ''{0}'', which is not a list.");
 
-  /**
-   * The current replacement JS expressions for the local variables (and foreach-loop special
-   * functions) current in scope.
-   */
   private final TranslationContext translationContext;
-
   private final JavaScriptValueFactoryImpl javascriptValueFactory;
   private final ErrorReporter errorReporter;
   private final TemplateAliases templateAliases;
-
-  /**
-   * An expression that represents the data parameter to read params from. Defaults to {@code
-   * OPT_DATA}.
-   */
-  private final Expression dataSource;
-
   private final ScopedJsTypeRegistry jsTypeRegistry;
 
   public TranslateExprNodeVisitor(
@@ -235,18 +224,12 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
       TranslationContext translationContext,
       TemplateAliases templateAliases,
       ErrorReporter errorReporter,
-      Expression dataSource,
       ScopedJsTypeRegistry jsTypeRegistry) {
-    this.javascriptValueFactory = javascriptValueFactory;
-    this.errorReporter = errorReporter;
-    this.translationContext = translationContext;
-    this.templateAliases = templateAliases;
-    this.dataSource = dataSource;
-    this.jsTypeRegistry = jsTypeRegistry;
-  }
-
-  public Expression getDataSource() {
-    return dataSource;
+    this.javascriptValueFactory = checkNotNull(javascriptValueFactory);
+    this.errorReporter = checkNotNull(errorReporter);
+    this.translationContext = checkNotNull(translationContext);
+    this.templateAliases = checkNotNull(templateAliases);
+    this.jsTypeRegistry = checkNotNull(jsTypeRegistry);
   }
 
   @Override
@@ -262,7 +245,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
    * @return The code to access the value of that parameter.
    */
   Expression genCodeForParamAccess(String paramName, VarDefn varDefn) {
-    Expression source = dataSource;
+    Expression source = OPT_DATA;
     checkState(
         varDefn instanceof TemplateParam || varDefn instanceof TemplateStateVar,
         "expected a parameter type, got, %s",

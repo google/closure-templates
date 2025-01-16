@@ -19,7 +19,6 @@ package com.google.template.soy.jssrc.internal;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
-import static com.google.template.soy.jssrc.internal.JsRuntime.OPT_DATA;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableSet;
@@ -27,6 +26,7 @@ import com.google.protobuf.Descriptors.GenericDescriptor;
 import com.google.template.soy.base.internal.UniqueNameGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
+import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.Expressions;
 import com.google.template.soy.jssrc.dsl.FormatOptions;
@@ -34,6 +34,7 @@ import com.google.template.soy.jssrc.internal.GenJsCodeVisitor.ScopedJsTypeRegis
 import com.google.template.soy.shared.internal.InternalPlugins;
 import com.google.template.soy.shared.internal.NoOpScopedData;
 import com.google.template.soy.soytree.CallNode;
+import com.google.template.soy.soytree.Metadata;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateNode;
@@ -44,9 +45,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-/**
- * Unit tests for {@link GenCallCodeUtils}.
- */
+/** Unit tests for {@link GenCallCodeUtils}. */
 @RunWith(JUnit4.class)
 public final class GenCallCodeUtilsTest {
 
@@ -161,7 +160,14 @@ public final class GenCallCodeUtilsTest {
             .filter(d -> escapingDirectives.contains(d.getName()))
             .collect(toImmutableList()));
 
-    GenCallCodeUtils genCallCodeUtils = JsSrcTestUtils.createGenCallCodeUtils();
+    ErrorReporter errorReporter = ErrorReporter.exploding();
+    VisitorsState visitorsState =
+        new VisitorsState(
+            SoyJsSrcOptions.getDefault(),
+            new JavaScriptValueFactoryImpl(BidiGlobalDir.LTR, errorReporter),
+            SharedTestUtils.importing(desc));
+    visitorsState.enterFileSet(Metadata.EMPTY_FILESET, errorReporter);
+
     UniqueNameGenerator nameGenerator = JsSrcNameGenerators.forLocalVariables();
     TranslationContext translationContext =
         TranslationContext.of(
@@ -169,22 +175,11 @@ public final class GenCallCodeUtilsTest {
                 .put("$boo", Expressions.id("boo"))
                 .put("$goo", Expressions.id("goo")),
             nameGenerator);
-    ErrorReporter errorReporter = ErrorReporter.exploding();
-    TranslateExprNodeVisitor exprTranslator =
-        new TranslateExprNodeVisitor(
-            new JavaScriptValueFactoryImpl(BidiGlobalDir.LTR, errorReporter),
-            translationContext,
-            AliasUtils.IDENTITY_ALIASES,
-            errorReporter,
-            OPT_DATA,
-            ScopedJsTypeRegistry.PASSTHROUGH);
+    visitorsState.enterFile(
+        translationContext, ScopedJsTypeRegistry.PASSTHROUGH, AliasUtils.IDENTITY_ALIASES);
     CodeChunk call =
-        genCallCodeUtils.gen(
-            callNode,
-            AliasUtils.IDENTITY_ALIASES,
-            translationContext,
-            errorReporter,
-            exprTranslator);
+        visitorsState.genCallCodeUtils.gen(
+            callNode, visitorsState.createTranslateExprNodeVisitor());
     return call.getCode(FormatOptions.JSSRC);
   }
 }

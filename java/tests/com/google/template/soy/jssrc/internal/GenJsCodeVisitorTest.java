@@ -17,8 +17,8 @@
 package com.google.template.soy.jssrc.internal;
 
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.template.soy.error.ErrorReporter.exploding;
 import static com.google.template.soy.jssrc.dsl.Expressions.id;
-import static com.google.template.soy.jssrc.internal.JsRuntime.OPT_DATA;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
@@ -32,6 +32,7 @@ import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.jssrc.dsl.JsCodeBuilder;
 import com.google.template.soy.jssrc.internal.GenJsCodeVisitor.ScopedJsTypeRegistry;
+import com.google.template.soy.soytree.Metadata;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.testing.SharedTestUtils;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
@@ -53,18 +54,20 @@ public final class GenJsCodeVisitorTest {
 
   private static final TemplateAliases TEMPLATE_ALIASES = AliasUtils.IDENTITY_ALIASES;
 
+  private VisitorsState visitorsState;
   private SoyJsSrcOptions jsSrcOptions;
   private GenJsCodeVisitor genJsCodeVisitor;
 
   @Before
   public void setUp() {
     jsSrcOptions = SoyJsSrcOptions.getDefault();
-    genJsCodeVisitor =
-        JsSrcMain.createVisitor(
+    visitorsState =
+        new VisitorsState(
             jsSrcOptions,
-            SoyTypeRegistryBuilder.create(),
-            BidiGlobalDir.LTR,
-            ErrorReporter.exploding());
+            new JavaScriptValueFactoryImpl(BidiGlobalDir.LTR, exploding()),
+            SoyTypeRegistryBuilder.create());
+    visitorsState.enterFileSet(Metadata.EMPTY_FILESET, exploding());
+    genJsCodeVisitor = visitorsState.createGenJsCodeVisitor();
     genJsCodeVisitor.templateAliases = TEMPLATE_ALIASES;
   }
 
@@ -107,8 +110,7 @@ public final class GenJsCodeVisitorTest {
             + "\n";
 
     List<String> jsFilesContents =
-        genJsCodeVisitor.gen(
-            parseResult.fileSet(), parseResult.registry(), ErrorReporter.exploding());
+        genJsCodeVisitor.gen(parseResult.fileSet(), parseResult.registry(), exploding());
     assertThat(jsFilesContents.get(0)).startsWith(expectedJsFileContentStart);
   }
 
@@ -345,9 +347,7 @@ public final class GenJsCodeVisitorTest {
     String soyNodeCode = "{let $text kind=\"text\"}foo{/let}{let $html kind=\"html\"}foo{/let}\n";
     ParseResult parseResult = SoyFileSetParserBuilder.forTemplateContents(soyNodeCode).parse();
     String jsFilesContents =
-        genJsCodeVisitor
-            .gen(parseResult.fileSet(), parseResult.registry(), ErrorReporter.exploding())
-            .get(0);
+        genJsCodeVisitor.gen(parseResult.fileSet(), parseResult.registry(), exploding()).get(0);
     assertThat(jsFilesContents).contains("goog.require('soy')");
   }
 
@@ -478,8 +478,7 @@ public final class GenJsCodeVisitorTest {
 
     jsSrcOptions = SoyJsSrcOptions.builder().setShouldProvideRequireSoyNamespaces(true).build();
     List<String> jsFilesContents =
-        genJsCodeVisitor.gen(
-            parseResult.fileSet(), parseResult.registry(), ErrorReporter.exploding());
+        genJsCodeVisitor.gen(parseResult.fileSet(), parseResult.registry(), exploding());
     assertThat(jsFilesContents.get(0)).contains("goog.require('xid');");
   }
 
@@ -1018,7 +1017,7 @@ public final class GenJsCodeVisitorTest {
     genJsCodeVisitor.jsCodeBuilder = new JsCodeBuilder(null);
     ParseResult parseResult = SoyFileSetParserBuilder.forFileContents(testFileContent).parse();
     TemplateNode template = (TemplateNode) SharedTestUtils.getNode(parseResult.fileSet());
-    genJsCodeVisitor.visitForTesting(template, parseResult.registry(), ErrorReporter.exploding());
+    genJsCodeVisitor.visitForTesting(template, parseResult.registry(), exploding());
     assertThat(genJsCodeVisitor.jsCodeBuilder.getCode().toString()).isEqualTo(expectedJsCode);
   }
 
@@ -1046,17 +1045,10 @@ public final class GenJsCodeVisitorTest {
         TranslationContext.of(
             SoyToJsVariableMappings.startingWith(LOCAL_VAR_TRANSLATIONS), nameGenerator);
     genJsCodeVisitor.templateTranslationContext = translationContext;
-    genJsCodeVisitor.genJsExprsVisitor =
-        JsSrcTestUtils.createGenJsExprsVisitorFactory()
-            .create(
-                translationContext,
-                TEMPLATE_ALIASES,
-                ErrorReporter.exploding(),
-                OPT_DATA,
-                ScopedJsTypeRegistry.PASSTHROUGH);
 
-    genJsCodeVisitor.jsCodeBuilder.append(
-        genJsCodeVisitor.visitTemplateNodeChildren(templateNode, ErrorReporter.exploding()));
+    visitorsState.enterFile(translationContext, ScopedJsTypeRegistry.PASSTHROUGH, TEMPLATE_ALIASES);
+    genJsCodeVisitor.genJsExprsVisitor = visitorsState.createJsExprsVisitor();
+    genJsCodeVisitor.jsCodeBuilder.append(genJsCodeVisitor.visitTemplateNodeChildren(templateNode));
 
     String genCode = genJsCodeVisitor.jsCodeBuilder.getCode().toString();
     assertThat(genCode).isEqualTo(expectedJsCode);

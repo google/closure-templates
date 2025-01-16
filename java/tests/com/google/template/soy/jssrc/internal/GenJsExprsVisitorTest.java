@@ -18,21 +18,24 @@ package com.google.template.soy.jssrc.internal;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.template.soy.jssrc.dsl.Expressions.id;
-import static com.google.template.soy.jssrc.internal.JsRuntime.OPT_DATA;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.internal.i18n.BidiGlobalDir;
+import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.jssrc.dsl.FormatOptions;
 import com.google.template.soy.jssrc.dsl.Precedence;
 import com.google.template.soy.jssrc.internal.GenJsCodeVisitor.ScopedJsTypeRegistry;
 import com.google.template.soy.jssrc.restricted.JsExpr;
+import com.google.template.soy.soytree.Metadata;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.testing.SharedTestUtils;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
+import com.google.template.soy.types.SoyTypeRegistryBuilder;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.Test;
@@ -228,16 +231,19 @@ public final class GenJsExprsVisitorTest {
         SoyFileSetParserBuilder.forTemplateContents(soyCode).errorReporter(boom).parse().fileSet();
     SoyNode node = SharedTestUtils.getNode(soyTree, indicesToNode);
 
-    GenJsExprsVisitor visitor =
-        JsSrcTestUtils.createGenJsExprsVisitorFactory()
-            .create(
-                TranslationContext.of(
-                    SoyToJsVariableMappings.startingWith(LOCAL_VAR_TRANSLATIONS),
-                    JsSrcNameGenerators.forLocalVariables()),
-                AliasUtils.IDENTITY_ALIASES,
-                boom,
-                OPT_DATA,
-                ScopedJsTypeRegistry.PASSTHROUGH);
+    VisitorsState visitorsState =
+        new VisitorsState(
+            SoyJsSrcOptions.getDefault(),
+            new JavaScriptValueFactoryImpl(BidiGlobalDir.LTR, boom),
+            SoyTypeRegistryBuilder.create());
+    visitorsState.enterFileSet(Metadata.EMPTY_FILESET, boom);
+    visitorsState.enterFile(
+        TranslationContext.of(
+            SoyToJsVariableMappings.startingWith(LOCAL_VAR_TRANSLATIONS),
+            JsSrcNameGenerators.forLocalVariables()),
+        ScopedJsTypeRegistry.PASSTHROUGH,
+        AliasUtils.IDENTITY_ALIASES);
+    GenJsExprsVisitor visitor = visitorsState.createJsExprsVisitor();
     return visitor.exec(node);
   }
 }

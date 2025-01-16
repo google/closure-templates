@@ -16,6 +16,7 @@
 
 package com.google.template.soy.jssrc.internal;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.template.soy.jssrc.dsl.Expressions.LITERAL_EMPTY_STRING;
 import static com.google.template.soy.jssrc.dsl.Expressions.LITERAL_NULL;
@@ -30,7 +31,6 @@ import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.internal.SanitizedContentKind;
-import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
@@ -39,8 +39,6 @@ import com.google.template.soy.jssrc.dsl.Expressions;
 import com.google.template.soy.jssrc.dsl.FormatOptions;
 import com.google.template.soy.jssrc.dsl.GoogRequire;
 import com.google.template.soy.jssrc.dsl.Id;
-import com.google.template.soy.jssrc.internal.GenJsCodeVisitor.ScopedJsTypeRegistry;
-import com.google.template.soy.jssrc.internal.GenJsExprsVisitor.GenJsExprsVisitorFactory;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.ModernSoyJsSrcPrintDirective;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcPrintDirective;
@@ -64,6 +62,7 @@ import java.util.Optional;
 
 /** Generates JS code for {call}s and {delcall}s. */
 public class GenCallCodeUtils {
+
   /**
    * Returns true if the given template has a positional signature where all explicit {@code @param}
    * declarations are exploded into explicit parameters.
@@ -89,22 +88,21 @@ public class GenCallCodeUtils {
         && !type.isModifying();
   }
 
+  private final VisitorsState state;
+
   /** Instance of DelTemplateNamer to use. */
   private final DelTemplateNamer delTemplateNamer;
 
   /** The IsComputableAsJsExprsVisitor used by this instance. */
   private final IsComputableAsJsExprsVisitor isComputableAsJsExprsVisitor;
 
-  /** Factory for creating an instance of GenJsExprsVisitor. */
-  private final GenJsExprsVisitorFactory genJsExprsVisitorFactory;
-
   protected GenCallCodeUtils(
+      VisitorsState state,
       DelTemplateNamer delTemplateNamer,
-      IsComputableAsJsExprsVisitor isComputableAsJsExprsVisitor,
-      GenJsExprsVisitorFactory genJsExprsVisitorFactory) {
-    this.delTemplateNamer = delTemplateNamer;
-    this.isComputableAsJsExprsVisitor = isComputableAsJsExprsVisitor;
-    this.genJsExprsVisitorFactory = genJsExprsVisitorFactory;
+      IsComputableAsJsExprsVisitor isComputableAsJsExprsVisitor) {
+    this.state = checkNotNull(state);
+    this.delTemplateNamer = checkNotNull(delTemplateNamer);
+    this.isComputableAsJsExprsVisitor = checkNotNull(isComputableAsJsExprsVisitor);
   }
 
   /**
@@ -146,18 +144,12 @@ public class GenCallCodeUtils {
    * that code has been generated to define the temporary variable 'param&lt;n&gt;'.
    *
    * @param callNode The call to generate code for.
-   * @param templateAliases A mapping of fully qualified calls to a variable in scope.
    * @return The JS expression for the call.
    */
-  public Expression gen(
-      CallNode callNode,
-      TemplateAliases templateAliases,
-      TranslationContext translationContext,
-      ErrorReporter errorReporter,
-      TranslateExprNodeVisitor exprTranslator) {
+  public Expression gen(CallNode callNode, TranslateExprNodeVisitor exprTranslator) {
 
     // Build the JS CodeChunk for the callee's name.
-    Callee callee = genCallee(callNode, templateAliases, exprTranslator);
+    Callee callee = genCallee(callNode, exprTranslator);
 
     // Generate the data object to pass to callee
     Expression call;
@@ -166,20 +158,12 @@ public class GenCallCodeUtils {
       params.add(JsRuntime.SOY_INTERNAL_CALL_MARKER);
       params.add(JsRuntime.IJ_DATA);
       params.addAll(
-          getPositionalParams(
-              (CallBasicNode) callNode,
-              templateAliases,
-              translationContext,
-              errorReporter,
-              exprTranslator,
-              hasVariant(callNode)));
+          getPositionalParams((CallBasicNode) callNode, exprTranslator, hasVariant(callNode)));
       maybeAddVariantParam(callNode, exprTranslator, params);
       call = callee.positionalStyle().get().call(params);
     } else {
       List<Expression> params = new ArrayList<>();
-      params.add(
-          genObjToPass(
-              callNode, templateAliases, translationContext, errorReporter, exprTranslator));
+      params.add(genObjToPass(callNode, exprTranslator));
       params.add(JsRuntime.IJ_DATA);
       maybeAddVariantParam(callNode, exprTranslator, params);
       call = callee.objectStyle().call(params);
@@ -207,15 +191,8 @@ public class GenCallCodeUtils {
   }
 
   public List<Expression> getPositionalParams(
-      CallBasicNode callNode,
-      TemplateAliases templateAliases,
-      TranslationContext translationContext,
-      ErrorReporter errorReporter,
-      TranslateExprNodeVisitor exprTranslator,
-      boolean hasVariant) {
-    Map<String, Expression> explicitParams =
-        getExplicitParams(
-            callNode, templateAliases, translationContext, errorReporter, exprTranslator);
+      CallBasicNode callNode, TranslateExprNodeVisitor exprTranslator, boolean hasVariant) {
+    Map<String, Expression> explicitParams = getExplicitParams(callNode, exprTranslator);
     // to perform the call we need to pass these params in the correct order
     List<Expression> params = new ArrayList<>();
     int numTrailingUndefineds = 0;
@@ -306,11 +283,9 @@ public class GenCallCodeUtils {
 
   /**
    * @param callNode The call to generate code for.
-   * @param templateAliases A mapping of fully qualified calls to a variable in scope.
    * @return The JS expression for the template to call
    */
-  public Callee genCallee(
-      CallNode callNode, TemplateAliases templateAliases, TranslateExprNodeVisitor exprTranslator) {
+  public Callee genCallee(CallNode callNode, TranslateExprNodeVisitor exprTranslator) {
     // Build the JS CodeChunk for the callee's name.
     Expression callee;
     if (callNode instanceof CallBasicNode) {
@@ -318,7 +293,8 @@ public class GenCallCodeUtils {
       CallBasicNode callBasicNode = (CallBasicNode) callNode;
       if (callBasicNode.isStaticCall()) {
         // Skip checks for the common case of synthetic template literals.
-        callee = Expressions.dottedIdNoRequire(templateAliases.get(callBasicNode.getCalleeName()));
+        callee =
+            Expressions.dottedIdNoRequire(state.templateAliases.get(callBasicNode.getCalleeName()));
       } else {
         callee = exprTranslator.exec(callBasicNode.getCalleeExpr());
       }
@@ -347,7 +323,7 @@ public class GenCallCodeUtils {
       positional =
           Optional.of(
               dottedIdNoRequire(
-                  templateAliases.get(
+                  state.templateAliases.get(
                           ((TemplateLiteralNode)
                                   ((CallBasicNode) callNode).getCalleeExpr().getRoot())
                               .getResolvedName())
@@ -396,15 +372,9 @@ public class GenCallCodeUtils {
    * that code has been generated to define the temporary variable 'param&lt;n&gt;'.
    *
    * @param callNode The call to generate code for.
-   * @param templateAliases A mapping of fully qualified calls to a variable in scope.
    * @return The JS expression for the object to pass in the call.
    */
-  public Expression genObjToPass(
-      CallNode callNode,
-      TemplateAliases templateAliases,
-      TranslationContext translationContext,
-      ErrorReporter errorReporter,
-      TranslateExprNodeVisitor exprTranslator) {
+  public Expression genObjToPass(CallNode callNode, TranslateExprNodeVisitor exprTranslator) {
 
     // ------ Generate the expression for the original data to pass ------
     Optional<Expression> dataToPass = Optional.empty();
@@ -415,12 +385,10 @@ public class GenCallCodeUtils {
     }
 
     // ------ Build an object literal containing the additional params ------
-    Map<String, Expression> params =
-        getExplicitParams(
-            callNode, templateAliases, translationContext, errorReporter, exprTranslator);
+    Map<String, Expression> params = getExplicitParams(callNode, exprTranslator);
     if (callNode.isPassingAllData()) {
       Map<String, Expression> mergedParams = new LinkedHashMap<>();
-      mergedParams.putAll(getDefaultParams(callNode, translationContext));
+      mergedParams.putAll(getDefaultParams(callNode));
       mergedParams.putAll(params);
       params = mergedParams;
     }
@@ -441,11 +409,7 @@ public class GenCallCodeUtils {
   }
 
   private Map<String, Expression> getExplicitParams(
-      CallNode callNode,
-      TemplateAliases templateAliases,
-      TranslationContext translationContext,
-      ErrorReporter errorReporter,
-      TranslateExprNodeVisitor exprTranslator) {
+      CallNode callNode, TranslateExprNodeVisitor exprTranslator) {
     Map<String, Expression> params = new LinkedHashMap<>();
 
     for (CallParamNode child : callNode.getChildren()) {
@@ -458,15 +422,7 @@ public class GenCallCodeUtils {
         CallParamContentNode cpcn = (CallParamContentNode) child;
 
         if (isComputableAsJsExprsVisitor.exec(cpcn)) {
-          List<Expression> chunks =
-              genJsExprsVisitorFactory
-                  .create(
-                      translationContext,
-                      templateAliases,
-                      errorReporter,
-                      exprTranslator.getDataSource(),
-                      ScopedJsTypeRegistry.PASSTHROUGH)
-                  .exec(cpcn);
+          List<Expression> chunks = state.createJsExprsVisitor().exec(cpcn);
           value = Expressions.concatForceString(chunks);
         } else {
           // This is a param with content that cannot be represented as JS expressions, so we assume
@@ -474,7 +430,7 @@ public class GenCallCodeUtils {
           value = Id.create("param" + cpcn.getId());
         }
 
-        value = maybeWrapContent(translationContext.codeGenerator(), cpcn, value);
+        value = maybeWrapContent(state.translationContext.codeGenerator(), cpcn, value);
       }
       params.put(child.getKey().identifier(), value);
     }
@@ -482,8 +438,7 @@ public class GenCallCodeUtils {
     return params;
   }
 
-  private Map<String, Expression> getDefaultParams(
-      CallNode node, TranslationContext translationContext) {
+  private Map<String, Expression> getDefaultParams(CallNode node) {
     Map<String, Expression> defaultParams = new LinkedHashMap<>();
     for (TemplateParam param : node.getNearestAncestor(TemplateNode.class).getParams()) {
       if (param.hasDefault()) {
@@ -491,7 +446,7 @@ public class GenCallCodeUtils {
         // unset. The additional JS to figure out of a parameter is the default or not isn't worth
         // it.
         defaultParams.put(
-            param.name(), translationContext.soyToJsVariableMappings().get(param.refName()));
+            param.name(), state.translationContext.soyToJsVariableMappings().get(param.refName()));
       }
     }
     return defaultParams;

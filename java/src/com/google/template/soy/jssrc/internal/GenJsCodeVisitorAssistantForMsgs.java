@@ -16,6 +16,7 @@
 
 package com.google.template.soy.jssrc.internal;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.template.soy.jssrc.dsl.Expressions.construct;
 import static com.google.template.soy.jssrc.dsl.Expressions.id;
@@ -83,52 +84,32 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractReturningSoyNodeVi
   /** Regex pattern for an underscore-number suffix. */
   private static final Pattern UNDERSCORE_NUMBER_SUFFIX = Pattern.compile("_[0-9]+$");
 
-  /** The options for generating JS source code. */
   private final SoyJsSrcOptions jsSrcOptions;
-
-  /** Master instance of GenJsTemplateBodyVisitor. */
-  protected final GenJsTemplateBodyVisitor master;
-
-  /** Instance of GenCallCodeUtils to use. */
+  protected final GenJsTemplateBodyVisitor owner;
   private final GenCallCodeUtils genCallCodeUtils;
-
-  /** The IsComputableAsJsExprsVisitor used by this instance. */
   private final IsComputableAsJsExprsVisitor isComputableAsJsExprsVisitor;
-
-  /** The GenJsExprsVisitor used for the current template. */
   private final GenJsExprsVisitor genJsExprsVisitor;
-
-  /**
-   * Used for looking up the local name for a given template call to a fully qualified template
-   * name.
-   */
-  private final TemplateAliases templateAliases;
-
   protected final TranslationContext translationContext;
-
   private final ErrorReporter errorReporter;
-
   private final OutputVarHandler outputVars;
 
   protected GenJsCodeVisitorAssistantForMsgs(
-      GenJsTemplateBodyVisitor master,
+      GenJsTemplateBodyVisitor owner,
       SoyJsSrcOptions jsSrcOptions,
       GenCallCodeUtils genCallCodeUtils,
       IsComputableAsJsExprsVisitor isComputableAsJsExprsVisitor,
-      TemplateAliases functionAliases,
       GenJsExprsVisitor genJsExprsVisitor,
       TranslationContext translationContext,
       ErrorReporter errorReporter,
       OutputVarHandler outputVars) {
-    this.master = master;
-    this.jsSrcOptions = jsSrcOptions;
-    this.genCallCodeUtils = genCallCodeUtils;
-    this.isComputableAsJsExprsVisitor = isComputableAsJsExprsVisitor;
-    this.templateAliases = functionAliases;
-    this.genJsExprsVisitor = genJsExprsVisitor;
-    this.translationContext = translationContext;
-    this.errorReporter = errorReporter;
-    this.outputVars = outputVars;
+    this.owner = checkNotNull(owner);
+    this.jsSrcOptions = checkNotNull(jsSrcOptions);
+    this.genCallCodeUtils = checkNotNull(genCallCodeUtils);
+    this.isComputableAsJsExprsVisitor = checkNotNull(isComputableAsJsExprsVisitor);
+    this.genJsExprsVisitor = checkNotNull(genJsExprsVisitor);
+    this.translationContext = checkNotNull(translationContext);
+    this.errorReporter = checkNotNull(errorReporter);
+    this.outputVars = checkNotNull(outputVars);
   }
 
   /**
@@ -510,7 +491,7 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractReturningSoyNodeVi
   }
 
   private Expression translateExpr(ExprNode expr) {
-    return master.getExprTranslator().exec(expr);
+    return owner.createExprTranslator().exec(expr);
   }
 
   /**
@@ -593,12 +574,7 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractReturningSoyNodeVi
 
         Expression call =
             genCallCodeUtils
-                .gen(
-                    callNode,
-                    templateAliases,
-                    translationContext,
-                    errorReporter,
-                    master.getExprTranslator())
+                .gen(callNode, owner.createExprTranslator())
                 .withInitialStatements(decls);
         contentChunks.add(call);
       } else {
@@ -649,7 +625,7 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractReturningSoyNodeVi
 
   @Override
   protected Statement visitSoyNode(SoyNode node) {
-    return master.visit(node);
+    return owner.visit(node);
   }
 
   /**

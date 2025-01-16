@@ -21,7 +21,6 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.internal.i18n.SoyBidiUtils;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
-import com.google.template.soy.jssrc.internal.GenJsExprsVisitor.GenJsExprsVisitorFactory;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.internal.InsertMsgsVisitor;
 import com.google.template.soy.passes.CombineConsecutiveRawTextNodesPass;
@@ -30,7 +29,6 @@ import com.google.template.soy.soytree.FileSetMetadata;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.types.SoyTypeRegistry;
 import java.util.List;
-import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 /** Main entry point for the JS Src backend (output target). */
@@ -98,38 +96,9 @@ public class JsSrcMain {
       SoyTypeRegistry typeRegistry,
       BidiGlobalDir dir,
       ErrorReporter errorReporter) {
-    DelTemplateNamer delTemplateNamer = new DelTemplateNamer();
-    IsComputableAsJsExprsVisitor isComputableAsJsExprsVisitor = new IsComputableAsJsExprsVisitor();
     JavaScriptValueFactoryImpl javaScriptValueFactory =
         new JavaScriptValueFactoryImpl(dir, errorReporter);
-    CanInitOutputVarVisitor canInitOutputVarVisitor =
-        new CanInitOutputVarVisitor(isComputableAsJsExprsVisitor);
-    // This supplier is used to break a circular dependency between GenCallCodeUtils and
-    // GenJsExprsVisitorFactory.  The reason this cycle exists is due complex, but could be
-    // eliminated if we got rid of the whole 'iscomputableasjsexprs' concept in this backend.
-    // TODO(lukes): fix the cycle by eliminating IsComputableAsJsExprsVisitor
-    class GenCallCodeUtilsSupplier implements Supplier<GenCallCodeUtils> {
-      GenJsExprsVisitorFactory factory;
-
-      @Override
-      public GenCallCodeUtils get() {
-        return new GenCallCodeUtils(delTemplateNamer, isComputableAsJsExprsVisitor, factory);
-      }
-    }
-    GenCallCodeUtilsSupplier supplier = new GenCallCodeUtilsSupplier();
-    GenJsExprsVisitorFactory genJsExprsVisitorFactory =
-        new GenJsExprsVisitorFactory(
-            javaScriptValueFactory, supplier, isComputableAsJsExprsVisitor);
-    supplier.factory = genJsExprsVisitorFactory;
-
-    return new GenJsCodeVisitor(
-        options,
-        javaScriptValueFactory,
-        delTemplateNamer,
-        supplier.get(),
-        isComputableAsJsExprsVisitor,
-        canInitOutputVarVisitor,
-        genJsExprsVisitorFactory,
-        typeRegistry);
+    VisitorsState visitorsState = new VisitorsState(options, javaScriptValueFactory, typeRegistry);
+    return visitorsState.createGenJsCodeVisitor();
   }
 }

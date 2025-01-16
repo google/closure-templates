@@ -30,7 +30,6 @@ import com.google.template.soy.soytree.SoyNode;
  */
 final class IsComputableAsIncrementalDomExprsVisitor extends IsComputableAsJsExprsVisitor {
 
-
   @Override
   protected Boolean visitCallParamContentNode(CallParamContentNode node) {
     switch (node.getContentKind()) {

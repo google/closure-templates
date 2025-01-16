@@ -32,6 +32,7 @@ java_library(
         "//java/src/com/google/template/soy/incrementaldomsrc",
         "//java/src/com/google/template/soy/incrementaldomsrc:options",
         "//java/src/com/google/template/soy/internal/i18n",
+        "//java/src/com/google/template/soy/jssrc/internal",
         "//java/src/com/google/template/soy/passes",
         "//java/src/com/google/template/soy/soytree",
         "//java/src/com/google/template/soy/testing:shared_test_utils",

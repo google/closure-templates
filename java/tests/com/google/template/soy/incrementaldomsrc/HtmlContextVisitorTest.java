@@ -116,7 +116,7 @@ public final class HtmlContextVisitorTest {
     SoyFileSetNode n = performVisitor(templateBody, FAIL);
     assertThat(((HtmlOpenTagNode) getNode(n, 0)).getTagName().getStaticTagNameAsLowerCase())
         .isEqualTo("div");
-    assertThat(((PrintNode) getNode(n, 0, 1, 1, 0)).toSourceString()).isEqualTo("{css('Foobar')}");
+    assertThat(getNode(n, 0, 1, 1, 0).toSourceString()).isEqualTo("{css('Foobar')}");
     assertThat(((RawTextNode) getNode(n, 0, 1, 1, 1)).getRawText()).isEqualTo(" Baz");
   }
 

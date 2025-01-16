@@ -16,6 +16,7 @@
 
 package com.google.template.soy.incrementaldomsrc;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.BUFFERING_IDOM_RENDERER;
@@ -89,6 +90,7 @@ import com.google.template.soy.jssrc.internal.OutputVarHandler;
 import com.google.template.soy.jssrc.internal.TemplateAliases;
 import com.google.template.soy.jssrc.internal.TranslateExprNodeVisitor;
 import com.google.template.soy.jssrc.internal.TranslationContext;
+import com.google.template.soy.jssrc.internal.VisitorsState;
 import com.google.template.soy.logging.LoggingFunction;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.soytree.CallBasicNode;
@@ -135,7 +137,7 @@ import javax.annotation.Nullable;
  * a template as HTML. This heavily leverages {@link GenJsTemplateBodyVisitor}, adding logic to
  * print the function calls and changing how statements are combined.
  */
-public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBodyVisitor {
+final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBodyVisitor {
   private final Deque<SanitizedContentKind> contentKind;
   private final List<Statement> staticVarDeclarations;
   private final boolean generatePositionalParamsSignature;
@@ -146,6 +148,7 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
   private int staticsCounter = 0;
 
   GenIncrementalDomTemplateBodyVisitor(
+      VisitorsState state,
       OutputVarHandler outputVars,
       SoyJsSrcOptions jsSrcOptions,
       JavaScriptValueFactoryImpl javaScriptValueFactory,
@@ -157,12 +160,12 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
       TranslationContext templateTranslationContext,
       TemplateAliases templateAliases,
       Deque<SanitizedContentKind> contentKind,
-      List<Statement> staticVarDeclarations,
       boolean generatePositionalParamsSignature,
       FileSetMetadata fileSetMetadata,
       String alias,
       ScopedJsTypeRegistry jsTypeRegistry) {
     super(
+        state,
         outputVars,
         jsSrcOptions,
         javaScriptValueFactory,
@@ -174,11 +177,15 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
         templateTranslationContext,
         templateAliases,
         jsTypeRegistry);
-    this.contentKind = contentKind;
-    this.staticVarDeclarations = staticVarDeclarations;
+    this.contentKind = checkNotNull(contentKind);
+    this.staticVarDeclarations = new ArrayList<>();
     this.generatePositionalParamsSignature = generatePositionalParamsSignature;
-    this.fileSetMetadata = fileSetMetadata;
-    this.alias = alias;
+    this.fileSetMetadata = checkNotNull(fileSetMetadata);
+    this.alias = checkNotNull(alias);
+  }
+
+  public List<Statement> getStaticVarDeclarations() {
+    return staticVarDeclarations;
   }
 
   /**
@@ -285,16 +292,9 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
 
     Expression call;
     Optional<SanitizedContentKind> kind = Metadata.getCallContentKind(fileSetMetadata, node);
-    GenCallCodeUtils.Callee callee =
-        genCallCodeUtils.genCallee(node, templateAliases, getExprTranslator());
+    GenCallCodeUtils.Callee callee = genCallCodeUtils.genCallee(node, createExprTranslator());
     Supplier<Expression> objToPass =
-        () ->
-            genCallCodeUtils.genObjToPass(
-                node,
-                templateAliases,
-                templateTranslationContext,
-                errorReporter,
-                getExprTranslator());
+        () -> genCallCodeUtils.genObjToPass(node, createExprTranslator());
     Optional<Supplier<List<Expression>>> positionalParameters = Optional.empty();
     if (genCallCodeUtils.canPerformPositionalCall(node)) {
       positionalParameters =
@@ -302,10 +302,7 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
               () ->
                   genCallCodeUtils.getPositionalParams(
                       (CallBasicNode) node,
-                      templateAliases,
-                      templateTranslationContext,
-                      errorReporter,
-                      getExprTranslator(),
+                      createExprTranslator(),
                       GenCallCodeUtils.hasVariant(node)));
     }
     boolean shouldPushKey = false;
@@ -331,7 +328,12 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
         } else {
           call =
               directCall(
-                  callee, node, getExprTranslator(), positionalParameters, objToPass, idomRenderer);
+                  callee,
+                  node,
+                  createExprTranslator(),
+                  positionalParameters,
+                  objToPass,
+                  idomRenderer);
         }
         break;
       case CSS:
@@ -344,7 +346,7 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
             SOY_IDOM_CALL_DYNAMIC_JS.call(
                 idomRenderer, callee.objectStyle(), objToPass.get(), JsRuntime.IJ_DATA);
         break;
-        // stringlike kinds
+      // stringlike kinds
       case URI:
       case TEXT:
       case HTML_ATTRIBUTE_NAME:
@@ -359,7 +361,7 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
                     callee.objectStyle(),
                     objToPass.get(),
                     JsRuntime.IJ_DATA,
-                    getExprTranslator().exec(((CallBasicNode) node).getVariantExpr().getRoot()));
+                    createExprTranslator().exec(((CallBasicNode) node).getVariantExpr().getRoot()));
           } else {
             textCall =
                 SOY_IDOM_CALL_DYNAMIC_TEXT.call(
@@ -368,7 +370,8 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
         } else {
           // This is executed in the case of TEXT Context -> Text Template
           textCall =
-              directCall(callee, node, getExprTranslator(), positionalParameters, objToPass, null);
+              directCall(
+                  callee, node, createExprTranslator(), positionalParameters, objToPass, null);
         }
         Statement callStatement =
             outputVars.addChunkToOutputVar(
@@ -390,7 +393,7 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
                     callee.objectStyle(),
                     objToPass.get(),
                     JsRuntime.IJ_DATA,
-                    getExprTranslator().exec(((CallBasicNode) node).getVariantExpr().getRoot()));
+                    createExprTranslator().exec(((CallBasicNode) node).getVariantExpr().getRoot()));
           } else {
             call =
                 SOY_IDOM_CALL_DYNAMIC_HTML.call(
@@ -402,7 +405,12 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
           // passed through to runtime functions.
           call =
               directCall(
-                  callee, node, getExprTranslator(), positionalParameters, objToPass, idomRenderer);
+                  callee,
+                  node,
+                  createExprTranslator(),
+                  positionalParameters,
+                  objToPass,
+                  idomRenderer);
           shouldPushKey = true;
         }
         break;
@@ -521,17 +529,6 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
   }
 
   @Override
-  protected TranslateExprNodeVisitor getExprTranslator() {
-    return new IncrementalDomTranslateExprNodeVisitor(
-        javaScriptValueFactory,
-        templateTranslationContext,
-        templateAliases,
-        errorReporter,
-        OPT_DATA,
-        jsTypeRegistry);
-  }
-
-  @Override
   protected Statement visitHtmlCommentNode(HtmlCommentNode node) {
     List<Statement> statements = new ArrayList<>();
     String id = "html_comment_" + node.getId();
@@ -614,7 +611,7 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
                         XID.call(Expressions.stringLiteral(func.getStaticFunctionName())),
                         Expressions.arrayLiteral(
                             func.getParams().stream()
-                                .map(n -> getExprTranslator().exec(n))
+                                .map(n -> createExprTranslator().exec(n))
                                 .collect(toImmutableList())),
                         Expressions.stringLiteral(loggingNode.getPlaceholder()))
                     .asStatement());
@@ -1000,7 +997,7 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
       case JS:
         return outputVars.addChunkToOutputVar(Expressions.concat(chunks));
       case CSS:
-        // fall through
+      // fall through
       case HTML_PCDATA:
         if (node.numChildren() > 0
             && node.getChild(node.numChildren() - 1).getPrintDirective()
@@ -1057,12 +1054,12 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
   }
 
   Statement openVeLogNode(VeLogNode node) {
-    Expression veData = getExprTranslator().exec(node.getVeDataExpression());
+    Expression veData = createExprTranslator().exec(node.getVeDataExpression());
     if (node.getLogonlyExpression() != null) {
       return Statements.assign(
           INCREMENTAL_DOM,
           INCREMENTAL_DOM_ENTER_VELOG.call(
-              veData, getExprTranslator().exec(node.getLogonlyExpression())));
+              veData, createExprTranslator().exec(node.getLogonlyExpression())));
     }
     return INCREMENTAL_DOM_ENTER_VELOG.call(veData).asStatement();
   }
@@ -1091,24 +1088,22 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
                 jsSrcOptions,
                 genCallCodeUtils,
                 isComputableAsJsExprsVisitor,
-                templateAliases,
                 genJsExprsVisitor,
                 templateTranslationContext,
                 errorReporter,
                 id,
                 outputVars)
             .generateMsgGroupCode(node);
-        // Messages in attribute values are plain text. However, since the translated content
-        // includes entities (because other Soy backends treat these messages as HTML source), we
-        // must unescape the translations before passing them to the idom APIs.
+      // Messages in attribute values are plain text. However, since the translated content
+      // includes entities (because other Soy backends treat these messages as HTML source), we
+      // must unescape the translations before passing them to the idom APIs.
       case HTML_NORMAL_ATTR_VALUE:
         msgExpression =
             new AssistantForAttributeMsgs(
-                    /* master= */ this,
+                    this,
                     jsSrcOptions,
                     genCallCodeUtils,
                     isComputableAsJsExprsVisitor,
-                    templateAliases,
                     genJsExprsVisitor,
                     templateTranslationContext,
                     errorReporter,
@@ -1150,7 +1145,6 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
         SoyJsSrcOptions jsSrcOptions,
         GenCallCodeUtils genCallCodeUtils,
         IsComputableAsJsExprsVisitor isComputableAsJsExprsVisitor,
-        TemplateAliases functionAliases,
         GenJsExprsVisitor genJsExprsVisitor,
         TranslationContext translationContext,
         ErrorReporter errorReporter,
@@ -1160,7 +1154,6 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
           jsSrcOptions,
           genCallCodeUtils,
           isComputableAsJsExprsVisitor,
-          functionAliases,
           genJsExprsVisitor,
           translationContext,
           errorReporter,

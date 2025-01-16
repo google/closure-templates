@@ -16,6 +16,7 @@
 
 package com.google.template.soy.jssrc.internal;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.template.soy.jssrc.dsl.Expressions.LITERAL_EMPTY_STRING;
 import static com.google.template.soy.jssrc.dsl.Expressions.stringLiteral;
 
@@ -49,7 +50,6 @@ import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.TemplateNode;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Supplier;
 
 /**
  * Visitor for generating JS expressions for parse tree nodes.
@@ -58,53 +58,13 @@ import java.util.function.Supplier;
  */
 public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<Expression>> {
 
-  /** Injectable factory for creating an instance of this class. */
-  public static class GenJsExprsVisitorFactory {
-    // We are using a provider to resolve a circular dependency between GenCallCodeUtils and this
-    // factory.
-    protected final JavaScriptValueFactoryImpl javaScriptValueFactory;
-    protected final Supplier<GenCallCodeUtils> genCallCodeUtils;
-    protected final IsComputableAsJsExprsVisitor isComputableAsJsExprsVisitor;
-
-    protected GenJsExprsVisitorFactory(
-        JavaScriptValueFactoryImpl javaScriptValueFactory,
-        Supplier<GenCallCodeUtils> genCallCodeUtils,
-        IsComputableAsJsExprsVisitor isComputableAsJsExprsVisitor) {
-      this.javaScriptValueFactory = javaScriptValueFactory;
-      this.genCallCodeUtils = genCallCodeUtils;
-      this.isComputableAsJsExprsVisitor = isComputableAsJsExprsVisitor;
-    }
-
-    /**
-     * @param templateAliases A mapping for looking up the function name for a given fully qualified
-     *     name.
-     */
-    public GenJsExprsVisitor create(
-        TranslationContext translationContext,
-        TemplateAliases templateAliases,
-        ErrorReporter errorReporter,
-        Expression dataSource,
-        ScopedJsTypeRegistry jsTypeRegistry) {
-      return new GenJsExprsVisitor(
-          javaScriptValueFactory,
-          genCallCodeUtils.get(),
-          isComputableAsJsExprsVisitor,
-          this,
-          translationContext,
-          errorReporter,
-          templateAliases,
-          dataSource,
-          jsTypeRegistry);
-    }
-  }
-
   private static final SoyErrorKind UNKNOWN_SOY_JS_SRC_PRINT_DIRECTIVE =
       SoyErrorKind.of("Unknown SoyJsSrcPrintDirective ''{0}''.");
 
-  protected final JavaScriptValueFactoryImpl javaScriptValueFactory;
+  private final VisitorsState state;
+
   private final GenCallCodeUtils genCallCodeUtils;
   protected final IsComputableAsJsExprsVisitor isComputableAsJsExprsVisitor;
-  private final GenJsExprsVisitorFactory genJsExprsVisitorFactory;
 
   protected final TranslationContext translationContext;
   protected final ErrorReporter errorReporter;
@@ -112,7 +72,6 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<Expression>> 
   /** List to collect the results. */
   protected List<Expression> chunks;
 
-  protected final Expression dataSource;
   protected final ScopedJsTypeRegistry jsTypeRegistry;
 
   /**
@@ -125,31 +84,24 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<Expression>> 
    * @param genCallCodeUtils Instance of GenCallCodeUtils to use.
    * @param isComputableAsJsExprsVisitor The IsComputableAsJsExprsVisitor used by this instance
    *     (when needed).
-   * @param genJsExprsVisitorFactory Factory for creating an instance of GenJsExprsVisitor.
    * @param templateAliases A mapping for looking up the function name for a given fully qualified
    *     name.
-   * @param dataSource A data source to map data params from.
    */
   protected GenJsExprsVisitor(
-      JavaScriptValueFactoryImpl javaScriptValueFactory,
+      VisitorsState state,
       GenCallCodeUtils genCallCodeUtils,
       IsComputableAsJsExprsVisitor isComputableAsJsExprsVisitor,
-      GenJsExprsVisitorFactory genJsExprsVisitorFactory,
       TranslationContext translationContext,
       ErrorReporter errorReporter,
       TemplateAliases templateAliases,
-      Expression dataSource,
       ScopedJsTypeRegistry jsTypeRegistry) {
-    this.javaScriptValueFactory = javaScriptValueFactory;
-    this.genCallCodeUtils = genCallCodeUtils;
-    this.isComputableAsJsExprsVisitor = isComputableAsJsExprsVisitor;
-    this.genJsExprsVisitorFactory = genJsExprsVisitorFactory;
-
-    this.translationContext = translationContext;
-    this.errorReporter = errorReporter;
-    this.templateAliases = templateAliases;
-    this.dataSource = dataSource;
-    this.jsTypeRegistry = jsTypeRegistry;
+    this.state = checkNotNull(state);
+    this.genCallCodeUtils = checkNotNull(genCallCodeUtils);
+    this.isComputableAsJsExprsVisitor = checkNotNull(isComputableAsJsExprsVisitor);
+    this.translationContext = checkNotNull(translationContext);
+    this.errorReporter = checkNotNull(errorReporter);
+    this.templateAliases = checkNotNull(templateAliases);
+    this.jsTypeRegistry = checkNotNull(jsTypeRegistry);
   }
 
   @Override
@@ -282,18 +234,12 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<Expression>> 
     chunks.add(expr);
   }
 
-  protected TranslateExprNodeVisitor getExprTranslator() {
-    return new TranslateExprNodeVisitor(
-        javaScriptValueFactory,
-        translationContext,
-        templateAliases,
-        errorReporter,
-        dataSource,
-        jsTypeRegistry);
+  protected TranslateExprNodeVisitor createExprTranslator() {
+    return state.createTranslateExprNodeVisitor();
   }
 
   private Expression translateExpr(ExprRootNode argNode) {
-    return getExprTranslator().exec(argNode);
+    return createExprTranslator().exec(argNode);
   }
 
   /**
@@ -318,9 +264,7 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<Expression>> 
   @Override
   protected void visitIfNode(IfNode node) {
     // Create another instance of this visitor class for generating JS expressions from children.
-    GenJsExprsVisitor genJsExprsVisitor =
-        genJsExprsVisitorFactory.create(
-            translationContext, templateAliases, errorReporter, dataSource, jsTypeRegistry);
+    GenJsExprsVisitor genJsExprsVisitor = state.createJsExprsVisitor();
     CodeChunk.Generator generator = translationContext.codeGenerator();
 
     List<Expression> ifs = new ArrayList<>();
@@ -333,7 +277,7 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<Expression>> 
         IfCondNode ifCond = (IfCondNode) child;
 
         ifs.add(
-            getExprTranslator()
+            createExprTranslator()
                 .maybeCoerceToBoolean(
                     ifCond.getExpr().getType(), translateExpr(ifCond.getExpr()), false));
         thens.add(Expressions.concat(genJsExprsVisitor.exec(ifCond)));
@@ -395,9 +339,7 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<Expression>> 
    */
   @Override
   protected void visitCallNode(CallNode node) {
-    Expression call =
-        genCallCodeUtils.gen(
-            node, templateAliases, translationContext, errorReporter, getExprTranslator());
+    Expression call = genCallCodeUtils.gen(node, createExprTranslator());
     chunks.add(call);
   }
 
