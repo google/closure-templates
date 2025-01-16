@@ -14,16 +14,16 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.incrementaldomsrc;
+package com.google.template.soy.idomsrc;
 
 import com.google.auto.value.AutoValue;
 import com.google.template.soy.base.internal.KytheMode;
 import com.google.template.soy.base.internal.SourceMapMode;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 
-/** Compilation options for incrementaldomsrc. */
+/** Compilation options for idomsrc. */
 @AutoValue
-public abstract class SoyIncrementalDomSrcOptions {
+public abstract class SoyIdomSrcOptions {
 
   /** Returns whether we should add a requirecss annotation for the generated GSS header file. */
   public abstract boolean dependOnCssHeader();
@@ -36,7 +36,7 @@ public abstract class SoyIncrementalDomSrcOptions {
   public abstract SourceMapMode sourceMapMode();
 
   public static Builder builder() {
-    return new AutoValue_SoyIncrementalDomSrcOptions.Builder()
+    return new AutoValue_SoyIdomSrcOptions.Builder()
         .setDependOnCssHeader(false)
         .setGoogMsgsAreExternal(true)
         .setKytheMode(KytheMode.DISABLED)
@@ -45,7 +45,7 @@ public abstract class SoyIncrementalDomSrcOptions {
 
   public abstract Builder toBuilder();
 
-  public static SoyIncrementalDomSrcOptions getDefault() {
+  public static SoyIdomSrcOptions getDefault() {
     return builder().build();
   }
 
@@ -66,12 +66,12 @@ public abstract class SoyIncrementalDomSrcOptions {
 
     public abstract Builder setSourceMapMode(SourceMapMode sourceMapMode);
 
-    public abstract SoyIncrementalDomSrcOptions build();
+    public abstract SoyIdomSrcOptions build();
   }
 
   /**
-   * Convert to {@link SoyJsSrcOptions}. This is necessary since {@code incrementaldomsrc} reuses
-   * lots of {@code jssrc} which needs to interact with this object.
+   * Convert to {@link SoyJsSrcOptions}. This is necessary since {@code idomsrc} reuses lots of
+   * {@code jssrc} which needs to interact with this object.
    */
   SoyJsSrcOptions toJsSrcOptions() {
     return SoyJsSrcOptions.builder()

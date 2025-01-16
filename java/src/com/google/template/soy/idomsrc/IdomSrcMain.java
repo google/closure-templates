@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.incrementaldomsrc;
+package com.google.template.soy.idomsrc;
 
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
@@ -31,14 +31,14 @@ import java.util.Collections;
 import java.util.List;
 
 /** Main entry point for the Incremental DOM JS Src backend (output target). */
-public class IncrementalDomSrcMain {
+public class IdomSrcMain {
 
   /** The scope object that manages the API call scope. */
   private final SoyScopedData.Enterable apiCallScope;
 
   private final SoyTypeRegistry typeRegistry;
 
-  public IncrementalDomSrcMain(SoyScopedData.Enterable apiCallScope, SoyTypeRegistry typeRegistry) {
+  public IdomSrcMain(SoyScopedData.Enterable apiCallScope, SoyTypeRegistry typeRegistry) {
     this.apiCallScope = apiCallScope;
     this.typeRegistry = typeRegistry;
   }
@@ -57,7 +57,7 @@ public class IncrementalDomSrcMain {
   public List<String> genJsSrc(
       SoyFileSetNode soyTree,
       FileSetMetadata registry,
-      SoyIncrementalDomSrcOptions options,
+      SoyIdomSrcOptions options,
       ErrorReporter errorReporter) {
 
     SoyJsSrcOptions incrementalJSSrcOptions = options.toJsSrcOptions();

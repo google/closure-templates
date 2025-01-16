@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.incrementaldomsrc;
+package com.google.template.soy.idomsrc;
 
-import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_TEXT;
+import static com.google.template.soy.idomsrc.IdomRuntime.INCREMENTAL_DOM_TEXT;
 import static com.google.template.soy.jssrc.dsl.Statements.forOf;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_STRING_UNESCAPE_ENTITIES;
 
@@ -197,16 +197,14 @@ final class AssistantForHtmlMsgs extends GenJsCodeVisitorAssistantForMsgs {
         if (parent.getChild(0) == phNode) {
           value =
               Statements.of(
-                  ((GenIncrementalDomTemplateBodyVisitor) idomTemplateBodyVisitor)
-                      .openVeLogNode(parent),
+                  ((GenIdomTemplateBodyVisitor) idomTemplateBodyVisitor).openVeLogNode(parent),
                   value);
         }
         if (parent.getChild(parent.numChildren() - 1) == phNode) {
           value =
               Statements.of(
                   value,
-                  ((GenIncrementalDomTemplateBodyVisitor) idomTemplateBodyVisitor)
-                      .exitVeLogNode(parent));
+                  ((GenIdomTemplateBodyVisitor) idomTemplateBodyVisitor).exitVeLogNode(parent));
         }
       }
       switchBuilder.addCase(Expressions.stringLiteral(ph.getKey()), value);

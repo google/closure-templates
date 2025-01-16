@@ -14,40 +14,40 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.incrementaldomsrc;
+package com.google.template.soy.idomsrc;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.ImmutableList.toImmutableList;
-import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.BUFFERING_IDOM_RENDERER;
-import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM;
-import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_APPLY_ATTRS;
-import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_APPLY_STATICS;
-import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_ATTR;
-import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_CLOSE;
-import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_ELEMENT_CLOSE;
-import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_ENTER_VELOG;
-import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_EXIT_VELOG;
-import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_KEEP_GOING;
-import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_LOGGING_FUNCTION_ATTR;
-import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_OPEN;
-import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_OPEN_SIMPLE;
-import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_PARAM_NAME;
-import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_POP_KEY;
-import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_POP_MANUAL_KEY;
-import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_PRINT;
-import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_PUSH_KEY;
-import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_PUSH_MANUAL_KEY;
-import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_TEXT;
-import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_VISIT_HTML_COMMENT;
-import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_CALL_DYNAMIC_ATTRIBUTES;
-import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_CALL_DYNAMIC_CSS;
-import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_CALL_DYNAMIC_HTML;
-import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_CALL_DYNAMIC_JS;
-import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_CALL_DYNAMIC_TEXT;
-import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_MAKE_ATTRIBUTES;
-import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_MAKE_HTML;
-import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_PRINT_DYNAMIC_ATTR;
+import static com.google.template.soy.idomsrc.IdomRuntime.BUFFERING_IDOM_RENDERER;
+import static com.google.template.soy.idomsrc.IdomRuntime.INCREMENTAL_DOM;
+import static com.google.template.soy.idomsrc.IdomRuntime.INCREMENTAL_DOM_APPLY_ATTRS;
+import static com.google.template.soy.idomsrc.IdomRuntime.INCREMENTAL_DOM_APPLY_STATICS;
+import static com.google.template.soy.idomsrc.IdomRuntime.INCREMENTAL_DOM_ATTR;
+import static com.google.template.soy.idomsrc.IdomRuntime.INCREMENTAL_DOM_CLOSE;
+import static com.google.template.soy.idomsrc.IdomRuntime.INCREMENTAL_DOM_ELEMENT_CLOSE;
+import static com.google.template.soy.idomsrc.IdomRuntime.INCREMENTAL_DOM_ENTER_VELOG;
+import static com.google.template.soy.idomsrc.IdomRuntime.INCREMENTAL_DOM_EXIT_VELOG;
+import static com.google.template.soy.idomsrc.IdomRuntime.INCREMENTAL_DOM_KEEP_GOING;
+import static com.google.template.soy.idomsrc.IdomRuntime.INCREMENTAL_DOM_LOGGING_FUNCTION_ATTR;
+import static com.google.template.soy.idomsrc.IdomRuntime.INCREMENTAL_DOM_OPEN;
+import static com.google.template.soy.idomsrc.IdomRuntime.INCREMENTAL_DOM_OPEN_SIMPLE;
+import static com.google.template.soy.idomsrc.IdomRuntime.INCREMENTAL_DOM_PARAM_NAME;
+import static com.google.template.soy.idomsrc.IdomRuntime.INCREMENTAL_DOM_POP_KEY;
+import static com.google.template.soy.idomsrc.IdomRuntime.INCREMENTAL_DOM_POP_MANUAL_KEY;
+import static com.google.template.soy.idomsrc.IdomRuntime.INCREMENTAL_DOM_PRINT;
+import static com.google.template.soy.idomsrc.IdomRuntime.INCREMENTAL_DOM_PUSH_KEY;
+import static com.google.template.soy.idomsrc.IdomRuntime.INCREMENTAL_DOM_PUSH_MANUAL_KEY;
+import static com.google.template.soy.idomsrc.IdomRuntime.INCREMENTAL_DOM_TEXT;
+import static com.google.template.soy.idomsrc.IdomRuntime.INCREMENTAL_DOM_VISIT_HTML_COMMENT;
+import static com.google.template.soy.idomsrc.IdomRuntime.SOY_IDOM_CALL_DYNAMIC_ATTRIBUTES;
+import static com.google.template.soy.idomsrc.IdomRuntime.SOY_IDOM_CALL_DYNAMIC_CSS;
+import static com.google.template.soy.idomsrc.IdomRuntime.SOY_IDOM_CALL_DYNAMIC_HTML;
+import static com.google.template.soy.idomsrc.IdomRuntime.SOY_IDOM_CALL_DYNAMIC_JS;
+import static com.google.template.soy.idomsrc.IdomRuntime.SOY_IDOM_CALL_DYNAMIC_TEXT;
+import static com.google.template.soy.idomsrc.IdomRuntime.SOY_IDOM_MAKE_ATTRIBUTES;
+import static com.google.template.soy.idomsrc.IdomRuntime.SOY_IDOM_MAKE_HTML;
+import static com.google.template.soy.idomsrc.IdomRuntime.SOY_IDOM_PRINT_DYNAMIC_ATTR;
 import static com.google.template.soy.jssrc.dsl.Expressions.LITERAL_EMPTY_STRING;
 import static com.google.template.soy.jssrc.dsl.Expressions.id;
 import static com.google.template.soy.jssrc.dsl.Expressions.stringLiteral;
@@ -137,7 +137,7 @@ import javax.annotation.Nullable;
  * a template as HTML. This heavily leverages {@link GenJsTemplateBodyVisitor}, adding logic to
  * print the function calls and changing how statements are combined.
  */
-final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBodyVisitor {
+final class GenIdomTemplateBodyVisitor extends GenJsTemplateBodyVisitor {
   private final Deque<SanitizedContentKind> contentKind;
   private final List<Statement> staticVarDeclarations;
   private final boolean generatePositionalParamsSignature;
@@ -147,7 +147,7 @@ final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBodyVisito
   // Counter for static variables that are declared at the global scope.
   private int staticsCounter = 0;
 
-  GenIncrementalDomTemplateBodyVisitor(
+  GenIdomTemplateBodyVisitor(
       VisitorsState state,
       OutputVarHandler outputVars,
       SoyJsSrcOptions jsSrcOptions,
@@ -1141,7 +1141,7 @@ final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBodyVisito
    */
   private static final class AssistantForAttributeMsgs extends GenJsCodeVisitorAssistantForMsgs {
     AssistantForAttributeMsgs(
-        GenIncrementalDomTemplateBodyVisitor master,
+        GenIdomTemplateBodyVisitor master,
         SoyJsSrcOptions jsSrcOptions,
         GenCallCodeUtils genCallCodeUtils,
         IsComputableAsJsExprsVisitor isComputableAsJsExprsVisitor,

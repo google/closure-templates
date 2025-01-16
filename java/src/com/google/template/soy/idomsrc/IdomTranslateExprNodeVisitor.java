@@ -14,16 +14,16 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.incrementaldomsrc;
+package com.google.template.soy.idomsrc;
 
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
-import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_EVAL_LOG_FN;
-import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_EMPTY_TO_UNDEFINED;
-import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_HAS_CONTENT;
-import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_IS_TRUTHY;
-import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_IS_TRUTHY_NON_EMPTY;
-import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.STATE_PREFIX;
-import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.STATE_VAR_PREFIX;
+import static com.google.template.soy.idomsrc.IdomRuntime.INCREMENTAL_DOM_EVAL_LOG_FN;
+import static com.google.template.soy.idomsrc.IdomRuntime.SOY_IDOM_EMPTY_TO_UNDEFINED;
+import static com.google.template.soy.idomsrc.IdomRuntime.SOY_IDOM_HAS_CONTENT;
+import static com.google.template.soy.idomsrc.IdomRuntime.SOY_IDOM_IS_TRUTHY;
+import static com.google.template.soy.idomsrc.IdomRuntime.SOY_IDOM_IS_TRUTHY_NON_EMPTY;
+import static com.google.template.soy.idomsrc.IdomRuntime.STATE_PREFIX;
+import static com.google.template.soy.idomsrc.IdomRuntime.STATE_VAR_PREFIX;
 import static com.google.template.soy.jssrc.dsl.Expressions.id;
 import static com.google.template.soy.jssrc.internal.JsRuntime.BIND_TEMPLATE_PARAMS_FOR_IDOM;
 import static com.google.template.soy.jssrc.internal.JsRuntime.XID;
@@ -56,8 +56,8 @@ import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.TemplateType;
 
 /** Translates expressions, overriding methods for special-case idom behavior. */
-final class IncrementalDomTranslateExprNodeVisitor extends TranslateExprNodeVisitor {
-  public IncrementalDomTranslateExprNodeVisitor(
+final class IdomTranslateExprNodeVisitor extends TranslateExprNodeVisitor {
+  public IdomTranslateExprNodeVisitor(
       JavaScriptValueFactoryImpl javaScriptValueFactory,
       TranslationContext translationContext,
       TemplateAliases templateAliases,
@@ -78,7 +78,7 @@ final class IncrementalDomTranslateExprNodeVisitor extends TranslateExprNodeVisi
 
   @Override
   protected Expression sanitizedContentToProtoConverterFunction(Descriptor messageType) {
-    return IncrementalDomRuntime.IDOM_JS_TO_PROTO_PACK_FN.get(messageType.getFullName());
+    return IdomRuntime.IDOM_JS_TO_PROTO_PACK_FN.get(messageType.getFullName());
   }
 
   @Override
@@ -148,12 +148,12 @@ final class IncrementalDomTranslateExprNodeVisitor extends TranslateExprNodeVisi
 
   @Override
   protected JsType jsTypeForStrict(SoyType type) {
-    return JsType.forIncrementalDomState().get(type);
+    return JsType.forIdomSrcState().get(type);
   }
 
   @Override
   protected JsType jsTypeFor(SoyType type) {
-    return JsType.forIncrementalDom().get(type);
+    return JsType.forIdomSrc().get(type);
   }
 
   @Override

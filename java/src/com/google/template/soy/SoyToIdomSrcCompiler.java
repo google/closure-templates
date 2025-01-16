@@ -17,7 +17,7 @@
 package com.google.template.soy;
 
 import com.google.common.collect.ImmutableList;
-import com.google.template.soy.incrementaldomsrc.SoyIncrementalDomSrcOptions;
+import com.google.template.soy.idomsrc.SoyIdomSrcOptions;
 import org.kohsuke.args4j.Option;
 
 /**
@@ -29,7 +29,7 @@ import org.kohsuke.args4j.Option;
  * @see <a href="http://google.github.io/incremental-dom">docs</a>
  * @see <a href="https://github.com/google/incremental-dom">Github page</a>
  */
-public final class SoyToIncrementalDomSrcCompiler extends AbstractSoyCompiler {
+public final class SoyToIdomSrcCompiler extends AbstractSoyCompiler {
 
   @Option(
       name = "--dependOnCssHeader",
@@ -68,14 +68,14 @@ public final class SoyToIncrementalDomSrcCompiler extends AbstractSoyCompiler {
    * @param args Should contain command-line flags and the list of paths to the Soy files.
    */
   public static void main(String[] args) {
-    new SoyToIncrementalDomSrcCompiler().runMain(args);
+    new SoyToIdomSrcCompiler().runMain(args);
   }
 
-  SoyToIncrementalDomSrcCompiler(PluginLoader loader, SoyInputCache cache) {
+  SoyToIdomSrcCompiler(PluginLoader loader, SoyInputCache cache) {
     super(loader, cache);
   }
 
-  SoyToIncrementalDomSrcCompiler() {}
+  SoyToIdomSrcCompiler() {}
 
   @Override
   protected void validateFlags() {
@@ -90,14 +90,13 @@ public final class SoyToIncrementalDomSrcCompiler extends AbstractSoyCompiler {
   @Override
   protected void compile(SoyFileSet.Builder sfsBuilder) {
     SoyFileSet sfs = sfsBuilder.build();
-    SoyIncrementalDomSrcOptions options =
-        SoyIncrementalDomSrcOptions.builder()
+    SoyIdomSrcOptions options =
+        SoyIdomSrcOptions.builder()
             .setDependOnCssHeader(dependOnCssHeader)
             .setGoogMsgsAreExternal(googMsgsAreExternal)
             .setKytheMode(kytheMode)
             .setSourceMapMode(sourceMapMode)
             .build();
-    outputFiles.writeFiles(
-        srcs, sfs.compileToIncrementalDomSrcInternal(options), /* locale= */ null);
+    outputFiles.writeFiles(srcs, sfs.compileToIdomSrcInternal(options), /* locale= */ null);
   }
 }

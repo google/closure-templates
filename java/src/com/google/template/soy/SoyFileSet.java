@@ -46,8 +46,8 @@ import com.google.template.soy.error.SoyCompilationException;
 import com.google.template.soy.error.SoyError;
 import com.google.template.soy.error.SoyErrors;
 import com.google.template.soy.error.SoyInternalCompilerException;
-import com.google.template.soy.incrementaldomsrc.IncrementalDomSrcMain;
-import com.google.template.soy.incrementaldomsrc.SoyIncrementalDomSrcOptions;
+import com.google.template.soy.idomsrc.IdomSrcMain;
+import com.google.template.soy.idomsrc.SoyIdomSrcOptions;
 import com.google.template.soy.javagencode.GenerateBuildersVisitor;
 import com.google.template.soy.javagencode.GenerateParseInfoVisitor;
 import com.google.template.soy.jbcsrc.BytecodeCompiler;
@@ -1099,7 +1099,7 @@ public final class SoyFileSet {
    *     JS file. The generated JS files correspond one-to-one to the original Soy source files.
    * @throws SoyCompilationException If compilation fails.
    */
-  List<String> compileToIncrementalDomSrcInternal(SoyIncrementalDomSrcOptions jsSrcOptions) {
+  List<String> compileToIdomSrcInternal(SoyIdomSrcOptions jsSrcOptions) {
     return entryPoint(
         () -> {
           // For incremental dom backend, we don't desugar HTML nodes since it requires HTML
@@ -1114,7 +1114,7 @@ public final class SoyFileSet {
                       .addHtmlAttributesForLogging(false)
                       .validateJavaMethods(false));
           throwIfErrorsPresent();
-          return new IncrementalDomSrcMain(scopedData.enterable(), typeRegistry)
+          return new IdomSrcMain(scopedData.enterable(), typeRegistry)
               .genJsSrc(result.fileSet(), result.registry(), jsSrcOptions, errorReporter);
         });
   }

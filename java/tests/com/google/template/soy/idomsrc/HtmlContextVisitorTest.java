@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.incrementaldomsrc;
+package com.google.template.soy.idomsrc;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.template.soy.testing.SharedTestUtils.getNode;
 
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.passes.CombineConsecutiveRawTextNodesPass;
@@ -44,6 +45,7 @@ import org.junit.runners.JUnit4;
 public final class HtmlContextVisitorTest {
   private static final ErrorReporter FAIL = ErrorReporter.exploding();
 
+  @CanIgnoreReturnValue
   private static SoyFileSetNode performVisitor(String templateBody, ErrorReporter er) {
     return performVisitorFile(SharedTestUtils.buildTestSoyFileContent(templateBody), er);
   }
@@ -116,7 +118,7 @@ public final class HtmlContextVisitorTest {
     SoyFileSetNode n = performVisitor(templateBody, FAIL);
     assertThat(((HtmlOpenTagNode) getNode(n, 0)).getTagName().getStaticTagNameAsLowerCase())
         .isEqualTo("div");
-    assertThat(getNode(n, 0, 1, 1, 0).toSourceString()).isEqualTo("{css('Foobar')}");
+    assertThat(((PrintNode) getNode(n, 0, 1, 1, 0)).toSourceString()).isEqualTo("{css('Foobar')}");
     assertThat(((RawTextNode) getNode(n, 0, 1, 1, 1)).getRawText()).isEqualTo(" Baz");
   }
 

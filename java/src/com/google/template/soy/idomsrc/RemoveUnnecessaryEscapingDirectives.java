@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.incrementaldomsrc;
+package com.google.template.soy.idomsrc;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;

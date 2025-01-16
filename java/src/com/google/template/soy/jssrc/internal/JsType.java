@@ -233,37 +233,37 @@ public final class JsType implements CodeChunk.HasRequires {
   }
 
   /** Returns a JS type for idom with looser rules, allowing 1/0 for bools. */
-  public static RecursiveJsTypeProducer forIncrementalDom() {
+  public static RecursiveJsTypeProducer forIdomSrc() {
     return new RecursiveJsTypeProducerImpl(
         JsTypeKind.IDOMSRC, /* isStrict= */ false, ArrayTypeMode.ARRAY_OR_READONLY_ARRAY);
   }
 
   /** Returns a JS type for idom with looser rules, allowing 1/0 for bools. */
-  public static RecursiveJsTypeProducer forIncrementalDomTypeChecks() {
+  public static RecursiveJsTypeProducer forIdomSrcTypeChecks() {
     return new RecursiveJsTypeProducerImpl(
         JsTypeKind.IDOMSRC, /* isStrict= */ false, ArrayTypeMode.READONLY_ARRAY);
   }
 
   /** Returns a JS type for idom with strict rules. */
-  public static RecursiveJsTypeProducer forIncrementalDomGetters() {
+  public static RecursiveJsTypeProducer forIdomSrcGetters() {
     return new RecursiveJsTypeProducerImpl(
         JsTypeKind.IDOMSRC, /* isStrict= */ true, ArrayTypeMode.READONLY_ARRAY);
   }
 
   /** Returns a JS type for idom with strict rules. */
-  public static RecursiveJsTypeProducer forIncrementalDomSetters() {
+  public static RecursiveJsTypeProducer forIdomSrcSetters() {
     return new RecursiveJsTypeProducerImpl(
         JsTypeKind.IDOMSRC, /* isStrict= */ true, ArrayTypeMode.ARRAY_OR_READONLY_ARRAY);
   }
 
   /** Returns a JS type for idom template type decls. */
-  public static RecursiveJsTypeProducer forIncrementalDomDeclarations() {
+  public static RecursiveJsTypeProducer forIdomSrcDeclarations() {
     return new RecursiveJsTypeProducerImpl(
         JsTypeKind.IDOMSRC, /* isStrict= */ true, ArrayTypeMode.ARRAY_OR_READONLY_ARRAY);
   }
 
   /** Returns a JS type for idom with strict rules. */
-  public static RecursiveJsTypeProducer forIncrementalDomState() {
+  public static RecursiveJsTypeProducer forIdomSrcState() {
     return new RecursiveJsTypeProducerImpl(
         JsTypeKind.IDOMSRC, /* isStrict= */ true, ArrayTypeMode.READONLY_ARRAY);
   }

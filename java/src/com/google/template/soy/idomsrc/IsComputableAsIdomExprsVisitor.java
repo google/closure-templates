@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.incrementaldomsrc;
+package com.google.template.soy.idomsrc;
 
 import com.google.template.soy.jssrc.internal.IsComputableAsJsExprsVisitor;
 import com.google.template.soy.soytree.CallParamContentNode;
@@ -28,7 +28,7 @@ import com.google.template.soy.soytree.SoyNode;
  * a JavaScript expression. This allows for generating formatted JavaScript for the Incremental DOM
  * functions that is more readable than if they had been generated as an expression.
  */
-final class IsComputableAsIncrementalDomExprsVisitor extends IsComputableAsJsExprsVisitor {
+final class IsComputableAsIdomExprsVisitor extends IsComputableAsJsExprsVisitor {
 
   @Override
   protected Boolean visitCallParamContentNode(CallParamContentNode node) {

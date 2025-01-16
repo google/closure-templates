@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.incrementaldomsrc;
+package com.google.template.soy.idomsrc;
 
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
@@ -30,8 +30,8 @@ import com.google.template.soy.soytree.CallParamContentNode;
  * used to prevent re-escaping of safe content. The Incremental DOM code generation use DOM APIs for
  * creating Elements, Text and attributes rather than relying on innerHTML.
  */
-final class IncrementalDomGenCallCodeUtils extends GenCallCodeUtils {
-  IncrementalDomGenCallCodeUtils(
+final class IdomGenCallCodeUtils extends GenCallCodeUtils {
+  IdomGenCallCodeUtils(
       VisitorsState state,
       DelTemplateNamer incrementalDomDelTemplateNamer,
       IsComputableAsJsExprsVisitor isComputableAsIncrementalDomExprsVisitor) {

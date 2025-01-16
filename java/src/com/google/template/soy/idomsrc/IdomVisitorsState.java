@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.incrementaldomsrc;
+package com.google.template.soy.idomsrc;
 
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
@@ -42,22 +42,22 @@ public final class IdomVisitorsState extends VisitorsState {
 
   @Override
   protected DelTemplateNamer createDelTemplateNamer() {
-    return new IncrementalDomDelTemplateNamer();
+    return new IdomDelTemplateNamer();
   }
 
   @Override
   protected IsComputableAsJsExprsVisitor createIsComputableAsJsExprsVisitor() {
-    return new IsComputableAsIncrementalDomExprsVisitor();
+    return new IsComputableAsIdomExprsVisitor();
   }
 
   @Override
   protected GenCallCodeUtils createGenCallCodeUtils() {
-    return new IncrementalDomGenCallCodeUtils(this, delTemplateNamer, isComputableAsJsExprsVisitor);
+    return new IdomGenCallCodeUtils(this, delTemplateNamer, isComputableAsJsExprsVisitor);
   }
 
   @Override
-  public GenIncrementalDomCodeVisitor createGenJsCodeVisitor() {
-    return new GenIncrementalDomCodeVisitor(
+  public GenIdomCodeVisitor createGenJsCodeVisitor() {
+    return new GenIdomCodeVisitor(
         this,
         options,
         javaScriptValueFactory,
@@ -69,8 +69,8 @@ public final class IdomVisitorsState extends VisitorsState {
   }
 
   @Override
-  public IncrementalDomTranslateExprNodeVisitor createTranslateExprNodeVisitor() {
-    return new IncrementalDomTranslateExprNodeVisitor(
+  public IdomTranslateExprNodeVisitor createTranslateExprNodeVisitor() {
+    return new IdomTranslateExprNodeVisitor(
         javaScriptValueFactory,
         translationContext,
         templateAliases,
@@ -79,9 +79,8 @@ public final class IdomVisitorsState extends VisitorsState {
   }
 
   @Override
-  public GenIncrementalDomTemplateBodyVisitor createTemplateBodyVisitor(
-      GenJsExprsVisitor genJsExprsVisitor) {
-    return new GenIncrementalDomTemplateBodyVisitor(
+  public GenIdomTemplateBodyVisitor createTemplateBodyVisitor(GenJsExprsVisitor genJsExprsVisitor) {
+    return new GenIdomTemplateBodyVisitor(
         this,
         outputVarHandler,
         options,
@@ -101,8 +100,8 @@ public final class IdomVisitorsState extends VisitorsState {
   }
 
   @Override
-  public GenIncrementalDomExprsVisitor createJsExprsVisitor() {
-    return new GenIncrementalDomExprsVisitor(
+  public GenIdomExprsVisitor createJsExprsVisitor() {
+    return new GenIdomExprsVisitor(
         this,
         genCallCodeUtils,
         isComputableAsJsExprsVisitor,

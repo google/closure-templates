@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.incrementaldomsrc;
+package com.google.template.soy.idomsrc;
 
 import static com.google.template.soy.jssrc.dsl.Expressions.id;
 import static com.google.template.soy.jssrc.internal.JsRuntime.JS_TO_PROTO_PACK_FN_BASE;
@@ -30,7 +30,7 @@ import com.google.template.soy.jssrc.dsl.GoogRequire;
  * <p>Unlike jssrc, incrementaldom declares {@code goog.module}s and therefore uses aliased {@code
  * goog.require} statements.
  */
-final class IncrementalDomRuntime {
+final class IdomRuntime {
 
   static final GoogRequire INCREMENTAL_DOM_LIB_TYPE =
       GoogRequire.createTypeRequireWithAlias(
@@ -149,5 +149,5 @@ final class IncrementalDomRuntime {
                   .dotAccess("packSanitizedHtmlToProtoSoyRuntimeOnly"))
           .buildOrThrow();
 
-  private IncrementalDomRuntime() {}
+  private IdomRuntime() {}
 }

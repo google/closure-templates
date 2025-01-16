@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.incrementaldomsrc;
+package com.google.template.soy.idomsrc;
 
-import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM;
+import static com.google.template.soy.idomsrc.IdomRuntime.INCREMENTAL_DOM;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;

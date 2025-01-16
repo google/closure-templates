@@ -18,7 +18,7 @@ load("@rules_java//java:defs.bzl", "java_library")
 
 package(default_visibility = ["//:soy_internal"])
 
-OPTIONS_SRCS = ["SoyIncrementalDomSrcOptions.java"]
+OPTIONS_SRCS = ["SoyIdomSrcOptions.java"]
 
 java_library(
     name = "options",
@@ -32,7 +32,7 @@ java_library(
 )
 
 java_library(
-    name = "incrementaldomsrc",
+    name = "idomsrc",
     srcs = glob(
         ["*.java"],
         exclude = OPTIONS_SRCS,

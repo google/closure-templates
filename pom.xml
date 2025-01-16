@@ -564,20 +564,20 @@
             </configuration>
           </execution>
           <execution>
-            <id>SoyToIncrementalDomSrcCompiler</id>
+            <id>SoyToIdomSrcCompiler</id>
             <phase>package</phase>
             <goals>
               <goal>shade</goal>
             </goals>
             <configuration>
               <shadedArtifactAttached>true</shadedArtifactAttached>
-              <shadedClassifierName>SoyToIncrementalDomSrcCompiler
+              <shadedClassifierName>SoyToIdomSrcCompiler
               </shadedClassifierName>
               <transformers>
                 <transformer
                     implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                   <mainClass>
-                    com.google.template.soy.SoyToIncrementalDomSrcCompiler
+                    com.google.template.soy.SoyToIdomSrcCompiler
                   </mainClass>
                 </transformer>
               </transformers>

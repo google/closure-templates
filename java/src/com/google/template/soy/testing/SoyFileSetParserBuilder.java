@@ -87,7 +87,7 @@ public final class SoyFileSetParserBuilder {
   private ToggleRegistry toggleRegistry = ToggleRegistry.EMPTY;
   // TODO(lukes): disabled for compatibility with unit tests.  Fix tests relying on the
   // escaper not running and enable by default.  This configuration bit only really exists
-  // for incrementaldomsrc, not tests.
+  // for idomsrc, not tests.
   private boolean runAutoescaper = false;
   // By default, do not modify the AST to add the HTML comments, since many unit tests depend on
   // the order of the nodes in the AST.

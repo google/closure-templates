@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.incrementaldomsrc;
+package com.google.template.soy.idomsrc;
 
 import com.google.template.soy.jssrc.internal.DelTemplateNamer;
 
@@ -22,7 +22,7 @@ import com.google.template.soy.jssrc.internal.DelTemplateNamer;
  * Names del templates using a modified namespace so that they can coexist with output from
  * GenJsCodeVisitor.
  */
-final class IncrementalDomDelTemplateNamer extends DelTemplateNamer {
+final class IdomDelTemplateNamer extends DelTemplateNamer {
   @Override
   protected String getDelegateName(String delTemplateName) {
     return delTemplateName + ".idom";

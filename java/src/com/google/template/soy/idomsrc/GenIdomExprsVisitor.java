@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.incrementaldomsrc;
+package com.google.template.soy.idomsrc;
 
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.jssrc.dsl.Expression;
@@ -30,9 +30,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 /** Overrides the base class to provide the correct helpers classes. */
-public final class GenIncrementalDomExprsVisitor extends GenJsExprsVisitor {
+public final class GenIdomExprsVisitor extends GenJsExprsVisitor {
 
-  public GenIncrementalDomExprsVisitor(
+  public GenIdomExprsVisitor(
       VisitorsState state,
       GenCallCodeUtils genCallCodeUtils,
       IsComputableAsJsExprsVisitor isComputableAsJsExprsVisitor,

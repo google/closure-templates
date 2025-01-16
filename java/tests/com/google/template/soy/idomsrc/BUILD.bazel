@@ -29,8 +29,8 @@ java_library(
         "//java/src/com/google/template/soy:impl",
         "//java/src/com/google/template/soy/base/internal",
         "//java/src/com/google/template/soy/error:error_reporter",
-        "//java/src/com/google/template/soy/incrementaldomsrc",
-        "//java/src/com/google/template/soy/incrementaldomsrc:options",
+        "//java/src/com/google/template/soy/idomsrc",
+        "//java/src/com/google/template/soy/idomsrc:options",
         "//java/src/com/google/template/soy/internal/i18n",
         "//java/src/com/google/template/soy/jssrc/internal",
         "//java/src/com/google/template/soy/passes",
@@ -41,6 +41,7 @@ java_library(
         "@maven//:com_google_guava_guava",
         "@maven//:com_google_truth_truth",
         "@maven//:junit_junit",
+        "@maven//:com_google_errorprone_error_prone_annotations",
     ],
 )
 
