@@ -670,7 +670,7 @@ public final class GenIdomCodeVisitor extends GenJsCodeVisitor {
   }
 
   private static Expression exportWithSpan(String symbol, ByteSpan byteSpan) {
-    return JsRuntime.EXPORTS.dotAccess(id(symbol).withByteSpan(byteSpan));
+    return JsRuntime.EXPORTS.dotAccess(Id.builder(symbol).setSpan(byteSpan).build());
   }
 
   /**

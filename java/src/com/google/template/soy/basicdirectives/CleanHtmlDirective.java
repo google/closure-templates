@@ -142,7 +142,7 @@ final class CleanHtmlDirective
     if (!args.isEmpty()) {
       for (com.google.template.soy.jssrc.dsl.Expression tagName : args) {
         if (tagName instanceof StringLiteral) {
-          OptionalSafeTag.fromTagName(((StringLiteral) tagName).literalValue());
+          OptionalSafeTag.fromTagName(((StringLiteral) tagName).value());
         } else {
           throw new IllegalArgumentException(
               String.format(

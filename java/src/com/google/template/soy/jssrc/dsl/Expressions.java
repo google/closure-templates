@@ -252,7 +252,7 @@ public final class Expressions {
   }
 
   public static Expression stringLiteral(String contents, QuoteStyle quoteStyle) {
-    return StringLiteral.create(contents, quoteStyle);
+    return StringLiteral.builder(contents).setQuoteStyle(quoteStyle).build();
   }
 
   /**
@@ -473,25 +473,6 @@ public final class Expressions {
       }
     }
     return null;
-  }
-
-  static final class ExpressionWithSpan extends DelegatingExpression {
-
-    public static Expression create(Expression expr, ByteSpan byteSpan) {
-      return new ExpressionWithSpan(expr, byteSpan);
-    }
-
-    private final ByteSpan byteSpan;
-
-    private ExpressionWithSpan(Expression delegate, ByteSpan byteSpan) {
-      super(delegate);
-      this.byteSpan = byteSpan;
-    }
-
-    @Override
-    void doFormatOutputExpr(FormattingContext ctx) {
-      ctx.appendImputee(delegate, byteSpan);
-    }
   }
 
   @AutoValue

@@ -73,6 +73,7 @@ import com.google.template.soy.jssrc.dsl.JsDoc;
 import com.google.template.soy.jssrc.dsl.LineComment;
 import com.google.template.soy.jssrc.dsl.Statement;
 import com.google.template.soy.jssrc.dsl.Statements;
+import com.google.template.soy.jssrc.dsl.StringLiteral;
 import com.google.template.soy.jssrc.dsl.VariableDeclaration;
 import com.google.template.soy.jssrc.internal.JsType.JsTypeProducer;
 import com.google.template.soy.jssrc.internal.JsType.RecursiveJsTypeProducer;
@@ -495,8 +496,9 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
         .append(
             dottedIdNoRequire("goog.provide")
                 .call(
-                    stringLiteral(getGoogModuleNamespace(soyFile.getNamespace()))
-                        .withByteSpan(getNamespaceByteSpan(soyFile))))
+                    StringLiteral.builder(getGoogModuleNamespace(soyFile.getNamespace()))
+                        .setSpan(getNamespaceByteSpan(soyFile))
+                        .build()))
         .append(BLANK_LINE);
   }
 
@@ -524,7 +526,10 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     jsCodeBuilder
         .append(
             dottedIdNoRequire("goog.module")
-                .call(stringLiteral(exportNamespace).withByteSpan(getNamespaceByteSpan(soyFile))))
+                .call(
+                    StringLiteral.builder(exportNamespace)
+                        .setSpan(getNamespaceByteSpan(soyFile))
+                        .build()))
         .append(BLANK_LINE);
   }
 
@@ -776,13 +781,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
             .prepend(JsDoc.builder().setOverviewComment("@pureOrBreakMyCode").build());
 
     jsCodeBuilder.append(
-        topLevelAssignment(
-            node,
-            node.isExported(),
-            partialName,
-            jsDoc,
-            imputesSpan,
-            constantExpr));
+        topLevelAssignment(node, node.isExported(), partialName, jsDoc, imputesSpan, constantExpr));
     for (GoogRequire require : varType.googRequires()) {
       jsCodeBuilder.addGoogRequire(require);
     }
@@ -802,10 +801,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
   }
 
   private Expression topLevelLhs(
-      SoyNode node,
-      boolean exported,
-      String partialName,
-      @Nullable ByteSpan byteSpan) {
+      SoyNode node, boolean exported, String partialName, @Nullable ByteSpan byteSpan) {
     Expression nameExpr = Id.builder(partialName).setSpan(byteSpan).build();
     if (jsSrcOptions.shouldGenerateGoogModules()) {
       if (exported) {

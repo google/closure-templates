@@ -83,12 +83,13 @@ public final class CodeChunks {
       return (Expression) chunks.get(0);
     }
     if (chunks.stream().allMatch(StringLiteral.class::isInstance)) {
-      return StringLiteral.create(
-          chunks.stream()
-              .map(StringLiteral.class::cast)
-              .map(StringLiteral::literalValue)
-              .collect(Collectors.joining()),
-          ((StringLiteral) chunks.get(0)).quoteStyle());
+      return StringLiteral.builder(
+              chunks.stream()
+                  .map(StringLiteral.class::cast)
+                  .map(StringLiteral::value)
+                  .collect(Collectors.joining()))
+          .setQuoteStyle(((StringLiteral) chunks.get(0)).quoteStyle())
+          .build();
     }
     List<SpecialToken> special = new ArrayList<>();
     List<Expression> exprs = new ArrayList<>();

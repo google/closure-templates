@@ -18,9 +18,12 @@ package com.google.template.soy.jssrc.dsl;
 
 import com.google.auto.value.AutoValue;
 import com.google.errorprone.annotations.Immutable;
+import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.SourceLocation.ByteSpan;
 import com.google.template.soy.base.internal.QuoteStyle;
 import java.util.Optional;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 /** Represents a string literal expression. */
 @AutoValue
@@ -28,16 +31,15 @@ import java.util.stream.Stream;
 public abstract class StringLiteral extends Expression {
 
   static Expression create(String literalValue) {
-    return new AutoValue_StringLiteral(literalValue, QuoteStyle.SINGLE);
+    return builder(literalValue).build();
   }
 
-  static Expression create(String literalValue, QuoteStyle quoteStyle) {
-    return new AutoValue_StringLiteral(literalValue, quoteStyle);
-  }
-
-  public abstract String literalValue();
+  public abstract String value();
 
   abstract QuoteStyle quoteStyle();
+
+  @Nullable
+  public abstract SourceLocation.ByteSpan span();
 
   @Override
   public boolean isDefinitelyNotNull() {
@@ -56,11 +58,32 @@ public abstract class StringLiteral extends Expression {
 
   @Override
   void doFormatOutputExpr(FormattingContext ctx) {
-    ctx.appendQuotedString(literalValue(), quoteStyle());
+    ctx.appendQuotedString(value(), quoteStyle(), span());
   }
 
   @Override
   public Optional<String> asStringLiteral() {
-    return Optional.of(literalValue());
+    return Optional.of(value());
+  }
+
+  public static Builder builder(String literalValue) {
+    return new AutoValue_StringLiteral.Builder()
+        .setValue(literalValue)
+        .setQuoteStyle(QuoteStyle.SINGLE);
+  }
+
+  public abstract Builder toBuilder();
+
+  /** A builder for a {@link Id}. */
+  @AutoValue.Builder
+  public abstract static class Builder {
+
+    public abstract Builder setValue(String id);
+
+    public abstract Builder setQuoteStyle(QuoteStyle style);
+
+    public abstract Builder setSpan(ByteSpan span);
+
+    public abstract StringLiteral build();
   }
 }

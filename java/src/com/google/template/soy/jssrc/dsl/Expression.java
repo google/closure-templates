@@ -24,11 +24,9 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.errorprone.annotations.Immutable;
-import com.google.template.soy.base.SourceLocation.ByteSpan;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.internal.util.TreeStreams;
 import com.google.template.soy.jssrc.dsl.Expressions.DecoratedExpression;
-import com.google.template.soy.jssrc.dsl.Expressions.ExpressionWithSpan;
 import com.google.template.soy.jssrc.dsl.Precedence.Associativity;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import java.util.Arrays;
@@ -36,7 +34,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Stream;
-import javax.annotation.Nullable;
 
 /**
  * Marker class for a chunk of code that represents a value.
@@ -122,16 +119,6 @@ public abstract class Expression extends CodeChunk {
   /** Creates a new expression by prepending special tokens before this expression. */
   public Expression prepend(List<SpecialToken> tokens) {
     return DecoratedExpression.create(this, tokens, ImmutableList.of());
-  }
-
-  public Expression withByteSpan(@Nullable ByteSpan byteSpan) {
-    if (byteSpan == null || !byteSpan.isKnown()) {
-      return this;
-    }
-    if (this instanceof Id) {
-      return ((Id) this).toBuilder().setSpan(byteSpan).build();
-    }
-    return ExpressionWithSpan.create(this, byteSpan);
   }
 
   public final Expression prepend(SpecialToken... tokens) {
