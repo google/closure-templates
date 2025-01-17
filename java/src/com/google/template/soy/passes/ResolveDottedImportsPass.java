@@ -214,7 +214,7 @@ final class ResolveDottedImportsPass implements CompilerFilePass {
       } else if (replaceCssVariables) {
         FunctionNode funcNode =
             FunctionNode.newPositional(
-                Identifier.create(BuiltinFunction.CSS.getName(), SourceLocation.UNKNOWN),
+                Identifier.create(BuiltinFunction.CSS.getName(), fullLocation),
                 BuiltinFunction.CSS,
                 fullLocation);
         funcNode.addChild(
