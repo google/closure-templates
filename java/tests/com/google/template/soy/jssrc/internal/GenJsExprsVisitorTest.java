@@ -28,6 +28,7 @@ import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.jssrc.dsl.FormatOptions;
 import com.google.template.soy.jssrc.dsl.Precedence;
+import com.google.template.soy.jssrc.dsl.SourceMapHelper;
 import com.google.template.soy.jssrc.internal.GenJsCodeVisitor.ScopedJsTypeRegistry;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.soytree.Metadata;
@@ -242,7 +243,8 @@ public final class GenJsExprsVisitorTest {
             SoyToJsVariableMappings.startingWith(LOCAL_VAR_TRANSLATIONS),
             JsSrcNameGenerators.forLocalVariables()),
         ScopedJsTypeRegistry.PASSTHROUGH,
-        AliasUtils.IDENTITY_ALIASES);
+        AliasUtils.IDENTITY_ALIASES,
+        SourceMapHelper.NO_OP);
     GenJsExprsVisitor visitor = visitorsState.createJsExprsVisitor();
     return visitor.exec(node);
   }

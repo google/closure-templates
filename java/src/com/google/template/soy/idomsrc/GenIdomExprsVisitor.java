@@ -18,6 +18,7 @@ package com.google.template.soy.idomsrc;
 
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.jssrc.dsl.Expression;
+import com.google.template.soy.jssrc.dsl.SourceMapHelper;
 import com.google.template.soy.jssrc.internal.GenCallCodeUtils;
 import com.google.template.soy.jssrc.internal.GenJsCodeVisitor.ScopedJsTypeRegistry;
 import com.google.template.soy.jssrc.internal.GenJsExprsVisitor;
@@ -39,7 +40,8 @@ public final class GenIdomExprsVisitor extends GenJsExprsVisitor {
       TranslationContext translationContext,
       ErrorReporter errorReporter,
       TemplateAliases templateAliases,
-      ScopedJsTypeRegistry jsTypeRegistry) {
+      ScopedJsTypeRegistry jsTypeRegistry,
+      SourceMapHelper sourceMapHelper) {
     super(
         state,
         genCallCodeUtils,
@@ -47,7 +49,8 @@ public final class GenIdomExprsVisitor extends GenJsExprsVisitor {
         translationContext,
         errorReporter,
         templateAliases,
-        jsTypeRegistry);
+        jsTypeRegistry,
+        sourceMapHelper);
   }
 
   @Override

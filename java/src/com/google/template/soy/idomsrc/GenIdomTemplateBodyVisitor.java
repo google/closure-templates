@@ -72,6 +72,7 @@ import com.google.template.soy.jssrc.dsl.GoogRequire;
 import com.google.template.soy.jssrc.dsl.JsArrowFunction;
 import com.google.template.soy.jssrc.dsl.JsDoc;
 import com.google.template.soy.jssrc.dsl.LineComment;
+import com.google.template.soy.jssrc.dsl.SourceMapHelper;
 import com.google.template.soy.jssrc.dsl.Statement;
 import com.google.template.soy.jssrc.dsl.Statements;
 import com.google.template.soy.jssrc.dsl.TryCatch;
@@ -163,7 +164,8 @@ final class GenIdomTemplateBodyVisitor extends GenJsTemplateBodyVisitor {
       boolean generatePositionalParamsSignature,
       FileSetMetadata fileSetMetadata,
       String alias,
-      ScopedJsTypeRegistry jsTypeRegistry) {
+      ScopedJsTypeRegistry jsTypeRegistry,
+      SourceMapHelper sourceMapHelper) {
     super(
         state,
         outputVars,
@@ -176,7 +178,8 @@ final class GenIdomTemplateBodyVisitor extends GenJsTemplateBodyVisitor {
         errorReporter,
         templateTranslationContext,
         templateAliases,
-        jsTypeRegistry);
+        jsTypeRegistry,
+        sourceMapHelper);
     this.contentKind = checkNotNull(contentKind);
     this.staticVarDeclarations = new ArrayList<>();
     this.generatePositionalParamsSignature = generatePositionalParamsSignature;

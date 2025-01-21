@@ -30,6 +30,7 @@ import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.Expressions;
 import com.google.template.soy.jssrc.dsl.FormatOptions;
+import com.google.template.soy.jssrc.dsl.SourceMapHelper;
 import com.google.template.soy.jssrc.internal.GenJsCodeVisitor.ScopedJsTypeRegistry;
 import com.google.template.soy.shared.internal.InternalPlugins;
 import com.google.template.soy.shared.internal.NoOpScopedData;
@@ -176,7 +177,10 @@ public final class GenCallCodeUtilsTest {
                 .put("$goo", Expressions.id("goo")),
             nameGenerator);
     visitorsState.enterFile(
-        translationContext, ScopedJsTypeRegistry.PASSTHROUGH, AliasUtils.IDENTITY_ALIASES);
+        translationContext,
+        ScopedJsTypeRegistry.PASSTHROUGH,
+        AliasUtils.IDENTITY_ALIASES,
+        SourceMapHelper.NO_OP);
     CodeChunk call =
         visitorsState.genCallCodeUtils.gen(
             callNode, visitorsState.createTranslateExprNodeVisitor());

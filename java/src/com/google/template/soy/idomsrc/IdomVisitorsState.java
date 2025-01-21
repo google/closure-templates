@@ -75,7 +75,8 @@ public final class IdomVisitorsState extends VisitorsState {
         translationContext,
         templateAliases,
         errorReporter,
-        scopedJsTypeRegistry);
+        scopedJsTypeRegistry,
+        sourceMapHelper);
   }
 
   @Override
@@ -96,7 +97,8 @@ public final class IdomVisitorsState extends VisitorsState {
         generatePositionalParamsSignature,
         fileSetMetadata,
         alias,
-        scopedJsTypeRegistry);
+        scopedJsTypeRegistry,
+        sourceMapHelper);
   }
 
   @Override
@@ -108,7 +110,8 @@ public final class IdomVisitorsState extends VisitorsState {
         translationContext,
         errorReporter,
         templateAliases,
-        scopedJsTypeRegistry);
+        scopedJsTypeRegistry,
+        sourceMapHelper);
   }
 
   public void enterCall(String alias, Deque<SanitizedContentKind> contentKind) {

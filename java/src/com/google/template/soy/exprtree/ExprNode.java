@@ -17,6 +17,7 @@
 package com.google.template.soy.exprtree;
 
 import com.google.common.collect.ImmutableList;
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SourceLocation.Point;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.basetree.CopyState;
@@ -170,6 +171,8 @@ public interface ExprNode extends Node {
     default Associativity getAssociativity() {
       return getOperator().getAssociativity();
     }
+
+    SourceLocation getOperatorLocation();
   }
 
   // -----------------------------------------------------------------------------------------------

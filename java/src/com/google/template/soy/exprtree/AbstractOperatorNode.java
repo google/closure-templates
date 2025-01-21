@@ -61,6 +61,7 @@ public abstract class AbstractOperatorNode extends AbstractParentExprNode implem
   }
 
   /** Returns the location of the operator token */
+  @Override
   public SourceLocation getOperatorLocation() {
     return operatorLocation;
   }

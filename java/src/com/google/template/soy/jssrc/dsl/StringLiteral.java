@@ -58,7 +58,7 @@ public abstract class StringLiteral extends Expression {
 
   @Override
   void doFormatOutputExpr(FormattingContext ctx) {
-    ctx.appendQuotedString(value(), quoteStyle(), span());
+    ctx.withSpan(span()).appendQuotedString(value(), quoteStyle());
   }
 
   @Override

@@ -21,6 +21,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import com.google.errorprone.annotations.ForOverride;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
+import com.google.template.soy.jssrc.dsl.SourceMapHelper;
 import com.google.template.soy.jssrc.internal.GenJsCodeVisitor.ScopedJsTypeRegistry;
 import com.google.template.soy.soytree.FileSetMetadata;
 import com.google.template.soy.types.SoyTypeRegistry;
@@ -47,6 +48,7 @@ public class VisitorsState {
 
   // Set per FileNode:
   protected TemplateAliases templateAliases;
+  protected SourceMapHelper sourceMapHelper;
   protected ScopedJsTypeRegistry scopedJsTypeRegistry;
   protected TranslationContext translationContext;
 
@@ -99,7 +101,8 @@ public class VisitorsState {
         translationContext,
         templateAliases,
         errorReporter,
-        scopedJsTypeRegistry);
+        scopedJsTypeRegistry,
+        sourceMapHelper);
   }
 
   public GenJsTemplateBodyVisitor createTemplateBodyVisitor(GenJsExprsVisitor genJsExprsVisitor) {
@@ -115,7 +118,8 @@ public class VisitorsState {
         errorReporter,
         translationContext,
         templateAliases,
-        scopedJsTypeRegistry);
+        scopedJsTypeRegistry,
+        sourceMapHelper);
   }
 
   public GenJsExprsVisitor createJsExprsVisitor() {
@@ -126,7 +130,8 @@ public class VisitorsState {
         translationContext,
         errorReporter,
         templateAliases,
-        scopedJsTypeRegistry);
+        scopedJsTypeRegistry,
+        sourceMapHelper);
   }
 
   public GenJsCodeVisitorAssistantForMsgs createVisitorAssistantForMsgs(
@@ -155,15 +160,18 @@ public class VisitorsState {
   public void enterFile(
       TranslationContext translationContext,
       ScopedJsTypeRegistry scopedJsTypeRegistry,
-      TemplateAliases templateAliases) {
+      TemplateAliases templateAliases,
+      SourceMapHelper sourceMapHelper) {
     this.translationContext = translationContext;
     this.scopedJsTypeRegistry = scopedJsTypeRegistry;
     this.templateAliases = templateAliases;
+    this.sourceMapHelper = sourceMapHelper;
   }
 
   public void exitFile() {
     this.translationContext = null;
     this.scopedJsTypeRegistry = null;
     this.templateAliases = null;
+    this.sourceMapHelper = null;
   }
 }

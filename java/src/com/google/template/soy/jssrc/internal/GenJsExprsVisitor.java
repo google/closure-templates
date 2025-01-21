@@ -28,6 +28,7 @@ import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.ConditionalExpressionBuilder;
 import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.jssrc.dsl.Expressions;
+import com.google.template.soy.jssrc.dsl.SourceMapHelper;
 import com.google.template.soy.jssrc.dsl.SoyJsPluginUtils;
 import com.google.template.soy.jssrc.internal.GenJsCodeVisitor.ScopedJsTypeRegistry;
 import com.google.template.soy.jssrc.restricted.ModernSoyJsSrcPrintDirective;
@@ -80,6 +81,8 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<Expression>> 
    */
   protected final TemplateAliases templateAliases;
 
+  private final SourceMapHelper sourceMapHelper;
+
   /**
    * @param genCallCodeUtils Instance of GenCallCodeUtils to use.
    * @param isComputableAsJsExprsVisitor The IsComputableAsJsExprsVisitor used by this instance
@@ -94,7 +97,8 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<Expression>> 
       TranslationContext translationContext,
       ErrorReporter errorReporter,
       TemplateAliases templateAliases,
-      ScopedJsTypeRegistry jsTypeRegistry) {
+      ScopedJsTypeRegistry jsTypeRegistry,
+      SourceMapHelper sourceMapHelper) {
     this.state = checkNotNull(state);
     this.genCallCodeUtils = checkNotNull(genCallCodeUtils);
     this.isComputableAsJsExprsVisitor = checkNotNull(isComputableAsJsExprsVisitor);
@@ -102,6 +106,7 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<Expression>> 
     this.errorReporter = checkNotNull(errorReporter);
     this.templateAliases = checkNotNull(templateAliases);
     this.jsTypeRegistry = checkNotNull(jsTypeRegistry);
+    this.sourceMapHelper = sourceMapHelper;
   }
 
   @Override
@@ -109,6 +114,7 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<Expression>> 
     Preconditions.checkArgument(isComputableAsJsExprsVisitor.exec(node));
     chunks = new ArrayList<>();
     visit(node);
+    chunks.forEach(c -> sourceMapHelper.setPrimaryLocation(c, node.getSourceLocation()));
     return chunks;
   }
 

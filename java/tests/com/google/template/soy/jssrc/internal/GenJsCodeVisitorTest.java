@@ -31,6 +31,7 @@ import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.jssrc.dsl.JsCodeBuilder;
+import com.google.template.soy.jssrc.dsl.SourceMapHelper;
 import com.google.template.soy.jssrc.internal.GenJsCodeVisitor.ScopedJsTypeRegistry;
 import com.google.template.soy.soytree.Metadata;
 import com.google.template.soy.soytree.TemplateNode;
@@ -1014,7 +1015,7 @@ public final class GenJsCodeVisitorTest {
             + "}\n";
 
     // Setup the GenJsCodeVisitor's state before the template is visited.
-    genJsCodeVisitor.jsCodeBuilder = new JsCodeBuilder(null);
+    genJsCodeVisitor.jsCodeBuilder = new JsCodeBuilder(null, SourceMapHelper.NO_OP);
     ParseResult parseResult = SoyFileSetParserBuilder.forFileContents(testFileContent).parse();
     TemplateNode template = (TemplateNode) SharedTestUtils.getNode(parseResult.fileSet());
     genJsCodeVisitor.visitForTesting(template, parseResult.registry(), exploding());
@@ -1037,7 +1038,7 @@ public final class GenJsCodeVisitorTest {
     TemplateNode templateNode = (TemplateNode) parseResult.fileSet().getChild(0).getChild(0);
 
     // Setup the GenJsCodeVisitor's state before the node is visited.
-    genJsCodeVisitor.jsCodeBuilder = new JsCodeBuilder(null);
+    genJsCodeVisitor.jsCodeBuilder = new JsCodeBuilder(null, SourceMapHelper.NO_OP);
     genJsCodeVisitor.outputVars.pushOutputVar("output");
     genJsCodeVisitor.outputVars.setOutputVarInited();
     UniqueNameGenerator nameGenerator = JsSrcNameGenerators.forLocalVariables();
@@ -1046,7 +1047,11 @@ public final class GenJsCodeVisitorTest {
             SoyToJsVariableMappings.startingWith(LOCAL_VAR_TRANSLATIONS), nameGenerator);
     genJsCodeVisitor.templateTranslationContext = translationContext;
 
-    visitorsState.enterFile(translationContext, ScopedJsTypeRegistry.PASSTHROUGH, TEMPLATE_ALIASES);
+    visitorsState.enterFile(
+        translationContext,
+        ScopedJsTypeRegistry.PASSTHROUGH,
+        TEMPLATE_ALIASES,
+        SourceMapHelper.NO_OP);
     genJsCodeVisitor.genJsExprsVisitor = visitorsState.createJsExprsVisitor();
     genJsCodeVisitor.jsCodeBuilder.append(genJsCodeVisitor.visitTemplateNodeChildren(templateNode));
 

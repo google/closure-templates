@@ -16,6 +16,7 @@
 
 package com.google.template.soy.jssrc.dsl;
 
+import com.google.common.base.Preconditions;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.javagencode.KytheHelper;
 import java.util.ArrayList;
@@ -46,13 +47,15 @@ public final class JsCodeBuilder {
   private final List<CodeChunk> chunks;
 
   @Nullable private final KytheHelper kytheHelper;
+  private final SourceMapHelper sourceMapHelper;
 
   // the set of symbols to require, indexed by symbol name to detect conflicting imports
   private final Map<String, GoogRequire> googRequires = new TreeMap<>();
 
-  public JsCodeBuilder(@Nullable KytheHelper kytheHelper) {
+  public JsCodeBuilder(@Nullable KytheHelper kytheHelper, SourceMapHelper sourceMapHelper) {
     this.chunks = new ArrayList<>();
     this.kytheHelper = kytheHelper;
+    this.sourceMapHelper = Preconditions.checkNotNull(sourceMapHelper);
   }
 
   @CanIgnoreReturnValue
@@ -105,7 +108,7 @@ public final class JsCodeBuilder {
       // TODO(lukes): we need some namespace management here... though really we need namespace
       // management with all declarations... The problem is that a require could introduce a name
       // alias that conflicts with a symbol defined elsewhere in the file.
-      sb.appendToBuffer(require.chunk().getCode(FormatOptions.JSSRC)).appendToBuffer('\n');
+      sb.appendToBuffer(require.chunk().getCode(FormatOptions.JSSRC)).appendToBuffer("\n");
     }
   }
 
@@ -115,15 +118,16 @@ public final class JsCodeBuilder {
   public StringBuilder getCode() {
     FormattingContext context = new FormattingContext(FormatOptions.JSSRC);
     context.setKytheHelper(kytheHelper);
+    context.setSourceMapHelper(sourceMapHelper);
     for (CodeChunk chunk : chunks) {
       if (chunk == REQUIRES_PLACEHOLDER) {
         appendGoogRequiresTo(context);
       } else if (chunk == Whitespace.BLANK_LINE) {
-        context.appendToBuffer('\n');
+        context.appendToBuffer("\n");
       } else {
         context.appendAll(chunk);
         if (context.isEndOfLine()) {
-          context.appendToBuffer('\n');
+          context.appendToBuffer("\n");
         }
       }
     }

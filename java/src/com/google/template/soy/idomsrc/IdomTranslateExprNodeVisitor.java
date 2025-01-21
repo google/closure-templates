@@ -41,6 +41,7 @@ import com.google.template.soy.exprtree.ProtoEnumValueNode;
 import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.jssrc.dsl.Expressions;
 import com.google.template.soy.jssrc.dsl.GoogRequire;
+import com.google.template.soy.jssrc.dsl.SourceMapHelper;
 import com.google.template.soy.jssrc.internal.GenJsCodeVisitor.ScopedJsTypeRegistry;
 import com.google.template.soy.jssrc.internal.JavaScriptValueFactoryImpl;
 import com.google.template.soy.jssrc.internal.JsType;
@@ -62,13 +63,15 @@ final class IdomTranslateExprNodeVisitor extends TranslateExprNodeVisitor {
       TranslationContext translationContext,
       TemplateAliases templateAliases,
       ErrorReporter errorReporter,
-      ScopedJsTypeRegistry jsTypeRegistry) {
+      ScopedJsTypeRegistry jsTypeRegistry,
+      SourceMapHelper sourceMapHelper) {
     super(
         javaScriptValueFactory,
         translationContext,
         templateAliases,
         errorReporter,
-        jsTypeRegistry);
+        jsTypeRegistry,
+        sourceMapHelper);
   }
 
   @Override

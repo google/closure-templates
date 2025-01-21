@@ -16,13 +16,16 @@
 
 package com.google.template.soy.base;
 
+
 /**
  * Object that can map one source location to anther, typically from generated source location to
  * original source location.
  */
 public interface SourceLocationMapper {
 
-  SourceLocationMapper NO_OP = loc -> loc;
+  SourceLocationMapper NO_OP = new SourceLocationMapper() {};
 
-  SourceLocation map(SourceLocation loc);
+  default SourceLocation map(SourceLocation loc) {
+    return loc;
+  }
 }

@@ -19,12 +19,14 @@ package com.google.template.soy.jssrc.dsl;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Utf8;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SourceLocation.ByteSpan;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.base.internal.QuoteStyle;
 import com.google.template.soy.javagencode.KytheHelper;
 import java.util.ArrayDeque;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.IdentityHashMap;
 import java.util.Set;
 import javax.annotation.Nullable;
@@ -39,13 +41,20 @@ class FormattingContext implements AutoCloseable {
   private StringBuilder buf;
   private final FormatOptions formatOptions;
   @Nullable private KytheHelper kytheHelper;
+  private SourceMapHelper sourceMapHelper = SourceMapHelper.NO_OP;
   private Scope curScope = new Scope(/* parent= */ null, /* emitClosingBrace= */ false);
   private String curIndent;
-  private boolean nextAppendShouldStartNewLine = false;
-  private boolean nextAppendShouldNeverStartNewLine = false;
   private final ArrayDeque<LexicalState> lexicalStateStack;
 
+  private boolean nextAppendShouldStartNewLine = false;
+  private boolean nextAppendShouldNeverStartNewLine = false;
+  @Nullable private ByteSpan nextImputee;
+  @Nullable private String nextSourcemapToken;
+  private Deque<SourceLocation> locationStack = new ArrayDeque<>();
+
   private int currentByteOffset = 0;
+  private int currentLine = 0; // 0-based to match SourceMapGeneratorV3
+  private int currentColumn = 0; // 0-based to match SourceMapGeneratorV3
 
   public enum LexicalState {
     JS,
@@ -67,6 +76,10 @@ class FormattingContext implements AutoCloseable {
     this.kytheHelper = kytheHelper;
   }
 
+  public void setSourceMapHelper(SourceMapHelper sourceMapHelper) {
+    this.sourceMapHelper = Preconditions.checkNotNull(sourceMapHelper);
+  }
+
   /**
    * Returns a buffering context that will not insert any line breaks or indents automatically. The
    * contents of the buffer will be appended to the main context as a single string on close.
@@ -85,6 +98,10 @@ class FormattingContext implements AutoCloseable {
     context.setKytheHelper(kytheHelper);
     context.currentByteOffset = currentByteOffset;
 
+    context.setSourceMapHelper(sourceMapHelper);
+    context.currentLine = currentLine;
+    context.currentColumn = currentColumn;
+
     context.lexicalStateStack.push(this.lexicalStateStack.peek());
     return context;
   }
@@ -102,28 +119,27 @@ class FormattingContext implements AutoCloseable {
   }
 
   @CanIgnoreReturnValue
-  public FormattingContext appendQuotedString(String s, QuoteStyle style, @Nullable ByteSpan span) {
+  public FormattingContext appendQuotedString(String s, QuoteStyle style) {
     switch (getCurrentLexicalState()) {
       case TSX_ATTR:
         style = style.escaped(); // fall-through
       case JS:
-        return appendImputee(
+        return append(
             escapeCloseScript(
-                BaseUtils.escapeToWrappedSoyString(s, formatOptions.htmlEscapeStrings(), style)),
-            span);
+                BaseUtils.escapeToWrappedSoyString(s, formatOptions.htmlEscapeStrings(), style)));
       case TTL:
         String content =
             BaseUtils.escapeToSoyString(s, formatOptions.htmlEscapeStrings(), QuoteStyle.BACKTICK);
         if (content.contains("\n")) {
-          return noBreak().appendImputee(content, span);
+          return noBreak().append(content);
         } else {
-          return appendImputee(content, span);
+          return append(content);
         }
       case TSX:
         // '>' is allowed in Soy but not in TSX.
-        return appendImputee(s.replace(">", "&gt;"), span);
+        return append(s.replace(">", "&gt;"));
       default:
-        return appendImputee(s, span);
+        return append(s);
     }
   }
 
@@ -200,16 +216,16 @@ class FormattingContext implements AutoCloseable {
   }
 
   @CanIgnoreReturnValue
-  FormattingContext appendImputee(String stuff, @Nullable ByteSpan soyOffsetSpan) {
-    if (soyOffsetSpan != null && soyOffsetSpan.isKnown() && kytheHelper != null) {
-      forceOutputWhitespace(stuff);
-      int startBytes = currentByteOffset;
-      appendToBuffer(stuff);
-      kytheHelper.addKytheLinkTo(
-          soyOffsetSpan.getStart(), soyOffsetSpan.getEnd(), startBytes, currentByteOffset);
-    } else {
-      append(stuff);
-    }
+  FormattingContext withSpan(@Nullable ByteSpan soyOffsetSpan) {
+    Preconditions.checkState(nextImputee == null);
+    nextImputee = soyOffsetSpan;
+    return this;
+  }
+
+  @CanIgnoreReturnValue
+  FormattingContext withSourceToken(@Nullable String token) {
+    Preconditions.checkState(nextSourcemapToken == null);
+    nextSourcemapToken = token;
     return this;
   }
 
@@ -223,29 +239,53 @@ class FormattingContext implements AutoCloseable {
   @CanIgnoreReturnValue
   FormattingContext append(CharSequence stuff) {
     forceOutputWhitespace(stuff);
-    appendToBuffer(stuff);
+
+    SourceLocation loc = locationStack.peek();
+    boolean addSourcemap = loc != null && loc.isKnown() && sourceMapHelper != null;
+    boolean addKythe = nextImputee != null && nextImputee.isKnown() && kytheHelper != null;
+
+    if (addSourcemap || addKythe) {
+      int startBytes = currentByteOffset;
+      int startCol = currentColumn;
+      int startLine = currentLine;
+
+      appendToBuffer(stuff);
+      if (addKythe) {
+        kytheHelper.addKytheLinkTo(
+            nextImputee.getStart(), nextImputee.getEnd(), startBytes, currentByteOffset);
+      }
+      if (addSourcemap) {
+        sourceMapHelper.mark(
+            loc, startLine, startCol, currentLine, currentColumn, nextSourcemapToken);
+      }
+    } else {
+      appendToBuffer(stuff);
+    }
+    nextImputee = null;
+    nextSourcemapToken = null;
     return this;
   }
 
   @CanIgnoreReturnValue
   FormattingContext append(char c) {
-    forceOutputWhitespace(Character.toString(c));
-    appendToBuffer(c);
-    return this;
+    return append(Character.toString(c));
   }
 
   @CanIgnoreReturnValue
   FormattingContext appendToBuffer(CharSequence stuff) {
+    stuff
+        .codePoints()
+        .forEach(
+            c -> {
+              if (c == '\n') {
+                currentLine++;
+                currentColumn = 0;
+              } else {
+                currentColumn++;
+              }
+            });
     buf.append(stuff);
     currentByteOffset += Utf8.encodedLength(stuff);
-    return this;
-  }
-
-  @CanIgnoreReturnValue
-  FormattingContext appendToBuffer(char c) {
-    String asString = String.valueOf(c);
-    buf.append(c);
-    currentByteOffset += Utf8.encodedLength(asString);
     return this;
   }
 
@@ -293,7 +333,7 @@ class FormattingContext implements AutoCloseable {
   FormattingContext appendInitialStatements(CodeChunk chunk) {
     // Never write the same initial statement more than once.
     if (shouldAppend(chunk)) {
-      chunk.doFormatInitialStatements(this);
+      withLocation(chunk, () -> chunk.doFormatInitialStatements(this));
     }
     return this;
   }
@@ -301,8 +341,19 @@ class FormattingContext implements AutoCloseable {
   /** Writes the output expression for the {@code value} to the buffer. */
   @CanIgnoreReturnValue
   FormattingContext appendOutputExpression(Expression value) {
-    value.doFormatOutputExpr(this);
+    withLocation(value, () -> value.doFormatOutputExpr(this));
     return this;
+  }
+
+  private void withLocation(CodeChunk chunk, Runnable task) {
+    SourceLocation loc = sourceMapHelper.getPrimaryLocation(chunk);
+    if (loc != null) {
+      locationStack.push(loc);
+    }
+    task.run();
+    if (loc != null) {
+      locationStack.pop();
+    }
   }
 
   /** Writes all code for the {@code chunk} to the buffer. */
@@ -317,7 +368,7 @@ class FormattingContext implements AutoCloseable {
         endLine();
       }
     } else if (chunk instanceof SpecialToken) {
-      ((SpecialToken) chunk).doFormatToken(this);
+      withLocation(chunk, () -> ((SpecialToken) chunk).doFormatToken(this));
     }
     return this;
   }
@@ -329,7 +380,7 @@ class FormattingContext implements AutoCloseable {
   @CanIgnoreReturnValue
   FormattingContext enterBlock() {
     maybeIndent('{');
-    appendToBuffer('{');
+    appendToBuffer("{");
     increaseIndent();
     endLine();
     curScope = new Scope(curScope, /* emitClosingBrace= */ true);
@@ -426,7 +477,7 @@ class FormattingContext implements AutoCloseable {
 
     if (nextAppendShouldStartNewLine) {
       if (lastChar != '\n') {
-        appendToBuffer('\n');
+        appendToBuffer("\n");
       }
       if (nextChar != '\n') {
         appendToBuffer(curIndent);

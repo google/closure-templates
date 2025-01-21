@@ -43,6 +43,7 @@ import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.jssrc.dsl.Expressions;
 import com.google.template.soy.jssrc.dsl.GoogRequire;
 import com.google.template.soy.jssrc.dsl.Id;
+import com.google.template.soy.jssrc.dsl.SourceMapHelper;
 import com.google.template.soy.jssrc.dsl.Statement;
 import com.google.template.soy.jssrc.dsl.Statements;
 import com.google.template.soy.jssrc.dsl.SwitchBuilder;
@@ -127,6 +128,8 @@ public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<St
 
   protected final ScopedJsTypeRegistry jsTypeRegistry;
 
+  protected final SourceMapHelper sourceMapHelper;
+
   protected GenJsTemplateBodyVisitor(
       VisitorsState state,
       OutputVarHandler outputVars,
@@ -139,7 +142,8 @@ public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<St
       ErrorReporter errorReporter,
       TranslationContext templateTranslationContext,
       TemplateAliases templateAliases,
-      ScopedJsTypeRegistry jsTypeRegistry) {
+      ScopedJsTypeRegistry jsTypeRegistry,
+      SourceMapHelper sourceMapHelper) {
     this.state = checkNotNull(state);
     this.outputVars = checkNotNull(outputVars);
     this.jsSrcOptions = checkNotNull(jsSrcOptions);
@@ -152,11 +156,14 @@ public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<St
     this.templateTranslationContext = checkNotNull(templateTranslationContext);
     this.templateAliases = checkNotNull(templateAliases);
     this.jsTypeRegistry = checkNotNull(jsTypeRegistry);
+    this.sourceMapHelper = sourceMapHelper;
   }
 
   @Override
   public Statement visit(SoyNode node) {
-    return super.visit(node);
+    Statement rv = super.visit(node);
+    sourceMapHelper.setPrimaryLocation(rv, node.getSourceLocation());
+    return rv;
   }
 
   protected List<Statement> visitChildren(ParentSoyNode<?> node) {

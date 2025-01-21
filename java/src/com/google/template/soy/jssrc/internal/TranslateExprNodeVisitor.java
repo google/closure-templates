@@ -121,6 +121,7 @@ import com.google.template.soy.jssrc.dsl.Expressions;
 import com.google.template.soy.jssrc.dsl.GoogRequire;
 import com.google.template.soy.jssrc.dsl.Id;
 import com.google.template.soy.jssrc.dsl.JsDoc;
+import com.google.template.soy.jssrc.dsl.SourceMapHelper;
 import com.google.template.soy.jssrc.dsl.SoyJsPluginUtils;
 import com.google.template.soy.jssrc.internal.GenJsCodeVisitor.ScopedJsTypeRegistry;
 import com.google.template.soy.jssrc.internal.NullSafeAccumulator.FieldAccess;
@@ -218,23 +219,29 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
   private final ErrorReporter errorReporter;
   private final TemplateAliases templateAliases;
   private final ScopedJsTypeRegistry jsTypeRegistry;
+  private final SourceMapHelper sourceMapHelper;
 
   public TranslateExprNodeVisitor(
       JavaScriptValueFactoryImpl javascriptValueFactory,
       TranslationContext translationContext,
       TemplateAliases templateAliases,
       ErrorReporter errorReporter,
-      ScopedJsTypeRegistry jsTypeRegistry) {
+      ScopedJsTypeRegistry jsTypeRegistry,
+      SourceMapHelper sourceMapHelper) {
     this.javascriptValueFactory = checkNotNull(javascriptValueFactory);
     this.errorReporter = checkNotNull(errorReporter);
     this.translationContext = checkNotNull(translationContext);
     this.templateAliases = checkNotNull(templateAliases);
     this.jsTypeRegistry = checkNotNull(jsTypeRegistry);
+    this.sourceMapHelper = checkNotNull(sourceMapHelper);
   }
 
   @Override
   protected Expression visit(ExprNode node) {
-    return checkNotNull(super.visit(node), "visit(%s) returned null", node);
+    Expression rv = super.visit(node);
+    checkNotNull(rv, "visit(%s) returned null", node);
+    sourceMapHelper.setPrimaryLocation(rv, node.getSourceLocation());
+    return rv;
   }
 
   /**

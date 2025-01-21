@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.google.template.soy.jssrc.dsl;
 
 import com.google.auto.value.AutoValue;
@@ -30,7 +29,6 @@ import javax.annotation.Nullable;
 @AutoValue
 @Immutable
 public abstract class Id extends Expression implements OperatorInterface, CodeChunk.HasRequires {
-
   public static Id create(String id) {
     return builder(id).build();
   }
@@ -44,17 +42,20 @@ public abstract class Id extends Expression implements OperatorInterface, CodeCh
   @Nullable
   public abstract ByteSpan span();
 
+  /** The identifier name in the source file. */
+  @Nullable
+  public abstract String sourceName();
+
   @Override
   public abstract ImmutableSet<GoogRequire> googRequires();
 
   @Override
   void doFormatOutputExpr(FormattingContext ctx) {
-    ctx.appendImputee(id(), span());
+    ctx.withSpan(span()).withSourceToken(sourceName()).append(id());
   }
 
   @Override
   public JsExpr singleExprOrName(FormatOptions formatOptions) {
-    // throw new RuntimeException();
     return new JsExpr(id(), Integer.MAX_VALUE);
   }
 
@@ -83,10 +84,11 @@ public abstract class Id extends Expression implements OperatorInterface, CodeCh
   /** A builder for a {@link Id}. */
   @AutoValue.Builder
   public abstract static class Builder {
-
     public abstract Builder setId(String id);
 
     public abstract Builder setSpan(ByteSpan span);
+
+    public abstract Builder setSourceName(String sourceName);
 
     public abstract Builder setGoogRequires(ImmutableSet<GoogRequire> requires);
 
@@ -95,7 +97,9 @@ public abstract class Id extends Expression implements OperatorInterface, CodeCh
 
     public Id build() {
       Id built = autoBuild();
-      CodeChunks.checkId(built.id());
+      if (!built.id().isEmpty()) {
+        CodeChunks.checkId(built.id());
+      }
       return built;
     }
   }
