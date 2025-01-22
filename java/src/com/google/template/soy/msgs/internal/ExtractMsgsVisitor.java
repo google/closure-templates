@@ -21,6 +21,8 @@ import static java.util.Comparator.comparing;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.SourceLocationMapper;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.internal.MsgUtils.MsgPartsAndIds;
@@ -51,6 +53,7 @@ public final class ExtractMsgsVisitor extends AbstractSoyNodeVisitor<SoyMsgBundl
   private List<SoyMsg> msgs;
 
   private String currentTemplate;
+  private SourceLocationMapper currentMapper;
 
   public ExtractMsgsVisitor(ErrorReporter errorReporter) {}
 
@@ -66,7 +69,7 @@ public final class ExtractMsgsVisitor extends AbstractSoyNodeVisitor<SoyMsgBundl
     visit(node);
     // the messages in this list only have one source location.
     // messages gain extra source locations when merged together in a bundle.
-    msgs.sort(comparing(m -> Iterables.getOnlyElement(m.getSourceLocations()).sourceLocation()));
+    msgs.sort(comparing(m -> Iterables.getFirst(m.getSourceLocations(), null).sourceLocation()));
     return new SoyMsgBundleImpl(null, msgs, this::merge);
   }
 
@@ -96,6 +99,12 @@ public final class ExtractMsgsVisitor extends AbstractSoyNodeVisitor<SoyMsgBundl
     return attributes.toString();
   }
 
+  @Override
+  protected void visitSoyFileNode(SoyFileNode node) {
+    currentMapper = node.getSourceMap();
+    super.visitSoyFileNode(node);
+  }
+
   // -----------------------------------------------------------------------------------------------
   // Implementations for specific nodes.
 
@@ -107,19 +116,27 @@ public final class ExtractMsgsVisitor extends AbstractSoyNodeVisitor<SoyMsgBundl
       builder.setMeaning(node.getMeaning());
     }
     node.getAlternateId().ifPresent(builder::setAlternateId);
-    SoyMsg msg =
+    SourceLocation msgLoc = node.getSourceLocation();
+    SoyMsg.Builder msg =
         builder
             .setDesc(node.getDesc())
             .setContentType(node.getContentType())
-            .addSourceLocation(node.getSourceLocation(), currentTemplate)
+            .addSourceLocation(msgLoc, currentTemplate)
             .setIsPlrselMsg(node.isPlrselMsg())
             .setParts(msgPartsAndIds.parts)
             .setHasFallback(
                 // we have a fallback if our parent has 2 children (the msg and the fallbackmsg) and
                 // we are the msg
-                node.getParent().numChildren() == 2 && node.getParent().getChildIndex(node) == 0)
-            .build();
-    msgs.add(msg);
+                node.getParent().numChildren() == 2 && node.getParent().getChildIndex(node) == 0);
+
+    // Add the original source's location as well, if the Soy file is generated and we have a
+    // source map.
+    SourceLocation originalLoc = currentMapper.map(msgLoc);
+    if (originalLoc.isKnown() && !originalLoc.getFilePath().equals(msgLoc.getFilePath())) {
+      msg.addSourceLocation(originalLoc, currentTemplate);
+    }
+
+    msgs.add(msg.build());
 
     // Nested msg are allowed, e.g. as params of a nested call node.
     visitChildren(node);
