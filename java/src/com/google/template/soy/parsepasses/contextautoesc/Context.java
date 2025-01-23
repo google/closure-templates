@@ -91,6 +91,7 @@ abstract class Context {
           "icon",
           "image_src",
           "license",
+          "me",
           "next",
           "preconnect",
           "prefetch",

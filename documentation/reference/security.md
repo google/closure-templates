@@ -190,6 +190,7 @@ This escaping logic applies to:
     *   icon
     *   image_src
     *   license
+    *   me
     *   next
     *   preconnect
     *   prefetch
