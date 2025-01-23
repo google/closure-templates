@@ -22,9 +22,8 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.SourceMapMode;
 import com.google.template.soy.soytree.SoyFileNode;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.List;
-import java.util.Map;
 import javax.annotation.Nullable;
 
 /** Builds a sourcemap. */
@@ -39,7 +38,7 @@ public final class SourceMapHelper {
 
   private final List<String> debugLines = new ArrayList<>();
   private String lastPath = "";
-  private Map<CodeChunk, SourceLocation> locationMap = new HashMap<>();
+  private final IdentityHashMap<CodeChunk, SourceLocation> locationMap = new IdentityHashMap<>();
 
   public SourceMapHelper(SoyFileNode file, SourceMapMode sourceMapMode) {
     this.sourceMapMode = sourceMapMode;
@@ -47,6 +46,10 @@ public final class SourceMapHelper {
 
   @Nullable
   public SourceLocation getPrimaryLocation(CodeChunk value) {
+    // Save bytes by not mapping comment ranges.
+    if (value instanceof LineComment || value instanceof RangeComment || value instanceof JsDoc) {
+      return SourceLocation.UNKNOWN;
+    }
     return locationMap.get(value);
   }
 

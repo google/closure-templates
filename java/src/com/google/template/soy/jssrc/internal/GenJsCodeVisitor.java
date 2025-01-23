@@ -500,14 +500,15 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
    * @param soyFile The node we're visiting.
    */
   private void addCodeToProvideSoyNamespace(JsCodeBuilder jsCodeBuilder, SoyFileNode soyFile) {
-    jsCodeBuilder
-        .append(
-            dottedIdNoRequire("goog.provide")
-                .call(
-                    StringLiteral.builder(getGoogModuleNamespace(soyFile.getNamespace()))
-                        .setSpan(getNamespaceByteSpan(soyFile))
-                        .build()))
-        .append(BLANK_LINE);
+    Expression expression =
+        dottedIdNoRequire("goog.provide")
+            .call(
+                StringLiteral.builder(getGoogModuleNamespace(soyFile.getNamespace()))
+                    .setSpan(getNamespaceByteSpan(soyFile))
+                    .build());
+    sourceMapHelper.setPrimaryLocation(
+        expression, soyFile.getNamespaceDeclaration().getSourceLocation());
+    jsCodeBuilder.append(expression).append(BLANK_LINE);
   }
 
   private static ByteSpan getNamespaceByteSpan(SoyFileNode soyFile) {
@@ -1767,6 +1768,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
                   JsDoc.builder().addParameterizedAnnotation("const", jsType.typeExpr()).build())
               .build();
       declarations.add(declaration);
+      sourceMapHelper.setPrimaryLocation(declaration, param.getSourceLocation());
 
       templateTranslationContext
           .soyToJsVariableMappings()
