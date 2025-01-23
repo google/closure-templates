@@ -26,6 +26,7 @@ import static com.google.template.soy.jssrc.internal.JsRuntime.ELEMENT_LIB_IDOM;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_HTML_SAFE_ATTRIBUTE;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_IS_FUNCTION;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_IS_OBJECT;
+import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_SOY_DATA;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_SOY_DATA_SANITIZED_CONTENT;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SAFEVALUES_SAFEHTML;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_ASSERT_PARAM_TYPE;
@@ -142,9 +143,9 @@ public final class JsType implements CodeChunk.HasRequires {
       builder()
           .addType("function()")
           .addType("!" + ELEMENT_LIB_IDOM.alias() + ".IdomFunction")
-          .addType("!goog.soy.data.SanitizedHtmlAttribute")
           .addRequire(ELEMENT_LIB_IDOM)
-          .addRequire(GoogRequire.createTypeRequire("goog.soy.data.SanitizedHtmlAttribute"))
+          .addType("!" + GOOG_SOY_DATA.alias() + ".SanitizedHtmlAttribute")
+          .addRequire(GOOG_SOY_DATA)
           .setPredicate(
               (value, codeGenerator) ->
                   Optional.of(
@@ -153,8 +154,8 @@ public final class JsType implements CodeChunk.HasRequires {
                           .or(value.instanceOf(GOOG_HTML_SAFE_ATTRIBUTE), codeGenerator)))
           .build();
 
-  private static final GoogRequire SANITIZED_CONTENT_KIND =
-      GoogRequire.createWithAlias("goog.soy.data.SanitizedContentKind", "SanitizedContentKind");
+  private static final Expression SANITIZED_CONTENT_KIND =
+      GOOG_SOY_DATA.dotAccess("SanitizedContentKind");
   // This cannot use a goog.require() alias to avoid conflicts with legacy
   // FilterHtmlAttributesDirective
   private static final Expression IS_IDOM_FUNCTION_TYPE =
@@ -164,10 +165,10 @@ public final class JsType implements CodeChunk.HasRequires {
 
   private static final JsType IDOM_HTML =
       builder()
-          .addType("!goog.soy.data.SanitizedHtml")
+          .addType("!" + GOOG_SOY_DATA.alias() + ".SanitizedHtml")
+          .addRequire(GOOG_SOY_DATA)
           .addType("!safevalues.SafeHtml")
           .addRequire(GoogRequire.createTypeRequire("safevalues"))
-          .addRequire(GoogRequire.createTypeRequire("goog.soy.data.SanitizedHtml"))
           .addType("!" + ELEMENT_LIB_IDOM.alias() + ".IdomFunction")
           .addRequire(ELEMENT_LIB_IDOM)
           .addType("function(!incrementaldomlib.IncrementalDomRenderer): undefined")
@@ -734,8 +735,8 @@ public final class JsType implements CodeChunk.HasRequires {
             && (contentKind.isHtml() || contentKind == SanitizedContentKind.ATTRIBUTES)) {
           builder.addType("void");
         } else {
-          builder.addType("!" + type);
-          builder.addRequire(GoogRequire.createTypeRequire(type));
+          builder.addType("!goog.soy.data." + type);
+          builder.addRequire(GoogRequire.createTypeRequire("goog.soy.data"));
         }
         // Type predicate is not used for template return types.
         builder.setPredicate(TypePredicate.NO_OP);
@@ -861,8 +862,8 @@ public final class JsType implements CodeChunk.HasRequires {
     Builder builder = builder();
     builder.addType("!soy.$$EMPTY_STRING_");
     builder.addRequire(JsRuntime.SOY);
-    builder.addType("!" + type);
-    builder.addRequire(GoogRequire.createTypeRequire(type));
+    builder.addType("!goog.soy.data." + type);
+    builder.addRequire(GoogRequire.createTypeRequire("goog.soy.data"));
     if (!isStrict) {
       // All the sanitized types have an .isCompatibleWith method for testing for allowed types
       // NOTE: this actually allows 'string' to be passed, which is inconsistent with other backends

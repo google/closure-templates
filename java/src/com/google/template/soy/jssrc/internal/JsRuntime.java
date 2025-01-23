@@ -103,14 +103,16 @@ public final class JsRuntime {
 
   public static final Expression GOOG_MODULE_GET = dottedIdNoRequire("goog.module.get");
 
+  public static final GoogRequire GOOG_SOY_DATA = GoogRequire.create("goog.soy.data");
+
   public static final Expression GOOG_SOY_DATA_SANITIZED_CONTENT =
-      GoogRequire.create("goog.soy.data.SanitizedContent").reference();
+      GOOG_SOY_DATA.dotAccess("SanitizedContent");
 
   public static final Expression SAFEVALUES_SAFEHTML =
       GoogRequire.create("safevalues").dotAccess("SafeHtml");
 
   public static final Expression GOOG_HTML_SAFE_ATTRIBUTE =
-      GoogRequire.create("goog.soy.data.SanitizedHtmlAttribute").reference();
+      GOOG_SOY_DATA.dotAccess("SanitizedHtmlAttribute");
 
   public static final Expression GOOG_STRING_UNESCAPE_ENTITIES =
       GOOG_STRING.dotAccess("unescapeEntities");
@@ -315,7 +317,8 @@ public final class JsRuntime {
    * Returns the js type for the sanitized content object corresponding to the given ContentKind.
    */
   public static Expression sanitizedContentType(SanitizedContentKind kind) {
-    return GoogRequire.create(NodeContentKinds.toJsSanitizedContentCtorName(kind)).reference();
+    String type = NodeContentKinds.toJsSanitizedContentCtorName(kind);
+    return GOOG_SOY_DATA.dotAccess(type);
   }
 
   /**

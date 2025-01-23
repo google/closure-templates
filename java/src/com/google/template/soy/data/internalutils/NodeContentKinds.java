@@ -43,15 +43,13 @@ public final class NodeContentKinds {
 
   private static final ImmutableMap<SanitizedContentKind, String> KIND_TO_JS_CTOR_NAME =
       ImmutableMap.<SanitizedContentKind, String>builder()
-          .put(SanitizedContentKind.HTML, "goog.soy.data.SanitizedHtml")
-          .put(SanitizedContentKind.HTML_ELEMENT, "goog.soy.data.SanitizedHtml")
-          .put(SanitizedContentKind.ATTRIBUTES, "goog.soy.data.SanitizedHtmlAttribute")
-          .put(SanitizedContentKind.JS, "goog.soy.data.SanitizedJs")
-          .put(SanitizedContentKind.URI, "goog.soy.data.SanitizedUri")
-          .put(SanitizedContentKind.CSS, "goog.soy.data.SanitizedCss")
-          .put(
-              SanitizedContentKind.TRUSTED_RESOURCE_URI,
-              "goog.soy.data.SanitizedTrustedResourceUri")
+          .put(SanitizedContentKind.HTML, "SanitizedHtml")
+          .put(SanitizedContentKind.HTML_ELEMENT, "SanitizedHtml")
+          .put(SanitizedContentKind.ATTRIBUTES, "SanitizedHtmlAttribute")
+          .put(SanitizedContentKind.JS, "SanitizedJs")
+          .put(SanitizedContentKind.URI, "SanitizedUri")
+          .put(SanitizedContentKind.CSS, "SanitizedCss")
+          .put(SanitizedContentKind.TRUSTED_RESOURCE_URI, "SanitizedTrustedResourceUri")
           .put(SanitizedContentKind.TEXT, "string")
           .build();
 

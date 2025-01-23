@@ -17,6 +17,7 @@
 package com.google.template.soy.idomsrc;
 
 import static com.google.template.soy.jssrc.dsl.Expressions.id;
+import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_SOY_DATA;
 import static com.google.template.soy.jssrc.internal.JsRuntime.JS_TO_PROTO_PACK_FN_BASE;
 
 import com.google.common.collect.ImmutableMap;
@@ -42,8 +43,8 @@ final class IdomRuntime {
   public static final Expression BUFFERING_IDOM_RENDERER =
       INCREMENTAL_DOM_LIB.dotAccess("BufferingIncrementalDomRenderer");
 
-  private static final GoogRequire SANITIZED_CONTENT_KIND =
-      GoogRequire.createWithAlias("goog.soy.data.SanitizedContentKind", "SanitizedContentKind");
+  private static final Expression SANITIZED_CONTENT_KIND =
+      GOOG_SOY_DATA.dotAccess("SanitizedContentKind");
 
   static final GoogRequire SOY_IDOM =
       GoogRequire.createWithAlias("google3.javascript.template.soy.soyutils_idom", "soyIdom");

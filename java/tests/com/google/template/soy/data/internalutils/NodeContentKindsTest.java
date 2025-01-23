@@ -32,23 +32,19 @@ public class NodeContentKindsTest {
   @Test
   public void testToJsSanitizedContentCtorName() {
     assertEquals(
-        "goog.soy.data.SanitizedHtml",
-        NodeContentKinds.toJsSanitizedContentCtorName(SanitizedContentKind.HTML));
+        "SanitizedHtml", NodeContentKinds.toJsSanitizedContentCtorName(SanitizedContentKind.HTML));
     assertEquals(
-        "goog.soy.data.SanitizedHtmlAttribute",
+        "SanitizedHtmlAttribute",
         NodeContentKinds.toJsSanitizedContentCtorName(SanitizedContentKind.ATTRIBUTES));
     assertEquals(
-        "goog.soy.data.SanitizedCss",
-        NodeContentKinds.toJsSanitizedContentCtorName(SanitizedContentKind.CSS));
+        "SanitizedCss", NodeContentKinds.toJsSanitizedContentCtorName(SanitizedContentKind.CSS));
     assertEquals(
-        "goog.soy.data.SanitizedUri",
-        NodeContentKinds.toJsSanitizedContentCtorName(SanitizedContentKind.URI));
+        "SanitizedUri", NodeContentKinds.toJsSanitizedContentCtorName(SanitizedContentKind.URI));
     assertEquals(
-        "goog.soy.data.SanitizedTrustedResourceUri",
+        "SanitizedTrustedResourceUri",
         NodeContentKinds.toJsSanitizedContentCtorName(SanitizedContentKind.TRUSTED_RESOURCE_URI));
     assertEquals(
-        "goog.soy.data.SanitizedJs",
-        NodeContentKinds.toJsSanitizedContentCtorName(SanitizedContentKind.JS));
+        "SanitizedJs", NodeContentKinds.toJsSanitizedContentCtorName(SanitizedContentKind.JS));
     assertEquals(
         "string", NodeContentKinds.toJsSanitizedContentCtorName(SanitizedContentKind.TEXT));
   }
