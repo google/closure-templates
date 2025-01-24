@@ -131,8 +131,8 @@ final class IncrementalDomKeysPass implements CompilerFilePass {
         visitBlockNode((ParentSoyNode) node);
         return;
       }
-      if (node instanceof ParentSoyNode) {
-        visitChildren((ParentSoyNode) node);
+      if (node instanceof ParentSoyNode<?> parent) {
+        visitChildren(parent);
       }
     }
 
