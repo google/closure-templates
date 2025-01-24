@@ -635,6 +635,7 @@ public final class PassManager {
           passes.add(new VeLogRewritePass());
         }
         passes.add(new CheckModifiableTemplatesPass(errorReporter));
+        passes.add(new ValidateAutoJavaExternPass(errorReporter));
       }
       passes.add(new CheckAllFunctionsResolvedPass(pluginResolver));
 
