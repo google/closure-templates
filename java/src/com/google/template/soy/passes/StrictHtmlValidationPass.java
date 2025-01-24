@@ -399,8 +399,8 @@ public final class StrictHtmlValidationPass implements CompilerFilePass {
 
     @Override
     protected void visitSoyNode(SoyNode node) {
-      if (node instanceof ParentSoyNode) {
-        visitChildren((ParentSoyNode<?>) node);
+      if (node instanceof ParentSoyNode<?> parent) {
+        visitChildren(parent);
       }
     }
   }

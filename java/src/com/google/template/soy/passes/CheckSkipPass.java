@@ -78,8 +78,8 @@ final class CheckSkipPass implements CompilerFilePass {
 
     @Override
     public void visitSoyNode(SoyNode node) {
-      if (node instanceof ParentSoyNode) {
-        visitChildren((ParentSoyNode<?>) node);
+      if (node instanceof ParentSoyNode<?> parent) {
+        visitChildren(parent);
       }
     }
   }
