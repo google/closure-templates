@@ -126,6 +126,12 @@ public abstract class AbstractSoyNodeVisitor<R> extends AbstractNodeVisitor<SoyN
       case LET_CONTENT_NODE:
         visitLetContentNode((LetContentNode) node);
         break;
+      case RETURN_NODE:
+        visitReturnNode((ReturnNode) node);
+        break;
+      case ASSIGNMENT_NODE:
+        visitAssignmentNode((AssignmentNode) node);
+        break;
 
       case IF_NODE:
         visitIfNode((IfNode) node);
@@ -357,6 +363,14 @@ public abstract class AbstractSoyNodeVisitor<R> extends AbstractNodeVisitor<SoyN
 
   protected void visitLetContentNode(LetContentNode node) {
     visitLetNode(node);
+  }
+
+  protected void visitReturnNode(ReturnNode node) {
+    visitSoyNode(node);
+  }
+
+  protected void visitAssignmentNode(AssignmentNode node) {
+    visitSoyNode(node);
   }
 
   protected void visitLetNode(LetNode node) {

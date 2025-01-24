@@ -464,7 +464,7 @@ public final class TemplateParserTest {
         .causesError(
             "parse error at '{fallbackmsg ': expected text, {literal}, {call, {delcall, {msg, "
                 + "{/msg}, {if, {let, {for, {plural, {select, {switch, {log}, {debugger}, {print, "
-                + "{, {key, {velog, {skip}, {skipchildren}, or whitespace");
+                + "{, {key, {velog, {skip}, {skipchildren}, {return, {set, or whitespace");
     assertInvalidTemplate("{print $boo /}");
     assertInvalidTemplate("{if true}aaa{else/}bbb{/if}");
     assertInvalidTemplate("{call aaa.bbb /}");
@@ -1208,10 +1208,9 @@ public final class TemplateParserTest {
     // Test error case.
     assertThatTemplateContent("{let $alpha: $boo.foo}{/let}")
         .causesError(
-            "parse error at '{/let}': expected {/template}, text, {literal}, {call, {delcall, {msg,"
-                + " {if, {let, {for, {switch, {log}, {debugger}, {print, {, {key, {velog, {skip},"
-                + " {skipchildren}, or whitespace")
-        .at(1, 23);
+            "parse error at '}': expected /}, ?, ||, ??, as, instanceof, &&, ^, &, ==, !=, ===, "
+                + "!==, <, >, <=, >=, +, -, *, /, %, ?., ., [, ?[, (, or !")
+        .at(1, 22);
   }
 
   @Test

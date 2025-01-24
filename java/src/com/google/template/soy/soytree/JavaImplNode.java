@@ -34,7 +34,7 @@ import java.util.function.Function;
 import javax.annotation.Nullable;
 
 /** Java implementation for an extern. */
-public final class JavaImplNode extends ExternImplNode {
+public final class JavaImplNode extends AbstractBlockCommandNode implements ExternImplNode {
   private static final ImmutableSet<String> IMPLICIT_PARAMS =
       ImmutableSet.of(
           "com.google.template.soy.data.Dir",
@@ -65,6 +65,7 @@ public final class JavaImplNode extends ExternImplNode {
               "Valid values for ''%s'' are %s.",
               TYPE, ALLOWED_TYPES.stream().collect(joining("'', ''", "''", "''"))));
 
+  private final boolean isAutoImpl;
   private final ImmutableList<CommandTagAttribute> attributes;
 
   // Stored separately from {@code attributes} for convenience.
@@ -83,7 +84,8 @@ public final class JavaImplNode extends ExternImplNode {
       ErrorReporter errorReporter,
       Function<String, TypeReference> typeParser,
       Function<String, ImmutableList<TypeReference>> typeListParser) {
-    super(id, sourceLocation, "javaimpl");
+    super(id, sourceLocation, sourceLocation, "javaimpl");
+    this.isAutoImpl = false;
     this.attributes = ImmutableList.copyOf(attributes);
     initAttributes(errorReporter);
 
@@ -95,6 +97,12 @@ public final class JavaImplNode extends ExternImplNode {
     }
   }
 
+  public JavaImplNode(int id, SourceLocation sourceLocation, SourceLocation openTagLocation) {
+    super(id, sourceLocation, openTagLocation, "javaimpl");
+    this.isAutoImpl = true;
+    this.attributes = ImmutableList.of();
+  }
+
   /**
    * Copy constructor.
    *
@@ -102,7 +110,7 @@ public final class JavaImplNode extends ExternImplNode {
    */
   private JavaImplNode(JavaImplNode orig, CopyState copyState) {
     super(orig, copyState);
-
+    this.isAutoImpl = orig.isAutoImpl;
     this.attributes =
         orig.attributes.stream()
             .map(origAttr -> origAttr.copy(copyState))
@@ -110,6 +118,10 @@ public final class JavaImplNode extends ExternImplNode {
     initAttributes(ErrorReporter.devnull());
     this.parsedReturnType = orig.parsedReturnType;
     this.parsedParamTypes = orig.parsedParamTypes;
+  }
+
+  public boolean isAutoImpl() {
+    return isAutoImpl;
   }
 
   /**

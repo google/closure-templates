@@ -16,28 +16,7 @@
 
 package com.google.template.soy.soytree;
 
-import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.soytree.CommandTagAttribute.CommandTagAttributesHolder;
 
 /** A node that specifies some language-specific implementation of an extern. */
-public abstract class ExternImplNode extends AbstractCommandNode
-    implements CommandTagAttributesHolder {
-  /**
-   * @param id The id for this node.
-   * @param sourceLocation The node's source location.
-   * @param commandName The name of the Soy command.
-   */
-  protected ExternImplNode(int id, SourceLocation sourceLocation, String commandName) {
-    super(id, sourceLocation, commandName);
-  }
-
-  /**
-   * Copy constructor.
-   *
-   * @param orig The node to copy.
-   */
-  protected ExternImplNode(ExternImplNode orig, CopyState copyState) {
-    super(orig, copyState);
-  }
-}
+public interface ExternImplNode extends CommandTagAttributesHolder {}

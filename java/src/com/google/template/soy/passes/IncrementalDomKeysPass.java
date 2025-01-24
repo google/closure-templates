@@ -18,6 +18,7 @@ package com.google.template.soy.passes;
 
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
+import com.google.template.soy.soytree.ExternNode;
 import com.google.template.soy.soytree.HtmlCloseTagNode;
 import com.google.template.soy.soytree.HtmlContext;
 import com.google.template.soy.soytree.HtmlOpenTagNode;
@@ -73,6 +74,11 @@ final class IncrementalDomKeysPass implements CompilerFilePass {
       template = templateNode;
       templateContainsUnpredictableContent = false;
       visitBlockNode(templateNode);
+    }
+
+    @Override
+    protected void visitExternNode(ExternNode node) {
+      // Do not look in {javaimpl}.
     }
 
     /**

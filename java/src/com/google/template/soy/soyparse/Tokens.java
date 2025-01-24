@@ -168,6 +168,10 @@ final class Tokens {
       case SoyFileParserConstants.SQ_ATTRIBUTE_VALUE:
       case SoyFileParserConstants.DQ_ATTRIBUTE_VALUE:
         return "attribute value";
+      case SoyFileParserConstants.CMD_RETURN:
+        return "{return";
+      case SoyFileParserConstants.CMD_ASSIGN:
+        return "{set";
 
       case SoyFileParserConstants.CMD_FULL_SP:
       case SoyFileParserConstants.CMD_FULL_NIL:

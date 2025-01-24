@@ -210,6 +210,10 @@ public final class RawTextNode extends AbstractSoyNode
     return rawText.isEmpty();
   }
 
+  public boolean isWhitespace() {
+    return rawText.codePoints().allMatch(Character::isWhitespace);
+  }
+
   public Provenance getProvenance() {
     return provenance;
   }

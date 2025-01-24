@@ -17,6 +17,7 @@
 package com.google.template.soy.soyparse;
 
 import com.google.common.base.CharMatcher;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
@@ -158,6 +159,19 @@ final class ParseErrors {
         PLAIN_ERROR,
         formatParseExceptionDetails(errorToken.image, expectedTokenImages.build().asList())
             + optionalAdvice);
+  }
+
+  static void reportSoyFileParseException(
+      ErrorReporter reporter, SourceFilePath filePath, Token currentToken, String optionalAdvice) {
+    // currentToken is the 'last successfully consumed token', but the error is usually due to the
+    // first unsuccessful token.  use that for the source location
+    Token errorToken = (currentToken.next != null) ? currentToken.next : currentToken;
+    SourceLocation location = Tokens.createSrcLoc(filePath, errorToken);
+
+    reporter.report(
+        location,
+        PLAIN_ERROR,
+        formatParseExceptionDetails(errorToken.image, ImmutableList.of()) + optionalAdvice);
   }
 
   static void reportTokenMgrError(

@@ -38,6 +38,7 @@ import com.google.template.soy.soytree.ConstNode;
 import com.google.template.soy.soytree.ExternNode;
 import com.google.template.soy.soytree.ForNonemptyNode;
 import com.google.template.soy.soytree.ImportNode;
+import com.google.template.soy.soytree.JavaImplNode;
 import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.LetValueNode;
 import com.google.template.soy.soytree.PrintNode;
@@ -49,8 +50,12 @@ import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TypeDefNode;
 import com.google.template.soy.soytree.defn.ExternVar;
+import com.google.template.soy.soytree.defn.FunctionParam;
 import com.google.template.soy.soytree.defn.ImportedVar;
 import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
+import com.google.template.soy.types.FunctionType.Parameter;
+import com.google.template.soy.types.UnknownType;
+import com.google.template.soy.types.ast.FunctionTypeNode;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.LinkedHashMap;
@@ -237,6 +242,29 @@ final class LocalVariablesNodeVisitor {
     }
 
     @Override
+    protected void visitJavaImplNode(JavaImplNode node) {
+      if (!node.isAutoImpl()) {
+        super.visitJavaImplNode(node);
+        return;
+      }
+
+      // Create a scope for all parameters.
+      localVariables.enterScope();
+      ExternNode parent = node.getParent();
+      if (parent.typeNode().isTypeResolved()) {
+        for (Parameter p : parent.getType().getParameters()) {
+          localVariables.define(new FunctionParam(p.getName(), p.getType()), parent);
+        }
+      } else {
+        for (FunctionTypeNode.Parameter p : parent.typeNode().parameters()) {
+          localVariables.define(new FunctionParam(p.name(), UnknownType.getInstance()), parent);
+        }
+      }
+      super.visitJavaImplNode(node);
+      localVariables.exitScope();
+    }
+
+    @Override
     protected void visitTemplateNode(TemplateNode node) {
       // Create a scope for all parameters.
       localVariables.enterScope();
@@ -368,6 +396,8 @@ final class LocalVariablesNodeVisitor {
         return "Extern function";
       case CONST:
         return "Symbol";
+      case FUNCTION_PARAM:
+        return "Function parameter";
     }
     throw new AssertionError(varDefn.kind());
   }

@@ -41,6 +41,8 @@ public interface VarDefn {
     CONST,
     // File-wide exportable extern.
     EXTERN,
+    // Param inside function ({javaimpl}) block.
+    FUNCTION_PARAM,
     // imported symbol
     IMPORT_VAR,
 

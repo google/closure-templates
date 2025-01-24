@@ -95,6 +95,7 @@ import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.soytree.AbstractSoyNode;
 import com.google.template.soy.soytree.AliasDeclaration;
+import com.google.template.soy.soytree.AssignmentNode;
 import com.google.template.soy.soytree.ByteOffsetIndex;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallDelegateNode;
@@ -135,6 +136,7 @@ import com.google.template.soy.soytree.NamespaceDeclaration;
 import com.google.template.soy.soytree.PrintDirectiveNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
+import com.google.template.soy.soytree.ReturnNode;
 import com.google.template.soy.soytree.SkipNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode.BlockNode;
@@ -687,6 +689,24 @@ public class SoyFileParser {
     return skipToTemplateToken(kinds);
   }
 
+  boolean assertInFunction(Token token) throws ParseException {
+    if (!token_source.isInFunction) {
+      ParseErrors.reportSoyFileParseException(
+          errorReporter, filePath, token, ": content not allowed in template block.");
+      return true;
+    }
+    return false;
+  }
+
+  boolean assertNotInFunction(Token token) throws ParseException {
+    if (token_source.isInFunction) {
+      ParseErrors.reportSoyFileParseException(
+          errorReporter, filePath, token, ": content not allowed in function block.");
+      return true;
+    }
+    return false;
+  }
+
   @CheckReturnValue
   private Token skipToTemplateToken(int... kinds) {
     ImmutableSet<Integer> skipTo = ImmutableSet.copyOf(Ints.asList(kinds));
@@ -822,6 +842,7 @@ PARSER_END(SoyFileParser)
 TOKEN_MGR_DECLS: {
 
   private boolean isInTemplate;
+  boolean isInFunction;
   private int prevState = -1;
   private SoyFileParser parser;
   List<Comment> comments = new ArrayList<Comment>();
@@ -872,6 +893,7 @@ TOKEN_MGR_DECLS: {
 
   private void resetState() {
     isInTemplate = false;
+    isInFunction = false;
     prevState = -1;
   }
 
@@ -950,6 +972,17 @@ TOKEN_MGR_DECLS: {
         }
     }
     token.image = token.image.substring(by);
+  }
+
+  void enterFunction() {
+    isInFunction = true;
+    isInTemplate = true; // template-like, anyway
+    SwitchTo(TEMPLATE_DEFAULT);
+  }
+
+  void exitFunction() {
+    isInFunction = false;
+    isInTemplate = false;
   }
 
   @Override
@@ -1257,6 +1290,10 @@ TOKEN_MGR_DECLS: {
 
 | < CMD_SKIP                     : "{skip}"         >
 | < CMD_SKIPCHILDREN             : "{skipchildren}" >
+
+| < CMD_RETURN                   : "{return" <WS>   > : EXPR
+| < CMD_ASSIGN                   : "{set" <WS>      > : EXPR
+| < CMD_CLOSE_JAVA_IMPL          : "{/javaimpl}"    > : DEFAULT
 }
 
 
@@ -1622,7 +1659,11 @@ private ExternNode ExternStmt() :
     { impls.add(impl); }
   |
     impl = JavaImplStmt()
-    { impls.add(impl); }
+    {
+      if (impl != null) {
+        impls.add(impl);
+      }
+    }
   )+
   close = <CMD_CLOSE_EXTERN>
   {
@@ -1676,19 +1717,45 @@ private JsImplNode JsImplStmt() :
  */
 private JavaImplNode JavaImplStmt() :
 {
-  Token open, close;
+  Token open, endOpen, close = null;
   List<CommandTagAttribute> attributes;
+  List<StandaloneNode> autoImpl = ImmutableList.of();
 }
 {
   open = <CMD_OPEN_JAVA_IMPL>
-  attributes = Attributes()
-  close = <CMD_SELF_CLOSE>
-  {
-    SourceLocation srcLoc = createSrcLoc(open, close);
-    validateAttributes(null, attributes, errorReporter);
-    return new JavaImplNode(nodeIdGen.genId(), srcLoc, attributes,
-        errorReporter, TypeReferenceParser.parser(), TypeReferenceParser.listParser());
-  }
+  (
+    attributes = Attributes()
+    close = <CMD_SELF_CLOSE>
+    {
+      SourceLocation srcLoc = createSrcLoc(open, close);
+      validateAttributes(null, attributes, errorReporter);
+      return new JavaImplNode(nodeIdGen.genId(), srcLoc, attributes,
+          errorReporter, TypeReferenceParser.parser(), TypeReferenceParser.listParser());
+    }
+  |
+    endOpen = <CMD_END>
+    {
+      token_source.enterFunction();
+    }
+    try {
+      autoImpl = TemplateBlock()
+      close = <CMD_CLOSE_JAVA_IMPL>
+    } catch (ParseException e) {
+      token_source.exitFunction();
+      reportFileErrorAndSkipTo(e, CMD_CLOSE_JAVA_IMPL);
+      return null;
+    }
+    {
+      token_source.exitFunction();
+      SourceLocation srcLoc = createSrcLoc(open, close);
+      SourceLocation openTagLoc = createSrcLoc(open, endOpen);
+      JavaImplNode impl = new JavaImplNode(nodeIdGen.genId(), srcLoc, openTagLoc);
+      for (StandaloneNode node : autoImpl) {
+        impl.addChild(node);
+      }
+      return impl;
+    }
+  )
 }
 
 
@@ -2279,7 +2346,7 @@ private void SkipWhitespace() : { }
  */
 private RawTextNode RawText() :
 {
-  Token tagBegin, token;
+  Token tagBegin, token, firstToken = null;
   RawTextBuilder builder = new RawTextBuilder(filePath, nodeIdGen, whitespaceMode);
 }
 {
@@ -2295,6 +2362,7 @@ private RawTextNode RawText() :
       | token = <CMD_FULL_NBSP>
       )
       {
+        assertNotInFunction(token);
         return RawTextBuilder.buildCommandCharNode(token, filePath, nodeIdGen);
       }
   |
@@ -2310,7 +2378,12 @@ private RawTextNode RawText() :
         token = <TOKEN_NOT_WS>
       | token = <TOKEN_WS>
       )
-      { builder.addBasic(token); }
+      {
+        builder.addBasic(token);
+        if (firstToken == null) {
+          firstToken = token;
+        }
+      }
     |
       tagBegin = <CMD_OPEN_LITERAL>
       token = <LITERAL_RAW_TEXT_CONTENT>
@@ -2320,17 +2393,30 @@ private RawTextNode RawText() :
         // Remove the closing tag from the token.
         token.image = token.image.substring(0, token.image.length() - "{/literal}".length());
         token.endColumn -= "{/literal}".length();
+        assertNotInFunction(tagBegin);
         return builder.buildLiteral(token, loc);
       }
     )
     {
       if (getToken(1).kind == CMD_OPEN_LITERAL) {
-        return builder.build();
+        RawTextNode node = builder.build();
+        if (node.isWhitespace() && token_source.isInFunction) {
+          return null;
+        }
+        assertNotInFunction(firstToken);
+        return node;
       }
     }
   )+
 
-  { return builder.build(); }
+  {
+    RawTextNode node = builder.build();
+    if (node.isWhitespace() && token_source.isInFunction) {
+      return null;
+    }
+    assertNotInFunction(firstToken);
+    return node;
+  }
 }
 
 
@@ -2589,10 +2675,12 @@ private List<StandaloneNode> TemplateBlock() :
   (
     node = TemplateBlockItem()
     {
-      if (templateBlock.isEmpty()) {
-        templateBlock = new ArrayList<StandaloneNode>();
+      if (node != null) {
+        if (templateBlock.isEmpty()) {
+          templateBlock = new ArrayList<StandaloneNode>();
+        }
+        templateBlock.add(node);
       }
-      templateBlock.add(node);
     }
   )*
 
@@ -2646,6 +2734,7 @@ private StatementNode NonPrintableStmt() :
 {
   (
     stmt = LetStmt()
+  | stmt = AssignmentStmt()
   | stmt = LogStmt()
   | stmt = DebuggerStmt()
   | stmt = VeLogStmt()
@@ -2686,6 +2775,7 @@ private StatementNode ControlFlowStmt() :
     stmt = IfStmt()
   | stmt = SwitchStmt()
   | stmt = ForStmt()
+  | stmt = ReturnStmt()
   )
 
   { return stmt; }
@@ -2705,6 +2795,12 @@ private MsgFallbackGroupNode MsgStmt() :
 }
 {
   tagBegin = <CMD_BEGIN_MSG>
+  {
+    if (assertNotInFunction(tagBegin)) {
+      skipToTemplateToken(CMD_CLOSE_MSG);
+      return null;
+    }
+  }
 
   try {
     attributes = Attributes()
@@ -3073,6 +3169,9 @@ private PrintNode PrintStmt() :
     tagBegin = <CMD_BEGIN_PRINT>  { isImplicit = false; }
   | tagBegin = <CMD_BEGIN_IMPLICIT_PRINT>  { isImplicit = true; }
   )
+  {
+    assertNotInFunction(tagBegin);
+  }
 
   try {
     expr = PrintExpr()
@@ -3493,6 +3592,9 @@ private VeLogNode VeLogStmt() :
 }
 {
   tagBegin = <CMD_BEGIN_VELOG>
+  {
+    assertNotInFunction(tagBegin);
+  }
   try {
     veDataExpr = Expr()
     attributes = Attributes()
@@ -3675,6 +3777,42 @@ private ForNode ForStmt() :
   }
 }
 
+private ReturnNode ReturnStmt() :
+{
+  Token tagBegin, tagEnd;
+  ExprNode expr = null;
+}
+{
+  tagBegin = <CMD_RETURN>
+  {
+    assertInFunction(tagBegin);
+  }
+  expr = Expr()
+  tagEnd = <CMD_SELF_CLOSE>
+  {
+    return new ReturnNode(nodeIdGen.genId(), createSrcLoc(tagBegin, tagEnd), expr);
+  }
+}
+
+private AssignmentNode AssignmentStmt() :
+{
+  Token tagBegin, tagEnd, identToken;
+  ExprNode rhs;
+}
+{
+  tagBegin = <CMD_ASSIGN>
+  {
+    assertInFunction(tagBegin);
+  }
+  identToken = <IDENT>
+  <EQ>
+  rhs = Expr()
+  tagEnd = <CMD_SELF_CLOSE>
+  {
+    ExprNode lhs = new VarRefNode(identToken.image, createSrcLoc(identToken), null);
+    return new AssignmentNode(nodeIdGen.genId(), createSrcLoc(tagBegin, tagEnd), lhs, rhs);
+  }
+}
 
 /**
  * CallStmt -> ( CmdBeginCall TemplateName Attributes
@@ -3696,6 +3834,9 @@ private CallNode CallStmt() :
   (
     // {call}
     tagBegin = <CMD_BEGIN_CALL>
+    {
+      assertNotInFunction(tagBegin);
+    }
 
     try {
       calleeExpr = Expr()

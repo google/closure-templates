@@ -72,6 +72,9 @@ public interface SoyNode extends Node {
     LET_VALUE_NODE,
     LET_CONTENT_NODE,
 
+    RETURN_NODE,
+    ASSIGNMENT_NODE,
+
     IF_NODE,
     IF_COND_NODE,
     IF_ELSE_NODE,

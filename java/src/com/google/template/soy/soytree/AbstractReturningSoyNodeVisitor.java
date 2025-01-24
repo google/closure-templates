@@ -100,6 +100,10 @@ public abstract class AbstractReturningSoyNodeVisitor<R>
         return visitLetValueNode((LetValueNode) node);
       case LET_CONTENT_NODE:
         return visitLetContentNode((LetContentNode) node);
+      case RETURN_NODE:
+        return visitReturnNode((ReturnNode) node);
+      case ASSIGNMENT_NODE:
+        return visitAssignmentNode((AssignmentNode) node);
 
       case IF_NODE:
         return visitIfNode((IfNode) node);
@@ -278,6 +282,14 @@ public abstract class AbstractReturningSoyNodeVisitor<R>
   }
 
   protected R visitLetNode(LetNode node) {
+    return visitSoyNode(node);
+  }
+
+  protected R visitReturnNode(ReturnNode node) {
+    return visitSoyNode(node);
+  }
+
+  protected R visitAssignmentNode(AssignmentNode node) {
     return visitSoyNode(node);
   }
 

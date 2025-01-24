@@ -27,7 +27,7 @@ import com.google.template.soy.soytree.SoyNode.Kind;
 import java.util.List;
 
 /** Js implementation for an extern. */
-public final class JsImplNode extends ExternImplNode {
+public final class JsImplNode extends AbstractCommandNode implements ExternImplNode {
   private static final SoyErrorKind INVALID_IMPL_ATTRIBUTE =
       SoyErrorKind.of("''{0}'' is not a valid attribute.");
 
