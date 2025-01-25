@@ -86,7 +86,7 @@ public final class ExternNode extends AbstractParentCommandNode<ExternImplNode>
   }
 
   public boolean isJavaImplAsync() {
-    return getJavaImpl().map(JavaImplNode::isAsync).orElse(false);
+    return getJavaImpl().map(j -> !j.isAutoImpl() && j.isAsync()).orElse(false);
   }
 
   public FunctionTypeNode typeNode() {
