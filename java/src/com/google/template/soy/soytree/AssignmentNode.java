@@ -24,7 +24,7 @@ import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.StatementNode;
 
-/** Node representing a 'set' statement. */
+/** Node representing a 'assign' statement. */
 public final class AssignmentNode extends AbstractCommandNode
     implements ExprHolderNode, StatementNode {
 
@@ -32,7 +32,7 @@ public final class AssignmentNode extends AbstractCommandNode
   private final ExprRootNode rhs;
 
   public AssignmentNode(int id, SourceLocation location, ExprNode lhs, ExprNode rhs) {
-    super(id, location, "set");
+    super(id, location, "assign");
     this.lhs = new ExprRootNode(lhs);
     this.rhs = new ExprRootNode(rhs);
   }

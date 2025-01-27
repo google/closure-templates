@@ -1292,7 +1292,7 @@ TOKEN_MGR_DECLS: {
 | < CMD_SKIPCHILDREN             : "{skipchildren}" >
 
 | < CMD_RETURN                   : "{return" <WS>   > : EXPR
-| < CMD_ASSIGN                   : "{set" <WS>      > : EXPR
+| < CMD_ASSIGN                   : "{assign" <WS>      > : EXPR
 | < CMD_CLOSE_JAVA_IMPL          : "{/javaimpl}"    > : DEFAULT
 }
 
