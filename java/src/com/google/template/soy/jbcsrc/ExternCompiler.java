@@ -73,7 +73,7 @@ public final class ExternCompiler {
     // local method parameter types match the soy types from the extern definition while the extern
     // delegate parameter types match the java types from the javaimpl definition.
 
-    if (!extern.getJavaImpl().isPresent()) {
+    if (extern.getJavaImpl().isEmpty() || extern.getJavaImpl().get().isAutoImpl()) {
       Statement.throwExpression(JbcSrcExternRuntime.NO_EXTERN_JAVA_IMPL.invoke())
           .writeMethod(
               methodAccess(),
