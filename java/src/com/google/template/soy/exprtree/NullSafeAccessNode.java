@@ -315,6 +315,7 @@ public final class NullSafeAccessNode extends AbstractParentExprNode {
    *         +-- FieldAccess (b)
    *             +-- GroupNode Placeholder (null)
    *     +-- FieldAccess (d)
+   *         +-- GroupNode Placeholder (null)
    *
    * Calling this method on NSAN(2) will result in `a.b.c`, eg:
    * FieldAccess (c)
