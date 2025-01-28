@@ -27,6 +27,7 @@ import com.google.template.soy.base.internal.TypeReference;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
+import com.google.template.soy.soytree.SoyNode.StackContextNode;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.Future;
@@ -34,7 +35,8 @@ import java.util.function.Function;
 import javax.annotation.Nullable;
 
 /** Java implementation for an extern. */
-public final class JavaImplNode extends AbstractBlockCommandNode implements ExternImplNode {
+public final class JavaImplNode extends AbstractBlockCommandNode
+    implements ExternImplNode, StackContextNode {
   private static final ImmutableSet<String> IMPLICIT_PARAMS =
       ImmutableSet.of(
           "com.google.template.soy.data.Dir",
@@ -252,5 +254,15 @@ public final class JavaImplNode extends AbstractBlockCommandNode implements Exte
   @Override
   public ExternNode getParent() {
     return (ExternNode) super.getParent();
+  }
+
+  @Override
+  public StackTraceElement createStackTraceElement(SourceLocation srcLocation) {
+    SoyFileNode file = getNearestAncestor(SoyFileNode.class);
+    return new StackTraceElement(
+        /* declaringClass= */ file.getNamespace(),
+        /* methodName= */ getParent().getIdentifier().identifier(),
+        srcLocation.getFileName(),
+        srcLocation.getBeginLine());
   }
 }

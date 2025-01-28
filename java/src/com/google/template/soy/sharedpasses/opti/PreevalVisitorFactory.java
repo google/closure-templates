@@ -29,6 +29,7 @@ import com.google.template.soy.sharedpasses.render.EvalVisitor.EvalVisitorFactor
 import com.google.template.soy.soytree.ExternNode;
 import com.google.template.soy.soytree.TemplateNode;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 /** A factory for creating PreevalVisitor objects. */
@@ -37,6 +38,7 @@ final class PreevalVisitorFactory implements EvalVisitorFactory {
   @Override
   public PreevalVisitor create(
       Environment env,
+      Supplier<Environment> fileEnvSupplier,
       @Nullable SoyCssRenamingMap cssRenamingMap,
       @Nullable SoyIdRenamingMap xidRenamingMap,
       @Nullable SoyMsgBundle msgBundle,

@@ -16,13 +16,19 @@
 
 package com.google.template.soy.soytree;
 
+import static com.google.common.collect.ImmutableList.toImmutableList;
+
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.soytree.CommandTagAttribute.CommandTagAttributesHolder;
 import com.google.template.soy.soytree.defn.ExternVar;
+import com.google.template.soy.soytree.defn.FunctionParam;
 import com.google.template.soy.types.FunctionType;
+import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.UnknownType;
 import com.google.template.soy.types.ast.FunctionTypeNode;
 import java.util.Optional;
 
@@ -38,6 +44,7 @@ public final class ExternNode extends AbstractParentCommandNode<ExternImplNode>
   private final SourceLocation openTagLocation;
   private final boolean exported;
   private final ExternVar var;
+  private ImmutableList<FunctionParam> paramVars;
 
   public ExternNode(
       int id,
@@ -67,6 +74,15 @@ public final class ExternNode extends AbstractParentCommandNode<ExternImplNode>
     this.exported = orig.exported;
     this.var = new ExternVar(orig.var);
     copyState.updateRefs(orig.var, this.var);
+    if (orig.paramVars != null) {
+      this.paramVars =
+          orig.paramVars.stream()
+              .map(v -> new FunctionParam(v.name(), v.nameLocation(), v.type()))
+              .collect(toImmutableList());
+      for (int i = 0; i < paramVars.size(); i++) {
+        copyState.updateRefs(orig.paramVars.get(i), this.paramVars.get(i));
+      }
+    }
   }
 
   public Identifier getIdentifier() {
@@ -120,6 +136,24 @@ public final class ExternNode extends AbstractParentCommandNode<ExternImplNode>
 
   public ExternVar getVar() {
     return var;
+  }
+
+  public ImmutableList<FunctionParam> getParamVars() {
+    if (paramVars == null) {
+      if (typeNode.isTypeResolved()) {
+        FunctionType type = getType();
+        ImmutableMap<String, SoyType> types = type.getParameterMap();
+        paramVars =
+            typeNode().parameters().stream()
+                .map(p -> new FunctionParam(p.name(), p.nameLocation(), types.get(p.name())))
+                .collect(toImmutableList());
+      } else {
+        return typeNode().parameters().stream()
+            .map(p -> new FunctionParam(p.name(), p.nameLocation(), UnknownType.getInstance()))
+            .collect(toImmutableList());
+      }
+    }
+    return paramVars;
   }
 
   @Override

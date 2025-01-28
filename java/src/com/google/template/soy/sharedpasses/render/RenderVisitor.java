@@ -125,6 +125,9 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
 
   private final ImmutableTable<SourceLogicalPath, String, ImmutableList<ExternNode>> externs;
 
+  /** The environment of the current file node. */
+  protected Environment fileEnv;
+
   /** The current environment. */
   protected Environment env;
 
@@ -279,16 +282,16 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
   /** A private helper to render templates with optimized type checking. */
   private void renderTemplate(TemplateNode template) {
     TemplateNode templateToRender = getTemplateToRender(template);
-    env = Environment.create(templateToRender, data, ijData);
-
     // Visit top-level constant and imports explicitly every time we render a new template, in order
     // to populate the variable environment.
-    SoyFileNode file = templateToRender.getParent();
-    file.getImports().forEach(this::visitImportNode);
-    file.getConstants().forEach(this::visitConstNode);
+    fileEnv = Environment.create();
+    buildFileEnvironment(fileEnv, templateToRender.getParent(), constants, this::eval);
+    env = fileEnv.fork();
+    enterTemplate(env, templateToRender, data, ijData);
 
     checkStrictParamTypes(templateToRender);
     visitChildren(templateToRender);
+    fileEnv = null;
     env = null; // unpin for gc
   }
 
@@ -311,38 +314,6 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
 
   // -----------------------------------------------------------------------------------------------
   // Implementations for specific nodes.
-
-  @Override
-  protected void visitImportNode(ImportNode node) {
-    if (node.getImportType() != ImportType.TEMPLATE) {
-      return;
-    }
-    node.visitVars(
-        (var, parentType) -> {
-          if (parentType != null
-              && parentType.getKind() == Kind.TEMPLATE_MODULE
-              && var.type().getKind() != Kind.TEMPLATE_TYPE) {
-            // Any nested vardefn of a template module import that is not a template type must be a
-            // constant.
-            env.bind(
-                var,
-                SoyValueConverter.INSTANCE.convertLazy(
-                    // Bind this lazily since we process every import for every template in the
-                    // file.
-                    () -> {
-                      ConstNode constNode =
-                          constants.get(SourceLogicalPath.create(node.getPath()), var.getSymbol());
-                      return eval(constNode.getExpr(), constNode);
-                    }));
-          }
-        });
-  }
-
-  @Override
-  protected void visitConstNode(ConstNode node) {
-    SoyValue constValue = eval(node.getExpr(), node);
-    env.bind(node.getVar(), constValue);
-  }
 
   @Override
   protected void visitTemplateNode(TemplateNode node) {
@@ -413,20 +384,16 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
 
   @Override
   protected void visitIfNode(IfNode node) {
-
     for (SoyNode child : node.getChildren()) {
-
       if (child instanceof IfCondNode) {
         IfCondNode icn = (IfCondNode) child;
         if (eval(icn.getExpr(), node).coerceToBoolean()) {
           visit(icn);
           return;
         }
-
       } else if (child instanceof IfElseNode) {
         visit(child);
         return;
-
       } else {
         throw new AssertionError();
       }
@@ -438,7 +405,6 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
     SoyValue switchValue = eval(node.getExpr(), node);
 
     for (SoyNode child : node.getChildren()) {
-
       if (child instanceof SwitchCaseNode) {
         SwitchCaseNode scn = (SwitchCaseNode) child;
         for (ExprNode caseExpr : scn.getExprList()) {
@@ -447,11 +413,9 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
             return;
           }
         }
-
       } else if (child instanceof SwitchDefaultNode) {
         visit(child);
         return;
-
       } else {
         throw new AssertionError();
       }
@@ -465,16 +429,12 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
     int i = 0;
     ForNonemptyNode child = (ForNonemptyNode) node.getChild(0);
     while (it.hasNext()) {
-      executeForeachBody(child, i++, it.next());
+      env.bindLoopPosition(child.getVar(), it.next());
+      if (child.getIndexVar() != null) {
+        env.bind(child.getIndexVar(), SoyValueConverter.INSTANCE.convert(i++));
+      }
+      visitChildren(child);
     }
-  }
-
-  private void executeForeachBody(ForNonemptyNode child, int i, SoyValueProvider value) {
-    env.bindLoopPosition(child.getVar(), value);
-    if (child.getIndexVar() != null) {
-      env.bind(child.getIndexVar(), SoyValueConverter.INSTANCE.convert(i));
-    }
-    visitChildren(child);
   }
 
   @Override
@@ -791,7 +751,10 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
    * directly, because this helper creates and throws a RenderException if there's an error.
    */
   private SoyValue eval(ExprNode expr, SoyNode node) {
+    return eval(env, expr, node);
+  }
 
+  private SoyValue eval(Environment env, ExprNode expr, SoyNode node) {
     if (expr == null) {
       throw RenderException.create("Cannot evaluate expression in V1 syntax.")
           .addStackTraceElement(node);
@@ -802,6 +765,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
       evalVisitor =
           evalVisitorFactory.create(
               env,
+              () -> fileEnv,
               cssRenamingMap,
               xidRenamingMap,
               msgBundle,
@@ -810,6 +774,8 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
               externs,
               deltemplates,
               activeModSelector);
+    } else {
+      evalVisitor = evalVisitor.withEnv(env);
     }
 
     try {
@@ -997,5 +963,61 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
       return SanitizedContent.class.getSimpleName();
     }
     return value.getClass().getSimpleName();
+  }
+
+  @FunctionalInterface
+  interface NodeEvaler {
+    SoyValue eval(Environment env, ExprNode exprNode, SoyNode soyNode);
+  }
+
+  private static void buildFileEnvironment(
+      Environment env,
+      SoyFileNode node,
+      ImmutableTable<SourceLogicalPath, String, ConstNode> constants,
+      NodeEvaler evaler) {
+    for (SoyNode child : node.getChildren()) {
+      if (child instanceof ConstNode) {
+        ConstNode constNode = (ConstNode) child;
+        env.bind(constNode.getVar(), evaler.eval(env, constNode.getExpr(), node));
+      } else if (child instanceof ImportNode) {
+        ImportNode importNode = (ImportNode) child;
+        if (importNode.getImportType() == ImportType.TEMPLATE) {
+          importNode.visitVars(
+              (var, parentType) -> {
+                if (parentType != null
+                    && parentType.getKind() == Kind.TEMPLATE_MODULE
+                    && var.type().getKind() != Kind.TEMPLATE_TYPE) {
+                  // Any nested vardefn of a template module import that is not a template type must
+                  // be a constant.
+                  env.bind(
+                      var,
+                      SoyValueConverter.INSTANCE.convertLazy(
+                          // Bind this lazily since we process every import for every template in
+                          // the file.
+                          () -> {
+                            ConstNode constNode =
+                                constants.get(
+                                    SourceLogicalPath.create(importNode.getPath()),
+                                    var.getSymbol());
+                            return evaler.eval(env, constNode.getExpr(), constNode);
+                          }));
+                }
+              });
+        }
+      }
+    }
+  }
+
+  static void enterTemplate(
+      Environment env, TemplateNode template, ParamStore data, SoyInjector ijData) {
+    for (TemplateParam param : template.getAllParams()) {
+      var property = RecordProperty.get(param.name());
+      SoyValueProvider provider =
+          param.isInjected() ? ijData.get(property) : data.getFieldProvider(property);
+      if (provider == null) {
+        provider = UndefinedData.INSTANCE;
+      }
+      env.bind(param, provider);
+    }
   }
 }

@@ -17,14 +17,15 @@
 package com.google.template.soy.soytree.defn;
 
 import com.google.common.base.Preconditions;
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.exprtree.AbstractVarDefn;
 import com.google.template.soy.types.SoyType;
 
 /** A declared function parameter. */
 public class FunctionParam extends AbstractVarDefn {
 
-  public FunctionParam(String name, SoyType type) {
-    super(name, null, Preconditions.checkNotNull(type));
+  public FunctionParam(String name, SourceLocation loc, SoyType type) {
+    super(name, loc, Preconditions.checkNotNull(type));
   }
 
   @Override

@@ -18,6 +18,7 @@ package com.google.template.soy.sharedpasses.render;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.template.soy.shared.internal.SharedRuntime.bitwiseAnd;
 import static com.google.template.soy.shared.internal.SharedRuntime.bitwiseOr;
 import static com.google.template.soy.shared.internal.SharedRuntime.bitwiseXor;
@@ -156,6 +157,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 /**
@@ -199,6 +201,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
      */
     EvalVisitor create(
         Environment env,
+        Supplier<Environment> fileEnvSupplier,
         @Nullable SoyCssRenamingMap cssRenamingMap,
         @Nullable SoyIdRenamingMap xidRenamingMap,
         @Nullable SoyMsgBundle msgBundle,
@@ -212,6 +215,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
   /** The current environment. */
   private final Environment env;
 
+  private final Supplier<Environment> fileEnvSupplier;
   @Nullable private final SoyMsgBundle msgBundle;
 
   /** The current CSS renaming map. */
@@ -245,6 +249,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
    */
   protected EvalVisitor(
       Environment env,
+      Supplier<Environment> fileEnvSupplier,
       @Nullable SoyCssRenamingMap cssRenamingMap,
       @Nullable SoyIdRenamingMap xidRenamingMap,
       @Nullable SoyMsgBundle msgBundle,
@@ -255,6 +260,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
       DelTemplateSelector<TemplateNode> deltemplates,
       Predicate<String> activeModSelector) {
     this.env = checkNotNull(env);
+    this.fileEnvSupplier = fileEnvSupplier;
     this.msgBundle = msgBundle;
     this.cssRenamingMap = (cssRenamingMap == null) ? SoyCssRenamingMap.EMPTY : cssRenamingMap;
     this.xidRenamingMap = (xidRenamingMap == null) ? SoyCssRenamingMap.EMPTY : xidRenamingMap;
@@ -265,6 +271,24 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     this.externs = externs;
     this.deltemplates = deltemplates;
     this.activeModSelector = activeModSelector;
+  }
+
+  EvalVisitor withEnv(Environment env) {
+    if (this.env == env) {
+      return this;
+    }
+    return new EvalVisitor(
+        env,
+        fileEnvSupplier,
+        cssRenamingMap,
+        xidRenamingMap,
+        msgBundle,
+        debugSoyTemplateInfo,
+        pluginInstances,
+        undefinedDataHandlingMode,
+        externs,
+        deltemplates,
+        activeModSelector);
   }
 
   // -----------------------------------------------------------------------------------------------
@@ -952,6 +976,14 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
       throw RenderException.createF("No java implementation for extern '%s'.", soyFunction.name());
     }
     JavaImplNode java = impl.get();
+    if (java.isAutoImpl()) {
+      return new FunctionVisitor(
+              java,
+              fileEnvSupplier.get(),
+              node.getParams().stream().map(this::visit).collect(toImmutableList()),
+              this::withEnv)
+          .eval();
+    }
     int numJavaParams = java.paramTypes().size();
     MethodSignature method;
     try {

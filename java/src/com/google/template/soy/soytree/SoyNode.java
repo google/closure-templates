@@ -211,6 +211,11 @@ public interface SoyNode extends Node {
     boolean isImplicitContentKind();
   }
 
+  /** Node that provides a Java stack trace element. */
+  interface StackContextNode extends SoyNode {
+    StackTraceElement createStackTraceElement(SourceLocation srcLocation);
+  }
+
   // -----------------------------------------------------------------------------------------------
 
   /** A node that represents a specific Soy statement. */

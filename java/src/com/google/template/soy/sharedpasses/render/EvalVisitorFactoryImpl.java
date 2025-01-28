@@ -28,6 +28,7 @@ import com.google.template.soy.sharedpasses.render.EvalVisitor.EvalVisitorFactor
 import com.google.template.soy.soytree.ExternNode;
 import com.google.template.soy.soytree.TemplateNode;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 /** Default implementation of EvalVisitorFactory. */
@@ -36,6 +37,7 @@ public final class EvalVisitorFactoryImpl implements EvalVisitorFactory {
   @Override
   public EvalVisitor create(
       Environment env,
+      Supplier<Environment> fileEnvSupplier,
       @Nullable SoyCssRenamingMap cssRenamingMap,
       @Nullable SoyIdRenamingMap xidRenamingMap,
       @Nullable SoyMsgBundle msgBundle,
@@ -46,6 +48,7 @@ public final class EvalVisitorFactoryImpl implements EvalVisitorFactory {
       Predicate<String> activeModSelector) {
     return new EvalVisitor(
         env,
+        fileEnvSupplier,
         cssRenamingMap,
         xidRenamingMap,
         msgBundle,

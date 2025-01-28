@@ -17,15 +17,11 @@
 package com.google.template.soy.sharedpasses.render;
 
 import com.google.common.base.Preconditions;
-import com.google.template.soy.data.RecordProperty;
-import com.google.template.soy.data.SoyInjector;
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
-import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.exprtree.VarDefn;
-import com.google.template.soy.soytree.TemplateNode;
-import com.google.template.soy.soytree.defn.TemplateParam;
 import java.util.IdentityHashMap;
 
 /**
@@ -49,8 +45,8 @@ public abstract class Environment {
    * <p>Allocates the local variable table for the template and prepopulates it with data from the
    * given SoyRecords.
    */
-  static Environment create(TemplateNode template, ParamStore data, SoyInjector ijData) {
-    return new Impl(template, data, ijData);
+  static Environment create() {
+    return new Impl();
   }
 
   /**
@@ -73,8 +69,7 @@ public abstract class Environment {
   /** Returns the resolved SoyValue for the given VarDefn. Guaranteed to not return null. */
   abstract SoyValue getVar(VarDefn var);
 
-  /** Returns {@code true} if SoyRecord has a field of the given VarDefn. */
-  abstract boolean hasVar(VarDefn var);
+  abstract Environment fork();
 
   /** Returns the resolved SoyValue for the given VarDefn. Guaranteed to not return null. */
   abstract SoyValueProvider getVarProvider(VarDefn var);
@@ -84,20 +79,14 @@ public abstract class Environment {
       SoyValueProvider item;
     }
 
-    final IdentityHashMap<VarDefn, Object> localVariables = new IdentityHashMap<>();
-    final ParamStore data;
+    final IdentityHashMap<VarDefn, Object> localVariables;
 
-    Impl(TemplateNode template, ParamStore data, SoyInjector ijData) {
-      this.data = data;
-      for (TemplateParam param : template.getAllParams()) {
-        var property = RecordProperty.get(param.name());
-        SoyValueProvider provider =
-            param.isInjected() ? ijData.get(property) : data.getFieldProvider(property);
-        if (provider == null) {
-          provider = UndefinedData.INSTANCE;
-        }
-        bind(param, provider);
-      }
+    Impl() {
+      localVariables = new IdentityHashMap<>();
+    }
+
+    private Impl(Impl copyFrom) {
+      localVariables = new IdentityHashMap<>(copyFrom.localVariables);
     }
 
     @Override
@@ -123,18 +112,22 @@ public abstract class Environment {
 
     @Override
     SoyValue getVar(VarDefn var) {
+      SourceLocation loc = var.nameLocation();
+      if (loc == null) {
+        loc = SourceLocation.UNKNOWN;
+      }
       return Preconditions.checkNotNull(
               getVarProvider(var),
               "No value for %s at %s. All: %s",
-              var.name(),
-              var.nameLocation().toLineColumnString(),
+              var,
+              loc.toLineColumnString(),
               localVariables.keySet())
           .resolve();
     }
 
     @Override
-    boolean hasVar(VarDefn var) {
-      return data.hasField(RecordProperty.get(var.name()));
+    Environment fork() {
+      return new Impl(this);
     }
   }
 
@@ -161,8 +154,8 @@ public abstract class Environment {
     }
 
     @Override
-    boolean hasVar(VarDefn var) {
-      return false;
+    Environment fork() {
+      return this;
     }
   }
 }

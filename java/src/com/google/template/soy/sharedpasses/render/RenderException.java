@@ -21,14 +21,12 @@ import com.google.errorprone.annotations.FormatMethod;
 import com.google.errorprone.annotations.FormatString;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.soytree.SoyNode;
-import com.google.template.soy.soytree.TemplateNode;
+import com.google.template.soy.soytree.SoyNode.StackContextNode;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import javax.annotation.Nullable;
 
-/**
- * Exception thrown when a rendering or evaluation attempt fails.
- */
+/** Exception thrown when a rendering or evaluation attempt fails. */
 public final class RenderException extends RuntimeException {
 
   public static RenderException create(String message) {
@@ -88,13 +86,16 @@ public final class RenderException extends RuntimeException {
   RenderException addStackTraceElement(SoyNode node) {
     // Typically, this is fast since templates aren't that deep and we only do this in error
     // situations so performance matters less.
-    TemplateNode template = node.getNearestAncestor(TemplateNode.class);
-    return addStackTraceElement(template, node.getSourceLocation());
+    StackContextNode template = node.getNearestAncestor(StackContextNode.class);
+    if (template != null) {
+      return addStackTraceElement(template, node.getSourceLocation());
+    }
+    return this;
   }
 
   /** Add a partial stack trace element by specifying the source location of the soy file. */
   @CanIgnoreReturnValue
-  RenderException addStackTraceElement(TemplateNode template, SourceLocation location) {
+  RenderException addStackTraceElement(StackContextNode template, SourceLocation location) {
     // Typically, this is fast since templates aren't that deep and we only do this in error
     // situations so performance matters less.
     soyStackTrace.add(template.createStackTraceElement(location));

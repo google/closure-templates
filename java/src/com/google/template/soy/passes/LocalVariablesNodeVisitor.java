@@ -53,9 +53,6 @@ import com.google.template.soy.soytree.defn.ExternVar;
 import com.google.template.soy.soytree.defn.FunctionParam;
 import com.google.template.soy.soytree.defn.ImportedVar;
 import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
-import com.google.template.soy.types.FunctionType.Parameter;
-import com.google.template.soy.types.UnknownType;
-import com.google.template.soy.types.ast.FunctionTypeNode;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.LinkedHashMap;
@@ -251,14 +248,8 @@ final class LocalVariablesNodeVisitor {
       // Create a scope for all parameters.
       localVariables.enterScope();
       ExternNode parent = node.getParent();
-      if (parent.typeNode().isTypeResolved()) {
-        for (Parameter p : parent.getType().getParameters()) {
-          localVariables.define(new FunctionParam(p.getName(), p.getType()), parent);
-        }
-      } else {
-        for (FunctionTypeNode.Parameter p : parent.typeNode().parameters()) {
-          localVariables.define(new FunctionParam(p.name(), UnknownType.getInstance()), parent);
-        }
+      for (FunctionParam paramVar : parent.getParamVars()) {
+        localVariables.define(paramVar, parent);
       }
       super.visitJavaImplNode(node);
       localVariables.exitScope();

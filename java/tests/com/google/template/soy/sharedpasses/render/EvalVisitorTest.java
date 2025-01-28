@@ -134,10 +134,12 @@ public class EvalVisitorTest {
                 .getChild(0);
     ExprNode expr = ((FunctionNode) code.getExpr().getChild(0)).getChild(0);
 
+    Environment env = TestingEnvironment.createForTest(testData, LOCALS);
     EvalVisitor evalVisitor =
         new EvalVisitorFactoryImpl()
             .create(
-                TestingEnvironment.createForTest(testData, LOCALS),
+                env,
+                () -> env,
                 cssRenamingMap,
                 xidRenamingMap,
                 null,

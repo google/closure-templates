@@ -42,6 +42,7 @@ import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.soytree.CommandTagAttribute.CommandTagAttributesHolder;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
+import com.google.template.soy.soytree.SoyNode.StackContextNode;
 import com.google.template.soy.soytree.defn.AttrParam;
 import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import com.google.template.soy.soytree.defn.TemplateParam;
@@ -58,7 +59,7 @@ import javax.annotation.Nullable;
 
 /** Node representing a template. */
 public abstract class TemplateNode extends AbstractBlockCommandNode
-    implements RenderUnitNode, ExprHolderNode, CommandTagAttributesHolder {
+    implements RenderUnitNode, ExprHolderNode, CommandTagAttributesHolder, StackContextNode {
 
   public static final String ATTRKIND = "kind";
   public static final String ATTR_REQUIRECSS = "requirecss";
@@ -730,6 +731,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
    * Construct a StackTraceElement that will point to the given source location of the current
    * template.
    */
+  @Override
   public StackTraceElement createStackTraceElement(SourceLocation srcLocation) {
     return new StackTraceElement(
         /* declaringClass= */ soyFileHeaderInfo.namespace,

@@ -56,11 +56,6 @@ public final class TestingEnvironment extends Environment {
   }
 
   @Override
-  boolean hasVar(VarDefn var) {
-    return params.hasField(RecordProperty.get(var.name()));
-  }
-
-  @Override
   SoyValue getVar(VarDefn var) {
     return getVarProvider(var).resolve();
   }
@@ -68,6 +63,11 @@ public final class TestingEnvironment extends Environment {
   @Override
   SoyValueProvider getVarProvider(VarDefn var) {
     return doGetProvider(var.name());
+  }
+
+  @Override
+  Environment fork() {
+    return this;
   }
 
   private SoyValueProvider doGetProvider(String name) {
