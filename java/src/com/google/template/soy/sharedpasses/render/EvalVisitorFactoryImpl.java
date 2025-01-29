@@ -24,11 +24,11 @@ import com.google.template.soy.plugin.java.PluginInstances;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
 import com.google.template.soy.shared.internal.DelTemplateSelector;
+import com.google.template.soy.sharedpasses.render.EvalVisitor.AutoJavaExternVisitor;
 import com.google.template.soy.sharedpasses.render.EvalVisitor.EvalVisitorFactory;
 import com.google.template.soy.soytree.ExternNode;
 import com.google.template.soy.soytree.TemplateNode;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 /** Default implementation of EvalVisitorFactory. */
@@ -37,7 +37,7 @@ public final class EvalVisitorFactoryImpl implements EvalVisitorFactory {
   @Override
   public EvalVisitor create(
       Environment env,
-      Supplier<Environment> fileEnvSupplier,
+      AutoJavaExternVisitor externVisitor,
       @Nullable SoyCssRenamingMap cssRenamingMap,
       @Nullable SoyIdRenamingMap xidRenamingMap,
       @Nullable SoyMsgBundle msgBundle,
@@ -48,7 +48,7 @@ public final class EvalVisitorFactoryImpl implements EvalVisitorFactory {
       Predicate<String> activeModSelector) {
     return new EvalVisitor(
         env,
-        fileEnvSupplier,
+        externVisitor,
         cssRenamingMap,
         xidRenamingMap,
         msgBundle,

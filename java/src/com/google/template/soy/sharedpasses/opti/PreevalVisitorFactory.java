@@ -25,11 +25,11 @@ import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
 import com.google.template.soy.shared.internal.DelTemplateSelector;
 import com.google.template.soy.sharedpasses.render.Environment;
+import com.google.template.soy.sharedpasses.render.EvalVisitor.AutoJavaExternVisitor;
 import com.google.template.soy.sharedpasses.render.EvalVisitor.EvalVisitorFactory;
 import com.google.template.soy.soytree.ExternNode;
 import com.google.template.soy.soytree.TemplateNode;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 /** A factory for creating PreevalVisitor objects. */
@@ -38,7 +38,7 @@ final class PreevalVisitorFactory implements EvalVisitorFactory {
   @Override
   public PreevalVisitor create(
       Environment env,
-      Supplier<Environment> fileEnvSupplier,
+      AutoJavaExternVisitor externVisitor,
       @Nullable SoyCssRenamingMap cssRenamingMap,
       @Nullable SoyIdRenamingMap xidRenamingMap,
       @Nullable SoyMsgBundle msgBundle,

@@ -47,7 +47,9 @@ final class PreevalVisitor extends EvalVisitor {
   PreevalVisitor(Environment env) {
     super(
         env,
-        () -> env,
+        (java, args) -> {
+          throw new UnsupportedOperationException();
+        },
         /* cssRenamingMap= */ null,
         /* xidRenamingMap= */ null,
         /* msgBundle= */ null,

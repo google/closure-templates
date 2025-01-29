@@ -18,6 +18,7 @@ package com.google.template.soy.sharedpasses.render;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableTable;
@@ -46,6 +47,7 @@ import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.plugin.java.PluginInstances;
@@ -57,6 +59,7 @@ import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.sharedpasses.render.EvalVisitor.EvalVisitorFactory;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
+import com.google.template.soy.soytree.AssignmentNode;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallDelegateNode;
 import com.google.template.soy.soytree.CallNode;
@@ -73,6 +76,7 @@ import com.google.template.soy.soytree.IfElseNode;
 import com.google.template.soy.soytree.IfNode;
 import com.google.template.soy.soytree.ImportNode;
 import com.google.template.soy.soytree.ImportNode.ImportType;
+import com.google.template.soy.soytree.JavaImplNode;
 import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.LetValueNode;
 import com.google.template.soy.soytree.LogNode;
@@ -81,6 +85,7 @@ import com.google.template.soy.soytree.MsgHtmlTagNode;
 import com.google.template.soy.soytree.PrintDirectiveNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
+import com.google.template.soy.soytree.ReturnNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.BlockNode;
@@ -92,6 +97,7 @@ import com.google.template.soy.soytree.SwitchNode;
 import com.google.template.soy.soytree.TemplateBasicNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.VeLogNode;
+import com.google.template.soy.soytree.defn.FunctionParam;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.SoyType.Kind;
 import java.io.Flushable;
@@ -124,9 +130,6 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
   protected final SoyInjector ijData;
 
   private final ImmutableTable<SourceLogicalPath, String, ImmutableList<ExternNode>> externs;
-
-  /** The environment of the current file node. */
-  protected Environment fileEnv;
 
   /** The current environment. */
   protected Environment env;
@@ -246,6 +249,44 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
     return null;
   }
 
+  private SoyValue execAutoJavaExternInNewEnv(JavaImplNode java, ImmutableList<SoyValue> args) {
+    RenderVisitor visitor =
+        new RenderVisitor(
+            evalVisitorFactory,
+            NO_OUTPUT_ALLOWED,
+            basicTemplates,
+            deltemplates,
+            constants,
+            externs,
+            ParamStore.EMPTY_INSTANCE,
+            null,
+            null,
+            null,
+            null,
+            null,
+            debugSoyTemplateInfo,
+            pluginInstances);
+    return visitor.execAutoJavaExtern(java, args);
+  }
+
+  public SoyValue execAutoJavaExtern(JavaImplNode java, ImmutableList<SoyValue> args) {
+    env = Environment.create();
+    buildFileEnvironment(env, java.getNearestAncestor(SoyFileNode.class));
+    ImmutableList<FunctionParam> externParams = java.getParent().getParamVars();
+    Preconditions.checkArgument(externParams.size() == args.size());
+    for (int i = 0; i < externParams.size(); i++) {
+      this.env.bind(externParams.get(i), args.get(i));
+    }
+    try {
+      visit(java);
+    } catch (ReturnValue rv) {
+      return rv.value;
+    } finally {
+      env = null;
+    }
+    throw new IllegalStateException();
+  }
+
   /**
    * Creates a helper instance for rendering a subtemplate.
    *
@@ -284,14 +325,12 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
     TemplateNode templateToRender = getTemplateToRender(template);
     // Visit top-level constant and imports explicitly every time we render a new template, in order
     // to populate the variable environment.
-    fileEnv = Environment.create();
-    buildFileEnvironment(fileEnv, templateToRender.getParent(), constants, this::eval);
-    env = fileEnv.fork();
+    env = Environment.create();
+    buildFileEnvironment(env, templateToRender.getParent());
     enterTemplate(env, templateToRender, data, ijData);
 
     checkStrictParamTypes(templateToRender);
     visitChildren(templateToRender);
-    fileEnv = null;
     env = null; // unpin for gc
   }
 
@@ -318,6 +357,17 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
   @Override
   protected void visitTemplateNode(TemplateNode node) {
     renderTemplate(node);
+  }
+
+  @Override
+  protected void visitAssignmentNode(AssignmentNode node) {
+    VarRefNode varRefNode = (VarRefNode) node.getLhs().getRoot();
+    env.bind(varRefNode.getDefnDecl(), eval(node.getRhs(), node));
+  }
+
+  @Override
+  protected void visitReturnNode(ReturnNode node) {
+    throw new ReturnValue(eval(node.getExpr(), node));
   }
 
   @Override
@@ -765,7 +815,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
       evalVisitor =
           evalVisitorFactory.create(
               env,
-              () -> fileEnv,
+              this::execAutoJavaExternInNewEnv,
               cssRenamingMap,
               xidRenamingMap,
               msgBundle,
@@ -970,15 +1020,11 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
     SoyValue eval(Environment env, ExprNode exprNode, SoyNode soyNode);
   }
 
-  private static void buildFileEnvironment(
-      Environment env,
-      SoyFileNode node,
-      ImmutableTable<SourceLogicalPath, String, ConstNode> constants,
-      NodeEvaler evaler) {
+  private void buildFileEnvironment(Environment env, SoyFileNode node) {
     for (SoyNode child : node.getChildren()) {
       if (child instanceof ConstNode) {
         ConstNode constNode = (ConstNode) child;
-        env.bind(constNode.getVar(), evaler.eval(env, constNode.getExpr(), node));
+        env.bind(constNode.getVar(), eval(env, constNode.getExpr(), node));
       } else if (child instanceof ImportNode) {
         ImportNode importNode = (ImportNode) child;
         if (importNode.getImportType() == ImportType.TEMPLATE) {
@@ -999,7 +1045,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
                                 constants.get(
                                     SourceLogicalPath.create(importNode.getPath()),
                                     var.getSymbol());
-                            return evaler.eval(env, constNode.getExpr(), constNode);
+                            return eval(env, constNode.getExpr(), constNode);
                           }));
                 }
               });
@@ -1020,4 +1066,36 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
       env.bind(param, provider);
     }
   }
+
+  private static final class ReturnValue extends RuntimeException {
+    final SoyValue value;
+
+    public ReturnValue(SoyValue value) {
+      this.value = value;
+    }
+
+    @Override
+    public synchronized Throwable fillInStackTrace() {
+      // For efficiency, since this is used for control flow.
+      return this;
+    }
+  }
+
+  private static final Appendable NO_OUTPUT_ALLOWED =
+      new Appendable() {
+        @Override
+        public Appendable append(CharSequence csq) {
+          throw new UnsupportedOperationException("no output allowed in function block");
+        }
+
+        @Override
+        public Appendable append(CharSequence csq, int start, int end) {
+          throw new UnsupportedOperationException("no output allowed in function block");
+        }
+
+        @Override
+        public Appendable append(char c) {
+          throw new UnsupportedOperationException("no output allowed in function block");
+        }
+      };
 }

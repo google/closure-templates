@@ -157,7 +157,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 /**
@@ -201,7 +200,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
      */
     EvalVisitor create(
         Environment env,
-        Supplier<Environment> fileEnvSupplier,
+        AutoJavaExternVisitor externVisitor,
         @Nullable SoyCssRenamingMap cssRenamingMap,
         @Nullable SoyIdRenamingMap xidRenamingMap,
         @Nullable SoyMsgBundle msgBundle,
@@ -212,10 +211,16 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
         Predicate<String> activeModSelector);
   }
 
+  /** Functional interface for executing a {@code JavaImplNode}. */
+  @FunctionalInterface
+  public interface AutoJavaExternVisitor {
+    SoyValue exec(JavaImplNode java, ImmutableList<SoyValue> args);
+  }
+
   /** The current environment. */
   private final Environment env;
 
-  private final Supplier<Environment> fileEnvSupplier;
+  private final AutoJavaExternVisitor externVisitor;
   @Nullable private final SoyMsgBundle msgBundle;
 
   /** The current CSS renaming map. */
@@ -249,7 +254,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
    */
   protected EvalVisitor(
       Environment env,
-      Supplier<Environment> fileEnvSupplier,
+      AutoJavaExternVisitor externVisitor,
       @Nullable SoyCssRenamingMap cssRenamingMap,
       @Nullable SoyIdRenamingMap xidRenamingMap,
       @Nullable SoyMsgBundle msgBundle,
@@ -260,7 +265,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
       DelTemplateSelector<TemplateNode> deltemplates,
       Predicate<String> activeModSelector) {
     this.env = checkNotNull(env);
-    this.fileEnvSupplier = fileEnvSupplier;
+    this.externVisitor = externVisitor;
     this.msgBundle = msgBundle;
     this.cssRenamingMap = (cssRenamingMap == null) ? SoyCssRenamingMap.EMPTY : cssRenamingMap;
     this.xidRenamingMap = (xidRenamingMap == null) ? SoyCssRenamingMap.EMPTY : xidRenamingMap;
@@ -279,7 +284,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     }
     return new EvalVisitor(
         env,
-        fileEnvSupplier,
+        externVisitor,
         cssRenamingMap,
         xidRenamingMap,
         msgBundle,
@@ -977,12 +982,8 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     }
     JavaImplNode java = impl.get();
     if (java.isAutoImpl()) {
-      return new FunctionVisitor(
-              java,
-              fileEnvSupplier.get(),
-              node.getParams().stream().map(this::visit).collect(toImmutableList()),
-              this::withEnv)
-          .eval();
+      return externVisitor.exec(
+          java, node.getParams().stream().map(this::visit).collect(toImmutableList()));
     }
     int numJavaParams = java.paramTypes().size();
     MethodSignature method;

@@ -139,7 +139,9 @@ public class EvalVisitorTest {
         new EvalVisitorFactoryImpl()
             .create(
                 env,
-                () -> env,
+                (java, args) -> {
+                  throw new UnsupportedOperationException();
+                },
                 cssRenamingMap,
                 xidRenamingMap,
                 null,
