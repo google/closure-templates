@@ -35,3 +35,8 @@ message Proto2ImplicitDefaults {
   repeated int64 repeated_long_with_number_js_type = 14
       ;
 }
+
+message Msg {
+  optional Msg p = 1;
+  optional string name = 2;
+}

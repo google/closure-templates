@@ -264,6 +264,9 @@ public abstract class Expression extends CodeChunk {
 
   public Expression dotAccess(String identifier, boolean nullSafe) {
     return nullSafe
+            && !(this instanceof UnaryOperation
+                && ((UnaryOperation) this).operator().equals("!")
+                && ((UnaryOperation) this).isSynthetic())
         ? Dot.createNullSafe(this, Expressions.id(identifier))
         : Dot.create(this, Expressions.id(identifier));
   }

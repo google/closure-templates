@@ -25,6 +25,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SourceLocation.ByteSpan;
 import com.google.template.soy.base.internal.IdGenerator;
@@ -712,5 +713,31 @@ public final class SoyTreeUtils {
       return location;
     }
     return node.getNearestAncestor(SoyFileNode.class).getSourceMap().map(location);
+  }
+
+  /**
+   * Similar to {@link SoyTreeUtils#buildAstString}, but for ExprNodes and also prints the source
+   * string for debug usages.
+   */
+  public static String buildAstStringWithPreview(ExprNode node) {
+    return buildAstStringWithPreview(ImmutableList.of(node), 0, new StringBuilder()).toString();
+  }
+
+  @CanIgnoreReturnValue
+  private static StringBuilder buildAstStringWithPreview(
+      Iterable<ExprNode> nodes, int indent, StringBuilder sb) {
+    for (ExprNode child : nodes) {
+      sb.append("  ".repeat(indent))
+          .append(child.getKind())
+          .append(": ")
+          .append(child.getType().toString().replace("soy.test.", "*."))
+          .append(": ")
+          .append(child.toSourceString())
+          .append('\n');
+      if (child instanceof ParentExprNode) {
+        buildAstStringWithPreview(((ParentExprNode) child).getChildren(), indent + 1, sb);
+      }
+    }
+    return sb;
   }
 }
