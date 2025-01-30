@@ -306,6 +306,10 @@ public final class Expressions {
     return UnaryOperation.create(Operator.ASSERT_NON_NULL, arg);
   }
 
+  public static Expression assertNonNullForGenTsxTypeNarrowing(Expression arg) {
+    return UnaryOperation.createForGenTsxTypeNarrowing(Operator.ASSERT_NON_NULL, arg);
+  }
+
   /**
    * Creates a code chunk representing the {@code new} operator applied to the given constructor. If
    * you need to call the constructor with arguments, call {@link Expression#call} on the returned

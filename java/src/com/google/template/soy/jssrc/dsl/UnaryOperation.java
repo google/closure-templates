@@ -34,17 +34,30 @@ abstract class UnaryOperation extends Operation {
 
   abstract boolean isPrefix();
 
+  abstract boolean isForGenTsxTypeNarrowing();
+
   static UnaryOperation create(Operator operator, Expression arg) {
     return new AutoValue_UnaryOperation(
         Precedence.forSoyOperator(operator),
         Operation.getOperatorToken(operator),
         arg,
-        operator != Operator.ASSERT_NON_NULL);
+        operator != Operator.ASSERT_NON_NULL,
+        /* isForGenTsxTypeNarrowing= */ false);
+  }
+
+  static UnaryOperation createForGenTsxTypeNarrowing(Operator operator, Expression arg) {
+    return new AutoValue_UnaryOperation(
+        Precedence.forSoyOperator(operator),
+        Operation.getOperatorToken(operator),
+        arg,
+        operator != Operator.ASSERT_NON_NULL,
+        /* isForGenTsxTypeNarrowing= */ true);
   }
 
   static UnaryOperation create(
       String operatorString, Precedence precedence, Expression arg, boolean isPrefix) {
-    return new AutoValue_UnaryOperation(precedence, operatorString, arg, isPrefix);
+    return new AutoValue_UnaryOperation(
+        precedence, operatorString, arg, isPrefix, /* isForGenTsxTypeNarrowing= */ false);
   }
 
   @Override

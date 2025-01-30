@@ -263,7 +263,14 @@ public abstract class Expression extends CodeChunk {
   }
 
   public Expression dotAccess(String identifier, boolean nullSafe) {
+    // Elide the null safe access if the base is a synthetic non-null assertion that we've
+    // explicitly added to emulate type narrowing that happens in soy but noy in TSX by default.
+    // We don't want to elide in the general case because if a user actually writes `a!?b`',
+    // changing it to `a!.b` could change the runtime behavior.
     return nullSafe
+            && !(this instanceof UnaryOperation
+                && ((UnaryOperation) this).operator().equals("!")
+                && ((UnaryOperation) this).isForGenTsxTypeNarrowing())
         ? Dot.createNullSafe(this, Expressions.id(identifier))
         : Dot.create(this, Expressions.id(identifier));
   }
