@@ -259,8 +259,6 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
               + "first check for null or use null-safe (\"?[\") operations.");
   private static final SoyErrorKind CHECK_NOT_NULL_ON_COMPILE_TIME_NULL =
       SoyErrorKind.of("Cannot {0} on a value with a static type of ''null'' or ''undefined''.");
-  private static final SoyErrorKind REDUNDANT_NON_NULL_ASSERTION_OPERATOR =
-      SoyErrorKind.of("Found redundant non-null assertion operators (''!'').");
   private static final SoyErrorKind NULLISH_FIELD_ACCESS =
       SoyErrorKind.of("Field access not allowed on nullable type.");
   private static final SoyErrorKind NO_SUCH_FIELD =
@@ -273,8 +271,6 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
   private static final SoyErrorKind NO_SUCH_EXTERN_OVERLOAD_N =
       SoyErrorKind.of(
           "Parameter types, {0}, do not uniquely satisfy one of the function signatures [{1}].");
-  private static final SoyErrorKind UNNECESSARY_NULL_SAFE_ACCESS =
-      SoyErrorKind.of("This null safe access is unnecessary, it is on a value that is non-null.");
   private static final SoyErrorKind INVALID_INSTANCE_OF =
       SoyErrorKind.of("Not a valid instanceof type operand.");
   private static final SoyErrorKind UNNECESSARY_CAST =
@@ -1084,9 +1080,6 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
             CHECK_NOT_NULL_ON_COMPILE_TIME_NULL,
             "use the non-null assertion operator ('!')");
         node.setType(UnknownType.getInstance());
-      } else if (node.getChild(0).getKind() == ExprNode.Kind.ASSERT_NON_NULL_OP_NODE) {
-        errorReporter.report(node.getSourceLocation(), REDUNDANT_NON_NULL_ASSERTION_OPERATOR);
-        node.setType(UnknownType.getInstance());
       } else {
         node.setType(tryRemoveNullish(type));
       }
@@ -1393,10 +1386,6 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
     }
 
     private void visitNullSafeAccessNodeRecurse(NullSafeAccessNode nullSafeAccessNode) {
-      if (nullSafeAccessNode.getBase().getKind() == ExprNode.Kind.ASSERT_NON_NULL_OP_NODE) {
-        errorReporter.report(nullSafeAccessNode.getSourceLocation(), UNNECESSARY_NULL_SAFE_ACCESS);
-      }
-
       // Rebuild the normalized DataAccessNode chain so that the type substitutions can be applied.
       ExprNode nsBaseExpr = nullSafeAccessNode.asMergedBase();
       SoyType maybeSubstitutedType = substitutions.getTypeSubstitution(nsBaseExpr);
