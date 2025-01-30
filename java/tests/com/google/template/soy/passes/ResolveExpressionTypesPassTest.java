@@ -20,6 +20,7 @@ import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 import static com.google.template.soy.passes.TypeNarrowingConditionVisitor.instanceOfIntersection;
 import static com.google.template.soy.passes.TypeNarrowingConditionVisitor.instanceOfRemainder;
+import static com.google.template.soy.soytree.SoyTreeUtils.buildAstStringWithPreview;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableSet;
@@ -29,6 +30,9 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.soyparse.SoyFileParser;
+import com.google.template.soy.soytree.IfCondNode;
+import com.google.template.soy.soytree.IfNode;
+import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
@@ -42,6 +46,7 @@ import com.google.template.soy.testing.KvPair;
 import com.google.template.soy.testing.ProtoMap;
 import com.google.template.soy.testing.SomeExtension;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
+import com.google.template.soy.testing.correct.Proto2CorrectSemantics.Msg;
 import com.google.template.soy.testing.correct.Proto2CorrectSemantics.Proto2ImplicitDefaults;
 import com.google.template.soy.types.AnyType;
 import com.google.template.soy.types.BoolType;
@@ -79,6 +84,7 @@ public final class ResolveExpressionTypesPassTest {
       };
 
   private static final SoyTypeRegistry TYPE_REGISTRY = SoyTypeRegistryBuilder.create();
+  private static final Joiner NEWLINE = Joiner.on('\n');
 
   @Test
   public void testOptionalParamTypes() {
@@ -676,10 +682,8 @@ public final class ResolveExpressionTypesPassTest {
         "{if $m.get('a')?.get('b')}",
         "  {assertType('map<string,null|string>', $m.get('a'))}",
         "  {assertType('string', $m.get('a').get('b'))}",
-        // We aren't quite sure why you can call `get` on $m?.get('a') since the base's type hasn't
-        // been narrowed according to assertType.
-        "  {assertType('map<string,null|string>|null|undefined', $m?.get('a'))}",
-        "  {assertType('null|string|undefined', $m?.get('a').get('b'))}",
+        "  {assertType('map<string,null|string>', $m?.get('a'))}",
+        "  {assertType('string', $m?.get('a').get('b'))}",
         "{else}",
         "  {assertType('null|string|undefined', $m?.get('a')?.get('b'))}",
         "{/if}",
@@ -687,20 +691,24 @@ public final class ResolveExpressionTypesPassTest {
   }
 
   @Test
-  public void testDataFlowTypeNarrowing_nullSafeChains_notAllPermutations() {
-    // There's probably no reason not to support these narrowings. Just a regression test to make
-    // explicit that we don't support them currently.
+  public void testDataFlowTypeNarrowing_nullSafeChains_allPermutations() {
     assertTypes(
         "{@param r: [a: null|[b: null|[c: null|string]]]}",
         "{if $r.a?.b?.c}",
+        "  {assertType('[b: [c: null|string]|null]', $r.a)}",
+        "  {assertType('[b: [c: null|string]|null]', $r?.a)}",
+        "  {assertType('[c: null|string]', $r.a.b)}",
+        "  {assertType('[c: null|string]', $r.a?.b)}",
+        "  {assertType('[c: null|string]', $r?.a.b)}",
+        "  {assertType('[c: null|string]', $r?.a?.b)}",
         "  {assertType('string', $r.a.b.c)}",
         "  {assertType('string', $r.a?.b?.c)}",
-        "  {assertType('null|string', $r?.a.b.c)}",
-        "  {assertType('null|string', $r.a?.b.c)}",
-        "  {assertType('null|string', $r.a.b?.c)}",
-        "  {assertType('null|string|undefined', $r?.a?.b.c)}",
-        "  {assertType('null|string|undefined', $r?.a.b?.c)}",
-        "  {assertType('null|string|undefined', $r?.a?.b?.c)}",
+        "  {assertType('string', $r?.a.b.c)}",
+        "  {assertType('string', $r.a?.b.c)}",
+        "  {assertType('string', $r.a.b?.c)}",
+        "  {assertType('string', $r?.a?.b.c)}",
+        "  {assertType('string', $r?.a.b?.c)}",
+        "  {assertType('string', $r?.a?.b?.c)}",
         "{/if}",
         "");
   }
@@ -1282,6 +1290,75 @@ public final class ResolveExpressionTypesPassTest {
         "{assertType('null|string', undefinedToNullForSsrMigration($s2))}",
         "{assertType('null|string', undefinedToNullForSsrMigration($s3))}",
         "{assertType('null|string', undefinedToNullForSsrMigration($s4))}");
+  }
+
+  @Test
+  public void testNarrowingFullAccessChain() {
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forTemplateAndImports(
+                constructTemplateSource(
+                    "{@param p: Msg}",
+                    "{if $p.getP()?.getP()?.getName()}",
+                    "  {$p.getP()?.getP()?.getName()}",
+                    "{/if}"),
+                Msg.getDescriptor())
+            .parse()
+            .fileSet();
+    TemplateBasicNode node = (TemplateBasicNode) soyTree.getChild(0).getChild(1);
+    IfNode ifNode = (IfNode) node.getChild(0);
+    IfCondNode ifCondNode = (IfCondNode) ifNode.getChild(0);
+    PrintNode printNode = (PrintNode) ifCondNode.getChild(0);
+    assertThat(buildAstStringWithPreview(printNode.getExpr().getRoot()))
+        .isEqualTo(
+            NEWLINE.join(
+                "NULL_SAFE_ACCESS_NODE: string: $p.getP()?.getP()?.getName()",
+                "  METHOD_CALL_NODE: *.correct.Msg: $p.getP()",
+                "    VAR_REF_NODE: *.correct.Msg: $p",
+                "  NULL_SAFE_ACCESS_NODE: string: (undefined).getP()?.getName()",
+                "    METHOD_CALL_NODE: *.correct.Msg:" + " (undefined).getP()",
+                "      GROUP_NODE: *.correct.Msg: (undefined)",
+                "        UNDEFINED_NODE: undefined: undefined",
+                "    METHOD_CALL_NODE: string: (undefined).getName()",
+                "      GROUP_NODE: *.correct.Msg: (undefined)",
+                "        UNDEFINED_NODE: undefined: undefined",
+                ""));
+  }
+
+  @Test
+  public void testNarrowingFullAccessChainMixed() {
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forTemplateAndImports(
+                constructTemplateSource(
+                    "{@param p: Msg}",
+                    "{if $p.getReadonlyP().getP()?.getReadonlyP().getP()?.getReadonlyP().getName()}",
+                    "  {$p.getReadonlyP().getP()?.getReadonlyP().getP()?.getReadonlyP().getName()}",
+                    "{/if}"),
+                Msg.getDescriptor())
+            .parse()
+            .fileSet();
+    TemplateBasicNode node = (TemplateBasicNode) soyTree.getChild(0).getChild(1);
+    IfNode ifNode = (IfNode) node.getChild(0);
+    IfCondNode ifCondNode = (IfCondNode) ifNode.getChild(0);
+    PrintNode printNode = (PrintNode) ifCondNode.getChild(0);
+    assertThat(buildAstStringWithPreview(printNode.getExpr().getRoot()))
+        .isEqualTo(
+            NEWLINE.join(
+                "NULL_SAFE_ACCESS_NODE: string:"
+                    + " $p.getReadonlyP().getP()?.getReadonlyP().getP()?.getReadonlyP().getName()",
+                "  METHOD_CALL_NODE: *.correct.Msg: $p.getReadonlyP().getP()",
+                "    METHOD_CALL_NODE: *.correct.Msg: $p.getReadonlyP()",
+                "      VAR_REF_NODE: *.correct.Msg: $p",
+                "  NULL_SAFE_ACCESS_NODE: string:"
+                    + " (undefined).getReadonlyP().getP()?.getReadonlyP().getName()",
+                "    METHOD_CALL_NODE: *.correct.Msg: (undefined).getReadonlyP().getP()",
+                "      METHOD_CALL_NODE: *.correct.Msg: (undefined).getReadonlyP()",
+                "        GROUP_NODE: *.correct.Msg: (undefined)",
+                "          UNDEFINED_NODE: undefined: undefined",
+                "    METHOD_CALL_NODE: string: (undefined).getReadonlyP().getName()",
+                "      METHOD_CALL_NODE: *.correct.Msg: (undefined).getReadonlyP()",
+                "        GROUP_NODE: *.correct.Msg: (undefined)",
+                "          UNDEFINED_NODE: undefined: undefined",
+                ""));
   }
 
   private SoyType parseSoyType(String type) {
