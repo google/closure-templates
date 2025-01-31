@@ -17,14 +17,10 @@
 package com.google.template.soy.exprtree;
 
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.template.soy.testing.SharedTestUtils.buildAstStringWithPreview;
 
 import com.google.common.base.Joiner;
-import com.google.common.base.Strings;
-import com.google.common.collect.ImmutableList;
-import com.google.errorprone.annotations.CanIgnoreReturnValue;
-import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import com.google.template.soy.exprtree.testing.ExpressionParser;
-import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.testing.Extendable;
 import com.google.template.soy.testing.Foo;
 import java.util.List;
@@ -279,29 +275,5 @@ public class NullSafeAccessNodeTest {
             "$foo.getMessageField().getFoo().getMessageField()");
   }
 
-  private static String buildAstStringWithPreview(ExprNode node) {
-    return buildAstStringWithPreview(ImmutableList.of(node), 0, new StringBuilder()).toString();
-  }
 
-  /**
-   * Similar to {@link SoyTreeUtils#buildAstString}, but for ExprNodes and also prints the source
-   * string for debug usages.
-   */
-  @CanIgnoreReturnValue
-  private static StringBuilder buildAstStringWithPreview(
-      Iterable<ExprNode> nodes, int indent, StringBuilder sb) {
-    for (ExprNode child : nodes) {
-      sb.append(Strings.repeat("  ", indent))
-          .append(child.getKind())
-          .append(": ")
-          .append(child.getType().toString().replaceAll("soy\\.test\\.", "*."))
-          .append(": ")
-          .append(child.toSourceString())
-          .append('\n');
-      if (child instanceof ParentExprNode) {
-        buildAstStringWithPreview(((ParentExprNode) child).getChildren(), indent + 1, sb);
-      }
-    }
-    return sb;
-  }
 }

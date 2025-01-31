@@ -22,10 +22,12 @@ import static com.google.common.collect.Streams.stream;
 import static com.google.common.truth.Truth.assertWithMessage;
 import static java.util.stream.Collectors.toCollection;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.google.common.collect.Streams;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.EnumDescriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor;
@@ -310,5 +312,31 @@ public final class SharedTestUtils {
     public ProtoTypeRegistry getProtoRegistry() {
       return fqnRegistry;
     }
+  }
+
+  /**
+   * Similar to {@link SoyTreeUtils#buildAstString}, but for ExprNodes and also prints the source
+   * string for debug usages.
+   */
+  public static String buildAstStringWithPreview(ExprNode node) {
+    return buildAstStringWithPreview(ImmutableList.of(node), 0, new StringBuilder()).toString();
+  }
+
+  @CanIgnoreReturnValue
+  private static StringBuilder buildAstStringWithPreview(
+      Iterable<ExprNode> nodes, int indent, StringBuilder sb) {
+    for (ExprNode child : nodes) {
+      sb.append("  ".repeat(indent))
+          .append(child.getKind())
+          .append(": ")
+          .append(child.getType().toString().replace("soy.test.", "*."))
+          .append(": ")
+          .append(child.toSourceString())
+          .append('\n');
+      if (child instanceof ParentExprNode) {
+        buildAstStringWithPreview(((ParentExprNode) child).getChildren(), indent + 1, sb);
+      }
+    }
+    return sb;
   }
 }
