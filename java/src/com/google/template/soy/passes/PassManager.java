@@ -634,7 +634,9 @@ public final class PassManager {
         if (astRewrites.isAll()) {
           passes.add(new VeLogRewritePass());
         }
-        passes.add(new CheckModifiableTemplatesPass(errorReporter));
+        if (!allowMissingSoyDeps) {
+          passes.add(new CheckModifiableTemplatesPass(errorReporter));
+        }
         passes.add(new ValidateAutoJavaExternPass(errorReporter));
       }
       passes.add(new CheckAllFunctionsResolvedPass(pluginResolver));
