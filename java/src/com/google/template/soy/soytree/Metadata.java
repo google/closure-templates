@@ -525,7 +525,8 @@ public final class Metadata {
                                   context().typeRegistry(),
                                   getPath(),
                                   context().errorReporter()),
-                          e.getJavaAsync())));
+                          e.getJavaAsync(),
+                          e.getAutoJava())));
     }
 
     @Override
@@ -685,7 +686,10 @@ public final class Metadata {
                       e -> e.getIdentifier().identifier(),
                       e ->
                           ExternImpl.of(
-                              e.getIdentifier().identifier(), e.getType(), e.isJavaImplAsync())));
+                              e.getIdentifier().identifier(),
+                              e.getType(),
+                              e.isJavaImplAsync(),
+                              e.isAutoJava())));
 
       ImmutableList.Builder<TemplateMetadata> templates = ImmutableList.builder();
       Map<String, TemplateMetadata> index = new LinkedHashMap<>();
@@ -775,8 +779,9 @@ public final class Metadata {
   @AutoValue
   abstract static class ExternImpl implements FileMetadata.Extern {
 
-    private static ExternImpl of(String name, FunctionType signature, boolean boxed) {
-      return new AutoValue_Metadata_ExternImpl(name, signature, boxed);
+    private static ExternImpl of(
+        String name, FunctionType signature, boolean javaAsync, boolean autoJava) {
+      return new AutoValue_Metadata_ExternImpl(name, signature, javaAsync, autoJava);
     }
 
     @Override
@@ -787,6 +792,9 @@ public final class Metadata {
 
     @Override
     public abstract boolean isJavaAsync();
+
+    @Override
+    public abstract boolean isAutoJava();
   }
 
   private static FileMetadata merge(FileMetadata primary, FileMetadata secondary) {

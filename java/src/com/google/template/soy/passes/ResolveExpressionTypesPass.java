@@ -3309,14 +3309,14 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
       List<ExternNode> fromSources = sources.get(path, name);
       if (fromSources != null) {
         return fromSources.stream()
-            .map(n -> ExternRef.of(path, name, n.getType(), n.isJavaImplAsync()))
+            .map(n -> ExternRef.of(path, name, n.getType(), n.isJavaImplAsync(), n.isAutoJava()))
             .collect(toImmutableList());
       }
       FileMetadata fromDeps = deps.get().getFile(path);
       if (fromDeps != null) {
         List<? extends FileMetadata.Extern> exts = fromDeps.getExterns(name);
         return exts.stream()
-            .map(e -> ExternRef.of(path, name, e.getSignature(), e.isJavaAsync()))
+            .map(e -> ExternRef.of(path, name, e.getSignature(), e.isJavaAsync(), e.isAutoJava()))
             .collect(toImmutableList());
       }
       return ImmutableList.of();

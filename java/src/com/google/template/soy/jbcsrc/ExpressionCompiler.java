@@ -2120,7 +2120,6 @@ final class ExpressionCompiler {
         case PARAM:
         case LOCAL_VAR:
         case EXTERN:
-        case FUNCTION_PARAM:
           return false;
         case TEMPLATE:
           break;

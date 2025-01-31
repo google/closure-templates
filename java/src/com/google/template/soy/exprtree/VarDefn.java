@@ -33,7 +33,7 @@ public interface VarDefn {
 
   /** Enum used to distinguish subtypes. */
   enum Kind {
-    // Explicitly declared parameter.
+    // Explicitly declared parameter (in template or function).
     PARAM,
     // Local variable
     LOCAL_VAR,
@@ -41,8 +41,6 @@ public interface VarDefn {
     CONST,
     // File-wide exportable extern.
     EXTERN,
-    // Param inside function ({javaimpl}) block.
-    FUNCTION_PARAM,
     // imported symbol
     IMPORT_VAR,
 

@@ -97,7 +97,6 @@ import com.google.template.soy.soytree.SwitchNode;
 import com.google.template.soy.soytree.TemplateBasicNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.VeLogNode;
-import com.google.template.soy.soytree.defn.FunctionParam;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.SoyType.Kind;
 import java.io.Flushable;
@@ -272,7 +271,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
   public SoyValue execAutoJavaExtern(JavaImplNode java, ImmutableList<SoyValue> args) {
     env = Environment.create();
     buildFileEnvironment(env, java.getNearestAncestor(SoyFileNode.class));
-    ImmutableList<FunctionParam> externParams = java.getParent().getParamVars();
+    ImmutableList<TemplateParam> externParams = java.getParent().getParamVars();
     Preconditions.checkArgument(externParams.size() == args.size());
     for (int i = 0; i < externParams.size(); i++) {
       this.env.bind(externParams.get(i), args.get(i));

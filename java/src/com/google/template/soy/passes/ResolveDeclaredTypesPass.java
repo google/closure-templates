@@ -158,6 +158,9 @@ final class ResolveDeclaredTypesPass
     @Override
     protected void visitExternNode(ExternNode node) {
       visitTypeNode(node.typeNode());
+      for (TemplateParam paramVar : node.getParamVars()) {
+        paramVar.setType(paramVar.getTypeNode().getResolvedType());
+      }
       super.visitExternNode(node);
     }
 

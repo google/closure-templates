@@ -50,7 +50,6 @@ import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TypeDefNode;
 import com.google.template.soy.soytree.defn.ExternVar;
-import com.google.template.soy.soytree.defn.FunctionParam;
 import com.google.template.soy.soytree.defn.ImportedVar;
 import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import java.util.ArrayDeque;
@@ -248,7 +247,7 @@ final class LocalVariablesNodeVisitor {
       // Create a scope for all parameters.
       localVariables.enterScope();
       ExternNode parent = node.getParent();
-      for (FunctionParam paramVar : parent.getParamVars()) {
+      for (VarDefn paramVar : parent.getParamVars()) {
         localVariables.define(paramVar, parent);
       }
       super.visitJavaImplNode(node);
@@ -387,8 +386,6 @@ final class LocalVariablesNodeVisitor {
         return "Extern function";
       case CONST:
         return "Symbol";
-      case FUNCTION_PARAM:
-        return "Function parameter";
     }
     throw new AssertionError(varDefn.kind());
   }
