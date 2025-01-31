@@ -21,6 +21,7 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
+import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.soytree.AbstractReturningSoyNodeVisitor;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
@@ -53,7 +54,7 @@ class ValidateAutoJavaExternPass implements CompilerFilePass {
   private static final SoyErrorKind DEAD_CODE = SoyErrorKind.of("Unreachable code.");
 
   private static final SoyErrorKind BAD_ASSIGNMENT =
-      SoyErrorKind.of("Assignment is only allowed on previously let values.");
+      SoyErrorKind.of("Assignment is only allowed on params or lets.");
 
   private static final SoyErrorKind MISSING_RETURN =
       SoyErrorKind.of("Function lacks ending return statement.");
@@ -188,6 +189,14 @@ class ValidateAutoJavaExternPass implements CompilerFilePass {
   private final class AssignmentChecker extends AbstractSoyNodeVisitor<Void> {
 
     private final Set<String> lets = new HashSet<>();
+
+    @Override
+    protected void visitJavaImplNode(JavaImplNode node) {
+      for (VarDefn param : node.getParent().getParamVars()) {
+        lets.add(param.refName());
+      }
+      super.visitJavaImplNode(node);
+    }
 
     @Override
     protected void visitLetNode(LetNode node) {
