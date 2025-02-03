@@ -32,6 +32,7 @@ import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.LocalVariable;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.MethodRefs;
+import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.Statement;
 import com.google.template.soy.jbcsrc.shared.SaveStateMetaFactory;
 import java.lang.invoke.MethodHandles;
@@ -169,6 +170,7 @@ final class TemplateVariableManager implements LocalVariableManager {
    */
   static final class Variable extends AbstractVariable {
     private final Expression initExpression;
+    private final Expression accessor;
     private final LocalVariable local;
     private final SaveStrategy strategy;
     private final Statement initializer;
@@ -184,6 +186,12 @@ final class TemplateVariableManager implements LocalVariableManager {
       this.local = local;
       this.initializer = local.initialize(initExpression);
       this.strategy = strategy;
+      if (initExpression instanceof SoyExpression) {
+        accessor =
+            SoyExpression.forRuntimeType(((SoyExpression) initExpression).soyRuntimeType(), local);
+      } else {
+        accessor = local;
+      }
     }
 
     Statement initializer() {
@@ -192,7 +200,7 @@ final class TemplateVariableManager implements LocalVariableManager {
 
     @Override
     Expression accessor() {
-      return local();
+      return accessor;
     }
 
     LocalVariable local() {
@@ -250,35 +258,34 @@ final class TemplateVariableManager implements LocalVariableManager {
       TemplateVariableManager.this.activeScope = this;
     }
 
-      @Override
-      void createTrivial(String name, Expression expression) {
-        putVariable(VarKey.create(name), new TrivialVariable(expression));
-      }
+    @Override
+    void createTrivial(String name, Expression expression) {
+      putVariable(VarKey.create(name), new TrivialVariable(expression));
+    }
 
-      @Override
-      Variable createSynthetic(
-          SyntheticVarName varName, Expression initExpr, SaveStrategy strategy) {
-        return doCreate(
-            // synthetics are prefixed by $ by convention
-            "$" + varName.name(), initExpr, VarKey.create(varName), strategy);
-      }
+    @Override
+    Variable createSynthetic(SyntheticVarName varName, Expression initExpr, SaveStrategy strategy) {
+      return doCreate(
+          // synthetics are prefixed by $ by convention
+          "$" + varName.name(), initExpr, VarKey.create(varName), strategy);
+    }
 
-      @Override
-      Variable create(String name, Expression initExpr, SaveStrategy strategy) {
-        return doCreate(name, initExpr, VarKey.create(name), strategy);
-      }
+    @Override
+    Variable create(String name, Expression initExpr, SaveStrategy strategy) {
+      return doCreate(name, initExpr, VarKey.create(name), strategy);
+    }
 
-      @Override
-      public LocalVariable createTemporary(String proposedName, Type type) {
-        return delegateScope.createTemporary(proposedName, type);
-      }
+    @Override
+    public LocalVariable createTemporary(String proposedName, Type type) {
+      return delegateScope.createTemporary(proposedName, type);
+    }
 
-      @Override
-      public LocalVariable createNamedLocal(String name, Type type) {
-        LocalVariable var = delegateScope.createNamedLocal(name, type);
-        putVariable(VarKey.create(name), new TrivialVariable(var));
-        return var;
-      }
+    @Override
+    public LocalVariable createNamedLocal(String name, Type type) {
+      LocalVariable var = delegateScope.createNamedLocal(name, type);
+      putVariable(VarKey.create(name), new TrivialVariable(var));
+      return var;
+    }
 
     @Override
     public Label exitScopeMarker() {
@@ -293,20 +300,20 @@ final class TemplateVariableManager implements LocalVariableManager {
     }
 
     Variable doCreate(String proposedName, Expression initExpr, VarKey key, SaveStrategy strategy) {
-        Variable var =
-            new Variable(
-                initExpr,
-                delegateScope.createTemporary(proposedName, initExpr.resultType()),
-                strategy);
-        putVariable(key, var);
-        return var;
-      }
+      Variable var =
+          new Variable(
+              initExpr,
+              delegateScope.createTemporary(proposedName, initExpr.resultType()),
+              strategy);
+      putVariable(key, var);
+      return var;
+    }
 
     void putVariable(VarKey key, AbstractVariable var) {
-        AbstractVariable old = variablesByKey.put(key, var);
-        if (old != null) {
-          throw new IllegalStateException("multiple variables active for key: " + key);
-        }
+      AbstractVariable old = variablesByKey.put(key, var);
+      if (old != null) {
+        throw new IllegalStateException("multiple variables active for key: " + key);
+      }
       activeVariables.add(key);
     }
 

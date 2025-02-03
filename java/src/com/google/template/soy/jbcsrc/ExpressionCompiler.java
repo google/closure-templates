@@ -1367,7 +1367,10 @@ final class ExpressionCompiler {
 
     @Override
     SoyExpression visitLetNodeVar(VarRefNode varRef, LocalVar local) {
-      return resolveVarRefNode(varRef, parameters.getLocal(local));
+      Expression expression = parameters.getLocal(local);
+      return expression instanceof SoyExpression
+          ? (SoyExpression) expression
+          : resolveVarRefNode(varRef, expression);
     }
 
     @Override
