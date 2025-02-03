@@ -520,11 +520,6 @@ final class ProtoUtils {
       throw new AssertionError();
     }
 
-    // TODO: b/373956531 - Remove this once gbigint is the default for 64-bit int maps.
-    private RepeatedFieldInterpreter getMapFieldInterpreter(FieldDescriptor mapField) {
-      return FORCE_GBIGINT_REPEATED_FIELD_INTERPRETER;
-    }
-
     private SoyExpression handleMapField(Expression typedBaseExpr, MethodRef getMethodRef) {
       List<FieldDescriptor> mapFields = descriptor.getMessageType().getFields();
       FieldDescriptor keyDescriptor = mapFields.get(0);
@@ -533,8 +528,8 @@ final class ProtoUtils {
           (MapType) fieldType,
           MethodRefs.LAZY_PROTO_TO_SOY_VALUE_MAP_FOR_MAP.invoke(
               typedBaseExpr.invoke(getMethodRef),
-              FieldVisitor.visitField(keyDescriptor, getMapFieldInterpreter(descriptor)),
-              FieldVisitor.visitField(valueDescriptor, getMapFieldInterpreter(descriptor))));
+              FieldVisitor.visitField(keyDescriptor, FORCE_GBIGINT_REPEATED_FIELD_INTERPRETER),
+              FieldVisitor.visitField(valueDescriptor, FORCE_GBIGINT_REPEATED_FIELD_INTERPRETER)));
     }
 
     private SoyExpression interpretField(Expression field, Int64ConversionMode int64Mode) {

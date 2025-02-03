@@ -21,6 +21,7 @@ import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static com.google.template.soy.types.SoyTypes.NUMBER_TYPE;
 
 import com.google.common.base.Objects;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.protobuf.Descriptors.Descriptor;
@@ -223,6 +224,9 @@ public final class SoyProtoType extends SoyType {
     }
 
     synchronized SoyType getType(Int64ConversionMode int64Mode) {
+      if (getDescriptor().isMapField()) {
+        Preconditions.checkArgument(int64Mode == Int64ConversionMode.FORCE_GBIGINT);
+      }
 
       switch (int64Mode) {
         case FORCE_STRING:

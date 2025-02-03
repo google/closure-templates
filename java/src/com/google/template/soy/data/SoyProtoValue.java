@@ -119,8 +119,11 @@ public final class SoyProtoValue extends SoyRecord {
     }
 
     public void assignField(Message.Builder builder, SoyValue value) {
-      builder.setField(
-          getDescriptor(), impl(Int64ConversionMode.FOLLOW_JS_TYPE).protoFromSoy(value));
+      Int64ConversionMode int64Mode =
+          getDescriptor().isMapField()
+              ? Int64ConversionMode.FORCE_GBIGINT
+              : Int64ConversionMode.FOLLOW_JS_TYPE;
+      builder.setField(getDescriptor(), impl(int64Mode).protoFromSoy(value));
     }
   }
 

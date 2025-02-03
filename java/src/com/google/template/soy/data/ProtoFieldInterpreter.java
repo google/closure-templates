@@ -16,6 +16,7 @@
 
 package com.google.template.soy.data;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 import com.google.common.html.types.SafeHtmlProto;
@@ -202,6 +203,9 @@ public abstract class ProtoFieldInterpreter {
   /** Creates a {@link ProtoFieldInterpreter} for the given field. */
   static ProtoFieldInterpreter create(
       FieldDescriptor fieldDescriptor, Int64ConversionMode int64Mode) {
+    if (fieldDescriptor.isMapField()) {
+      Preconditions.checkArgument(int64Mode == Int64ConversionMode.FORCE_GBIGINT);
+    }
 
     switch (int64Mode) {
       case FORCE_STRING:
