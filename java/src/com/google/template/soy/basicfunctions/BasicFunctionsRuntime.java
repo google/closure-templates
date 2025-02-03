@@ -49,6 +49,7 @@ import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.shared.internal.Sanitizers;
+import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -394,7 +395,7 @@ public final class BasicFunctionsRuntime {
   }
 
   @Nonnull
-  public static ImmutableList<IntegerData> range(int start, int end, int step) {
+  public static List<IntegerData> range(int start, int end, int step) {
     if (step == 0) {
       throw new IllegalArgumentException(String.format("step must be non-zero: %d", step));
     }
@@ -405,17 +406,18 @@ public final class BasicFunctionsRuntime {
     }
     // if step does not evenly divide length add +1 to account for the fact that we always add start
     int size = length / step + (length % step == 0 ? 0 : 1);
-    ImmutableList.Builder<IntegerData> list = ImmutableList.builderWithExpectedSize(size);
-    if (step > 0) {
-      for (int i = start; i < end; i += step) {
-        list.add(IntegerData.forValue(i));
+
+    return new AbstractList<>() {
+      @Override
+      public IntegerData get(int index) {
+        return IntegerData.forValue(start + step * index);
       }
-    } else {
-      for (int i = start; i > end; i += step) {
-        list.add(IntegerData.forValue(i));
+
+      @Override
+      public int size() {
+        return size;
       }
-    }
-    return list.build();
+    };
   }
 
   public static boolean strContainsFromIndex(String left, String right, NumberData index) {
