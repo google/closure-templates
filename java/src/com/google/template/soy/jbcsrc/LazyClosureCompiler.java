@@ -570,7 +570,8 @@ final class LazyClosureCompiler {
               /* parameterNames= */ ImmutableList.of(),
               start,
               end,
-              /* isStatic= */ true);
+              /* isStatic= */ true,
+              TemplateVariableManager.NO_RUNTIME_TYPE_KNOWN);
       LazyClosureParameterLookup lookup =
           new LazyClosureParameterLookup(
               this, parent.parameterLookup, variableSet, Optional.empty());
@@ -629,7 +630,8 @@ final class LazyClosureCompiler {
               /* parameterNames= */ ImmutableList.of(),
               start,
               end,
-              /* isStatic= */ true);
+              /* isStatic= */ true,
+              TemplateVariableManager.NO_RUNTIME_TYPE_KNOWN);
 
       LazyClosureParameterLookup lookup =
           new LazyClosureParameterLookup(
@@ -724,7 +726,8 @@ final class LazyClosureCompiler {
               /* parameterNames= */ ImmutableList.of(),
               start,
               end,
-              /* isStatic= */ true);
+              /* isStatic= */ true,
+              TemplateVariableManager.NO_RUNTIME_TYPE_KNOWN);
 
       // The stackFrame and appendable parameters come last, but we don't know what values will be
       // captured yet so we need to defer computing its slot.

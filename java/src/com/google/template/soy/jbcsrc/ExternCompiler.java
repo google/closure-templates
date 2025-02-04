@@ -23,6 +23,8 @@ import static java.util.Arrays.stream;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Streams;
 import com.google.template.soy.data.SoyValue;
+import com.google.template.soy.exprtree.DataAccessNode;
+import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.internal.proto.JavaQualifiedNames;
 import com.google.template.soy.jbcsrc.ConstantsCompiler.ConstantVariables;
 import com.google.template.soy.jbcsrc.ExpressionCompiler.BasicExpressionCompiler;
@@ -43,6 +45,7 @@ import com.google.template.soy.jbcsrc.runtime.JbcSrcExternRuntime;
 import com.google.template.soy.jbcsrc.shared.Names;
 import com.google.template.soy.plugin.java.restricted.MethodSignature;
 import com.google.template.soy.soytree.ExternNode;
+import com.google.template.soy.soytree.FileSetMetadata;
 import com.google.template.soy.soytree.JavaImplNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.types.FunctionType;
@@ -65,17 +68,33 @@ import org.objectweb.asm.commons.Method;
 /** Compiles byte code for {@link ExternNode}s. */
 public final class ExternCompiler {
 
+  static final TemplateAnalysis EXTERN_CONTEXT =
+      new TemplateAnalysis() {
+        @Override
+        public boolean isResolved(VarRefNode ref) {
+          return true;
+        }
+
+        @Override
+        public boolean isResolved(DataAccessNode ref) {
+          return true;
+        }
+      };
+
   private final ExternNode extern;
   private final SoyClassWriter writer;
   private final JavaSourceFunctionCompiler javaSourceFunctionCompiler;
+  private final FileSetMetadata fileSetMetadata;
 
   ExternCompiler(
       ExternNode extern,
       SoyClassWriter writer,
-      JavaSourceFunctionCompiler javaSourceFunctionCompiler) {
+      JavaSourceFunctionCompiler javaSourceFunctionCompiler,
+      FileSetMetadata fileSetMetadata) {
     this.extern = extern;
     this.writer = writer;
     this.javaSourceFunctionCompiler = javaSourceFunctionCompiler;
+    this.fileSetMetadata = fileSetMetadata;
   }
 
   public void compile() {
@@ -140,7 +159,13 @@ public final class ExternCompiler {
             paramNames,
             start,
             end,
-            /* isStatic= */ true);
+            /* isStatic= */ true,
+            javaImpl.isAutoImpl()
+                ? n -> {
+                  SoyType soyType = extern.getType().getParameterMap().get(n);
+                  return soyType != null ? getRuntimeType(soyType) : null;
+                }
+                : TemplateVariableManager.NO_RUNTIME_TYPE_KNOWN);
     var renderContext =
         requiresRenderContext
             ? Optional.of(
@@ -159,7 +184,7 @@ public final class ExternCompiler {
       BasicExpressionCompiler basicCompiler =
           ExpressionCompiler.createBasicCompiler(
               javaImpl,
-              ConstantsCompiler.ALL_RESOLVED,
+              EXTERN_CONTEXT,
               variables,
               paramSet,
               javaSourceFunctionCompiler,
@@ -167,7 +192,12 @@ public final class ExternCompiler {
               null);
       SoyNodeCompiler nodeCompiler =
           SoyNodeCompiler.createForExtern(
-              javaImpl, paramSet, variables, basicCompiler, javaSourceFunctionCompiler);
+              javaImpl,
+              paramSet,
+              variables,
+              basicCompiler,
+              javaSourceFunctionCompiler,
+              fileSetMetadata);
       body = nodeCompiler.compile(javaImpl);
     } else {
       TypeInfo externClass = TypeInfo.create(javaImpl.className(), javaImpl.isInterface());

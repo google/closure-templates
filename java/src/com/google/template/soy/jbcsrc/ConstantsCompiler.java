@@ -53,7 +53,7 @@ import org.objectweb.asm.commons.Method;
 /** Compiles byte code for {@link ConstNode}s. */
 public final class ConstantsCompiler {
 
-  static final TemplateAnalysis ALL_RESOLVED =
+  static final TemplateAnalysis CONSTANT_CONTEXT =
       new TemplateAnalysis() {
         @Override
         public boolean isResolved(VarRefNode ref) {
@@ -116,7 +116,7 @@ public final class ConstantsCompiler {
       BasicExpressionCompiler constantCompiler =
           ExpressionCompiler.createConstantCompiler(
               constant,
-              ALL_RESOLVED,
+              CONSTANT_CONTEXT,
               new SimpleLocalVariableManager(
                   javaClass.type(),
                   new Type[] {},
@@ -156,7 +156,8 @@ public final class ConstantsCompiler {
               ImmutableList.of(StandardNames.RENDER_CONTEXT),
               start,
               end,
-              /* isStatic= */ true);
+              /* isStatic= */ true,
+              TemplateVariableManager.NO_RUNTIME_TYPE_KNOWN);
 
       Expression renderContext = variableSet.getVariable(StandardNames.RENDER_CONTEXT);
       RenderContextExpression renderContextExpr = new RenderContextExpression(renderContext);
@@ -166,7 +167,7 @@ public final class ConstantsCompiler {
       BasicExpressionCompiler expressionCompiler =
           ExpressionCompiler.createBasicCompiler(
               constant,
-              ALL_RESOLVED,
+              CONSTANT_CONTEXT,
               variables,
               variableSet,
               javaSourceFunctionCompiler,
@@ -243,11 +244,11 @@ public final class ConstantsCompiler {
   }
 
   static final class ConstantVariables implements TemplateParameterLookup {
-    private final TemplateVariableManager variableSet;
+    private final LocalVariableManager variableSet;
     private final Optional<RenderContextExpression> renderContext;
 
     ConstantVariables(
-        TemplateVariableManager variableSet, Optional<RenderContextExpression> renderContext) {
+        LocalVariableManager variableSet, Optional<RenderContextExpression> renderContext) {
       this.renderContext = renderContext;
       this.variableSet = variableSet;
     }

@@ -33,6 +33,7 @@ import com.google.template.soy.jbcsrc.restricted.LocalVariable;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.MethodRefs;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
+import com.google.template.soy.jbcsrc.restricted.SoyRuntimeType;
 import com.google.template.soy.jbcsrc.restricted.Statement;
 import com.google.template.soy.jbcsrc.shared.SaveStateMetaFactory;
 import java.lang.invoke.MethodHandles;
@@ -210,6 +211,8 @@ final class TemplateVariableManager implements LocalVariableManager {
     }
   }
 
+  static final Function<String, SoyRuntimeType> NO_RUNTIME_TYPE_KNOWN = n -> null;
+
   private ScopeImpl activeScope;
   private final SimpleLocalVariableManager delegate;
   private final ImmutableMap<String, LocalVariable> methodParameters;
@@ -220,7 +223,8 @@ final class TemplateVariableManager implements LocalVariableManager {
       ImmutableList<String> parameterNames,
       Label methodBegin,
       Label methodEnd,
-      boolean isStatic) {
+      boolean isStatic,
+      Function<String, SoyRuntimeType> runtimeTypeCalculator) {
     this.delegate =
         new SimpleLocalVariableManager(
             owner,
@@ -233,8 +237,14 @@ final class TemplateVariableManager implements LocalVariableManager {
     // seed our map with all the method parameters from our delegate.
     methodParameters = delegate.allActiveVariables();
     methodParameters.forEach(
-        (key, value) ->
-            activeScope.variablesByKey.put(VarKey.create(key), new TrivialVariable(value)));
+        (key, value) -> {
+          Expression exp = value;
+          SoyRuntimeType runtimeType = runtimeTypeCalculator.apply(key);
+          if (runtimeType != null) {
+            exp = SoyExpression.forRuntimeType(runtimeType, value);
+          }
+          activeScope.variablesByKey.put(VarKey.create(key), new TrivialVariable(exp));
+        });
   }
 
   public void updateParameterTypes(Type[] parameterTypes, List<String> parameterNames) {

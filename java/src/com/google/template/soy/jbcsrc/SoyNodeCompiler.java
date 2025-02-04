@@ -213,11 +213,12 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       TemplateVariableManager variables,
       TemplateParameterLookup parameterLookup,
       BasicExpressionCompiler constantCompiler,
-      JavaSourceFunctionCompiler javaSourceFunctionCompiler) {
+      JavaSourceFunctionCompiler javaSourceFunctionCompiler,
+      FileSetMetadata fileSetMetadata) {
     return create(
         context,
         null,
-        ConstantsCompiler.ALL_RESOLVED,
+        ExternCompiler.EXTERN_CONTEXT,
         null,
         null,
         variables,
@@ -225,7 +226,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
         null,
         constantCompiler,
         javaSourceFunctionCompiler,
-        null);
+        fileSetMetadata);
   }
 
   @Nullable final TypeInfo typeInfo;
@@ -240,7 +241,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   final ExpressionToSoyValueProviderCompiler expressionToSoyValueProviderCompiler;
   final BasicExpressionCompiler constantCompiler;
   final JavaSourceFunctionCompiler javaSourceFunctionCompiler;
-  @Nullable final FileSetMetadata fileSetMetadata;
+  final FileSetMetadata fileSetMetadata;
   private Scope currentScope;
 
   private SoyNodeCompiler(
@@ -255,7 +256,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       ExpressionToSoyValueProviderCompiler expressionToSoyValueProviderCompiler,
       BasicExpressionCompiler constantCompiler,
       JavaSourceFunctionCompiler javaSourceFunctionCompiler,
-      @Nullable FileSetMetadata fileSetMetadata) {
+      FileSetMetadata fileSetMetadata) {
     this.typeInfo = typeInfo;
     this.analysis = checkNotNull(analysis);
     this.innerMethods = innerMethods;
@@ -267,7 +268,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     this.expressionToSoyValueProviderCompiler = checkNotNull(expressionToSoyValueProviderCompiler);
     this.constantCompiler = checkNotNull(constantCompiler);
     this.javaSourceFunctionCompiler = checkNotNull(javaSourceFunctionCompiler);
-    this.fileSetMetadata = fileSetMetadata;
+    this.fileSetMetadata = checkNotNull(fileSetMetadata);
   }
 
   Statement compile(RenderUnitNode node, ExtraCodeCompiler prefix, ExtraCodeCompiler suffix) {
@@ -901,7 +902,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     DetachState detach = getNullableDetachState();
     return detach != null
         ? exprCompiler.compileRootExpression(expr, detach)
-        : exprCompiler.compileWithNoDetaches(expr).get();
+        : exprCompiler.asBasicCompiler(null).compile(expr);
   }
 
   @Override

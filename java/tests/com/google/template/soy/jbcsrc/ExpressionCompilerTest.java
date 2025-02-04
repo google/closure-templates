@@ -600,7 +600,8 @@ public class ExpressionCompilerTest {
                 ImmutableList.of(),
                 null,
                 null,
-                /* isStatic= */ true),
+                /* isStatic= */ true,
+                TemplateVariableManager.NO_RUNTIME_TYPE_KNOWN),
             new JavaSourceFunctionCompiler(
                 SoyTypeRegistryBuilder.create(), ErrorReporter.exploding()),
             result.registry());

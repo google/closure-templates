@@ -449,7 +449,8 @@ final class TemplateCompiler {
             paramNames.build(),
             start,
             end,
-            /* isStatic= */ true);
+            /* isStatic= */ true,
+            TemplateVariableManager.NO_RUNTIME_TYPE_KNOWN);
     Optional<Expression> paramsVar =
         template.hasPositionalSignature()
             ? Optional.empty()
@@ -641,14 +642,15 @@ final class TemplateCompiler {
             StandardNames.APPENDABLE,
             StandardNames.RENDER_CONTEXT);
 
-    TemplateVariableManager variableSet =
+    LocalVariableManager variableSet =
         new TemplateVariableManager(
             template.typeInfo().type(),
             method.getArgumentTypes(),
             paramNames,
             start,
             end,
-            /* isStatic= */ true);
+            /* isStatic= */ true,
+            TemplateVariableManager.NO_RUNTIME_TYPE_KNOWN);
     Expression stackFrameVar = variableSet.getVariable(StandardNames.STACK_FRAME);
     Expression paramsVar = variableSet.getVariable(StandardNames.PARAMS);
     Expression appendableVar = variableSet.getVariable(StandardNames.APPENDABLE);
@@ -693,7 +695,7 @@ final class TemplateCompiler {
 
     @Override
     public LocalVariable getStackFrame() {
-      return checkNotNull(stackFrame);
+      return stackFrame;
     }
 
     @Override

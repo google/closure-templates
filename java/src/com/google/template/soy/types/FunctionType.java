@@ -20,6 +20,7 @@ import static com.google.common.base.Functions.identity;
 import static com.google.common.collect.ImmutableMap.toImmutableMap;
 
 import com.google.auto.value.AutoValue;
+import com.google.auto.value.extension.memoized.Memoized;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.soytree.FunctionTypeP;
@@ -39,7 +40,8 @@ public abstract class FunctionType extends SoyType {
 
   public abstract ImmutableList<Parameter> getParameters();
 
-  public final ImmutableMap<String, SoyType> getParameterMap() {
+  @Memoized
+  public ImmutableMap<String, SoyType> getParameterMap() {
     return getParameters().stream().collect(toImmutableMap(Parameter::getName, Parameter::getType));
   }
 

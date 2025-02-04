@@ -19,10 +19,12 @@ package com.google.template.soy.parsepasses.contextautoesc;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.internal.IdGenerator;
+import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
+import com.google.template.soy.soytree.ExternNode;
 import com.google.template.soy.soytree.FileSetMetadata;
 import com.google.template.soy.soytree.HtmlContext;
 import com.google.template.soy.soytree.HtmlOpenTagNode;
@@ -100,6 +102,24 @@ public final class ContextualAutoescaper {
           reportError(errorReporter, e);
         }
       }
+
+      // Set context to TEXT anywhere in {javaimpl}. This information shouldn't affect anything but
+      // will avoid runtime exceptions calling getHtmlContext.
+      file.getExterns().stream()
+          .filter(ExternNode::isAutoJava)
+          .map(ExternNode::getJavaImpl)
+          .map(Optional::get)
+          .forEach(
+              j -> {
+                try {
+                  Context startContext =
+                      Context.getStartContextForContentKind(SanitizedContentKind.TEXT);
+                  InferenceEngine.inferTemplateEndContext(
+                      j, startContext, inferences, errorReporter);
+                } catch (SoyAutoescapeException e) {
+                  reportError(errorReporter, e);
+                }
+              });
     }
     if (errorReporter.hasErrors()) {
       return null;

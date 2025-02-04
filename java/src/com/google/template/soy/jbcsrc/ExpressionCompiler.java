@@ -22,12 +22,9 @@ import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.ITERATOR_T
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.LIST_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.NULL_POINTER_EXCEPTION_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_VALUE_PROVIDER_TYPE;
-import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_VALUE_TYPE;
-import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.STRING_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constantRecordProperty;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.firstSoyNonNullish;
-import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.isDefinitelyAssignableFrom;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.numericConversion;
 
 import com.google.common.collect.ImmutableList;
@@ -1284,32 +1281,9 @@ final class ExpressionCompiler {
     @Override
     SoyExpression visitParam(VarRefNode varRef, TemplateParam param) {
       Expression expression = parameters.getParam(param);
-      if (analysis.isResolved(varRef)) {
-        SoyExpression functionParam = maybeGetFunctionParam(varRef.getType(), expression);
-        if (functionParam != null) {
-          return functionParam;
-        }
-      }
-      return resolveVarRefNode(varRef, expression);
-    }
-
-    private SoyExpression maybeGetFunctionParam(SoyType soyType, Expression expression) {
-      // TODO(jcg): Build this into TemplateVariableManager.
-      Type type = expression.resultType();
-      if (expression instanceof SoyExpression) {
-        return (SoyExpression) expression;
-      } else if (type == Type.LONG_TYPE) {
-        return SoyExpression.forInt(expression);
-      } else if (type == Type.BOOLEAN_TYPE) {
-        return SoyExpression.forBool(expression);
-      } else if (type == Type.DOUBLE_TYPE) {
-        return SoyExpression.forFloat(expression);
-      } else if (type.equals(STRING_TYPE)) {
-        return SoyExpression.forString(expression);
-      } else if (isDefinitelyAssignableFrom(SOY_VALUE_TYPE, type)) {
-        return SoyExpression.forSoyValue(soyType, expression);
-      }
-      return null;
+      return expression instanceof SoyExpression
+          ? (SoyExpression) expression
+          : resolveVarRefNode(varRef, expression);
     }
 
     // Let vars

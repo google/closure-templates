@@ -42,6 +42,7 @@ import com.google.template.soy.soytree.HtmlOpenTagNode;
 import com.google.template.soy.soytree.HtmlTagNode;
 import com.google.template.soy.soytree.IfElseNode;
 import com.google.template.soy.soytree.IfNode;
+import com.google.template.soy.soytree.JavaImplNode;
 import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.LogNode;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;
@@ -202,6 +203,12 @@ final class InferenceEngine {
       context = Context.getStartContextForContentKind(templateNode.getContentKind());
       visitChildren(templateNode);
       checkBlockEndContext(templateNode, context);
+    }
+
+    @Override
+    protected void visitJavaImplNode(JavaImplNode node) {
+      context = Context.getStartContextForContentKind(SanitizedContentKind.TEXT);
+      visitChildren(node);
     }
 
     /** Propagates context across raw chunks of HTML text. */
