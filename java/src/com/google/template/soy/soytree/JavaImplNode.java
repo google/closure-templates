@@ -209,7 +209,7 @@ public final class JavaImplNode extends AbstractBlockCommandNode
   }
 
   public boolean requiresRenderContext() {
-    return !isStatic() || hasImplicitParams();
+    return !isAutoImpl() && (!isStatic() || hasImplicitParams());
   }
 
   public TypeReference returnType() {

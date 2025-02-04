@@ -99,6 +99,8 @@ final class TemplateVariableManager implements LocalVariableManager {
      *     derivable from other variables already defined.
      */
     abstract Variable create(String name, Expression initializer, SaveStrategy strategy);
+
+    abstract AbstractVariable get(String name);
   }
 
   /**
@@ -140,7 +142,7 @@ final class TemplateVariableManager implements LocalVariableManager {
     abstract Object name();
   }
 
-  private abstract static class AbstractVariable {
+  abstract static class AbstractVariable {
     abstract Expression accessor();
   }
 
@@ -276,6 +278,11 @@ final class TemplateVariableManager implements LocalVariableManager {
     }
 
     @Override
+    AbstractVariable get(String name) {
+      return getVariable(VarKey.create(name));
+    }
+
+    @Override
     public LocalVariable createTemporary(String proposedName, Type type) {
       return delegateScope.createTemporary(proposedName, type);
     }
@@ -317,16 +324,21 @@ final class TemplateVariableManager implements LocalVariableManager {
       activeVariables.add(key);
     }
 
-    Expression getVariable(VarKey key) {
+    AbstractVariable getVariable(VarKey key) {
       var variable = variablesByKey.get(key);
       if (variable == null) {
+        IllegalStateException e = null;
         if (parent != null) {
-          return parent.getVariable(key);
+          try {
+            return parent.getVariable(key);
+          } catch (IllegalStateException ex) {
+            e = ex;
+          }
         }
         throw new IllegalStateException(
-            "no variable: '" + key + "' is bound. " + variablesByKey.keySet() + " are in scope");
+            "no variable: '" + key + "' is bound. " + variablesByKey.keySet() + " are in scope", e);
       }
-      return variable.accessor();
+      return variable;
     }
 
     /** Returns all variables currently in scope in creation order. */
@@ -363,7 +375,7 @@ final class TemplateVariableManager implements LocalVariableManager {
   }
 
   private Expression getVariable(VarKey varKey) {
-    return activeScope.getVariable(varKey);
+    return activeScope.getVariable(varKey).accessor();
   }
 
   /**

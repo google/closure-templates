@@ -16,6 +16,7 @@
 
 package com.google.template.soy.jbcsrc;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.base.Strings.nullToEmpty;
 import static com.google.common.collect.ImmutableList.toImmutableList;
@@ -121,11 +122,13 @@ final class TemplateCompiler {
    * <p>For each template, we generate:
    *
    * <ul>
-   *   <li>A {@link CompiledTemplate}
-   *   <li>A DetachableSoyValueProvider subclass for each {@link LetValueNode} and {@link
-   *       CallParamValueNode}
-   *   <li>A DetachableContentProvider subclass for each {@link LetContentNode} and {@link
-   *       CallParamContentNode}
+   *   <li>A {@link com.google.template.soy.jbcsrc.shared.CompiledTemplate}
+   *   <li>A DetachableSoyValueProvider subclass for each {@link
+   *       com.google.template.soy.soytree.LetValueNode} and {@link
+   *       com.google.template.soy.soytree.CallParamValueNode}
+   *   <li>A DetachableContentProvider subclass for each {@link
+   *       com.google.template.soy.soytree.LetContentNode} and {@link
+   *       com.google.template.soy.soytree.CallParamContentNode}
    *       <p>Note: This will <em>not</em> generate classes for other templates, only the template
    *       configured in the constructor. But it will generate classes that <em>reference</em> the
    *       classes that are generated for other templates. It is the callers responsibility to
@@ -671,7 +674,7 @@ final class TemplateCompiler {
         methodAccess(), template.modifiableSelectMethod().get().method(), writer);
   }
 
-  private static final class TemplateVariables implements TemplateParameterLookup {
+  static final class TemplateVariables implements TemplateParameterLookup {
     private final TemplateVariableManager variableSet;
     private final Optional<Expression> paramsRecord;
     private final RenderContextExpression renderContext;
@@ -690,7 +693,7 @@ final class TemplateCompiler {
 
     @Override
     public LocalVariable getStackFrame() {
-      return stackFrame;
+      return checkNotNull(stackFrame);
     }
 
     @Override
@@ -715,7 +718,7 @@ final class TemplateCompiler {
 
     @Override
     public RenderContextExpression getRenderContext() {
-      return renderContext;
+      return checkNotNull(renderContext);
     }
   }
 }

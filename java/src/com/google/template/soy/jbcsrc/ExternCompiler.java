@@ -17,6 +17,7 @@
 package com.google.template.soy.jbcsrc;
 
 import static com.google.common.base.Preconditions.checkState;
+import static com.google.common.collect.ImmutableList.toImmutableList;
 import static java.util.Arrays.stream;
 
 import com.google.common.collect.ImmutableList;
@@ -24,7 +25,10 @@ import com.google.common.collect.Streams;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.internal.proto.JavaQualifiedNames;
 import com.google.template.soy.jbcsrc.ConstantsCompiler.ConstantVariables;
+import com.google.template.soy.jbcsrc.ExpressionCompiler.BasicExpressionCompiler;
+import com.google.template.soy.jbcsrc.TemplateCompiler.TemplateVariables;
 import com.google.template.soy.jbcsrc.internal.SoyClassWriter;
+import com.google.template.soy.jbcsrc.restricted.BytecodeProducer;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
 import com.google.template.soy.jbcsrc.restricted.Expression;
@@ -42,6 +46,7 @@ import com.google.template.soy.soytree.ExternNode;
 import com.google.template.soy.soytree.JavaImplNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.types.FunctionType;
+import com.google.template.soy.types.FunctionType.Parameter;
 import com.google.template.soy.types.SoyProtoEnumType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
@@ -62,10 +67,15 @@ public final class ExternCompiler {
 
   private final ExternNode extern;
   private final SoyClassWriter writer;
+  private final JavaSourceFunctionCompiler javaSourceFunctionCompiler;
 
-  ExternCompiler(ExternNode extern, SoyClassWriter writer) {
+  ExternCompiler(
+      ExternNode extern,
+      SoyClassWriter writer,
+      JavaSourceFunctionCompiler javaSourceFunctionCompiler) {
     this.extern = extern;
     this.writer = writer;
+    this.javaSourceFunctionCompiler = javaSourceFunctionCompiler;
   }
 
   public void compile() {
@@ -73,49 +83,53 @@ public final class ExternCompiler {
     // local method parameter types match the soy types from the extern definition while the extern
     // delegate parameter types match the java types from the javaimpl definition.
 
-    if (extern.getJavaImpl().isEmpty() || extern.getJavaImpl().get().isAutoImpl()) {
+    boolean requiresRenderContext = false;
+    if (extern.getJavaImpl().isEmpty()) {
       Statement.throwExpression(JbcSrcExternRuntime.NO_EXTERN_JAVA_IMPL.invoke())
           .writeMethod(
               methodAccess(),
               buildMemberMethod(
                   extern.getIdentifier().identifier(),
                   extern.getType(),
-                  /* requiresRenderContext= */ false,
+                  requiresRenderContext,
                   extern.isJavaImplAsync()),
               writer);
       return;
     }
 
     JavaImplNode javaImpl = extern.getJavaImpl().get();
+    requiresRenderContext = javaImpl.requiresRenderContext();
     Method memberMethod =
         buildMemberMethod(
             extern.getIdentifier().identifier(),
             extern.getType(),
-            javaImpl.requiresRenderContext(),
+            requiresRenderContext,
             extern.isJavaImplAsync());
     int declaredMethodArgs = extern.getType().getParameters().size();
 
-    ImmutableList.Builder<String> paramNamesBuilder = ImmutableList.builder();
+    ImmutableList<String> paramNames;
     int paramNamesOffset = 0;
-    if (javaImpl.requiresRenderContext()) {
-      paramNamesBuilder.add(StandardNames.RENDER_CONTEXT);
-      paramNamesOffset = 1;
+    if (javaImpl.isAutoImpl()) {
+      paramNames =
+          javaImpl.getParent().getType().getParameters().stream()
+              .map(Parameter::getName)
+              .collect(toImmutableList());
+    } else {
+      ImmutableList.Builder<String> paramNamesBuilder = ImmutableList.builder();
+      if (requiresRenderContext) {
+        paramNamesBuilder.add(StandardNames.RENDER_CONTEXT);
+        paramNamesOffset = 1;
+      }
+      for (int i = 0; i < declaredMethodArgs; i++) {
+        paramNamesBuilder.add("p" + (i + 1 /* start with p1 */));
+      }
+      paramNames = paramNamesBuilder.build();
     }
-    for (int i = 0; i < declaredMethodArgs; i++) {
-      paramNamesBuilder.add("p" + (i + 1 /* start with p1 */));
-    }
-    ImmutableList<String> paramNames = paramNamesBuilder.build();
-
-    TypeInfo externClass = TypeInfo.create(javaImpl.className(), javaImpl.isInterface());
-    TypeInfo returnType = getTypeInfoLoadedIfPossible(javaImpl.returnType().className());
-    TypeInfo[] paramTypesInfos =
-        javaImpl.paramTypes().stream()
-            .map(d -> getTypeInfoLoadedIfPossible(d.className()))
-            .toArray(TypeInfo[]::new);
-    Type[] paramTypes = stream(paramTypesInfos).map(TypeInfo::type).toArray(Type[]::new);
 
     Label start = new Label();
     Label end = new Label();
+    BytecodeProducer body;
+
     TemplateVariableManager paramSet =
         new TemplateVariableManager(
             TypeInfo.createClass(
@@ -128,58 +142,92 @@ public final class ExternCompiler {
             end,
             /* isStatic= */ true);
     var renderContext =
-        javaImpl.requiresRenderContext()
+        requiresRenderContext
             ? Optional.of(
                 new RenderContextExpression(paramSet.getVariable(StandardNames.RENDER_CONTEXT)))
             : Optional.<RenderContextExpression>empty();
     ConstantVariables vars = new ConstantVariables(paramSet, renderContext);
 
-    Method externMethod = new Method(javaImpl.methodName(), returnType.type(), paramTypes);
-
-    List<Expression> adaptedParams = new ArrayList<>();
-    if (!javaImpl.isStatic()) {
-      adaptedParams.add(
-          vars.getRenderContext()
-              .getPluginInstance(javaImpl.className())
-              .checkedCast(externClass.type()));
-    }
-    for (int i = 0; i < declaredMethodArgs; i++) {
-      adaptedParams.add(
-          adaptParameter(
-              paramSet.getVariable(paramNames.get(i + paramNamesOffset)),
-              paramTypesInfos[i],
-              extern.getType().getParameters().get(i).getType()));
-    }
-    // Add implicit params.
-    for (int i = declaredMethodArgs; i < javaImpl.paramTypes().size(); i++) {
-      adaptedParams.add(adaptImplicitParameter(vars, paramTypesInfos[i]));
-    }
-
-    MethodRef extMethodRef;
-    if (javaImpl.isStatic()) {
-      extMethodRef =
-          MethodRef.createStaticMethod(externClass, externMethod, MethodPureness.NON_PURE);
-    } else if (javaImpl.isInterface()) {
-      extMethodRef =
-          MethodRef.createInterfaceMethod(externClass, externMethod, MethodPureness.NON_PURE);
+    if (javaImpl.isAutoImpl()) {
+      // TODO(jcg): RenderContext and xid will be needed for delegating to non-auto externs.
+      TemplateVariables variables =
+          new TemplateVariables(
+              paramSet,
+              /* stackFrame= */ null,
+              /* paramsRecord= */ Optional.empty(),
+              /* renderContext= */ null);
+      BasicExpressionCompiler basicCompiler =
+          ExpressionCompiler.createBasicCompiler(
+              javaImpl,
+              ConstantsCompiler.ALL_RESOLVED,
+              variables,
+              paramSet,
+              javaSourceFunctionCompiler,
+              null,
+              null);
+      SoyNodeCompiler nodeCompiler =
+          SoyNodeCompiler.createForExtern(
+              javaImpl, paramSet, variables, basicCompiler, javaSourceFunctionCompiler);
+      body = nodeCompiler.compile(javaImpl);
     } else {
-      extMethodRef =
-          MethodRef.createInstanceMethod(externClass, externMethod, MethodPureness.NON_PURE);
-    }
+      TypeInfo externClass = TypeInfo.create(javaImpl.className(), javaImpl.isInterface());
+      TypeInfo returnType = getTypeInfoLoadedIfPossible(javaImpl.returnType().className());
+      TypeInfo[] paramTypesInfos =
+          javaImpl.paramTypes().stream()
+              .map(d -> getTypeInfoLoadedIfPossible(d.className()))
+              .toArray(TypeInfo[]::new);
+      Type[] paramTypes = stream(paramTypesInfos).map(TypeInfo::type).toArray(Type[]::new);
 
-    Expression body =
-        adaptReturnType(
-            returnType.type(),
-            extern.getType().getReturnType(),
-            extMethodRef.invoke(adaptedParams));
+      Method externMethod = new Method(javaImpl.methodName(), returnType.type(), paramTypes);
+
+      List<Expression> adaptedParams = new ArrayList<>();
+      if (!javaImpl.isStatic()) {
+        adaptedParams.add(
+            vars.getRenderContext()
+                .getPluginInstance(javaImpl.className())
+                .checkedCast(externClass.type()));
+      }
+      for (int i = 0; i < declaredMethodArgs; i++) {
+        adaptedParams.add(
+            adaptParameter(
+                paramSet.getVariable(paramNames.get(i + paramNamesOffset)),
+                paramTypesInfos[i],
+                extern.getType().getParameters().get(i).getType()));
+      }
+      // Add implicit params.
+      for (int i = declaredMethodArgs; i < javaImpl.paramTypes().size(); i++) {
+        adaptedParams.add(adaptImplicitParameter(vars, paramTypesInfos[i]));
+      }
+
+      MethodRef extMethodRef;
+      if (javaImpl.isStatic()) {
+        extMethodRef =
+            MethodRef.createStaticMethod(externClass, externMethod, MethodPureness.NON_PURE);
+      } else if (javaImpl.isInterface()) {
+        extMethodRef =
+            MethodRef.createInterfaceMethod(externClass, externMethod, MethodPureness.NON_PURE);
+      } else {
+        extMethodRef =
+            MethodRef.createInstanceMethod(externClass, externMethod, MethodPureness.NON_PURE);
+      }
+
+      body =
+          adaptReturnType(
+              returnType.type(),
+              extern.getType().getReturnType(),
+              extMethodRef.invoke(adaptedParams));
+    }
 
     new Statement() {
       @Override
       protected void doGen(CodeBuilder adapter) {
         adapter.mark(start);
         body.gen(adapter);
-        adapter.mark(end);
+        // This instruction is only needed for !isAutoImpl(). However, due to how BytecodeProducer
+        // marks the line number of the end location of every SoyNode, we need some instruction
+        // after body.
         adapter.returnValue();
+        adapter.mark(end);
         paramSet.generateTableEntries(adapter);
       }
     }.writeMethod(methodAccess(), memberMethod, writer);
@@ -433,7 +481,8 @@ public final class ExternCompiler {
    *
    * <p>In some cases (e.g. List) we happen to tolerate the extern returning null.
    */
-  static Expression adaptReturnType(Type returnType, SoyType soyReturnType, Expression externCall) {
+  private static Expression adaptReturnType(
+      Type returnType, SoyType soyReturnType, Expression externCall) {
     boolean nullish = SoyTypes.isNullish(soyReturnType);
     Type externType = externCall.resultType();
 

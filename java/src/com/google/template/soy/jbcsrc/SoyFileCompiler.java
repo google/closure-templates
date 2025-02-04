@@ -105,7 +105,8 @@ final class SoyFileCompiler {
                         fileSetMetadata)
                     .compile();
               } else if (c instanceof ExternNode) {
-                new ExternCompiler((ExternNode) c, typeWriter.writer()).compile();
+                new ExternCompiler((ExternNode) c, typeWriter.writer(), javaSourceFunctionCompiler)
+                    .compile();
               } else if (c instanceof TemplateNode) {
                 new TemplateCompiler(
                         (TemplateNode) c,

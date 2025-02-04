@@ -22,12 +22,14 @@ import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.ITERATOR_T
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.LIST_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.NULL_POINTER_EXCEPTION_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_VALUE_PROVIDER_TYPE;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_VALUE_TYPE;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.STRING_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constantRecordProperty;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.firstSoyNonNullish;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.isDefinitelyAssignableFrom;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.numericConversion;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.base.internal.Identifier;
@@ -227,12 +229,7 @@ final class ExpressionCompiler {
       JavaSourceFunctionCompiler sourceFunctionCompiler,
       PartialFileSetMetadata fileSetMetadata) {
     return new ExpressionCompiler(
-        context,
-        analysis,
-        checkNotNull(parameters),
-        varManager,
-        sourceFunctionCompiler,
-        fileSetMetadata);
+        context, analysis, parameters, varManager, sourceFunctionCompiler, fileSetMetadata);
   }
 
   static BasicExpressionCompiler createConstantCompiler(
@@ -439,12 +436,12 @@ final class ExpressionCompiler {
         JavaSourceFunctionCompiler sourceFunctionCompiler,
         PartialFileSetMetadata fileSetMetadata,
         boolean isConstantContext) {
-      this.context = Preconditions.checkNotNull(context);
+      this.context = checkNotNull(context);
       this.analysis = analysis;
       this.detacher = detacher;
       this.parameters = parameters;
       this.varManager = varManager;
-      this.sourceFunctionCompiler = sourceFunctionCompiler;
+      this.sourceFunctionCompiler = checkNotNull(sourceFunctionCompiler);
       this.fileSetMetadata = fileSetMetadata;
       this.isConstantContext = isConstantContext;
     }
@@ -1286,7 +1283,33 @@ final class ExpressionCompiler {
 
     @Override
     SoyExpression visitParam(VarRefNode varRef, TemplateParam param) {
-      return resolveVarRefNode(varRef, parameters.getParam(param));
+      Expression expression = parameters.getParam(param);
+      if (analysis.isResolved(varRef)) {
+        SoyExpression functionParam = maybeGetFunctionParam(varRef.getType(), expression);
+        if (functionParam != null) {
+          return functionParam;
+        }
+      }
+      return resolveVarRefNode(varRef, expression);
+    }
+
+    private SoyExpression maybeGetFunctionParam(SoyType soyType, Expression expression) {
+      // TODO(jcg): Build this into TemplateVariableManager.
+      Type type = expression.resultType();
+      if (expression instanceof SoyExpression) {
+        return (SoyExpression) expression;
+      } else if (type == Type.LONG_TYPE) {
+        return SoyExpression.forInt(expression);
+      } else if (type == Type.BOOLEAN_TYPE) {
+        return SoyExpression.forBool(expression);
+      } else if (type == Type.DOUBLE_TYPE) {
+        return SoyExpression.forFloat(expression);
+      } else if (type.equals(STRING_TYPE)) {
+        return SoyExpression.forString(expression);
+      } else if (isDefinitelyAssignableFrom(SOY_VALUE_TYPE, type)) {
+        return SoyExpression.forSoyValue(soyType, expression);
+      }
+      return null;
     }
 
     // Let vars
@@ -2280,7 +2303,7 @@ final class ExpressionCompiler {
     private final TemplateAnalysis analysis;
 
     RequiresDetachVisitor(TemplateAnalysis analysis) {
-      this.analysis = analysis;
+      this.analysis = checkNotNull(analysis);
     }
 
     @Override

@@ -190,6 +190,11 @@ final class LazyClosureCompiler {
 
   LazyClosureCompiler(SoyNodeCompiler parent) {
     this.parent = parent;
+    checkNotNull(parent.fields);
+    checkNotNull(parent.constantCompiler);
+    checkNotNull(parent.innerMethods);
+    checkNotNull(parent.typeInfo);
+    checkNotNull(parent.fileSetMetadata);
   }
 
   /** Returns true if evaluating the RenderUnitNode will require generating detach logic. */
@@ -413,7 +418,7 @@ final class LazyClosureCompiler {
 
   /**
    * Returns the name to use for the method generated for the given node. The prefix can be used to
-   * customize the otherwise implict prefix applied to the first node.
+   * customize the otherwise implicit prefix applied to the first node.
    */
   private static String getMethodName(Optional<String> customPrefix, SoyNode declaringNode) {
     checkArgument(
@@ -747,7 +752,8 @@ final class LazyClosureCompiler {
               lookup,
               AppendableExpression.forStringBuilder(appendableParameter));
       Statement nodeBody = soyNodeCompiler.compile(renderUnit, prefix, suffix);
-      boolean isEager = !soyNodeCompiler.detachState.hasDetaches() && canEagerlyRender(renderUnit);
+      boolean isEager =
+          !soyNodeCompiler.getDetachState().hasDetaches() && canEagerlyRender(renderUnit);
 
       // We only use to lazy rendering if the content type requires it.  See TODOs on
       // canEagerlyRender
@@ -1021,7 +1027,6 @@ final class LazyClosureCompiler {
       this.localSlot = argSlot;
     }
   }
-
 
   /**
    * The {@link LazyClosureParameterLookup} will generate expressions for all variable references
