@@ -86,7 +86,7 @@ public abstract class BytecodeProducer {
 
       doGen(adapter);
 
-      if (location.isKnown()) {
+      if (location.isKnown() && logEndLine()) {
         Label end = new Label();
         adapter.mark(end);
         adapter.visitLineNumber(location.getEndLine(), end);
@@ -96,6 +96,10 @@ public abstract class BytecodeProducer {
         isGenerating.set(false);
       }
     }
+  }
+
+  protected boolean logEndLine() {
+    return true;
   }
 
   @ForOverride

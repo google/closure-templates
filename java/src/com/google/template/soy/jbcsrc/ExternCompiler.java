@@ -223,10 +223,9 @@ public final class ExternCompiler {
       protected void doGen(CodeBuilder adapter) {
         adapter.mark(start);
         body.gen(adapter);
-        // This instruction is only needed for !isAutoImpl(). However, due to how BytecodeProducer
-        // marks the line number of the end location of every SoyNode, we need some instruction
-        // after body.
-        adapter.returnValue();
+        if (!javaImpl.isAutoImpl()) {
+          adapter.returnValue();
+        }
         adapter.mark(end);
         paramSet.generateTableEntries(adapter);
       }

@@ -143,6 +143,11 @@ public abstract class Statement extends BytecodeProducer {
     super(location);
   }
 
+  @Override
+  protected boolean logEndLine() {
+    return false;
+  }
+
   /** If this statement is composed of multiple others this spreads them into a flat list. */
   public ImmutableList<Statement> asStatements() {
     return ImmutableList.of(this);
