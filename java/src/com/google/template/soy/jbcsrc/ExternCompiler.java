@@ -197,7 +197,8 @@ public final class ExternCompiler {
               variables,
               basicCompiler,
               javaSourceFunctionCompiler,
-              fileSetMetadata);
+              fileSetMetadata,
+              e -> adaptReturnExpression(e, getRuntimeType(extern.getType().getReturnType())));
       body = nodeCompiler.compile(javaImpl);
     } else {
       TypeInfo externClass = TypeInfo.create(javaImpl.className(), javaImpl.isInterface());
@@ -503,6 +504,15 @@ public final class ExternCompiler {
       default:
         throw new IllegalArgumentException(javaTypeInfo.className());
     }
+  }
+
+  private SoyExpression adaptReturnExpression(SoyExpression raw, SoyRuntimeType type) {
+    // TODO(jcg): Handle more combinations here?
+    if (type.isBoxed()) {
+      // This handles things like the declared return type is `number` and you return an `int`.
+      return raw.box();
+    }
+    return raw;
   }
 
   /**
