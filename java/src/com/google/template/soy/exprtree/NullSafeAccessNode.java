@@ -21,6 +21,7 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.google.template.soy.base.internal.QuoteStyle;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.exprtree.OperatorNodes.AssertNonNullOpNode;
@@ -49,10 +50,14 @@ import javax.annotation.Nullable;
  *
  * <pre>
  * NSAN type:string|null, assuming $a is nullish
- * +-- VAR_REF ($a)
- * +-- METHOD_CALL_NODE (getString) type: string, isNullSafe: false
+ * +-- VAR_REF ($a) (base expression)
+ * +-- METHOD_CALL_NODE (getString) type: string, isNullSafe: false (data access expression)
  *     +-- GroupNode Placeholder (null)
  * </pre>
+ *
+ * To convert back to the original chain of DataAccessNodes, the placeholders are "grafted" onto the
+ * next higher up NSAN. i.e., the parent node of the placeholder, is set as the parent of the NSAN's
+ * child base expression.
  */
 public final class NullSafeAccessNode extends AbstractParentExprNode {
 
@@ -246,6 +251,11 @@ public final class NullSafeAccessNode extends AbstractParentExprNode {
     return null;
   }
 
+  /** Like `asAccessChain()`, but normalizes all accesses to be non-null safe. */
+  public ExprNode asNormalizedAccessChain() {
+    return Iterables.getLast(asNullSafeBaseList());
+  }
+
   /**
    * We need special traversal rules so that we don't accidentally traverse into method parameters
    * and other parts of the subtree that could contain independent null safe chains.
@@ -268,7 +278,8 @@ public final class NullSafeAccessNode extends AbstractParentExprNode {
   /**
    * Normalizes the access chain into a chain of AccessChainComponentNodes and setting all data
    * accesses to be non-null safe. Then returns a list of pointers to copies of ExprNodes that are
-   * bases of every (originally) null-safe access in the chain.
+   * bases of every (originally) null-safe access in the chain. The last element in the list is the
+   * original root, e.g. `c` for `a?.b?.c`
    */
   public ImmutableList<ExprNode> asNullSafeBaseList() {
     AccessChainComponentNode accessChainHead = this.asAccessChain();

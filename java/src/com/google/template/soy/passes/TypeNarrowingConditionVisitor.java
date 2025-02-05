@@ -246,9 +246,6 @@ final class TypeNarrowingConditionVisitor {
         // Narrow a.b.c to non null/undefined/nullish
         visitExprNode(Iterables.getLast(chain));
       }
-
-      // a?.b?.c was already narrowed by TruthyVisitor
-      visitExprNode(node);
     }
   }
 
@@ -412,8 +409,6 @@ final class TypeNarrowingConditionVisitor {
         positiveTypeConstraints.put(
             exprEquivalence.wrap(nullSafeBase), SoyTypes.tryRemoveNullish(nullSafeBase.getType()));
       }
-      // Narrow a?.b?.c
-      super.visitNullSafeAccessNode(node);
     }
 
     @Override

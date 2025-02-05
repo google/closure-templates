@@ -682,10 +682,8 @@ public final class ResolveExpressionTypesPassTest {
         "{if $m.get('a')?.get('b')}",
         "  {assertType('map<string,null|string>', $m.get('a'))}",
         "  {assertType('string', $m.get('a').get('b'))}",
-        // We aren't quite sure why you can call `get` on $m?.get('a') since the base's type hasn't
-        // been narrowed according to assertType.
-        "  {assertType('map<string,null|string>|null|undefined', $m?.get('a'))}",
-        "  {assertType('null|string|undefined', $m?.get('a').get('b'))}",
+        "  {assertType('map<string,null|string>', $m?.get('a'))}",
+        "  {assertType('string', $m?.get('a').get('b'))}",
         "{else}",
         "  {assertType('null|string|undefined', $m?.get('a')?.get('b'))}",
         "{/if}",
@@ -693,20 +691,24 @@ public final class ResolveExpressionTypesPassTest {
   }
 
   @Test
-  public void testDataFlowTypeNarrowing_nullSafeChains_notAllPermutations() {
-    // There's probably no reason not to support these narrowings. Just a regression test to make
-    // explicit that we don't support them currently.
+  public void testDataFlowTypeNarrowing_nullSafeChains_allPermutations() {
     assertTypes(
         "{@param r: [a: null|[b: null|[c: null|string]]]}",
         "{if $r.a?.b?.c}",
+        "  {assertType('[b: [c: null|string]|null]', $r.a)}",
+        "  {assertType('[b: [c: null|string]|null]', $r?.a)}",
+        "  {assertType('[c: null|string]', $r.a.b)}",
+        "  {assertType('[c: null|string]', $r.a?.b)}",
+        "  {assertType('[c: null|string]', $r?.a.b)}",
+        "  {assertType('[c: null|string]', $r?.a?.b)}",
         "  {assertType('string', $r.a.b.c)}",
         "  {assertType('string', $r.a?.b?.c)}",
-        "  {assertType('null|string', $r?.a.b.c)}",
-        "  {assertType('null|string', $r.a?.b.c)}",
-        "  {assertType('null|string', $r.a.b?.c)}",
-        "  {assertType('null|string|undefined', $r?.a?.b.c)}",
-        "  {assertType('null|string|undefined', $r?.a.b?.c)}",
-        "  {assertType('null|string|undefined', $r?.a?.b?.c)}",
+        "  {assertType('string', $r?.a.b.c)}",
+        "  {assertType('string', $r.a?.b.c)}",
+        "  {assertType('string', $r.a.b?.c)}",
+        "  {assertType('string', $r?.a?.b.c)}",
+        "  {assertType('string', $r?.a.b?.c)}",
+        "  {assertType('string', $r?.a?.b?.c)}",
         "{/if}",
         "");
   }
@@ -1312,8 +1314,8 @@ public final class ResolveExpressionTypesPassTest {
                 "NULL_SAFE_ACCESS_NODE: string: $p.getP()?.getP()?.getName()",
                 "  METHOD_CALL_NODE: *.correct.Msg: $p.getP()",
                 "    VAR_REF_NODE: *.correct.Msg: $p",
-                "  NULL_SAFE_ACCESS_NODE: string|undefined: (undefined).getP()?.getName()",
-                "    METHOD_CALL_NODE: *.correct.Msg|undefined:" + " (undefined).getP()",
+                "  NULL_SAFE_ACCESS_NODE: string: (undefined).getP()?.getName()",
+                "    METHOD_CALL_NODE: *.correct.Msg:" + " (undefined).getP()",
                 "      GROUP_NODE: *.correct.Msg: (undefined)",
                 "        UNDEFINED_NODE: undefined: undefined",
                 "    METHOD_CALL_NODE: string: (undefined).getName()",
@@ -1346,9 +1348,9 @@ public final class ResolveExpressionTypesPassTest {
                 "  METHOD_CALL_NODE: *.correct.Msg: $p.getReadonlyP().getP()",
                 "    METHOD_CALL_NODE: *.correct.Msg: $p.getReadonlyP()",
                 "      VAR_REF_NODE: *.correct.Msg: $p",
-                "  NULL_SAFE_ACCESS_NODE: string|undefined:"
+                "  NULL_SAFE_ACCESS_NODE: string:"
                     + " (undefined).getReadonlyP().getP()?.getReadonlyP().getName()",
-                "    METHOD_CALL_NODE: *.correct.Msg|undefined: (undefined).getReadonlyP().getP()",
+                "    METHOD_CALL_NODE: *.correct.Msg: (undefined).getReadonlyP().getP()",
                 "      METHOD_CALL_NODE: *.correct.Msg: (undefined).getReadonlyP()",
                 "        GROUP_NODE: *.correct.Msg: (undefined)",
                 "          UNDEFINED_NODE: undefined: undefined",

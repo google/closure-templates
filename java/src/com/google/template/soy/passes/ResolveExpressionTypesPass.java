@@ -1383,6 +1383,21 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
     protected void visitNullSafeAccessNode(NullSafeAccessNode nullSafeAccessNode) {
       visit(nullSafeAccessNode.getBase());
       visitNullSafeAccessNodeRecurse(nullSafeAccessNode);
+
+      // All of the NSAN will have the same type, since they (il)-logically all refer to the same
+      // thing. e.g., a?.b?.c?.d will have 3 NSANs, that express a?.b?.c?.d,
+      // (placeholder).b?.c?.d, and (placeholder).c?.d. But only the root can be rebuilt to the full
+      // access chain to query type substitutions.
+      SoyType maybeSubstitutedRootType =
+          substitutions.getTypeSubstitution(nullSafeAccessNode.asNormalizedAccessChain());
+      if (maybeSubstitutedRootType != null) {
+        // Propagate substitution to all NSANs in the chain.
+        ExprNode curr = nullSafeAccessNode;
+        while (curr instanceof NullSafeAccessNode) {
+          ((NullSafeAccessNode) curr).setType(maybeSubstitutedRootType);
+          curr = ((NullSafeAccessNode) curr).getDataAccess();
+        }
+      }
     }
 
     private void visitNullSafeAccessNodeRecurse(NullSafeAccessNode nullSafeAccessNode) {
@@ -1411,7 +1426,6 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
         type = SoyTypes.makeUndefinable(type);
       }
       nullSafeAccessNode.setType(type);
-      tryApplySubstitution(nullSafeAccessNode);
     }
 
     private ExprNode getTail(ExprNode expr) {
@@ -1463,19 +1477,6 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
         calculateAccessChainTypes(
             nsBaseExpr, baseType, (DataAccessNode) dataAccess.getBaseExprChild());
         nullSafe = false;
-
-        // Rebuild the normalized DataAccessNode chain by combining this section of the base access
-        // with the merged bases of parent NullSafeAccessNodes.
-        SoyType maybeSubstitutedType =
-            substitutions.getTypeSubstitution(
-                NullSafeAccessNode.copyAndGraftPlaceholders(
-                    (DataAccessNode) dataAccess.getBaseExprChild(), ImmutableList.of(nsBaseExpr)));
-        baseType =
-            maybeSubstitutedType != null
-                ? maybeSubstitutedType
-                : dataAccess.getBaseExprChild().getType();
-        ((DataAccessNode) dataAccess.getBaseExprChild()).setType(baseType);
-
       } else if (dataAccess.getBaseExprChild().getKind() == ExprNode.Kind.ASSERT_NON_NULL_OP_NODE) {
         AssertNonNullOpNode baseExpr = (AssertNonNullOpNode) dataAccess.getBaseExprChild();
         DataAccessNode childDataAccess = getDataAccessChild(baseExpr);
@@ -1508,6 +1509,15 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
           break;
         default:
           throw new AssertionError(dataAccess.getKind());
+      }
+
+      // Note that nsBaseExpr is normalized to all non-null safe accesses.
+      SoyType maybeSubstitutedType =
+          substitutions.getTypeSubstitution(
+              NullSafeAccessNode.copyAndGraftPlaceholders(
+                  dataAccess, ImmutableList.of(nsBaseExpr)));
+      if (maybeSubstitutedType != null) {
+        dataAccess.setType(maybeSubstitutedType);
       }
     }
 
