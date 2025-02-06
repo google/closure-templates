@@ -181,6 +181,34 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       BasicExpressionCompiler constantCompiler,
       JavaSourceFunctionCompiler javaSourceFunctionCompiler,
       FileSetMetadata fileSetMetadata) {
+    return create(
+        context,
+        typeInfo,
+        analysis,
+        innerMethods,
+        appendableVar,
+        variables,
+        parameterLookup,
+        fields,
+        constantCompiler,
+        javaSourceFunctionCompiler,
+        fileSetMetadata,
+        null);
+  }
+
+  private static SoyNodeCompiler create(
+      SoyNode context,
+      TypeInfo typeInfo,
+      TemplateAnalysis analysis,
+      InnerMethods innerMethods,
+      AppendableExpression appendableVar,
+      TemplateVariableManager variables,
+      TemplateParameterLookup parameterLookup,
+      FieldManager fields,
+      BasicExpressionCompiler constantCompiler,
+      JavaSourceFunctionCompiler javaSourceFunctionCompiler,
+      FileSetMetadata fileSetMetadata,
+      Function<SoyExpression, SoyExpression> returnMapper) {
     // We pass a lazy supplier of render context so that lazy closure compiler classes that don't
     // generate detach logic don't trigger capturing this value into a field.
     ExpressionCompiler expressionCompiler =
@@ -205,7 +233,8 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
         soyValueProviderCompiler,
         constantCompiler,
         javaSourceFunctionCompiler,
-        fileSetMetadata);
+        fileSetMetadata,
+        returnMapper);
   }
 
   static SoyNodeCompiler createForExtern(
@@ -214,7 +243,8 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       TemplateParameterLookup parameterLookup,
       BasicExpressionCompiler constantCompiler,
       JavaSourceFunctionCompiler javaSourceFunctionCompiler,
-      FileSetMetadata fileSetMetadata) {
+      FileSetMetadata fileSetMetadata,
+      Function<SoyExpression, SoyExpression> returnMapper) {
     return create(
         context,
         null,
@@ -226,7 +256,8 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
         null,
         constantCompiler,
         javaSourceFunctionCompiler,
-        fileSetMetadata);
+        fileSetMetadata,
+        checkNotNull(returnMapper));
   }
 
   @Nullable final TypeInfo typeInfo;
@@ -242,6 +273,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   final BasicExpressionCompiler constantCompiler;
   final JavaSourceFunctionCompiler javaSourceFunctionCompiler;
   final FileSetMetadata fileSetMetadata;
+  @Nullable private final Function<SoyExpression, SoyExpression> returnMapper;
   private Scope currentScope;
 
   private SoyNodeCompiler(
@@ -256,7 +288,8 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       ExpressionToSoyValueProviderCompiler expressionToSoyValueProviderCompiler,
       BasicExpressionCompiler constantCompiler,
       JavaSourceFunctionCompiler javaSourceFunctionCompiler,
-      FileSetMetadata fileSetMetadata) {
+      FileSetMetadata fileSetMetadata,
+      Function<SoyExpression, SoyExpression> returnMapper) {
     this.typeInfo = typeInfo;
     this.analysis = checkNotNull(analysis);
     this.innerMethods = innerMethods;
@@ -269,6 +302,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     this.constantCompiler = checkNotNull(constantCompiler);
     this.javaSourceFunctionCompiler = checkNotNull(javaSourceFunctionCompiler);
     this.fileSetMetadata = checkNotNull(fileSetMetadata);
+    this.returnMapper = returnMapper;
   }
 
   Statement compile(RenderUnitNode node, ExtraCodeCompiler prefix, ExtraCodeCompiler suffix) {
@@ -459,7 +493,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   @Override
   protected Statement visitReturnNode(ReturnNode node) {
     SoyExpression value = compileRootExpression(node.getExpr());
-    return Statement.returnExpression(value);
+    return Statement.returnExpression(returnMapper.apply(value));
   }
 
   private Statement visitChildrenInNewScope(BlockNode node) {
@@ -2016,7 +2050,8 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
         expressionToSoyValueProviderCompiler,
         constantCompiler,
         javaSourceFunctionCompiler,
-        fileSetMetadata);
+        fileSetMetadata,
+        returnMapper);
   }
 
   /** Returns a {@link SoyNodeCompiler} for compiling the new child node in a new context. */
