@@ -193,12 +193,17 @@ export abstract class SoyElement<TData extends {} | null, TInterface extends {}>
           'Do not set skip handlers twice.',
         );
         const skipHandler = maybeSkipHandler;
-        if (
-          skipHandler(
-            this as unknown as TInterface,
-            newNode as unknown as TInterface,
-          )
-        ) {
+        try {
+          if (
+            skipHandler(
+              this as unknown as TInterface,
+              newNode as unknown as TInterface,
+            )
+          ) {
+            this.data = newNode.data;
+            return true;
+          }
+        } catch (e: unknown) {
           this.data = newNode.data;
           return true;
         }
