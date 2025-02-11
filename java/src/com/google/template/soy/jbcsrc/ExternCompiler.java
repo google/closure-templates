@@ -17,7 +17,6 @@
 package com.google.template.soy.jbcsrc;
 
 import static com.google.common.base.Preconditions.checkState;
-import static com.google.common.collect.ImmutableList.toImmutableList;
 import static java.util.Arrays.stream;
 
 import com.google.common.collect.ImmutableList;
@@ -126,24 +125,23 @@ public final class ExternCompiler {
             extern.isJavaImplAsync());
     int declaredMethodArgs = extern.getType().getParameters().size();
 
-    ImmutableList<String> paramNames;
     int paramNamesOffset = 0;
+    ImmutableList.Builder<String> paramNamesBuilder = ImmutableList.builder();
+    if (requiresRenderContext) {
+      paramNamesBuilder.add(StandardNames.RENDER_CONTEXT);
+      paramNamesOffset = 1;
+    }
+
     if (javaImpl.isAutoImpl()) {
-      paramNames =
-          javaImpl.getParent().getType().getParameters().stream()
-              .map(Parameter::getName)
-              .collect(toImmutableList());
+      javaImpl.getParent().getType().getParameters().stream()
+          .map(Parameter::getName)
+          .forEach(paramNamesBuilder::add);
     } else {
-      ImmutableList.Builder<String> paramNamesBuilder = ImmutableList.builder();
-      if (requiresRenderContext) {
-        paramNamesBuilder.add(StandardNames.RENDER_CONTEXT);
-        paramNamesOffset = 1;
-      }
       for (int i = 0; i < declaredMethodArgs; i++) {
         paramNamesBuilder.add("p" + (i + 1 /* start with p1 */));
       }
-      paramNames = paramNamesBuilder.build();
     }
+    ImmutableList<String> paramNames = paramNamesBuilder.build();
 
     Label start = new Label();
     Label end = new Label();
@@ -174,13 +172,12 @@ public final class ExternCompiler {
     ConstantVariables vars = new ConstantVariables(paramSet, renderContext);
 
     if (javaImpl.isAutoImpl()) {
-      // TODO(jcg): RenderContext and xid will be needed for delegating to non-auto externs.
       TemplateVariables variables =
           new TemplateVariables(
               paramSet,
               /* stackFrame= */ null,
               /* paramsRecord= */ Optional.empty(),
-              /* renderContext= */ null);
+              renderContext.orElse(null));
       BasicExpressionCompiler basicCompiler =
           ExpressionCompiler.createBasicCompiler(
               javaImpl,

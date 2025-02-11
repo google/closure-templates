@@ -259,10 +259,10 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
             externs,
             ParamStore.EMPTY_INSTANCE,
             null,
-            null,
-            null,
-            null,
-            null,
+            activeModSelector,
+            msgBundle,
+            xidRenamingMap,
+            cssRenamingMap,
             debugSoyTemplateInfo,
             pluginInstances);
     return visitor.execAutoJavaExtern(java, args);

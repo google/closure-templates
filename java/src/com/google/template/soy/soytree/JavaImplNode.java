@@ -209,7 +209,9 @@ public final class JavaImplNode extends AbstractBlockCommandNode
   }
 
   public boolean requiresRenderContext() {
-    return !isAutoImpl() && (!isStatic() || hasImplicitParams());
+    // We could filter out some cases where isAutoImpl()==true but we'd have to check several things
+    // like calling another extern, referencing a constant, calling xid() and other built-ins, etc.
+    return isAutoImpl() || (!isStatic() || hasImplicitParams());
   }
 
   public TypeReference returnType() {
