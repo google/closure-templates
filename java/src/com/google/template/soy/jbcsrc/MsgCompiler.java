@@ -23,6 +23,7 @@ import static com.google.template.soy.jbcsrc.PrintDirectives.areAllPrintDirectiv
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_VALUE_PROVIDER_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.STRING_DATA_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.newLabel;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
@@ -274,7 +275,7 @@ final class MsgCompiler {
       ImmutableList<SoyJbcSrcPrintDirective> escapingDirectives,
       Expression soyMsgParts,
       Expression locale) {
-    Label reattachPoint = new Label();
+    Label reattachPoint = newLabel();
     var detacher = detachState.createExpressionDetacher(reattachPoint);
     ImmutableList<String> placeholderNames =
         ImmutableList.sortedCopyOf(msg.getVarNameToRepNodeMap().keySet());
@@ -375,7 +376,7 @@ final class MsgCompiler {
                   : detachState.assertFullyRenderered(callRenderAndResolve),
               clearAppendable);
     } else {
-      Label start = new Label();
+      Label start = newLabel();
       SoyExpression value =
           SoyExpression.forSoyValue(
               StringType.getInstance(),
@@ -490,7 +491,7 @@ final class MsgCompiler {
                 // this is very similar to SoyNodeCompiler.visitVeLogNode but
                 // 1. we don't have to worry about logonly
                 // 2. we need to only generate 'half' of it
-                Label restartPoint = new Label();
+                Label restartPoint = newLabel();
                 Expression veData =
                     exprCompiler.compileSubExpression(
                         veLogNode.getVeDataExpression(),

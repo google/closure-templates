@@ -22,6 +22,7 @@ import static com.google.common.base.Preconditions.checkState;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_VALUE_PROVIDER_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constantSanitizedContentKindAsContentKind;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.newLabel;
 import static com.google.template.soy.soytree.SoyTreeUtils.isDescendantOf;
 import static java.util.Arrays.asList;
 import static java.util.Arrays.copyOfRange;
@@ -497,7 +498,7 @@ final class LazyClosureCompiler {
           @Override
           protected void doGen(CodeBuilder cb) {
             cb.visitVarInsn(Opcodes.ILOAD, 0); // load the optimistic parameter
-            Label end = new Label();
+            Label end = newLabel();
             cb.ifZCmp(Opcodes.IFEQ, end); // if (optimistic) {
             var methodParameters = cb.getArgumentTypes();
             // Load all the arguments except the first one (the optimistic
@@ -527,10 +528,10 @@ final class LazyClosureCompiler {
   // TODO(b/289390227): remove the try/catch once we are sure it is safe.
   static Handler catchAsThrowingSoyValueProvider(
       CodeBuilder cb, Expression renderContext, boolean isOptimistic) {
-    Label tryStart = new Label();
-    Label tryEnd = new Label();
+    Label tryStart = newLabel();
+    Label tryEnd = newLabel();
 
-    Label handlerLabel = new Label();
+    Label handlerLabel = newLabel();
     cb.visitTryCatchBlock(
         tryStart, tryEnd, handlerLabel, BytecodeUtils.THROWABLE_TYPE.getInternalName());
     cb.mark(tryStart);
@@ -539,7 +540,7 @@ final class LazyClosureCompiler {
       cb.mark(handlerLabel);
       if (isOptimistic) {
         cb.visitVarInsn(Opcodes.ILOAD, 0); // load the optimistic parameter
-        Label end = new Label();
+        Label end = newLabel();
         cb.ifZCmp(Opcodes.IFNE, end); // if (!optimistic) {
         cb.throwException(); // propagate the exception
         cb.mark(end); // }
@@ -561,8 +562,8 @@ final class LazyClosureCompiler {
     }
 
     Expression compileExpression(String methodName, ExprNode exprNode) {
-      Label start = new Label();
-      Label end = new Label();
+      Label start = newLabel();
+      Label end = newLabel();
       TemplateVariableManager variableSet =
           new TemplateVariableManager(
               parent.typeInfo.type(),
@@ -621,8 +622,8 @@ final class LazyClosureCompiler {
 
     Optional<Expression> compileExpressionToSoyValueProviderIfUseful(
         String methodName, ExprNode exprNode) {
-      Label start = new Label();
-      Label end = new Label();
+      Label start = newLabel();
+      Label end = newLabel();
       TemplateVariableManager variableSet =
           new TemplateVariableManager(
               /* owner= */ parent.typeInfo.type(),
@@ -717,8 +718,8 @@ final class LazyClosureCompiler {
         ExtraCodeCompiler prefix,
         ExtraCodeCompiler suffix) {
 
-      Label start = new Label();
-      Label end = new Label();
+      Label start = newLabel();
+      Label end = newLabel();
       TemplateVariableManager variableSet =
           new TemplateVariableManager(
               /* owner= */ null,
@@ -949,7 +950,7 @@ final class LazyClosureCompiler {
                   cb.visitVarInsn(Opcodes.ALOAD, bufferSlot);
                   implMethod.invokeUnchecked(cb);
                   cb.dup();
-                  Label done = new Label();
+                  Label done = newLabel();
                   cb.ifNull(done);
                   // If we are not complete we need to capture the partial progress into a new
                   // DetachableContentProvider subclass

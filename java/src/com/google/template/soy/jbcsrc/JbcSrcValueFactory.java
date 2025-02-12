@@ -18,6 +18,7 @@ package com.google.template.soy.jbcsrc;
 
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.ImmutableList.toImmutableList;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.newLabel;
 import static com.google.template.soy.jbcsrc.runtime.JbcSrcPluginRuntime.BOX_JAVA_MAP_AS_SOY_LEGACY_OBJECT_MAP;
 import static com.google.template.soy.jbcsrc.runtime.JbcSrcPluginRuntime.BOX_JAVA_MAP_AS_SOY_MAP;
 import static com.google.template.soy.jbcsrc.runtime.JbcSrcPluginRuntime.BOX_JAVA_MAP_AS_SOY_RECORD;
@@ -412,7 +413,7 @@ final class JbcSrcValueFactory extends JavaValueFactory {
       return new Expression(forNumber.returnType()) {
         @Override
         protected void doGen(CodeBuilder mv) {
-          Label end = new Label();
+          Label end = newLabel();
           actualParam.gen(mv);
           BytecodeUtils.coalesceSoyNullishToJavaNull(mv, actualParam.resultType(), end);
           MethodRefs.SOY_VALUE_LONG_VALUE.invokeUnchecked(mv);

@@ -17,6 +17,7 @@
 package com.google.template.soy.jbcsrc.restricted;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.newLabel;
 
 import com.google.errorprone.annotations.ForOverride;
 import com.google.template.soy.base.SourceLocation;
@@ -79,7 +80,7 @@ public abstract class BytecodeProducer {
         // http://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.7.12
         // It is used by the JVM to add source data to stack traces and by debuggers to highlight
         // source files.
-        Label start = new Label();
+        Label start = newLabel();
         adapter.mark(start);
         adapter.visitLineNumber(location.getBeginLine(), start);
       }
@@ -87,7 +88,7 @@ public abstract class BytecodeProducer {
       doGen(adapter);
 
       if (location.isKnown() && logEndLine()) {
-        Label end = new Label();
+        Label end = newLabel();
         adapter.mark(end);
         adapter.visitLineNumber(location.getEndLine(), end);
       }

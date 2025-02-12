@@ -23,6 +23,7 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constantNull;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.newLabel;
 import static com.google.template.soy.soytree.SoyTreeUtils.allNodesOfType;
 import static java.util.stream.Collectors.toCollection;
 
@@ -373,8 +374,8 @@ final class TemplateCompiler {
       return;
     }
     MethodRef renderMethod = template.positionalRenderMethod().get();
-    Label start = new Label();
-    Label end = new Label();
+    Label start = newLabel();
+    Label end = newLabel();
     LocalVariable stackFrame =
         LocalVariable.createLocal(
             StandardNames.STACK_FRAME, 0, BytecodeUtils.STACK_FRAME_TYPE, start, end);
@@ -428,8 +429,8 @@ final class TemplateCompiler {
             new SimpleLocalVariableManager(template.typeInfo().type(), /* isStatic= */ true),
             javaSourceFunctionCompiler,
             fileSetMetadata);
-    Label start = new Label();
-    Label end = new Label();
+    Label start = newLabel();
+    Label end = newLabel();
     ImmutableList.Builder<String> paramNames = ImmutableList.builder();
     paramNames.add(StandardNames.STACK_FRAME);
     if (template.hasPositionalSignature()) {
@@ -632,8 +633,8 @@ final class TemplateCompiler {
       return;
     }
     Method method = template.renderMethod().method();
-    Label start = new Label();
-    Label end = new Label();
+    Label start = newLabel();
+    Label end = newLabel();
 
     ImmutableList<String> paramNames =
         ImmutableList.of(

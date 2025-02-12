@@ -33,6 +33,7 @@ import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.STRING_TYP
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.isDefinitelyAssignableFrom;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.isNumericPrimitive;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.newLabel;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Preconditions;
@@ -379,7 +380,7 @@ public final class SoyExpression extends Expression {
             : new Expression(soyRuntimeType.box().runtimeType(), features) {
               @Override
               protected void doGen(CodeBuilder adapter) {
-                Label end = new Label();
+                Label end = newLabel();
                 delegate.gen(adapter);
                 BytecodeUtils.coalesceSoyNullishToSoyNull(adapter, delegate.resultType(), end);
                 doBox(adapter, soyRuntimeType.asNonSoyNullish());
@@ -404,7 +405,7 @@ public final class SoyExpression extends Expression {
         new Expression(soyRuntimeType.box().runtimeType()) {
           @Override
           protected void doGen(CodeBuilder adapter) {
-            Label end = new Label();
+            Label end = newLabel();
             delegate.gen(adapter);
             BytecodeUtils.coalesceSoyNullishToJavaNull(adapter, delegate.resultType(), end);
             doBox(adapter, soyRuntimeType.asNonSoyNullish());
@@ -424,7 +425,7 @@ public final class SoyExpression extends Expression {
         new Expression(soyRuntimeType.box().runtimeType()) {
           @Override
           protected void doGen(CodeBuilder adapter) {
-            Label end = new Label();
+            Label end = newLabel();
             delegate.gen(adapter);
             BytecodeUtils.coalesceSoyNullToJavaNull(adapter, delegate.resultType(), end);
             doBox(adapter, soyRuntimeType.asNonSoyNullish());
@@ -627,7 +628,7 @@ public final class SoyExpression extends Expression {
     return new Expression(BytecodeUtils.NUMBER_TYPE, featuresAfterUnboxing()) {
       @Override
       protected void doGen(CodeBuilder adapter) {
-        Label end = new Label();
+        Label end = newLabel();
         delegate.gen(adapter);
         BytecodeUtils.coalesceSoyNullishToJavaNull(adapter, delegate.resultType(), end);
         adapter.checkCast(BytecodeUtils.NUMBER_DATA_TYPE);

@@ -19,6 +19,7 @@ package com.google.template.soy.jbcsrc;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.RENDER_RESULT_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.STACK_FRAME_TYPE;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.newLabel;
 import static com.google.template.soy.jbcsrc.restricted.Statement.returnExpression;
 
 import com.google.auto.value.AutoValue;
@@ -247,7 +248,7 @@ final class DetachState implements ExpressionDetacher.Factory {
         new Statement() {
           @Override
           protected void doGen(CodeBuilder adapter) {
-            Label continueLabel = new Label();
+            Label continueLabel = newLabel();
             isSoftLimited.gen(adapter);
             if (FORCE_EVERY_DETACH_POINT) {
               adapter.visitLdcInsn(ForceDetachPointsForTesting.uniqueCallSite());
@@ -296,7 +297,7 @@ final class DetachState implements ExpressionDetacher.Factory {
         render.resultType().equals(STACK_FRAME_TYPE) || isRenderResult,
         "Unsupported render type: %s",
         render.resultType());
-    Label reattachPoint = new Label();
+    Label reattachPoint = newLabel();
     SaveRestoreState saveState = addState(reattachPoint);
     return new Statement() {
       @Override
@@ -312,7 +313,7 @@ final class DetachState implements ExpressionDetacher.Factory {
               adapter);
           adapter.dup(); // Stack: SF, SF
           // if isDone goto end
-          Label end = new Label();
+          Label end = newLabel();
           adapter.ifNull(end); // Stack: SF
           saveState.saveStackFrame().gen(adapter);
           adapter.returnValue();
@@ -320,7 +321,7 @@ final class DetachState implements ExpressionDetacher.Factory {
           adapter.pop(); // Stack:
         }
         render.gen(adapter); // Stack: SF or RR
-        Label end = new Label();
+        Label end = newLabel();
         if (isRenderResult) {
           adapter.dup(); // Stack: RR, RR
           MethodRefs.RENDER_RESULT_IS_DONE.invokeUnchecked(adapter); // Stack: RR, Z
@@ -364,8 +365,8 @@ final class DetachState implements ExpressionDetacher.Factory {
     // So instead we emulate that with a jump table.  And anyway we still need to execute
     // 'restore' logic to repopulate the local variable tables, so the 'case' statements are a
     // natural place for that logic to live.
-    Label unexpectedState = new Label();
-    Label end = new Label();
+    Label unexpectedState = newLabel();
+    Label end = newLabel();
     List<Label> caseLabels = new ArrayList<>();
     List<Statement> casesToGen = new ArrayList<>();
     // handle case 0, this is the initial state of the template. Just jump to the bottom of the
@@ -374,7 +375,7 @@ final class DetachState implements ExpressionDetacher.Factory {
     for (ReattachState reattachState : reattaches) {
       if (reattachState.restoreStatement().isPresent()) {
         Statement restoreState = reattachState.restoreStatement().get().apply(tempStackFrameVar);
-        Label caseLabel = new Label();
+        Label caseLabel = newLabel();
         // execute the restore and jump to the reattach point
         casesToGen.add(
             new Statement() {

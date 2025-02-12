@@ -16,6 +16,7 @@
 
 package com.google.template.soy.jbcsrc.restricted;
 
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.newLabel;
 import static java.util.Comparator.comparing;
 import static java.util.Comparator.comparingInt;
 
@@ -217,10 +218,6 @@ public final class CodeBuilder extends MethodVisitor {
     adapter.unbox(type);
   }
 
-  /** See {@link GeneratorAdapter#newLabel()} */
-  public Label newLabel() {
-    return adapter.newLabel();
-  }
 
   /** See {@link GeneratorAdapter#mark(Label)} */
   public void mark(Label label) {
@@ -229,7 +226,9 @@ public final class CodeBuilder extends MethodVisitor {
 
   /** See {@link GeneratorAdapter#mark()} */
   public Label mark() {
-    return adapter.mark();
+    var label = newLabel();
+    adapter.mark(label);
+    return label;
   }
 
   /** See {@link GeneratorAdapter#ifCmp} */

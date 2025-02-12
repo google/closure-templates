@@ -18,6 +18,7 @@ package com.google.template.soy.jbcsrc;
 
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.boxJavaPrimitive;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.isDefinitelyAssignableFrom;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.newLabel;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.unboxJavaPrimitive;
 
 import com.google.common.base.Preconditions;
@@ -110,8 +111,8 @@ public final class ConstantsCompiler {
 
     Type methodType = getConstantRuntimeType(constant.getVar().type()).runtimeType();
 
-    Label start = new Label();
-    Label end = new Label();
+    Label start = newLabel();
+    Label end = newLabel();
     if (ExpressionCompiler.canCompileToConstant(constant, constant.getExpr())) {
       BasicExpressionCompiler constantCompiler =
           ExpressionCompiler.createConstantCompiler(

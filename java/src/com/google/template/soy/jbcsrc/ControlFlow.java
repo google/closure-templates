@@ -17,6 +17,7 @@
 package com.google.template.soy.jbcsrc;
 
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.newLabel;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
@@ -62,7 +63,7 @@ final class ControlFlow {
     return new Statement() {
       @Override
       protected void doGen(CodeBuilder adapter) {
-        Label end = new Label();
+        Label end = newLabel();
         Label next;
         for (int i = 0; i < ifs.size(); i++) {
           IfBlock curr = ifs.get(i);
@@ -70,7 +71,7 @@ final class ControlFlow {
           if (isLastIfBlock && !elseBlock.isPresent()) {
             next = end;
           } else {
-            next = new Label();
+            next = newLabel();
           }
           curr.startLabel().ifPresent(adapter::mark);
           curr.condition().negate().branchTo(adapter, next);

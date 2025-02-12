@@ -29,6 +29,7 @@ import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_VALUE_
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.STACK_FRAME_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.compareSoySwitchCaseEquals;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.newLabel;
 import static java.util.function.Function.identity;
 
 import com.google.auto.value.AutoValue;
@@ -512,7 +513,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     for (SoyNode child : node.getChildren()) {
       if (child instanceof IfCondNode) {
         IfCondNode icn = (IfCondNode) child;
-        Label reattachPoint = new Label();
+        Label reattachPoint = newLabel();
         Branch cond = compileIfCondNode(icn, reattachPoint, node.getHtmlContext());
         Statement block = visitChildrenInNewScope(icn);
         // TODO: b/375681066 - tag the label here instead of on the expression since the compiler
@@ -639,12 +640,12 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   private static final Type STRING_SWITCH_DESCRIPTOR_SOY_VALUE =
       Type.getMethodType(Type.INT_TYPE, BytecodeUtils.SOY_VALUE_TYPE);
 
-  class StatementAndStartLabel {
+  final class StatementAndStartLabel {
     final Statement statement;
     final Label startLabel;
 
     StatementAndStartLabel(SwitchCaseNode caseNode) {
-      startLabel = new Label();
+      startLabel = newLabel();
       this.statement = visitChildrenInNewScope(caseNode).labelStart(startLabel);
     }
   }
@@ -764,8 +765,8 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     return new Statement() {
       @Override
       protected void doGen(CodeBuilder adapter) {
-        Label end = new Label();
-        Label dflt = defaultBlock == null ? end : new Label();
+        Label end = newLabel();
+        Label dflt = defaultBlock == null ? end : newLabel();
         switchExpr.gen(adapter); // stack: I
         if (isDense) {
           // For dense table switches we need a label for everything in the range
@@ -856,7 +857,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
         for (ExprRootNode caseExpr : caseNode.getExprList()) {
           boolean isFirst = reattachPoint == null;
           if (isFirst) {
-            reattachPoint = new Label();
+            reattachPoint = newLabel();
           }
           Expression compiledCase =
               compareSoySwitchCaseEquals(
@@ -915,7 +916,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
         }
 
         Label loopStart = adapter.mark();
-        Label loopEnd = new Label();
+        Label loopEnd = newLabel();
 
         hasNext.gen(adapter);
         adapter.ifZCmp(Opcodes.IFEQ, loopEnd); // while (it.hasNext()) {
@@ -955,7 +956,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     // First check our special case where all print directives are streamable and an expression that
     // evaluates to a SoyValueProvider.  This will allow us to render incrementally.
     if (areAllPrintDirectivesStreamable(node)) {
-      Label reattachPoint = new Label();
+      Label reattachPoint = newLabel();
       ExprRootNode expr = node.getExpr();
       Optional<Expression> asSoyValueProvider =
           expressionToSoyValueProviderCompiler.compileToSoyValueProviderIfUsefulToPreserveStreaming(
@@ -973,7 +974,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
 
     // otherwise we need to apply some non-streaming print directives, or the expression would
     // require boxing to be a print directive (which usually means it is quite trivial).
-    Label reattachPoint = new Label();
+    Label reattachPoint = newLabel();
     var detacher = getDetachState().createExpressionDetacher(reattachPoint);
     SoyExpression value = compilePrintNodeAsExpression(node, detacher);
     if (value.isBoxed()) {
@@ -998,7 +999,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       printDirectives.add(
           parameterLookup.getRenderContext().getEscapingDirectiveAsFunction(child.getName()));
     }
-    Label reattachPoint = new Label();
+    Label reattachPoint = newLabel();
     var detacher = getDetachState().createExpressionDetacher(reattachPoint);
     SoyFunctionSignature functionSignature =
         loggingFunction.getClass().getAnnotation(SoyFunctionSignature.class);
@@ -1111,7 +1112,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     Statement clearAppendable = Statement.NULL_STATEMENT;
     AppendableExpression appendable = getAppendableExpression();
     if (!directives.isEmpty()) {
-      Label printDirectiveArgumentReattachPoint = new Label();
+      Label printDirectiveArgumentReattachPoint = newLabel();
       PrintDirectives.AppendableAndFlushBuffersDepth wrappedAppendable =
           applyStreamingPrintDirectives(
               directives,
@@ -1247,7 +1248,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
 
   @Override
   protected Statement visitVeLogNode(VeLogNode node) {
-    Label restartPoint = new Label();
+    Label restartPoint = newLabel();
     var detacher = getDetachState().createExpressionDetacher(restartPoint);
     Statement enterStatement;
     if (node.getLogonlyExpression() != null) {
@@ -1343,7 +1344,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     return renderCallNode(
         node,
         () -> {
-          Label reattachPoint = new Label();
+          Label reattachPoint = newLabel();
           Expression variantExpr;
           if (node.getDelCalleeVariantExpr() == null) {
             variantExpr = constant("");
@@ -1696,7 +1697,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       CallNode node, TemplateVariableManager.Scope scope) {
     // params will only be 'cheap' if they are something trivial like the empty constant
     // or data="all", in those cases we don't need to save/restore anything.
-    Label reattachPoint = new Label();
+    Label reattachPoint = newLabel();
     Expression record = getParamStoreExpression(node, compileExplicitParams(node, reattachPoint));
     Statement initialize = Statement.NULL_STATEMENT;
     if (!record.isCheap()) {
@@ -1744,7 +1745,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
                   .asCheap();
             };
       } else {
-        Label reattachPoint = new Label();
+        Label reattachPoint = newLabel();
         Expression data = getDataRecordExpression(node, reattachPoint);
         TemplateVariableManager.Variable variable =
             scope.createSynthetic(
@@ -1767,7 +1768,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     }
 
     ImmutableList.Builder<Expression> builder = ImmutableList.builder();
-    Label reattachPoint = new Label();
+    Label reattachPoint = newLabel();
     Map<String, Supplier<Expression>> explicit =
         new HashMap<>(compileExplicitParams(node, reattachPoint));
     ImmutableMap<String, CallParamNode> keyToParam = null;
@@ -1844,7 +1845,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     params.forEach((k, v) -> paramsMap.put(k, v.get()));
     Optional<Expression> baseRecord;
     ;
-    Label reattachDataLabel = new Label();
+    Label reattachDataLabel = newLabel();
     if (node.isPassingAllData()) {
       maybeAddCallerParametersForDataAllCall(node, paramsMap);
       baseRecord = parameterLookup.getParamsRecord();

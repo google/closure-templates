@@ -18,6 +18,7 @@ package com.google.template.soy.jbcsrc;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.newLabel;
 import static java.util.stream.Collectors.toCollection;
 
 import com.google.common.collect.ImmutableList;
@@ -167,7 +168,7 @@ final class SimpleLocalVariableManager implements LocalVariableManager {
     UniqueNameGenerator scopeNames = localNames.peekLast().branch();
     localNames.addLast(scopeNames);
     return new Scope() {
-      final Label scopeExit = new Label();
+      final Label scopeExit = newLabel();
       boolean exited;
 
       @Override
@@ -185,7 +186,7 @@ final class SimpleLocalVariableManager implements LocalVariableManager {
         int slot = reserveSlotFor(type);
         LocalVariable var =
             LocalVariable.createLocal(
-                name, slot, type, /* start= */ new Label(), /* end= */ scopeExit);
+                name, slot, type, /* start= */ newLabel(), /* end= */ scopeExit);
         allVariables.add(var);
         frame.add(var);
         return var;

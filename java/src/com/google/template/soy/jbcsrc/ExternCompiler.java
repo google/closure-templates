@@ -17,6 +17,7 @@
 package com.google.template.soy.jbcsrc;
 
 import static com.google.common.base.Preconditions.checkState;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.newLabel;
 import static java.util.Arrays.stream;
 
 import com.google.common.collect.ImmutableList;
@@ -143,8 +144,8 @@ public final class ExternCompiler {
     }
     ImmutableList<String> paramNames = paramNamesBuilder.build();
 
-    Label start = new Label();
-    Label end = new Label();
+    Label start = newLabel();
+    Label end = newLabel();
     BytecodeProducer body;
 
     TemplateVariableManager paramSet =

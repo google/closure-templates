@@ -30,6 +30,7 @@ import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_VALUE_
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.STRING_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.isPrimitive;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.newLabel;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.numericConversion;
 
 import com.google.common.collect.ImmutableList;
@@ -416,7 +417,7 @@ final class ProtoUtils {
         // Simple case, just call .get and interpret the result
         return interpretField(typedBaseExpr.invoke(getMethodRef), int64Mode);
       } else {
-        Label hasFieldLabel = new Label();
+        Label hasFieldLabel = newLabel();
         BytecodeProducer hasCheck;
 
         // if oneof, check the value of getFooCase() enum
@@ -466,7 +467,7 @@ final class ProtoUtils {
                 },
                 int64Mode);
 
-        Label endLabel = new Label();
+        Label endLabel = newLabel();
         return SoyExpression.forSoyValue(
             interpreted.soyType(),
             new Expression(BytecodeUtils.SOY_VALUE_TYPE, Feature.NON_JAVA_NULLABLE.asFeatures()) {
@@ -620,7 +621,7 @@ final class ProtoUtils {
                     })
                 .box();
 
-        Label endLabel = new Label();
+        Label endLabel = newLabel();
         return SoyExpression.forSoyValue(
             interpreted.soyType(),
             new Expression(BytecodeUtils.SOY_VALUE_TYPE, Feature.NON_JAVA_NULLABLE.asFeatures()) {
@@ -632,7 +633,7 @@ final class ProtoUtils {
                 adapter.dup();
                 extensionFieldAccessor.gen(adapter);
                 EXTENDABLE_MESSAGE_HAS_EXTENSION.invokeUnchecked(adapter);
-                Label hasFieldLabel = new Label();
+                Label hasFieldLabel = newLabel();
                 adapter.ifZCmp(Opcodes.IFNE, hasFieldLabel);
 
                 // The field is missing, substitute null.
@@ -812,7 +813,7 @@ final class ProtoUtils {
 
             @Override
             protected void doGen(CodeBuilder cb) {
-              Label end = new Label();
+              Label end = newLabel();
               baseInit.gen(cb);
 
               for (Iterator<Map.Entry<SoyRuntimeType, SoyExpression>> i =
@@ -829,7 +830,7 @@ final class ProtoUtils {
                 // match. For the last iteration, skip the type check since it can only be the one
                 // remaining type. A cast in the getter expression will verify this.
                 if (!last) {
-                  next = new Label();
+                  next = newLabel();
                   base.gen(cb);
                   cb.instanceOf(type.runtimeType());
                   cb.ifZCmp(Opcodes.IFEQ, next);
@@ -1074,8 +1075,8 @@ final class ProtoUtils {
           Label argIsNull = null;
           Label end = null;
           if (isNullable) {
-            argIsNull = new Label();
-            end = new Label();
+            argIsNull = newLabel();
+            end = newLabel();
             // perform null check
             cb.dup();
             BytecodeUtils.ifNullish(cb, baseArg.resultType(), argIsNull);
@@ -1170,7 +1171,7 @@ final class ProtoUtils {
           Label loopStart = cb.mark();
           // If hasNext is false, jumps to the end
           iterHasNext.gen(cb);
-          Label end = new Label();
+          Label end = newLabel();
           cb.ifZCmp(Opcodes.IFEQ, end);
 
           // Loop body: load the current map entry and put it into proto
@@ -1228,8 +1229,8 @@ final class ProtoUtils {
             : handleRepeatedNotNull(baseArg, field);
       }
 
-      Label isNonNull = new Label();
-      Label end = new Label();
+      Label isNonNull = newLabel();
+      Label end = newLabel();
 
       // perform null check
       SoyExpression nonNull =
@@ -1329,7 +1330,7 @@ final class ProtoUtils {
 
           // if list.size() == 0, skip loop
           listSize.gen(cb);
-          Label listIsEmpty = new Label();
+          Label listIsEmpty = newLabel();
           cb.ifZCmp(Opcodes.IFEQ, listIsEmpty);
 
           indexInitialization.gen(cb);
@@ -1434,8 +1435,8 @@ final class ProtoUtils {
           Label argIsNull = null;
           Label end = null;
           if (isNullable) {
-            argIsNull = new Label();
-            end = new Label();
+            argIsNull = newLabel();
+            end = newLabel();
             // Null check
             cb.dup();
             BytecodeUtils.ifNullish(cb, baseArg.resultType(), argIsNull);

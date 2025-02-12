@@ -18,6 +18,7 @@ package com.google.template.soy.jbcsrc;
 
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_VALUE_PROVIDER_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_VALUE_TYPE;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.newLabel;
 
 import com.google.common.base.Suppliers;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
@@ -176,7 +177,7 @@ interface ExpressionDetacher {
           }
           cb.dup(); // Stack: SVP, RR, RR
           MethodRefs.RENDER_RESULT_IS_DONE.invokeUnchecked(cb); // Stack: SVP, RR, Z
-          Label end = new Label();
+          Label end = newLabel();
           // if isDone goto end
           cb.ifZCmp(Opcodes.IFNE, end); // Stack: SVP, RR
 
@@ -222,7 +223,7 @@ interface ExpressionDetacher {
           }
           cb.dup(); // Stack: List, RR, RR
           MethodRefs.RENDER_RESULT_IS_DONE.invokeUnchecked(cb); // Stack: List, RR, Z
-          Label end = new Label();
+          Label end = newLabel();
           // if isDone goto end
           cb.ifZCmp(Opcodes.IFNE, end); // Stack: List, RR
 
@@ -256,7 +257,7 @@ interface ExpressionDetacher {
           }
           cb.dup(); // Stack: Map, RR, RR
           MethodRefs.RENDER_RESULT_IS_DONE.invokeUnchecked(cb); // Stack: Map, RR, Z
-          Label end = new Label();
+          Label end = newLabel();
           // if isDone go to end
           cb.ifZCmp(Opcodes.IFNE, end); // Stack: Map, RR
 

@@ -17,6 +17,7 @@
 package com.google.template.soy.jbcsrc.restricted.testing;
 
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.newLabel;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.jbcsrc.internal.ClassData;
@@ -34,7 +35,6 @@ import com.google.template.soy.jbcsrc.shared.Names;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.Method;
@@ -156,7 +156,7 @@ public final class ExpressionEvaluator {
       throw new RuntimeException(e); // this method definitely exists
     }
     Statement.concat(
-            LocalVariable.createThisVar(generatedType, new Label(), new Label())
+            LocalVariable.createThisVar(generatedType, newLabel(), newLabel())
                 .invoke(MethodRef.create(invokeMethod, MethodPureness.NON_PURE))
                 .toStatement(),
             new Statement() {

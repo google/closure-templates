@@ -24,6 +24,7 @@ import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_VALUE_
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_VALUE_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.isDefinitelyAssignableFrom;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.newLabel;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
@@ -83,8 +84,8 @@ public final class Branch {
           return;
         }
       }
-      Label ifTrue = new Label();
-      Label end = new Label();
+      Label ifTrue = newLabel();
+      Label end = newLabel();
       branch.branchTo(adapter, ifTrue);
       adapter.pushBoolean(false);
       adapter.goTo(end);
@@ -284,8 +285,8 @@ public final class Branch {
       return new Branch(
               features,
               (CodeBuilder adapter, Label ifTrueLabel, boolean negate) -> {
-                Label ifTernaryTrue = new Label();
-                Label end = new Label();
+                Label ifTernaryTrue = newLabel();
+                Label end = newLabel();
                 ternary.branchTo(adapter, ifTernaryTrue);
                 (negate ? ifFalseBranch.negate() : ifFalseBranch).branchTo(adapter, ifTrueLabel);
                 adapter.goTo(end);
@@ -300,8 +301,8 @@ public final class Branch {
     return new Expression(resultType, features) {
       @Override
       protected void doGen(CodeBuilder adapter) {
-        Label ifTrueLabel = new Label();
-        Label end = new Label();
+        Label ifTrueLabel = newLabel();
+        Label end = newLabel();
         Branch.this.branchTo(adapter, ifTrueLabel);
         ifFalse.gen(adapter);
         adapter.goTo(end);
@@ -433,7 +434,7 @@ public final class Branch {
         branches = branches.stream().map(Branch::negate).collect(toImmutableList());
       }
       if (mode == CompositionMode.AND) {
-        Label ifFalse = new Label();
+        Label ifFalse = newLabel();
         for (int i = 0; i < branches.size() - 1; i++) {
           branches.get(i).negate().branchTo(adapter, ifFalse);
         }
@@ -466,25 +467,25 @@ public final class Branch {
       Expression finalBoolean = ((BooleanBrancher) finalBranch.brancher).booleanExpression;
 
       if (mode == CompositionMode.AND) {
-        Label ifFalse = new Label();
+        Label ifFalse = newLabel();
         // if any are false jump to ifFalse
         for (int i = 0; i < branches.size() - 1; i++) {
           branches.get(i).negate().branchTo(adapter, ifFalse);
         }
         // If we get to the final branch, its boolean value is the answer.
         finalBoolean.gen(adapter);
-        Label end = new Label();
+        Label end = newLabel();
         adapter.goTo(end);
         adapter.mark(ifFalse);
         adapter.pushBoolean(false);
         adapter.mark(end);
       } else {
-        Label ifTrue = new Label();
+        Label ifTrue = newLabel();
         // if any are true jump to ifTrue
         for (int i = 0; i < branches.size() - 1; i++) {
           branches.get(i).branchTo(adapter, ifTrue);
         }
-        Label end = new Label();
+        Label end = newLabel();
         // If we get to the final branch, its boolean value is the answer.
         finalBoolean.gen(adapter);
         adapter.goTo(end);

@@ -17,6 +17,7 @@
 package com.google.template.soy.jbcsrc;
 
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.newLabel;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
@@ -24,7 +25,6 @@ import com.google.template.soy.jbcsrc.restricted.LocalVariable;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
-import org.objectweb.asm.Label;
 import org.objectweb.asm.Type;
 
 @RunWith(JUnit4.class)
@@ -69,8 +69,8 @@ public final class SimpleLocalVariableManagerTest {
             BytecodeUtils.OBJECT.type(),
             /* argumentTypes= */ new Type[] {Type.getType(String.class), Type.getType(int.class)},
             ImmutableList.of("baz", "quux"),
-            new Label(),
-            new Label(),
+            newLabel(),
+            newLabel(),
             /* isStatic= */ false);
     LocalVariable thisVar = (LocalVariable) vars.getVariable("this");
     assertThat(thisVar.index()).isEqualTo(0);

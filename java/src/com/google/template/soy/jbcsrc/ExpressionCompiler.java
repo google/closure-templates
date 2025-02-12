@@ -25,6 +25,7 @@ import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_VALUE_
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constantRecordProperty;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.firstSoyNonNullish;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.newLabel;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.numericConversion;
 
 import com.google.common.collect.ImmutableList;
@@ -359,7 +360,7 @@ final class ExpressionCompiler {
    * correct label (where the stack is empty).
    */
   SoyExpression compileRootExpression(ExprNode node, ExpressionDetacher.Factory detacherFactory) {
-    Label reattachPoint = new Label();
+    Label reattachPoint = newLabel();
     SoyExpression exec =
         compileSubExpression(node, detacherFactory.createExpressionDetacher(reattachPoint));
     return exec.labelStart(reattachPoint);
@@ -624,9 +625,9 @@ final class ExpressionCompiler {
                 userIndexVarInitializer.gen(adapter); //  int i = 0;
               }
 
-              Label loopStart = new Label();
-              Label loopContinue = new Label();
-              Label loopEnd = new Label();
+              Label loopStart = newLabel();
+              Label loopContinue = newLabel();
+              Label loopEnd = newLabel();
 
               adapter.mark(loopStart);
 
@@ -1175,7 +1176,7 @@ final class ExpressionCompiler {
           new Expression(SoyRuntimeType.getBoxedType(node.getType()).runtimeType()) {
             @Override
             protected void doGen(CodeBuilder adapter) {
-              Label trueLabel = new Label();
+              Label trueLabel = newLabel();
               lhsExpr.gen(adapter); // Stack: L
               adapter.dup(); // Stack: L, L
               MethodRefs.SOY_VALUE_COERCE_TO_BOOLEAN.invokeUnchecked(adapter); // Stack: L Z
@@ -1653,7 +1654,7 @@ final class ExpressionCompiler {
       // A null safe access {@code $foo?.bar?.baz} is syntactic sugar for {@code $foo == null ?
       // null : $foo.bar == null ? null : $foo.bar.baz)}. So to generate code for it we need to have
       // a way to 'exit' the full access chain as soon as we observe a failed null safety check.
-      Label nullSafeExit = new Label();
+      Label nullSafeExit = newLabel();
       SoyExpression accumulator = visit(nullSafeAccessNode.getBase());
       ExprNode dataAccess = nullSafeAccessNode.getDataAccess();
       while (dataAccess.getKind() == ExprNode.Kind.NULL_SAFE_ACCESS_NODE) {
