@@ -139,6 +139,7 @@ import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.ReturnNode;
 import com.google.template.soy.soytree.SkipNode;
 import com.google.template.soy.soytree.SoyFileNode;
+import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.BlockNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyNode.StatementNode;
@@ -1547,12 +1548,10 @@ private SoyFileNode NonEmptySoyFile() :
   ConstNode constant;
   TypeDefNode typeDef;
   ExternNode extern;
-  ImmutableList.Builder<AliasDeclaration> aliases = new ImmutableList.Builder<AliasDeclaration>();
-  ImmutableList.Builder<ImportNode> imports = new ImmutableList.Builder<ImportNode>();
-  ImmutableList.Builder<ConstNode> constants = new ImmutableList.Builder<ConstNode>();
-  ImmutableList.Builder<TypeDefNode> typeDefs = new ImmutableList.Builder<TypeDefNode>();
-  ImmutableList.Builder<ExternNode> externs = new ImmutableList.Builder<ExternNode>();
-  TemplateNode template;
+  SoyNode child;
+  List<AliasDeclaration> aliases = new ArrayList<AliasDeclaration>();
+  List<SoyNode> children = new ArrayList<SoyNode>();
+
   Token eof;
 }
 {
@@ -1568,48 +1567,31 @@ private SoyFileNode NonEmptySoyFile() :
       }
     }
   |
-    importNode = Import()
+    child = Import()
     {
-      if (importNode != null) {
-        imports.add(importNode);
+      if (child != null) {
+        children.add(child);
       }
     }
   )*
-
-  (
-    constant = ConstStmt()
-    {
-      if (constant != null) {
-        constants.add(constant);
-      }
-    }
-  |
-    typeDef = TypeDefStmt()
-    {
-      if (typeDef != null) {
-        typeDefs.add(typeDef);
-      }
-    }
-  |
-    extern = ExternStmt()
-    {
-      if (extern != null) {
-        externs.add(extern);
-      }
-    }
-  )*
-
   {
     headerInfo = new SoyFileHeaderInfo(errorReporter, modNameDecl, namespace,
-        aliases.build(), importSymbols);
-    List<TemplateNode> templates = new ArrayList<TemplateNode>();
+        aliases, importSymbols);
   }
   (
-    template = Template(headerInfo)
+    (
+      child = ConstStmt()
+    |
+      child = TypeDefStmt()
+    |
+      child = ExternStmt()
+    |
+      child = Template(headerInfo)
+    )
     {
-      if (template != null) {
+      if (child != null) {
         // it will be null if a parsing error occurred
-        templates.add(template);
+        children.add(child);
       }
     }
   )*
@@ -1625,11 +1607,7 @@ private SoyFileNode NonEmptySoyFile() :
             SourceLocation.Point.create(eof.beginLine, eof.beginColumn),
             SourceLocation.ByteSpan.create(0, eof.beginColumn)),
         namespace, headerInfo, buildByteOffsetIndex(token_source), buildComments(token_source));
-    sfn.addChildren(imports.build());
-    sfn.addChildren(constants.build());
-    sfn.addChildren(typeDefs.build());  
-    sfn.addChildren(externs.build());
-    sfn.addChildren(templates);
+    sfn.addChildren(children);
     return sfn;
   }
 }
