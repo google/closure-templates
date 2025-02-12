@@ -92,8 +92,7 @@ public abstract class SoyType implements ErrorArg {
     NULL,
     UNDEFINED,
     BOOL,
-    INT,
-    FLOAT,
+    NUMBER,
     STRING,
     GBIGINT,
     // Sanitized types (subtypes of string)

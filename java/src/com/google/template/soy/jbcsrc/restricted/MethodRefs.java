@@ -32,6 +32,7 @@ import com.google.protobuf.ExtensionLite;
 import com.google.protobuf.GeneratedMessage.ExtendableMessage;
 import com.google.protobuf.Message;
 import com.google.protobuf.ProtocolMessageEnum;
+import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.data.Dir;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.LoggingAdvisingAppendable.BufferingAppendable;
@@ -57,9 +58,7 @@ import com.google.template.soy.data.internal.SetImpl;
 import com.google.template.soy.data.internal.SoyMapImpl;
 import com.google.template.soy.data.internal.SoyRecordImpl;
 import com.google.template.soy.data.restricted.BooleanData;
-import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.GbigintData;
-import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.jbcsrc.api.RenderResult;
@@ -121,15 +120,13 @@ public final class MethodRefs {
       createPure(SoyMapImpl.class, "forProviderMapNoNullKeys", Map.class);
 
   public static final MethodRef DOUBLE_TO_STRING =
-      createPure(FloatData.class, "toString", double.class);
-
-  public static final MethodRef EQUALS = createPure(Object.class, "equals", Object.class);
+      createPure(BaseUtils.class, "formatDouble", double.class);
 
   public static final MethodRef STRING_COMPARE_TO =
       createPure(String.class, "compareTo", String.class);
 
-  public static final MethodRef FLOAT_DATA_FOR_VALUE =
-      createPure(FloatData.class, "forValue", double.class);
+  public static final MethodRef NUMBER_DATA_FOR_VALUE =
+      createPure(NumberData.class, "forValue", double.class);
 
   public static final MethodRef RENDER_RESULT_ASSERT_DONE =
       createPure(RenderResult.class, "assertDone");
@@ -214,9 +211,6 @@ public final class MethodRefs {
     }
     IMMUTABLE_MAP_OF = ImmutableList.copyOf(immutableMapOfMethods.values());
   }
-
-  public static final MethodRef INTEGER_DATA_FOR_VALUE =
-      createPure(IntegerData.class, "forValue", long.class);
 
   public static final MethodRef INTS_CHECKED_CAST =
       createPure(Ints.class, "checkedCast", long.class).asCheap();
@@ -387,10 +381,10 @@ public final class MethodRefs {
           .asCheap();
 
   public static final MethodRef RUNTIME_GET_LIST_ITEM =
-      createPure(JbcSrcRuntime.class, "getSoyListItem", List.class, long.class);
+      createPure(JbcSrcRuntime.class, "getSoyListItem", List.class, double.class);
 
   public static final MethodRef RUNTIME_GET_LIST_ITEM_PROVIDER =
-      createPure(JbcSrcRuntime.class, "getSoyListItemProvider", List.class, long.class);
+      createPure(JbcSrcRuntime.class, "getSoyListItemProvider", List.class, double.class);
 
   public static final MethodRef RUNTIME_GET_LIST_STATUS =
       createNonPure(JbcSrcRuntime.class, "getListStatus", List.class);
@@ -535,10 +529,6 @@ public final class MethodRefs {
 
   public static final MethodRef CHECK_TYPE =
       createNonPure(SoyValue.class, "checkNullishType", Class.class);
-
-  public static final MethodRef CHECK_INT = createNonPure(SoyValue.class, "checkNullishInt");
-
-  public static final MethodRef CHECK_FLOAT = createNonPure(SoyValue.class, "checkNullishFloat");
 
   public static final MethodRef CHECK_NUMBER = createNonPure(SoyValue.class, "checkNullishNumber");
 

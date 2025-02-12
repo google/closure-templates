@@ -38,12 +38,12 @@ import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.GlobalNode;
-import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.ListComprehensionNode;
 import com.google.template.soy.exprtree.ListLiteralNode;
 import com.google.template.soy.exprtree.MapLiteralFromListNode;
 import com.google.template.soy.exprtree.MapLiteralNode;
 import com.google.template.soy.exprtree.NullSafeAccessNode;
+import com.google.template.soy.exprtree.NumberNode;
 import com.google.template.soy.exprtree.OperatorNodes.AmpAmpOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.AssertNonNullOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.BarBarOpNode;
@@ -641,12 +641,12 @@ final class TemplateAnalysisImpl implements TemplateAnalysis {
   private static StaticAnalysisResult isRangeExpressionEmpty(RangeArgs range) {
     int start = 0;
     if (range.start().isPresent()) {
-      if (range.start().get() instanceof IntegerNode) {
-        long startAsLong = ((IntegerNode) range.start().get()).getValue();
-        if (startAsLong != (int) startAsLong) {
+      if (range.start().get() instanceof NumberNode) {
+        double startAsDouble = ((NumberNode) range.start().get()).getValue();
+        if (startAsDouble != (int) startAsDouble) {
           return StaticAnalysisResult.UNKNOWN;
         }
-        start = (int) startAsLong;
+        start = (int) startAsDouble;
       } else {
         // if the start is not a constant then we don't know anything
         return StaticAnalysisResult.UNKNOWN;
@@ -654,24 +654,24 @@ final class TemplateAnalysisImpl implements TemplateAnalysis {
     }
 
     int limit;
-    if (range.limit() instanceof IntegerNode) {
-      long limitAsLong = ((IntegerNode) range.limit()).getValue();
-      if (limitAsLong != (int) limitAsLong) {
+    if (range.limit() instanceof NumberNode) {
+      double limitAsDouble = ((NumberNode) range.limit()).getValue();
+      if (limitAsDouble != (int) limitAsDouble) {
         return StaticAnalysisResult.UNKNOWN;
       }
-      limit = (int) limitAsLong;
+      limit = (int) limitAsDouble;
     } else {
       return StaticAnalysisResult.UNKNOWN;
     }
 
     int step = 1;
     if (range.increment().isPresent()) {
-      if (range.increment().get() instanceof IntegerNode) {
-        long stepAsLong = ((IntegerNode) range.increment().get()).getValue();
-        if (stepAsLong != (int) stepAsLong) {
+      if (range.increment().get() instanceof NumberNode) {
+        double stepAsDouble = ((NumberNode) range.increment().get()).getValue();
+        if (stepAsDouble != (int) stepAsDouble) {
           return StaticAnalysisResult.UNKNOWN;
         }
-        step = (int) stepAsLong;
+        step = (int) stepAsDouble;
       } else {
         return StaticAnalysisResult.UNKNOWN;
       }
@@ -829,7 +829,6 @@ final class TemplateAnalysisImpl implements TemplateAnalysis {
           case DEBUG_SOY_TEMPLATE_INFO:
           case PROTO_INIT:
           case SOY_SERVER_KEY:
-          case TO_FLOAT:
           case VE_DATA:
           case XID:
           case EMPTY_TO_UNDEFINED:

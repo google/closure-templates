@@ -91,10 +91,8 @@ public abstract class AbstractReturningExprNodeVisitor<R>
         return visitUndefinedNode((UndefinedNode) node);
       case BOOLEAN_NODE:
         return visitBooleanNode((BooleanNode) node);
-      case INTEGER_NODE:
-        return visitIntegerNode((IntegerNode) node);
-      case FLOAT_NODE:
-        return visitFloatNode((FloatNode) node);
+      case NUMBER_NODE:
+        return visitNumberNode((NumberNode) node);
       case STRING_NODE:
         return visitStringNode((StringNode) node);
       case PROTO_ENUM_VALUE_NODE:
@@ -231,11 +229,7 @@ public abstract class AbstractReturningExprNodeVisitor<R>
     return visitPrimitiveNode(node);
   }
 
-  protected R visitIntegerNode(IntegerNode node) {
-    return visitPrimitiveNode(node);
-  }
-
-  protected R visitFloatNode(FloatNode node) {
+  protected R visitNumberNode(NumberNode node) {
     return visitPrimitiveNode(node);
   }
 

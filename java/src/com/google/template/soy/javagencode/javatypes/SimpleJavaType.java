@@ -43,26 +43,6 @@ public class SimpleJavaType extends JavaType {
           castFunction("asBool"),
           castFunction("asNullableBool"));
 
-  public static final SimpleJavaType INT =
-      new PrimitiveJavaType(
-          /* boxedType= */ "java.lang.Long",
-          /* primitiveType= */ "long",
-          /* genericType= */ "? extends java.lang.Number",
-          /* isNullable= */ false,
-          castFunction("asInt"),
-          castFunction("asBoxedInt"),
-          castFunction("asNullableInt"));
-
-  public static final SimpleJavaType FLOAT =
-      new PrimitiveJavaType(
-          /* boxedType= */ "java.lang.Double",
-          /* primitiveType= */ "double",
-          /* genericType= */ "? extends java.lang.Number",
-          /* isNullable= */ false,
-          castFunction("asFloat"),
-          castFunction("asBoxedFloat"),
-          castFunction("asNullableFloat"));
-
   public static final SimpleJavaType NUMBER =
       new SimpleJavaType(
           "java.lang.Number",

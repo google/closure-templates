@@ -16,8 +16,6 @@
 
 package com.google.template.soy.types;
 
-import static com.google.common.base.Preconditions.checkState;
-import static com.google.template.soy.types.SoyTypes.NUMBER_TYPE;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -102,8 +100,6 @@ public final class TypeRegistries {
     private final Map<GenericDescriptor, ImportType> protoImportTypes = new ConcurrentHashMap<>();
 
     public TypeInternerImpl() {
-      // Register the special number type so == comparisons work
-      checkState(types.intern(NUMBER_TYPE) == NUMBER_TYPE);
     }
 
     @Override
@@ -190,10 +186,10 @@ public final class TypeRegistries {
             .put("null", NullType.getInstance())
             .put("undefined", UndefinedType.getInstance())
             .put("bool", BoolType.getInstance())
-            .put("int", IntType.getInstance())
-            .put("float", FloatType.getInstance())
+            .put("int", NumberType.getInstance())
+            .put("float", NumberType.getInstance())
             .put("string", StringType.getInstance())
-            .put("number", NUMBER_TYPE)
+            .put("number", NumberType.getInstance())
             .put("gbigint", GbigintType.getInstance())
             .put("html", HtmlType.getInstance())
             .put("never", NeverType.getInstance())

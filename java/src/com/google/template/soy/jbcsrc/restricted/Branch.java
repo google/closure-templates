@@ -22,7 +22,6 @@ import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_VALUE_PROVIDER_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_VALUE_TYPE;
-import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.isDefinitelyAssignableFrom;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.newLabel;
 
@@ -503,11 +502,6 @@ public final class Branch {
 
   public static Branch always() {
     return never().negate();
-  }
-
-  public static Branch ifNotZero(Expression expression) {
-    checkState(expression.resultType().equals(Type.LONG_TYPE));
-    return Branch.compare(Opcodes.IFNE, expression, constant(0L));
   }
 
   public static Branch ifEqual(Expression left, Expression right) {

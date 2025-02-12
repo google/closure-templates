@@ -217,10 +217,10 @@ public final class JbcSrcExternRuntime {
     return values.stream().map(SoyValue::coerceToString).collect(toImmutableList());
   }
 
-  public static final MethodRef LONG_TO_INT = create("longToInt", long.class);
+  public static final MethodRef DOUBLE_TO_INT = create("doubleToInt", double.class);
 
   @Keep
-  public static int longToInt(long value) {
+  public static int doubleToInt(double value) {
     Preconditions.checkState(
         value >= Integer.MIN_VALUE && value <= Integer.MAX_VALUE,
         "Casting long to integer results in overflow: %s",
@@ -315,8 +315,9 @@ public final class JbcSrcExternRuntime {
   public static final MethodRef UNBOX_BOOLEAN = MethodRef.createPure(Boolean.class, "booleanValue");
   public static final MethodRef UNBOX_DOUBLE = MethodRef.createPure(Double.class, "doubleValue");
   public static final MethodRef UNBOX_FLOAT = MethodRef.createPure(Float.class, "doubleValue");
-  public static final MethodRef UNBOX_INTEGER = MethodRef.createPure(Integer.class, "longValue");
-  public static final MethodRef UNBOX_LONG = MethodRef.createPure(Long.class, "longValue");
+  public static final MethodRef UNBOX_INTEGER = MethodRef.createPure(Integer.class, "doubleValue");
+  public static final MethodRef UNBOX_LONG = MethodRef.createPure(Long.class, "doubleValue");
+  public static final MethodRef UNBOX_NUMBER = MethodRef.createPure(Number.class, "doubleValue");
 
   public static final MethodRef UNBOX_MAP =
       create("unboxMap", SoyValue.class, Class.class, Class.class);

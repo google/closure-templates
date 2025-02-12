@@ -96,7 +96,6 @@ import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.FunctionNode.ExternRef;
 import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.GroupNode;
-import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.ItemAccessNode;
 import com.google.template.soy.exprtree.ListComprehensionNode;
 import com.google.template.soy.exprtree.ListLiteralNode;
@@ -105,6 +104,7 @@ import com.google.template.soy.exprtree.MapLiteralNode;
 import com.google.template.soy.exprtree.MethodCallNode;
 import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.exprtree.NullSafeAccessNode;
+import com.google.template.soy.exprtree.NumberNode;
 import com.google.template.soy.exprtree.OperatorNodes.AmpAmpOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.AsOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.AssertNonNullOpNode;
@@ -188,14 +188,13 @@ import com.google.template.soy.soytree.defn.TemplateStateVar;
 import com.google.template.soy.types.AbstractIterableType;
 import com.google.template.soy.types.AbstractMapType;
 import com.google.template.soy.types.BoolType;
-import com.google.template.soy.types.FloatType;
 import com.google.template.soy.types.FunctionType;
 import com.google.template.soy.types.FunctionType.Parameter;
-import com.google.template.soy.types.IntType;
 import com.google.template.soy.types.IterableType;
 import com.google.template.soy.types.LegacyObjectMapType;
 import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.MapType;
+import com.google.template.soy.types.NumberType;
 import com.google.template.soy.types.ProtoImportType;
 import com.google.template.soy.types.RecordType;
 import com.google.template.soy.types.RecordType.Member;
@@ -655,11 +654,6 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
                 SoyType actualType = headerVar.defaultValue().getRoot().getAuthoredType();
 
                 SoyType declaredType = headerVar.authoredType();
-                if (!declaredType.isAssignableFromStrict(actualType)) {
-                  actualType =
-                      RuntimeTypeCoercion.maybeCoerceType(
-                          headerVar.defaultValue().getRoot(), SoyTypes.expandUnions(declaredType));
-                }
                 if (!declaredType.isAssignableFromLoose(actualType)) {
                   SourceLocation loc = headerVar.defaultValue().getSourceLocation();
                   if (!loc.isKnown()) {
@@ -811,7 +805,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
 
     private final ImmutableSet<SoyType.Kind> allowedSwitchTypes =
         ImmutableSet.of(
-            Kind.BOOL, Kind.INT, Kind.FLOAT, Kind.STRING, Kind.PROTO_ENUM, Kind.UNKNOWN, Kind.ANY);
+            Kind.BOOL, Kind.NUMBER, Kind.STRING, Kind.PROTO_ENUM, Kind.UNKNOWN, Kind.ANY);
 
     @Override
     protected void visitSwitchNode(SwitchNode node) {
@@ -828,7 +822,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
         exprTypeError = true;
       } else if (tryRemoveNullish(switchExprType).getKind() == Kind.PROTO_ENUM) {
         // Allow int cases in proto switch.
-        switchExprType = UnionType.of(switchExprType, IntType.getInstance());
+        switchExprType = UnionType.of(switchExprType, NumberType.getInstance());
       }
       SoyType switchExprNarrowedType = switchExpr.getType();
       for (SoyNode child : node.getChildren()) {
@@ -893,7 +887,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
       // Visit the node body
       if (node.getIndexVar() != null) {
         // Set the type of the optional index to integer.
-        node.getIndexVar().setType(IntType.getInstance());
+        node.getIndexVar().setType(NumberType.getInstance());
       }
       visitChildren(node);
     }
@@ -913,8 +907,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
     }
 
     private final ImmutableSet<SoyType.Kind> allowedVariantTypes =
-        ImmutableSet.of(
-            SoyType.Kind.STRING, SoyType.Kind.INT, SoyType.Kind.PROTO_ENUM, SoyType.Kind.UNKNOWN);
+        ImmutableSet.of(SoyType.Kind.STRING, SoyType.Kind.PROTO_ENUM, SoyType.Kind.UNKNOWN);
 
     @Override
     protected void visitCallDelegateNode(CallDelegateNode node) {
@@ -939,9 +932,9 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
         if (!BaseUtils.isIdentifier(variantStr)) {
           errorReporter.report(location, INVALID_VARIANT_EXPRESSION, variantStr);
         }
-      } else if (variant.getRoot().getKind() == ExprNode.Kind.INTEGER_NODE) {
-        long variantInt = ((IntegerNode) variant.getRoot()).getValue();
-        if (variantInt < 0) {
+      } else if (variant.getRoot().getKind() == ExprNode.Kind.NUMBER_NODE) {
+        double variantInt = ((NumberNode) variant.getRoot()).getValue();
+        if (variantInt < 0 || (int) variantInt != variantInt) {
           errorReporter.report(location, INVALID_VARIANT_EXPRESSION, variant.toSourceString());
         }
       }
@@ -1153,7 +1146,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
 
       if (node.getIndexVar() != null) {
         // Set the type of the optional index to integer ($index in this example).
-        node.getIndexVar().setType(IntType.getInstance());
+        node.getIndexVar().setType(NumberType.getInstance());
       }
 
       TypeSubstitutions.Checkpoint savedSubstitutions = substitutions.checkpoint();
@@ -1640,8 +1633,8 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
           int maxDepth;
           if (node.numParams() == 1) {
             // This will only work for int literal in the source code.
-            if (node.getParam(0).getKind() == ExprNode.Kind.INTEGER_NODE) {
-              maxDepth = (int) ((IntegerNode) node.getParam(0)).getValue();
+            if (node.getParam(0).getKind() == ExprNode.Kind.NUMBER_NODE) {
+              maxDepth = (int) ((NumberNode) node.getParam(0)).getValue();
             } else {
               maxDepth = 0;
             }
@@ -1851,17 +1844,31 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
 
     private void visitLongOnlyOpNode(AbstractOperatorNode node) {
       visitChildren(node);
-      SoyType result = IntType.getInstance();
-      SoyType left = SoyTypes.tryRemoveNullish(node.getChild(0).getType());
-      SoyType right = SoyTypes.tryRemoveNullish(node.getChild(1).getType());
-      if (left.getKind() != Kind.INT || right.getKind() != Kind.INT) {
+      ExprNode lhs = node.getChild(0);
+      ExprNode rhs = node.getChild(1);
+
+      SoyType result = NumberType.getInstance();
+      SoyType left = SoyTypes.tryRemoveNullish(lhs.getType());
+      SoyType right = SoyTypes.tryRemoveNullish(rhs.getType());
+      if (left.getKind() != Kind.NUMBER || right.getKind() != Kind.NUMBER) {
         errorReporter.report(
             node.getOperatorLocation(),
             INCOMPATIBLE_ARITHMETIC_OP,
             node.getOperator().getTokenString(),
-            node.getChild(0).getAuthoredType(),
-            node.getChild(1).getAuthoredType());
+            lhs.getAuthoredType(),
+            rhs.getAuthoredType());
         result = UnknownType.getInstance();
+      } else {
+        boolean leftInt = !(lhs instanceof NumberNode) || ((NumberNode) lhs).isInteger();
+        boolean rightInt = !(rhs instanceof NumberNode) || ((NumberNode) rhs).isInteger();
+        if (!leftInt || !rightInt) {
+          errorReporter.report(
+              node.getOperatorLocation(),
+              INCOMPATIBLE_ARITHMETIC_OP,
+              node.getOperator().getTokenString(),
+              leftInt ? "int" : "float",
+              rightInt ? "int" : "float");
+        }
       }
       node.setType(result);
     }
@@ -2298,7 +2305,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
         if (argType.getKind() == Kind.LEGACY_OBJECT_MAP) {
           listArg = ((LegacyObjectMapType) argType).getKeyType(); // pretty much just string
         } else if (argType.getKind() == Kind.LIST) {
-          listArg = IntType.getInstance();
+          listArg = NumberType.getInstance();
         } else if (argType.getKind() == Kind.MAP) {
           errorReporter.report(node.getSourceLocation(), KEYS_PASSED_MAP);
           listArg = UnknownType.getInstance();
@@ -2469,14 +2476,6 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
 
         SoyType expectedType = SoyTypes.makeNullish(fieldType);
         if (!expectedType.isAssignableFromLoose(argType)) {
-          argType =
-              RuntimeTypeCoercion.maybeCoerceType(
-                  expr,
-                  expectedType instanceof UnionType
-                      ? ((UnionType) expectedType).getMembers()
-                      : ImmutableList.of(expectedType));
-        }
-        if (!expectedType.isAssignableFromLoose(argType)) {
           errorReporter.report(
               expr.getSourceLocation(),
               ARGUMENT_TYPE_MISMATCH,
@@ -2559,7 +2558,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
       // returned by getSoyTypeForBinaryOperator.
       // TODO(b/64098780): Should we add nullability to divide operator? Probably not, but we should
       // also consolidate the behaviors when we divide something by 0 or null.
-      node.setType(isDivide ? FloatType.getInstance() : result);
+      node.setType(isDivide ? NumberType.getInstance() : result);
       tryApplySubstitution(node);
     }
 
@@ -2684,7 +2683,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
           }
 
           // For lists, the key type must either be unknown or assignable to integer.
-          if (!IntType.getInstance().isAssignableFromLoose(keyType)) {
+          if (!NumberType.getInstance().isAssignableFromLoose(keyType)) {
             errorReporter.report(keyLocation, BAD_INDEX_TYPE, keyType, baseType);
             // fall through and report the element type.  This will allow more later type checks to
             // be evaluated.
@@ -2825,9 +2824,8 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
             node.setType(VeType.NO_DATA);
           }
           break;
-        case TO_FLOAT: // is added to the AST after this pass
         case REMAINDER:
-          node.setType(IntType.getInstance());
+          node.setType(NumberType.getInstance());
           break;
         case MSG_WITH_ID:
           node.setType(

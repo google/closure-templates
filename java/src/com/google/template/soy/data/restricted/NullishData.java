@@ -62,16 +62,6 @@ public abstract class NullishData extends PrimitiveData {
   }
 
   @Override
-  public final SoyValue checkNullishInt() {
-    return this;
-  }
-
-  @Override
-  public final SoyValue checkNullishFloat() {
-    return this;
-  }
-
-  @Override
   public final SoyValue checkNullishNumber() {
     return this;
   }

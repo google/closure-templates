@@ -19,7 +19,6 @@ package com.google.template.soy.types;
 import static com.google.common.base.Strings.lenientFormat;
 import static com.google.common.truth.Fact.simpleFact;
 import static com.google.common.truth.Truth.assertThat;
-import static com.google.template.soy.types.SoyTypes.NUMBER_TYPE;
 import static com.google.template.soy.types.SoyTypes.makeNullable;
 
 import com.google.common.collect.ImmutableMap;
@@ -48,8 +47,8 @@ import org.junit.runners.JUnit4;
 @RunWith(JUnit4.class)
 public class SoyTypesTest {
   private static final BoolType BOOL_TYPE = BoolType.getInstance();
-  private static final IntType INT_TYPE = IntType.getInstance();
-  private static final FloatType FLOAT_TYPE = FloatType.getInstance();
+  private static final NumberType NUMBER_TYPE = NumberType.getInstance();
+  private static final NumberType FLOAT_TYPE = NumberType.getInstance();
   private static final StringType STRING_TYPE = StringType.getInstance();
   private static final HtmlType HTML_TYPE = HtmlType.getInstance();
   private static final NullType NULL_TYPE = NullType.getInstance();
@@ -170,11 +169,11 @@ public class SoyTypesTest {
   @Test
   public void testUnionType() {
     // Test that it flattens properly
-    SoyType utype = UnionType.of(INT_TYPE, UnionType.of(INT_TYPE, NULL_TYPE));
-    assertThat(utype.toString()).isEqualTo("int|null");
+    SoyType utype = UnionType.of(NUMBER_TYPE, UnionType.of(NUMBER_TYPE, NULL_TYPE));
+    assertThat(utype.toString()).isEqualTo("null|number");
     assertThatSoyType("int|null").isAssignableFromStrict("int");
     assertThatSoyType("int|null").isAssignableFromStrict("null");
-    assertThatSoyType("int|null").isNotAssignableFromStrict("float");
+    assertThatSoyType("int|null").isAssignableFromStrict("float");
     assertThatSoyType("int|null").isNotAssignableFromStrict("string");
     assertThatSoyType("int|null").isNotAssignableFromStrict("any");
     assertThatSoyType("int|null").isNotAssignableFromStrict("?");
@@ -326,7 +325,7 @@ public class SoyTypesTest {
   public void testNamed() {
     SoyTypeRegistry baseRegistry = SoyTypeRegistryBuilder.create();
     SoyType stringAlias = NamedType.create("StringAlias", "-", StringType.getInstance());
-    SoyType intAlias = NamedType.create("IntAlias", "-", IntType.getInstance());
+    SoyType intAlias = NamedType.create("IntAlias", "-", NumberType.getInstance());
     SoyType unionOfAliases =
         NamedType.create("UnionOfAliases", "-", UnionType.of(stringAlias, intAlias));
     SoyType anotherUnion =
@@ -563,120 +562,138 @@ public class SoyTypesTest {
 
   @Test
   public void testBothOfKind() {
-    assertThat(SoyTypes.bothOfKind(INT_TYPE, INT_TYPE, INT_TYPE.getKind())).isTrue();
-    assertThat(SoyTypes.bothOfKind(INT_TYPE, INT_TYPE, SoyTypes.ARITHMETIC_PRIMITIVES)).isTrue();
-    assertThat(
-            SoyTypes.bothOfKind(
-                INT_TYPE, FLOAT_TYPE, ImmutableSet.of(INT_TYPE.getKind(), FLOAT_TYPE.getKind())))
+    assertThat(SoyTypes.bothOfKind(NUMBER_TYPE, NUMBER_TYPE, NUMBER_TYPE.getKind())).isTrue();
+    assertThat(SoyTypes.bothOfKind(NUMBER_TYPE, NUMBER_TYPE, SoyTypes.ARITHMETIC_PRIMITIVES))
         .isTrue();
-    assertThat(SoyTypes.bothOfKind(INT_TYPE, FLOAT_TYPE, SoyTypes.ARITHMETIC_PRIMITIVES)).isTrue();
     assertThat(
             SoyTypes.bothOfKind(
-                NUMBER_TYPE, FLOAT_TYPE, ImmutableSet.of(INT_TYPE.getKind(), FLOAT_TYPE.getKind())))
+                NUMBER_TYPE,
+                FLOAT_TYPE,
+                ImmutableSet.of(NUMBER_TYPE.getKind(), FLOAT_TYPE.getKind())))
         .isTrue();
     assertThat(SoyTypes.bothOfKind(NUMBER_TYPE, FLOAT_TYPE, SoyTypes.ARITHMETIC_PRIMITIVES))
         .isTrue();
+    assertThat(
+            SoyTypes.bothOfKind(
+                NumberType.getInstance(),
+                FLOAT_TYPE,
+                ImmutableSet.of(NUMBER_TYPE.getKind(), FLOAT_TYPE.getKind())))
+        .isTrue();
+    assertThat(
+            SoyTypes.bothOfKind(
+                NumberType.getInstance(), FLOAT_TYPE, SoyTypes.ARITHMETIC_PRIMITIVES))
+        .isTrue();
 
-    assertThat(SoyTypes.bothOfKind(INT_TYPE, INT_TYPE, ImmutableSet.of())).isFalse();
-    assertThat(SoyTypes.bothOfKind(INT_TYPE, FLOAT_TYPE, INT_TYPE.getKind())).isFalse();
-    assertThat(SoyTypes.bothOfKind(NUMBER_TYPE, INT_TYPE, INT_TYPE.getKind())).isFalse();
-    assertThat(SoyTypes.bothOfKind(STRING_TYPE, NUMBER_TYPE, SoyTypes.ARITHMETIC_PRIMITIVES))
+    assertThat(SoyTypes.bothOfKind(NUMBER_TYPE, NUMBER_TYPE, ImmutableSet.of())).isFalse();
+    assertThat(SoyTypes.bothOfKind(NUMBER_TYPE, FLOAT_TYPE, NUMBER_TYPE.getKind())).isTrue();
+    assertThat(SoyTypes.bothOfKind(NumberType.getInstance(), NUMBER_TYPE, NUMBER_TYPE.getKind()))
+        .isTrue();
+    assertThat(
+            SoyTypes.bothOfKind(
+                STRING_TYPE, NumberType.getInstance(), SoyTypes.ARITHMETIC_PRIMITIVES))
         .isFalse();
   }
 
   @Test
   public void testEitherOfKind() {
-    assertThat(SoyTypes.eitherOfKind(INT_TYPE, INT_TYPE, INT_TYPE.getKind())).isTrue();
-    assertThat(SoyTypes.eitherOfKind(STRING_TYPE, INT_TYPE, INT_TYPE.getKind())).isTrue();
-    assertThat(SoyTypes.eitherOfKind(INT_TYPE, STRING_TYPE, INT_TYPE.getKind())).isTrue();
-    assertThat(SoyTypes.eitherOfKind(INT_TYPE, STRING_TYPE, SoyTypes.ARITHMETIC_PRIMITIVES))
+    assertThat(SoyTypes.eitherOfKind(NUMBER_TYPE, NUMBER_TYPE, NUMBER_TYPE.getKind())).isTrue();
+    assertThat(SoyTypes.eitherOfKind(STRING_TYPE, NUMBER_TYPE, NUMBER_TYPE.getKind())).isTrue();
+    assertThat(SoyTypes.eitherOfKind(NUMBER_TYPE, STRING_TYPE, NUMBER_TYPE.getKind())).isTrue();
+    assertThat(SoyTypes.eitherOfKind(NUMBER_TYPE, STRING_TYPE, SoyTypes.ARITHMETIC_PRIMITIVES))
         .isTrue();
 
-    assertThat(SoyTypes.eitherOfKind(FLOAT_TYPE, NUMBER_TYPE, ImmutableSet.of())).isFalse();
-    assertThat(SoyTypes.eitherOfKind(FLOAT_TYPE, NUMBER_TYPE, INT_TYPE.getKind())).isFalse();
+    assertThat(SoyTypes.eitherOfKind(FLOAT_TYPE, NumberType.getInstance(), ImmutableSet.of()))
+        .isFalse();
+    assertThat(SoyTypes.eitherOfKind(FLOAT_TYPE, NumberType.getInstance(), NUMBER_TYPE.getKind()))
+        .isTrue();
   }
 
   @Test
   public void testComputeStricterType() {
-    assertThat(SoyTypes.computeStricterType(INT_TYPE, ANY_TYPE)).hasValue(INT_TYPE);
-    assertThat(SoyTypes.computeStricterType(NUMBER_TYPE, INT_TYPE)).hasValue(INT_TYPE);
+    assertThat(SoyTypes.computeStricterType(NUMBER_TYPE, ANY_TYPE)).hasValue(NUMBER_TYPE);
+    assertThat(SoyTypes.computeStricterType(NumberType.getInstance(), NUMBER_TYPE))
+        .hasValue(NUMBER_TYPE);
     assertThat(SoyTypes.computeStricterType(makeNullable(STRING_TYPE), STRING_TYPE))
         .hasValue(STRING_TYPE);
-    assertThat(SoyTypes.computeStricterType(INT_TYPE, STRING_TYPE)).isEmpty();
+    assertThat(SoyTypes.computeStricterType(NUMBER_TYPE, STRING_TYPE)).isEmpty();
   }
 
   @Test
   public void testLowestCommonType() {
     SoyTypeRegistry typeRegistry = SoyTypeRegistryBuilder.create();
 
-    assertThat(SoyTypes.computeLowestCommonType(typeRegistry, INT_TYPE, ANY_TYPE))
+    assertThat(SoyTypes.computeLowestCommonType(typeRegistry, NUMBER_TYPE, ANY_TYPE))
         .isEqualTo(ANY_TYPE);
-    assertThat(SoyTypes.computeLowestCommonType(typeRegistry, INT_TYPE, UNKNOWN_TYPE))
+    assertThat(SoyTypes.computeLowestCommonType(typeRegistry, NUMBER_TYPE, UNKNOWN_TYPE))
         .isEqualTo(UNKNOWN_TYPE);
-    assertThat(SoyTypes.computeLowestCommonType(typeRegistry, UNKNOWN_TYPE, INT_TYPE))
+    assertThat(SoyTypes.computeLowestCommonType(typeRegistry, UNKNOWN_TYPE, NUMBER_TYPE))
         .isEqualTo(UNKNOWN_TYPE);
-    assertThat(SoyTypes.computeLowestCommonType(typeRegistry, ANY_TYPE, INT_TYPE))
+    assertThat(SoyTypes.computeLowestCommonType(typeRegistry, ANY_TYPE, NUMBER_TYPE))
         .isEqualTo(ANY_TYPE);
     assertThat(SoyTypes.computeLowestCommonType(typeRegistry, STRING_TYPE, HTML_TYPE))
         .isEqualTo(UnionType.of(STRING_TYPE, HTML_TYPE));
-    assertThat(SoyTypes.computeLowestCommonType(typeRegistry, INT_TYPE, FLOAT_TYPE))
-        .isEqualTo(NUMBER_TYPE);
-    assertThat(SoyTypes.computeLowestCommonType(typeRegistry, FLOAT_TYPE, INT_TYPE))
-        .isEqualTo(NUMBER_TYPE);
-    assertThat(SoyTypes.computeLowestCommonType(typeRegistry, INT_TYPE, UNDEFINED_TYPE))
-        .isEqualTo(UnionType.of(INT_TYPE, UNDEFINED_TYPE));
+    assertThat(SoyTypes.computeLowestCommonType(typeRegistry, NUMBER_TYPE, FLOAT_TYPE))
+        .isEqualTo(NumberType.getInstance());
+    assertThat(SoyTypes.computeLowestCommonType(typeRegistry, FLOAT_TYPE, NUMBER_TYPE))
+        .isEqualTo(NumberType.getInstance());
+    assertThat(SoyTypes.computeLowestCommonType(typeRegistry, NUMBER_TYPE, UNDEFINED_TYPE))
+        .isEqualTo(UnionType.of(NUMBER_TYPE, UNDEFINED_TYPE));
   }
 
   @Test
   public void testLowestCommonTypeArithmetic() {
-    assertThat(SoyTypes.computeLowestCommonTypeArithmetic(INT_TYPE, ANY_TYPE)).isEmpty();
-    assertThat(SoyTypes.computeLowestCommonTypeArithmetic(ANY_TYPE, INT_TYPE)).isEmpty();
+    assertThat(SoyTypes.computeLowestCommonTypeArithmetic(NUMBER_TYPE, ANY_TYPE)).isEmpty();
+    assertThat(SoyTypes.computeLowestCommonTypeArithmetic(ANY_TYPE, NUMBER_TYPE)).isEmpty();
     assertThat(SoyTypes.computeLowestCommonTypeArithmetic(STRING_TYPE, HTML_TYPE)).isEmpty();
     assertThat(SoyTypes.computeLowestCommonTypeArithmetic(HTML_TYPE, STRING_TYPE)).isEmpty();
-    assertThat(SoyTypes.computeLowestCommonTypeArithmetic(ListType.of(INT_TYPE), INT_TYPE))
+    assertThat(SoyTypes.computeLowestCommonTypeArithmetic(ListType.of(NUMBER_TYPE), NUMBER_TYPE))
         .isEmpty();
     assertThat(
             SoyTypes.computeLowestCommonTypeArithmetic(
-                LegacyObjectMapType.of(INT_TYPE, STRING_TYPE), INT_TYPE))
+                LegacyObjectMapType.of(NUMBER_TYPE, STRING_TYPE), NUMBER_TYPE))
         .isEmpty();
     assertThat(
             SoyTypes.computeLowestCommonTypeArithmetic(
-                RecordType.of(ImmutableMap.of("a", INT_TYPE, "b", FLOAT_TYPE)), INT_TYPE))
+                RecordType.of(ImmutableMap.of("a", NUMBER_TYPE, "b", FLOAT_TYPE)), NUMBER_TYPE))
         .isEmpty();
     assertThat(
             SoyTypes.computeLowestCommonTypeArithmetic(
-                UnionType.of(LegacyObjectMapType.of(FLOAT_TYPE, STRING_TYPE), INT_TYPE),
+                UnionType.of(LegacyObjectMapType.of(FLOAT_TYPE, STRING_TYPE), NUMBER_TYPE),
                 FLOAT_TYPE))
         .isEmpty();
     assertThat(
             SoyTypes.computeLowestCommonTypeArithmetic(
-                UnionType.of(BOOL_TYPE, INT_TYPE, STRING_TYPE), NUMBER_TYPE))
-        .isEmpty();
-    assertThat(
-            SoyTypes.computeLowestCommonTypeArithmetic(UnionType.of(BOOL_TYPE, INT_TYPE), INT_TYPE))
+                UnionType.of(BOOL_TYPE, NUMBER_TYPE, STRING_TYPE), NumberType.getInstance()))
         .isEmpty();
     assertThat(
             SoyTypes.computeLowestCommonTypeArithmetic(
-                UnionType.of(STRING_TYPE, FLOAT_TYPE), INT_TYPE))
+                UnionType.of(BOOL_TYPE, NUMBER_TYPE), NUMBER_TYPE))
+        .isEmpty();
+    assertThat(
+            SoyTypes.computeLowestCommonTypeArithmetic(
+                UnionType.of(STRING_TYPE, FLOAT_TYPE), NUMBER_TYPE))
         .isEmpty();
 
-    assertThat(SoyTypes.computeLowestCommonTypeArithmetic(INT_TYPE, FLOAT_TYPE))
+    assertThat(SoyTypes.computeLowestCommonTypeArithmetic(NUMBER_TYPE, FLOAT_TYPE))
         .hasValue(FLOAT_TYPE);
-    assertThat(SoyTypes.computeLowestCommonTypeArithmetic(FLOAT_TYPE, INT_TYPE))
+    assertThat(SoyTypes.computeLowestCommonTypeArithmetic(FLOAT_TYPE, NUMBER_TYPE))
         .hasValue(FLOAT_TYPE);
     assertThat(SoyTypes.computeLowestCommonTypeArithmetic(FLOAT_TYPE, UNKNOWN_TYPE))
         .hasValue(UNKNOWN_TYPE);
     assertThat(SoyTypes.computeLowestCommonTypeArithmetic(UNKNOWN_TYPE, FLOAT_TYPE))
         .hasValue(UNKNOWN_TYPE);
-    assertThat(SoyTypes.computeLowestCommonTypeArithmetic(INT_TYPE, INT_TYPE)).hasValue(INT_TYPE);
-    assertThat(SoyTypes.computeLowestCommonTypeArithmetic(FLOAT_TYPE, FLOAT_TYPE))
-        .hasValue(FLOAT_TYPE);
-    assertThat(SoyTypes.computeLowestCommonTypeArithmetic(FLOAT_TYPE, NUMBER_TYPE))
-        .hasValue(NUMBER_TYPE);
-    assertThat(SoyTypes.computeLowestCommonTypeArithmetic(INT_TYPE, NUMBER_TYPE))
-        .hasValue(NUMBER_TYPE);
     assertThat(SoyTypes.computeLowestCommonTypeArithmetic(NUMBER_TYPE, NUMBER_TYPE))
         .hasValue(NUMBER_TYPE);
+    assertThat(SoyTypes.computeLowestCommonTypeArithmetic(FLOAT_TYPE, FLOAT_TYPE))
+        .hasValue(FLOAT_TYPE);
+    assertThat(SoyTypes.computeLowestCommonTypeArithmetic(FLOAT_TYPE, NumberType.getInstance()))
+        .hasValue(NumberType.getInstance());
+    assertThat(SoyTypes.computeLowestCommonTypeArithmetic(NUMBER_TYPE, NumberType.getInstance()))
+        .hasValue(NumberType.getInstance());
+    assertThat(
+            SoyTypes.computeLowestCommonTypeArithmetic(
+                NumberType.getInstance(), NumberType.getInstance()))
+        .hasValue(NumberType.getInstance());
   }
 
   @Test
@@ -690,20 +707,22 @@ public class SoyTypesTest {
      * return number.
      */
     // All number types
-    assertThat(SoyTypes.getSoyTypeForBinaryOperator(INT_TYPE, FLOAT_TYPE, plusOp))
-        .isEqualTo(FLOAT_TYPE);
-    assertThat(SoyTypes.getSoyTypeForBinaryOperator(FLOAT_TYPE, INT_TYPE, plusOp))
-        .isEqualTo(FLOAT_TYPE);
-    assertThat(SoyTypes.getSoyTypeForBinaryOperator(INT_TYPE, INT_TYPE, plusOp))
-        .isEqualTo(INT_TYPE);
-    assertThat(SoyTypes.getSoyTypeForBinaryOperator(FLOAT_TYPE, FLOAT_TYPE, plusOp))
+    assertThat(SoyTypes.getSoyTypeForBinaryOperator(NUMBER_TYPE, FLOAT_TYPE, plusOp))
         .isEqualTo(FLOAT_TYPE);
     assertThat(SoyTypes.getSoyTypeForBinaryOperator(FLOAT_TYPE, NUMBER_TYPE, plusOp))
         .isEqualTo(FLOAT_TYPE);
-    assertThat(SoyTypes.getSoyTypeForBinaryOperator(INT_TYPE, NUMBER_TYPE, plusOp))
-        .isEqualTo(NUMBER_TYPE);
     assertThat(SoyTypes.getSoyTypeForBinaryOperator(NUMBER_TYPE, NUMBER_TYPE, plusOp))
         .isEqualTo(NUMBER_TYPE);
+    assertThat(SoyTypes.getSoyTypeForBinaryOperator(FLOAT_TYPE, FLOAT_TYPE, plusOp))
+        .isEqualTo(FLOAT_TYPE);
+    assertThat(SoyTypes.getSoyTypeForBinaryOperator(FLOAT_TYPE, NumberType.getInstance(), plusOp))
+        .isEqualTo(FLOAT_TYPE);
+    assertThat(SoyTypes.getSoyTypeForBinaryOperator(NUMBER_TYPE, NumberType.getInstance(), plusOp))
+        .isEqualTo(NumberType.getInstance());
+    assertThat(
+            SoyTypes.getSoyTypeForBinaryOperator(
+                NumberType.getInstance(), NumberType.getInstance(), plusOp))
+        .isEqualTo(NumberType.getInstance());
 
     // Unknown types are fine
     assertThat(SoyTypes.getSoyTypeForBinaryOperator(FLOAT_TYPE, UNKNOWN_TYPE, plusOp))
@@ -714,17 +733,17 @@ public class SoyTypesTest {
         .isEqualTo(UNKNOWN_TYPE);
 
     // Any string types should be resolved to string
-    assertThat(SoyTypes.getSoyTypeForBinaryOperator(INT_TYPE, STRING_TYPE, plusOp))
+    assertThat(SoyTypes.getSoyTypeForBinaryOperator(NUMBER_TYPE, STRING_TYPE, plusOp))
         .isEqualTo(STRING_TYPE);
     assertThat(SoyTypes.getSoyTypeForBinaryOperator(STRING_TYPE, BOOL_TYPE, plusOp))
         .isEqualTo(STRING_TYPE);
     assertThat(SoyTypes.getSoyTypeForBinaryOperator(STRING_TYPE, FLOAT_TYPE, plusOp))
         .isEqualTo(STRING_TYPE);
-    assertThat(SoyTypes.getSoyTypeForBinaryOperator(STRING_TYPE, NUMBER_TYPE, plusOp))
+    assertThat(SoyTypes.getSoyTypeForBinaryOperator(STRING_TYPE, NumberType.getInstance(), plusOp))
         .isEqualTo(STRING_TYPE);
     assertThat(SoyTypes.getSoyTypeForBinaryOperator(STRING_TYPE, STRING_TYPE, plusOp))
         .isEqualTo(STRING_TYPE);
-    assertThat(SoyTypes.getSoyTypeForBinaryOperator(INT_TYPE, URI_TYPE, plusOp))
+    assertThat(SoyTypes.getSoyTypeForBinaryOperator(NUMBER_TYPE, URI_TYPE, plusOp))
         .isEqualTo(STRING_TYPE);
     assertThat(SoyTypes.getSoyTypeForBinaryOperator(HTML_TYPE, STRING_TYPE, plusOp))
         .isEqualTo(STRING_TYPE);
@@ -734,56 +753,64 @@ public class SoyTypesTest {
         .isNull();
     assertThat(
             SoyTypes.getSoyTypeForBinaryOperator(
-                INT_TYPE, LegacyObjectMapType.of(INT_TYPE, STRING_TYPE), plusOp))
+                NUMBER_TYPE, LegacyObjectMapType.of(NUMBER_TYPE, STRING_TYPE), plusOp))
         .isNull();
     assertThat(
             SoyTypes.getSoyTypeForBinaryOperator(
-                INT_TYPE, RecordType.of(ImmutableMap.of("a", INT_TYPE, "b", FLOAT_TYPE)), plusOp))
+                NUMBER_TYPE,
+                RecordType.of(ImmutableMap.of("a", NUMBER_TYPE, "b", FLOAT_TYPE)),
+                plusOp))
         .isNull();
 
     // Union types should list all possible combinations
     assertThat(
             SoyTypes.getSoyTypeForBinaryOperator(
-                INT_TYPE, UnionType.of(INT_TYPE, STRING_TYPE), plusOp))
-        .isEqualTo(UnionType.of(INT_TYPE, STRING_TYPE));
+                NUMBER_TYPE, UnionType.of(NUMBER_TYPE, STRING_TYPE), plusOp))
+        .isEqualTo(UnionType.of(NUMBER_TYPE, STRING_TYPE));
     assertThat(
             SoyTypes.getSoyTypeForBinaryOperator(
-                UnionType.of(STRING_TYPE, FLOAT_TYPE), UnionType.of(INT_TYPE, STRING_TYPE), plusOp))
+                UnionType.of(STRING_TYPE, FLOAT_TYPE),
+                UnionType.of(NUMBER_TYPE, STRING_TYPE),
+                plusOp))
         .isEqualTo(UnionType.of(STRING_TYPE, FLOAT_TYPE));
     assertThat(
             SoyTypes.getSoyTypeForBinaryOperator(
-                UnionType.of(STRING_TYPE, INT_TYPE), UnionType.of(INT_TYPE, STRING_TYPE), plusOp))
-        .isEqualTo(UnionType.of(STRING_TYPE, INT_TYPE));
+                UnionType.of(STRING_TYPE, NUMBER_TYPE),
+                UnionType.of(NUMBER_TYPE, STRING_TYPE),
+                plusOp))
+        .isEqualTo(UnionType.of(STRING_TYPE, NUMBER_TYPE));
     assertThat(
             SoyTypes.getSoyTypeForBinaryOperator(
-                UnionType.of(STRING_TYPE, HTML_TYPE), UnionType.of(INT_TYPE, STRING_TYPE), plusOp))
+                UnionType.of(STRING_TYPE, HTML_TYPE),
+                UnionType.of(NUMBER_TYPE, STRING_TYPE),
+                plusOp))
         .isEqualTo(STRING_TYPE);
 
     // If any of these combinations are incompatible, we should return null.
     assertThat(
             SoyTypes.getSoyTypeForBinaryOperator(
-                INT_TYPE, UnionType.of(BOOL_TYPE, FLOAT_TYPE, INT_TYPE), plusOp))
+                NUMBER_TYPE, UnionType.of(BOOL_TYPE, FLOAT_TYPE, NUMBER_TYPE), plusOp))
         .isNull();
     assertThat(
             SoyTypes.getSoyTypeForBinaryOperator(
                 UnionType.of(STRING_TYPE, HTML_TYPE),
-                UnionType.of(INT_TYPE, STRING_TYPE, ListType.of(INT_TYPE)),
+                UnionType.of(NUMBER_TYPE, STRING_TYPE, ListType.of(NUMBER_TYPE)),
                 plusOp))
         .isNull();
 
     // Nullable types should be fine. However, null type itself is not allowed.
-    assertThat(SoyTypes.getSoyTypeForBinaryOperator(INT_TYPE, NULL_TYPE, plusOp)).isNull();
+    assertThat(SoyTypes.getSoyTypeForBinaryOperator(NUMBER_TYPE, NULL_TYPE, plusOp)).isNull();
     assertThat(
             SoyTypes.getSoyTypeForBinaryOperator(
-                INT_TYPE, UnionType.of(NULL_TYPE, INT_TYPE), plusOp))
-        .isEqualTo(INT_TYPE);
+                NUMBER_TYPE, UnionType.of(NULL_TYPE, NUMBER_TYPE), plusOp))
+        .isEqualTo(NUMBER_TYPE);
     assertThat(
             SoyTypes.getSoyTypeForBinaryOperator(
-                UnionType.of(NULL_TYPE, FLOAT_TYPE), UnionType.of(NULL_TYPE, INT_TYPE), plusOp))
+                UnionType.of(NULL_TYPE, FLOAT_TYPE), UnionType.of(NULL_TYPE, NUMBER_TYPE), plusOp))
         .isEqualTo(FLOAT_TYPE);
     assertThat(
             SoyTypes.getSoyTypeForBinaryOperator(
-                UnionType.of(NULL_TYPE, STRING_TYPE), UnionType.of(NULL_TYPE, INT_TYPE), plusOp))
+                UnionType.of(NULL_TYPE, STRING_TYPE), UnionType.of(NULL_TYPE, NUMBER_TYPE), plusOp))
         .isEqualTo(STRING_TYPE);
   }
 
@@ -791,20 +818,22 @@ public class SoyTypesTest {
   public void testGetSoyTypeForBinaryOperatorArithmeticOp() {
     SoyTypes.SoyTypeBinaryOperator plusOp = new SoyTypes.SoyTypeArithmeticOperator();
     // All number types
-    assertThat(SoyTypes.getSoyTypeForBinaryOperator(INT_TYPE, FLOAT_TYPE, plusOp))
-        .isEqualTo(FLOAT_TYPE);
-    assertThat(SoyTypes.getSoyTypeForBinaryOperator(FLOAT_TYPE, INT_TYPE, plusOp))
-        .isEqualTo(FLOAT_TYPE);
-    assertThat(SoyTypes.getSoyTypeForBinaryOperator(INT_TYPE, INT_TYPE, plusOp))
-        .isEqualTo(INT_TYPE);
-    assertThat(SoyTypes.getSoyTypeForBinaryOperator(FLOAT_TYPE, FLOAT_TYPE, plusOp))
+    assertThat(SoyTypes.getSoyTypeForBinaryOperator(NUMBER_TYPE, FLOAT_TYPE, plusOp))
         .isEqualTo(FLOAT_TYPE);
     assertThat(SoyTypes.getSoyTypeForBinaryOperator(FLOAT_TYPE, NUMBER_TYPE, plusOp))
         .isEqualTo(FLOAT_TYPE);
-    assertThat(SoyTypes.getSoyTypeForBinaryOperator(INT_TYPE, NUMBER_TYPE, plusOp))
-        .isEqualTo(NUMBER_TYPE);
     assertThat(SoyTypes.getSoyTypeForBinaryOperator(NUMBER_TYPE, NUMBER_TYPE, plusOp))
         .isEqualTo(NUMBER_TYPE);
+    assertThat(SoyTypes.getSoyTypeForBinaryOperator(FLOAT_TYPE, FLOAT_TYPE, plusOp))
+        .isEqualTo(FLOAT_TYPE);
+    assertThat(SoyTypes.getSoyTypeForBinaryOperator(FLOAT_TYPE, NumberType.getInstance(), plusOp))
+        .isEqualTo(FLOAT_TYPE);
+    assertThat(SoyTypes.getSoyTypeForBinaryOperator(NUMBER_TYPE, NumberType.getInstance(), plusOp))
+        .isEqualTo(NumberType.getInstance());
+    assertThat(
+            SoyTypes.getSoyTypeForBinaryOperator(
+                NumberType.getInstance(), NumberType.getInstance(), plusOp))
+        .isEqualTo(NumberType.getInstance());
 
     // Unknown types are fine
     assertThat(SoyTypes.getSoyTypeForBinaryOperator(FLOAT_TYPE, UNKNOWN_TYPE, plusOp))
@@ -815,11 +844,12 @@ public class SoyTypesTest {
         .isEqualTo(UNKNOWN_TYPE);
 
     // Any string types should be rejected
-    assertThat(SoyTypes.getSoyTypeForBinaryOperator(INT_TYPE, STRING_TYPE, plusOp)).isNull();
+    assertThat(SoyTypes.getSoyTypeForBinaryOperator(NUMBER_TYPE, STRING_TYPE, plusOp)).isNull();
     assertThat(SoyTypes.getSoyTypeForBinaryOperator(STRING_TYPE, FLOAT_TYPE, plusOp)).isNull();
-    assertThat(SoyTypes.getSoyTypeForBinaryOperator(STRING_TYPE, NUMBER_TYPE, plusOp)).isNull();
+    assertThat(SoyTypes.getSoyTypeForBinaryOperator(STRING_TYPE, NumberType.getInstance(), plusOp))
+        .isNull();
     assertThat(SoyTypes.getSoyTypeForBinaryOperator(STRING_TYPE, STRING_TYPE, plusOp)).isNull();
-    assertThat(SoyTypes.getSoyTypeForBinaryOperator(INT_TYPE, URI_TYPE, plusOp)).isNull();
+    assertThat(SoyTypes.getSoyTypeForBinaryOperator(NUMBER_TYPE, URI_TYPE, plusOp)).isNull();
     assertThat(SoyTypes.getSoyTypeForBinaryOperator(HTML_TYPE, STRING_TYPE, plusOp)).isNull();
 
     // Arbitrary types are banned
@@ -827,51 +857,58 @@ public class SoyTypesTest {
         .isNull();
     assertThat(
             SoyTypes.getSoyTypeForBinaryOperator(
-                INT_TYPE, LegacyObjectMapType.of(INT_TYPE, STRING_TYPE), plusOp))
+                NUMBER_TYPE, LegacyObjectMapType.of(NUMBER_TYPE, STRING_TYPE), plusOp))
         .isNull();
     assertThat(
             SoyTypes.getSoyTypeForBinaryOperator(
-                INT_TYPE, RecordType.of(ImmutableMap.of("a", INT_TYPE, "b", FLOAT_TYPE)), plusOp))
+                NUMBER_TYPE,
+                RecordType.of(ImmutableMap.of("a", NUMBER_TYPE, "b", FLOAT_TYPE)),
+                plusOp))
         .isNull();
 
     // If any of these combinations are incompatible, we should return null.
     assertThat(
             SoyTypes.getSoyTypeForBinaryOperator(
-                INT_TYPE, UnionType.of(BOOL_TYPE, FLOAT_TYPE, INT_TYPE), plusOp))
+                NUMBER_TYPE, UnionType.of(BOOL_TYPE, FLOAT_TYPE, NUMBER_TYPE), plusOp))
         .isNull();
     assertThat(
             SoyTypes.getSoyTypeForBinaryOperator(
-                UnionType.of(STRING_TYPE, INT_TYPE),
-                UnionType.of(INT_TYPE, STRING_TYPE, ListType.of(INT_TYPE)),
+                UnionType.of(STRING_TYPE, NUMBER_TYPE),
+                UnionType.of(NUMBER_TYPE, STRING_TYPE, ListType.of(NUMBER_TYPE)),
                 plusOp))
         .isNull();
     assertThat(
             SoyTypes.getSoyTypeForBinaryOperator(
-                UnionType.of(NULL_TYPE, STRING_TYPE), UnionType.of(NULL_TYPE, INT_TYPE), plusOp))
+                UnionType.of(NULL_TYPE, STRING_TYPE), UnionType.of(NULL_TYPE, NUMBER_TYPE), plusOp))
         .isNull();
 
     // Nullable types should be fine. However, null type itself is not allowed.
-    assertThat(SoyTypes.getSoyTypeForBinaryOperator(INT_TYPE, NULL_TYPE, plusOp)).isNull();
+    assertThat(SoyTypes.getSoyTypeForBinaryOperator(NUMBER_TYPE, NULL_TYPE, plusOp)).isNull();
     assertThat(
             SoyTypes.getSoyTypeForBinaryOperator(
-                INT_TYPE, UnionType.of(NULL_TYPE, INT_TYPE), plusOp))
-        .isEqualTo(INT_TYPE);
+                NUMBER_TYPE, UnionType.of(NULL_TYPE, NUMBER_TYPE), plusOp))
+        .isEqualTo(NUMBER_TYPE);
     assertThat(
             SoyTypes.getSoyTypeForBinaryOperator(
-                UnionType.of(NULL_TYPE, FLOAT_TYPE), UnionType.of(NULL_TYPE, INT_TYPE), plusOp))
+                UnionType.of(NULL_TYPE, FLOAT_TYPE), UnionType.of(NULL_TYPE, NUMBER_TYPE), plusOp))
         .isEqualTo(FLOAT_TYPE);
   }
 
   @Test
   public void testGetSoyTypeForBinaryOperatorEqualOp() {
     SoyTypes.SoyTypeBinaryOperator equalOp = new SoyTypes.SoyTypeEqualComparisonOp();
-    assertThat(SoyTypes.getSoyTypeForBinaryOperator(INT_TYPE, FLOAT_TYPE, equalOp)).isNotNull();
-    assertThat(SoyTypes.getSoyTypeForBinaryOperator(FLOAT_TYPE, INT_TYPE, equalOp)).isNotNull();
-    assertThat(SoyTypes.getSoyTypeForBinaryOperator(INT_TYPE, INT_TYPE, equalOp)).isNotNull();
-    assertThat(SoyTypes.getSoyTypeForBinaryOperator(FLOAT_TYPE, FLOAT_TYPE, equalOp)).isNotNull();
+    assertThat(SoyTypes.getSoyTypeForBinaryOperator(NUMBER_TYPE, FLOAT_TYPE, equalOp)).isNotNull();
     assertThat(SoyTypes.getSoyTypeForBinaryOperator(FLOAT_TYPE, NUMBER_TYPE, equalOp)).isNotNull();
-    assertThat(SoyTypes.getSoyTypeForBinaryOperator(INT_TYPE, NUMBER_TYPE, equalOp)).isNotNull();
     assertThat(SoyTypes.getSoyTypeForBinaryOperator(NUMBER_TYPE, NUMBER_TYPE, equalOp)).isNotNull();
+    assertThat(SoyTypes.getSoyTypeForBinaryOperator(FLOAT_TYPE, FLOAT_TYPE, equalOp)).isNotNull();
+    assertThat(SoyTypes.getSoyTypeForBinaryOperator(FLOAT_TYPE, NumberType.getInstance(), equalOp))
+        .isNotNull();
+    assertThat(SoyTypes.getSoyTypeForBinaryOperator(NUMBER_TYPE, NumberType.getInstance(), equalOp))
+        .isNotNull();
+    assertThat(
+            SoyTypes.getSoyTypeForBinaryOperator(
+                NumberType.getInstance(), NumberType.getInstance(), equalOp))
+        .isNotNull();
 
     // Unknown types are fine
     assertThat(SoyTypes.getSoyTypeForBinaryOperator(FLOAT_TYPE, UNKNOWN_TYPE, equalOp)).isNotNull();
@@ -882,10 +919,11 @@ public class SoyTypesTest {
     assertThat(SoyTypes.getSoyTypeForBinaryOperator(ANY_TYPE, NULL_TYPE, equalOp)).isNotNull();
 
     // String-number comparisons are okay.
-    assertThat(SoyTypes.getSoyTypeForBinaryOperator(INT_TYPE, STRING_TYPE, equalOp)).isNotNull();
+    assertThat(SoyTypes.getSoyTypeForBinaryOperator(NUMBER_TYPE, STRING_TYPE, equalOp)).isNotNull();
     assertThat(SoyTypes.getSoyTypeForBinaryOperator(STRING_TYPE, FLOAT_TYPE, equalOp)).isNotNull();
-    assertThat(SoyTypes.getSoyTypeForBinaryOperator(STRING_TYPE, NUMBER_TYPE, equalOp)).isNotNull();
-    assertThat(SoyTypes.getSoyTypeForBinaryOperator(INT_TYPE, URI_TYPE, equalOp)).isNotNull();
+    assertThat(SoyTypes.getSoyTypeForBinaryOperator(STRING_TYPE, NumberType.getInstance(), equalOp))
+        .isNotNull();
+    assertThat(SoyTypes.getSoyTypeForBinaryOperator(NUMBER_TYPE, URI_TYPE, equalOp)).isNotNull();
 
     // String-string comparisons are okay.
     assertThat(SoyTypes.getSoyTypeForBinaryOperator(STRING_TYPE, STRING_TYPE, equalOp)).isNotNull();
@@ -896,60 +934,68 @@ public class SoyTypesTest {
         .isNull();
     assertThat(
             SoyTypes.getSoyTypeForBinaryOperator(
-                INT_TYPE, LegacyObjectMapType.of(INT_TYPE, STRING_TYPE), equalOp))
+                NUMBER_TYPE, LegacyObjectMapType.of(NUMBER_TYPE, STRING_TYPE), equalOp))
         .isNull();
     assertThat(
             SoyTypes.getSoyTypeForBinaryOperator(
-                INT_TYPE, RecordType.of(ImmutableMap.of("a", INT_TYPE, "b", FLOAT_TYPE)), equalOp))
+                NUMBER_TYPE,
+                RecordType.of(ImmutableMap.of("a", NUMBER_TYPE, "b", FLOAT_TYPE)),
+                equalOp))
         .isNull();
 
     // Union types might be okay if all combinations are okay.
     assertThat(
             SoyTypes.getSoyTypeForBinaryOperator(
-                INT_TYPE, UnionType.of(INT_TYPE, STRING_TYPE), equalOp))
+                NUMBER_TYPE, UnionType.of(NUMBER_TYPE, STRING_TYPE), equalOp))
         .isNotNull();
     assertThat(
             SoyTypes.getSoyTypeForBinaryOperator(
                 UnionType.of(STRING_TYPE, FLOAT_TYPE),
-                UnionType.of(INT_TYPE, STRING_TYPE),
+                UnionType.of(NUMBER_TYPE, STRING_TYPE),
                 equalOp))
         .isNotNull();
     assertThat(
             SoyTypes.getSoyTypeForBinaryOperator(
-                UnionType.of(STRING_TYPE, INT_TYPE), UnionType.of(INT_TYPE, STRING_TYPE), equalOp))
+                UnionType.of(STRING_TYPE, NUMBER_TYPE),
+                UnionType.of(NUMBER_TYPE, STRING_TYPE),
+                equalOp))
         .isNotNull();
     assertThat(
             SoyTypes.getSoyTypeForBinaryOperator(
-                UnionType.of(STRING_TYPE, HTML_TYPE), UnionType.of(INT_TYPE, STRING_TYPE), equalOp))
+                UnionType.of(STRING_TYPE, HTML_TYPE),
+                UnionType.of(NUMBER_TYPE, STRING_TYPE),
+                equalOp))
         .isNotNull();
 
     // If any of these combinations are incompatible, we should return null.
     assertThat(
             SoyTypes.getSoyTypeForBinaryOperator(
-                LegacyObjectMapType.of(INT_TYPE, STRING_TYPE),
-                UnionType.of(BOOL_TYPE, FLOAT_TYPE, INT_TYPE),
+                LegacyObjectMapType.of(NUMBER_TYPE, STRING_TYPE),
+                UnionType.of(BOOL_TYPE, FLOAT_TYPE, NUMBER_TYPE),
                 equalOp))
         .isNull();
     assertThat(
             SoyTypes.getSoyTypeForBinaryOperator(
                 UnionType.of(STRING_TYPE, HTML_TYPE),
-                UnionType.of(INT_TYPE, STRING_TYPE, ListType.of(INT_TYPE)),
+                UnionType.of(NUMBER_TYPE, STRING_TYPE, ListType.of(NUMBER_TYPE)),
                 equalOp))
         .isNull();
 
     // Nullable types and null type itself are okay.
-    assertThat(SoyTypes.getSoyTypeForBinaryOperator(INT_TYPE, NULL_TYPE, equalOp)).isNotNull();
+    assertThat(SoyTypes.getSoyTypeForBinaryOperator(NUMBER_TYPE, NULL_TYPE, equalOp)).isNotNull();
     assertThat(
             SoyTypes.getSoyTypeForBinaryOperator(
-                INT_TYPE, UnionType.of(NULL_TYPE, INT_TYPE), equalOp))
+                NUMBER_TYPE, UnionType.of(NULL_TYPE, NUMBER_TYPE), equalOp))
         .isNotNull();
     assertThat(
             SoyTypes.getSoyTypeForBinaryOperator(
-                UnionType.of(NULL_TYPE, FLOAT_TYPE), UnionType.of(NULL_TYPE, INT_TYPE), equalOp))
+                UnionType.of(NULL_TYPE, FLOAT_TYPE), UnionType.of(NULL_TYPE, NUMBER_TYPE), equalOp))
         .isNotNull();
     assertThat(
             SoyTypes.getSoyTypeForBinaryOperator(
-                UnionType.of(NULL_TYPE, STRING_TYPE), UnionType.of(NULL_TYPE, INT_TYPE), equalOp))
+                UnionType.of(NULL_TYPE, STRING_TYPE),
+                UnionType.of(NULL_TYPE, NUMBER_TYPE),
+                equalOp))
         .isNotNull();
   }
 
@@ -971,7 +1017,7 @@ public class SoyTypesTest {
                     VeType.of("my.Proto"), VeType.of("my.OtherProto"), NullType.getInstance()),
                 Kind.VE))
         .isFalse();
-    assertThat(SoyTypes.isKindOrUnionOfKind(IntType.getInstance(), Kind.BOOL)).isFalse();
+    assertThat(SoyTypes.isKindOrUnionOfKind(NumberType.getInstance(), Kind.BOOL)).isFalse();
   }
 
   @Test
@@ -999,7 +1045,7 @@ public class SoyTypesTest {
             SoyTypes.containsKinds(
                 UnionType.of(
                     VeType.of("my.Proto"), VeType.of("my.OtherProto"), NullType.getInstance()),
-                Sets.immutableEnumSet(Kind.INT)))
+                Sets.immutableEnumSet(Kind.NUMBER)))
         .isFalse();
   }
 
@@ -1007,7 +1053,7 @@ public class SoyTypesTest {
   public void testContainsKinds_multipleKinds() {
     assertThat(
             SoyTypes.containsKinds(
-                IntType.getInstance(), Sets.immutableEnumSet(Kind.BOOL, Kind.STRING)))
+                NumberType.getInstance(), Sets.immutableEnumSet(Kind.BOOL, Kind.STRING)))
         .isFalse();
   }
 
@@ -1015,7 +1061,7 @@ public class SoyTypesTest {
   public void testContainsKinds_multipleNonMatchingKinds() {
     assertThat(
             SoyTypes.containsKinds(
-                IntType.getInstance(), Sets.immutableEnumSet(Kind.BOOL, Kind.INT)))
+                NumberType.getInstance(), Sets.immutableEnumSet(Kind.BOOL, Kind.NUMBER)))
         .isTrue();
   }
 
@@ -1033,7 +1079,7 @@ public class SoyTypesTest {
 
     assertThatSoyType("[foo: string, bar: int]").isAssignableFromLoose("[foo: ?, bar: ?, baz: ?]");
     assertThatSoyType("[foo: string, bar: int]")
-        .isNotAssignableFromLoose("[foo: string, bar: number]");
+        .isAssignableFromLoose("[foo: string, bar: number]");
   }
 
   @Test

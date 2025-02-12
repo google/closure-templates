@@ -107,7 +107,7 @@ final class TruncateDirective
     return SoyExpression.forString(
         JbcSrcMethods.TRUNCATE.invoke(
             value.coerceToString(),
-            BytecodeUtils.numericConversion(args.get(0).unboxAsLong(), Type.INT_TYPE),
+            BytecodeUtils.numericConversion(args.get(0).unboxAsDouble(), Type.INT_TYPE),
             args.size() > 1 ? args.get(1).unboxAsBoolean() : BytecodeUtils.constant(true)));
   }
 
@@ -117,7 +117,7 @@ final class TruncateDirective
     return AppendableAndOptions.createCloseable(
         JbcSrcMethods.TRUNCATE_STREAMING.invoke(
             delegateAppendable,
-            BytecodeUtils.numericConversion(args.get(0).unboxAsLong(), Type.INT_TYPE),
+            BytecodeUtils.numericConversion(args.get(0).unboxAsDouble(), Type.INT_TYPE),
             args.size() > 1 ? args.get(1).unboxAsBoolean() : BytecodeUtils.constant(true)));
   }
 

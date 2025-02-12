@@ -29,13 +29,12 @@ import com.google.template.soy.exprtree.ExprEquivalence;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.OperatorNode;
 import com.google.template.soy.exprtree.FieldAccessNode;
-import com.google.template.soy.exprtree.FloatNode;
 import com.google.template.soy.exprtree.FunctionNode;
-import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.ItemAccessNode;
 import com.google.template.soy.exprtree.ListLiteralNode;
 import com.google.template.soy.exprtree.MethodCallNode;
 import com.google.template.soy.exprtree.NullNode;
+import com.google.template.soy.exprtree.NumberNode;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.exprtree.OperatorNodes.AssertNonNullOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.BarBarOpNode;
@@ -330,7 +329,7 @@ public final class ParseExpressionTest {
     assertNodeEquals(
         new ItemAccessNode(
             new ItemAccessNode(
-                new VarRefNode("$boo", loc, null), new IntegerNode(0, loc), loc, false),
+                new VarRefNode("$boo", loc, null), new NumberNode(0, loc), loc, false),
             new VarRefNode("$foo", loc, null),
             loc,
             false),
@@ -340,7 +339,7 @@ public final class ParseExpressionTest {
     assertNodeEquals(
         new ItemAccessNode(
             new ItemAccessNode(
-                new VarRefNode("$boo", loc, null), new IntegerNode(0, loc), loc, true),
+                new VarRefNode("$boo", loc, null), new NumberNode(0, loc), loc, true),
             new VarRefNode("$foo", loc, null),
             loc,
             true),
@@ -360,16 +359,16 @@ public final class ParseExpressionTest {
     assertThat(((BooleanNode) expr).getValue()).isFalse();
 
     expr = assertThatExpression("26").isValidExpression();
-    assertThat(((IntegerNode) expr).getValue()).isEqualTo(26);
+    assertThat(((NumberNode) expr).getValue()).isEqualTo(26);
 
     expr = assertThatExpression("0xCAFE").isValidExpression();
-    assertThat(((IntegerNode) expr).getValue()).isEqualTo(0xCAFE);
+    assertThat(((NumberNode) expr).getValue()).isEqualTo(0xCAFE);
 
     expr = assertThatExpression("3.14").isValidExpression();
-    assertThat(((FloatNode) expr).getValue()).isEqualTo(3.14);
+    assertThat(((NumberNode) expr).getValue()).isEqualTo(3.14);
 
     expr = assertThatExpression("3e-3").isValidExpression();
-    assertThat(((FloatNode) expr).getValue()).isEqualTo(3e-3);
+    assertThat(((NumberNode) expr).getValue()).isEqualTo(3e-3);
 
     expr = assertThatExpression("'Aa`! \\n \\r \\t \\\\ \\\' \"'").isValidExpression();
     assertThat(((StringNode) expr).getValue()).isEqualTo("Aa`! \n \r \t \\ \' \"");
@@ -418,8 +417,8 @@ public final class ParseExpressionTest {
     FunctionNode roundFn = (FunctionNode) expr;
     assertThat(roundFn.getFunctionName()).isEqualTo("round");
     assertThat(roundFn.numChildren()).isEqualTo(2);
-    assertThat(((FloatNode) roundFn.getChild(0)).getValue()).isEqualTo(3.14159);
-    assertThat(((IntegerNode) roundFn.getChild(1)).getValue()).isEqualTo(2);
+    assertThat(((NumberNode) roundFn.getChild(0)).getValue()).isEqualTo(3.14159);
+    assertThat(((NumberNode) roundFn.getChild(1)).getValue()).isEqualTo(2);
   }
 
   @Test
@@ -437,7 +436,7 @@ public final class ParseExpressionTest {
         .inOrder();
     assertThat(protoFn.numChildren()).isEqualTo(4);
     assertThat(((VarRefNode) protoFn.getChild(0)).getName()).isEqualTo("my");
-    assertThat(((IntegerNode) protoFn.getChild(1)).getValue()).isEqualTo(1);
+    assertThat(((NumberNode) protoFn.getChild(1)).getValue()).isEqualTo(1);
     assertThat(((StringNode) ((FunctionNode) protoFn.getChild(2)).getChild(0)).getValue())
         .isEqualTo("str");
     assertThat(((StringNode) protoFn.getChild(3)).getValue()).isEqualTo("str");
@@ -449,7 +448,7 @@ public final class ParseExpressionTest {
   @Test
   public void testParseOperators() throws Exception {
     ExprNode expr = assertThatExpression("-11").isValidExpression();
-    IntegerNode negInt = (IntegerNode) expr;
+    NumberNode negInt = (NumberNode) expr;
     assertThat(negInt.getValue()).isEqualTo(-11);
 
     expr = assertThatExpression("!false").isValidExpression();
@@ -458,8 +457,8 @@ public final class ParseExpressionTest {
 
     expr = assertThatExpression("90 -14.75").isValidExpression();
     MinusOpNode minusOp = (MinusOpNode) expr;
-    assertThat(((IntegerNode) minusOp.getChild(0)).getValue()).isEqualTo(90);
-    assertThat(((FloatNode) minusOp.getChild(1)).getValue()).isEqualTo(14.75);
+    assertThat(((NumberNode) minusOp.getChild(0)).getValue()).isEqualTo(90);
+    assertThat(((NumberNode) minusOp.getChild(1)).getValue()).isEqualTo(14.75);
 
     expr = assertThatExpression("$a || true").isValidExpression();
     BarBarOpNode orOp = (BarBarOpNode) expr;
@@ -477,7 +476,7 @@ public final class ParseExpressionTest {
     ConditionalOpNode condOp = (ConditionalOpNode) expr;
     assertThat(condOp.getChild(0)).isInstanceOf(NullCoalescingOpNode.class);
     assertThat(condOp.getChild(1)).isInstanceOf(TimesOpNode.class);
-    assertThat(condOp.getChild(2)).isInstanceOf(IntegerNode.class);
+    assertThat(condOp.getChild(2)).isInstanceOf(NumberNode.class);
   }
 
   @Test
@@ -509,7 +508,7 @@ public final class ParseExpressionTest {
   public void testNonNullAssertion() {
     ExprNode expr = assertThatExpression("1!").isValidExpression();
     AssertNonNullOpNode nonNullOp = (AssertNonNullOpNode) expr;
-    assertThat(nonNullOp.getChild(0)).isInstanceOf(IntegerNode.class);
+    assertThat(nonNullOp.getChild(0)).isInstanceOf(NumberNode.class);
 
     expr = assertThatExpression("record(a: 1)!.a").isValidExpression();
     FieldAccessNode fieldAccess = (FieldAccessNode) expr;

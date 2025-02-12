@@ -44,8 +44,6 @@ import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.data.internal.RuntimeMapTypeTracker;
 import com.google.template.soy.data.internal.SoyMapImpl;
 import com.google.template.soy.data.internal.SoyRecordImpl;
-import com.google.template.soy.data.restricted.FloatData;
-import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.shared.internal.Sanitizers;
@@ -74,11 +72,7 @@ public final class BasicFunctionsRuntime {
    * to the argument.
    */
   public static long ceil(SoyValue arg) {
-    if (arg instanceof IntegerData) {
-      return arg.longValue();
-    } else {
-      return (long) Math.ceil(arg.floatValue());
-    }
+    return (long) Math.ceil(arg.floatValue());
   }
 
   /** Concatenates its arguments. */
@@ -218,8 +212,8 @@ public final class BasicFunctionsRuntime {
 
   @Nonnull
   public static ImmutableList<? extends SoyValueProvider> listFlat(
-      List<? extends SoyValueProvider> list, IntegerData data) {
-    return listFlatImpl(list, (int) data.getValue());
+      List<? extends SoyValueProvider> list, NumberData data) {
+    return listFlatImpl(list, data.integerValue());
   }
 
   @Nonnull
@@ -272,11 +266,7 @@ public final class BasicFunctionsRuntime {
    * the argument.
    */
   public static long floor(SoyValue arg) {
-    if (arg instanceof IntegerData) {
-      return arg.longValue();
-    } else {
-      return (long) Math.floor(arg.floatValue());
-    }
+    return (long) Math.floor(arg.floatValue());
   }
 
   /**
@@ -327,36 +317,28 @@ public final class BasicFunctionsRuntime {
 
   /** Returns the numeric maximum of the two arguments. */
   public static NumberData max(SoyValue arg0, SoyValue arg1) {
-    if (arg0 instanceof IntegerData && arg1 instanceof IntegerData) {
-      return IntegerData.forValue(Math.max(arg0.longValue(), arg1.longValue()));
-    } else {
-      return FloatData.forValue(Math.max(arg0.numberValue(), arg1.numberValue()));
-    }
+    return NumberData.forValue(Math.max(arg0.floatValue(), arg1.floatValue()));
   }
 
   /** Returns the numeric minimum of the two arguments. */
   public static NumberData min(SoyValue arg0, SoyValue arg1) {
-    if (arg0 instanceof IntegerData && arg1 instanceof IntegerData) {
-      return IntegerData.forValue(Math.min(arg0.longValue(), arg1.longValue()));
-    } else {
-      return FloatData.forValue(Math.min(arg0.numberValue(), arg1.numberValue()));
-    }
+    return NumberData.forValue(Math.min(arg0.floatValue(), arg1.floatValue()));
   }
 
   @Nullable
-  public static FloatData parseFloat(String str) {
+  public static NumberData parseFloat(String str) {
     Double d = Doubles.tryParse(str);
-    return (d == null || d.isNaN()) ? null : FloatData.forValue(d);
+    return (d == null || d.isNaN()) ? null : NumberData.forValue(d);
   }
 
   @Nullable
-  public static IntegerData parseInt(String str, SoyValue radixVal) {
+  public static NumberData parseInt(String str, SoyValue radixVal) {
     int radix = SoyValue.isNullish(radixVal) ? 10 : (int) radixVal.numberValue();
     if (radix < 2 || radix > 36) {
       return null;
     }
     Long l = Longs.tryParse(str, radix);
-    return (l == null) ? null : IntegerData.forValue(l);
+    return (l == null) ? null : NumberData.forValue(l);
   }
 
   /** Returns a random integer between {@code 0} and the provided argument. */
@@ -373,29 +355,25 @@ public final class BasicFunctionsRuntime {
     // NOTE: for more accurate rounding, this should really be using BigDecimal which can do correct
     // decimal arithmetic.  However, for compatibility with js, that probably isn't an option.
     if (numDigitsAfterPoint == 0) {
-      return IntegerData.forValue(round(value));
+      return NumberData.forValue(round(value));
     } else if (numDigitsAfterPoint > 0) {
       double valueDouble = value.numberValue();
       double shift = Math.pow(10, numDigitsAfterPoint);
-      return FloatData.forValue(Math.round(valueDouble * shift) / shift);
+      return NumberData.forValue(Math.round(valueDouble * shift) / shift);
     } else {
       double valueDouble = value.numberValue();
       double shift = Math.pow(10, -numDigitsAfterPoint);
-      return IntegerData.forValue((int) (Math.round(valueDouble / shift) * shift));
+      return NumberData.forValue((int) (Math.round(valueDouble / shift) * shift));
     }
   }
 
   /** Rounds the given value to the closest integer. */
   public static long round(SoyValue value) {
-    if (value instanceof IntegerData) {
-      return value.longValue();
-    } else {
-      return Math.round(value.numberValue());
-    }
+    return Math.round(value.floatValue());
   }
 
   @Nonnull
-  public static List<IntegerData> range(int start, int end, int step) {
+  public static List<NumberData> range(int start, int end, int step) {
     if (step == 0) {
       throw new IllegalArgumentException(String.format("step must be non-zero: %d", step));
     }
@@ -409,8 +387,8 @@ public final class BasicFunctionsRuntime {
 
     return new AbstractList<>() {
       @Override
-      public IntegerData get(int index) {
-        return IntegerData.forValue(start + step * index);
+      public NumberData get(int index) {
+        return NumberData.forValue(start + step * index);
       }
 
       @Override

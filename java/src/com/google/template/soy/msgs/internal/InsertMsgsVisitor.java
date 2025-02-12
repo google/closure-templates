@@ -25,7 +25,7 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.BooleanNode;
 import com.google.template.soy.exprtree.FunctionNode;
-import com.google.template.soy.exprtree.IntegerNode;
+import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.restricted.SoyMsg;
 import com.google.template.soy.msgs.restricted.SoyMsgPart;
@@ -220,8 +220,8 @@ public final class InsertMsgsVisitor {
     } else {
       // if the primary message id is available or the fallback message is not available, then we
       // are using the primary message.
-      long primaryMsgId = ((IntegerNode) node.getParam(1)).getValue();
-      long fallbackMsgId = ((IntegerNode) node.getParam(2)).getValue();
+      long primaryMsgId = Long.parseLong(((StringNode) node.getParam(1)).getValue());
+      long fallbackMsgId = Long.parseLong(((StringNode) node.getParam(2)).getValue());
       isPrimaryMsgInUse = msgBundle.hasMsg(primaryMsgId) || !msgBundle.hasMsg(fallbackMsgId);
     }
     node.getParent()

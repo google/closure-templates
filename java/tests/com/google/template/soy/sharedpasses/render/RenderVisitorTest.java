@@ -1446,7 +1446,7 @@ public class RenderVisitorTest {
           .isEqualTo(
               "When evaluating \"$foo\": Parameter type mismatch: attempt to bind value "
                   + "'hello world' (a StringData) to parameter "
-                  + "'foo' which has a declared type of 'int'.");
+                  + "'foo' which has a declared type of 'number'.");
     }
   }
 

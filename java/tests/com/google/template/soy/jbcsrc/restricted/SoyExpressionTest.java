@@ -27,14 +27,11 @@ import static com.google.template.soy.jbcsrc.restricted.testing.ExpressionSubjec
 import com.google.template.soy.data.internal.ListImpl;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
-import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.data.restricted.UndefinedData;
-import com.google.template.soy.types.AnyType;
-import com.google.template.soy.types.FloatType;
-import com.google.template.soy.types.IntType;
 import com.google.template.soy.types.ListType;
+import com.google.template.soy.types.NumberType;
 import com.google.template.soy.types.StringType;
 import com.google.template.soy.types.UnknownType;
 import org.junit.Test;
@@ -46,34 +43,13 @@ import org.junit.runners.JUnit4;
 public class SoyExpressionTest {
 
   @Test
-  public void testIntExpressions() {
-    SoyExpression expr = SoyExpression.forInt(constant(12L));
-    assertThat(expr.isNonJavaNullable()).isTrue();
-    assertThat(expr.isNonSoyNullish()).isTrue();
-    assertThat(expr.box().isNonJavaNullable()).isTrue();
-    assertThat(expr.box().isNonSoyNullish()).isTrue();
-
-    assertThatExpression(expr).evaluatesTo(12L);
-    assertThatExpression(expr.box()).evaluatesTo(IntegerData.forValue(12));
-    assertThatExpression(expr.box().unboxAsLong()).evaluatesTo(12L);
-    assertThatExpression(expr.coerceToDouble()).evaluatesTo(12D);
-    assertThatExpression(
-            SoyExpression.forSoyValue(AnyType.getInstance(), expr.box()).coerceToDouble())
-        .evaluatesTo(12D);
-
-    assertThatExpression(expr.coerceToBoolean()).evaluatesTo(true);
-    assertThatExpression(SoyExpression.forInt(constant(0L)).coerceToBoolean()).evaluatesTo(false);
-    assertThatExpression(expr.coerceToString()).evaluatesTo("12");
-  }
-
-  @Test
-  public void testFloatExpressions() {
+  public void testNumberExpressions() {
     SoyExpression expr = SoyExpression.forFloat(constant(12.34D));
     assertThatExpression(expr).evaluatesTo(12.34D);
     assertThatExpression(expr.box()).evaluatesTo(FloatData.forValue(12.34D));
     assertThatExpression(expr.box().coerceToDouble()).evaluatesTo(12.34D);
     assertThatExpression(
-            SoyExpression.forSoyValue(FloatType.getInstance(), expr.box()).coerceToString())
+            SoyExpression.forSoyValue(NumberType.getInstance(), expr.box()).coerceToString())
         .evaluatesTo("12.34");
 
     assertThatExpression(expr.coerceToBoolean()).evaluatesTo(true);
@@ -137,7 +113,7 @@ public class SoyExpressionTest {
 
   @Test
   public void testListExpression() {
-    ListType list = ListType.of(IntType.getInstance());
+    ListType list = ListType.of(NumberType.getInstance());
     assertThatExpression(forSoyValue(list, soyNull()).coerceToBoolean()).evaluatesTo(false);
     assertThatExpression(forSoyValue(list, soyNull())).evaluatesTo(NullData.INSTANCE);
     assertThatExpression(
@@ -232,12 +208,6 @@ public class SoyExpressionTest {
         .evaluatesTo(false);
     assertThatExpression(forSoyValue(StringType.getInstance(), soyNull()).box().coerceToBoolean())
         .evaluatesTo(false);
-  }
-
-  @Test
-  public void testCoerceToBoolean_primitives_int() {
-    assertThatExpression(SoyExpression.forInt(constant(1L)).coerceToBoolean()).evaluatesTo(true);
-    assertThatExpression(SoyExpression.forInt(constant(0L)).coerceToBoolean()).evaluatesTo(false);
   }
 
   @Test

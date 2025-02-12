@@ -43,37 +43,33 @@ public class SoyTypeRegistryTest {
     assertThat(typeRegistry.getType("any").getKind()).isEqualTo(SoyType.Kind.ANY);
     assertThat(typeRegistry.getType("null").getKind()).isEqualTo(SoyType.Kind.NULL);
     assertThat(typeRegistry.getType("bool").getKind()).isEqualTo(SoyType.Kind.BOOL);
-    assertThat(typeRegistry.getType("int").getKind()).isEqualTo(SoyType.Kind.INT);
-    assertThat(typeRegistry.getType("float").getKind()).isEqualTo(SoyType.Kind.FLOAT);
+    assertThat(typeRegistry.getType("int").getKind()).isEqualTo(SoyType.Kind.NUMBER);
+    assertThat(typeRegistry.getType("float").getKind()).isEqualTo(SoyType.Kind.NUMBER);
+    assertThat(typeRegistry.getType("number").getKind()).isEqualTo(SoyType.Kind.NUMBER);
     assertThat(typeRegistry.getType("string").getKind()).isEqualTo(SoyType.Kind.STRING);
-
-    // Check that 'number' type is assignable from both float and int.
-    assertThat(typeRegistry.getType("number").isAssignableFromStrict(IntType.getInstance()))
-        .isTrue();
-    assertThat(typeRegistry.getType("number").isAssignableFromStrict(FloatType.getInstance()))
-        .isTrue();
   }
 
   @Test
   public void testCreateListType() {
-    ListType listOfInt = typeRegistry.getOrCreateListType(IntType.getInstance());
-    ListType listOfInt2 = typeRegistry.getOrCreateListType(IntType.getInstance());
-    ListType listOfFloat = typeRegistry.getOrCreateListType(FloatType.getInstance());
+    ListType listOfInt = typeRegistry.getOrCreateListType(NumberType.getInstance());
+    ListType listOfInt2 = typeRegistry.getOrCreateListType(NumberType.getInstance());
+    ListType listOfString = typeRegistry.getOrCreateListType(StringType.getInstance());
 
     assertThat(listOfInt2).isSameInstanceAs(listOfInt);
-    assertThat(listOfFloat).isNotSameInstanceAs(listOfInt);
+    assertThat(listOfString).isNotSameInstanceAs(listOfInt);
   }
 
   @Test
   public void testCreateLegacyObjectMapType() {
     LegacyObjectMapType mapOfIntToString =
         typeRegistry.getOrCreateLegacyObjectMapType(
-            IntType.getInstance(), StringType.getInstance());
+            NumberType.getInstance(), StringType.getInstance());
     LegacyObjectMapType mapOfIntToString2 =
         typeRegistry.getOrCreateLegacyObjectMapType(
-            IntType.getInstance(), StringType.getInstance());
+            NumberType.getInstance(), StringType.getInstance());
     LegacyObjectMapType mapOfIntToInt =
-        typeRegistry.getOrCreateLegacyObjectMapType(IntType.getInstance(), IntType.getInstance());
+        typeRegistry.getOrCreateLegacyObjectMapType(
+            NumberType.getInstance(), NumberType.getInstance());
     LegacyObjectMapType mapOfStringToString =
         typeRegistry.getOrCreateLegacyObjectMapType(
             StringType.getInstance(), StringType.getInstance());
@@ -85,9 +81,12 @@ public class SoyTypeRegistryTest {
 
   @Test
   public void testCreateUnionType() {
-    SoyType u1 = typeRegistry.getOrCreateUnionType(IntType.getInstance(), FloatType.getInstance());
-    SoyType u2 = typeRegistry.getOrCreateUnionType(IntType.getInstance(), FloatType.getInstance());
-    SoyType u3 = typeRegistry.getOrCreateUnionType(IntType.getInstance(), StringType.getInstance());
+    SoyType u1 =
+        typeRegistry.getOrCreateUnionType(NumberType.getInstance(), NumberType.getInstance());
+    SoyType u2 =
+        typeRegistry.getOrCreateUnionType(NumberType.getInstance(), NumberType.getInstance());
+    SoyType u3 =
+        typeRegistry.getOrCreateUnionType(NumberType.getInstance(), StringType.getInstance());
 
     assertThat(u2).isSameInstanceAs(u1);
     assertThat(u3).isNotSameInstanceAs(u1);
@@ -98,43 +97,33 @@ public class SoyTypeRegistryTest {
     RecordType r1 =
         typeRegistry.getOrCreateRecordType(
             ImmutableList.of(
-                RecordType.memberOf("a", false, IntType.getInstance()),
-                RecordType.memberOf("b", false, FloatType.getInstance())));
+                RecordType.memberOf("a", false, NumberType.getInstance()),
+                RecordType.memberOf("b", false, NumberType.getInstance())));
     RecordType r2 =
         typeRegistry.getOrCreateRecordType(
             ImmutableList.of(
-                RecordType.memberOf("a", false, IntType.getInstance()),
-                RecordType.memberOf("b", false, FloatType.getInstance())));
+                RecordType.memberOf("a", false, NumberType.getInstance()),
+                RecordType.memberOf("b", false, NumberType.getInstance())));
     RecordType r3 =
         typeRegistry.getOrCreateRecordType(
             ImmutableList.of(
-                RecordType.memberOf("a", false, IntType.getInstance()),
+                RecordType.memberOf("a", false, NumberType.getInstance()),
                 RecordType.memberOf("b", false, StringType.getInstance())));
     RecordType r4 =
         typeRegistry.getOrCreateRecordType(
             ImmutableList.of(
-                RecordType.memberOf("a", false, IntType.getInstance()),
-                RecordType.memberOf("c", false, FloatType.getInstance())));
+                RecordType.memberOf("a", false, NumberType.getInstance()),
+                RecordType.memberOf("c", false, NumberType.getInstance())));
     RecordType r5 =
         typeRegistry.getOrCreateRecordType(
             ImmutableList.of(
-                RecordType.memberOf("a", false, IntType.getInstance()),
-                RecordType.memberOf("c", true, FloatType.getInstance())));
+                RecordType.memberOf("a", false, NumberType.getInstance()),
+                RecordType.memberOf("c", true, NumberType.getInstance())));
 
     assertThat(r2).isSameInstanceAs(r1);
     assertThat(r3).isNotSameInstanceAs(r1);
     assertThat(r4).isNotSameInstanceAs(r1);
     assertThat(r4).isNotSameInstanceAs(r5);
-  }
-
-  @Test
-  public void testNumberType() {
-    // Make sure the type registry knows about the special number type
-    assertThat(SoyTypes.NUMBER_TYPE)
-        .isSameInstanceAs(
-            typeRegistry.getOrCreateUnionType(FloatType.getInstance(), IntType.getInstance()));
-    assertThat(SoyTypes.NUMBER_TYPE)
-        .isSameInstanceAs(typeRegistry.getOrCreateUnionType(SoyTypes.NUMBER_TYPE));
   }
 
   @Test

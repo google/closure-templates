@@ -29,7 +29,6 @@ import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.FunctionNode;
-import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.OperatorNodes.ConditionalOpNode;
 import com.google.template.soy.exprtree.RecordLiteralNode;
 import com.google.template.soy.exprtree.StringNode;
@@ -186,8 +185,10 @@ final class MsgWithIdFunctionPass implements CompilerFilePass {
       // We could formalize the hack by providing a way to stash arbitrary data in the FunctionNode
       // and then just pack this up in a non-AST datastructure.
       isPrimaryMsgInUse.addChild(fn.getParam(0).copy(new CopyState()));
-      isPrimaryMsgInUse.addChild(new IntegerNode(primaryMsgId, fn.getSourceLocation()));
-      isPrimaryMsgInUse.addChild(new IntegerNode(fallbackMsgId, fn.getSourceLocation()));
+      isPrimaryMsgInUse.addChild(
+          new StringNode(String.valueOf(primaryMsgId), QuoteStyle.SINGLE, fn.getSourceLocation()));
+      isPrimaryMsgInUse.addChild(
+          new StringNode(String.valueOf(fallbackMsgId), QuoteStyle.SINGLE, fn.getSourceLocation()));
       condOpNode.addChild(isPrimaryMsgInUse);
       condOpNode.addChild(createMsgIdNode(primaryMsgId, fn.getSourceLocation()));
       condOpNode.addChild(createMsgIdNode(fallbackMsgId, fn.getSourceLocation()));

@@ -43,10 +43,9 @@ import com.google.template.soy.basetree.Node;
 import com.google.template.soy.basetree.ParentNode;
 import com.google.template.soy.exprtree.BooleanNode;
 import com.google.template.soy.exprtree.ExprRootNode;
-import com.google.template.soy.exprtree.FloatNode;
 import com.google.template.soy.exprtree.FunctionNode;
-import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.NullNode;
+import com.google.template.soy.exprtree.NumberNode;
 import com.google.template.soy.exprtree.ProtoEnumValueNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.UndefinedNode;
@@ -680,21 +679,13 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
         SwitchCaseNode caseNode = (SwitchCaseNode) child;
         for (ExprRootNode caseExpr : caseNode.getExprList()) {
           var root = caseExpr.getRoot();
-          if (root instanceof IntegerNode) {
-            long intValue = ((IntegerNode) root).getValue();
-            // If a case expression is used multiple times, only use the first occurrence
-            if (intValue == (int) intValue) {
-              cases.putIfAbsent((int) intValue, caseNode);
-            } else {
-              cases.putIfAbsent(intValue, caseNode);
-            }
-          } else if (root instanceof ProtoEnumValueNode) {
+          if (root instanceof ProtoEnumValueNode) {
             cases.putIfAbsent(((ProtoEnumValueNode) root).getValueAsInt(), caseNode);
           } else if (root instanceof BooleanNode) {
             cases.putIfAbsent(
                 constant(((BooleanNode) root).getValue()).constantBytecodeValue(), caseNode);
-          } else if (root instanceof FloatNode) {
-            double floatValue = ((FloatNode) root).getValue();
+          } else if (root instanceof NumberNode) {
+            double floatValue = ((NumberNode) root).getValue();
             if (floatValue == (int) floatValue) {
               cases.putIfAbsent((int) floatValue, caseNode);
             } else if (floatValue == (long) floatValue) {

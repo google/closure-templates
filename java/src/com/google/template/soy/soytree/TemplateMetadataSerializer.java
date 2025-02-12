@@ -33,13 +33,12 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.types.AnyType;
 import com.google.template.soy.types.BoolType;
-import com.google.template.soy.types.FloatType;
 import com.google.template.soy.types.FunctionType;
 import com.google.template.soy.types.GbigintType;
 import com.google.template.soy.types.IndexedType;
-import com.google.template.soy.types.IntType;
 import com.google.template.soy.types.MessageType;
 import com.google.template.soy.types.NullType;
+import com.google.template.soy.types.NumberType;
 import com.google.template.soy.types.RecordType;
 import com.google.template.soy.types.SanitizedType;
 import com.google.template.soy.types.SanitizedType.AttributesType;
@@ -336,16 +335,14 @@ public final class TemplateMetadataSerializer {
             return AnyType.getInstance();
           case UNKNOWN:
             return UnknownType.getInstance();
-          case INT:
-            return IntType.getInstance();
           case NULL:
             return NullType.getInstance();
           case UNDEFINED:
             return UndefinedType.getInstance();
           case BOOL:
             return BoolType.getInstance();
-          case FLOAT:
-            return FloatType.getInstance();
+          case NUMBER:
+            return NumberType.getInstance();
           case STRING:
             return StringType.getInstance();
           case GBIGINT:

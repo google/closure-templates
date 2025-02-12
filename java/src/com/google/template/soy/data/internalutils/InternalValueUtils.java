@@ -23,17 +23,15 @@ import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.restricted.BooleanData;
-import com.google.template.soy.data.restricted.FloatData;
-import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NullData;
+import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.data.restricted.PrimitiveData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.exprtree.BooleanNode;
 import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
-import com.google.template.soy.exprtree.FloatNode;
-import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.NullNode;
+import com.google.template.soy.exprtree.NumberNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.UndefinedNode;
 import java.util.Map;
@@ -60,15 +58,8 @@ public class InternalValueUtils {
       return new StringNode(primitiveData.stringValue(), QuoteStyle.SINGLE, location);
     } else if (primitiveData instanceof BooleanData) {
       return new BooleanNode(primitiveData.booleanValue(), location);
-    } else if (primitiveData instanceof IntegerData) {
-      // NOTE: We only support numbers in the range of JS [MIN_SAFE_INTEGER, MAX_SAFE_INTEGER]
-      if (!IntegerNode.isInRange(primitiveData.longValue())) {
-        return null;
-      } else {
-        return new IntegerNode(primitiveData.longValue(), location);
-      }
-    } else if (primitiveData instanceof FloatData) {
-      return new FloatNode(primitiveData.floatValue(), location);
+    } else if (primitiveData instanceof NumberData) {
+      return new NumberNode(primitiveData.floatValue(), location);
     } else if (primitiveData instanceof NullData) {
       return new NullNode(location);
     } else if (primitiveData instanceof UndefinedData) {
@@ -91,10 +82,8 @@ public class InternalValueUtils {
       return StringData.forValue(((StringNode) primitiveNode).getValue());
     } else if (primitiveNode instanceof BooleanNode) {
       return BooleanData.forValue(((BooleanNode) primitiveNode).getValue());
-    } else if (primitiveNode instanceof IntegerNode) {
-      return IntegerData.forValue(((IntegerNode) primitiveNode).getValue());
-    } else if (primitiveNode instanceof FloatNode) {
-      return FloatData.forValue(((FloatNode) primitiveNode).getValue());
+    } else if (primitiveNode instanceof NumberNode) {
+      return NumberData.forValue(((NumberNode) primitiveNode).getValue());
     } else if (primitiveNode instanceof NullNode) {
       return NullData.INSTANCE;
     } else if (primitiveNode instanceof UndefinedNode) {

@@ -25,8 +25,9 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Streams;
 import com.google.template.soy.base.SourceLocation.ByteSpan;
+import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.base.internal.QuoteStyle;
-import com.google.template.soy.exprtree.IntegerNode;
+import com.google.template.soy.exprtree.NumberNode;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.jssrc.dsl.CodeChunk.Generator;
 import com.google.template.soy.jssrc.restricted.JsExpr;
@@ -273,13 +274,13 @@ public final class Expressions {
   /** Creates a code chunk representing a JavaScript number literal. */
   public static Expression number(long value) {
     Preconditions.checkArgument(
-        IntegerNode.isInRange(value), "Number is outside JS safe integer range: %s", value);
+        NumberNode.isInRange(value), "Number is outside JS safe integer range: %s", value);
     return Leaf.createNonNull(Long.toString(value), /* isCheap= */ true);
   }
 
   /** Creates a code chunk representing a JavaScript number literal. */
   public static Expression number(double value) {
-    return Leaf.createNonNull(Double.toString(value), /* isCheap= */ true);
+    return Leaf.createNonNull(BaseUtils.formatDouble(value), /* isCheap= */ true);
   }
 
   /** Creates a code chunk representing an anonymous function literal. */

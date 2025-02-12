@@ -50,10 +50,10 @@ import com.google.template.soy.testing.correct.Proto2CorrectSemantics.Msg;
 import com.google.template.soy.testing.correct.Proto2CorrectSemantics.Proto2ImplicitDefaults;
 import com.google.template.soy.types.AnyType;
 import com.google.template.soy.types.BoolType;
-import com.google.template.soy.types.IntType;
 import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.MapType;
 import com.google.template.soy.types.NullType;
+import com.google.template.soy.types.NumberType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypeRegistry;
@@ -92,7 +92,7 @@ public final class ResolveExpressionTypesPassTest {
         "{@param? pa: bool}",
         "{@param? pb: list<int>}",
         "{assertType('bool|undefined', $pa)}",
-        "{assertType('list<int>|undefined', $pb)}");
+        "{assertType('list<number>|undefined', $pb)}");
   }
 
   @Test
@@ -106,9 +106,9 @@ public final class ResolveExpressionTypesPassTest {
                     "{@param pd: list<int>|null = null}",
                     "<div>",
                     "{assertType('bool', $pa)}",
-                    "{assertType('list<int>', $pb)}",
+                    "{assertType('list<number>', $pb)}",
                     "{assertType('bool|null', $pc)}",
-                    "{assertType('list<int>|null', $pd)}",
+                    "{assertType('list<number>|null', $pd)}",
                     "</div>"))
             .addSoyFunction(ASSERT_TYPE_FUNCTION)
             .desugarHtmlNodes(false)
@@ -121,7 +121,7 @@ public final class ResolveExpressionTypesPassTest {
     List<TemplateStateVar> stateVars = node.getStateVars();
     assertThat(stateVars.get(0).defaultValue().getType()).isEqualTo(BoolType.getInstance());
     assertThat(stateVars.get(1).defaultValue().getType())
-        .isEqualTo(ListType.of(IntType.getInstance()));
+        .isEqualTo(ListType.of(NumberType.getInstance()));
 
     List<TemplateParam> params = node.getParams();
     assertThat(params.get(0).defaultValue().getType()).isEqualTo(NullType.getInstance());
@@ -160,7 +160,7 @@ public final class ResolveExpressionTypesPassTest {
                     "{@state proto:= ExampleExtendable()}",
                     "<div>",
                     "{assertType('bool', $pa)}",
-                    "{assertType('list<int>', $pb)}",
+                    "{assertType('list<number>', $pb)}",
                     "{assertType('example.ExampleExtendable', $proto)}",
                     "</div>"),
                 ExampleExtendable.getDescriptor())
@@ -178,7 +178,7 @@ public final class ResolveExpressionTypesPassTest {
     assertThat(stateVars.get(0).type()).isEqualTo(BoolType.getInstance());
 
     assertThat(stateVars.get(1).name()).isEqualTo("pb");
-    assertThat(stateVars.get(1).type()).isEqualTo(ListType.of(IntType.getInstance()));
+    assertThat(stateVars.get(1).type()).isEqualTo(ListType.of(NumberType.getInstance()));
 
     assertThat(stateVars.get(2).name()).isEqualTo("proto");
     assertThat(stateVars.get(2).type().toString())
@@ -192,10 +192,10 @@ public final class ResolveExpressionTypesPassTest {
         "{@param pb: list<int>}",
         "{@param pe: map<int, map<int, string>>}",
         "{assertType('bool', $pa)}",
-        "{assertType('list<int>', $pb)}",
-        "{assertType('int', $pb[0])}",
-        "{assertType('map<int,map<int,string>>', $pe)}",
-        "{assertType('map<int,string>', $pe.get(0)!)}",
+        "{assertType('list<number>', $pb)}",
+        "{assertType('number', $pb[0])}",
+        "{assertType('map<number,map<number,string>>', $pe)}",
+        "{assertType('map<number,string>', $pe.get(0)!)}",
         "{assertType('string', $pe.get(1 + 1)!.get(2)!)}");
   }
 
@@ -203,7 +203,7 @@ public final class ResolveExpressionTypesPassTest {
   public void testRecordTypes() {
     assertTypes(
         "{@param pa: [a:int, b:string]}",
-        "{assertType('int', $pa.a)}",
+        "{assertType('number', $pa.a)}",
         "{assertType('string', $pa.b)}");
   }
 
@@ -217,21 +217,21 @@ public final class ResolveExpressionTypesPassTest {
         "{assertType('?', $pa[0])}",
         "{assertType('?', $pa.xxx)}",
         "{assertType('?', $pa.xxx.yyy)}",
-        "{assertType('float', $pb.get($pa)!)}",
+        "{assertType('number', $pb.get($pa)!)}",
         "{assertType('string', $pc.get($pa)!)}");
   }
 
   @Test
   public void testDataRefTypesError() {
     assertResolveExpressionTypesFails(
-        "Method 'get' called with parameter types (int) but expected (string).",
+        "Method 'get' called with parameter types (number) but expected (string).",
         constructFileSource("{@param pa: map<string, float>}", "{$pa.get(0)}"));
   }
 
   @Test
   public void testRecordTypesError() {
     assertResolveExpressionTypesFails(
-        "Undefined field 'c' for record type [a: int, bb: float]. Did you mean 'a'?",
+        "Undefined field 'c' for record type [a: number, bb: number]. Did you mean 'a'?",
         constructFileSource("{@param pa: [a:int, bb:float]}", "{$pa.c}"));
   }
 
@@ -242,7 +242,7 @@ public final class ResolveExpressionTypesPassTest {
                 constructTemplateSource(
                     "{@param proto: ExampleExtendable}",
                     "{assertType('bool', $proto.getExtension(someBoolExtension))}",
-                    "{assertType('int|undefined', $proto.getExtension("
+                    "{assertType('number|undefined', $proto.getExtension("
                         + "SomeExtension.someExtensionField).getSomeExtensionNumOrUndefined())}"),
                 ExampleExtendable.getDescriptor(),
                 SomeExtension.getDescriptor(),
@@ -260,23 +260,23 @@ public final class ResolveExpressionTypesPassTest {
         "{@param pi: int}",
         "{@param pf: float}",
         "{assertType('?', $pa + $pa)}",
-        "{assertType('int', $pi + $pi)}",
-        "{assertType('float', $pf + $pf)}",
+        "{assertType('number', $pi + $pi)}",
+        "{assertType('number', $pf + $pf)}",
         "{assertType('?', $pa - $pa)}",
-        "{assertType('int', $pi - $pi)}",
-        "{assertType('float', $pf - $pf)}",
+        "{assertType('number', $pi - $pi)}",
+        "{assertType('number', $pf - $pf)}",
         "{assertType('?', $pa * $pa)}",
-        "{assertType('int', $pi * $pi)}",
-        "{assertType('float', $pf * $pf)}",
-        "{assertType('float', $pa / $pa)}",
-        "{assertType('float', $pi / $pi)}",
-        "{assertType('float', $pf / $pf)}",
+        "{assertType('number', $pi * $pi)}",
+        "{assertType('number', $pf * $pf)}",
+        "{assertType('number', $pa / $pa)}",
+        "{assertType('number', $pi / $pi)}",
+        "{assertType('number', $pf / $pf)}",
         "{assertType('?', $pa % $pa)}",
-        "{assertType('int', $pi % $pi)}",
-        "{assertType('float', $pf % $pf)}",
+        "{assertType('number', $pi % $pi)}",
+        "{assertType('number', $pf % $pf)}",
         "{assertType('?', -$pa)}",
-        "{assertType('int', -$pi)}",
-        "{assertType('float', -$pf)}");
+        "{assertType('number', -$pi)}",
+        "{assertType('number', -$pf)}");
   }
 
   @Test
@@ -306,11 +306,11 @@ public final class ResolveExpressionTypesPassTest {
         "{@param pi: int}",
         "{@param pf: float}",
         "{assertType('?', $pa && $pa)}",
-        "{assertType('int', $pi && $pi)}",
-        "{assertType('float', $pf && $pf)}",
+        "{assertType('number', $pi && $pi)}",
+        "{assertType('number', $pf && $pf)}",
         "{assertType('?', $pa || $pa)}",
-        "{assertType('int', $pi || $pi)}",
-        "{assertType('float', $pf || $pf)}",
+        "{assertType('number', $pi || $pi)}",
+        "{assertType('number', $pf || $pf)}",
         "{assertType('bool', !$pa)}",
         "{assertType('bool', !$pi)}",
         "{assertType('bool', !$pf)}");
@@ -350,9 +350,9 @@ public final class ResolveExpressionTypesPassTest {
         "{@param pf: float}",
         "{@param? ni: int|null}",
         "{assertType('?', $pa ?? $pi)}",
-        "{assertType('float|int', $pi ?? $pf)}",
-        "{assertType('float|int', $pa ? $pi : $pf)}",
-        "{assertType('int', $ni ?? 0)}");
+        "{assertType('number', $pi ?? $pf)}",
+        "{assertType('number', $pa ? $pi : $pf)}",
+        "{assertType('number', $ni ?? 0)}");
   }
 
   @Test
@@ -360,7 +360,7 @@ public final class ResolveExpressionTypesPassTest {
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(
                 constructFileSource(
-                    "{@param? l: [a :int]|null}", "{assertType('int', $l?.a ?? 0)}"))
+                    "{@param? l: [a :int]|null}", "{assertType('number', $l?.a ?? 0)}"))
             .typeRegistry(TYPE_REGISTRY)
             .addSoyFunction(ASSERT_TYPE_FUNCTION)
             .parse()
@@ -374,10 +374,10 @@ public final class ResolveExpressionTypesPassTest {
         "{@param pi: int}",
         "{@param pf: float}",
         "{let $list: [$pi, $pf]/}",
-        "{assertType('list<float|int>', $list)}",
-        "{assertType('int', length($list))}",
-        "{assertType('list<float|int>', [1, 2, 3, ...$list])}",
-        "{assertType('list<float|int|string>', [1, ...$list, 's'])}",
+        "{assertType('list<number>', $list)}",
+        "{assertType('number', length($list))}",
+        "{assertType('list<number>', [1, 2, 3, ...$list])}",
+        "{assertType('list<number|string>', [1, ...$list, 's'])}",
         "");
   }
 
@@ -387,7 +387,7 @@ public final class ResolveExpressionTypesPassTest {
         "{@param pi: int}",
         "{@param pf: float}",
         "{let $map: map(1: $pi, 2:$pf)/}",
-        "{assertType('map<int,float|int>', $map)}");
+        "{assertType('map<number,number>', $map)}");
   }
 
   @Test
@@ -397,7 +397,7 @@ public final class ResolveExpressionTypesPassTest {
         "{@param v2: string}",
         "{@param k1: string}",
         "{let $map: map($k1: $v1, 'b': $v2) /}",
-        "{assertType('map<string,int|string>', $map)}");
+        "{assertType('map<string,number|string>', $map)}");
   }
 
   @Test
@@ -407,7 +407,7 @@ public final class ResolveExpressionTypesPassTest {
         "{@param pf: float}",
         // With the old map syntax, this would create a record type (see next test)
         "{let $map: map('a': $pi, 'b':$pf)/}",
-        "{assertType('map<string,float|int>', $map)}");
+        "{assertType('map<string,number>', $map)}");
   }
 
   @Test
@@ -416,11 +416,11 @@ public final class ResolveExpressionTypesPassTest {
         "{@param pi: int}",
         "{@param pf: float}",
         "{let $record: record(a: $pi, b: $pf)/}",
-        "{assertType('[a: int, b: float]', $record)}",
-        "{assertType('[a: int, b: float]', record(...$record))}",
-        "{assertType('[a: int, b: float]', record(a: $pi, ...$record))}",
-        "{assertType('[a: int, b: float]', record(a: $pf, ...$record))}",
-        "{assertType('[a: float, b: float]', record(...$record, a: $pf))}",
+        "{assertType('[a: number, b: number]', $record)}",
+        "{assertType('[a: number, b: number]', record(...$record))}",
+        "{assertType('[a: number, b: number]', record(a: $pi, ...$record))}",
+        "{assertType('[a: number, b: number]', record(a: $pf, ...$record))}",
+        "{assertType('[a: number, b: number]', record(...$record, a: $pf))}",
         "");
   }
 
@@ -581,8 +581,8 @@ public final class ResolveExpressionTypesPassTest {
     assertTypes(
         "{@param pa: string|null}",
         "{@param pb: int|null}",
-        "{assertType('int|null|string', $pa && $pb)}",
-        "{assertType('int|null|string', $pa || $pb)}");
+        "{assertType('null|number|string', $pa && $pb)}",
+        "{assertType('null|number|string', $pa || $pb)}");
   }
 
   @Test
@@ -771,10 +771,10 @@ public final class ResolveExpressionTypesPassTest {
         "{@param map: map<string, int|null>}",
         "{@param record: " + "[a : [nullableInt : int|null, nullableBool : bool|null]|null]}",
         "{if $map.get('a')}",
-        "  {assertType('int', $map.get('a'))}",
+        "  {assertType('number', $map.get('a'))}",
         "{/if}",
         "{if $record.a?.nullableInt}",
-        "  {assertType('int', $record.a?.nullableInt)}",
+        "  {assertType('number', $record.a?.nullableInt)}",
         "{/if}",
         "");
     // Don't add |null to types for checks like this.
@@ -903,9 +903,9 @@ public final class ResolveExpressionTypesPassTest {
         "  {case 'str', 'str2'}",
         "    {assertType('string', $p)}",
         "  {case 'str', 8675309}",
-        "    {assertType('int|string', $p)}",
+        "    {assertType('number|string', $p)}",
         "  {default}",
-        "    {assertType('bool|int|string|undefined', $p)}",
+        "    {assertType('bool|number|string|undefined', $p)}",
         "{/switch}");
     assertTypes(
         "{@param? p: string|bool|int|null}",
@@ -913,7 +913,7 @@ public final class ResolveExpressionTypesPassTest {
         "  {case null}",
         "    {assertType('null', $p)}",
         "  {default}",
-        "    {assertType('bool|int|string|undefined', $p)}",
+        "    {assertType('bool|number|string|undefined', $p)}",
         "{/switch}");
     assertTypes(
         "{@param? p: string|bool|int|null}",
@@ -923,7 +923,7 @@ public final class ResolveExpressionTypesPassTest {
         "  {case undefined}",
         "    {assertType('undefined', $p)}",
         "  {default}",
-        "    {assertType('bool|int|string', $p)}",
+        "    {assertType('bool|number|string', $p)}",
         "{/switch}");
   }
 
@@ -937,8 +937,8 @@ public final class ResolveExpressionTypesPassTest {
         "{assertType('bool', $pa != null ?? $pb)}", // #1 must be non-null
         "{assertType('bool', $pa ?? $pb)}", // #2 must be non-null (re-written to ($pa != null ? $pa
         // : $pb))
-        "{assertType('int', $pc.a ? $pc.a : 0)}",
-        "{if !$pc.a}{assertType('int|null', $pc.a)}{/if}");
+        "{assertType('number', $pc.a ? $pc.a : 0)}",
+        "{if !$pc.a}{assertType('null|number', $pc.a)}{/if}");
   }
 
   @Test
@@ -946,8 +946,8 @@ public final class ResolveExpressionTypesPassTest {
     assertTypes(
         "{@inject list: list<int|null>}",
         "{for $item in $list}",
-        "   {assertType('int|null', $item)}",
-        "   {assertType('int', checkNotNull($item))}",
+        "   {assertType('null|number', $item)}",
+        "   {assertType('number', checkNotNull($item))}",
         "   {assertType('string', css('foo'))}",
         "   {assertType('string', xid('bar'))}",
         "{/for}");
@@ -958,11 +958,11 @@ public final class ResolveExpressionTypesPassTest {
     assertTypes(
         "{@param union: number|string}",
         "{@param b: bool}",
-        "{assertType('float|int', $union as number)}",
+        "{assertType('number', $union as number)}",
         "{assertType('string', $union as string)}",
         "{assertType('bool', $union as any as bool)}",
         // precedence:
-        "{assertType('int|string', $b ? 1 : $union as string)}",
+        "{assertType('number|string', $b ? 1 : $union as string)}",
         "{assertType('string', ($b ? 1 : $union) as string)}",
         "");
   }
@@ -982,7 +982,7 @@ public final class ResolveExpressionTypesPassTest {
         "{if $union instanceof string}",
         "  {assertType('string', $union)}",
         "{elseif $union instanceof number}",
-        "  {assertType('float|int', $union)}",
+        "  {assertType('number', $union)}",
         "{else}",
         "  {assertType('never', $union)}",
         "{/if}",
@@ -998,9 +998,9 @@ public final class ResolveExpressionTypesPassTest {
     assertTypes(
         "{@param union: map<string, string>|map<int, string>|list<int>}",
         "{if $union instanceof map}",
-        "  {assertType('map<int,string>|map<string,string>', $union)}",
+        "  {assertType('map<number,string>|map<string,string>', $union)}",
         "{else}",
-        "  {assertType('list<int>', $union)}",
+        "  {assertType('list<number>', $union)}",
         "{/if}",
         "");
 
@@ -1078,7 +1078,7 @@ public final class ResolveExpressionTypesPassTest {
                     "{assertType('example.ExampleExtendable', $proto)}",
                     "{assertType('string', $proto.getSomeString())}",
                     "{assertType('string|undefined', $proto.getSomeStringOrUndefined())}",
-                    "{assertType('int|undefined', $proto.getSomeNumNoDefaultOrUndefined())}",
+                    "{assertType('number|undefined', $proto.getSomeNumNoDefaultOrUndefined())}",
                     "{assertType('example.SomeEmbeddedMessage|undefined',"
                         + " $proto.getSomeEmbeddedMessage())}",
                     "",
@@ -1115,10 +1115,10 @@ public final class ResolveExpressionTypesPassTest {
   @Test
   public void testBadForEach() {
     assertResolveExpressionTypesFails(
-        "Cannot iterate over $p of type int.",
+        "Cannot iterate over $p of type number.",
         constructFileSource("{@param p: int}", "{for $item in $p}{/for}"));
     assertResolveExpressionTypesFails(
-        "Cannot iterate over $p of type int|string.",
+        "Cannot iterate over $p of type number|string.",
         constructFileSource("{@param p: int|string}", "{for $item in $p}{/for}"));
     assertResolveExpressionTypesFails(
         "Cannot iterate over $p of type list<string>|string|uri.",
@@ -1131,32 +1131,32 @@ public final class ResolveExpressionTypesPassTest {
         "{@inject pa: bool}",
         "{@inject? pb: list<int>}",
         "{assertType('bool', $pa)}",
-        "{assertType('list<int>|undefined', $pb)}");
+        "{assertType('list<number>|undefined', $pb)}");
   }
 
   @Test
   public void testConcatLists() {
     assertTypes(
         "{assertType('list<string>', ['1'].concat(['2']))}",
-        "{assertType('list<int>', [1].concat([2]))}",
-        "{assertType('list<int>', [1].concat([]))}",
-        "{assertType('list<int>', [].concat([1]))}",
-        "{assertType('list<int>', (true ? [] : [1]).concat([2]))}",
+        "{assertType('list<number>', [1].concat([2]))}",
+        "{assertType('list<number>', [1].concat([]))}",
+        "{assertType('list<number>', [].concat([1]))}",
+        "{assertType('list<number>', (true ? [] : [1]).concat([2]))}",
         "{assertType('list<?>', [].concat([]))}",
-        "{assertType('list<int|string>', [1].concat([\"2\"]))}");
+        "{assertType('list<number|string>', [1].concat([\"2\"]))}");
   }
 
   @Test
   public void testConcatMaps() {
     assertTypes(
         "{assertType('map<string,string>', map('1' : '2').concat(map('3':'4')))}",
-        "{assertType('map<int,int>', map(1: 2).concat(map(3: 4)))}",
-        "{assertType('map<int,int>', map(1: 2).concat(map()))}",
-        "{assertType('map<int,int>', map().concat(map(3: 4)))}",
-        "{assertType('map<int,int>', map().concat(true ? map() : map(3: 4)))}",
-        "{assertType('map<int,int>', (true ? map() : map(1:2)).concat(map()))}",
+        "{assertType('map<number,number>', map(1: 2).concat(map(3: 4)))}",
+        "{assertType('map<number,number>', map(1: 2).concat(map()))}",
+        "{assertType('map<number,number>', map().concat(map(3: 4)))}",
+        "{assertType('map<number,number>', map().concat(true ? map() : map(3: 4)))}",
+        "{assertType('map<number,number>', (true ? map() : map(1:2)).concat(map()))}",
         "{assertType('map<?,?>', map().concat(map()))}",
-        "{assertType('map<int,int|string>', map(1: '2').concat(map(3: 4)))}");
+        "{assertType('map<number,number|string>', map(1: '2').concat(map(3: 4)))}");
   }
 
   @Test
@@ -1172,7 +1172,7 @@ public final class ResolveExpressionTypesPassTest {
   public void testMapToLegacyObjectMap() {
     assertTypes(
         "{@param m: map<string, int>}",
-        "{assertType('legacy_object_map<string,int>', mapToLegacyObjectMap($m))}",
+        "{assertType('legacy_object_map<string,number>', mapToLegacyObjectMap($m))}",
         "{assertType('legacy_object_map<?,?>', mapToLegacyObjectMap(map()))}",
         "");
   }
@@ -1196,11 +1196,11 @@ public final class ResolveExpressionTypesPassTest {
   @Test
   public void testErrorMessagesInUnionTypes() {
     assertResolveExpressionTypesFails(
-        "Type float does not support bracket access.",
+        "Type number does not support bracket access.",
         constructFileSource("{@param p: float|int}", "{$p[1]}"));
 
     assertResolveExpressionTypesFails(
-        "Field 'a' does not exist on type float.",
+        "Field 'a' does not exist on type number.",
         constructFileSource("{@param p: float|int}", "{$p.a}"));
   }
 
@@ -1222,7 +1222,7 @@ public final class ResolveExpressionTypesPassTest {
     SoyType type = parseSoyType("string");
     assertThat(type).isEqualTo(StringType.getInstance());
     type = parseSoyType("int");
-    assertThat(type).isEqualTo(IntType.getInstance());
+    assertThat(type).isEqualTo(NumberType.getInstance());
     type = parseSoyType("list<any>");
     assertThat(type.getKind()).isEqualTo(SoyType.Kind.LIST);
     assertThat(((ListType) type).getElementType()).isEqualTo(AnyType.getInstance());
@@ -1239,13 +1239,13 @@ public final class ResolveExpressionTypesPassTest {
         "{@param? n: int|null}",
         "{@param b: bool}",
         "{@param r: [a: null|[b: null|[c: null|string]]]}",
-        "{assertType('int', $i!)}",
-        "{assertType('int|null', $i != null ? $i! : null)}",
+        "{assertType('number', $i!)}",
+        "{assertType('null|number', $i != null ? $i! : null)}",
         "{assertType('string', $r.a.b.c!)}",
         "{assertType('[c: null|string]', $r.a.b!)}",
-        "{assertType('int', $i ?? $n!)}",
-        "{assertType('int', ($b ? $i : $n)!)}",
-        "{assertType('int|undefined', $b ? $i : $n!)}",
+        "{assertType('number', $i ?? $n!)}",
+        "{assertType('number', ($b ? $i : $n)!)}",
+        "{assertType('number|undefined', $b ? $i : $n!)}",
         "{assertType('[c: null|string]|null|undefined', $r!.a?.b)}",
         "{assertType('[c: null|string]|null', $r?.a!.b)}",
         "{assertType('string', $r?.a.b.c!)}",

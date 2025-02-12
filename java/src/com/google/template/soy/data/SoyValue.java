@@ -262,16 +262,6 @@ public abstract class SoyValue extends SoyValueProvider {
   }
 
   /** A runtime type check for this boxed Soy value. */
-  public SoyValue checkNullishInt() {
-    throw new ClassCastException(classCastErrorMessage(this, "int"));
-  }
-
-  /** A runtime type check for this boxed Soy value. */
-  public SoyValue checkNullishFloat() {
-    throw new ClassCastException(classCastErrorMessage(this, "float"));
-  }
-
-  /** A runtime type check for this boxed Soy value. */
   public SoyValue checkNullishNumber() {
     throw new ClassCastException(classCastErrorMessage(this, "number"));
   }

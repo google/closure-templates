@@ -85,11 +85,11 @@ public final class SoyValueConverter {
     cheapConverterMap.put(String.class, StringData::forValue);
     cheapConverterMap.put(Boolean.class, BooleanData::forValue);
     cheapConverterMap.put(Integer.class, input -> IntegerData.forValue(input.longValue()));
-    cheapConverterMap.put(Long.class, IntegerData::forValue);
+    cheapConverterMap.put(Long.class, input -> IntegerData.forValue(input.longValue()));
     cheapConverterMap.put(BigInteger.class, GbigintData::forValue);
 
     cheapConverterMap.put(Float.class, input -> FloatData.forValue(input.doubleValue()));
-    cheapConverterMap.put(Double.class, FloatData::forValue);
+    cheapConverterMap.put(Double.class, input -> FloatData.forValue(input.doubleValue()));
     cheapConverterMap.put(Future.class, (f) -> new SoyFutureValueProvider(f, this::convert));
     // Proto enum that was obtained via reflection (e.g. from SoyProtoValue)
     cheapConverterMap.put(

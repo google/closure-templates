@@ -417,10 +417,12 @@ class ValidateExternsPass implements CompilerFilePass {
         preserveUndefined ? SoyTypes.tryRemoveNull(soyType) : SoyTypes.tryRemoveNullish(soyType);
     javaType = Primitives.wrap(javaType);
     switch (soyType.getKind()) {
-      case INT:
-        return javaType == Integer.class || javaType == Long.class;
-      case FLOAT:
-        return javaType == Double.class || javaType == Float.class;
+      case NUMBER:
+        return javaType == Double.class
+            || javaType == Float.class
+            || javaType == Integer.class
+            || javaType == Long.class
+            || javaType == Number.class;
       case STRING:
         return javaType == String.class;
       case BOOL:
@@ -428,10 +430,6 @@ class ValidateExternsPass implements CompilerFilePass {
       case GBIGINT:
         return javaType == BigInteger.class;
       case UNION:
-        if (soyType.equals(SoyTypes.NUMBER_TYPE)) {
-          return javaType == Number.class || javaType == Double.class;
-        }
-      // fallthrough
       case ANY:
       case UNKNOWN:
         return javaType == Object.class || javaType == SoyValue.class;

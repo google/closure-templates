@@ -24,8 +24,6 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.types.AbstractIterableType;
 import com.google.template.soy.types.AbstractMapType;
-import com.google.template.soy.types.FloatType;
-import com.google.template.soy.types.IntType;
 import com.google.template.soy.types.RecordType;
 import com.google.template.soy.types.SoyProtoEnumType;
 import com.google.template.soy.types.SoyProtoType;
@@ -67,11 +65,8 @@ public final class JavaTypeUtils {
       case BOOL:
         types = ImmutableList.of(SimpleJavaType.BOOLEAN);
         break;
-      case INT:
-        types = ImmutableList.of(SimpleJavaType.INT);
-        break;
-      case FLOAT:
-        types = ImmutableList.of(SimpleJavaType.FLOAT);
+      case NUMBER:
+        types = ImmutableList.of(SimpleJavaType.NUMBER);
         break;
       case STRING:
         types = ImmutableList.of(SimpleJavaType.STRING);
@@ -268,15 +263,6 @@ public final class JavaTypeUtils {
    */
   private static ImmutableList<JavaType> convertSoyUnionTypeToJavaTypes(
       UnionType unionType, Set<SoyType.Kind> skipSoyTypes) {
-    if (SoyTypes.isNullish(unionType)
-        && SoyTypes.tryRemoveNullish(unionType).equals(SoyTypes.NUMBER_TYPE)) {
-      return ImmutableList.of(SimpleJavaType.NUMBER.asNullable());
-    }
-
-    if (unionType.equals(UnionType.of(IntType.getInstance(), FloatType.getInstance()))) {
-      return ImmutableList.of(SimpleJavaType.NUMBER);
-    }
-
     // Figure out if the union contains the {@link NullType}, which tells us if the param setters
     // should be nullable.
     boolean unionAllowsNull = unionType.getMembers().stream().anyMatch(SoyType::isNullOrUndefined);

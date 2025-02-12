@@ -28,9 +28,9 @@ import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.testing3.Proto3Message;
 import com.google.template.soy.types.AnyType;
 import com.google.template.soy.types.BoolType;
-import com.google.template.soy.types.IntType;
 import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.MapType;
+import com.google.template.soy.types.NumberType;
 import com.google.template.soy.types.RecordType;
 import com.google.template.soy.types.SanitizedType.HtmlType;
 import com.google.template.soy.types.SanitizedType.UriType;
@@ -51,7 +51,7 @@ public final class JsTypeTest {
   private static final ListType LIST_OF_HTML = ListType.of(HtmlType.getInstance());
   private static final SoyType NULLABLE_LIST_OF_HTML = makeNullable(LIST_OF_HTML);
   private static final SoyType UNION_OF_STRING_OR_INT =
-      UnionType.of(StringType.getInstance(), IntType.getInstance());
+      UnionType.of(StringType.getInstance(), NumberType.getInstance());
   private static final SoyType NULLABLE_STRING = makeNullable(StringType.getInstance());
 
   @Test
@@ -61,7 +61,7 @@ public final class JsTypeTest {
     assertThatTypeExprForRecordMember(UnknownType.getInstance()).isEqualTo("?");
     assertThatTypeExprForOptionalRecordMember(UnknownType.getInstance()).isEqualTo("(?|undefined)");
 
-    assertThatTypeExpr(IntType.getInstance()).isEqualTo("number");
+    assertThatTypeExpr(NumberType.getInstance()).isEqualTo("number");
 
     // Basic unions
     assertThatTypeExpr(UNION_OF_STRING_OR_INT).isEqualTo("number|string");
@@ -109,7 +109,7 @@ public final class JsTypeTest {
 
     // Records
     assertThatTypeExpr(
-            RecordType.of(ImmutableMap.of("foo", IntType.getInstance(), "bar", LIST_OF_HTML)))
+            RecordType.of(ImmutableMap.of("foo", NumberType.getInstance(), "bar", LIST_OF_HTML)))
         .isEqualTo(
             "{foo: number, bar:"
                 + " (!Array<!goog.soy.data.SanitizedHtml|"
@@ -117,7 +117,7 @@ public final class JsTypeTest {
                 + "!ReadonlyArray<!goog.soy.data.SanitizedHtml|"
                 + "!safevalues.SafeHtml|!soy.$$EMPTY_STRING_|string>),}");
     assertThatTypeExpr(
-            RecordType.of(ImmutableMap.of("foo", IntType.getInstance(), "bar", LIST_OF_HTML)))
+            RecordType.of(ImmutableMap.of("foo", NumberType.getInstance(), "bar", LIST_OF_HTML)))
         .isEqualTo(
             "{foo: number, bar:"
                 + " (!Array<!goog.soy.data.SanitizedHtml|"
@@ -127,7 +127,7 @@ public final class JsTypeTest {
 
     assertThatTypeExpr(
             RecordType.of(
-                ImmutableMap.of("foo", IntType.getInstance(), "bar", NULLABLE_LIST_OF_HTML)))
+                ImmutableMap.of("foo", NumberType.getInstance(), "bar", NULLABLE_LIST_OF_HTML)))
         .isEqualTo(
             "{foo: number, bar:"
                 + " ((!Array<!goog.soy.data.SanitizedHtml|"
@@ -159,7 +159,7 @@ public final class JsTypeTest {
   @Test
   public void testGetTypeAssertion() {
     assertThat(getTypeAssertion(StringType.getInstance(), "x")).isEqualTo("typeof x === 'string'");
-    assertThat(getTypeAssertion(IntType.getInstance(), "x")).isEqualTo("typeof x === 'number'");
+    assertThat(getTypeAssertion(NumberType.getInstance(), "x")).isEqualTo("typeof x === 'number'");
     assertThat(getTypeAssertion(BoolType.getInstance(), "x")).isEqualTo("typeof x === 'boolean'");
 
     assertThat(getTypeAssertion(SoyTypes.makeNullish(BoolType.getInstance()), "x"))
@@ -178,7 +178,7 @@ public final class JsTypeTest {
 
     assertThat(
             getTypeAssertion(
-                UnionType.of(StringType.getInstance(), ListType.of(IntType.getInstance())), "x"))
+                UnionType.of(StringType.getInstance(), ListType.of(NumberType.getInstance())), "x"))
         .isEqualTo("Array.isArray(x) || typeof x === 'string'");
   }
 
@@ -186,7 +186,7 @@ public final class JsTypeTest {
   public void testGetSoyTypeAssertionStrict() {
     assertThat(
             getSoyTypeAssertionStrict(
-                UnionType.of(BoolType.getInstance(), IntType.getInstance()), "x"))
+                UnionType.of(BoolType.getInstance(), NumberType.getInstance()), "x"))
         .isEqualTo(
             "soy.assertParamType(typeof x === 'boolean' || typeof x === 'number', 'x', x, '@param',"
                 + " 'boolean|number')");

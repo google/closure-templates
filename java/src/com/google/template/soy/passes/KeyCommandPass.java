@@ -138,8 +138,7 @@ final class KeyCommandPass implements CompilerFilePass {
       switch (type.getKind()) {
         case NULL:
         case UNDEFINED:
-        case INT:
-        case FLOAT:
+        case NUMBER:
         case STRING:
         case PROTO_ENUM:
         case GBIGINT:

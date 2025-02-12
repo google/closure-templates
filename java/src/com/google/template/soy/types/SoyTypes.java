@@ -49,10 +49,6 @@ public final class SoyTypes {
 
   private SoyTypes() {}
 
-  /** Shared constant for the 'number' type. */
-  public static final SoyType NUMBER_TYPE =
-      UnionType.of(IntType.getInstance(), FloatType.getInstance());
-
   public static final SoyType GBIGINT = GbigintType.getInstance();
 
   // TODO: b/319288438 - Remove these types once soy setters are migrated to gbigint.
@@ -61,7 +57,7 @@ public final class SoyTypes {
   // setters in JS normally accept gbigint|number|string regardless of any jstype annotations. This
   // has not historically been the case in Soy, so we need to smooth over the difference.
   public static final SoyType GBIGINT_OR_NUMBER_FOR_MIGRATION =
-      UnionType.of(GbigintType.getInstance(), NUMBER_TYPE);
+      UnionType.of(GbigintType.getInstance(), NumberType.getInstance());
 
   public static final SoyType GBIGINT_OR_STRING_FOR_MIGRATION =
       UnionType.of(GbigintType.getInstance(), StringType.getInstance());
@@ -96,8 +92,7 @@ public final class SoyTypes {
   private static final ImmutableSet<Kind> ALWAYS_COMPARABLE_KINDS =
       Sets.immutableEnumSet(Kind.UNKNOWN, Kind.ANY, Kind.NULL, Kind.UNDEFINED);
 
-  public static final ImmutableSet<Kind> ARITHMETIC_PRIMITIVES =
-      Sets.immutableEnumSet(Kind.INT, Kind.FLOAT);
+  public static final ImmutableSet<Kind> ARITHMETIC_PRIMITIVES = Sets.immutableEnumSet(Kind.NUMBER);
 
   public static final ImmutableSet<Kind> NULLISH_KINDS =
       Sets.immutableEnumSet(Kind.NULL, Kind.UNDEFINED);
@@ -113,7 +108,7 @@ public final class SoyTypes {
           .build();
 
   public static boolean isIntFloatOrNumber(SoyType type) {
-    return SoyTypes.NUMBER_TYPE.isAssignableFromStrict(type);
+    return NumberType.getInstance().isAssignableFromStrict(type);
   }
 
   /**
@@ -242,7 +237,7 @@ public final class SoyTypes {
   }
 
   public static boolean isNumericOrUnknown(SoyType type) {
-    return type.getKind() == Kind.UNKNOWN || NUMBER_TYPE.isAssignableFromStrict(type);
+    return type.getKind() == Kind.UNKNOWN || NumberType.getInstance().isAssignableFromStrict(type);
   }
 
   public static Optional<SoyType> computeStricterType(SoyType t0, SoyType t1) {
@@ -317,7 +312,7 @@ public final class SoyTypes {
     } else {
       // If we get here then we know that we have a mix of float and int.  In this case arithmetic
       // ops always 'upgrade' to float.  So just return that.
-      return Optional.of(FloatType.getInstance());
+      return Optional.of(NumberType.getInstance());
     }
   }
 
@@ -784,6 +779,7 @@ public final class SoyTypes {
     switch (type.getKind()) {
       case STRING:
       case BOOL:
+      case NUMBER:
       case HTML:
       case JS:
       case URI:
@@ -802,8 +798,6 @@ public final class SoyTypes {
       case MAP:
         return ((MapType) type).getKeyType().equals(AnyType.getInstance())
             && ((MapType) type).getValueType().equals(AnyType.getInstance());
-      case UNION:
-        return type.equals(NUMBER_TYPE);
       default:
         return false;
     }

@@ -230,11 +230,12 @@ public class SoyJavaSourceFunctionTester {
       return SoyExpression.forSoyValue(
           NullType.getInstance(), BytecodeUtils.constantNull(BytecodeUtils.NULL_DATA_TYPE));
     } else if (value instanceof Integer) {
-      return SoyExpression.forInt(BytecodeUtils.constant(((Integer) value).longValue()));
+      return SoyExpression.forFloat(BytecodeUtils.constant(((Integer) value).doubleValue()));
     } else if (value instanceof Long) {
-      return SoyExpression.forInt(BytecodeUtils.constant(((Long) value).longValue()));
+      return SoyExpression.forFloat(BytecodeUtils.constant(((Long) value).doubleValue()));
     } else if (value instanceof IntegerData) {
-      return SoyExpression.forInt(BytecodeUtils.constant(((IntegerData) value).longValue())).box();
+      return SoyExpression.forFloat(BytecodeUtils.constant(((IntegerData) value).floatValue()))
+          .box();
     } else if (value instanceof Double) {
       return SoyExpression.forFloat(BytecodeUtils.constant(((Double) value).doubleValue()));
     } else if (value instanceof FloatData) {
