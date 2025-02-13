@@ -17,6 +17,7 @@
 package com.google.template.soy.base.internal;
 
 import static com.google.common.truth.Truth.assertThat;
+import static org.junit.Assert.assertEquals;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -161,6 +162,22 @@ public final class BaseUtilsTest {
             BaseUtils.escapeToWrappedSoyString(
                 "they said, \"this'll be a `string` literal\"", false, QuoteStyle.BACKTICK))
         .isEqualTo("`they said, \"this'll be a \\`string\\` literal\"`");
+  }
+
+  @Test
+  public void testFloatDataToString() {
+    // Tests that our toString is similar to Javascript's number toString.
+    assertEquals("0", BaseUtils.formatDouble(0.0));
+    assertEquals("0", BaseUtils.formatDouble(-0.0));
+    assertEquals("1", BaseUtils.formatDouble(1.0));
+    assertEquals("-1", BaseUtils.formatDouble(-1.0));
+    assertEquals("1000000000000000", BaseUtils.formatDouble(1.0e15));
+    assertEquals("-1000000000000000", BaseUtils.formatDouble(-1.0e15));
+    assertEquals("-1000000000000000", BaseUtils.formatDouble(-1.0e15));
+    assertEquals("1.51e32", BaseUtils.formatDouble(1.51e32));
+    assertEquals("NaN", BaseUtils.formatDouble(Double.NaN));
+    assertEquals("Infinity", BaseUtils.formatDouble(Double.POSITIVE_INFINITY));
+    assertEquals("-Infinity", BaseUtils.formatDouble(Double.NEGATIVE_INFINITY));
   }
 
   // TODO: fix callers of wrapped

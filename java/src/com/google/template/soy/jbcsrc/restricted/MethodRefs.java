@@ -32,6 +32,7 @@ import com.google.protobuf.ExtensionLite;
 import com.google.protobuf.GeneratedMessage.ExtendableMessage;
 import com.google.protobuf.Message;
 import com.google.protobuf.ProtocolMessageEnum;
+import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.data.Dir;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.LoggingAdvisingAppendable.BufferingAppendable;
@@ -121,7 +122,7 @@ public final class MethodRefs {
       createPure(SoyMapImpl.class, "forProviderMapNoNullKeys", Map.class);
 
   public static final MethodRef DOUBLE_TO_STRING =
-      createPure(FloatData.class, "toString", double.class);
+      createPure(BaseUtils.class, "formatDouble", double.class);
 
   public static final MethodRef EQUALS = createPure(Object.class, "equals", Object.class);
 

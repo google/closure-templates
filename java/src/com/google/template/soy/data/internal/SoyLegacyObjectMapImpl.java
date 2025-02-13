@@ -107,7 +107,7 @@ public final class SoyLegacyObjectMapImpl extends SoyLegacyObjectMap {
     } catch (SoyDataException e) {
       throw new SoyDataException(
           "SoyLegacyObjectMap accessed with non-string key (got key type "
-              + key.getClass().getName()
+              + key.getSoyTypeName()
               + ").",
           e);
     }

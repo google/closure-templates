@@ -89,7 +89,7 @@ public final class TofuExceptionsTest {
       assertThat(ste)
           .hasMessageThat()
           .isEqualTo(
-              "Parameter type mismatch: attempt to bind value 'not a record' (a StringData) to "
+              "Parameter type mismatch: attempt to bind value 'not a record' (a string) to "
                   + "parameter 'foo' which has a declared type of '[boo: int, bad: string]'.");
       assertThat(ste.getStackTrace()[0].toString()).isEqualTo("ns.calleeTemplate(no-path:8)");
       assertThat(ste.getStackTrace()[1].toString()).isEqualTo("ns.callerTemplate(no-path:5)");
@@ -129,7 +129,7 @@ public final class TofuExceptionsTest {
           .hasMessageThat()
           .isEqualTo(
               "When evaluating \"$foo.boo\": Parameter type mismatch: attempt to bind value "
-                  + "'not a record' (a StringData) to parameter 'foo' which has a declared type "
+                  + "'not a record' (a string) to parameter 'foo' which has a declared type "
                   + "of '[boo: int, bad: string]'.");
       assertThat(ste.getStackTrace()[0].toString()).isEqualTo("ns.calleeTemplate(no-path:8)");
       assertThat(ste.getStackTrace()[1].toString()).isEqualTo("ns.calleeTemplate(no-path:10)");
@@ -149,7 +149,7 @@ public final class TofuExceptionsTest {
           .hasMessageThat()
           .isEqualTo(
               "When evaluating \"$foo\": Parameter type mismatch: "
-                  + "attempt to bind value 'not an int' (a StringData) to parameter 'foo' which "
+                  + "attempt to bind value 'not an int' (a string) to parameter 'foo' which "
                   + "has a declared type of 'int'.");
       assertThat(ste.getStackTrace()[0].toString()).isEqualTo("ns.transclusionCallee(no-path:21)");
     }

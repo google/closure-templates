@@ -552,7 +552,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
       throw RenderException.create(
           String.format(
               "Attempted to access field \"%s\" of non-record type: %s.",
-              fieldAccess.getFieldName(), base.getClass().getName()));
+              fieldAccess.getFieldName(), base.getSoyTypeName()));
     }
 
     // If the static type is a proto, access it using proto semantics
@@ -573,7 +573,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
       throw RenderException.create(
           String.format(
               "Expected value of type '%s', but actual type was '%s'.",
-              fieldAccess.getType(), value.getClass().getSimpleName()));
+              fieldAccess.getType(), value.getSoyTypeName()));
     }
 
     return value != null ? value : UndefinedData.INSTANCE;
@@ -623,7 +623,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
       throw RenderException.create(
           String.format(
               "Expected value of type '%s', but actual type was '%s'.",
-              itemAccess.getType(), value.getClass().getSimpleName()));
+              itemAccess.getType(), value.getSoyTypeName()));
     }
 
     return value != null ? value : UndefinedData.INSTANCE;
@@ -1146,11 +1146,11 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     }
     // if the primary message id is available or the fallback message is not available, then we
     // are using the primary message.
-    long primaryMsgId = ((IntegerNode) node.getParam(1)).getValue();
+    long primaryMsgId = Long.parseLong(((StringNode) node.getParam(1)).getValue());
     if (msgBundle.hasMsg(primaryMsgId)) {
       return BooleanData.TRUE;
     }
-    long fallbackMsgId = ((IntegerNode) node.getParam(2)).getValue();
+    long fallbackMsgId = Long.parseLong(((StringNode) node.getParam(2)).getValue());
     return BooleanData.forValue(!msgBundle.hasMsg(fallbackMsgId));
   }
 

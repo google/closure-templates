@@ -267,8 +267,7 @@ public final class SoyMapData extends SoyDict implements CollectionData {
       return key.stringValue();
     } catch (ClassCastException e) {
       throw new SoyDataException(
-          "SoyDict accessed with non-string key (got key type " + key.getClass().getName() + ").",
-          e);
+          "SoyDict accessed with non-string key (got key type " + key.getSoyTypeName() + ").", e);
     }
   }
 

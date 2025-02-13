@@ -1792,8 +1792,8 @@ final class ExpressionCompiler {
           parameters
               .getRenderContext()
               .usePrimaryMsgIfFallback(
-                  ((IntegerNode) node.getParam(1)).getValue(),
-                  ((IntegerNode) node.getParam(2)).getValue()));
+                  Long.parseLong(((StringNode) node.getParam(1)).getValue()),
+                  Long.parseLong(((StringNode) node.getParam(2)).getValue())));
     }
 
     @Override

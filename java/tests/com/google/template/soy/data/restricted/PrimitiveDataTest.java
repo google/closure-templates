@@ -106,22 +106,6 @@ public class PrimitiveDataTest {
   }
 
   @Test
-  public void testFloatDataToString() {
-    // Tests that our toString is similar to Javascript's number toString.
-    assertEquals("0", FloatData.toString(0.0));
-    assertEquals("0", FloatData.toString(-0.0));
-    assertEquals("1", FloatData.toString(1.0));
-    assertEquals("-1", FloatData.toString(-1.0));
-    assertEquals("1000000000000000", FloatData.toString(1.0e15));
-    assertEquals("-1000000000000000", FloatData.toString(-1.0e15));
-    assertEquals("-1000000000000000", FloatData.toString(-1.0e15));
-    assertEquals("1.51e32", FloatData.toString(1.51e32));
-    assertEquals("NaN", FloatData.toString(Double.NaN));
-    assertEquals("Infinity", FloatData.toString(Double.POSITIVE_INFINITY));
-    assertEquals("-Infinity", FloatData.toString(Double.NEGATIVE_INFINITY));
-  }
-
-  @Test
   public void testNumberData() {
 
     IntegerData id0 = IntegerData.ZERO;

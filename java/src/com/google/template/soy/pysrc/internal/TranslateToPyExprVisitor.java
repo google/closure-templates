@@ -37,7 +37,6 @@ import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.FunctionNode.ExternRef;
-import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.ItemAccessNode;
 import com.google.template.soy.exprtree.ListComprehensionNode;
 import com.google.template.soy.exprtree.ListLiteralNode;
@@ -728,8 +727,8 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
   }
 
   private PyExpr visitIsPrimaryMsgInUseFunction(FunctionNode node) {
-    long primaryMsgId = ((IntegerNode) node.getParam(1)).getValue();
-    long fallbackMsgId = ((IntegerNode) node.getParam(2)).getValue();
+    long primaryMsgId = Long.parseLong(((StringNode) node.getParam(1)).getValue());
+    long fallbackMsgId = Long.parseLong(((StringNode) node.getParam(2)).getValue());
     return new PyExpr(
         PyExprUtils.TRANSLATOR_NAME
             + ".is_msg_available("

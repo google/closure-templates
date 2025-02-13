@@ -410,7 +410,7 @@ class TofuValueFactory extends JavaValueFactory {
                 + ", but actual value is a `"
                 + value
                 + "` of type "
-                + value.getClass().getName());
+                + value.getSoyTypeName());
       }
     }
   }

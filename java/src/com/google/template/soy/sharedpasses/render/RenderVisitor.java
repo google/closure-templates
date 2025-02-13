@@ -26,7 +26,6 @@ import com.google.common.collect.Lists;
 import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.data.RecordProperty;
-import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyAbstractCachingValueProvider;
 import com.google.template.soy.data.SoyAbstractCachingValueProvider.ValueAssertion;
@@ -995,7 +994,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
           "Parameter type mismatch: attempt to bind value '"
               + (value instanceof UndefinedData ? "(undefined)" : value)
               + "' (a "
-              + soyValueClassName(value)
+              + value.getSoyTypeName()
               + ") to parameter '"
               + param.name()
               + "' which has a declared type of '"
@@ -1003,15 +1002,6 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
               + "'.",
           node);
     }
-  }
-
-  private static String soyValueClassName(SoyValue value) {
-    if (value instanceof StringData) {
-      return StringData.class.getSimpleName();
-    } else if (value instanceof SanitizedContent) {
-      return SanitizedContent.class.getSimpleName();
-    }
-    return value.getClass().getSimpleName();
   }
 
   @FunctionalInterface

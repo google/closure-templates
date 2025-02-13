@@ -305,10 +305,7 @@ public class EvalVisitorTest {
     assertRenderException("$boo?[2]", "encountered non-map/list just before accessing \"[2]\"");
     assertRenderException(
         "$boo?['xyz']", "encountered non-map/list just before accessing \"['xyz']\"");
-    assertDataException(
-        "$foo[2]",
-        "SoyDict accessed with non-string key (got key type"
-            + " com.google.template.soy.data.restricted.IntegerData).");
+    assertDataException("$foo[2]", "SoyDict accessed with non-string key (got key type int).");
     assertRenderException("$moo.too", "Attempted to access field \"too\" of non-record type");
     // assertRenderException(
     //    "$roo.too", "encountered undefined LHS just before accessing \".too\"");
@@ -326,10 +323,7 @@ public class EvalVisitorTest {
         "$foo?.bar?.moo.tar", "encountered non-record just before accessing \".moo\"");
     assertThat(eval("$foo?.baz?.moo.tar")).isInstanceOf(UndefinedData.class);
     assertThat(eval("$aNull?.baz?.moo.tar")).isInstanceOf(UndefinedData.class);
-    assertDataException(
-        "$foo[2]",
-        "SoyDict accessed with non-string key (got key type"
-            + " com.google.template.soy.data.restricted.IntegerData).");
+    assertDataException("$foo[2]", "SoyDict accessed with non-string key (got key type int).");
     assertRenderException("$moo?.too", "encountered non-record just before accessing \".too\"");
     assertThat(eval("$roo?.too")).isInstanceOf(UndefinedData.class);
     assertThat(eval("$roo?[2]")).isInstanceOf(UndefinedData.class);
