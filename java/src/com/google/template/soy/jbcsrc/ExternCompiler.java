@@ -30,7 +30,6 @@ import com.google.template.soy.jbcsrc.ConstantsCompiler.ConstantVariables;
 import com.google.template.soy.jbcsrc.ExpressionCompiler.BasicExpressionCompiler;
 import com.google.template.soy.jbcsrc.TemplateCompiler.TemplateVariables;
 import com.google.template.soy.jbcsrc.internal.SoyClassWriter;
-import com.google.template.soy.jbcsrc.restricted.BytecodeProducer;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
 import com.google.template.soy.jbcsrc.restricted.Expression;
@@ -146,7 +145,7 @@ public final class ExternCompiler {
 
     Label start = newLabel();
     Label end = newLabel();
-    BytecodeProducer body;
+    Statement body;
 
     TemplateVariableManager paramSet =
         new TemplateVariableManager(
@@ -241,20 +240,19 @@ public final class ExternCompiler {
       }
 
       body =
-          adaptReturnType(
-              returnType.type(),
-              extern.getType().getReturnType(),
-              extMethodRef.invoke(adaptedParams));
+          Statement.returnExpression(
+              adaptReturnType(
+                  returnType.type(),
+                  extern.getType().getReturnType(),
+                  extMethodRef.invoke(adaptedParams)));
     }
 
-    new Statement() {
+    checkState(body.isTerminal());
+    new Statement(Statement.Kind.TERMINAL) {
       @Override
       protected void doGen(CodeBuilder adapter) {
         adapter.mark(start);
         body.gen(adapter);
-        if (!javaImpl.isAutoImpl()) {
-          adapter.returnValue();
-        }
         adapter.mark(end);
         paramSet.generateTableEntries(adapter);
       }

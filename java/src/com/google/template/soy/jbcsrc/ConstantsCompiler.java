@@ -208,7 +208,7 @@ public final class ConstantsCompiler {
       // static memory) is necessary because constants can be initialized via externs that depend on
       // request scoped data (via type="instance").
       var scopeExit = constScope.exitScopeMarker();
-      new Statement() {
+      new Statement(Statement.Kind.TERMINAL) {
         @Override
         protected void doGen(CodeBuilder adapter) {
           /*

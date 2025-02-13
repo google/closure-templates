@@ -16,7 +16,9 @@
 
 package com.google.template.soy.jbcsrc.restricted;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.THROWABLE_TYPE;
 
 import com.google.common.collect.ImmutableList;
@@ -40,6 +42,14 @@ import org.objectweb.asm.commons.Method;
 public abstract class Statement extends BytecodeProducer {
   private static final Type[] IO_EXCEPTION_ARRAY = new Type[] {Type.getType(IOException.class)};
 
+  /** The kind of statement. */
+  public static enum Kind {
+    /** Execution will fall off the end of the statement. */
+    NON_TERMINAL,
+    /** The statement completes by returning of throwing. */
+    TERMINAL
+  }
+
   public static final Statement NULL_STATEMENT =
       new Statement() {
         @Override
@@ -52,7 +62,7 @@ public abstract class Statement extends BytecodeProducer {
       };
 
   public static final Statement RETURN =
-      new Statement() {
+      new Statement(Kind.TERMINAL) {
         @Override
         protected void doGen(CodeBuilder adapter) {
           adapter.returnValue();
@@ -66,10 +76,11 @@ public abstract class Statement extends BytecodeProducer {
    * to do that.
    */
   public static Statement returnExpression(Expression expression) {
-    // TODO(lukes): it would be nice to do a checkType operation here to make sure that expression
-    // is compatible with the return type of the method, but i don't know how to get that
-    // information here (reasonably).  So it is the caller's responsibility.
     class ReturnStatement extends Statement {
+      ReturnStatement() {
+        super(Kind.TERMINAL);
+      }
+
       @Override
       protected void doGen(CodeBuilder adapter) {
         expression.gen(adapter);
@@ -87,6 +98,10 @@ public abstract class Statement extends BytecodeProducer {
   public static Statement throwExpression(Expression expression) {
     expression.checkAssignableTo(THROWABLE_TYPE);
     class ThrowStatement extends Statement {
+      ThrowStatement() {
+        super(Kind.TERMINAL);
+      }
+
       @Override
       protected void doGen(CodeBuilder adapter) {
         expression.gen(adapter);
@@ -118,7 +133,18 @@ public abstract class Statement extends BytecodeProducer {
     if (copy.size() == 1) {
       return copy.get(0);
     }
+    boolean isTerminal = false;
+    for (int i = 0; i < copy.size(); i++) {
+      if (copy.get(i).isTerminal()) {
+        checkArgument(i == copy.size() - 1, "only the last statement can be terminal");
+        isTerminal = true;
+      }
+    }
+    var kind = isTerminal ? Kind.TERMINAL : Kind.NON_TERMINAL;
     class ConcatStatement extends Statement {
+      ConcatStatement() {
+        super(kind);
+      }
 
       @Override
       protected void doGen(CodeBuilder adapter) {
@@ -135,12 +161,28 @@ public abstract class Statement extends BytecodeProducer {
     return new ConcatStatement();
   }
 
+  private final Kind kind;
+
   protected Statement() {
+    this(Kind.NON_TERMINAL);
+  }
+
+  protected Statement(Kind kind) {
     super();
+    this.kind = kind;
   }
 
   protected Statement(SourceLocation location) {
+    this(location, Kind.NON_TERMINAL);
+  }
+
+  protected Statement(SourceLocation location, Kind kind) {
     super(location);
+    this.kind = kind;
+  }
+
+  public boolean isTerminal() {
+    return kind == Kind.TERMINAL;
   }
 
   @Override
@@ -177,6 +219,7 @@ public abstract class Statement extends BytecodeProducer {
 
   /** Writes this statement as the complete method body to {@code ga}. */
   public final void writeMethodTo(CodeBuilder builder) {
+    checkState(isTerminal());
     try {
       builder.visitCode();
       gen(builder);
@@ -203,7 +246,12 @@ public abstract class Statement extends BytecodeProducer {
    * the statement.
    */
   public final Statement labelStart(Label label) {
+    var kind = this.kind;
     class LabelStartStatement extends Statement {
+      LabelStartStatement() {
+        super(kind);
+      }
+
       @Override
       protected void doGen(CodeBuilder adapter) {
         adapter.mark(label);
@@ -218,7 +266,12 @@ public abstract class Statement extends BytecodeProducer {
    * the statement.
    */
   public Statement labelEnd(Label label) {
+    var kind = this.kind;
     class LabelEndStatement extends Statement {
+      LabelEndStatement() {
+        super(kind);
+      }
+
       @Override
       protected void doGen(CodeBuilder adapter) {
         Statement.this.gen(adapter);
@@ -234,9 +287,10 @@ public abstract class Statement extends BytecodeProducer {
     if (loc.equals(this.location)) {
       return this;
     }
+    var kind = this.kind;
     class WithSourceLocation extends Statement {
       WithSourceLocation() {
-        super(loc);
+        super(loc, kind);
       }
 
       @Override
@@ -249,6 +303,7 @@ public abstract class Statement extends BytecodeProducer {
 
   /** Returns an Expression that evaluates this statement followed by the given expression. */
   public Expression then(Expression expression) {
+    checkState(!isTerminal());
     class ThenExpression extends Expression {
       ThenExpression() {
         super(expression.resultType(), expression.features());

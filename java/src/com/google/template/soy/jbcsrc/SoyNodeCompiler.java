@@ -762,11 +762,22 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     // If more than 50% of the slots between min and max or full, use a tableswitch otherwise a
     // lookup switch
     boolean isDense = ((float) casesByKey.size() / range) >= 0.5f;
-    return new Statement() {
+    List<Statement> cases = new ArrayList<>();
+    boolean isTerminal = true;
+    // We need to dedupe since multiple keys may point at the same case
+    for (var entry : new LinkedHashSet<>(casesByKey.values())) {
+      cases.add(entry.statement);
+      isTerminal = isTerminal && entry.statement.isTerminal();
+    }
+    Label end = newLabel();
+    Label dflt = defaultBlock == null ? end : newLabel();
+    if (defaultBlock != null) {
+      isTerminal = isTerminal && defaultBlock.isTerminal();
+      cases.add(defaultBlock.labelStart(dflt));
+    }
+    return new Statement(isTerminal ? Statement.Kind.TERMINAL : Statement.Kind.NON_TERMINAL) {
       @Override
       protected void doGen(CodeBuilder adapter) {
-        Label end = newLabel();
-        Label dflt = defaultBlock == null ? end : newLabel();
         switchExpr.gen(adapter); // stack: I
         if (isDense) {
           // For dense table switches we need a label for everything in the range
@@ -790,22 +801,17 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
                   .map(s -> s.startLabel)
                   .toArray(Label[]::new));
         }
-        boolean isFirst = true;
-        // we need to dedupe since multiple keys may point at the same case
-        for (StatementAndStartLabel caseStatement : new LinkedHashSet<>(casesByKey.values())) {
-          if (!isFirst) {
-            // have the previous case jump over the next
-            // by not unconditionally doing this at the end of this loop we can avoid
-            // an extra goto in switches with no defaults.
-            adapter.goTo(end);
+
+        for (int i = 0; i < cases.size(); i++) {
+          var caseStatement = cases.get(i);
+          caseStatement.gen(adapter);
+          // If it is terminal (e.g. a return or throw) or it is the last case we don't need to
+          // jump to the end of the switch.
+          if (!caseStatement.isTerminal() && (i < cases.size() - 1)) {
+            // we need to jump to the end of the switch if this isn't the last case and it is not
+            // terminal.
+            adapter.goTo(end); // jump from the last case past default
           }
-          caseStatement.statement.gen(adapter);
-          isFirst = false;
-        }
-        if (defaultBlock != null) {
-          adapter.goTo(end); // jump from the last case past default
-          adapter.mark(dflt);
-          defaultBlock.gen(adapter);
         }
         adapter.mark(end);
       }
@@ -907,7 +913,8 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     Statement loopBody = visitChildrenInNewScope(nonEmptyNode);
     var exitScope = scope.exitScopeMarker();
 
-    return new Statement() {
+    return new Statement(
+        loopBody.isTerminal() ? Statement.Kind.TERMINAL : Statement.Kind.NON_TERMINAL) {
       @Override
       protected void doGen(CodeBuilder adapter) {
         iteratorVar.initializer().gen(adapter); // Iterator it = ...;

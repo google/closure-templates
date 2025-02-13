@@ -399,31 +399,32 @@ final class DetachState implements ExpressionDetacher.Factory {
                 MethodRefs.RUNTIME_UNEXPECTED_STATE_ERROR.invoke(tempStackFrameVar))
             .labelStart(unexpectedState));
     var scopeExit = stackFrameScope.exitScopeMarker();
-    return Statement.concat(
-            new Statement() {
-              @Override
-              protected void doGen(CodeBuilder adapter) {
-                stackFrameVar.gen(adapter);
-                adapter.ifNull(end); // if (stackFrame == null) goto case 0
-                initTemp.gen(adapter); // StackFrame tmp = stackFrame
-                updateFrame.gen(adapter); // stackFrame = stackFrame.child
-                readStateNumber.gen(adapter); // tmp.state
-                // we need to mark the end of the stackFrameVar somewhere, this isn't exactly
-                // accurate since it does extend into the beginning of some of the cases, but there
-                // is no consistent end point. This means that our debugging information will be
-                // slightly off, e.g. a debugger may think that this variable is out of scope before
-                // it technically is.  But the most any case will access it is exactly once as the
-                // first instruction... so this is fine, if odd.
-                adapter.mark(scopeExit);
-                adapter.visitTableSwitchInsn(
-                    /* min= */ 0,
-                    /* max= */ reattaches.size(),
-                    /* dflt= */ unexpectedState,
-                    caseLabels.toArray(new Label[0]));
-              }
-            },
-            Statement.concat(casesToGen))
-        .labelEnd(end);
+    return new Statement() {
+      @Override
+      protected void doGen(CodeBuilder adapter) {
+        stackFrameVar.gen(adapter);
+        adapter.ifNull(end); // if (stackFrame == null) goto case 0
+        initTemp.gen(adapter); // StackFrame tmp = stackFrame
+        updateFrame.gen(adapter); // stackFrame = stackFrame.child
+        readStateNumber.gen(adapter); // tmp.state
+        // we need to mark the end of the stackFrameVar somewhere, this isn't exactly
+        // accurate since it does extend into the beginning of some of the cases, but there
+        // is no consistent end point. This means that our debugging information will be
+        // slightly off, e.g. a debugger may think that this variable is out of scope before
+        // it technically is.  But the most any case will access it is exactly once as the
+        // first instruction... so this is fine, if odd.
+        adapter.mark(scopeExit);
+        adapter.visitTableSwitchInsn(
+            /* min= */ 0,
+            /* max= */ reattaches.size(),
+            /* dflt= */ unexpectedState,
+            caseLabels.toArray(new Label[0]));
+        for (Statement caseStatement : casesToGen) {
+          caseStatement.gen(adapter);
+        }
+        adapter.mark(end);
+      }
+    };
   }
 
   /** Add a new state item and return the statement that saves state. */

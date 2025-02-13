@@ -24,6 +24,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.template.soy.jbcsrc.restricted.Branch;
 import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
 import com.google.template.soy.jbcsrc.restricted.Statement;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import org.objectweb.asm.Label;
@@ -60,15 +61,20 @@ final class ControlFlow {
    */
   static Statement ifElseChain(List<IfBlock> ifs, Optional<Statement> elseBlock) {
     checkArgument(!ifs.isEmpty());
-    return new Statement() {
+    List<IfBlock> allBlocks = new ArrayList<>(ifs);
+    if (elseBlock.isPresent()) {
+      allBlocks.add(IfBlock.create(Branch.always(), elseBlock.get()));
+    }
+    boolean isTerminal = allBlocks.stream().allMatch(ifBlock -> ifBlock.block().isTerminal());
+    return new Statement(isTerminal ? Statement.Kind.TERMINAL : Statement.Kind.NON_TERMINAL) {
       @Override
       protected void doGen(CodeBuilder adapter) {
         Label end = newLabel();
-        Label next;
-        for (int i = 0; i < ifs.size(); i++) {
-          IfBlock curr = ifs.get(i);
-          boolean isLastIfBlock = i == ifs.size() - 1;
-          if (isLastIfBlock && !elseBlock.isPresent()) {
+        for (int i = 0; i < allBlocks.size(); i++) {
+          IfBlock curr = allBlocks.get(i);
+          boolean isLastIfBlock = i == allBlocks.size() - 1;
+          Label next;
+          if (isLastIfBlock) {
             next = end;
           } else {
             next = newLabel();
@@ -76,14 +82,10 @@ final class ControlFlow {
           curr.startLabel().ifPresent(adapter::mark);
           curr.condition().negate().branchTo(adapter, next);
           curr.block().gen(adapter);
-          if (end != next) {
+          if (!curr.block().isTerminal() && i != allBlocks.size() - 1) {
             adapter.goTo(end);
           }
           adapter.mark(next);
-        }
-        if (elseBlock.isPresent()) {
-          elseBlock.get().gen(adapter);
-          adapter.mark(end);
         }
       }
     };

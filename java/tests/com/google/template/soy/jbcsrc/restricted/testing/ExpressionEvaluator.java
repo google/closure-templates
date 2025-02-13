@@ -159,7 +159,7 @@ public final class ExpressionEvaluator {
             LocalVariable.createThisVar(generatedType, newLabel(), newLabel())
                 .invoke(MethodRef.create(invokeMethod, MethodPureness.NON_PURE))
                 .toStatement(),
-            new Statement() {
+            new Statement(Statement.Kind.TERMINAL) {
               @Override
               protected void doGen(CodeBuilder adapter) {
                 adapter.visitInsn(Opcodes.RETURN);

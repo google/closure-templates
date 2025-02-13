@@ -404,7 +404,7 @@ final class TemplateCompiler {
     renderMethodArgs.add(context);
     Expression invokePositional = renderMethod.invoke(renderMethodArgs);
     Statement methodBody =
-        new Statement() {
+        new Statement(Statement.Kind.TERMINAL) {
           @Override
           protected void doGen(CodeBuilder cb) {
             cb.mark(start);
@@ -537,7 +537,7 @@ final class TemplateCompiler {
             /* suffix= */ ExtraCodeCompiler.NO_OP);
     Label exitTemplateScope = templateScope.exitScopeMarker();
     Statement returnDone = Statement.returnExpression(constantNull(BytecodeUtils.STACK_FRAME_TYPE));
-    new Statement() {
+    new Statement(Statement.Kind.TERMINAL) {
       @Override
       protected void doGen(CodeBuilder adapter) {
         adapter.mark(start);
@@ -665,7 +665,7 @@ final class TemplateCompiler {
 
     Statement returnExpression = Statement.returnExpression(renderExpression);
 
-    new Statement() {
+    new Statement(Statement.Kind.TERMINAL) {
       @Override
       protected void doGen(CodeBuilder adapter) {
         adapter.mark(start);

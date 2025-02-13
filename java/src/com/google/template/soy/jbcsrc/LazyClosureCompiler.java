@@ -494,7 +494,7 @@ final class LazyClosureCompiler {
   private static ExpressionDetacher.BasicDetacher createOptimisticDetacher(
       Handle bootstrapHandle, Type providerSubclassType) {
     Statement optimisticDetacher =
-        new Statement() {
+        new Statement(Statement.Kind.TERMINAL) {
           @Override
           protected void doGen(CodeBuilder cb) {
             cb.visitVarInsn(Opcodes.ILOAD, 0); // load the optimistic parameter
@@ -594,7 +594,7 @@ final class LazyClosureCompiler {
       final Statement returnSvp = Statement.returnExpression(expression);
       Expression renderContextExpression = lookup.getRenderContext();
       Statement methodBody =
-          new Statement() {
+          new Statement(Statement.Kind.TERMINAL) {
             @Override
             protected void doGen(CodeBuilder cb) {
               cb.mark(start);
@@ -663,7 +663,7 @@ final class LazyClosureCompiler {
       Expression expression = expr.get();
       final Statement returnSvp = Statement.returnExpression(expression);
       Statement methodBody =
-          new Statement() {
+          new Statement(Statement.Kind.TERMINAL) {
             @Override
             protected void doGen(CodeBuilder cb) {
               cb.mark(start);
@@ -763,7 +763,7 @@ final class LazyClosureCompiler {
       // canEagerlyRender
       boolean useLazyRendering = !canEagerlyRender(renderUnit);
       Statement fullMethodBody =
-          new Statement() {
+          new Statement(Statement.Kind.TERMINAL) {
             @Override
             protected void doGen(CodeBuilder cb) {
               cb.mark(start);
@@ -934,7 +934,7 @@ final class LazyClosureCompiler {
       Expression renderContextFinal = renderContext;
       int bufferSlot = slot;
       Statement helperMethodBody =
-          new Statement() {
+          new Statement(Statement.Kind.TERMINAL) {
             @Override
             protected void doGen(CodeBuilder cb) {
               try (Handler handler =
