@@ -25,12 +25,11 @@ import com.google.protobuf.Descriptors.Descriptor;
 import com.google.template.soy.internal.proto.JavaQualifiedNames;
 import com.google.template.soy.types.AbstractIterableType;
 import com.google.template.soy.types.BoolType;
-import com.google.template.soy.types.FloatType;
-import com.google.template.soy.types.IntType;
 import com.google.template.soy.types.IterableType;
 import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.MapType;
 import com.google.template.soy.types.MessageType;
+import com.google.template.soy.types.NumberType;
 import com.google.template.soy.types.SanitizedType.AttributesType;
 import com.google.template.soy.types.SanitizedType.HtmlType;
 import com.google.template.soy.types.SetType;
@@ -76,12 +75,10 @@ public abstract class SoyRuntimeType {
         return new PrimitiveSoyType(BoolType.getInstance(), Type.BOOLEAN_TYPE);
       case STRING:
         return new PrimitiveSoyType(StringType.getInstance(), BytecodeUtils.STRING_TYPE);
-      case INT:
-        return new PrimitiveSoyType(IntType.getInstance(), Type.LONG_TYPE);
-      case FLOAT:
-        return new PrimitiveSoyType(FloatType.getInstance(), Type.DOUBLE_TYPE);
+      case NUMBER:
+        return new PrimitiveSoyType(NumberType.getInstance(), Type.DOUBLE_TYPE);
       case PROTO_ENUM:
-        return new PrimitiveSoyType(soyType, Type.LONG_TYPE);
+        return new PrimitiveSoyType(soyType, Type.DOUBLE_TYPE);
       case MESSAGE:
         return new PrimitiveSoyType(soyType, BytecodeUtils.MESSAGE_TYPE);
       case PROTO:
@@ -228,23 +225,13 @@ public abstract class SoyRuntimeType {
   }
 
   /**
-   * Returns {@code true} if the expression is known to be an int at compile time.
-   *
-   * <p>Note: If this returns {@code false}, there is no guarantee that this expression is
-   * <em>not</em> a int, just that it is not <em>known</em> to be a int at compile time.
-   */
-  public boolean isKnownInt() {
-    return soyType.getKind() == Kind.INT || SoyTypes.isKindOrUnionOfKind(soyType, Kind.PROTO_ENUM);
-  }
-
-  /**
    * Returns {@code true} if the expression is known to be a float at compile time.
    *
    * <p>Note: If this returns {@code false}, there is no guarantee that this expression is
    * <em>not</em> a float, just that it is not <em>known</em> to be a float at compile time.
    */
-  public final boolean isKnownFloat() {
-    return soyType.getKind() == Kind.FLOAT;
+  public final boolean isKnownNumber() {
+    return NumberType.getInstance().isAssignableFromStrict(soyType);
   }
 
   public final boolean isKnownListOrUnionOfLists() {
@@ -290,17 +277,6 @@ public abstract class SoyRuntimeType {
 
   public final boolean isKnownProtoOrUnionOfProtos() {
     return MessageType.getInstance().isAssignableFromStrict(soyType);
-  }
-
-  /**
-   * Returns {@code true} if the expression is known to be an {@linkplain #isKnownInt() int} or a
-   * {@linkplain #isKnownFloat() float} at compile time.
-   *
-   * <p>Note: If this returns {@code false}, there is no guarantee that this expression is
-   * <em>not</em> a number, just that it is not <em>known</em> to be a number at compile time.
-   */
-  public final boolean isKnownNumber() {
-    return SoyTypes.NUMBER_TYPE.isAssignableFromStrict(soyType);
   }
 
   public final SoyRuntimeType asNonSoyNullish() {

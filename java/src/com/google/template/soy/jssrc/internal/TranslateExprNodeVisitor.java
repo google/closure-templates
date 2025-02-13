@@ -84,11 +84,9 @@ import com.google.template.soy.exprtree.ExprNode.CallableExpr;
 import com.google.template.soy.exprtree.ExprNode.OperatorNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FieldAccessNode;
-import com.google.template.soy.exprtree.FloatNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.FunctionNode.ExternRef;
 import com.google.template.soy.exprtree.GlobalNode;
-import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.ItemAccessNode;
 import com.google.template.soy.exprtree.ListComprehensionNode;
 import com.google.template.soy.exprtree.ListLiteralNode;
@@ -97,6 +95,7 @@ import com.google.template.soy.exprtree.MapLiteralNode;
 import com.google.template.soy.exprtree.MethodCallNode;
 import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.exprtree.NullSafeAccessNode;
+import com.google.template.soy.exprtree.NumberNode;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.exprtree.OperatorNodes.AmpAmpOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.AsOpNode;
@@ -305,12 +304,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
   }
 
   @Override
-  protected Expression visitFloatNode(FloatNode node) {
-    return number(node.getValue());
-  }
-
-  @Override
-  protected Expression visitIntegerNode(IntegerNode node) {
+  protected Expression visitNumberNode(NumberNode node) {
     return number(node.getValue());
   }
 
@@ -886,11 +880,8 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
         return value.typeOf().tripleEquals(stringLiteral("string"));
       case BOOL:
         return value.typeOf().tripleEquals(stringLiteral("boolean"));
-      case UNION:
-        if (operand.equals(SoyTypes.NUMBER_TYPE)) {
-          return value.typeOf().tripleEquals(stringLiteral("number"));
-        }
-        break;
+      case NUMBER:
+        return value.typeOf().tripleEquals(stringLiteral("number"));
       case RECORD:
         return JsRuntime.IS_RECORD.call(value);
       case LIST:
@@ -926,8 +917,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
   }
 
   private static final ImmutableSet<SoyType.Kind> CAN_USE_EQUALS =
-      Sets.immutableEnumSet(
-          SoyType.Kind.INT, SoyType.Kind.FLOAT, SoyType.Kind.PROTO_ENUM, Kind.BOOL, Kind.STRING);
+      Sets.immutableEnumSet(SoyType.Kind.NUMBER, SoyType.Kind.PROTO_ENUM, Kind.BOOL, Kind.STRING);
 
   private Expression visitEqualNodeHelper(OperatorNode node, Operator eq) {
     boolean needsSoyEquals = false;
@@ -1101,9 +1091,6 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
           return visitUnknownJsGlobal(node);
         case IS_PRIMARY_MSG_IN_USE:
           return visitIsPrimaryMsgInUseFunction(node);
-        case TO_FLOAT:
-          // this is a no-op in js
-          return visit(node.getParam(0));
         case DEBUG_SOY_TEMPLATE_INFO:
           // TODO(lukes): does this need a goog.debug guard? it exists in the runtime
           return GOOG_DEBUG.and(

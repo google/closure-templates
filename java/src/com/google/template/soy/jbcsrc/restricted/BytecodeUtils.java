@@ -18,7 +18,6 @@ package com.google.template.soy.jbcsrc.restricted;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
-import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.newLabel;
 
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
@@ -61,7 +60,6 @@ import com.google.template.soy.data.internal.SoyRecordImpl;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.GbigintData;
-import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.NullishData;
 import com.google.template.soy.data.restricted.NumberData;
@@ -140,7 +138,6 @@ public final class BytecodeUtils {
   public static final Type UNDEFINED_DATA_TYPE = Type.getType(UndefinedData.class);
   public static final Type PRIMITIVE_DATA_TYPE = Type.getType(PrimitiveData.class);
   public static final Type NUMBER_DATA_TYPE = Type.getType(NumberData.class);
-  public static final Type INTEGER_DATA_TYPE = Type.getType(IntegerData.class);
   public static final Type BIG_INTEGER_TYPE = Type.getType(BigInteger.class);
   public static final Type GBIGINT_DATA_TYPE = Type.getType(GbigintData.class);
   public static final Type FLOAT_DATA_TYPE = Type.getType(FloatData.class);
@@ -728,7 +725,7 @@ public final class BytecodeUtils {
     };
   }
 
-  static boolean isNumericPrimitive(Type type) {
+  public static boolean isNumericPrimitive(Type type) {
     int sort = type.getSort();
     switch (sort) {
       case Type.OBJECT:
@@ -839,17 +836,11 @@ public final class BytecodeUtils {
   private static Expression maybeFastCompareNumbers(SoyExpression left, SoyExpression right) {
     SoyRuntimeType leftRuntimeType = left.soyRuntimeType();
     SoyRuntimeType rightRuntimeType = right.soyRuntimeType();
-    if (leftRuntimeType.isKnownInt()
-        && rightRuntimeType.isKnownInt()
-        && left.isNonSoyNullish()
-        && right.isNonSoyNullish()) {
-      return Branch.ifEqual(left.unboxAsLong(), right.unboxAsLong()).asBoolean();
-    }
     if (leftRuntimeType.isKnownNumber()
         && rightRuntimeType.isKnownNumber()
         && left.isNonSoyNullish()
         && right.isNonSoyNullish()
-        && (leftRuntimeType.isKnownFloat() || rightRuntimeType.isKnownFloat())) {
+        && (leftRuntimeType.isKnownNumber() || rightRuntimeType.isKnownNumber())) {
       return Branch.ifEqual(left.coerceToDouble(), right.coerceToDouble()).asBoolean();
     }
     return null;
@@ -1360,9 +1351,7 @@ public final class BytecodeUtils {
 
   public static Type getTypeForSoyType(SoyType type) {
     switch (type.getKind()) {
-      case INT:
-        return BOXED_LONG_TYPE;
-      case FLOAT:
+      case NUMBER:
         return BOXED_DOUBLE_TYPE;
       case BOOL:
         return BOXED_BOOLEAN_TYPE;

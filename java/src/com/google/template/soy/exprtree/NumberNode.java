@@ -17,33 +17,26 @@
 package com.google.template.soy.exprtree;
 
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.basetree.CopyState;
-import com.google.template.soy.types.IntType;
+import com.google.template.soy.types.NumberType;
 
-/**
- * Node representing a Soy integer value. Note that Soy supports up to JavaScript
- * +-Number.MAX_SAFE_INTEGER at the least; Java and Python backends support full 64 bit longs.
- */
-public final class IntegerNode extends AbstractPrimitiveNode {
+/** Node representing a float value. */
+public final class NumberNode extends AbstractPrimitiveNode {
 
   // JavaScript Number.MAX_SAFE_INTEGER:
   // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number/MAX_SAFE_INTEGER
   private static final long JS_MAX_SAFE_INTEGER = (1L << 53) - 1;
   private static final long JS_MIN_SAFE_INTEGER = -1 * JS_MAX_SAFE_INTEGER;
 
-  /** Returns true if {@code value} is within JavaScript safe range. */
-  public static boolean isInRange(long value) {
-    return JS_MIN_SAFE_INTEGER <= value && value <= JS_MAX_SAFE_INTEGER;
-  }
-
-  /** The Soy integer value. */
-  private final long value;
+  /** The float value */
+  private final double value;
 
   /**
-   * @param value The Soy integer value.
+   * @param value The float value.
    * @param sourceLocation The node's source location.
    */
-  public IntegerNode(long value, SourceLocation sourceLocation) {
+  public NumberNode(double value, SourceLocation sourceLocation) {
     super(sourceLocation);
     this.value = value;
   }
@@ -53,38 +46,42 @@ public final class IntegerNode extends AbstractPrimitiveNode {
    *
    * @param orig The node to copy.
    */
-  private IntegerNode(IntegerNode orig, CopyState copyState) {
+  private NumberNode(NumberNode orig, CopyState copyState) {
     super(orig, copyState);
     this.value = orig.value;
   }
 
+  /** Returns true if {@code value} is within JavaScript safe range. */
+  public static boolean isInRange(long value) {
+    return JS_MIN_SAFE_INTEGER <= value && value <= JS_MAX_SAFE_INTEGER;
+  }
+
   @Override
   public Kind getKind() {
-    return Kind.INTEGER_NODE;
+    return Kind.NUMBER_NODE;
   }
 
   @Override
-  public IntType getAuthoredType() {
-    return IntType.getInstance();
+  public NumberType getAuthoredType() {
+    return NumberType.getInstance();
   }
 
-  /** Returns the Soy integer value. */
-  public long getValue() {
+  /** Returns the float value. */
+  public double getValue() {
     return value;
   }
 
-  /** Returns true if the value stored by the node is a 32-bit integer. */
-  public boolean isInt() {
-    return Integer.MIN_VALUE <= value && value <= Integer.MAX_VALUE;
+  public boolean isInteger() {
+    return value % 1 == 0 && isInRange((long) value);
   }
 
   @Override
   public String toSourceString() {
-    return Long.toString(value);
+    return BaseUtils.formatDouble(value);
   }
 
   @Override
-  public IntegerNode copy(CopyState copyState) {
-    return new IntegerNode(this, copyState);
+  public NumberNode copy(CopyState copyState) {
+    return new NumberNode(this, copyState);
   }
 }

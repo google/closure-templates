@@ -201,12 +201,12 @@ class TofuValueFactory extends JavaValueFactory {
 
   @Override
   public TofuJavaValue constant(double value) {
-    return TofuJavaValue.forSoyValue(FloatData.forValue(value), SourceLocation.UNKNOWN);
+    return TofuJavaValue.forSoyValue(NumberData.forValue(value), SourceLocation.UNKNOWN);
   }
 
   @Override
   public TofuJavaValue constant(long value) {
-    return TofuJavaValue.forSoyValue(IntegerData.forValue(value), SourceLocation.UNKNOWN);
+    return TofuJavaValue.forSoyValue(NumberData.forValue(value), SourceLocation.UNKNOWN);
   }
 
   @Override
@@ -319,6 +319,10 @@ class TofuValueFactory extends JavaValueFactory {
             : value.numberValue();
       } else if (type.isInstance(value)) {
         return value;
+      } else if (type == IntegerData.class) {
+        return IntegerData.forValue(value.longValue());
+      } else if (type == FloatData.class) {
+        return FloatData.forValue(value.floatValue());
       }
 
       Class<?> primitiveType = Primitives.unwrap(type);
@@ -418,9 +422,7 @@ class TofuValueFactory extends JavaValueFactory {
   private Object adaptParamItem(SoyValueProvider item, SoyType elmType) {
     SoyValue val = item.resolve();
     switch (elmType.getKind()) {
-      case INT:
-        return val.longValue();
-      case FLOAT:
+      case NUMBER:
         return val.floatValue();
       case STRING:
         return val.coerceToString();

@@ -27,13 +27,13 @@ import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NullData;
+import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.data.restricted.PrimitiveData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.exprtree.BooleanNode;
-import com.google.template.soy.exprtree.FloatNode;
-import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.NullNode;
+import com.google.template.soy.exprtree.NumberNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.UndefinedNode;
 import java.util.Iterator;
@@ -58,12 +58,14 @@ public class InternalValueUtilsTest {
             .getValue());
     assertEquals(
         26,
-        ((IntegerNode)
-                InternalValueUtils.convertPrimitiveDataToExpr(IntegerData.forValue(26), location))
-            .getValue());
+        (int)
+            ((NumberNode)
+                    InternalValueUtils.convertPrimitiveDataToExpr(
+                        NumberData.forValue(26), location))
+                .getValue());
     assertEquals(
         -3.14159,
-        ((FloatNode)
+        ((NumberNode)
                 InternalValueUtils.convertPrimitiveDataToExpr(
                     FloatData.forValue(-3.14159), location))
             .getValue(),
@@ -89,12 +91,12 @@ public class InternalValueUtilsTest {
             .booleanValue());
     assertEquals(
         -1,
-        InternalValueUtils.convertPrimitiveExprToData(new IntegerNode(-1, SourceLocation.UNKNOWN))
+        InternalValueUtils.convertPrimitiveExprToData(new NumberNode(-1, SourceLocation.UNKNOWN))
             .integerValue());
     assertEquals(
         6.02e23,
         InternalValueUtils.convertPrimitiveExprToData(
-                new FloatNode(6.02e23, SourceLocation.UNKNOWN))
+                new NumberNode(6.02e23, SourceLocation.UNKNOWN))
             .floatValue(),
         0.0);
     assertEquals(

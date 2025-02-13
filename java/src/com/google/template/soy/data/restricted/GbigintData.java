@@ -127,11 +127,6 @@ public final class GbigintData extends PrimitiveData {
   }
 
   @Override
-  public SoyValue checkNullishInt() {
-    return this;
-  }
-
-  @Override
   public String getSoyTypeName() {
     return "gbigint";
   }

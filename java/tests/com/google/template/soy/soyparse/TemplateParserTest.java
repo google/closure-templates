@@ -31,7 +31,7 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyError;
 import com.google.template.soy.exprtree.ExprEquivalence;
 import com.google.template.soy.exprtree.FieldAccessNode;
-import com.google.template.soy.exprtree.IntegerNode;
+import com.google.template.soy.exprtree.NumberNode;
 import com.google.template.soy.exprtree.OperatorNodes.GreaterThanOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
 import com.google.template.soy.exprtree.StringNode;
@@ -866,7 +866,7 @@ public final class TemplateParserTest {
     assertThat(params.get(0).desc()).isNull();
 
     assertThat(params.get(1).name()).isEqualTo("foo");
-    assertEquals("list<int>", params.get(1).type().toString());
+    assertEquals("list<number>", params.get(1).type().toString());
     assertThat(params.get(1).desc()).isEqualTo("Something random.");
 
     assertThat(params.get(2).name()).isEqualTo("goo");
@@ -919,7 +919,7 @@ public final class TemplateParserTest {
     assertEquals(1, pn3.numChildren());
     PrintDirectiveNode pn3d0 = pn3.getChild(0);
     assertEquals("|insertWordBreaks", pn3d0.getName());
-    assertEquals(8, ((IntegerNode) pn3d0.getArgs().get(0).getRoot()).getValue());
+    assertEquals(8, (int) ((NumberNode) pn3d0.getArgs().get(0).getRoot()).getValue());
     assertEquals(MessagePlaceholder.create("XXX"), pn3.getPlaceholder());
     assertTrue(pn3.getExpr().getRoot() instanceof StringNode);
 
@@ -1274,8 +1274,8 @@ public final class TemplateParserTest {
 
     SwitchCaseNode scn0 = (SwitchCaseNode) sn.getChild(0);
     assertEquals(1, scn0.getExprList().size());
-    assertTrue(scn0.getExprList().get(0).getRoot() instanceof IntegerNode);
-    assertEquals(0, ((IntegerNode) scn0.getExprList().get(0).getRoot()).getValue());
+    assertTrue(scn0.getExprList().get(0).getRoot() instanceof NumberNode);
+    assertEquals(0, (int) ((NumberNode) scn0.getExprList().get(0).getRoot()).getValue());
 
     SwitchCaseNode scn1 = (SwitchCaseNode) sn.getChild(1);
     assertEquals(1, scn1.getExprList().size());
@@ -1284,8 +1284,8 @@ public final class TemplateParserTest {
 
     SwitchCaseNode scn2 = (SwitchCaseNode) sn.getChild(2);
     assertEquals(3, scn2.getExprList().size());
-    assertTrue(scn2.getExprList().get(0).getRoot() instanceof IntegerNode);
-    assertTrue(scn2.getExprList().get(1).getRoot() instanceof IntegerNode);
+    assertTrue(scn2.getExprList().get(0).getRoot() instanceof NumberNode);
+    assertTrue(scn2.getExprList().get(1).getRoot() instanceof NumberNode);
     assertTrue(scn2.getExprList().get(2).getRoot() instanceof VarRefNode);
     assertEquals("-1", scn2.getExprList().get(0).getRoot().toSourceString());
     assertEquals("1", scn2.getExprList().get(1).getRoot().toSourceString());

@@ -46,9 +46,8 @@ public final class ExprNodes {
       case GLOBAL_NODE:
       case NULL_SAFE_ACCESS_NODE:
         return false;
-        // Actual literals
-      case FLOAT_NODE:
-      case INTEGER_NODE:
+      // Actual literals
+      case NUMBER_NODE:
       case STRING_NODE:
       case BOOLEAN_NODE:
       case MAP_LITERAL_NODE:
@@ -81,10 +80,8 @@ public final class ExprNodes {
 
   public static boolean isNonFalsyLiteral(ExprNode node) {
     switch (node.getKind()) {
-      case INTEGER_NODE:
-        return ((IntegerNode) node).getValue() != 0;
-      case FLOAT_NODE:
-        return ((FloatNode) node).getValue() != 0.0;
+      case NUMBER_NODE:
+        return ((NumberNode) node).getValue() != 0.0;
       case BOOLEAN_NODE:
         return ((BooleanNode) node).getValue();
       case STRING_NODE:

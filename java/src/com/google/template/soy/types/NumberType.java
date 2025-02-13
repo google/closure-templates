@@ -18,40 +18,38 @@ package com.google.template.soy.types;
 
 import com.google.template.soy.soytree.SoyTypeP;
 
-/**
- * Soy integer type.
- */
-public final class IntType extends PrimitiveType {
+/** Soy floating-point type. */
+public final class NumberType extends PrimitiveType {
 
-  private static final IntType INSTANCE = new IntType();
+  private static final NumberType INSTANCE = new NumberType();
 
   // Not constructible - use getInstance().
-  private IntType() {}
+  private NumberType() {}
 
   @Override
   public Kind getKind() {
-    return Kind.INT;
-  }
-
-  @Override
-  boolean doIsAssignableFromNonUnionType(SoyType srcType) {
-    Kind kind = srcType.getKind();
-    // enums are implicitly assignable to ints since that is the runtime representation in all
-    // backends
-    return kind == Kind.INT || kind == Kind.PROTO_ENUM;
+    return Kind.NUMBER;
   }
 
   @Override
   public String toString() {
-    return "int";
+    return "number";
+  }
+
+  boolean doIsAssignableFromNonUnionType(SoyType srcType) {
+    Kind kind = srcType.getKind();
+    // enums are implicitly assignable to number since that is the runtime representation in all
+    // backends
+    return kind == Kind.NUMBER || kind == Kind.PROTO_ENUM;
   }
 
   @Override
   void doToProto(SoyTypeP.Builder builder) {
-    builder.setPrimitive(SoyTypeP.PrimitiveTypeP.INT);
+    builder.setPrimitive(SoyTypeP.PrimitiveTypeP.NUMBER);
   }
+
   /** Return the single instance of this type. */
-  public static IntType getInstance() {
+  public static NumberType getInstance() {
     return INSTANCE;
   }
 }

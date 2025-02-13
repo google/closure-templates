@@ -97,8 +97,6 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
           return visitXidFunction(node);
         case IS_PRIMARY_MSG_IN_USE:
           return visitIsPrimaryMsgInUse(node);
-        case TO_FLOAT:
-          return visitToFloatFunction(node);
         case DEBUG_SOY_TEMPLATE_INFO:
           return visitDebugSoyTemplateInfoFunction(node);
         case VE_DATA:
@@ -183,10 +181,6 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
   }
 
   T visitIsPrimaryMsgInUse(FunctionNode node) {
-    return visitExprNode(node);
-  }
-
-  T visitToFloatFunction(FunctionNode node) {
     return visitExprNode(node);
   }
 

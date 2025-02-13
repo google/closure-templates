@@ -372,8 +372,7 @@ public final class JsType implements CodeChunk.HasRequires {
                   .setPredicate(typeofTypePredicate("number"));
           return enumBuilder.build();
 
-        case FLOAT:
-        case INT:
+        case NUMBER:
           return NUMBER_TYPE;
 
         case STRING:

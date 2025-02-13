@@ -195,16 +195,4 @@ public class SoyListDataTest {
     new EqualsTester().addEqualityGroup(sld0).addEqualityGroup(sld1).testEquals();
     assertThat(sld0.equals(new SoyListData())).isFalse();
   }
-
-  @Test
-  public void testLongHandling() {
-    // long value will loose precision if converted to double.
-    long l = 987654321987654321L;
-    SoyListData sld = new SoyListData();
-    sld.add(l);
-    assertThat(sld.getLong(0)).isEqualTo(l);
-
-    sld = new SoyListData(l);
-    assertThat(sld.getLong(0)).isEqualTo(l);
-  }
 }

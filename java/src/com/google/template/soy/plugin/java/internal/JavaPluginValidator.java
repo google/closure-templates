@@ -30,11 +30,11 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.plugin.java.restricted.JavaValue;
 import com.google.template.soy.plugin.java.restricted.MethodSignature;
 import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
-import com.google.template.soy.types.IntType;
 import com.google.template.soy.types.LegacyObjectMapType;
 import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.MapType;
 import com.google.template.soy.types.NullType;
+import com.google.template.soy.types.NumberType;
 import com.google.template.soy.types.RecordType;
 import com.google.template.soy.types.SetType;
 import com.google.template.soy.types.SoyType;
@@ -177,7 +177,7 @@ public class JavaPluginValidator {
           reporter.incompatibleReturnType(returnType.get(), expectedType, method);
           return;
         }
-        actualSoyType = IntType.getInstance();
+        actualSoyType = NumberType.getInstance();
       } else if (PartialSoyTemplate.class.isAssignableFrom(actualClass)
           || SoyTemplate.class.isAssignableFrom(actualClass)) {
         if (expectedType instanceof TemplateType) {
@@ -195,7 +195,7 @@ public class JavaPluginValidator {
     // We special-case proto enums when the return expression is an INT, to allow someone to return
     // an 'int' representing the enum.
     boolean isPossibleProtoEnum =
-        actualSoyType.getKind() == SoyType.Kind.INT
+        actualSoyType.getKind() == SoyType.Kind.NUMBER
             && isOrContains(expectedType, SoyType.Kind.PROTO_ENUM);
     if (!isPossibleProtoEnum && !expectedType.isAssignableFromStrict(actualSoyType)) {
       reporter.incompatibleReturnType(actualSoyType, expectedType, pluginReturnValue.methodInfo());

@@ -93,11 +93,8 @@ public abstract class AbstractExprNodeVisitor<R> extends AbstractNodeVisitor<Exp
       case BOOLEAN_NODE:
         visitBooleanNode((BooleanNode) node);
         break;
-      case INTEGER_NODE:
-        visitIntegerNode((IntegerNode) node);
-        break;
-      case FLOAT_NODE:
-        visitFloatNode((FloatNode) node);
+      case NUMBER_NODE:
+        visitNumberNode((NumberNode) node);
         break;
       case STRING_NODE:
         visitStringNode((StringNode) node);
@@ -292,11 +289,7 @@ public abstract class AbstractExprNodeVisitor<R> extends AbstractNodeVisitor<Exp
     visitPrimitiveNode(node);
   }
 
-  protected void visitIntegerNode(IntegerNode node) {
-    visitPrimitiveNode(node);
-  }
-
-  protected void visitFloatNode(FloatNode node) {
+  protected void visitNumberNode(NumberNode node) {
     visitPrimitiveNode(node);
   }
 

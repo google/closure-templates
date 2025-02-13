@@ -17,7 +17,11 @@
 package com.google.template.soy.jbcsrc;
 
 import static com.google.common.base.Preconditions.checkState;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.NUMBER_TYPE;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.isDefinitelyAssignableFrom;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.isNumericPrimitive;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.newLabel;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.numericConversion;
 import static java.util.Arrays.stream;
 
 import com.google.common.collect.ImmutableList;
@@ -343,12 +347,12 @@ public final class ExternCompiler {
 
     // int needs special-casing for overflow, and because we can't unbox as int
     if (javaType.equals(Type.INT_TYPE)) {
-      return JbcSrcExternRuntime.LONG_TO_INT.invoke(actualParam);
+      return JbcSrcExternRuntime.DOUBLE_TO_INT.invoke(actualParam);
     } else if (javaType.equals(BytecodeUtils.BOXED_INTEGER_TYPE)) {
       if (soyTypeBoxed) {
         return JbcSrcExternRuntime.SOY_VALUE_TO_BOXED_INTEGER.invoke(actualParam);
       }
-      return MethodRefs.BOX_INTEGER.invoke(JbcSrcExternRuntime.LONG_TO_INT.invoke(actualParam));
+      return MethodRefs.BOX_INTEGER.invoke(JbcSrcExternRuntime.DOUBLE_TO_INT.invoke(actualParam));
     } else if (javaType.equals(Type.DOUBLE_TYPE)) {
       return actualParam.coerceToDouble();
     } else if (javaType.equals(BytecodeUtils.BOXED_DOUBLE_TYPE)) {
@@ -357,13 +361,13 @@ public final class ExternCompiler {
       }
       return MethodRefs.BOX_DOUBLE.invoke(actualParam.coerceToDouble());
     } else if (javaType.equals(Type.FLOAT_TYPE)) {
-      return BytecodeUtils.numericConversion(actualParam.coerceToDouble(), Type.FLOAT_TYPE);
+      return numericConversion(actualParam.coerceToDouble(), Type.FLOAT_TYPE);
     } else if (javaType.equals(BytecodeUtils.BOXED_FLOAT_TYPE)) {
       if (soyTypeBoxed) {
         return JbcSrcExternRuntime.SOY_VALUE_TO_BOXED_FLOAT.invoke(actualParam);
       }
       return MethodRefs.BOX_FLOAT.invoke(
-          BytecodeUtils.numericConversion(actualParam.coerceToDouble(), Type.FLOAT_TYPE));
+          numericConversion(actualParam.coerceToDouble(), Type.FLOAT_TYPE));
     } else if (javaType.equals(BytecodeUtils.NUMBER_TYPE)) {
       return actualParam.unboxAsNumberOrJavaNull();
     } else if (javaType.equals(Type.getType(BigInteger.class))) {
@@ -395,7 +399,7 @@ public final class ExternCompiler {
               javaTypeInfo,
               new Method("forNumber", javaType, new Type[] {Type.INT_TYPE}),
               MethodPureness.PURE)
-          .invoke(BytecodeUtils.numericConversion(actualParam.unboxAsLong(), Type.INT_TYPE));
+          .invoke(numericConversion(actualParam.unboxAsDouble(), Type.INT_TYPE));
     }
 
     if (javaType.equals(BytecodeUtils.SAFE_URL_TYPE)) {
@@ -420,12 +424,13 @@ public final class ExternCompiler {
       }
       return MethodRefs.BOX_BOOLEAN.invoke(actualParam.unboxAsBoolean());
     } else if (javaType.equals(Type.LONG_TYPE)) {
-      return actualParam.unboxAsLong();
+      return numericConversion(actualParam.unboxAsDouble(), Type.LONG_TYPE);
     } else if (javaType.equals(BytecodeUtils.BOXED_LONG_TYPE)) {
       if (soyTypeBoxed) {
         return JbcSrcExternRuntime.SOY_VALUE_TO_BOXED_LONG.invoke(actualParam);
       }
-      return MethodRefs.BOX_LONG.invoke(actualParam.unboxAsLong());
+      return MethodRefs.BOX_LONG.invoke(
+          numericConversion(actualParam.unboxAsDouble(), Type.LONG_TYPE));
     } else if (javaType.equals(BytecodeUtils.STRING_TYPE)) {
       return actualParam.unboxAsStringOrJavaNull();
     } else if (!isObject
@@ -434,9 +439,7 @@ public final class ExternCompiler {
       SoyExpression unboxedList =
           actualParam.isBoxed() ? actualParam.unboxAsListOrJavaNull() : actualParam;
       switch (elmType.getKind()) {
-        case INT:
-          return JbcSrcExternRuntime.LIST_UNBOX_INTS.invoke(unboxedList);
-        case FLOAT:
+        case NUMBER:
           return JbcSrcExternRuntime.LIST_UNBOX_FLOATS.invoke(unboxedList);
         case STRING:
           return JbcSrcExternRuntime.LIST_UNBOX_STRINGS.invoke(unboxedList);
@@ -450,11 +453,6 @@ public final class ExternCompiler {
               JavaQualifiedNames.getClassName(((SoyProtoEnumType) elmType).getDescriptor());
           return JbcSrcExternRuntime.LIST_UNBOX_ENUMS.invoke(
               unboxedList, BytecodeUtils.constant(BytecodeUtils.getTypeForClassName(javaClass)));
-        case UNION:
-          if (SoyTypes.NUMBER_TYPE.equals(elmType)) {
-            return JbcSrcExternRuntime.LIST_UNBOX_NUMBERS.invoke(unboxedList);
-          }
-        // fall through
         default:
           return actualParam.isBoxed()
               ? JbcSrcExternRuntime.UNBOX_OBJECT.invoke(actualParam)
@@ -525,22 +523,14 @@ public final class ExternCompiler {
       return JbcSrcExternRuntime.CONVERT_OBJECT_TO_SOY_VALUE_PROVIDER.invoke(externCall);
     }
 
-    if (!nullish && externType.equals(BytecodeUtils.BOXED_INTEGER_TYPE)) {
-      return JbcSrcExternRuntime.UNBOX_INTEGER.invoke(externCall);
-    } else if (externType.equals(Type.INT_TYPE)) {
-      return BytecodeUtils.numericConversion(externCall, Type.LONG_TYPE);
-    } else if (!nullish && externType.equals(BytecodeUtils.BOXED_LONG_TYPE)) {
-      return JbcSrcExternRuntime.UNBOX_LONG.invoke(externCall);
-    } else if (!nullish && externType.equals(BytecodeUtils.BOXED_DOUBLE_TYPE)) {
-      return JbcSrcExternRuntime.UNBOX_DOUBLE.invoke(externCall);
-    } else if (externType.equals(Type.FLOAT_TYPE)) {
-      return BytecodeUtils.numericConversion(externCall, Type.DOUBLE_TYPE);
-    } else if (!nullish && externType.equals(BytecodeUtils.BOXED_FLOAT_TYPE)) {
-      return JbcSrcExternRuntime.UNBOX_FLOAT.invoke(externCall);
-    } else if (!nullish && externType.equals(BytecodeUtils.BOXED_BOOLEAN_TYPE)) {
-      return JbcSrcExternRuntime.UNBOX_BOOLEAN.invoke(externCall);
+    if (isNumericPrimitive(externType)) {
+      return numericConversion(externCall, Type.DOUBLE_TYPE);
     } else if (!nullish && externType.equals(BytecodeUtils.BIG_INTEGER_TYPE)) {
       return JbcSrcExternRuntime.GBIGINT_FOR_VALUE.invoke(externCall);
+    } else if (!nullish && isDefinitelyAssignableFrom(NUMBER_TYPE, externType)) {
+      return JbcSrcExternRuntime.UNBOX_NUMBER.invoke(externCall);
+    } else if (!nullish && externType.equals(BytecodeUtils.BOXED_BOOLEAN_TYPE)) {
+      return JbcSrcExternRuntime.UNBOX_BOOLEAN.invoke(externCall);
     } else if (externType.equals(BytecodeUtils.OBJECT.type())
         || externType.equals(BytecodeUtils.NUMBER_TYPE)) {
       checkState(soyReturnType.getKind() != SoyType.Kind.MAP);
@@ -573,8 +563,8 @@ public final class ExternCompiler {
       return JbcSrcExternRuntime.CONVERT_TRUSTED_RESOURCE_URL_TO_SOY_VALUE_PROVIDER.invoke(
           externCall);
     } else if (soyReturnType.getKind() == SoyType.Kind.PROTO_ENUM) {
-      return BytecodeUtils.numericConversion(
-          MethodRefs.PROTOCOL_ENUM_GET_NUMBER.invoke(externCall), Type.LONG_TYPE);
+      return numericConversion(
+          MethodRefs.PROTOCOL_ENUM_GET_NUMBER.invoke(externCall), Type.DOUBLE_TYPE);
     } else if (BytecodeUtils.SOY_VALUE_TYPE.equals(getRuntimeType(soyReturnType).runtimeType())) {
       // If the Soy return type of the extern is SoyValue, then we need to make sure the value
       // returned from the implementation is boxed.

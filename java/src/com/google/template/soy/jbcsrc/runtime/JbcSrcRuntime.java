@@ -167,12 +167,12 @@ public final class JbcSrcRuntime {
   }
 
   @Keep
-  public static SoyValue getSoyListItem(List<SoyValueProvider> list, long index) {
+  public static SoyValue getSoyListItem(List<SoyValueProvider> list, double index) {
     return getSoyListItemProvider(list, index).resolve();
   }
 
   @Keep
-  public static SoyValueProvider getSoyListItemProvider(List<SoyValueProvider> list, long index) {
+  public static SoyValueProvider getSoyListItemProvider(List<SoyValueProvider> list, double index) {
     if (list == null) {
       throw new NullPointerException("Attempted to access list item '" + index + "' of null");
     }

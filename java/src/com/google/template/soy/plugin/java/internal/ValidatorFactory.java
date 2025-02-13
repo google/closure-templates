@@ -53,9 +53,8 @@ import com.google.template.soy.plugin.java.restricted.JavaValue;
 import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
 import com.google.template.soy.plugin.java.restricted.MethodSignature;
 import com.google.template.soy.types.BoolType;
-import com.google.template.soy.types.FloatType;
-import com.google.template.soy.types.IntType;
 import com.google.template.soy.types.NullType;
+import com.google.template.soy.types.NumberType;
 import com.google.template.soy.types.SoyProtoEnumType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
@@ -83,17 +82,15 @@ final class ValidatorFactory extends JavaValueFactory {
   private static final ImmutableSet<Class<?>> BOOL_TYPES =
       ImmutableSet.of(SoyValue.class, boolean.class, BooleanData.class);
 
-  private static final ImmutableSet<Class<?>> FLOAT_TYPES =
-      ImmutableSet.of(SoyValue.class, double.class, FloatData.class, NumberData.class);
-
   private static final ImmutableSet<Class<?>> NUMBER_TYPES =
-      ImmutableSet.of(SoyValue.class, double.class, NumberData.class);
-
-  // We allow 'double' for soy int types because double has more precision than soy guarantees
-  // for its int type.
-  private static final ImmutableSet<Class<?>> INT_TYPES =
       ImmutableSet.of(
-          SoyValue.class, long.class, IntegerData.class, NumberData.class, int.class, double.class);
+          SoyValue.class,
+          double.class,
+          long.class,
+          int.class,
+          FloatData.class,
+          NumberData.class,
+          IntegerData.class);
 
   private static final ImmutableSet<Class<?>> GBIGINT_TYPES =
       ImmutableSet.of(SoyValue.class, BigInteger.class, GbigintData.class);
@@ -234,12 +231,12 @@ final class ValidatorFactory extends JavaValueFactory {
 
   @Override
   public ValidatorValue constant(double value) {
-    return ValidatorValue.forSoyType(FloatType.getInstance(), reporter);
+    return ValidatorValue.forSoyType(NumberType.getInstance(), reporter);
   }
 
   @Override
   public ValidatorValue constant(long value) {
-    return ValidatorValue.forSoyType(IntType.getInstance(), reporter);
+    return ValidatorValue.forSoyType(NumberType.getInstance(), reporter);
   }
 
   @Override
@@ -389,11 +386,8 @@ final class ValidatorFactory extends JavaValueFactory {
       case BOOL:
         expectedClasses = BOOL_TYPES;
         break;
-      case FLOAT:
-        expectedClasses = FLOAT_TYPES;
-        break;
-      case INT:
-        expectedClasses = INT_TYPES;
+      case NUMBER:
+        expectedClasses = NUMBER_TYPES;
         break;
       case LEGACY_OBJECT_MAP:
         expectedClasses = LEGACY_OBJECT_MAP_TYPES;
@@ -432,11 +426,6 @@ final class ValidatorFactory extends JavaValueFactory {
         expectedDescriptor = ((SoyProtoEnumType) type).getDescriptor();
         break;
       case UNION:
-        // number is a special case, it should work for double and NumberData
-        if (type.equals(SoyTypes.NUMBER_TYPE)) {
-          expectedClasses = NUMBER_TYPES;
-          break;
-        }
         // If this is a union, make sure the type is valid for every member.
         // If the type isn't valid for any member, then there's no guarantee this will work
         // for an arbitrary template at runtime.

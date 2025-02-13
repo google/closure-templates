@@ -16,13 +16,12 @@
 
 package com.google.template.soy.data.restricted;
 
-import com.google.common.base.Preconditions;
 import com.google.errorprone.annotations.Immutable;
-import com.google.template.soy.data.SoyValue;
 import javax.annotation.Nonnull;
 
 /** Integer data. */
 @Immutable
+@Deprecated
 public final class IntegerData extends NumberData {
 
   // Note: ZERO, ONE, and MINUS_ONE are public. The rest are private.
@@ -63,11 +62,12 @@ public final class IntegerData extends NumberData {
   /** Static instance of IntegerData with value 10. */
   private static final IntegerData TEN = new IntegerData(10);
 
-  /** The integer value. */
-  private final long value;
-
   private IntegerData(long value) {
-    this.value = value;
+    super(value);
+  }
+
+  public long getValue() {
+    return (long) floatValue();
   }
 
   /**
@@ -109,77 +109,5 @@ public final class IntegerData extends NumberData {
       default:
         throw new AssertionError("Impossible case");
     }
-  }
-
-  /** Returns the integer value. */
-  public long getValue() {
-    return value;
-  }
-
-  @Override
-  public int integerValue() {
-    Preconditions.checkState(
-        value >= Integer.MIN_VALUE && value <= Integer.MAX_VALUE,
-        "Casting long to integer results in overflow: %s",
-        value);
-    return (int) value;
-  }
-
-  @Override
-  public long longValue() {
-    return value;
-  }
-
-  @Override
-  @Nonnull
-  public String toString() {
-    return String.valueOf(value);
-  }
-
-  /**
-   * {@inheritDoc}
-   *
-   * <p>0 is falsy.
-   */
-  @Override
-  public boolean coerceToBoolean() {
-    return value != 0;
-  }
-
-  @Override
-  public String coerceToString() {
-    return toString();
-  }
-
-  @Override
-  public double toFloat() {
-    return value;
-  }
-
-  @Override
-  public Number javaNumberValue() {
-    return value;
-  }
-
-  @Override
-  public boolean equals(Object other) {
-    if (!(other instanceof NumberData)) {
-      return false;
-    }
-    if (other instanceof IntegerData) {
-      return this.value == ((IntegerData) other).value;
-    } else {
-      return super.equals(other);
-    }
-  }
-
-  @Override
-  public SoyValue checkNullishInt() {
-    return this;
-  }
-
-  @Override
-  public String getSoyTypeName() {
-    return "int";
   }
 }

@@ -264,11 +264,11 @@ final class ExpressionToSoyValueProviderCompiler {
     @Override
     Optional<Expression> visitForLoopVar(VarRefNode varRef, LocalVar local) {
       Expression loopVar = variables.getLocal(local);
-      if (loopVar.resultType().equals(Type.INT_TYPE)) {
+      if (BytecodeUtils.isNumericPrimitive(loopVar.resultType())) {
         // The optional index var is an int.
         if (allowsBoxing()) {
           return Optional.of(
-              SoyExpression.forInt(numericConversion(loopVar, Type.LONG_TYPE)).box());
+              SoyExpression.forFloat(numericConversion(loopVar, Type.DOUBLE_TYPE)).box());
         }
         return Optional.empty();
       } else {

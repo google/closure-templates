@@ -39,7 +39,7 @@ import com.google.template.soy.data.SoySet;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.TemplateValue;
 import com.google.template.soy.data.restricted.GbigintData;
-import com.google.template.soy.data.restricted.IntegerData;
+import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.internal.proto.JavaQualifiedNames;
 import com.google.template.soy.jbcsrc.shared.Names;
 import com.google.template.soy.types.SoyProtoType;
@@ -788,13 +788,6 @@ public abstract class Expression extends BytecodeProducer {
         case INDEXED:
           return doCheckedSoyCast(type.getEffectiveType());
         case UNION:
-          if (type.equals(SoyTypes.NUMBER_TYPE)) {
-            if (BytecodeUtils.isDefinitelyAssignableFrom(
-                BytecodeUtils.NUMBER_DATA_TYPE, resultType)) {
-              return Optional.empty();
-            }
-            return Optional.of(MethodRefs.CHECK_NUMBER.invoke(this));
-          }
           return Optional.empty();
         case NULL:
           return this.maybeCheckedCast(BytecodeUtils.NULL_DATA_TYPE);
@@ -811,21 +804,15 @@ public abstract class Expression extends BytecodeProducer {
             return Optional.empty();
           }
           return Optional.of(MethodRefs.CHECK_BOOLEAN.invoke(this));
-        case FLOAT:
+        case NUMBER:
           if (BytecodeUtils.isDefinitelyAssignableFrom(BytecodeUtils.FLOAT_DATA_TYPE, resultType)) {
             return Optional.empty();
           }
-          return Optional.of(MethodRefs.CHECK_FLOAT.invoke(this));
+          return Optional.of(MethodRefs.CHECK_NUMBER.invoke(this));
         case HTML:
         case ELEMENT:
           return Optional.of(
               MethodRefs.CHECK_CONTENT_KIND.invoke(this, constant(ContentKind.HTML)));
-        case INT:
-          if (BytecodeUtils.isDefinitelyAssignableFrom(
-              BytecodeUtils.INTEGER_DATA_TYPE, resultType)) {
-            return Optional.empty();
-          }
-          return Optional.of(MethodRefs.CHECK_INT.invoke(this));
 
         case GBIGINT:
           expectedClass = GbigintData.class;
@@ -857,7 +844,7 @@ public abstract class Expression extends BytecodeProducer {
                   .type();
           return Optional.of(MethodRefs.CHECK_PROTO.invoke(this, constant(protoType)));
         case PROTO_ENUM:
-          expectedClass = IntegerData.class;
+          expectedClass = NumberData.class;
           break;
         case RECORD:
           expectedClass = SoyRecord.class;

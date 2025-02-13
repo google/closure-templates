@@ -188,7 +188,7 @@ public final class StreamingPrintDirectivesTest {
             ClassCastException.class,
             () ->
                 templates.getTemplate("ns.nonstreamable").render(null, badParam, output, context));
-    assertThat(cce).hasMessageThat().contains("expected int, got string");
+    assertThat(cce).hasMessageThat().contains("expected number, got string");
   }
 
   @Test

@@ -20,8 +20,7 @@ import com.google.auto.value.AutoOneOf;
 import com.google.template.soy.plugin.java.restricted.JavaValue;
 import com.google.template.soy.plugin.java.restricted.MethodSignature;
 import com.google.template.soy.types.BoolType;
-import com.google.template.soy.types.FloatType;
-import com.google.template.soy.types.IntType;
+import com.google.template.soy.types.NumberType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.StringType;
 import javax.annotation.Nullable;
@@ -79,14 +78,10 @@ final class ValidatorValue implements JavaValue {
     if (method.returnType() == boolean.class) {
       type = BoolType.getInstance();
     }
-    if (method.returnType() == int.class || method.returnType() == long.class) {
-      type = IntType.getInstance();
-    }
-    if (method.returnType() == int.class) {
-      type = IntType.getInstance();
-    }
-    if (method.returnType() == double.class) {
-      type = FloatType.getInstance();
+    if (method.returnType() == int.class
+        || method.returnType() == long.class
+        || method.returnType() == double.class) {
+      type = NumberType.getInstance();
     }
     if (method.returnType() == String.class) {
       type = StringType.getInstance();
@@ -132,17 +127,17 @@ final class ValidatorValue implements JavaValue {
 
   @Override
   public ValidatorValue asSoyInt() {
-    return asValue(IntType.getInstance(), "asSoyInt");
+    return asValue(NumberType.getInstance(), "asSoyInt");
   }
 
   @Override
   public ValidatorValue coerceToJavaInt() {
-    return asValue(IntType.getInstance(), "asJavaInt");
+    return asValue(NumberType.getInstance(), "asJavaInt");
   }
 
   @Override
   public ValidatorValue asSoyFloat() {
-    return asValue(FloatType.getInstance(), "asSoyFloat");
+    return asValue(NumberType.getInstance(), "asSoyFloat");
   }
 
   private ValidatorValue asValue(SoyType newType, String methodName) {

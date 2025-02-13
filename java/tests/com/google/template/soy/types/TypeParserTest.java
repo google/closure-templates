@@ -42,7 +42,7 @@ public class TypeParserTest {
   public void testParseTypeNames() {
     assertTypeEquals(AnyType.getInstance(), "any");
     assertTypeEquals(AnyType.getInstance(), " any ");
-    assertTypeEquals(IntType.getInstance(), "int");
+    assertTypeEquals(NumberType.getInstance(), "int");
     assertTypeEquals(BoolType.getInstance(), "bool");
     assertTypeEquals(UnknownType.getInstance(), "?");
     assertTypeEquals(MessageType.getInstance(), "Message");
@@ -50,24 +50,26 @@ public class TypeParserTest {
 
   @Test
   public void testParseUnionTypes() {
-    assertTypeEquals(UnionType.of(IntType.getInstance(), BoolType.getInstance()), "int|bool");
+    assertTypeEquals(UnionType.of(NumberType.getInstance(), BoolType.getInstance()), "int|bool");
     assertTypeEquals(
-        UnionType.of(IntType.getInstance(), BoolType.getInstance(), StringType.getInstance()),
+        UnionType.of(NumberType.getInstance(), BoolType.getInstance(), StringType.getInstance()),
         "int|bool|string");
-    assertTypeEquals(UnionType.of(IntType.getInstance(), BoolType.getInstance()), " int | bool ");
+    assertTypeEquals(
+        UnionType.of(NumberType.getInstance(), BoolType.getInstance()), " int | bool ");
   }
 
   @Test
   public void testParseRecordTypes() {
-    assertTypeEquals(RecordType.of(ImmutableMap.of("a", IntType.getInstance())), "[a:int]");
-    assertTypeEquals(RecordType.of(ImmutableMap.of("a", IntType.getInstance())), "[a:int]");
+    assertTypeEquals(RecordType.of(ImmutableMap.of("a", NumberType.getInstance())), "[a:int]");
+    assertTypeEquals(RecordType.of(ImmutableMap.of("a", NumberType.getInstance())), "[a:int]");
     assertTypeEquals(
-        RecordType.of(ImmutableMap.of("a", IntType.getInstance(), "b", FloatType.getInstance())),
+        RecordType.of(
+            ImmutableMap.of("a", NumberType.getInstance(), "b", NumberType.getInstance())),
         "[a:int, b:float]");
     assertTypeEquals(
         RecordType.of(
             ImmutableMap.of(
-                "a", IntType.getInstance(), "b", ListType.of(StringType.getInstance()))),
+                "a", NumberType.getInstance(), "b", ListType.of(StringType.getInstance()))),
         "[a:int, b:list<string>]");
   }
 
@@ -76,9 +78,10 @@ public class TypeParserTest {
     assertTypeEquals(ListType.of(StringType.getInstance()), "list<string>");
     assertTypeEquals(ListType.of(StringType.getInstance()), "list < string > ");
     assertTypeEquals(
-        LegacyObjectMapType.of(IntType.getInstance(), BoolType.getInstance()),
+        LegacyObjectMapType.of(NumberType.getInstance(), BoolType.getInstance()),
         "legacy_object_map<int, bool>");
-    assertTypeEquals(MapType.of(IntType.getInstance(), BoolType.getInstance()), "map<int, bool>");
+    assertTypeEquals(
+        MapType.of(NumberType.getInstance(), BoolType.getInstance()), "map<int, bool>");
   }
 
   // -----------------------------------------------------------------------------------------------

@@ -33,6 +33,7 @@ import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
+import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.error.ErrorReporter;
@@ -54,10 +55,9 @@ import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.testing.SharedTestUtils;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import com.google.template.soy.types.BoolType;
-import com.google.template.soy.types.FloatType;
-import com.google.template.soy.types.IntType;
 import com.google.template.soy.types.LegacyObjectMapType;
 import com.google.template.soy.types.ListType;
+import com.google.template.soy.types.NumberType;
 import com.google.template.soy.types.RecordType;
 import com.google.template.soy.types.SanitizedType;
 import com.google.template.soy.types.SoyType;
@@ -86,7 +86,7 @@ public class ExpressionCompilerTest {
 
   @Test
   public void testConstants() {
-    assertExpression("1").evaluatesTo(1L);
+    assertExpression("1").evaluatesTo(1D);
     assertExpression("1.0").evaluatesTo(1D);
     assertExpression("false").evaluatesTo(false);
     assertExpression("true").evaluatesTo(true);
@@ -126,11 +126,8 @@ public class ExpressionCompilerTest {
 
   @Test
   public void testNegativeOpNode() {
-    assertExpression("-1").evaluatesTo(-1L);
+    assertExpression("-1").evaluatesTo(-1D);
     assertExpression("-1.0").evaluatesTo(-1.0);
-
-    variables.put("foo", untypedBoxedSoyExpression(SoyExpression.forInt(constant(1L))));
-    assertExpression("-$foo").evaluatesTo(IntegerData.forValue(-1));
 
     variables.put("foo", untypedBoxedSoyExpression(SoyExpression.forFloat(constant(1D))));
     assertExpression("-$foo").evaluatesTo(FloatData.forValue(-1.0));
@@ -138,13 +135,9 @@ public class ExpressionCompilerTest {
 
   @Test
   public void testModOpNode() {
-    assertExpression("3 % 2").evaluatesTo(1L);
-    assertExpression("5 % 3").evaluatesTo(2L);
+    assertExpression("3 % 2").evaluatesTo(1D);
+    assertExpression("5 % 3").evaluatesTo(2D);
     assertExpression("5.0 % 3.0").evaluatesTo(2D);
-
-    variables.put("foo", untypedBoxedSoyExpression(SoyExpression.forInt(constant(3L))));
-    variables.put("bar", untypedBoxedSoyExpression(SoyExpression.forInt(constant(2L))));
-    assertExpression("$foo % $bar").evaluatesTo(IntegerData.forValue(1));
 
     variables.put("foo", untypedBoxedSoyExpression(SoyExpression.forFloat(constant(3.0))));
     variables.put("bar", untypedBoxedSoyExpression(SoyExpression.forFloat(constant(2.0))));
@@ -168,7 +161,7 @@ public class ExpressionCompilerTest {
   @Test
   public void testTimesOpNode() {
     assertExpression("4.2 * 2").evaluatesTo(8.4);
-    assertExpression("4 * 2").evaluatesTo(8L);
+    assertExpression("4 * 2").evaluatesTo(8D);
 
     variables.put("foo", untypedBoxedSoyExpression(SoyExpression.forFloat(constant(3.0))));
     variables.put("bar", untypedBoxedSoyExpression(SoyExpression.forFloat(constant(2.0))));
@@ -178,7 +171,7 @@ public class ExpressionCompilerTest {
   @Test
   public void testMinusOpNode() {
     assertExpression("4.2 - 2").evaluatesTo(2.2);
-    assertExpression("4 - 2").evaluatesTo(2L);
+    assertExpression("4 - 2").evaluatesTo(2D);
 
     variables.put("foo", untypedBoxedSoyExpression(SoyExpression.forFloat(constant(3.0))));
     variables.put("bar", untypedBoxedSoyExpression(SoyExpression.forFloat(constant(2.0))));
@@ -188,7 +181,7 @@ public class ExpressionCompilerTest {
   @Test
   public void testPlusOpNode() {
     assertExpression("4.2 + 2").evaluatesTo(6.2);
-    assertExpression("4 + 2").evaluatesTo(6L);
+    assertExpression("4 + 2").evaluatesTo(6D);
     assertExpression("4 + '2'").evaluatesTo("42");
     assertExpression("'4' + 2").evaluatesTo("42");
 
@@ -196,9 +189,8 @@ public class ExpressionCompilerTest {
     assertExpression("$foo + 2").evaluatesTo(StringData.forValue("foo2"));
     assertExpression("$foo + '2'").evaluatesTo("foo2"); // Note, not boxed
 
-    variables.put("foo", untypedBoxedSoyExpression(SoyExpression.forInt(constant(1L))));
-    assertExpression("$foo + 2").evaluatesTo(IntegerData.forValue(3));
-    assertExpression("$foo + '2'").evaluatesTo("12");
+    variables.put("foo", untypedBoxedSoyExpression(SoyExpression.forFloat(constant(1D))));
+    assertExpression("$foo + 2").evaluatesTo(NumberData.forValue(3));
   }
 
   @Test
@@ -215,9 +207,9 @@ public class ExpressionCompilerTest {
 
   @Test
   public void testComparisonOperators() {
-    variables.put("oneInt", untypedBoxedSoyExpression(SoyExpression.forInt(constant(1L))));
+    variables.put("oneInt", untypedBoxedSoyExpression(SoyExpression.forFloat(constant(1D))));
     variables.put("oneFloat", untypedBoxedSoyExpression(SoyExpression.forFloat(constant(1.0))));
-    variables.put("twoInt", untypedBoxedSoyExpression(SoyExpression.forInt(constant(2L))));
+    variables.put("twoInt", untypedBoxedSoyExpression(SoyExpression.forFloat(constant(2D))));
     variables.put("twoFloat", untypedBoxedSoyExpression(SoyExpression.forFloat(constant(2.0))));
     variables.put("oneStr", untypedBoxedSoyExpression(SoyExpression.forString(constant("kill"))));
     variables.put("twoStr", untypedBoxedSoyExpression(SoyExpression.forString(constant("zoo"))));
@@ -330,18 +322,18 @@ public class ExpressionCompilerTest {
 
   @Test
   public void testConditionalOpNode() {
-    assertExpression("false ? 1 : 2").evaluatesTo(2L);
-    assertExpression("true ? 1 : 2").evaluatesTo(1L);
+    assertExpression("false ? 1 : 2").evaluatesTo(2D);
+    assertExpression("true ? 1 : 2").evaluatesTo(1D);
 
-    assertExpression("false ? 1.0 : 2").evaluatesTo(IntegerData.forValue(2));
-    assertExpression("true ? 1 : 2.0").evaluatesTo(IntegerData.forValue(1));
+    assertExpression("false ? 1.0 : 2").evaluatesTo(2D);
+    assertExpression("true ? 1 : 2.0").evaluatesTo(1D);
 
     assertExpression("false ? 'a' : 'b'").evaluatesTo("b");
     assertExpression("true ? 'a' : 'b'").evaluatesTo("a");
 
     // note the boxing
-    assertExpression("false ? 'a' : 2").evaluatesTo(IntegerData.forValue(2));
-    assertExpression("true ? 1 : 'b'").evaluatesTo(IntegerData.forValue(1));
+    assertExpression("false ? 'a' : 2").evaluatesTo(NumberData.forValue(2));
+    assertExpression("true ? 1 : 'b'").evaluatesTo(NumberData.forValue(1));
     assertExpression("false ? 1 : 'b'").evaluatesTo(StringData.forValue("b"));
     assertExpression("true ? 'a' : 2").evaluatesTo(StringData.forValue("a"));
   }
@@ -375,7 +367,7 @@ public class ExpressionCompilerTest {
 
   @Test
   public void testNullCoalescingOpNode() {
-    assertExpression("1 ?? 2").evaluatesTo(1L);
+    assertExpression("1 ?? 2").evaluatesTo(1D);
     // force the type checker to interpret the left hand side as a nullable string, the literal null
     // is rejected by the type checker.
     assertExpression("(true ? null : 'a') ?? 2").evaluatesTo(IntegerData.forValue(2));
@@ -432,9 +424,9 @@ public class ExpressionCompilerTest {
     assertExpression("$list[3] + 1").throwsException(SoyDataException.class);
 
     // even if the index type is not known, it still works
-    variables.put("anInt", untypedBoxedSoyExpression(SoyExpression.forInt(constant(1L))));
+    variables.put("anInt", untypedBoxedSoyExpression(SoyExpression.forFloat(constant(1D))));
     assertExpression("$list[$anInt]").evaluatesTo(IntegerData.forValue(1));
-    variables.put("anInt", untypedBoxedSoyExpression(SoyExpression.forInt(constant(3L))));
+    variables.put("anInt", untypedBoxedSoyExpression(SoyExpression.forFloat(constant(3D))));
     assertExpression("$list[$anInt]").evaluatesTo(UndefinedData.INSTANCE);
   }
 
@@ -456,7 +448,7 @@ public class ExpressionCompilerTest {
     variables.put(
         "nullMap",
         SoyExpression.forSoyValue(
-            LegacyObjectMapType.of(StringType.getInstance(), IntType.getInstance()), soyNull()));
+            LegacyObjectMapType.of(StringType.getInstance(), NumberType.getInstance()), soyNull()));
     assertExpression("$nullMap['a']").throwsException(NullPointerException.class);
     assertExpression("$nullMap?['a']").evaluatesTo(UndefinedData.INSTANCE);
   }
@@ -496,7 +488,7 @@ public class ExpressionCompilerTest {
   public void testBuiltinFunctions() {
     variables.put("x", compileExpression("record(a: 1)").box());
     variables.put(
-        "y", SoyExpression.forSoyValue(SoyTypes.makeNullable(FloatType.getInstance()), soyNull()));
+        "y", SoyExpression.forSoyValue(SoyTypes.makeNullable(NumberType.getInstance()), soyNull()));
     assertExpression("checkNotNull($x.a)").evaluatesTo(IntegerData.forValue(1));
     assertExpression("checkNotNull($y)").throwsException(NullPointerException.class);
   }

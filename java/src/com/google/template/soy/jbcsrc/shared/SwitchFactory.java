@@ -22,9 +22,8 @@ import com.google.common.collect.Maps;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.BooleanData;
-import com.google.template.soy.data.restricted.FloatData;
-import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NullData;
+import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.data.restricted.UndefinedData;
 import java.lang.invoke.CallSite;
@@ -89,10 +88,8 @@ public final class SwitchFactory {
       // Turn ints and doubles into their SoyValue types since those have equals/hashCode methods
       // that make them mutually comparable. i.o.w.
       // FloatData.valueOf(2).equals(IntegerData.valueOf(2))
-      if (caseValue instanceof Integer || caseValue instanceof Long) {
-        caseValue = IntegerData.forValue(((Number) caseValue).longValue());
-      } else if (caseValue instanceof Double) {
-        caseValue = FloatData.forValue(((Double) caseValue).doubleValue());
+      if (caseValue instanceof Number) {
+        caseValue = NumberData.forValue((Number) caseValue);
       } else if (caseValue instanceof Boolean) {
         caseValue = BooleanData.forValue(((Boolean) caseValue).booleanValue());
       } else if (caseValue instanceof String) {

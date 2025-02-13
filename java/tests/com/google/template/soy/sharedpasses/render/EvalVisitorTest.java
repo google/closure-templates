@@ -90,8 +90,6 @@ public class EvalVisitorTest {
         SoyValueConverterUtility.newDict(),
         "list0",
         SoyValueConverterUtility.newList(),
-        "longNumber",
-        1000000000000000001L,
         "floatNumber",
         1.5,
         "aNull",
@@ -305,10 +303,7 @@ public class EvalVisitorTest {
     assertRenderException("$boo?[2]", "encountered non-map/list just before accessing \"[2]\"");
     assertRenderException(
         "$boo?['xyz']", "encountered non-map/list just before accessing \"['xyz']\"");
-    assertDataException(
-        "$foo[2]",
-        "SoyDict accessed with non-string key (got key type"
-            + " com.google.template.soy.data.restricted.IntegerData).");
+    assertDataException("$foo[2]", "SoyDict accessed with non-string key (got key type number).");
     assertRenderException("$moo.too", "Attempted to access field \"too\" of non-record type");
     // assertRenderException(
     //    "$roo.too", "encountered undefined LHS just before accessing \".too\"");
@@ -326,10 +321,7 @@ public class EvalVisitorTest {
         "$foo?.bar?.moo.tar", "encountered non-record just before accessing \".moo\"");
     assertThat(eval("$foo?.baz?.moo.tar")).isInstanceOf(UndefinedData.class);
     assertThat(eval("$aNull?.baz?.moo.tar")).isInstanceOf(UndefinedData.class);
-    assertDataException(
-        "$foo[2]",
-        "SoyDict accessed with non-string key (got key type"
-            + " com.google.template.soy.data.restricted.IntegerData).");
+    assertDataException("$foo[2]", "SoyDict accessed with non-string key (got key type number).");
     assertRenderException("$moo?.too", "encountered non-record just before accessing \".too\"");
     assertThat(eval("$roo?.too")).isInstanceOf(UndefinedData.class);
     assertThat(eval("$roo?[2]")).isInstanceOf(UndefinedData.class);
@@ -355,13 +347,6 @@ public class EvalVisitorTest {
 
     assertEval("$goo[4] - $boo", 7);
     assertEval("1.002- $woo", 2.62);
-
-    // Ensure longs work.
-    assertEval("$longNumber + $longNumber", 2000000000000000002L);
-    assertEval("$longNumber * 4 - $longNumber", 3000000000000000003L);
-    assertEval("$longNumber / $longNumber", 1.0); // NOTE: Division is on floats.
-    assertEval("$longNumber < ($longNumber + 1)", true);
-    assertEval("$longNumber < ($longNumber - 1)", false);
   }
 
   @Test
@@ -436,22 +421,6 @@ public class EvalVisitorTest {
     assertEval("$goo != $foo.goo2", false);
     assertEval("22 != '22'", false);
     assertEval("'' + 22 != '22'", false);
-
-    assertEval("$longNumber < $longNumber", false);
-    assertEval("$longNumber < ($longNumber - 1)", false);
-    assertEval("($longNumber - 1) < $longNumber", true);
-
-    assertEval("$longNumber <= $longNumber", true);
-    assertEval("$longNumber <= ($longNumber - 1)", false);
-    assertEval("($longNumber - 1) <= $longNumber", true);
-
-    assertEval("$longNumber > $longNumber", false);
-    assertEval("$longNumber > ($longNumber - 1)", true);
-    assertEval("($longNumber - 1) > $longNumber", false);
-
-    assertEval("$longNumber >= $longNumber", true);
-    assertEval("$longNumber >= ($longNumber - 1)", true);
-    assertEval("($longNumber - 1) >= $longNumber", false);
 
     assertEval("$floatNumber < $floatNumber", false);
     assertEval("$floatNumber < ($floatNumber - 1)", false);

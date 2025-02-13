@@ -32,7 +32,6 @@ import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.STRING_DAT
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.STRING_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.isDefinitelyAssignableFrom;
-import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.isNumericPrimitive;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.newLabel;
 
 import com.google.common.base.MoreObjects;
@@ -44,12 +43,11 @@ import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.internal.Converters;
 import com.google.template.soy.data.internal.RuntimeMapTypeTracker;
 import com.google.template.soy.types.BoolType;
-import com.google.template.soy.types.FloatType;
-import com.google.template.soy.types.IntType;
 import com.google.template.soy.types.LegacyObjectMapType;
 import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.MapType;
 import com.google.template.soy.types.NullType;
+import com.google.template.soy.types.NumberType;
 import com.google.template.soy.types.SanitizedType;
 import com.google.template.soy.types.SetType;
 import com.google.template.soy.types.SoyProtoType;
@@ -97,20 +95,11 @@ public final class SoyExpression extends Expression {
   }
 
   public static SoyExpression forFloat(Expression delegate) {
-    return new SoyExpression(getUnboxedType(FloatType.getInstance()), delegate);
+    return new SoyExpression(getUnboxedType(NumberType.getInstance()), delegate);
   }
 
   @DoNotCall
   public static SoyExpression forFloat(SoyExpression delegate) {
-    throw new UnsupportedOperationException();
-  }
-
-  public static SoyExpression forInt(Expression delegate) {
-    return new SoyExpression(getUnboxedType(IntType.getInstance()), delegate);
-  }
-
-  @DoNotCall
-  public static SoyExpression forInt(SoyExpression delegate) {
     throw new UnsupportedOperationException();
   }
 
@@ -317,18 +306,9 @@ public final class SoyExpression extends Expression {
     return delegate.location();
   }
 
-  public boolean isRuntimeInt() {
-    return soyRuntimeType.runtimeType().getSort() == Type.INT
-        || soyRuntimeType.runtimeType().getSort() == Type.LONG;
-  }
-
-  public boolean isRuntimeFloat() {
+  public boolean isRuntimeNumber() {
     return soyRuntimeType.runtimeType().getSort() == Type.FLOAT
         || soyRuntimeType.runtimeType().getSort() == Type.DOUBLE;
-  }
-
-  public boolean isRuntimeNumber() {
-    return isRuntimeInt() || isRuntimeFloat();
   }
 
   public boolean isKnownString() {
@@ -361,11 +341,8 @@ public final class SoyExpression extends Expression {
       }
       return asBoxed(MethodRefs.BOOLEAN_DATA_FOR_VALUE.invoke(delegate).toMaybeConstant());
     }
-    if (soyRuntimeType.isKnownInt()) {
-      return asBoxed(MethodRefs.INTEGER_DATA_FOR_VALUE.invoke(delegate).toMaybeConstant());
-    }
-    if (soyRuntimeType.isKnownFloat()) {
-      return asBoxed(MethodRefs.FLOAT_DATA_FOR_VALUE.invoke(delegate).toMaybeConstant());
+    if (soyRuntimeType.isKnownNumber()) {
+      return asBoxed(MethodRefs.NUMBER_DATA_FOR_VALUE.invoke(delegate).toMaybeConstant());
     }
     // If null is expected and it is a reference type we want to propagate null through the boxing
     // operation
@@ -522,14 +499,6 @@ public final class SoyExpression extends Expression {
       } else if (resultType().equals(Type.DOUBLE_TYPE)) {
         return Branch.ifTrue(
             MethodRefs.RUNTIME_COERCE_DOUBLE_TO_BOOLEAN.invoke(delegate).toMaybeConstant());
-      } else if (resultType().equals(Type.LONG_TYPE)) {
-        if (delegate.isConstant()) {
-          Long maybeLong = delegate.constantValue().getJavaValueAsType(Long.class).orElse(null);
-          if (maybeLong == null) {
-            return maybeLong == 0L ? Branch.never() : Branch.never().negate();
-          }
-        }
-        return Branch.ifNotZero(delegate);
       } else {
         throw new AssertionError(
             "resultType(): " + resultType() + " is not a valid type for a SoyExpression");
@@ -591,16 +560,12 @@ public final class SoyExpression extends Expression {
   /** Coerce this expression to a double value. Useful for float-int comparisons. */
   public SoyExpression coerceToDouble() {
     if (!isBoxed()) {
-      if (soyRuntimeType.isKnownFloat()) {
+      if (soyRuntimeType.isKnownNumber()) {
         return this;
-      }
-      if (soyRuntimeType.isKnownInt()) {
-        return forFloat(
-            BytecodeUtils.numericConversion(delegate, Type.DOUBLE_TYPE).toMaybeConstant());
       }
       throw new UnsupportedOperationException("Can't convert " + resultType() + " to a double");
     }
-    if (soyRuntimeType.isKnownFloat()) {
+    if (soyRuntimeType.isKnownNumber()) {
       return forFloat(delegate.invoke(MethodRefs.SOY_VALUE_FLOAT_VALUE).toMaybeConstant());
     }
     return forFloat(delegate.invoke(MethodRefs.SOY_VALUE_NUMBER_VALUE).toMaybeConstant());
@@ -613,11 +578,8 @@ public final class SoyExpression extends Expression {
    */
   public Expression unboxAsNumberOrJavaNull() {
     if (!isBoxed()) {
-      if (soyRuntimeType.isKnownFloat()) {
+      if (soyRuntimeType.isKnownNumber()) {
         return MethodRefs.BOX_DOUBLE.invoke(this).toMaybeConstant();
-      }
-      if (soyRuntimeType.isKnownInt()) {
-        return MethodRefs.BOX_LONG.invoke(this).toMaybeConstant();
       }
       throw new UnsupportedOperationException("Can't convert " + resultType() + " to a Number");
     }
@@ -656,46 +618,10 @@ public final class SoyExpression extends Expression {
         delegateWithoutCast().invoke(MethodRefs.SOY_VALUE_BOOLEAN_VALUE).toMaybeConstant());
   }
 
-  /**
-   * Unboxes this to a {@link SoyExpression} with a long runtime type.
-   *
-   * <p>This method is appropriate when you know (likely via inspection of the {@link #soyType()},
-   * or other means) that the value does have the appropriate type but you prefer to interact with
-   * it as its unboxed representation. If you simply want to 'coerce' the given value to a new type
-   * consider {@link #coerceToDouble()} which is designed for that use case.
-   */
-  public SoyExpression unboxAsLong() {
-    if (alreadyUnboxed(long.class)) {
-      return this;
-    }
-    assertBoxed(long.class);
-
-    return forInt(delegateWithoutCast().invoke(MethodRefs.SOY_VALUE_LONG_VALUE));
-  }
-
-  /**
-   * Unboxes this to a {@link SoyExpression} with an `int` runtime type.
-   *
-   * <p>This method is appropriate when you know (likely via inspection of the {@link #soyType()},
-   * or other means) that the value does have the appropriate type but you prefer to interact with
-   * it as its unboxed representation. If you simply want to 'coerce' the given value to a new type
-   * consider {@link #coerceToDouble()} which is designed for that use case.
-   */
-  public Expression unboxAsInt() {
-    if (alreadyUnboxed(long.class)) {
-      return checkedCastLongToInt(this);
-    }
-    assertBoxed(long.class);
-    return delegateWithoutCast().invoke(MethodRefs.SOY_VALUE_INTEGER_VALUE);
-  }
-
   public Expression coerceToInt() {
-    if (soyRuntimeType.isKnownInt()) {
-      return unboxAsInt();
-    }
     return checkedCastLongToInt(
         BytecodeUtils.numericConversion(
-            soyRuntimeType.isKnownFloat() ? unboxAsDouble() : coerceToDouble(), Type.LONG_TYPE));
+            soyRuntimeType.isKnownNumber() ? unboxAsDouble() : coerceToDouble(), Type.LONG_TYPE));
   }
 
   private static Expression checkedCastLongToInt(Expression delegate) {
@@ -862,13 +788,11 @@ public final class SoyExpression extends Expression {
       case STRING:
         staticValue = alreadyUnboxed(String.class);
         break;
+      case NUMBER:
+        staticValue = Type.DOUBLE_TYPE == soyRuntimeType.runtimeType();
+        break;
       case BOOL:
         staticValue = Type.BOOLEAN_TYPE == soyRuntimeType.runtimeType();
-        break;
-      case UNION:
-        staticValue =
-            soyType.equals(SoyTypes.NUMBER_TYPE)
-                && isNumericPrimitive(soyRuntimeType.runtimeType());
         break;
       case LIST:
         staticValue = alreadyUnboxed(List.class);
@@ -902,13 +826,11 @@ public final class SoyExpression extends Expression {
       case STRING:
         type = STRING_DATA_TYPE;
         break;
+      case NUMBER:
+        type = NUMBER_DATA_TYPE;
+        break;
       case BOOL:
         type = BOOLEAN_DATA_TYPE;
-        break;
-      case UNION:
-        if (soyType.equals(SoyTypes.NUMBER_TYPE)) {
-          type = NUMBER_DATA_TYPE;
-        }
         break;
       case RECORD:
         type = SOY_RECORD_IMPL_TYPE;

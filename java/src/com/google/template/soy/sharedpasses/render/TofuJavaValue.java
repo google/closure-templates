@@ -23,14 +23,12 @@ import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.BooleanData;
-import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.plugin.java.restricted.JavaValue;
 import com.google.template.soy.types.BoolType;
-import com.google.template.soy.types.IntType;
+import com.google.template.soy.types.NumberType;
 import com.google.template.soy.types.SoyType;
-import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.StringType;
 import javax.annotation.Nullable;
 
@@ -103,15 +101,15 @@ final class TofuJavaValue implements JavaValue {
   @CanIgnoreReturnValue
   @Override
   public TofuJavaValue asSoyInt() {
-    checkType(IntType.getInstance());
+    checkType(NumberType.getInstance());
     return this;
   }
 
   @Override
   public JavaValue coerceToJavaInt() {
-    checkType(SoyTypes.NUMBER_TYPE);
+    checkType(NumberType.getInstance());
     return TofuJavaValue.forSoyValue(
-        IntegerData.forValue(((NumberData) soyValue).coerceToInt()), sourceLocation);
+        NumberData.forValue(((NumberData) soyValue).coerceToInt()), sourceLocation);
   }
 
   @CanIgnoreReturnValue

@@ -31,7 +31,10 @@ import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.data.internal.SoyLegacyObjectMapImpl;
 import com.google.template.soy.data.internal.SoyMapImpl;
 import com.google.template.soy.data.internal.SoyRecordImpl;
+import com.google.template.soy.data.restricted.FloatData;
+import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NullData;
+import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import java.util.Map;
 import java.util.concurrent.Future;
@@ -45,6 +48,22 @@ public final class JbcSrcPluginRuntime {
 
   private static MethodRef create(String methodName, Class<?>... params) {
     return MethodRef.createPure(JbcSrcPluginRuntime.class, methodName, params);
+  }
+
+  public static final MethodRef NUMBER_TO_FLOAT = create("numberToFloat", NumberData.class);
+
+  @Keep
+  @Nonnull
+  public static FloatData numberToFloat(NumberData value) {
+    return FloatData.forValue(value.toFloat());
+  }
+
+  public static final MethodRef NUMBER_TO_INT = create("numberToInt", NumberData.class);
+
+  @Keep
+  @Nonnull
+  public static IntegerData numberToInt(NumberData value) {
+    return IntegerData.forValue((long) value.toFloat());
   }
 
   public static final MethodRef CONVERT_FUTURE_TO_SOY_VALUE_PROVIDER =

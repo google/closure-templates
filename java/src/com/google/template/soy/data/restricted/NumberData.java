@@ -17,11 +17,43 @@
 package com.google.template.soy.data.restricted;
 
 import com.google.common.primitives.Longs;
+import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.data.SoyValue;
 import javax.annotation.Nonnull;
 
 /** Abstract superclass for number data (integers and floats). */
-public abstract class NumberData extends PrimitiveData {
+public class NumberData extends PrimitiveData {
+
+  /** The float value. */
+  private final double value;
+
+  protected NumberData(double value) {
+    this.value = value;
+  }
+
+  /**
+   * Gets a FloatData instance for the given value.
+   *
+   * @param value The desired value.
+   * @return A FloatData instance with the given value.
+   */
+  @Nonnull
+  public static NumberData forValue(double value) {
+    return new NumberData(value);
+  }
+
+  public static NumberData forValue(Number value) {
+    return new NumberData(value.doubleValue());
+  }
+
+  @Override
+  public double floatValue() {
+    return value;
+  }
+
+  public int integerValue() {
+    return coerceToInt();
+  }
 
   /**
    * Gets the float value of this number data object. If this object is actually an integer, its
@@ -29,10 +61,17 @@ public abstract class NumberData extends PrimitiveData {
    *
    * @return The float value of this number data object.
    */
-  public abstract double toFloat();
+  public double toFloat() {
+    return value;
+  }
 
   @Override
   public long coerceToLong() {
+    return longValue();
+  }
+
+  @Override
+  public long longValue() {
     return javaNumberValue().longValue();
   }
 
@@ -50,11 +89,13 @@ public abstract class NumberData extends PrimitiveData {
   }
 
   @Nonnull
-  public abstract Number javaNumberValue();
+  public Number javaNumberValue() {
+    return value;
+  }
 
   @Override
   public boolean equals(Object other) {
-    return other instanceof NumberData && ((NumberData) other).toFloat() == this.toFloat();
+    return other instanceof NumberData && ((NumberData) other).value == this.value;
   }
 
   @Override
@@ -63,7 +104,32 @@ public abstract class NumberData extends PrimitiveData {
   }
 
   @Override
-  public final SoyValue checkNullishNumber() {
+  public SoyValue checkNullishNumber() {
     return this;
+  }
+
+  @Override
+  public String toString() {
+    return BaseUtils.formatDouble(value);
+  }
+
+  /**
+   * {@inheritDoc}
+   *
+   * <p>0.0 is falsy as is NaN.
+   */
+  @Override
+  public boolean coerceToBoolean() {
+    return value != 0.0 && !Double.isNaN(value);
+  }
+
+  @Override
+  public String coerceToString() {
+    return toString();
+  }
+
+  @Override
+  public String getSoyTypeName() {
+    return "number";
   }
 }

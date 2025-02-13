@@ -42,7 +42,7 @@ import com.google.template.soy.data.TemplateValue;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.data.internal.Converters;
 import com.google.template.soy.data.internal.ParamStore;
-import com.google.template.soy.data.restricted.IntegerData;
+import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.exprtree.ExprNode;
@@ -502,7 +502,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
   protected String variantString(ExprNode variantExpr, CallNode node) {
     try {
       SoyValue variantData = eval(variantExpr, node);
-      if (variantData instanceof IntegerData) {
+      if (variantData instanceof NumberData) {
         // An integer constant is being used as variant. Use the value string representation as
         // variant.
         return String.valueOf(variantData.longValue());

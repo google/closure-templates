@@ -65,12 +65,11 @@ import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContents;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.exprtree.ExprNode;
-import com.google.template.soy.exprtree.FloatNode;
 import com.google.template.soy.exprtree.FunctionNode;
-import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.ListLiteralNode;
 import com.google.template.soy.exprtree.MapLiteralNode;
 import com.google.template.soy.exprtree.MethodCallNode;
+import com.google.template.soy.exprtree.NumberNode;
 import com.google.template.soy.exprtree.ProtoEnumValueNode;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
@@ -500,10 +499,8 @@ final class ProtoUtils {
     private static void doBox(CodeBuilder adapter, SoyRuntimeType soyRuntimeType) {
       if (soyRuntimeType.isKnownBool()) {
         MethodRefs.BOOLEAN_DATA_FOR_VALUE.invokeUnchecked(adapter);
-      } else if (soyRuntimeType.isKnownInt()) {
-        MethodRefs.INTEGER_DATA_FOR_VALUE.invokeUnchecked(adapter);
-      } else if (soyRuntimeType.isKnownFloat()) {
-        MethodRefs.FLOAT_DATA_FOR_VALUE.invokeUnchecked(adapter);
+      } else if (soyRuntimeType.isKnownNumber()) {
+        MethodRefs.NUMBER_DATA_FOR_VALUE.invokeUnchecked(adapter);
       } else {
         SoyExpression.doBox(adapter, soyRuntimeType);
       }
@@ -544,18 +541,21 @@ final class ProtoUtils {
         case ENUM:
           if (isOpenEnumField(descriptor)) {
             // it already is an integer, cast to long
-            return SoyExpression.forInt(numericConversion(field, Type.LONG_TYPE));
+            return SoyExpression.forFloat(numericConversion(field, Type.DOUBLE_TYPE));
           }
           // otherwise it is closed and we need to extract the number.
-          return SoyExpression.forInt(
-              numericConversion(field.invoke(MethodRefs.PROTOCOL_ENUM_GET_NUMBER), Type.LONG_TYPE));
+          return SoyExpression.forFloat(
+              numericConversion(
+                  field.invoke(MethodRefs.PROTOCOL_ENUM_GET_NUMBER), Type.DOUBLE_TYPE));
         case INT:
           // Since soy 'int's are java longs, we can actually fully represent an unsigned 32bit
           // integer.
           if (isUnsigned(descriptor)) {
-            return SoyExpression.forInt(MethodRefs.UNSIGNED_INTS_TO_LONG.invoke(field));
+            return SoyExpression.forFloat(
+                numericConversion(
+                    MethodRefs.UNSIGNED_INTS_TO_LONG.invoke(field), Type.DOUBLE_TYPE));
           } else {
-            return SoyExpression.forInt(numericConversion(field, Type.LONG_TYPE));
+            return SoyExpression.forFloat(numericConversion(field, Type.DOUBLE_TYPE));
           }
         case LONG:
           if (int64Mode == Int64ConversionMode.FORCE_GBIGINT) {
@@ -582,7 +582,7 @@ final class ProtoUtils {
           // appear negative).  We don't have a solution for this currently.  In theory we could add
           // the concept of unsigned integers to soy and then implement arithmetic on them... but
           // that is insane!
-          return SoyExpression.forInt(field);
+          return SoyExpression.forFloat(numericConversion(field, Type.DOUBLE_TYPE));
         case BOOLEAN:
           return SoyExpression.forBool(field);
         case STRING:
@@ -664,20 +664,22 @@ final class ProtoUtils {
           return SoyExpression.forFloat(
               field.checkedCast(Number.class).invoke(MethodRefs.NUMBER_DOUBLE_VALUE));
         case ENUM:
-          return SoyExpression.forInt(
+          return SoyExpression.forFloat(
               numericConversion(
                   field
                       .checkedCast(ProtocolMessageEnum.class)
                       .invoke(MethodRefs.PROTOCOL_ENUM_GET_NUMBER),
-                  Type.LONG_TYPE));
+                  Type.DOUBLE_TYPE));
         case INT:
           if (isUnsigned(descriptor)) {
-            return SoyExpression.forInt(
-                MethodRefs.UNSIGNED_INTS_TO_LONG.invoke(
-                    field.checkedCast(Integer.class).invoke(MethodRefs.NUMBER_INT_VALUE)));
+            return SoyExpression.forFloat(
+                numericConversion(
+                    MethodRefs.UNSIGNED_INTS_TO_LONG.invoke(
+                        field.checkedCast(Integer.class).invoke(MethodRefs.NUMBER_INT_VALUE)),
+                    Type.DOUBLE_TYPE));
           } else {
-            return SoyExpression.forInt(
-                field.checkedCast(Integer.class).invoke(MethodRefs.NUMBER_LONG_VALUE));
+            return SoyExpression.forFloat(
+                field.checkedCast(Integer.class).invoke(MethodRefs.NUMBER_DOUBLE_VALUE));
           }
         case LONG:
           SoyRuntimeType gbigintType = SoyRuntimeType.getBoxedType(GbigintType.getInstance());
@@ -1034,9 +1036,9 @@ final class ProtoUtils {
           }
         };
       }
-      if (field.getJavaType() == JavaType.INT && arg.getKind() == ExprNode.Kind.INTEGER_NODE) {
+      if (field.getJavaType() == JavaType.INT && arg.getKind() == ExprNode.Kind.NUMBER_NODE) {
         // similar to the above, we can avoid a L2I instruction or a method call
-        long value = ((IntegerNode) arg).getValue();
+        long value = (long) ((NumberNode) arg).getValue();
         return new Statement() {
           @Override
           protected void doGen(CodeBuilder cb) {
@@ -1049,8 +1051,8 @@ final class ProtoUtils {
           }
         };
       }
-      if (field.getJavaType() == JavaType.FLOAT && arg.getKind() == ExprNode.Kind.FLOAT_NODE) {
-        float value = (float) ((FloatNode) arg).getValue();
+      if (field.getJavaType() == JavaType.FLOAT && arg.getKind() == ExprNode.Kind.NUMBER_NODE) {
+        float value = (float) ((NumberNode) arg).getValue();
         return new Statement() {
           @Override
           protected void doGen(CodeBuilder cb) {
@@ -1384,9 +1386,9 @@ final class ProtoUtils {
           }
         };
       }
-      if (field.getJavaType() == JavaType.INT && arg.getKind() == ExprNode.Kind.INTEGER_NODE) {
+      if (field.getJavaType() == JavaType.INT && arg.getKind() == ExprNode.Kind.NUMBER_NODE) {
         // similar to the above, we can avoid a L2I instruction or a method call
-        long value = ((IntegerNode) arg).getValue();
+        long value = (long) ((NumberNode) arg).getValue();
         int intValue = isUnsigned(field) ? UnsignedInts.saturatedCast(value) : (int) value;
         Expression boxedInt = BytecodeUtils.boxJavaPrimitive(Type.INT_TYPE, constant(intValue));
         return new Statement() {
@@ -1399,8 +1401,8 @@ final class ProtoUtils {
           }
         };
       }
-      if (field.getJavaType() == JavaType.FLOAT && arg.getKind() == ExprNode.Kind.FLOAT_NODE) {
-        float value = (float) ((FloatNode) arg).getValue();
+      if (field.getJavaType() == JavaType.FLOAT && arg.getKind() == ExprNode.Kind.NUMBER_NODE) {
+        float value = (float) ((NumberNode) arg).getValue();
         Expression boxedFloat = BytecodeUtils.boxJavaPrimitive(Type.FLOAT_TYPE, constant(value));
         return new Statement() {
           @Override

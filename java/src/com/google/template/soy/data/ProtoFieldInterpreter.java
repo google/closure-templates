@@ -34,7 +34,6 @@ import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.EnumDescriptor;
 import com.google.protobuf.Descriptors.EnumValueDescriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor;
-import com.google.protobuf.Descriptors.FileDescriptor.Syntax;
 import com.google.protobuf.DynamicMessage;
 import com.google.protobuf.Message;
 import com.google.protobuf.ProtocolMessageEnum;
@@ -43,7 +42,7 @@ import com.google.template.soy.data.internal.SoyMapImpl;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.GbigintData;
-import com.google.template.soy.data.restricted.IntegerData;
+import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.internal.proto.FieldVisitor;
 import com.google.template.soy.internal.proto.Int64ConversionMode;
@@ -317,7 +316,7 @@ public abstract class ProtoFieldInterpreter {
       new ProtoFieldInterpreter() {
         @Override
         public SoyValue soyFromProto(Object field) {
-          return IntegerData.forValue(((Number) field).longValue());
+          return NumberData.forValue(((Number) field).longValue());
         }
 
         @Override
@@ -331,7 +330,7 @@ public abstract class ProtoFieldInterpreter {
       new ProtoFieldInterpreter() {
         @Override
         public SoyValue soyFromProto(Object field) {
-          return IntegerData.forValue(UnsignedInts.toLong(((Number) field).intValue()));
+          return NumberData.forValue(UnsignedInts.toLong(((Number) field).intValue()));
         }
 
         @Override
@@ -345,7 +344,7 @@ public abstract class ProtoFieldInterpreter {
       new ProtoFieldInterpreter() {
         @Override
         public SoyValue soyFromProto(Object field) {
-          return IntegerData.forValue((Long) field);
+          return NumberData.forValue((Long) field);
         }
 
         @Override
@@ -567,7 +566,7 @@ public abstract class ProtoFieldInterpreter {
             // ProtocolMessageEnum otherwise.  Who knows why.
             value = ((EnumValueDescriptor) field).getNumber();
           }
-          return IntegerData.forValue(value);
+          return NumberData.forValue(value);
         }
 
         @Override

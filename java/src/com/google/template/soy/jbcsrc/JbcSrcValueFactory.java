@@ -19,6 +19,7 @@ package com.google.template.soy.jbcsrc;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.newLabel;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.numericConversion;
 import static com.google.template.soy.jbcsrc.runtime.JbcSrcPluginRuntime.BOX_JAVA_MAP_AS_SOY_LEGACY_OBJECT_MAP;
 import static com.google.template.soy.jbcsrc.runtime.JbcSrcPluginRuntime.BOX_JAVA_MAP_AS_SOY_MAP;
 import static com.google.template.soy.jbcsrc.runtime.JbcSrcPluginRuntime.BOX_JAVA_MAP_AS_SOY_RECORD;
@@ -26,6 +27,8 @@ import static com.google.template.soy.jbcsrc.runtime.JbcSrcPluginRuntime.CONVERT
 import static com.google.template.soy.jbcsrc.runtime.JbcSrcPluginRuntime.JAVA_NULL_TO_SOY_NULL;
 import static com.google.template.soy.jbcsrc.runtime.JbcSrcPluginRuntime.NULLISH_TO_JAVA_NULL;
 import static com.google.template.soy.jbcsrc.runtime.JbcSrcPluginRuntime.NULL_TO_JAVA_NULL;
+import static com.google.template.soy.jbcsrc.runtime.JbcSrcPluginRuntime.NUMBER_TO_FLOAT;
+import static com.google.template.soy.jbcsrc.runtime.JbcSrcPluginRuntime.NUMBER_TO_INT;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -36,6 +39,9 @@ import com.google.protobuf.ProtocolMessageEnum;
 import com.google.template.soy.data.PartialSoyTemplate;
 import com.google.template.soy.data.SoyTemplate;
 import com.google.template.soy.data.SoyValue;
+import com.google.template.soy.data.restricted.FloatData;
+import com.google.template.soy.data.restricted.IntegerData;
+import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.data.restricted.PrimitiveData;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
@@ -300,7 +306,7 @@ final class JbcSrcValueFactory extends JavaValueFactory {
 
   @Override
   public JbcSrcJavaValue constant(long value) {
-    return JbcSrcJavaValue.of(SoyExpression.forInt(BytecodeUtils.constant(value)));
+    return constant((double) value);
   }
 
   @Override
@@ -372,6 +378,12 @@ final class JbcSrcValueFactory extends JavaValueFactory {
       // NullData -> null, UndefinedData -> UndefinedData
       return maybeSoyNullToJavaNull(actualParam.box()).checkedCast(expectedParamType);
     }
+    if (expectedParamType == IntegerData.class) {
+      return NUMBER_TO_INT.invoke(actualParam.box().checkedCast(NumberData.class));
+    }
+    if (expectedParamType == FloatData.class) {
+      return NUMBER_TO_FLOAT.invoke(actualParam.box().checkedCast(NumberData.class));
+    }
     // If we expect a specific SoyValue subclass, then box + cast.
     if (SoyValue.class.isAssignableFrom(expectedParamType)) {
       // NullData -> null, UndefinedData -> null
@@ -382,9 +394,7 @@ final class JbcSrcValueFactory extends JavaValueFactory {
 
     // int needs special-casing for overflow, and because we can't unbox as int
     if (expectedParamType == int.class) {
-      // We box + invoke rather than unboxAsLong() + numericConversion so that we get overflow
-      // checking (built into integerValue()).
-      return actualParam.unboxAsInt();
+      return actualParam.coerceToInt();
     }
     // double needs special casing since we allow soy int -> double conversions (since double
     // has enough precision to hold soy int data).  We can't unbox longs as double, so we coerce.
@@ -427,7 +437,7 @@ final class JbcSrcValueFactory extends JavaValueFactory {
     if (expectedParamType.equals(boolean.class)) {
       return actualParam.unboxAsBoolean();
     } else if (expectedParamType.equals(long.class)) {
-      return actualParam.unboxAsLong();
+      return numericConversion(actualParam.unboxAsDouble(), Type.LONG_TYPE);
     } else if (expectedParamType.equals(String.class)) {
       return actualParam.unboxAsStringOrJavaNull();
     } else if (expectedParamType.equals(List.class)) {
@@ -439,7 +449,7 @@ final class JbcSrcValueFactory extends JavaValueFactory {
 
   private static Expression convertToEnum(Class<?> enumType, SoyExpression e) {
     return getForNumberMethod(enumType)
-        .invoke(BytecodeUtils.numericConversion(e.unboxAsLong(), Type.INT_TYPE));
+        .invoke(BytecodeUtils.numericConversion(e.unboxAsDouble(), Type.INT_TYPE));
   }
 
   private static MethodRef getForNumberMethod(Class<?> enumType) {
@@ -464,9 +474,8 @@ final class JbcSrcValueFactory extends JavaValueFactory {
       case Type.BOOLEAN:
         return SoyExpression.forBool(expr);
       case Type.INT:
-        return SoyExpression.forInt(BytecodeUtils.numericConversion(expr, Type.LONG_TYPE));
       case Type.LONG:
-        return SoyExpression.forInt(expr);
+        return SoyExpression.forFloat(BytecodeUtils.numericConversion(expr, Type.DOUBLE_TYPE));
       case Type.DOUBLE:
         return SoyExpression.forFloat(expr);
       case Type.OBJECT:
@@ -553,9 +562,9 @@ final class JbcSrcValueFactory extends JavaValueFactory {
         // TODO(lukes): SoyExpression should have a way to track type information with an unboxed
         // int that is actually a proto enum.  Like we do with SanitizedContents
         soyExpr =
-            SoyExpression.forInt(
+            SoyExpression.forFloat(
                 BytecodeUtils.numericConversion(
-                    MethodRefs.PROTOCOL_ENUM_GET_NUMBER.invoke(expr), Type.LONG_TYPE));
+                    MethodRefs.PROTOCOL_ENUM_GET_NUMBER.invoke(expr), Type.DOUBLE_TYPE));
       } else if (PartialSoyTemplate.class.isAssignableFrom(type)
           || SoyTemplate.class.isAssignableFrom(type)) {
 

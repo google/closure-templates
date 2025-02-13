@@ -65,8 +65,8 @@ import com.google.template.soy.data.internal.SoyMapImpl;
 import com.google.template.soy.data.internal.SoyRecordImpl;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
-import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NullData;
+import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.exprtree.AbstractReturningExprNodeVisitor;
@@ -77,10 +77,8 @@ import com.google.template.soy.exprtree.ExprNode.AccessChainComponentNode;
 import com.google.template.soy.exprtree.ExprNode.Kind;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FieldAccessNode;
-import com.google.template.soy.exprtree.FloatNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.FunctionNode.ExternRef;
-import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.ItemAccessNode;
 import com.google.template.soy.exprtree.ListComprehensionNode;
 import com.google.template.soy.exprtree.ListComprehensionNode.ComprehensionVarDefn;
@@ -90,6 +88,7 @@ import com.google.template.soy.exprtree.MapLiteralNode;
 import com.google.template.soy.exprtree.MethodCallNode;
 import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.exprtree.NullSafeAccessNode;
+import com.google.template.soy.exprtree.NumberNode;
 import com.google.template.soy.exprtree.OperatorNodes.AmpAmpOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.AsOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.AssertNonNullOpNode;
@@ -323,12 +322,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
   }
 
   @Override
-  protected SoyValue visitIntegerNode(IntegerNode node) {
-    return convertResult(node.getValue());
-  }
-
-  @Override
-  protected SoyValue visitFloatNode(FloatNode node) {
+  protected SoyValue visitNumberNode(NumberNode node) {
     return convertResult(node.getValue());
   }
 
@@ -573,7 +567,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
       throw RenderException.create(
           String.format(
               "Expected value of type '%s', but actual type was '%s'.",
-              fieldAccess.getType(), value.getClass().getSimpleName()));
+              fieldAccess.getType(), value.getSoyTypeName()));
     }
 
     return value != null ? value : UndefinedData.INSTANCE;
@@ -623,7 +617,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
       throw RenderException.create(
           String.format(
               "Expected value of type '%s', but actual type was '%s'.",
-              itemAccess.getType(), value.getClass().getSimpleName()));
+              itemAccess.getType(), value.getSoyTypeName()));
     }
 
     return value != null ? value : UndefinedData.INSTANCE;
@@ -912,8 +906,6 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
               "the "
                   + nonpluginFn.getName()
                   + " function can't be used in templates compiled to Java");
-        case TO_FLOAT:
-          return visitToFloatFunction(node);
         case DEBUG_SOY_TEMPLATE_INFO:
           return BooleanData.forValue(debugSoyTemplateInfo);
         case VE_DATA:
@@ -1146,17 +1138,12 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     }
     // if the primary message id is available or the fallback message is not available, then we
     // are using the primary message.
-    long primaryMsgId = ((IntegerNode) node.getParam(1)).getValue();
+    long primaryMsgId = Long.parseLong(((StringNode) node.getParam(1)).getValue());
     if (msgBundle.hasMsg(primaryMsgId)) {
       return BooleanData.TRUE;
     }
-    long fallbackMsgId = ((IntegerNode) node.getParam(2)).getValue();
+    long fallbackMsgId = Long.parseLong(((StringNode) node.getParam(2)).getValue());
     return BooleanData.forValue(!msgBundle.hasMsg(fallbackMsgId));
-  }
-
-  private SoyValue visitToFloatFunction(FunctionNode node) {
-    IntegerData v = (IntegerData) visit(node.getParam(0));
-    return FloatData.forValue((double) v.longValue());
   }
 
   private SoyValue visitNewSetFunction(FunctionNode node) {
@@ -1186,7 +1173,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
    * @param i The integer to convert.
    */
   private SoyValue convertResult(long i) {
-    return IntegerData.forValue(i);
+    return NumberData.forValue(i);
   }
 
   /**

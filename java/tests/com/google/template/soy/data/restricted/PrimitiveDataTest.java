@@ -20,6 +20,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import com.google.template.soy.base.internal.BaseUtils;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -108,17 +109,17 @@ public class PrimitiveDataTest {
   @Test
   public void testFloatDataToString() {
     // Tests that our toString is similar to Javascript's number toString.
-    assertEquals("0", FloatData.toString(0.0));
-    assertEquals("0", FloatData.toString(-0.0));
-    assertEquals("1", FloatData.toString(1.0));
-    assertEquals("-1", FloatData.toString(-1.0));
-    assertEquals("1000000000000000", FloatData.toString(1.0e15));
-    assertEquals("-1000000000000000", FloatData.toString(-1.0e15));
-    assertEquals("-1000000000000000", FloatData.toString(-1.0e15));
-    assertEquals("1.51e32", FloatData.toString(1.51e32));
-    assertEquals("NaN", FloatData.toString(Double.NaN));
-    assertEquals("Infinity", FloatData.toString(Double.POSITIVE_INFINITY));
-    assertEquals("-Infinity", FloatData.toString(Double.NEGATIVE_INFINITY));
+    assertEquals("0", BaseUtils.formatDouble(0.0));
+    assertEquals("0", BaseUtils.formatDouble(-0.0));
+    assertEquals("1", BaseUtils.formatDouble(1.0));
+    assertEquals("-1", BaseUtils.formatDouble(-1.0));
+    assertEquals("1000000000000000", BaseUtils.formatDouble(1.0e15));
+    assertEquals("-1000000000000000", BaseUtils.formatDouble(-1.0e15));
+    assertEquals("-1000000000000000", BaseUtils.formatDouble(-1.0e15));
+    assertEquals("1.51e32", BaseUtils.formatDouble(1.51e32));
+    assertEquals("NaN", BaseUtils.formatDouble(Double.NaN));
+    assertEquals("Infinity", BaseUtils.formatDouble(Double.POSITIVE_INFINITY));
+    assertEquals("-Infinity", BaseUtils.formatDouble(Double.NEGATIVE_INFINITY));
   }
 
   @Test

@@ -25,7 +25,6 @@ import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.internalutils.InternalValueUtils;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
-import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.PrimitiveData;
 import com.google.template.soy.data.restricted.StringData;
@@ -42,14 +41,13 @@ import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FieldAccessNode;
-import com.google.template.soy.exprtree.FloatNode;
 import com.google.template.soy.exprtree.FunctionNode;
-import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.ItemAccessNode;
 import com.google.template.soy.exprtree.ListLiteralNode;
 import com.google.template.soy.exprtree.MapLiteralNode;
 import com.google.template.soy.exprtree.MethodCallNode;
 import com.google.template.soy.exprtree.NullSafeAccessNode;
+import com.google.template.soy.exprtree.NumberNode;
 import com.google.template.soy.exprtree.OperatorNodes.AmpAmpOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.AsOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.BarBarOpNode;
@@ -66,8 +64,8 @@ import com.google.template.soy.sharedpasses.render.Environment;
 import com.google.template.soy.sharedpasses.render.RenderException;
 import com.google.template.soy.types.AnyType;
 import com.google.template.soy.types.BoolType;
+import com.google.template.soy.types.NumberType;
 import com.google.template.soy.types.SoyType;
-import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.StringType;
 import java.util.function.BiFunction;
 import javax.annotation.Nullable;
@@ -266,9 +264,9 @@ final class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
     ExprNode keyExpr = node.getChild(1);
     if (baseExpr instanceof ListLiteralNode
         && !((ListLiteralNode) baseExpr).containsSpreads()
-        && keyExpr instanceof IntegerNode) {
+        && keyExpr instanceof NumberNode) {
       ListLiteralNode listLiteral = (ListLiteralNode) baseExpr;
-      long index = ((IntegerNode) keyExpr).getValue();
+      long index = (long) ((NumberNode) keyExpr).getValue();
       if (index >= 0 && index < listLiteral.numChildren()) {
         return listLiteral.getChild((int) index);
       } else {
@@ -458,9 +456,8 @@ final class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
       case STRING_NODE:
         staticValue = rhs.equals(StringType.getInstance());
         break;
-      case INTEGER_NODE:
-      case FLOAT_NODE:
-        staticValue = rhs.equals(SoyTypes.NUMBER_TYPE);
+      case NUMBER_NODE:
+        staticValue = rhs.equals(NumberType.getInstance());
         break;
       case BOOLEAN_NODE:
         staticValue = rhs.equals(BoolType.getInstance());
@@ -582,10 +579,8 @@ final class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
         return UndefinedData.INSTANCE;
       case BOOLEAN_NODE:
         return BooleanData.forValue(((BooleanNode) expr).getValue());
-      case INTEGER_NODE:
-        return IntegerData.forValue(((IntegerNode) expr).getValue());
-      case FLOAT_NODE:
-        return FloatData.forValue(((FloatNode) expr).getValue());
+      case NUMBER_NODE:
+        return FloatData.forValue(((NumberNode) expr).getValue());
       case STRING_NODE:
         return StringData.forValue(((StringNode) expr).getValue());
       case PROTO_ENUM_VALUE_NODE:

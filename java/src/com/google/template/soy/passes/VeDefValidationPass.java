@@ -24,12 +24,11 @@ import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprEquivalence;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.FunctionNode;
-import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.NullNode;
+import com.google.template.soy.exprtree.NumberNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.logging.LoggingConfigValidator;
 import com.google.template.soy.logging.LoggingConfigValidator.VisualElement;
-import com.google.template.soy.passes.CompilerFileSetPass.Result;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.soytree.ConstNode;
 import com.google.template.soy.soytree.SoyFileNode;
@@ -114,11 +113,11 @@ final class VeDefValidationPass implements CompilerFileSetPass {
     }
     String veName = ((StringNode) func.getParam(0)).getValue();
 
-    if (!(func.getParam(1) instanceof IntegerNode)) {
+    if (!(func.getParam(1) instanceof NumberNode)) {
       errorReporter.report(func.getParam(1).getSourceLocation(), BAD_VE_DEF_ID);
       return;
     }
-    long id = ((IntegerNode) func.getParam(1)).getValue();
+    long id = (long) ((NumberNode) func.getParam(1)).getValue();
 
     Optional<String> dataProtoType;
     if (func.numParams() < 3 || func.getParam(2) instanceof NullNode) {

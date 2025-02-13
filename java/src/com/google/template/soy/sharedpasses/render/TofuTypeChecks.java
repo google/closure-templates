@@ -30,8 +30,7 @@ import com.google.template.soy.data.SoySet;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.TemplateValue;
 import com.google.template.soy.data.restricted.BooleanData;
-import com.google.template.soy.data.restricted.FloatData;
-import com.google.template.soy.data.restricted.IntegerData;
+import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
@@ -122,13 +121,11 @@ public final class TofuTypeChecks {
         return isSanitizedofKind(value, ContentKind.CSS);
       case BOOL:
         return CheckResult.fromBool(value instanceof BooleanData);
-      case FLOAT:
-        return CheckResult.fromBool(value instanceof FloatData);
+      case NUMBER:
+        return CheckResult.fromBool(value instanceof NumberData);
       case HTML:
       case ELEMENT:
         return isSanitizedofKind(value, ContentKind.HTML);
-      case INT:
-        return CheckResult.fromBool(value instanceof IntegerData);
       case JS:
         return isSanitizedofKind(value, ContentKind.JS);
       case ITERABLE:
@@ -155,7 +152,7 @@ public final class TofuTypeChecks {
                     == ((SoyProtoType) type).getDescriptor());
       case PROTO_ENUM:
         // TODO(lukes): this should also assert that the value is in range
-        return CheckResult.fromBool(value instanceof IntegerData);
+        return CheckResult.fromBool(value instanceof NumberData);
       case RECORD:
         // This allows casting a map or proto to a record.
         return CheckResult.fromBool(value instanceof SoyRecord);
