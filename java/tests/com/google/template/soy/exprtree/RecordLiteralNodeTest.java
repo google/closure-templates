@@ -46,7 +46,7 @@ public final class RecordLiteralNodeTest {
             X);
     recordLit.addChildren(
         ImmutableList.of(
-            new StringNode("blah", QuoteStyle.SINGLE, X), new IntegerNode(123, X), fooDataRef));
+            new StringNode("blah", QuoteStyle.SINGLE, X), new NumberNode(123, X), fooDataRef));
     assertThat(recordLit.toSourceString()).isEqualTo("record(aaa: 'blah', bbb: 123, boo: $foo)");
   }
 }
