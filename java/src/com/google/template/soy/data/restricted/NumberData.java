@@ -36,6 +36,7 @@ public abstract class NumberData extends PrimitiveData {
     return javaNumberValue().longValue();
   }
 
+  @Override
   public int coerceToInt() {
     long l = coerceToLong();
     if (l > Integer.MAX_VALUE || l < Integer.MIN_VALUE) {

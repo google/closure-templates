@@ -88,6 +88,10 @@ public abstract class SoyValue extends SoyValueProvider {
     throw new SoyDataException("'" + this + "' cannot be coerced to long");
   }
 
+  public int coerceToInt() {
+    throw new SoyDataException("'" + this + "' cannot be coerced to int");
+  }
+
   /**
    * Returns whether this value is truthy. For SanitizedContent, this checks if the content is
    * empty.

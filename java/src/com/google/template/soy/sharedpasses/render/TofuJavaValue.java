@@ -24,7 +24,6 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.IntegerData;
-import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.plugin.java.restricted.JavaValue;
 import com.google.template.soy.types.BoolType;
@@ -110,8 +109,7 @@ final class TofuJavaValue implements JavaValue {
   @Override
   public JavaValue coerceToJavaInt() {
     checkType(SoyTypes.NUMBER_TYPE);
-    return TofuJavaValue.forSoyValue(
-        IntegerData.forValue(((NumberData) soyValue).coerceToInt()), sourceLocation);
+    return TofuJavaValue.forSoyValue(IntegerData.forValue(soyValue.coerceToInt()), sourceLocation);
   }
 
   @CanIgnoreReturnValue
