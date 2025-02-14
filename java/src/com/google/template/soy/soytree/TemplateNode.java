@@ -35,7 +35,7 @@ import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.AbstractVarDefn;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
-import com.google.template.soy.exprtree.IntegerNode;
+import com.google.template.soy.exprtree.NumberNode;
 import com.google.template.soy.exprtree.ProtoEnumValueNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VarDefn;
@@ -782,8 +782,8 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
    */
   @Nullable
   protected static String variantExprToString(ExprNode exprNode) {
-    if (exprNode instanceof IntegerNode) {
-      long variantValue = ((IntegerNode) exprNode).getValue();
+    if (exprNode instanceof NumberNode) {
+      long variantValue = ((NumberNode) exprNode).longValue();
       return String.valueOf(variantValue);
     }
     if (exprNode instanceof ProtoEnumValueNode) {

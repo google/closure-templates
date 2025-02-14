@@ -24,7 +24,7 @@ import com.google.template.soy.base.internal.IncrementingIdGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.GroupNode;
-import com.google.template.soy.exprtree.IntegerNode;
+import com.google.template.soy.exprtree.NumberNode;
 import com.google.template.soy.exprtree.OperatorNodes.DivideByOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TimesOpNode;
@@ -74,10 +74,10 @@ public final class DesugarGroupNodesPassTest {
     DivideByOpNode divideOpNode = (DivideByOpNode) exprRoot.getChild(0);
     TimesOpNode timesOpNode = (TimesOpNode) divideOpNode.getChild(0);
     PlusOpNode plusOpNode = (PlusOpNode) timesOpNode.getChild(0);
-    assertThat(((IntegerNode) plusOpNode.getChild(0)).getValue()).isEqualTo(1L);
-    assertThat(((IntegerNode) plusOpNode.getChild(1)).getValue()).isEqualTo(5L);
-    assertThat(((IntegerNode) timesOpNode.getChild(1)).getValue()).isEqualTo(6L);
-    assertThat(((IntegerNode) divideOpNode.getChild(1)).getValue()).isEqualTo(2L);
+    assertThat(((NumberNode) plusOpNode.getChild(0)).longValue()).isEqualTo(1L);
+    assertThat(((NumberNode) plusOpNode.getChild(1)).longValue()).isEqualTo(5L);
+    assertThat(((NumberNode) timesOpNode.getChild(1)).longValue()).isEqualTo(6L);
+    assertThat(((NumberNode) divideOpNode.getChild(1)).longValue()).isEqualTo(2L);
   }
 
   private static void runPass(SoyFileNode file) {

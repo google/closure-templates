@@ -29,9 +29,9 @@ import com.google.template.soy.exprtree.DataAccessNode;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.GlobalNode;
-import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.ItemAccessNode;
 import com.google.template.soy.exprtree.NullSafeAccessNode;
+import com.google.template.soy.exprtree.NumberNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import java.util.List;
 
@@ -262,14 +262,14 @@ public final class MsgSubstUnitPlaceholderNameUtils {
         } else if (exprNode instanceof ItemAccessNode) {
           ItemAccessNode itemAccess = (ItemAccessNode) exprNode;
           exprNode = itemAccess.getBaseExprChild();
-          if (itemAccess.getKeyExprChild() instanceof IntegerNode) {
+          if (itemAccess.getKeyExprChild() instanceof NumberNode) {
             // Prefix with index, but don't add to baseNames list since it's not a valid ident.
-            IntegerNode keyValue = (IntegerNode) itemAccess.getKeyExprChild();
-            if (keyValue.getValue() < 0) {
+            NumberNode keyValue = (NumberNode) itemAccess.getKeyExprChild();
+            if (keyValue.longValue() < 0) {
               // Stop if we encounter an invalid key.
               break;
             }
-            nameSegment = Long.toString(keyValue.getValue());
+            nameSegment = Long.toString(keyValue.longValue());
             baseName =
                 BaseUtils.convertToUpperUnderscore(nameSegment)
                     + ((baseName != null) ? "_" + baseName : "");

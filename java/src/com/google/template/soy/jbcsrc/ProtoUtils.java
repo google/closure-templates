@@ -65,12 +65,11 @@ import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContents;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.exprtree.ExprNode;
-import com.google.template.soy.exprtree.FloatNode;
 import com.google.template.soy.exprtree.FunctionNode;
-import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.ListLiteralNode;
 import com.google.template.soy.exprtree.MapLiteralNode;
 import com.google.template.soy.exprtree.MethodCallNode;
+import com.google.template.soy.exprtree.NumberNode;
 import com.google.template.soy.exprtree.ProtoEnumValueNode;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
@@ -1034,9 +1033,9 @@ final class ProtoUtils {
           }
         };
       }
-      if (field.getJavaType() == JavaType.INT && arg.getKind() == ExprNode.Kind.INTEGER_NODE) {
+      if (field.getJavaType() == JavaType.INT && arg instanceof NumberNode) {
         // similar to the above, we can avoid a L2I instruction or a method call
-        long value = ((IntegerNode) arg).getValue();
+        long value = ((NumberNode) arg).longValue();
         return new Statement() {
           @Override
           protected void doGen(CodeBuilder cb) {
@@ -1049,8 +1048,8 @@ final class ProtoUtils {
           }
         };
       }
-      if (field.getJavaType() == JavaType.FLOAT && arg.getKind() == ExprNode.Kind.FLOAT_NODE) {
-        float value = (float) ((FloatNode) arg).getValue();
+      if (field.getJavaType() == JavaType.FLOAT && arg instanceof NumberNode) {
+        float value = (float) ((NumberNode) arg).doubleValue();
         return new Statement() {
           @Override
           protected void doGen(CodeBuilder cb) {
@@ -1384,9 +1383,9 @@ final class ProtoUtils {
           }
         };
       }
-      if (field.getJavaType() == JavaType.INT && arg.getKind() == ExprNode.Kind.INTEGER_NODE) {
+      if (field.getJavaType() == JavaType.INT && arg instanceof NumberNode) {
         // similar to the above, we can avoid a L2I instruction or a method call
-        long value = ((IntegerNode) arg).getValue();
+        long value = ((NumberNode) arg).longValue();
         int intValue = isUnsigned(field) ? UnsignedInts.saturatedCast(value) : (int) value;
         Expression boxedInt = BytecodeUtils.boxJavaPrimitive(Type.INT_TYPE, constant(intValue));
         return new Statement() {
@@ -1399,8 +1398,8 @@ final class ProtoUtils {
           }
         };
       }
-      if (field.getJavaType() == JavaType.FLOAT && arg.getKind() == ExprNode.Kind.FLOAT_NODE) {
-        float value = (float) ((FloatNode) arg).getValue();
+      if (field.getJavaType() == JavaType.FLOAT && arg instanceof NumberNode) {
+        float value = (float) ((NumberNode) arg).doubleValue();
         Expression boxedFloat = BytecodeUtils.boxJavaPrimitive(Type.FLOAT_TYPE, constant(value));
         return new Statement() {
           @Override

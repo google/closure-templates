@@ -32,6 +32,7 @@ import com.google.template.soy.error.SoyError;
 import com.google.template.soy.exprtree.ExprEquivalence;
 import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.IntegerNode;
+import com.google.template.soy.exprtree.NumberNode;
 import com.google.template.soy.exprtree.OperatorNodes.GreaterThanOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
 import com.google.template.soy.exprtree.StringNode;
@@ -919,7 +920,7 @@ public final class TemplateParserTest {
     assertEquals(1, pn3.numChildren());
     PrintDirectiveNode pn3d0 = pn3.getChild(0);
     assertEquals("|insertWordBreaks", pn3d0.getName());
-    assertEquals(8, ((IntegerNode) pn3d0.getArgs().get(0).getRoot()).getValue());
+    assertEquals(8, ((NumberNode) pn3d0.getArgs().get(0).getRoot()).longValue());
     assertEquals(MessagePlaceholder.create("XXX"), pn3.getPlaceholder());
     assertTrue(pn3.getExpr().getRoot() instanceof StringNode);
 
@@ -1275,7 +1276,7 @@ public final class TemplateParserTest {
     SwitchCaseNode scn0 = (SwitchCaseNode) sn.getChild(0);
     assertEquals(1, scn0.getExprList().size());
     assertTrue(scn0.getExprList().get(0).getRoot() instanceof IntegerNode);
-    assertEquals(0, ((IntegerNode) scn0.getExprList().get(0).getRoot()).getValue());
+    assertEquals(0, ((NumberNode) scn0.getExprList().get(0).getRoot()).longValue());
 
     SwitchCaseNode scn1 = (SwitchCaseNode) sn.getChild(1);
     assertEquals(1, scn1.getExprList().size());

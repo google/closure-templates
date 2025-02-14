@@ -27,7 +27,7 @@ import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.GlobalNode;
-import com.google.template.soy.exprtree.IntegerNode;
+import com.google.template.soy.exprtree.NumberNode;
 import com.google.template.soy.exprtree.StringNode;
 import javax.annotation.Nullable;
 
@@ -207,9 +207,10 @@ public final class TemplateDelegateNode extends TemplateNode {
         }
         break;
       case INTEGER_NODE:
-        IntegerNode in = (IntegerNode) primitiveNode;
-        if (in.getValue() < 0) {
-          reporter.report(in.getSourceLocation(), INVALID_VARIANT_INTEGER, in.getValue());
+      case FLOAT_NODE:
+        NumberNode in = (NumberNode) primitiveNode;
+        if (in.longValue() < 0) {
+          reporter.report(in.getSourceLocation(), INVALID_VARIANT_INTEGER, in.longValue());
         }
         break;
       case PROTO_ENUM_VALUE_NODE:

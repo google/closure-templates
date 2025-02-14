@@ -96,7 +96,6 @@ import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.FunctionNode.ExternRef;
 import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.GroupNode;
-import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.ItemAccessNode;
 import com.google.template.soy.exprtree.ListComprehensionNode;
 import com.google.template.soy.exprtree.ListLiteralNode;
@@ -105,6 +104,7 @@ import com.google.template.soy.exprtree.MapLiteralNode;
 import com.google.template.soy.exprtree.MethodCallNode;
 import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.exprtree.NullSafeAccessNode;
+import com.google.template.soy.exprtree.NumberNode;
 import com.google.template.soy.exprtree.OperatorNodes.AmpAmpOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.AsOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.AssertNonNullOpNode;
@@ -939,8 +939,8 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
         if (!BaseUtils.isIdentifier(variantStr)) {
           errorReporter.report(location, INVALID_VARIANT_EXPRESSION, variantStr);
         }
-      } else if (variant.getRoot().getKind() == ExprNode.Kind.INTEGER_NODE) {
-        long variantInt = ((IntegerNode) variant.getRoot()).getValue();
+      } else if (variant.getRoot() instanceof NumberNode) {
+        long variantInt = ((NumberNode) variant.getRoot()).longValue();
         if (variantInt < 0) {
           errorReporter.report(location, INVALID_VARIANT_EXPRESSION, variant.toSourceString());
         }
@@ -1640,8 +1640,8 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
           int maxDepth;
           if (node.numParams() == 1) {
             // This will only work for int literal in the source code.
-            if (node.getParam(0).getKind() == ExprNode.Kind.INTEGER_NODE) {
-              maxDepth = (int) ((IntegerNode) node.getParam(0)).getValue();
+            if (node.getParam(0) instanceof NumberNode) {
+              maxDepth = ((NumberNode) node.getParam(0)).intValue();
             } else {
               maxDepth = 0;
             }

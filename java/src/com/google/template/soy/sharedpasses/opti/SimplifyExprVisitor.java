@@ -50,6 +50,7 @@ import com.google.template.soy.exprtree.ListLiteralNode;
 import com.google.template.soy.exprtree.MapLiteralNode;
 import com.google.template.soy.exprtree.MethodCallNode;
 import com.google.template.soy.exprtree.NullSafeAccessNode;
+import com.google.template.soy.exprtree.NumberNode;
 import com.google.template.soy.exprtree.OperatorNodes.AmpAmpOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.AsOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.BarBarOpNode;
@@ -266,9 +267,9 @@ final class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
     ExprNode keyExpr = node.getChild(1);
     if (baseExpr instanceof ListLiteralNode
         && !((ListLiteralNode) baseExpr).containsSpreads()
-        && keyExpr instanceof IntegerNode) {
+        && keyExpr instanceof NumberNode) {
       ListLiteralNode listLiteral = (ListLiteralNode) baseExpr;
-      long index = ((IntegerNode) keyExpr).getValue();
+      long index = ((NumberNode) keyExpr).longValue();
       if (index >= 0 && index < listLiteral.numChildren()) {
         return listLiteral.getChild((int) index);
       } else {

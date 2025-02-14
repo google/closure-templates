@@ -38,12 +38,12 @@ import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.GlobalNode;
-import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.ListComprehensionNode;
 import com.google.template.soy.exprtree.ListLiteralNode;
 import com.google.template.soy.exprtree.MapLiteralFromListNode;
 import com.google.template.soy.exprtree.MapLiteralNode;
 import com.google.template.soy.exprtree.NullSafeAccessNode;
+import com.google.template.soy.exprtree.NumberNode;
 import com.google.template.soy.exprtree.OperatorNodes.AmpAmpOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.AssertNonNullOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.BarBarOpNode;
@@ -641,8 +641,8 @@ final class TemplateAnalysisImpl implements TemplateAnalysis {
   private static StaticAnalysisResult isRangeExpressionEmpty(RangeArgs range) {
     int start = 0;
     if (range.start().isPresent()) {
-      if (range.start().get() instanceof IntegerNode) {
-        long startAsLong = ((IntegerNode) range.start().get()).getValue();
+      if (range.start().get() instanceof NumberNode) {
+        long startAsLong = ((NumberNode) range.start().get()).longValue();
         if (startAsLong != (int) startAsLong) {
           return StaticAnalysisResult.UNKNOWN;
         }
@@ -654,8 +654,8 @@ final class TemplateAnalysisImpl implements TemplateAnalysis {
     }
 
     int limit;
-    if (range.limit() instanceof IntegerNode) {
-      long limitAsLong = ((IntegerNode) range.limit()).getValue();
+    if (range.limit() instanceof NumberNode) {
+      long limitAsLong = ((NumberNode) range.limit()).longValue();
       if (limitAsLong != (int) limitAsLong) {
         return StaticAnalysisResult.UNKNOWN;
       }
@@ -666,8 +666,8 @@ final class TemplateAnalysisImpl implements TemplateAnalysis {
 
     int step = 1;
     if (range.increment().isPresent()) {
-      if (range.increment().get() instanceof IntegerNode) {
-        long stepAsLong = ((IntegerNode) range.increment().get()).getValue();
+      if (range.increment().get() instanceof NumberNode) {
+        long stepAsLong = ((NumberNode) range.increment().get()).longValue();
         if (stepAsLong != (int) stepAsLong) {
           return StaticAnalysisResult.UNKNOWN;
         }

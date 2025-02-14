@@ -17,11 +17,12 @@
 package com.google.template.soy.exprtree;
 
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.internal.NumericCoercions;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.types.FloatType;
 
 /** Node representing a float value. */
-public final class FloatNode extends AbstractPrimitiveNode {
+public final class FloatNode extends NumberNode {
 
   /** The float value */
   private final double value;
@@ -68,5 +69,20 @@ public final class FloatNode extends AbstractPrimitiveNode {
   @Override
   public FloatNode copy(CopyState copyState) {
     return new FloatNode(this, copyState);
+  }
+
+  @Override
+  public double doubleValue() {
+    return value;
+  }
+
+  @Override
+  public long longValue() {
+    return NumericCoercions.safeLong(value);
+  }
+
+  @Override
+  public int intValue() {
+    return NumericCoercions.safeInt(value);
   }
 }

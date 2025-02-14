@@ -34,6 +34,7 @@ import com.google.template.soy.exprtree.BooleanNode;
 import com.google.template.soy.exprtree.FloatNode;
 import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.NullNode;
+import com.google.template.soy.exprtree.NumberNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.UndefinedNode;
 import java.util.Iterator;
@@ -63,10 +64,10 @@ public class InternalValueUtilsTest {
             .getValue());
     assertEquals(
         -3.14159,
-        ((FloatNode)
+        ((NumberNode)
                 InternalValueUtils.convertPrimitiveDataToExpr(
                     FloatData.forValue(-3.14159), location))
-            .getValue(),
+            .doubleValue(),
         0.0);
     assertEquals(
         "boo",

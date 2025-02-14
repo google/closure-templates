@@ -17,6 +17,7 @@
 package com.google.template.soy.exprtree;
 
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.internal.NumericCoercions;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.types.IntType;
 
@@ -24,7 +25,7 @@ import com.google.template.soy.types.IntType;
  * Node representing a Soy integer value. Note that Soy supports up to JavaScript
  * +-Number.MAX_SAFE_INTEGER at the least; Java and Python backends support full 64 bit longs.
  */
-public final class IntegerNode extends AbstractPrimitiveNode {
+public final class IntegerNode extends NumberNode {
 
   // JavaScript Number.MAX_SAFE_INTEGER:
   // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number/MAX_SAFE_INTEGER
@@ -86,5 +87,20 @@ public final class IntegerNode extends AbstractPrimitiveNode {
   @Override
   public IntegerNode copy(CopyState copyState) {
     return new IntegerNode(this, copyState);
+  }
+
+  @Override
+  public double doubleValue() {
+    return NumericCoercions.safeDouble(value);
+  }
+
+  @Override
+  public long longValue() {
+    return value;
+  }
+
+  @Override
+  public int intValue() {
+    return NumericCoercions.safeInt(value);
   }
 }
