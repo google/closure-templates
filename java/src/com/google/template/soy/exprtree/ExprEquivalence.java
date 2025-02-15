@@ -21,7 +21,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import com.google.common.base.Equivalence;
 import com.google.common.primitives.Booleans;
 import com.google.common.primitives.Doubles;
-import com.google.common.primitives.Longs;
 import com.google.template.soy.exprtree.ExprNode.CallableExpr.ParamsStyle;
 import com.google.template.soy.exprtree.ExprNode.OperatorNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
@@ -167,12 +166,7 @@ public final class ExprEquivalence {
         }
 
         @Override
-        protected Integer visitIntegerNode(IntegerNode node) {
-          return Longs.hashCode(node.getValue());
-        }
-
-        @Override
-        protected Integer visitFloatNode(FloatNode node) {
+        protected Integer visitNumberNode(NumberNode node) {
           return Doubles.hashCode(node.getValue());
         }
 
@@ -345,13 +339,8 @@ public final class ExprEquivalence {
     }
 
     @Override
-    protected Boolean visitIntegerNode(IntegerNode node) {
-      return node.getValue() == ((IntegerNode) other).getValue();
-    }
-
-    @Override
-    protected Boolean visitFloatNode(FloatNode node) {
-      return node.getValue() == ((FloatNode) other).getValue();
+    protected Boolean visitNumberNode(NumberNode node) {
+      return node.getValue() == ((NumberNode) other).getValue();
     }
 
     @Override

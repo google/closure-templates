@@ -45,8 +45,8 @@ public final class FunctionNodeTest {
             Identifier.create("round", SourceLocation.UNKNOWN),
             new SoySourceFunction() {},
             SourceLocation.UNKNOWN);
-    fn.addChild(new FloatNode(3.14159, SourceLocation.UNKNOWN));
-    fn.addChild(new IntegerNode(2, SourceLocation.UNKNOWN));
+    fn.addChild(new NumberNode(3.14159, SourceLocation.UNKNOWN));
+    fn.addChild(new NumberNode(2, SourceLocation.UNKNOWN));
     assertThat(fn.toSourceString()).isEqualTo("round(3.14159, 2)");
   }
 
@@ -105,8 +105,8 @@ public final class FunctionNodeTest {
                 Identifier.create("i", SourceLocation.UNKNOWN),
                 Identifier.create("s", SourceLocation.UNKNOWN)),
             SourceLocation.UNKNOWN);
-    fn.addChild(new FloatNode(3.14159, SourceLocation.UNKNOWN));
-    fn.addChild(new IntegerNode(2, SourceLocation.UNKNOWN));
+    fn.addChild(new NumberNode(3.14159, SourceLocation.UNKNOWN));
+    fn.addChild(new NumberNode(2, SourceLocation.UNKNOWN));
     fn.addChild(new StringNode("str", QuoteStyle.SINGLE, SourceLocation.UNKNOWN));
     assertThat(fn.toSourceString()).isEqualTo("my.awesome.Proto(f: 3.14159, i: 2, s: 'str')");
   }

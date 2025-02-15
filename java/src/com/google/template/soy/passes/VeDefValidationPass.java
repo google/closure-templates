@@ -29,7 +29,6 @@ import com.google.template.soy.exprtree.NumberNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.logging.LoggingConfigValidator;
 import com.google.template.soy.logging.LoggingConfigValidator.VisualElement;
-import com.google.template.soy.passes.CompilerFileSetPass.Result;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.soytree.ConstNode;
 import com.google.template.soy.soytree.SoyFileNode;
