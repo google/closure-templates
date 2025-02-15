@@ -25,7 +25,8 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.exprtree.ExprNode;
-import com.google.template.soy.exprtree.NumberNode;
+import com.google.template.soy.exprtree.FloatNode;
+import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.ibm.icu.text.MessagePattern;
 import java.util.List;
@@ -289,7 +290,7 @@ final class ParseErrors {
         isError = false;
       }
     } else {
-      isNumeric = caseValue instanceof NumberNode;
+      isNumeric = caseValue instanceof FloatNode || caseValue instanceof IntegerNode;
       isError = true;
       value = "";
     }

@@ -52,7 +52,7 @@ public class MethodCallNodeTest {
         MethodCallNode.newWithPositionalArgs(
             baseExpr,
             ImmutableList.of(
-                new NumberNode(2, LOCATION), new StringNode("str", QuoteStyle.SINGLE, LOCATION)),
+                new IntegerNode(2, LOCATION), new StringNode("str", QuoteStyle.SINGLE, LOCATION)),
             Identifier.create("myMethod", LOCATION),
             LOCATION,
             /* isNullSafe= */ true);

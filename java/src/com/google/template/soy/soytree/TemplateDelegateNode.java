@@ -206,7 +206,8 @@ public final class TemplateDelegateNode extends TemplateNode {
           reporter.report(sn.getSourceLocation(), INVALID_VARIANT_STRING, sn.getValue());
         }
         break;
-      case NUMBER_NODE:
+      case INTEGER_NODE:
+      case FLOAT_NODE:
         NumberNode in = (NumberNode) primitiveNode;
         if (in.longValue() < 0) {
           reporter.report(in.getSourceLocation(), INVALID_VARIANT_INTEGER, in.longValue());

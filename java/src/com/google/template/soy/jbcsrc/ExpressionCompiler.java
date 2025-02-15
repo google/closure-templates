@@ -45,10 +45,12 @@ import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
 import com.google.template.soy.exprtree.ExprNodes;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FieldAccessNode;
+import com.google.template.soy.exprtree.FloatNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.FunctionNode.ExternRef;
 import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.GroupNode;
+import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.ItemAccessNode;
 import com.google.template.soy.exprtree.ListComprehensionNode;
 import com.google.template.soy.exprtree.ListComprehensionNode.ComprehensionVarDefn;
@@ -58,7 +60,6 @@ import com.google.template.soy.exprtree.MapLiteralNode;
 import com.google.template.soy.exprtree.MethodCallNode;
 import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.exprtree.NullSafeAccessNode;
-import com.google.template.soy.exprtree.NumberNode;
 import com.google.template.soy.exprtree.OperatorNodes.AmpAmpOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.AsOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.AssertNonNullOpNode;
@@ -466,12 +467,8 @@ final class ExpressionCompiler {
     }
 
     @Override
-    protected SoyExpression visitNumberNode(NumberNode node) {
-      if (node.isInteger()) {
-        return SoyExpression.forInt(BytecodeUtils.constant(node.longValue()));
-      } else {
-        return SoyExpression.forFloat(constant(node.doubleValue()));
-      }
+    protected SoyExpression visitFloatNode(FloatNode node) {
+      return SoyExpression.forFloat(constant(node.getValue()));
     }
 
     @Override
@@ -487,6 +484,11 @@ final class ExpressionCompiler {
     @Override
     protected SoyExpression visitBooleanNode(BooleanNode node) {
       return node.getValue() ? SoyExpression.TRUE : SoyExpression.FALSE;
+    }
+
+    @Override
+    protected SoyExpression visitIntegerNode(IntegerNode node) {
+      return SoyExpression.forInt(BytecodeUtils.constant(node.getValue()));
     }
 
     @Override
@@ -2010,7 +2012,7 @@ final class ExpressionCompiler {
 
     @Override
     protected SoyExpression visitVeDefNode(FunctionNode node) {
-      Expression id = constant(((NumberNode) node.getParam(1)).longValue());
+      Expression id = constant(((IntegerNode) node.getParam(1)).getValue());
       Expression name = constant(((StringNode) node.getParam(0)).getValue());
       Expression visualElement;
       if (node.numParams() == 4) {

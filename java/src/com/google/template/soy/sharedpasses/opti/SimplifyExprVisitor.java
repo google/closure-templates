@@ -42,7 +42,9 @@ import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FieldAccessNode;
+import com.google.template.soy.exprtree.FloatNode;
 import com.google.template.soy.exprtree.FunctionNode;
+import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.ItemAccessNode;
 import com.google.template.soy.exprtree.ListLiteralNode;
 import com.google.template.soy.exprtree.MapLiteralNode;
@@ -457,7 +459,8 @@ final class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
       case STRING_NODE:
         staticValue = rhs.equals(StringType.getInstance());
         break;
-      case NUMBER_NODE:
+      case INTEGER_NODE:
+      case FLOAT_NODE:
         staticValue = rhs.equals(SoyTypes.NUMBER_TYPE);
         break;
       case BOOLEAN_NODE:
@@ -580,11 +583,10 @@ final class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
         return UndefinedData.INSTANCE;
       case BOOLEAN_NODE:
         return BooleanData.forValue(((BooleanNode) expr).getValue());
-      case NUMBER_NODE:
-        NumberNode numberNode = (NumberNode) expr;
-        return numberNode.isInteger()
-            ? IntegerData.forValue(numberNode.longValue())
-            : FloatData.forValue(numberNode.doubleValue());
+      case INTEGER_NODE:
+        return IntegerData.forValue(((IntegerNode) expr).getValue());
+      case FLOAT_NODE:
+        return FloatData.forValue(((FloatNode) expr).getValue());
       case STRING_NODE:
         return StringData.forValue(((StringNode) expr).getValue());
       case PROTO_ENUM_VALUE_NODE:

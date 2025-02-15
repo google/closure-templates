@@ -84,9 +84,11 @@ import com.google.template.soy.exprtree.ExprNode.CallableExpr;
 import com.google.template.soy.exprtree.ExprNode.OperatorNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FieldAccessNode;
+import com.google.template.soy.exprtree.FloatNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.FunctionNode.ExternRef;
 import com.google.template.soy.exprtree.GlobalNode;
+import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.ItemAccessNode;
 import com.google.template.soy.exprtree.ListComprehensionNode;
 import com.google.template.soy.exprtree.ListLiteralNode;
@@ -95,7 +97,6 @@ import com.google.template.soy.exprtree.MapLiteralNode;
 import com.google.template.soy.exprtree.MethodCallNode;
 import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.exprtree.NullSafeAccessNode;
-import com.google.template.soy.exprtree.NumberNode;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.exprtree.OperatorNodes.AmpAmpOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.AsOpNode;
@@ -304,12 +305,13 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
   }
 
   @Override
-  protected Expression visitNumberNode(NumberNode node) {
-    if (node.isInteger()) {
-      return number(node.longValue());
-    } else {
-      return number(node.doubleValue());
-    }
+  protected Expression visitFloatNode(FloatNode node) {
+    return number(node.getValue());
+  }
+
+  @Override
+  protected Expression visitIntegerNode(IntegerNode node) {
+    return number(node.getValue());
   }
 
   @Override

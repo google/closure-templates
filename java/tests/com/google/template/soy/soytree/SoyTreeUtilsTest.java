@@ -36,7 +36,7 @@ import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.OperatorNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import com.google.template.soy.exprtree.FunctionNode;
-import com.google.template.soy.exprtree.NumberNode;
+import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.shared.restricted.SoyFunction;
@@ -461,8 +461,8 @@ public final class SoyTreeUtilsTest {
     assertIsDescendent(ifNode, template);
     assertIsNotDescendent(template, ifNode);
 
-    NumberNode number =
-        Iterables.getOnlyElement(SoyTreeUtils.getAllNodesOfType(template, NumberNode.class));
+    IntegerNode number =
+        Iterables.getOnlyElement(SoyTreeUtils.getAllNodesOfType(template, IntegerNode.class));
     OperatorNode plusOp =
         Iterables.getOnlyElement(SoyTreeUtils.getAllNodesOfType(template, OperatorNode.class));
 

@@ -18,7 +18,6 @@ package com.google.template.soy.data.internalutils;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.base.internal.NumericCoercions;
 import com.google.template.soy.base.internal.QuoteStyle;
 import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.data.SoyValue;
@@ -32,14 +31,17 @@ import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.exprtree.BooleanNode;
 import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
+import com.google.template.soy.exprtree.FloatNode;
+import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.NullNode;
-import com.google.template.soy.exprtree.NumberNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.UndefinedNode;
 import java.util.Map;
 import javax.annotation.Nullable;
 
-/** Internal utilities related to Soy values. */
+/**
+ * Internal utilities related to Soy values.
+ */
 public class InternalValueUtils {
 
   private InternalValueUtils() {}
@@ -60,13 +62,13 @@ public class InternalValueUtils {
       return new BooleanNode(primitiveData.booleanValue(), location);
     } else if (primitiveData instanceof IntegerData) {
       // NOTE: We only support numbers in the range of JS [MIN_SAFE_INTEGER, MAX_SAFE_INTEGER]
-      if (!NumericCoercions.isInRange(primitiveData.longValue())) {
+      if (!IntegerNode.isInRange(primitiveData.longValue())) {
         return null;
       } else {
-        return new NumberNode(primitiveData.longValue(), location);
+        return new IntegerNode(primitiveData.longValue(), location);
       }
     } else if (primitiveData instanceof FloatData) {
-      return new NumberNode(primitiveData.floatValue(), location);
+      return new FloatNode(primitiveData.floatValue(), location);
     } else if (primitiveData instanceof NullData) {
       return new NullNode(location);
     } else if (primitiveData instanceof UndefinedData) {
@@ -89,13 +91,10 @@ public class InternalValueUtils {
       return StringData.forValue(((StringNode) primitiveNode).getValue());
     } else if (primitiveNode instanceof BooleanNode) {
       return BooleanData.forValue(((BooleanNode) primitiveNode).getValue());
-    } else if (primitiveNode instanceof NumberNode) {
-      NumberNode numberNode = (NumberNode) primitiveNode;
-      if (numberNode.isInteger()) {
-        return IntegerData.forValue(numberNode.longValue());
-      } else {
-        return FloatData.forValue(numberNode.doubleValue());
-      }
+    } else if (primitiveNode instanceof IntegerNode) {
+      return IntegerData.forValue(((IntegerNode) primitiveNode).getValue());
+    } else if (primitiveNode instanceof FloatNode) {
+      return FloatData.forValue(((FloatNode) primitiveNode).getValue());
     } else if (primitiveNode instanceof NullNode) {
       return NullData.INSTANCE;
     } else if (primitiveNode instanceof UndefinedNode) {

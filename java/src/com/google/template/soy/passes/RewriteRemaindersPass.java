@@ -22,7 +22,7 @@ import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprEquivalence;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.FunctionNode;
-import com.google.template.soy.exprtree.NumberNode;
+import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
@@ -129,7 +129,7 @@ final class RewriteRemaindersPass implements CompilerFilePass {
       // Now rewrite the FunctionNode(reusing the old node id).
       ExprNode plural = currPluralNode.getExpr().getRoot().copy(new CopyState());
       ExprNode offset =
-          new NumberNode(currPluralNode.getOffset(), functionNode.getSourceLocation());
+          new IntegerNode(currPluralNode.getOffset(), functionNode.getSourceLocation());
       ExprNode remainder =
           Operator.MINUS.createNode(
               plural.getSourceLocation().extend(offset.getSourceLocation()),
@@ -161,6 +161,6 @@ final class RewriteRemaindersPass implements CompilerFilePass {
     // parts don't expect the remainder() function.
     functionNode
         .getParent()
-        .replaceChild(functionNode, new NumberNode(0, functionNode.getSourceLocation()));
+        .replaceChild(functionNode, new IntegerNode(0, functionNode.getSourceLocation()));
   }
 }

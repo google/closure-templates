@@ -99,7 +99,7 @@ public final class SimplifyExprVisitorTest {
             new ExpressionParser("floor($boo / (1.0 + 2))")
                 .withParam("boo", "float")
                 .parseForParentNode())
-        .simplifiesTo("floor($boo / 3)");
+        .simplifiesTo("floor($boo / 3.0)");
   }
 
   @Test

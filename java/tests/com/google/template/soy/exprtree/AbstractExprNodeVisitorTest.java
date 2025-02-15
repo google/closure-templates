@@ -21,7 +21,6 @@ import static org.junit.Assert.fail;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.base.internal.QuoteStyle;
 import com.google.template.soy.exprtree.ExprNode.OperatorNode;
 import com.google.template.soy.exprtree.OperatorNodes.MinusOpNode;
 import java.util.ArrayDeque;
@@ -31,7 +30,9 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-/** Unit tests for AbstractExprNodeVisitor. */
+/**
+ * Unit tests for AbstractExprNodeVisitor.
+ */
 @RunWith(JUnit4.class)
 public final class AbstractExprNodeVisitorTest {
 
@@ -40,7 +41,7 @@ public final class AbstractExprNodeVisitorTest {
   @Test
   public void testConcreteImplementation() {
 
-    NumberNode expr = new NumberNode(17, LOC);
+    IntegerNode expr = new IntegerNode(17, LOC);
 
     IncompleteEvalVisitor iev = new IncompleteEvalVisitor(null);
     assertThat(iev.exec(expr)).isEqualTo(17.0);
@@ -50,7 +51,7 @@ public final class AbstractExprNodeVisitorTest {
   public void testInterfaceImplementation() {
 
     MinusOpNode expr = new MinusOpNode(LOC, LOC);
-    expr.addChild(new NumberNode(17, LOC));
+    expr.addChild(new IntegerNode(17, LOC));
 
     VarRefNode dataRef = new VarRefNode("$boo", LOC, null);
     expr.addChild(dataRef);
@@ -58,7 +59,7 @@ public final class AbstractExprNodeVisitorTest {
     IncompleteEvalVisitor iev = new IncompleteEvalVisitor(ImmutableMap.of("$boo", 13.0));
     assertThat(iev.exec(expr)).isEqualTo(4.0);
 
-    expr.replaceChild(0, new NumberNode(34, LOC));
+    expr.replaceChild(0, new IntegerNode(34, LOC));
 
     assertThat(iev.exec(expr)).isEqualTo(21.0);
   }
@@ -67,7 +68,7 @@ public final class AbstractExprNodeVisitorTest {
   public void testNotImplemented() {
 
     MinusOpNode expr = new MinusOpNode(LOC, LOC);
-    expr.addChild(new StringNode("17.0", QuoteStyle.SINGLE, LOC));
+    expr.addChild(new FloatNode(17.0, LOC));
 
     VarRefNode dataRef = new VarRefNode("$boo", LOC, null);
     expr.addChild(dataRef);
@@ -100,8 +101,8 @@ public final class AbstractExprNodeVisitorTest {
     }
 
     @Override
-    protected void visitNumberNode(NumberNode node) {
-      resultStack.push(node.getValue());
+    protected void visitIntegerNode(IntegerNode node) {
+      resultStack.push((double) node.getValue());
     }
 
     @Override

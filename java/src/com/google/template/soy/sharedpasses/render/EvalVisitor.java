@@ -77,8 +77,10 @@ import com.google.template.soy.exprtree.ExprNode.AccessChainComponentNode;
 import com.google.template.soy.exprtree.ExprNode.Kind;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FieldAccessNode;
+import com.google.template.soy.exprtree.FloatNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.FunctionNode.ExternRef;
+import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.ItemAccessNode;
 import com.google.template.soy.exprtree.ListComprehensionNode;
 import com.google.template.soy.exprtree.ListComprehensionNode.ComprehensionVarDefn;
@@ -88,7 +90,6 @@ import com.google.template.soy.exprtree.MapLiteralNode;
 import com.google.template.soy.exprtree.MethodCallNode;
 import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.exprtree.NullSafeAccessNode;
-import com.google.template.soy.exprtree.NumberNode;
 import com.google.template.soy.exprtree.OperatorNodes.AmpAmpOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.AsOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.AssertNonNullOpNode;
@@ -322,12 +323,13 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
   }
 
   @Override
-  protected SoyValue visitNumberNode(NumberNode node) {
-    if (node.isInteger()) {
-      return convertResult(node.longValue());
-    } else {
-      return convertResult(node.doubleValue());
-    }
+  protected SoyValue visitIntegerNode(IntegerNode node) {
+    return convertResult(node.getValue());
+  }
+
+  @Override
+  protected SoyValue visitFloatNode(FloatNode node) {
+    return convertResult(node.getValue());
   }
 
   @Override
