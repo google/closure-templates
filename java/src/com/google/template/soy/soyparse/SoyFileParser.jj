@@ -59,31 +59,27 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.Identifier;
+import com.google.template.soy.base.internal.NumericCoercions;
 import com.google.template.soy.base.internal.QuoteStyle;
-import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.basetree.Node;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.error.SoyErrorKind;
-import com.google.template.soy.exprtree.AbstractParentExprNode;
 import com.google.template.soy.exprtree.BooleanNode;
 import com.google.template.soy.exprtree.CallableExprBuilder;
 import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FieldAccessNode;
-import com.google.template.soy.exprtree.FloatNode;
-import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.GroupNode;
-import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.ItemAccessNode;
 import com.google.template.soy.exprtree.ListComprehensionNode;
 import com.google.template.soy.exprtree.ListLiteralNode;
 import com.google.template.soy.exprtree.MapLiteralFromListNode;
 import com.google.template.soy.exprtree.MapLiteralNode;
-import com.google.template.soy.exprtree.MethodCallNode;
 import com.google.template.soy.exprtree.NullNode;
+import com.google.template.soy.exprtree.NumberNode;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.exprtree.RecordLiteralNode;
 import com.google.template.soy.exprtree.SoyPrecedence;
@@ -91,9 +87,7 @@ import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.exprtree.TypeLiteralNode;
 import com.google.template.soy.exprtree.UndefinedNode;
-import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
-import com.google.template.soy.soytree.AbstractSoyNode;
 import com.google.template.soy.soytree.AliasDeclaration;
 import com.google.template.soy.soytree.AssignmentNode;
 import com.google.template.soy.soytree.ByteOffsetIndex;
@@ -160,7 +154,6 @@ import com.google.template.soy.soytree.defn.ImportedVar;
 import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.soytree.defn.TemplateStateVar;
-import com.google.template.soy.types.FunctionType;
 import com.google.template.soy.types.TemplateType.ParameterKind;
 import com.google.template.soy.types.TemplateType;
 import com.google.template.soy.types.ast.FunctionTypeNode;
@@ -172,12 +165,9 @@ import com.google.template.soy.types.ast.RecordTypeNode;
 import com.google.template.soy.types.ast.TemplateTypeNode;
 import com.google.template.soy.types.ast.TypeNode;
 import com.google.template.soy.types.ast.UnionTypeNode;
-import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -2976,11 +2966,11 @@ private MsgPluralNode MsgPlural() :
       caseBeginEnd = <CMD_END>
       {
         int value;
-        if (!(caseExpr instanceof IntegerNode)) {
+        if (!(caseExpr instanceof NumberNode)) {
           errorReporter.report(caseExpr.getSourceLocation(), PLURAL_CASE_MALFORMED);
           value = 0;
         } else {
-          value = (int) ((IntegerNode) caseExpr).getValue();
+          value = ((NumberNode) caseExpr).intValue();
           if (value < 0) {
             errorReporter.report(caseExpr.getSourceLocation(), PLURAL_CASE_OUT_OF_BOUNDS, value);
             value = 0;
@@ -4649,12 +4639,13 @@ private ExprNode PrecExpr12(ExprState state) :
       SourceLocation opLocation = createSrcLoc(op);
       SourceLocation location = opLocation.extend(expr.getSourceLocation());
 
-      if (op.kind == MINUS && expr instanceof IntegerNode) {
-        long value = -1 * ((IntegerNode) expr).getValue();
-        expr = new IntegerNode(value, location);
-      } else if (op.kind == MINUS && expr instanceof FloatNode) {
-        double value = -1 * ((FloatNode) expr).getValue();
-        expr = new FloatNode(value, location);
+      if (op.kind == MINUS && expr instanceof NumberNode) {
+        NumberNode numberNode = (NumberNode) expr;
+        if (numberNode.isInteger()) {
+          expr = new NumberNode(-1 * numberNode.longValue(), location);
+        } else {
+          expr = new NumberNode(-1 * numberNode.doubleValue(), location);
+        }
       } else {
         expr = createOperatorNode(
             location,
@@ -5010,26 +5001,26 @@ private PrimitiveNode Primitive() :
   |
     tok = <DEC_INTEGER>
     { SourceLocation loc = createSrcLoc(tok);
-      Long parsed = Longs.tryParse(tok.image, 10);
-      if (parsed == null || !IntegerNode.isInRange(parsed)) {
-        errorReporter.report(loc, INTEGER_OUT_OF_RANGE);
-        parsed = 0L;
-      }
-      primitive = new IntegerNode(parsed, loc);
-    }
+  Long parsed = Longs.tryParse(tok.image, 10);
+  if (parsed == null || !NumericCoercions.isInRange(parsed)) {
+    errorReporter.report(loc, INTEGER_OUT_OF_RANGE);
+    parsed = 0L;
+  }
+  primitive = new NumberNode(parsed, loc);
+}
   |
     tok = <HEX_INTEGER>
     { SourceLocation loc = createSrcLoc(tok);
-      Long parsed = Longs.tryParse(tok.image.substring(2), 16);
-      if (parsed == null || !IntegerNode.isInRange(parsed)) {
-        errorReporter.report(loc, INTEGER_OUT_OF_RANGE);
-        parsed = 0L;
-      }
-      primitive = new IntegerNode(parsed, loc);
-    }
+  Long parsed = Longs.tryParse(tok.image.substring(2), 16);
+  if (parsed == null || !NumericCoercions.isInRange(parsed)) {
+    errorReporter.report(loc, INTEGER_OUT_OF_RANGE);
+    parsed = 0L;
+  }
+  primitive = new NumberNode(parsed, loc);
+}
   |
     tok = <FLOAT>
-    { primitive = new FloatNode(Double.parseDouble(tok.image), createSrcLoc(tok)); }
+    { primitive = new NumberNode(Double.parseDouble(tok.image), createSrcLoc(tok)); }
   |
     primitive = StringLiteral()
   )

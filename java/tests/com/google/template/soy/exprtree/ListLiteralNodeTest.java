@@ -41,7 +41,7 @@ public final class ListLiteralNodeTest {
     ListLiteralNode listLit =
         new ListLiteralNode(
             ImmutableList.of(
-                new StringNode("blah", QuoteStyle.SINGLE, X), new IntegerNode(123, X), dataRef),
+                new StringNode("blah", QuoteStyle.SINGLE, X), new NumberNode(123, X), dataRef),
             X);
     assertThat(listLit.toSourceString()).isEqualTo("['blah', 123, $foo]");
 

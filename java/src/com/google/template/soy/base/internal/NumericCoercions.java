@@ -19,25 +19,27 @@ package com.google.template.soy.base.internal;
 /** Numeric coercions compatible with JavaScript number. */
 public final class NumericCoercions {
 
-  private static final long MAX_SAFE_INTEGER = (1L << 53) - 1; // 2^53 - 1
-  private static final long MIN_SAFE_INTEGER = -MAX_SAFE_INTEGER;
+  // JavaScript Number.MAX_SAFE_INTEGER:
+  // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number/MAX_SAFE_INTEGER
+  private static final long JS_MAX_SAFE_INTEGER = (1L << 53) - 1;
+  private static final long JS_MIN_SAFE_INTEGER = -1 * JS_MAX_SAFE_INTEGER;
 
   private NumericCoercions() {}
 
-  public static double safeDouble(long l) {
-    if (l > MAX_SAFE_INTEGER || l < MIN_SAFE_INTEGER) {
-      throw new IllegalArgumentException(String.valueOf(l));
-    }
-    return (double) l;
-  }
-
+  /**
+   * Converts a double to a long by truncating. Throws an exception if the double is out of the safe
+   * JavaScript integer range.
+   */
   public static long safeLong(double d) {
-    if (d > MAX_SAFE_INTEGER || d < MIN_SAFE_INTEGER) {
+    if (d > JS_MAX_SAFE_INTEGER || d < JS_MIN_SAFE_INTEGER) {
       throw new IllegalArgumentException(String.valueOf(d));
     }
     return (long) d;
   }
 
+  /**
+   * Converts a long to a int. Throws an exception if the long is out of the 32-bit integer range.
+   */
   public static int safeInt(long l) {
     if (l > Integer.MAX_VALUE || l < Integer.MIN_VALUE) {
       throw new IllegalArgumentException(String.valueOf(l));
@@ -45,7 +47,16 @@ public final class NumericCoercions {
     return (int) l;
   }
 
+  /**
+   * Converts a double to a int. Throws an exception if the double is out of the 32-bit integer
+   * range.
+   */
   public static int safeInt(double d) {
     return safeInt(safeLong(d));
+  }
+
+  /** Returns true if {@code value} is within JavaScript safe range. */
+  public static boolean isInRange(long value) {
+    return JS_MIN_SAFE_INTEGER <= value && value <= JS_MAX_SAFE_INTEGER;
   }
 }
