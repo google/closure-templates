@@ -28,16 +28,15 @@ import com.google.template.soy.exprtree.BooleanNode;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.OperatorNode;
 import com.google.template.soy.exprtree.FieldAccessNode;
-import com.google.template.soy.exprtree.FloatNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.GroupNode;
-import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.ItemAccessNode;
 import com.google.template.soy.exprtree.ListComprehensionNode;
 import com.google.template.soy.exprtree.ListLiteralNode;
 import com.google.template.soy.exprtree.MethodCallNode;
 import com.google.template.soy.exprtree.NullNode;
+import com.google.template.soy.exprtree.NumberNode;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.exprtree.RecordLiteralNode;
 import com.google.template.soy.exprtree.StringNode;
@@ -76,8 +75,8 @@ public final class ExprNodes {
     return new FieldAccessNode(maybeCopyNode(base), fieldName, SourceLocation.UNKNOWN, isNullSafe);
   }
 
-  public static FloatNode floatLiteral(double value) {
-    return new FloatNode(value, SourceLocation.UNKNOWN);
+  public static NumberNode floatLiteral(double value) {
+    return new NumberNode(value, SourceLocation.UNKNOWN);
   }
 
   public static FunctionNode function(String name, ExprNode... params) {
@@ -111,8 +110,8 @@ public final class ExprNodes {
     return new GroupNode(maybeCopyNode(expr), SourceLocation.UNKNOWN);
   }
 
-  public static IntegerNode integerLiteral(long value) {
-    return new IntegerNode(value, SourceLocation.UNKNOWN);
+  public static NumberNode integerLiteral(long value) {
+    return new NumberNode(value, SourceLocation.UNKNOWN);
   }
 
   public static ItemAccessNode itemAccess(ExprNode base, ExprNode key, boolean isNullSafe) {

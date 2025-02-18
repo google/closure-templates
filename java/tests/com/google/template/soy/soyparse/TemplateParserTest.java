@@ -31,7 +31,6 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyError;
 import com.google.template.soy.exprtree.ExprEquivalence;
 import com.google.template.soy.exprtree.FieldAccessNode;
-import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.NumberNode;
 import com.google.template.soy.exprtree.OperatorNodes.GreaterThanOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
@@ -1275,7 +1274,7 @@ public final class TemplateParserTest {
 
     SwitchCaseNode scn0 = (SwitchCaseNode) sn.getChild(0);
     assertEquals(1, scn0.getExprList().size());
-    assertTrue(scn0.getExprList().get(0).getRoot() instanceof IntegerNode);
+    assertTrue(scn0.getExprList().get(0).getRoot() instanceof NumberNode);
     assertEquals(0, ((NumberNode) scn0.getExprList().get(0).getRoot()).longValue());
 
     SwitchCaseNode scn1 = (SwitchCaseNode) sn.getChild(1);
@@ -1285,8 +1284,8 @@ public final class TemplateParserTest {
 
     SwitchCaseNode scn2 = (SwitchCaseNode) sn.getChild(2);
     assertEquals(3, scn2.getExprList().size());
-    assertTrue(scn2.getExprList().get(0).getRoot() instanceof IntegerNode);
-    assertTrue(scn2.getExprList().get(1).getRoot() instanceof IntegerNode);
+    assertTrue(scn2.getExprList().get(0).getRoot() instanceof NumberNode);
+    assertTrue(scn2.getExprList().get(1).getRoot() instanceof NumberNode);
     assertTrue(scn2.getExprList().get(2).getRoot() instanceof VarRefNode);
     assertEquals("-1", scn2.getExprList().get(0).getRoot().toSourceString());
     assertEquals("1", scn2.getExprList().get(1).getRoot().toSourceString());

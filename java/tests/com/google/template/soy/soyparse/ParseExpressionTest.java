@@ -30,7 +30,6 @@ import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.OperatorNode;
 import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.FunctionNode;
-import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.ItemAccessNode;
 import com.google.template.soy.exprtree.ListLiteralNode;
 import com.google.template.soy.exprtree.MethodCallNode;
@@ -330,7 +329,7 @@ public final class ParseExpressionTest {
     assertNodeEquals(
         new ItemAccessNode(
             new ItemAccessNode(
-                new VarRefNode("$boo", loc, null), new IntegerNode(0, loc), loc, false),
+                new VarRefNode("$boo", loc, null), new NumberNode(0, loc), loc, false),
             new VarRefNode("$foo", loc, null),
             loc,
             false),
@@ -340,7 +339,7 @@ public final class ParseExpressionTest {
     assertNodeEquals(
         new ItemAccessNode(
             new ItemAccessNode(
-                new VarRefNode("$boo", loc, null), new IntegerNode(0, loc), loc, true),
+                new VarRefNode("$boo", loc, null), new NumberNode(0, loc), loc, true),
             new VarRefNode("$foo", loc, null),
             loc,
             true),
@@ -477,7 +476,7 @@ public final class ParseExpressionTest {
     ConditionalOpNode condOp = (ConditionalOpNode) expr;
     assertThat(condOp.getChild(0)).isInstanceOf(NullCoalescingOpNode.class);
     assertThat(condOp.getChild(1)).isInstanceOf(TimesOpNode.class);
-    assertThat(condOp.getChild(2)).isInstanceOf(IntegerNode.class);
+    assertThat(condOp.getChild(2)).isInstanceOf(NumberNode.class);
   }
 
   @Test
@@ -509,7 +508,7 @@ public final class ParseExpressionTest {
   public void testNonNullAssertion() {
     ExprNode expr = assertThatExpression("1!").isValidExpression();
     AssertNonNullOpNode nonNullOp = (AssertNonNullOpNode) expr;
-    assertThat(nonNullOp.getChild(0)).isInstanceOf(IntegerNode.class);
+    assertThat(nonNullOp.getChild(0)).isInstanceOf(NumberNode.class);
 
     expr = assertThatExpression("record(a: 1)!.a").isValidExpression();
     FieldAccessNode fieldAccess = (FieldAccessNode) expr;

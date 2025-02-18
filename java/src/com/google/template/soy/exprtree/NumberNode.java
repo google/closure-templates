@@ -16,26 +16,94 @@
 
 package com.google.template.soy.exprtree;
 
+import com.google.common.base.Preconditions;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.internal.NumericCoercions;
 import com.google.template.soy.basetree.CopyState;
+import com.google.template.soy.types.FloatType;
+import com.google.template.soy.types.IntType;
+import com.google.template.soy.types.SoyType;
 
-/**
- * Node representing a Soy integer value. Note that Soy supports up to JavaScript
- * +-Number.MAX_SAFE_INTEGER at the least; Java and Python backends support full 64 bit longs.
- */
-public abstract class NumberNode extends AbstractPrimitiveNode {
+/** Node representing a float value. */
+public final class NumberNode extends AbstractPrimitiveNode {
 
-  public NumberNode(SourceLocation sourceLocation) {
+  /** The float value */
+  private final double value;
+
+  private final boolean isInt;
+
+  /**
+   * @param value The float value.
+   * @param sourceLocation The node's source location.
+   */
+  public NumberNode(double value, SourceLocation sourceLocation) {
     super(sourceLocation);
+    this.value = value;
+    this.isInt = false;
   }
 
-  protected NumberNode(NumberNode orig, CopyState copyState) {
+  public NumberNode(long value, SourceLocation sourceLocation) {
+    super(sourceLocation);
+    Preconditions.checkArgument(NumericCoercions.isInRange(value));
+    this.value = (double) value;
+    this.isInt = true;
+  }
+
+  /**
+   * Copy constructor.
+   *
+   * @param orig The node to copy.
+   */
+  private NumberNode(NumberNode orig, CopyState copyState) {
     super(orig, copyState);
+    this.value = orig.value;
+    this.isInt = orig.isInt;
   }
 
-  public abstract double doubleValue();
+  @Override
+  public Kind getKind() {
+    return Kind.NUMBER_NODE;
+  }
 
-  public abstract long longValue();
+  @Override
+  public SoyType getAuthoredType() {
+    return isInteger() ? IntType.getInstance() : FloatType.getInstance();
+  }
 
-  public abstract int intValue();
+  /** Returns the float value. */
+  public double getValue() {
+    return value;
+  }
+
+  public boolean isInteger() {
+    return isInt;
+  }
+
+  @Override
+  public String toSourceString() {
+    if (isInteger()) {
+      return Long.toString((long) value);
+    } else {
+      return Double.toString(value).replace("E", "e");
+    }
+  }
+
+  @Override
+  public NumberNode copy(CopyState copyState) {
+    return new NumberNode(this, copyState);
+  }
+
+  public double doubleValue() {
+    return value;
+  }
+
+  /** Asserts in safe JS range, truncates non-integer. */
+  public long longValue() {
+    return NumericCoercions.safeLong(value);
+  }
+
+  /** Asserts in range, truncates non-integer. */
+  public int intValue() {
+    return NumericCoercions.safeInt(value);
+  }
 }
