@@ -5,6 +5,7 @@
  */
 
 import {ordainSanitizedHtml} from 'goog:soydata.VERY_UNSAFE'; // from //javascript/template/soy:soy_usegoog_js
+import {stringifyReplacingJspbMessages} from 'google3/javascript/apps/jspb/stringify';
 import * as soy from 'google3/javascript/template/soy/soyutils_usegoog';
 import {
   $$VisualElementData,
@@ -705,11 +706,15 @@ function debugReplacerIgnoringSerializationChanges(
 }
 
 function maybeReportErrors(el: HTMLElement, data: unknown) {
-  const stringifiedParams = JSON.stringify(
+  const stringifiedParams = stringifyReplacingJspbMessages(
     data,
     debugReplacerIgnoringSerializationChanges,
   );
-  const stringifiedParamsPretty = JSON.stringify(data, undefined, 2);
+  const stringifiedParamsPretty = stringifyReplacingJspbMessages(
+    data,
+    undefined,
+    2,
+  );
   if (!el.__lastParams) {
     el.__lastParams = stringifiedParams;
     el.__lastParamsPretty = stringifiedParamsPretty;
