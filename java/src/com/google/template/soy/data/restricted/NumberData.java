@@ -17,6 +17,7 @@
 package com.google.template.soy.data.restricted;
 
 import com.google.common.primitives.Longs;
+import com.google.template.soy.base.internal.NumericCoercions;
 import com.google.template.soy.data.SoyValue;
 import javax.annotation.Nonnull;
 
@@ -30,6 +31,15 @@ public abstract class NumberData extends PrimitiveData {
    * @return The float value of this number data object.
    */
   public abstract double toFloat();
+
+  /**
+   * Returns true if this value is a whole integer in the range representable in JavaScript without
+   * a loss of precision.
+   */
+  public boolean isSafeJsInteger() {
+    double val = numberValue();
+    return val % 1 == 0 && NumericCoercions.isInRange((long) val);
+  }
 
   @Override
   public long coerceToLong() {
