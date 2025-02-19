@@ -38,6 +38,7 @@ const googString = goog.require('goog.string');
 const {Message} = goog.requireType('jspb');
 const {SafeHtml, SafeScript, SafeStyleSheet, TrustedResourceUrl, isUrl, unwrapHtml, unwrapResourceUrl, unwrapScript, unwrapStyleSheet, unwrapUrl} = goog.require('safevalues');
 const {SanitizedContent, SanitizedContentKind, SanitizedCss, SanitizedHtml, SanitizedHtmlAttribute, SanitizedJs, SanitizedTrustedResourceUri, SanitizedUri} = goog.require('goog.soy.data');
+const {compareBigInt} = goog.require('google3.javascript.common.bigint.index');
 const {defaultImmutableInstance} = goog.require('jspb.immutable_message');
 const {htmlSafeByReview} = goog.require('safevalues.restricted.reviewed');
 const {isReadonly} = goog.require('google3.javascript.apps.jspb.types.is_readonly');
@@ -2112,6 +2113,14 @@ const $$numberListSort = function(list) {
   return googArray.toArray(list).sort((a, b) => a - b);
 };
 
+/**
+ * Sorts a list of gbigints in numerical order.
+ * @param {!IArrayLike<!gbigint>} list
+ * @return {!Array<!gbigint>}
+ */
+const $$gbigintListSort = function(list) {
+  return googArray.toArray(list).sort(compareBigInt);
+};
 
 /**
  * Sorts a list of strings in lexicographic order.
@@ -2767,6 +2776,7 @@ exports = {
   $$makeArray,
   $$filterAndMap,
   $$numberListSort,
+  $$gbigintListSort,
   $$stringListSort,
   $$strToAsciiLowerCase,
   $$strToAsciiUpperCase,

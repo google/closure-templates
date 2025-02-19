@@ -45,6 +45,7 @@ import com.google.template.soy.data.internal.RuntimeMapTypeTracker;
 import com.google.template.soy.data.internal.SoyMapImpl;
 import com.google.template.soy.data.internal.SoyRecordImpl;
 import com.google.template.soy.data.restricted.FloatData;
+import com.google.template.soy.data.restricted.GbigintData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.data.restricted.StringData;
@@ -253,6 +254,12 @@ public final class BasicFunctionsRuntime {
       List<? extends SoyValueProvider> list) {
     return ImmutableList.sortedCopyOf(
         comparingDouble((SoyValueProvider arg) -> arg.resolve().numberValue()), list);
+  }
+
+  /** Sorts a list in numerical order. */
+  @Nonnull
+  public static ImmutableList<GbigintData> gbigintListSort(List<GbigintData> list) {
+    return ImmutableList.sortedCopyOf(comparing(GbigintData::getValue), list);
   }
 
   /**

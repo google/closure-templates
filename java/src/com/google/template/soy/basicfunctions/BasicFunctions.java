@@ -40,6 +40,7 @@ public class BasicFunctions {
         new ConcatListsFunction(),
         new ConcatMapsMethod(),
         new FloorFunction(),
+        new GbigintListSortMethod(),
         new HtmlToTextFunction(),
         new IsFiniteFunction(),
         new JoinFunction(),

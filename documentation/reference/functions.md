@@ -205,8 +205,9 @@ Joins a list of strings or numbers with a string separator.
 Also callable as deprecated global function: `join(list, separator)`
 
 <span id="list-number_sort"></span>
+<span id="list-gbigint_sort"></span>
 
-### `list<number>.sort()` {#sort}
+### `list<number>.sort()` and `list<gbigint>.sort()` {#sort}
 
 Sorts the list in numerical order.
 
