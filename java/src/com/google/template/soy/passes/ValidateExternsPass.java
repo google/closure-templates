@@ -418,9 +418,13 @@ class ValidateExternsPass implements CompilerFilePass {
     javaType = Primitives.wrap(javaType);
     switch (soyType.getKind()) {
       case INT:
-        return javaType == Integer.class || javaType == Long.class;
+        return javaType == Integer.class
+            || javaType == Long.class
+            || (mode == Mode.SUPER && javaType == Number.class);
       case FLOAT:
-        return javaType == Double.class || javaType == Float.class;
+        return javaType == Double.class
+            || javaType == Float.class
+            || (mode == Mode.SUPER && javaType == Number.class);
       case STRING:
         return javaType == String.class;
       case BOOL:
