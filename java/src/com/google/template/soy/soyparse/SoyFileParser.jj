@@ -4641,7 +4641,7 @@ private ExprNode PrecExpr12(ExprState state) :
 
       if (op.kind == MINUS && expr instanceof NumberNode) {
         NumberNode numberNode = (NumberNode) expr;
-        if (numberNode.isInteger()) {
+        if (numberNode.isInteger() && numberNode.longValue() != 0) {
           expr = new NumberNode(-1 * numberNode.longValue(), location);
         } else {
           expr = new NumberNode(-1 * numberNode.doubleValue(), location);
