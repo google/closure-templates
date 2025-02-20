@@ -172,6 +172,11 @@ public final class I18NDirectivesRuntime {
       ((CompactDecimalFormat) numberFormat).setMaximumSignificantDigits(3);
     }
 
+    // Negative zero is not a human-readable concept. Oddly, ICU4J does not handle this
+    // automatically.
+    if (number == -0.0) {
+      number = 0.0;
+    }
     return numberFormat.format(number);
   }
 
