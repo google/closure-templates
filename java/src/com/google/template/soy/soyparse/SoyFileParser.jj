@@ -148,6 +148,7 @@ import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateNodeBuilder;
 import com.google.template.soy.soytree.TypeDefNode;
 import com.google.template.soy.soytree.VeLogNode;
+import com.google.template.soy.soytree.WhileNode;
 import com.google.template.soy.soytree.WhitespaceMode;
 import com.google.template.soy.soytree.defn.AttrParam;
 import com.google.template.soy.soytree.defn.ImportedVar;
@@ -322,6 +323,7 @@ import javax.annotation.Nullable;
  *    {switch ...}{case ...}...{default}...{/switch}
  *    {foreach ...}...{/foreach}
  *    {for ...}...{/for}
+ *    {while ...}...{/while}
  *    {call ... /}
  *    {delcall ... /}
  *    {call ...}{param ... /}{param ...}...{/param}{/call}
@@ -1283,8 +1285,11 @@ TOKEN_MGR_DECLS: {
 | < CMD_SKIPCHILDREN             : "{skipchildren}" >
 
 | < CMD_RETURN                   : "{return" <WS>   > : EXPR
-| < CMD_ASSIGN                   : "{assign" <WS>      > : EXPR
+| < CMD_ASSIGN                   : "{assign" <WS>   > : EXPR
 | < CMD_CLOSE_JAVA_IMPL          : "{/javaimpl}"    > : DEFAULT
+
+| < CMD_BEGIN_WHILE              : "{while" <WS>    > : EXPR
+| < CMD_CLOSE_WHILE              : "{/while}"       >
 }
 
 
@@ -2732,7 +2737,7 @@ private StatementNode PrintableStmt() :
 }
 
 /**
- * ControlFlowStmt -> IfStmt | SwitchStmt | ForStmt
+ * ControlFlowStmt -> IfStmt | SwitchStmt | ForStmt | ReturnStmt | WhileStmt
  */
 private StatementNode ControlFlowStmt() :
 {
@@ -2744,6 +2749,7 @@ private StatementNode ControlFlowStmt() :
   | stmt = SwitchStmt()
   | stmt = ForStmt()
   | stmt = ReturnStmt()
+  | stmt = WhileStmt()
   )
 
   { return stmt; }
@@ -3779,6 +3785,45 @@ private AssignmentNode AssignmentStmt() :
   {
     ExprNode lhs = new VarRefNode(identToken.image, createSrcLoc(identToken), null);
     return new AssignmentNode(nodeIdGen.genId(), createSrcLoc(tagBegin, tagEnd), lhs, rhs);
+  }
+}
+
+/**
+ * WhileStmt -> CmdBeginWhile Expr CmdEnd TemplateBlock CmdCloseWhile
+ */
+private WhileNode WhileStmt() :
+{
+  Token tagBegin, tagClose;
+  Token tagBeginEnd = null;
+  ExprNode whileExpr;
+  List<StandaloneNode> templateBlock;
+}
+{
+  tagBegin = <CMD_BEGIN_WHILE>
+  {
+    assertInFunction(tagBegin);
+  }
+  try {
+    whileExpr = Expr()
+    tagBeginEnd = <CMD_END>
+  } catch (ParseException e) {
+    whileExpr = errorExpr(tagBegin);
+    tagBeginEnd = reportTemplateBodyErrorAndSkipTo(
+        e,
+        "\nWhile-loops should be formatted as: \"{while <condition>}\".",
+        CMD_END);
+
+  }
+  templateBlock = TemplateBlock()
+  tagClose = <CMD_CLOSE_WHILE>
+  {
+    WhileNode whileNode = new WhileNode(
+        nodeIdGen.genId(),
+        createSrcLoc(tagClose),
+        createSrcLoc(tagBegin, tagClose),
+        whileExpr);
+    whileNode.addChildren(templateBlock);
+    return whileNode;
   }
 }
 

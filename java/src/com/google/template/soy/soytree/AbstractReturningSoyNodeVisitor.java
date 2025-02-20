@@ -124,6 +124,9 @@ public abstract class AbstractReturningSoyNodeVisitor<R>
       case FOR_NONEMPTY_NODE:
         return visitForNonemptyNode((ForNonemptyNode) node);
 
+      case WHILE_NODE:
+        return visitWhileNode((WhileNode) node);
+
       case CALL_BASIC_NODE:
         return visitCallBasicNode((CallBasicNode) node);
       case CALL_DELEGATE_NODE:
@@ -326,6 +329,10 @@ public abstract class AbstractReturningSoyNodeVisitor<R>
   }
 
   protected R visitForNonemptyNode(ForNonemptyNode node) {
+    return visitSoyNode(node);
+  }
+
+  protected R visitWhileNode(WhileNode node) {
     return visitSoyNode(node);
   }
 

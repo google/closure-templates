@@ -86,6 +86,8 @@ public interface SoyNode extends Node {
     FOR_NODE,
     FOR_NONEMPTY_NODE,
 
+    WHILE_NODE,
+
     CALL_BASIC_NODE,
     CALL_DELEGATE_NODE,
     CALL_PARAM_VALUE_NODE,
@@ -230,7 +232,7 @@ public interface SoyNode extends Node {
    * loops.
    *
    * <p>Includes nodes such as IfCondNode, IfElseNode, SwitchCaseNode, SwitchDefaultNode,
-   * ForNonemptyNode, ForNode etc.
+   * ForNonemptyNode, ForNode, WhileNode, etc.
    */
   interface ConditionalBlockNode extends BlockNode {}
 
@@ -328,7 +330,7 @@ public interface SoyNode extends Node {
   /** A node that can be the initial content (i.e. initial child) of a MsgPlaceholderNode. */
   interface MsgPlaceholderInitialNode extends StandaloneNode {
 
-    /** A value object that can be used to test for placehoolder */
+    /** A value object that can be used to test for placeholder */
     interface SamenessKey {
       SamenessKey copy(CopyState copy);
     }

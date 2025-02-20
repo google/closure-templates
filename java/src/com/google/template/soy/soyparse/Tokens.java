@@ -172,6 +172,8 @@ final class Tokens {
         return "{return";
       case SoyFileParserConstants.CMD_ASSIGN:
         return "{assign";
+      case SoyFileParserConstants.CMD_BEGIN_WHILE:
+        return "{while";
 
       case SoyFileParserConstants.CMD_FULL_SP:
       case SoyFileParserConstants.CMD_FULL_NIL:

@@ -160,6 +160,10 @@ public abstract class AbstractSoyNodeVisitor<R> extends AbstractNodeVisitor<SoyN
         visitForNonemptyNode((ForNonemptyNode) node);
         break;
 
+      case WHILE_NODE:
+        visitWhileNode((WhileNode) node);
+        break;
+
       case CALL_BASIC_NODE:
         visitCallBasicNode((CallBasicNode) node);
         break;
@@ -406,6 +410,10 @@ public abstract class AbstractSoyNodeVisitor<R> extends AbstractNodeVisitor<SoyN
   }
 
   protected void visitForNonemptyNode(ForNonemptyNode node) {
+    visitSoyNode(node);
+  }
+
+  protected void visitWhileNode(WhileNode node) {
     visitSoyNode(node);
   }
 
