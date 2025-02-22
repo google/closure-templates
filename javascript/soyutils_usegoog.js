@@ -2801,6 +2801,7 @@ exports = {
   $$stubsMap,
   $$internalCallMarkerDoNotUse,
   $$areYouAnInternalCaller,
+  getBidiFormatterInstance_,
   // The following are exported just for tests
   $$balanceTags_,
   $$isRecord,
