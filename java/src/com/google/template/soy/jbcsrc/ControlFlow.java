@@ -65,7 +65,9 @@ final class ControlFlow {
     if (elseBlock.isPresent()) {
       allBlocks.add(IfBlock.create(Branch.always(), elseBlock.get()));
     }
-    boolean isTerminal = allBlocks.stream().allMatch(ifBlock -> ifBlock.block().isTerminal());
+    boolean isTerminal =
+        elseBlock.isPresent()
+            && allBlocks.stream().allMatch(ifBlock -> ifBlock.block().isTerminal());
     return new Statement(isTerminal ? Statement.Kind.TERMINAL : Statement.Kind.NON_TERMINAL) {
       @Override
       protected void doGen(CodeBuilder adapter) {

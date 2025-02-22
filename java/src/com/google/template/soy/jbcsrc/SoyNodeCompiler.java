@@ -765,7 +765,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     // lookup switch
     boolean isDense = ((float) casesByKey.size() / range) >= 0.5f;
     List<Statement> cases = new ArrayList<>();
-    boolean isTerminal = true;
+    boolean isTerminal = defaultBlock != null;
     // We need to dedupe since multiple keys may point at the same case
     for (var entry : new LinkedHashSet<>(casesByKey.values())) {
       cases.add(entry.statement);
