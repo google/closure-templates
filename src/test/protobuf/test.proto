@@ -159,10 +159,8 @@ message Repeated {
 }
 
 message GbigintMap {
-  map<int64, int32> long_to_int_with_jstype = 1
-      ;
-  map<int32, int64> int_to_long_with_jstype = 2
-      ;
+  map<int64, int32> long_to_int_with_jstype = 1;
+  map<int32, int64> int_to_long_with_jstype = 2;
 
   map<int64, int32> long_to_int = 3;
   map<int32, int64> int_to_long = 4;
