@@ -125,6 +125,7 @@ import com.google.template.soy.soytree.TemplateBasicNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.VeLogNode;
 import com.google.template.soy.soytree.Visibility;
+import com.google.template.soy.soytree.WhileNode;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.BoolType;
@@ -935,6 +936,30 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
         if (userIndexVar != null) {
           adapter.iinc(userIndexVar.local().index(), 1); // index++
         }
+        adapter.goTo(loopStart);
+        adapter.mark(exitScope);
+        adapter.mark(loopEnd);
+      }
+    };
+  }
+
+  @Override
+  protected Statement visitWhileNode(WhileNode node) {
+    Scope scope = variables.enterScope();
+    Expression boolExpr = compileRootExpression(node.getExpr()).coerceToBoolean();
+    Statement loopBody = AppendableExpression.concat(visitChildren(node));
+    var exitScope = scope.exitScopeMarker();
+    return new Statement(
+        loopBody.isTerminal() ? Statement.Kind.TERMINAL : Statement.Kind.NON_TERMINAL) {
+      @Override
+      protected void doGen(CodeBuilder adapter) {
+        Label loopStart = adapter.mark();
+        Label loopEnd = newLabel();
+
+        boolExpr.gen(adapter);
+        adapter.ifZCmp(Opcodes.IFEQ, loopEnd); // while (booleanProvider == true) {
+        loopBody.gen(adapter);
+
         adapter.goTo(loopStart);
         adapter.mark(exitScope);
         adapter.mark(loopEnd);

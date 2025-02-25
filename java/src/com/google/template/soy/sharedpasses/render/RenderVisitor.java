@@ -96,6 +96,7 @@ import com.google.template.soy.soytree.SwitchNode;
 import com.google.template.soy.soytree.TemplateBasicNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.VeLogNode;
+import com.google.template.soy.soytree.WhileNode;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.SoyType.Kind;
 import java.io.Flushable;
@@ -482,6 +483,15 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
         env.bind(child.getIndexVar(), SoyValueConverter.INSTANCE.convert(i++));
       }
       visitChildren(child);
+    }
+  }
+
+  @Override
+  protected void visitWhileNode(WhileNode node) {
+    while (eval(node.getExpr(), node).coerceToBoolean()) {
+      for (SoyNode child : node.getChildren()) {
+        visit(child);
+      }
     }
   }
 
