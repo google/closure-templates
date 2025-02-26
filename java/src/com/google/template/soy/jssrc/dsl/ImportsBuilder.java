@@ -28,6 +28,7 @@ import java.util.SortedMap;
 import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import javax.annotation.Nullable;
 
 /**
  * Allows building imports incrementally.
@@ -149,8 +150,9 @@ public class ImportsBuilder {
   /**
    * Given the proto type, return the file local name (the imported symbol, plus any additional
    * parts for nested protos, possibly the immutable version) that should be used in Tsx, and mark
-   * the symbol as referenced.
+   * the symbol as referenced. Can return null if the proto type is not imported.
    */
+  @Nullable
   public String useImportedProtoSymbol(String fqn, JspbApi api) {
     String topLevelMsg = fqn;
     String dotPlusNestedSymbol = "";
@@ -172,7 +174,7 @@ public class ImportsBuilder {
     }
 
     if (data == null) {
-      throw new IllegalArgumentException("Unexpected proto: " + fqn);
+      return null;
     }
 
     if (api == JspbApi.MUTABLE) {
