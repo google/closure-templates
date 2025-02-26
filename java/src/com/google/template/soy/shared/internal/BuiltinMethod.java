@@ -423,6 +423,18 @@ public enum BuiltinMethod implements SoyMethod {
         }
       };
 
+  private static final ImmutableSet<BuiltinMethod> PROTO_ACCESSORS =
+      ImmutableSet.of(
+          BuiltinMethod.GET_PROTO_FIELD,
+          BuiltinMethod.GET_PROTO_FIELD_OR_UNDEFINED,
+          BuiltinMethod.GET_READONLY_PROTO_FIELD,
+          BuiltinMethod.GET_EXTENSION,
+          BuiltinMethod.GET_READONLY_EXTENSION);
+
+  public static boolean isProtoAccessor(BuiltinMethod method) {
+    return PROTO_ACCESSORS.contains(method);
+  }
+
   public static String getProtoFieldNameFromMethodCall(MethodCallNode node) {
     var methodName = node.getMethodName().identifier();
     switch (((BuiltinMethod) node.getSoyMethod())) {

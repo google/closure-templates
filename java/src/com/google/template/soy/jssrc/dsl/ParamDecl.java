@@ -37,7 +37,7 @@ public abstract class ParamDecl extends Expression {
   public abstract String alias();
 
   @Nullable
-  abstract Expression type();
+  public abstract Expression type();
 
   abstract boolean optional();
 
