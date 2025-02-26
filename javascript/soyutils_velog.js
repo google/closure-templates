@@ -301,28 +301,59 @@ function setMetadataTestOnly(testdata) {
  * @return {string} The HTML attribute that will be stored in the DOM.
  */
 function $$getLoggingAttribute(veData, logOnly) {
-  if (metadata) {
-    const dataIdx = metadata.elements.push(new ElementMetadata(
-                        veData.getVe().getId(), veData.getData(), logOnly)) -
-        1;
-    // Insert a whitespace at the beginning. In VeLogInstrumentationVisitor,
-    // we insert the return value of this method as a plain string instead of a
-    // HTML attribute, therefore the desugaring pass does not know how to handle
-    // whitespaces.
-    // Trailing whitespace is not needed since we always add this at the end of
-    // a HTML tag.
-    return ' ' + ELEMENT_ATTR + '="' + dataIdx + '"';
-  } else if (logOnly) {
-    // If logonly is true but no longger has been configured, we throw an error
-    // since this is clearly a misconfiguration.
-    throw new Error(
-        'Cannot set logonly="true" unless there is a logger configured');
-  } else {
-    // If logger has not been configured, return an empty string to avoid adding
-    // unnecessary information in the DOM.
-    return '';
+  const dataIdx = storeElementData(veData, logOnly);
+  if (dataIdx === -1) {
+    return "";
   }
+  // Insert a whitespace at the beginning. In VeLogInstrumentationVisitor,
+  // we insert the return value of this method as a plain string instead of a
+  // HTML attribute, therefore the desugaring pass does not know how to handle
+  // whitespaces.
+  // Trailing whitespace is not needed since we always add this at the end of
+  // a HTML tag.
+  return ' ' + ELEMENT_ATTR + '="' + dataIdx + '"';
 }
+
+/**
+ * Records the data index.
+ *
+ * @param {!$$VisualElementData} veData The VE to log.
+ * @param {boolean} logOnly Whether to enable counterfactual logging.
+ *
+ * @return {number} The index where the metadata was stored in Metadata#elements, -1 if not recorded.
+ */
+function storeElementData(veData, logOnly) {
+  if (!metadata) {
+    if (logOnly) {
+      // If logonly is true but no logger has been configured, we throw an error
+      // since this is clearly a misconfiguration.
+      throw new Error(
+          'Cannot set logonly="true" unless there is a logger configured');
+    }
+    return -1;
+  }
+  const elementMetadata = new ElementMetadata(veData.getVe().getId(), veData.getData(), logOnly);
+  const dataIdx = metadata.elements.push(elementMetadata) - 1;
+  return dataIdx;
+}
+
+/**
+ * Returns the id and additional data into the global metadata structure. This
+ * will be used to set the logging data attribute via DOM APIs.
+ *
+ * @param {!$$VisualElementData} veData The VE to log.
+ * @param {boolean} logOnly Whether to enable counterfactual logging.
+ *
+ * @return {!Array<string | number> | undefined} Tuple containing the Soy logging attribute name and its corresponding id number value.
+ */
+function getLoggingAttributeEntry(veData, logOnly) {
+  const dataIdx = storeElementData(veData, logOnly);
+  if (dataIdx === -1) {
+    return undefined;
+  }
+  return [ELEMENT_ATTR, dataIdx];
+}
+
 
 /**
  * Registers the logging function in the metadata.
@@ -754,6 +785,7 @@ exports = {
   $$hasMetadata,
   $$getLoggingAttribute,
   $$getLoggingFunctionAttribute,
+  getLoggingAttributeEntry,
   ELEMENT_ATTR,
   FUNCTION_ATTR,
   ElementMetadata,
