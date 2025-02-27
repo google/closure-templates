@@ -155,7 +155,6 @@ import com.google.template.soy.shared.restricted.SoySourceFunctionMethod;
 import com.google.template.soy.shared.restricted.TypedSoyFunction;
 import com.google.template.soy.soyparse.SoyFileParser;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
-import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallDelegateNode;
 import com.google.template.soy.soytree.CallParamValueNode;
 import com.google.template.soy.soytree.ConstNode;
@@ -391,8 +390,8 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
               + " individual class names to multiple separate calls of the css() function.");
   private static final SoyErrorKind CAN_OMIT_KIND_ONLY_FOR_SINGLE_CALL =
       SoyErrorKind.of(
-          "The ''kind'' attribute can be omitted only if the let contains a single "
-              + "call command.");
+          "The ''kind'' attribute can be omitted only if the let contains only calls with matching "
+              + "kind and the control structures if/switch/for.");
   static final SoyErrorKind TEMPLATE_CALL_NULLISH =
       SoyErrorKind.of(
           "Template call expressions must be non-nullish. Try guarding with an '{'if'}' command.");
@@ -744,7 +743,9 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
     protected void visitLetContentNode(LetContentNode node) {
       visitSoyNode(node);
       if (node.isImplicitContentKind()) {
-        if (!(node.numChildren() == 1 && node.getChild(0) instanceof CallBasicNode)) {
+        SanitizedContentKind inferredKind =
+            SoyTreeUtils.inferSanitizedContentKindFromChildren(node);
+        if (inferredKind == null) {
           if (rewriteShortFormCalls) {
             // Be permissive when running fixer.
             errorReporter.report(node.getSourceLocation(), CAN_OMIT_KIND_ONLY_FOR_SINGLE_CALL);
@@ -752,15 +753,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
           // Avoid duplicate errors later.
           node.setContentKind(SanitizedContentKind.HTML);
         } else {
-          CallBasicNode callNode = (CallBasicNode) node.getChild(0);
-          SoyType templateType = callNode.getCalleeExpr().getType();
-          if (templateType instanceof TemplateType) {
-            node.setContentKind(
-                ((TemplateType) templateType).getContentKind().getSanitizedContentKind());
-          } else {
-            // Avoid duplicate errors later.
-            node.setContentKind(SanitizedContentKind.HTML);
-          }
+          node.setContentKind(inferredKind);
         }
       }
       node.getVar()

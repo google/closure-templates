@@ -120,8 +120,8 @@ final class CheckTemplateCallsPass implements CompilerFileSetPass {
           "Cannot call modifying templates directly. Call the main modifiable template instead.");
   private static final SoyErrorKind CAN_OMIT_KIND_ONLY_FOR_SINGLE_CALL =
       SoyErrorKind.of(
-          "The ''kind'' attribute can be omitted only if the param contains a single "
-              + "call command.");
+          "The ''kind'' attribute can be omitted only if the param contains only calls with"
+              + " matching kind and the control structures if/switch/for.");
 
   private static final SoyErrorKind INVALID_DATA_EXPR =
       SoyErrorKind.of("''data='' should be a record type, found ''{0}''.", StyleAllowance.NO_CAPS);
@@ -313,8 +313,9 @@ final class CheckTemplateCallsPass implements CompilerFileSetPass {
           if (!callParamContentNode.isImplicitContentKind()) {
             argType = SanitizedType.getTypeForContentKind(callParamContentNode.getContentKind());
           } else {
-            if (!(callParamContentNode.numChildren() == 1
-                && callParamContentNode.getChild(0) instanceof CallBasicNode)) {
+            SanitizedContentKind inferredKind =
+                SoyTreeUtils.inferSanitizedContentKindFromChildren(callParamContentNode);
+            if (inferredKind == null) {
               if (rewriteShortFormCalls) {
                 // Be permissive when running fixer.
                 errorReporter.report(
@@ -325,13 +326,8 @@ final class CheckTemplateCallsPass implements CompilerFileSetPass {
               callParamContentNode.setContentKind(SanitizedContentKind.HTML);
               continue;
             }
-            CallBasicNode callNode = (CallBasicNode) callParamContentNode.getChild(0);
-            TemplateType templateType = (TemplateType) callNode.getCalleeExpr().getType();
-            callParamContentNode.setContentKind(
-                templateType.getContentKind().getSanitizedContentKind());
-            argType =
-                SanitizedType.getTypeForContentKind(
-                    templateType.getContentKind().getSanitizedContentKind());
+            callParamContentNode.setContentKind(inferredKind);
+            argType = SanitizedType.getTypeForContentKind(inferredKind);
           }
         } else {
           throw new AssertionError(); // CallParamNode shouldn't have any other kind of child
