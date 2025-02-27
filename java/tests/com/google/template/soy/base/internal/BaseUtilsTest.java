@@ -168,7 +168,7 @@ public final class BaseUtilsTest {
   public void testFloatDataToString() {
     // Tests that our toString is similar to Javascript's number toString.
     assertEquals("0", BaseUtils.formatDouble(0.0));
-    assertEquals("0", BaseUtils.formatDouble(-0.0));
+    assertEquals("-0.0", BaseUtils.formatDouble(-0.0));
     assertEquals("1", BaseUtils.formatDouble(1.0));
     assertEquals("-1", BaseUtils.formatDouble(-1.0));
     assertEquals("1000000000000000", BaseUtils.formatDouble(1.0e15));
