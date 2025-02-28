@@ -479,6 +479,7 @@ public class SoyFileParser {
       SoyErrorKind.of("Invalid param name ''{0}''.");
   private static final SoyErrorKind UNEXPECTED_PIPE =
       SoyErrorKind.of("Unexpected ''|''. Print directives should not have whitespace after ''|''.");
+  private static final SoyErrorKind UNMATCHED_BRACES = SoyErrorKind.of("Unmatched curly braces.");
   private static final SoyErrorKind RECORD_NAMED_PARAMS =
       SoyErrorKind.of("Record literals require named parameters.");
   // TODO(b/314845158): Remove legacy and/or from parser.
@@ -648,6 +649,9 @@ public class SoyFileParser {
     Token t;
     do {
       t = getNextToken();
+      if (t.kind == CMD_END) {
+        token_source.resetToDefault();
+      }
     // We need to halt when observing EOF.  The behavior of the token manager is to keep returning
     // EOF from getNextToken(), so if we don't check for it this will become an infinite loop.
     } while (t.kind != skipTo && t.kind != EOF);
@@ -706,6 +710,9 @@ public class SoyFileParser {
     Token t;
     while (true) {
       t = getNextToken();
+      if (t.kind == CMD_END) {
+        token_source.resetToDefault();
+      }
       if (skipTo.contains(t.kind)) {
         return t;
       }
@@ -890,7 +897,7 @@ TOKEN_MGR_DECLS: {
     prevState = -1;
   }
 
-  private void resetToDefault() {
+  void resetToDefault() {
     SwitchTo(isInTemplate ? TEMPLATE_DEFAULT : DEFAULT);
   }
 
@@ -1296,7 +1303,7 @@ TOKEN_MGR_DECLS: {
 // ------------ Step 2: Match the command text and closing delimiter ------------
 
 <IN_CMD_TAG, EXPR> TOKEN: {
-  < CMD_END : "}" > { resetToDefault(); }
+  < CMD_END : "}" >
   // there are technically no self closing tags in DEFAULT, but this should yield better error
   // recovery
 | < CMD_SELF_CLOSE : "/}" > { resetToDefault(); }
@@ -1442,6 +1449,7 @@ TOKEN_MGR_DECLS: {
 | < IF: "if" >            // Not actually an operator, part of map/list comprehension syntax.
 | < LPAREN: "(" >
 | < RPAREN: ")" >
+| < LPARENBRACE: "({" >
 | < VBAR: "|" >           // an operator for type unions
 | < EQ: "=" >             // For state assignments and attribute value pairs in EXPR
 | < FORWARD_ARROW: "=>" > // Part of template type syntax.
@@ -1607,6 +1615,18 @@ private SoyFileNode NonEmptySoyFile() :
   }
 }
 
+private Token CmdEnd() :
+{
+  Token end;
+}
+{
+  end = <CMD_END>
+  {
+    token_source.resetToDefault();
+    return end;
+  }
+}
+
 /**
  * ExternStmt -> {extern ident: type}{/extern}
  */
@@ -1625,7 +1645,7 @@ private ExternNode ExternStmt() :
   name = <NAME>
   <CMD_COLON>
   type = FunctionType()
-  openClose = <CMD_END>
+  openClose = CmdEnd()
 
   (
     impl = JsImplStmt()
@@ -1706,7 +1726,7 @@ private JavaImplNode JavaImplStmt() :
           errorReporter, TypeReferenceParser.parser(), TypeReferenceParser.listParser());
     }
   |
-    endOpen = <CMD_END>
+    endOpen = CmdEnd()
     {
       token_source.enterFunction();
     }
@@ -1751,7 +1771,7 @@ private AliasDeclaration Alias() :
       <AS_OP>
       alias = DottedIdent()
     ]
-    close = <CMD_END>
+    close = CmdEnd()
   )
   {
     SourceLocation srcLoc = createSrcLoc(open, close);
@@ -1912,7 +1932,7 @@ private NamespaceDeclaration Namespace() :
   open = <NAMESPACE_OPEN>
   name = DottedIdent()
   attributes = Attributes()
-  close = <CMD_END>
+  close = CmdEnd()
   {
     validateAttributes(createSrcLoc(open), attributes, errorReporter);
     return new NamespaceDeclaration(name, attributes, errorReporter, createSrcLoc(open, close));
@@ -2073,7 +2093,7 @@ private ModNameDeclaration ModName() :
 {
   open = <MODNAME_OPEN>
   name = DottedIdent()
-  close = <CMD_END>
+  close = CmdEnd()
   { return ModNameDeclaration.create(createSrcLoc(open,close), name); }
 }
 
@@ -2206,7 +2226,7 @@ private void TemplateOpenTagHelper(
       builder.setSoyDoc(soyDoc.image, createSrcLoc(soyDoc));
     }
   }
-  close = <CMD_END>
+  close = CmdEnd()
   { builder.setOpenTagLocation(createSrcLoc(open, close)); }
 }
 
@@ -2532,7 +2552,7 @@ private TemplateHeaderVarDefn ParamDecl(@Nullable String desc) :
       <CMD_COLON_EQ>
       value = Expr()
     )
-    tagEnd = <CMD_END>
+    tagEnd = CmdEnd()
   } catch (ParseException parseException) {
     tagEnd = reportTemplateBodyErrorAndSkipTo(parseException, CMD_END);
   }
@@ -2611,7 +2631,7 @@ private TemplateHeaderVarDefn AttrDecl(@Nullable String desc) :
       <CMD_COLON>
       paramTypeNode = TypeExpr()
     )
-    tagEnd = <CMD_END>
+    tagEnd = CmdEnd()
   } catch (ParseException parseException) {
     tagEnd = reportTemplateBodyErrorAndSkipTo(parseException, CMD_END);
   }
@@ -2778,7 +2798,7 @@ private MsgFallbackGroupNode MsgStmt() :
 
   try {
     attributes = Attributes()
-    tagEnd = <CMD_END>
+    tagEnd = CmdEnd()
   } catch (ParseException e) {
     tagEnd = reportTemplateBodyErrorAndSkipTo(e, CMD_END);
   }
@@ -2803,7 +2823,7 @@ private MsgFallbackGroupNode MsgStmt() :
 
     try {
       attributes = Attributes()
-      tagEnd = <CMD_END>
+      tagEnd = CmdEnd()
     } catch (ParseException e) {
       tagEnd = reportTemplateBodyErrorAndSkipTo(e, CMD_END);
     }
@@ -2949,7 +2969,7 @@ private MsgPluralNode MsgPlural() :
   try {
     pluralExpr = Expr()
     attributes = Attributes()
-    tagEnd = <CMD_END>
+    tagEnd = CmdEnd()
   } catch (ParseException e) {
     pluralExpr = errorExpr(tagBegin);
     attributes = ImmutableList.of();
@@ -2969,7 +2989,7 @@ private MsgPluralNode MsgPlural() :
     (
       caseBeginTag = <CMD_BEGIN_CASE>
       caseExpr = Expr()
-      caseBeginEnd = <CMD_END>
+      caseBeginEnd = CmdEnd()
       {
         int value;
         if (!(caseExpr instanceof NumberNode)) {
@@ -3061,7 +3081,7 @@ private MsgSelectNode MsgSelect() :
   try {
     selectExpr = Expr()
     attributes = Attributes()
-    tagBeginEnd = <CMD_END>
+    tagBeginEnd = CmdEnd()
   } catch (ParseException e) {
     selectExpr = errorExpr(tagBegin);
     attributes = ImmutableList.of();
@@ -3082,7 +3102,7 @@ private MsgSelectNode MsgSelect() :
     (
       caseTagBegin = <CMD_BEGIN_CASE>
       caseExpr = Expr()
-      caseTagEnd = <CMD_END>
+      caseTagEnd = CmdEnd()
       templateBlock = TemplateBlockForMsg()
 
       {
@@ -3151,7 +3171,7 @@ private PrintNode PrintStmt() :
     expr = PrintExpr()
     directives = PrintDirectives()
     attributes = Attributes()
-    tagEnd = <CMD_END>
+    tagEnd = CmdEnd()
   } catch (ParseException e) {
     if (expr == null) {
       expr = errorExpr(tagBegin);
@@ -3249,7 +3269,7 @@ private KeyNode KeyStmt() :
 
   try {
     expr = Expr()
-    tagEnd = <CMD_END>
+    tagEnd = CmdEnd()
   } catch (ParseException e) {
     if (expr == null) {
       expr = errorExpr(tagBegin);
@@ -3358,7 +3378,7 @@ private LetNode LetStmt() :
       |
         { attr = null; }
       )
-      tagBeginEnd = <CMD_END>
+      tagBeginEnd = CmdEnd()
     } catch (ParseException e) {
       tagBeginEnd = reportTemplateBodyErrorAndSkipTo(e, CMD_END, CMD_SELF_CLOSE);
     }
@@ -3489,7 +3509,7 @@ private IfNode IfStmt() :
   tagBegin = <CMD_BEGIN_IF>
   try {
     ifExpr = Expr()
-    tagBeginEnd = <CMD_END>
+    tagBeginEnd = CmdEnd()
   } catch (ParseException e) {
     ifExpr = errorExpr(tagBegin);
     tagBeginEnd = reportTemplateBodyErrorAndSkipTo(e, CMD_END);
@@ -3512,7 +3532,7 @@ private IfNode IfStmt() :
     condTagBegin = <CMD_BEGIN_ELSEIF>
     try {
       ifExpr = Expr()
-      tagBeginEnd = <CMD_END>
+      tagBeginEnd = CmdEnd()
     } catch (ParseException e) {
       ifExpr = errorExpr(condTagBegin);
       tagBeginEnd = reportTemplateBodyErrorAndSkipTo(e, CMD_END);
@@ -3572,7 +3592,7 @@ private VeLogNode VeLogStmt() :
   try {
     veDataExpr = Expr()
     attributes = Attributes()
-    tagBeginEnd = <CMD_END>
+    tagBeginEnd = CmdEnd()
   } catch (ParseException e) {
     if (veDataExpr == null) {
       veDataExpr = errorExpr(tagBegin);
@@ -3618,7 +3638,7 @@ private SwitchNode SwitchStmt() :
   tagBegin = <CMD_BEGIN_SWITCH>
   try {
     switchExpr = Expr()
-    tagBeginEnd = <CMD_END>
+    tagBeginEnd = CmdEnd()
   } catch (ParseException e) {
     switchExpr = errorExpr(tagBegin);
     tagBeginEnd = reportTemplateBodyErrorAndSkipTo(e, CMD_END);
@@ -3637,7 +3657,7 @@ private SwitchNode SwitchStmt() :
     (
       caseTag = <CMD_BEGIN_CASE>
       caseExprs = ExprList(false)
-      caseTagEnd = <CMD_END>
+      caseTagEnd = CmdEnd()
       templateBlock = TemplateBlock()
       {
         SwitchCaseNode caseNode = new SwitchCaseNode(
@@ -3711,7 +3731,7 @@ private ForNode ForStmt() :
     <IN>
     expr = Expr()
 
-    tagBeginEnd = <CMD_END>
+    tagBeginEnd = CmdEnd()
   } catch (ParseException e) {
     tagBeginEnd = reportTemplateBodyErrorAndSkipTo(
         e,
@@ -3805,7 +3825,7 @@ private WhileNode WhileStmt() :
   }
   try {
     whileExpr = Expr()
-    tagBeginEnd = <CMD_END>
+    tagBeginEnd = CmdEnd()
   } catch (ParseException e) {
     whileExpr = errorExpr(tagBegin);
     tagBeginEnd = reportTemplateBodyErrorAndSkipTo(
@@ -3858,7 +3878,7 @@ private CallNode CallStmt() :
         tagClose = <CMD_SELF_CLOSE>
         { selfClosing = true; }
       |
-        tagBeginEnd = <CMD_END>
+        tagBeginEnd = CmdEnd()
         params = CallParams()
         tagClose = <CMD_CLOSE_CALL>
       )
@@ -3904,7 +3924,7 @@ private CallNode CallStmt() :
         tagClose = <CMD_SELF_CLOSE>
         { selfClosing = true; }
       |
-        tagBeginEnd = <CMD_END>
+        tagBeginEnd = CmdEnd()
         params = CallParams()
         tagClose = <CMD_CLOSE_DELCALL>
       )
@@ -4009,7 +4029,7 @@ private CallParamNode CallParam() :
       |
         { attr = null; }
       )
-      tagBeginEnd = <CMD_END>
+      tagBeginEnd = CmdEnd()
     } catch (ParseException e) {
       tagBeginEnd = reportTemplateBodyErrorAndSkipTo(e, CMD_END, CMD_SELF_CLOSE);
     }
@@ -5305,12 +5325,16 @@ private TypeNode TypeExprPrec3() :
 private TypeNode TemplateType() :
 {
   List<TemplateTypeNode.Parameter> parameters = ImmutableList.of();
-  Token open, close, arrow;
+  Token open, close, arrow, rcurly = null;
   TypeNode returnType;
   TemplateTypeNode.Parameter parameter;
 }
 {
-  open = <LPAREN>
+  (
+    open = <LPAREN>
+  |
+    open = <LPARENBRACE>
+  )
 
   (
     parameter = TemplateParameter()
@@ -5327,6 +5351,9 @@ private TypeNode TemplateType() :
     )*
   )?
 
+  (
+    rcurly = <CMD_END>
+  )?
   close = <RPAREN>
 
   arrow = <FORWARD_ARROW>
@@ -5334,6 +5361,9 @@ private TypeNode TemplateType() :
   returnType = NamedType()
 
   {
+    if ((open.image.length() == 2) != (rcurly != null)) {
+      errorReporter.report(createSrcLoc(open, close), UNMATCHED_BRACES);
+    }
     SourceLocation srcLoc = createSrcLoc(open, returnType.sourceLocation().getEndPoint());
     return TemplateTypeNode.create(srcLoc, parameters, returnType);
   }
