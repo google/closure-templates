@@ -284,8 +284,6 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
   private static final SoyErrorKind KEYS_PASSED_MAP =
       SoyErrorKind.of(
           "Use the ''mapKeys'' function instead of ''keys'' for objects of type ''map''.");
-  private static final SoyErrorKind EMPTY_LIST_ACCESS =
-      SoyErrorKind.of("Accessing item in empty list.");
   private static final SoyErrorKind EMPTY_MAP_ACCESS =
       SoyErrorKind.of("Accessing item in empty map.");
   private static final SoyErrorKind INVALID_TYPE_SUBSTITUTION =
@@ -2671,10 +2669,6 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
 
         case LIST:
           ListType listType = (ListType) baseType;
-          if (listType.isEmpty()) {
-            errorReporter.report(baseLocation, EMPTY_LIST_ACCESS);
-            return UnknownType.getInstance();
-          }
 
           // For lists, the key type must either be unknown or assignable to integer.
           if (!IntType.getInstance().isAssignableFromLoose(keyType)) {
