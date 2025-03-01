@@ -852,23 +852,22 @@ This mirrors the
 of the same name. Safely coerces a `gbigint` to a `boolean` when the underlying
 browser may not natively support `bigint`.
 
-### `gbigintToNumber(gbigint)` {#gbigintToNumber}
+### `gbigintToInt(gbigint)` {#gbigintToInt}
 
-Converts the provided `gbigint` into a `number` typed value. Asserts that the
-input is actually a `gbigint` and that its value is within the JavaScript safe
-integer range.
+Converts the provided `gbigint` into a `int` typed value. Asserts that the input
+is actually a `gbigint` and that its value is within the JavaScript safe integer
+range.
 
-### `gbigintToNumberOrNull(gbigint|null|undefined)` {#gbigintToNumberOrNull}
+### `gbigintToIntOrNull(gbigint|null|undefined)` {#gbigintToIntOrNull}
 
-Converts the provided `gbigint` into a `number` typed value. If a nullish value
-is provided, this function is guaranteed to return `null`.
+Converts the provided `gbigint` into a `int` typed value. If a nullish value is
+provided, this function is guaranteed to return `null`.
 
 Asserts the value is within the JavaScript safe integer range.
 
-### `gbigintToNumberArray(list<gbigint>)` {#gbigintToNumberArray}
+### `gbigintToIntArray(list<gbigint>)` {#gbigintToIntArray}
 
-Returns an array created by calling `gbigintToNumber` on each element of the
-input.
+Returns an array created by calling `gbigintToInt` on each element of the input.
 
 ### `isSafeInt52(gbigint)` {#isSafeInt52}
 
