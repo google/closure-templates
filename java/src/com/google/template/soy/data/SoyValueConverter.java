@@ -38,6 +38,7 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.Descriptors.EnumValueDescriptor;
 import com.google.protobuf.Message;
 import com.google.protobuf.ProtocolMessageEnum;
+import com.google.template.soy.base.internal.NumericCoercions;
 import com.google.template.soy.data.internal.DictImpl;
 import com.google.template.soy.data.internal.IterableImpl;
 import com.google.template.soy.data.internal.RuntimeMapTypeTracker;
@@ -85,7 +86,12 @@ public final class SoyValueConverter {
     cheapConverterMap.put(String.class, StringData::forValue);
     cheapConverterMap.put(Boolean.class, BooleanData::forValue);
     cheapConverterMap.put(Integer.class, input -> IntegerData.forValue(input.longValue()));
-    cheapConverterMap.put(Long.class, IntegerData::forValue);
+    cheapConverterMap.put(
+        Long.class,
+        input ->
+            NumericCoercions.isInRange(input)
+                ? IntegerData.forValue(input)
+                : StringData.forValue(String.valueOf(input)));
     cheapConverterMap.put(BigInteger.class, GbigintData::forValue);
 
     cheapConverterMap.put(Float.class, input -> FloatData.forValue(input.doubleValue()));

@@ -91,7 +91,7 @@ public class EvalVisitorTest {
         "list0",
         SoyValueConverterUtility.newList(),
         "longNumber",
-        1000000000000000001L,
+        100000000000001L,
         "floatNumber",
         1.5,
         "aNull",
@@ -351,8 +351,8 @@ public class EvalVisitorTest {
     assertEval("1.002- $woo", 2.62);
 
     // Ensure longs work.
-    assertEval("$longNumber + $longNumber", 2000000000000000002L);
-    assertEval("$longNumber * 4 - $longNumber", 3000000000000000003L);
+    assertEval("$longNumber + $longNumber", 200000000000002L);
+    assertEval("$longNumber * 4 - $longNumber", 300000000000003L);
     assertEval("$longNumber / $longNumber", 1.0); // NOTE: Division is on floats.
     assertEval("$longNumber < ($longNumber + 1)", true);
     assertEval("$longNumber < ($longNumber - 1)", false);

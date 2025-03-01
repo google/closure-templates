@@ -34,6 +34,7 @@ import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.errorprone.annotations.ForOverride;
 import com.google.protobuf.Message;
 import com.google.protobuf.ProtocolMessageEnum;
+import com.google.template.soy.base.internal.NumericCoercions;
 import com.google.template.soy.data.internal.IterableImpl;
 import com.google.template.soy.data.internal.ListImpl;
 import com.google.template.soy.data.internal.ParamStore;
@@ -46,7 +47,6 @@ import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.GbigintData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NullData;
-import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.data.restricted.StringData;
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -313,10 +313,10 @@ public abstract class BaseSoyTemplateImpl extends SoyTemplate {
      *
      * @throws NullPointerException if n is null.
      */
-    protected static NumberData asNumber(Number n) {
+    protected static SoyValue asNumber(Number n) {
       return n instanceof Float || n instanceof Double
           ? FloatData.forValue(n.doubleValue())
-          : IntegerData.forValue(n.longValue());
+          : asInt(n.longValue());
     }
 
     /** Converts a {@code Number} into a number type supported by Soy. */
@@ -324,11 +324,13 @@ public abstract class BaseSoyTemplateImpl extends SoyTemplate {
       return n == null ? NullData.INSTANCE : asNumber(n);
     }
 
-    protected static IntegerData asInt(long n) {
-      return IntegerData.forValue(n);
+    protected static SoyValue asInt(long n) {
+      return NumericCoercions.isInRange(n)
+          ? IntegerData.forValue(n)
+          : StringData.forValue(String.valueOf(n));
     }
 
-    protected static IntegerData asBoxedInt(Number n) {
+    protected static SoyValue asBoxedInt(Number n) {
       return asInt(n.longValue());
     }
 
