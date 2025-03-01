@@ -619,7 +619,6 @@ function $$veHasSameId(ve1, ve2) {
  *
  * create instances for tests.
  *
- * @final
  */
 class $$VisualElement {
   /**
@@ -686,7 +685,6 @@ class $$VisualElement {
  *
  * create instances for tests.
  *
- * @final
  */
 class $$VisualElementData {
   /**
