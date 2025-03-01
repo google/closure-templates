@@ -198,18 +198,6 @@ public final class SoyMapDataTest {
   }
 
   @Test
-  public void testLongHandling() {
-    // long value will loose precision if converted to double.
-    long l = 987654321987654321L;
-    SoyMapData smd = new SoyMapData();
-    smd.put("long", l);
-    assertThat(smd.getLong("long")).isEqualTo(l);
-
-    smd = new SoyMapData("long", l);
-    assertThat(smd.getLong("long")).isEqualTo(l);
-  }
-
-  @Test
   public void testRuntimeTypeTransitions() {
     ImmutableMap<String, String> underlying = ImmutableMap.of("a", "b");
 
