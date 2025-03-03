@@ -770,7 +770,7 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       pyCodeBuilder.initOutputVarIfNecessary();
       visitChildren(node);
       pyCodeBuilder.popOutputVar();
-      pyCodeBuilder.appendLine("print " + outputVarName);
+      pyCodeBuilder.appendLine("print(" + outputVarName + ")");
     }
 
     // ---------------------------------------------------------------------------------------------

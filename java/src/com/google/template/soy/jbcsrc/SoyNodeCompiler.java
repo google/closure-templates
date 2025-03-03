@@ -226,6 +226,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
         typeInfo,
         analysis,
         innerMethods,
+        null,
         variables,
         parameterLookup,
         fields,
@@ -281,6 +282,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       @Nullable TypeInfo typeInfo,
       TemplateAnalysis analysis,
       @Nullable InnerMethods innerMethods,
+      @Nullable DetachState detachState,
       TemplateVariableManager variables,
       TemplateParameterLookup parameterLookup,
       @Nullable FieldManager fields,
@@ -294,6 +296,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     this.typeInfo = typeInfo;
     this.analysis = checkNotNull(analysis);
     this.innerMethods = innerMethods;
+    this.detachState = detachState;
     this.variables = checkNotNull(variables);
     this.parameterLookup = checkNotNull(parameterLookup);
     this.fields = fields;
@@ -2077,6 +2080,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
         typeInfo,
         analysis,
         innerMethods,
+        detachState,
         variables,
         parameterLookup,
         fields,
