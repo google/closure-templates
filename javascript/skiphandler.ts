@@ -34,7 +34,7 @@ declare global {
 export function setSkipHandler(
   el: Element,
   fn: (prev: UnknownSoyElement, next: UnknownSoyElement) => boolean,
-) {
+): void {
   el.__soy_skip_handler = fn;
 }
 
@@ -45,6 +45,6 @@ export function setSkipHandler(
  * @param fn A function that corresponds to the patch handler of the Soy
  *     element.
  */
-export function setAfterPatchHandler(el: Element, fn: () => void) {
+export function setAfterPatchHandler(el: Element, fn: () => void): void {
   el.__soy_patch_handler = fn;
 }
