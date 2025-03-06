@@ -74,7 +74,7 @@ public abstract class TemplateTypeNode extends TypeNode {
 
   @Override
   public final String toString() {
-    return "(" + Joiner.on(", ").join(parameters()) + ") => " + returnType();
+    return "template (" + Joiner.on(", ").join(parameters()) + ") => " + returnType();
   }
 
   @Override

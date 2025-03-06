@@ -110,7 +110,7 @@ public final class TypeNodeTest {
                     ImmutableList.of(),
                     NamedTypeNode.create(SOURCE_LOCATION, "html"))
                 .toString())
-        .isEqualTo("() => html");
+        .isEqualTo("template () => html");
 
     assertThat(
             TemplateTypeNode.create(
@@ -120,7 +120,7 @@ public final class TypeNodeTest {
                             SOURCE_LOCATION, "x", "x", PARAM, TYPE_ABC, false)),
                     NamedTypeNode.create(SOURCE_LOCATION, "attributes"))
                 .toString())
-        .isEqualTo("(x?: abc) => attributes");
+        .isEqualTo("template (x?: abc) => attributes");
 
     assertThat(
             TemplateTypeNode.create(
@@ -132,7 +132,7 @@ public final class TypeNodeTest {
                             SOURCE_LOCATION, "y", "y", PARAM, TYPE_DEF, true)),
                     NamedTypeNode.create(SOURCE_LOCATION, "css"))
                 .toString())
-        .isEqualTo("(x: abc, y: def) => css");
+        .isEqualTo("template (x: abc, y: def) => css");
 
     assertThat(
             TemplateTypeNode.create(
@@ -148,7 +148,7 @@ public final class TypeNodeTest {
                             SOURCE_LOCATION, "w", "@w", ATTRIBUTE, TYPE_JKL, true)),
                     NamedTypeNode.create(SOURCE_LOCATION, "uri"))
                 .toString())
-        .isEqualTo("(x: abc, y: def, z: ghi, @w: jkl) => uri");
+        .isEqualTo("template (x: abc, y: def, z: ghi, @w: jkl) => uri");
   }
 
   @Test
