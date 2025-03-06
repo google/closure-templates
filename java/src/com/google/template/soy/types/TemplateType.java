@@ -471,7 +471,7 @@ public abstract class TemplateType extends SoyType {
       TemplateContentKind contentKind,
       ImmutableSet<String> reservedAttributes) {
     StringBuilder sb = new StringBuilder();
-    sb.append("({");
+    sb.append("template (");
     boolean first = true;
     for (Parameter parameter : parameters) {
       if (first) {
@@ -498,7 +498,7 @@ public abstract class TemplateType extends SoyType {
           .append(reservedAttributes.stream().map(a -> "@" + a).collect(joining(", ")))
           .append("}");
     }
-    sb.append("}) => ");
+    sb.append(") => ");
     sb.append(contentKind.asAttributeValue());
     return sb.toString();
   }

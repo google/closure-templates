@@ -49,8 +49,8 @@ final class CheckModifiableTemplatesPass implements CompilerFilePass {
 
   private static final SoyErrorKind INCOMPATIBLE_SIGNATURE =
       SoyErrorKind.of(
-          "Template with signature {0} cannot be modified by template with "
-              + "incompatible signature {1}.");
+          "Template with signature `{0}` cannot be modified by template with "
+              + "incompatible signature `{1}`.");
 
   private static final SoyErrorKind BAD_VARIANT_TYPE =
       SoyErrorKind.of("Expected variant of type {0}, found type {1}.");

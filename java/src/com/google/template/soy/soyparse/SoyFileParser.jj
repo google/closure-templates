@@ -479,7 +479,7 @@ public class SoyFileParser {
       SoyErrorKind.of("Invalid param name ''{0}''.");
   private static final SoyErrorKind UNEXPECTED_PIPE =
       SoyErrorKind.of("Unexpected ''|''. Print directives should not have whitespace after ''|''.");
-  private static final SoyErrorKind UNMATCHED_BRACES = SoyErrorKind.of("Unmatched curly braces.");
+  private static final SoyErrorKind BAD_TEMPLATE_TYPE_KEYWORD = SoyErrorKind.of("Only keyword ''template'' is allowed.");
   private static final SoyErrorKind RECORD_NAMED_PARAMS =
       SoyErrorKind.of("Record literals require named parameters.");
   // TODO(b/314845158): Remove legacy and/or from parser.
@@ -1449,7 +1449,6 @@ TOKEN_MGR_DECLS: {
 | < IF: "if" >            // Not actually an operator, part of map/list comprehension syntax.
 | < LPAREN: "(" >
 | < RPAREN: ")" >
-| < LPARENBRACE: "({" >
 | < VBAR: "|" >           // an operator for type unions
 | < EQ: "=" >             // For state assignments and attribute value pairs in EXPR
 | < FORWARD_ARROW: "=>" > // Part of template type syntax.
@@ -5308,12 +5307,13 @@ private TypeNode TypeExprPrec3() :
 }
 {
   (
-    type = NamedOrIndexedType()
+    LOOKAHEAD( { getToken(1).kind == LPAREN || getToken(2).kind == LPAREN } )
+    type = TemplateType()
+  | type = NamedOrIndexedType()
   | type = NullType()
   | type = UndefinedType()
   | type = UnknownType()
   | type = RecordType()
-  | type = TemplateType()
   )
 
   { return type; }
@@ -5325,16 +5325,16 @@ private TypeNode TypeExprPrec3() :
 private TypeNode TemplateType() :
 {
   List<TemplateTypeNode.Parameter> parameters = ImmutableList.of();
-  Token open, close, arrow, rcurly = null;
+  Token open, close, arrow;
+  Identifier templateId = null;
   TypeNode returnType;
   TemplateTypeNode.Parameter parameter;
 }
 {
   (
-    open = <LPAREN>
-  |
-    open = <LPARENBRACE>
-  )
+    templateId = Identifier()
+  )?
+  open = <LPAREN>
 
   (
     parameter = TemplateParameter()
@@ -5351,9 +5351,6 @@ private TypeNode TemplateType() :
     )*
   )?
 
-  (
-    rcurly = <CMD_END>
-  )?
   close = <RPAREN>
 
   arrow = <FORWARD_ARROW>
@@ -5361,8 +5358,8 @@ private TypeNode TemplateType() :
   returnType = NamedType()
 
   {
-    if ((open.image.length() == 2) != (rcurly != null)) {
-      errorReporter.report(createSrcLoc(open, close), UNMATCHED_BRACES);
+    if (templateId != null && !templateId.identifier().equals("template")) {
+      errorReporter.report(templateId.location(), BAD_TEMPLATE_TYPE_KEYWORD);
     }
     SourceLocation srcLoc = createSrcLoc(open, returnType.sourceLocation().getEndPoint());
     return TemplateTypeNode.create(srcLoc, parameters, returnType);
