@@ -479,7 +479,6 @@ public class SoyFileParser {
       SoyErrorKind.of("Invalid param name ''{0}''.");
   private static final SoyErrorKind UNEXPECTED_PIPE =
       SoyErrorKind.of("Unexpected ''|''. Print directives should not have whitespace after ''|''.");
-  private static final SoyErrorKind BAD_TEMPLATE_TYPE_KEYWORD = SoyErrorKind.of("Only keyword ''template'' is allowed.");
   private static final SoyErrorKind RECORD_NAMED_PARAMS =
       SoyErrorKind.of("Record literals require named parameters.");
   // TODO(b/314845158): Remove legacy and/or from parser.
@@ -804,18 +803,9 @@ public class SoyFileParser {
   }
 
   // Distinguish template type from type grouping.
-  boolean isStartOfTemplateType() {
-    if ("template".equals(getToken(1).image)) {
-      return true;
-    }
-    if (getToken(1).kind != LPAREN) {
-      return false;
-    }
-    if (getToken(2).kind == RPAREN || getToken(2).kind == ATTR_IDENT
-        || getToken(3).kind == COLON || getToken(3).kind == QCOLON) {
-      return true;
-    }
-    return false;
+  boolean isStartOfFunctionType() {
+    return getToken(1).kind == LPAREN &&
+        (getToken(2).kind == RPAREN || getToken(3).kind == COLON || getToken(3).kind == QCOLON);
   }
 
   // An error that can be thrown to abort parsing.  This is useful if an error has been reported
@@ -5322,8 +5312,10 @@ private TypeNode TypeExprPrec3() :
 }
 {
   (
-    LOOKAHEAD( { isStartOfTemplateType() } )
+    LOOKAHEAD( { "template".equals(getToken(1).image) } )
     type = TemplateType()
+  | LOOKAHEAD( { isStartOfFunctionType() } )
+    type = FunctionType()
   | type = TypeGrouping()
   | type = NamedOrIndexedType()
   | type = NullType()
@@ -5358,9 +5350,7 @@ private TypeNode TemplateType() :
   TemplateTypeNode.Parameter parameter;
 }
 {
-  (
-    templateId = Identifier()
-  )?
+  templateId = Identifier()
   open = <LPAREN>
 
   (
@@ -5382,14 +5372,11 @@ private TypeNode TemplateType() :
 
   arrow = <FORWARD_ARROW>
 
-  // TODO(b/401341611): Change to TypeExpr() after LSC.
-  returnType = NamedType()
+  returnType = TypeExpr()
 
   {
-    if (templateId != null && !templateId.identifier().equals("template")) {
-      errorReporter.report(templateId.location(), BAD_TEMPLATE_TYPE_KEYWORD);
-    }
-    SourceLocation srcLoc = createSrcLoc(open, returnType.sourceLocation().getEndPoint());
+    checkState(templateId.identifier().equals("template"));
+    SourceLocation srcLoc = templateId.location().extend(returnType.sourceLocation());
     return TemplateTypeNode.create(srcLoc, parameters, returnType);
   }
 }
