@@ -17,7 +17,6 @@
 package com.google.template.soy.soytree;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
-import static java.util.stream.Collectors.toCollection;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
@@ -64,11 +63,9 @@ import com.google.template.soy.types.ast.TypeNode;
 import com.google.template.soy.types.ast.TypeNodeVisitor;
 import com.google.template.soy.types.ast.UnionTypeNode;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.BiConsumer;
-import java.util.function.Function;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
@@ -721,44 +718,44 @@ public final class SoyTreeUtils {
   }
 
   @Nullable
-  public static SanitizedContentKind inferSanitizedContentKindFromChildren(SoyNode node) {
-    if (node instanceof ParentSoyNode) {
-      return getOnlyKindOfChildren((ParentSoyNode) node, SoyTreeUtils::inferSanitizedContentKind);
-    }
-    return null;
-  }
-
-  @Nullable
-  private static SanitizedContentKind getOnlyKindOfChildren(
-      ParentSoyNode<?> node, Function<SoyNode, SanitizedContentKind> kindMapper) {
-    HashSet<SanitizedContentKind> kindsSet =
-        node.getChildren().stream().map(kindMapper).collect(toCollection(HashSet::new));
-    if (kindsSet.contains(null)) {
-      return null;
-    }
-    if (kindsSet.size() == 1) {
-      return Iterables.getOnlyElement(kindsSet);
-    }
-    return null;
-  }
-
-  @Nullable
-  private static SanitizedContentKind inferSanitizedContentKind(SoyNode node) {
-    if (node instanceof CallBasicNode) {
-      CallBasicNode callNode = (CallBasicNode) node;
-      SoyType type = callNode.getCalleeExpr().getType();
-      if (type.getKind() != SoyType.Kind.TEMPLATE) {
+  public static SanitizedContentKind inferSanitizedContentKindFromChildren(
+      ParentSoyNode<? extends SoyNode> node) {
+    SanitizedContentKind kind = null;
+    for (SoyNode child : getChildrenNoControlFlows(node)) {
+      if (!(child instanceof CallBasicNode)) {
         return null;
       }
-      return ((TemplateType) type).getContentKind().getSanitizedContentKind();
-    } else if ((node instanceof IfNode)
-        || (node instanceof SwitchNode)
-        || (node instanceof ForNode)) {
-      // These all have an intermediate node between the content: IfCondNode, SwitchCaseNode,
-      // ForNonEmptyNode &c.
-      return getOnlyKindOfChildren(
-          (ParentSoyNode<?>) node, SoyTreeUtils::inferSanitizedContentKindFromChildren);
+      CallBasicNode callNode = (CallBasicNode) child;
+      SoyType type = callNode.getCalleeExpr().getType();
+      if (type.getKind() == SoyType.Kind.TEMPLATE) {
+        SanitizedContentKind childKind =
+            ((TemplateType) type).getContentKind().getSanitizedContentKind();
+        if (kind == null) {
+          kind = childKind;
+        } else if (kind != childKind) {
+          return null;
+        }
+      }
     }
-    return null;
+    return kind;
+  }
+
+  private static ImmutableList<SoyNode> getChildrenNoControlFlows(
+      ParentSoyNode<? extends SoyNode> node) {
+    ImmutableList.Builder<SoyNode> nodes = ImmutableList.builder();
+    for (SoyNode child : node.getChildren()) {
+      if ((child instanceof IfNode)
+          || (child instanceof SwitchNode)
+          || (child instanceof ForNode)) {
+        // These all have an intermediate node between the content: IfCondNode, SwitchCaseNode,
+        // ForNonEmptyNode &c.
+        for (SoyNode condNode : ((ParentSoyNode<? extends SoyNode>) child).getChildren()) {
+          nodes.addAll(getChildrenNoControlFlows((ParentSoyNode<? extends SoyNode>) condNode));
+        }
+      } else {
+        nodes.add(child);
+      }
+    }
+    return nodes.build();
   }
 }
