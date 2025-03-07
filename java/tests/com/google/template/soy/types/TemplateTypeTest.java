@@ -46,31 +46,44 @@ public class TemplateTypeTest {
   @Test
   public void testAssignability() {
     // equality
-    assertThatSoyType("() => html").isAssignableFromStrict("() => html");
+    assertThatSoyType("template () => html").isAssignableFromStrict("template () => html");
 
     // disjoint params
-    assertThatSoyType("() => html").isAssignableFromStrict("(p?: string|null) => html");
-    assertThatSoyType("() => html").isNotAssignableFromStrict("(p: string) => html");
-    assertThatSoyType("(p?: string|null) => html").isNotAssignableFromStrict("() => html");
-    assertThatSoyType("(p: string) => html").isNotAssignableFromStrict("() => html");
+    assertThatSoyType("template () => html")
+        .isAssignableFromStrict("template (p?: string|null) => html");
+    assertThatSoyType("template () => html")
+        .isNotAssignableFromStrict("template (p: string) => html");
+    assertThatSoyType("template (p?: string|null) => html")
+        .isNotAssignableFromStrict("template () => html");
+    assertThatSoyType("template (p: string) => html")
+        .isNotAssignableFromStrict("template () => html");
 
     // param types mismatch
-    assertThatSoyType("(p: int) => html").isNotAssignableFromStrict("(p: string) => html");
-    assertThatSoyType("(p: int|string) => html").isNotAssignableFromStrict("(p: string) => html");
+    assertThatSoyType("template (p: int) => html")
+        .isNotAssignableFromStrict("template (p: string) => html");
+    assertThatSoyType("template (p: int|string) => html")
+        .isNotAssignableFromStrict("template (p: string) => html");
 
     // return type mismatch
-    assertThatSoyType("() => html").isNotAssignableFromStrict("() => uri");
+    assertThatSoyType("template () => html").isNotAssignableFromStrict("template () => uri");
 
     // expanded unions
-    assertThatSoyType("(p: int) => html").isAssignableFromStrict("(p: int|string) => html");
-    assertThatSoyType("(p: int) => html").isAssignableFromStrict("(p?: int|null) => html");
-    assertThatSoyType("(p: int) => html").isAssignableFromStrict("(p?: int|null) => html");
+    assertThatSoyType("template (p: int) => html")
+        .isAssignableFromStrict("template (p: int|string) => html");
+    assertThatSoyType("template (p: int) => html")
+        .isAssignableFromStrict("template (p?: int|null) => html");
+    assertThatSoyType("template (p: int) => html")
+        .isAssignableFromStrict("template (p?: int|null) => html");
 
     // optional
-    assertThatSoyType("(p: int) => html").isAssignableFromStrict("(p?: int) => html");
-    assertThatSoyType("(p?: int) => html").isAssignableFromStrict("(p?: int) => html");
-    assertThatSoyType("(p?: int) => html").isNotAssignableFromStrict("(p: int) => html");
-    assertThatSoyType("(p: ?) => html").isAssignableFromStrict("(p: ?) => html");
-    assertThatSoyType("(p: any) => html").isAssignableFromStrict("(p: any) => html");
+    assertThatSoyType("template (p: int) => html")
+        .isAssignableFromStrict("template (p?: int) => html");
+    assertThatSoyType("template (p?: int) => html")
+        .isAssignableFromStrict("template (p?: int) => html");
+    assertThatSoyType("template (p?: int) => html")
+        .isNotAssignableFromStrict("template (p: int) => html");
+    assertThatSoyType("template (p: ?) => html").isAssignableFromStrict("template (p: ?) => html");
+    assertThatSoyType("template (p: any) => html")
+        .isAssignableFromStrict("template (p: any) => html");
   }
 }
