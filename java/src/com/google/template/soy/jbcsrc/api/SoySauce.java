@@ -33,6 +33,7 @@ import com.google.template.soy.parseinfo.TemplateName;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyCssTracker;
 import com.google.template.soy.shared.SoyIdRenamingMap;
+import com.google.template.soy.shared.SoyJsIdTracker;
 import java.io.IOException;
 import java.util.Map;
 import java.util.function.Predicate;
@@ -175,6 +176,10 @@ public interface SoySauce {
     /** Configures the {@link SoyCssTracker} to use. */
     @CanIgnoreReturnValue
     Renderer setCssTracker(SoyCssTracker cssTracker);
+
+    /** Configures the {@link SoyJsIdTracker} to use. */
+    @CanIgnoreReturnValue
+    Renderer setJsIdTracker(SoyJsIdTracker jsIdTracker);
 
     /**
      * Renders the configured html template to the given appendable, returning a continuation (more
