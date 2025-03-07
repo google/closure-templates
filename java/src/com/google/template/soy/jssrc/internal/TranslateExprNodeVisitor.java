@@ -1100,6 +1100,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
         case IS_PRIMARY_MSG_IN_USE:
           return visitIsPrimaryMsgInUseFunction(node);
         case TO_FLOAT:
+        case RECORD_JS_OBJECT_ID:
           // this is a no-op in js
           return visit(node.getParam(0));
         case DEBUG_SOY_TEMPLATE_INFO:

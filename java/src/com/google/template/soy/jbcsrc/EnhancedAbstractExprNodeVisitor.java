@@ -91,6 +91,8 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
           return visitCheckNotNullFunction(node);
         case CSS:
           return visitCssFunction(node);
+        case RECORD_JS_OBJECT_ID:
+          return visitRecordJsObjectIdFunction(node);
         case EVAL_TOGGLE:
           return visitToggleFunction(node);
         case XID:
@@ -171,6 +173,10 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
   }
 
   T visitToggleFunction(FunctionNode node) {
+    return visitExprNode(node);
+  }
+
+  T visitRecordJsObjectIdFunction(FunctionNode node) {
     return visitExprNode(node);
   }
 
