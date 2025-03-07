@@ -894,6 +894,8 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
           return assertNotNull(node.getParam(0));
         case CSS:
           return visitCssFunction(node);
+        case RECORD_JS_OBJECT_ID:
+          return visitRecordJsObjectIdFunction(node);
         case EVAL_TOGGLE:
           return visitToggleFunction(node);
         case XID:
@@ -1118,6 +1120,11 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
       String fullSelector = children.get(0).stringValue() + "-" + renamedSelector;
       return StringData.forValue(fullSelector);
     }
+  }
+
+  private SoyValue visitRecordJsObjectIdFunction(FunctionNode node) {
+    String jsObjectId = visit(node.getParam(0)).stringValue();
+    return StringData.forValue(jsObjectId);
   }
 
   private SoyValue visitToggleFunction(FunctionNode node) {

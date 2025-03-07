@@ -2792,6 +2792,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
           checkArgIsStringLiteralWithNoSpaces(node, node.numParams() - 1, builtinFunction);
           node.setType(StringType.getInstance());
           break;
+        case RECORD_JS_OBJECT_ID:
         case SOY_SERVER_KEY:
         case XID:
           // arg validation is already handled by the XidPass
