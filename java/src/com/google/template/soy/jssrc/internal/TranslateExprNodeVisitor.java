@@ -1098,6 +1098,8 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
           return visitCheckNotNullFunction(node);
         case CSS:
           return visitCssFunction(node);
+        case RECORD_JS_OBJECT_ID:
+          return visitRecordJsObjectIdFunction(node);
         case EVAL_TOGGLE:
           return visitToggleFunction(node, /* useGoogModuleSyntax= */ false);
         case XID:
@@ -1214,6 +1216,10 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
 
   private Expression visitCssFunction(FunctionNode node) {
     return GOOG_GET_CSS_NAME.call(visitParams(node));
+  }
+
+  private Expression visitRecordJsObjectIdFunction(FunctionNode node) {
+    return visit(node.getChild(0));
   }
 
   /** Built-in function for generating JS code to import toggles. */

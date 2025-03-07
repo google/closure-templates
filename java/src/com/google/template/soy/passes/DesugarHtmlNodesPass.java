@@ -24,6 +24,7 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.basicdirectives.BasicEscapeDirective;
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
@@ -53,6 +54,7 @@ import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SwitchNode;
 import com.google.template.soy.soytree.TemplateNode;
+import com.google.template.soy.types.StringType;
 import java.util.List;
 import java.util.Optional;
 
@@ -250,7 +252,14 @@ public final class DesugarHtmlNodesPass implements CompilerFileSetPass {
       if (node.hasValue()) {
         builder.add(new RawTextNode(idGenerator.genId(), "=", node.getEqualsLocation()));
         // normally there would only be 1 child, but rewriting may have split it into multiple
-        builder.addAll(node.getChildren().subList(1, node.numChildren()));
+        for (StandaloneNode child : node.getChildren().subList(1, node.numChildren())) {
+          if (node.definitelyMatchesAttributeName("jscontroller")
+              && child instanceof PrintNode printNode) {
+            builder.add(wrapAsRecordJsObjectId(printNode));
+          } else {
+            builder.add(child);
+          }
+        }
       }
       if (!node.hasValue() && node.getStaticKey() == null && !isFlushPendingLoggingAttribute) {
         // Add a space after the last attribute if it is dynamic and the tag is self-closing. If the
@@ -258,6 +267,25 @@ public final class DesugarHtmlNodesPass implements CompilerFileSetPass {
         needsSpaceSelfClosingTag = true;
       }
       replacements = Optional.of(builder.build());
+    }
+
+    private PrintNode wrapAsRecordJsObjectId(PrintNode printNode) {
+      FunctionNode jsObjectIdFn =
+          FunctionNode.newPositional(
+              Identifier.create(
+                  BuiltinFunction.RECORD_JS_OBJECT_ID.getName(), printNode.getSourceLocation()),
+              BuiltinFunction.RECORD_JS_OBJECT_ID,
+              printNode.getSourceLocation());
+      jsObjectIdFn.setType(StringType.getInstance());
+      jsObjectIdFn.addChild(printNode.getExpr().getRoot());
+
+      return new PrintNode(
+          idGenerator.genId(),
+          printNode.getSourceLocation(),
+          /* isImplicit= */ true,
+          /* expr= */ jsObjectIdFn,
+          /* attributes= */ ImmutableList.of(),
+          ErrorReporter.exploding());
     }
 
     @Override

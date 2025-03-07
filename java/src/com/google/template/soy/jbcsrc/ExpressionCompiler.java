@@ -1768,6 +1768,17 @@ final class ExpressionCompiler {
     }
 
     @Override
+    // Pass through the module name to the render context for now.
+    SoyExpression visitRecordJsObjectIdFunction(FunctionNode node) {
+      // Child is the xid function. Grandchild is the module name.
+      FunctionNode child = (FunctionNode) node.getChild(0);
+      String jsControllerName = ((StringNode) child.getChild(0)).getValue();
+      Expression recordJsObjectId =
+          parameters.getRenderContext().recordJsObjectId(jsControllerName);
+      return SoyExpression.forString(recordJsObjectId);
+    }
+
+    @Override
     SoyExpression visitToggleFunction(FunctionNode node) {
       String toggleName = ((StringNode) node.getChild(1)).getValue();
       Expression toggleRewrite = parameters.getRenderContext().evalToggle(toggleName);
