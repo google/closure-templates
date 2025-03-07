@@ -17,10 +17,10 @@
 package com.google.template.soy.types.ast;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
+import static java.util.stream.Collectors.joining;
 
 import com.google.auto.value.AutoValue;
 import com.google.auto.value.extension.memoized.Memoized;
-import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
@@ -59,8 +59,15 @@ public abstract class UnionTypeNode extends TypeNode {
   }
 
   @Override
+  public boolean childNeedsGrouping(TypeNode child) {
+    return child instanceof FunctionTypeNode || child instanceof TemplateTypeNode;
+  }
+
+  @Override
   public final String toString() {
-    return Joiner.on("|").join(candidates());
+    return candidates().stream()
+        .map(c -> childNeedsGrouping(c) ? "(" + c + ")" : c.toString())
+        .collect(joining("|"));
   }
 
   @Override

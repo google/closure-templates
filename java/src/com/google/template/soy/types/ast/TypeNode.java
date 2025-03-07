@@ -63,4 +63,8 @@ public abstract class TypeNode {
   public Stream<TypeNode> asStreamExpandingUnion() {
     return Stream.of(this);
   }
+
+  public boolean childNeedsGrouping(TypeNode child) {
+    return false;
+  }
 }

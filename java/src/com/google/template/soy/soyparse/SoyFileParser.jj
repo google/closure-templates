@@ -803,6 +803,21 @@ public class SoyFileParser {
     return new CommandTagAttribute(id, quoteStyle, exprList, loc);
   }
 
+  // Distinguish template type from type grouping.
+  boolean isStartOfTemplateType() {
+    if ("template".equals(getToken(1).image)) {
+      return true;
+    }
+    if (getToken(1).kind != LPAREN) {
+      return false;
+    }
+    if (getToken(2).kind == RPAREN || getToken(2).kind == ATTR_IDENT
+        || getToken(3).kind == COLON || getToken(3).kind == QCOLON) {
+      return true;
+    }
+    return false;
+  }
+
   // An error that can be thrown to abort parsing.  This is useful if an error has been reported
   // and it is known that parsing cannot continue.
   private static final class AbortParsingError extends Error {}
@@ -5307,8 +5322,9 @@ private TypeNode TypeExprPrec3() :
 }
 {
   (
-    LOOKAHEAD( { getToken(1).kind == LPAREN || getToken(2).kind == LPAREN } )
+    LOOKAHEAD( { isStartOfTemplateType() } )
     type = TemplateType()
+  | type = TypeGrouping()
   | type = NamedOrIndexedType()
   | type = NullType()
   | type = UndefinedType()
@@ -5317,6 +5333,17 @@ private TypeNode TypeExprPrec3() :
   )
 
   { return type; }
+}
+
+private TypeNode TypeGrouping() :
+{
+  TypeNode value;
+}
+{
+  <LPAREN>
+  value = TypeExpr()
+  <RPAREN>
+  { return value; }
 }
 
 /**
@@ -5355,6 +5382,7 @@ private TypeNode TemplateType() :
 
   arrow = <FORWARD_ARROW>
 
+  // TODO(b/401341611): Change to TypeExpr() after LSC.
   returnType = NamedType()
 
   {

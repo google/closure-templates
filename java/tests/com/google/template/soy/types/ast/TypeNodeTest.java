@@ -168,6 +168,17 @@ public final class TypeNodeTest {
     assertRoundTrip("() => html");
     assertRoundTrip("(baz: int, tpl: (foo: string, bar: int) => attributes) => html");
     assertRoundTrip("(count: int) => html | (count: int) => attributes");
+
+    assertRoundTrip("A & (B | C) & D");
+    assertRoundTrip("(A & B) | (C & D)");
+
+    // TODO(b/401341611): Uncomment below after LSC and parser change.
+    assertRoundTrip("() => string|null");
+    // assertRoundTrip("() => (string|null)");
+    assertRoundTrip("(() => string)|null");
+    assertRoundTrip("template () => string|null");
+    // assertRoundTrip("template () => (string|null)");
+    assertRoundTrip("(template () => string)|null");
   }
 
   private void assertRoundTrip(String typeString) {
