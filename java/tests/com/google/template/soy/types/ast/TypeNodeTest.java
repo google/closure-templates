@@ -165,19 +165,19 @@ public final class TypeNodeTest {
     assertRoundTrip("list<list<list<list<int>>>>");
     assertRoundTrip("map<int, any>");
     assertRoundTrip("[foo: string, bar: int, quux: [foo: string, bar: int, quux: list<any>]]");
-    assertRoundTrip("() => html");
-    assertRoundTrip("(baz: int, tpl: (foo: string, bar: int) => attributes) => html");
-    assertRoundTrip("(count: int) => html | (count: int) => attributes");
+    assertRoundTrip("template () => html");
+    assertRoundTrip(
+        "template (baz: int, tpl: template (foo: string, bar: int) => attributes) => html");
+    assertRoundTrip("template (count: int) => html | template (count: int) => attributes");
 
     assertRoundTrip("A & (B | C) & D");
     assertRoundTrip("(A & B) | (C & D)");
 
-    // TODO(b/401341611): Uncomment below after LSC and parser change.
     assertRoundTrip("() => string|null");
-    // assertRoundTrip("() => (string|null)");
+    assertRoundTrip("() => (string|null)");
     assertRoundTrip("(() => string)|null");
     assertRoundTrip("template () => string|null");
-    // assertRoundTrip("template () => (string|null)");
+    assertRoundTrip("template () => (string|null)");
     assertRoundTrip("(template () => string)|null");
   }
 
