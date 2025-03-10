@@ -76,17 +76,23 @@ function wrapAsGeneric<R>(
 }
 
 /** PatchInner using Soy-IDOM semantics. */
-export const patchInner = wrapAsGeneric(
-  incrementaldom.createPatchInner,
-  patchConfig,
-);
+export const patchInner: <T>(
+  node: Element | DocumentFragment,
+  template: (a: T | undefined) => void,
+  data?: T | undefined,
+) => Node = wrapAsGeneric(incrementaldom.createPatchInner, patchConfig);
 /** PatchOuter using Soy-IDOM semantics. */
-export const patchOuter = wrapAsGeneric(
-  incrementaldom.createPatchOuter,
-  patchConfig,
-);
+export const patchOuter: <T>(
+  node: Element | DocumentFragment,
+  template: (a: T | undefined) => void,
+  data?: T | undefined,
+) => Node | null = wrapAsGeneric(incrementaldom.createPatchOuter, patchConfig);
 /** PatchInner using Soy-IDOM semantics. */
-export const patch = patchInner;
+export const patch: <T>(
+  node: Element | DocumentFragment,
+  template: (a: T | undefined) => void,
+  data?: T | undefined,
+) => Node = patchInner;
 
 /** Interface for idom renderers. */
 export interface IncrementalDomRenderer {
@@ -188,7 +194,7 @@ export class IncrementalDomRendererImpl implements IncrementalDomRenderer {
   keepGoing(
     data: unknown,
     continueFn: (renderer: IncrementalDomRenderer) => void,
-  ) {
+  ): void {
     const el = this.currentElement() as HTMLElement;
     // `data` is only passed by {skip} elements that are roots of templates.
     if (!COMPILED && goog.DEBUG && el && data) {
@@ -217,13 +223,13 @@ export class IncrementalDomRendererImpl implements IncrementalDomRenderer {
   }
 
   // For users extending IncrementalDomRenderer
-  visit(el: HTMLElement | void) {}
+  visit(el: HTMLElement | void): void {}
 
   /**
    * Called (from generated template render function) before OPENING
    * keyed elements.
    */
-  pushManualKey(key: incrementaldom.Key) {
+  pushManualKey(key: incrementaldom.Key): void {
     this.keyStackHolder.push(soy.$$serializeKey(key));
   }
 
@@ -231,7 +237,7 @@ export class IncrementalDomRendererImpl implements IncrementalDomRenderer {
    * Called (from generated template render function) before CLOSING
    * keyed elements.
    */
-  popManualKey() {
+  popManualKey(): void {
     this.keyStackHolder.pop();
   }
 
@@ -239,7 +245,7 @@ export class IncrementalDomRendererImpl implements IncrementalDomRenderer {
    * Called (from generated template render function) BEFORE template
    * calls.
    */
-  pushKey(key: string) {
+  pushKey(key: string): void {
     this.keyStackHolder[this.keyStackHolder.length - 1] = this.getNewKey(key);
   }
 
@@ -258,7 +264,7 @@ export class IncrementalDomRendererImpl implements IncrementalDomRenderer {
    * Called (from generated template render function) AFTER template
    * calls.
    */
-  popKey() {
+  popKey(): void {
     const currentKeyStack = this.getCurrentKeyStack();
     if (!currentKeyStack) {
       // This can happen when templates are not fully idom compatible, eg
@@ -283,18 +289,18 @@ export class IncrementalDomRendererImpl implements IncrementalDomRenderer {
     return incrementaldom.close();
   }
 
-  close() {
+  close(): void {
     this.closeInternal();
   }
 
-  elementClose() {
+  elementClose(): void {
     const el = this.closeInternal();
     if (el && el.__soy_patch_handler) {
       el.__soy_patch_handler();
     }
   }
 
-  text(value: string) {
+  text(value: string): void {
     // This helps ensure that hydrations on the server are consistent with
     // client-side renders.
     if (value) {
@@ -305,7 +311,7 @@ export class IncrementalDomRendererImpl implements IncrementalDomRenderer {
   /**
    * Prints an expression depending on its type.
    */
-  print(expr: unknown, isSanitizedContent?: boolean | undefined) {
+  print(expr: unknown, isSanitizedContent?: boolean | undefined): void {
     if (
       expr instanceof SanitizedHtml ||
       isSanitizedContent ||
@@ -353,7 +359,7 @@ export class IncrementalDomRendererImpl implements IncrementalDomRenderer {
     }
   }
 
-  visitHtmlCommentNode(val: string) {
+  visitHtmlCommentNode(val: string): void {
     const currNode = this.currentElement();
     if (!currNode) {
       return;
@@ -370,7 +376,7 @@ export class IncrementalDomRendererImpl implements IncrementalDomRenderer {
     this.skipNode();
   }
 
-  appendCloneToCurrent(content: HTMLTemplateElement) {
+  appendCloneToCurrent(content: HTMLTemplateElement): void {
     const currentElement = this.currentElement();
     if (!currentElement) {
       return;
@@ -407,7 +413,7 @@ export class IncrementalDomRendererImpl implements IncrementalDomRenderer {
     }
   }
 
-  attr(name: string, value: string) {
+  attr(name: string, value: string): void {
     incrementaldom.attr(name, value);
   }
 
@@ -415,7 +421,7 @@ export class IncrementalDomRendererImpl implements IncrementalDomRenderer {
     return incrementaldom.currentPointer();
   }
 
-  skip() {
+  skip(): void {
     incrementaldom.skip();
   }
 
@@ -423,11 +429,11 @@ export class IncrementalDomRendererImpl implements IncrementalDomRenderer {
     return incrementaldom.currentElement();
   }
 
-  skipNode() {
+  skipNode(): void {
     incrementaldom.skipNode();
   }
 
-  applyAttrs() {
+  applyAttrs(): void {
     incrementaldom.applyAttrs(attributes);
     const pendingAttrs = this.pendingAttrs;
     if (pendingAttrs) {
@@ -439,7 +445,7 @@ export class IncrementalDomRendererImpl implements IncrementalDomRenderer {
     }
   }
 
-  applyStatics(statics: incrementaldom.Statics) {
+  applyStatics(statics: incrementaldom.Statics): void {
     incrementaldom.applyStatics(statics, attributes);
   }
 
@@ -480,11 +486,11 @@ export class IncrementalDomRendererImpl implements IncrementalDomRenderer {
   }
 
   /** Called by user code to configure logging */
-  setLogger(logger: Logger | undefined) {
+  setLogger(logger: Logger | undefined): void {
     this.logger = logger;
   }
 
-  getLogger() {
+  getLogger(): Logger | undefined {
     return this.logger;
   }
 
@@ -511,7 +517,7 @@ export class IncrementalDomRendererImpl implements IncrementalDomRenderer {
     loggingFuncName: string,
     args: Array<{}>,
     placeHolder: string,
-  ) {
+  ): void {
     const attrValue = this.logger
       ? this.logger.evalLoggingFunction(loggingFuncName, args)
       : placeHolder;
@@ -613,30 +619,30 @@ export class NullRenderer extends IncrementalDomRendererImpl {
   override keepGoing(
     data: unknown,
     continueFn: (renderer: IncrementalDomRenderer) => void,
-  ) {}
+  ): void {}
 
-  override close() {}
-  override elementClose() {}
+  override close(): void {}
+  override elementClose(): void {}
 
-  override text(value: string) {}
+  override text(value: string): void {}
 
-  override attr(name: string, value: string) {}
+  override attr(name: string, value: string): void {}
 
   override currentPointer() {
     return null;
   }
 
-  override applyAttrs() {}
+  override applyAttrs(): void {}
 
-  override applyStatics(statics: incrementaldom.Statics) {}
+  override applyStatics(statics: incrementaldom.Statics): void {}
 
-  override skip() {}
+  override skip(): void {}
 
-  key(val: string) {}
+  key(val: string): void {}
 
-  override currentElement() {}
+  override currentElement(): void {}
 
-  override skipNode() {}
+  override skipNode(): void {}
 
   override enterVeLog(
     data: $$VisualElementData,
@@ -672,7 +678,7 @@ export class NullRenderer extends IncrementalDomRendererImpl {
 export function isMatchingKey(
   proposedKey: unknown,
   currentPointerKey: unknown,
-) {
+): boolean {
   // Using "==" instead of "===" is intentional. SSR serializes attributes
   // differently than the type that keys are. For example "0" == 0.
   // tslint:disable-next-line:triple-equals
@@ -741,7 +747,7 @@ ${el.dataset['debugSoy'] || truncate(el.outerHTML, 256)}`);
  */
 export class FalsinessRenderer extends IncrementalDomRendererImpl {
   override visit(el: void | HTMLElement): void {}
-  override pushManualKey(key: incrementaldom.Key) {}
+  override pushManualKey(key: incrementaldom.Key): void {}
   override popManualKey(): void {}
   override pushKey(key: string): void {}
   override popKey(): void {}
@@ -771,35 +777,35 @@ export class FalsinessRenderer extends IncrementalDomRendererImpl {
     loggingFuncName: string,
     args: Array<{}>,
     placeHolder: string,
-  ) {
+  ): void {
     this.rendered = true;
   }
 
   /** Checks whether any DOM was rendered. */
-  didRender() {
+  didRender(): boolean {
     return this.rendered;
   }
 
-  override open(nameOrCtor: string, key?: string) {
+  override open(nameOrCtor: string, key?: string): void {
     this.rendered = true;
   }
 
-  override openSimple(nameOrCtor: string, key?: string) {}
+  override openSimple(nameOrCtor: string, key?: string): void {}
 
   override keepGoing(
     data: unknown,
     continueFn: (renderer: IncrementalDomRenderer) => void,
-  ) {}
+  ): void {}
 
-  override close() {
+  override close(): void {
     this.rendered = true;
   }
 
-  override elementClose() {
+  override elementClose(): void {
     this.rendered = true;
   }
 
-  override text(value: string) {
+  override text(value: string): void {
     // This helps ensure that hydrations on the server are consistent with
     // client-side renders.
     if (value) {
@@ -807,7 +813,7 @@ export class FalsinessRenderer extends IncrementalDomRendererImpl {
     }
   }
 
-  override attr(name: string, value: string) {
+  override attr(name: string, value: string): void {
     this.rendered = true;
   }
 
@@ -815,23 +821,23 @@ export class FalsinessRenderer extends IncrementalDomRendererImpl {
     return null;
   }
 
-  override applyAttrs() {
+  override applyAttrs(): void {
     this.rendered = true;
   }
 
-  override applyStatics(statics: incrementaldom.Statics) {
+  override applyStatics(statics: incrementaldom.Statics): void {
     this.rendered = true;
   }
 
-  override skip() {
+  override skip(): void {
     this.rendered = true;
   }
 
-  key(val: string) {}
+  key(val: string): void {}
 
-  override currentElement() {}
+  override currentElement(): void {}
 
-  override skipNode() {
+  override skipNode(): void {
     this.rendered = true;
   }
 
@@ -842,7 +848,7 @@ export class FalsinessRenderer extends IncrementalDomRendererImpl {
     data: {},
     ijData: IjData,
     template: Template<unknown>,
-  ) {
+  ): void {
     // If we're just testing truthiness, record an element but don't do anythng.
     this.open('div');
     this.close();
@@ -887,7 +893,7 @@ export class BufferingIncrementalDomRenderer implements IncrementalDomRenderer {
       actual.visit(el);
     });
   }
-  pushManualKey(key: incrementaldom.Key) {
+  pushManualKey(key: incrementaldom.Key): void {
     this.buffer.push((actual) => {
       actual.pushManualKey(key);
     });
@@ -943,18 +949,18 @@ export class BufferingIncrementalDomRenderer implements IncrementalDomRenderer {
     name: string,
     args: Array<{}>,
     placeHolder: string,
-  ) {
+  ): void {
     this.buffer.push((actual) => {
       actual.loggingFunctionAttr(attrName, name, args, placeHolder);
     });
   }
-  open(nameOrCtor: string, key?: string) {
+  open(nameOrCtor: string, key?: string): void {
     this.buffer.push((actual) => {
       actual.open(nameOrCtor, key);
     });
   }
 
-  openSimple(nameOrCtor: string, key?: string) {
+  openSimple(nameOrCtor: string, key?: string): void {
     this.buffer.push((actual) => {
       actual.openSimple(nameOrCtor, key);
     });
@@ -963,7 +969,7 @@ export class BufferingIncrementalDomRenderer implements IncrementalDomRenderer {
   keepGoing(
     data: unknown,
     continueFn: (renderer: IncrementalDomRenderer) => void,
-  ) {
+  ): void {
     const innerBuffer = new BufferingIncrementalDomRenderer();
     continueFn(innerBuffer);
     this.buffer.push((actual) => {
@@ -973,39 +979,39 @@ export class BufferingIncrementalDomRenderer implements IncrementalDomRenderer {
     });
   }
 
-  close() {
+  close(): void {
     this.buffer.push(noArgCallConsts.close);
   }
 
-  elementClose() {
+  elementClose(): void {
     this.buffer.push(noArgCallConsts.elementClose);
   }
 
-  text(value: string) {
+  text(value: string): void {
     this.buffer.push((actual) => {
       actual.text(value);
     });
   }
 
-  print(expr: unknown, isSanitizedContent?: boolean | undefined) {
+  print(expr: unknown, isSanitizedContent?: boolean | undefined): void {
     this.buffer.push((actual) => {
       actual.print(expr, isSanitizedContent);
     });
   }
 
-  visitHtmlCommentNode(val: string) {
+  visitHtmlCommentNode(val: string): void {
     this.buffer.push((actual) => {
       actual.visitHtmlCommentNode(val);
     });
   }
 
-  appendCloneToCurrent(content: HTMLTemplateElement) {
+  appendCloneToCurrent(content: HTMLTemplateElement): void {
     this.buffer.push((actual) => {
       actual.appendCloneToCurrent(content);
     });
   }
 
-  attr(name: string, value: string) {
+  attr(name: string, value: string): void {
     this.buffer.push((actual) => {
       actual.attr(name, value);
     });
@@ -1017,27 +1023,27 @@ export class BufferingIncrementalDomRenderer implements IncrementalDomRenderer {
     );
   }
 
-  applyAttrs() {
+  applyAttrs(): void {
     this.buffer.push(noArgCallConsts.applyAttrs);
   }
 
-  applyStatics(statics: incrementaldom.Statics) {
+  applyStatics(statics: incrementaldom.Statics): void {
     this.buffer.push((actual) => {
       actual.applyStatics(statics);
     });
   }
 
-  skip() {
+  skip(): void {
     this.buffer.push(noArgCallConsts.skip);
   }
 
-  currentElement() {
+  currentElement(): void {
     throw new Error(
       'Tried to call currentElement() on BufferingIncrementalDomRenderer',
     );
   }
 
-  skipNode() {
+  skipNode(): void {
     this.buffer.push(noArgCallConsts.skipNode);
   }
 
@@ -1048,7 +1054,7 @@ export class BufferingIncrementalDomRenderer implements IncrementalDomRenderer {
     data: {},
     ijData: IjData,
     template: Template<unknown>,
-  ) {
+  ): void {
     const innerBuffer = new BufferingIncrementalDomRenderer();
     const soyElement = new elementClassCtor() as unknown as SoyElement<{}, {}>;
     soyElement.ijData = ijData;
@@ -1067,7 +1073,7 @@ export class BufferingIncrementalDomRenderer implements IncrementalDomRenderer {
     });
   }
 
-  replayOn(actual: IncrementalDomRenderer) {
+  replayOn(actual: IncrementalDomRenderer): void {
     this.buffer.forEach((fn) => {
       fn(actual);
     });

@@ -51,7 +51,8 @@ import {
 // Declare properties that need to be applied not as attributes but as
 // actual DOM properties.
 
-const defaultIdomRenderer = new IncrementalDomRendererImpl();
+const defaultIdomRenderer: IncrementalDomRendererImpl =
+  new IncrementalDomRendererImpl();
 const htmlToStringRenderer = new IncrementalDomRendererImpl();
 
 const NODE_PART = '<?child-node-part?><?/child-node-part?>';
@@ -89,7 +90,7 @@ function upgrade<X extends {}, T extends TemplateAcceptor<X>>(
   template: IdomTemplate<X>,
   sync: IdomSyncState<X>,
   init: (this: T) => void,
-) {
+): void {
   acceptor.prototype.init = init;
   acceptor.prototype.idomSyncFn = sync;
   acceptor.prototype.idomRenderer = new IncrementalDomRendererImpl();
@@ -226,7 +227,7 @@ function toLazyFunction<T extends string | number>(fn: T | (() => T)): () => T {
 function htmlToString(
   fn: PatchFunction,
   renderer: IncrementalDomRenderer = htmlToStringRenderer,
-) {
+): string {
   const el = document.createElement('div');
   patch(el, () => {
     fn(renderer);
@@ -289,7 +290,7 @@ function callDynamicAttributes<TParams>(
   expr: Template<TParams>,
   data: TParams,
   ij: IjData,
-) {
+): void {
   if (isIdom(expr)) {
     switch ((expr as IdomFunction).contentKind) {
       case SanitizedContentKind.ATTRIBUTES:
@@ -325,7 +326,7 @@ function callDynamicAttributes<TParams>(
 function printDynamicAttr(
   incrementaldom: IncrementalDomRenderer,
   expr: SanitizedHtmlAttribute | string | boolean | IdomFunction,
-) {
+): void {
   if (
     (expr as IdomFunction).isInvokableFn &&
     (expr as IdomFunction).contentKind === SanitizedContentKind.ATTRIBUTES
@@ -356,7 +357,7 @@ function callDynamicHTML<TParams>(
   data: TParams,
   ij: IjData,
   variant?: string,
-) {
+): void {
   if (isIdom(expr)) {
     switch ((expr as IdomFunction).contentKind) {
       case SanitizedContentKind.HTML:
@@ -382,7 +383,7 @@ function callDynamicCss<TParams>(
   expr: Template<TParams>,
   data: TParams,
   ij: IjData,
-) {
+): void {
   const val = callDynamicText<TParams>(expr, data, ij, soy.$$filterCssValue);
   incrementaldom.text(String(val));
 }
@@ -392,7 +393,7 @@ function callDynamicJs<TParams>(
   expr: Template<TParams>,
   data: TParams,
   ij: IjData,
-) {
+): string {
   const val = callDynamicText<TParams>(expr, data, ij, soy.$$escapeJsValue);
   return String(val);
 }
@@ -407,7 +408,7 @@ function callDynamicText<TParams>(
   ij: IjData,
   escFn?: (i: string) => string,
   variant?: string,
-) {
+): string | SanitizedContent {
   const transformFn = escFn ? escFn : (a: string) => a;
   if (isIdom(expr)) {
     switch ((expr as IdomFunction).contentKind) {
@@ -438,7 +439,7 @@ declare global {
   }
 }
 
-function getOriginalSanitizedContent(el: Element) {
+function getOriginalSanitizedContent(el: Element): unknown {
   return el.__originalContent;
 }
 

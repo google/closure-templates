@@ -88,26 +88,26 @@ export function getSoyOptional<TElement extends SoyElement<{}, {}>>(
  * When rehydrating a Soy element, tag the element so that rehydration stops at
  * the Soy element boundary.
  */
-export function tagForSkip(node: Node) {
+export function tagForSkip(node: Node): void {
   node.__soy_tagged_for_skip = true;
 }
 
 /**
  * Once a soy element has been tagged, reset the tag.
  */
-export function isTaggedForSkip(node: Node) {
+export function isTaggedForSkip(node: Node): boolean {
   const isTaggedForSkip = node.__soy_tagged_for_skip;
   node.__soy_tagged_for_skip = false;
   return isTaggedForSkip;
 }
 
 /** Retrieves an untyped Soy element, or null if it doesn't exist. */
-export function getSoyUntyped(node: Node) {
+export function getSoyUntyped(node: Node): SoyElement<{}, {}> | null {
   return node.__soy;
 }
 
 /** Disposes lifecycle hooks from element. */
-export function unsetLifecycleHooks(node: Node) {
+export function unsetLifecycleHooks(node: Node): void {
   const soyEl = getSoyUntyped(node);
   if (soyEl) {
     soyEl.unsetLifecycleHooks();
