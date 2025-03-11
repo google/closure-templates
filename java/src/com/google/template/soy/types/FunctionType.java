@@ -16,7 +16,6 @@
 
 package com.google.template.soy.types;
 
-import static com.google.common.base.Functions.identity;
 import static com.google.common.collect.ImmutableMap.toImmutableMap;
 
 import com.google.auto.value.AutoValue;
@@ -26,7 +25,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.soytree.FunctionTypeP;
 import com.google.template.soy.soytree.SoyTypeP;
 import java.util.Collection;
-import java.util.Map;
 
 /** Function type, containing a list of named, typed parameters and a return type. */
 @AutoValue
@@ -76,30 +74,19 @@ public abstract class FunctionType extends SoyType {
     }
 
     FunctionType srcFunction = (FunctionType) srcType;
-
-    Map<String, Parameter> thisParams =
-        getParameters().stream().collect(toImmutableMap(Parameter::getName, identity()));
-    Map<String, Parameter> srcParams =
-        srcFunction.getParameters().stream()
-            .collect(toImmutableMap(Parameter::getName, identity()));
-
-    // The source template type's arguments must be a superset of this type's arguments (possibly
-    // containing some optional parameters omitted from this type).
-    for (Parameter thisParam : getParameters()) {
-      if (!srcParams.containsKey(thisParam.getName())) {
-        return false;
-      }
+    int paramsInCommon = Math.min(getParameters().size(), srcFunction.getParameters().size());
+    if (srcFunction.getParameters().size() > paramsInCommon) {
+      return false;
     }
 
-    for (Parameter srcParam : srcFunction.getParameters()) {
-      Parameter thisParam = thisParams.get(srcParam.getName());
-      // Check that each argument of the source type is assignable FROM the corresponding
-      // argument of this type. This is because the parameter types are constraints; assignability
-      // of a template type is only possible when the constraints of the from-type are narrower.
+    for (int i = 0; i < paramsInCommon; i++) {
+      Parameter thisParam = getParameters().get(i);
+      Parameter srcParam = srcFunction.getParameters().get(i);
       if (!srcParam.getType().isAssignableFromInternal(thisParam.getType(), unknownPolicy)) {
         return false;
       }
     }
+
     return this.getReturnType().isAssignableFromStrict(srcFunction.getReturnType());
   }
 

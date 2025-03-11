@@ -542,6 +542,22 @@ public class SoyTypesTest {
   }
 
   @Test
+  public void testFunctionTypeAssignment() {
+    assertThatSoyType("() => string").isAssignableFromStrict("() => string");
+    assertThatSoyType("(p: int) => string").isAssignableFromStrict("() => string");
+    assertThatSoyType("() => string").isNotAssignableFromStrict("(p: int) => string");
+
+    assertThatSoyType("() => string|bool").isAssignableFromStrict("() => bool");
+    assertThatSoyType("() => bool").isNotAssignableFromStrict("() => string|bool");
+    assertThatSoyType("(p: bool) => string").isAssignableFromStrict("(p: string|bool) => string");
+    assertThatSoyType("(p: string|bool) => string")
+        .isNotAssignableFromStrict("(p: bool) => string");
+
+    // param name doesn't matter
+    assertThatSoyType("(p: int) => string").isAssignableFromStrict("(v: int) => string");
+  }
+
+  @Test
   public void testAllContentKindsCovered() {
     Set<SoyType> types = Sets.newIdentityHashSet();
     for (SanitizedContentKind kind : SanitizedContentKind.values()) {
