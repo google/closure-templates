@@ -42,6 +42,7 @@ import com.google.template.soy.internal.proto.Int64ConversionMode;
 import com.google.template.soy.shared.restricted.SoyMethod;
 import com.google.template.soy.types.AbstractMapType;
 import com.google.template.soy.types.BoolType;
+import com.google.template.soy.types.FunctionBindingUtil;
 import com.google.template.soy.types.MapType;
 import com.google.template.soy.types.MessageType;
 import com.google.template.soy.types.ProtoExtensionImportType;
@@ -350,6 +351,37 @@ public enum BuiltinMethod implements SoyMethod {
     }
   },
 
+  FUNCTION_BIND("bind", 1) {
+
+    @Override
+    public boolean appliesToBase(SoyType baseType) {
+      Preconditions.checkArgument(!SoyTypes.isNullish(baseType));
+      return SoyTypes.isKindOrUnionOfKind(baseType, SoyType.Kind.FUNCTION);
+    }
+
+    @Override
+    public boolean acceptsArgCount(int count) {
+      return count > 0;
+    }
+
+    @Override
+    public SoyType getReturnType(
+        String methodName,
+        SoyType baseType,
+        List<ExprNode> params,
+        SoyTypeRegistry soyTypeRegistry,
+        ErrorReporter errorReporter) {
+      Preconditions.checkArgument(!SoyTypes.isNullish(baseType));
+
+      return FunctionBindingUtil.bind(
+          baseType,
+          params.stream().map(ExprNode::getType).collect(toImmutableList()),
+          params.stream()
+              .map(e -> errorReporter.bind(e.getSourceLocation()))
+              .collect(toImmutableList()));
+    }
+  },
+
   BIND("bind", 1) {
 
     @Override
@@ -450,6 +482,7 @@ public enum BuiltinMethod implements SoyMethod {
       case GET_READONLY_EXTENSION:
       case HAS_EXTENSION:
       case MAP_GET:
+      case FUNCTION_BIND:
       case BIND:
         break;
     }
@@ -590,8 +623,13 @@ public enum BuiltinMethod implements SoyMethod {
   }
 
   @Override
+  public boolean acceptsArgCount(int count) {
+    return argCount == count;
+  }
+
+  @Override
   public boolean appliesToArgs(List<SoyType> argTypes) {
-    return argTypes.size() == getNumArgs();
+    return acceptsArgCount(argTypes.size());
   }
 
   /**
@@ -615,6 +653,7 @@ public enum BuiltinMethod implements SoyMethod {
       case GET_PROTO_FIELD_OR_UNDEFINED:
       case GET_READONLY_PROTO_FIELD:
       case MAP_GET:
+      case FUNCTION_BIND:
       case BIND:
         return ImmutableList.of();
     }

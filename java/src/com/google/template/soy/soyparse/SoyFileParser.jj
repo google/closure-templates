@@ -802,7 +802,7 @@ public class SoyFileParser {
     return new CommandTagAttribute(id, quoteStyle, exprList, loc);
   }
 
-  // Distinguish template type from type grouping.
+  // Distinguish function type from type grouping.
   boolean isStartOfFunctionType() {
     return getToken(1).kind == LPAREN &&
         (getToken(2).kind == RPAREN || getToken(3).kind == COLON || getToken(3).kind == QCOLON);

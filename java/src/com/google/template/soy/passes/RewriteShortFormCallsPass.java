@@ -49,6 +49,8 @@ import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.types.SanitizedType;
 import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.SoyType.Kind;
+import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.TemplateImportType;
 import com.google.template.soy.types.TemplateType;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -187,6 +189,11 @@ final class RewriteShortFormCallsPass implements CompilerFileSetPass {
       return null;
     }
     ExprNode nameExpr = fnNode.getNameExpr();
+
+    // Ignore function/extern pointers.
+    if (SoyTypes.isKindOrUnionOfKind(nameExpr.getType(), Kind.FUNCTION)) {
+      return null;
+    }
 
     ExprNode callee;
     SoyType type;

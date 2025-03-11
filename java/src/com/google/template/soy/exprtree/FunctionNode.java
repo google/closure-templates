@@ -50,6 +50,17 @@ public final class FunctionNode extends AbstractParentExprNode implements ExprNo
         }
       };
 
+  /**
+   * Temporary marker for extern pointers to avoid compilation errors. TODO(b/191497298): Implement.
+   */
+  public static final SoySourceFunction FUNCTION_POINTER =
+      new SoySourceFunction() {
+        @Override
+        public String toString() {
+          return "ptr";
+        }
+      };
+
   /** All the information a runtime needs to execute a call to an extern. */
   @AutoValue
   public abstract static class ExternRef {

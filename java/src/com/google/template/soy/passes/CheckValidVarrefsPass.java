@@ -57,13 +57,6 @@ final class CheckValidVarrefsPass implements CompilerFilePass {
         errorReporter.report(
             varRef.getSourceLocation(), ILLEGAL_TYPE_OF_VARIABLE, varRef.toSourceString());
         break;
-      case FUNCTION:
-        if (!(parentKind == Kind.FUNCTION_NODE && varRef.equals(parent.getChild(0)))) {
-          // Using an extern/function name anywhere other than as the base of a function call.
-          errorReporter.report(
-              varRef.getSourceLocation(), ILLEGAL_TYPE_OF_VARIABLE, varRef.toSourceString());
-        }
-        break;
       case PROTO_TYPE:
         if (!(parent == null
             || parentKind == Kind.FIELD_ACCESS_NODE

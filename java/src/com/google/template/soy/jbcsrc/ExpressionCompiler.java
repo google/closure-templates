@@ -1624,6 +1624,8 @@ final class ExpressionCompiler {
           case MAP_GET:
             Expression expr = getMapGetExpression(baseExpr, node, visit(node.getParam(0)));
             return SoyExpression.forSoyValue(node.getType(), expr.checkedSoyCast(node.getType()));
+          case FUNCTION_BIND:
+            break;
           case BIND:
             {
               var record = (RecordLiteralNode) node.getChild(1);

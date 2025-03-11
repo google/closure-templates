@@ -175,9 +175,9 @@ public final class JavaTypeUtils {
       case PROTO_MODULE:
       case TEMPLATE_TYPE:
       case TEMPLATE_MODULE:
-      case FUNCTION:
       case NEVER:
         throw new UnsupportedOperationException();
+      case FUNCTION:
       case NULL:
       case UNDEFINED:
         break;

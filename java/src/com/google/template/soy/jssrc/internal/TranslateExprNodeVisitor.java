@@ -737,6 +737,8 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
         // is not null in order to prevent a method call on a null instance from ever succeeding.
         case MAP_GET:
           return base.mapGetAccess(visit(methodCallNode.getParam(0)), nullSafe);
+        case FUNCTION_BIND:
+          break;
         case BIND:
           return base.transform(
               nullSafe,

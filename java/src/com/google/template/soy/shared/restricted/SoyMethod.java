@@ -34,6 +34,8 @@ public interface SoyMethod {
   /** Returns the number of args that this method accepts. */
   int getNumArgs();
 
+  boolean acceptsArgCount(int count);
+
   /** Returns whether this method can be passed args of type {@code argTypes}. */
   boolean appliesToArgs(List<SoyType> argTypes);
 

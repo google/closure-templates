@@ -1710,7 +1710,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
 
       // Subset of previous that also matches arg count.
       List<SoyMethod> andMatchArgCount =
-          matchNameAndType.stream().filter(m -> m.getNumArgs() == numParams).collect(toList());
+          matchNameAndType.stream().filter(m -> m.acceptsArgCount(numParams)).collect(toList());
 
       if (!matchNameAndType.isEmpty() && andMatchArgCount.isEmpty()) {
         // We matched the base type and method name but did not match on arity.
@@ -2183,6 +2183,10 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
             if (defn.kind() == VarDefn.Kind.IMPORT_VAR) {
               filePath = ((ImportedVar) defn).getSourceFilePath();
               functionName = ((ImportedVar) defn).getSymbol();
+            } else if (defn.kind() == VarDefn.Kind.LOCAL_VAR || defn.kind() == VarDefn.Kind.PARAM) {
+              node.setSoyFunction(FunctionNode.FUNCTION_POINTER);
+              node.setType(((FunctionType) nameExprType).getReturnType());
+              return;
             }
             List<ExternRef> externTypes = externsTypeLookup.getRefs(filePath, functionName);
             if (maybeSetExtern(node, externTypes)) {
@@ -3082,9 +3086,12 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
     @Override
     protected void visitMethodCallNode(MethodCallNode node) {
       super.visitMethodCallNode(node);
-      if (!node.isMethodResolved() || node.getSoyMethod() != BuiltinMethod.BIND) {
-        notAllowed(node);
+      if (node.isMethodResolved()
+          && (node.getSoyMethod() == BuiltinMethod.BIND
+              || node.getSoyMethod() == BuiltinMethod.FUNCTION_BIND)) {
+        return;
       }
+      notAllowed(node);
     }
 
     @Override
@@ -3198,7 +3205,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
           .forEach(
               methodName -> {
                 for (SoySourceFunctionMethod m : methodCache.getUnchecked(methodName)) {
-                  if (m.appliesToBase(baseType) && m.getNumArgs() == argTypes.size()) {
+                  if (m.appliesToBase(baseType) && m.acceptsArgCount(argTypes.size())) {
                     builder.put(m, methodName);
                   }
                 }

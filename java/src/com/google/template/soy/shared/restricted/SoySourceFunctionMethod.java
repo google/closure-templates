@@ -50,6 +50,11 @@ public final class SoySourceFunctionMethod implements SoyMethod {
   }
 
   @Override
+  public boolean acceptsArgCount(int count) {
+    return argTypes.size() == count;
+  }
+
+  @Override
   public boolean appliesToArgs(List<SoyType> argTypes) {
     Preconditions.checkArgument(argTypes.size() == this.argTypes.size());
     for (int i = 0; i < argTypes.size(); i++) {

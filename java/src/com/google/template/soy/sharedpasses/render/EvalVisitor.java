@@ -684,6 +684,8 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
           SoyValue key = visit(methodNode.getParam(0));
           SoyValue value = ((SoyMap) base).get(key);
           return value != null ? value : UndefinedData.INSTANCE;
+        case FUNCTION_BIND:
+          break;
         case BIND:
           TemplateValue template = (TemplateValue) base;
           ParamStore params = ParamStore.fromRecord((SoyRecord) visit(methodNode.getParam(0)));
