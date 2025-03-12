@@ -12,7 +12,7 @@ A _template type_ is the signature of a template. It consists of a set of
 parameter names and types, and a return type. For example:
 
 ```soy
-(s: string) => html
+template (s: string) => html
 ```
 
 ## How do you declare a parameter that accepts a template?
@@ -21,7 +21,7 @@ To declare a parameter that accepts a template, simply declare a parameter and
 use the type of the template being passed in. For example:
 
 ```soy
-  {@param renderer: (s: string) => html}
+  {@param renderer: template (s: string) => html}
 ```
 
 ## How do you call a passed-in template?
@@ -35,7 +35,7 @@ parameter to which the template was passed. For example:
 
 ```soy
 {template foo}
-  {@param renderer: (s: string) => html} // Accept a template as a parameter
+  {@param renderer: template (s: string) => html} // Accept a template as a parameter
   {call $renderer}                       // Call the passed-in template
     {param s: 'hello' /}                 // Use the parameter from the template type
   {/call}
@@ -46,7 +46,7 @@ parameter to which the template was passed. For example:
 
 ```soy
 {template foo}
-  {@param renderer: (s: string) => html<?>} // Accept a template as a parameter
+  {@param renderer: template (s: string) => html<?>} // Accept a template as a parameter
 
   <{$renderer.bind(record(s: 'hello'))} />  // See below for info on .bind()
 {/template}
@@ -74,7 +74,7 @@ To pass a template as a parameter, directly use a template as a value.
 {/template}
 
 {template bar}
-  {@param tpl: (content: html) => html}
+  {@param tpl: template (content: html) => html}
 
   {call $tpl}
     {param content kind="html"}
@@ -102,7 +102,7 @@ To pass a template as a parameter, directly use a template as a value.
 {/template}
 
 {template bar kind="html<?>"}
-  {@param tpl: (content: html) => html<?>}
+  {@param tpl: template (content: html) => html<?>}
 
   <{$tpl}>
     <parameter slot="content">
@@ -128,7 +128,7 @@ If a template is imported, use the value directly
 import {foo} from '<PATH>';
 
 {template bar}
-  {@param tpl: (content: html) => html}
+  {@param tpl: template (content: html) => html}
 {/template}
 
 {template baz}
@@ -144,7 +144,7 @@ import {foo} from '<PATH>';
 import {foo} from '<PATH>';
 
 {template bar}
-  {@param tpl: (content: html) => html}
+  {@param tpl: template (content: html) => html}
 {/template}
 
 {template baz}
@@ -161,19 +161,20 @@ type represents a legal call on the template.
 *   All parameters appearing in the template type must exist in the template.
 *   A parameter with a looser type in the template, e.g. `@param p:
     string|number`, can satisfy a more strictly typed parameter in the template
-    type, e.g. `(p: string) => html`, but not the other way around.
-*   A required parameter in the template type, `(p: string) => html`, can be
-    satisfied by either an optional or a required parameter in the template.
-*   An optional parameter in the template type, `(p?: string) => html`, can only
-    be satisfied by an optional parameter in the template, `{@param? p:
+    type, e.g. `template (p: string) => html`, but not the other way around.
+*   A required parameter in the template type, `template (p: string) => html`,
+    can be satisfied by either an optional or a required parameter in the
+    template.
+*   An optional parameter in the template type, `template (p?: string) => html`,
+    can only be satisfied by an optional parameter in the template, `{@param? p:
     string}`.
 
-As an example, the following templates can be bound to `(content: html) =>
-html`.
+As an example, the following templates can be bound to `template (content: html)
+=> html`.
 
 ```soy
 {template <TEMPLATE_NAME>}
-  {@param tpl: (content: html) => html}
+  {@param tpl: template (content: html) => html}
 {/template}
 
 {template <TEMPLATE_NAME2>}
@@ -203,8 +204,9 @@ You can bind some of the parameters in a passed-in template to fixed values by
 using the builtin `bind` method. This method accepts a `record` literal and
 returns a template whose type depends on the unbound parameters.
 
-In the following example, the type of the template returned by `bind` is `(s:
-string) => html`. As a result, this template can be passed to `foo`.
+In the following example, the type of the template returned by `bind` is
+`template (s: string) => html`. As a result, this template can be passed to
+`foo`.
 
 <section class="polyglot">
 

@@ -666,7 +666,7 @@ already bound to the template type may not be bound again.
 
 ```soy
 {template foo}
-  {@param fn: (a: string) => html}
+  {@param fn: template (a: string) => html}
 {/template}
 
 {template bar}
@@ -685,7 +685,7 @@ already bound to the template type may not be bound again.
 
 ```soy
 {template foo kind="html<div>"}
-  {@param fn: (a: string) => html}
+  {@param fn: template (a: string) => html}
   <div></div>
 {/template}
 

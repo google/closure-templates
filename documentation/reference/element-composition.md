@@ -83,7 +83,7 @@ be passed directly into the print command.
 
 ```soy
 {template example}
-  {@param tpl: () => html<div>}
+  {@param tpl: template () => html<div>}
   <{$tpl}></>
 {/template}
 ```
@@ -136,7 +136,7 @@ parameters must be provided with the
 
 ```soy
 {template example}
-  {@param tpl: (a: number) => html<div>}
+  {@param tpl: template (a: number) => html<div>}
   <{$tpl.bind(record(a: 3))}></>
 {/template}
 ```
@@ -215,7 +215,7 @@ prefix.
 
 ```soy
 {template example}
-  {@param tpl: (@aria-label: string) => html<button>}
+  {@param tpl: template (@aria-label: string) => html<button>}
 {/template}
 ```
 

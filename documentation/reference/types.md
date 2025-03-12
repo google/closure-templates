@@ -308,7 +308,7 @@ For example:
 
 ```soy
 {template foo}
-  {@param tpl: (count: int, greeting: string) => html}
+  {@param tpl: template (count: int, greeting: string) => html}
 
   {call $tpl}
     {param count: 5 /}
@@ -321,7 +321,7 @@ For example:
 
 ```soy
 {template foo}
-  {@param tpl: (count: int, greeting: string) => html<?>}
+  {@param tpl: template (count: int, greeting: string) => html<?>}
 
   <{$tpl.bind(record(count:5, greeting: 'Hello'))} />
 ```
