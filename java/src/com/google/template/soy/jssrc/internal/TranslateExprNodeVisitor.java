@@ -33,6 +33,7 @@ import static com.google.template.soy.jssrc.dsl.Expressions.not;
 import static com.google.template.soy.jssrc.dsl.Expressions.number;
 import static com.google.template.soy.jssrc.dsl.Expressions.operation;
 import static com.google.template.soy.jssrc.dsl.Expressions.stringLiteral;
+import static com.google.template.soy.jssrc.internal.JsRuntime.BIND_FUNCTION_PARAMS;
 import static com.google.template.soy.jssrc.internal.JsRuntime.BIND_TEMPLATE_PARAMS;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_ARRAY_MAP;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_DEBUG;
@@ -738,7 +739,15 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
         case MAP_GET:
           return base.mapGetAccess(visit(methodCallNode.getParam(0)), nullSafe);
         case FUNCTION_BIND:
-          break;
+          return base.transform(
+              nullSafe,
+              (baseExpr) ->
+                  BIND_FUNCTION_PARAMS.call(
+                      baseExpr,
+                      Expressions.arrayLiteral(
+                          methodCallNode.getParams().stream()
+                              .map(this::visit)
+                              .collect(toImmutableList()))));
         case BIND:
           return base.transform(
               nullSafe,
@@ -1157,6 +1166,12 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
         return LITERAL_UNDEFINED;
       }
       return translationContext.soyToJsVariableMappings().get(ref.name()).call(visitParams(node));
+    } else if (soyFunction == FunctionNode.FUNCTION_POINTER) {
+      VarRefNode ref = (VarRefNode) node.getNameExpr();
+      return translationContext
+          .soyToJsVariableMappings()
+          .get(ref.getName())
+          .call(visitParams(node));
     } else {
       if (!(soyFunction instanceof SoyJsSrcFunction)) {
         errorReporter.report(

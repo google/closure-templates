@@ -126,6 +126,7 @@ import com.google.template.soy.soytree.PartialFileSetMetadata;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.defn.ConstVar;
+import com.google.template.soy.soytree.defn.ExternVar;
 import com.google.template.soy.soytree.defn.ImportedVar;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
@@ -1870,6 +1871,9 @@ final class ExpressionCompiler {
             node, (SoyJavaSourceFunction) fn, visitChildren(node), parameters, detacher);
       } else if (fn instanceof ExternRef) {
         return callExtern((ExternRef) fn, node.getParams());
+      } else if (fn == FunctionNode.FUNCTION_POINTER) {
+        // TODO(b/191497298): Implement.
+        return SoyExpression.SOY_NULL;
       }
 
       // Functions that are not a SoyJavaSourceFunction
@@ -2072,6 +2076,12 @@ final class ExpressionCompiler {
                   node.getResolvedName());
             }
           });
+    }
+
+    @Override
+    SoyExpression visitExternVar(VarRefNode node, ExternVar c) {
+      // TODO(b/191497298): Implement.
+      return SoyExpression.SOY_NULL;
     }
 
     // Catch-all for unimplemented nodes

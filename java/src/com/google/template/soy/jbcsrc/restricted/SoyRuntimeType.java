@@ -138,6 +138,7 @@ public abstract class SoyRuntimeType {
       case VE_DATA:
       case UNKNOWN:
       case ANY:
+      case FUNCTION:
         // no unique unboxed representation
         return null;
       case CSS_TYPE:
@@ -149,7 +150,6 @@ public abstract class SoyRuntimeType {
       case PROTO_MODULE:
       case TEMPLATE_TYPE:
       case TEMPLATE_MODULE:
-      case FUNCTION:
       case INTERSECTION:
       case NAMED:
       case INDEXED:

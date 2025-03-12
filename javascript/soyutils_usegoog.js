@@ -2702,6 +2702,17 @@ const $$isReadonly = function(ctor, msg) {
   return guard(msg);
 };
 
+/**
+ * Wrapper for Function.bind.
+ * @param {!Function} f
+ * @param {!Array} params
+ * @return {!Function}
+ */
+const $$bindFunctionParams =
+    function(f, params) {
+  return f.bind(null, ...params);
+};
+
 exports = {
   $$maybeMakeImmutableProto,
   $$emptyProto,
@@ -2801,6 +2812,7 @@ exports = {
   $$stubsMap,
   $$internalCallMarkerDoNotUse,
   $$areYouAnInternalCaller,
+  $$bindFunctionParams,
   // The following are exported just for tests
   $$balanceTags_,
   $$isRecord,

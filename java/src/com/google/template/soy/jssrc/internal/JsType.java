@@ -50,6 +50,7 @@ import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.jssrc.dsl.Expressions;
 import com.google.template.soy.jssrc.dsl.GoogRequire;
 import com.google.template.soy.types.AbstractIterableType;
+import com.google.template.soy.types.FunctionType;
 import com.google.template.soy.types.IndexedType;
 import com.google.template.soy.types.IntersectionType;
 import com.google.template.soy.types.LegacyObjectMapType;
@@ -65,10 +66,12 @@ import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.TemplateType;
 import com.google.template.soy.types.UnionType;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Deque;
 import java.util.EnumMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -597,6 +600,26 @@ public final class JsType implements CodeChunk.HasRequires {
             builder.setPredicate(GOOG_IS_FUNCTION);
             return builder.build();
           }
+        case FUNCTION:
+          {
+            FunctionType functionType = (FunctionType) soyType;
+            Builder builder = builder();
+            List<String> parameters = new ArrayList<>();
+            for (FunctionType.Parameter parameter : functionType.getParameters()) {
+              JsType forSoyType =
+                  getWithArrayMode(ArrayTypeMode.ARRAY_OR_READONLY_ARRAY, parameter.getType());
+              builder.addRequires(forSoyType.googRequires());
+              parameters.add(forSoyType.typeExpr());
+            }
+            JsType forReturnType = get(functionType.getReturnType());
+            builder.addRequires(forReturnType.googRequires());
+            builder.addType(
+                String.format(
+                    "function(%s):(%s)", String.join(",", parameters), forReturnType.typeExpr()));
+            builder.addRequire(JsRuntime.GOOG_SOY.toRequireType());
+            builder.setPredicate(GOOG_IS_FUNCTION);
+            return builder.build();
+          }
         case NAMED:
           NamedType namedType = (NamedType) soyType;
           String namespace =
@@ -667,7 +690,6 @@ public final class JsType implements CodeChunk.HasRequires {
         case PROTO_MODULE:
         case TEMPLATE_TYPE:
         case TEMPLATE_MODULE:
-        case FUNCTION:
         case NEVER:
       }
       throw new AssertionError("unhandled soytype: " + soyType);

@@ -205,6 +205,8 @@ public final class JsRuntime {
       SOY_TEMPLATES.googModuleGet().dotAccess("$$markTemplate");
   public static final Expression BIND_TEMPLATE_PARAMS =
       SOY_TEMPLATES.googModuleGet().dotAccess("$$bindTemplateParams");
+  public static final Expression BIND_FUNCTION_PARAMS =
+      SOY.googModuleGet().dotAccess("$$bindFunctionParams");
   public static final Expression BIND_TEMPLATE_PARAMS_FOR_IDOM =
       SOY_TEMPLATES.googModuleGet().dotAccess("$$bindTemplateParamsForIdom");
 
