@@ -484,6 +484,11 @@ public final class ExternCompiler {
           : actualParam;
     }
 
+    // TODO(b/191497298): Implement.
+    if (SoyTypes.isKindOrUnionOfKind(soyType, Kind.FUNCTION)) {
+      return BytecodeUtils.constantNull(javaType);
+    }
+
     throw new AssertionError(
         String.format(
             "Unable to convert parameter of Soy type %s to java type %s.", soyType, javaType));

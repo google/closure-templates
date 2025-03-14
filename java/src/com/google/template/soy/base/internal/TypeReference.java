@@ -16,20 +16,23 @@
 
 package com.google.template.soy.base.internal;
 
+import static com.google.common.collect.ImmutableList.toImmutableList;
+
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.lang.reflect.TypeVariable;
+import java.lang.reflect.WildcardType;
+import java.util.Arrays;
 import java.util.List;
 
 /** A representation of a Java type, possibly parameterized. */
 @AutoValue
 public abstract class TypeReference {
 
-  /** The base type. */
-  public abstract String className();
-
-  /** The type parameters. */
-  public abstract ImmutableList<TypeReference> parameters();
+  private static final TypeReference OBJECT = create("java.lang.Object");
 
   public static TypeReference create(String type) {
     return create(type, ImmutableList.of());
@@ -41,6 +44,37 @@ public abstract class TypeReference {
     }
     return new AutoValue_TypeReference(type, ImmutableList.copyOf(parameters));
   }
+
+  public static TypeReference create(Type type) {
+    if (type instanceof Class) {
+      return TypeReference.create(((Class<?>) type).getName());
+    } else if (type instanceof ParameterizedType) {
+      ParameterizedType pType = (ParameterizedType) type;
+      return TypeReference.create(
+          ((Class<?>) pType.getRawType()).getName(),
+          Arrays.stream(pType.getActualTypeArguments())
+              .map(TypeReference::create)
+              .collect(toImmutableList()));
+    } else if (type instanceof WildcardType) {
+      // Omit "? super" / "? extends" and match with CompiledJarsPluginSignatureReader$TypeVisitor
+      WildcardType wt = (WildcardType) type;
+      if (wt.getLowerBounds().length > 0) {
+        return OBJECT;
+      } else if (wt.getUpperBounds().length == 1) {
+        return create(wt.getUpperBounds()[0]);
+      }
+    } else if (type instanceof TypeVariable<?>) {
+      return OBJECT;
+    }
+
+    return TypeReference.create(type.toString());
+  }
+
+  /** The base type. */
+  public abstract String className();
+
+  /** The type parameters. */
+  public abstract ImmutableList<TypeReference> parameters();
 
   public boolean isGeneric() {
     return !parameters().isEmpty();

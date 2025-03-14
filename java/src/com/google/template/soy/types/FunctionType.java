@@ -38,6 +38,10 @@ public abstract class FunctionType extends SoyType {
 
   public abstract ImmutableList<Parameter> getParameters();
 
+  public int getArity() {
+    return getParameters().size();
+  }
+
   @Memoized
   public ImmutableMap<String, SoyType> getParameterMap() {
     return getParameters().stream().collect(toImmutableMap(Parameter::getName, Parameter::getType));

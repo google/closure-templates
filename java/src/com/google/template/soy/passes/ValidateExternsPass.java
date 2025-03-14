@@ -34,6 +34,7 @@ import com.google.common.html.types.TrustedResourceUrlProto;
 import com.google.common.primitives.Primitives;
 import com.google.protobuf.Message;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.internal.FunctionalInterfaceUtil;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.TypeReference;
 import com.google.template.soy.data.PartialSoyTemplate;
@@ -61,10 +62,12 @@ import com.google.template.soy.types.RecordType;
 import com.google.template.soy.types.SoyProtoEnumType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.StringType;
 import com.google.template.soy.types.TemplateType;
 import com.google.template.soy.types.TemplateType.Parameter;
+import java.lang.reflect.Method;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -398,6 +401,15 @@ class ValidateExternsPass implements CompilerFilePass {
       boolean preserveUndefined) {
     // Validate after eliminating any Future<> box
     Class<?> javaType = getType(parameterizedType.className());
+
+    if (SoyTypes.isKindOrUnionOfKind(soyType, Kind.FUNCTION)) {
+      if (javaType == null) {
+        // Allow user-defined functional interfaces, which won't be loaded.
+        return true;
+      }
+      return functionalTypesAreCompatible(extern, javaType, soyType);
+    }
+
     if (javaType == null) {
       boolean result = protoTypesAreCompatible(parameterizedType.className(), soyType);
       if (!result) {
@@ -577,5 +589,37 @@ class ValidateExternsPass implements CompilerFilePass {
       default:
         return false;
     }
+  }
+
+  private boolean functionalTypesAreCompatible(
+      ExternNode extern, Class<?> javaType, SoyType soyType) {
+    Method method = FunctionalInterfaceUtil.getMethod(javaType);
+    if (method == null) {
+      return false;
+    }
+    ImmutableList<SoyType> functionTypes = SoyTypes.expandUnions(soyType);
+    for (SoyType memberType : functionTypes) {
+      FunctionType functionType = (FunctionType) memberType;
+      if (functionType.getArity() != method.getParameterCount()) {
+        return false;
+      }
+      if (!typesAreCompatible(
+          TypeReference.create(method.getGenericReturnType()),
+          functionType.getReturnType(),
+          extern,
+          Mode.EXTENDS)) {
+        return false;
+      }
+      for (int i = 0; i < method.getGenericParameterTypes().length; i++) {
+        if (!typesAreCompatible(
+            TypeReference.create(method.getGenericParameterTypes()[i]),
+            functionType.getParameters().get(i).getType(),
+            extern,
+            Mode.SUPER)) {
+          return false;
+        }
+      }
+    }
+    return true;
   }
 }

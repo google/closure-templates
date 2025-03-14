@@ -34,7 +34,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.lang.reflect.ParameterizedType;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
@@ -161,29 +160,14 @@ public class CompiledJarsPluginSignatureReader implements PluginSignatureReader,
                 !Modifier.isStatic(m.getModifiers()),
                 clazz.isInterface(),
                 m.getReturnType().getName(),
-                forType(m.getGenericReturnType()),
+                TypeReference.create(m.getGenericReturnType()),
                 Arrays.stream(m.getGenericParameterTypes())
-                    .map(CompiledJarsPluginSignatureReader::forType)
+                    .map(TypeReference::create)
                     .collect(toImmutableList())));
       }
       return signatures.build();
     } catch (ClassNotFoundException | SecurityException e) {
       return ClassSignatures.EMPTY;
-    }
-  }
-
-  private static TypeReference forType(java.lang.reflect.Type type) {
-    if (type instanceof Class) {
-      return TypeReference.create(((Class<?>) type).getName());
-    } else if (type instanceof ParameterizedType) {
-      ParameterizedType pType = (ParameterizedType) type;
-      return TypeReference.create(
-          ((Class<?>) pType.getRawType()).getName(),
-          Arrays.stream(pType.getActualTypeArguments())
-              .map(CompiledJarsPluginSignatureReader::forType)
-              .collect(toImmutableList()));
-    } else {
-      return TypeReference.create(type.toString());
     }
   }
 
@@ -268,14 +252,22 @@ public class CompiledJarsPluginSignatureReader implements PluginSignatureReader,
   }
 
   private static final class TypeVisitor extends SignatureVisitor {
+
+    private final char tag;
     private String baseType = "";
     private final List<TypeVisitor> genericTypes = new ArrayList<>();
 
     TypeVisitor(int api) {
+      this(api, INSTANCEOF);
+    }
+
+    TypeVisitor(int api, char tag) {
       super(api);
+      this.tag = tag;
     }
 
     public TypeReference getType() {
+      String baseType = tag == SUPER ? "java.lang.Object" : this.baseType;
       return TypeReference.create(
           baseType, genericTypes.stream().map(TypeVisitor::getType).collect(toImmutableList()));
     }
@@ -304,7 +296,7 @@ public class CompiledJarsPluginSignatureReader implements PluginSignatureReader,
 
     @Override
     public SignatureVisitor visitTypeArgument(char tag) {
-      TypeVisitor next = new TypeVisitor(this.api);
+      TypeVisitor next = new TypeVisitor(this.api, tag);
       genericTypes.add(next);
       return next;
     }
