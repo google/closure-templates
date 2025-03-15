@@ -645,6 +645,8 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
         return assertNotNull(node.getParam(0));
       case CSS:
         return visitCssFunction(node);
+      case RECORD_JS_OBJECT_ID:
+        return visitRecordJsObjectIdFunction(node);
       case EVAL_TOGGLE:
         return visitToggleFunction(node);
       case XID:
@@ -714,6 +716,10 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
   private PyExpr visitToggleFunction(FunctionNode node) {
     errorReporter.report(node.getSourceLocation(), TOGGLE_IMPORT_NOT_SUPPORTED);
     return ERROR;
+  }
+
+  private PyExpr visitRecordJsObjectIdFunction(FunctionNode node) {
+    return visit(node.getChild(0));
   }
 
   private PyExpr visitXidFunction(FunctionNode node) {

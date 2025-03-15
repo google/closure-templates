@@ -42,6 +42,7 @@ public enum BuiltinFunction implements SoyFunction {
    * a string literal selector name.
    */
   CSS("css"),
+  RECORD_JS_OBJECT_ID("$recordJsObjectId"),
   /**
    * Function for rewriting toggle import in Java / JS. Server side, we query activeModSelector in
    * RenderContext and client side we use ts_toggle_library output.
@@ -107,6 +108,7 @@ public enum BuiltinFunction implements SoyFunction {
       case HAS_CONTENT:
       case NEW_SET:
       case FLUSH_PENDING_LOGGING_ATTRIBUTES:
+      case RECORD_JS_OBJECT_ID:
         return ImmutableSet.of(1);
       case PROTO_INIT:
         throw new UnsupportedOperationException();
@@ -177,6 +179,7 @@ public enum BuiltinFunction implements SoyFunction {
       case DEBUG_SOY_TEMPLATE_INFO: // implicitly depends on a renderer param or js compiler flag
       case VE_DEF:
       case FLUSH_PENDING_LOGGING_ATTRIBUTES: // implicitly depends on ephemeral state
+      case RECORD_JS_OBJECT_ID:
         return false;
     }
     throw new AssertionError(this);

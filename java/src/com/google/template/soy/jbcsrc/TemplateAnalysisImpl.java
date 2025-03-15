@@ -825,6 +825,7 @@ final class TemplateAnalysisImpl implements TemplateAnalysis {
             return;
           case CHECK_NOT_NULL:
           case CSS:
+          case RECORD_JS_OBJECT_ID:
           case EVAL_TOGGLE:
           case DEBUG_SOY_TEMPLATE_INFO:
           case PROTO_INIT:
