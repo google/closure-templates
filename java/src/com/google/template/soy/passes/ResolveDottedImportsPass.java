@@ -21,7 +21,6 @@ import com.google.protobuf.Descriptors.EnumValueDescriptor;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.Identifier;
-import com.google.template.soy.base.internal.QuoteStyle;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
@@ -35,15 +34,14 @@ import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.MethodCallNode;
 import com.google.template.soy.exprtree.ProtoEnumValueNode;
-import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
-import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.defn.ImportedVar;
-import com.google.template.soy.types.CssImportType;
+import com.google.template.soy.soytree.defn.ImportedVar.SymbolKind;
 import com.google.template.soy.types.ImportType;
+import com.google.template.soy.types.NamespaceType;
 import com.google.template.soy.types.ProtoEnumImportType;
 import com.google.template.soy.types.ProtoImportType;
 import com.google.template.soy.types.ProtoModuleImportType;
@@ -79,13 +77,10 @@ final class ResolveDottedImportsPass implements CompilerFilePass {
 
   private final ErrorReporter errorReporter;
   private final TypeInterner typeRegistry;
-  private final boolean replaceCssVariables;
 
-  public ResolveDottedImportsPass(
-      ErrorReporter errorReporter, TypeInterner typeRegistry, boolean replaceCssVariables) {
+  public ResolveDottedImportsPass(ErrorReporter errorReporter, TypeInterner typeRegistry) {
     this.errorReporter = errorReporter;
     this.typeRegistry = typeRegistry;
-    this.replaceCssVariables = replaceCssVariables;
   }
 
   @Override
@@ -181,6 +176,7 @@ final class ResolveDottedImportsPass implements CompilerFilePass {
     }
 
     SoyType nestedType = null;
+    SymbolKind nestedSymbolKind = null;
 
     if (type.getKind() == SoyType.Kind.PROTO_MODULE) {
       // e.g. {protos.Message()}
@@ -207,25 +203,15 @@ final class ResolveDottedImportsPass implements CompilerFilePass {
         // e.g. {call templates.doesNotExist}
         nestedType = UnknownType.getInstance();
       }
-    } else if (type.getKind() == SoyType.Kind.CSS_TYPE) {
-      CssImportType cssType = (CssImportType) type;
-      if (!cssType.getNestedSymbolNames().contains(fieldName)) {
-        nestedType = UnknownType.getInstance();
-      } else if (replaceCssVariables) {
-        FunctionNode funcNode =
-            FunctionNode.newPositional(
-                Identifier.create(BuiltinFunction.CSS.getName(), fullLocation),
-                BuiltinFunction.CSS,
-                fullLocation);
-        funcNode.addChild(
-            new StringNode(
-                cssType.getShortClassMap().get(fieldName),
-                QuoteStyle.DOUBLE,
-                refn.getSourceLocation()));
-        funcNode.setType(StringType.getInstance());
-        return funcNode;
-      } else {
-        nestedType = StringType.getInstance();
+    } else if (type.getKind() == SoyType.Kind.NAMESPACE) {
+      NamespaceType namespaceType = (NamespaceType) type;
+      if (defn.getSymbolKind() == SymbolKind.CSS_MODULE) {
+        if (namespaceType.containsSymbol(fieldName)) {
+          nestedType = StringType.getInstance();
+          nestedSymbolKind = SymbolKind.CSS_CLASS;
+        } else {
+          nestedType = UnknownType.getInstance();
+        }
       }
     } else {
       nestedType = UnknownType.getInstance();
@@ -251,17 +237,14 @@ final class ResolveDottedImportsPass implements CompilerFilePass {
     if (nestedType != null) {
       newDefn.setType(nestedType);
     }
+    if (nestedSymbolKind != null && newDefn.getSymbolKind() == null) {
+      newDefn.setSymbolKind(nestedSymbolKind);
+    }
     return new VarRefNode(refn.getName() + "." + fieldName, fullLocation, newDefn);
   }
 
   private static String englishForType(SoyType type) {
     switch (type.getKind()) {
-      case CSS_TYPE:
-        return "css class";
-      case CSS_MODULE:
-        return "css module";
-      case TOGGLE_TYPE:
-        return "toggle type";
       case PROTO_TYPE:
         return "proto message";
       case PROTO_ENUM_TYPE:

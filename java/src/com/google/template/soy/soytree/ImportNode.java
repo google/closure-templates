@@ -50,7 +50,7 @@ public final class ImportNode extends AbstractSoyNode {
 
   private Optional<SoyFileNode.CssPath> requiredCssPath;
 
-  /** Only Proto, CSS, and Toggle are supported right now. */
+  /** The category of import, based on the path suffix. */
   public enum ImportType {
     CSS,
     TOGGLE,
@@ -191,7 +191,6 @@ public final class ImportNode extends AbstractSoyNode {
   private static void visitVars(
       ImportedVar id, SoyType parentType, BiConsumer<ImportedVar, SoyType> visitor) {
     visitor.accept(id, parentType);
-    id.getNestedTypes()
-        .forEach(nestedType -> visitVars(id.nested(nestedType), id.typeOrDefault(null), visitor));
+    id.getNestedVars().forEach(nestedVar -> visitVars(nestedVar, id.typeOrDefault(null), visitor));
   }
 }

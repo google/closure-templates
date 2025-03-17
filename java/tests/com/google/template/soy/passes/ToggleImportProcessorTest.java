@@ -34,7 +34,9 @@ import com.google.template.soy.soytree.NamespaceDeclaration;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.ImportedVar;
-import com.google.template.soy.types.ToggleImportType;
+import com.google.template.soy.soytree.defn.ImportedVar.SymbolKind;
+import com.google.template.soy.types.BoolType;
+import com.google.template.soy.types.SoyType;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -103,10 +105,9 @@ public final class ToggleImportProcessorTest {
 
     assertThat(importNode.getImportType()).isEqualTo(ImportNode.ImportType.TOGGLE);
 
-    assertThat(importedVar.type()).isInstanceOf(ToggleImportType.class);
-    ToggleImportType importType = (ToggleImportType) importedVar.type();
-    assertThat(importType.getKind()).isEqualTo(ToggleImportType.Kind.TOGGLE_TYPE);
-    assertThat(importType.toString()).isEqualTo("toggle1 from foo.toggles");
+    SoyType importType = importedVar.type();
+    assertThat(importType).isEqualTo(BoolType.getInstance());
+    assertThat(importedVar.getSymbolKind()).isEqualTo(SymbolKind.TOGGLE);
   }
 
   @Test

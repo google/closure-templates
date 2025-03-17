@@ -166,9 +166,7 @@ public final class JavaTypeUtils {
       case VE_DATA:
         types = ImmutableList.of(new VeDataJavaType());
         break;
-      case CSS_TYPE:
-      case CSS_MODULE:
-      case TOGGLE_TYPE:
+      case NAMESPACE:
       case PROTO_TYPE:
       case PROTO_ENUM_TYPE:
       case PROTO_EXTENSION:

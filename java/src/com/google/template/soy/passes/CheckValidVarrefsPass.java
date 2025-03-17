@@ -51,9 +51,7 @@ final class CheckValidVarrefsPass implements CompilerFilePass {
       case TEMPLATE_MODULE:
       case PROTO_ENUM_TYPE:
       case PROTO_MODULE:
-      case CSS_MODULE:
-      case CSS_TYPE:
-      case TOGGLE_TYPE:
+      case NAMESPACE:
         errorReporter.report(
             varRef.getSourceLocation(), ILLEGAL_TYPE_OF_VARIABLE, varRef.toSourceString());
         break;

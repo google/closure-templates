@@ -28,8 +28,8 @@ import com.google.template.soy.soytree.ImportNode;
 import com.google.template.soy.soytree.ImportNode.ImportType;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.defn.ImportedVar;
-import com.google.template.soy.types.CssImportType;
-import com.google.template.soy.types.CssModuleImportType;
+import com.google.template.soy.soytree.defn.ImportedVar.SymbolKind;
+import com.google.template.soy.types.NamespaceType;
 
 /**
  * Resolves Soy proto imports; verifies that the imports are valid and populates a local type
@@ -74,23 +74,18 @@ final class CssImportProcessor implements ImportsPass.ImportProcessor {
   }
 
   private void processImportedSymbols(ImportNode node) {
-    CssModuleImportType moduleType = CssModuleImportType.create(node.getSourceFilePath());
-    node.setModuleType(moduleType);
-
     for (ImportedVar symbol : node.getIdentifiers()) {
       String name = symbol.getSymbol();
-      if (!moduleType.getNestedSymbolNames().contains(name)) {
+      if (!"classes".equals(name)) {
         ImportsPass.reportUnknownSymbolError(
-            errorReporter,
-            symbol.nameLocation(),
-            name,
-            node.getPath(),
-            moduleType.getNestedSymbolNames());
+            errorReporter, symbol.nameLocation(), name, node.getPath(), ImmutableSet.of("classes"));
+        continue;
       }
 
       ImmutableMap<String, String> shortClassMap =
           cssRegistry.getShortClassNameMapForLogicalPath(node.getSourceFilePath());
-      symbol.setType(CssImportType.create(node.getSourceFilePath(), shortClassMap));
+      symbol.setType(new NamespaceType(shortClassMap.keySet()));
+      symbol.setSymbolKind(SymbolKind.CSS_MODULE);
     }
   }
 }

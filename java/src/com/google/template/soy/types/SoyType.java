@@ -124,9 +124,7 @@ public abstract class SoyType implements ErrorArg {
     NAMED,
     INDEXED,
     // Imported symbol types
-    CSS_TYPE,
-    CSS_MODULE,
-    TOGGLE_TYPE,
+    NAMESPACE,
     PROTO_TYPE,
     PROTO_ENUM_TYPE,
     PROTO_EXTENSION,

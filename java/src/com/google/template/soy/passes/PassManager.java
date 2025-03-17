@@ -577,10 +577,13 @@ public final class PassManager {
                   errorReporter))
           .add(new UnknownJsGlobalPass(allowUnknownJsGlobals, errorReporter))
           .add(new ResolveNamesPass(errorReporter))
-          .add(
-              new ResolveDottedImportsPass(
-                  errorReporter, registry, astRewrites.rewriteCssVariables()));
-      passes.add(new RewriteToggleImportsPass(astRewrites.isAll()));
+          .add(new ResolveDottedImportsPass(errorReporter, registry));
+      if (astRewrites.rewriteCssVariables()) {
+        passes.add(new RewriteCssRefsPass(cssRegistry));
+      }
+      if (astRewrites.isAll()) {
+        passes.add(new RewriteToggleRefsPass());
+      }
       passes.add(
           new RewriteElementCompositionFunctionsPass(
               errorReporter, astRewrites.rewriteElementComposition()));

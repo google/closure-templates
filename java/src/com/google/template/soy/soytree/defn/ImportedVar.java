@@ -20,15 +20,16 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SourceLogicalPath;
+import com.google.template.soy.base.internal.SetOnce;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.basetree.Copyable;
 import com.google.template.soy.exprtree.AbstractVarDefn;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.types.SoyType;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Set;
 import javax.annotation.Nullable;
 
 /**
@@ -37,6 +38,23 @@ import javax.annotation.Nullable;
  * templates and constants under a template module import.
  */
 public final class ImportedVar extends AbstractVarDefn implements Copyable<ImportedVar> {
+
+  /** The kind of symbol this var references. */
+  public enum SymbolKind {
+    TEMPLATE,
+    CONST,
+    EXTERN,
+    TYPEDEF,
+
+    PROTO_MESSAGE,
+    PROTO_ENUM,
+    PROTO_EXT,
+
+    CSS_MODULE,
+    CSS_CLASS,
+
+    TOGGLE
+  }
 
   public static final String MODULE_IMPORT = "*";
 
@@ -48,6 +66,7 @@ public final class ImportedVar extends AbstractVarDefn implements Copyable<Impor
   private final ImportedVar parent;
   // The file path of the ImportNode that owns this var. Only set if parent == null.
   private SourceLogicalPath filePath;
+  private SetOnce<SymbolKind> kind = new SetOnce<>();
 
   public ImportedVar(String name, @Nullable String alias, SourceLocation nameLocation) {
     super(alias != null ? alias : name, nameLocation, null);
@@ -75,11 +94,21 @@ public final class ImportedVar extends AbstractVarDefn implements Copyable<Impor
     this.symbol = var.symbol;
     this.parent = parent;
     this.filePath = var.filePath;
+    this.kind = var.kind.copy();
   }
 
   public void onParentInit(SourceLogicalPath path) {
     Preconditions.checkState(parent == null);
     this.filePath = path;
+  }
+
+  @Nullable
+  public SymbolKind getSymbolKind() {
+    return kind.isPresent() ? kind.get() : null;
+  }
+
+  public void setSymbolKind(SymbolKind kind) {
+    this.kind.set(kind);
   }
 
   @Override
@@ -95,9 +124,9 @@ public final class ImportedVar extends AbstractVarDefn implements Copyable<Impor
     return parent != null ? parent.getRoot() : this;
   }
 
-  /** Returns the names of all lazily created types within. */
-  public Set<String> getNestedTypes() {
-    return Collections.unmodifiableSet(nestedVarDefns.keySet());
+  /** Returns all the lazily created nested vars. */
+  public Collection<ImportedVar> getNestedVars() {
+    return Collections.unmodifiableCollection(nestedVarDefns.values());
   }
 
   /** Creates if necessary and returns a var representing a nested symbol. */

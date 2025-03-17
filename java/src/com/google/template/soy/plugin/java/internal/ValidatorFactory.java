@@ -451,21 +451,7 @@ final class ValidatorFactory extends JavaValueFactory {
       case VE_DATA:
         expectedClasses = VE_DATA_TYPES;
         break;
-      case TEMPLATE:
-      case CSS_TYPE:
-      case CSS_MODULE:
-      case TOGGLE_TYPE:
-      case PROTO_TYPE:
-      case PROTO_ENUM_TYPE:
-      case PROTO_EXTENSION:
-      case PROTO_MODULE:
-      case TEMPLATE_TYPE:
-      case TEMPLATE_MODULE:
-      case FUNCTION:
-      case INTERSECTION:
-      case NAMED:
-      case INDEXED:
-      case NEVER:
+      default:
         throw new IllegalStateException(
             "Cannot have " + type.getKind() + " from function signature");
     }

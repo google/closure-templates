@@ -28,7 +28,8 @@ import com.google.template.soy.soytree.ImportNode;
 import com.google.template.soy.soytree.ImportNode.ImportType;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.defn.ImportedVar;
-import com.google.template.soy.types.ToggleImportType;
+import com.google.template.soy.soytree.defn.ImportedVar.SymbolKind;
+import com.google.template.soy.types.BoolType;
 
 /**
  * Resolves Soy toggle imports; verifies that the imports are valid and populates a local type
@@ -91,8 +92,9 @@ final class ToggleImportProcessor implements ImportsPass.ImportProcessor {
             node.getPath(),
             toggleRegistry.getToggles(path));
       }
-      ToggleImportType nodeType = ToggleImportType.create(name, path);
-      symbol.setType(nodeType);
+
+      symbol.setSymbolKind(SymbolKind.TOGGLE);
+      symbol.setType(BoolType.getInstance());
     }
   }
 }

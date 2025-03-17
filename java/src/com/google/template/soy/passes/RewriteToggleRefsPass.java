@@ -20,7 +20,6 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.QuoteStyle;
-import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VarDefn;
@@ -29,31 +28,31 @@ import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.defn.ImportedVar;
-import com.google.template.soy.types.BoolType;
-import com.google.template.soy.types.SoyType;
+import com.google.template.soy.soytree.defn.ImportedVar.SymbolKind;
 import com.google.template.soy.types.StringType;
-import com.google.template.soy.types.ToggleImportType;
 
 /**
  * Rewrite toggle import statement and references to call built-in function that supports toggles as
  * an {@link ImportedVar} vardef.
  */
 @RunAfter(ResolveNamesPass.class)
-final class RewriteToggleImportsPass implements CompilerFilePass {
+final class RewriteToggleRefsPass implements CompilerFilePass {
 
-  private final boolean rewrite;
-
-  public RewriteToggleImportsPass(boolean rewrite) {
-    this.rewrite = rewrite;
-  }
+  public RewriteToggleRefsPass() {}
 
   @Override
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
     SoyTreeUtils.allNodesOfType(file, VarRefNode.class)
-        .filter(v -> v.getDefnDecl().kind() == VarDefn.Kind.IMPORT_VAR)
-        .filter(v -> v.getDefnDecl().hasType())
-        .filter(v -> v.getDefnDecl().type().getKind() == SoyType.Kind.TOGGLE_TYPE)
-        .forEach(v -> rewriteToggleNode(v, v.getSourceLocation()));
+        .forEach(
+            ref -> {
+              VarDefn defn = ref.getDefnDecl();
+              if (defn instanceof ImportedVar) {
+                ImportedVar importedVar = (ImportedVar) defn;
+                if (importedVar.getSymbolKind() == SymbolKind.TOGGLE) {
+                  rewriteToggleNode(ref, ref.getSourceLocation(), importedVar);
+                }
+              }
+            });
   }
 
   /**
@@ -61,16 +60,7 @@ final class RewriteToggleImportsPass implements CompilerFilePass {
    * {@code refn} value. Returns either a primitive node or var ref node or null if the field could
    * not be resolved.
    */
-  private void rewriteToggleNode(VarRefNode refn, SourceLocation fullLocation) {
-    if (!rewrite) {
-      // If we don't delete the VarRefNode then we at least need to set the type of the import to
-      // boolean for type checking to succeed.
-      ((ImportedVar) refn.getDefnDecl()).setType(BoolType.getInstance());
-      return;
-    }
-
-    ImportedVar defn = (ImportedVar) refn.getDefnDecl();
-    ToggleImportType toggleType = (ToggleImportType) defn.type();
+  private void rewriteToggleNode(VarRefNode refn, SourceLocation fullLocation, ImportedVar defn) {
     FunctionNode funcNode =
         FunctionNode.newPositional(
             Identifier.create(BuiltinFunction.EVAL_TOGGLE.getName(), fullLocation),
@@ -79,11 +69,12 @@ final class RewriteToggleImportsPass implements CompilerFilePass {
 
     // Add toggle path and name as parameters to built-in function
     funcNode.addChild(
-        new StringNode(toggleType.getPath().path(), QuoteStyle.DOUBLE, refn.getSourceLocation()));
+        new StringNode(
+            defn.getSourceFilePath().path(), QuoteStyle.DOUBLE, refn.getSourceLocation()));
     funcNode.addChild(
-        new StringNode(toggleType.getName(), QuoteStyle.DOUBLE, refn.getSourceLocation()));
+        new StringNode(defn.getSymbol(), QuoteStyle.DOUBLE, refn.getSourceLocation()));
     funcNode.setType(StringType.getInstance());
 
-    refn.getParent().replaceChild(refn, (ExprNode) funcNode);
+    refn.getParent().replaceChild(refn, funcNode);
   }
 }

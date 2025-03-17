@@ -877,9 +877,7 @@ public abstract class Expression extends BytecodeProducer {
                   this, constant(ContentKind.TRUSTED_RESOURCE_URI)));
         case URI:
           return Optional.of(MethodRefs.CHECK_CONTENT_KIND.invoke(this, constant(ContentKind.URI)));
-        case CSS_TYPE:
-        case CSS_MODULE:
-        case TOGGLE_TYPE:
+        case NAMESPACE:
         case PROTO_TYPE:
         case PROTO_ENUM_TYPE:
         case PROTO_EXTENSION:
