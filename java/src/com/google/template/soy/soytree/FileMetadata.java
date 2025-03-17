@@ -16,6 +16,7 @@
 
 package com.google.template.soy.soytree;
 
+import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.types.FunctionType;
 import com.google.template.soy.types.NamedType;
@@ -39,6 +40,8 @@ public interface FileMetadata extends PartialFileMetadata {
 
   /** Java object version of {@link ExternP}. */
   interface Extern {
+    SourceLogicalPath getPath();
+
     String getName();
 
     FunctionType getSignature();

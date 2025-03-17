@@ -39,6 +39,7 @@ import com.google.template.soy.jbcsrc.shared.Names;
 import com.google.template.soy.plugin.java.internal.PluginAnalyzer;
 import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
 import com.google.template.soy.soytree.FileSetMetadata;
+import com.google.template.soy.soytree.Metadata;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
@@ -271,7 +272,7 @@ public final class BytecodeCompiler {
         listener.onCompile(clazz);
       }
       for (TemplateNode template : file.getTemplates()) {
-        TemplateMetadata metadata = TemplateMetadata.fromTemplate(template);
+        TemplateMetadata metadata = Metadata.forAst(template);
         if (isModTemplate(metadata)) {
           listener.onCompileModifiableTemplate(modImplName(metadata));
         }

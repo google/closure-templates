@@ -425,7 +425,9 @@ public final class GenerateParseInfoVisitor
         } else {
           javadocSb.append(", ");
         }
-        javadocSb.append(buildTemplateNameForJavadoc(node, fileSetMetadata.getTemplate(template)));
+        javadocSb.append(
+            buildTemplateNameForJavadoc(
+                node, fileSetMetadata.getTemplate(template.getTemplateName())));
       }
       javadocSb.append('.');
       appendJavadoc(ilb, javadocSb.toString(), false, true);
@@ -529,7 +531,7 @@ public final class GenerateParseInfoVisitor
       }
     }
 
-    TemplateMetadata nodeMetadata = fileSetMetadata.getTemplate(node);
+    TemplateMetadata nodeMetadata = fileSetMetadata.getTemplate(node.getTemplateName());
     // Indirect params.
     IndirectParamsInfo indirectParamsInfo =
         new IndirectParamsCalculator(fileSetMetadata).calculateIndirectParams(node);

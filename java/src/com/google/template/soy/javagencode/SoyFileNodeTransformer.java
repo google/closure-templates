@@ -36,6 +36,7 @@ import com.google.template.soy.passes.IndirectParamsCalculator;
 import com.google.template.soy.passes.IndirectParamsCalculator.IndirectParamsInfo;
 import com.google.template.soy.shared.internal.gencode.JavaGenerationUtils;
 import com.google.template.soy.soytree.FileSetMetadata;
+import com.google.template.soy.soytree.Metadata;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.TemplateMetadata;
@@ -195,7 +196,7 @@ public class SoyFileNodeTransformer {
   public abstract static class ParamInfo {
     static ParamInfo of(TemplateParam param, ParamStatus status) {
       return of(
-          TemplateMetadata.parameterFromTemplateParam(param),
+          Metadata.parameterFromTemplateParam(param),
           status,
           false,
           param.isInjected(),
@@ -205,7 +206,7 @@ public class SoyFileNodeTransformer {
 
     static ParamInfo of(TemplateParam param, ParamStatus status, boolean indirect) {
       return of(
-          TemplateMetadata.parameterFromTemplateParam(param),
+          Metadata.parameterFromTemplateParam(param),
           status,
           indirect,
           param.isInjected(),
@@ -354,7 +355,7 @@ public class SoyFileNodeTransformer {
 
     IndirectParamsInfo idi =
         new IndirectParamsCalculator(registry)
-            .calculateIndirectParams(TemplateMetadata.fromTemplate(template).getTemplateType());
+            .calculateIndirectParams(Metadata.forAst(template).getTemplateType());
 
     for (Map.Entry<String, Parameter> entry : idi.indirectParams.entrySet()) {
       String paramName = entry.getKey();

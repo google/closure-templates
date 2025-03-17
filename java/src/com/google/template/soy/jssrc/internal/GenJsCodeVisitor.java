@@ -90,6 +90,7 @@ import com.google.template.soy.soytree.FileSetMetadata;
 import com.google.template.soy.soytree.ImportNode;
 import com.google.template.soy.soytree.ImportNode.ImportType;
 import com.google.template.soy.soytree.JsImplNode;
+import com.google.template.soy.soytree.Metadata;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
@@ -97,7 +98,6 @@ import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateBasicNode;
 import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateElementNode;
-import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TypeDefNode;
 import com.google.template.soy.soytree.Visibility;
@@ -990,7 +990,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
   @Override
   protected void visitTemplateNode(TemplateNode node) {
     state.generatePositionalParamsSignature =
-        GenCallCodeUtils.hasPositionalSignature(TemplateMetadata.buildTemplateType(node));
+        GenCallCodeUtils.hasPositionalSignature(Metadata.buildTemplateType(node));
     String templateName = node.getTemplateName();
     String partialName = node.getPartialTemplateName();
     String alias;
@@ -1251,7 +1251,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     TemplateType templateType =
         isModTemplate(node)
             ? getModifiedTemplateType((TemplateBasicNode) node)
-            : TemplateMetadata.buildTemplateType(node);
+            : Metadata.buildTemplateType(node);
     // Use the templatemetadata so we generate parameters in the correct order as
     // expected by callers, this is defined by TemplateMetadata.
     return templateType.getActualParameters().stream()
@@ -1326,7 +1326,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       // TODO(b/11787791): make the checkTypes suppression more fine grained.
       jsDocBuilder.addParameterizedAnnotation("suppress", "checkTypes");
     } else {
-      if (TemplateMetadata.buildTemplateType(node).getActualParameters().stream()
+      if (Metadata.buildTemplateType(node).getActualParameters().stream()
           .anyMatch(TemplateType.Parameter::isImplicit)) {
         jsDocBuilder.addParameterizedAnnotation("suppress", "missingProperties");
       }

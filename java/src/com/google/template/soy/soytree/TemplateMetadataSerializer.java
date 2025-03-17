@@ -31,6 +31,7 @@ import com.google.template.soy.base.internal.TemplateContentKind;
 import com.google.template.soy.base.internal.TemplateContentKind.ElementContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
+import com.google.template.soy.soytree.Metadata.TemplateMetadataImpl;
 import com.google.template.soy.types.AnyType;
 import com.google.template.soy.types.BoolType;
 import com.google.template.soy.types.FloatType;
@@ -102,7 +103,7 @@ public final class TemplateMetadataSerializer {
           .filter(ExternNode::isExported)
           .forEach(e -> fileBuilder.addExterns(protoFromExtern(e)));
       for (TemplateNode template : file.getTemplates()) {
-        TemplateMetadata meta = registry.getTemplate(template);
+        TemplateMetadata meta = registry.getTemplate(template.getTemplateName());
         fileBuilder.addTemplate(protoFromTemplate(meta, file));
       }
       builder.addFile(fileBuilder.build());
@@ -190,7 +191,7 @@ public final class TemplateMetadataSerializer {
       SoyTypeRegistry typeRegistry,
       SourceFilePath filePath,
       ErrorReporter errorReporter) {
-    TemplateMetadata.Builder builder = TemplateMetadata.builder();
+    TemplateMetadataImpl.Builder builder = TemplateMetadataImpl.builder();
     TemplateType.TemplateKind templateKind =
         TEMPLATE_KIND_CONVERTER.convert(templateProto.getTemplateKind());
     @Nullable String modName = emptyToNull(fileProto.getModName());

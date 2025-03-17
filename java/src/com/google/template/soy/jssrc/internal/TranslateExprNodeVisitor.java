@@ -86,7 +86,6 @@ import com.google.template.soy.exprtree.ExprNode.OperatorNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.FunctionNode;
-import com.google.template.soy.exprtree.FunctionNode.ExternRef;
 import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.ItemAccessNode;
 import com.google.template.soy.exprtree.ListComprehensionNode;
@@ -134,6 +133,7 @@ import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.shared.internal.BuiltinMethod;
 import com.google.template.soy.shared.restricted.SoyMethod;
 import com.google.template.soy.shared.restricted.SoySourceFunctionMethod;
+import com.google.template.soy.soytree.FileMetadata.Extern;
 import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;
 import com.google.template.soy.soytree.defn.LocalVar;
@@ -1157,15 +1157,18 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
           (SoyJavaScriptSourceFunction) soyFunction,
           visitParams(node),
           translationContext.codeGenerator());
-    } else if (soyFunction instanceof ExternRef) {
-      ExternRef ref = (ExternRef) soyFunction;
-      if (!translationContext.soyToJsVariableMappings().has(ref.name())) {
+    } else if (soyFunction instanceof Extern) {
+      Extern ref = (Extern) soyFunction;
+      if (!translationContext.soyToJsVariableMappings().has(ref.getName())) {
         // This extern doesn't have a jsimpl. An error has already been reported, but compilation
         // hasn't been halted yet. Return a placeholder value to keep going until errors get
         // reported.
         return LITERAL_UNDEFINED;
       }
-      return translationContext.soyToJsVariableMappings().get(ref.name()).call(visitParams(node));
+      return translationContext
+          .soyToJsVariableMappings()
+          .get(ref.getName())
+          .call(visitParams(node));
     } else if (soyFunction == FunctionNode.FUNCTION_POINTER) {
       VarRefNode ref = (VarRefNode) node.getNameExpr();
       return translationContext

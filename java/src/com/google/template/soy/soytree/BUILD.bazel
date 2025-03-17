@@ -23,13 +23,40 @@ SOY_NODE_SRCS = [
     "SoyNode.java",
 ]
 
+METADATA_SRCS = [
+    "PartialFileMetadata.java",
+    "PartialFileSetMetadata.java",
+    "FileMetadata.java",
+    "FileSetMetadata.java",
+    "TemplateMetadata.java",
+    "Visibility.java",
+]
+
+java_library(
+    name = "metadata",
+    srcs = METADATA_SRCS,
+    deps = [
+        "//java/src/com/google/template/soy/base",
+        "//java/src/com/google/template/soy/base/internal",
+        "//java/src/com/google/template/soy/shared/internal:deltemplate_selector",
+        "//java/src/com/google/template/soy/types",
+        "//src/main/protobuf:template_metadata_java_proto",
+        "@maven//:com_google_code_findbugs_jsr305",
+        "@maven//:com_google_guava_guava",
+    ],
+)
+
 java_library(
     name = "soytree",
     srcs = glob(
         ["*.java"],
-        exclude = SOY_NODE_SRCS,
+        exclude = SOY_NODE_SRCS + METADATA_SRCS,
     ),
+    exports = [
+        ":metadata",
+    ],
     deps = [
+        ":metadata",
         ":soynode",
         "//java/src/com/google/template/soy/base",
         "//java/src/com/google/template/soy/base/internal",

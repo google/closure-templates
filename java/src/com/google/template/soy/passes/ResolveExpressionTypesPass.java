@@ -93,7 +93,6 @@ import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.FunctionNode;
-import com.google.template.soy.exprtree.FunctionNode.ExternRef;
 import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.GroupNode;
 import com.google.template.soy.exprtree.ItemAccessNode;
@@ -161,6 +160,7 @@ import com.google.template.soy.soytree.ConstNode;
 import com.google.template.soy.soytree.ExternNode;
 import com.google.template.soy.soytree.FileMetadata;
 import com.google.template.soy.soytree.FileMetadata.Constant;
+import com.google.template.soy.soytree.FileMetadata.Extern;
 import com.google.template.soy.soytree.FileSetMetadata;
 import com.google.template.soy.soytree.ForNonemptyNode;
 import com.google.template.soy.soytree.IfCondNode;
@@ -169,6 +169,7 @@ import com.google.template.soy.soytree.IfNode;
 import com.google.template.soy.soytree.ImportNode;
 import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.LetValueNode;
+import com.google.template.soy.soytree.Metadata;
 import com.google.template.soy.soytree.MsgPluralNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyFileNode;
@@ -490,12 +491,12 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
                         TemplateModuleImportType moduleType = (TemplateModuleImportType) parentType;
                         String symbol = var.getSymbol();
                         if (moduleType.getExternNames().contains(symbol)) {
-                          ImmutableList<ExternRef> types =
+                          ImmutableList<? extends Extern> types =
                               externsTypeLookup.getRefs(moduleType.getPath(), symbol);
                           // The return type is what's important here, and extern overloads are
                           // required to have the same return type, so it's okay to just grab the
                           // first one.
-                          var.setType(types.get(0).signature());
+                          var.setType(types.get(0).getSignature());
                         }
                       }
                     }));
@@ -548,7 +549,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
       // These template types only contain the information from passes that run before this. There
       // is currently nothing that guarantees that a subsequent pass doesn't mutate the TemplateNode
       // in such a way as the TemplateType changes.
-      types.put(node.getTemplateName(), TemplateMetadata.buildTemplateType(node));
+      types.put(node.getTemplateName(), Metadata.buildTemplateType(node));
     }
 
     @Override
@@ -2098,16 +2099,16 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
       return resolvedSignature;
     }
 
-    private boolean maybeSetExtern(FunctionNode node, List<ExternRef> externTypes) {
-      List<ExternRef> matching =
+    private boolean maybeSetExtern(FunctionNode node, List<? extends Extern> externTypes) {
+      List<Extern> matching =
           externTypes.stream()
-              .filter(t -> paramsMatchFunctionType(node.getParams(), t.signature()))
+              .filter(t -> paramsMatchFunctionType(node.getParams(), t.getSignature()))
               .collect(Collectors.toList());
       if (matching.size() == 1) {
-        ExternRef ref = matching.get(0);
+        Extern ref = matching.get(0);
         node.setAllowedParamTypes(
-            ref.signature().getParameters().stream().map(Parameter::getType).collect(toList()));
-        node.setType(ref.signature().getReturnType());
+            ref.getSignature().getParameters().stream().map(Parameter::getType).collect(toList()));
+        node.setType(ref.getSignature().getReturnType());
         node.setSoyFunction(ref);
         return true;
       }
@@ -2188,7 +2189,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
               node.setType(((FunctionType) nameExprType).getReturnType());
               return;
             }
-            List<ExternRef> externTypes = externsTypeLookup.getRefs(filePath, functionName);
+            List<? extends Extern> externTypes = externsTypeLookup.getRefs(filePath, functionName);
             if (maybeSetExtern(node, externTypes)) {
               visitInternalExtern(node);
               tryApplySubstitution(node);
@@ -2204,7 +2205,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
                   externTypes.stream()
                       .map(
                           t ->
-                              t.signature().getParameters().stream()
+                              t.getSignature().getParameters().stream()
                                   .map(p -> p.getType().toString())
                                   .collect(joining(", ")))
                       .collect(joining("', '", "'", "'"));
@@ -2909,9 +2910,9 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
     }
 
     private void visitInternalExtern(FunctionNode node) {
-      ExternRef externRef = (ExternRef) node.getSoyFunction();
-      if (externRef.path().path().endsWith("java/soy/plugins/functions.soy")
-          && externRef.name().equals("unpackAny")) {
+      Extern externRef = (Extern) node.getSoyFunction();
+      if (externRef.getPath().path().endsWith("java/soy/plugins/functions.soy")
+          && externRef.getName().equals("unpackAny")) {
         ExprNode secondParam = node.getParam(1);
         node.setType(secondParam.getAuthoredType());
       }
@@ -3309,19 +3310,14 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
       this.deps = deps;
     }
 
-    ImmutableList<ExternRef> getRefs(SourceLogicalPath path, String name) {
+    ImmutableList<? extends Extern> getRefs(SourceLogicalPath path, String name) {
       List<ExternNode> fromSources = sources.get(path, name);
       if (fromSources != null) {
-        return fromSources.stream()
-            .map(n -> ExternRef.of(path, name, n.getType(), n.isJavaImplAsync(), n.isAutoJava()))
-            .collect(toImmutableList());
+        return fromSources.stream().map(Metadata::forAst).collect(toImmutableList());
       }
       FileMetadata fromDeps = deps.get().getFile(path);
       if (fromDeps != null) {
-        List<? extends FileMetadata.Extern> exts = fromDeps.getExterns(name);
-        return exts.stream()
-            .map(e -> ExternRef.of(path, name, e.getSignature(), e.isJavaAsync(), e.isAutoJava()))
-            .collect(toImmutableList());
+        return ImmutableList.copyOf(fromDeps.getExterns(name));
       }
       return ImmutableList.of();
     }

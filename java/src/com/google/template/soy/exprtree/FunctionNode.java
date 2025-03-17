@@ -20,12 +20,10 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
 import com.google.auto.value.AutoOneOf;
-import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SourceLocation.Point;
-import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
@@ -33,7 +31,7 @@ import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.shared.restricted.SoyFunctions;
 import com.google.template.soy.shared.restricted.SoyPureFunction;
-import com.google.template.soy.types.FunctionType;
+import com.google.template.soy.soytree.FileMetadata.Extern;
 import com.google.template.soy.types.SoyType;
 import java.util.List;
 import java.util.Optional;
@@ -61,29 +59,6 @@ public final class FunctionNode extends AbstractParentExprNode implements ExprNo
         }
       };
 
-  /** All the information a runtime needs to execute a call to an extern. */
-  @AutoValue
-  public abstract static class ExternRef {
-    public static ExternRef of(
-        SourceLogicalPath path,
-        String name,
-        FunctionType signature,
-        boolean javaAsync,
-        boolean autoJava) {
-      return new AutoValue_FunctionNode_ExternRef(path, name, signature, javaAsync, autoJava);
-    }
-
-    public abstract SourceLogicalPath path();
-
-    public abstract String name();
-
-    public abstract FunctionType signature();
-
-    public abstract boolean javaAsync();
-
-    public abstract boolean autoJava();
-  }
-
   /**
    * Either a {@link SoyFunction} or a {@link SoySourceFunction}. TODO(b/19252021): use
    * SoySourceFunction everywhere.
@@ -101,8 +76,8 @@ public final class FunctionNode extends AbstractParentExprNode implements ExprNo
         return of((SoyFunction) soyFunction);
       } else if (soyFunction instanceof SoySourceFunction) {
         return of((SoySourceFunction) soyFunction);
-      } else if (soyFunction instanceof ExternRef) {
-        return of((ExternRef) soyFunction);
+      } else if (soyFunction instanceof Extern) {
+        return of((Extern) soyFunction);
       } else {
         throw new ClassCastException(String.valueOf(soyFunction));
       }
@@ -116,7 +91,7 @@ public final class FunctionNode extends AbstractParentExprNode implements ExprNo
       return AutoOneOf_FunctionNode_FunctionRef.soySourceFunction(soySourceFunction);
     }
 
-    public static FunctionRef of(ExternRef functionType) {
+    public static FunctionRef of(Extern functionType) {
       return AutoOneOf_FunctionNode_FunctionRef.extern(functionType);
     }
 
@@ -126,7 +101,7 @@ public final class FunctionNode extends AbstractParentExprNode implements ExprNo
 
     abstract SoySourceFunction soySourceFunction();
 
-    abstract ExternRef extern();
+    abstract Extern extern();
 
     public Object either() {
       switch (type()) {

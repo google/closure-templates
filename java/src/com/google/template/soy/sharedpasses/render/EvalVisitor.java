@@ -78,7 +78,6 @@ import com.google.template.soy.exprtree.ExprNode.Kind;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.FunctionNode;
-import com.google.template.soy.exprtree.FunctionNode.ExternRef;
 import com.google.template.soy.exprtree.ItemAccessNode;
 import com.google.template.soy.exprtree.ListComprehensionNode;
 import com.google.template.soy.exprtree.ListComprehensionNode.ComprehensionVarDefn;
@@ -142,6 +141,7 @@ import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyMethod;
 import com.google.template.soy.shared.restricted.SoySourceFunctionMethod;
 import com.google.template.soy.soytree.ExternNode;
+import com.google.template.soy.soytree.FileMetadata.Extern;
 import com.google.template.soy.soytree.JavaImplNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.TemplateParam;
@@ -955,8 +955,8 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
       return computeFunctionHelper(args, JavaPluginExecContext.forFunctionNode(node, fn));
     } else if (soyFunction instanceof LoggingFunction) {
       return StringData.forValue(((LoggingFunction) soyFunction).getPlaceholder());
-    } else if (soyFunction instanceof ExternRef) {
-      return visitExternRef(node, (ExternRef) soyFunction);
+    } else if (soyFunction instanceof Extern) {
+      return visitExtern(node, (Extern) soyFunction);
     } else {
       throw RenderException.createF(
           "Failed to find Soy function with name '%s' (function call \"%s\").",
@@ -964,21 +964,25 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     }
   }
 
-  private SoyValue visitExternRef(FunctionNode node, ExternRef soyFunction) {
-    ImmutableList<ExternNode> externNodes = externs.get(soyFunction.path(), soyFunction.name());
+  private SoyValue visitExtern(FunctionNode node, Extern soyFunction) {
+    ImmutableList<ExternNode> externNodes =
+        externs.get(soyFunction.getPath(), soyFunction.getName());
     if (externNodes == null) {
       externNodes = ImmutableList.of();
     }
     Optional<ExternNode> matching =
-        externNodes.stream().filter(e -> e.getType().equals(soyFunction.signature())).findFirst();
+        externNodes.stream()
+            .filter(e -> e.getType().equals(soyFunction.getSignature()))
+            .findFirst();
     if (!matching.isPresent()) {
       throw RenderException.createF(
           "No extern named '%s' matching signature %s.",
-          soyFunction.name(), soyFunction.signature());
+          soyFunction.getName(), soyFunction.getSignature());
     }
     Optional<JavaImplNode> impl = matching.get().getJavaImpl();
     if (!impl.isPresent()) {
-      throw RenderException.createF("No java implementation for extern '%s'.", soyFunction.name());
+      throw RenderException.createF(
+          "No java implementation for extern '%s'.", soyFunction.getName());
     }
     JavaImplNode java = impl.get();
     if (java.isAutoImpl()) {
@@ -1026,7 +1030,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
             node.getSourceLocation(),
             java.className(), // Use java class as instance key.
             pluginInstances,
-            soyFunction.signature());
+            soyFunction.getSignature());
     TofuJavaValue value =
         java.isStatic()
             ? factory.callStaticMethod(method, node.getType(), javaValues)

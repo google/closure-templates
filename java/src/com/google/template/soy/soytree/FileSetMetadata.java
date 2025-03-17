@@ -17,7 +17,6 @@
 package com.google.template.soy.soytree;
 
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.shared.internal.DelTemplateSelector;
@@ -30,10 +29,6 @@ public interface FileSetMetadata extends PartialFileSetMetadata {
 
   @Nullable
   TemplateMetadata getTemplate(String templateFqn);
-
-  default TemplateMetadata getTemplate(TemplateNode node) {
-    return Preconditions.checkNotNull(getTemplate(node.getTemplateName()));
-  }
 
   /** Returns a multimap from delegate template name to set of keys. */
   DelTemplateSelector<TemplateMetadata> getDelTemplateSelector();

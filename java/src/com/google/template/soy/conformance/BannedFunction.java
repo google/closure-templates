@@ -20,7 +20,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.FunctionNode;
-import com.google.template.soy.exprtree.FunctionNode.ExternRef;
+import com.google.template.soy.soytree.FileMetadata.Extern;
 
 /**
  * Conformance rule banning particular Soy functions. For built-in functions and plug-in functions
@@ -42,8 +42,8 @@ final class BannedFunction extends Rule<FunctionNode> {
     if (functionStr.isEmpty()) {
       if (node.isResolved()) {
         Object functImpl = node.getSoyFunction();
-        if (functImpl instanceof ExternRef) {
-          functionStr = externStringRepresentation((ExternRef) functImpl);
+        if (functImpl instanceof Extern) {
+          functionStr = externStringRepresentation((Extern) functImpl);
         }
       }
     }
@@ -53,7 +53,7 @@ final class BannedFunction extends Rule<FunctionNode> {
     }
   }
 
-  static String externStringRepresentation(ExternRef ref) {
-    return String.format("{%s} from '%s'", ref.name(), ref.path().path());
+  static String externStringRepresentation(Extern ref) {
+    return String.format("{%s} from '%s'", ref.getName(), ref.getPath().path());
   }
 }

@@ -200,7 +200,8 @@ public final class IndirectParamsCalculator {
   }
 
   public IndirectParamsInfo calculateIndirectParams(TemplateNode node) {
-    return calculateIndirectParams(fileSetMetadata.getTemplate(node).getTemplateType());
+    return calculateIndirectParams(
+        fileSetMetadata.getTemplate(node.getTemplateName()).getTemplateType());
   }
 
   public IndirectParamsInfo calculateIndirectParams(TemplateType template) {

@@ -46,7 +46,6 @@ import com.google.template.soy.exprtree.ExprNodes;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.FunctionNode;
-import com.google.template.soy.exprtree.FunctionNode.ExternRef;
 import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.GroupNode;
 import com.google.template.soy.exprtree.ItemAccessNode;
@@ -121,6 +120,7 @@ import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyMethod;
 import com.google.template.soy.shared.restricted.SoySourceFunctionMethod;
 import com.google.template.soy.soytree.ConstNode;
+import com.google.template.soy.soytree.FileMetadata.Extern;
 import com.google.template.soy.soytree.JavaImplNode;
 import com.google.template.soy.soytree.PartialFileSetMetadata;
 import com.google.template.soy.soytree.SoyFileNode;
@@ -1869,8 +1869,8 @@ final class ExpressionCompiler {
       if (fn instanceof SoyJavaSourceFunction) {
         return sourceFunctionCompiler.compile(
             node, (SoyJavaSourceFunction) fn, visitChildren(node), parameters, detacher);
-      } else if (fn instanceof ExternRef) {
-        return callExtern((ExternRef) fn, node.getParams());
+      } else if (fn instanceof Extern) {
+        return callExtern((Extern) fn, node.getParams());
       } else if (fn == FunctionNode.FUNCTION_POINTER) {
         // TODO(b/191497298): Implement.
         return SoyExpression.SOY_NULL;
@@ -1890,19 +1890,19 @@ final class ExpressionCompiler {
               .checkedSoyCast(node.getType()));
     }
 
-    private SoyExpression callExtern(ExternRef extern, List<ExprNode> params) {
-      String namespace = fileSetMetadata.getNamespaceForPath(extern.path());
+    private SoyExpression callExtern(Extern extern, List<ExprNode> params) {
+      String namespace = fileSetMetadata.getNamespaceForPath(extern.getPath());
       TypeInfo externOwner = TypeInfo.createClass(Names.javaClassNameFromSoyNamespace(namespace));
       SoyRuntimeType soyReturnType =
-          ExternCompiler.getRuntimeType(extern.signature().getReturnType());
-      if (extern.javaAsync()) {
+          ExternCompiler.getRuntimeType(extern.getSignature().getReturnType());
+      if (extern.isJavaAsync()) {
         soyReturnType = soyReturnType.box();
       }
       List<Expression> args = new ArrayList<>();
       for (int i = 0; i < params.size(); i++) {
         args.add(
             adaptExternArg(
-                visit(params.get(i)), extern.signature().getParameters().get(i).getType()));
+                visit(params.get(i)), extern.getSignature().getParameters().get(i).getType()));
       }
       // Dispatch directly for locally defined externs
       var soyFileNode = context.getNearestAncestor(SoyFileNode.class);
@@ -1913,8 +1913,8 @@ final class ExpressionCompiler {
             soyFileNode.getExterns().stream()
                 .filter(
                     e ->
-                        e.getIdentifier().identifier().equals(extern.name())
-                            && e.getType().equals(extern.signature()))
+                        e.getIdentifier().identifier().equals(extern.getName())
+                            && e.getType().equals(extern.getSignature()))
                 .findFirst()
                 .get();
         boolean javaImplRequiresRenderContext =
@@ -1924,10 +1924,10 @@ final class ExpressionCompiler {
         }
         Method asmMethod =
             ExternCompiler.buildMemberMethod(
-                extern.name(),
-                extern.signature(),
+                extern.getName(),
+                extern.getSignature(),
                 javaImplRequiresRenderContext,
-                extern.javaAsync());
+                extern.isJavaAsync());
         MethodRef ref =
             MethodRef.createStaticMethod(externOwner, asmMethod, MethodPureness.NON_PURE);
         externCall = ref.invoke(args);
@@ -1939,10 +1939,10 @@ final class ExpressionCompiler {
         // required, so that we can dynamically resolve the target.
         Method asmMethod =
             ExternCompiler.buildMemberMethod(
-                extern.name(),
-                extern.signature(),
+                extern.getName(),
+                extern.getSignature(),
                 /* requiresRenderContext= */ true,
-                extern.javaAsync());
+                extern.isJavaAsync());
         args.add(0, parameters.getRenderContext());
         externCall =
             new Expression(soyReturnType.runtimeType()) {
@@ -1961,7 +1961,7 @@ final class ExpressionCompiler {
             };
       }
 
-      if (extern.javaAsync()) {
+      if (extern.isJavaAsync()) {
         externCall =
             detacher.resolveSoyValueProvider(externCall).checkedCast(soyReturnType.runtimeType());
       }
@@ -2366,8 +2366,8 @@ final class ExpressionCompiler {
             return true;
           }
         }
-      } else if (fn instanceof ExternRef) {
-        if (((ExternRef) fn).javaAsync()) {
+      } else if (fn instanceof Extern) {
+        if (((Extern) fn).isJavaAsync()) {
           return true;
         }
       }

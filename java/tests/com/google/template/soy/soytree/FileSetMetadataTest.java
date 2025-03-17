@@ -265,12 +265,12 @@ public final class FileSetMetadataTest {
     TemplateNode secondTemplate = (TemplateNode) parseResult.fileSet().getChild(0).getChild(1);
 
     // Make sure this returns the metadata for the deltemplate in file #1, not #2.
-    assertThat(registry.getTemplate(firstTemplate))
-        .isEqualTo(TemplateMetadata.fromTemplate(firstTemplate));
+    assertThat(registry.getTemplate(firstTemplate.getTemplateName()))
+        .isEqualTo(Metadata.forAst(firstTemplate));
 
     // Sanity check getMetadata for a regular template.
-    assertThat(registry.getTemplate(secondTemplate))
-        .isEqualTo(TemplateMetadata.fromTemplate(secondTemplate));
+    assertThat(registry.getTemplate(secondTemplate.getTemplateName()))
+        .isEqualTo(Metadata.forAst(secondTemplate));
   }
 
   @Test
@@ -313,18 +313,13 @@ public final class FileSetMetadataTest {
     SoyFileNode file2 = parseResult.fileSet().getChild(1);
     SoyFileNode file3 = parseResult.fileSet().getChild(2);
 
-    TemplateMetadata file1Template1 =
-        TemplateMetadata.fromTemplate((TemplateNode) file1.getChild(0));
-    TemplateMetadata file1Template2 =
-        TemplateMetadata.fromTemplate((TemplateNode) file1.getChild(1));
+    TemplateMetadata file1Template1 = Metadata.forAst((TemplateNode) file1.getChild(0));
+    TemplateMetadata file1Template2 = Metadata.forAst((TemplateNode) file1.getChild(1));
 
-    TemplateMetadata file2Template1 =
-        TemplateMetadata.fromTemplate((TemplateNode) file2.getChild(0));
-    TemplateMetadata file2Template2 =
-        TemplateMetadata.fromTemplate((TemplateNode) file2.getChild(1));
+    TemplateMetadata file2Template1 = Metadata.forAst((TemplateNode) file2.getChild(0));
+    TemplateMetadata file2Template2 = Metadata.forAst((TemplateNode) file2.getChild(1));
 
-    TemplateMetadata file3Template1 =
-        TemplateMetadata.fromTemplate((TemplateNode) file3.getChild(1));
+    TemplateMetadata file3Template1 = Metadata.forAst((TemplateNode) file3.getChild(1));
 
     FileSetMetadata registry = parseResult.registry();
     assertThat(registry.getAllTemplates())

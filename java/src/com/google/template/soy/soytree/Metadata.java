@@ -17,10 +17,13 @@
 package com.google.template.soy.soytree;
 
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.ImmutableListMultimap.toImmutableListMultimap;
 import static com.google.common.collect.ImmutableMap.toImmutableMap;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
+import static com.google.common.primitives.Booleans.trueFirst;
+import static java.util.Comparator.comparing;
 
 import com.google.auto.value.AutoValue;
 import com.google.auto.value.extension.memoized.Memoized;
@@ -32,20 +35,30 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.errorprone.annotations.concurrent.LazyInit;
 import com.google.template.soy.base.SourceFilePath;
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
+import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.shared.internal.DelTemplateSelector;
+import com.google.template.soy.soytree.FileMetadata.Extern;
+import com.google.template.soy.soytree.SoyNode.Kind;
+import com.google.template.soy.soytree.defn.AttrParam;
+import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.DelegatingSoyTypeRegistry;
 import com.google.template.soy.types.FunctionType;
 import com.google.template.soy.types.NamedType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.TemplateType;
+import com.google.template.soy.types.TemplateType.DataAllCallSituation;
+import com.google.template.soy.types.TemplateType.Parameter;
+import com.google.template.soy.types.TemplateType.ParameterKind;
 import com.google.template.soy.types.TemplateType.TemplateKind;
+import com.google.template.soy.types.UndefinedType;
 import com.google.template.soy.types.UnionType;
 import com.google.template.soy.types.UnknownType;
 import java.util.Collection;
@@ -165,6 +178,41 @@ public final class Metadata {
     }
     // The template node may be null if the template is being compiled in isolation.
     return Optional.empty();
+  }
+
+  public static TemplateType buildTemplateType(TemplateNode template) {
+    TemplateType.Builder builder =
+        TemplateType.builder()
+            .setTemplateKind(convertKind(template.getKind()))
+            .setAllowExtraAttributes(template.getAllowExtraAttributes())
+            .setReservedAttributes(template.getReservedAttributes())
+            .setContentKind(template.getTemplateContentKind())
+            .setStrictHtml(template.isStrictHtml())
+            .setParameters(directParametersFromTemplate(template))
+            .setDataAllCallSituations(dataAllCallSituationFromTemplate(template))
+            .setIdentifierForDebugging(template.getTemplateName());
+    if (template instanceof TemplateBasicNode) {
+      TemplateBasicNode templateBasicNode = (TemplateBasicNode) template;
+      builder.setUseVariantType(templateBasicNode.getUseVariantType());
+      builder.setModifiable(templateBasicNode.isModifiable());
+      builder.setModifying(templateBasicNode.getModifiesExpr() != null);
+      builder.setLegacyDeltemplateNamespace(templateBasicNode.getLegacyDeltemplateNamespace());
+    } else {
+      builder.setUseVariantType(UndefinedType.getInstance());
+    }
+    return builder.build();
+  }
+
+  public static Parameter parameterFromTemplateParam(TemplateParam param) {
+    return Parameter.builder()
+        .setName(param.name())
+        .setKind(param instanceof AttrParam ? ParameterKind.ATTRIBUTE : ParameterKind.PARAM)
+        // Proto imports when compiler is not given proto descriptors will cause type to be unset.
+        .setType(param.hasType() ? param.authoredType() : UnknownType.getInstance())
+        .setRequired(param.isRequired())
+        .setImplicit(param.isImplicit())
+        .setDescription(param.desc())
+        .build();
   }
 
   /** Parameter bean. */
@@ -512,12 +560,14 @@ public final class Metadata {
     @Memoized
     @Override
     protected ImmutableListMultimap<String, ? extends Extern> externIndex() {
+      SourceLogicalPath path = SourceFilePath.create(proto()).asLogicalPath();
       return proto().getExternsList().stream()
           .collect(
               toImmutableListMultimap(
                   ExternP::getName,
                   e ->
                       ExternImpl.of(
+                          path,
                           e.getName(),
                           (FunctionType)
                               TemplateMetadataSerializer.fromProto(
@@ -644,6 +694,66 @@ public final class Metadata {
     return new AstFileMetadata(node);
   }
 
+  public static Extern forAst(ExternNode node) {
+    return ExternImpl.of(
+        node.getSourceLocation().getFilePath().asLogicalPath(),
+        node.getIdentifier().identifier(),
+        node.getType(),
+        node.isJavaImplAsync(),
+        node.isAutoJava());
+  }
+
+  /** Builds a Template from a parsed TemplateNode. */
+  public static TemplateMetadata forAst(TemplateNode template) {
+    TemplateMetadataImpl.Builder builder =
+        TemplateMetadataImpl.builder()
+            .setTemplateName(template.getTemplateName())
+            .setSourceLocation(template.getSourceLocation())
+            .setSoyFileKind(SoyFileKind.SRC)
+            .setSoyElement(
+                SoyElementMetadataP.newBuilder()
+                    .setIsSoyElement(template instanceof TemplateElementNode)
+                    .build())
+            .setTemplateType(buildTemplateType(template))
+            .setComponent(template.getComponent())
+            .setModName(template.getModName())
+            .setVisibility(template.getVisibility());
+    // In various conditions such as Conformance tests, this can be null.
+    if (template.getHtmlElementMetadata() != null) {
+      builder.setHtmlElement(template.getHtmlElementMetadata());
+    }
+    if (template.getKind() == Kind.TEMPLATE_DELEGATE_NODE) {
+      TemplateDelegateNode deltemplate = (TemplateDelegateNode) template;
+      builder.setDelTemplateName(deltemplate.getDelTemplateName());
+      builder.setDelTemplateVariant(deltemplate.getDelTemplateVariant());
+    } else if (template instanceof TemplateBasicNode) {
+      TemplateBasicNode basicTemplate = (TemplateBasicNode) template;
+      if (basicTemplate.isModifiable()) {
+        builder.setDelTemplateName(basicTemplate.getTemplateName());
+        builder.setDelTemplateVariant(basicTemplate.getDelTemplateVariant());
+      } else if (basicTemplate.getModifiesExpr() != null) {
+        if (basicTemplate.getModifiesExpr().getRoot() instanceof TemplateLiteralNode) {
+          SoyType modifiableType = basicTemplate.getModifiesExpr().getRoot().getType();
+          builder.setDelTemplateName(
+              // In some cases the types won't be resolved to a TemplateType, eg Aspirin. In that
+              // case the deltemplate selector won't work correctly when modifiable templates are
+              // used with deltemplates and delcalls. For that we'd need to propagate
+              // legacydeltemplatenamespace from the `modifiable` templates to all of the associated
+              // `modifies` templates' TemplateMetadata.
+              modifiableType instanceof TemplateType
+                      && !((TemplateType) modifiableType).getLegacyDeltemplateNamespace().isEmpty()
+                  ? ((TemplateType) modifiableType).getLegacyDeltemplateNamespace()
+                  : ((TemplateLiteralNode) basicTemplate.getModifiesExpr().getRoot())
+                      .getResolvedName());
+        } else {
+          builder.setDelTemplateName("$__unresolvable__");
+        }
+        builder.setDelTemplateVariant(basicTemplate.getDelTemplateVariant());
+      }
+    }
+    return builder.build();
+  }
+
   /** FileMetadata for AST under compilation. */
   private static final class AstFileMetadata extends AbstractFileMetadata {
 
@@ -683,20 +793,14 @@ public final class Metadata {
               .filter(ExternNode::isExported)
               .collect(
                   toImmutableListMultimap(
-                      e -> e.getIdentifier().identifier(),
-                      e ->
-                          ExternImpl.of(
-                              e.getIdentifier().identifier(),
-                              e.getType(),
-                              e.isJavaImplAsync(),
-                              e.isAutoJava())));
+                      e -> e.getIdentifier().identifier(), e -> (ExternImpl) forAst(e)));
 
       ImmutableList.Builder<TemplateMetadata> templates = ImmutableList.builder();
       Map<String, TemplateMetadata> index = new LinkedHashMap<>();
       ast.getTemplates()
           .forEach(
               t -> {
-                TemplateMetadata metadata = TemplateMetadata.fromTemplate(t);
+                TemplateMetadata metadata = forAst(t);
                 templates.add(metadata);
                 // Duplicates reported elsewhere.
                 index.putIfAbsent(t.getPartialTemplateName(), metadata);
@@ -780,9 +884,16 @@ public final class Metadata {
   abstract static class ExternImpl implements FileMetadata.Extern {
 
     private static ExternImpl of(
-        String name, FunctionType signature, boolean javaAsync, boolean autoJava) {
-      return new AutoValue_Metadata_ExternImpl(name, signature, javaAsync, autoJava);
+        SourceLogicalPath path,
+        String name,
+        FunctionType signature,
+        boolean javaAsync,
+        boolean autoJava) {
+      return new AutoValue_Metadata_ExternImpl(path, name, signature, javaAsync, autoJava);
     }
+
+    @Override
+    public abstract SourceLogicalPath getPath();
 
     @Override
     public abstract String getName();
@@ -963,6 +1074,182 @@ public final class Metadata {
     abstract SoyFileKind fileKind();
 
     abstract CompilationUnit compilationUnit();
+  }
+
+  /**
+   * An abstract representation of a template that provides the minimal amount of information needed
+   * compiling against dependency templates.
+   *
+   * <p>When compiling with dependencies the compiler needs to examine certain information from
+   * dependent templates in order to validate calls and escape call sites. Traditionally, the Soy
+   * compiler accomplished this by having each compilation parse all transitive dependencies. This
+   * is an expensive solution. So instead of that we instead use this object to represent the
+   * minimal information we need about dependencies.
+   *
+   * <p>The APIs on this class mirror ones available on {@link TemplateNode}.
+   */
+  @AutoValue
+  public abstract static class TemplateMetadataImpl implements TemplateMetadata {
+
+    public static Builder builder() {
+      return new AutoValue_Metadata_TemplateMetadataImpl.Builder();
+    }
+
+    @Override
+    public abstract SoyFileKind getSoyFileKind();
+
+    @Override
+    public abstract SourceLocation getSourceLocation();
+
+    @Override
+    @Nullable
+    public abstract HtmlElementMetadataP getHtmlElement();
+
+    @Override
+    @Nullable
+    public abstract SoyElementMetadataP getSoyElement();
+
+    @Override
+    public abstract String getTemplateName();
+
+    @Override
+    @Nullable
+    public abstract String getDelTemplateName();
+
+    @Override
+    @Nullable
+    public abstract String getDelTemplateVariant();
+
+    @Override
+    public abstract TemplateType getTemplateType();
+
+    @Override
+    public abstract Visibility getVisibility();
+
+    @Override
+    @Nullable
+    public abstract String getModName();
+
+    @Override
+    public abstract boolean getComponent();
+
+    public abstract Builder toBuilder();
+
+    /** Builder for {@link com.google.template.soy.soytree.TemplateMetadata} */
+    @AutoValue.Builder
+    public abstract static class Builder {
+      public abstract Builder setSoyFileKind(SoyFileKind location);
+
+      public abstract Builder setSourceLocation(SourceLocation location);
+
+      public abstract Builder setHtmlElement(HtmlElementMetadataP isHtml);
+
+      public abstract Builder setSoyElement(SoyElementMetadataP isSoyEl);
+
+      public abstract Builder setTemplateName(String templateName);
+
+      public abstract Builder setDelTemplateName(String delTemplateName);
+
+      public abstract Builder setDelTemplateVariant(String delTemplateVariant);
+
+      public abstract Builder setTemplateType(TemplateType templateType);
+
+      public abstract Builder setModName(@Nullable String modName);
+
+      public abstract Builder setVisibility(Visibility visibility);
+
+      public abstract Builder setComponent(boolean isComponent);
+
+      public final TemplateMetadataImpl build() {
+        TemplateMetadataImpl built = autobuild();
+        if (built.getTemplateType().getTemplateKind() == TemplateType.TemplateKind.DELTEMPLATE
+            || built.getTemplateType().isModifiable()
+            || built.getTemplateType().isModifying()) {
+          checkState(
+              built.getDelTemplateName() != null, "Deltemplates must have a deltemplateName");
+          checkState(built.getDelTemplateVariant() != null, "Deltemplates must have a variant");
+        } else {
+          checkState(
+              built.getDelTemplateVariant() == null, "non-Deltemplates must not have a variant");
+          checkState(
+              built.getDelTemplateName() == null,
+              "non-Deltemplates must not have a deltemplateName");
+        }
+        return built;
+      }
+
+      abstract TemplateMetadataImpl autobuild();
+    }
+  }
+
+  /**
+   * Transforms the parameters of the template into their proto forms, also sorts them in a
+   * consistent ordering.
+   *
+   * <p>The ordering is simply required parameters followed by optional parameters in declaration
+   * order.
+   */
+  private static ImmutableList<Parameter> directParametersFromTemplate(TemplateNode node) {
+    return node.getParams().stream()
+        .sorted(comparing(TemplateParam::isRequired, trueFirst()))
+        .filter(p -> !p.isImplicit())
+        .map(Metadata::parameterFromTemplateParam)
+        .collect(toImmutableList());
+  }
+
+  private static ImmutableList<DataAllCallSituation> dataAllCallSituationFromTemplate(
+      TemplateNode node) {
+    return SoyTreeUtils.allNodesOfType(node, CallNode.class)
+        .filter(CallNode::isPassingAllData)
+        .map(
+            call -> {
+              DataAllCallSituation.Builder builder = DataAllCallSituation.builder();
+              ImmutableSet.Builder<String> explicitlyPassedParams = ImmutableSet.builder();
+              for (CallParamNode param : call.getChildren()) {
+                explicitlyPassedParams.add(param.getKey().identifier());
+              }
+              builder.setExplicitlyPassedParameters(explicitlyPassedParams.build());
+              switch (call.getKind()) {
+                case CALL_BASIC_NODE:
+                  SoyType type = ((CallBasicNode) call).getCalleeExpr().getType();
+                  boolean isModifiable =
+                      type instanceof TemplateType && ((TemplateType) type).isModifiable();
+                  builder.setDelCall(isModifiable);
+                  if (((CallBasicNode) call).isStaticCall()) {
+                    builder.setTemplateName(
+                        isModifiable
+                                && !((TemplateType) type).getLegacyDeltemplateNamespace().isEmpty()
+                            ? ((TemplateType) type).getLegacyDeltemplateNamespace()
+                            : ((CallBasicNode) call).getCalleeName());
+                  } else {
+                    builder.setTemplateName("$error");
+                  }
+                  break;
+                case CALL_DELEGATE_NODE:
+                  builder
+                      .setDelCall(true)
+                      .setTemplateName(((CallDelegateNode) call).getDelCalleeName());
+                  break;
+                default:
+                  throw new AssertionError("unexpected call kind: " + call.getKind());
+              }
+              return builder.build();
+            })
+        .collect(toImmutableSet())
+        .asList();
+  }
+
+  private static TemplateKind convertKind(Kind kind) {
+    switch (kind) {
+      case TEMPLATE_BASIC_NODE:
+        return TemplateKind.BASIC;
+      case TEMPLATE_DELEGATE_NODE:
+        return TemplateKind.DELTEMPLATE;
+      case TEMPLATE_ELEMENT_NODE:
+        return TemplateKind.ELEMENT;
+      default:
+        throw new AssertionError("unexpected template kind: " + kind);
+    }
   }
 
   /**

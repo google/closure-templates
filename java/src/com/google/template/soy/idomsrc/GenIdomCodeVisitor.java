@@ -383,7 +383,11 @@ public final class GenIdomCodeVisitor extends GenJsCodeVisitor {
       // TODO(b/11787791): make the checkTypes suppression more fine grained.
       jsDocBuilder.addParameterizedAnnotation("suppress", "checkTypes");
     } else {
-      if (fileSetMetadata.getTemplate(node).getTemplateType().getActualParameters().stream()
+      if (fileSetMetadata
+          .getTemplate(node.getTemplateName())
+          .getTemplateType()
+          .getActualParameters()
+          .stream()
           .anyMatch(TemplateType.Parameter::isImplicit)) {
         jsDocBuilder.addParameterizedAnnotation("suppress", "missingProperties");
       }

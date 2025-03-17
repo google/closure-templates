@@ -30,9 +30,9 @@ import com.google.template.soy.jbcsrc.shared.RenderContext;
 import com.google.template.soy.passes.IndirectParamsCalculator;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.FileSetMetadata;
+import com.google.template.soy.soytree.Metadata;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
-import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.Visibility;
 import com.google.template.soy.types.TemplateType;
@@ -104,8 +104,7 @@ abstract class CompiledTemplateMetadata {
   }
 
   static CompiledTemplateMetadata create(TemplateNode node, FileSetMetadata fileSetMetadata) {
-    return create(
-        node.getTemplateName(), TemplateMetadata.buildTemplateType(node), fileSetMetadata);
+    return create(node.getTemplateName(), Metadata.buildTemplateType(node), fileSetMetadata);
   }
 
   static CompiledTemplateMetadata create(CallBasicNode callNode, FileSetMetadata fileSetMetadata) {

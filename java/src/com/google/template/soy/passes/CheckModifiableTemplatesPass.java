@@ -22,9 +22,9 @@ import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
+import com.google.template.soy.soytree.Metadata;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.TemplateBasicNode;
-import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.TemplateType;
@@ -110,7 +110,7 @@ final class CheckModifiableTemplatesPass implements CompilerFilePass {
           templateBasicNode.getModifiesExpr().getSourceLocation(), MODIFIES_NON_MODIFIABLE);
       return;
     }
-    TemplateType overrideType = TemplateMetadata.buildTemplateType(templateBasicNode);
+    TemplateType overrideType = Metadata.buildTemplateType(templateBasicNode);
     if (!mayOverride(baseType, overrideType)) {
       errorReporter.report(
           templateBasicNode.getSourceLocation(), INCOMPATIBLE_SIGNATURE, baseType, overrideType);

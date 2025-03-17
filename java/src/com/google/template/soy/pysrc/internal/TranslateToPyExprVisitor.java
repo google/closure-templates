@@ -36,7 +36,6 @@ import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.FunctionNode;
-import com.google.template.soy.exprtree.FunctionNode.ExternRef;
 import com.google.template.soy.exprtree.ItemAccessNode;
 import com.google.template.soy.exprtree.ListComprehensionNode;
 import com.google.template.soy.exprtree.ListLiteralNode;
@@ -80,6 +79,7 @@ import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.shared.internal.BuiltinMethod;
 import com.google.template.soy.shared.restricted.SoyMethod;
 import com.google.template.soy.shared.restricted.SoySourceFunctionMethod;
+import com.google.template.soy.soytree.FileMetadata.Extern;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.TemplateBasicNode;
@@ -629,7 +629,7 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
     } else if (soyFunction instanceof LoggingFunction) {
       // trivial logging function support
       return new PyStringExpr("'" + ((LoggingFunction) soyFunction).getPlaceholder() + "'");
-    } else if (soyFunction instanceof ExternRef) {
+    } else if (soyFunction instanceof Extern) {
       errorReporter.report(node.getSourceLocation(), EXTERNS_NOT_SUPPORTED);
       return ERROR;
     } else {
