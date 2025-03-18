@@ -37,6 +37,7 @@ import com.google.common.primitives.Primitives;
 import com.google.protobuf.Message;
 import com.google.protobuf.ProtocolMessageEnum;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.data.FunctionValue;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.data.SoyMap;
@@ -81,20 +82,26 @@ class TofuValueFactory extends JavaValueFactory {
   private final String instanceKey;
   private final PluginInstances pluginInstances;
   @Nullable private final FunctionType externSig;
+  private final boolean produceRawTofuValues;
+  @Nullable private final FunctionAdapter functionAdapter;
 
   TofuValueFactory(JavaPluginExecContext fn, PluginInstances pluginInstances) {
-    this(fn.getSourceLocation(), fn.getFunctionName(), pluginInstances, null);
+    this(fn.getSourceLocation(), fn.getFunctionName(), pluginInstances, null, false, null);
   }
 
   TofuValueFactory(
       SourceLocation fnSourceLocation,
       String instanceKey,
       PluginInstances pluginInstances,
-      FunctionType externSig) {
+      FunctionType externSig,
+      boolean produceRawTofuValues,
+      FunctionAdapter functionAdapter) {
     this.fnSourceLocation = fnSourceLocation;
     this.instanceKey = instanceKey;
     this.pluginInstances = pluginInstances;
     this.externSig = externSig;
+    this.produceRawTofuValues = produceRawTofuValues;
+    this.functionAdapter = functionAdapter;
   }
 
   SoyValue computeForJava(
@@ -221,6 +228,9 @@ class TofuValueFactory extends JavaValueFactory {
 
   private TofuJavaValue wrapInTofuValue(
       Method method, Object object, @Nullable SoyType returnType) {
+    if (produceRawTofuValues) {
+      return TofuJavaValue.forRaw(object);
+    }
     if (object instanceof SoyValue) {
       return TofuJavaValue.forSoyValue((SoyValue) object, fnSourceLocation);
     }
@@ -276,34 +286,51 @@ class TofuValueFactory extends JavaValueFactory {
               + method);
     }
     Object[] params = new Object[tofuValues.length];
+
+    int numSoyParams = externSig != null ? externSig.getParameters().size() : 0;
     for (int i = 0; i < tofuValues.length; i++) {
-      params[i] = adaptParam((TofuJavaValue) tofuValues[i], paramTypes[i], method, i);
+      params[i] =
+          adaptParam(
+              (TofuJavaValue) tofuValues[i],
+              paramTypes[i],
+              i < numSoyParams ? externSig.getParameters().get(i).getType() : null);
+      if (params[i] == ERROR) {
+        throw RenderException.create(
+            String.format(
+                "cannot call method %s.%s because parameter[%s] expects a primitive type [%s], but"
+                    + " actual value is null [%s]",
+                method.getDeclaringClass().getName(),
+                method.getName(),
+                i,
+                paramTypes[i],
+                tofuValues[i]));
+      }
     }
     return params;
   }
 
-  private Object adaptParam(TofuJavaValue tofuVal, Class<?> type, Method method, int i) {
-    // Some conversions here are only supported in the newer extern API, not the older plugin API.
-    boolean isExternApi = externSig != null;
+  private static final Object ERROR = new Object();
 
+  private Object adaptParam(TofuJavaValue tofuVal, Class<?> type, @Nullable SoyType soyType) {
+    boolean isExternApi = externSig != null;
+    if (isExternApi && tofuVal.hasSoyValue() && tofuVal.soyValue() instanceof FunctionValue) {
+      @SuppressWarnings("unchecked")
+      FunctionValue<TofuJavaValue> functionPtr = (FunctionValue<TofuJavaValue>) tofuVal.soyValue();
+      return functionAdapter.adapt(functionPtr, type);
+    }
+    return adaptValueToJava(tofuVal, type, soyType, isExternApi);
+  }
+
+  static Object adaptValueToJava(
+      TofuJavaValue tofuVal, Class<?> type, @Nullable SoyType soyType, boolean isExternApi) {
     if (!tofuVal.hasSoyValue()) {
       return tofuVal.rawValue();
     } else {
       SoyValue value = tofuVal.soyValue();
+
       if (value.isNullish()) {
         if (Primitives.allPrimitiveTypes().contains(type)) {
-          throw RenderException.create(
-              "cannot call method "
-                  + method.getDeclaringClass().getName()
-                  + "."
-                  + method.getName()
-                  + " because parameter["
-                  + i
-                  + "] expects a primitive type ["
-                  + type
-                  + "], but actual value is null [ "
-                  + tofuVal
-                  + "]");
+          return ERROR;
         }
         // Always pass NullData as java null. Pass UndefinedData as UndefinedData unless that
         // would be a CCE in the java implementation, otherwise pass null.
@@ -341,30 +368,27 @@ class TofuValueFactory extends JavaValueFactory {
           return value.asJavaList().stream()
               .map(
                   item ->
-                      adaptParamItem(
-                          item,
-                          ((AbstractIterableType) externSig.getParameters().get(i).getType())
-                              .getElementType()))
+                      adaptCollectionValueToJava(
+                          item, ((AbstractIterableType) soyType).getElementType()))
               .collect(toImmutableList());
         } else {
           return value.asJavaList();
         }
       } else if (Map.class.isAssignableFrom(type) && isExternApi) {
-        SoyType paramType = externSig.getParameters().get(i).getType();
-        if (paramType.getKind() == Kind.RECORD) {
+        if (soyType.getKind() == Kind.RECORD) {
           if (ImmutableMap.class.isAssignableFrom(type)) {
             return SharedExternRuntime.recordToImmutableMap(value);
           } else {
             return SharedExternRuntime.recordToMap(value);
           }
         }
-        MapType mapType = (MapType) paramType;
+        MapType mapType = (MapType) soyType;
         return ((SoyMap) value)
             .entrySet().stream()
                 .collect(
                     toImmutableMap(
-                        e -> adaptParamItem(e.getKey(), mapType.getKeyType()),
-                        e -> adaptParamItem(e.getValue(), mapType.getValueType())));
+                        e -> adaptCollectionValueToJava(e.getKey(), mapType.getKeyType()),
+                        e -> adaptCollectionValueToJava(e.getValue(), mapType.getValueType())));
       } else if (type.isEnum() && ProtocolMessageEnum.class.isAssignableFrom(type)) {
         try {
           return type.getDeclaredMethod("forNumber", int.class).invoke(null, value.integerValue());
@@ -398,24 +422,12 @@ class TofuValueFactory extends JavaValueFactory {
       } else if (Message.class.isAssignableFrom(type)) {
         return type.cast(value.getProto());
       } else {
-        throw new UnsupportedOperationException(
-            "cannot call method "
-                + method.getDeclaringClass().getName()
-                + "."
-                + method.getName()
-                + " because parameter["
-                + i
-                + "] expects a "
-                + type
-                + ", but actual value is a `"
-                + value
-                + "` of type "
-                + value.getSoyTypeName());
+        return ERROR;
       }
     }
   }
 
-  private Object adaptParamItem(SoyValueProvider item, SoyType elmType) {
+  private static Object adaptCollectionValueToJava(SoyValueProvider item, SoyType elmType) {
     SoyValue val = item.resolve();
     switch (elmType.getKind()) {
       case INT:

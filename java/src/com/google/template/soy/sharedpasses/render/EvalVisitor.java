@@ -41,10 +41,13 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableTable;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
+import com.google.common.collect.Streams;
 import com.google.errorprone.annotations.ForOverride;
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.data.Dir;
+import com.google.template.soy.data.FunctionValue;
 import com.google.template.soy.data.RecordProperty;
 import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.data.SoyIterable;
@@ -154,7 +157,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
@@ -685,7 +687,9 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
           SoyValue value = ((SoyMap) base).get(key);
           return value != null ? value : UndefinedData.INSTANCE;
         case FUNCTION_BIND:
-          break;
+          @SuppressWarnings("unchecked")
+          FunctionValue<TofuJavaValue> functPtr = (FunctionValue<TofuJavaValue>) base;
+          return functPtr.bind(visitAllTofu(methodNode.getParams()));
         case BIND:
           TemplateValue template = (TemplateValue) base;
           ParamStore params = ParamStore.fromRecord((SoyRecord) visit(methodNode.getParam(0)));
@@ -956,7 +960,26 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     } else if (soyFunction instanceof LoggingFunction) {
       return StringData.forValue(((LoggingFunction) soyFunction).getPlaceholder());
     } else if (soyFunction instanceof Extern) {
-      return visitExtern(node, (Extern) soyFunction);
+      return visitExtern(
+              (Extern) soyFunction,
+              ImmutableList.of(),
+              visitAllTofu(node.getParams()),
+              node.getType(),
+              node.getSourceLocation(),
+              false)
+          .soyValue();
+    } else if (soyFunction == FunctionNode.FUNCTION_POINTER) {
+      @SuppressWarnings("unchecked")
+      FunctionValue<TofuJavaValue> callee =
+          (FunctionValue<TofuJavaValue>) visit(node.getNameExpr());
+      return visitExtern(
+              callee.getImpl(),
+              callee.getBoundArgs(),
+              visitAllTofu(node.getParams()),
+              node.getType(),
+              node.getSourceLocation(),
+              false)
+          .soyValue();
     } else {
       throw RenderException.createF(
           "Failed to find Soy function with name '%s' (function call \"%s\").",
@@ -964,55 +987,73 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     }
   }
 
-  private SoyValue visitExtern(FunctionNode node, Extern soyFunction) {
-    ImmutableList<ExternNode> externNodes =
-        externs.get(soyFunction.getPath(), soyFunction.getName());
-    if (externNodes == null) {
-      externNodes = ImmutableList.of();
-    }
-    Optional<ExternNode> matching =
-        externNodes.stream()
-            .filter(e -> e.getType().equals(soyFunction.getSignature()))
-            .findFirst();
-    if (!matching.isPresent()) {
-      throw RenderException.createF(
-          "No extern named '%s' matching signature %s.",
-          soyFunction.getName(), soyFunction.getSignature());
-    }
-    Optional<JavaImplNode> impl = matching.get().getJavaImpl();
-    if (!impl.isPresent()) {
-      throw RenderException.createF(
-          "No java implementation for extern '%s'.", soyFunction.getName());
-    }
-    JavaImplNode java = impl.get();
+  TofuJavaValue visitExtern(
+      Extern ref,
+      ImmutableList<? extends TofuJavaValue> boundArgs,
+      ImmutableList<TofuJavaValue> passedArgs,
+      SoyType resultType,
+      SourceLocation sourceLocation,
+      boolean produceRawTofuValues) {
+    ExternNode externNode = resolveExternToNode(ref);
+    JavaImplNode java =
+        externNode
+            .getJavaImpl()
+            .orElseThrow(
+                () ->
+                    RenderException.createF(
+                        "No java implementation for extern '%s'.",
+                        externNode.getIdentifier().identifier()));
+
     if (java.isAutoImpl()) {
-      return externVisitor.exec(
-          java, node.getParams().stream().map(this::visit).collect(toImmutableList()));
+      ImmutableList.Builder<SoyValue> javaArgs = ImmutableList.builder();
+      for (TofuJavaValue boundArg : boundArgs) {
+        javaArgs.add(boundArg.soyValue());
+      }
+      for (TofuJavaValue boundArg : passedArgs) {
+        javaArgs.add(boundArg.soyValue());
+      }
+      // Ignore produceRawTofuValues. Callers should handle both possibilities.
+      return TofuJavaValue.forSoyValue(
+          externVisitor.exec(java, javaArgs.build()), SourceLocation.UNKNOWN);
     }
-    int numJavaParams = java.paramTypes().size();
+
     MethodSignature method;
     try {
-      Class<?> rt = MethodSignature.forName(java.returnType().className());
-      Class<?>[] args = new Class<?>[numJavaParams];
-      for (int i = 0; i < numJavaParams; i++) {
-        args[i] = MethodSignature.forName(java.paramTypes().get(i).className());
-      }
-      method =
-          java.isInterface()
-              ? MethodSignature.createInterfaceMethod(java.className(), java.methodName(), rt, args)
-              : MethodSignature.create(java.className(), java.methodName(), rt, args);
+      method = getMethodSignature(java);
     } catch (ClassNotFoundException e) {
       throw RenderException.create("Required Java runtime class not found.", e);
     }
 
-    List<ExprNode> params = node.getParams();
+    TofuJavaValue[] javaValues = getTofuJavaValues(boundArgs, method, passedArgs);
+
+    TofuValueFactory factory =
+        new TofuValueFactory(
+            sourceLocation,
+            java.className(), // Use java class as instance key.
+            pluginInstances,
+            externNode.getType(),
+            produceRawTofuValues,
+            new FunctionAdapter(this));
+    return java.isStatic()
+        ? factory.callStaticMethod(method, resultType, javaValues)
+        : factory.callInstanceMethod(method, resultType, javaValues);
+  }
+
+  private TofuJavaValue[] getTofuJavaValues(
+      ImmutableList<? extends Object> boundArgs,
+      MethodSignature method,
+      List<TofuJavaValue> params) {
+    int numJavaParams = method.arguments().size();
     TofuJavaValue[] javaValues = new TofuJavaValue[numJavaParams];
-    for (int i = 0; i < params.size(); i++) {
-      ExprNode param = params.get(i);
-      javaValues[i] = TofuJavaValue.forSoyValue(visit(param), param.getSourceLocation());
+    int idx = 0;
+    for (Object boundArg : boundArgs) {
+      javaValues[idx++] = (TofuJavaValue) boundArg;
+    }
+    for (TofuJavaValue param : params) {
+      javaValues[idx++] = param;
     }
     // Add implicit params.
-    for (int i = params.size(); i < numJavaParams; i++) {
+    for (int i = idx; i < numJavaParams; i++) {
       Class<?> implicitType = method.arguments().get(i);
       if (implicitType == Dir.class) {
         javaValues[i] = TofuJavaValue.forRaw(context.getBidiGlobalDir().toDir());
@@ -1024,18 +1065,35 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
         throw new IllegalArgumentException(implicitType.getName());
       }
     }
+    return javaValues;
+  }
 
-    TofuValueFactory factory =
-        new TofuValueFactory(
-            node.getSourceLocation(),
-            java.className(), // Use java class as instance key.
-            pluginInstances,
-            soyFunction.getSignature());
-    TofuJavaValue value =
-        java.isStatic()
-            ? factory.callStaticMethod(method, node.getType(), javaValues)
-            : factory.callInstanceMethod(method, node.getType(), javaValues);
-    return value.soyValue();
+  private static MethodSignature getMethodSignature(JavaImplNode java)
+      throws ClassNotFoundException {
+    int numJavaParams = java.paramTypes().size();
+    Class<?> rt = MethodSignature.forName(java.returnType().className());
+    Class<?>[] args = new Class<?>[numJavaParams];
+    for (int i = 0; i < numJavaParams; i++) {
+      args[i] = MethodSignature.forName(java.paramTypes().get(i).className());
+    }
+    return java.isInterface()
+        ? MethodSignature.createInterfaceMethod(java.className(), java.methodName(), rt, args)
+        : MethodSignature.create(java.className(), java.methodName(), rt, args);
+  }
+
+  private ExternNode resolveExternToNode(Extern ref) {
+    ImmutableList<ExternNode> externNodes = externs.get(ref.getPath(), ref.getName());
+    if (externNodes == null) {
+      externNodes = ImmutableList.of();
+    }
+    return externNodes.stream()
+        .filter(e -> e.getType().equals(ref.getSignature()))
+        .findFirst()
+        .orElseThrow(
+            () ->
+                RenderException.createF(
+                    "No extern named '%s' matching signature %s.",
+                    ref.getName(), ref.getSignature()));
   }
 
   private RenderCssHelper getRenderCssHelper() {
@@ -1209,5 +1267,11 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
    */
   private SoyValue convertResult(String s) {
     return StringData.forValue(s);
+  }
+
+  private ImmutableList<TofuJavaValue> visitAllTofu(Iterable<ExprNode> nodes) {
+    return Streams.stream(nodes)
+        .map(e -> TofuJavaValue.forSoyValue(visit(e), e.getSourceLocation()))
+        .collect(toImmutableList());
   }
 }

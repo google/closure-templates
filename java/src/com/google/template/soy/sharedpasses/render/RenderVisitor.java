@@ -17,14 +17,17 @@
 package com.google.template.soy.sharedpasses.render;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.collect.ImmutableMultiset.toImmutableMultiset;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.ImmutableTable;
 import com.google.common.collect.Lists;
 import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.base.internal.SanitizedContentKind;
+import com.google.template.soy.data.FunctionValue;
 import com.google.template.soy.data.RecordProperty;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyAbstractCachingValueProvider;
@@ -79,6 +82,7 @@ import com.google.template.soy.soytree.JavaImplNode;
 import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.LetValueNode;
 import com.google.template.soy.soytree.LogNode;
+import com.google.template.soy.soytree.Metadata;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;
 import com.google.template.soy.soytree.MsgHtmlTagNode;
 import com.google.template.soy.soytree.PrintDirectiveNode;
@@ -1020,6 +1024,11 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
   }
 
   private void buildFileEnvironment(Environment env, SoyFileNode node) {
+    ImmutableMultiset<String> externNames =
+        node.getExterns().stream()
+            .map(e -> e.getIdentifier().identifier())
+            .collect(toImmutableMultiset());
+
     for (SoyNode child : node.getChildren()) {
       if (child instanceof ConstNode) {
         ConstNode constNode = (ConstNode) child;
@@ -1048,6 +1057,13 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
                           }));
                 }
               });
+        }
+      } else if (child instanceof ExternNode) {
+        ExternNode externNode = (ExternNode) child;
+        String name = externNode.getIdentifier().identifier();
+        if (externNames.count(name) == 1) {
+          // Don't allow referencing overloaded externs. Is this possible to support?
+          env.bind(externNode.getVar(), FunctionValue.create(Metadata.forAst(externNode)));
         }
       }
     }
