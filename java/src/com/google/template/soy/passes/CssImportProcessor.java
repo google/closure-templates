@@ -84,7 +84,7 @@ final class CssImportProcessor implements ImportsPass.ImportProcessor {
 
       ImmutableMap<String, String> shortClassMap =
           cssRegistry.getShortClassNameMapForLogicalPath(node.getSourceFilePath());
-      symbol.setType(new NamespaceType(shortClassMap.keySet()));
+      symbol.setType(new NamespaceType(node.getSourceFilePath(), shortClassMap.keySet()));
       symbol.setSymbolKind(SymbolKind.CSS_MODULE);
     }
   }

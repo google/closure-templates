@@ -16,6 +16,8 @@
 
 package com.google.template.soy.soytree;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import com.google.template.soy.base.SourceLogicalPath;
 import java.util.Collection;
 import javax.annotation.Nullable;
@@ -34,6 +36,6 @@ public interface PartialFileSetMetadata {
    * @throws NullPointerException if {@code path} is not registered in metadata.
    */
   default String getNamespaceForPath(SourceLogicalPath path) {
-    return getPartialFile(path).getNamespace();
+    return checkNotNull(getPartialFile(path), "No metadata for %s", path).getNamespace();
   }
 }

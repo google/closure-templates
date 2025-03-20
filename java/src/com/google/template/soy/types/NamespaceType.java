@@ -16,15 +16,18 @@
 
 package com.google.template.soy.types;
 
-import com.google.common.collect.ImmutableCollection;
+import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.soytree.SoyTypeP;
+import java.util.Set;
 
 /** A type representing a namespace containing other symbols. */
 public class NamespaceType extends SoyType {
 
-  private ImmutableCollection<String> nestedSymbolNames;
+  private final SourceLogicalPath path;
+  private Set<String> nestedSymbolNames;
 
-  public NamespaceType(ImmutableCollection<String> nestedSymbolNames) {
+  public NamespaceType(SourceLogicalPath path, Set<String> nestedSymbolNames) {
+    this.path = path;
     this.nestedSymbolNames = nestedSymbolNames;
   }
 
@@ -35,7 +38,7 @@ public class NamespaceType extends SoyType {
 
   @Override
   public String toString() {
-    return "namespace";
+    return "namespace " + path.path();
   }
 
   @Override
@@ -58,7 +61,7 @@ public class NamespaceType extends SoyType {
   }
 
   /** Returns the full list of any valid nested symbols, of any type, within this type. */
-  public ImmutableCollection<String> getNestedSymbolNames() {
+  public Set<String> getNestedSymbolNames() {
     return nestedSymbolNames;
   }
 }

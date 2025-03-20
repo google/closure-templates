@@ -219,10 +219,11 @@ public final class TemplateBasicNode extends TemplateNode {
    */
   @Nullable
   public String moddedSoyNamespace() {
-    if (getModifiesExpr() != null
+    ExprRootNode modifiesExpr = getModifiesExpr();
+    if (modifiesExpr != null
         && getModName() != null
-        && getModifiesExpr().getRoot() instanceof TemplateLiteralNode) {
-      TemplateLiteralNode templateLiteralNode = (TemplateLiteralNode) getModifiesExpr().getRoot();
+        && modifiesExpr.getRoot() instanceof TemplateLiteralNode) {
+      TemplateLiteralNode templateLiteralNode = (TemplateLiteralNode) modifiesExpr.getRoot();
       SoyType nodeType = templateLiteralNode.getType();
       if ((nodeType instanceof TemplateType)
           && ((TemplateType) nodeType).getLegacyDeltemplateNamespace().isEmpty()) {
