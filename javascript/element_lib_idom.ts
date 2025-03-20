@@ -36,7 +36,14 @@ export type PatchFunction = (a: IncrementalDomRenderer) => void;
 export type SkipHandler = <T>(prev: T, next: T) => boolean;
 
 /** Gets a skip handler that was passed to setSkipHandler. */
-export function getSkipHandler(el: HTMLElement) {
+export function getSkipHandler(
+  el: HTMLElement,
+):
+  | ((
+      prev: AnyDuringIsolatedDeclarationsMigration,
+      next: AnyDuringIsolatedDeclarationsMigration,
+    ) => boolean)
+  | undefined {
   return el.__soy_skip_handler;
 }
 
@@ -63,14 +70,14 @@ export abstract class SoyElement<TData extends {} | null, TInterface extends {}>
   // Setting this to TData makes this type invariant.
   template!: IdomTemplate<unknown>;
 
-  dispose() {
+  dispose(): void {
     if (!this.disposed) {
       this.disposed = true;
       this.unsetLifecycleHooks();
     }
   }
 
-  isDisposed() {
+  isDisposed(): boolean {
     return this.disposed;
   }
 
@@ -101,18 +108,20 @@ export abstract class SoyElement<TData extends {} | null, TInterface extends {}>
     return this;
   }
 
-  protected shouldSyncState() {
+  protected shouldSyncState(): boolean {
     return this.syncState;
   }
 
-  syncStateFromData(data: TData) {}
+  syncStateFromData(data: TData): void {}
 
   /**
    * Patches the current dom node.
    * @param renderer Allows injecting a subclass of IncrementalDomRenderer
    *                 to customize the behavior of patches.
    */
-  render(renderer = new IncrementalDomRendererImpl()) {
+  render(
+    renderer: IncrementalDomRendererImpl = new IncrementalDomRendererImpl(),
+  ): void {
     assert(this.node);
     if (this.loggerPrivate && !renderer.getLogger()) {
       renderer.setLogger(this.loggerPrivate);
@@ -227,7 +236,7 @@ export abstract class SoyElement<TData extends {} | null, TInterface extends {}>
     return false;
   }
 
-  unsetLifecycleHooks() {
+  unsetLifecycleHooks(): void {
     this.skipHandler = null;
     this.patchHandler = null;
     const node = assertExists(this.node);
@@ -244,7 +253,9 @@ export abstract class SoyElement<TData extends {} | null, TInterface extends {}>
    *   - true: skip the element
    *   - false: renders the element
    */
-  setSkipHandler(skipHandler: (prev: TInterface, next: TInterface) => boolean) {
+  setSkipHandler(
+    skipHandler: (prev: TInterface, next: TInterface) => boolean,
+  ): void {
     assert(!this.skipHandler, 'Only one skip handler is allowed.');
     this.skipHandler = skipHandler;
   }
@@ -264,7 +275,7 @@ export abstract class SoyElement<TData extends {} | null, TInterface extends {}>
    * Executes right after a Soy element has finished rendering, but before
    * anymore of the template executes.
    */
-  setAfterPatch(handler: (prev: TInterface, next: TInterface) => void) {
+  setAfterPatch(handler: (prev: TInterface, next: TInterface) => void): void {
     assert(!this.patchHandler, 'Only one patch handler is allowed');
     this.patchHandler = handler;
   }
@@ -272,7 +283,7 @@ export abstract class SoyElement<TData extends {} | null, TInterface extends {}>
   /**
    * Makes idom patch calls, inside of a patch context.
    */
-  renderInternal(renderer: IncrementalDomRenderer, data: TData) {
+  renderInternal(renderer: IncrementalDomRenderer, data: TData): void {
     this.template(renderer, data);
   }
 }
