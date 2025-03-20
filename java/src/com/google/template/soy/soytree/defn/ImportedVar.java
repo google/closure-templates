@@ -41,6 +41,7 @@ public final class ImportedVar extends AbstractVarDefn implements Copyable<Impor
 
   /** The kind of symbol this var references. */
   public enum SymbolKind {
+    SOY_FILE,
     TEMPLATE,
     CONST,
     EXTERN,
@@ -53,7 +54,9 @@ public final class ImportedVar extends AbstractVarDefn implements Copyable<Impor
     CSS_MODULE,
     CSS_CLASS,
 
-    TOGGLE
+    TOGGLE,
+
+    UNKNOWN
   }
 
   public static final String MODULE_IMPORT = "*";

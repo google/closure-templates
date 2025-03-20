@@ -102,6 +102,7 @@ import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TypeDefNode;
 import com.google.template.soy.soytree.Visibility;
 import com.google.template.soy.soytree.defn.ConstVar;
+import com.google.template.soy.soytree.defn.ImportedVar.SymbolKind;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.IndexedType;
 import com.google.template.soy.types.IntersectionType;
@@ -646,30 +647,26 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
   @Override
   protected void visitImportNode(ImportNode node) {
+    if (node.getImportType() != ImportType.TEMPLATE) {
+      return;
+    }
     node.visitVars(
-        (var, parentType) -> {
-          if (parentType != null
-              && parentType.getKind() == Kind.TEMPLATE_MODULE
-              && var.type().getKind() != Kind.TEMPLATE_TYPE) {
-            // This is a constant or function import.
-            String namespace = namespaceForPath(node.getSourceFilePath());
-            if (jsSrcOptions.shouldGenerateGoogModules()) {
-              namespace = templateAliases.getNamespaceAlias(namespace);
-            }
-            if (var.type().getKind() == Kind.FUNCTION) {
-              Expression translation = dottedIdNoRequire(namespace + "." + var.getSymbol());
-              templateTranslationContext
-                  .soyToJsVariableMappings()
-                  .put(var.getSymbol(), translation);
-            } else {
-              templateTranslationContext
-                  .soyToJsVariableMappings()
-                  .put(
-                      var.name(),
-                      JsRuntime.SOY_GET_CONST.call(
-                          dottedIdNoRequire(namespace + "." + var.getSymbol()),
-                          JsRuntime.SOY_INTERNAL_CALL_MARKER));
-            }
+        (var) -> {
+          String namespace = namespaceForPath(node.getSourceFilePath());
+          if (jsSrcOptions.shouldGenerateGoogModules()) {
+            namespace = templateAliases.getNamespaceAlias(namespace);
+          }
+          if (var.getSymbolKind() == SymbolKind.EXTERN) {
+            Expression translation = dottedIdNoRequire(namespace + "." + var.getSymbol());
+            templateTranslationContext.soyToJsVariableMappings().put(var.getSymbol(), translation);
+          } else if (var.getSymbolKind() == SymbolKind.CONST) {
+            templateTranslationContext
+                .soyToJsVariableMappings()
+                .put(
+                    var.name(),
+                    JsRuntime.SOY_GET_CONST.call(
+                        dottedIdNoRequire(namespace + "." + var.getSymbol()),
+                        JsRuntime.SOY_INTERNAL_CALL_MARKER));
           }
         });
   }

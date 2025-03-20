@@ -22,6 +22,7 @@ import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static com.google.common.collect.ImmutableSortedSet.toImmutableSortedSet;
 import static com.google.common.collect.Iterables.getOnlyElement;
 import static com.google.template.soy.passes.CheckTemplateCallsPass.ARGUMENT_TYPE_MISMATCH;
+import static com.google.template.soy.passes.TemplateImportProcessor.templateFqn;
 import static com.google.template.soy.types.SoyTypes.SAFE_PROTO_TO_SANITIZED_TYPE;
 import static com.google.template.soy.types.SoyTypes.getMapKeysType;
 import static com.google.template.soy.types.SoyTypes.getMapValuesType;
@@ -167,6 +168,7 @@ import com.google.template.soy.soytree.IfCondNode;
 import com.google.template.soy.soytree.IfElseNode;
 import com.google.template.soy.soytree.IfNode;
 import com.google.template.soy.soytree.ImportNode;
+import com.google.template.soy.soytree.ImportNode.ImportType;
 import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.LetValueNode;
 import com.google.template.soy.soytree.Metadata;
@@ -183,6 +185,7 @@ import com.google.template.soy.soytree.SwitchNode;
 import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.ImportedVar;
+import com.google.template.soy.soytree.defn.ImportedVar.SymbolKind;
 import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import com.google.template.soy.soytree.defn.TemplateStateVar;
 import com.google.template.soy.types.AbstractIterableType;
@@ -208,7 +211,6 @@ import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.StringType;
 import com.google.template.soy.types.TemplateImportType;
-import com.google.template.soy.types.TemplateModuleImportType;
 import com.google.template.soy.types.TemplateType;
 import com.google.template.soy.types.UnionType;
 import com.google.template.soy.types.UnknownType;
@@ -484,20 +486,14 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
         .forEach(
             importNode ->
                 importNode.visitVars(
-                    (var, parentType) -> {
-                      if (!var.hasType()
-                          && parentType != null
-                          && parentType.getKind() == Kind.TEMPLATE_MODULE) {
-                        TemplateModuleImportType moduleType = (TemplateModuleImportType) parentType;
-                        String symbol = var.getSymbol();
-                        if (moduleType.getExternNames().contains(symbol)) {
-                          ImmutableList<? extends Extern> types =
-                              externsTypeLookup.getRefs(moduleType.getPath(), symbol);
-                          // The return type is what's important here, and extern overloads are
-                          // required to have the same return type, so it's okay to just grab the
-                          // first one.
-                          var.setType(types.get(0).getSignature());
-                        }
+                    (var) -> {
+                      if (!var.hasType() && var.getSymbolKind() == SymbolKind.EXTERN) {
+                        ImmutableList<? extends Extern> types =
+                            externsTypeLookup.getRefs(var.getSourceFilePath(), var.getSymbol());
+                        // The return type is what's important here, and extern overloads are
+                        // required to have the same return type, so it's okay to just grab the
+                        // first one.
+                        var.setType(types.get(0).getSignature());
                       }
                     }));
   }
@@ -562,21 +558,30 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
 
     @Override
     protected void visitImportNode(ImportNode node) {
+      if (node.getImportType() == ImportType.UNKNOWN) {
+        node.visitVars(var -> var.setType(UnknownType.getInstance()));
+      } else if (node.getImportType() != ImportType.TEMPLATE) {
+        return;
+      }
       node.visitVars(
-          (var, parentType) -> {
-            if (!var.hasType()) {
+          (var) -> {
+            if (var.hasType()) {
+              return;
+            }
+            if (var.getSymbolKind() == SymbolKind.CONST) {
               SoyType newType = UnknownType.getInstance();
-              if (parentType != null && parentType.getKind() == Kind.TEMPLATE_MODULE) {
-                TemplateModuleImportType moduleType = (TemplateModuleImportType) parentType;
-                String symbol = var.getSymbol();
-                if (moduleType.getConstantNames().contains(symbol)) {
-                  SoyType constantType = constantsTypeLookup.get(moduleType.getPath(), symbol);
-                  if (constantType != null) {
-                    newType = constantType;
-                  }
-                }
+              SoyType constantType =
+                  constantsTypeLookup.get(var.getSourceFilePath(), var.getSymbol());
+              if (constantType != null) {
+                newType = constantType;
               }
               var.setType(newType);
+            } else if (var.getSymbolKind() == SymbolKind.TEMPLATE) {
+              var.setType(
+                  TemplateImportType.create(
+                      templateFqn(
+                          templateRegistryFromDeps.get().getFile(var.getSourceFilePath()),
+                          var.getSymbol())));
             }
           });
     }
@@ -2637,7 +2642,6 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
           }
 
         case TEMPLATE_TYPE:
-        case TEMPLATE_MODULE:
         case PROTO_TYPE:
         case PROTO_EXTENSION:
           // May not be erased if other errors are present.

@@ -130,7 +130,6 @@ public abstract class SoyType implements ErrorArg {
     PROTO_EXTENSION,
     PROTO_MODULE,
     TEMPLATE_TYPE,
-    TEMPLATE_MODULE,
     ;
 
     public static final ImmutableSet<Kind> STRING_KINDS =

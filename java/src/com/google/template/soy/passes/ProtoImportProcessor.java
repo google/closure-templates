@@ -100,7 +100,6 @@ final class ProtoImportProcessor implements ImportsPass.ImportProcessor {
       return;
     }
     FileDescriptor fd = pathToDescriptor.get(node.getSourceFilePath());
-    node.setModuleType(typeRegistry.getProtoImportType(fd));
 
     ImmutableMap<String, Descriptor> messages =
         fd.getMessageTypes().stream().collect(toImmutableMap(Descriptor::getName, f -> f));

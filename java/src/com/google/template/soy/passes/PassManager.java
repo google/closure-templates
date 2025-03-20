@@ -39,6 +39,8 @@ import com.google.template.soy.shared.SoyGeneralOptions;
 import com.google.template.soy.shared.ToggleRegistry;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.FileSetMetadata;
+import com.google.template.soy.soytree.Metadata;
+import com.google.template.soy.soytree.PartialFileSetMetadata;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.types.SoyTypeRegistry;
@@ -91,11 +93,16 @@ public final class PassManager {
   /** State used for inter-pass communication, without modifying the AST. */
   private static class AccumulatedState {
     private FileSetMetadata fileSetMetadataFromDeps;
+    private PartialFileSetMetadata partialFileSetMetadata;
     private FileSetMetadata fileSetMetadataFull;
     private ImmutableList<SoyFileNode> topologicallyOrderedFiles;
 
     FileSetMetadata registryFromDeps() {
       return fileSetMetadataFromDeps;
+    }
+
+    PartialFileSetMetadata partialFileSetMetadata() {
+      return partialFileSetMetadata;
     }
 
     FileSetMetadata registryFull() {
@@ -132,6 +139,8 @@ public final class PassManager {
   public Result runPasses(
       SoyFileSetNode soyTree, FileSetMetadata partialFileSetMetadataWithJustDeps) {
     accumulatedState.fileSetMetadataFromDeps = partialFileSetMetadataWithJustDeps;
+    accumulatedState.partialFileSetMetadata =
+        Metadata.partialMetadataForAst(partialFileSetMetadataWithJustDeps, soyTree.getChildren());
 
     ImmutableList<SoyFileNode> sourceFiles = ImmutableList.copyOf(soyTree.getChildren());
     IdGenerator idGenerator = soyTree.getNodeIdGenerator();
@@ -528,7 +537,8 @@ public final class PassManager {
                   errorReporter,
                   disableAllTypeChecking || allowMissingSoyDeps,
                   new ProtoImportProcessor(registry, errorReporter, disableAllTypeChecking),
-                  new TemplateImportProcessor(errorReporter, accumulatedState::registryFromDeps),
+                  new TemplateImportProcessor(
+                      errorReporter, accumulatedState::partialFileSetMetadata),
                   new CssImportProcessor(cssRegistry, errorReporter),
                   new ToggleImportProcessor(toggleRegistry, errorReporter)))
           .add(new ResolveUseVariantTypePass(errorReporter))
@@ -577,7 +587,9 @@ public final class PassManager {
                   errorReporter))
           .add(new UnknownJsGlobalPass(allowUnknownJsGlobals, errorReporter))
           .add(new ResolveNamesPass(errorReporter))
-          .add(new ResolveDottedImportsPass(errorReporter, registry));
+          .add(
+              new ResolveDottedImportsPass(
+                  errorReporter, registry, accumulatedState::partialFileSetMetadata));
       if (astRewrites.rewriteCssVariables()) {
         passes.add(new RewriteCssRefsPass(cssRegistry));
       }
@@ -788,7 +800,7 @@ public final class PassManager {
           switch (rule) {
             case STOP_AFTER_PASS:
               builder.add(pass);
-              // fall-through
+            // fall-through
             case STOP_BEFORE_PASS:
               Preconditions.checkState(building, "Multiple STOP rules not allowed.");
               building = false;

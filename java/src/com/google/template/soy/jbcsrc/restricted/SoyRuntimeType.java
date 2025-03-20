@@ -147,7 +147,6 @@ public abstract class SoyRuntimeType {
       case PROTO_EXTENSION:
       case PROTO_MODULE:
       case TEMPLATE_TYPE:
-      case TEMPLATE_MODULE:
       case INTERSECTION:
       case NAMED:
       case INDEXED:

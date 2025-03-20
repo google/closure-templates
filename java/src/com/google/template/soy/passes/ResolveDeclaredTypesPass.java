@@ -40,6 +40,7 @@ import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateElementNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TypeDefNode;
+import com.google.template.soy.soytree.defn.ImportedVar.SymbolKind;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.soytree.defn.TemplateStateVar;
 import com.google.template.soy.types.DelegatingSoyTypeRegistry;
@@ -134,15 +135,15 @@ final class ResolveDeclaredTypesPass
         } else {
           FileMetadata fileMetadataFinal = fileMetadata;
           node.getIdentifiers().stream()
-              .filter(var -> !var.hasType())
+              .filter(v -> v.getSymbolKind() == SymbolKind.TYPEDEF)
               .forEach(
                   var -> {
-                    FileMetadata.TypeDef typeDef = fileMetadataFinal.getTypeDef(var.getSymbol());
-                    if (typeDef != null) {
-                      NamedType resolvedType = typeDef.getType();
-                      var.setType(resolvedType);
-                      boolean unusedTrue = typeRegistry.addTypeAlias(var.name(), resolvedType);
+                    if (!var.hasType()) {
+                      FileMetadata.TypeDef typeDef = fileMetadataFinal.getTypeDef(var.getSymbol());
+                      var.setType(typeDef.getType());
                     }
+                    boolean unusedTrue =
+                        typeRegistry.addTypeAlias(var.name(), (NamedType) var.authoredType());
                   });
         }
       }

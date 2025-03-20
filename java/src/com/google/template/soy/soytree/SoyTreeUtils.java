@@ -520,7 +520,6 @@ public final class SoyTreeUtils {
         if (refNode.hasType()) {
           switch (refNode.getType().getKind()) {
             case TEMPLATE_TYPE:
-            case TEMPLATE_MODULE:
             case PROTO_TYPE:
             case PROTO_ENUM_TYPE:
             case PROTO_MODULE:
