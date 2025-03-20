@@ -20,15 +20,17 @@ import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static java.util.stream.Collectors.joining;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.soytree.defn.ImportedVar;
+import com.google.template.soy.types.SoyType;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Consumer;
+import java.util.function.BiConsumer;
 
 /** Node representing a 'import' statement with a value expression. */
 public final class ImportNode extends AbstractSoyNode {
@@ -37,8 +39,14 @@ public final class ImportNode extends AbstractSoyNode {
   private final ImmutableList<ImportedVar> identifiers;
 
   private final StringNode path;
-  private final SourceLogicalPath sourceLogicalPath;
   private ImportType importType;
+
+  /**
+   * If this is NOT a module import (* as) then store the {@link
+   * com.google.template.soy.types.TemplateModuleImportType} or {@link
+   * com.google.template.soy.types.ProtoModuleImportType} here as a convenience.
+   */
+  private SoyType moduleType;
 
   private Optional<SoyFileNode.CssPath> requiredCssPath;
 
@@ -55,7 +63,6 @@ public final class ImportNode extends AbstractSoyNode {
     super(id, location);
     this.identifiers = ImmutableList.copyOf(defns);
     this.path = path;
-    this.sourceLogicalPath = SourceLogicalPath.create(path.getValue());
     this.importType = ImportType.UNKNOWN;
     this.requiredCssPath = Optional.empty();
 
@@ -81,9 +88,9 @@ public final class ImportNode extends AbstractSoyNode {
                 })
             .collect(toImmutableList());
     this.path = orig.path.copy(copyState);
-    this.sourceLogicalPath = orig.sourceLogicalPath;
     this.importType = orig.importType;
     this.requiredCssPath = orig.requiredCssPath;
+    this.moduleType = orig.moduleType;
   }
 
   @Override
@@ -113,7 +120,7 @@ public final class ImportNode extends AbstractSoyNode {
   }
 
   public SourceLogicalPath getSourceFilePath() {
-    return sourceLogicalPath;
+    return SourceLogicalPath.create(path.getValue());
   }
 
   /**
@@ -135,6 +142,15 @@ public final class ImportNode extends AbstractSoyNode {
         "Module alias can only be retrieved for module imports (e.g. \"import * as fooTemplates"
             + " from 'my_foo.soy';\")");
     return identifiers.get(0).name();
+  }
+
+  public SoyType getModuleType() {
+    return moduleType;
+  }
+
+  public void setModuleType(SoyType moduleType) {
+    Preconditions.checkState(!isModuleImport());
+    this.moduleType = moduleType;
   }
 
   public SourceLocation getPathSourceLocation() {
@@ -165,14 +181,16 @@ public final class ImportNode extends AbstractSoyNode {
 
   /**
    * Visits all {@link ImportedVar} descending from this import node. {@code visitor} is called once
-   * for each var.
+   * for each var. The second argument to {@code visitor} is the (nullable) type of the parent var,
+   * or the {@link #getModuleType()} for a top level var.
    */
-  public void visitVars(Consumer<ImportedVar> visitor) {
-    getIdentifiers().forEach(id -> visitVars(id, visitor));
+  public void visitVars(BiConsumer<ImportedVar, SoyType> visitor) {
+    getIdentifiers().forEach(id -> visitVars(id, getModuleType(), visitor));
   }
 
-  private static void visitVars(ImportedVar id, Consumer<ImportedVar> visitor) {
-    visitor.accept(id);
-    id.getNestedVars().forEach(nestedVar -> visitVars(nestedVar, visitor));
+  private static void visitVars(
+      ImportedVar id, SoyType parentType, BiConsumer<ImportedVar, SoyType> visitor) {
+    visitor.accept(id, parentType);
+    id.getNestedVars().forEach(nestedVar -> visitVars(nestedVar, id.typeOrDefault(null), visitor));
   }
 }

@@ -883,6 +883,7 @@ public abstract class Expression extends BytecodeProducer {
         case PROTO_EXTENSION:
         case PROTO_MODULE:
         case TEMPLATE_TYPE:
+        case TEMPLATE_MODULE:
         case FUNCTION:
         case NEVER:
           throw new UnsupportedOperationException(type.getKind().toString());

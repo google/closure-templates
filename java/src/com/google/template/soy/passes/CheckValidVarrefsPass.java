@@ -48,6 +48,7 @@ final class CheckValidVarrefsPass implements CompilerFilePass {
     Kind parentKind = parent != null ? parent.getKind() : null;
 
     switch (varRef.getType().getKind()) {
+      case TEMPLATE_MODULE:
       case PROTO_ENUM_TYPE:
       case PROTO_MODULE:
       case NAMESPACE:

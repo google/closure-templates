@@ -16,8 +16,6 @@
 
 package com.google.template.soy.soytree;
 
-import static com.google.common.collect.Sets.union;
-
 import com.google.template.soy.base.SourceFilePath;
 import java.util.Set;
 
@@ -35,11 +33,6 @@ public interface PartialFileMetadata {
         || hasConstant(symbolName)
         || hasExtern(symbolName)
         || hasTypeDef(symbolName);
-  }
-
-  default Set<String> allSymbolNames() {
-    return union(
-        getTemplateNames(), union(getConstantNames(), union(getExternNames(), getTypeDefNames())));
   }
 
   default boolean hasTemplate(String shortName) {

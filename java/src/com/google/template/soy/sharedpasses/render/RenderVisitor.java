@@ -101,7 +101,6 @@ import com.google.template.soy.soytree.TemplateBasicNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.VeLogNode;
 import com.google.template.soy.soytree.WhileNode;
-import com.google.template.soy.soytree.defn.ImportedVar.SymbolKind;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.SoyType.Kind;
 import java.io.Flushable;
@@ -1038,8 +1037,10 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
         ImportNode importNode = (ImportNode) child;
         if (importNode.getImportType() == ImportType.TEMPLATE) {
           importNode.visitVars(
-              (var) -> {
-                if (var.getSymbolKind() == SymbolKind.CONST) {
+              (var, parentType) -> {
+                if (parentType != null
+                    && parentType.getKind() == Kind.TEMPLATE_MODULE
+                    && var.type().getKind() != Kind.TEMPLATE_TYPE) {
                   // Any nested vardefn of a template module import that is not a template type must
                   // be a constant.
                   env.bind(

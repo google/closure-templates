@@ -21,7 +21,6 @@ import com.google.common.base.Preconditions;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
-import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.soytree.Metadata;
 import com.google.template.soy.soytree.SoyFileNode;
@@ -97,17 +96,18 @@ final class CheckModifiableTemplatesPass implements CompilerFilePass {
 
   private void validateModifiesAttribute(
       TemplateBasicNode templateBasicNode, SoyFileNode file, Set<String> modifiedNamespaces) {
-    ExprRootNode modifiesExpr = templateBasicNode.getModifiesExpr();
-    if (modifiesExpr == null) {
+    if (templateBasicNode.getModifiesExpr() == null) {
       return;
     }
-    if (!(modifiesExpr.getRoot() instanceof TemplateLiteralNode)) {
-      errorReporter.report(modifiesExpr.getSourceLocation(), UNRESOLVED_MODIFIES_EXPR);
+    if (!(templateBasicNode.getModifiesExpr().getRoot() instanceof TemplateLiteralNode)) {
+      errorReporter.report(
+          templateBasicNode.getModifiesExpr().getSourceLocation(), UNRESOLVED_MODIFIES_EXPR);
       return;
     }
-    TemplateType baseType = (TemplateType) modifiesExpr.getRoot().getType();
+    TemplateType baseType = (TemplateType) templateBasicNode.getModifiesExpr().getRoot().getType();
     if (!baseType.isModifiable()) {
-      errorReporter.report(modifiesExpr.getSourceLocation(), MODIFIES_NON_MODIFIABLE);
+      errorReporter.report(
+          templateBasicNode.getModifiesExpr().getSourceLocation(), MODIFIES_NON_MODIFIABLE);
       return;
     }
     TemplateType overrideType = Metadata.buildTemplateType(templateBasicNode);
@@ -171,17 +171,18 @@ final class CheckModifiableTemplatesPass implements CompilerFilePass {
   private void validateSingleFileIsModded(
       TemplateBasicNode templateBasicNode, SoyFileNode file, Set<String> modifiedNamespaces) {
     // Invariants checked in validateModifiesAttribute().
-    ExprRootNode modifiesExpr = templateBasicNode.getModifiesExpr();
-    Preconditions.checkNotNull(modifiesExpr);
-    Preconditions.checkState(modifiesExpr.getRoot() instanceof TemplateLiteralNode);
-    TemplateLiteralNode literal = (TemplateLiteralNode) modifiesExpr.getRoot();
+    Preconditions.checkNotNull(templateBasicNode.getModifiesExpr());
+    Preconditions.checkState(
+        templateBasicNode.getModifiesExpr().getRoot() instanceof TemplateLiteralNode);
+    TemplateLiteralNode literal =
+        (TemplateLiteralNode) templateBasicNode.getModifiesExpr().getRoot();
     String namespace =
         literal.getResolvedName().substring(0, literal.getResolvedName().lastIndexOf("."));
     if (!namespace.equals(file.getNamespace())) {
       modifiedNamespaces.add(namespace);
       if (modifiedNamespaces.size() > 1) {
         errorReporter.report(
-            modifiesExpr.getSourceLocation(),
+            templateBasicNode.getModifiesExpr().getSourceLocation(),
             MODDING_MULTIPLE_FILES,
             Joiner.on(", ").join(modifiedNamespaces));
       }

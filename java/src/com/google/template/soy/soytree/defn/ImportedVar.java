@@ -41,7 +41,6 @@ public final class ImportedVar extends AbstractVarDefn implements Copyable<Impor
 
   /** The kind of symbol this var references. */
   public enum SymbolKind {
-    SOY_FILE,
     TEMPLATE,
     CONST,
     EXTERN,

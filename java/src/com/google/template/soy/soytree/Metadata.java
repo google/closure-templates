@@ -95,7 +95,7 @@ public final class Metadata {
    * called any time during compilation since it only depends on the parse passes.
    */
   public static PartialFileSetMetadata partialMetadataForAst(
-      PartialFileSetMetadata deps, Iterable<SoyFileNode> ast) {
+      PartialFileSetMetadata deps, ImmutableList<SoyFileNode> ast) {
     return new AstPartialFileSetMetadata(deps, ast);
   }
 
@@ -309,7 +309,7 @@ public final class Metadata {
     private final ImmutableMap<SourceLogicalPath, PartialFileMetadata> fullFileIndex;
 
     /** ASTs are mutable so we need to copy all data in the constructor. */
-    public AstPartialFileSetMetadata(PartialFileSetMetadata deps, Iterable<SoyFileNode> ast) {
+    public AstPartialFileSetMetadata(PartialFileSetMetadata deps, List<SoyFileNode> ast) {
       Map<SourceLogicalPath, PartialFileMetadata> fullFileIndexBuilder = new LinkedHashMap<>();
       for (PartialFileMetadata depFile : deps.getAllPartialFiles()) {
         fullFileIndexBuilder.put(depFile.getPath().asLogicalPath(), depFile);

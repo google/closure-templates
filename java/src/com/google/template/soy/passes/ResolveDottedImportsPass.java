@@ -16,8 +16,6 @@
 
 package com.google.template.soy.passes;
 
-import static com.google.template.soy.passes.TemplateImportProcessor.templateFqn;
-
 import com.google.protobuf.Descriptors.EnumDescriptor;
 import com.google.protobuf.Descriptors.EnumValueDescriptor;
 import com.google.template.soy.base.SourceLocation;
@@ -38,8 +36,6 @@ import com.google.template.soy.exprtree.MethodCallNode;
 import com.google.template.soy.exprtree.ProtoEnumValueNode;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
-import com.google.template.soy.soytree.PartialFileMetadata;
-import com.google.template.soy.soytree.PartialFileSetMetadata;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.defn.ImportedVar;
@@ -53,9 +49,9 @@ import com.google.template.soy.types.SoyProtoEnumType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.StringType;
 import com.google.template.soy.types.TemplateImportType;
+import com.google.template.soy.types.TemplateModuleImportType;
 import com.google.template.soy.types.TypeInterner;
 import com.google.template.soy.types.UnknownType;
-import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 /**
@@ -81,15 +77,10 @@ final class ResolveDottedImportsPass implements CompilerFilePass {
 
   private final ErrorReporter errorReporter;
   private final TypeInterner typeRegistry;
-  private final Supplier<PartialFileSetMetadata> partialFileSetMetadata;
 
-  public ResolveDottedImportsPass(
-      ErrorReporter errorReporter,
-      TypeInterner typeRegistry,
-      Supplier<PartialFileSetMetadata> partialFileSetMetadata) {
+  public ResolveDottedImportsPass(ErrorReporter errorReporter, TypeInterner typeRegistry) {
     this.errorReporter = errorReporter;
     this.typeRegistry = typeRegistry;
-    this.partialFileSetMetadata = partialFileSetMetadata;
   }
 
   @Override
@@ -196,33 +187,25 @@ final class ResolveDottedImportsPass implements CompilerFilePass {
       // e.g. {Message.Nested()}
       nestedType =
           typeRegistry.getProtoImportType(((ProtoImportType) type).getDescriptor(), fieldName);
+    } else if (type.getKind() == SoyType.Kind.TEMPLATE_MODULE) {
+      // e.g. import * as templates from 'src.soy';
+      TemplateModuleImportType moduleType = (TemplateModuleImportType) type;
+      if (moduleType.getTemplateNames().contains(fieldName)) {
+        // e.g. {call templates.body}
+        nestedType = typeRegistry.intern(TemplateImportType.create(moduleType, fieldName));
+      } else if (moduleType.getConstantNames().contains(fieldName)) {
+        // e.g. {templates.CONST}
+        // Constant import. Continue with inlining but without setting the type. Types not known
+        // until ResolveExpressionTypesPass.
+      } else if (moduleType.getExternNames().contains(fieldName)) {
+        // e.g. {templates.pluginFunction(1)}
+      } else {
+        // e.g. {call templates.doesNotExist}
+        nestedType = UnknownType.getInstance();
+      }
     } else if (type.getKind() == SoyType.Kind.NAMESPACE) {
       NamespaceType namespaceType = (NamespaceType) type;
-      if (defn.getSymbolKind() == SymbolKind.SOY_FILE) {
-        // e.g. import * as templates from 'src.soy';
-
-        PartialFileMetadata fileMetadata =
-            partialFileSetMetadata.get().getPartialFile(defn.getSourceFilePath());
-        if (fileMetadata.hasTemplate(fieldName)) {
-          // e.g. {call templates.body}
-          nestedSymbolKind = SymbolKind.TEMPLATE;
-          nestedType =
-              typeRegistry.intern(TemplateImportType.create(templateFqn(fileMetadata, fieldName)));
-        } else if (fileMetadata.hasConstant(fieldName)) {
-          // e.g. {templates.CONST}
-          // Constant import. Continue with inlining but without setting the type. Types not known
-          // until ResolveExpressionTypesPass.
-          nestedSymbolKind = SymbolKind.CONST;
-        } else if (fileMetadata.hasExtern(fieldName)) {
-          // e.g. {templates.pluginFunction(1)}
-          nestedSymbolKind = SymbolKind.EXTERN;
-        } else if (fileMetadata.hasTypeDef(fieldName)) {
-          nestedSymbolKind = SymbolKind.TYPEDEF;
-        } else {
-          // e.g. {call templates.doesNotExist}
-          nestedType = UnknownType.getInstance();
-        }
-      } else if (defn.getSymbolKind() == SymbolKind.CSS_MODULE) {
+      if (defn.getSymbolKind() == SymbolKind.CSS_MODULE) {
         if (namespaceType.containsSymbol(fieldName)) {
           nestedType = StringType.getInstance();
           nestedSymbolKind = SymbolKind.CSS_CLASS;
@@ -272,6 +255,8 @@ final class ResolveDottedImportsPass implements CompilerFilePass {
         return "proto module";
       case TEMPLATE_TYPE:
         return "template";
+      case TEMPLATE_MODULE:
+        return "template module";
       default:
         return "type";
     }

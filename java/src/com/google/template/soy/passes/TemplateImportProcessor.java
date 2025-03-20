@@ -18,23 +18,24 @@ package com.google.template.soy.passes;
 
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.soytree.FileMetadata;
+import com.google.template.soy.soytree.FileSetMetadata;
 import com.google.template.soy.soytree.ImportNode;
 import com.google.template.soy.soytree.ImportNode.ImportType;
+import com.google.template.soy.soytree.Metadata;
 import com.google.template.soy.soytree.PartialFileMetadata;
 import com.google.template.soy.soytree.PartialFileSetMetadata;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.defn.ImportedVar;
-import com.google.template.soy.soytree.defn.ImportedVar.SymbolKind;
-import com.google.template.soy.types.NamespaceType;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.TemplateImportType;
+import com.google.template.soy.types.TemplateModuleImportType;
+import com.google.template.soy.types.UnknownType;
 import java.util.function.Supplier;
 
 /**
@@ -44,18 +45,20 @@ import java.util.function.Supplier;
 public final class TemplateImportProcessor implements ImportsPass.ImportProcessor {
 
   private final ErrorReporter errorReporter;
-  private final Supplier<PartialFileSetMetadata> partialFileSetMetadata;
+  private final Supplier<FileSetMetadata> registryFromDeps;
+  private PartialFileSetMetadata fileSetMetadata;
 
   private SoyTypeRegistry typeRegistry;
 
-  TemplateImportProcessor(
-      ErrorReporter errorReporter, Supplier<PartialFileSetMetadata> partialFileSetMetadata) {
-    this.partialFileSetMetadata = partialFileSetMetadata;
+  TemplateImportProcessor(ErrorReporter errorReporter, Supplier<FileSetMetadata> registryFromDeps) {
+    this.registryFromDeps = registryFromDeps;
     this.errorReporter = errorReporter;
   }
 
   @Override
-  public void init(ImmutableList<SoyFileNode> sourceFiles) {}
+  public void init(ImmutableList<SoyFileNode> sourceFiles) {
+    fileSetMetadata = Metadata.partialMetadataForAst(registryFromDeps.get(), sourceFiles);
+  }
 
   @Override
   public void handle(SoyFileNode file, ImmutableCollection<ImportNode> imports) {
@@ -79,56 +82,36 @@ public final class TemplateImportProcessor implements ImportsPass.ImportProcesso
    */
   private void processImportedSymbols(ImportNode node) {
     PartialFileMetadata fileMetadata =
-        partialFileSetMetadata.get().getPartialFile(node.getSourceFilePath());
-
+        fileSetMetadata.getPartialFile(SourceLogicalPath.create(node.getPath()));
+    node.setModuleType(buildModuleType(node));
     for (ImportedVar symbol : node.getIdentifiers()) {
       String name = symbol.getSymbol();
+      boolean isTemplate = fileMetadata.hasTemplate(name);
 
-      if (fileMetadata.hasConstant(name)) {
-        symbol.setSymbolKind(SymbolKind.CONST);
-      } else if (fileMetadata.hasExtern(name)) {
-        symbol.setSymbolKind(SymbolKind.EXTERN);
-      } else if (fileMetadata.hasTypeDef(name)) {
-        symbol.setSymbolKind(SymbolKind.TYPEDEF);
-      } else if (fileMetadata.hasTemplate(name)) {
-        symbol.setSymbolKind(SymbolKind.TEMPLATE);
-        symbol.setType(
-            typeRegistry.intern(TemplateImportType.create(templateFqn(fileMetadata, name))));
-      } else {
+      // Report an error if the symbol name is invalid.
+      if (!isTemplate && !fileMetadata.hasSymbol(name)) {
         ImportsPass.reportUnknownSymbolError(
             errorReporter,
             symbol.nameLocation(),
             name,
             node.getPath(),
-            /* validSymbols= */ fileMetadata.allSymbolNames());
+            /* validSymbols= */ fileMetadata.getTemplateNames());
+        symbol.setType(UnknownType.getInstance());
+        continue;
       }
 
-      if (!symbol.hasType() && fileMetadata instanceof FileMetadata) {
-        setSymbolType(symbol, (FileMetadata) fileMetadata);
+      // Needs to be able to handle duplicates, since the formatter fixes them, but it's not a
+      // compiler error (if they have the same path).
+      if (isTemplate) {
+        symbol.setType(
+            typeRegistry.intern(TemplateImportType.create(templateFqn(fileMetadata, name))));
       }
     }
   }
 
-  static String templateFqn(PartialFileMetadata file, String name) {
+  private static String templateFqn(PartialFileMetadata file, String name) {
     String namespace = file.getNamespace();
     return namespace.isEmpty() ? name : namespace + "." + name;
-  }
-
-  static void setSymbolType(ImportedVar symbol, FileMetadata fileMetadata) {
-    Preconditions.checkArgument(!symbol.hasType());
-    String name = symbol.getSymbol();
-    if (fileMetadata.hasConstant(name)) {
-      symbol.setType(fileMetadata.getConstant(name).getType());
-    } else if (fileMetadata.hasExtern(name)) {
-      // The return type is what's important here, and extern overloads are
-      // required to have the same return type, so it's okay to just grab the
-      // first one.
-      symbol.setType(Iterables.getFirst(fileMetadata.getExterns(name), null).getSignature());
-    } else if (fileMetadata.hasTypeDef(name)) {
-      symbol.setType(fileMetadata.getTypeDef(name).getType());
-    } else if (fileMetadata.hasTemplate(name)) {
-      symbol.setType(TemplateImportType.create(templateFqn(fileMetadata, name)));
-    }
   }
 
   /**
@@ -138,25 +121,29 @@ public final class TemplateImportProcessor implements ImportsPass.ImportProcesso
    * collide with other import symbol aliases).
    */
   private void processImportedModule(ImportNode node) {
-    ImportedVar var = Iterables.getOnlyElement(node.getIdentifiers());
-    var.setType(buildModuleType(node));
-    var.setSymbolKind(SymbolKind.SOY_FILE);
+    Iterables.getOnlyElement(node.getIdentifiers()).setType(buildModuleType(node));
   }
 
-  private NamespaceType buildModuleType(ImportNode node) {
-    SourceLogicalPath path = node.getSourceFilePath();
-    PartialFileMetadata templatesPerFile = partialFileSetMetadata.get().getPartialFile(path);
-    return new NamespaceType(path, templatesPerFile.allSymbolNames());
+  private TemplateModuleImportType buildModuleType(ImportNode node) {
+    SourceLogicalPath path = SourceLogicalPath.create(node.getPath());
+    PartialFileMetadata templatesPerFile = fileSetMetadata.getPartialFile(path);
+    return typeRegistry.intern(
+        TemplateModuleImportType.create(
+            templatesPerFile.getNamespace(),
+            path,
+            ImmutableSet.copyOf(templatesPerFile.getConstantNames()),
+            ImmutableSet.copyOf(templatesPerFile.getExternNames()),
+            ImmutableSet.copyOf(templatesPerFile.getTemplateNames())));
   }
 
   @Override
   public boolean handlesPath(SourceLogicalPath path) {
-    return partialFileSetMetadata.get().getPartialFile(path) != null;
+    return fileSetMetadata.getPartialFile(path) != null;
   }
 
   @Override
   public ImmutableCollection<SourceLogicalPath> getAllPaths() {
-    return partialFileSetMetadata.get().getAllPartialFiles().stream()
+    return fileSetMetadata.getAllPartialFiles().stream()
         .map(f -> f.getPath().asLogicalPath())
         .collect(toImmutableSet());
   }

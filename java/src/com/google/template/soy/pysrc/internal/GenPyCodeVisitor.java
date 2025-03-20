@@ -64,8 +64,8 @@ import com.google.template.soy.soytree.TemplateBasicNode;
 import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.VeLogNode;
-import com.google.template.soy.soytree.defn.ImportedVar.SymbolKind;
 import com.google.template.soy.soytree.defn.TemplateParam;
+import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.ast.TypeNode;
 import java.util.ArrayList;
 import java.util.List;
@@ -290,8 +290,10 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     @Override
     protected void visitImportNode(ImportNode node) {
       node.visitVars(
-          (var) -> {
-            if (var.getSymbolKind() == SymbolKind.CONST) {
+          (var, parentType) -> {
+            if (parentType != null
+                && parentType.getKind() == Kind.TEMPLATE_MODULE
+                && var.type().getKind() != Kind.TEMPLATE_TYPE) {
               // This is a constant import.
               String fullNamespace = fileSetMetadata.getNamespaceForPath(node.getSourceFilePath());
               NamespaceAndName namespaceAndName = NamespaceAndName.fromModule(fullNamespace);

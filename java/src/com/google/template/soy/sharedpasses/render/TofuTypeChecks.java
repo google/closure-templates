@@ -192,6 +192,7 @@ public final class TofuTypeChecks {
       case PROTO_EXTENSION:
       case PROTO_MODULE:
       case TEMPLATE_TYPE:
+      case TEMPLATE_MODULE:
       case NAMED:
       case INTERSECTION:
       case INDEXED:
