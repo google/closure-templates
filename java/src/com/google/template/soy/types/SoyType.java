@@ -128,7 +128,6 @@ public abstract class SoyType implements ErrorArg {
     PROTO_TYPE,
     PROTO_ENUM_TYPE,
     PROTO_EXTENSION,
-    PROTO_MODULE,
     TEMPLATE_TYPE,
     ;
 

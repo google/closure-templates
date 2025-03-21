@@ -522,7 +522,6 @@ public final class SoyTreeUtils {
             case TEMPLATE_TYPE:
             case PROTO_TYPE:
             case PROTO_ENUM_TYPE:
-            case PROTO_MODULE:
               return false;
             default:
               return true;

@@ -123,9 +123,6 @@ public final class TypeRegistries {
       return protoImportTypes.computeIfAbsent(
           descriptor,
           d -> {
-            if (d instanceof FileDescriptor) {
-              return ProtoModuleImportType.create((FileDescriptor) d);
-            }
             if (d instanceof Descriptor) {
               return ProtoImportType.create((Descriptor) d);
             }

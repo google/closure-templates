@@ -183,8 +183,9 @@ public final class ImportedVar extends AbstractVarDefn implements Copyable<Impor
   }
 
   private static boolean isProtoImport(ImportedVar var) {
-    return var.type().getKind() == SoyType.Kind.PROTO_TYPE
-        || var.type().getKind() == SoyType.Kind.PROTO_ENUM_TYPE;
+    return var.getSymbolKind() == SymbolKind.PROTO_MESSAGE
+        || var.getSymbolKind() == SymbolKind.PROTO_ENUM
+        || var.getSymbolKind() == SymbolKind.PROTO_EXT;
   }
 
   @Override

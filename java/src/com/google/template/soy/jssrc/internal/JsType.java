@@ -685,7 +685,6 @@ public final class JsType implements CodeChunk.HasRequires {
         case PROTO_TYPE:
         case PROTO_ENUM_TYPE:
         case PROTO_EXTENSION:
-        case PROTO_MODULE:
         case TEMPLATE_TYPE:
         case NEVER:
       }

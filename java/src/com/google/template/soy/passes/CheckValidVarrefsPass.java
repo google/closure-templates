@@ -49,7 +49,6 @@ final class CheckValidVarrefsPass implements CompilerFilePass {
 
     switch (varRef.getType().getKind()) {
       case PROTO_ENUM_TYPE:
-      case PROTO_MODULE:
       case NAMESPACE:
         errorReporter.report(
             varRef.getSourceLocation(), ILLEGAL_TYPE_OF_VARIABLE, varRef.toSourceString());

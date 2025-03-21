@@ -36,6 +36,7 @@ import com.google.template.soy.soytree.ImportNode.ImportType;
 import com.google.template.soy.soytree.ImportsContext.ImportsTypeRegistry;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.defn.ImportedVar;
+import com.google.template.soy.soytree.defn.ImportedVar.SymbolKind;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.UnknownType;
 import java.util.HashMap;
@@ -116,6 +117,7 @@ final class ProtoImportProcessor implements ImportsPass.ImportProcessor {
       if (messageDesc != null) {
         putDistinct(msgAndEnumLocalToFqn, symbol.name(), fullName);
         symbol.setType(typeRegistry.getProtoImportType(messageDesc));
+        symbol.setSymbolKind(SymbolKind.PROTO_MESSAGE);
         continue;
       }
 
@@ -123,6 +125,7 @@ final class ProtoImportProcessor implements ImportsPass.ImportProcessor {
       if (enumDesc != null) {
         putDistinct(msgAndEnumLocalToFqn, symbol.name(), fullName);
         symbol.setType(typeRegistry.getProtoImportType(enumDesc));
+        symbol.setSymbolKind(SymbolKind.PROTO_ENUM);
         continue;
       }
 
@@ -130,10 +133,12 @@ final class ProtoImportProcessor implements ImportsPass.ImportProcessor {
       if (extDesc != null) {
         putDistinct(this.extLocalToFqn, symbol.name(), fullName);
         symbol.setType(typeRegistry.getProtoImportType(extDesc));
+        symbol.setSymbolKind(SymbolKind.PROTO_EXT);
         continue;
       }
 
       symbol.setType(UnknownType.getInstance());
+      symbol.setSymbolKind(SymbolKind.UNKNOWN);
 
       ImportsPass.reportUnknownSymbolError(
           errorReporter,

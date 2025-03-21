@@ -48,7 +48,6 @@ import com.google.template.soy.types.ImportType;
 import com.google.template.soy.types.NamespaceType;
 import com.google.template.soy.types.ProtoEnumImportType;
 import com.google.template.soy.types.ProtoImportType;
-import com.google.template.soy.types.ProtoModuleImportType;
 import com.google.template.soy.types.SoyProtoEnumType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.StringType;
@@ -171,7 +170,7 @@ final class ResolveDottedImportsPass implements CompilerFilePass {
     }
     SoyType type = defn.type();
 
-    if (type.getKind() == SoyType.Kind.PROTO_ENUM_TYPE) {
+    if (defn.getSymbolKind() == SymbolKind.PROTO_ENUM) {
       EnumDescriptor enumDescriptor = ((ProtoEnumImportType) type).getDescriptor();
       EnumValueDescriptor val = enumDescriptor.findValueByName(fieldName);
       Identifier id = Identifier.create(refn.getName() + "." + fieldName, fullLocation);
@@ -187,15 +186,17 @@ final class ResolveDottedImportsPass implements CompilerFilePass {
     SoyType nestedType = null;
     SymbolKind nestedSymbolKind = null;
 
-    if (type.getKind() == SoyType.Kind.PROTO_MODULE) {
-      // e.g. {protos.Message()}
-      nestedType =
-          typeRegistry.getProtoImportType(
-              ((ProtoModuleImportType) type).getDescriptor(), fieldName);
-    } else if (type.getKind() == SoyType.Kind.PROTO_TYPE) {
+    if (type.getKind() == SoyType.Kind.PROTO_TYPE) {
       // e.g. {Message.Nested()}
       nestedType =
           typeRegistry.getProtoImportType(((ProtoImportType) type).getDescriptor(), fieldName);
+      if (nestedType.getKind() == SoyType.Kind.PROTO_TYPE) {
+        nestedSymbolKind = SymbolKind.PROTO_MESSAGE;
+      } else if (nestedType.getKind() == SoyType.Kind.PROTO_ENUM_TYPE) {
+        nestedSymbolKind = SymbolKind.PROTO_ENUM;
+      } else if (nestedType.getKind() == SoyType.Kind.PROTO_EXTENSION) {
+        nestedSymbolKind = SymbolKind.PROTO_EXT;
+      }
     } else if (type.getKind() == SoyType.Kind.PROTO_EXTENSION) {
       // Force a warning here.
       nestedType = UnknownType.getInstance();
@@ -269,8 +270,6 @@ final class ResolveDottedImportsPass implements CompilerFilePass {
         return "proto enum";
       case PROTO_EXTENSION:
         return "proto extension";
-      case PROTO_MODULE:
-        return "proto module";
       case TEMPLATE_TYPE:
         return "template";
       default:
