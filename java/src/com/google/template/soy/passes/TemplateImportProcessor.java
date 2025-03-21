@@ -106,7 +106,7 @@ public final class TemplateImportProcessor implements ImportsPass.ImportProcesso
             /* validSymbols= */ fileMetadata.allSymbolNames());
       }
 
-      if (!symbol.hasType() && fileMetadata instanceof FileMetadata) {
+      if (fileMetadata instanceof FileMetadata) {
         setSymbolType(symbol, (FileMetadata) fileMetadata);
       }
     }
@@ -118,19 +118,22 @@ public final class TemplateImportProcessor implements ImportsPass.ImportProcesso
   }
 
   static void setSymbolType(ImportedVar symbol, FileMetadata fileMetadata) {
-    Preconditions.checkArgument(!symbol.hasType());
     String name = symbol.getSymbol();
     if (fileMetadata.hasConstant(name)) {
+      Preconditions.checkArgument(!symbol.hasType());
       symbol.setType(fileMetadata.getConstant(name).getType());
     } else if (fileMetadata.hasExtern(name)) {
+      Preconditions.checkArgument(!symbol.hasType());
       // The return type is what's important here, and extern overloads are
       // required to have the same return type, so it's okay to just grab the
       // first one.
       symbol.setType(Iterables.getFirst(fileMetadata.getExterns(name), null).getSignature());
     } else if (fileMetadata.hasTypeDef(name)) {
+      Preconditions.checkArgument(!symbol.hasType());
       symbol.setType(fileMetadata.getTypeDef(name).getType());
     } else if (fileMetadata.hasTemplate(name)) {
-      symbol.setType(TemplateImportType.create(templateFqn(fileMetadata, name)));
+      ((TemplateImportType) symbol.type())
+          .setBasicTemplateType(fileMetadata.getTemplate(name).getTemplateType());
     }
   }
 

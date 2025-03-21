@@ -16,7 +16,6 @@
 
 package com.google.template.soy.passes;
 
-import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
@@ -31,7 +30,6 @@ import com.google.template.soy.soytree.FileMetadata;
 import com.google.template.soy.soytree.FileSetMetadata;
 import com.google.template.soy.soytree.ImportNode;
 import com.google.template.soy.soytree.ImportNode.ImportType;
-import com.google.template.soy.soytree.Metadata;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
@@ -58,14 +56,10 @@ import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 /** Resolves all {@link TypeNode}s in the AST. */
-final class ResolveDeclaredTypesPass
-    implements CompilerFilePass, CompilerFileSetPass.TopologicallyOrdered {
+final class ResolveDeclaredTypesPass extends AbstractTopologicallyOrderedPass {
   private final ErrorReporter errorReporter;
   private final boolean disableAllTypeChecking;
   private final boolean allowMissingSoyDeps;
-  private final Supplier<FileSetMetadata> fileSetMetadataFromDeps;
-
-  private final Map<SourceLogicalPath, SoyFileNode> pathToFileNode = new HashMap<>();
 
   private AccumulatingTypeRegistry typeRegistry;
   private TypeNodeConverter converter;
@@ -84,10 +78,10 @@ final class ResolveDeclaredTypesPass
       boolean disableAllTypeChecking,
       boolean allowMissingSoyDeps,
       Supplier<FileSetMetadata> fileSetMetadataFromDeps) {
+    super(fileSetMetadataFromDeps);
     this.errorReporter = errorReporter;
     this.disableAllTypeChecking = disableAllTypeChecking;
     this.allowMissingSoyDeps = allowMissingSoyDeps;
-    this.fileSetMetadataFromDeps = fileSetMetadataFromDeps;
   }
 
   @Override
@@ -98,8 +92,6 @@ final class ResolveDeclaredTypesPass
             .setTypeRegistry(typeRegistry)
             .setReportMissingTypes(!disableAllTypeChecking && !allowMissingSoyDeps)
             .build();
-    pathToFileNode.put(file.getFilePath().asLogicalPath(), file);
-
     new NodeVisitor().exec(file);
   }
 
@@ -110,13 +102,7 @@ final class ResolveDeclaredTypesPass
     @Override
     protected void visitImportNode(ImportNode node) {
       if (node.getImportType() == ImportType.TEMPLATE) {
-        FileMetadata fileMetadata = fileSetMetadataFromDeps.get().getFile(node.getSourceFilePath());
-        if (fileMetadata == null) {
-          SoyFileNode fileNode = pathToFileNode.get(node.getSourceFilePath());
-          if (fileNode != null) {
-            fileMetadata = Metadata.forAst(fileNode);
-          }
-        }
+        FileMetadata fileMetadata = getFileMetadata(node.getSourceFilePath());
 
         if (fileMetadata == null) {
           super.visitImportNode(node);
@@ -133,13 +119,12 @@ final class ResolveDeclaredTypesPass
                             node.getModuleAlias() + "." + typeDef.getName(), typeDef.getType());
                   });
         } else {
-          FileMetadata fileMetadataFinal = fileMetadata;
           node.getIdentifiers().stream()
               .filter(v -> v.getSymbolKind() == SymbolKind.TYPEDEF)
               .forEach(
                   var -> {
                     if (!var.hasType()) {
-                      FileMetadata.TypeDef typeDef = fileMetadataFinal.getTypeDef(var.getSymbol());
+                      FileMetadata.TypeDef typeDef = fileMetadata.getTypeDef(var.getSymbol());
                       var.setType(typeDef.getType());
                     }
                     boolean unusedTrue =

@@ -22,7 +22,6 @@ import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static com.google.common.collect.ImmutableSortedSet.toImmutableSortedSet;
 import static com.google.common.collect.Iterables.getOnlyElement;
 import static com.google.template.soy.passes.CheckTemplateCallsPass.ARGUMENT_TYPE_MISMATCH;
-import static com.google.template.soy.passes.TemplateImportProcessor.templateFqn;
 import static com.google.template.soy.types.SoyTypes.SAFE_PROTO_TO_SANITIZED_TYPE;
 import static com.google.template.soy.types.SoyTypes.getMapKeysType;
 import static com.google.template.soy.types.SoyTypes.getMapValuesType;
@@ -40,19 +39,15 @@ import com.google.common.base.Preconditions;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
-import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableListMultimap;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.SetMultimap;
-import com.google.common.collect.Table;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.Identifier;
@@ -159,8 +154,6 @@ import com.google.template.soy.soytree.CallDelegateNode;
 import com.google.template.soy.soytree.CallParamValueNode;
 import com.google.template.soy.soytree.ConstNode;
 import com.google.template.soy.soytree.ExternNode;
-import com.google.template.soy.soytree.FileMetadata;
-import com.google.template.soy.soytree.FileMetadata.Constant;
 import com.google.template.soy.soytree.FileMetadata.Extern;
 import com.google.template.soy.soytree.FileSetMetadata;
 import com.google.template.soy.soytree.ForNonemptyNode;
@@ -182,7 +175,6 @@ import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.SwitchCaseNode;
 import com.google.template.soy.soytree.SwitchDefaultNode;
 import com.google.template.soy.soytree.SwitchNode;
-import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.ImportedVar;
 import com.google.template.soy.soytree.defn.ImportedVar.SymbolKind;
@@ -235,7 +227,7 @@ import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
 /** Visitor which resolves all expression types. */
-final class ResolveExpressionTypesPass implements CompilerFileSetPass.TopologicallyOrdered {
+final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass {
   // Constant type resolution requires topological ordering of inputs.
 
   // Keep in alphabetical order.
@@ -403,7 +395,6 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
 
   private final SoyMethod.Registry methodRegistry;
   private final boolean rewriteShortFormCalls;
-  private final Supplier<FileSetMetadata> templateRegistryFromDeps;
 
   /** Cached map that converts a string representation of types to actual soy types. */
   private final Map<Signature, ResolvedSignature> signatureMap = new HashMap<>();
@@ -422,9 +413,6 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
   private SoyTypeRegistry typeRegistry;
   private TypeNodeConverter pluginTypeConverter;
   private final PluginResolver.Mode pluginResolutionMode;
-  private ImmutableMap<String, TemplateType> allTemplateTypes;
-  private ConstantsTypeIndex constantsTypeLookup;
-  private ExternsTypeIndex externsTypeLookup;
   private SoyFileNode currentFile;
 
   ResolveExpressionTypesPass(
@@ -433,6 +421,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
       boolean allowMissingSoyDeps,
       boolean rewriteShortFormCalls,
       Supplier<FileSetMetadata> templateRegistryFromDeps) {
+    super(templateRegistryFromDeps);
     this.errorReporter = errorReporter;
     this.pluginResolutionMode =
         allowMissingSoyDeps
@@ -441,7 +430,6 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
                 ? PluginResolver.Mode.REQUIRE_DEFINITIONS
                 : pluginResolver.getPluginResolutionMode());
     this.rewriteShortFormCalls = rewriteShortFormCalls;
-    this.templateRegistryFromDeps = templateRegistryFromDeps;
     this.methodRegistry =
         new CompositeMethodRegistry(
             ImmutableList.of(BuiltinMethod.REGISTRY, new PluginMethodRegistry(pluginResolver)));
@@ -450,52 +438,9 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
   }
 
   @Override
-  public Result run(ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator) {
-    CollectTemplateTypesVisitor templateTypesVisitor = new CollectTemplateTypesVisitor();
-    Map<String, TemplateType> allTemplateTypesBuilder = new HashMap<>();
-    this.externsTypeLookup = new ExternsTypeIndex(templateRegistryFromDeps);
-    for (SoyFileNode sourceFile : sourceFiles) {
-      prepFile(sourceFile);
-      // This needs to happen before templateTypesVisitor so it can infer the type of an extern
-      // that's the default value of a @state variable.
-      setExternTypes(sourceFile);
-      allTemplateTypesBuilder.putAll(templateTypesVisitor.exec(sourceFile));
-    }
-    this.allTemplateTypes = ImmutableMap.copyOf(allTemplateTypesBuilder);
-    this.constantsTypeLookup = new ConstantsTypeIndex(templateRegistryFromDeps);
-
-    for (SoyFileNode sourceFile : sourceFiles) {
-      prepFile(sourceFile);
-      new TypeAssignmentSoyVisitor().exec(sourceFile);
-    }
-    return Result.CONTINUE;
-  }
-
-  private void setExternTypes(SoyFileNode sourceFile) {
-    // Process externs defined in this file.
-    sourceFile
-        .getExterns()
-        .forEach(
-            extern -> {
-              extern.getVar().setType(extern.getType());
-              externsTypeLookup.put(extern);
-            });
-    // Process imported externs.
-    sourceFile
-        .getImports()
-        .forEach(
-            importNode ->
-                importNode.visitVars(
-                    (var) -> {
-                      if (!var.hasType() && var.getSymbolKind() == SymbolKind.EXTERN) {
-                        ImmutableList<? extends Extern> types =
-                            externsTypeLookup.getRefs(var.getSourceFilePath(), var.getSymbol());
-                        // The return type is what's important here, and extern overloads are
-                        // required to have the same return type, so it's okay to just grab the
-                        // first one.
-                        var.setType(types.get(0).getSignature());
-                      }
-                    }));
+  void run(SoyFileNode file, IdGenerator nodeIdGen) {
+    prepFile(file);
+    new TypeAssignmentSoyVisitor().exec(file);
   }
 
   private void prepFile(SoyFileNode file) {
@@ -513,48 +458,25 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
     return new TypeNarrowingConditionVisitor(exprEquivalence, typeRegistry);
   }
 
-  /**
-   * A quick first subpass to determine the template type for all templates in every file the file
-   * set being compiled.
-   */
-  private final class CollectTemplateTypesVisitor
-      extends AbstractSoyNodeVisitor<Map<String, TemplateType>> {
-
-    private Map<String, TemplateType> types;
-
-    @Override
-    public Map<String, TemplateType> exec(SoyNode node) {
-      types = new HashMap<>();
-      visit(node);
-      return types;
-    }
-
-    @Override
-    protected void visitTemplateNode(TemplateNode node) {
-      // We only need to visit params for which we will infer the type from the default value. These
-      // params have a default value and no type declaration. Because we never infer types from
-      // template types this is safe to do without regards to topological ordering of calls.
-      node.getHeaderParams().stream()
-          .filter(headerVar -> headerVar.hasDefault() && !headerVar.hasType())
-          .forEach(
-              headerVar -> {
-                paramInfExprVisitor.exec(headerVar.defaultValue());
-                headerVar.setType(headerVar.defaultValue().getRoot().getAuthoredType());
-              });
-
-      // These template types only contain the information from passes that run before this. There
-      // is currently nothing that guarantees that a subsequent pass doesn't mutate the TemplateNode
-      // in such a way as the TemplateType changes.
-      types.put(node.getTemplateName(), Metadata.buildTemplateType(node));
-    }
+  private final class TypeAssignmentSoyVisitor extends AbstractSoyNodeVisitor<Void> {
 
     @Override
     protected void visitSoyFileNode(SoyFileNode node) {
+      // Visit in order of what types of nodes can reference other types of nodes.
+      // Alternately, we could do a topological traversal to allow more types of references.
+      node.getImports().forEach(this::visit);
+      node.getTypeDefs().forEach(this::visit);
+      node.getExterns().forEach(this::calculateExternType);
+
+      // The following ordering means that we have decided to allow constants to reference templates
+      // in the same file, at the cost of having to disallow params from omitting a type and having
+      // a default value that's a const in the same file.
+      node.getTemplates().forEach(this::calculateTemplateType);
+      node.getConstants().forEach(this::visit);
+
+      node.getExterns().forEach(this::visit);
       node.getTemplates().forEach(this::visit);
     }
-  }
-
-  private final class TypeAssignmentSoyVisitor extends AbstractSoyNodeVisitor<Void> {
 
     @Override
     protected void visitImportNode(ImportNode node) {
@@ -565,25 +487,31 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
       }
       node.visitVars(
           (var) -> {
-            if (var.hasType()) {
+            if (var.getSymbolKind() == SymbolKind.TEMPLATE) {
+              if (var.hasType()
+                  && ((TemplateImportType) var.type()).getBasicTemplateType() != null) {
+                return;
+              }
+            } else if (var.hasType()) {
               return;
             }
-            if (var.getSymbolKind() == SymbolKind.CONST) {
-              SoyType newType = UnknownType.getInstance();
-              SoyType constantType =
-                  constantsTypeLookup.get(var.getSourceFilePath(), var.getSymbol());
-              if (constantType != null) {
-                newType = constantType;
-              }
-              var.setType(newType);
-            } else if (var.getSymbolKind() == SymbolKind.TEMPLATE) {
-              var.setType(
-                  TemplateImportType.create(
-                      templateFqn(
-                          templateRegistryFromDeps.get().getFile(var.getSourceFilePath()),
-                          var.getSymbol())));
-            }
+            TemplateImportProcessor.setSymbolType(var, getFileMetadata(var.getSourceFilePath()));
           });
+    }
+
+    private void calculateTemplateType(TemplateNode node) {
+      // We only need to visit params for which we will infer the type from the default value. These
+      // params have a default value and no type declaration. Because we never infer types from
+      // template types this is safe to do without regards to topological ordering of calls.
+      node.getHeaderParams().stream()
+          .filter(headerVar -> headerVar.hasDefault() && !headerVar.hasType())
+          .forEach(
+              headerVar -> {
+                paramInfExprVisitor.exec(headerVar.defaultValue());
+                headerVar.setType(headerVar.defaultValue().getRoot().getAuthoredType());
+              });
+      ((TemplateImportType) node.asVarDefn().type())
+          .setBasicTemplateType(Metadata.buildTemplateType(node));
     }
 
     @Override
@@ -694,6 +622,10 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
       visitSoyNode(node);
     }
 
+    private void calculateExternType(ExternNode node) {
+      node.getVar().setType(node.getType());
+    }
+
     @Override
     protected void visitConstNode(ConstNode node) {
       constExprVisitor.exec(node.getExpr());
@@ -713,9 +645,6 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
         inferredType = declaredType;
       }
       node.getVar().setType(inferredType);
-      // Store the type of this constant in the index so that imports of this constant in other
-      // files (topologically processed) can have their type set in #visitImportNode.
-      constantsTypeLookup.put(node);
     }
 
     @Override
@@ -1310,27 +1239,6 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
 
     @Override
     protected void visitVarRefNode(VarRefNode varRef) {
-      // Only resolve template types after CollectTemplateTypesVisitor has run. Param type inference
-      // should not need this.
-      if (allTemplateTypes != null) {
-        VarDefn defn = varRef.getDefnDecl();
-        if (defn != null && defn.hasType() && defn.type().getKind() == Kind.TEMPLATE_TYPE) {
-          TemplateImportType templateType = (TemplateImportType) defn.type();
-          if (templateType.getBasicTemplateType() == null) {
-            String fqn = templateType.getName();
-            TemplateMetadata metadataFromLib =
-                templateRegistryFromDeps.get().getBasicTemplateOrElement(fqn);
-            if (metadataFromLib != null) {
-              // Type is available from deps.
-              templateType.setBasicTemplateType(metadataFromLib.getTemplateType());
-            } else {
-              // Type is available from CollectTemplateTypesVisitor.
-              templateType.setBasicTemplateType(allTemplateTypes.get(fqn));
-            }
-          }
-        }
-      }
-
       SoyType newType = substitutions.getTypeSubstitution(varRef);
       if (newType != null) {
         varRef.setSubstituteType(newType);
@@ -2183,18 +2091,27 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
             errorReporter.report(node.getFunctionNameLocation(), INCORRECT_ARG_STYLE);
             node.setSoyFunction(FunctionNode.UNRESOLVED);
           } else {
-            String functionName = ((VarRefNode) node.getNameExpr()).getName();
-            SourceLogicalPath filePath = currentFile.getFilePath().asLogicalPath();
             VarDefn defn = ((VarRefNode) node.getNameExpr()).getDefnDecl();
+            List<? extends Extern> externTypes;
+
             if (defn.kind() == VarDefn.Kind.IMPORT_VAR) {
-              filePath = ((ImportedVar) defn).getSourceFilePath();
-              functionName = ((ImportedVar) defn).getSymbol();
+              externTypes =
+                  getFileMetadata(((ImportedVar) defn).getSourceFilePath())
+                      .getExterns(((ImportedVar) defn).getSymbol());
             } else if (defn.kind() == VarDefn.Kind.LOCAL_VAR || defn.kind() == VarDefn.Kind.PARAM) {
               node.setSoyFunction(FunctionNode.FUNCTION_POINTER);
               node.setType(((FunctionType) nameExprType).getReturnType());
               return;
+            } else {
+              externTypes =
+                  currentFile.getExterns().stream()
+                      .filter(
+                          e ->
+                              e.getVar().name().equals(((VarRefNode) node.getNameExpr()).getName()))
+                      .map(Metadata::forAst)
+                      .collect(toImmutableList());
             }
-            List<? extends Extern> externTypes = externsTypeLookup.getRefs(filePath, functionName);
+
             if (maybeSetExtern(node, externTypes)) {
               visitInternalExtern(node);
               tryApplySubstitution(node);
@@ -2508,7 +2425,11 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
       if (existingType.getKind() == Kind.TEMPLATE_TYPE) {
         TemplateType basicType = ((TemplateImportType) existingType).getBasicTemplateType();
         node.setType(
-            Preconditions.checkNotNull(basicType, "No type for %s", node.getResolvedName()));
+            Preconditions.checkNotNull(
+                basicType,
+                "No type for %s (%s)",
+                node.getResolvedName(),
+                node.getSourceLocation()));
       }
     }
 
@@ -3272,72 +3193,6 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
           .filter(method -> method.appliesToBase(baseType))
           .map(SoySourceFunctionMethod::getMethodName)
           .collect(toImmutableSet());
-    }
-  }
-
-  private static class ConstantsTypeIndex {
-    private final Supplier<FileSetMetadata> deps;
-    private final Table<SourceLogicalPath, String, ConstNode> sources = HashBasedTable.create();
-
-    public ConstantsTypeIndex(Supplier<FileSetMetadata> deps) {
-      this.deps = deps;
-    }
-
-    @Nullable
-    SoyType get(SourceLogicalPath path, String name) {
-      ConstNode fromSources = sources.get(path, name);
-      if (fromSources != null) {
-        return fromSources.getVar().type();
-      }
-      FileMetadata fromDeps = deps.get().getFile(path);
-      if (fromDeps != null) {
-        Constant c = fromDeps.getConstant(name);
-        if (c != null) {
-          return c.getType();
-        }
-      }
-      return null;
-    }
-
-    void put(ConstNode node) {
-      SoyFileNode file = node.getNearestAncestor(SoyFileNode.class);
-      sources.put(file.getFilePath().asLogicalPath(), node.getVar().name(), node);
-    }
-  }
-
-  private static class ExternsTypeIndex {
-    private final Supplier<FileSetMetadata> deps;
-    private final Table<SourceLogicalPath, String, List<ExternNode>> sources =
-        HashBasedTable.create();
-
-    public ExternsTypeIndex(Supplier<FileSetMetadata> deps) {
-      this.deps = deps;
-    }
-
-    ImmutableList<? extends Extern> getRefs(SourceLogicalPath path, String name) {
-      List<ExternNode> fromSources = sources.get(path, name);
-      if (fromSources != null) {
-        return fromSources.stream().map(Metadata::forAst).collect(toImmutableList());
-      }
-      FileMetadata fromDeps = deps.get().getFile(path);
-      if (fromDeps != null) {
-        return ImmutableList.copyOf(fromDeps.getExterns(name));
-      }
-      return ImmutableList.of();
-    }
-
-    void put(ExternNode node) {
-      SourceLogicalPath path =
-          node.getNearestAncestor(SoyFileNode.class).getFilePath().asLogicalPath();
-      String name = node.getVar().name();
-      List<ExternNode> nodes = sources.get(path, name);
-      if (nodes != null) {
-        nodes.add(node);
-      } else {
-        nodes = new ArrayList<>();
-        nodes.add(node);
-        sources.put(path, name, nodes);
-      }
     }
   }
 }
