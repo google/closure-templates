@@ -36,6 +36,7 @@ import com.google.template.soy.shared.internal.BuiltinMethod;
 import com.google.template.soy.soytree.ImportNode.ImportType;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
+import com.google.template.soy.types.ProtoExtensionImportType;
 import com.google.template.soy.types.SoyProtoEnumType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
@@ -347,7 +348,7 @@ public final class JavaGenerationUtils {
                   } else if (type.getKind() == Kind.PROTO_ENUM) {
                     return ((SoyProtoEnumType) type).getDescriptor();
                   } else if (type.getKind() == Kind.PROTO_EXTENSION) {
-                    return ((SoyProtoEnumType) type).getDescriptor();
+                    return ((ProtoExtensionImportType) type).getDescriptor();
                   }
                   return null;
                 })
