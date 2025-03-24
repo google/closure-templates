@@ -253,7 +253,7 @@ public class BytecodeCompilerTest {
         .isEqualTo("<div>foo</div>");
     // If debugSoyTemplateInfo is enabled, we should render additional HTML comments.
     assertThat(renderWithContext(template, getDefaultContextWithDebugInfo(templates)))
-        .isEqualTo("<div data-debug-soy=\"ns.html no-path:4\">foo</div>");
+        .isEqualTo("<div data-debug-soy=\"ns.html no-path:3\">foo</div>");
 
     // We should never render these comments for templates with kind="text".
     template = templates.getTemplate("ns.text");

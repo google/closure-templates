@@ -40,9 +40,9 @@ public final class AddDebugAttributesPassTest {
     assertRewritten(
         join(
             "{template foo}\n",
-            "<div" + injectedCode(4) + "></div>",
-            "<input" + injectedCode(4) + "/>",
-            "<a" + injectedCode(4) + "></a>\n",
+            "<div" + injectedCode(3) + "></div>",
+            "<input" + injectedCode(3) + "/>",
+            "<a" + injectedCode(3) + "></a>\n",
             "{/template}"),
         join("{template foo}\n", "<div></div><input /><a></a>\n", "{/template}"));
 
@@ -50,7 +50,7 @@ public final class AddDebugAttributesPassTest {
     assertRewritten(
         join(
             "{template foo}\n",
-            "<div" + injectedCode(4) + ">",
+            "<div" + injectedCode(3) + ">",
             "<input/><a></a></div>\n",
             "{/template}"),
         join("{template foo}\n", "<div><input /><a></a></div>\n", "{/template}"));
@@ -62,7 +62,7 @@ public final class AddDebugAttributesPassTest {
         join(
             "{template foo}\n",
             "  {@param b: bool}\n",
-            "<div" + injectedCode(5) + ">",
+            "<div" + injectedCode(3) + ">",
             "{if $b}",
             "<div><input/>",
             "</div>",
@@ -84,7 +84,7 @@ public final class AddDebugAttributesPassTest {
             "{template foo}\n",
             "  {@param b: bool}\n",
             "{if $b}",
-            "<div" + injectedCode(5) + "><input/>",
+            "<div" + injectedCode(3) + "><input/>",
             "</div>",
             "{/if}\n",
             "{/template}"),
@@ -101,8 +101,8 @@ public final class AddDebugAttributesPassTest {
         join(
             "{template foo}\n",
             "  {@param b: bool}\n",
-            "{if $b}<div" + injectedCode(5) + ">{/if}",
-            "<div" + injectedCode(5) + "></div>",
+            "{if $b}<div" + injectedCode(3) + ">{/if}",
+            "<div" + injectedCode(3) + "></div>",
             "{if $b}</div>{/if}\n",
             "{/template}"),
         join(

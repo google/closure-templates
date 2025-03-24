@@ -17,6 +17,7 @@
 package com.google.template.soy.passes;
 
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.SourceLocationMapper;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.exprtree.FunctionNode;
@@ -73,12 +74,13 @@ final class AddDebugAttributesPass implements CompilerFilePass {
 
   @Override
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
-    new Visitor(nodeIdGen).exec(file);
+    new Visitor(nodeIdGen, file.getSourceMap()).exec(file);
   }
 
   private static final class Visitor extends AbstractSoyNodeVisitor<Void> {
     /** Tracks the user name of the current template. */
-    String currentTemplate;
+    TemplateNode currentTemplate;
+
     /**
      * Tracks the number of open tags minus the number of close tags in a block (clamped to be
      * non-negative).
@@ -86,14 +88,16 @@ final class AddDebugAttributesPass implements CompilerFilePass {
     int tagDepth;
 
     final IdGenerator nodeIdGen;
+    private final SourceLocationMapper sourceMap;
 
-    Visitor(IdGenerator nodeIdGen) {
+    Visitor(IdGenerator nodeIdGen, SourceLocationMapper sourceMap) {
       this.nodeIdGen = nodeIdGen;
+      this.sourceMap = sourceMap;
     }
 
     @Override
     protected void visitTemplateNode(TemplateNode node) {
-      currentTemplate = node.getTemplateNameForUserMsgs();
+      currentTemplate = node;
       visitBlock(node);
       currentTemplate = null;
     }
@@ -171,16 +175,18 @@ final class AddDebugAttributesPass implements CompilerFilePass {
           new HtmlAttributeValueNode(
               nodeIdGen.genId(), insertionLocation, HtmlAttributeValueNode.Quotes.DOUBLE);
       attribute.addChild(attrValue);
+
+      SourceLocation originalLoc = sourceMap.map(currentTemplate.getTemplateNameLocation());
       attrValue.addChild(
           new RawTextNode(
               nodeIdGen.genId(),
               // escape special characters
               Sanitizers.escapeHtmlAttribute(
-                  currentTemplate
+                  currentTemplate.getTemplateNameForUserMsgs()
                       + " "
-                      + insertionLocation.getFilePath().path()
+                      + originalLoc.getFilePath().path()
                       + ":"
-                      + insertionLocation.getBeginLine()),
+                      + originalLoc.getBeginLine()),
               insertionLocation));
       ifCondNode.addChild(attribute);
       ifNode.addChild(ifCondNode);
