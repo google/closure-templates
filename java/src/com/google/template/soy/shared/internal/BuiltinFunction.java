@@ -48,6 +48,7 @@ public enum BuiltinFunction implements SoyFunction {
    */
   EVAL_TOGGLE("$evalToggle"),
   XID("xid"),
+  RECORD_JS_ID("$recordJsId"),
   SOY_SERVER_KEY("$soyServerKey"),
   UNKNOWN_JS_GLOBAL("unknownJsGlobal"),
   REMAINDER("remainder"),
@@ -94,6 +95,7 @@ public enum BuiltinFunction implements SoyFunction {
       case SOY_SERVER_KEY:
       case CHECK_NOT_NULL:
       case XID:
+      case RECORD_JS_ID:
       case UNKNOWN_JS_GLOBAL:
       case LEGACY_DYNAMIC_TAG:
       case REMAINDER:
@@ -169,6 +171,7 @@ public enum BuiltinFunction implements SoyFunction {
       case CSS: // implicitly depends on a renaming map or js compiler flag
       case EVAL_TOGGLE:
       case XID: // implicitly depends on a renaming map or js compiler flag
+      case RECORD_JS_ID:
       case SOY_SERVER_KEY: // Relies on call stack dependent on rendering
       case UNKNOWN_JS_GLOBAL: // this is a black box from the compiler perspective
       case LEGACY_DYNAMIC_TAG: // this is a black box from the compiler perspective

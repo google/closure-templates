@@ -230,7 +230,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
   /** The current XID renaming map. */
   private final SoyIdRenamingMap xidRenamingMap;
 
-  /** If we should render additional HTML comments for runtime insepction. */
+  /** If we should render additional HTML comments for runtime inspection. */
   private final boolean debugSoyTemplateInfo;
 
   /** The context for running plugins. */
@@ -904,6 +904,8 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
           return visitToggleFunction(node);
         case XID:
           return visitXidFunction(node);
+        case RECORD_JS_ID:
+          return visitRecordJsIdFunction(node);
         case SOY_SERVER_KEY:
           return visitSoyServerKeyFunction(node);
         case IS_PRIMARY_MSG_IN_USE:
@@ -1194,6 +1196,11 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     String xid = visit(node.getParam(0)).stringValue();
     String renamed = xidRenamingMap.get(xid);
     return (renamed != null) ? StringData.forValue(renamed) : StringData.forValue(xid + "_");
+  }
+
+  private SoyValue visitRecordJsIdFunction(FunctionNode node) {
+    // We don't support the SoyJsTracker in TOFU.
+    return visit(node.getParam(0));
   }
 
   private SoyValue visitSoyServerKeyFunction(FunctionNode node) {

@@ -1782,6 +1782,14 @@ final class ExpressionCompiler {
     }
 
     @Override
+    SoyExpression visitRecordJsIdFunction(FunctionNode node) {
+      // TODO(b/405129116): Consolidate with child xid function, when possible.
+      Expression recordJsId =
+          parameters.getRenderContext().recordJsId(visit(node.getChild(0)).coerceToString());
+      return SoyExpression.forString(recordJsId);
+    }
+
+    @Override
     SoyExpression visitSoyServerKeyFunction(FunctionNode node) {
       ExprNode child = Iterables.getOnlyElement(node.getParams());
       return SoyExpression.forString(MethodRefs.SOY_SERVER_KEY.invoke(visit(child).box()));

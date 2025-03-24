@@ -116,6 +116,9 @@ final class RenderContextExpression extends Expression implements JbcSrcPluginCo
       MethodRef.createNonPure(RenderContext.class, "renameCssSelector", String.class)
           .asNonJavaNullable();
 
+  private static final MethodRef RECORD_JS_ID =
+      MethodRef.createNonPure(RenderContext.class, "recordJsId", String.class);
+
   private static final MethodRef EVAL_TOGGLE =
       MethodRef.createNonPure(RenderContext.class, "evalToggle", String.class);
 
@@ -249,6 +252,10 @@ final class RenderContextExpression extends Expression implements JbcSrcPluginCo
 
   Expression renameCss(String value) {
     return delegate.invoke(RENAME_CSS_SELECTOR, constant(value));
+  }
+
+  Expression recordJsId(SoyExpression value) {
+    return delegate.invoke(RECORD_JS_ID, value);
   }
 
   Expression evalToggle(String toggleName) {

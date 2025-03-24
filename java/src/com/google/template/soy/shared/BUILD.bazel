@@ -23,7 +23,6 @@ RENAMING_MAPS = [
     "SoyIdRenamingMap.java",
 ]
 
-
 TOGGLE_REGISTRY = [
     "ToggleRegistry.java",
 ]
@@ -32,7 +31,10 @@ java_library(
     name = "shared",
     srcs = glob(
         ["*.java"],
-        exclude = RENAMING_MAPS + ["SoyCssTracker.java"] + TOGGLE_REGISTRY,
+        exclude = RENAMING_MAPS + [
+            "SoyCssTracker.java",
+            "SoyJsIdTracker.java",
+        ] + TOGGLE_REGISTRY,
     ),
     visibility = ["//visibility:public"],
     deps = [
@@ -55,13 +57,18 @@ java_library(
     srcs = RENAMING_MAPS + TOGGLE_REGISTRY,
     visibility = ["//visibility:public"],
     deps = [
+        "//java/src/com/google/template/soy/base",
         "@maven//:com_google_code_findbugs_jsr305",
         "@maven//:com_google_guava_guava",
-        "//java/src/com/google/template/soy/base",
     ],
 )
 
 java_library(
     name = "soy_css_tracker",
     srcs = ["SoyCssTracker.java"],
+)
+
+java_library(
+    name = "soy_js_id_tracker",
+    srcs = ["SoyJsIdTracker.java"],
 )

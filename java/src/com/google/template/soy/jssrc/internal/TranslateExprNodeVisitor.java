@@ -1102,6 +1102,8 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
           return visitToggleFunction(node, /* useGoogModuleSyntax= */ false);
         case XID:
           return visitXidFunction(node);
+        case RECORD_JS_ID:
+          return visitRecordJsIdFunction(node);
         case SOY_SERVER_KEY:
           return visitSoyServerKeyFunction(node);
         case PROTO_INIT:
@@ -1228,6 +1230,11 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
 
   private Expression visitXidFunction(FunctionNode node) {
     return XID.call(visitParams(node));
+  }
+
+  private Expression visitRecordJsIdFunction(FunctionNode node) {
+    // This is a no-op in JS.
+    return visit(node.getChild(0));
   }
 
   private Expression visitSoyServerKeyFunction(FunctionNode node) {
