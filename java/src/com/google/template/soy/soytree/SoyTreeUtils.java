@@ -720,6 +720,9 @@ public final class SoyTreeUtils {
       ParentSoyNode<? extends SoyNode> node) {
     SanitizedContentKind kind = null;
     for (SoyNode child : getChildrenNoControlFlows(node)) {
+      if (child instanceof LetContentNode || child instanceof LetValueNode) {
+        continue;
+      }
       if (!(child instanceof CallBasicNode)) {
         return null;
       }
