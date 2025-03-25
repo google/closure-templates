@@ -53,7 +53,6 @@ import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SwitchNode;
 import com.google.template.soy.soytree.TemplateNode;
-import com.google.template.soy.types.StringType;
 import java.util.List;
 import java.util.Optional;
 
@@ -251,16 +250,7 @@ public final class DesugarHtmlNodesPass implements CompilerFileSetPass {
       if (node.hasValue()) {
         builder.add(new RawTextNode(idGenerator.genId(), "=", node.getEqualsLocation()));
         // normally there would only be 1 child, but rewriting may have split it into multiple
-        for (StandaloneNode child : node.getChildren().subList(1, node.numChildren())) {
-          if ((node.definitelyMatchesAttributeName("jscontroller")
-                  || node.definitelyMatchesAttributeName("jsmodel")
-                  || node.definitelyMatchesAttributeName("jscallback"))
-              && child instanceof PrintNode) {
-            PrintNode printNode = (PrintNode) child;
-            wrapAsRecordJsId(printNode);
-          }
-          builder.add(child);
-        }
+        builder.addAll(node.getChildren().subList(1, node.numChildren()));
       }
       if (!node.hasValue() && node.getStaticKey() == null && !isFlushPendingLoggingAttribute) {
         // Add a space after the last attribute if it is dynamic and the tag is self-closing. If the
@@ -268,18 +258,6 @@ public final class DesugarHtmlNodesPass implements CompilerFileSetPass {
         needsSpaceSelfClosingTag = true;
       }
       replacements = Optional.of(builder.build());
-    }
-
-    private void wrapAsRecordJsId(PrintNode printNode) {
-      FunctionNode jsIdFn =
-          FunctionNode.newPositional(
-              Identifier.create(
-                  BuiltinFunction.RECORD_JS_ID.getName(), printNode.getSourceLocation()),
-              BuiltinFunction.RECORD_JS_ID,
-              printNode.getSourceLocation());
-      jsIdFn.setType(StringType.getInstance());
-      jsIdFn.addChild(printNode.getExpr().getRoot());
-      printNode.getExpr().addChild(jsIdFn);
     }
 
     @Override

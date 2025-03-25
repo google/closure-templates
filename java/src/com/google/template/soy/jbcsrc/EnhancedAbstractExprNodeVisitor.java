@@ -97,8 +97,6 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
           return visitToggleFunction(node);
         case XID:
           return visitXidFunction(node);
-        case RECORD_JS_ID:
-          return visitRecordJsIdFunction(node);
         case IS_PRIMARY_MSG_IN_USE:
           return visitIsPrimaryMsgInUse(node);
         case TO_FLOAT:
@@ -175,10 +173,6 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
   }
 
   T visitCssFunction(FunctionNode node) {
-    return visitExprNode(node);
-  }
-
-  T visitRecordJsIdFunction(FunctionNode node) {
     return visitExprNode(node);
   }
 

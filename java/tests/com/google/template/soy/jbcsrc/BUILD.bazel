@@ -77,7 +77,6 @@ java_library(
         "//java/src/com/google/template/soy/plugin/restricted",
         "//java/src/com/google/template/soy/shared",
         "//java/src/com/google/template/soy/shared:interfaces",
-        "//java/src/com/google/template/soy/shared:soy_js_id_tracker",
         "//java/src/com/google/template/soy/shared/internal",
         "//java/src/com/google/template/soy/shared/restricted",
         "//java/src/com/google/template/soy/soytree",

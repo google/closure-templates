@@ -69,15 +69,6 @@ public final class DesugarHtmlNodesPassTest {
 
     assertRewrite("{let $foo kind=\"attributes\"}     class=foo    {/let}")
         .isEqualTo("{let $foo kind=\"attributes\"}class=foo{/let}");
-
-    assertRewrite("<div jscontroller='{xid('foo')}'></div>")
-        .isEqualTo("<div jscontroller='{$recordJsId(xid('foo'))}'></div>");
-
-    assertRewrite("<div jsmodel='{xid('foo')}'></div>")
-        .isEqualTo("<div jsmodel='{$recordJsId(xid('foo'))}'></div>");
-
-    assertRewrite("<div jscallback='{xid('foo')}'></div>")
-        .isEqualTo("<div jscallback='{$recordJsId(xid('foo'))}'></div>");
   }
 
   // This is a regression test for a bug where we failed to correctly remove whitespace seen in the

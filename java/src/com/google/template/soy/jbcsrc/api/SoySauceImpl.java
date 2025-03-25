@@ -46,7 +46,6 @@ import com.google.template.soy.plugin.java.PluginInstances;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyCssTracker;
 import com.google.template.soy.shared.SoyIdRenamingMap;
-import com.google.template.soy.shared.SoyJsIdTracker;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
@@ -148,7 +147,6 @@ public final class SoySauceImpl implements SoySauce {
     private boolean debugSoyTemplateInfo;
     private SoyLogger logger;
     private SoyCssTracker cssTracker;
-    private SoyJsIdTracker jsIdTracker;
 
     private ParamStore data;
     private SoyInjector ij;
@@ -180,8 +178,7 @@ public final class SoySauceImpl implements SoySauce {
           xidRenamingMap,
           msgBundle,
           debugSoyTemplateInfo,
-          cssTracker,
-          jsIdTracker);
+          cssTracker);
     }
 
     private ParamStore mapAsParamStore(Map<String, ?> source) {
@@ -272,13 +269,6 @@ public final class SoySauceImpl implements SoySauce {
     @Override
     public RendererImpl setCssTracker(SoyCssTracker cssTracker) {
       this.cssTracker = cssTracker;
-      return this;
-    }
-
-    @CanIgnoreReturnValue
-    @Override
-    public RendererImpl setJsIdTracker(SoyJsIdTracker jsIdTracker) {
-      this.jsIdTracker = jsIdTracker;
       return this;
     }
 

@@ -649,8 +649,6 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
         return visitToggleFunction(node);
       case XID:
         return visitXidFunction(node);
-      case RECORD_JS_ID:
-        return visitRecordJsIdFunction(node);
       case SOY_SERVER_KEY:
         return visitSoyServerKeyFunction(node);
       case IS_PRIMARY_MSG_IN_USE:
@@ -722,11 +720,6 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
     return new PyFunctionExprBuilder("runtime.get_xid_name")
         .addArg(visit(node.getParam(0)))
         .asPyExpr();
-  }
-
-  private PyExpr visitRecordJsIdFunction(FunctionNode node) {
-    // This is a no-op in Python.
-    return visit(node.getChild(0));
   }
 
   private PyExpr visitSoyServerKeyFunction(FunctionNode node) {

@@ -43,7 +43,6 @@ import com.google.template.soy.plugin.java.RenderCssHelper;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyCssTracker;
 import com.google.template.soy.shared.SoyIdRenamingMap;
-import com.google.template.soy.shared.SoyJsIdTracker;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.ibm.icu.util.ULocale;
 import java.io.IOException;
@@ -80,7 +79,6 @@ public final class RenderContext {
   private final SoyMsgBundle msgBundle;
 
   private final SoyCssTracker cssTracker;
-  private final SoyJsIdTracker jsIdTracker;
 
   /**
    * Stores memoized {const} values, which in SSR are actually request-scoped values, not Java
@@ -104,8 +102,7 @@ public final class RenderContext {
       @Nullable SoyIdRenamingMap xidRenamingMap,
       @Nullable SoyMsgBundle msgBundle,
       boolean debugSoyTemplateInfo,
-      @Nullable SoyCssTracker cssTracker,
-      @Nullable SoyJsIdTracker jsIdTracker) {
+      @Nullable SoyCssTracker cssTracker) {
     this.templates = templates;
     this.soyJavaDirectivesMap = soyJavaDirectivesMap;
     this.pluginInstances = pluginInstances;
@@ -116,7 +113,6 @@ public final class RenderContext {
     this.msgBundle = msgBundle == null ? SoyMsgBundle.EMPTY : msgBundle;
     this.debugSoyTemplateInfo = debugSoyTemplateInfo;
     this.cssTracker = cssTracker;
-    this.jsIdTracker = jsIdTracker;
   }
 
   @Nullable
@@ -158,15 +154,6 @@ public final class RenderContext {
       cssTracker.trackRequiredCssSelector(string);
     }
     return string;
-  }
-
-  @Nonnull
-  @CanIgnoreReturnValue
-  public String recordJsId(String id) {
-    if (jsIdTracker != null) {
-      jsIdTracker.trackJsId(id);
-    }
-    return id;
   }
 
   public boolean evalToggle(String toggleName) {
@@ -536,7 +523,6 @@ public final class RenderContext {
     private SoyMsgBundle msgBundle;
     private boolean debugSoyTemplateInfo;
     private SoyCssTracker cssTracker;
-    private SoyJsIdTracker jsIdTracker;
     private SoyInjector ijData;
 
     public Builder(
@@ -591,12 +577,6 @@ public final class RenderContext {
     }
 
     @CanIgnoreReturnValue
-    public Builder withJsIdTracker(SoyJsIdTracker jsIdTracker) {
-      this.jsIdTracker = jsIdTracker;
-      return this;
-    }
-
-    @CanIgnoreReturnValue
     public Builder withIj(SoyInjector ijData) {
       this.ijData = checkNotNull(ijData);
       return this;
@@ -613,8 +593,7 @@ public final class RenderContext {
           xidRenamingMap,
           msgBundle,
           debugSoyTemplateInfo,
-          cssTracker,
-          jsIdTracker);
+          cssTracker);
     }
   }
 }
