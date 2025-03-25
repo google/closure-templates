@@ -545,6 +545,9 @@ public final class MethodRefs {
 
   public static final MethodRef CHECK_STRING = createNonPure(SoyValue.class, "checkNullishString");
 
+  public static final MethodRef CHECK_FUNCTION =
+      createNonPure(SoyValue.class, "checkNullishFunction");
+
   public static final MethodRef CHECK_BOOLEAN =
       createNonPure(SoyValue.class, "checkNullishBoolean");
 

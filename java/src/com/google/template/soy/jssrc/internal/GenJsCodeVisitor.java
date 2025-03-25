@@ -658,7 +658,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
           }
           if (var.getSymbolKind() == SymbolKind.EXTERN) {
             Expression translation = dottedIdNoRequire(namespace + "." + var.getSymbol());
-            templateTranslationContext.soyToJsVariableMappings().put(var.getSymbol(), translation);
+            templateTranslationContext.soyToJsVariableMappings().put(var.name(), translation);
           } else if (var.getSymbolKind() == SymbolKind.CONST) {
             templateTranslationContext
                 .soyToJsVariableMappings()

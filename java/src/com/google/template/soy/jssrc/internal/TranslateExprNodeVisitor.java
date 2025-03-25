@@ -1159,24 +1159,15 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
           (SoyJavaScriptSourceFunction) soyFunction,
           visitParams(node),
           translationContext.codeGenerator());
-    } else if (soyFunction instanceof Extern) {
-      Extern ref = (Extern) soyFunction;
-      if (!translationContext.soyToJsVariableMappings().has(ref.getName())) {
+    } else if (soyFunction instanceof Extern || soyFunction == FunctionNode.FUNCTION_POINTER) {
+      String varKey = ((VarRefNode) node.getNameExpr()).getName();
+      if (!translationContext.soyToJsVariableMappings().has(varKey)) {
         // This extern doesn't have a jsimpl. An error has already been reported, but compilation
         // hasn't been halted yet. Return a placeholder value to keep going until errors get
         // reported.
         return LITERAL_UNDEFINED;
       }
-      return translationContext
-          .soyToJsVariableMappings()
-          .get(ref.getName())
-          .call(visitParams(node));
-    } else if (soyFunction == FunctionNode.FUNCTION_POINTER) {
-      VarRefNode ref = (VarRefNode) node.getNameExpr();
-      return translationContext
-          .soyToJsVariableMappings()
-          .get(ref.getName())
-          .call(visitParams(node));
+      return translationContext.soyToJsVariableMappings().get(varKey).call(visitParams(node));
     } else {
       if (!(soyFunction instanceof SoyJsSrcFunction)) {
         errorReporter.report(

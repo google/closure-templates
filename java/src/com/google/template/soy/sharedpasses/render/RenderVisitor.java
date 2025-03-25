@@ -1054,6 +1054,10 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
                                     var.getSymbol());
                             return eval(env, constNode.getExpr(), constNode);
                           }));
+                } else if (var.getSymbolKind() == SymbolKind.EXTERN) {
+                  ExternNode externNode =
+                      externs.get(var.getSourceFilePath(), var.getSymbol()).get(0);
+                  env.bind(var, FunctionValue.create(Metadata.forAst(externNode)));
                 }
               });
         }

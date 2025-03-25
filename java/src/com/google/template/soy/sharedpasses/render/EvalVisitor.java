@@ -1049,13 +1049,17 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     TofuJavaValue[] javaValues = new TofuJavaValue[numJavaParams];
     int idx = 0;
     for (Object boundArg : boundArgs) {
+      // There's type checking on binding params, so these should be in bounds.
       javaValues[idx++] = (TofuJavaValue) boundArg;
     }
     for (TofuJavaValue param : params) {
-      javaValues[idx++] = param;
+      // You can pass extra params to a pointer, so these might overflow.
+      if (javaValues.length > idx) {
+        javaValues[idx++] = param;
+      }
     }
-    // Add implicit params.
-    for (int i = idx; i < numJavaParams; i++) {
+    // Add implicit params. Start from index=0 since we may have overflowed passing extra params.
+    for (int i = 0; i < numJavaParams; i++) {
       Class<?> implicitType = method.arguments().get(i);
       if (implicitType == Dir.class) {
         javaValues[i] = TofuJavaValue.forRaw(context.getBidiGlobalDir().toDir());
@@ -1063,8 +1067,6 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
         javaValues[i] = context.getULocale();
       } else if (implicitType == RenderCssHelper.class) {
         javaValues[i] = TofuJavaValue.forRaw(getRenderCssHelper());
-      } else {
-        throw new IllegalArgumentException(implicitType.getName());
       }
     }
     return javaValues;

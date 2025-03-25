@@ -63,6 +63,11 @@ public abstract class FunctionValue<T> extends SoyValue {
   }
 
   @Override
+  public SoyValue checkNullishFunction() {
+    return this;
+  }
+
+  @Override
   public final boolean coerceToBoolean() {
     return true;
   }
