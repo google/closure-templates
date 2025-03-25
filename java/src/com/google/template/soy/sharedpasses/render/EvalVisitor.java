@@ -47,7 +47,6 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.data.Dir;
-import com.google.template.soy.data.FunctionValue;
 import com.google.template.soy.data.RecordProperty;
 import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.data.SoyIterable;
@@ -687,8 +686,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
           SoyValue value = ((SoyMap) base).get(key);
           return value != null ? value : UndefinedData.INSTANCE;
         case FUNCTION_BIND:
-          @SuppressWarnings("unchecked")
-          FunctionValue<TofuJavaValue> functPtr = (FunctionValue<TofuJavaValue>) base;
+          TofuFunctionValue functPtr = (TofuFunctionValue) base;
           return functPtr.bind(visitAllTofu(methodNode.getParams()));
         case BIND:
           TemplateValue template = (TemplateValue) base;
@@ -963,7 +961,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
       return StringData.forValue(((LoggingFunction) soyFunction).getPlaceholder());
     } else if (soyFunction instanceof Extern) {
       return visitExtern(
-              (Extern) soyFunction,
+              resolveExternToNode((Extern) soyFunction),
               ImmutableList.of(),
               visitAllTofu(node.getParams()),
               node.getType(),
@@ -971,9 +969,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
               false)
           .soyValue();
     } else if (soyFunction == FunctionNode.FUNCTION_POINTER) {
-      @SuppressWarnings("unchecked")
-      FunctionValue<TofuJavaValue> callee =
-          (FunctionValue<TofuJavaValue>) visit(node.getNameExpr());
+      TofuFunctionValue callee = (TofuFunctionValue) visit(node.getNameExpr());
       return visitExtern(
               callee.getImpl(),
               callee.getBoundArgs(),
@@ -990,13 +986,12 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
   }
 
   TofuJavaValue visitExtern(
-      Extern ref,
+      ExternNode externNode,
       ImmutableList<? extends TofuJavaValue> boundArgs,
       ImmutableList<TofuJavaValue> passedArgs,
       SoyType resultType,
       SourceLocation sourceLocation,
       boolean produceRawTofuValues) {
-    ExternNode externNode = resolveExternToNode(ref);
     JavaImplNode java =
         externNode
             .getJavaImpl()

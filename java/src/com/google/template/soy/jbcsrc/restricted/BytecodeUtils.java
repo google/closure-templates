@@ -18,7 +18,6 @@ package com.google.template.soy.jbcsrc.restricted;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
-import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.newLabel;
 
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
@@ -38,7 +37,6 @@ import com.google.protobuf.Message;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.data.Dir;
-import com.google.template.soy.data.FunctionValue;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.RecordProperty;
 import com.google.template.soy.data.SanitizedContent;
@@ -74,6 +72,7 @@ import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.restricted.Expression.Feature;
 import com.google.template.soy.jbcsrc.restricted.Expression.Features;
 import com.google.template.soy.jbcsrc.runtime.DetachableContentProvider;
+import com.google.template.soy.jbcsrc.runtime.JbcSrcFunctionValue;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.ExtraConstantBootstraps;
 import com.google.template.soy.jbcsrc.shared.LargeStringConstantFactory;
@@ -147,7 +146,7 @@ public final class BytecodeUtils {
   public static final Type FLOAT_DATA_TYPE = Type.getType(FloatData.class);
   public static final Type BOOLEAN_DATA_TYPE = Type.getType(BooleanData.class);
   public static final Type STRING_DATA_TYPE = Type.getType(StringData.class);
-  public static final Type FUNCTION_VALUE_TYPE = Type.getType(FunctionValue.class);
+  public static final Type FUNCTION_VALUE_TYPE = Type.getType(JbcSrcFunctionValue.class);
   public static final Type SANITIZED_CONTENT_TYPE = Type.getType(SanitizedContent.class);
   public static final Type SOY_LIST_TYPE = Type.getType(SoyList.class);
   public static final Type SOY_SET_TYPE = Type.getType(SoySet.class);

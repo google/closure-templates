@@ -18,7 +18,6 @@ package com.google.template.soy.sharedpasses.render;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import com.google.template.soy.data.FunctionValue;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyIterable;
@@ -185,7 +184,7 @@ public final class TofuTypeChecks {
       case VE_DATA:
         return CheckResult.fromBool(value == EvalVisitor.UNDEFINED_VE_DATA);
       case FUNCTION:
-        return CheckResult.fromBool(value instanceof FunctionValue);
+        return CheckResult.fromBool(value instanceof TofuFunctionValue);
       case NAMESPACE:
       case PROTO_TYPE:
       case PROTO_ENUM_TYPE:

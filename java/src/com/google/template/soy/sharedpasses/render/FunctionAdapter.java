@@ -23,10 +23,9 @@ import com.google.common.base.VerifyException;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.FunctionalInterfaceUtil;
-import com.google.template.soy.data.FunctionValue;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueConverter;
-import com.google.template.soy.soytree.FileMetadata.Extern;
+import com.google.template.soy.soytree.ExternNode;
 import com.google.template.soy.types.SoyType;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandleProxies;
@@ -35,8 +34,8 @@ import java.lang.invoke.MethodType;
 import java.lang.reflect.Method;
 
 /**
- * Adapts a {@link FunctionValue} to an instance of a functional interface for passing to an extern
- * implementation.
+ * Adapts a {@link TofuFunctionValue} to an instance of a functional interface for passing to an
+ * extern implementation.
  */
 class FunctionAdapter {
 
@@ -54,7 +53,7 @@ class FunctionAdapter {
               "visitExtern",
               MethodType.methodType(
                   TofuJavaValue.class,
-                  Extern.class,
+                  ExternNode.class,
                   ImmutableList.class,
                   ImmutableList.class,
                   SoyType.class,
@@ -85,7 +84,7 @@ class FunctionAdapter {
     this.evalVisitor = evalVisitor;
   }
 
-  public Object adapt(FunctionValue<TofuJavaValue> functionPtr, Class<?> iface) {
+  public Object adapt(TofuFunctionValue functionPtr, Class<?> iface) {
     Method functionalMethod = FunctionalInterfaceUtil.getMethod(iface);
     if (functionalMethod == null) {
       throw RenderException.create("Not a functional interface: " + iface);
@@ -101,9 +100,7 @@ class FunctionAdapter {
         MethodHandles.insertArguments(handle, 0, functionPtr.getImpl(), functionPtr.getBoundArgs());
     // handle = TofuJavaValue(ImmutableList.class, SoyType.class, SourceLocation.class,
     //              boolean.class)
-    handle =
-        MethodHandles.insertArguments(
-            handle, 1, functionPtr.getReturnType(), SourceLocation.UNKNOWN, true);
+    handle = MethodHandles.insertArguments(handle, 1, null, SourceLocation.UNKNOWN, true);
     // handle = TofuJavaValue(ImmutableList.class)
 
     MethodHandle passedArgs = CONVERT_ARGS.asCollector(Object[].class, paramCount);

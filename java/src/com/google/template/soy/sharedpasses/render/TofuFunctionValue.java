@@ -14,40 +14,41 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.data;
+package com.google.template.soy.sharedpasses.render;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
-import com.google.template.soy.soytree.FileMetadata.Extern;
-import com.google.template.soy.types.SoyType;
+import com.google.template.soy.data.LoggingAdvisingAppendable;
+import com.google.template.soy.data.SoyValue;
+import com.google.template.soy.soytree.ExternNode;
 import java.util.List;
 
 /** Runtime type for function pointers. */
 @AutoValue
-public abstract class FunctionValue<T> extends SoyValue {
+public abstract class TofuFunctionValue extends SoyValue {
 
-  public static FunctionValue<?> create(Extern impl) {
-    return new AutoValue_FunctionValue<>(impl, ImmutableList.of());
+  public static TofuFunctionValue create(ExternNode impl) {
+    return new AutoValue_TofuFunctionValue(impl, ImmutableList.of());
   }
 
-  public abstract Extern getImpl();
+  public abstract ExternNode getImpl();
 
   /**
    * Typed broadly as Object until this is working in JBCSRC. TOFU uses TofuJavaValue. Each backend
    * just needs to agree between binding and calling.
    */
-  public abstract ImmutableList<T> getBoundArgs();
+  public abstract ImmutableList<TofuJavaValue> getBoundArgs();
 
-  public FunctionValue<T> bind(List<? extends T> params) {
+  public TofuFunctionValue bind(List<? extends TofuJavaValue> params) {
     if (params.isEmpty()) {
       return this;
     }
-    ImmutableList<T> existing = getBoundArgs();
-    ImmutableList<T> newParams =
+    ImmutableList<TofuJavaValue> existing = getBoundArgs();
+    ImmutableList<TofuJavaValue> newParams =
         existing.isEmpty()
             ? ImmutableList.copyOf(params)
-            : ImmutableList.<T>builder().addAll(existing).addAll(params).build();
-    return new AutoValue_FunctionValue<T>(getImpl(), newParams);
+            : ImmutableList.<TofuJavaValue>builder().addAll(existing).addAll(params).build();
+    return new AutoValue_TofuFunctionValue(getImpl(), newParams);
   }
 
   public int getBoundArgsCount() {
@@ -55,11 +56,7 @@ public abstract class FunctionValue<T> extends SoyValue {
   }
 
   public int getParamCount() {
-    return getImpl().getSignature().getArity();
-  }
-
-  public SoyType getReturnType() {
-    return getImpl().getSignature().getReturnType();
+    return getImpl().getType().getArity();
   }
 
   @Override

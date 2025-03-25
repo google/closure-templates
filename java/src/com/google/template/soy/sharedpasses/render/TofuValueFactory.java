@@ -37,7 +37,6 @@ import com.google.common.primitives.Primitives;
 import com.google.protobuf.Message;
 import com.google.protobuf.ProtocolMessageEnum;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.data.FunctionValue;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.data.SoyMap;
@@ -313,9 +312,8 @@ class TofuValueFactory extends JavaValueFactory {
 
   private Object adaptParam(TofuJavaValue tofuVal, Class<?> type, @Nullable SoyType soyType) {
     boolean isExternApi = externSig != null;
-    if (isExternApi && tofuVal.hasSoyValue() && tofuVal.soyValue() instanceof FunctionValue) {
-      @SuppressWarnings("unchecked")
-      FunctionValue<TofuJavaValue> functionPtr = (FunctionValue<TofuJavaValue>) tofuVal.soyValue();
+    if (isExternApi && tofuVal.hasSoyValue() && tofuVal.soyValue() instanceof TofuFunctionValue) {
+      TofuFunctionValue functionPtr = (TofuFunctionValue) tofuVal.soyValue();
       return functionAdapter.adapt(functionPtr, type);
     }
     return adaptValueToJava(tofuVal, type, soyType, isExternApi);

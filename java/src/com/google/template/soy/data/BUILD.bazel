@@ -23,7 +23,6 @@ LOCKED_DOWN = ["UnsafeSanitizedContentOrdainer.java"]
 ACTUAL_INTERNAL = [
     "internal/LazyProtoToSoyValueList.java",
     "internal/LazyProtoToSoyValueMap.java",
-    "FunctionValue.java",
 ]
 
 VE = [
@@ -132,7 +131,6 @@ java_library(
         ":record_property",
         "//java/src/com/google/template/soy/soytree:metadata",
         "//java/src/com/google/template/soy/types",
-        "@com_google_auto_value_auto_value",
         "@maven//:com_google_code_findbugs_jsr305",
         "@maven//:com_google_guava_guava",
     ],

@@ -27,7 +27,6 @@ import com.google.common.collect.ImmutableTable;
 import com.google.common.collect.Lists;
 import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.base.internal.SanitizedContentKind;
-import com.google.template.soy.data.FunctionValue;
 import com.google.template.soy.data.RecordProperty;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyAbstractCachingValueProvider;
@@ -82,7 +81,6 @@ import com.google.template.soy.soytree.JavaImplNode;
 import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.LetValueNode;
 import com.google.template.soy.soytree.LogNode;
-import com.google.template.soy.soytree.Metadata;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;
 import com.google.template.soy.soytree.MsgHtmlTagNode;
 import com.google.template.soy.soytree.PrintDirectiveNode;
@@ -1057,7 +1055,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
                 } else if (var.getSymbolKind() == SymbolKind.EXTERN) {
                   ExternNode externNode =
                       externs.get(var.getSourceFilePath(), var.getSymbol()).get(0);
-                  env.bind(var, FunctionValue.create(Metadata.forAst(externNode)));
+                  env.bind(var, TofuFunctionValue.create(externNode));
                 }
               });
         }
@@ -1066,7 +1064,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
         String name = externNode.getIdentifier().identifier();
         if (externNames.count(name) == 1) {
           // Don't allow referencing overloaded externs. Is this possible to support?
-          env.bind(externNode.getVar(), FunctionValue.create(Metadata.forAst(externNode)));
+          env.bind(externNode.getVar(), TofuFunctionValue.create(externNode));
         }
       }
     }
