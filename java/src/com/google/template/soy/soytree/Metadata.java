@@ -21,6 +21,7 @@ import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.ImmutableListMultimap.toImmutableListMultimap;
 import static com.google.common.collect.ImmutableMap.toImmutableMap;
+import static com.google.common.collect.ImmutableMultiset.toImmutableMultiset;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static com.google.common.primitives.Booleans.trueFirst;
 import static java.util.Comparator.comparing;
@@ -32,6 +33,7 @@ import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.ImmutableSet;
 import com.google.errorprone.annotations.concurrent.LazyInit;
 import com.google.template.soy.base.SourceFilePath;
@@ -492,6 +494,11 @@ public final class Metadata {
     }
 
     @Override
+    public boolean isOverloadedExtern(String shortName) {
+      return getExterns(shortName).size() > 1;
+    }
+
+    @Override
     public TypeDef getTypeDef(String name) {
       return typeDefIndex().get(name);
     }
@@ -634,7 +641,7 @@ public final class Metadata {
     private final String namespace;
     private final ImmutableSet<String> templateNames;
     private final ImmutableSet<String> constantNames;
-    private final ImmutableSet<String> externNames;
+    private final ImmutableMultiset<String> externNames;
     private final ImmutableSet<String> typeDefNames;
 
     /** ASTs are mutable so we need to copy all data in the constructor. */
@@ -656,7 +663,7 @@ public final class Metadata {
           ast.getExterns().stream()
               .filter(ExternNode::isExported)
               .map(e -> e.getIdentifier().identifier())
-              .collect(toImmutableSet());
+              .collect(toImmutableMultiset());
     }
 
     @Override
@@ -681,7 +688,12 @@ public final class Metadata {
 
     @Override
     public ImmutableSet<String> getExternNames() {
-      return externNames;
+      return externNames.elementSet();
+    }
+
+    @Override
+    public boolean isOverloadedExtern(String shortName) {
+      return externNames.count(shortName) > 1;
     }
 
     @Override

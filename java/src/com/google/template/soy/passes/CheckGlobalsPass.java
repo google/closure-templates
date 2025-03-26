@@ -33,11 +33,17 @@ import com.google.template.soy.soytree.SoyFileNode;
 final class CheckGlobalsPass implements CompilerFilePass {
   private static final SoyErrorKind UNBOUND_GLOBAL =
       SoyErrorKind.of("Undefined symbol ''{0}''.{1}", StyleAllowance.NO_PUNCTUATION);
+  private static final SoyErrorKind NO_BUILTIN_REFS =
+      SoyErrorKind.of(
+          "References to built-in and plugin functions are not allowed.",
+          StyleAllowance.NO_PUNCTUATION);
 
   private final ErrorReporter errorReporter;
+  private final PluginResolver pluginResolver;
 
-  CheckGlobalsPass(ErrorReporter errorReporter) {
+  CheckGlobalsPass(ErrorReporter errorReporter, PluginResolver pluginResolver) {
     this.errorReporter = errorReporter;
+    this.pluginResolver = pluginResolver;
   }
 
   @Override
@@ -54,10 +60,14 @@ final class CheckGlobalsPass implements CompilerFilePass {
       }
 
       String sourceName = global.getIdentifier().originalName();
-      String extraErrorMessage =
-          SoyErrors.getDidYouMeanMessage(getLocalVariables().allVariablesInScope(), sourceName);
-      errorReporter.report(
-          global.getSourceLocation(), UNBOUND_GLOBAL, sourceName, extraErrorMessage);
+      if (pluginResolver.containsFunctionNamed(sourceName)) {
+        errorReporter.report(global.getSourceLocation(), NO_BUILTIN_REFS);
+      } else {
+        String extraErrorMessage =
+            SoyErrors.getDidYouMeanMessage(getLocalVariables().allVariablesInScope(), sourceName);
+        errorReporter.report(
+            global.getSourceLocation(), UNBOUND_GLOBAL, sourceName, extraErrorMessage);
+      }
     }
   }
 }

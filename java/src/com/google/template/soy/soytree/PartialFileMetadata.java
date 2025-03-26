@@ -58,6 +58,8 @@ public interface PartialFileMetadata {
     return getExternNames().contains(shortName);
   }
 
+  boolean isOverloadedExtern(String shortName);
+
   Set<String> getTypeDefNames();
 
   default boolean hasTypeDef(String shortName) {

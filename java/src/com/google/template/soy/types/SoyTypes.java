@@ -813,4 +813,20 @@ public final class SoyTypes {
     return UnionType.of(
         type.getMembers().stream().map(RecordType.Member::checkedType).collect(toImmutableList()));
   }
+
+  public static SoyType getFunctionReturnType(SoyType soyType) {
+    SoyType rv = null;
+    for (SoyType member : expandUnions(soyType)) {
+      if (member instanceof FunctionType) {
+        SoyType returnType = ((FunctionType) member).getReturnType();
+        rv =
+            rv != null
+                ? computeLowestCommonType(TypeRegistries.newTypeInterner(), rv, returnType)
+                : returnType;
+      } else {
+        return UnknownType.getInstance();
+      }
+    }
+    return checkNotNull(rv);
+  }
 }

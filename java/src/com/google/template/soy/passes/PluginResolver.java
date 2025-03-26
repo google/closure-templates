@@ -367,6 +367,10 @@ public final class PluginResolver {
     return Optional.empty();
   }
 
+  public boolean containsFunctionNamed(String name) {
+    return functions.containsKey(name);
+  }
+
   /**
    * Returns a function with the given name and arity.
    *

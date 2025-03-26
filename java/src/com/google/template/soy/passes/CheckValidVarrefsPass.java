@@ -16,14 +16,24 @@
 
 package com.google.template.soy.passes;
 
+import static com.google.common.collect.ImmutableListMultimap.toImmutableListMultimap;
+
+import com.google.common.collect.ImmutableListMultimap;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprNode.Kind;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
+import com.google.template.soy.exprtree.FunctionNode;
+import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
+import com.google.template.soy.soytree.ExternNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
+import com.google.template.soy.soytree.defn.ExternVar;
+import com.google.template.soy.soytree.defn.ImportedVar;
+import com.google.template.soy.soytree.defn.ImportedVar.SymbolKind;
+import com.google.template.soy.types.UnionType;
 
 /** Reports errors for illegal symbol references. */
 @RunAfter({ResolveExpressionTypesPass.class, MoreCallValidationsPass.class})
@@ -32,7 +42,11 @@ final class CheckValidVarrefsPass implements CompilerFilePass {
   private static final SoyErrorKind ILLEGAL_TYPE_OF_VARIABLE =
       SoyErrorKind.of("Illegal use of symbol ''{0}''.");
 
+  private static final SoyErrorKind EXTERN_OVERLOAD =
+      SoyErrorKind.of("Cannot reference or bind overloaded functions.");
+
   private final ErrorReporter errorReporter;
+  private ImmutableListMultimap<String, ExternNode> externIndex;
 
   CheckValidVarrefsPass(ErrorReporter errorReporter) {
     this.errorReporter = errorReporter;
@@ -40,10 +54,22 @@ final class CheckValidVarrefsPass implements CompilerFilePass {
 
   @Override
   public void run(SoyFileNode file, IdGenerator idGenerator) {
+    externIndex =
+        file.getExterns().stream()
+            .collect(toImmutableListMultimap(e -> e.getIdentifier().identifier(), e -> e));
     SoyTreeUtils.allNodesOfType(file, VarRefNode.class).forEach(this::checkVarRef);
   }
 
   private void checkVarRef(VarRefNode varRef) {
+    VarDefn defn = varRef.getDefnDecl();
+    if (isOverloadedExtern(defn)) {
+      if (!(varRef.getParent() instanceof FunctionNode
+          && varRef.equals(((FunctionNode) varRef.getParent()).getNameExpr()))) {
+        errorReporter.report(varRef.getSourceLocation(), EXTERN_OVERLOAD);
+        return;
+      }
+    }
+
     ParentExprNode parent = varRef.getParent();
     Kind parentKind = parent != null ? parent.getKind() : null;
 
@@ -86,5 +112,17 @@ final class CheckValidVarrefsPass implements CompilerFilePass {
       default:
         break;
     }
+  }
+
+  private boolean isOverloadedExtern(VarDefn defn) {
+    if (defn instanceof ImportedVar
+        && ((ImportedVar) defn).getSymbolKind() == SymbolKind.EXTERN
+        && defn.type() instanceof UnionType) {
+      return true;
+    }
+    if (defn instanceof ExternVar) {
+      return externIndex.get(defn.name()).size() > 1;
+    }
+    return false;
   }
 }

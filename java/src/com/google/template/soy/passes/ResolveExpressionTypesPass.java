@@ -258,6 +258,8 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
   private static final SoyErrorKind NO_SUCH_FIELD =
       SoyErrorKind.of(
           "Field ''{0}'' does not exist on type {1}.{2}", StyleAllowance.NO_PUNCTUATION);
+  private static final SoyErrorKind METHOD_REFERENCE =
+      SoyErrorKind.of("References to methods are not allowed.", StyleAllowance.NO_PUNCTUATION);
   private static final SoyErrorKind DOT_ACCESS_NOT_SUPPORTED_CONSIDER_RECORD =
       SoyErrorKind.of("Type {0} does not support dot access (consider record instead of map).");
   private static final SoyErrorKind NO_SUCH_EXTERN_OVERLOAD_1 =
@@ -2086,7 +2088,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
             errorReporter.report(node.getNameExpr().getSourceLocation(), TEMPLATE_CALL_NULLISH);
           }
           return;
-        } else if (nameExprType.getKind() == Kind.FUNCTION) {
+        } else if (SoyTypes.isKindOrUnionOfKind(nameExprType, Kind.FUNCTION)) {
           if (node.getParamsStyle() == ParamsStyle.NAMED) {
             errorReporter.report(node.getFunctionNameLocation(), INCORRECT_ARG_STYLE);
             node.setSoyFunction(FunctionNode.UNRESOLVED);
@@ -2100,7 +2102,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
                       .getExterns(((ImportedVar) defn).getSymbol());
             } else if (defn.kind() == VarDefn.Kind.LOCAL_VAR || defn.kind() == VarDefn.Kind.PARAM) {
               node.setSoyFunction(FunctionNode.FUNCTION_POINTER);
-              node.setType(((FunctionType) nameExprType).getReturnType());
+              node.setType(SoyTypes.getFunctionReturnType(nameExprType));
               return;
             } else {
               externTypes =
@@ -2576,10 +2578,14 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
 
     private void emitDefaultFieldNotFoundError(
         SoyType baseType, String fieldName, SourceLocation sourceLocation) {
-      ImmutableSet<String> allFields = fieldRegistry.getAllFieldNames(tryRemoveNullish(baseType));
-      String didYouMean =
-          allFields.isEmpty() ? "" : SoyErrors.getDidYouMeanMessage(allFields, fieldName);
-      errorReporter.report(sourceLocation, NO_SUCH_FIELD, fieldName, baseType, didYouMean);
+      if (!methodRegistry.matchForNameAndBase(fieldName, baseType).isEmpty()) {
+        errorReporter.report(sourceLocation, METHOD_REFERENCE);
+      } else {
+        ImmutableSet<String> allFields = fieldRegistry.getAllFieldNames(tryRemoveNullish(baseType));
+        String didYouMean =
+            allFields.isEmpty() ? "" : SoyErrors.getDidYouMeanMessage(allFields, fieldName);
+        errorReporter.report(sourceLocation, NO_SUCH_FIELD, fieldName, baseType, didYouMean);
+      }
     }
 
     /** Given a base type and an item key type, compute the item value type. */

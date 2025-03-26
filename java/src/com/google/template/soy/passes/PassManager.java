@@ -662,7 +662,7 @@ public final class PassManager {
         // Must come after RewriteGlobalsPass since that is when values are substituted.
         // We should also run after the ResolveNamesPass which checks for global/param ambiguity and
         // may issue better error messages.
-        passes.add(new CheckGlobalsPass(errorReporter));
+        passes.add(new CheckGlobalsPass(errorReporter, pluginResolver));
       }
       passes
           .add(new ValidateAliasesPass(errorReporter))

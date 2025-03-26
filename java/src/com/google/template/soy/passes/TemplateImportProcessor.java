@@ -16,6 +16,7 @@
 
 package com.google.template.soy.passes;
 
+import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
 
 import com.google.common.base.Preconditions;
@@ -25,6 +26,7 @@ import com.google.common.collect.Iterables;
 import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.soytree.FileMetadata;
+import com.google.template.soy.soytree.FileMetadata.Extern;
 import com.google.template.soy.soytree.ImportNode;
 import com.google.template.soy.soytree.ImportNode.ImportType;
 import com.google.template.soy.soytree.PartialFileMetadata;
@@ -35,6 +37,7 @@ import com.google.template.soy.soytree.defn.ImportedVar.SymbolKind;
 import com.google.template.soy.types.NamespaceType;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.TemplateImportType;
+import com.google.template.soy.types.UnionType;
 import com.google.template.soy.types.UnknownType;
 import java.util.function.Supplier;
 
@@ -124,10 +127,11 @@ public final class TemplateImportProcessor implements ImportsPass.ImportProcesso
       symbol.setType(fileMetadata.getConstant(name).getType());
     } else if (fileMetadata.hasExtern(name)) {
       Preconditions.checkArgument(!symbol.hasType());
-      // The return type is what's important here, and extern overloads are
-      // required to have the same return type, so it's okay to just grab the
-      // first one.
-      symbol.setType(Iterables.getFirst(fileMetadata.getExterns(name), null).getSignature());
+      symbol.setType(
+          UnionType.of(
+              fileMetadata.getExterns(name).stream()
+                  .map(Extern::getSignature)
+                  .collect(toImmutableList())));
     } else if (fileMetadata.hasTypeDef(name)) {
       Preconditions.checkArgument(!symbol.hasType());
       symbol.setType(fileMetadata.getTypeDef(name).getType());
