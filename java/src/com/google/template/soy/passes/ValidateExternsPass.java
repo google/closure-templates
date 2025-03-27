@@ -399,6 +399,8 @@ class ValidateExternsPass implements CompilerFilePass {
       ExternNode extern,
       Mode mode,
       boolean preserveUndefined) {
+    soyType = soyType.getEffectiveType();
+
     // Validate after eliminating any Future<> box
     Class<?> javaType = getType(parameterizedType.className());
 
