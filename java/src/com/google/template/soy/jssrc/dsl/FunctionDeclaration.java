@@ -85,9 +85,7 @@ public abstract class FunctionDeclaration extends Expression
     if (body().equals(Statements.EMPTY)) {
       ctx.append("{}");
     } else {
-      try (FormattingContext ignored = ctx.enterBlock()) {
-        ctx.appendAll(body());
-      }
+      ctx.appendAllIntoBlock(body());
     }
   }
 }

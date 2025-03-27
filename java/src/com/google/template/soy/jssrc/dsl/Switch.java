@@ -54,30 +54,30 @@ abstract class Switch extends Statement {
     // Append the output expressions for the switch expression and case labels,
     // together with the complete of for all the bodies.
     ctx.append("switch (").appendOutputExpression(switchOn()).append(") ");
-    try (FormattingContext ignored = ctx.enterBlock()) {
-      for (CaseClause caseClause : caseClauses()) {
-        for (int i = 0; i < caseClause.caseLabels.size(); ++i) {
-          ctx.append("case ").appendOutputExpression(caseClause.caseLabels.get(i)).append(":");
-          // The last case label in this clause will have its line ended by enterCaseBody below.
-          if (i < caseClause.caseLabels.size() - 1) {
-            ctx.endLine();
-          }
-        }
-        try (FormattingContext ignored2 = ctx.enterCaseBody()) {
-          ctx.appendAll(caseClause.caseBody).endLine();
-          if (!caseClause.caseBody.isTerminal()) {
-            ctx.append("break;").endLine();
-          }
-        }
-        ctx.endLine();
-      }
-      if (defaultCaseBody() != null) {
-        ctx.append("default:");
-        try (FormattingContext ignored2 = ctx.enterCaseBody()) {
-          ctx.appendAll(defaultCaseBody());
+    ctx.enterBlock();
+    for (CaseClause caseClause : caseClauses()) {
+      for (int i = 0; i < caseClause.caseLabels.size(); ++i) {
+        ctx.append("case ").appendOutputExpression(caseClause.caseLabels.get(i)).append(":");
+        // The last case label in this clause will have its line ended by enterCaseBody below.
+        if (i < caseClause.caseLabels.size() - 1) {
+          ctx.endLine();
         }
       }
+      ctx.enterCaseBody();
+      ctx.appendAll(caseClause.caseBody).endLine();
+      if (!caseClause.caseBody.isTerminal()) {
+        ctx.append("break;").endLine();
+      }
+      ctx.closeBlock();
+      ctx.endLine();
     }
+    if (defaultCaseBody() != null) {
+      ctx.append("default:");
+      ctx.enterCaseBody();
+      ctx.appendAll(defaultCaseBody());
+      ctx.closeBlock();
+    }
+    ctx.closeBlock();
     ctx.endLine();
   }
 

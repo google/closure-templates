@@ -136,7 +136,7 @@ public abstract class TsxFragmentElement extends Expression implements CodeChunk
   void doFormatOutputExpr(FormattingContext ctx) {
     ctx.pushLexicalState(LexicalState.TSX);
     if (body().isEmpty()) {
-      try (FormattingContext buffer = ctx.buffer()) {
+      try (FormattingContext.Buffer buffer = ctx.buffer()) {
         buffer.appendAll(HtmlTag.FRAGMENT_OPEN);
         buffer.appendAll(HtmlTag.FRAGMENT_CLOSE);
       }

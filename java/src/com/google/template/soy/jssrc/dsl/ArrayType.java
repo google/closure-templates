@@ -33,7 +33,7 @@ public abstract class ArrayType extends AbstractType {
 
   @Override
   void doFormatOutputExpr(FormattingContext ctx) {
-    try (FormattingContext buffer = ctx.buffer()) {
+    try (FormattingContext.Buffer buffer = ctx.buffer()) {
       if (readonly()) {
         buffer.append("readonly ");
       }

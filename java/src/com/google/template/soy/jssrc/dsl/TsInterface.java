@@ -71,7 +71,7 @@ public abstract class TsInterface extends Statement {
       ctx.noBreak().append(";");
       ctx.endLine();
     }
-    ctx.close();
+    ctx.closeBlock();
     ctx.endLine();
   }
 

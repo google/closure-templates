@@ -38,7 +38,7 @@ public abstract class TsGlobal extends Statement {
       ctx.appendAll(stmt);
       ctx.endLine();
     }
-    ctx.close();
+    ctx.closeBlock();
   }
 
   @Override

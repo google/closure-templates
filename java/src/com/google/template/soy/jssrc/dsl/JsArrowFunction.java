@@ -66,8 +66,6 @@ public abstract class JsArrowFunction extends Expression
         return;
       }
     }
-    try (FormattingContext ignored = ctx.enterBlock()) {
-      ctx.appendAll(body());
-    }
+    ctx.appendAllIntoBlock(body());
   }
 }

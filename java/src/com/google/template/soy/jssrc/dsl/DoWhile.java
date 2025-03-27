@@ -43,9 +43,7 @@ public abstract class DoWhile extends Statement {
     ctx.appendInitialStatements(condition());
 
     ctx.append("do ");
-    try (FormattingContext ignored = ctx.enterBlock()) {
-      ctx.appendAll(body());
-    }
+    ctx.appendAllIntoBlock(body());
     ctx.append(" while (").appendOutputExpression(condition()).append(");");
     ctx.endLine();
   }

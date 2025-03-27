@@ -40,7 +40,7 @@ public abstract class TsCast extends Expression {
 
   @Override
   void doFormatOutputExpr(FormattingContext ctx) {
-    try (FormattingContext buffer = ctx.buffer()) {
+    try (FormattingContext.Buffer buffer = ctx.buffer()) {
       // 'as' is hard to model. But it appears that line breaks in the LHS can cause problems.
       buffer.appendOutputExpression(expr()).noBreak().append(" as ").appendOutputExpression(type());
     }

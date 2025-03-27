@@ -64,14 +64,14 @@ public abstract class ClassExpression extends Expression
       ctx.appendOutputExpression(baseClass());
     }
     ctx.append(" ");
-    try (FormattingContext ignored = ctx.enterBlock()) {
-      for (int i = 0; i < methods().size(); i++) {
-        if (i > 0) {
-          ctx.appendBlankLine();
-        }
-        ctx.appendOutputExpression(methods().get(i));
+    ctx.enterBlock();
+    for (int i = 0; i < methods().size(); i++) {
+      if (i > 0) {
+        ctx.appendBlankLine();
       }
+      ctx.appendOutputExpression(methods().get(i));
     }
+    ctx.closeBlock();
   }
 
   public static Builder builder() {
@@ -129,9 +129,7 @@ public abstract class ClassExpression extends Expression
       ctx.append(
           FunctionDeclaration.generateParamList(jsDoc(), /* addInlineTypeAnnotations= */ false));
       ctx.append(") ");
-      try (FormattingContext ignored = ctx.enterBlock()) {
-        ctx.appendAll(body());
-      }
+      ctx.appendAllIntoBlock(body());
     }
 
     public static Builder builder(Id name, Statement body) {

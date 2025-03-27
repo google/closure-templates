@@ -55,7 +55,7 @@ abstract class Conditional extends Statement {
     formatElseClause(ctx);
     // Explicitly close the extra blocks opened by formatElseIfClauseWithDependencies.
     for (int i = 0; i < numRightBracesToClose; ++i) {
-      ctx.close();
+      ctx.closeBlock();
     }
     ctx.endLine();
   }
@@ -84,9 +84,7 @@ abstract class Conditional extends Statement {
         .append("if (")
         .appendOutputExpression(first.predicate)
         .append(") ");
-    try (FormattingContext ignored = ctx.enterBlock()) {
-      ctx.appendAll(first.consequent);
-    }
+    ctx.appendAllIntoBlock(first.consequent);
   }
 
   /**
@@ -96,9 +94,7 @@ abstract class Conditional extends Statement {
   private static void formatElseIfClauseWithNoDependencies(
       IfThenPair<?> condition, FormattingContext ctx) {
     ctx.append(" else if (").appendOutputExpression(condition.predicate).append(") ");
-    try (FormattingContext ignored = ctx.enterBlock()) {
-      ctx.appendAll(condition.consequent);
-    }
+    ctx.appendAllIntoBlock(condition.consequent);
   }
 
   /**
@@ -112,19 +108,15 @@ abstract class Conditional extends Statement {
   private static void formatElseIfClauseWithDependencies(
       IfThenPair<?> condition, FormattingContext ctx) {
     ctx.append(" else ");
-    try (FormattingContext ignored = ctx.enterBlock()) {
-      ctx.appendInitialStatements(condition.predicate)
-          .append("if (")
-          .appendOutputExpression(condition.predicate)
-          .append(") ");
+    ctx.enterBlock();
+    ctx.appendInitialStatements(condition.predicate)
+        .append("if (")
+        .appendOutputExpression(condition.predicate)
+        .append(") ");
+    ctx.appendAllIntoBlock(condition.consequent);
 
-      // Most enterBlock callers use try-with-resources to automatically close the block,
-      // but here, we need to leave the block open so that subsequent `else if` clauses
-      // are chained appropriately. The block will be closed by
-      // Conditional#doFormatInitialStatements.
-      ctx.enterBlock();
-      ctx.appendAll(condition.consequent);
-    }
+    // Leave the outer block open so that subsequent `else if` clauses are chained appropriately.
+    // The block will be closed by Conditional#doFormatInitialStatements.
   }
 
   private void formatElseClause(FormattingContext ctx) {
@@ -132,9 +124,7 @@ abstract class Conditional extends Statement {
       return;
     }
     ctx.append(" else ");
-    try (FormattingContext ignored = ctx.enterBlock()) {
-      ctx.appendAll(trailingElse());
-    }
+    ctx.appendAllIntoBlock(trailingElse());
     ctx.endLine();
   }
 }

@@ -50,9 +50,7 @@ abstract class ForOf extends Statement {
         .appendOutputExpression(collection())
         .append(") ");
 
-    try (FormattingContext ignored = ctx.enterBlock()) {
-      ctx.appendAll(body());
-    }
+    ctx.appendAllIntoBlock(body());
     ctx.endLine();
   }
 }

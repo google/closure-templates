@@ -70,9 +70,7 @@ abstract class For extends Statement {
 
     ctx.append(") ");
 
-    try (FormattingContext ignored = ctx.enterBlock()) {
-      ctx.appendAll(body());
-    }
+    ctx.appendAllIntoBlock(body());
     ctx.endLine();
   }
 }

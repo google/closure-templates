@@ -126,7 +126,7 @@ abstract class TsFunction extends Expression
         ctx.appendAll(stmt);
         ctx.endLine();
       }
-      ctx.close();
+      ctx.closeBlock();
     }
   }
 

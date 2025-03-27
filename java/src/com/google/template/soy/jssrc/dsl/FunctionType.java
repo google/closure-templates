@@ -38,7 +38,7 @@ public abstract class FunctionType extends AbstractType {
 
   @Override
   void doFormatOutputExpr(FormattingContext ctx) {
-    try (FormattingContext buffer = ctx.buffer()) {
+    try (FormattingContext.Buffer buffer = ctx.buffer()) {
       buffer.append("(");
       buffer.appendOutputExpression(params());
       buffer.append(") => ");

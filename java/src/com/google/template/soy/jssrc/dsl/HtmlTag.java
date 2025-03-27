@@ -138,22 +138,28 @@ public abstract class HtmlTag extends Expression implements CodeChunk.HasRequire
     if (type() == Type.CLOSE) {
       ctx.decreaseIndentLenient();
     }
-    FormattingContext buffer = attributes().isEmpty() ? ctx.buffer() : ctx;
-    buffer.append(type() == Type.CLOSE ? "</" : "<");
-    buffer.pushLexicalState(LexicalState.TSX);
-    buffer.appendAll(tagName());
-    for (CodeChunk attribute : attributes()) {
-      buffer.append(" ");
-      buffer.appendAll(attribute);
-    }
-    buffer.popLexicalState();
-    buffer.append(type() == Type.SELF_CLOSE ? "/>" : ">");
-    if (buffer != ctx) {
-      buffer.close();
+    if (attributes().isEmpty()) {
+      try (FormattingContext.Buffer buffer = ctx.buffer()) {
+        doFormatOutputExprInternal(buffer);
+      }
+    } else {
+      doFormatOutputExprInternal(ctx);
     }
     if (type() == Type.OPEN) {
       ctx.increaseIndent();
     }
+  }
+
+  private void doFormatOutputExprInternal(FormattingContext ctx) {
+    ctx.append(type() == Type.CLOSE ? "</" : "<");
+    ctx.pushLexicalState(LexicalState.TSX);
+    ctx.appendAll(tagName());
+    for (CodeChunk attribute : attributes()) {
+      ctx.append(" ");
+      ctx.appendAll(attribute);
+    }
+    ctx.popLexicalState();
+    ctx.append(type() == Type.SELF_CLOSE ? "/>" : ">");
   }
 
   @Override

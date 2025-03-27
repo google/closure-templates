@@ -34,9 +34,7 @@ public abstract class TryCatch extends Statement {
   @Override
   void doFormatStatement(FormattingContext ctx) {
     ctx.append("try ");
-    ctx.enterBlock();
-    ctx.appendAll(body());
-    ctx.close();
+    ctx.appendAllIntoBlock(body());
     ctx.append(" catch {}");
     ctx.endLine();
   }

@@ -35,7 +35,7 @@ import javax.annotation.Nullable;
  * Helper class to keep track of state during a single call to {@link CodeChunk#getCode}, including
  * the initial statements that have already been formatted and the current indentation level.
  */
-class FormattingContext implements AutoCloseable {
+class FormattingContext {
   private static final int MAX_LINE_LENGTH = 80;
 
   private StringBuilder buf;
@@ -44,7 +44,7 @@ class FormattingContext implements AutoCloseable {
   private SourceMapHelper sourceMapHelper = SourceMapHelper.NO_OP;
   private Scope curScope = new Scope(/* parent= */ null, /* emitClosingBrace= */ false);
   private String curIndent;
-  private final ArrayDeque<LexicalState> lexicalStateStack;
+  protected final ArrayDeque<LexicalState> lexicalStateStack;
 
   private boolean nextAppendShouldStartNewLine = false;
   private boolean nextAppendShouldNeverStartNewLine = false;
@@ -52,9 +52,9 @@ class FormattingContext implements AutoCloseable {
   @Nullable private String nextSourcemapToken;
   private Deque<SourceLocation> locationStack = new ArrayDeque<>();
 
-  private int currentByteOffset = 0;
-  private int currentLine = 0; // 0-based to match SourceMapGeneratorV3
-  private int currentColumn = 0; // 0-based to match SourceMapGeneratorV3
+  protected int currentByteOffset = 0;
+  protected int currentLine = 0; // 0-based to match SourceMapGeneratorV3
+  protected int currentColumn = 0; // 0-based to match SourceMapGeneratorV3
 
   public enum LexicalState {
     JS,
@@ -80,30 +80,34 @@ class FormattingContext implements AutoCloseable {
     this.sourceMapHelper = Preconditions.checkNotNull(sourceMapHelper);
   }
 
+  static class Buffer extends FormattingContext implements AutoCloseable {
+    final FormattingContext parent;
+
+    Buffer(FormattingContext parent) {
+      super(parent.formatOptions.toBuilder().setUseTsxLineBreaks(false).build());
+      this.parent = parent;
+      this.setKytheHelper(parent.kytheHelper);
+      this.currentByteOffset = parent.currentByteOffset;
+
+      this.setSourceMapHelper(parent.sourceMapHelper);
+      this.currentLine = parent.currentLine;
+      this.currentColumn = parent.currentColumn;
+
+      this.lexicalStateStack.push(parent.lexicalStateStack.peek());
+    }
+
+    @Override
+    public void close() {
+      parent.append(this.getBuffer());
+    }
+  }
+
   /**
    * Returns a buffering context that will not insert any line breaks or indents automatically. The
    * contents of the buffer will be appended to the main context as a single string on close.
    */
-  FormattingContext buffer() {
-    FormattingContext parent = this;
-    FormatOptions bufferOptions = formatOptions.toBuilder().setUseTsxLineBreaks(false).build();
-    FormattingContext context =
-        new FormattingContext(bufferOptions) {
-          @Override
-          public void close() {
-            parent.append(this.getBuffer());
-          }
-        };
-
-    context.setKytheHelper(kytheHelper);
-    context.currentByteOffset = currentByteOffset;
-
-    context.setSourceMapHelper(sourceMapHelper);
-    context.currentLine = currentLine;
-    context.currentColumn = currentColumn;
-
-    context.lexicalStateStack.push(this.lexicalStateStack.peek());
-    return context;
+  FormattingContext.Buffer buffer() {
+    return new Buffer(this);
   }
 
   void pushLexicalState(LexicalState lexicalState) {
@@ -373,6 +377,15 @@ class FormattingContext implements AutoCloseable {
     return this;
   }
 
+  /** Opens a block, writes all code, then closes the block. */
+  @CanIgnoreReturnValue
+  FormattingContext appendAllIntoBlock(CodeChunk chunk) {
+    enterBlock();
+    appendAll(chunk);
+    closeBlock();
+    return this;
+  }
+
   private boolean shouldAppend(CodeChunk chunk) {
     return curScope.append(chunk);
   }
@@ -533,8 +546,7 @@ class FormattingContext implements AutoCloseable {
     return buf.length() == 0;
   }
 
-  @Override
-  public void close() {
+  public void closeBlock() {
     boolean emitClosingBrace = curScope.emitClosingBrace;
     curScope = Preconditions.checkNotNull(curScope.parent);
     decreaseIndentLenient();
@@ -548,8 +560,8 @@ class FormattingContext implements AutoCloseable {
    * {@link FormattingContext} needs to keep track of the conditional nesting structure in order to
    * avoid, for example, formatting the initial statements of a code chunk in one branch and
    * referencing the chunk in another. The scopes form a simple tree, built and torn down by {@link
-   * #enterBlock()} and {@link #close()} respectively. {@link FormattingContext#curScope} points to
-   * the current tip of the tree.
+   * #enterBlock()} and {@link #closeBlock()} respectively. {@link FormattingContext#curScope}
+   * points to the current tip of the tree.
    */
   private static final class Scope {
     private final Set<CodeChunk> appendedChunks =

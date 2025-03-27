@@ -97,7 +97,7 @@ public abstract class NamedFunctionDeclaration extends Statement {
         ctx.appendAll(stmt);
         ctx.endLine();
       }
-      ctx.close();
+      ctx.closeBlock();
     } else {
       ctx.noBreak().append(";");
     }

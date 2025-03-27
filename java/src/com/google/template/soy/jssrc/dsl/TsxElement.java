@@ -88,7 +88,7 @@ public abstract class TsxElement extends Expression {
   @Override
   void doFormatOutputExpr(FormattingContext ctx) {
     if (isComponentCall() && body().isEmpty()) {
-      try (FormattingContext buffer = ctx.buffer()) {
+      try (FormattingContext.Buffer buffer = ctx.buffer()) {
         doFormatOutputExprHelper(buffer);
       }
     } else {
