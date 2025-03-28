@@ -355,6 +355,8 @@ public final class MethodRefs {
       createNonPure(JbcSrcFunctionValue.class, "bind", ImmutableList.class);
   public static final MethodRef FUNCTION_CALL =
       createNonPure(JbcSrcFunctionValue.class, "call", ImmutableList.class);
+  public static final MethodRef FUNCTION_AS =
+      createNonPure(JbcSrcFunctionValue.class, "asInstance", Class.class);
 
   public static final MethodRef SOY_VALUE_IS_TRUTHY_NON_EMPTY =
       createPure(SoyValue.class, "isTruthyNonEmpty");

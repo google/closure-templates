@@ -17,6 +17,8 @@
 package com.google.template.soy.jbcsrc;
 
 import static com.google.common.base.Preconditions.checkState;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.FUNCTION_VALUE_TYPE;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.newLabel;
 import static java.util.Arrays.stream;
 
@@ -484,9 +486,11 @@ public final class ExternCompiler {
           : actualParam;
     }
 
-    // TODO(b/191497298): Implement.
     if (SoyTypes.isKindOrUnionOfKind(soyType, Kind.FUNCTION)) {
-      return BytecodeUtils.constantNull(javaType);
+      return actualParam
+          .checkedCast(FUNCTION_VALUE_TYPE)
+          .invoke(MethodRefs.FUNCTION_AS, constant(javaType))
+          .checkedCast(javaType);
     }
 
     throw new AssertionError(

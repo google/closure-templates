@@ -36,6 +36,7 @@ java_library(
     deps = [
         ":missing_plugin_instance_exception",
         ":names",
+        "//java/src/com/google/template/soy/base/internal",
         "//java/src/com/google/template/soy/data",
         "//java/src/com/google/template/soy/data:record_property",
         "//java/src/com/google/template/soy/data:ve",
