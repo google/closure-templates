@@ -82,6 +82,7 @@ import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.AbstractReturningSoyNodeVisitor;
 import com.google.template.soy.soytree.AssignmentNode;
+import com.google.template.soy.soytree.BreakNode;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallDelegateNode;
 import com.google.template.soy.soytree.CallNode;
@@ -90,6 +91,7 @@ import com.google.template.soy.soytree.CallParamNode;
 import com.google.template.soy.soytree.CallParamValueNode;
 import com.google.template.soy.soytree.CaseOrDefaultNode;
 import com.google.template.soy.soytree.ConstNode;
+import com.google.template.soy.soytree.ContinueNode;
 import com.google.template.soy.soytree.DebuggerNode;
 import com.google.template.soy.soytree.FileSetMetadata;
 import com.google.template.soy.soytree.ForNode;
@@ -133,8 +135,10 @@ import com.google.template.soy.types.TemplateType;
 import com.google.template.soy.types.UnknownType;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -277,6 +281,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   final FileSetMetadata fileSetMetadata;
   @Nullable private final Function<SoyExpression, SoyExpression> returnMapper;
   private Scope currentScope;
+  private final Deque<LoopContext> loopStack = new ArrayDeque<>();
 
   private SoyNodeCompiler(
       @Nullable TypeInfo typeInfo,
@@ -653,6 +658,26 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     }
   }
 
+  private static class LoopContext {
+    private final Label continueToLabel;
+    private final Label breakToLabel;
+
+    LoopContext(Label continueToLabel, Label breakToLabel) {
+      this.continueToLabel = continueToLabel;
+      this.breakToLabel = breakToLabel;
+    }
+
+    /** Gets the label to jump to for a 'continue' statement within a loop. */
+    Label getContinueToLabel() {
+      return continueToLabel;
+    }
+
+    /** Gets the label to jump to for a 'break' statement within a loop. */
+    Label getBreakToLabel() {
+      return breakToLabel;
+    }
+  }
+
   /**
    * Special case switches against literal primitives to use java switch instructions.
    *
@@ -915,8 +940,18 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
                 .invoke(MethodRefs.ITERATOR_NEXT)
                 .checkedCast(SOY_VALUE_PROVIDER_TYPE),
             STORE);
+
+    Label loopStart = newLabel();
+    Label loopEnd = newLabel();
+
+    LoopContext context = new LoopContext(loopStart, loopEnd);
+    loopStack.push(context);
+
     Expression hasNext = MethodRefs.ITERATOR_HAS_NEXT.invoke(iteratorVar.local());
     Statement loopBody = visitChildrenInNewScope(nonEmptyNode);
+
+    loopStack.pop();
+
     var exitScope = scope.exitScopeMarker();
 
     return new Statement(
@@ -928,8 +963,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
           userIndexVar.initializer().gen(adapter); // int index = 0;
         }
 
-        Label loopStart = adapter.mark();
-        Label loopEnd = newLabel();
+        adapter.mark(loopStart);
 
         hasNext.gen(adapter);
         adapter.ifZCmp(Opcodes.IFEQ, loopEnd); // while (it.hasNext()) {
@@ -950,14 +984,24 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   protected Statement visitWhileNode(WhileNode node) {
     Scope scope = variables.enterScope();
     Expression boolExpr = compileRootExpression(node.getExpr()).coerceToBoolean();
+
+    Label loopStart = newLabel();
+    Label loopEnd = newLabel();
+
+    LoopContext context = new LoopContext(loopStart, loopEnd);
+    loopStack.push(context);
+
     Statement loopBody = AppendableExpression.concat(visitChildren(node));
+
+    loopStack.pop();
+
     var exitScope = scope.exitScopeMarker();
+
     return new Statement(
         loopBody.isTerminal() ? Statement.Kind.TERMINAL : Statement.Kind.NON_TERMINAL) {
       @Override
       protected void doGen(CodeBuilder adapter) {
-        Label loopStart = adapter.mark();
-        Label loopEnd = newLabel();
+        adapter.mark(loopStart);
 
         boolExpr.gen(adapter);
         adapter.ifZCmp(Opcodes.IFEQ, loopEnd); // while (booleanProvider == true) {
@@ -966,6 +1010,35 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
         adapter.goTo(loopStart);
         adapter.mark(exitScope);
         adapter.mark(loopEnd);
+      }
+    };
+  }
+
+  @Override
+  protected Statement visitBreakNode(BreakNode node) {
+    if (loopStack.isEmpty()) {
+      throw new IllegalStateException("{break /} found outside of a loop structure.");
+    }
+    Label breakToLabel = loopStack.peek().getBreakToLabel();
+    return new Statement(Statement.Kind.TERMINAL) {
+      @Override
+      protected void doGen(CodeBuilder adapter) {
+        adapter.goTo(breakToLabel);
+      }
+    };
+  }
+
+  @Override
+  protected Statement visitContinueNode(ContinueNode node) {
+    if (loopStack.isEmpty()) {
+      throw new IllegalStateException("{continue /} found outside of a loop structure.");
+    }
+    Label continueToLabel = loopStack.peek().getContinueToLabel();
+    return new Statement(
+        Statement.Kind.TERMINAL) { // 'continue' terminates the current block iteration
+      @Override
+      protected void doGen(CodeBuilder adapter) {
+        adapter.goTo(continueToLabel);
       }
     };
   }

@@ -59,6 +59,7 @@ import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.sharedpasses.render.EvalVisitor.EvalVisitorFactory;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.AssignmentNode;
+import com.google.template.soy.soytree.BreakNode;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallDelegateNode;
 import com.google.template.soy.soytree.CallNode;
@@ -66,6 +67,7 @@ import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamNode;
 import com.google.template.soy.soytree.CallParamValueNode;
 import com.google.template.soy.soytree.ConstNode;
+import com.google.template.soy.soytree.ContinueNode;
 import com.google.template.soy.soytree.DebuggerNode;
 import com.google.template.soy.soytree.ExternNode;
 import com.google.template.soy.soytree.ForNode;
@@ -474,26 +476,74 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
 
   @Override
   protected void visitForNode(ForNode node) {
-    SoyValue dataRefValue = eval(node.getExpr(), node);
-    Iterator<? extends SoyValueProvider> it = dataRefValue.javaIterator();
-    int i = 0;
-    ForNonemptyNode child = (ForNonemptyNode) node.getChild(0);
-    while (it.hasNext()) {
-      env.bindLoopPosition(child.getVar(), it.next());
-      if (child.getIndexVar() != null) {
-        env.bind(child.getIndexVar(), SoyValueConverter.INSTANCE.convert(i++));
+    try {
+      SoyValue dataRefValue = eval(node.getExpr(), node);
+      Iterator<? extends SoyValueProvider> it = dataRefValue.javaIterator();
+      int i = 0;
+      ForNonemptyNode child = (ForNonemptyNode) node.getChild(0);
+      while (it.hasNext()) {
+        env.bindLoopPosition(child.getVar(), it.next());
+        if (child.getIndexVar() != null) {
+          env.bind(child.getIndexVar(), SoyValueConverter.INSTANCE.convert(i++));
+        }
+        try {
+          visitChildren(child);
+        } catch (ContinueException e) {
+          // Do nothing and continue the loop.
+        }
       }
-      visitChildren(child);
+    } catch (BreakException e) {
+      // Do nothing and break out of the loop.
     }
   }
 
   @Override
   protected void visitWhileNode(WhileNode node) {
-    while (eval(node.getExpr(), node).coerceToBoolean()) {
-      for (SoyNode child : node.getChildren()) {
-        visit(child);
+    try {
+      while (eval(node.getExpr(), node).coerceToBoolean()) {
+        try {
+          visitChildren(node);
+        } catch (ContinueException e) {
+          // Do nothing and continue the loop.
+        }
       }
+    } catch (BreakException e) {
+      // Do nothing and break out of the loop.
     }
+  }
+
+  private static class BreakException extends RuntimeException {
+    public BreakException() {
+      super("Break statement encountered");
+    }
+
+    @Override
+    public synchronized Throwable fillInStackTrace() {
+      // For efficiency, since this is used for control flow.
+      return this;
+    }
+  }
+
+  @Override
+  protected void visitBreakNode(BreakNode node) {
+    throw new BreakException();
+  }
+
+  private static class ContinueException extends RuntimeException {
+    public ContinueException() {
+      super("Continue statement encountered");
+    }
+
+    @Override
+    public synchronized Throwable fillInStackTrace() {
+      // For efficiency, since this is used for control flow.
+      return this;
+    }
+  }
+
+  @Override
+  protected void visitContinueNode(ContinueNode node) {
+    throw new ContinueException();
   }
 
   @Override
