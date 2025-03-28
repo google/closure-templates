@@ -68,6 +68,7 @@ import com.google.template.soy.jbcsrc.restricted.MethodRef.MethodPureness;
 import com.google.template.soy.jbcsrc.runtime.DetachableContentProvider;
 import com.google.template.soy.jbcsrc.runtime.JbcSrcRuntime;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
+import com.google.template.soy.jbcsrc.shared.JbcSrcFunctionValue;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
 import com.google.template.soy.jbcsrc.shared.StackFrame;
 import com.google.template.soy.logging.LoggableElementMetadata;
@@ -343,6 +344,17 @@ public final class MethodRefs {
 
   public static final MethodRef RUNTIME_EQUAL =
       createPure(SharedRuntime.class, "equal", SoyValue.class, SoyValue.class);
+
+  public static final MethodRef FUNCTION_CREATE_IMPORTED =
+      createPure(
+          JbcSrcFunctionValue.class, "create", RenderContext.class, String.class, String.class);
+  public static final MethodRef FUNCTION_CREATE_LOCAL =
+      createPure(
+          JbcSrcFunctionValue.class, "create", RenderContext.class, Class.class, String.class);
+  public static final MethodRef FUNCTION_BIND =
+      createNonPure(JbcSrcFunctionValue.class, "bind", ImmutableList.class);
+  public static final MethodRef FUNCTION_CALL =
+      createNonPure(JbcSrcFunctionValue.class, "call", ImmutableList.class);
 
   public static final MethodRef SOY_VALUE_IS_TRUTHY_NON_EMPTY =
       createPure(SoyValue.class, "isTruthyNonEmpty");

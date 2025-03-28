@@ -236,6 +236,7 @@ public class CompiledTemplates {
   }
 
   private static final Splitter HASH_SPLITTER = Splitter.on('#');
+  private static final String ONLY_METHOD_MARKER = "*";
 
   /**
    * Fetches and caches a method handle for the given fully qualified method reference.
@@ -268,8 +269,16 @@ public class CompiledTemplates {
     try {
       var ownerClass = Class.forName(className, /* initialize= */ true, getClassLoader());
       // parse the descriptor in the context of the callee
-      var methodType =
-          MethodType.fromMethodDescriptorString(descriptor, ownerClass.getClassLoader());
+      MethodType methodType;
+      if (ONLY_METHOD_MARKER.equals(descriptor)) {
+        Method declaredMethod =
+            JbcSrcFunctionValue.getOnlyStaticMethodNamed(ownerClass, methodName);
+        methodType =
+            MethodType.methodType(
+                declaredMethod.getReturnType(), declaredMethod.getParameterTypes());
+      } else {
+        methodType = MethodType.fromMethodDescriptorString(descriptor, ownerClass.getClassLoader());
+      }
 
       return ClassLoaderFallbackCallFactory.findStaticWithOrWithoutLeadingRenderContext(
           MethodHandles.publicLookup().in(ownerClass), ownerClass, methodName, methodType, isConst);

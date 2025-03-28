@@ -323,24 +323,26 @@ public final class ClassLoaderFallbackCallFactory {
   static MethodHandle findStaticWithOrWithoutLeadingRenderContext(
       MethodHandles.Lookup lookup, Class<?> context, String name, MethodType type, boolean isConst)
       throws NoSuchMethodException, IllegalAccessException {
-    checkState(type.parameterType(0).equals(RenderContext.class));
-    try {
-      MethodHandle withoutRenderContext =
-          lookup.findStatic(context, name, type.dropParameterTypes(0, 1));
-      if (isConst) {
-        Object result;
-        try {
-          result = withoutRenderContext.invoke();
-        } catch (Throwable t) {
-          throw new AssertionError("const methods should not throw", t);
+    if (type.parameterType(0).equals(RenderContext.class)) {
+      try {
+        MethodHandle withoutRenderContext =
+            lookup.findStatic(context, name, type.dropParameterTypes(0, 1));
+        if (isConst) {
+          Object result;
+          try {
+            result = withoutRenderContext.invoke();
+          } catch (Throwable t) {
+            throw new AssertionError("const methods should not throw", t);
+          }
+          withoutRenderContext =
+              MethodHandles.constant(withoutRenderContext.type().returnType(), result);
         }
-        withoutRenderContext =
-            MethodHandles.constant(withoutRenderContext.type().returnType(), result);
+        return MethodHandles.dropArguments(withoutRenderContext, 0, RenderContext.class);
+      } catch (NoSuchMethodException nsme) {
+        // fall through
       }
-      return MethodHandles.dropArguments(withoutRenderContext, 0, RenderContext.class);
-    } catch (NoSuchMethodException nsme) {
-      return lookup.findStatic(context, name, type);
     }
+    return lookup.findStatic(context, name, type);
   }
 
   /**

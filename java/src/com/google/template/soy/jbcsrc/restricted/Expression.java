@@ -882,7 +882,7 @@ public abstract class Expression extends BytecodeProducer {
               BytecodeUtils.FUNCTION_VALUE_TYPE, resultType)) {
             return Optional.empty();
           }
-          return Optional.of(MethodRefs.CHECK_STRING.invoke(this));
+          return Optional.of(MethodRefs.CHECK_FUNCTION.invoke(this));
         case NAMESPACE:
         case PROTO_TYPE:
         case PROTO_ENUM_TYPE:

@@ -18,15 +18,20 @@ package com.google.template.soy.jbcsrc;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.FUNCTION_VALUE_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.ITERATOR_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.LIST_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.NULL_POINTER_EXCEPTION_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_VALUE_PROVIDER_TYPE;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.asImmutableList;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constantRecordProperty;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.firstSoyNonNullish;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.newLabel;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.numericConversion;
+import static com.google.template.soy.jbcsrc.restricted.MethodRefs.FUNCTION_CREATE_IMPORTED;
+import static com.google.template.soy.jbcsrc.restricted.MethodRefs.FUNCTION_CREATE_LOCAL;
+import static com.google.template.soy.jbcsrc.restricted.SoyExpression.asBoxedValueProviderList;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
@@ -128,9 +133,11 @@ import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.defn.ConstVar;
 import com.google.template.soy.soytree.defn.ExternVar;
 import com.google.template.soy.soytree.defn.ImportedVar;
+import com.google.template.soy.soytree.defn.ImportedVar.SymbolKind;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.FloatType;
+import com.google.template.soy.types.FunctionType;
 import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.SetType;
 import com.google.template.soy.types.SoyProtoType;
@@ -536,7 +543,7 @@ final class ExpressionCompiler {
       }
 
       var compiledChildren = visitChildren(node);
-      var asList = SoyExpression.asBoxedValueProviderList(compiledChildren);
+      var asList = asBoxedValueProviderList(compiledChildren);
       var asListSoyExpression = SoyExpression.forList((ListType) node.getType(), asList);
       // lists show up in defaults and const expressions, special case those
       if (isConstantContext && Expression.areAllConstant(compiledChildren)) {
@@ -1314,24 +1321,35 @@ final class ExpressionCompiler {
       String namespace = fileSetMetadata.getNamespaceForPath(importedVar.getSourceFilePath());
       TypeInfo typeInfo = TypeInfo.createClass(Names.javaClassNameFromSoyNamespace(namespace));
       Expression renderContext = parameters.getRenderContext();
-      Expression constExpression =
-          new Expression(
-              ConstantsCompiler.getConstantRuntimeType(importedVar.type()).runtimeType()) {
-            @Override
-            protected void doGen(CodeBuilder adapter) {
-              renderContext.gen(adapter);
-              adapter.visitInvokeDynamicInsn(
-                  "create",
-                  ConstantsCompiler.getConstantMethodWithRenderContext(
-                          importedVar.name(), importedVar.type())
-                      .getDescriptor(),
-                  GET_CONST_HANDLE,
-                  typeInfo.className(),
-                  importedVar.getSymbol());
-            }
-          };
-      return SoyExpression.forRuntimeType(
-          ConstantsCompiler.getConstantRuntimeType(importedVar.type()), constExpression);
+      if (importedVar.getSymbolKind() == SymbolKind.CONST) {
+        Expression constExpression =
+            new Expression(
+                ConstantsCompiler.getConstantRuntimeType(importedVar.type()).runtimeType()) {
+              @Override
+              protected void doGen(CodeBuilder adapter) {
+                renderContext.gen(adapter);
+                adapter.visitInvokeDynamicInsn(
+                    "create",
+                    ConstantsCompiler.getConstantMethodWithRenderContext(
+                            importedVar.name(), importedVar.type())
+                        .getDescriptor(),
+                    GET_CONST_HANDLE,
+                    typeInfo.className(),
+                    importedVar.getSymbol());
+              }
+            };
+        return SoyExpression.forRuntimeType(
+            ConstantsCompiler.getConstantRuntimeType(importedVar.type()), constExpression);
+      } else if (importedVar.getSymbolKind() == SymbolKind.EXTERN) {
+        return SoyExpression.forSoyValue(
+            varRef.getType(),
+            FUNCTION_CREATE_IMPORTED.invoke(
+                parameters.getRenderContext(),
+                constant(Names.javaClassNameFromSoyNamespace(namespace)),
+                constant(importedVar.getSymbol())));
+      } else {
+        throw new IllegalArgumentException("" + importedVar.getSymbolKind());
+      }
     }
 
     @Override
@@ -1626,7 +1644,14 @@ final class ExpressionCompiler {
             Expression expr = getMapGetExpression(baseExpr, node, visit(node.getParam(0)));
             return SoyExpression.forSoyValue(node.getType(), expr.checkedSoyCast(node.getType()));
           case FUNCTION_BIND:
-            return SoyExpression.SOY_NULL;
+            return SoyExpression.forSoyValue(
+                node.getType(),
+                baseExpr
+                    .checkedCast(FUNCTION_VALUE_TYPE)
+                    .invoke(
+                        MethodRefs.FUNCTION_BIND,
+                        adaptFunctionArgs(
+                            (FunctionType) node.getBaseExprChild().getType(), node.getParams())));
           case BIND:
             {
               var record = (RecordLiteralNode) node.getChild(1);
@@ -1880,8 +1905,20 @@ final class ExpressionCompiler {
       } else if (fn instanceof Extern) {
         return callExtern((Extern) fn, node.getParams());
       } else if (fn == FunctionNode.FUNCTION_POINTER) {
-        // TODO(b/191497298): Implement.
-        return SoyExpression.SOY_NULL;
+        FunctionType functionType = (FunctionType) node.getNameExpr().getType();
+        SoyRuntimeType soyReturnType = ExternCompiler.getRuntimeType(functionType.getReturnType());
+        Expression obj =
+            visit(node.getNameExpr())
+                .checkedCast(FUNCTION_VALUE_TYPE)
+                .invoke(
+                    MethodRefs.FUNCTION_CALL, adaptFunctionArgs(functionType, node.getParams()));
+        if (BytecodeUtils.isPrimitive(soyReturnType.runtimeType())) {
+          obj = BytecodeUtils.unboxJavaPrimitive(soyReturnType.runtimeType(), obj);
+        } else {
+          obj = obj.checkedCast(soyReturnType.runtimeType());
+        }
+
+        return SoyExpression.forRuntimeType(soyReturnType, obj);
       }
 
       // Functions that are not a SoyJavaSourceFunction
@@ -1893,9 +1930,23 @@ final class ExpressionCompiler {
               .checkedCast(SoyJavaFunction.class)
               .invoke(
                   MethodRefs.SOY_JAVA_FUNCTION_COMPUTE_FOR_JAVA,
-                  SoyExpression.asBoxedValueProviderList(visitChildren(node)))
+                  asBoxedValueProviderList(visitChildren(node)))
               // Most soy functions don't have return types, but if they do we should enforce it
               .checkedSoyCast(node.getType()));
+    }
+
+    private Expression adaptFunctionArgs(FunctionType type, List<ExprNode> args) {
+      List<Expression> adaptedArgs = new ArrayList<>(args.size());
+      for (int i = 0; i < args.size(); i++) {
+        ExprNode param = args.get(i);
+        SoyType paramType = type.getParameters().get(i).getType();
+        Expression adapted = adaptExternArg(visit(param), paramType);
+        if (BytecodeUtils.isPrimitive(adapted.resultType())) {
+          adapted = BytecodeUtils.boxJavaPrimitive(adapted);
+        }
+        adaptedArgs.add(adapted);
+      }
+      return asImmutableList(adaptedArgs);
     }
 
     private SoyExpression callExtern(Extern extern, List<ExprNode> params) {
@@ -2088,8 +2139,16 @@ final class ExpressionCompiler {
 
     @Override
     SoyExpression visitExternVar(VarRefNode node, ExternVar c) {
-      // TODO(b/191497298): Implement.
-      return SoyExpression.SOY_NULL;
+      SoyFileNode fileNode = context.getNearestAncestor(SoyFileNode.class);
+      TypeInfo typeInfo =
+          TypeInfo.createClass(Names.javaClassNameFromSoyNamespace(fileNode.getNamespace()));
+      // TODO(b/191497298): Convert to SoyCallSite bootstrap.
+      return SoyExpression.forSoyValue(
+          node.getType(),
+          FUNCTION_CREATE_LOCAL.invoke(
+              parameters.getRenderContext(),
+              constant(typeInfo.type()),
+              constant(node.getDefnDecl().name())));
     }
 
     // Catch-all for unimplemented nodes

@@ -72,9 +72,9 @@ import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.restricted.Expression.Feature;
 import com.google.template.soy.jbcsrc.restricted.Expression.Features;
 import com.google.template.soy.jbcsrc.runtime.DetachableContentProvider;
-import com.google.template.soy.jbcsrc.runtime.JbcSrcFunctionValue;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.ExtraConstantBootstraps;
+import com.google.template.soy.jbcsrc.shared.JbcSrcFunctionValue;
 import com.google.template.soy.jbcsrc.shared.LargeStringConstantFactory;
 import com.google.template.soy.jbcsrc.shared.Names;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
@@ -1385,6 +1385,10 @@ public final class BytecodeUtils {
   /** Converts int to Integer, long to Long, etc. Java "boxing", not Soy "boxing". */
   public static Expression boxJavaPrimitive(SoyExpression actualParam) {
     return boxJavaPrimitive(actualParam.soyRuntimeType().runtimeType(), actualParam);
+  }
+
+  public static Expression boxJavaPrimitive(Expression expr) {
+    return boxJavaPrimitive(expr.resultType(), expr);
   }
 
   public static Expression boxJavaPrimitive(Type type, Expression expr) {
