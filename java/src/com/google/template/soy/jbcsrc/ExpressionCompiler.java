@@ -29,8 +29,6 @@ import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constantRe
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.firstSoyNonNullish;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.newLabel;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.numericConversion;
-import static com.google.template.soy.jbcsrc.restricted.MethodRefs.FUNCTION_CREATE_IMPORTED;
-import static com.google.template.soy.jbcsrc.restricted.MethodRefs.FUNCTION_CREATE_LOCAL;
 import static com.google.template.soy.jbcsrc.restricted.SoyExpression.asBoxedValueProviderList;
 
 import com.google.common.collect.ImmutableList;
@@ -126,7 +124,6 @@ import com.google.template.soy.shared.restricted.SoyMethod;
 import com.google.template.soy.shared.restricted.SoySourceFunctionMethod;
 import com.google.template.soy.soytree.ConstNode;
 import com.google.template.soy.soytree.FileMetadata.Extern;
-import com.google.template.soy.soytree.JavaImplNode;
 import com.google.template.soy.soytree.PartialFileSetMetadata;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
@@ -177,6 +174,19 @@ import org.objectweb.asm.commons.Method;
  * All other type information is derived directly from operations on SoyExpression objects.
  */
 final class ExpressionCompiler {
+
+  private static final Handle STATIC_FUNCTION_HANDLE =
+      MethodRef.createPure(
+              ClassLoaderFallbackCallFactory.class,
+              "bootstrapFunctionPointerLookup",
+              MethodHandles.Lookup.class,
+              String.class,
+              MethodType.class,
+              String.class,
+              String.class)
+          .asHandle();
+  private static final String FUNCTION_METHOD_DESCRIPTOR =
+      Type.getMethodDescriptor(FUNCTION_VALUE_TYPE, BytecodeUtils.RENDER_CONTEXT_TYPE);
 
   static final class BasicExpressionCompiler {
     private final CompilerVisitor compilerVisitor;
@@ -1342,14 +1352,28 @@ final class ExpressionCompiler {
             ConstantsCompiler.getConstantRuntimeType(importedVar.type()), constExpression);
       } else if (importedVar.getSymbolKind() == SymbolKind.EXTERN) {
         return SoyExpression.forSoyValue(
-            varRef.getType(),
-            FUNCTION_CREATE_IMPORTED.invoke(
-                parameters.getRenderContext(),
-                constant(Names.javaClassNameFromSoyNamespace(namespace)),
-                constant(importedVar.getSymbol())));
+            varRef.getType(), getFunctionValue(namespace, importedVar.getSymbol()));
       } else {
         throw new IllegalArgumentException("" + importedVar.getSymbolKind());
       }
+    }
+
+    private Expression getFunctionValue(String namespace, String symbol) {
+      Expression renderContext = parameters.getRenderContext();
+      TypeInfo fctOwner = TypeInfo.createClass(Names.javaClassNameFromSoyNamespace(namespace));
+
+      return new Expression(FUNCTION_VALUE_TYPE, Feature.NON_JAVA_NULLABLE.asFeatures()) {
+        @Override
+        protected void doGen(CodeBuilder adapter) {
+          renderContext.gen(adapter);
+          adapter.visitInvokeDynamicInsn(
+              "function",
+              FUNCTION_METHOD_DESCRIPTOR,
+              STATIC_FUNCTION_HANDLE,
+              fctOwner.className(),
+              symbol);
+        }
+      };
     }
 
     @Override
@@ -1910,8 +1934,11 @@ final class ExpressionCompiler {
         Expression obj =
             visit(node.getNameExpr())
                 .checkedCast(FUNCTION_VALUE_TYPE)
+                .invoke(MethodRefs.FUNCTION_WITH_RENDER_CONTEXT, parameters.getRenderContext())
                 .invoke(
                     MethodRefs.FUNCTION_CALL, adaptFunctionArgs(functionType, node.getParams()));
+        // TODO(b/407056315): This can all be moved into another bootstrap with invokeDynamic, and
+        //                    relying on MethodHandle.invokeExact.
         if (BytecodeUtils.isPrimitive(soyReturnType.runtimeType())) {
           obj = BytecodeUtils.unboxJavaPrimitive(soyReturnType.runtimeType(), obj);
         } else {
@@ -1976,8 +2003,7 @@ final class ExpressionCompiler {
                             && e.getType().equals(extern.getSignature()))
                 .findFirst()
                 .get();
-        boolean javaImplRequiresRenderContext =
-            externNode.getJavaImpl().map(JavaImplNode::requiresRenderContext).orElse(false);
+        boolean javaImplRequiresRenderContext = externNode.requiresRenderContext();
         if (javaImplRequiresRenderContext) {
           args.add(0, parameters.getRenderContext());
         }
@@ -2140,15 +2166,8 @@ final class ExpressionCompiler {
     @Override
     SoyExpression visitExternVar(VarRefNode node, ExternVar c) {
       SoyFileNode fileNode = context.getNearestAncestor(SoyFileNode.class);
-      TypeInfo typeInfo =
-          TypeInfo.createClass(Names.javaClassNameFromSoyNamespace(fileNode.getNamespace()));
-      // TODO(b/191497298): Convert to SoyCallSite bootstrap.
       return SoyExpression.forSoyValue(
-          node.getType(),
-          FUNCTION_CREATE_LOCAL.invoke(
-              parameters.getRenderContext(),
-              constant(typeInfo.type()),
-              constant(node.getDefnDecl().name())));
+          node.getType(), getFunctionValue(fileNode.getNamespace(), node.getDefnDecl().name()));
     }
 
     // Catch-all for unimplemented nodes

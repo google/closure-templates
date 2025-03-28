@@ -59,45 +59,31 @@ public abstract class JbcSrcFunctionValue extends SoyValue {
     }
   }
 
-  public static JbcSrcFunctionValue create(
-      RenderContext renderContext, String className, String methodName) {
-    MethodHandle methodHandle =
-        renderContext.getTemplates().getExternMethod(className + "#" + methodName + "#*");
-    if (methodHandle.type().parameterCount() > 0
-        && methodHandle.type().parameterType(0).equals(RenderContext.class)) {
-      methodHandle = MethodHandles.insertArguments(methodHandle, 0, renderContext);
-    }
-    return forHandle(methodHandle);
-  }
-
-  public static JbcSrcFunctionValue create(
-      RenderContext renderContext, Class<?> clazz, String methodName) {
-    try {
-      Method method = getOnlyStaticMethodNamed(clazz, methodName);
-      method.setAccessible(true);
-      MethodHandle methodHandle = MethodHandles.lookup().unreflect(method);
-      if (method.getParameterTypes().length > 0
-          && method.getParameterTypes()[0].equals(RenderContext.class)) {
-        methodHandle = MethodHandles.insertArguments(methodHandle, 0, renderContext);
-      }
-      return forHandle(methodHandle);
-    } catch (ReflectiveOperationException e) {
-      throw new VerifyException(e);
-    }
-  }
-
-  private static JbcSrcFunctionValue forHandle(MethodHandle methodHandle) {
+  public static JbcSrcFunctionValue create(MethodHandle methodHandle) {
     return new AutoValue_JbcSrcFunctionValue(methodHandle);
   }
 
-  abstract MethodHandle getHandle();
+  public abstract MethodHandle getHandle();
 
   public JbcSrcFunctionValue bind(ImmutableList<?> args) {
     if (args.isEmpty()) {
       return this;
     }
-    return forHandle(
-        MethodHandles.insertArguments(getHandle(), 0, Iterables.toArray(args, Object.class)));
+    return create(
+        MethodHandles.insertArguments(
+            getHandle(), hasRenderContext() ? 1 : 0, Iterables.toArray(args, Object.class)));
+  }
+
+  private boolean hasRenderContext() {
+    return getHandle().type().parameterCount() > 0
+        && getHandle().type().parameterType(0).equals(RenderContext.class);
+  }
+
+  public JbcSrcFunctionValue withRenderContext(RenderContext renderContext) {
+    if (!hasRenderContext()) {
+      return this;
+    }
+    return create(MethodHandles.insertArguments(getHandle(), 0, renderContext));
   }
 
   /** Must be boxed because we can't know whether this depends on an async extern. */
@@ -171,6 +157,7 @@ public abstract class JbcSrcFunctionValue extends SoyValue {
 
   /** Adapt return value of Soy extern to what Java expects. */
   public static Object adaptReturn(Object val, Class<?> returnType) {
+    // TODO(b/407056315): This is probably incomplete.
     if (returnType == int.class || returnType == Integer.class) {
       return ((Number) val).intValue();
     }

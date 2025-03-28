@@ -208,7 +208,7 @@ public final class JavaImplNode extends AbstractBlockCommandNode
     return parsedParamTypes.stream().anyMatch(p -> IMPLICIT_PARAMS.contains(p.className()));
   }
 
-  public boolean requiresRenderContext() {
+  boolean requiresRenderContext() {
     // We could filter out some cases where isAutoImpl()==true but we'd have to check several things
     // like calling another extern, referencing a constant, calling xid() and other built-ins, etc.
     return isAutoImpl() || (!isStatic() || hasImplicitParams());

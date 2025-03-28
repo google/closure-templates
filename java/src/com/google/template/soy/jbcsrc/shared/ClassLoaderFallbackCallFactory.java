@@ -32,6 +32,7 @@ import java.lang.invoke.CallSite;
 import java.lang.invoke.ConstantCallSite;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodHandles.Lookup;
 import java.lang.invoke.MethodType;
 import java.lang.invoke.MutableCallSite;
 import java.lang.ref.WeakReference;
@@ -87,7 +88,7 @@ public final class ClassLoaderFallbackCallFactory {
    * triggered which is rare.
    */
   private static final class SlowPathHandles {
-    private static final MethodHandles.Lookup LOOKUP = MethodHandles.lookup();
+    private static final Lookup LOOKUP = MethodHandles.lookup();
 
     private static MethodHandle findLocalStaticOrDie(String name, MethodType type) {
       try {
@@ -127,6 +128,17 @@ public final class ClassLoaderFallbackCallFactory {
             methodType(
                 CompiledTemplate.class, SoyCallSite.class, String.class, RenderContext.class));
 
+    private static final MethodHandle SLOWPATH_FUNCTION_PTR =
+        findLocalStaticOrDie(
+            "slowPathFunctionPointer",
+            methodType(
+                JbcSrcFunctionValue.class,
+                SoyCallSite.class,
+                Lookup.class,
+                String.class,
+                String.class,
+                RenderContext.class));
+
     private static final MethodHandle SLOWPATH_TEMPLATE_VALUE =
         findLocalStaticOrDie(
             "slowPathTemplateValue",
@@ -134,13 +146,15 @@ public final class ClassLoaderFallbackCallFactory {
     private static final MethodHandle SLOWPATH_CONST =
         findLocalStaticOrDie(
             "slowPathConst",
-            methodType(Object.class, SoyCallSite.class, String.class, RenderContext.class));
+            methodType(
+                Object.class, SoyCallSite.class, Lookup.class, String.class, RenderContext.class));
     private static final MethodHandle SLOWPATH_EXTERN =
         findLocalStaticOrDie(
             "slowPathExtern",
             methodType(
                 Object.class,
                 SoyCallSite.class,
+                Lookup.class,
                 String.class,
                 RenderContext.class,
                 Object[].class));
@@ -195,7 +209,7 @@ public final class ClassLoaderFallbackCallFactory {
    *     template name of the template being referenced.
    */
   public static CallSite bootstrapTemplateLookup(
-      MethodHandles.Lookup lookup, String name, MethodType type, String templateName)
+      Lookup lookup, String name, MethodType type, String templateName)
       throws NoSuchMethodException, IllegalAccessException {
     if (!FORCE_SLOWPATH) {
       Optional<Class<?>> templateClass = findTemplateClass(lookup, templateName);
@@ -210,6 +224,39 @@ public final class ClassLoaderFallbackCallFactory {
     MethodHandle slowPath = SlowPathHandles.SLOWPATH_TEMPLATE;
     slowPath = insertArguments(slowPath, 1, templateName);
     return new SoyCallSite(type, slowPath);
+  }
+
+  public static CallSite bootstrapFunctionPointerLookup(
+      Lookup lookup, String name, MethodType type, String className, String symbol)
+      throws NoSuchMethodException {
+    if (!FORCE_SLOWPATH) {
+      Optional<Class<?>> templateClass = findClass(lookup, className, symbol);
+      if (templateClass.isPresent()) {
+        MethodHandle methodHandle =
+            CompiledTemplates.findConstOrExternMethod(
+                lookup, templateClass.get(), false, symbol, "*");
+        JbcSrcFunctionValue function = JbcSrcFunctionValue.create(methodHandle);
+        // the initial renderContext is ignored in this case
+        MethodHandle getter = constant(JbcSrcFunctionValue.class, function);
+        getter = dropArguments(getter, 0, RenderContext.class);
+        return new ConstantCallSite(getter);
+      }
+    }
+    MethodHandle slowPath = SlowPathHandles.SLOWPATH_FUNCTION_PTR;
+    slowPath = insertArguments(slowPath, 1, lookup, className, symbol);
+    return new SoyCallSite(type, slowPath);
+  }
+
+  public static JbcSrcFunctionValue slowPathFunctionPointer(
+      SoyCallSite callSite, Lookup lookup, String className, String symbol, RenderContext context) {
+    CompiledTemplates templates = context.getTemplates();
+
+    MethodHandle methodHandle =
+        context.getTemplates().getExternMethod(lookup, className + "#" + symbol + "#*");
+
+    JbcSrcFunctionValue function = JbcSrcFunctionValue.create(methodHandle);
+    callSite.updateWithConstant(templates, JbcSrcFunctionValue.class, function);
+    return function;
   }
 
   /**
@@ -231,7 +278,7 @@ public final class ClassLoaderFallbackCallFactory {
    *     template name of the template being referenced.
    */
   public static CallSite bootstrapTemplateValueLookup(
-      MethodHandles.Lookup lookup, String name, MethodType type, String templateName)
+      Lookup lookup, String name, MethodType type, String templateName)
       throws NoSuchMethodException, IllegalAccessException {
     if (!FORCE_SLOWPATH) {
       Optional<Class<?>> templateClass = findTemplateClass(lookup, templateName);
@@ -250,7 +297,7 @@ public final class ClassLoaderFallbackCallFactory {
   }
 
   private static CompiledTemplate getTemplate(
-      MethodHandles.Lookup lookup, Class<?> templateClass, String templateName)
+      Lookup lookup, Class<?> templateClass, String templateName)
       throws NoSuchMethodException, IllegalAccessException {
     // Use the lookup to find and invoke the method.  This ensures that we can access the
     // factory using the permissions of the caller instead of the permissions of this class.
@@ -285,7 +332,7 @@ public final class ClassLoaderFallbackCallFactory {
    *     template name of the template being referenced.
    */
   public static CallSite bootstrapCall(
-      MethodHandles.Lookup lookup, String name, MethodType type, String templateName)
+      Lookup lookup, String name, MethodType type, String templateName)
       throws IllegalAccessException, NoSuchMethodException {
     if (!FORCE_SLOWPATH) {
       Optional<Class<?>> templateClass = findTemplateClass(lookup, templateName);
@@ -321,7 +368,7 @@ public final class ClassLoaderFallbackCallFactory {
    * return that instead.
    */
   static MethodHandle findStaticWithOrWithoutLeadingRenderContext(
-      MethodHandles.Lookup lookup, Class<?> context, String name, MethodType type, boolean isConst)
+      Lookup lookup, Class<?> context, String name, MethodType type, boolean isConst)
       throws NoSuchMethodException, IllegalAccessException {
     if (type.parameterType(0).equals(RenderContext.class)) {
       try {
@@ -359,11 +406,7 @@ public final class ClassLoaderFallbackCallFactory {
    * @param constName The local name of the constant.
    */
   public static CallSite bootstrapConstLookup(
-      MethodHandles.Lookup lookup,
-      String name,
-      MethodType type,
-      String constClassName,
-      String constName)
+      Lookup lookup, String name, MethodType type, String constClassName, String constName)
       throws Throwable {
     if (!FORCE_SLOWPATH) {
       ClassLoader callerClassLoader = lookup.lookupClass().getClassLoader();
@@ -381,7 +424,10 @@ public final class ClassLoaderFallbackCallFactory {
     MethodHandle slowPath = SlowPathHandles.SLOWPATH_CONST;
     slowPath =
         insertArguments(
-            slowPath, 1, constClassName + '#' + constName + '#' + type.toMethodDescriptorString());
+            slowPath,
+            1,
+            lookup,
+            constClassName + '#' + constName + '#' + type.toMethodDescriptorString());
     return new SoyCallSite(
         // adapt the return type of the slowpath to the current constant type
         type, slowPath.asType(slowPath.type().changeReturnType(type.returnType())));
@@ -405,11 +451,7 @@ public final class ClassLoaderFallbackCallFactory {
    * @param externName the name of the extern
    */
   public static CallSite bootstrapExternCall(
-      MethodHandles.Lookup lookup,
-      String name,
-      MethodType type,
-      String externClassName,
-      String externName)
+      Lookup lookup, String name, MethodType type, String externClassName, String externName)
       throws NoSuchMethodException, IllegalAccessException {
     if (!FORCE_SLOWPATH) {
       ClassLoader callerClassLoader = lookup.lookupClass().getClassLoader();
@@ -428,6 +470,7 @@ public final class ClassLoaderFallbackCallFactory {
         insertArguments(
             slowPath,
             1,
+            lookup,
             externClassName + '#' + externName + '#' + type.toMethodDescriptorString());
     // collect all arguments except the RenderContext into an array
     slowPath = slowPath.asCollector(Object[].class, type.parameterCount() - 1);
@@ -440,9 +483,10 @@ public final class ClassLoaderFallbackCallFactory {
    * RenderContext, which uses the CompiledTemplate's class loader to find the method.
    */
   public static Object slowPathConst(
-      SoyCallSite callSite, String constantFqn, RenderContext context) throws Throwable {
+      SoyCallSite callSite, Lookup lookup, String constantFqn, RenderContext context)
+      throws Throwable {
     CompiledTemplates templates = context.getTemplates();
-    MethodHandle constMethod = templates.getConstMethod(constantFqn);
+    MethodHandle constMethod = templates.getConstMethod(lookup, constantFqn);
     // Update the callsite so future calls dispatch directly to constMethod
     callSite.update(templates, constMethod);
     return constMethod.invoke(context);
@@ -454,10 +498,10 @@ public final class ClassLoaderFallbackCallFactory {
    * RenderContext, which uses the CompiledTemplate's class loader to find the method.
    */
   public static Object slowPathExtern(
-      SoyCallSite callSite, String externFqn, RenderContext context, Object[] args)
+      SoyCallSite callSite, Lookup lookup, String externFqn, RenderContext context, Object[] args)
       throws Throwable {
     CompiledTemplates templates = context.getTemplates();
-    MethodHandle externMethod = templates.getExternMethod(externFqn);
+    MethodHandle externMethod = templates.getExternMethod(lookup, externFqn);
     // Update the callsite so future calls dispatch directly to externMethod
     callSite.update(templates, externMethod);
 
@@ -466,10 +510,17 @@ public final class ClassLoaderFallbackCallFactory {
     return externMethod.invokeWithArguments(ObjectArrays.concat(context, args));
   }
 
-  private static Optional<Class<?>> findTemplateClass(
-      MethodHandles.Lookup lookup, String templateName) throws NoSuchMethodException {
+  private static Optional<Class<?>> findTemplateClass(Lookup lookup, String templateName)
+      throws NoSuchMethodException {
+    return findClass(
+        lookup,
+        Names.javaClassNameFromSoyTemplateName(templateName),
+        Names.renderMethodNameFromSoyTemplateName(templateName));
+  }
+
+  private static Optional<Class<?>> findClass(Lookup lookup, String className, String methodName)
+      throws NoSuchMethodException {
     ClassLoader callerClassLoader = lookup.lookupClass().getClassLoader();
-    String className = Names.javaClassNameFromSoyTemplateName(templateName);
     Class<?> clazz;
     try {
       clazz = callerClassLoader.loadClass(className);
@@ -480,8 +531,7 @@ public final class ClassLoaderFallbackCallFactory {
     }
     // Test if we should send this class through the slowpath anyway
     if (clazz.getClassLoader() instanceof AlwaysSlowPath) {
-      Method method =
-          clazz.getDeclaredMethod(Names.renderMethodNameFromSoyTemplateName(templateName));
+      Method method = clazz.getDeclaredMethod(methodName);
       // We can't take the slowpath for private templates.  Private templates are represented as
       // default access methods.
       if (Modifier.isPublic(method.getModifiers())) {

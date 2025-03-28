@@ -345,18 +345,14 @@ public final class MethodRefs {
   public static final MethodRef RUNTIME_EQUAL =
       createPure(SharedRuntime.class, "equal", SoyValue.class, SoyValue.class);
 
-  public static final MethodRef FUNCTION_CREATE_IMPORTED =
-      createPure(
-          JbcSrcFunctionValue.class, "create", RenderContext.class, String.class, String.class);
-  public static final MethodRef FUNCTION_CREATE_LOCAL =
-      createPure(
-          JbcSrcFunctionValue.class, "create", RenderContext.class, Class.class, String.class);
   public static final MethodRef FUNCTION_BIND =
       createNonPure(JbcSrcFunctionValue.class, "bind", ImmutableList.class);
   public static final MethodRef FUNCTION_CALL =
       createNonPure(JbcSrcFunctionValue.class, "call", ImmutableList.class);
-  public static final MethodRef FUNCTION_AS =
+  public static final MethodRef FUNCTION_AS_INSTANCE =
       createNonPure(JbcSrcFunctionValue.class, "asInstance", Class.class);
+  public static final MethodRef FUNCTION_WITH_RENDER_CONTEXT =
+      createNonPure(JbcSrcFunctionValue.class, "withRenderContext", RenderContext.class);
 
   public static final MethodRef SOY_VALUE_IS_TRUTHY_NON_EMPTY =
       createPure(SoyValue.class, "isTruthyNonEmpty");

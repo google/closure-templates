@@ -118,7 +118,7 @@ public final class ExternCompiler {
     }
 
     JavaImplNode javaImpl = extern.getJavaImpl().get();
-    requiresRenderContext = javaImpl.requiresRenderContext();
+    requiresRenderContext = extern.requiresRenderContext();
     Method memberMethod =
         buildMemberMethod(
             extern.getIdentifier().identifier(),
@@ -222,7 +222,8 @@ public final class ExternCompiler {
             adaptParameter(
                 paramSet.getVariable(paramNames.get(i + paramNamesOffset)),
                 paramTypesInfos[i],
-                extern.getType().getParameters().get(i).getType()));
+                extern.getType().getParameters().get(i).getType(),
+                vars));
       }
       // Add implicit params.
       for (int i = declaredMethodArgs; i < javaImpl.paramTypes().size(); i++) {
@@ -319,7 +320,7 @@ public final class ExternCompiler {
    * <p>Extern implementations expect Java null for Soy null values.
    */
   private static Expression adaptParameter(
-      Expression param, TypeInfo javaTypeInfo, SoyType soyType) {
+      Expression param, TypeInfo javaTypeInfo, SoyType soyType, ConstantVariables vars) {
     Type javaType = javaTypeInfo.type();
     SoyExpression actualParam =
         param instanceof SoyExpression
@@ -489,7 +490,8 @@ public final class ExternCompiler {
     if (SoyTypes.isKindOrUnionOfKind(soyType, Kind.FUNCTION)) {
       return actualParam
           .checkedCast(FUNCTION_VALUE_TYPE)
-          .invoke(MethodRefs.FUNCTION_AS, constant(javaType))
+          .invoke(MethodRefs.FUNCTION_WITH_RENDER_CONTEXT, vars.getRenderContext())
+          .invoke(MethodRefs.FUNCTION_AS_INSTANCE, constant(javaType))
           .checkedCast(javaType);
     }
 

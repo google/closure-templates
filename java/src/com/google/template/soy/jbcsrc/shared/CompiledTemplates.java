@@ -39,6 +39,7 @@ import com.google.template.soy.jbcsrc.shared.TemplateMetadata.DelTemplateMetadat
 import com.google.template.soy.shared.internal.DelTemplateSelector;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodHandles.Lookup;
 import java.lang.invoke.MethodType;
 import java.lang.reflect.Method;
 import java.util.Arrays;
@@ -244,9 +245,9 @@ public class CompiledTemplates {
    * <p>The format is `clasName#methodName#descriptor` this allows for a simple value that can be
    * cached and then unambiguously looked up.
    */
-  MethodHandle getConstMethod(String fqn) {
+  MethodHandle getConstMethod(Lookup lookup, String fqn) {
     return constOrExternNameToMethod.computeIfAbsent(
-        fqn, n -> findConstOrExternMethod(n, /* isConst= */ true));
+        fqn, n -> findConstOrExternMethod(lookup, n, /* isConst= */ true));
   }
 
   /**
@@ -255,12 +256,12 @@ public class CompiledTemplates {
    * <p>The format is `clasName#methodName#descriptor` this allows for a simple value that can be
    * cached and then unambiguously looked up.
    */
-  MethodHandle getExternMethod(String fqn) {
+  MethodHandle getExternMethod(Lookup lookup, String fqn) {
     return constOrExternNameToMethod.computeIfAbsent(
-        fqn, n -> findConstOrExternMethod(n, /* isConst= */ false));
+        fqn, n -> findConstOrExternMethod(lookup, n, /* isConst= */ false));
   }
 
-  private MethodHandle findConstOrExternMethod(String fqn, boolean isConst) {
+  private MethodHandle findConstOrExternMethod(Lookup lookup, String fqn, boolean isConst) {
     var parts = HASH_SPLITTER.split(fqn).iterator();
     var className = parts.next();
     var methodName = parts.next();
@@ -268,22 +269,29 @@ public class CompiledTemplates {
     checkArgument(!parts.hasNext(), "Expected FQN with exactly 2 hash characters: %s", fqn);
     try {
       var ownerClass = Class.forName(className, /* initialize= */ true, getClassLoader());
+      return findConstOrExternMethod(lookup, ownerClass, isConst, methodName, descriptor);
+    } catch (ReflectiveOperationException e) {
+      throw new LinkageError("Could not link to " + fqn, e);
+    }
+  }
+
+  static MethodHandle findConstOrExternMethod(
+      Lookup lookup, Class<?> ownerClass, boolean isConst, String methodName, String descriptor) {
+    try {
       // parse the descriptor in the context of the callee
-      MethodType methodType;
       if (ONLY_METHOD_MARKER.equals(descriptor)) {
         Method declaredMethod =
             JbcSrcFunctionValue.getOnlyStaticMethodNamed(ownerClass, methodName);
-        methodType =
-            MethodType.methodType(
-                declaredMethod.getReturnType(), declaredMethod.getParameterTypes());
-      } else {
-        methodType = MethodType.fromMethodDescriptorString(descriptor, ownerClass.getClassLoader());
+        return lookup.unreflect(declaredMethod);
       }
 
+      MethodType methodType =
+          MethodType.fromMethodDescriptorString(descriptor, ownerClass.getClassLoader());
       return ClassLoaderFallbackCallFactory.findStaticWithOrWithoutLeadingRenderContext(
-          MethodHandles.publicLookup().in(ownerClass), ownerClass, methodName, methodType, isConst);
+          lookup, ownerClass, methodName, methodType, isConst);
     } catch (ReflectiveOperationException e) {
-      throw new LinkageError("Could not link to " + fqn, e);
+      throw new LinkageError(
+          "Could not link to " + ownerClass.getName() + "#" + methodName + "#" + descriptor, e);
     }
   }
 
