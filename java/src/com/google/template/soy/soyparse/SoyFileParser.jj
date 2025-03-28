@@ -90,6 +90,7 @@ import com.google.template.soy.exprtree.UndefinedNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.soytree.AliasDeclaration;
 import com.google.template.soy.soytree.AssignmentNode;
+import com.google.template.soy.soytree.BreakNode;
 import com.google.template.soy.soytree.ByteOffsetIndex;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallDelegateNode;
@@ -101,6 +102,7 @@ import com.google.template.soy.soytree.CaseOrDefaultNode;
 import com.google.template.soy.soytree.CommandTagAttribute;
 import com.google.template.soy.soytree.Comment;
 import com.google.template.soy.soytree.ConstNode;
+import com.google.template.soy.soytree.ContinueNode;
 import com.google.template.soy.soytree.DebuggerNode;
 import com.google.template.soy.soytree.ExternImplNode;
 import com.google.template.soy.soytree.ExternNode;
@@ -1302,6 +1304,9 @@ TOKEN_MGR_DECLS: {
 
 | < CMD_BEGIN_WHILE              : "{while" <WS>    > : EXPR
 | < CMD_CLOSE_WHILE              : "{/while}"       >
+
+| < CMD_BREAK                    : "{break /}"         >
+| < CMD_CONTINUE                 : "{continue /}"      >
 }
 
 
@@ -2774,6 +2779,8 @@ private StatementNode ControlFlowStmt() :
   | stmt = ForStmt()
   | stmt = ReturnStmt()
   | stmt = WhileStmt()
+  | stmt = BreakStmt()
+  | stmt = ContinueStmt()
   )
 
   { return stmt; }
@@ -3848,6 +3855,44 @@ private WhileNode WhileStmt() :
         whileExpr);
     whileNode.addChildren(templateBlock);
     return whileNode;
+  }
+}
+
+/**
+ * BreakStmt -> CmdBreak CmdEnd
+ */
+private BreakNode BreakStmt() :
+{
+  Token tag;
+}
+{
+  tag = <CMD_BREAK>
+  {
+    assertInFunction(tag);
+  }
+  {
+    return new BreakNode(
+        nodeIdGen.genId(),
+        createSrcLoc(tag));
+  }
+}
+
+/**
+ * ContinueStmt -> CmdContinue CmdEnd
+ */
+private ContinueNode ContinueStmt() :
+{
+  Token tag;
+}
+{
+  tag = <CMD_CONTINUE>
+  {
+    assertInFunction(tag);
+  }
+  {
+    return new ContinueNode(
+        nodeIdGen.genId(),
+        createSrcLoc(tag));
   }
 }
 

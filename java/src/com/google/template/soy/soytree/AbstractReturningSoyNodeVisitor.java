@@ -127,6 +127,11 @@ public abstract class AbstractReturningSoyNodeVisitor<R>
       case WHILE_NODE:
         return visitWhileNode((WhileNode) node);
 
+      case BREAK_NODE:
+        return visitBreakNode((BreakNode) node);
+      case CONTINUE_NODE:
+        return visitContinueNode((ContinueNode) node);
+
       case CALL_BASIC_NODE:
         return visitCallBasicNode((CallBasicNode) node);
       case CALL_DELEGATE_NODE:
@@ -333,6 +338,14 @@ public abstract class AbstractReturningSoyNodeVisitor<R>
   }
 
   protected R visitWhileNode(WhileNode node) {
+    return visitSoyNode(node);
+  }
+
+  protected R visitBreakNode(BreakNode node) {
+    return visitSoyNode(node);
+  }
+
+  protected R visitContinueNode(ContinueNode node) {
     return visitSoyNode(node);
   }
 

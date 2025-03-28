@@ -88,6 +88,9 @@ public interface SoyNode extends Node {
 
     WHILE_NODE,
 
+    BREAK_NODE,
+    CONTINUE_NODE,
+
     CALL_BASIC_NODE,
     CALL_DELEGATE_NODE,
     CALL_PARAM_VALUE_NODE,

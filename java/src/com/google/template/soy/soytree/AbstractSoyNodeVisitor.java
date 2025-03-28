@@ -164,6 +164,13 @@ public abstract class AbstractSoyNodeVisitor<R> extends AbstractNodeVisitor<SoyN
         visitWhileNode((WhileNode) node);
         break;
 
+      case BREAK_NODE:
+        visitBreakNode((BreakNode) node);
+        break;
+      case CONTINUE_NODE:
+        visitContinueNode((ContinueNode) node);
+        break;
+
       case CALL_BASIC_NODE:
         visitCallBasicNode((CallBasicNode) node);
         break;
@@ -414,6 +421,14 @@ public abstract class AbstractSoyNodeVisitor<R> extends AbstractNodeVisitor<SoyN
   }
 
   protected void visitWhileNode(WhileNode node) {
+    visitSoyNode(node);
+  }
+
+  protected void visitBreakNode(BreakNode node) {
+    visitSoyNode(node);
+  }
+
+  protected void visitContinueNode(ContinueNode node) {
     visitSoyNode(node);
   }
 
