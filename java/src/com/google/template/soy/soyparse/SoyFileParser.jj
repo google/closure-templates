@@ -1305,8 +1305,8 @@ TOKEN_MGR_DECLS: {
 | < CMD_BEGIN_WHILE              : "{while" <WS>    > : EXPR
 | < CMD_CLOSE_WHILE              : "{/while}"       >
 
-| < CMD_BREAK                    : "{break /}"         >
-| < CMD_CONTINUE                 : "{continue /}"      >
+| < CMD_BREAK                    : "{break" <WS>    > : IN_CMD_TAG
+| < CMD_CONTINUE                 : "{continue" <WS> > : IN_CMD_TAG
 }
 
 
@@ -3863,17 +3863,18 @@ private WhileNode WhileStmt() :
  */
 private BreakNode BreakStmt() :
 {
-  Token tag;
+  Token tagBegin, tagEnd;
 }
 {
-  tag = <CMD_BREAK>
+  tagBegin = <CMD_BREAK>
   {
-    assertInFunction(tag);
+    assertInFunction(tagBegin);
   }
+  tagEnd = <CMD_SELF_CLOSE>
   {
     return new BreakNode(
         nodeIdGen.genId(),
-        createSrcLoc(tag));
+        createSrcLoc(tagBegin, tagEnd));
   }
 }
 
@@ -3882,17 +3883,18 @@ private BreakNode BreakStmt() :
  */
 private ContinueNode ContinueStmt() :
 {
-  Token tag;
+  Token tagBegin, tagEnd;
 }
 {
-  tag = <CMD_CONTINUE>
+  tagBegin = <CMD_CONTINUE>
   {
-    assertInFunction(tag);
+    assertInFunction(tagBegin);
   }
+  tagEnd = <CMD_SELF_CLOSE>
   {
     return new ContinueNode(
         nodeIdGen.genId(),
-        createSrcLoc(tag));
+        createSrcLoc(tagBegin, tagEnd));
   }
 }
 
