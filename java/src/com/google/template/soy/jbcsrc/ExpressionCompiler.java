@@ -1832,9 +1832,18 @@ final class ExpressionCompiler {
 
     @Override
     SoyExpression visitRecordJsIdFunction(FunctionNode node) {
-      // TODO(b/405129116): Consolidate with child xid function, when possible.
-      Expression recordJsId =
-          parameters.getRenderContext().recordJsId(visit(node.getChild(0)).coerceToString());
+      Expression recordJsId;
+      if ((node.getChild(0).getKind() == ExprNode.Kind.FUNCTION_NODE)
+          && ((FunctionNode) node.getChild(0)).getSoyFunction().equals(BuiltinFunction.XID)) {
+        recordJsId =
+            parameters
+                .getRenderContext()
+                .renameXidAndRecordJsId(
+                    visit(((FunctionNode) node.getChild(0)).getChild(0)).coerceToString());
+      } else {
+        recordJsId =
+            parameters.getRenderContext().recordJsId(visit(node.getChild(0)).coerceToString());
+      }
       return SoyExpression.forString(recordJsId);
     }
 

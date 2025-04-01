@@ -44,6 +44,7 @@ public final class SoyJsIdTrackerTest {
   @Test
   public void testCallingTemplates_recordJsObjectIds() throws IOException {
     List<String> jsIds = Lists.newArrayList();
+    List<String> jsXids = Lists.newArrayList();
     SoyFileSetParserBuilder builder =
         SoyFileSetParserBuilder.forSuppliers(
                 SoyFileSupplier.Factory.create(
@@ -74,7 +75,13 @@ public final class SoyJsIdTrackerTest {
             .withJsIdTracker(
                 new SoyJsIdTracker() {
                   @Override
-                  public void trackJsId(String id) {
+                  public void trackJsXid(String xid) {
+                    jsXids.add(xid);
+                  }
+
+                  @Override
+                  public void trackRawJsId(String id, String xid) {
+                    jsXids.add(xid);
                     jsIds.add(id);
                   }
                 })
@@ -105,6 +112,8 @@ public final class SoyJsIdTrackerTest {
                 .render(null, ParamStore.EMPTY_INSTANCE, output, ctx))
         .isNull();
 
-    assertThat(jsIds).containsExactly("foo.bar.controller_", "foo.bar.model_", "foo.bar.callback_");
+    assertThat(jsIds).containsExactly("foo.bar.controller", "foo.bar.model", "foo.bar.callback");
+    assertThat(jsXids)
+        .containsExactly("foo.bar.controller_", "foo.bar.model_", "foo.bar.callback_");
   }
 }

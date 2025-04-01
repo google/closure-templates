@@ -20,5 +20,11 @@ package com.google.template.soy.shared;
 public interface SoyJsIdTracker {
 
   /** Tracks an obfuscated JS object ID. */
-  void trackJsId(String id);
+  void trackJsXid(String xid);
+
+  /**
+   * Tracks an un-obfuscated JS object ID, and its obfuscated version, if it was possible to
+   * identify before obfuscation.
+   */
+  void trackRawJsId(String rawId, String xid);
 }

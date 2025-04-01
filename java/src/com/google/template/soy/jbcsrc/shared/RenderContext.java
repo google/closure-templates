@@ -162,11 +162,21 @@ public final class RenderContext {
 
   @Nonnull
   @CanIgnoreReturnValue
-  public String recordJsId(String id) {
+  public String recordJsId(String xid) {
     if (jsIdTracker != null) {
-      jsIdTracker.trackJsId(id);
+      jsIdTracker.trackJsXid(xid);
     }
-    return id;
+    return xid;
+  }
+
+  @Nonnull
+  @CanIgnoreReturnValue
+  public String renameXidAndRecordJsId(String rawId) {
+    String xid = renameXid(rawId);
+    if (jsIdTracker != null) {
+      jsIdTracker.trackRawJsId(/* rawId= */ rawId, /* xid= */ xid);
+    }
+    return xid;
   }
 
   public boolean evalToggle(String toggleName) {
