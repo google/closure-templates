@@ -109,11 +109,9 @@ public final class GenCallCodeUtilsTest {
     assertWithMessage("Actual result: " + callExprText)
         .that(callExprText)
         .matches(
-            Pattern.quote(
-                    "ns.someFunc$(soy.$$internalCallMarkerDoNotUse, $ijData,"
-                        + " soy.VERY_UNSAFE.ordainSanitizedHtml(param")
+            Pattern.quote("ns.someFunc$(soy.$$internalCallMarkerDoNotUse, $ijData, param")
                 + "[0-9]+"
-                + Pattern.quote("));"));
+                + Pattern.quote(");"));
   }
 
   @Test

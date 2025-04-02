@@ -295,6 +295,14 @@ public final class JsRuntime {
         NodeContentKinds.toJsSanitizedContentOrdainer(kind));
   }
 
+  public static Expression createNodeBuilderFunction() {
+    return SOY.dotAccess("$$createNodeBuilder");
+  }
+
+  public static Expression createHtmlOutputBufferFunction() {
+    return SOY.dotAccess("$$createHtmlOutputBuffer");
+  }
+
   /** Returns the constructor for the proto. */
   public static Expression protoConstructor(SoyProtoType type) {
     return GoogRequire.create(type.getJsName(ProtoUtils.MutabilityMode.MUTABLE)).reference();

@@ -19,6 +19,7 @@ package com.google.template.soy.jssrc.internal;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.template.soy.jssrc.dsl.Expressions.LITERAL_EMPTY_STRING;
 import static com.google.template.soy.jssrc.dsl.Expressions.stringLiteral;
+import static com.google.template.soy.jssrc.internal.JsRuntime.createNodeBuilderFunction;
 
 import com.google.common.base.Preconditions;
 import com.google.template.soy.error.ErrorReporter;
@@ -237,7 +238,24 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<Expression>> 
       }
     }
 
-    chunks.add(expr);
+    chunks.add(maybeAddNodeBuilder(node, expr));
+  }
+
+  protected Expression maybeAddNodeBuilder(PrintNode node, Expression expr) {
+    // When in lazy mode, also defer print directives if needed.
+    if (state.outputVarHandler.currentOutputVarStyle() == OutputVarHandler.Style.LAZY
+        && node.getExpr().getType() != null
+        && node.getExpr().getType().getKind().isHtml()
+        && node.getChildren().stream().anyMatch(GenJsExprsVisitor::needToDeferDirective)) {
+      return createNodeBuilderFunction().call(Expressions.tsArrowFunction(expr));
+    }
+    return expr;
+  }
+
+  private static boolean needToDeferDirective(PrintDirectiveNode directiveNode) {
+    SoyPrintDirective directive = directiveNode.getPrintDirective();
+    return !(directive instanceof ModernSoyJsSrcPrintDirective)
+        || !((ModernSoyJsSrcPrintDirective) directive).isJsImplNoOpForSanitizedHtml();
   }
 
   protected TranslateExprNodeVisitor createExprTranslator() {

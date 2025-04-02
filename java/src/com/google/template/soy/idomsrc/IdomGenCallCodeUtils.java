@@ -19,11 +19,15 @@ package com.google.template.soy.idomsrc;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.Expression;
+import com.google.template.soy.jssrc.dsl.Expressions;
 import com.google.template.soy.jssrc.internal.DelTemplateNamer;
 import com.google.template.soy.jssrc.internal.GenCallCodeUtils;
 import com.google.template.soy.jssrc.internal.IsComputableAsJsExprsVisitor;
 import com.google.template.soy.jssrc.internal.VisitorsState;
+import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
+import java.util.List;
+import javax.annotation.Nullable;
 
 /**
  * Extends {@link GenCallCodeUtils} to not wrap function arguments as sanitized content, which is
@@ -38,14 +42,27 @@ final class IdomGenCallCodeUtils extends GenCallCodeUtils {
     super(state, incrementalDomDelTemplateNamer, isComputableAsIncrementalDomExprsVisitor);
   }
 
+  /** No OutputHtmlBuffer in idom. */
+  @Nullable
+  @Override
+  protected Expression maybeWrapWithOutputBuffer(
+      CallParamContentNode node, List<Expression> exprs) {
+    return null;
+  }
+
   /** Never wrap contents as SanitizedContent if HTML or ATTRIBUTES. */
   @Override
   protected Expression maybeWrapContent(
-      CodeChunk.Generator generator, CallParamContentNode node, Expression content) {
+      CodeChunk.Generator generator, CallParamContentNode node, List<Expression> exprs) {
     SanitizedContentKind kind = node.getContentKind();
     if (kind.isHtml() || kind == SanitizedContentKind.ATTRIBUTES) {
-      return content;
+      return Expressions.concatForceString(exprs);
     }
-    return super.maybeWrapContent(generator, node, content);
+    return super.maybeWrapContent(generator, node, exprs);
+  }
+
+  @Override
+  public boolean useNodeBuilder(CallNode callNode) {
+    return false;
   }
 }

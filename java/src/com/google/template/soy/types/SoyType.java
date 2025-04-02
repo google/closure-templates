@@ -146,6 +146,13 @@ public abstract class SoyType implements ErrorArg {
         Sets.immutableEnumSet(
             Kind.ITERABLE, Kind.LIST, Kind.SET, Kind.LEGACY_OBJECT_MAP, Kind.MAP, Kind.RECORD);
 
+    public static final ImmutableSet<Kind> HTML_KINDS =
+        Sets.immutableEnumSet(Kind.HTML, Kind.ELEMENT);
+
+    public boolean isHtml() {
+      return HTML_KINDS.contains(this);
+    }
+
     /** Returns true for SoyTypes that are plain strings or sanitized subtypes of strings. */
     public boolean isKnownStringOrSanitizedContent() {
       return STRING_KINDS.contains(this);

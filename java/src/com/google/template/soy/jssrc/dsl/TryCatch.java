@@ -19,23 +19,36 @@ package com.google.template.soy.jssrc.dsl;
 import com.google.auto.value.AutoValue;
 import com.google.errorprone.annotations.Immutable;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
-/** Represents a statement wrapped in a try block, with a no-op catch block. */
+/** Represents a statement wrapped in a try block. */
 @AutoValue
 @Immutable
 public abstract class TryCatch extends Statement {
 
   abstract Statement body();
 
+  @Nullable
+  abstract Statement catchBody();
+
   public static TryCatch create(Statement body) {
-    return new AutoValue_TryCatch(body);
+    return new AutoValue_TryCatch(body, null);
+  }
+
+  public static TryCatch create(Statement body, Statement catchBody) {
+    return new AutoValue_TryCatch(body, catchBody);
   }
 
   @Override
   void doFormatStatement(FormattingContext ctx) {
     ctx.append("try ");
     ctx.appendAllIntoBlock(body());
-    ctx.append(" catch {}");
+    if (catchBody() == null) {
+      ctx.append(" catch {}");
+    } else {
+      ctx.append(" catch ");
+      ctx.appendAllIntoBlock(catchBody());
+    }
     ctx.endLine();
   }
 

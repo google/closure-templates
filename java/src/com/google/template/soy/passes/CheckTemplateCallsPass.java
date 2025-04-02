@@ -122,6 +122,8 @@ final class CheckTemplateCallsPass implements CompilerFileSetPass {
       SoyErrorKind.of(
           "The ''kind'' attribute can be omitted only if the param contains only calls with"
               + " matching kind and the control structures if/switch/for.");
+  private static final SoyErrorKind LAZY_CALL_NOT_HTML =
+      SoyErrorKind.of("Calls with lazy=\"true\" can only be made to html templates.");
 
   private static final SoyErrorKind INVALID_DATA_EXPR =
       SoyErrorKind.of("''data='' should be a record type, found ''{0}''.", StyleAllowance.NO_CAPS);
@@ -224,6 +226,9 @@ final class CheckTemplateCallsPass implements CompilerFileSetPass {
       checkVariant(node, calleeType);
       if (calleeType.isModifying()) {
         errorReporter.report(node.getSourceLocation(), CANNOT_CALL_MODIFYING_TEMPLATE_DIRECTLY);
+      }
+      if (node.isLazy() && !calleeType.getContentKind().getSanitizedContentKind().isHtml()) {
+        errorReporter.report(node.getCalleeExpr().getSourceLocation(), LAZY_CALL_NOT_HTML);
       }
     }
 
