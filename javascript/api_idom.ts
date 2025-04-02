@@ -560,7 +560,9 @@ export class IncrementalDomRendererImpl implements IncrementalDomRenderer {
     this.openInternal = (tagName, soyElementKey) => {
       if (element) {
         if (soyElementKey !== firstElementKey) {
-          throw new Error('Expected tag name and key to match.');
+          throw new Error(
+            `Expected key ${soyElementKey} and ${firstElementKey} to match.`,
+          );
         }
       } else {
         element = oldOpen.call(this, tagName, soyElementKey);
