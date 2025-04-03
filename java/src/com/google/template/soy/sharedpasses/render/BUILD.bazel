@@ -54,6 +54,7 @@ java_library(
         "//java/src/com/google/template/soy/shared/internal:shared_runtime",
         "//java/src/com/google/template/soy/shared/restricted",
         "//java/src/com/google/template/soy/soytree",
+        "//java/src/com/google/template/soy/soytree:metadata",
         "//java/src/com/google/template/soy/soytree:soynode",
         "//java/src/com/google/template/soy/soytree/defn",
         "//java/src/com/google/template/soy/types",

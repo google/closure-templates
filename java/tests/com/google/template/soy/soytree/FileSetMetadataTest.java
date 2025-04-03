@@ -31,7 +31,6 @@ import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.exprtree.VarRefNode;
-import com.google.template.soy.soytree.Metadata.CompilationUnitAndKind;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -91,7 +90,7 @@ public final class FileSetMetadataTest {
                     FILE_PATH))
             .parse();
     CompilationUnitAndKind dependencyCompilationUnit =
-        Metadata.CompilationUnitAndKind.create(
+        CompilationUnitAndKind.create(
             SoyFileKind.DEP,
             TemplateMetadataSerializer.compilationUnitFromFileSet(
                 dependencyParseResult.fileSet(), dependencyParseResult.registry()));

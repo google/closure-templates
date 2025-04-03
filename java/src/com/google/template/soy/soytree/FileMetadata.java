@@ -16,8 +16,10 @@
 
 package com.google.template.soy.soytree;
 
+import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.base.internal.SoyFileKind;
+import com.google.template.soy.base.internal.TypeReference;
 import com.google.template.soy.types.FunctionType;
 import com.google.template.soy.types.NamedType;
 import com.google.template.soy.types.SoyType;
@@ -46,9 +48,25 @@ public interface FileMetadata extends PartialFileMetadata {
 
     FunctionType getSignature();
 
+    @Nullable
+    JavaImpl getJavaImpl();
+
     boolean isJavaAsync();
 
-    boolean isAutoJava();
+    /** Java object version of {@link JavaImplP}. */
+    interface JavaImpl {
+      boolean isAuto();
+
+      String className();
+
+      String method();
+
+      TypeReference returnType();
+
+      ImmutableList<TypeReference> paramTypes();
+
+      String type();
+    }
   }
 
   /** Java object version of {@link TypeDefP}. */

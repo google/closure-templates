@@ -89,9 +89,8 @@ import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 import com.google.template.soy.shared.restricted.SoyMethodSignature;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.CompilationUnit;
+import com.google.template.soy.soytree.CompilationUnitAndKind;
 import com.google.template.soy.soytree.FileSetMetadata;
-import com.google.template.soy.soytree.Metadata;
-import com.google.template.soy.soytree.Metadata.CompilationUnitAndKind;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.tofu.SoyTofu;
 import com.google.template.soy.tofu.internal.BaseTofu;
@@ -546,8 +545,7 @@ public final class SoyFileSet {
 
     @CanIgnoreReturnValue
     Builder addCompilationUnit(SoyFileKind fileKind, CompilationUnit compilationUnit) {
-      compilationUnitsBuilder.add(
-          Metadata.CompilationUnitAndKind.create(fileKind, compilationUnit));
+      compilationUnitsBuilder.add(CompilationUnitAndKind.create(fileKind, compilationUnit));
       return this;
     }
 
@@ -1063,7 +1061,6 @@ public final class SoyFileSet {
    * @throws SoyCompilationException If compilation fails.
    * @deprecated Do not call. Use the command line API.
    */
-  @SuppressWarnings("deprecation")
   @Deprecated
   public List<String> compileToJsSrc(
       SoyJsSrcOptions jsSrcOptions, @Nullable SoyMsgBundle msgBundle) {

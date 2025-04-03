@@ -24,12 +24,18 @@ SOY_NODE_SRCS = [
 ]
 
 METADATA_SRCS = [
+    "CompilationUnitAndKind.java",
     "PartialFileMetadata.java",
     "PartialFileSetMetadata.java",
     "FileMetadata.java",
     "FileSetMetadata.java",
     "TemplateMetadata.java",
     "Visibility.java",
+]
+
+METADATA_IMPL_SRCS = [
+    "Metadata.java",
+    "TemplateMetadataSerializer.java",
 ]
 
 java_library(
@@ -41,7 +47,30 @@ java_library(
         "//java/src/com/google/template/soy/shared/internal:deltemplate_selector",
         "//java/src/com/google/template/soy/types",
         "//src/main/protobuf:template_metadata_java_proto",
+        "@com_google_auto_value_auto_value",
         "@maven//:com_google_code_findbugs_jsr305",
+        "@maven//:com_google_guava_guava",
+    ],
+)
+
+java_library(
+    name = "metadata_impl",
+    srcs = METADATA_IMPL_SRCS,
+    deps = [
+        ":metadata",
+        ":soynode",
+        ":soytree",
+        "//java/src/com/google/template/soy/base",
+        "//java/src/com/google/template/soy/base/internal",
+        "//java/src/com/google/template/soy/error:error_reporter",
+        "//java/src/com/google/template/soy/exprtree",
+        "//java/src/com/google/template/soy/shared/internal:deltemplate_selector",
+        "//java/src/com/google/template/soy/soytree/defn",
+        "//java/src/com/google/template/soy/types",
+        "//src/main/protobuf:template_metadata_java_proto",
+        "@com_google_auto_value_auto_value",
+        "@maven//:com_google_code_findbugs_jsr305",
+        "@maven//:com_google_errorprone_error_prone_annotations",
         "@maven//:com_google_guava_guava",
     ],
 )
@@ -50,11 +79,8 @@ java_library(
     name = "soytree",
     srcs = glob(
         ["*.java"],
-        exclude = SOY_NODE_SRCS + METADATA_SRCS,
+        exclude = SOY_NODE_SRCS + METADATA_SRCS + METADATA_IMPL_SRCS,
     ),
-    exports = [
-        ":metadata",
-    ],
     deps = [
         ":metadata",
         ":soynode",
@@ -66,7 +92,6 @@ java_library(
         "//java/src/com/google/template/soy/internal/util",
         "//java/src/com/google/template/soy/plugin/restricted",
         "//java/src/com/google/template/soy/shared/internal:builtin_function",
-        "//java/src/com/google/template/soy/shared/internal:deltemplate_selector",
         "//java/src/com/google/template/soy/shared/restricted:restricted_internal",
         "//java/src/com/google/template/soy/soytree/defn",
         "//java/src/com/google/template/soy/types",

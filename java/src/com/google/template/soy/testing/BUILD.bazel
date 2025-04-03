@@ -78,6 +78,7 @@ java_library(
         "//java/src/com/google/template/soy/shared/restricted",
         "//java/src/com/google/template/soy/shared/restricted:method_annotation",
         "//java/src/com/google/template/soy/soytree",
+        "//java/src/com/google/template/soy/soytree:metadata",
         "//java/src/com/google/template/soy/types",
         "@com_google_protobuf//:protobuf_java",
         "@maven//:com_google_code_findbugs_jsr305",

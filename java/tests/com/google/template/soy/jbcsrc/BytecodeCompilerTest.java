@@ -78,7 +78,7 @@ import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.restricted.Signature;
 import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
-import com.google.template.soy.soytree.Metadata.CompilationUnitAndKind;
+import com.google.template.soy.soytree.CompilationUnitAndKind;
 import com.google.template.soy.soytree.TemplateMetadataSerializer;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import java.io.IOException;

@@ -17,8 +17,10 @@
 package com.google.template.soy.soytree;
 
 import static com.google.common.base.Strings.emptyToNull;
+import static com.google.common.collect.ImmutableList.toImmutableList;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Ascii;
 import com.google.common.base.Converter;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
@@ -29,6 +31,7 @@ import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.TemplateContentKind;
 import com.google.template.soy.base.internal.TemplateContentKind.ElementContentKind;
+import com.google.template.soy.base.internal.TypeReference;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.soytree.Metadata.TemplateMetadataImpl;
@@ -66,6 +69,7 @@ import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
@@ -152,11 +156,44 @@ public final class TemplateMetadataSerializer {
   }
 
   private static ExternP protoFromExtern(ExternNode node) {
-    return ExternP.newBuilder()
-        .setName(node.getIdentifier().identifier())
-        .setSignature(node.getType().toProto().getFunction())
-        .setJavaAsync(node.isJavaImplAsync())
-        .build();
+    ExternP.Builder builder =
+        ExternP.newBuilder()
+            .setName(node.getIdentifier().identifier())
+            .setSignature(node.getType().toProto().getFunction());
+
+    Optional<JavaImplNode> java = node.getJavaImpl();
+    java.ifPresent(
+        j -> {
+          if (j.isAutoImpl()) {
+            builder.setAutoJava(true);
+          } else {
+            builder.setJavaImpl(
+                JavaImplP.newBuilder()
+                    .setClassName(j.className())
+                    .setMethod(j.methodName())
+                    .setReturnType(typeProto(j.returnType()))
+                    .addAllParamTypes(
+                        j.paramTypes().stream()
+                            .map(TemplateMetadataSerializer::typeProto)
+                            .collect(toImmutableList()))
+                    .setMethodType(JavaImplP.MethodType.valueOf(Ascii.toUpperCase(j.type()))));
+          }
+        });
+    return builder.build();
+  }
+
+  private static JavaImplP.TypeP typeProto(TypeReference type) {
+    if (type.isGeneric()) {
+      return JavaImplP.TypeP.newBuilder()
+          .setClassName(type.className())
+          .addAllTypeArgs(
+              type.parameters().stream()
+                  .map(TemplateMetadataSerializer::typeProto)
+                  .collect(toImmutableList()))
+          .build();
+    } else {
+      return JavaImplP.TypeP.newBuilder().setClassName(type.className()).build();
+    }
   }
 
   private static TemplateMetadataP protoFromTemplate(TemplateMetadata meta, SoyFileNode fileNode) {

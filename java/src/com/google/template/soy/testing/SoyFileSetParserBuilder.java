@@ -55,7 +55,7 @@ import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 import com.google.template.soy.shared.restricted.SoyMethodSignature;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
-import com.google.template.soy.soytree.Metadata.CompilationUnitAndKind;
+import com.google.template.soy.soytree.CompilationUnitAndKind;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.SoyTypeRegistryBuilder;
 import java.util.Arrays;

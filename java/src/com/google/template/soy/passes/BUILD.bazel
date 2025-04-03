@@ -58,6 +58,8 @@ java_library(
         "//java/src/com/google/template/soy/sharedpasses/opti",
         "//java/src/com/google/template/soy/soyparse",
         "//java/src/com/google/template/soy/soytree",
+        "//java/src/com/google/template/soy/soytree:metadata",
+        "//java/src/com/google/template/soy/soytree:metadata_impl",
         "//java/src/com/google/template/soy/soytree:soynode",
         "//java/src/com/google/template/soy/soytree/defn",
         "//java/src/com/google/template/soy/treebuilder",

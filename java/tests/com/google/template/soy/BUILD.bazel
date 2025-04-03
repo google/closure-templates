@@ -40,6 +40,8 @@ java_library(
         "//java/src/com/google/template/soy/plugin/java",
         "//java/src/com/google/template/soy/shared/internal",
         "//java/src/com/google/template/soy/shared/restricted",
+        "//java/src/com/google/template/soy/soytree:metadata",
+        "//java/src/com/google/template/soy/soytree:metadata_impl",
         "//java/src/com/google/template/soy/testing:soy_file_set_parser_builder",
         "//java/src/com/google/template/soy/tofu",
         "//java/src/com/google/template/soy/tofu/internal",

@@ -16,7 +16,6 @@
 
 package com.google.template.soy.soytree;
 
-import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.ImmutableListMultimap.toImmutableListMultimap;
@@ -28,6 +27,7 @@ import static java.util.Comparator.comparing;
 
 import com.google.auto.value.AutoValue;
 import com.google.auto.value.extension.memoized.Memoized;
+import com.google.common.base.Ascii;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
@@ -41,6 +41,7 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.base.internal.SoyFileKind;
+import com.google.template.soy.base.internal.TypeReference;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
@@ -582,8 +583,7 @@ public final class Metadata {
                                   context().typeRegistry(),
                                   getPath(),
                                   context().errorReporter()),
-                          e.getJavaAsync(),
-                          e.getAutoJava())));
+                          ExternImpl.Java.of(e))));
     }
 
     @Override
@@ -711,8 +711,7 @@ public final class Metadata {
         node.getSourceLocation().getFilePath().asLogicalPath(),
         node.getIdentifier().identifier(),
         node.getType(),
-        node.isJavaImplAsync(),
-        node.isAutoJava());
+        ExternImpl.Java.of(node.getJavaImpl()));
   }
 
   /** Builds a Template from a parsed TemplateNode. */
@@ -896,12 +895,8 @@ public final class Metadata {
   abstract static class ExternImpl implements FileMetadata.Extern {
 
     private static ExternImpl of(
-        SourceLogicalPath path,
-        String name,
-        FunctionType signature,
-        boolean javaAsync,
-        boolean autoJava) {
-      return new AutoValue_Metadata_ExternImpl(path, name, signature, javaAsync, autoJava);
+        SourceLogicalPath path, String name, FunctionType signature, JavaImpl java) {
+      return new AutoValue_Metadata_ExternImpl(path, name, signature, java);
     }
 
     @Override
@@ -913,11 +908,96 @@ public final class Metadata {
     @Override
     public abstract FunctionType getSignature();
 
+    @Nullable
     @Override
-    public abstract boolean isJavaAsync();
+    public abstract JavaImpl getJavaImpl();
 
     @Override
-    public abstract boolean isAutoJava();
+    public boolean isJavaAsync() {
+      JavaImpl impl = getJavaImpl();
+      if (impl == null || impl.isAuto()) {
+        return false;
+      }
+      return impl.returnType().isGeneric()
+          && JavaImplNode.isSupportedFutureClassName(impl.returnType().className());
+    }
+
+    @AutoValue
+    abstract static class Java implements JavaImpl {
+
+      @Nullable
+      public static JavaImpl of(ExternP e) {
+        if (e.getAutoJava()) {
+          return new AutoValue_Metadata_ExternImpl_Java(true, null, null, null, null, null);
+        } else if (e.hasJavaImpl()) {
+          JavaImplP implP = e.getJavaImpl();
+          return new AutoValue_Metadata_ExternImpl_Java(
+              false,
+              implP.getClassName(),
+              implP.getMethod(),
+              protoToTypeReference(implP.getReturnType()),
+              implP.getParamTypesList().stream()
+                  .map(Metadata::protoToTypeReference)
+                  .collect(toImmutableList()),
+              Ascii.toLowerCase(implP.getMethodType().name()));
+        }
+        return null;
+      }
+
+      @Nullable
+      public static JavaImpl of(Optional<JavaImplNode> javaImpl) {
+        if (javaImpl.isPresent()) {
+          JavaImplNode node = javaImpl.get();
+          if (node.isAutoImpl()) {
+            return new AutoValue_Metadata_ExternImpl_Java(true, null, null, null, null, null);
+          } else {
+            return new AutoValue_Metadata_ExternImpl_Java(
+                false,
+                node.className(),
+                node.methodName(),
+                node.returnType(),
+                node.paramTypes(),
+                node.type());
+          }
+        }
+        return null;
+      }
+
+      @Override
+      public abstract boolean isAuto();
+
+      @Nullable
+      @Override
+      public abstract String className();
+
+      @Nullable
+      @Override
+      public abstract String method();
+
+      @Nullable
+      @Override
+      public abstract TypeReference returnType();
+
+      @Nullable
+      @Override
+      public abstract ImmutableList<TypeReference> paramTypes();
+
+      @Nullable
+      @Override
+      public abstract String type();
+    }
+  }
+
+  private static TypeReference protoToTypeReference(JavaImplP.TypeP proto) {
+    if (proto.getTypeArgsCount() == 0) {
+      return TypeReference.create(proto.getClassName());
+    } else {
+      return TypeReference.create(
+          proto.getClassName(),
+          proto.getTypeArgsList().stream()
+              .map(Metadata::protoToTypeReference)
+              .collect(toImmutableList()));
+    }
   }
 
   private static FileMetadata merge(FileMetadata primary, FileMetadata secondary) {
@@ -1070,22 +1150,6 @@ public final class Metadata {
 
   private static boolean sameFile(TemplateMetadata t1, TemplateMetadata t2) {
     return t1.getSourceLocation().getFileName().equals(t2.getSourceLocation().getFileName());
-  }
-
-  /** Simple tuple of un an-evaluated compilation unit containing information about dependencies. */
-  @AutoValue
-  public abstract static class CompilationUnitAndKind {
-    public static CompilationUnitAndKind create(
-        SoyFileKind fileKind, CompilationUnit compilationUnit) {
-      // sanity check
-      checkArgument(
-          fileKind != SoyFileKind.SRC, "compilation units should only represent dependencies");
-      return new AutoValue_Metadata_CompilationUnitAndKind(fileKind, compilationUnit);
-    }
-
-    abstract SoyFileKind fileKind();
-
-    abstract CompilationUnit compilationUnit();
   }
 
   /**

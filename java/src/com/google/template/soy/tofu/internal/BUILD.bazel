@@ -36,6 +36,7 @@ java_library(
         "//java/src/com/google/template/soy/shared/internal:deltemplate_selector",
         "//java/src/com/google/template/soy/sharedpasses/render",
         "//java/src/com/google/template/soy/soytree",
+        "//java/src/com/google/template/soy/soytree:metadata",
         "//java/src/com/google/template/soy/soytree/defn",
         "//java/src/com/google/template/soy/tofu",
         "//java/src/com/google/template/soy/types",
