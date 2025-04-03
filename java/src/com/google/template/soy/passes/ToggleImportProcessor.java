@@ -27,8 +27,8 @@ import com.google.template.soy.shared.ToggleRegistry;
 import com.google.template.soy.soytree.ImportNode;
 import com.google.template.soy.soytree.ImportNode.ImportType;
 import com.google.template.soy.soytree.SoyFileNode;
-import com.google.template.soy.soytree.defn.ImportedVar;
-import com.google.template.soy.soytree.defn.ImportedVar.SymbolKind;
+import com.google.template.soy.soytree.defn.SymbolVar;
+import com.google.template.soy.soytree.defn.SymbolVar.SymbolKind;
 import com.google.template.soy.types.BoolType;
 
 /**
@@ -79,7 +79,7 @@ final class ToggleImportProcessor implements ImportsPass.ImportProcessor {
    * and any alias symbols are valid.
    */
   public void processImportedSymbols(ImportNode node) {
-    for (ImportedVar symbol : node.getIdentifiers()) {
+    for (SymbolVar symbol : node.getIdentifiers()) {
       String name = symbol.getSymbol();
       SourceLogicalPath path = node.getSourceFilePath();
 

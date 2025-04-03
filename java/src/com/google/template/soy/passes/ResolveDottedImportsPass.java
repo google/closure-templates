@@ -36,14 +36,13 @@ import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.MethodCallNode;
 import com.google.template.soy.exprtree.ProtoEnumValueNode;
-import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.soytree.PartialFileMetadata;
 import com.google.template.soy.soytree.PartialFileSetMetadata;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
-import com.google.template.soy.soytree.defn.ImportedVar;
-import com.google.template.soy.soytree.defn.ImportedVar.SymbolKind;
+import com.google.template.soy.soytree.defn.SymbolVar;
+import com.google.template.soy.soytree.defn.SymbolVar.SymbolKind;
 import com.google.template.soy.types.ImportType;
 import com.google.template.soy.types.NamespaceType;
 import com.google.template.soy.types.ProtoEnumImportType;
@@ -59,7 +58,7 @@ import javax.annotation.Nullable;
 
 /**
  * Inline VARREF + FIELD_ACCESS/METHOD_CALL into a simple VARREF for all VARREFs that point to an
- * {@link ImportedVar} VARDEF. Ensures that we don't need to evaluate such accesses at runtime.
+ * {@link SymbolVar} VARDEF. Ensures that we don't need to evaluate such accesses at runtime.
  *
  * <p>Imported var defs currently include proto messages (used in proto init), proto enums (used to
  * reference enum values), proto extensions (for getExtension and proto init), and namespace (nested
@@ -94,7 +93,8 @@ final class ResolveDottedImportsPass implements CompilerFilePass {
   @Override
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
     SoyTreeUtils.allNodesOfType(file, VarRefNode.class)
-        .filter(v -> v.getDefnDecl().kind() == VarDefn.Kind.IMPORT_VAR)
+        .filter(
+            v -> v.getDefnDecl() instanceof SymbolVar && ((SymbolVar) v.getDefnDecl()).isImported())
         .forEach(
             v -> {
               while (v != null) {
@@ -164,7 +164,7 @@ final class ResolveDottedImportsPass implements CompilerFilePass {
   @Nullable
   private ExprNode resolveField(
       VarRefNode refn, Kind kind, String fieldName, SourceLocation fullLocation) {
-    ImportedVar defn = (ImportedVar) refn.getDefnDecl();
+    SymbolVar defn = (SymbolVar) refn.getDefnDecl();
     if (!defn.hasType()) {
       return null;
     }
@@ -225,10 +225,10 @@ final class ResolveDottedImportsPass implements CompilerFilePass {
       }
     } else if (defn.getSymbolKind() == SymbolKind.CSS_MODULE) {
       NamespaceType namespaceType = (NamespaceType) type;
-        if (namespaceType.containsSymbol(fieldName)) {
-          nestedType = StringType.getInstance();
-          nestedSymbolKind = SymbolKind.CSS_CLASS;
-        } else {
+      if (namespaceType.containsSymbol(fieldName)) {
+        nestedType = StringType.getInstance();
+        nestedSymbolKind = SymbolKind.CSS_CLASS;
+      } else {
         nestedType = UnknownType.getInstance();
       }
     } else {
@@ -252,7 +252,7 @@ final class ResolveDottedImportsPass implements CompilerFilePass {
       return null;
     }
 
-    ImportedVar newDefn = defn.nested(fieldName);
+    SymbolVar newDefn = defn.nested(fieldName);
     if (nestedType != null) {
       newDefn.setType(nestedType);
     }

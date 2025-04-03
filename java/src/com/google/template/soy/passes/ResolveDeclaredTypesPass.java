@@ -38,7 +38,7 @@ import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateElementNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TypeDefNode;
-import com.google.template.soy.soytree.defn.ImportedVar.SymbolKind;
+import com.google.template.soy.soytree.defn.SymbolVar.SymbolKind;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.soytree.defn.TemplateStateVar;
 import com.google.template.soy.types.DelegatingSoyTypeRegistry;

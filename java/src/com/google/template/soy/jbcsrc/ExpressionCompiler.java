@@ -129,9 +129,9 @@ import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.defn.ConstVar;
 import com.google.template.soy.soytree.defn.ExternVar;
-import com.google.template.soy.soytree.defn.ImportedVar;
-import com.google.template.soy.soytree.defn.ImportedVar.SymbolKind;
 import com.google.template.soy.soytree.defn.LocalVar;
+import com.google.template.soy.soytree.defn.SymbolVar;
+import com.google.template.soy.soytree.defn.SymbolVar.SymbolKind;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.FloatType;
 import com.google.template.soy.types.FunctionType;
@@ -1327,34 +1327,34 @@ final class ExpressionCompiler {
             .asHandle();
 
     @Override
-    SoyExpression visitImportedVar(VarRefNode varRef, ImportedVar importedVar) {
-      String namespace = fileSetMetadata.getNamespaceForPath(importedVar.getSourceFilePath());
+    SoyExpression visitSymbolVar(VarRefNode varRef, SymbolVar symbolVar) {
+      String namespace = fileSetMetadata.getNamespaceForPath(symbolVar.getSourceFilePath());
       TypeInfo typeInfo = TypeInfo.createClass(Names.javaClassNameFromSoyNamespace(namespace));
       Expression renderContext = parameters.getRenderContext();
-      if (importedVar.getSymbolKind() == SymbolKind.CONST) {
+      if (symbolVar.getSymbolKind() == SymbolKind.CONST) {
         Expression constExpression =
             new Expression(
-                ConstantsCompiler.getConstantRuntimeType(importedVar.type()).runtimeType()) {
+                ConstantsCompiler.getConstantRuntimeType(symbolVar.type()).runtimeType()) {
               @Override
               protected void doGen(CodeBuilder adapter) {
                 renderContext.gen(adapter);
                 adapter.visitInvokeDynamicInsn(
                     "create",
                     ConstantsCompiler.getConstantMethodWithRenderContext(
-                            importedVar.name(), importedVar.type())
+                            symbolVar.name(), symbolVar.type())
                         .getDescriptor(),
                     GET_CONST_HANDLE,
                     typeInfo.className(),
-                    importedVar.getSymbol());
+                    symbolVar.getSymbol());
               }
             };
         return SoyExpression.forRuntimeType(
-            ConstantsCompiler.getConstantRuntimeType(importedVar.type()), constExpression);
-      } else if (importedVar.getSymbolKind() == SymbolKind.EXTERN) {
+            ConstantsCompiler.getConstantRuntimeType(symbolVar.type()), constExpression);
+      } else if (symbolVar.getSymbolKind() == SymbolKind.EXTERN) {
         return SoyExpression.forSoyValue(
-            varRef.getType(), getFunctionValue(namespace, importedVar.getSymbol()));
+            varRef.getType(), getFunctionValue(namespace, symbolVar.getSymbol()));
       } else {
-        throw new IllegalArgumentException("" + importedVar.getSymbolKind());
+        throw new IllegalArgumentException("" + symbolVar.getSymbolKind());
       }
     }
 
@@ -2219,7 +2219,7 @@ final class ExpressionCompiler {
         case STATE:
           // In jbcsrc all @state variables are compiled to constants so we can reference them
           return true;
-        case IMPORT_VAR:
+        case SYMBOL:
           // For things like proto extensions and constructors we could allow references. But it
           // isn't clear that that is very useful. For cross file `const`s this isn't possible
           return false;
@@ -2227,8 +2227,6 @@ final class ExpressionCompiler {
         case LOCAL_VAR:
         case EXTERN:
           return false;
-        case TEMPLATE:
-          break;
       }
       throw new AssertionError(node.getDefnDecl().kind());
     }

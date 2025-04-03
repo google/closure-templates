@@ -32,8 +32,8 @@ import com.google.template.soy.soytree.ImportNode.ImportType;
 import com.google.template.soy.soytree.PartialFileMetadata;
 import com.google.template.soy.soytree.PartialFileSetMetadata;
 import com.google.template.soy.soytree.SoyFileNode;
-import com.google.template.soy.soytree.defn.ImportedVar;
-import com.google.template.soy.soytree.defn.ImportedVar.SymbolKind;
+import com.google.template.soy.soytree.defn.SymbolVar;
+import com.google.template.soy.soytree.defn.SymbolVar.SymbolKind;
 import com.google.template.soy.types.NamespaceType;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.TemplateImportType;
@@ -85,7 +85,7 @@ public final class TemplateImportProcessor implements ImportsPass.ImportProcesso
     PartialFileMetadata fileMetadata =
         partialFileSetMetadata.get().getPartialFile(node.getSourceFilePath());
 
-    for (ImportedVar symbol : node.getIdentifiers()) {
+    for (SymbolVar symbol : node.getIdentifiers()) {
       String name = symbol.getSymbol();
 
       if (fileMetadata.hasConstant(name)) {
@@ -120,7 +120,7 @@ public final class TemplateImportProcessor implements ImportsPass.ImportProcesso
     return namespace.isEmpty() ? name : namespace + "." + name;
   }
 
-  static void setSymbolType(ImportedVar symbol, FileMetadata fileMetadata) {
+  static void setSymbolType(SymbolVar symbol, FileMetadata fileMetadata) {
     String name = symbol.getSymbol();
     if (fileMetadata.hasConstant(name)) {
       Preconditions.checkArgument(!symbol.hasType());
@@ -148,7 +148,7 @@ public final class TemplateImportProcessor implements ImportsPass.ImportProcesso
    * collide with other import symbol aliases).
    */
   private void processImportedModule(ImportNode node) {
-    ImportedVar var = Iterables.getOnlyElement(node.getIdentifiers());
+    SymbolVar var = Iterables.getOnlyElement(node.getIdentifiers());
     var.setType(buildModuleType(node));
     var.setSymbolKind(SymbolKind.SOY_FILE);
   }

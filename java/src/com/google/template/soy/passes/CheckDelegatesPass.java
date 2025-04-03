@@ -277,10 +277,9 @@ final class CheckDelegatesPass implements CompilerFileSetPass {
     if (collision == null) {
       return;
     }
-    if (collision.kind() == Kind.TEMPLATE
-        || (collision.kind() == Kind.IMPORT_VAR
-            && collision.hasType()
-            && collision.type().getKind() == SoyType.Kind.TEMPLATE_TYPE)) {
+    if (collision.kind() == Kind.SYMBOL
+        && collision.hasType()
+        && collision.type().getKind() == SoyType.Kind.TEMPLATE_TYPE) {
       errorReporter.report(
           node.getSourceLocation(),
           DELCALL_TO_BASIC_TEMPLATE,

@@ -102,7 +102,7 @@ import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TypeDefNode;
 import com.google.template.soy.soytree.Visibility;
 import com.google.template.soy.soytree.defn.ConstVar;
-import com.google.template.soy.soytree.defn.ImportedVar.SymbolKind;
+import com.google.template.soy.soytree.defn.SymbolVar.SymbolKind;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.IndexedType;
 import com.google.template.soy.types.IntersectionType;

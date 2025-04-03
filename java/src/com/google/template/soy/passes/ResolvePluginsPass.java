@@ -29,6 +29,8 @@ import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.soytree.PrintDirectiveNode;
 import com.google.template.soy.soytree.SoyFileNode;
+import com.google.template.soy.soytree.defn.SymbolVar;
+import com.google.template.soy.soytree.defn.SymbolVar.SymbolKind;
 import com.google.template.soy.types.SoyType;
 import java.util.Optional;
 
@@ -75,7 +77,11 @@ final class ResolvePluginsPass implements CompilerFilePass {
             //   2. a local or imported extern
             //   3. proto init (top-level message only)
             VarDefn varDefn = getLocalVariables().lookup(node.getStaticFunctionName());
-            boolean varDefnIsTemplate = varDefn != null && varDefn.kind() == VarDefn.Kind.TEMPLATE;
+            boolean varDefnIsTemplate =
+                varDefn != null
+                    && varDefn.kind() == VarDefn.Kind.SYMBOL
+                    && !((SymbolVar) varDefn).isImported()
+                    && ((SymbolVar) varDefn).getSymbolKind() == SymbolKind.TEMPLATE;
 
             // Precedence 1: Global/plug-in function, special case only when name collides with a
             //   local template name.

@@ -35,8 +35,8 @@ import com.google.template.soy.soytree.ImportNode;
 import com.google.template.soy.soytree.ImportNode.ImportType;
 import com.google.template.soy.soytree.ImportsContext.ImportsTypeRegistry;
 import com.google.template.soy.soytree.SoyFileNode;
-import com.google.template.soy.soytree.defn.ImportedVar;
-import com.google.template.soy.soytree.defn.ImportedVar.SymbolKind;
+import com.google.template.soy.soytree.defn.SymbolVar;
+import com.google.template.soy.soytree.defn.SymbolVar.SymbolKind;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.UnknownType;
 import java.util.HashMap;
@@ -109,7 +109,7 @@ final class ProtoImportProcessor implements ImportsPass.ImportProcessor {
     ImmutableMap<String, FieldDescriptor> extensions =
         fd.getExtensions().stream().collect(toImmutableMap(Field::computeSoyName, f -> f));
 
-    for (ImportedVar symbol : node.getIdentifiers()) {
+    for (SymbolVar symbol : node.getIdentifiers()) {
       String name = symbol.getSymbol();
       String fullName = fd.getPackage().isEmpty() ? name : fd.getPackage() + "." + name;
 

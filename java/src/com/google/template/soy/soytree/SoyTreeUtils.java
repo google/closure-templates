@@ -511,8 +511,7 @@ public final class SoyTreeUtils {
         VarRefNode refNode = (VarRefNode) expr;
         VarDefn varDefs = refNode.getDefnDecl();
         if (varDefs != null
-            && (varDefs.kind() == VarDefn.Kind.CONST
-                || varDefs.kind() == VarDefn.Kind.IMPORT_VAR)) {
+            && (varDefs.kind() == VarDefn.Kind.CONST || varDefs.kind() == VarDefn.Kind.SYMBOL)) {
           // This method is called while inferring parameter types, before the type has been set on
           // refNode.
           return false;

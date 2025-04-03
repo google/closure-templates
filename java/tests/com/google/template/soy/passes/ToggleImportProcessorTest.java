@@ -33,8 +33,8 @@ import com.google.template.soy.soytree.ImportNode;
 import com.google.template.soy.soytree.NamespaceDeclaration;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.TemplateNode;
-import com.google.template.soy.soytree.defn.ImportedVar;
-import com.google.template.soy.soytree.defn.ImportedVar.SymbolKind;
+import com.google.template.soy.soytree.defn.SymbolVar;
+import com.google.template.soy.soytree.defn.SymbolVar.SymbolKind;
 import com.google.template.soy.types.BoolType;
 import com.google.template.soy.types.SoyType;
 import org.junit.Before;
@@ -97,17 +97,17 @@ public final class ToggleImportProcessorTest {
         ImmutableSetMultimapToggleRegistry.createForTest(
             ImmutableSetMultimap.of(SourceLogicalPath.create("foo.toggles"), "toggle1"));
 
-    ImportedVar importedVar = forSymbol("toggle1");
-    ImportNode importNode = forPath("foo.toggles", ImmutableList.of(importedVar));
+    SymbolVar symbolVar = forSymbol("toggle1");
+    ImportNode importNode = forPath("foo.toggles", ImmutableList.of(symbolVar));
 
     ToggleImportProcessor processor = new ToggleImportProcessor(registry, errorReporter);
     processor.handle(EMPTY_SOY_FILE_NODE, ImmutableList.of(importNode));
 
     assertThat(importNode.getImportType()).isEqualTo(ImportNode.ImportType.TOGGLE);
 
-    SoyType importType = importedVar.type();
+    SoyType importType = symbolVar.type();
     assertThat(importType).isEqualTo(BoolType.getInstance());
-    assertThat(importedVar.getSymbolKind()).isEqualTo(SymbolKind.TOGGLE);
+    assertThat(symbolVar.getSymbolKind()).isEqualTo(SymbolKind.TOGGLE);
   }
 
   @Test
@@ -118,10 +118,10 @@ public final class ToggleImportProcessorTest {
         ImmutableSetMultimapToggleRegistry.createForTest(
             ImmutableSetMultimap.of(SourceLogicalPath.create("foo.toggles"), "toggle1"));
 
-    ImportedVar importedVarCorrect = withAlias("toggle1", "firstToggle");
-    ImportedVar importedVarBad = withAlias("firstToggle", "toggle1");
-    ImportNode importNodeCorrect = forPath("foo.toggles", ImmutableList.of(importedVarCorrect));
-    ImportNode importNodeBad = forPath("foo.toggles", ImmutableList.of(importedVarBad));
+    SymbolVar symbolVarCorrect = withAlias("toggle1", "firstToggle");
+    SymbolVar symbolVarBad = withAlias("firstToggle", "toggle1");
+    ImportNode importNodeCorrect = forPath("foo.toggles", ImmutableList.of(symbolVarCorrect));
+    ImportNode importNodeBad = forPath("foo.toggles", ImmutableList.of(symbolVarBad));
 
     ToggleImportProcessor processor = new ToggleImportProcessor(registry, errorReporter);
     processor.handle(EMPTY_SOY_FILE_NODE, ImmutableList.of(importNodeCorrect));
@@ -138,8 +138,8 @@ public final class ToggleImportProcessorTest {
     ImmutableSetMultimapToggleRegistry registry =
         ImmutableSetMultimapToggleRegistry.createForTest(
             ImmutableSetMultimap.of(SourceLogicalPath.create("foo.toggles"), "toggle1"));
-    ImportedVar importedVar = forSymbol(ImportedVar.MODULE_IMPORT);
-    ImportNode importNode = forPath("foo.toggles", ImmutableList.of(importedVar));
+    SymbolVar symbolVar = forSymbol(SymbolVar.MODULE_IMPORT);
+    ImportNode importNode = forPath("foo.toggles", ImmutableList.of(symbolVar));
 
     ToggleImportProcessor processor = new ToggleImportProcessor(registry, errorReporter);
     processor.handle(EMPTY_SOY_FILE_NODE, ImmutableList.of(importNode));
@@ -154,11 +154,11 @@ public final class ToggleImportProcessorTest {
     ImmutableSetMultimapToggleRegistry registry =
         ImmutableSetMultimapToggleRegistry.createForTest(
             ImmutableSetMultimap.of(SourceLogicalPath.create("foo.toggles"), "toggle1"));
-    ImportedVar importedVarA = forSymbol("unknownToggle");
-    ImportNode importNodeA = forPath("foo.toggles", ImmutableList.of(importedVarA));
+    SymbolVar symbolVarA = forSymbol("unknownToggle");
+    ImportNode importNodeA = forPath("foo.toggles", ImmutableList.of(symbolVarA));
 
-    ImportedVar importedVarB = forSymbol("toggle1");
-    ImportNode importNodeB = forPath("bar.toggles", ImmutableList.of(importedVarB));
+    SymbolVar symbolVarB = forSymbol("toggle1");
+    ImportNode importNodeB = forPath("bar.toggles", ImmutableList.of(symbolVarB));
 
     ToggleImportProcessor processor = new ToggleImportProcessor(registry, errorReporter);
     processor.handle(EMPTY_SOY_FILE_NODE, ImmutableList.of(importNodeA, importNodeB));
@@ -170,19 +170,19 @@ public final class ToggleImportProcessorTest {
         .contains("Unknown symbol toggle1 in bar.toggles");
   }
 
-  private ImportedVar forSymbol(String symbol) {
-    return new ImportedVar(symbol, null, SourceLocation.UNKNOWN);
+  private SymbolVar forSymbol(String symbol) {
+    return new SymbolVar(symbol, null, SourceLocation.UNKNOWN);
   }
 
-  private ImportedVar withAlias(String symbol, String alias) {
-    return new ImportedVar(symbol, alias, SourceLocation.UNKNOWN);
+  private SymbolVar withAlias(String symbol, String alias) {
+    return new SymbolVar(symbol, alias, SourceLocation.UNKNOWN);
   }
 
-  private ImportNode forPath(String path, ImmutableList<ImportedVar> importedVars) {
+  private ImportNode forPath(String path, ImmutableList<SymbolVar> symbolVars) {
     return new ImportNode(
         0,
         SourceLocation.UNKNOWN,
         new StringNode(path, QuoteStyle.DOUBLE, SourceLocation.UNKNOWN),
-        importedVars);
+        symbolVars);
   }
 }

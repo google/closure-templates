@@ -153,7 +153,7 @@ import com.google.template.soy.soytree.VeLogNode;
 import com.google.template.soy.soytree.WhileNode;
 import com.google.template.soy.soytree.WhitespaceMode;
 import com.google.template.soy.soytree.defn.AttrParam;
-import com.google.template.soy.soytree.defn.ImportedVar;
+import com.google.template.soy.soytree.defn.SymbolVar;
 import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.soytree.defn.TemplateStateVar;
@@ -1821,7 +1821,7 @@ private Token ImportIdent() :
 }
 
 /** Matches a module import var ("* as Foo"), and throws an error if the alias is missing . */
-private ImportedVar ModuleImportVar() :
+private SymbolVar ModuleImportVar() :
 {
   Token star = null;
   Token alias = null;
@@ -1832,7 +1832,7 @@ private ImportedVar ModuleImportVar() :
   alias = ImportIdent()
   {
     importSymbols.add(alias.image);
-    return new ImportedVar("*", alias.image, createSrcLoc(star, alias));
+    return new SymbolVar("*", alias.image, createSrcLoc(star, alias));
   }
 }
 
@@ -1840,13 +1840,13 @@ private ImportedVar ModuleImportVar() :
  * Matches a list of imported symbols (e.g. "foo, bar as myBar, baz"). Also matches a single
  * imported symbol.
  */
-private ImmutableList<ImportedVar> SymbolImportVarList() :
+private ImmutableList<SymbolVar> SymbolImportVarList() :
 {
   Token star = null;
   Token identifier = null;
   Token alias = null;
   SourceLocation loc;
-  ImmutableList.Builder<ImportedVar> importedVars = new ImmutableList.Builder<ImportedVar>();
+  ImmutableList.Builder<SymbolVar> importedVars = new ImmutableList.Builder<SymbolVar>();
 }
 {
   identifier = <IDENT>
@@ -1864,7 +1864,7 @@ private ImmutableList<ImportedVar> SymbolImportVarList() :
     } else {
       importSymbols.add(identifier.image);
     }
-    importedVars.add(new ImportedVar(identifier.image, a1, loc));
+    importedVars.add(new SymbolVar(identifier.image, a1, loc));
     alias = null;
   }
   (
@@ -1884,7 +1884,7 @@ private ImmutableList<ImportedVar> SymbolImportVarList() :
       } else {
         importSymbols.add(identifier.image);
       }
-      importedVars.add(new ImportedVar(identifier.image, a2, loc));
+      importedVars.add(new SymbolVar(identifier.image, a2, loc));
       alias = null;
     }
   )*
@@ -1896,8 +1896,8 @@ private ImportNode Import() :
   Token open = null;
   Token close = null;
   StringNode path = null;
-  ImportedVar moduleImportVar;
-  ImmutableList<ImportedVar> identifiers = ImmutableList.of();
+  SymbolVar moduleImportVar;
+  ImmutableList<SymbolVar> identifiers = ImmutableList.of();
 }
 {
   try {

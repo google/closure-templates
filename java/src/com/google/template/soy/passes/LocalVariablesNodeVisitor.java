@@ -50,7 +50,8 @@ import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TypeDefNode;
 import com.google.template.soy.soytree.defn.ExternVar;
-import com.google.template.soy.soytree.defn.ImportedVar;
+import com.google.template.soy.soytree.defn.SymbolVar;
+import com.google.template.soy.soytree.defn.SymbolVar.SymbolKind;
 import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -114,8 +115,13 @@ final class LocalVariablesNodeVisitor {
 
     VarDefn lookup(VarRefNode varRef) {
       VarDefn defn = lookup(varRef.getName());
-      // Only local template references may begin with '.'
-      if (defn != null && varRef.originallyLeadingDot() && defn.kind() != Kind.TEMPLATE) {
+      if (defn != null && varRef.originallyLeadingDot()) {
+        // Only local template references may begin with '.'
+        if (defn instanceof SymbolVar
+            && !((SymbolVar) defn).isImported()
+            && ((SymbolVar) defn).getSymbolKind() == SymbolKind.TEMPLATE) {
+          return defn;
+        }
         return null;
       }
       return defn;
@@ -209,7 +215,7 @@ final class LocalVariablesNodeVisitor {
     @Override
     protected void visitImportNode(ImportNode node) {
       super.visitImportNode(node);
-      for (ImportedVar var : node.getIdentifiers()) {
+      for (SymbolVar var : node.getIdentifiers()) {
         localVariables.define(var, node);
       }
     }
@@ -363,8 +369,10 @@ final class LocalVariablesNodeVisitor {
 
   /** Better error messages exist for deltemplate duplicates. */
   private static boolean shouldSkipError(VarDefn defn, VarDefn preexisting) {
-    return defn.kind() == Kind.TEMPLATE
-        && preexisting.kind() == Kind.TEMPLATE
+    return defn.kind() == Kind.SYMBOL
+        && ((SymbolVar) defn).getSymbolKind() == SymbolKind.TEMPLATE
+        && preexisting.kind() == Kind.SYMBOL
+        && ((SymbolVar) preexisting).getSymbolKind() == SymbolKind.TEMPLATE
         && isDeltemplateTemplateName(defn.name())
         && isDeltemplateTemplateName(preexisting.name());
   }
@@ -375,13 +383,15 @@ final class LocalVariablesNodeVisitor {
         return "Parameter";
       case STATE:
         return "State parameter";
-      case IMPORT_VAR:
+      case SYMBOL:
+        SymbolVar symbolVar = (SymbolVar) varDefn;
+        if (!symbolVar.isImported() && symbolVar.getSymbolKind() == SymbolKind.TEMPLATE) {
+          return "Template name";
+        }
         return "Imported symbol";
       case LOCAL_VAR:
       case COMPREHENSION_VAR:
         return "Local variable";
-      case TEMPLATE:
-        return "Template name";
       case EXTERN:
         return "Extern function";
       case CONST:

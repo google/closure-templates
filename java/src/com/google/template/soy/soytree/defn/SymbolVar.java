@@ -37,7 +37,7 @@ import javax.annotation.Nullable;
  * module or type, we may create nested instances of this class via {@link #nested}. Likewise for
  * templates and constants under a template module import.
  */
-public final class ImportedVar extends AbstractVarDefn implements Copyable<ImportedVar> {
+public final class SymbolVar extends AbstractVarDefn implements Copyable<SymbolVar> {
 
   /** The kind of symbol this var references. */
   public enum SymbolKind {
@@ -64,45 +64,63 @@ public final class ImportedVar extends AbstractVarDefn implements Copyable<Impor
   private final String symbol;
   // A registry of all lazily created nested types. Store these in a BIDI tree here for reachability
   // during AST copying as well as during constant type resolution.
-  private final Map<String, ImportedVar> nestedVarDefns;
+  private final Map<String, SymbolVar> nestedVarDefns;
   // A back reference to the parent if this is a nested type.
-  private final ImportedVar parent;
+  private final SymbolVar parent;
   // The file path of the ImportNode that owns this var. Only set if parent == null.
-  private SourceLogicalPath filePath;
-  private SetOnce<SymbolKind> kind = new SetOnce<>();
+  private final SetOnce<SourceLogicalPath> filePath;
+  private final SetOnce<Boolean> imported;
+  private final SetOnce<SymbolKind> kind;
 
-  public ImportedVar(String name, @Nullable String alias, SourceLocation nameLocation) {
+  public SymbolVar(String name, @Nullable String alias, SourceLocation nameLocation) {
     super(alias != null ? alias : name, nameLocation, null);
     Preconditions.checkArgument(alias == null || !alias.isEmpty());
     this.nestedVarDefns = new LinkedHashMap<>();
     this.symbol = name;
     this.parent = null;
+    this.filePath = new SetOnce<>();
+    this.imported = new SetOnce<>();
+    this.kind = new SetOnce<>();
   }
 
-  private ImportedVar(ImportedVar parent, String symbol) {
+  private SymbolVar(SymbolVar parent, String symbol) {
     super(parent.name() + "." + symbol, parent.nameLocation(), null);
     this.nestedVarDefns = new LinkedHashMap<>();
     this.symbol = symbol;
     this.parent = parent;
+    this.filePath = parent.filePath;
+    this.imported = parent.imported;
+    this.kind = new SetOnce<>();
   }
 
-  private ImportedVar(ImportedVar var, ImportedVar parent, CopyState copyState) {
+  private SymbolVar(SymbolVar var, SymbolVar parent, CopyState copyState) {
     super(var);
     this.nestedVarDefns = new LinkedHashMap<>();
-    for (Map.Entry<String, ImportedVar> entry : var.nestedVarDefns.entrySet()) {
-      ImportedVar newNested = new ImportedVar(entry.getValue(), this, copyState);
+    for (Map.Entry<String, SymbolVar> entry : var.nestedVarDefns.entrySet()) {
+      SymbolVar newNested = new SymbolVar(entry.getValue(), this, copyState);
       this.nestedVarDefns.put(entry.getKey(), newNested);
       copyState.updateRefs(entry.getValue(), newNested);
     }
     this.symbol = var.symbol;
     this.parent = parent;
-    this.filePath = var.filePath;
+    this.filePath = var.filePath.copy();
+    this.imported = var.imported.copy();
     this.kind = var.kind.copy();
   }
 
-  public void onParentInit(SourceLogicalPath path) {
+  public void initFromSoyNode(boolean imported, SourceLogicalPath path) {
     Preconditions.checkState(parent == null);
-    this.filePath = path;
+    if (this.imported.isPresent()) {
+      Preconditions.checkArgument(imported == this.imported.get());
+      Preconditions.checkArgument(path.equals(this.filePath.get()));
+    } else {
+      this.imported.set(imported);
+      this.filePath.set(path);
+    }
+  }
+
+  public boolean isImported() {
+    return imported.get();
   }
 
   @Nullable
@@ -115,26 +133,26 @@ public final class ImportedVar extends AbstractVarDefn implements Copyable<Impor
   }
 
   @Override
-  public ImportedVar copy(CopyState copyState) {
-    return new ImportedVar(this, parent, copyState);
+  public SymbolVar copy(CopyState copyState) {
+    return new SymbolVar(this, parent, copyState);
   }
 
   /**
    * Traverses up through any nested types and returns the top-level var corresponding to what's in
    * the source code.
    */
-  public ImportedVar getRoot() {
+  public SymbolVar getRoot() {
     return parent != null ? parent.getRoot() : this;
   }
 
   /** Returns all the lazily created nested vars. */
-  public Collection<ImportedVar> getNestedVars() {
+  public Collection<SymbolVar> getNestedVars() {
     return Collections.unmodifiableCollection(nestedVarDefns.values());
   }
 
   /** Creates if necessary and returns a var representing a nested symbol. */
-  public ImportedVar nested(String symbolName) {
-    return nestedVarDefns.computeIfAbsent(symbolName, n -> new ImportedVar(this, n));
+  public SymbolVar nested(String symbolName) {
+    return nestedVarDefns.computeIfAbsent(symbolName, n -> new SymbolVar(this, n));
   }
 
   /**
@@ -147,7 +165,7 @@ public final class ImportedVar extends AbstractVarDefn implements Copyable<Impor
 
   @Override
   public Kind kind() {
-    return Kind.IMPORT_VAR;
+    return Kind.SYMBOL;
   }
 
   public boolean isAliased() {
@@ -168,13 +186,13 @@ public final class ImportedVar extends AbstractVarDefn implements Copyable<Impor
   }
 
   public SourceLogicalPath getSourceFilePath() {
-    return parent != null ? parent.getSourceFilePath() : filePath;
+    return filePath.get();
   }
 
   /** Returns a list of imported vars, from the root imported symbol to the leaf symbol. */
-  public ImmutableList<ImportedVar> getChain() {
-    ImmutableList.Builder<ImportedVar> builder = ImmutableList.builder();
-    ImportedVar var = this;
+  public ImmutableList<SymbolVar> getChain() {
+    ImmutableList.Builder<SymbolVar> builder = ImmutableList.builder();
+    SymbolVar var = this;
     do {
       builder.add(var);
       var = var.parent;
@@ -182,7 +200,7 @@ public final class ImportedVar extends AbstractVarDefn implements Copyable<Impor
     return builder.build().reverse();
   }
 
-  private static boolean isProtoImport(ImportedVar var) {
+  private static boolean isProtoImport(SymbolVar var) {
     return var.getSymbolKind() == SymbolKind.PROTO_MESSAGE
         || var.getSymbolKind() == SymbolKind.PROTO_ENUM
         || var.getSymbolKind() == SymbolKind.PROTO_EXT;
@@ -195,13 +213,13 @@ public final class ImportedVar extends AbstractVarDefn implements Copyable<Impor
     if (this == other) {
       return true;
     }
-    if (!(other instanceof ImportedVar)) {
+    if (!(other instanceof SymbolVar)) {
       return false;
     }
     return hasType()
         && other.hasType()
         && isProtoImport(this)
-        && isProtoImport((ImportedVar) other)
+        && isProtoImport((SymbolVar) other)
         && type().equals(other.type());
   }
 }

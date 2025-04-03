@@ -176,8 +176,8 @@ import com.google.template.soy.soytree.SwitchCaseNode;
 import com.google.template.soy.soytree.SwitchDefaultNode;
 import com.google.template.soy.soytree.SwitchNode;
 import com.google.template.soy.soytree.TemplateNode;
-import com.google.template.soy.soytree.defn.ImportedVar;
-import com.google.template.soy.soytree.defn.ImportedVar.SymbolKind;
+import com.google.template.soy.soytree.defn.SymbolVar;
+import com.google.template.soy.soytree.defn.SymbolVar.SymbolKind;
 import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import com.google.template.soy.soytree.defn.TemplateStateVar;
 import com.google.template.soy.types.AbstractIterableType;
@@ -2096,10 +2096,10 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
             VarDefn defn = ((VarRefNode) node.getNameExpr()).getDefnDecl();
             List<? extends Extern> externTypes;
 
-            if (defn.kind() == VarDefn.Kind.IMPORT_VAR) {
+            if (defn.kind() == VarDefn.Kind.SYMBOL) {
               externTypes =
-                  getFileMetadata(((ImportedVar) defn).getSourceFilePath())
-                      .getExterns(((ImportedVar) defn).getSymbol());
+                  getFileMetadata(((SymbolVar) defn).getSourceFilePath())
+                      .getExterns(((SymbolVar) defn).getSymbol());
             } else if (defn.kind() == VarDefn.Kind.LOCAL_VAR || defn.kind() == VarDefn.Kind.PARAM) {
               node.setSoyFunction(FunctionNode.FUNCTION_POINTER);
               node.setType(SoyTypes.getFunctionReturnType(nameExprType));

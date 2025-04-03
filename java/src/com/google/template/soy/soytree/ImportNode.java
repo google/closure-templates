@@ -25,7 +25,7 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.exprtree.StringNode;
-import com.google.template.soy.soytree.defn.ImportedVar;
+import com.google.template.soy.soytree.defn.SymbolVar;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -34,7 +34,7 @@ import java.util.function.Consumer;
 public final class ImportNode extends AbstractSoyNode {
 
   /** The value expression that the variable is set to. */
-  private final ImmutableList<ImportedVar> identifiers;
+  private final ImmutableList<SymbolVar> identifiers;
 
   private final StringNode path;
   private final SourceLogicalPath sourceLogicalPath;
@@ -51,7 +51,7 @@ public final class ImportNode extends AbstractSoyNode {
     UNKNOWN
   }
 
-  public ImportNode(int id, SourceLocation location, StringNode path, List<ImportedVar> defns) {
+  public ImportNode(int id, SourceLocation location, StringNode path, List<SymbolVar> defns) {
     super(id, location);
     this.identifiers = ImmutableList.copyOf(defns);
     this.path = path;
@@ -59,8 +59,8 @@ public final class ImportNode extends AbstractSoyNode {
     this.importType = ImportType.UNKNOWN;
     this.requiredCssPath = Optional.empty();
 
-    for (ImportedVar defn : identifiers) {
-      defn.onParentInit(getSourceFilePath());
+    for (SymbolVar defn : identifiers) {
+      defn.initFromSoyNode(true, getSourceFilePath());
     }
   }
 
@@ -75,7 +75,7 @@ public final class ImportNode extends AbstractSoyNode {
         orig.identifiers.stream()
             .map(
                 prev -> {
-                  ImportedVar next = prev.copy(copyState);
+                  SymbolVar next = prev.copy(copyState);
                   copyState.updateRefs(prev, next);
                   return next;
                 })
@@ -141,7 +141,7 @@ public final class ImportNode extends AbstractSoyNode {
     return path.getSourceLocation();
   }
 
-  public ImmutableList<ImportedVar> getIdentifiers() {
+  public ImmutableList<SymbolVar> getIdentifiers() {
     return identifiers;
   }
 
@@ -164,14 +164,14 @@ public final class ImportNode extends AbstractSoyNode {
   }
 
   /**
-   * Visits all {@link ImportedVar} descending from this import node. {@code visitor} is called once
+   * Visits all {@link SymbolVar} descending from this import node. {@code visitor} is called once
    * for each var.
    */
-  public void visitVars(Consumer<ImportedVar> visitor) {
+  public void visitVars(Consumer<SymbolVar> visitor) {
     getIdentifiers().forEach(id -> visitVars(id, visitor));
   }
 
-  private static void visitVars(ImportedVar id, Consumer<ImportedVar> visitor) {
+  private static void visitVars(SymbolVar id, Consumer<SymbolVar> visitor) {
     visitor.accept(id);
     id.getNestedVars().forEach(nestedVar -> visitVars(nestedVar, visitor));
   }

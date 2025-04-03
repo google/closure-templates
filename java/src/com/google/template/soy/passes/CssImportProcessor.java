@@ -27,8 +27,8 @@ import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.soytree.ImportNode;
 import com.google.template.soy.soytree.ImportNode.ImportType;
 import com.google.template.soy.soytree.SoyFileNode;
-import com.google.template.soy.soytree.defn.ImportedVar;
-import com.google.template.soy.soytree.defn.ImportedVar.SymbolKind;
+import com.google.template.soy.soytree.defn.SymbolVar;
+import com.google.template.soy.soytree.defn.SymbolVar.SymbolKind;
 import com.google.template.soy.types.NamespaceType;
 
 /**
@@ -74,7 +74,7 @@ final class CssImportProcessor implements ImportsPass.ImportProcessor {
   }
 
   private void processImportedSymbols(ImportNode node) {
-    for (ImportedVar symbol : node.getIdentifiers()) {
+    for (SymbolVar symbol : node.getIdentifiers()) {
       String name = symbol.getSymbol();
       if (!"classes".equals(name)) {
         ImportsPass.reportUnknownSymbolError(

@@ -29,13 +29,13 @@ import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
-import com.google.template.soy.soytree.defn.ImportedVar;
-import com.google.template.soy.soytree.defn.ImportedVar.SymbolKind;
+import com.google.template.soy.soytree.defn.SymbolVar;
+import com.google.template.soy.soytree.defn.SymbolVar.SymbolKind;
 import com.google.template.soy.types.StringType;
 
 /**
  * Rewrite toggle import statement and references to call built-in function that supports toggles as
- * an {@link ImportedVar} vardef.
+ * an {@link SymbolVar} vardef.
  */
 @RunAfter(ResolveNamesPass.class)
 final class RewriteCssRefsPass implements CompilerFilePass {
@@ -52,10 +52,10 @@ final class RewriteCssRefsPass implements CompilerFilePass {
         .forEach(
             ref -> {
               VarDefn defn = ref.getDefnDecl();
-              if (defn instanceof ImportedVar) {
-                ImportedVar importedVar = (ImportedVar) defn;
-                if (importedVar.getSymbolKind() == SymbolKind.CSS_CLASS) {
-                  rewriteCssNode(ref, ref.getSourceLocation(), importedVar);
+              if (defn instanceof SymbolVar) {
+                SymbolVar symbolVar = (SymbolVar) defn;
+                if (symbolVar.getSymbolKind() == SymbolKind.CSS_CLASS) {
+                  rewriteCssNode(ref, ref.getSourceLocation(), symbolVar);
                 }
               }
             });
@@ -66,7 +66,7 @@ final class RewriteCssRefsPass implements CompilerFilePass {
    * {@code refn} value. Returns either a primitive node or var ref node or null if the field could
    * not be resolved.
    */
-  private void rewriteCssNode(VarRefNode refn, SourceLocation fullLocation, ImportedVar defn) {
+  private void rewriteCssNode(VarRefNode refn, SourceLocation fullLocation, SymbolVar defn) {
     ImmutableMap<String, String> shortClassMap =
         cssRegistry.getShortClassNameMapForLogicalPath(defn.getSourceFilePath());
 

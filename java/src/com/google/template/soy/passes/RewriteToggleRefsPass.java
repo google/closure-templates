@@ -27,13 +27,13 @@ import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
-import com.google.template.soy.soytree.defn.ImportedVar;
-import com.google.template.soy.soytree.defn.ImportedVar.SymbolKind;
+import com.google.template.soy.soytree.defn.SymbolVar;
+import com.google.template.soy.soytree.defn.SymbolVar.SymbolKind;
 import com.google.template.soy.types.StringType;
 
 /**
  * Rewrite toggle import statement and references to call built-in function that supports toggles as
- * an {@link ImportedVar} vardef.
+ * an {@link SymbolVar} vardef.
  */
 @RunAfter(ResolveNamesPass.class)
 final class RewriteToggleRefsPass implements CompilerFilePass {
@@ -46,10 +46,10 @@ final class RewriteToggleRefsPass implements CompilerFilePass {
         .forEach(
             ref -> {
               VarDefn defn = ref.getDefnDecl();
-              if (defn instanceof ImportedVar) {
-                ImportedVar importedVar = (ImportedVar) defn;
-                if (importedVar.getSymbolKind() == SymbolKind.TOGGLE) {
-                  rewriteToggleNode(ref, ref.getSourceLocation(), importedVar);
+              if (defn instanceof SymbolVar) {
+                SymbolVar symbolVar = (SymbolVar) defn;
+                if (symbolVar.getSymbolKind() == SymbolKind.TOGGLE) {
+                  rewriteToggleNode(ref, ref.getSourceLocation(), symbolVar);
                 }
               }
             });
@@ -60,7 +60,7 @@ final class RewriteToggleRefsPass implements CompilerFilePass {
    * {@code refn} value. Returns either a primitive node or var ref node or null if the field could
    * not be resolved.
    */
-  private void rewriteToggleNode(VarRefNode refn, SourceLocation fullLocation, ImportedVar defn) {
+  private void rewriteToggleNode(VarRefNode refn, SourceLocation fullLocation, SymbolVar defn) {
     FunctionNode funcNode =
         FunctionNode.newPositional(
             Identifier.create(BuiltinFunction.EVAL_TOGGLE.getName(), fullLocation),

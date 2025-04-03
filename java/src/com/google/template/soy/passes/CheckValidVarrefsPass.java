@@ -31,8 +31,8 @@ import com.google.template.soy.soytree.ExternNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.defn.ExternVar;
-import com.google.template.soy.soytree.defn.ImportedVar;
-import com.google.template.soy.soytree.defn.ImportedVar.SymbolKind;
+import com.google.template.soy.soytree.defn.SymbolVar;
+import com.google.template.soy.soytree.defn.SymbolVar.SymbolKind;
 import com.google.template.soy.types.UnionType;
 
 /** Reports errors for illegal symbol references. */
@@ -115,8 +115,8 @@ final class CheckValidVarrefsPass implements CompilerFilePass {
   }
 
   private boolean isOverloadedExtern(VarDefn defn) {
-    if (defn instanceof ImportedVar
-        && ((ImportedVar) defn).getSymbolKind() == SymbolKind.EXTERN
+    if (defn instanceof SymbolVar
+        && ((SymbolVar) defn).getSymbolKind() == SymbolKind.EXTERN
         && defn.type() instanceof UnionType) {
       return true;
     }

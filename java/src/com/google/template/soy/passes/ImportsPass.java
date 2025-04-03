@@ -33,7 +33,7 @@ import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.error.SoyErrors;
 import com.google.template.soy.soytree.ImportNode;
 import com.google.template.soy.soytree.SoyFileNode;
-import com.google.template.soy.soytree.defn.ImportedVar;
+import com.google.template.soy.soytree.defn.SymbolVar;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.TypeRegistries;
 import java.util.Set;
@@ -115,7 +115,7 @@ final class ImportsPass implements CompilerFileSetPass {
       checkState(!importNode.getIdentifiers().isEmpty());
 
       boolean foundSymbolErrors = false;
-      for (ImportedVar symbol : importNode.getIdentifiers()) {
+      for (SymbolVar symbol : importNode.getIdentifiers()) {
         // Import naming collisions. Report errors but continue checking the other symbols so we
         // can report all the errors at once.
         if (reportErrorIfSymbolInvalid(file, symbol.name(), symbol.nameLocation())) {

@@ -32,7 +32,6 @@ import com.google.template.soy.base.internal.TemplateContentKind;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
-import com.google.template.soy.exprtree.AbstractVarDefn;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.NumberNode;
@@ -44,6 +43,8 @@ import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
 import com.google.template.soy.soytree.SoyNode.StackContextNode;
 import com.google.template.soy.soytree.defn.AttrParam;
+import com.google.template.soy.soytree.defn.SymbolVar;
+import com.google.template.soy.soytree.defn.SymbolVar.SymbolKind;
 import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.soytree.defn.TemplateStateVar;
@@ -326,7 +327,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
   private final boolean component;
 
   // Lazy init.
-  private TemplateVarDefn varDefn;
+  private SymbolVar varDefn;
 
   /**
    * Main constructor. This is package-private because Template*Node instances should be built using
@@ -395,9 +396,9 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
     this.component = orig.component;
     if (orig.varDefn != null) {
       this.asVarDefn();
-      TemplateType tt = orig.varDefn.type().getBasicTemplateType();
+      TemplateType tt = ((TemplateImportType) orig.varDefn.type()).getBasicTemplateType();
       if (tt != null) {
-        this.varDefn.type().setBasicTemplateType(tt);
+        ((TemplateImportType) this.varDefn.type()).setBasicTemplateType(tt);
       }
       copyState.updateRefs(orig.varDefn, this.varDefn);
     }
@@ -743,35 +744,18 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
   }
 
   public VarDefn asVarDefn() {
-    TemplateVarDefn tmp = varDefn;
+    SymbolVar tmp = varDefn;
     if (tmp == null) {
       TemplateImportType importType = TemplateImportType.create(getTemplateName());
-      tmp = new TemplateVarDefn(getPartialTemplateName(), getTemplateNameLocation(), importType);
+      tmp =
+          new SymbolVar(
+              getPartialTemplateName(), getPartialTemplateName(), getTemplateNameLocation());
+      tmp.setType(importType);
+      tmp.initFromSoyNode(false, getSourceLocation().getFilePath().asLogicalPath());
+      tmp.setSymbolKind(SymbolKind.TEMPLATE);
       varDefn = tmp;
     }
     return tmp;
-  }
-
-  private static class TemplateVarDefn extends AbstractVarDefn {
-    public TemplateVarDefn(
-        String name, @Nullable SourceLocation nameLocation, TemplateImportType type) {
-      super(name, nameLocation, type);
-    }
-
-    @Override
-    public TemplateImportType type() {
-      return (TemplateImportType) super.type();
-    }
-
-    @Override
-    public Kind kind() {
-      return Kind.TEMPLATE;
-    }
-
-    @Override
-    public boolean isInjected() {
-      return false;
-    }
   }
 
   /**

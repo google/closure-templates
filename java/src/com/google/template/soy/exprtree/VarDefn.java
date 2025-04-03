@@ -42,15 +42,13 @@ public interface VarDefn {
     // File-wide exportable extern.
     EXTERN,
     // imported symbol
-    IMPORT_VAR,
+    SYMBOL,
 
     // List/map comprehension var.
     COMPREHENSION_VAR,
 
     // State variable
     STATE,
-    // A local template name.
-    TEMPLATE,
   }
 
   /** What kind of variable this is (param, local var, etc). */
