@@ -22,14 +22,15 @@ import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.SoyNode.FileVarNode;
-import com.google.template.soy.soytree.defn.ConstVar;
+import com.google.template.soy.soytree.defn.SymbolVar;
+import com.google.template.soy.soytree.defn.SymbolVar.SymbolKind;
 import com.google.template.soy.types.ast.TypeNode;
 import javax.annotation.Nullable;
 
 /** Node representing a 'const' statement with a value expression. */
 public final class ConstNode extends AbstractCommandNode implements FileVarNode {
 
-  private final ConstVar var;
+  private final SymbolVar var;
 
   /** The value expression that the variable is set to. */
   private final ExprRootNode valueExpr;
@@ -46,7 +47,9 @@ public final class ConstNode extends AbstractCommandNode implements FileVarNode 
       boolean exported,
       @Nullable TypeNode typeNode) {
     super(id, location, "const");
-    this.var = new ConstVar(varName, varNameLocation, this, /* type= */ null);
+    this.var = new SymbolVar(varName, varName, varNameLocation);
+    this.var.initFromSoyNode(false, varNameLocation.getFilePath().asLogicalPath());
+    this.var.setSymbolKind(SymbolKind.CONST);
     this.valueExpr = new ExprRootNode(expr);
     this.exported = exported;
     this.typeNode = typeNode;
@@ -59,7 +62,7 @@ public final class ConstNode extends AbstractCommandNode implements FileVarNode 
    */
   private ConstNode(ConstNode orig, CopyState copyState) {
     super(orig, copyState);
-    this.var = new ConstVar(orig.var, this);
+    this.var = orig.var.copy(copyState);
     this.valueExpr = orig.valueExpr.copy(copyState);
     this.exported = orig.exported;
     this.typeNode = orig.typeNode != null ? orig.typeNode.copy() : null;
@@ -67,7 +70,7 @@ public final class ConstNode extends AbstractCommandNode implements FileVarNode 
   }
 
   @Override
-  public ConstVar getVar() {
+  public SymbolVar getVar() {
     return var;
   }
 

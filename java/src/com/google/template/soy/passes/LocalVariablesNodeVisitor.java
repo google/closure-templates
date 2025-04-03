@@ -394,8 +394,6 @@ final class LocalVariablesNodeVisitor {
         return "Local variable";
       case EXTERN:
         return "Extern function";
-      case CONST:
-        return "Symbol";
     }
     throw new AssertionError(varDefn.kind());
   }

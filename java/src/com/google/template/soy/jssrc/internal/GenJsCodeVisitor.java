@@ -101,7 +101,7 @@ import com.google.template.soy.soytree.TemplateElementNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TypeDefNode;
 import com.google.template.soy.soytree.Visibility;
-import com.google.template.soy.soytree.defn.ConstVar;
+import com.google.template.soy.soytree.defn.SymbolVar;
 import com.google.template.soy.soytree.defn.SymbolVar.SymbolKind;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.IndexedType;
@@ -765,7 +765,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
   @Override
   protected void visitConstNode(ConstNode node) {
-    ConstVar var = node.getVar();
+    SymbolVar var = node.getVar();
     ByteSpan imputesSpan = SoyTreeUtils.getByteSpan(node, var.nameLocation());
 
     JsType varType = getJsTypeForParamForDeclaration(var.authoredType());

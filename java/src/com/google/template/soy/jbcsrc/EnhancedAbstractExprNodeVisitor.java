@@ -24,7 +24,6 @@ import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.soytree.SoyNode.LocalVarNode;
-import com.google.template.soy.soytree.defn.ConstVar;
 import com.google.template.soy.soytree.defn.ExternVar;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.SymbolVar;
@@ -70,8 +69,6 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
         throw new AssertionError("state should have been desugared");
       case COMPREHENSION_VAR:
         return visitListComprehensionVar(node, (ComprehensionVarDefn) defn);
-      case CONST:
-        return visitConstVar(node, (ConstVar) defn);
       case SYMBOL:
         return visitSymbolVar(node, (SymbolVar) defn);
       case EXTERN:
@@ -141,10 +138,6 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
 
   T visitForLoopVar(VarRefNode varRef, LocalVar local) {
     return visitExprNode(varRef);
-  }
-
-  T visitConstVar(VarRefNode node, ConstVar c) {
-    return visitExprNode(node);
   }
 
   T visitSymbolVar(VarRefNode node, SymbolVar c) {

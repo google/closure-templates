@@ -509,9 +509,8 @@ public final class SoyTreeUtils {
     switch (expr.getKind()) {
       case VAR_REF_NODE:
         VarRefNode refNode = (VarRefNode) expr;
-        VarDefn varDefs = refNode.getDefnDecl();
-        if (varDefs != null
-            && (varDefs.kind() == VarDefn.Kind.CONST || varDefs.kind() == VarDefn.Kind.SYMBOL)) {
+        VarDefn varDefn = refNode.getDefnDecl();
+        if (varDefn != null && (varDefn.kind() == VarDefn.Kind.SYMBOL)) {
           // This method is called while inferring parameter types, before the type has been set on
           // refNode.
           return false;

@@ -127,7 +127,6 @@ import com.google.template.soy.soytree.FileMetadata.Extern;
 import com.google.template.soy.soytree.PartialFileSetMetadata;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
-import com.google.template.soy.soytree.defn.ConstVar;
 import com.google.template.soy.soytree.defn.ExternVar;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.SymbolVar;
@@ -1332,6 +1331,22 @@ final class ExpressionCompiler {
       TypeInfo typeInfo = TypeInfo.createClass(Names.javaClassNameFromSoyNamespace(namespace));
       Expression renderContext = parameters.getRenderContext();
       if (symbolVar.getSymbolKind() == SymbolKind.CONST) {
+        if (!symbolVar.isImported()) {
+          // Fast path for local consts that don't need RenderContext.
+          ConstNode constNode = lookupConstNode(symbolVar);
+          if (constNode != null && canCompileToConstant(constNode, constNode.getExpr())) {
+            var type = ConstantsCompiler.getConstantRuntimeType(symbolVar.type());
+            MethodRef methodRef =
+                MethodRef.createStaticMethod(
+                    typeInfo,
+                    ConstantsCompiler.getConstantMethodWithoutRenderContext(
+                        symbolVar.name(), symbolVar.type()),
+                    MethodPureness.PURE);
+            // Constant fold the value into the callsite, no need to wait on the jit to inline the
+            // value
+            return SoyExpression.forRuntimeType(type, methodRef.invoke().toConstantExpression());
+          }
+        }
         Expression constExpression =
             new Expression(
                 ConstantsCompiler.getConstantRuntimeType(symbolVar.type()).runtimeType()) {
@@ -1358,6 +1373,17 @@ final class ExpressionCompiler {
       }
     }
 
+    private ConstNode lookupConstNode(SymbolVar symbol) {
+      SoyFileNode file = context.getNearestAncestor(SoyFileNode.class);
+      if (file != null) {
+        return file.getConstants().stream()
+            .filter(c -> c.getVar().equals(symbol))
+            .findFirst()
+            .orElse(null);
+      }
+      return null;
+    }
+
     private Expression getFunctionValue(String namespace, String symbol) {
       Expression renderContext = parameters.getRenderContext();
       TypeInfo fctOwner = TypeInfo.createClass(Names.javaClassNameFromSoyNamespace(namespace));
@@ -1374,34 +1400,6 @@ final class ExpressionCompiler {
               symbol);
         }
       };
-    }
-
-    @Override
-    SoyExpression visitConstVar(VarRefNode varRef, ConstVar constVar) {
-      SoyFileNode fileNode = context.getNearestAncestor(SoyFileNode.class);
-      TypeInfo typeInfo =
-          TypeInfo.createClass(Names.javaClassNameFromSoyNamespace(fileNode.getNamespace()));
-      ConstNode constNode = (ConstNode) constVar.declaringNode();
-      boolean requiresRenderContext = !canCompileToConstant(constNode, constNode.getExpr());
-      var type = ConstantsCompiler.getConstantRuntimeType(constVar.type());
-      if (requiresRenderContext) {
-        MethodRef methodRef =
-            MethodRef.createStaticMethod(
-                typeInfo,
-                ConstantsCompiler.getConstantMethodWithRenderContext(
-                    constVar.name(), constVar.type()),
-                MethodPureness.PURE);
-        return SoyExpression.forRuntimeType(type, methodRef.invoke(parameters.getRenderContext()));
-      } else {
-        MethodRef methodRef =
-            MethodRef.createStaticMethod(
-                typeInfo,
-                ConstantsCompiler.getConstantMethodWithoutRenderContext(
-                    constVar.name(), constVar.type()),
-                MethodPureness.PURE);
-        // Constant fold the value into the callsite, no need to wait on the jit to inline the value
-        return SoyExpression.forRuntimeType(type, methodRef.invoke().toConstantExpression());
-      }
     }
 
     @Override
@@ -2211,15 +2209,13 @@ final class ExpressionCompiler {
       switch (node.getDefnDecl().kind()) {
         case COMPREHENSION_VAR:
           return true;
-        case CONST:
-          // For consts we could allow references if they are in the same file and they themselves
-          // are constants. However, this would require changing the calling convention so that
-          // passing a `RenderContext` is optional.
-          return false;
         case STATE:
           // In jbcsrc all @state variables are compiled to constants so we can reference them
           return true;
         case SYMBOL:
+          // For consts we could allow references if they are in the same file and they themselves
+          // are constants. However, this would require changing the calling convention so that
+          // passing a `RenderContext` is optional.
           // For things like proto extensions and constructors we could allow references. But it
           // isn't clear that that is very useful. For cross file `const`s this isn't possible
           return false;
