@@ -21,14 +21,14 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
-import com.google.template.soy.soytree.SoyNode.FileVarNode;
+import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.defn.SymbolVar;
 import com.google.template.soy.soytree.defn.SymbolVar.SymbolKind;
 import com.google.template.soy.types.ast.TypeNode;
 import javax.annotation.Nullable;
 
 /** Node representing a 'const' statement with a value expression. */
-public final class ConstNode extends AbstractCommandNode implements FileVarNode {
+public final class ConstNode extends AbstractCommandNode implements ExprHolderNode {
 
   private final SymbolVar var;
 
@@ -69,7 +69,6 @@ public final class ConstNode extends AbstractCommandNode implements FileVarNode 
     copyState.updateRefs(orig.var, this.var);
   }
 
-  @Override
   public SymbolVar getVar() {
     return var;
   }

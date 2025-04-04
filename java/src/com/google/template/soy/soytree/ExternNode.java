@@ -23,7 +23,8 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.soytree.CommandTagAttribute.CommandTagAttributesHolder;
-import com.google.template.soy.soytree.defn.ExternVar;
+import com.google.template.soy.soytree.defn.SymbolVar;
+import com.google.template.soy.soytree.defn.SymbolVar.SymbolKind;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.FunctionType;
 import com.google.template.soy.types.ast.FunctionTypeNode;
@@ -40,7 +41,7 @@ public final class ExternNode extends AbstractParentCommandNode<ExternImplNode>
   private final Identifier name;
   private final SourceLocation openTagLocation;
   private final boolean exported;
-  private final ExternVar var;
+  private final SymbolVar var;
   private ImmutableList<TemplateParam> paramVars;
 
   public ExternNode(
@@ -55,7 +56,9 @@ public final class ExternNode extends AbstractParentCommandNode<ExternImplNode>
     this.openTagLocation = headerLocation;
     this.typeNode = typeNode;
     this.exported = exported;
-    this.var = new ExternVar(name.identifier(), name.location(), null);
+    this.var = new SymbolVar(name.identifier(), name.identifier(), name.location());
+    this.var.initFromSoyNode(false, location.getFilePath().asLogicalPath());
+    this.var.setSymbolKind(SymbolKind.EXTERN);
   }
 
   /**
@@ -69,7 +72,7 @@ public final class ExternNode extends AbstractParentCommandNode<ExternImplNode>
     this.typeNode = orig.typeNode.copy();
     this.openTagLocation = orig.openTagLocation;
     this.exported = orig.exported;
-    this.var = new ExternVar(orig.var);
+    this.var = orig.var.copy(copyState);
     copyState.updateRefs(orig.var, this.var);
     if (orig.paramVars != null) {
       this.paramVars =
@@ -133,7 +136,7 @@ public final class ExternNode extends AbstractParentCommandNode<ExternImplNode>
     return (FunctionType) typeNode.getResolvedType();
   }
 
-  public ExternVar getVar() {
+  public SymbolVar getVar() {
     return var;
   }
 

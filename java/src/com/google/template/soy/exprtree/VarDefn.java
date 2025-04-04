@@ -37,8 +37,6 @@ public interface VarDefn {
     PARAM,
     // Local variable
     LOCAL_VAR,
-    // File-wide exportable extern.
-    EXTERN,
     // imported symbol
     SYMBOL,
 

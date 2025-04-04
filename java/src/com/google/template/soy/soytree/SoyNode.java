@@ -25,7 +25,6 @@ import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.basetree.Node;
 import com.google.template.soy.basetree.ParentNode;
 import com.google.template.soy.exprtree.AbstractLocalVarDefn;
-import com.google.template.soy.exprtree.AbstractVarDefn;
 import com.google.template.soy.exprtree.ExprEquivalence;
 import com.google.template.soy.exprtree.ExprRootNode;
 
@@ -258,12 +257,6 @@ public interface SoyNode extends Node {
 
     /** Returns the variable definition. */
     AbstractLocalVarDefn<?> getVar();
-  }
-
-  /** A node that adds a new file scoped variable. */
-  interface FileVarNode extends ExprHolderNode {
-    /** Returns the variable definition. */
-    AbstractVarDefn getVar();
   }
 
   // -----------------------------------------------------------------------------------------------

@@ -127,7 +127,6 @@ import com.google.template.soy.soytree.FileMetadata.Extern;
 import com.google.template.soy.soytree.PartialFileSetMetadata;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
-import com.google.template.soy.soytree.defn.ExternVar;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.SymbolVar;
 import com.google.template.soy.soytree.defn.SymbolVar.SymbolKind;
@@ -2170,15 +2169,7 @@ final class ExpressionCompiler {
           });
     }
 
-    @Override
-    SoyExpression visitExternVar(VarRefNode node, ExternVar c) {
-      SoyFileNode fileNode = context.getNearestAncestor(SoyFileNode.class);
-      return SoyExpression.forSoyValue(
-          node.getType(), getFunctionValue(fileNode.getNamespace(), node.getDefnDecl().name()));
-    }
-
     // Catch-all for unimplemented nodes
-
     @Override
     protected SoyExpression visitExprNode(ExprNode node) {
       throw new UnsupportedOperationException(
@@ -2221,7 +2212,6 @@ final class ExpressionCompiler {
           return false;
         case PARAM:
         case LOCAL_VAR:
-        case EXTERN:
           return false;
       }
       throw new AssertionError(node.getDefnDecl().kind());

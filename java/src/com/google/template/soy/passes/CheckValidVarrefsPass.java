@@ -30,7 +30,6 @@ import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.soytree.ExternNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
-import com.google.template.soy.soytree.defn.ExternVar;
 import com.google.template.soy.soytree.defn.SymbolVar;
 import com.google.template.soy.soytree.defn.SymbolVar.SymbolKind;
 import com.google.template.soy.types.UnionType;
@@ -115,13 +114,12 @@ final class CheckValidVarrefsPass implements CompilerFilePass {
   }
 
   private boolean isOverloadedExtern(VarDefn defn) {
-    if (defn instanceof SymbolVar
-        && ((SymbolVar) defn).getSymbolKind() == SymbolKind.EXTERN
-        && defn.type() instanceof UnionType) {
-      return true;
-    }
-    if (defn instanceof ExternVar) {
-      return externIndex.get(defn.name()).size() > 1;
+    if (defn instanceof SymbolVar && ((SymbolVar) defn).getSymbolKind() == SymbolKind.EXTERN) {
+      if (((SymbolVar) defn).isImported()) {
+        return defn.type() instanceof UnionType;
+      } else {
+        return externIndex.get(defn.name()).size() > 1;
+      }
     }
     return false;
   }

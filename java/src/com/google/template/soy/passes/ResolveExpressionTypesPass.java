@@ -2096,7 +2096,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
             VarDefn defn = ((VarRefNode) node.getNameExpr()).getDefnDecl();
             List<? extends Extern> externTypes;
 
-            if (defn.kind() == VarDefn.Kind.SYMBOL) {
+            if (defn.kind() == VarDefn.Kind.SYMBOL && ((SymbolVar) defn).isImported()) {
               externTypes =
                   getFileMetadata(((SymbolVar) defn).getSourceFilePath())
                       .getExterns(((SymbolVar) defn).getSymbol());

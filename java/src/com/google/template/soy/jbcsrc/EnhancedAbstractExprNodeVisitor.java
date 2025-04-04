@@ -24,7 +24,6 @@ import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.soytree.SoyNode.LocalVarNode;
-import com.google.template.soy.soytree.defn.ExternVar;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.SymbolVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
@@ -71,8 +70,6 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
         return visitListComprehensionVar(node, (ComprehensionVarDefn) defn);
       case SYMBOL:
         return visitSymbolVar(node, (SymbolVar) defn);
-      case EXTERN:
-        return visitExternVar(node, (ExternVar) defn);
     }
     throw new AssertionError(defn.kind());
   }
@@ -141,10 +138,6 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
   }
 
   T visitSymbolVar(VarRefNode node, SymbolVar c) {
-    return visitExprNode(node);
-  }
-
-  T visitExternVar(VarRefNode node, ExternVar c) {
     return visitExprNode(node);
   }
 

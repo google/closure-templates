@@ -49,7 +49,6 @@ import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TypeDefNode;
-import com.google.template.soy.soytree.defn.ExternVar;
 import com.google.template.soy.soytree.defn.SymbolVar;
 import com.google.template.soy.soytree.defn.SymbolVar.SymbolKind;
 import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
@@ -234,9 +233,10 @@ final class LocalVariablesNodeVisitor {
     @Override
     protected void visitExternNode(ExternNode node) {
       super.visitExternNode(node);
-      ExternVar var = node.getVar();
+      VarDefn var = node.getVar();
       VarDefn preexisting = localVariables.lookup(var.refName());
-      if (preexisting instanceof ExternVar) {
+      if (preexisting instanceof SymbolVar
+          && ((SymbolVar) preexisting).getSymbolKind() == SymbolKind.EXTERN) {
         // Allow multiple externs with the same name.
         return;
       }
@@ -385,15 +385,22 @@ final class LocalVariablesNodeVisitor {
         return "State parameter";
       case SYMBOL:
         SymbolVar symbolVar = (SymbolVar) varDefn;
-        if (!symbolVar.isImported() && symbolVar.getSymbolKind() == SymbolKind.TEMPLATE) {
+        if (symbolVar.isImported()) {
+          return "Imported symbol";
+        }
+        if (symbolVar.getSymbolKind() == SymbolKind.TEMPLATE) {
           return "Template name";
         }
-        return "Imported symbol";
+        if (symbolVar.getSymbolKind() == SymbolKind.EXTERN) {
+          return "Extern function";
+        }
+        if (symbolVar.getSymbolKind() == SymbolKind.CONST) {
+          return "Const";
+        }
+        return "Symbol"; // Should not happen.
       case LOCAL_VAR:
       case COMPREHENSION_VAR:
         return "Local variable";
-      case EXTERN:
-        return "Extern function";
     }
     throw new AssertionError(varDefn.kind());
   }
