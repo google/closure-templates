@@ -66,6 +66,6 @@ Enabling this feature by yourself is also possible.
 *   The debugging support works by annotating HTML tags with metadata about the
     template that rendered them. Therefore if you have content that isn't
     directly associated with an html node, then attribution might not work. For
-    exapmle, if you have a template that only renders text (no DOM) then on
+    example, if you have a template that only renders text (no DOM) then on
     hovering over the text it will show the closest caller template that does
     have a DOM node.
