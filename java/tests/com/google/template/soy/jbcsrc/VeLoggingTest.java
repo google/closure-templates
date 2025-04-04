@@ -310,6 +310,19 @@ public final class VeLoggingTest {
   }
 
   @Test
+  public void testLoggingAttributes_withLet() throws Exception {
+    StringBuilder sb = new StringBuilder();
+    TestLogger testLogger = new TestLogger();
+    testLogger.attrsMap.put(1L, LoggingAttrs.builder().addDataAttribute("data-foo", "bar").build());
+    renderTemplate(
+        OutputAppendable.create(sb, testLogger),
+        "{let $div kind='html'}<div>hello</div>{/let}",
+        "{velog FooVe}{$div}{/velog}");
+    assertThat(testLogger.builder.toString()).isEqualTo("velog{id=1}");
+    assertThat(sb.toString()).isEqualTo("<div data-foo=\"bar\">hello</div>");
+  }
+
+  @Test
   public void testLoggingAttributes_anchor() throws Exception {
     StringBuilder sb = new StringBuilder();
     TestLogger testLogger = new TestLogger();

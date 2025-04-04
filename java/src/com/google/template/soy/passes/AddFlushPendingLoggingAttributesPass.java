@@ -16,7 +16,11 @@
 
 package com.google.template.soy.passes;
 
+import static com.google.common.collect.ImmutableList.toImmutableList;
+
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Streams;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.Identifier;
@@ -25,11 +29,14 @@ import com.google.template.soy.exprtree.BooleanNode;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.shared.internal.BuiltinFunction;
+import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.HtmlAttributeNode;
 import com.google.template.soy.soytree.HtmlContext;
 import com.google.template.soy.soytree.HtmlOpenTagNode;
+import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyFileNode;
+import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.VeLogNode;
 import com.google.template.soy.types.SanitizedType.AttributesType;
@@ -54,23 +61,30 @@ final class AddFlushPendingLoggingAttributesPass implements CompilerFilePass {
         instrumentNode(nodeIdGen, openTag);
       }
     }
-    // 2. it is the direct child of a template node that is an 'element'
-    for (var template : file.getTemplates()) {
-      var metadata = template.getHtmlElementMetadata();
-      if (metadata == null || !metadata.getIsHtmlElement()) {
-        continue;
-      }
-      // If we are an element then there is either a single root element at the top level, or under
-      // a velog command, or there is a delegating call either way we are just looking for an
-      // HtmlOpenTageNode one or two levels deep.
-      var openTag =
-          template.getChildren().stream()
-              .filter(node -> node instanceof HtmlOpenTagNode)
-              .findFirst();
-      if (openTag.isPresent()) {
-        instrumentNode(nodeIdGen, (HtmlOpenTagNode) openTag.get());
-      }
-    }
+    // 2. it is the root of a {template}, {let}, or {param} with a well-formed single root element.
+    Streams.<RenderUnitNode>concat(
+            file.getTemplates().stream().filter(t -> t.getContentKind().isHtml()),
+            SoyTreeUtils.allNodesOfType(file, LetContentNode.class)
+                .filter(l -> !l.isImplicitContentKind() && l.getContentKind().isHtml()),
+            SoyTreeUtils.allNodesOfType(file, CallParamContentNode.class)
+                .filter(l -> !l.isImplicitContentKind() && l.getContentKind().isHtml()))
+        .forEach(
+            block -> {
+              var contentTags =
+                  block.getChildren().stream()
+                      .filter(n -> !SoyElementPass.ALLOWED_CHILD_NODES.contains(n.getKind()))
+                      .collect(toImmutableList());
+              if (contentTags.isEmpty() || !(contentTags.get(0) instanceof HtmlOpenTagNode)) {
+                return;
+              }
+
+              HtmlOpenTagNode openTag = (HtmlOpenTagNode) contentTags.get(0);
+              if ((openTag.isSelfClosing() && contentTags.size() == 1)
+                  || (openTag.getTaggedPairs().size() == 1
+                      && openTag.getTaggedPairs().get(0).equals(Iterables.getLast(contentTags)))) {
+                instrumentNode(nodeIdGen, openTag);
+              }
+            });
   }
 
   /**
