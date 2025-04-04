@@ -299,6 +299,17 @@ public final class VeLoggingTest {
   }
 
   @Test
+  public void testLoggingAttributes_withCall() throws Exception {
+    StringBuilder sb = new StringBuilder();
+    TestLogger testLogger = new TestLogger();
+    testLogger.attrsMap.put(1L, LoggingAttrs.builder().addDataAttribute("data-foo", "bar").build());
+    renderTemplate(
+        OutputAppendable.create(sb, testLogger), "{velog FooVe}{call another /}{/velog}");
+    assertThat(testLogger.builder.toString()).isEqualTo("velog{id=1}");
+    assertThat(sb.toString()).isEqualTo("<div data-foo=\"bar\">called</div>");
+  }
+
+  @Test
   public void testLoggingAttributes_anchor() throws Exception {
     StringBuilder sb = new StringBuilder();
     TestLogger testLogger = new TestLogger();
@@ -343,7 +354,8 @@ public final class VeLoggingTest {
                     + "{const Quux = ve_def('Quux', 4, Foo) /}"
                     + "{template foo}\n"
                     + Joiner.on("\n").join(templateBodyLines)
-                    + "\n{/template}",
+                    + "\n{/template}"
+                    + "{template another}<div>called</div>{/template}\n",
                 Foo.getDescriptor())
             .addSoySourceFunction(new DepthFunction())
             .addHtmlAttributesForLogging(true)
