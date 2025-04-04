@@ -52,6 +52,7 @@ import com.google.template.soy.jssrc.dsl.VariableDeclaration;
 import com.google.template.soy.jssrc.internal.GenJsCodeVisitor.ScopedJsTypeRegistry;
 import com.google.template.soy.shared.RangeArgs;
 import com.google.template.soy.soytree.AbstractReturningSoyNodeVisitor;
+import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamNode;
@@ -188,22 +189,42 @@ public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<St
 
     for (SoyNode child : node.getChildren()) {
       if (isComputableAsJsExprsVisitor.exec(child)) {
-        consecChunks.addAll(genJsExprsVisitor.exec(child));
-      } else {
-        if (!consecChunks.isEmpty()) {
-          statements.add(outputVars.addChunksToOutputVar(consecChunks));
-          consecChunks.clear();
+        List<Expression> exprs = genJsExprsVisitor.exec(child);
+        if (canConcatenateAsString(child)) {
+          consecChunks.addAll(exprs);
+        } else {
+          addChunksToOutput(statements, consecChunks);
+          statements.add(outputVars.addChunksToOutputVar(exprs));
         }
+      } else {
+        addChunksToOutput(statements, consecChunks);
         statements.add(visit(child));
       }
     }
 
-    if (!consecChunks.isEmpty()) {
-      statements.add(outputVars.addChunksToOutputVar(consecChunks));
-      consecChunks.clear();
-    }
+    addChunksToOutput(statements, consecChunks);
 
     return statements;
+  }
+
+  private void addChunksToOutput(List<Statement> statements, List<Expression> chunks) {
+    if (!chunks.isEmpty()) {
+      statements.add(outputVars.addChunksToOutputVar(chunks));
+      chunks.clear();
+    }
+  }
+
+  private boolean canConcatenateAsString(SoyNode node) {
+    if (outputVars.currentOutputVarStyle() == OutputVarHandler.Style.APPENDING) {
+      return true;
+    }
+    if (node instanceof PrintNode) {
+      return !((PrintNode) node).isHtml();
+    }
+    if (node instanceof CallBasicNode) {
+      return !((CallBasicNode) node).isLazy();
+    }
+    return true;
   }
 
   /**
@@ -314,13 +335,15 @@ public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<St
     Expression generatedVar = id(generatedVarName);
 
     // Generate code to define the local var.
-    outputVars.pushOutputVar(generatedVarName);
+    OutputVarHandler.Style outputStyle = OutputVarHandler.outputStyleForBlock(node);
+    outputVars.pushOutputVar(generatedVarName, outputStyle);
 
     List<Statement> statements = visitChildrenInNewSoyScope(node);
 
     outputVars.popOutputVar();
 
-    if (node.getContentKind() != SanitizedContentKind.TEXT) {
+    if (node.getContentKind() != SanitizedContentKind.TEXT
+        && outputStyle == OutputVarHandler.Style.APPENDING) {
       // If the let node had a content kind specified, it was autoescaped in the corresponding
       // context. Hence the result of evaluating the let block is wrapped in a SanitizedContent
       // instance of the appropriate kind.
@@ -688,7 +711,12 @@ public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<St
 
     // Add the call's result to the current output var.
     Expression call = genCallCodeUtils.gen(node, createExprTranslator());
-    if (node.isErrorFallbackSkip()) {
+
+    // When not using node builder, we need to place the output variable concatenation statement
+    // inside of a try/catch. That is done in here.
+    // (When using a node builder, we need place the try/catch inside of the lambda. That is done
+    // in GenCallCodeUtils.)
+    if (node.isErrorFallbackSkip() && !genCallCodeUtils.useNodeBuilder(node)) {
       VariableDeclaration callResult =
           VariableDeclaration.builder(Id.create("call_" + node.getId())).setRhs(call).build();
       return Statements.of(
@@ -710,11 +738,28 @@ public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<St
           "Should only define 'param<n>' when not computable as JS expressions.");
     }
 
-    outputVars.pushOutputVar("param" + node.getId());
+    // Generate code to define the local var.
+    OutputVarHandler.Style outputStyle = OutputVarHandler.outputStyleForBlock(node);
+
+    boolean generateOrdainer =
+        node.getContentKind() != SanitizedContentKind.TEXT
+            && outputStyle == OutputVarHandler.Style.APPENDING;
+
+    String contentVarName = (generateOrdainer ? "unsanitized" : "") + "param" + node.getId();
+    String sanitzedVarName = "param" + node.getId();
+    outputVars.pushOutputVar(contentVarName, outputStyle);
 
     List<Statement> content = visitChildrenInNewSoyScope(node);
 
     outputVars.popOutputVar();
+
+    if (generateOrdainer) {
+      content.add(
+          VariableDeclaration.builder(Id.create(sanitzedVarName))
+              .setRhs(
+                  sanitizedContentOrdainerFunction(node.getContentKind()).call(id(contentVarName)))
+              .build());
+    }
 
     return Statements.of(content);
   }

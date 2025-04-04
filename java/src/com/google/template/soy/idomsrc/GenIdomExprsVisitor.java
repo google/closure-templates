@@ -26,6 +26,7 @@ import com.google.template.soy.jssrc.internal.IsComputableAsJsExprsVisitor;
 import com.google.template.soy.jssrc.internal.TemplateAliases;
 import com.google.template.soy.jssrc.internal.TranslationContext;
 import com.google.template.soy.jssrc.internal.VisitorsState;
+import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyNode;
 import java.util.ArrayList;
 import java.util.List;
@@ -58,5 +59,10 @@ public final class GenIdomExprsVisitor extends GenJsExprsVisitor {
     chunks = new ArrayList<>();
     visit(node);
     return chunks;
+  }
+
+  @Override
+  protected Expression maybeAddNodeBuilder(PrintNode node, Expression expr) {
+    return expr;
   }
 }

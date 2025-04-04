@@ -25,6 +25,8 @@ import static com.google.template.soy.jssrc.dsl.Expressions.fromExpr;
 import static com.google.template.soy.jssrc.dsl.Expressions.stringLiteral;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_ASSIGN_DEFAULTS;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_GET_DELEGATE_FN;
+import static com.google.template.soy.jssrc.internal.JsRuntime.createHtmlOutputBufferFunction;
+import static com.google.template.soy.jssrc.internal.JsRuntime.createNodeBuilderFunction;
 import static com.google.template.soy.jssrc.internal.JsRuntime.sanitizedContentOrdainerFunction;
 
 import com.google.auto.value.AutoValue;
@@ -39,6 +41,8 @@ import com.google.template.soy.jssrc.dsl.Expressions;
 import com.google.template.soy.jssrc.dsl.FormatOptions;
 import com.google.template.soy.jssrc.dsl.GoogRequire;
 import com.google.template.soy.jssrc.dsl.Id;
+import com.google.template.soy.jssrc.dsl.Return;
+import com.google.template.soy.jssrc.dsl.TryCatch;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.ModernSoyJsSrcPrintDirective;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcPrintDirective;
@@ -59,6 +63,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import javax.annotation.Nullable;
 
 /** Generates JS code for {call}s and {delcall}s. */
 public class GenCallCodeUtils {
@@ -160,18 +165,55 @@ public class GenCallCodeUtils {
       params.addAll(
           getPositionalParams((CallBasicNode) callNode, exprTranslator, hasVariant(callNode)));
       maybeAddVariantParam(callNode, exprTranslator, params);
-      call = callee.positionalStyle().get().call(params);
+      call = generateCallExpr(callNode, callee.positionalStyle().get(), params);
     } else {
       List<Expression> params = new ArrayList<>();
       params.add(genObjToPass(callNode, exprTranslator));
       params.add(JsRuntime.IJ_DATA);
       maybeAddVariantParam(callNode, exprTranslator, params);
-      call = callee.objectStyle().call(params);
+      call = generateCallExpr(callNode, callee.objectStyle(), params);
     }
     if (callNode.getEscapingDirectives().isEmpty()) {
       return call;
     }
     return applyEscapingDirectives(call, callNode);
+  }
+
+  /**
+   * Like gen(), but if the call is a NodeBuilder, return a wrapping html output buffer so that it
+   * can be evaluated e.g. in message placeholders.
+   */
+  public Expression genStandalone(CallNode callNode, TranslateExprNodeVisitor exprTranslator) {
+    Expression callExpr = gen(callNode, exprTranslator);
+    return useNodeBuilder(callNode) ? createHtmlOutputBufferFunction().call(callExpr) : callExpr;
+  }
+
+  private Expression generateCallExpr(
+      CallNode callNode, Expression callee, List<Expression> params) {
+    if (useNodeBuilder(callNode)) {
+      Expression callExpr = callee.call(params);
+      return createNodeBuilderFunction()
+          .call(
+              // When using a node builder, we need place the try/catch inside of the lambda. That
+              // is done here.
+              // (When not using node builder, we need to place the output variable concatenation
+              // statement inside of a try/catch. That is done in GenJsTemplateBodyVisitor.)
+              callNode.isErrorFallbackSkip()
+                  ? Expressions.tsArrowFunction(
+                      ImmutableList.of(
+                          TryCatch.create(
+                              Return.create(callExpr),
+                              Return.create(Expressions.stringLiteral("")))))
+                  : Expressions.tsArrowFunction(callExpr));
+    } else {
+      return callee.call(params);
+    }
+  }
+
+  public boolean useNodeBuilder(CallNode callNode) {
+    return state.outputVarHandler.currentOutputVarStyle() == OutputVarHandler.Style.LAZY
+        && callNode instanceof CallBasicNode
+        && ((CallBasicNode) callNode).isLazy();
   }
 
   public static boolean hasVariant(CallNode callNode) {
@@ -422,15 +464,19 @@ public class GenCallCodeUtils {
         CallParamContentNode cpcn = (CallParamContentNode) child;
 
         if (isComputableAsJsExprsVisitor.exec(cpcn)) {
-          List<Expression> chunks = state.createJsExprsVisitor().exec(cpcn);
-          value = Expressions.concatForceString(chunks);
+
+          state.outputVarHandler.pushOutputVarForEvalOnly(
+              OutputVarHandler.outputStyleForBlock(cpcn));
+          List<Expression> contentChunks = state.createJsExprsVisitor().exec(cpcn);
+          state.outputVarHandler.popOutputVar();
+
+          value = maybeWrapContent(state.translationContext.codeGenerator(), cpcn, contentChunks);
         } else {
           // This is a param with content that cannot be represented as JS expressions, so we assume
-          // that code has been generated to define the temporary variable 'param<n>'.
+          // that code has been generated to define the temporary variable 'param<n>'. The param
+          // will already be wrapped in the appropriate SanitizedContent if needed.
           value = Id.create("param" + cpcn.getId());
         }
-
-        value = maybeWrapContent(state.translationContext.codeGenerator(), cpcn, value);
       }
       params.put(child.getKey().identifier(), value);
     }
@@ -452,6 +498,15 @@ public class GenCallCodeUtils {
     return defaultParams;
   }
 
+  @Nullable
+  protected Expression maybeWrapWithOutputBuffer(
+      CallParamContentNode node, List<Expression> exprs) {
+    if (OutputVarHandler.outputStyleForBlock(node) == OutputVarHandler.Style.LAZY) {
+      return createHtmlOutputBufferFunction().call(exprs);
+    }
+    return null;
+  }
+
   /**
    * If the param node had a content kind specified, it was autoescaped in the corresponding
    * context. Hence the result of evaluating the param block is wrapped in a SanitizedContent
@@ -462,7 +517,13 @@ public class GenCallCodeUtils {
    * internal blocks.
    */
   protected Expression maybeWrapContent(
-      CodeChunk.Generator generator, CallParamContentNode node, Expression content) {
+      CodeChunk.Generator generator, CallParamContentNode node, List<Expression> exprs) {
+    Expression value = maybeWrapWithOutputBuffer(node, exprs);
+    if (value != null) {
+      return value;
+    }
+
+    Expression content = Expressions.concatForceString(exprs);
     if (node.getContentKind() == SanitizedContentKind.TEXT) {
       return content;
     }

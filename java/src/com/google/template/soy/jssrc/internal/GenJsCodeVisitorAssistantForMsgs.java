@@ -574,7 +574,7 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractReturningSoyNodeVi
 
         Expression call =
             genCallCodeUtils
-                .gen(callNode, owner.createExprTranslator())
+                .genStandalone(callNode, owner.createExprTranslator())
                 .withInitialStatements(decls);
         contentChunks.add(call);
       } else {
