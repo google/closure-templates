@@ -19,6 +19,7 @@ package com.google.template.soy.soytree;
 import static com.google.common.collect.Sets.union;
 
 import com.google.template.soy.base.SourceFilePath;
+import com.google.template.soy.base.internal.SoyFileKind;
 import java.util.Set;
 
 /** Metadata about a soy file that is available as soon as its AST is parsed. */
@@ -65,4 +66,6 @@ public interface PartialFileMetadata {
   default boolean hasTypeDef(String shortName) {
     return getTypeDefNames().contains(shortName);
   }
+
+  SoyFileKind getSoyFileKind();
 }

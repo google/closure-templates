@@ -18,7 +18,6 @@ package com.google.template.soy.soytree;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLogicalPath;
-import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.TypeReference;
 import com.google.template.soy.types.FunctionType;
 import com.google.template.soy.types.NamedType;
@@ -55,6 +54,22 @@ public interface FileMetadata extends PartialFileMetadata {
 
     /** Java object version of {@link JavaImplP}. */
     interface JavaImpl {
+      /** Java object version of {@link JavaImplP.MethodType}. */
+      enum MethodType {
+        STATIC,
+        INSTANCE,
+        INTERFACE,
+        STATIC_INTERFACE;
+
+        public boolean isStatic() {
+          return this == STATIC || this == STATIC_INTERFACE;
+        }
+
+        public boolean isInterface() {
+          return this == INTERFACE || this == STATIC_INTERFACE;
+        }
+      }
+
       boolean isAuto();
 
       String className();
@@ -65,7 +80,7 @@ public interface FileMetadata extends PartialFileMetadata {
 
       ImmutableList<TypeReference> paramTypes();
 
-      String type();
+      MethodType type();
     }
   }
 
@@ -97,6 +112,4 @@ public interface FileMetadata extends PartialFileMetadata {
   TypeDef getTypeDef(String name);
 
   Collection<? extends TypeDef> getTypeDefs();
-
-  SoyFileKind getSoyFileKind();
 }

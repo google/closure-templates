@@ -165,17 +165,4 @@ public final class ExternNode extends AbstractParentCommandNode<ExternImplNode>
   public ExternNode copy(CopyState copyState) {
     return new ExternNode(this, copyState);
   }
-
-  public boolean requiresRenderContext() {
-    return getJavaImpl()
-        .map(
-            j -> {
-              if (getType().getParameters().stream()
-                  .anyMatch(p -> p.getType() instanceof FunctionType)) {
-                return true;
-              }
-              return j.requiresRenderContext();
-            })
-        .orElse(false);
-  }
 }

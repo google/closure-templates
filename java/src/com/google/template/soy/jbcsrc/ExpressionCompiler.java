@@ -34,6 +34,7 @@ import static com.google.template.soy.jbcsrc.restricted.SoyExpression.asBoxedVal
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.base.internal.Identifier;
+import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.exprtree.AbstractLocalVarDefn;
 import com.google.template.soy.exprtree.AbstractOperatorNode;
 import com.google.template.soy.exprtree.AbstractReturningExprNodeVisitor;
@@ -124,6 +125,9 @@ import com.google.template.soy.shared.restricted.SoyMethod;
 import com.google.template.soy.shared.restricted.SoySourceFunctionMethod;
 import com.google.template.soy.soytree.ConstNode;
 import com.google.template.soy.soytree.FileMetadata.Extern;
+import com.google.template.soy.soytree.FileMetadata.Extern.JavaImpl;
+import com.google.template.soy.soytree.JavaImplNode;
+import com.google.template.soy.soytree.PartialFileMetadata;
 import com.google.template.soy.soytree.PartialFileSetMetadata;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
@@ -1326,12 +1330,14 @@ final class ExpressionCompiler {
 
     @Override
     SoyExpression visitSymbolVar(VarRefNode varRef, SymbolVar symbolVar) {
-      String namespace = fileSetMetadata.getNamespaceForPath(symbolVar.getSourceFilePath());
+      PartialFileMetadata owningFile =
+          fileSetMetadata.getPartialFile(symbolVar.getSourceFilePath());
+      String namespace = owningFile.getNamespace();
       TypeInfo typeInfo = TypeInfo.createClass(Names.javaClassNameFromSoyNamespace(namespace));
       Expression renderContext = parameters.getRenderContext();
       if (symbolVar.getSymbolKind() == SymbolKind.CONST) {
-        if (!symbolVar.isImported()) {
-          // Fast path for local consts that don't need RenderContext.
+        if (owningFile.getSoyFileKind() == SoyFileKind.SRC) {
+          // Statically link consts in this compilation unit that don't need RenderContext.
           ConstNode constNode = lookupConstNode(symbolVar);
           if (constNode != null && canCompileToConstant(constNode, constNode.getExpr())) {
             var type = ConstantsCompiler.getConstantRuntimeType(symbolVar.type());
@@ -1374,6 +1380,13 @@ final class ExpressionCompiler {
 
     private ConstNode lookupConstNode(SymbolVar symbol) {
       SoyFileNode file = context.getNearestAncestor(SoyFileNode.class);
+      if (file != null && !file.getFilePath().asLogicalPath().equals(symbol.getSourceFilePath())) {
+        file =
+            file.getParent().getChildren().stream()
+                .filter(f -> f.getFilePath().asLogicalPath().equals(symbol.getSourceFilePath()))
+                .findFirst()
+                .orElse(null);
+      }
       if (file != null) {
         return file.getConstants().stream()
             .filter(c -> c.getVar().equals(symbol))
@@ -1983,7 +1996,8 @@ final class ExpressionCompiler {
     }
 
     private SoyExpression callExtern(Extern extern, List<ExprNode> params) {
-      String namespace = fileSetMetadata.getNamespaceForPath(extern.getPath());
+      PartialFileMetadata owningFile = fileSetMetadata.getPartialFile(extern.getPath());
+      String namespace = owningFile.getNamespace();
       TypeInfo externOwner = TypeInfo.createClass(Names.javaClassNameFromSoyNamespace(namespace));
       SoyRuntimeType soyReturnType =
           ExternCompiler.getRuntimeType(extern.getSignature().getReturnType());
@@ -1996,20 +2010,13 @@ final class ExpressionCompiler {
             adaptExternArg(
                 visit(params.get(i)), extern.getSignature().getParameters().get(i).getType()));
       }
-      // Dispatch directly for locally defined externs
-      var soyFileNode = context.getNearestAncestor(SoyFileNode.class);
+
+      // Dispatch directly for externs defined in this compilation unit.
+      boolean linkStatically = owningFile.getSoyFileKind() == SoyFileKind.SRC;
 
       Expression externCall;
-      if (namespace.equals(soyFileNode.getNamespace())) {
-        var externNode =
-            soyFileNode.getExterns().stream()
-                .filter(
-                    e ->
-                        e.getIdentifier().identifier().equals(extern.getName())
-                            && e.getType().equals(extern.getSignature()))
-                .findFirst()
-                .get();
-        boolean javaImplRequiresRenderContext = externNode.requiresRenderContext();
+      if (linkStatically) {
+        boolean javaImplRequiresRenderContext = requiresRenderContext(extern);
         if (javaImplRequiresRenderContext) {
           args.add(0, parameters.getRenderContext());
         }
@@ -2469,5 +2476,20 @@ final class ExpressionCompiler {
       }
       return false;
     }
+  }
+
+  static boolean requiresRenderContext(Extern extern) {
+    JavaImpl javaImpl = extern.getJavaImpl();
+    if (javaImpl == null) {
+      return false; // Will error elsewhere.
+    }
+    FunctionType type = extern.getSignature();
+    if (type.getParameters().stream().anyMatch(p -> p.getType() instanceof FunctionType)) {
+      return true;
+    }
+    return javaImpl.isAuto()
+        || !javaImpl.type().isStatic()
+        || javaImpl.paramTypes().stream()
+            .anyMatch(t -> JavaImplNode.IMPLICIT_PARAMS.contains(t.className()));
   }
 }

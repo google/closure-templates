@@ -20,7 +20,6 @@ import static com.google.common.base.Strings.emptyToNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Ascii;
 import com.google.common.base.Converter;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
@@ -176,7 +175,7 @@ public final class TemplateMetadataSerializer {
                         j.paramTypes().stream()
                             .map(TemplateMetadataSerializer::typeProto)
                             .collect(toImmutableList()))
-                    .setMethodType(JavaImplP.MethodType.valueOf(Ascii.toUpperCase(j.type()))));
+                    .setMethodType(JavaImplP.MethodType.valueOf(j.type().name())));
           }
         });
     return builder.build();

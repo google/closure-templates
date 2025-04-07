@@ -46,8 +46,10 @@ import com.google.template.soy.jbcsrc.runtime.JbcSrcExternRuntime;
 import com.google.template.soy.jbcsrc.shared.Names;
 import com.google.template.soy.plugin.java.restricted.MethodSignature;
 import com.google.template.soy.soytree.ExternNode;
+import com.google.template.soy.soytree.FileMetadata.Extern;
 import com.google.template.soy.soytree.FileSetMetadata;
 import com.google.template.soy.soytree.JavaImplNode;
+import com.google.template.soy.soytree.Metadata;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.types.FunctionType;
 import com.google.template.soy.types.FunctionType.Parameter;
@@ -86,6 +88,7 @@ public final class ExternCompiler {
   private final SoyClassWriter writer;
   private final JavaSourceFunctionCompiler javaSourceFunctionCompiler;
   private final FileSetMetadata fileSetMetadata;
+  private final Extern externMetadata;
 
   ExternCompiler(
       ExternNode extern,
@@ -96,6 +99,7 @@ public final class ExternCompiler {
     this.writer = writer;
     this.javaSourceFunctionCompiler = javaSourceFunctionCompiler;
     this.fileSetMetadata = fileSetMetadata;
+    this.externMetadata = Metadata.forAst(extern);
   }
 
   public void compile() {
@@ -118,7 +122,7 @@ public final class ExternCompiler {
     }
 
     JavaImplNode javaImpl = extern.getJavaImpl().get();
-    requiresRenderContext = extern.requiresRenderContext();
+    requiresRenderContext = ExpressionCompiler.requiresRenderContext(externMetadata);
     Method memberMethod =
         buildMemberMethod(
             extern.getIdentifier().identifier(),

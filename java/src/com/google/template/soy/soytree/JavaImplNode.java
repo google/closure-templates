@@ -19,6 +19,7 @@ package com.google.template.soy.soytree;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static java.util.stream.Collectors.joining;
 
+import com.google.common.base.Ascii;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -27,6 +28,7 @@ import com.google.template.soy.base.internal.TypeReference;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
+import com.google.template.soy.soytree.FileMetadata.Extern.JavaImpl.MethodType;
 import com.google.template.soy.soytree.SoyNode.StackContextNode;
 import java.util.List;
 import java.util.Optional;
@@ -37,7 +39,7 @@ import javax.annotation.Nullable;
 /** Java implementation for an extern. */
 public final class JavaImplNode extends AbstractBlockCommandNode
     implements ExternImplNode, StackContextNode {
-  private static final ImmutableSet<String> IMPLICIT_PARAMS =
+  public static final ImmutableSet<String> IMPLICIT_PARAMS =
       ImmutableSet.of(
           "com.google.template.soy.data.Dir",
           "com.google.template.soy.plugin.java.RenderCssHelper",
@@ -55,7 +57,7 @@ public final class JavaImplNode extends AbstractBlockCommandNode
       "static_interface"; // static method in a interface
   private static final ImmutableSet<String> ALLOWED_TYPES =
       ImmutableSet.of(TYPE_STATIC, TYPE_INSTANCE, TYPE_INTERFACE, TYPE_STATIC_INTERFACE);
-  public static final String DEFAULT_TYPE = TYPE_STATIC;
+  public static final MethodType DEFAULT_TYPE = MethodType.STATIC;
 
   private static final SoyErrorKind INVALID_IMPL_ATTRIBUTE =
       SoyErrorKind.of("Invalid attribute ''{0}''.");
@@ -182,18 +184,16 @@ public final class JavaImplNode extends AbstractBlockCommandNode
     return methodName.getValue();
   }
 
-  public String type() {
-    return type != null ? type.getValue() : DEFAULT_TYPE;
+  public MethodType type() {
+    return type != null ? MethodType.valueOf(Ascii.toUpperCase(type.getValue())) : DEFAULT_TYPE;
   }
 
   public boolean isStatic() {
-    String t = type();
-    return TYPE_STATIC.equals(t) || TYPE_STATIC_INTERFACE.equals(t);
+    return type().isStatic();
   }
 
   public boolean isInterface() {
-    String t = type();
-    return TYPE_INTERFACE.equals(t) || TYPE_STATIC_INTERFACE.equals(t);
+    return type().isInterface();
   }
 
   public ImmutableList<TypeReference> paramTypes() {
@@ -202,16 +202,6 @@ public final class JavaImplNode extends AbstractBlockCommandNode
 
   public static boolean isParamImplicit(String param) {
     return IMPLICIT_PARAMS.contains(param);
-  }
-
-  private boolean hasImplicitParams() {
-    return parsedParamTypes.stream().anyMatch(p -> IMPLICIT_PARAMS.contains(p.className()));
-  }
-
-  boolean requiresRenderContext() {
-    // We could filter out some cases where isAutoImpl()==true but we'd have to check several things
-    // like calling another extern, referencing a constant, calling xid() and other built-ins, etc.
-    return isAutoImpl() || (!isStatic() || hasImplicitParams());
   }
 
   public TypeReference returnType() {

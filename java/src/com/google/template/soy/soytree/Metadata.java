@@ -27,7 +27,6 @@ import static java.util.Comparator.comparing;
 
 import com.google.auto.value.AutoValue;
 import com.google.auto.value.extension.memoized.Memoized;
-import com.google.common.base.Ascii;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
@@ -700,6 +699,11 @@ public final class Metadata {
     public ImmutableSet<String> getTypeDefNames() {
       return typeDefNames;
     }
+
+    @Override
+    public SoyFileKind getSoyFileKind() {
+      return SoyFileKind.SRC;
+    }
   }
 
   public static FileMetadata forAst(SoyFileNode node) {
@@ -939,7 +943,7 @@ public final class Metadata {
               implP.getParamTypesList().stream()
                   .map(Metadata::protoToTypeReference)
                   .collect(toImmutableList()),
-              Ascii.toLowerCase(implP.getMethodType().name()));
+              JavaImpl.MethodType.valueOf(implP.getMethodType().name()));
         }
         return null;
       }
@@ -984,7 +988,7 @@ public final class Metadata {
 
       @Nullable
       @Override
-      public abstract String type();
+      public abstract MethodType type();
     }
   }
 
