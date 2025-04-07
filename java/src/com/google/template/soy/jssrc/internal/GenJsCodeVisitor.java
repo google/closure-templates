@@ -1855,7 +1855,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
         NamedType namedType = (NamedType) type;
         String alias = templateAliases.getNullable(namedType.getFqn());
         if (alias != null) {
-          return JsType.localTypedef(alias);
+          return JsType.localTypedef("!" + alias);
         }
       }
       return delegate.get(type, this);
