@@ -52,4 +52,9 @@ final class EscapeHtmlDirective implements ModernSoyJsSrcPrintDirective {
   public Expression applyForJsSrc(Expression value, List<Expression> args) {
     return SOYUTILS_DIRECTIVES.dotAccess("$$escapeHtml").call(value, INCREMENTAL_DOM);
   }
+
+  @Override
+  public boolean isJsImplNoOpForSanitizedHtml() {
+    return true;
+  }
 }

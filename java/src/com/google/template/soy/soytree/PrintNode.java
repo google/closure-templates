@@ -41,6 +41,7 @@ import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyNode.SplitLevelTopNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyNode.StatementNode;
+import com.google.template.soy.types.SoyType;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -256,6 +257,11 @@ public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNod
   @Override
   public PrintNode copy(CopyState copyState) {
     return new PrintNode(this, copyState);
+  }
+
+  public boolean isHtml() {
+    SoyType type = getExpr().getRoot().getType();
+    return type != null && type.getKind().isHtml();
   }
 
   /**

@@ -2618,7 +2618,7 @@ function $$maybeMakeImmutableProto(/** !Message*/ message) {
 const isContentKind_ = function(value, contentKind, constructor) {
   const ret = value != null && value.contentKind === contentKind;
   if (ret && constructor) {
-    asserts.assert(value.constructor === constructor);
+    asserts.assert(value instanceof constructor);
   }
   return ret;
 };
@@ -2712,6 +2712,145 @@ const $$bindFunctionParams =
     function(f, params) {
   return f.bind(null, ...params);
 };
+
+/** @define {boolean} Whether to do lazy execution. */
+const LAZY_EXECUTION = goog.define('soy.lazyexecution', true);
+
+/** @return {boolean} */
+function isLazyExecutionEnabled() {
+  if (!COMPILED) {
+    return isLazyExecutionEnabledUncompiled;
+  }
+  return LAZY_EXECUTION;
+}
+
+let isLazyExecutionEnabledUncompiled = LAZY_EXECUTION;
+
+/** @param {boolean} val */
+function setLazyExeuctionUncompiled(val) {
+  isLazyExecutionEnabledUncompiled = val;
+}
+
+/**
+ * @param {function(): !SanitizedHtml} lambda
+ * @return {!NodeBuilder|!SanitizedHtml}
+ */
+function $$createNodeBuilder(lambda) {
+  return isLazyExecutionEnabled() ? new NodeBuilder(lambda) : lambda();
+}
+
+class NodeBuilder {
+  /**
+   * @param {function(): *} target
+   */
+  constructor(target) {
+    this.target = target;
+  }
+
+  /** @return {*} */
+  render() {
+    return this.target();
+  }
+}
+
+/**
+ * Builds an output buffer for Soy JS.
+ *
+ * @param {...*} initialVal The initial value of the buffer.
+ * @return {!StringAppendingHtmlOutputBuffer|!ArrayHtmlOutputBuffer}
+ */
+const $$createHtmlOutputBuffer = function(...initialVal) {
+  return isLazyExecutionEnabled() ?
+      ArrayHtmlOutputBuffer.create(...initialVal) :
+      StringAppendingHtmlOutputBuffer.create(...initialVal);
+};
+
+class StringAppendingHtmlOutputBuffer extends SanitizedHtml {
+  /** @param {...*} initialVal The initial value of the buffer. */
+  constructor(...initialVal) {
+    super();
+    /** @type {string} */
+    this.content = initialVal.join('');
+  }
+
+  static create(...initialVal) {
+    /**
+     * @param {...*} initialVal
+     * @constructor
+     * @extends {SanitizedHtml}
+     */
+    function InstantiableCtor(...initialVal) {
+      /** @type {string} */
+      this.content = initialVal.join('');
+    }
+    // Security through obfuscation hack... See $$makeSanitizedContentFactory_
+    InstantiableCtor.prototype = StringAppendingHtmlOutputBuffer.prototype;
+    return new InstantiableCtor(...initialVal);
+  }
+
+  /** @param {*} val */
+  append(val) {
+    this.content += val;
+  }
+}
+
+class ArrayHtmlOutputBuffer extends SanitizedHtml {
+  /** @param {...*} initialVal The initial value of the buffer. */
+  constructor(...initialVal) {
+    super();
+    /** @type {!Array<*>} */
+    this.content = initialVal;
+  }
+
+  static create(...initialVal) {
+    /**
+     * @param {...*} initialVal
+     * @constructor
+     * @extends {SanitizedContent}
+     */
+    function InstantiableCtor(...initialVal) {
+      /** @type {!Array<*>} */
+      this.content = initialVal;
+    }
+    // Security through obfuscation hack... See $$makeSanitizedContentFactory_
+    InstantiableCtor.prototype = ArrayHtmlOutputBuffer.prototype;
+    return new InstantiableCtor(...initialVal);
+  }
+
+  /** @param {*} val */
+  append(val) {
+    this.content.push(val);
+  }
+
+  /** @return {string} */
+  render() {
+    let output = '';
+    for (let c of this.content) {
+      if (c instanceof ArrayHtmlOutputBuffer || c instanceof NodeBuilder) {
+        output += c.render();
+      } else {
+        output += c;
+      }
+    }
+    return output;
+  }
+
+  /**
+   * @override
+   * @return {string}
+   */
+  toString() {
+    return this.render();
+  }
+
+  /**
+   * @override
+   * @return {string}
+   */
+  getContent() {
+    return this.render();
+  }
+}
 
 exports = {
   $$maybeMakeImmutableProto,
@@ -2813,7 +2952,10 @@ exports = {
   $$internalCallMarkerDoNotUse,
   $$areYouAnInternalCaller,
   $$bindFunctionParams,
+  $$createNodeBuilder,
+  $$createHtmlOutputBuffer,
   // The following are exported just for tests
+  setLazyExeuctionUncompiled,
   $$balanceTags_,
   $$isRecord,
   $$isHtml,

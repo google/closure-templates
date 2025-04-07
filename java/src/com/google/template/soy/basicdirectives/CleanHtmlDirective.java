@@ -202,4 +202,9 @@ final class CleanHtmlDirective
     }
     return optionalSafeTagsArg;
   }
+
+  @Override
+  public boolean isJsImplNoOpForSanitizedHtml() {
+    return true;
+  }
 }
