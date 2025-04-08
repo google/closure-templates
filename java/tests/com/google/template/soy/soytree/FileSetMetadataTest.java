@@ -26,7 +26,6 @@ import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.SanitizedContentKind;
-import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
@@ -66,67 +65,6 @@ public final class FileSetMetadataTest {
     assertThatRegistry(registry).doesNotContainBasicTemplate("foo");
     assertThatRegistry(registry)
         .containsDelTemplate("ns.baz")
-        .definedAt(new SourceLocation(FILE_PATH, 6, 1, 7, 11));
-  }
-
-  /**
-   * Verify that file registries are merged properly when two files have the same name. This is
-   * important for cases where dummy names are used and may collide.
-   */
-  @Test
-  public void testFilesWithSameNames() {
-
-    // First, build and parse a file, and turn it into a "compilation unit".
-    ParseResult dependencyParseResult =
-        SoyFileSetParserBuilder.forSuppliers(
-                SoyFileSupplier.Factory.create(
-                    "{namespace ns}\n"
-                        + "/** Simple template. */\n"
-                        + "{template foo}\n"
-                        + "{/template}\n"
-                        + "/** Simple modifiable. */\n"
-                        + "{template baz modifiable='true'}\n"
-                        + "{/template}",
-                    FILE_PATH))
-            .parse();
-    CompilationUnitAndKind dependencyCompilationUnit =
-        CompilationUnitAndKind.create(
-            SoyFileKind.DEP,
-            TemplateMetadataSerializer.compilationUnitFromFileSet(
-                dependencyParseResult.fileSet(), dependencyParseResult.registry()));
-
-    // Now, parse another file with the same name, and feed the previous compilation unit in as a
-    // dependency.
-    FileSetMetadata registry =
-        SoyFileSetParserBuilder.forSuppliers(
-                SoyFileSupplier.Factory.create(
-                    "{namespace ns}\n"
-                        + "/** Simple template. */\n"
-                        + "{template foo2}\n"
-                        + "{/template}\n"
-                        + "/** Simple deltemplate. */\n"
-                        + "{template baz2 modifiable='true'}\n"
-                        + "{/template}",
-                    FILE_PATH))
-            .addCompilationUnits(ImmutableList.of(dependencyCompilationUnit))
-            .build()
-            .parse()
-            .registry();
-
-    // Now, make sure that the final registry was merged properly and all the templates from both
-    // files were retained.
-    assertThatRegistry(registry)
-        .containsBasicTemplate("ns.foo")
-        .definedAt(new SourceLocation(FILE_PATH));
-    assertThatRegistry(registry)
-        .containsBasicTemplate("ns.foo2")
-        .definedAt(new SourceLocation(FILE_PATH, 3, 1, 4, 11));
-    assertThatRegistry(registry).doesNotContainBasicTemplate("foo");
-    assertThatRegistry(registry)
-        .containsDelTemplate("ns.baz")
-        .definedAt(new SourceLocation(FILE_PATH));
-    assertThatRegistry(registry)
-        .containsDelTemplate("ns.baz2")
         .definedAt(new SourceLocation(FILE_PATH, 6, 1, 7, 11));
   }
 

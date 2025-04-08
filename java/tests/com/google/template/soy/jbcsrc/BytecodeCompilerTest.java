@@ -1219,11 +1219,6 @@ public class BytecodeCompilerTest {
                         "{/template}")));
     ParseResult parseResult1 = parser1.parse();
     CompilingClassLoader loader1 = createCompilingClassLoader(parser1, parseResult1);
-    CompilationUnitAndKind dependency1 =
-        CompilationUnitAndKind.create(
-            SoyFileKind.DEP,
-            TemplateMetadataSerializer.compilationUnitFromFileSet(
-                parseResult1.fileSet(), parseResult1.registry()));
 
     SoyFileSetParser parser1Recompiled =
         createParserForFileContents(
@@ -1238,6 +1233,11 @@ public class BytecodeCompilerTest {
     ParseResult parseResult1Recompiled = parser1Recompiled.parse();
     CompilingClassLoader loader1Recompiled =
         createCompilingClassLoader(parser1Recompiled, parseResult1Recompiled);
+    CompilationUnitAndKind dependency2 =
+        CompilationUnitAndKind.create(
+            SoyFileKind.DEP,
+            TemplateMetadataSerializer.compilationUnitFromFileSet(
+                parseResult1Recompiled.fileSet(), parseResult1Recompiled.registry()));
 
     SoyFileSetParser parser2 =
         createParserForFileContentsWithDependencies(
@@ -1252,7 +1252,7 @@ public class BytecodeCompilerTest {
                         "{sp}{call publicTemplate1 /}",
                         "{sp}{call publicTemplate1 /}",
                         "{/template}")),
-            ImmutableList.of(dependency1));
+            ImmutableList.of(dependency2));
     ParseResult parseResult2 = parser2.parse();
     CompilingClassLoader loader2 = createCompilingClassLoader(parser2, parseResult2);
 
@@ -1321,11 +1321,6 @@ public class BytecodeCompilerTest {
                         "{/template}")));
     ParseResult parseResult1 = parser1.parse();
     CompilingClassLoader loader1 = createCompilingClassLoader(parser1, parseResult1);
-    CompilationUnitAndKind dependency1 =
-        CompilationUnitAndKind.create(
-            SoyFileKind.DEP,
-            TemplateMetadataSerializer.compilationUnitFromFileSet(
-                parseResult1.fileSet(), parseResult1.registry()));
 
     SoyFileSetParser parser1Recompiled =
         createParserForFileContents(
@@ -1345,6 +1340,11 @@ public class BytecodeCompilerTest {
     ParseResult parseResult1Recompiled = parser1Recompiled.parse();
     CompilingClassLoader loader1Recompiled =
         createCompilingClassLoader(parser1Recompiled, parseResult1Recompiled);
+    CompilationUnitAndKind dependency2 =
+        CompilationUnitAndKind.create(
+            SoyFileKind.DEP,
+            TemplateMetadataSerializer.compilationUnitFromFileSet(
+                parseResult1Recompiled.fileSet(), parseResult1Recompiled.registry()));
 
     SoyFileSetParser parser2 =
         createParserForFileContentsWithDependencies(
@@ -1364,7 +1364,7 @@ public class BytecodeCompilerTest {
                         "{sp}{extern()}",
                         "{/template}",
                         "{template dummyTemplate visibility=\"private\"}dummy{/template}")),
-            ImmutableList.of(dependency1));
+            ImmutableList.of(dependency2));
     ParseResult parseResult2 = parser2.parse();
     CompilingClassLoader loader2 = createCompilingClassLoader(parser2, parseResult2);
 

@@ -349,26 +349,17 @@ public final class Metadata {
     public AstFileSetMetadata(FileSetMetadata deps, List<SoyFileNode> ast, ParseContext context) {
       this.context = context;
 
-      Map<SourceLogicalPath, FileMetadata> fullFileIndexBuilder = new LinkedHashMap<>();
+      ImmutableMap.Builder<SourceLogicalPath, FileMetadata> fullFileIndexBuilder =
+          ImmutableMap.builder();
       for (FileMetadata depFile : deps.getAllFiles()) {
         fullFileIndexBuilder.put(depFile.getPath().asLogicalPath(), depFile);
       }
       ast.forEach(
           f -> {
             FileMetadata astMetadata = new AstFileMetadata(f);
-            // Put AST file at end of iteration order.
-            FileMetadata protoMetadata =
-                fullFileIndexBuilder.remove(f.getFilePath().asLogicalPath());
             fullFileIndexBuilder.put(f.getFilePath().asLogicalPath(), astMetadata);
-            // Several unit tests require this behavior. It might be needed by some direct users
-            // of SoyFileSet.
-            if (protoMetadata != null
-                && protoMetadata.getNamespace().equals(astMetadata.getNamespace())) {
-              fullFileIndexBuilder.put(
-                  f.getFilePath().asLogicalPath(), merge(astMetadata, protoMetadata));
-            }
           });
-      fullFileIndex = ImmutableMap.copyOf(fullFileIndexBuilder);
+      fullFileIndex = fullFileIndexBuilder.buildOrThrow();
     }
 
     private ImmutableMap<String, TemplateMetadata> templateIndex() {
@@ -1001,82 +992,6 @@ public final class Metadata {
           proto.getTypeArgsList().stream()
               .map(Metadata::protoToTypeReference)
               .collect(toImmutableList()));
-    }
-  }
-
-  private static FileMetadata merge(FileMetadata primary, FileMetadata secondary) {
-    return new MergedFileMetadata(primary, secondary);
-  }
-
-  /**
-   * FileMetadata that overlays an AST FileMetadata on a dep FileMetadata. Some compiler use cases
-   * require this (?).
-   */
-  private static class MergedFileMetadata extends AbstractFileMetadata {
-
-    private final FileMetadata primary;
-    private final ImmutableMap<String, Constant> constantIndex;
-    private final ImmutableMap<String, TypeDef> typeDefIndex;
-    private final ImmutableMap<String, TemplateMetadata> templateIndex;
-
-    public MergedFileMetadata(FileMetadata primary, FileMetadata secondary) {
-      this.primary = primary;
-
-      Map<String, Constant> constants = new LinkedHashMap<>();
-      secondary.getConstants().forEach(c -> constants.put(c.getName(), c));
-      primary.getConstants().forEach(c -> constants.put(c.getName(), c));
-      constantIndex = ImmutableMap.copyOf(constants);
-
-      Map<String, TypeDef> typeDefs = new LinkedHashMap<>();
-      secondary.getTypeDefs().forEach(c -> typeDefs.put(c.getName(), c));
-      primary.getTypeDefs().forEach(c -> typeDefs.put(c.getName(), c));
-      typeDefIndex = ImmutableMap.copyOf(typeDefs);
-
-      Map<String, TemplateMetadata> templates = new LinkedHashMap<>();
-      secondary.getTemplates().forEach(t -> templates.put(t.getTemplateName(), t));
-      primary.getTemplates().forEach(t -> templates.put(t.getTemplateName(), t));
-      templateIndex = ImmutableMap.copyOf(templates);
-    }
-
-    @Override
-    protected ImmutableMap<String, Constant> constantIndex() {
-      return constantIndex;
-    }
-
-    @Override
-    protected ImmutableListMultimap<String, ? extends Extern> externIndex() {
-      return ((AbstractFileMetadata) primary).externIndex();
-    }
-
-    @Override
-    public ImmutableCollection<TemplateMetadata> getTemplates() {
-      // Don't report any duplicates with merged since one file overwrites the other.
-      return templateIndex.values();
-    }
-
-    @Override
-    protected ImmutableMap<String, TemplateMetadata> templateIndex() {
-      return templateIndex;
-    }
-
-    @Override
-    protected ImmutableMap<String, ? extends TypeDef> typeDefIndex() {
-      return typeDefIndex;
-    }
-
-    @Override
-    public SourceFilePath getPath() {
-      return primary.getPath();
-    }
-
-    @Override
-    public String getNamespace() {
-      return primary.getNamespace();
-    }
-
-    @Override
-    public SoyFileKind getSoyFileKind() {
-      return primary.getSoyFileKind();
     }
   }
 
