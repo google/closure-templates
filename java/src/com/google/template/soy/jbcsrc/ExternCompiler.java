@@ -24,6 +24,7 @@ import static java.util.Arrays.stream;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Streams;
+import com.google.template.soy.base.internal.TypeReference;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.exprtree.DataAccessNode;
 import com.google.template.soy.exprtree.VarRefNode;
@@ -47,6 +48,7 @@ import com.google.template.soy.jbcsrc.shared.Names;
 import com.google.template.soy.plugin.java.restricted.MethodSignature;
 import com.google.template.soy.soytree.ExternNode;
 import com.google.template.soy.soytree.FileMetadata.Extern;
+import com.google.template.soy.soytree.FileMetadata.Extern.JavaImpl;
 import com.google.template.soy.soytree.FileSetMetadata;
 import com.google.template.soy.soytree.JavaImplNode;
 import com.google.template.soy.soytree.Metadata;
@@ -122,6 +124,8 @@ public final class ExternCompiler {
     }
 
     JavaImplNode javaImpl = extern.getJavaImpl().get();
+    // TODO(b/408029720): Do not code gen if private and not auto java. Private externs from
+    //    function pointers are still invoked via the dynamic path.
     requiresRenderContext = ExpressionCompiler.requiresRenderContext(externMetadata);
     Method memberMethod =
         buildMemberMethod(
@@ -205,14 +209,12 @@ public final class ExternCompiler {
       body = nodeCompiler.compile(javaImpl);
     } else {
       TypeInfo externClass = TypeInfo.create(javaImpl.className(), javaImpl.isInterface());
-      TypeInfo returnType = getTypeInfoLoadedIfPossible(javaImpl.returnType().className());
+      Type returnType = getTypeInfoForJavaImpl(javaImpl.returnType().className()).type();
       TypeInfo[] paramTypesInfos =
           javaImpl.paramTypes().stream()
-              .map(d -> getTypeInfoLoadedIfPossible(d.className()))
+              .map(d -> getTypeInfoForJavaImpl(d.className()))
               .toArray(TypeInfo[]::new);
       Type[] paramTypes = stream(paramTypesInfos).map(TypeInfo::type).toArray(Type[]::new);
-
-      Method externMethod = new Method(javaImpl.methodName(), returnType.type(), paramTypes);
 
       List<Expression> adaptedParams = new ArrayList<>();
       if (!javaImpl.isStatic()) {
@@ -234,22 +236,12 @@ public final class ExternCompiler {
         adaptedParams.add(adaptImplicitParameter(vars, paramTypesInfos[i]));
       }
 
-      MethodRef extMethodRef;
-      if (javaImpl.isStatic()) {
-        extMethodRef =
-            MethodRef.createStaticMethod(externClass, externMethod, MethodPureness.NON_PURE);
-      } else if (javaImpl.isInterface()) {
-        extMethodRef =
-            MethodRef.createInterfaceMethod(externClass, externMethod, MethodPureness.NON_PURE);
-      } else {
-        extMethodRef =
-            MethodRef.createInstanceMethod(externClass, externMethod, MethodPureness.NON_PURE);
-      }
-
+      MethodRef extMethodRef =
+          getMethodRef(javaImpl.type(), externClass, javaImpl.methodName(), returnType, paramTypes);
       body =
           Statement.returnExpression(
               adaptReturnType(
-                  returnType.type(),
+                  returnType,
                   extern.getType().getReturnType(),
                   extMethodRef.invoke(adaptedParams)));
     }
@@ -264,6 +256,33 @@ public final class ExternCompiler {
         paramSet.generateTableEntries(adapter);
       }
     }.writeMethod(methodAccess(), memberMethod, writer);
+  }
+
+  public static MethodRef getMethodRef(JavaImpl java) {
+    return getMethodRef(
+        java.type(),
+        getTypeInfoForJavaImpl(java.className(), java.type().isInterface()),
+        java.method(),
+        getTypeInfoForJavaImpl(java.returnType().className()).type(),
+        java.paramTypes().stream()
+            .map(t -> getTypeInfoForJavaImpl(t.className()).type())
+            .toArray(Type[]::new));
+  }
+
+  private static MethodRef getMethodRef(
+      JavaImpl.MethodType methodType,
+      TypeInfo externClass,
+      String methodName,
+      Type returnType,
+      Type[] paramTypes) {
+    Method externMethod = new Method(methodName, returnType, paramTypes);
+    if (methodType.isStatic()) {
+      return MethodRef.createStaticMethod(externClass, externMethod, MethodPureness.NON_PURE);
+    } else if (methodType.isInterface()) {
+      return MethodRef.createInterfaceMethod(externClass, externMethod, MethodPureness.NON_PURE);
+    } else {
+      return MethodRef.createInstanceMethod(externClass, externMethod, MethodPureness.NON_PURE);
+    }
   }
 
   private int methodAccess() {
@@ -310,12 +329,21 @@ public final class ExternCompiler {
     return new Method(symbol, returnType, args);
   }
 
-  private static TypeInfo getTypeInfoLoadedIfPossible(String s) {
+  static TypeInfo getTypeInfoForJavaImpl(String s) {
+    return getTypeInfoForJavaImpl(s, false);
+  }
+
+  static TypeInfo getTypeInfoForJavaImpl(String s, boolean isInterface) {
     try {
       return TypeInfo.create(MethodSignature.forName(s));
     } catch (ClassNotFoundException e) {
-      return TypeInfo.create(s, false);
+      return TypeInfo.create(s, isInterface);
     }
+  }
+
+  static Expression adaptParameter(
+      Expression param, TypeReference javaType, SoyType soyType, TemplateParameterLookup vars) {
+    return adaptParameter(param, getTypeInfoForJavaImpl(javaType.className()), soyType, vars);
   }
 
   /**
@@ -324,7 +352,7 @@ public final class ExternCompiler {
    * <p>Extern implementations expect Java null for Soy null values.
    */
   private static Expression adaptParameter(
-      Expression param, TypeInfo javaTypeInfo, SoyType soyType, ConstantVariables vars) {
+      Expression param, TypeInfo javaTypeInfo, SoyType soyType, TemplateParameterLookup vars) {
     Type javaType = javaTypeInfo.type();
     SoyExpression actualParam =
         param instanceof SoyExpression
@@ -531,8 +559,7 @@ public final class ExternCompiler {
    *
    * <p>In some cases (e.g. List) we happen to tolerate the extern returning null.
    */
-  private static Expression adaptReturnType(
-      Type returnType, SoyType soyReturnType, Expression externCall) {
+  static Expression adaptReturnType(Type returnType, SoyType soyReturnType, Expression externCall) {
     boolean nullish = SoyTypes.isNullish(soyReturnType);
     Type externType = externCall.resultType();
 

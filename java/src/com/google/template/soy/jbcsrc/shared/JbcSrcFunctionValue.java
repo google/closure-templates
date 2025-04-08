@@ -152,7 +152,7 @@ public abstract class JbcSrcFunctionValue extends SoyValue {
         method = declaredMethod;
       }
     }
-    return Preconditions.checkNotNull(method);
+    return Preconditions.checkNotNull(method, "%s#%s", clazz.getName(), name);
   }
 
   /** Adapt return value of Soy extern to what Java expects. */

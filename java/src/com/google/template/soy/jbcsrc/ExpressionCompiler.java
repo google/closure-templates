@@ -35,6 +35,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.SoyFileKind;
+import com.google.template.soy.base.internal.TypeReference;
 import com.google.template.soy.exprtree.AbstractLocalVarDefn;
 import com.google.template.soy.exprtree.AbstractOperatorNode;
 import com.google.template.soy.exprtree.AbstractReturningExprNodeVisitor;
@@ -1999,49 +2000,82 @@ final class ExpressionCompiler {
       PartialFileMetadata owningFile = fileSetMetadata.getPartialFile(extern.getPath());
       String namespace = owningFile.getNamespace();
       TypeInfo externOwner = TypeInfo.createClass(Names.javaClassNameFromSoyNamespace(namespace));
-      SoyRuntimeType soyReturnType =
-          ExternCompiler.getRuntimeType(extern.getSignature().getReturnType());
+      FunctionType functionType = extern.getSignature();
+      SoyRuntimeType soyReturnType = ExternCompiler.getRuntimeType(functionType.getReturnType());
+      JavaImpl javaImpl = extern.getJavaImpl();
+      boolean linkStatically = javaImpl != null && owningFile.getSoyFileKind() == SoyFileKind.SRC;
+      boolean requiresRenderContext = !linkStatically || requiresRenderContext(extern);
+
       if (extern.isJavaAsync()) {
         soyReturnType = soyReturnType.box();
       }
       List<Expression> args = new ArrayList<>();
-      for (int i = 0; i < params.size(); i++) {
-        args.add(
-            adaptExternArg(
-                visit(params.get(i)), extern.getSignature().getParameters().get(i).getType()));
-      }
 
       // Dispatch directly for externs defined in this compilation unit.
-      boolean linkStatically = owningFile.getSoyFileKind() == SoyFileKind.SRC;
+      if (linkStatically && !javaImpl.isAuto()) {
+        TypeInfo externClass = TypeInfo.create(javaImpl.className(), javaImpl.type().isInterface());
+        // Collect args for calling Java impl directly.
+        if (!javaImpl.type().isStatic()) {
+          args.add(
+              parameters
+                  .getRenderContext()
+                  .getPluginInstance(javaImpl.className())
+                  .checkedCast(externClass.type()));
+        }
+        int i = 0;
+        for (TypeReference paramType : javaImpl.paramTypes()) {
+          if (paramType.className().equals("com.google.template.soy.data.Dir")) {
+            args.add(parameters.getRenderContext().getBidiGlobalDirDir());
+          } else if (paramType
+              .className()
+              .equals("com.google.template.soy.plugin.java.RenderCssHelper")) {
+            args.add(parameters.getRenderContext().getRenderCssHelper());
+          } else if (paramType.className().equals("com.ibm.icu.util.ULocale")) {
+            args.add(parameters.getRenderContext().getULocale());
+          } else {
+            SoyType soyType = functionType.getParameters().get(i).getType();
+            // TODO(b/408029720): Avoid double boxing here.
+            args.add(
+                ExternCompiler.adaptParameter(
+                    adaptExternArg(visit(params.get(i)), soyType), paramType, soyType, parameters));
+            i++;
+          }
+        }
+      } else {
+        if (requiresRenderContext) {
+          args.add(parameters.getRenderContext());
+        }
+        for (int i = 0; i < params.size(); i++) {
+          args.add(
+              adaptExternArg(visit(params.get(i)), functionType.getParameters().get(i).getType()));
+        }
+      }
 
       Expression externCall;
       if (linkStatically) {
-        boolean javaImplRequiresRenderContext = requiresRenderContext(extern);
-        if (javaImplRequiresRenderContext) {
-          args.add(0, parameters.getRenderContext());
+        if (javaImpl.isAuto()) {
+          Method asmMethod =
+              ExternCompiler.buildMemberMethod(
+                  extern.getName(), functionType, requiresRenderContext, extern.isJavaAsync());
+          MethodRef ref =
+              MethodRef.createStaticMethod(externOwner, asmMethod, MethodPureness.NON_PURE);
+          externCall = ref.invoke(args);
+        } else {
+          externCall = ExternCompiler.getMethodRef(javaImpl).invoke(args);
+          externCall =
+              ExternCompiler.adaptReturnType(
+                  ExternCompiler.getTypeInfoForJavaImpl(javaImpl.returnType().className()).type(),
+                  functionType.getReturnType(),
+                  externCall);
         }
-        Method asmMethod =
-            ExternCompiler.buildMemberMethod(
-                extern.getName(),
-                extern.getSignature(),
-                javaImplRequiresRenderContext,
-                extern.isJavaAsync());
-        MethodRef ref =
-            MethodRef.createStaticMethod(externOwner, asmMethod, MethodPureness.NON_PURE);
-        externCall = ref.invoke(args);
       } else {
-
         // For externs defined in other files use invokeDynamic so that we can support the
         // classloader fallback.
         // To support those, we always need to pass the render context even when not otherwise
         // required, so that we can dynamically resolve the target.
         Method asmMethod =
             ExternCompiler.buildMemberMethod(
-                extern.getName(),
-                extern.getSignature(),
-                /* requiresRenderContext= */ true,
-                extern.isJavaAsync());
-        args.add(0, parameters.getRenderContext());
+                extern.getName(), functionType, requiresRenderContext, extern.isJavaAsync());
         externCall =
             new Expression(soyReturnType.runtimeType()) {
               @Override
