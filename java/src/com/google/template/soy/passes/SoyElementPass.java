@@ -38,6 +38,7 @@ import com.google.template.soy.soytree.FileSetMetadata;
 import com.google.template.soy.soytree.HtmlElementMetadataP;
 import com.google.template.soy.soytree.HtmlOpenTagNode;
 import com.google.template.soy.soytree.HtmlTagNode;
+import com.google.template.soy.soytree.IfNode;
 import com.google.template.soy.soytree.KeyNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SkipNode;
@@ -45,6 +46,7 @@ import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.BlockNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
+import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TagName;
 import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateElementNode;
@@ -103,6 +105,10 @@ final class SoyElementPass implements CompilerFileSetPass {
           SoyNode.Kind.DEBUGGER_NODE,
           SoyNode.Kind.LOG_NODE);
 
+  static final ImmutableSet<SoyNode.Kind> ALLOWED_IF_CHILD_NODES =
+      Sets.immutableEnumSet(
+          SoyNode.Kind.IF_NODE, SoyNode.Kind.IF_COND_NODE, SoyNode.Kind.IF_ELSE_NODE);
+
   private static final HtmlElementMetadataP DEFAULT_HTML_METADATA =
       HtmlElementMetadataP.newBuilder().setIsHtmlElement(false).setIsVelogged(false).build();
 
@@ -140,6 +146,22 @@ final class SoyElementPass implements CompilerFileSetPass {
       getTemplateMetadata(template, templatesInLibrary, visited);
     }
     return Result.CONTINUE;
+  }
+
+  private static boolean isAllowedInIfNode(SoyNode node) {
+    if (ALLOWED_CHILD_NODES.contains(node.getKind())
+        || ALLOWED_IF_CHILD_NODES.contains(node.getKind())) {
+      return true;
+    }
+
+    if (!(node instanceof PrintNode)) {
+      return false;
+    }
+    ExprNode expr = ((PrintNode) node).getExpr().getRoot();
+    if (!(expr instanceof FunctionNode)) {
+      return false;
+    }
+    return ((FunctionNode) expr).getFunctionName().equals("noopInternal");
   }
 
   /**
@@ -180,7 +202,11 @@ final class SoyElementPass implements CompilerFileSetPass {
       if (ALLOWED_CHILD_NODES.contains(child.getKind())) {
         continue;
       }
-
+      if (child instanceof IfNode
+          && SoyTreeUtils.allNodesOfType(child, SoyNode.class)
+              .allMatch((n) -> isAllowedInIfNode(n))) {
+        continue;
+      }
       // If the template is a static call, then it may be a Soy element if it's the last child.
       // TODO(tomnguyen): Merge this logic with velog validation pass.
       // TODO(user): There is no way to make guarantees about the root element of a dynamic
