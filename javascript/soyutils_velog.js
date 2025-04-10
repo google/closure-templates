@@ -196,8 +196,10 @@ class ElementMetadata {
    * @param {number} id
    * @param {?Message|undefined} data
    * @param {boolean} logOnly
+   * @param {?ReadonlyLoggableElementMetadata|undefined=}
+   *     loggableElementMetadata
    */
-  constructor(id, data, logOnly) {
+  constructor(id, data, logOnly, loggableElementMetadata = undefined) {
     /**
      * The identifier for the logging element
      * @const {number}
@@ -217,6 +219,12 @@ class ElementMetadata {
      * @const {boolean}
      */
     this.logOnly = logOnly;
+
+    /**
+     * Additional metadata to be included with the loggable element.
+     * @const {?ReadonlyLoggableElementMetadata|undefined}
+     */
+    this.loggableElementMetadata = loggableElementMetadata;
   }
 }
 
@@ -251,6 +259,7 @@ class Metadata {
 /** @package */ const ELEMENT_ATTR = 'data-soylog';
 
 /** @package */ const FUNCTION_ATTR = 'data-soyloggingfunction-';
+/** @private */ const SAFE_ATTR_PREFIXES = [
 
 /** Sets up the global metadata object before rendering any templates. */
 function setUpLogging() {
@@ -303,7 +312,7 @@ function setMetadataTestOnly(testdata) {
 function $$getLoggingAttribute(veData, logOnly) {
   const dataIdx = storeElementData(veData, logOnly);
   if (dataIdx === -1) {
-    return "";
+    return '';
   }
   // Insert a whitespace at the beginning. In VeLogInstrumentationVisitor,
   // we insert the return value of this method as a plain string instead of a
@@ -320,7 +329,8 @@ function $$getLoggingAttribute(veData, logOnly) {
  * @param {!$$VisualElementData} veData The VE to log.
  * @param {boolean} logOnly Whether to enable counterfactual logging.
  *
- * @return {number} The index where the metadata was stored in Metadata#elements, -1 if not recorded.
+ * @return {number} The index where the metadata was stored in
+ *     Metadata#elements, -1 if not recorded.
  */
 function storeElementData(veData, logOnly) {
   if (!metadata) {
@@ -332,7 +342,9 @@ function storeElementData(veData, logOnly) {
     }
     return -1;
   }
-  const elementMetadata = new ElementMetadata(veData.getVe().getId(), veData.getData(), logOnly);
+  const elementMetadata = new ElementMetadata(
+      veData.getVe().getId(), veData.getData(), logOnly,
+      veData.getVe().getMetadata());
   const dataIdx = metadata.elements.push(elementMetadata) - 1;
   return dataIdx;
 }
@@ -344,7 +356,8 @@ function storeElementData(veData, logOnly) {
  * @param {!$$VisualElementData} veData The VE to log.
  * @param {boolean} logOnly Whether to enable counterfactual logging.
  *
- * @return {!Array<string | number> | undefined} Tuple containing the Soy logging attribute name and its corresponding id number value.
+ * @return {!Array<string | number> | undefined} Tuple containing the Soy
+ *     logging attribute name and its corresponding id number value.
  */
 function getLoggingAttributeEntry(veData, logOnly) {
   const dataIdx = storeElementData(veData, logOnly);
@@ -715,7 +728,7 @@ class $$VisualElementData {
   toString() {
     if (goog.DEBUG) {
       return `**FOR DEBUGGING ONLY ve_data(${this.ve_.toDebugString()}${
-          this.data_? ', ' + this.data_ : ''})**`;
+          this.data_ ? ', ' + this.data_ : ''})**`;
     } else {
       return 'zSoyVeDz';
     }
