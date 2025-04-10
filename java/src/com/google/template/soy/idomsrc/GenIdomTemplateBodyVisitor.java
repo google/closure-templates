@@ -864,9 +864,6 @@ final class GenIdomTemplateBodyVisitor extends GenJsTemplateBodyVisitor {
     Expression openTagExpr = getOpenCall(node);
     statements.add(openTagExpr.asStatement());
     statements.add(getAttributes(node));
-    if (node.getTaggedPairs().isEmpty() && node.getKeyNode() != null) {
-      statements.add(INCREMENTAL_DOM_POP_MANUAL_KEY.call().asStatement());
-    }
     getClose(node).ifPresent(statements::add);
 
     return Statements.of(statements);
