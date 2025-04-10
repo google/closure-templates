@@ -52,8 +52,12 @@ import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.plugin.java.SharedExternRuntime;
 import java.lang.reflect.Method;
 import java.math.BigInteger;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
@@ -337,6 +341,23 @@ public final class JbcSrcExternRuntime {
 
   public static final MethodRef UNBOX_OBJECT =
       MethodRef.createPure(SoyValueUnconverter.class, "unconvert", SoyValueProvider.class);
+  public static final MethodRef UNBOX_OBJECT_CONTENTS =
+      MethodRef.createPure(JbcSrcExternRuntime.class, "unboxObjectContents", Object.class);
+
+  @Keep
+  @Nullable
+  public static Object unboxObjectContents(Object unboxedValue) {
+    if (unboxedValue instanceof Collection<?>) {
+      Collector<? super Object, ?, ?> collector =
+          unboxedValue instanceof Set ? Collectors.toSet() : toList();
+      return ((Collection<?>) unboxedValue)
+          .stream()
+              .map(SoyValueProvider.class::cast)
+              .map(SoyValueUnconverter::unconvert)
+              .collect(collector);
+    }
+    return unboxedValue;
+  }
 
   public static final MethodRef RECORD_TO_MAP =
       MethodRef.createPure(SharedExternRuntime.class, "recordToMap", SoyValue.class);

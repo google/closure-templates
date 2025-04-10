@@ -18,6 +18,7 @@ package com.google.template.soy.jbcsrc;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.template.soy.jbcsrc.ExternCompiler.getTypeInfoForJavaImpl;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.FUNCTION_VALUE_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.ITERATOR_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.LIST_TYPE;
@@ -2034,10 +2035,9 @@ final class ExpressionCompiler {
             args.add(parameters.getRenderContext().getULocale());
           } else {
             SoyType soyType = functionType.getParameters().get(i).getType();
-            // TODO(b/408029720): Avoid double boxing here.
             args.add(
                 ExternCompiler.adaptParameter(
-                    adaptExternArg(visit(params.get(i)), soyType), paramType, soyType, parameters));
+                    visit(params.get(i)), paramType, soyType, parameters));
             i++;
           }
         }
@@ -2064,7 +2064,7 @@ final class ExpressionCompiler {
           externCall = ExternCompiler.getMethodRef(javaImpl).invoke(args);
           externCall =
               ExternCompiler.adaptReturnType(
-                  ExternCompiler.getTypeInfoForJavaImpl(javaImpl.returnType().className()).type(),
+                  getTypeInfoForJavaImpl(javaImpl.returnType().className()).type(),
                   functionType.getReturnType(),
                   externCall);
         }

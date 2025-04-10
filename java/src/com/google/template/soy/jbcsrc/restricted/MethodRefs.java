@@ -160,6 +160,8 @@ public final class MethodRefs {
   public static final ImmutableList<MethodRef> IMMUTABLE_LIST_OF;
 
   public static final MethodRef IMMUTABLE_LIST_OF_ARRAY;
+  public static final MethodRef IMMUTABLE_LIST_COPY_OF_ITERABLE =
+      createNonPure(ImmutableList.class, "copyOf", Iterable.class);
 
   /** a list of all the ImmutableList.of overloads, indexed by number of entries. */
   public static final ImmutableList<MethodRef> IMMUTABLE_MAP_OF;

@@ -17,9 +17,13 @@
 package com.google.template.soy.jbcsrc;
 
 import static com.google.common.base.Preconditions.checkState;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.BIG_INTEGER_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.FUNCTION_VALUE_TYPE;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.ITERABLE_TYPE;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.MESSAGE_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.newLabel;
+import static com.google.template.soy.jbcsrc.restricted.MethodRefs.IMMUTABLE_LIST_COPY_OF_ITERABLE;
 import static java.util.Arrays.stream;
 
 import com.google.common.collect.ImmutableList;
@@ -60,7 +64,6 @@ import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypes;
-import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -362,28 +365,26 @@ public final class ExternCompiler {
     boolean isObject = javaType.equals(BytecodeUtils.OBJECT.type());
 
     // If expecting a bland 'SoyValue', just box the expr.
+    // If we expect a specific SoyValue subclass, then box + cast.
     if (javaType.equals(BytecodeUtils.SOY_VALUE_TYPE)
-        || javaType.equals(BytecodeUtils.PRIMITIVE_DATA_TYPE)) {
+        || javaType.equals(BytecodeUtils.PRIMITIVE_DATA_TYPE)
+        || (javaTypeInfo.classOptional().isPresent()
+            && SoyValue.class.isAssignableFrom(javaTypeInfo.classOptional().get()))) {
       // NullData -> null, UndefinedData -> UndefinedData
       return actualParam.boxWithSoyNullAsJavaNull().checkedCast(javaType);
-    }
-    // If we expect a specific SoyValue subclass, then box + cast.
-    if (javaTypeInfo.classOptional().isPresent()
-        && SoyValue.class.isAssignableFrom(javaTypeInfo.classOptional().get())) {
-      // NullData -> null, UndefinedData -> null
-      return actualParam.boxWithSoyNullishAsJavaNull().checkedCast(javaType);
     }
 
     // Otherwise, we're an unboxed type (non-SoyValue).
 
     // int needs special-casing for overflow, and because we can't unbox as int
     if (javaType.equals(Type.INT_TYPE)) {
-      return JbcSrcExternRuntime.LONG_TO_INT.invoke(actualParam);
+      return JbcSrcExternRuntime.LONG_TO_INT.invoke(actualParam.unboxAsLong());
     } else if (javaType.equals(BytecodeUtils.BOXED_INTEGER_TYPE)) {
       if (soyTypeBoxed) {
         return JbcSrcExternRuntime.SOY_VALUE_TO_BOXED_INTEGER.invoke(actualParam);
       }
-      return MethodRefs.BOX_INTEGER.invoke(JbcSrcExternRuntime.LONG_TO_INT.invoke(actualParam));
+      return MethodRefs.BOX_INTEGER.invoke(
+          JbcSrcExternRuntime.LONG_TO_INT.invoke(actualParam.unboxAsLong()));
     } else if (javaType.equals(Type.DOUBLE_TYPE)) {
       return actualParam.coerceToDouble();
     } else if (javaType.equals(BytecodeUtils.BOXED_DOUBLE_TYPE)) {
@@ -401,17 +402,33 @@ public final class ExternCompiler {
           BytecodeUtils.numericConversion(actualParam.coerceToDouble(), Type.FLOAT_TYPE));
     } else if (javaType.equals(BytecodeUtils.NUMBER_TYPE)) {
       return actualParam.unboxAsNumberOrJavaNull();
-    } else if (javaType.equals(Type.getType(BigInteger.class))) {
-      return JbcSrcExternRuntime.CONVERT_SOY_VALUE_TO_BIG_INTEGER.invoke(actualParam);
+    } else if (javaType.equals(Type.BOOLEAN_TYPE)) {
+      return actualParam.unboxAsBoolean();
+    } else if (javaType.equals(BytecodeUtils.BOXED_BOOLEAN_TYPE)) {
+      if (soyTypeBoxed) {
+        return JbcSrcExternRuntime.SOY_VALUE_TO_BOXED_BOOLEAN.invoke(actualParam);
+      }
+      return MethodRefs.BOX_BOOLEAN.invoke(actualParam.unboxAsBoolean());
+    } else if (javaType.equals(Type.LONG_TYPE)) {
+      return actualParam.unboxAsLong();
+    } else if (javaType.equals(BytecodeUtils.BOXED_LONG_TYPE)) {
+      if (soyTypeBoxed) {
+        return JbcSrcExternRuntime.SOY_VALUE_TO_BOXED_LONG.invoke(actualParam);
+      }
+      return MethodRefs.BOX_LONG.invoke(actualParam.unboxAsLong());
+    } else if (javaType.equals(BytecodeUtils.STRING_TYPE)) {
+      return actualParam.unboxAsStringOrJavaNull();
+    } else if (javaType.equals(BIG_INTEGER_TYPE)) {
+      return JbcSrcExternRuntime.CONVERT_SOY_VALUE_TO_BIG_INTEGER.invoke(actualParam.box());
     }
 
     SoyType nonNullableSoyType = SoyTypes.tryRemoveNullish(soyType);
 
     // For protos, we need to unbox as Message & then cast.
     if (nonNullableSoyType.getKind() == Kind.MESSAGE) {
-      return actualParam;
+      return actualParam.unboxAsMessageOrJavaNull(MESSAGE_TYPE);
     } else if (nonNullableSoyType.getKind() == Kind.PROTO) {
-      return actualParam.checkedCast(
+      return actualParam.unboxAsMessageOrJavaNull(
           ProtoUtils.messageRuntimeType(((SoyProtoType) nonNullableSoyType).getDescriptor())
               .type());
     }
@@ -447,23 +464,7 @@ public final class ExternCompiler {
       return JbcSrcExternRuntime.UNBOX_SAFE_HTML_PROTO.invoke(actualParam);
     }
 
-    if (javaType.equals(Type.BOOLEAN_TYPE)) {
-      return actualParam.unboxAsBoolean();
-    } else if (javaType.equals(BytecodeUtils.BOXED_BOOLEAN_TYPE)) {
-      if (soyTypeBoxed) {
-        return JbcSrcExternRuntime.SOY_VALUE_TO_BOXED_BOOLEAN.invoke(actualParam);
-      }
-      return MethodRefs.BOX_BOOLEAN.invoke(actualParam.unboxAsBoolean());
-    } else if (javaType.equals(Type.LONG_TYPE)) {
-      return actualParam.unboxAsLong();
-    } else if (javaType.equals(BytecodeUtils.BOXED_LONG_TYPE)) {
-      if (soyTypeBoxed) {
-        return JbcSrcExternRuntime.SOY_VALUE_TO_BOXED_LONG.invoke(actualParam);
-      }
-      return MethodRefs.BOX_LONG.invoke(actualParam.unboxAsLong());
-    } else if (javaType.equals(BytecodeUtils.STRING_TYPE)) {
-      return actualParam.unboxAsStringOrJavaNull();
-    } else if (!isObject
+    if (!isObject
         && BytecodeUtils.isDefinitelyAssignableFrom(javaType, BytecodeUtils.IMMUTABLE_LIST_TYPE)) {
       SoyType elmType = SoyTypes.getIterableElementType(nonNullableSoyType);
       SoyExpression unboxedList =
@@ -491,9 +492,16 @@ public final class ExternCompiler {
           }
         // fall through
         default:
-          return actualParam.isBoxed()
-              ? JbcSrcExternRuntime.UNBOX_OBJECT.invoke(actualParam)
-              : JbcSrcExternRuntime.DEEP_UNBOX_LIST.invoke(actualParam);
+          Expression list =
+              actualParam.isBoxed()
+                  ? JbcSrcExternRuntime.UNBOX_OBJECT.invoke(actualParam)
+                  : JbcSrcExternRuntime.DEEP_UNBOX_LIST.invoke(actualParam);
+          if (javaType.equals(BytecodeUtils.IMMUTABLE_LIST_TYPE)) {
+            list = IMMUTABLE_LIST_COPY_OF_ITERABLE.invoke(list.checkedCast(ITERABLE_TYPE));
+          } else {
+            list = list.checkedCast(javaType);
+          }
+          return list;
       }
     } else if (javaType.equals(BytecodeUtils.MAP_TYPE)
         || javaType.equals(BytecodeUtils.IMMUTABLE_MAP_TYPE)) {
@@ -510,13 +518,14 @@ public final class ExternCompiler {
           actualParam,
           BytecodeUtils.constant(BytecodeUtils.getTypeForSoyType(keyType)),
           BytecodeUtils.constant(BytecodeUtils.getTypeForSoyType(valueType)));
-    } else if (javaType.equals(BytecodeUtils.OBJECT.type())) {
+    } else if (isObject) {
       if (BytecodeUtils.isPrimitive(actualParam.soyRuntimeType().runtimeType())) {
         return BytecodeUtils.boxJavaPrimitive(actualParam);
       }
       return actualParam.isBoxed()
           ? JbcSrcExternRuntime.UNBOX_OBJECT.invoke(actualParam)
-          : actualParam;
+          // Unbox nested data structures in unboxed list/set.
+          : JbcSrcExternRuntime.UNBOX_OBJECT_CONTENTS.invoke(actualParam);
     }
 
     if (SoyTypes.isKindOrUnionOfKind(soyType, Kind.FUNCTION)) {
