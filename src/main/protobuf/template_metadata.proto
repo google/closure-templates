@@ -131,6 +131,7 @@ message SoyTypeP {
     HtmlTypeP html = 12;
     NamedTypeP named = 17;
     IndexedTypeP indexed = 18;
+    SoyTypeP signal = 19;
   }
 }
 

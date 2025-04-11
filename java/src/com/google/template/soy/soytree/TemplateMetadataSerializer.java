@@ -554,6 +554,9 @@ public final class TemplateMetadataSerializer {
             IndexedType.create(
                 fromProto(proto.getIndexed().getType(), typeRegistry, filePath, errorReporter),
                 proto.getIndexed().getProperty()));
+      case SIGNAL:
+        return typeRegistry.getOrCreateSignalType(
+            fromProto(proto.getSignal(), typeRegistry, filePath, errorReporter));
       case TYPEKIND_NOT_SET:
         // fall-through
     }

@@ -115,6 +115,7 @@ public abstract class SoyType implements ErrorArg {
     PROTO,
     PROTO_ENUM,
     TEMPLATE,
+    SIGNAL,
     FUNCTION,
     VE,
     VE_DATA,

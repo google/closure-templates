@@ -27,6 +27,7 @@ import com.google.template.soy.types.AbstractMapType;
 import com.google.template.soy.types.FloatType;
 import com.google.template.soy.types.IntType;
 import com.google.template.soy.types.RecordType;
+import com.google.template.soy.types.SignalType;
 import com.google.template.soy.types.SoyProtoEnumType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
@@ -165,6 +166,9 @@ public final class JavaTypeUtils {
         break;
       case VE_DATA:
         types = ImmutableList.of(new VeDataJavaType());
+        break;
+      case SIGNAL:
+        types = getJavaTypes(((SignalType) soyType).getDataType(), skipSoyTypes);
         break;
       case NAMESPACE:
       case PROTO_TYPE:
