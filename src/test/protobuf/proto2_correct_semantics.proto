@@ -40,3 +40,8 @@ message Msg {
   optional Msg p = 1;
   optional string name = 2;
 }
+
+enum Enum {
+  VAL_UNDEFINED = 0;
+  VAL_ONE = 1;
+}
