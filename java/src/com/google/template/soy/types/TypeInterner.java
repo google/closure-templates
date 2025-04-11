@@ -163,6 +163,10 @@ public interface TypeInterner {
     return intern(ElementType.getInstance(tagName));
   }
 
+  default SoyType getOrCreateSignalType(SoyType dataType) {
+    return intern(SignalType.of(dataType));
+  }
+
   ImportType getProtoImportType(GenericDescriptor descriptor);
 
   SoyType getProtoImportType(FileDescriptor descriptor, String member);

@@ -29,6 +29,7 @@ import com.google.errorprone.annotations.ForOverride;
 import com.google.errorprone.annotations.FormatMethod;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
+import com.google.template.soy.data.SignalValue;
 import com.google.template.soy.data.SoyIterable;
 import com.google.template.soy.data.SoyLegacyObjectMap;
 import com.google.template.soy.data.SoyList;
@@ -883,6 +884,9 @@ public abstract class Expression extends BytecodeProducer {
             return Optional.empty();
           }
           return Optional.of(MethodRefs.CHECK_FUNCTION.invoke(this));
+        case SIGNAL:
+          expectedClass = SignalValue.class;
+          break;
         case NAMESPACE:
         case PROTO_TYPE:
         case PROTO_ENUM_TYPE:

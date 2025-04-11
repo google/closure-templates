@@ -34,6 +34,7 @@ import com.google.template.soy.types.MessageType;
 import com.google.template.soy.types.SanitizedType.AttributesType;
 import com.google.template.soy.types.SanitizedType.HtmlType;
 import com.google.template.soy.types.SetType;
+import com.google.template.soy.types.SignalType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
@@ -92,6 +93,8 @@ public abstract class SoyRuntimeType {
       case SET:
         // We have some minor support for unboxed sets
         return new PrimitiveSoyType(soyType, BytecodeUtils.SET_TYPE);
+      case SIGNAL:
+        return unboxedTypeImpl(((SignalType) soyType).getDataType());
       case UNION:
         {
           // unions generally don't have a unique unboxed runtime type except in 2 special cases

@@ -20,6 +20,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
+import com.google.template.soy.data.SignalValue;
 import com.google.template.soy.data.SoyIterable;
 import com.google.template.soy.data.SoyLegacyObjectMap;
 import com.google.template.soy.data.SoyList;
@@ -185,6 +186,8 @@ public final class TofuTypeChecks {
         return CheckResult.fromBool(value == EvalVisitor.UNDEFINED_VE_DATA);
       case FUNCTION:
         return CheckResult.fromBool(value instanceof TofuFunctionValue);
+      case SIGNAL:
+        return CheckResult.fromBool(value instanceof SignalValue);
       case NAMESPACE:
       case PROTO_TYPE:
       case PROTO_ENUM_TYPE:

@@ -681,6 +681,8 @@ public final class JsType implements CodeChunk.HasRequires {
               .addRequires(baseType.googRequires())
               .setPredicate(TypePredicate.NO_OP)
               .build();
+        case SIGNAL:
+        // TODO(user): Implement.
         case NAMESPACE:
         case PROTO_TYPE:
         case PROTO_ENUM_TYPE:

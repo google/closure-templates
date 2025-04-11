@@ -56,4 +56,6 @@ public interface SoyTypeVisitor<T> {
   T visit(NamedType type);
 
   T visit(IndexedType type);
+
+  T visit(SignalType type);
 }
