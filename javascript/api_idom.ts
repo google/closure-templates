@@ -4,8 +4,8 @@
  * Functions necessary to interact with the Soy-Idom runtime.
  */
 
-import {ordainSanitizedHtml} from 'goog:soydata.VERY_UNSAFE'; // from //javascript/template/soy:soy_usegoog_js
 import {stringifyReplacingJspbMessages} from 'google3/javascript/apps/jspb/stringify';
+import {VERY_UNSAFE} from 'google3/javascript/template/soy/soydata_aliases';
 import * as soy from 'google3/javascript/template/soy/soyutils_usegoog';
 import {
   $$VisualElementData,
@@ -326,7 +326,7 @@ export class IncrementalDomRendererImpl implements IncrementalDomRenderer {
       // For HTML content we need to insert a custom element where we can
       // place the content without incremental dom modifying it.
       const el = document.createElement('html-blob');
-      googSoy.renderHtml(el, ordainSanitizedHtml(content));
+      googSoy.renderHtml(el, VERY_UNSAFE.ordainSanitizedHtml(content));
       const childNodes = Array.from(el.childNodes);
       for (const child of childNodes) {
         const currentPointer = this.currentPointer();
