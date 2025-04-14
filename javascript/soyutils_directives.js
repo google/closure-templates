@@ -34,8 +34,8 @@
 goog.module('google3.javascript.template.soy.soyutils_directives');
 var module = module || { id: 'javascript/template/soy/soyutils_directives.js' };
 const {SanitizedContentKind} = goog.require('goog.soy.data');
+const {VERY_UNSAFE: goog_soydata_VERY_UNSAFE_1} = goog.require('soydata');
 var soy = goog.require('soy'); // from //javascript/template/soy:soy_usegoog_js
-var goog_soydata_VERY_UNSAFE_1 = goog.require('soydata.VERY_UNSAFE'); // from //javascript/template/soy:soy_usegoog_js
 function isIdomFunctionType(
 // tslint:disable-next-line:no-any
 value, type) {
