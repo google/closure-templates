@@ -58,7 +58,7 @@ public final class SortMethod implements SoyJavaScriptSourceFunction, SoyJavaExt
   }
 
   @Override
-  public Method getExternJavaMethod() {
+  public Method getExternJavaMethod(List<Boxedness> argsBoxed) {
     return Methods.UNBOXED_SORT;
   }
 }

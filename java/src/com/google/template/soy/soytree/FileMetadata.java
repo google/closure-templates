@@ -89,6 +89,14 @@ public interface FileMetadata extends PartialFileMetadata {
       default boolean instanceFromContext() {
         return !type().isStatic();
       }
+
+      /**
+       * Returns whether the parameter at the given index should be adapted via the standard extern
+       * pipeline.
+       */
+      default boolean shouldAdaptArg(int paramIndex) {
+        return true;
+      }
     }
   }
 
