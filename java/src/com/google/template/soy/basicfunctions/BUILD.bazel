@@ -27,6 +27,7 @@ java_library(
         "//java/src/com/google/template/soy/data:unsafesanitizedcontentordainer",
         "//java/src/com/google/template/soy/data:ve",
         "//java/src/com/google/template/soy/internal/base",
+        "//java/src/com/google/template/soy/plugin/java/internal",
         "//java/src/com/google/template/soy/plugin/java/restricted",
         "//java/src/com/google/template/soy/plugin/javascript/restricted",
         "//java/src/com/google/template/soy/plugin/python/restricted",

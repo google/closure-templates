@@ -2114,6 +2114,17 @@ const $$numberListSort = function(list) {
 };
 
 /**
+ * Sorts a list of objects using the provided comparator.
+ * @param {!IArrayLike<T>} list
+ * @param {function(?, ?): number} comparator
+ * @return {!Array<T>}
+ * @template T extends number
+ */
+const $$comparatorListSort = function(list, comparator) {
+  return googArray.toArray(list).sort(comparator);
+};
+
+/**
  * Sorts a list of gbigints in numerical order.
  * @param {!IArrayLike<!gbigint>} list
  * @return {!Array<!gbigint>}
@@ -2787,6 +2798,7 @@ exports = {
   $$makeArray,
   $$filterAndMap,
   $$numberListSort,
+  $$comparatorListSort,
   $$gbigintListSort,
   $$stringListSort,
   $$strToAsciiLowerCase,

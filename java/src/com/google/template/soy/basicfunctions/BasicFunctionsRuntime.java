@@ -52,6 +52,7 @@ import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.shared.internal.Sanitizers;
 import java.util.AbstractList;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -254,6 +255,12 @@ public final class BasicFunctionsRuntime {
       List<? extends SoyValueProvider> list) {
     return ImmutableList.sortedCopyOf(
         comparingDouble((SoyValueProvider arg) -> arg.resolve().numberValue()), list);
+  }
+
+  @Nonnull
+  public static <T extends SoyValueProvider> ImmutableList<T> comparatorListSort(
+      List<T> list, Comparator<? super T> comparator) {
+    return ImmutableList.sortedCopyOf(comparator, list);
   }
 
   /** Sorts a list in numerical order. */

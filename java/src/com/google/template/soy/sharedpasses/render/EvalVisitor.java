@@ -523,6 +523,9 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
 
     SoySourceFunctionMethod method = fieldAccess.getSoyMethod();
     if (method != null) {
+      if (!(method.getImpl() instanceof SoyJavaSourceFunction)) {
+        throw RenderException.createF("SoyJavaExternFunction not implemented in TOFU.");
+      }
       return computeFunctionHelper(
           ImmutableList.of(base), JavaPluginExecContext.forFieldAccessNode(fieldAccess, method));
     }
@@ -699,6 +702,9 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
       List<SoyValue> args = new ArrayList<>(methodNode.numParams() + 1);
       args.add(base);
       methodNode.getParams().forEach(n -> args.add(visit(n)));
+      if (!(sourceMethod.getImpl() instanceof SoyJavaSourceFunction)) {
+        throw RenderException.createF("SoyJavaExternFunction not implemented in TOFU.");
+      }
       return computeFunctionHelper(
           args, JavaPluginExecContext.forMethodCallNode(methodNode, sourceMethod));
     }

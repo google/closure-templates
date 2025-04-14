@@ -71,6 +71,7 @@ public class BasicFunctions {
         new RoundFunction(),
         new SetHasFunction(),
         new SetSizeField(),
+        new SortMethod(),
         new SqrtFunction(),
         new StrEndsWithMethod(),
         new StrIncludesFunction(),

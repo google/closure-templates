@@ -69,6 +69,7 @@ import com.google.template.soy.basicfunctions.MapValuesMethod;
 import com.google.template.soy.basicfunctions.MaxFunction;
 import com.google.template.soy.basicfunctions.MinFunction;
 import com.google.template.soy.basicfunctions.NumberListSortMethod;
+import com.google.template.soy.basicfunctions.SortMethod;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
 import com.google.template.soy.error.SoyErrorKind;
@@ -1535,7 +1536,8 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
             || sourceFunction instanceof ListUniqMethod) {
           // list<T>.slice(...), list<T>.uniq(), and list<T>.reverse() return list<T>
           node.setType(baseType);
-        } else if (sourceFunction instanceof NumberListSortMethod) {
+        } else if (sourceFunction instanceof NumberListSortMethod
+            || sourceFunction instanceof SortMethod) {
           // list<T>.sort() returns list<T>
           // The sort() method only supports lists of number, int, or float.
           node.setType(baseType);

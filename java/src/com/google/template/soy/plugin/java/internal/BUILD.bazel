@@ -32,6 +32,7 @@ java_library(
         "//java/src/com/google/template/soy/jbcsrc/restricted",
         "//java/src/com/google/template/soy/plugin/java",
         "//java/src/com/google/template/soy/plugin/java/restricted",
+        "//java/src/com/google/template/soy/plugin/restricted",
         "//java/src/com/google/template/soy/shared/restricted:annotations",
         "//java/src/com/google/template/soy/types",
         "@com_google_auto_value_auto_value",

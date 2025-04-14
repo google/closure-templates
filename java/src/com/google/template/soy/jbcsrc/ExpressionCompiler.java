@@ -18,22 +18,26 @@ package com.google.template.soy.jbcsrc;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.template.soy.jbcsrc.ExternCompiler.getTypeInfoForJavaImpl;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.FUNCTION_VALUE_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.ITERATOR_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.LIST_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.NULL_POINTER_EXCEPTION_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_VALUE_PROVIDER_TYPE;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_VALUE_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.asImmutableList;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constantRecordProperty;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.firstSoyNonNullish;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.isDefinitelyAssignableFrom;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.newLabel;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.numericConversion;
 import static com.google.template.soy.jbcsrc.restricted.SoyExpression.asBoxedValueProviderList;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
+import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.TypeReference;
@@ -148,11 +152,14 @@ import com.google.template.soy.types.SoyTypes;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.Future;
+import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import org.objectweb.asm.ConstantDynamic;
 import org.objectweb.asm.Handle;
@@ -1552,9 +1559,13 @@ final class ExpressionCompiler {
       checkArgument(!node.isNullSafe());
 
       SoySourceFunctionMethod sourceMethod = node.getSoyMethod();
+      ImmutableList<SoyExpression> args = ImmutableList.of(baseExpr);
       if (sourceMethod != null) {
-        return sourceFunctionCompiler.compile(
-            node, sourceMethod, ImmutableList.of(baseExpr), parameters, detacher);
+        Optional<Extern> externApi = ExternAdaptors.asExtern(sourceMethod, args);
+        if (externApi.isPresent()) {
+          return callExtern(externApi.get(), args);
+        }
+        return sourceFunctionCompiler.compile(node, sourceMethod, args, parameters, detacher);
       }
 
       // Otherwise this must be a vanilla SoyRecord.  Box, call getField or getFieldProvider
@@ -1706,6 +1717,10 @@ final class ExpressionCompiler {
         List<SoyExpression> args = new ArrayList<>(node.numParams() + 1);
         args.add(baseExpr);
         node.getParams().forEach(n -> args.add(visit(n)));
+        Optional<Extern> externApi = ExternAdaptors.asExtern(sourceMethod, args);
+        if (externApi.isPresent()) {
+          return callExtern(externApi.get(), args);
+        }
         return sourceFunctionCompiler.compile(node, sourceMethod, args, parameters, detacher);
       }
       throw new AssertionError(function.getClass());
@@ -1945,10 +1960,17 @@ final class ExpressionCompiler {
     SoyExpression visitPluginFunction(FunctionNode node) {
       Object fn = node.getSoyFunction();
       if (fn instanceof SoyJavaSourceFunction) {
+        ImmutableList<SoyExpression> args = visitAll(node.getParams());
+        Optional<Extern> externApi =
+            ExternAdaptors.asExtern(
+                (SoyJavaSourceFunction) fn, args, node.getType(), node.getAllowedParamTypes());
+        if (externApi.isPresent()) {
+          return callExtern(externApi.get(), args);
+        }
         return sourceFunctionCompiler.compile(
-            node, (SoyJavaSourceFunction) fn, visitChildren(node), parameters, detacher);
+            node, (SoyJavaSourceFunction) fn, args, parameters, detacher);
       } else if (fn instanceof Extern) {
-        return callExtern((Extern) fn, node.getParams());
+        return callExtern((Extern) fn, visitAll(node.getParams()));
       } else if (fn == FunctionNode.FUNCTION_POINTER) {
         FunctionType functionType = (FunctionType) node.getNameExpr().getType();
         SoyRuntimeType soyReturnType = ExternCompiler.getRuntimeType(functionType.getReturnType());
@@ -1997,14 +2019,26 @@ final class ExpressionCompiler {
       return asImmutableList(adaptedArgs);
     }
 
-    private SoyExpression callExtern(Extern extern, List<ExprNode> params) {
-      PartialFileMetadata owningFile = fileSetMetadata.getPartialFile(extern.getPath());
-      String namespace = owningFile.getNamespace();
-      TypeInfo externOwner = TypeInfo.createClass(Names.javaClassNameFromSoyNamespace(namespace));
+    private ImmutableList<SoyExpression> visitAll(Collection<ExprNode> expr) {
+      return expr.stream().map(this::visit).collect(toImmutableList());
+    }
+
+    private SoyExpression callExtern(Extern extern, List<SoyExpression> params) {
+      SourceLogicalPath path = extern.getPath();
+      JavaImpl javaImpl = extern.getJavaImpl();
+      TypeInfo externOwner;
+      boolean linkStatically;
+      if (path == null) {
+        linkStatically = true;
+        externOwner = null;
+      } else {
+        PartialFileMetadata owningFile = fileSetMetadata.getPartialFile(path);
+        String namespace = owningFile.getNamespace();
+        externOwner = TypeInfo.createClass(Names.javaClassNameFromSoyNamespace(namespace));
+        linkStatically = javaImpl != null && owningFile.getSoyFileKind() == SoyFileKind.SRC;
+      }
       FunctionType functionType = extern.getSignature();
       SoyRuntimeType soyReturnType = ExternCompiler.getRuntimeType(functionType.getReturnType());
-      JavaImpl javaImpl = extern.getJavaImpl();
-      boolean linkStatically = javaImpl != null && owningFile.getSoyFileKind() == SoyFileKind.SRC;
       boolean requiresRenderContext = !linkStatically || requiresRenderContext(extern);
 
       if (extern.isJavaAsync()) {
@@ -2016,15 +2050,20 @@ final class ExpressionCompiler {
       if (linkStatically && !javaImpl.isAuto()) {
         TypeInfo externClass = TypeInfo.create(javaImpl.className(), javaImpl.type().isInterface());
         // Collect args for calling Java impl directly.
-        if (!javaImpl.type().isStatic()) {
+        Stream<TypeReference> javaParams = javaImpl.paramTypes().stream();
+        if (javaImpl.instanceFromContext()) {
           args.add(
               parameters
                   .getRenderContext()
                   .getPluginInstance(javaImpl.className())
                   .checkedCast(externClass.type()));
+        } else if (!javaImpl.type().isStatic()) {
+          javaParams =
+              Stream.concat(Stream.of(TypeReference.create(javaImpl.className())), javaParams);
         }
-        int i = 0;
-        for (TypeReference paramType : javaImpl.paramTypes()) {
+        int soyArgIndex = 0;
+        for (Iterator<TypeReference> i = javaParams.iterator(); i.hasNext(); ) {
+          TypeReference paramType = i.next();
           if (paramType.className().equals("com.google.template.soy.data.Dir")) {
             args.add(parameters.getRenderContext().getBidiGlobalDirDir());
           } else if (paramType
@@ -2034,11 +2073,10 @@ final class ExpressionCompiler {
           } else if (paramType.className().equals("com.ibm.icu.util.ULocale")) {
             args.add(parameters.getRenderContext().getULocale());
           } else {
-            SoyType soyType = functionType.getParameters().get(i).getType();
-            args.add(
-                ExternCompiler.adaptParameter(
-                    visit(params.get(i)), paramType, soyType, parameters));
-            i++;
+            SoyType soyType = functionType.getParameters().get(soyArgIndex).getType();
+            SoyExpression soyArg = params.get(soyArgIndex);
+            args.add(ExternCompiler.adaptParameter(soyArg, paramType, soyType, parameters));
+            soyArgIndex++;
           }
         }
       } else {
@@ -2046,8 +2084,7 @@ final class ExpressionCompiler {
           args.add(parameters.getRenderContext());
         }
         for (int i = 0; i < params.size(); i++) {
-          args.add(
-              adaptExternArg(visit(params.get(i)), functionType.getParameters().get(i).getType()));
+          args.add(adaptExternArg(params.get(i), functionType.getParameters().get(i).getType()));
         }
       }
 
@@ -2061,12 +2098,17 @@ final class ExpressionCompiler {
               MethodRef.createStaticMethod(externOwner, asmMethod, MethodPureness.NON_PURE);
           externCall = ref.invoke(args);
         } else {
-          externCall = ExternCompiler.getMethodRef(javaImpl).invoke(args);
+          MethodRef methodRef = ExternCompiler.getMethodRef(javaImpl);
+          externCall = methodRef.invoke(args);
           externCall =
               ExternCompiler.adaptReturnType(
                   getTypeInfoForJavaImpl(javaImpl.returnType().className()).type(),
                   functionType.getReturnType(),
                   externCall);
+          // Allow ExternSourceFunction to return a boxed value.
+          if (isDefinitelyAssignableFrom(SOY_VALUE_TYPE, externCall.resultType())) {
+            soyReturnType = soyReturnType.box();
+          }
         }
       } else {
         // For externs defined in other files use invokeDynamic so that we can support the

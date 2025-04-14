@@ -77,10 +77,13 @@ public final class InternalPluginsTest {
     for (SoySourceFunction function : InternalPlugins.internalMethods()) {
       assertThat(SoyMethodSignature.IS_SOY_METHOD.test(function)).isTrue();
       assertThat(function).isInstanceOf(SoyJavaScriptSourceFunction.class);
-      assertThat(function).isInstanceOf(SoyJavaSourceFunction.class);
+      if (!function.getClass().getSimpleName().equals("SortMethod")) {
+        assertThat(function).isInstanceOf(SoyJavaSourceFunction.class);
+      }
       if (!function.getClass().getName().contains("Proto")
-          && !function.getClass().getName().contains("VeHasSameIdMethod")
-          && !function.getClass().getName().contains("Gbigint")) {
+          && !function.getClass().getSimpleName().equals("VeHasSameIdMethod")
+          && !function.getClass().getName().contains("Gbigint")
+          && !function.getClass().getSimpleName().equals("SortMethod")) {
         assertThat(function).isInstanceOf(SoyPythonSourceFunction.class);
       }
     }

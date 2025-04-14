@@ -81,6 +81,14 @@ public interface FileMetadata extends PartialFileMetadata {
       ImmutableList<TypeReference> paramTypes();
 
       MethodType type();
+
+      /**
+       * Returns whether the receiver of the non-static method should be obtained from the render
+       * context.
+       */
+      default boolean instanceFromContext() {
+        return !type().isStatic();
+      }
     }
   }
 
