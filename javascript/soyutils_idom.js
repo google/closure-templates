@@ -34,11 +34,11 @@
 goog.module('google3.javascript.template.soy.soyutils_idom');
 var module = module || { id: 'javascript/template/soy/soyutils_idom.js' };
 const {SanitizedContent, SanitizedContentKind, SanitizedHtml} = goog.require('goog.soy.data');
+const {VERY_UNSAFE: goog_soydata_VERY_UNSAFE_1} = goog.require('soydata');
 var tslib_1 = goog.require('google3.third_party.javascript.tslib.tslib');
 var googSoy = goog.require('goog.soy'); // from //javascript/closure/soy
 var googString = goog.require('goog.string'); // from //javascript/closure/string
 var soy = goog.require('soy'); // from //javascript/template/soy:soy_usegoog_js
-var goog_soydata_VERY_UNSAFE_1 = goog.require('soydata.VERY_UNSAFE'); // from //javascript/template/soy:soy_usegoog_js
 var incrementaldom = goog.require('google3.third_party.javascript.incremental_dom.index'); // from //third_party/javascript/incremental_dom:incrementaldom
 var api_idom_1 = goog.require('google3.javascript.template.soy.api_idom');
 var element_lib_idom_1 = goog.require('google3.javascript.template.soy.element_lib_idom');
