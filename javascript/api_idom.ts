@@ -8,6 +8,7 @@ import {stringifyReplacingJspbMessages} from 'google3/javascript/apps/jspb/strin
 import {VERY_UNSAFE} from 'google3/javascript/template/soy/soydata_aliases';
 import * as soy from 'google3/javascript/template/soy/soyutils_usegoog';
 import {
+  $$getClickTrackType,
   $$VisualElementData,
   ElementMetadata,
   Logger,
@@ -463,6 +464,7 @@ export class IncrementalDomRendererImpl implements IncrementalDomRenderer {
           veData.getVe().getId(),
           veData.getData(),
           !!logOnly,
+          $$getClickTrackType(veData),
         ),
       );
     } else if (logOnly) {
