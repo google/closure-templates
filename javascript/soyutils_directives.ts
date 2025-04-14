@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import {ordainSanitizedHtml} from 'goog:soydata.VERY_UNSAFE'; // from //javascript/template/soy:soy_usegoog_js
+import {VERY_UNSAFE} from 'google3/javascript/template/soy/soydata_aliases';
 import * as soy from 'google3/javascript/template/soy/soyutils_usegoog';
 import {SanitizedContentKind} from 'google3/third_party/javascript/closure/soy/data';
 
@@ -54,7 +54,7 @@ function filterHtmlAttributes(value: unknown) {
  */
 function escapeHtml(value: unknown, renderer: IncrementalDomRenderer) {
   if (isIdomFunctionType(value, SanitizedContentKind.HTML)) {
-    return ordainSanitizedHtml(value.toString(renderer));
+    return VERY_UNSAFE.ordainSanitizedHtml(value.toString(renderer));
   }
   return soy.$$escapeHtml(value);
 }
@@ -72,7 +72,7 @@ function bidiUnicodeWrap(
   if (isIdomFunctionType(value, SanitizedContentKind.HTML)) {
     return soy.$$bidiUnicodeWrap(
       bidiGlobalDir,
-      ordainSanitizedHtml(value.toString(renderer)),
+      VERY_UNSAFE.ordainSanitizedHtml(value.toString(renderer)),
     );
   }
   return soy.$$bidiUnicodeWrap(bidiGlobalDir, value);
