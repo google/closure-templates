@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-import {ordainSanitizedHtml} from 'goog:soydata.VERY_UNSAFE'; // from //javascript/template/soy:soy_usegoog_js
+import {VERY_UNSAFE} from 'google3/javascript/template/soy/soydata_aliases';
 import * as soy from 'google3/javascript/template/soy/soyutils_usegoog';
 import {Logger} from 'google3/javascript/template/soy/soyutils_velog';
 import {cacheReturnValue} from 'google3/third_party/javascript/closure/functions/functions';
@@ -159,7 +159,8 @@ function makeHtml(idomFn: PatchFunction): IdomFunction {
     htmlToString(idomFn, renderer);
   fn.getContent = fn.toString;
   fn.contentKind = SanitizedContentKind.HTML;
-  fn.toSafeHtml = () => ordainSanitizedHtml(fn.getContent()).toSafeHtml();
+  fn.toSafeHtml = () =>
+    VERY_UNSAFE.ordainSanitizedHtml(fn.getContent()).toSafeHtml();
   fn.renderElement = (el: Element | ShadowRoot) => {
     incrementaldom.patch(el, () => {
       fn.invoke(defaultIdomRenderer);
