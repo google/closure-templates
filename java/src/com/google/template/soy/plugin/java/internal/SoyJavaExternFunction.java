@@ -18,9 +18,20 @@ package com.google.template.soy.plugin.java.internal;
 
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import java.lang.reflect.Method;
+import java.util.List;
 
 /** A SoySourceFunction that can be executed in JBCSRC via the extern compilation pipeline. */
 public interface SoyJavaExternFunction extends SoySourceFunction {
 
-  Method getExternJavaMethod();
+  /** Whether a jbcsrc value is boxed. */
+  enum Boxedness {
+    BOXED,
+    UNBOXED
+  }
+
+  Method getExternJavaMethod(List<Boxedness> argsBoxed);
+
+  default boolean bypassParamAdapt(int paramIndex, List<Boxedness> argsBoxed) {
+    return false;
+  }
 }
