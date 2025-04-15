@@ -42,11 +42,6 @@ public class NamespaceType extends SoyType {
   }
 
   @Override
-  public <T> T accept(SoyTypeVisitor<T> visitor) {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
   void doToProto(SoyTypeP.Builder builder) {
     throw new UnsupportedOperationException();
   }

@@ -126,9 +126,4 @@ public abstract class FunctionType extends SoyType {
               .setType(parameter.getType().toProto()));
     }
   }
-
-  @Override
-  public final <T> T accept(SoyTypeVisitor<T> visitor) {
-    return visitor.visit(this);
-  }
 }

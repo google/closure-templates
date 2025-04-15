@@ -63,11 +63,6 @@ public abstract class NamedType extends SoyType {
   }
 
   @Override
-  public <T> T accept(SoyTypeVisitor<T> visitor) {
-    return visitor.visit(this);
-  }
-
-  @Override
   public SoyType getEffectiveType() {
     return getType().getEffectiveType();
   }

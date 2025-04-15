@@ -52,11 +52,6 @@ public abstract class IndexedType extends SoyType {
   }
 
   @Override
-  public <T> T accept(SoyTypeVisitor<T> visitor) {
-    return visitor.visit(this);
-  }
-
-  @Override
   @Memoized
   public SoyType getEffectiveType() {
     SoyType baseType = getType().getEffectiveType();

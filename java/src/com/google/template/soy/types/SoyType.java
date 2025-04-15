@@ -297,8 +297,6 @@ public abstract class SoyType implements ErrorArg {
   @ForOverride
   abstract void doToProto(SoyTypeP.Builder builder);
 
-  public abstract <T> T accept(SoyTypeVisitor<T> visitor);
-
   /**
    * Resolves NAMED, INDEXED, and INTERSECTION types. The returned value is a shallow resolution,
    * guaranteed not to be one of the listed types but which may contain those types.

@@ -62,9 +62,4 @@ public final class SetType extends AbstractIterableType {
   void doToProto(SoyTypeP.Builder builder) {
     builder.setSetElement(elementType.toProto());
   }
-
-  @Override
-  public <T> T accept(SoyTypeVisitor<T> visitor) {
-    return visitor.visit(this);
-  }
 }

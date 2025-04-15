@@ -373,11 +373,6 @@ public final class SoyProtoType extends SoyType {
   }
 
   @Override
-  public <T> T accept(SoyTypeVisitor<T> visitor) {
-    return visitor.visit(this);
-  }
-
-  @Override
   public boolean equals(Object o) {
     if (this == o) {
       return true;

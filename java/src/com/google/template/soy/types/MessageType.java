@@ -52,9 +52,4 @@ public final class MessageType extends SoyType {
   void doToProto(SoyTypeP.Builder builder) {
     builder.setMessage(true);
   }
-
-  @Override
-  public <T> T accept(SoyTypeVisitor<T> visitor) {
-    return visitor.visit(this);
-  }
 }

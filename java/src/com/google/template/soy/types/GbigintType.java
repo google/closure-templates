@@ -50,9 +50,4 @@ public final class GbigintType extends SoyType {
   void doToProto(SoyTypeP.Builder builder) {
     builder.setPrimitive(SoyTypeP.PrimitiveTypeP.GBIGINT);
   }
-
-  @Override
-  public <T> T accept(SoyTypeVisitor<T> visitor) {
-    return visitor.visit(this);
-  }
 }

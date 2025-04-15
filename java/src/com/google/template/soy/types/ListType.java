@@ -62,9 +62,4 @@ public final class ListType extends AbstractIterableType {
   void doToProto(SoyTypeP.Builder builder) {
     builder.setListElement(elementType.toProto());
   }
-
-  @Override
-  public <T> T accept(SoyTypeVisitor<T> visitor) {
-    return visitor.visit(this);
-  }
 }

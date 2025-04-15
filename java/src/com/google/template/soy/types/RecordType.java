@@ -155,9 +155,4 @@ public abstract class RecordType extends SoyType {
               .setType(member.declaredType().toProto()));
     }
   }
-
-  @Override
-  public <T> T accept(SoyTypeVisitor<T> visitor) {
-    return visitor.visit(this);
-  }
 }

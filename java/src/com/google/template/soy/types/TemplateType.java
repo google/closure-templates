@@ -540,9 +540,4 @@ public abstract class TemplateType extends SoyType {
       return SanitizedType.getTypeForContentKind(kind.getSanitizedContentKind());
     }
   }
-
-  @Override
-  public final <T> T accept(SoyTypeVisitor<T> visitor) {
-    return visitor.visit(this);
-  }
 }

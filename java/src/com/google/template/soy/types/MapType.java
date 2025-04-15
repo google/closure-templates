@@ -120,9 +120,4 @@ public final class MapType extends AbstractMapType {
   void doToProto(SoyTypeP.Builder builder) {
     builder.getMapBuilder().setKey(keyType.toProto()).setValue(valueType.toProto());
   }
-
-  @Override
-  public <T> T accept(SoyTypeVisitor<T> visitor) {
-    return visitor.visit(this);
-  }
 }

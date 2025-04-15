@@ -144,9 +144,4 @@ public abstract class IntersectionType extends SoyType {
       typeBuilder.addMember(member.toProto());
     }
   }
-
-  @Override
-  public <T> T accept(SoyTypeVisitor<T> visitor) {
-    return visitor.visit(this);
-  }
 }
