@@ -156,18 +156,26 @@ final class IncrementalDomKeysPass implements CompilerFilePass {
       visitChildren(openTagNode);
       htmlKeyStack.push(mustEmitKeyNodes);
       mustEmitKeyNodes = false;
+
+      if (openTagNode.getTaggedPairs().isEmpty() && openTagNode.getTagName().isDefinitelyVoid()) {
+        handleKeyClose(openTagNode);
+      }
+    }
+
+    private void handleKeyClose(HtmlOpenTagNode openTag) {
+      if (openTag.getKeyNode() != null && !(openTag.getParent() instanceof SkipNode)) {
+        keyCounterStack.pop();
+      }
+      if (!htmlKeyStack.isEmpty()) {
+        mustEmitKeyNodes = htmlKeyStack.pop();
+      }
     }
 
     @Override
     public void visitHtmlCloseTagNode(HtmlCloseTagNode closeTagNode) {
       if (closeTagNode.getTaggedPairs().size() == 1) {
         HtmlOpenTagNode openTag = (HtmlOpenTagNode) closeTagNode.getTaggedPairs().get(0);
-        if (openTag.getKeyNode() != null && !(openTag.getParent() instanceof SkipNode)) {
-          keyCounterStack.pop();
-        }
-        if (!htmlKeyStack.isEmpty()) {
-          mustEmitKeyNodes = htmlKeyStack.pop();
-        }
+        handleKeyClose(openTag);
       }
     }
 
