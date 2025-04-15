@@ -16,7 +16,10 @@
 
 import {VERY_UNSAFE} from 'google3/javascript/template/soy/soydata_aliases';
 import * as soy from 'google3/javascript/template/soy/soyutils_usegoog';
-import {SanitizedContentKind} from 'google3/third_party/javascript/closure/soy/data';
+import {
+  SanitizedContentKind,
+  SanitizedHtml,
+} from 'google3/third_party/javascript/closure/soy/data';
 
 import {IncrementalDomRenderer} from './api_idom';
 import {IdomFunction} from './element_lib_idom';
@@ -37,7 +40,7 @@ function isIdomFunctionType(
  * attribute functions gracefully. In any other situation, this delegates to
  * the regular escaping directive.
  */
-function filterHtmlAttributes(value: unknown) {
+function filterHtmlAttributes(value: unknown): unknown {
   if (
     isIdomFunctionType(value, SanitizedContentKind.ATTRIBUTES) ||
     soy.$$isAttribute(value)
@@ -52,7 +55,10 @@ function filterHtmlAttributes(value: unknown) {
  * html functions gracefully. In any other situation, this delegates to
  * the regular escaping directive.
  */
-function escapeHtml(value: unknown, renderer: IncrementalDomRenderer) {
+function escapeHtml(
+  value: unknown,
+  renderer: IncrementalDomRenderer,
+): SanitizedHtml {
   if (isIdomFunctionType(value, SanitizedContentKind.HTML)) {
     return VERY_UNSAFE.ordainSanitizedHtml(value.toString(renderer));
   }
@@ -68,7 +74,7 @@ function bidiUnicodeWrap(
   bidiGlobalDir: number,
   value: unknown,
   renderer: IncrementalDomRenderer,
-) {
+): string | SanitizedHtml {
   if (isIdomFunctionType(value, SanitizedContentKind.HTML)) {
     return soy.$$bidiUnicodeWrap(
       bidiGlobalDir,
