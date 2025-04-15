@@ -169,9 +169,14 @@ class TofuValueFactory extends JavaValueFactory {
               + "'. Available keys are: "
               + pluginInstances.keys());
     }
+    return callInstanceMethod(method, returnType, instanceSupplier.get(), params);
+  }
+
+  TofuJavaValue callInstanceMethod(
+      Method method, @Nullable SoyType returnType, Object target, JavaValue[] params) {
     try {
       return wrapInTofuValue(
-          method, method.invoke(instanceSupplier.get(), adaptParams(method, params)), returnType);
+          method, method.invoke(target, adaptParams(method, params)), returnType);
     } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
       throw RenderException.create("Unexpected exception", e);
     }

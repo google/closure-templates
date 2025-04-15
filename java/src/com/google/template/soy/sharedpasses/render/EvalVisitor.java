@@ -132,6 +132,7 @@ import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.plugin.internal.JavaPluginExecContext;
 import com.google.template.soy.plugin.java.PluginInstances;
 import com.google.template.soy.plugin.java.RenderCssHelper;
+import com.google.template.soy.plugin.java.internal.SoyJavaExternFunction;
 import com.google.template.soy.plugin.java.restricted.MethodSignature;
 import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
 import com.google.template.soy.shared.SoyCssRenamingMap;
@@ -147,11 +148,16 @@ import com.google.template.soy.soytree.FileMetadata.Extern;
 import com.google.template.soy.soytree.JavaImplNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.TemplateParam;
+import com.google.template.soy.types.FunctionType;
+import com.google.template.soy.types.FunctionType.Parameter;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypes;
 import com.ibm.icu.util.ULocale;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -523,8 +529,14 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
 
     SoySourceFunctionMethod method = fieldAccess.getSoyMethod();
     if (method != null) {
-      if (!(method.getImpl() instanceof SoyJavaSourceFunction)) {
-        throw RenderException.createF("SoyJavaExternFunction not implemented in TOFU.");
+      if (method.getImpl() instanceof SoyJavaExternFunction) {
+        return visitExtern(
+            fieldAccess,
+            (SoyJavaExternFunction) method.getImpl(),
+            ImmutableList.of(
+                TofuJavaValue.forSoyValue(base, fieldAccess.getChild(0).getSourceLocation())),
+            fieldAccess.getType(),
+            ImmutableList.of());
       }
       return computeFunctionHelper(
           ImmutableList.of(base), JavaPluginExecContext.forFieldAccessNode(fieldAccess, method));
@@ -702,8 +714,18 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
       List<SoyValue> args = new ArrayList<>(methodNode.numParams() + 1);
       args.add(base);
       methodNode.getParams().forEach(n -> args.add(visit(n)));
-      if (!(sourceMethod.getImpl() instanceof SoyJavaSourceFunction)) {
-        throw RenderException.createF("SoyJavaExternFunction not implemented in TOFU.");
+      if (sourceMethod.getImpl() instanceof SoyJavaExternFunction) {
+        return visitExtern(
+            methodNode,
+            (SoyJavaExternFunction) sourceMethod.getImpl(),
+            args.stream()
+                .map(a -> TofuJavaValue.forSoyValue(a, SourceLocation.UNKNOWN))
+                .collect(toImmutableList()),
+            sourceMethod.getReturnType(),
+            ImmutableList.<SoyType>builder()
+                .add(sourceMethod.getBaseType())
+                .addAll(sourceMethod.getArgTypes())
+                .build());
       }
       return computeFunctionHelper(
           args, JavaPluginExecContext.forMethodCallNode(methodNode, sourceMethod));
@@ -958,6 +980,13 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
       SoyJavaFunction fn = (SoyJavaFunction) soyFunction;
       // Note: Arity has already been checked by CheckFunctionCallsVisitor.
       return computeFunctionHelper(fn, args, node);
+    } else if (soyFunction instanceof SoyJavaExternFunction) {
+      return visitExtern(
+          node,
+          (SoyJavaExternFunction) soyFunction,
+          visitAllTofu(node.getParams()),
+          node.getType(),
+          node.getAllowedParamTypes());
     } else if (soyFunction instanceof SoyJavaSourceFunction) {
       List<SoyValue> args = this.visitChildren(node);
       SoyJavaSourceFunction fn = (SoyJavaSourceFunction) soyFunction;
@@ -989,6 +1018,41 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
           "Failed to find Soy function with name '%s' (function call \"%s\").",
           node.getStaticFunctionName(), node.toSourceString());
     }
+  }
+
+  SoyValue visitExtern(
+      ExprNode scope,
+      SoyJavaExternFunction extern,
+      ImmutableList<TofuJavaValue> args,
+      SoyType returnType,
+      ImmutableList<SoyType> argTypes) {
+    Method method = extern.getExternJavaMethod();
+    SoyValue target = null;
+    if (!Modifier.isStatic(method.getModifiers())) {
+      target = args.get(0).soyValue();
+      args = args.subList(1, args.size());
+    }
+
+    TofuJavaValue[] javaValues =
+        getTofuJavaValues(ImmutableList.of(), Arrays.asList(method.getParameterTypes()), args);
+
+    FunctionType functionType =
+        FunctionType.of(
+            argTypes.stream().map(t -> Parameter.of("unused", t)).collect(toImmutableList()),
+            returnType);
+    TofuValueFactory factory =
+        new TofuValueFactory(
+            scope.getSourceLocation(),
+            method.getDeclaringClass().getName(), // Use java class as instance key.
+            pluginInstances,
+            functionType,
+            false,
+            new FunctionAdapter(this));
+    TofuJavaValue tofu =
+        Modifier.isStatic(method.getModifiers())
+            ? factory.callStaticMethod(method, returnType, javaValues)
+            : factory.callInstanceMethod(method, returnType, target, javaValues);
+    return tofu.soyValue();
   }
 
   TofuJavaValue visitExtern(
@@ -1027,7 +1091,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
       throw RenderException.create("Required Java runtime class not found.", e);
     }
 
-    TofuJavaValue[] javaValues = getTofuJavaValues(boundArgs, method, passedArgs);
+    TofuJavaValue[] javaValues = getTofuJavaValues(boundArgs, method.arguments(), passedArgs);
 
     TofuValueFactory factory =
         new TofuValueFactory(
@@ -1043,10 +1107,8 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
   }
 
   private TofuJavaValue[] getTofuJavaValues(
-      ImmutableList<? extends Object> boundArgs,
-      MethodSignature method,
-      List<TofuJavaValue> params) {
-    int numJavaParams = method.arguments().size();
+      List<? extends Object> boundArgs, List<Class<?>> methodParams, List<TofuJavaValue> params) {
+    int numJavaParams = methodParams.size();
     TofuJavaValue[] javaValues = new TofuJavaValue[numJavaParams];
     int idx = 0;
     for (Object boundArg : boundArgs) {
@@ -1061,7 +1123,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     }
     // Add implicit params. Start from index=0 since we may have overflowed passing extra params.
     for (int i = 0; i < numJavaParams; i++) {
-      Class<?> implicitType = method.arguments().get(i);
+      Class<?> implicitType = methodParams.get(i);
       if (implicitType == Dir.class) {
         javaValues[i] = TofuJavaValue.forRaw(context.getBidiGlobalDir().toDir());
       } else if (implicitType == ULocale.class) {

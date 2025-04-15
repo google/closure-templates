@@ -45,6 +45,7 @@ java_library(
         "//java/src/com/google/template/soy/plugin/internal",
         "//java/src/com/google/template/soy/plugin/java",
         "//java/src/com/google/template/soy/plugin/java:extern_helpers",
+        "//java/src/com/google/template/soy/plugin/java/internal",
         "//java/src/com/google/template/soy/plugin/java/restricted",
         "//java/src/com/google/template/soy/shared",
         "//java/src/com/google/template/soy/shared:interfaces",

@@ -23,6 +23,7 @@ import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcPrintDirective;
 import com.google.template.soy.jssrc.restricted.ModernSoyJsSrcPrintDirective;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcPrintDirective;
+import com.google.template.soy.plugin.java.internal.SoyJavaExternFunction;
 import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
 import com.google.template.soy.plugin.javascript.restricted.SoyJavaScriptSourceFunction;
 import com.google.template.soy.plugin.python.restricted.SoyPythonSourceFunction;
@@ -60,7 +61,10 @@ public final class InternalPluginsTest {
     for (SoySourceFunction function : InternalPlugins.internalFunctions()) {
       assertThat(function.getClass().isAnnotationPresent(SoyFunctionSignature.class)).isTrue();
       assertThat(function).isInstanceOf(SoyJavaScriptSourceFunction.class);
-      assertThat(function).isInstanceOf(SoyJavaSourceFunction.class);
+      assertThat(
+              function instanceof SoyJavaSourceFunction
+                  || function instanceof SoyJavaExternFunction)
+          .isTrue();
       if (!function.getClass().getName().contains("Proto")
           && !function.getClass().getName().contains("VeHasSameIdMethod")) {
         assertThat(function).isInstanceOf(SoyPythonSourceFunction.class);
@@ -77,9 +81,10 @@ public final class InternalPluginsTest {
     for (SoySourceFunction function : InternalPlugins.internalMethods()) {
       assertThat(SoyMethodSignature.IS_SOY_METHOD.test(function)).isTrue();
       assertThat(function).isInstanceOf(SoyJavaScriptSourceFunction.class);
-      if (!function.getClass().getSimpleName().equals("SortMethod")) {
-        assertThat(function).isInstanceOf(SoyJavaSourceFunction.class);
-      }
+      assertThat(
+              function instanceof SoyJavaSourceFunction
+                  || function instanceof SoyJavaExternFunction)
+          .isTrue();
       if (!function.getClass().getName().contains("Proto")
           && !function.getClass().getSimpleName().equals("VeHasSameIdMethod")
           && !function.getClass().getName().contains("Gbigint")
