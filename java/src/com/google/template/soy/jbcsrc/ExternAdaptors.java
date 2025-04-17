@@ -56,7 +56,7 @@ class ExternAdaptors {
               soyMethod.getReturnType(),
               ImmutableList.<SoyType>builder()
                   .add(soyMethod.getBaseType())
-                  .addAll(soyMethod.getArgTypes())
+                  .addAll(soyMethod.getParamTypes())
                   .build()));
     }
     return Optional.empty();

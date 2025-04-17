@@ -36,9 +36,6 @@ public interface SoyMethod {
 
   boolean acceptsArgCount(int count);
 
-  /** Returns whether this method can be passed args of type {@code argTypes}. */
-  boolean appliesToArgs(List<SoyType> argTypes);
-
   /** A queryable registry of soy methods. */
   interface Registry {
 

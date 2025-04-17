@@ -1643,7 +1643,9 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
 
       // Subset of previous that also matches arg types.
       List<SoyMethod> andMatchArgType =
-          andMatchArgCount.stream().filter(m -> m.appliesToArgs(argTypes)).collect(toList());
+          andMatchArgCount.stream()
+              .filter(m -> appliesToArgs(m, baseType, argTypes))
+              .collect(toImmutableList());
 
       if (andMatchArgType.size() == 1) {
         // Matched exactly one method. Success!
@@ -1660,8 +1662,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
         errorReporter.report(srcLoc, MULTIPLE_METHODS_MATCH, methodName, numParams, baseType);
       } else if (!andMatchArgCount.isEmpty()) {
         // We matched base type, method name, and arity but not argument types.
-        String expected =
-            Joiner.on(", ").join(((SoySourceFunctionMethod) andMatchArgCount.get(0)).getArgTypes());
+        String expected = Joiner.on(", ").join(getParamTypes(andMatchArgCount.get(0), baseType));
         String actual = Joiner.on(", ").join(argTypes);
         errorReporter.report(srcLoc, METHOD_INVALID_PARAM_TYPES, methodName, actual, expected);
       } else {
@@ -1691,6 +1692,42 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
         GlobalNode.replaceExprWithError(node);
       }
       return null;
+    }
+
+    private List<SoyType> getParamTypes(SoyMethod method, SoyType baseType) {
+      if (method instanceof SoySourceFunctionMethod) {
+        SoySourceFunctionMethod sourceMethod = (SoySourceFunctionMethod) method;
+        // Hand-coded support for generic param types.
+        if (sourceMethod.getImpl() instanceof SortMethod) {
+          // Change list<T>.toSorted((?, ?) => int) to list<T>.toSorted((T, T) => int)
+          FunctionType arg = (FunctionType) sourceMethod.getParamTypes().get(0);
+          SoyType itemType = ((AbstractIterableType) baseType).getElementType();
+          arg =
+              FunctionType.of(
+                  arg.getParameters().stream()
+                      .map(p -> FunctionType.Parameter.of(p.getName(), itemType))
+                      .collect(toImmutableList()),
+                  arg.getReturnType());
+          return ImmutableList.of(arg);
+        }
+        return sourceMethod.getParamTypes();
+      }
+      return ImmutableList.of();
+    }
+
+    private boolean appliesToArgs(SoyMethod method, SoyType baseType, List<SoyType> argTypes) {
+      if (method instanceof SoySourceFunctionMethod) {
+        List<SoyType> allowedTypes = getParamTypes(method, baseType);
+        Preconditions.checkArgument(argTypes.size() == allowedTypes.size());
+        for (int i = 0; i < argTypes.size(); i++) {
+          if (!allowedTypes.get(i).isAssignableFromStrict(argTypes.get(i))) {
+            return false;
+          }
+        }
+        return true;
+      } else {
+        return true;
+      }
     }
 
     @Override

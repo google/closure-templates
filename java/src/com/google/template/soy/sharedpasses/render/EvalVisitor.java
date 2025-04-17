@@ -726,7 +726,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
             sourceMethod.getReturnType(),
             ImmutableList.<SoyType>builder()
                 .add(sourceMethod.getBaseType())
-                .addAll(sourceMethod.getArgTypes())
+                .addAll(sourceMethod.getParamTypes())
                 .build());
       }
       return computeFunctionHelper(

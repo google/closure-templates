@@ -31,14 +31,13 @@ import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.util.Arrays;
 
 /** Runtime type for function pointers. */
 @AutoValue
 public abstract class JbcSrcFunctionValue extends SoyValue {
 
   private static final MethodHandle ADAPT_RETURN;
-  private static final MethodHandle ADAPT_ARG;
+  private static final MethodHandle ADAPT_ARG_TO_SOY_VALUE;
 
   static {
     try {
@@ -49,10 +48,10 @@ public abstract class JbcSrcFunctionValue extends SoyValue {
               JbcSrcFunctionValue.class,
               "adaptReturn",
               MethodType.methodType(Object.class, Object.class, Class.class));
-      ADAPT_ARG =
+      ADAPT_ARG_TO_SOY_VALUE =
           lookup.findStatic(
               JbcSrcFunctionValue.class,
-              "adaptArg",
+              "adaptArgToSoyValue",
               MethodType.methodType(SoyValue.class, Object.class, Class.class));
     } catch (ReflectiveOperationException e) {
       throw new VerifyException(e);
@@ -103,16 +102,32 @@ public abstract class JbcSrcFunctionValue extends SoyValue {
     }
 
     MethodHandle handle = getHandle();
-    MethodHandle[] argFilters = new MethodHandle[functionalMethod.getParameterCount()];
-    Arrays.setAll(
-        argFilters,
-        i -> MethodHandles.insertArguments(ADAPT_ARG, 1, functionalMethod.getParameterTypes()[i]));
+    // This handle is a compiled extern method. So parameters and return type may be anything from
+    // java primitives, to java objects, to soy values.
+    //   (int, List, SoyValue): SoyValue
+
+    int paramCount = functionalMethod.getParameterCount();
+    MethodHandle[] argFilters = new MethodHandle[paramCount];
+    for (int i = 0; i < paramCount; i++) {
+      argFilters[i] = null;
+      Class<?> expected = handle.type().parameterType(i);
+      Class<?> provided = functionalMethod.getParameterTypes()[i];
+      if (SoyValue.class.isAssignableFrom(expected) && !SoyValue.class.isAssignableFrom(provided)) {
+        argFilters[i] = MethodHandles.insertArguments(ADAPT_ARG_TO_SOY_VALUE, 1, provided);
+      }
+    }
     handle = MethodHandles.filterArguments(handle, 0, argFilters);
+    // If the handle previously had SoyValue parameters, now the parameters match the functional
+    // interface params.
+    //   (int, List, String): SoyValue
+
     MethodHandle returnFilter =
         MethodHandles.insertArguments(ADAPT_RETURN, 1, functionalMethod.getReturnType());
     returnFilter =
         returnFilter.asType(returnFilter.type().changeParameterType(0, handle.type().returnType()));
     handle = MethodHandles.filterReturnValue(handle, returnFilter);
+    //   (int, List, String): long
+
     return MethodHandleProxies.asInterfaceInstance(iface, handle);
   }
 
@@ -168,7 +183,7 @@ public abstract class JbcSrcFunctionValue extends SoyValue {
   }
 
   /** Adapt value passed to Java extern from what Java passes. */
-  public static SoyValue adaptArg(Object val, Class<?> paramType) {
+  public static SoyValue adaptArgToSoyValue(Object val, Class<?> paramType) {
     return SoyValueConverter.INSTANCE.convert(val).resolve();
   }
 }

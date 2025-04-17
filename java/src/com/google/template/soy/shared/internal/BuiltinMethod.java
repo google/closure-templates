@@ -448,7 +448,7 @@ public enum BuiltinMethod implements SoyMethod {
         public ImmutableListMultimap<SoyMethod, String> matchForBaseAndArgs(
             SoyType baseType, List<SoyType> argTypes) {
           return Arrays.stream(values())
-              .filter(m -> m.appliesToBase(baseType) && m.appliesToArgs(argTypes))
+              .filter(m -> m.appliesToBase(baseType) && m.acceptsArgCount(argTypes.size()))
               .collect(
                   flatteningToImmutableListMultimap(
                       m -> m, m -> m.expandMethodNames(baseType, argTypes).stream()));
@@ -625,11 +625,6 @@ public enum BuiltinMethod implements SoyMethod {
   @Override
   public boolean acceptsArgCount(int count) {
     return argCount == count;
-  }
-
-  @Override
-  public boolean appliesToArgs(List<SoyType> argTypes) {
-    return acceptsArgCount(argTypes.size());
   }
 
   /**

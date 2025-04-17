@@ -68,6 +68,7 @@ import com.google.template.soy.types.StringType;
 import com.google.template.soy.types.TemplateType;
 import com.google.template.soy.types.TemplateType.Parameter;
 import java.lang.reflect.Method;
+import java.lang.reflect.TypeVariable;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -609,6 +610,11 @@ class ValidateExternsPass implements CompilerFilePass {
         return false;
       }
       for (int i = 0; i < method.getGenericParameterTypes().length; i++) {
+        // Let e.g. `(string, string) => int` satisfy Comparator. Pass without checking since we
+        // don't really support generics in Soy.
+        if (method.getGenericParameterTypes()[i] instanceof TypeVariable) {
+          continue;
+        }
         if (!typesAreCompatible(
             TypeReference.create(method.getGenericParameterTypes()[i]),
             functionType.getParameters().get(i).getType(),

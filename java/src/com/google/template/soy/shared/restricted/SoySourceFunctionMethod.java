@@ -16,11 +16,9 @@
 
 package com.google.template.soy.shared.restricted;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import com.google.template.soy.types.SoyType;
-import java.util.List;
 
 /** A plugin-provided {@link SoyMethod}, implemented with a {@link SoySourceFunction}. */
 public final class SoySourceFunctionMethod implements SoyMethod {
@@ -28,41 +26,30 @@ public final class SoySourceFunctionMethod implements SoyMethod {
   private final SoySourceFunction impl;
   private final SoyType baseType;
   private final SoyType returnType;
-  private final ImmutableList<SoyType> argTypes;
+  private final ImmutableList<SoyType> paramTypes;
   private final String methodName;
 
   public SoySourceFunctionMethod(
       SoySourceFunction impl,
       SoyType baseType,
       SoyType returnType,
-      ImmutableList<SoyType> argTypes,
+      ImmutableList<SoyType> paramTypes,
       String methodName) {
     this.impl = impl;
     this.baseType = baseType;
     this.returnType = returnType;
-    this.argTypes = argTypes;
+    this.paramTypes = paramTypes;
     this.methodName = methodName;
   }
 
   @Override
   public int getNumArgs() {
-    return argTypes.size();
+    return paramTypes.size();
   }
 
   @Override
   public boolean acceptsArgCount(int count) {
-    return argTypes.size() == count;
-  }
-
-  @Override
-  public boolean appliesToArgs(List<SoyType> argTypes) {
-    Preconditions.checkArgument(argTypes.size() == this.argTypes.size());
-    for (int i = 0; i < argTypes.size(); i++) {
-      if (!this.argTypes.get(i).isAssignableFromStrict(argTypes.get(i))) {
-        return false;
-      }
-    }
-    return true;
+    return paramTypes.size() == count;
   }
 
   public SoySourceFunction getImpl() {
@@ -77,8 +64,8 @@ public final class SoySourceFunctionMethod implements SoyMethod {
     return returnType;
   }
 
-  public ImmutableList<SoyType> getArgTypes() {
-    return argTypes;
+  public ImmutableList<SoyType> getParamTypes() {
+    return paramTypes;
   }
 
   public boolean appliesToBase(SoyType baseType) {

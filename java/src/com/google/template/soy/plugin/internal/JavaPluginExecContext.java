@@ -50,7 +50,7 @@ public final class JavaPluginExecContext {
         methodNode.getMethodName().identifier(),
         ImmutableList.<SoyType>builder()
             .add(method.getBaseType())
-            .addAll(method.getArgTypes())
+            .addAll(method.getParamTypes())
             .build());
   }
 
