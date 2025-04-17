@@ -80,6 +80,10 @@ public final class Statements {
     return ForOf.create(localVar, collection, body);
   }
 
+  public static Statement whileLoop(Expression condition, Statement body) {
+    return While.create(condition, body);
+  }
+
   /** Creates a code chunk that represents a return statement returning the given value. */
   public static Statement returnValue(Expression returnValue) {
     return Return.create(returnValue);
@@ -88,6 +92,14 @@ public final class Statements {
   /** Creates a code chunk that represents an empty return statement. */
   public static Statement returnNothing() {
     return Return.create();
+  }
+
+  public static Statement breakStatement() {
+    return Break.create();
+  }
+
+  public static Statement continueStatement() {
+    return Continue.create();
   }
 
   /** Creates a code chunk that represents a throw statement. */

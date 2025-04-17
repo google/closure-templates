@@ -146,7 +146,7 @@ public abstract class VariableDeclaration extends Statement implements CodeChunk
       return setIsMutable(true);
     }
 
-    abstract Builder setIsMutable(boolean isConst);
+    public abstract Builder setIsMutable(boolean isConst);
 
     public abstract Builder setIsExported(boolean isExported);
 

@@ -165,7 +165,8 @@ final class GenIdomTemplateBodyVisitor extends GenJsTemplateBodyVisitor {
       FileSetMetadata fileSetMetadata,
       String alias,
       ScopedJsTypeRegistry jsTypeRegistry,
-      SourceMapHelper sourceMapHelper) {
+      SourceMapHelper sourceMapHelper,
+      boolean mutableLets) {
     super(
         state,
         outputVars,
@@ -179,7 +180,8 @@ final class GenIdomTemplateBodyVisitor extends GenJsTemplateBodyVisitor {
         templateTranslationContext,
         templateAliases,
         jsTypeRegistry,
-        sourceMapHelper);
+        sourceMapHelper,
+        mutableLets);
     this.contentKind = checkNotNull(contentKind);
     this.staticVarDeclarations = new ArrayList<>();
     this.generatePositionalParamsSignature = generatePositionalParamsSignature;

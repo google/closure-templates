@@ -21,8 +21,10 @@ import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.internal.DelTemplateNamer;
 import com.google.template.soy.jssrc.internal.GenCallCodeUtils;
 import com.google.template.soy.jssrc.internal.GenJsExprsVisitor;
+import com.google.template.soy.jssrc.internal.GenJsTemplateBodyVisitor;
 import com.google.template.soy.jssrc.internal.IsComputableAsJsExprsVisitor;
 import com.google.template.soy.jssrc.internal.JavaScriptValueFactoryImpl;
+import com.google.template.soy.jssrc.internal.OutputVarHandler;
 import com.google.template.soy.jssrc.internal.VisitorsState;
 import com.google.template.soy.types.SoyTypeRegistry;
 import java.util.Deque;
@@ -80,7 +82,8 @@ public final class IdomVisitorsState extends VisitorsState {
   }
 
   @Override
-  public GenIdomTemplateBodyVisitor createTemplateBodyVisitor(GenJsExprsVisitor genJsExprsVisitor) {
+  public GenJsTemplateBodyVisitor createTemplateBodyVisitor(
+      GenJsExprsVisitor genJsExprsVisitor, OutputVarHandler outputVarHandler, boolean mutableLets) {
     return new GenIdomTemplateBodyVisitor(
         this,
         outputVarHandler,
@@ -98,7 +101,8 @@ public final class IdomVisitorsState extends VisitorsState {
         fileSetMetadata,
         alias,
         scopedJsTypeRegistry,
-        sourceMapHelper);
+        sourceMapHelper,
+        mutableLets);
   }
 
   @Override

@@ -17,9 +17,13 @@
 package com.google.template.soy.jssrc.internal;
 
 import com.google.template.soy.soytree.AbstractReturningSoyNodeVisitor;
+import com.google.template.soy.soytree.AssignmentNode;
+import com.google.template.soy.soytree.AutoImplNode;
+import com.google.template.soy.soytree.BreakNode;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamValueNode;
+import com.google.template.soy.soytree.ContinueNode;
 import com.google.template.soy.soytree.DebuggerNode;
 import com.google.template.soy.soytree.ExternNode;
 import com.google.template.soy.soytree.ForNode;
@@ -40,6 +44,7 @@ import com.google.template.soy.soytree.MsgHtmlTagNode;
 import com.google.template.soy.soytree.MsgPlaceholderNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
+import com.google.template.soy.soytree.ReturnNode;
 import com.google.template.soy.soytree.SkipNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
@@ -48,6 +53,7 @@ import com.google.template.soy.soytree.SwitchDefaultNode;
 import com.google.template.soy.soytree.SwitchNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.VeLogNode;
+import com.google.template.soy.soytree.WhileNode;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -122,7 +128,6 @@ public class IsComputableAsJsExprsVisitor extends AbstractReturningSoyNodeVisito
   protected Boolean visitPrintNode(PrintNode node) {
     return true;
   }
-
 
   @Override
   protected Boolean visitLetNode(LetNode node) {
@@ -241,6 +246,36 @@ public class IsComputableAsJsExprsVisitor extends AbstractReturningSoyNodeVisito
 
   @Override
   protected Boolean visitJavaImplNode(JavaImplNode node) {
+    return false;
+  }
+
+  @Override
+  protected Boolean visitAutoImplNode(AutoImplNode node) {
+    return false;
+  }
+
+  @Override
+  protected Boolean visitAssignmentNode(AssignmentNode node) {
+    return false;
+  }
+
+  @Override
+  protected Boolean visitReturnNode(ReturnNode node) {
+    return false;
+  }
+
+  @Override
+  protected Boolean visitBreakNode(BreakNode node) {
+    return false;
+  }
+
+  @Override
+  protected Boolean visitContinueNode(ContinueNode node) {
+    return false;
+  }
+
+  @Override
+  protected Boolean visitWhileNode(WhileNode node) {
     return false;
   }
 

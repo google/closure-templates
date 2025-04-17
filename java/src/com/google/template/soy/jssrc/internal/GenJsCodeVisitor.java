@@ -82,6 +82,7 @@ import com.google.template.soy.passes.IndirectParamsCalculator;
 import com.google.template.soy.passes.IndirectParamsCalculator.IndirectParamsInfo;
 import com.google.template.soy.passes.ShouldEnsureDataIsDefinedVisitor;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
+import com.google.template.soy.soytree.AutoImplNode;
 import com.google.template.soy.soytree.CallDelegateNode;
 import com.google.template.soy.soytree.ConstNode;
 import com.google.template.soy.soytree.DelcallAnnotationVisitor;
@@ -104,6 +105,7 @@ import com.google.template.soy.soytree.Visibility;
 import com.google.template.soy.soytree.defn.SymbolVar;
 import com.google.template.soy.soytree.defn.SymbolVar.SymbolKind;
 import com.google.template.soy.soytree.defn.TemplateParam;
+import com.google.template.soy.types.FunctionType;
 import com.google.template.soy.types.IndexedType;
 import com.google.template.soy.types.IntersectionType;
 import com.google.template.soy.types.NamedType;
@@ -420,14 +422,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       } else if (child instanceof TypeDefNode) {
         visit(child);
       } else if (child instanceof ExternNode) {
-        ExternNode extern = (ExternNode) child;
-        Optional<JsImplNode> jsImpl = extern.getJsImpl();
-        if (jsImpl.isPresent()) {
-          visit(jsImpl.get());
-        } else {
-          state.errorReporter.report(
-              extern.getSourceLocation(), EXTERN_NO_JS_IMPL, extern.getIdentifier().identifier());
-        }
+        visit(child);
       }
     }
 
@@ -1581,41 +1576,85 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
   }
 
   @Override
-  protected void visitJsImplNode(JsImplNode node) {
-    ExternNode externNode = node.getParent();
-    String externName = externNode.getIdentifier().originalName();
+  protected void visitExternNode(ExternNode node) {
+    if (node.getJsImpl().isEmpty() && node.getAutoImpl().isEmpty()) {
+      state.errorReporter.report(
+          node.getSourceLocation(), EXTERN_NO_JS_IMPL, node.getIdentifier().identifier());
+      return;
+    }
 
+    String externName = node.getIdentifier().originalName();
     // Skip if we handled this impl already, e.g. a prev extern overload.
     if (templateTranslationContext.soyToJsVariableMappings().has(externName)) {
       return;
     }
 
-    GoogRequire externRequire;
-    Expression externReference;
-    if (jsSrcOptions.shouldGenerateGoogModules()) {
-      externRequire = GoogRequire.createWithAlias(node.module(), node.module().replace('.', '$'));
-      externReference = dottedIdNoRequire(externRequire.alias()).dotAccess(node.function());
-    } else {
-      externRequire = GoogRequire.create(node.module());
-      externReference =
-          GOOG_MODULE_GET.call(stringLiteral(node.module())).dotAccess(node.function());
-    }
-    jsCodeBuilder.addGoogRequire(externRequire);
-    templateTranslationContext.soyToJsVariableMappings().put(externName, externReference);
+    if (node.getJsImpl().isPresent()) {
+      JsImplNode js = node.getJsImpl().get();
+      GoogRequire externRequire;
+      Expression externReference;
+      if (jsSrcOptions.shouldGenerateGoogModules()) {
+        externRequire = GoogRequire.createWithAlias(js.module(), js.module().replace('.', '$'));
+        externReference = dottedIdNoRequire(externRequire.alias()).dotAccess(js.function());
+      } else {
+        externRequire = GoogRequire.create(js.module());
+        externReference = GOOG_MODULE_GET.call(stringLiteral(js.module())).dotAccess(js.function());
+      }
+      jsCodeBuilder.addGoogRequire(externRequire);
+      templateTranslationContext.soyToJsVariableMappings().put(externName, externReference);
 
-    if (externNode.isExported()) {
-      SoyFileNode file = node.getNearestAncestor(SoyFileNode.class);
-      Expression exportAlias =
-          jsSrcOptions.shouldGenerateGoogModules()
-              ? JsRuntime.EXPORTS
-              : dottedIdNoRequire(getGoogModuleNamespace(file.getNamespace()));
-      Expression export = exportAlias.dotAccess(externName);
-      jsCodeBuilder
-          .append(BLANK_LINE)
-          .append(BLANK_LINE)
-          .append(
-              Statements.assign(
-                  export, externReference, JsDoc.builder().addAnnotation("const").build()));
+      if (node.isExported()) {
+        SoyFileNode file = node.getNearestAncestor(SoyFileNode.class);
+        Expression exportAlias =
+            jsSrcOptions.shouldGenerateGoogModules()
+                ? JsRuntime.EXPORTS
+                : dottedIdNoRequire(getGoogModuleNamespace(file.getNamespace()));
+        Expression export = exportAlias.dotAccess(externName);
+        jsCodeBuilder
+            .append(BLANK_LINE)
+            .append(BLANK_LINE)
+            .append(
+                Statements.assign(
+                    export, externReference, JsDoc.builder().addAnnotation("const").build()));
+      }
+    } else {
+      AutoImplNode auto = node.getAutoImpl().get();
+      String partialName = node.getVar().name();
+      ByteSpan imputesSpan = SoyTreeUtils.getByteSpan(node, node.getIdentifier().location());
+
+      JsDoc.Builder jsDocBuilder = JsDoc.builder();
+      for (FunctionType.Parameter param : node.getType().getParameters()) {
+        JsType jsType = getJsTypeForParamForDeclaration(param.getType());
+        jsDocBuilder.addParam("p$" + param.getName(), jsType.typeExpr());
+      }
+      jsDocBuilder.addParameterizedAnnotation(
+          "return", getJsTypeForParamForDeclaration(node.getType().getReturnType()).typeExpr());
+
+      Statement body = generateAutoExtern(auto);
+      Expression function = Expressions.function(jsDocBuilder.build(), body);
+
+      jsCodeBuilder.append(
+          topLevelAssignment(
+              node, node.isExported(), partialName, jsDocBuilder, imputesSpan, function));
+      templateTranslationContext
+          .soyToJsVariableMappings()
+          .put(externName, topLevelLhs(node, node.isExported(), partialName, null));
+    }
+  }
+
+  @CheckReturnValue
+  protected Statement generateAutoExtern(AutoImplNode node) {
+    try (var unused = templateTranslationContext.enterSoyAndJsScope()) {
+      SoyToJsVariableMappings vars = templateTranslationContext.soyToJsVariableMappings();
+      for (TemplateParam param : node.getParent().getParamVars()) {
+        vars.put(param, Expressions.id("p$" + param.name()));
+      }
+      genJsExprsVisitor = state.createJsExprsVisitor();
+      return Statements.of(
+          state
+              .createTemplateBodyVisitor(
+                  genJsExprsVisitor, OutputVarHandler.DISALLOWED, /* mutableLets= */ true)
+              .visitChildren(node));
     }
   }
 

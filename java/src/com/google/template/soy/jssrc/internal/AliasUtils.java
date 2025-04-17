@@ -117,6 +117,11 @@ final class AliasUtils {
         .getConstants()
         .forEach(
             constNode -> aliasMap.put(constNode.getVar().name(), "$" + constNode.getVar().name()));
+    fileNode.getExterns().stream()
+        .filter(e -> e.getJsImpl().isEmpty() && e.getAutoImpl().isPresent())
+        .forEach(
+            externNode ->
+                aliasMap.put(externNode.getVar().name(), "$" + externNode.getVar().name()));
 
     fileNode.getImports().stream()
         .filter(i -> i.getImportType() == ImportType.TEMPLATE)

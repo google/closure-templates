@@ -52,9 +52,12 @@ import com.google.template.soy.jssrc.dsl.VariableDeclaration;
 import com.google.template.soy.jssrc.internal.GenJsCodeVisitor.ScopedJsTypeRegistry;
 import com.google.template.soy.shared.RangeArgs;
 import com.google.template.soy.soytree.AbstractReturningSoyNodeVisitor;
+import com.google.template.soy.soytree.AssignmentNode;
+import com.google.template.soy.soytree.BreakNode;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamNode;
+import com.google.template.soy.soytree.ContinueNode;
 import com.google.template.soy.soytree.DebuggerNode;
 import com.google.template.soy.soytree.ForNode;
 import com.google.template.soy.soytree.ForNonemptyNode;
@@ -69,6 +72,7 @@ import com.google.template.soy.soytree.MsgFallbackGroupNode;
 import com.google.template.soy.soytree.MsgHtmlTagNode;
 import com.google.template.soy.soytree.MsgPlaceholderNode;
 import com.google.template.soy.soytree.PrintNode;
+import com.google.template.soy.soytree.ReturnNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
@@ -76,6 +80,7 @@ import com.google.template.soy.soytree.SwitchCaseNode;
 import com.google.template.soy.soytree.SwitchDefaultNode;
 import com.google.template.soy.soytree.SwitchNode;
 import com.google.template.soy.soytree.VeLogNode;
+import com.google.template.soy.soytree.WhileNode;
 import com.google.template.soy.types.AnyType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypes;
@@ -130,6 +135,8 @@ public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<St
 
   protected final SourceMapHelper sourceMapHelper;
 
+  protected final boolean mutableLets;
+
   protected GenJsTemplateBodyVisitor(
       VisitorsState state,
       OutputVarHandler outputVars,
@@ -143,7 +150,8 @@ public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<St
       TranslationContext templateTranslationContext,
       TemplateAliases templateAliases,
       ScopedJsTypeRegistry jsTypeRegistry,
-      SourceMapHelper sourceMapHelper) {
+      SourceMapHelper sourceMapHelper,
+      boolean mutableLets) {
     this.state = checkNotNull(state);
     this.outputVars = checkNotNull(outputVars);
     this.jsSrcOptions = checkNotNull(jsSrcOptions);
@@ -157,6 +165,7 @@ public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<St
     this.templateAliases = checkNotNull(templateAliases);
     this.jsTypeRegistry = checkNotNull(jsTypeRegistry);
     this.sourceMapHelper = sourceMapHelper;
+    this.mutableLets = mutableLets;
   }
 
   @Override
@@ -290,7 +299,10 @@ public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<St
     // Add a mapping for generating future references to this local var.
     templateTranslationContext.soyToJsVariableMappings().put(node.getVar(), id(generatedVarName));
 
-    return VariableDeclaration.builder(Id.create(generatedVarName)).setRhs(value).build();
+    return VariableDeclaration.builder(Id.create(generatedVarName))
+        .setRhs(value)
+        .setIsMutable(mutableLets)
+        .build();
   }
 
   /**
@@ -341,6 +353,32 @@ public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<St
     templateTranslationContext.soyToJsVariableMappings().put(node.getVar(), generatedVar);
 
     return Statements.of(statements);
+  }
+
+  @Override
+  protected Statement visitAssignmentNode(AssignmentNode node) {
+    return Statements.assign(translateExpr(node.getLhs()), translateExpr(node.getRhs()));
+  }
+
+  @Override
+  protected Statement visitReturnNode(ReturnNode node) {
+    return Statements.returnValue(translateExpr(node.getExpr()));
+  }
+
+  @Override
+  protected Statement visitBreakNode(BreakNode node) {
+    return Statements.breakStatement();
+  }
+
+  @Override
+  protected Statement visitContinueNode(ContinueNode node) {
+    return Statements.continueStatement();
+  }
+
+  @Override
+  protected Statement visitWhileNode(WhileNode node) {
+    Statement body = Statements.of(visitChildren(node));
+    return Statements.whileLoop(translateExpr(node.getExpr()), body);
   }
 
   /**

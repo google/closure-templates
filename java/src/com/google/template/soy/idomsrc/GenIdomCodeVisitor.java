@@ -68,6 +68,7 @@ import com.google.template.soy.jssrc.internal.OutputVarHandler;
 import com.google.template.soy.jssrc.internal.StandardNames;
 import com.google.template.soy.jssrc.internal.TranslateExprNodeVisitor;
 import com.google.template.soy.passes.ShouldEnsureDataIsDefinedVisitor;
+import com.google.template.soy.soytree.ExternNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateDelegateNode;
@@ -166,6 +167,15 @@ public final class GenIdomCodeVisitor extends GenJsCodeVisitor {
     visitTemplateNodeInternal(node);
     contentKind.pop();
     currentTemplateNode = null;
+  }
+
+  @Override
+  protected void visitExternNode(ExternNode node) {
+    ((IdomVisitorsState) state).enterCall("unused", contentKind);
+    contentKind.push(SanitizedContentKind.TEXT);
+    super.visitExternNode(node);
+    contentKind.pop();
+    ((IdomVisitorsState) state).exitCall();
   }
 
   private void visitTemplateNodeInternal(TemplateNode node) {

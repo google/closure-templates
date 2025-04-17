@@ -31,7 +31,20 @@ import java.util.List;
 import java.util.Optional;
 
 /** Keeps track of the current output variable and generates code for declaring and assigning it. */
-public final class OutputVarHandler {
+public class OutputVarHandler {
+
+  public static final OutputVarHandler DISALLOWED =
+      new OutputVarHandler() {
+        @Override
+        public Optional<Statement> initOutputVarIfNecessary() {
+          return Optional.empty();
+        }
+
+        @Override
+        public Statement addChunksToOutputVar(List<? extends Expression> codeChunks) {
+          throw new UnsupportedOperationException("Output not allowed");
+        }
+      };
 
   private static final class OutputVar {
     // TODO(b/32224284): this is always an {@link Expression#id}. Consider exposing a subclass of
@@ -48,7 +61,7 @@ public final class OutputVarHandler {
   /** The current stack of output variables. */
   private final Deque<OutputVar> outputVars;
 
-  public OutputVarHandler() {
+  OutputVarHandler() {
     outputVars = new ArrayDeque<>();
   }
 

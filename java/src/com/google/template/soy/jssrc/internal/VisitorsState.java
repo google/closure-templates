@@ -105,7 +105,13 @@ public class VisitorsState {
         sourceMapHelper);
   }
 
-  public GenJsTemplateBodyVisitor createTemplateBodyVisitor(GenJsExprsVisitor genJsExprsVisitor) {
+  public final GenJsTemplateBodyVisitor createTemplateBodyVisitor(
+      GenJsExprsVisitor genJsExprsVisitor) {
+    return createTemplateBodyVisitor(genJsExprsVisitor, outputVarHandler, false);
+  }
+
+  public GenJsTemplateBodyVisitor createTemplateBodyVisitor(
+      GenJsExprsVisitor genJsExprsVisitor, OutputVarHandler outputVarHandler, boolean mutableLets) {
     return new GenJsTemplateBodyVisitor(
         this,
         outputVarHandler,
@@ -119,7 +125,8 @@ public class VisitorsState {
         translationContext,
         templateAliases,
         scopedJsTypeRegistry,
-        sourceMapHelper);
+        sourceMapHelper,
+        mutableLets);
   }
 
   public GenJsExprsVisitor createJsExprsVisitor() {
