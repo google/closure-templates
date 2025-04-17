@@ -191,8 +191,7 @@ public final class SoyFileNode extends AbstractParentSoyNode<SoyNode>
   public ImmutableList<CssPath> getRequiredCssImportPaths() {
     return getImports().stream()
         .map(ImportNode::getRequiredCssPath)
-        .filter(Optional::isPresent)
-        .map(Optional::get)
+        .flatMap(Optional::stream)
         .collect(toImmutableList());
   }
 

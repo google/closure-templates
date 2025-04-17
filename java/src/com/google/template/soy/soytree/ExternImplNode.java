@@ -16,7 +16,5 @@
 
 package com.google.template.soy.soytree;
 
-import com.google.template.soy.soytree.CommandTagAttribute.CommandTagAttributesHolder;
-
 /** A node that specifies some language-specific implementation of an extern. */
-public interface ExternImplNode extends CommandTagAttributesHolder {}
+public interface ExternImplNode extends SoyNode {}

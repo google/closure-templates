@@ -38,6 +38,7 @@ import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
 import com.google.template.soy.jbcsrc.shared.Names;
 import com.google.template.soy.plugin.java.internal.PluginAnalyzer;
 import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
+import com.google.template.soy.soytree.ExternNode;
 import com.google.template.soy.soytree.FileSetMetadata;
 import com.google.template.soy.soytree.Metadata;
 import com.google.template.soy.soytree.SoyFileNode;
@@ -181,8 +182,8 @@ public final class BytecodeCompiler {
       // Collect all instances from all declared externs.
       fileSet.getChildren().stream()
           .flatMap(f -> f.getExterns().stream())
-          .filter(e -> e.getJavaImpl().isPresent())
-          .map(e -> e.getJavaImpl().get())
+          .map(ExternNode::getJavaImpl)
+          .flatMap(Optional::stream)
           .filter(j -> !j.isStatic())
           .map(
               j ->

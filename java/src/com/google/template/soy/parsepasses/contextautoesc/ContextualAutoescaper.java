@@ -103,12 +103,11 @@ public final class ContextualAutoescaper {
         }
       }
 
-      // Set context to TEXT anywhere in {javaimpl}. This information shouldn't affect anything but
+      // Set context to TEXT anywhere in {autoimpl}. This information shouldn't affect anything but
       // will avoid runtime exceptions calling getHtmlContext.
       file.getExterns().stream()
-          .filter(ExternNode::isAutoJava)
-          .map(ExternNode::getJavaImpl)
-          .map(Optional::get)
+          .map(ExternNode::getAutoImpl)
+          .flatMap(Optional::stream)
           .forEach(
               j -> {
                 try {

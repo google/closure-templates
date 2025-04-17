@@ -160,14 +160,10 @@ message ExternP {
   // The function signature.
   FunctionTypeP signature = 2;
 
-  oneof java {
-    // If this element delegates to another element (element call syntax) then
-    // this is its FQN.
-    bool auto_java = 3;
-    // If this element delegates to another template (call syntax) then this is
-    // its FQN.
-    JavaImplP java_impl = 4;
-  }
+  // Whether the extern has an auto implementation.
+  bool auto_impl = 3;
+  // The optional java implementation.
+  JavaImplP java_impl = 4;
 }
 
 message JavaImplP {

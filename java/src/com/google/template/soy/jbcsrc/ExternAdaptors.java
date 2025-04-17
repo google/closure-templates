@@ -105,11 +105,6 @@ class ExternAdaptors {
     JavaImpl java =
         new JavaImpl() {
           @Override
-          public boolean isAuto() {
-            return false;
-          }
-
-          @Override
           public String className() {
             return method.getDeclaringClass().getName();
           }
@@ -160,6 +155,11 @@ class ExternAdaptors {
       @Override
       public JavaImpl getJavaImpl() {
         return java;
+      }
+
+      @Override
+      public boolean hasAutoImpl() {
+        return false;
       }
 
       @Override

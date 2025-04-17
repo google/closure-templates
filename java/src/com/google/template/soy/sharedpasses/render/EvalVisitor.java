@@ -143,6 +143,7 @@ import com.google.template.soy.shared.internal.DelTemplateSelector;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyMethod;
 import com.google.template.soy.shared.restricted.SoySourceFunctionMethod;
+import com.google.template.soy.soytree.AutoImplNode;
 import com.google.template.soy.soytree.ExternNode;
 import com.google.template.soy.soytree.FileMetadata.Extern;
 import com.google.template.soy.soytree.JavaImplNode;
@@ -162,6 +163,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
@@ -220,7 +222,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
   /** Functional interface for executing a {@code JavaImplNode}. */
   @FunctionalInterface
   public interface AutoJavaExternVisitor {
-    SoyValue exec(JavaImplNode java, ImmutableList<SoyValue> args);
+    SoyValue exec(AutoImplNode java, ImmutableList<SoyValue> args);
   }
 
   /** The current environment. */
@@ -1062,16 +1064,14 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
       SoyType resultType,
       SourceLocation sourceLocation,
       boolean produceRawTofuValues) {
-    JavaImplNode java =
-        externNode
-            .getJavaImpl()
-            .orElseThrow(
-                () ->
-                    RenderException.createF(
-                        "No java implementation for extern '%s'.",
-                        externNode.getIdentifier().identifier()));
+    Optional<JavaImplNode> javaOpt = externNode.getJavaImpl();
+    Optional<AutoImplNode> autoOpt = externNode.getAutoImpl();
+    if (javaOpt.isEmpty() && autoOpt.isEmpty()) {
+      throw RenderException.createF(
+          "No java implementation for extern '%s'.", externNode.getIdentifier().identifier());
+    }
 
-    if (java.isAutoImpl()) {
+    if (javaOpt.isEmpty()) {
       ImmutableList.Builder<SoyValue> javaArgs = ImmutableList.builder();
       for (TofuJavaValue boundArg : boundArgs) {
         javaArgs.add(boundArg.soyValue());
@@ -1081,9 +1081,10 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
       }
       // Ignore produceRawTofuValues. Callers should handle both possibilities.
       return TofuJavaValue.forSoyValue(
-          externVisitor.exec(java, javaArgs.build()), SourceLocation.UNKNOWN);
+          externVisitor.exec(autoOpt.get(), javaArgs.build()), SourceLocation.UNKNOWN);
     }
 
+    JavaImplNode java = javaOpt.get();
     MethodSignature method;
     try {
       method = getMethodSignature(java);

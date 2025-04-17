@@ -192,10 +192,6 @@ class ValidateExternsPass implements CompilerFilePass {
   }
 
   private void validateJava(ExternNode extern, JavaImplNode java) {
-    if (java.isAutoImpl()) {
-      return;
-    }
-
     int requiredParamCount = extern.getType().getParameters().size();
 
     // For now some of these won't trigger because the same checks exist in JavaImplNode.

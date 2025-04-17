@@ -59,6 +59,7 @@ import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.sharedpasses.render.EvalVisitor.EvalVisitorFactory;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.AssignmentNode;
+import com.google.template.soy.soytree.AutoImplNode;
 import com.google.template.soy.soytree.BreakNode;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallDelegateNode;
@@ -77,7 +78,6 @@ import com.google.template.soy.soytree.IfElseNode;
 import com.google.template.soy.soytree.IfNode;
 import com.google.template.soy.soytree.ImportNode;
 import com.google.template.soy.soytree.ImportNode.ImportType;
-import com.google.template.soy.soytree.JavaImplNode;
 import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.LetValueNode;
 import com.google.template.soy.soytree.LogNode;
@@ -251,7 +251,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
     return null;
   }
 
-  private SoyValue execAutoJavaExternInNewEnv(JavaImplNode java, ImmutableList<SoyValue> args) {
+  private SoyValue execAutoJavaExternInNewEnv(AutoImplNode java, ImmutableList<SoyValue> args) {
     RenderVisitor visitor =
         new RenderVisitor(
             evalVisitorFactory,
@@ -271,7 +271,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
     return visitor.execAutoJavaExtern(java, args);
   }
 
-  public SoyValue execAutoJavaExtern(JavaImplNode java, ImmutableList<SoyValue> args) {
+  public SoyValue execAutoJavaExtern(AutoImplNode java, ImmutableList<SoyValue> args) {
     env = Environment.create();
     buildFileEnvironment(env, java.getNearestAncestor(SoyFileNode.class));
     ImmutableList<TemplateParam> externParams = java.getParent().getParamVars();

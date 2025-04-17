@@ -158,14 +158,12 @@ public final class TemplateMetadataSerializer {
     ExternP.Builder builder =
         ExternP.newBuilder()
             .setName(node.getIdentifier().identifier())
-            .setSignature(node.getType().toProto().getFunction());
+            .setSignature(node.getType().toProto().getFunction())
+            .setAutoImpl(node.getAutoImpl().isPresent());
 
     Optional<JavaImplNode> java = node.getJavaImpl();
     java.ifPresent(
         j -> {
-          if (j.isAutoImpl()) {
-            builder.setAutoJava(true);
-          } else {
             builder.setJavaImpl(
                 JavaImplP.newBuilder()
                     .setClassName(j.className())
@@ -176,7 +174,6 @@ public final class TemplateMetadataSerializer {
                             .map(TemplateMetadataSerializer::typeProto)
                             .collect(toImmutableList()))
                     .setMethodType(JavaImplP.MethodType.valueOf(j.type().name())));
-          }
         });
     return builder.build();
   }

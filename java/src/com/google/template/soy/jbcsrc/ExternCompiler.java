@@ -50,6 +50,7 @@ import com.google.template.soy.jbcsrc.restricted.TypeInfo;
 import com.google.template.soy.jbcsrc.runtime.JbcSrcExternRuntime;
 import com.google.template.soy.jbcsrc.shared.Names;
 import com.google.template.soy.plugin.java.restricted.MethodSignature;
+import com.google.template.soy.soytree.AutoImplNode;
 import com.google.template.soy.soytree.ExternNode;
 import com.google.template.soy.soytree.FileMetadata.Extern;
 import com.google.template.soy.soytree.FileMetadata.Extern.JavaImpl;
@@ -113,7 +114,9 @@ public final class ExternCompiler {
     // delegate parameter types match the java types from the javaimpl definition.
 
     boolean requiresRenderContext = false;
-    if (extern.getJavaImpl().isEmpty()) {
+    Optional<JavaImplNode> javaOpt = extern.getJavaImpl();
+    Optional<AutoImplNode> autoOpt = extern.getAutoImpl();
+    if (javaOpt.isEmpty() && autoOpt.isEmpty()) {
       Statement.throwExpression(JbcSrcExternRuntime.NO_EXTERN_JAVA_IMPL.invoke())
           .writeMethod(
               methodAccess(),
@@ -126,7 +129,7 @@ public final class ExternCompiler {
       return;
     }
 
-    JavaImplNode javaImpl = extern.getJavaImpl().get();
+    boolean autoJava = javaOpt.isEmpty() && autoOpt.isPresent();
     // TODO(b/408029720): Do not code gen if private and not auto java. Private externs from
     //    function pointers are still invoked via the dynamic path.
     requiresRenderContext = ExpressionCompiler.requiresRenderContext(externMetadata);
@@ -145,8 +148,8 @@ public final class ExternCompiler {
       paramNamesOffset = 1;
     }
 
-    if (javaImpl.isAutoImpl()) {
-      javaImpl.getParent().getType().getParameters().stream()
+    if (autoJava) {
+      extern.getType().getParameters().stream()
           .map(Parameter::getName)
           .forEach(paramNamesBuilder::add);
     } else {
@@ -171,7 +174,7 @@ public final class ExternCompiler {
             start,
             end,
             /* isStatic= */ true,
-            javaImpl.isAutoImpl()
+            autoJava
                 ? n -> {
                   SoyType soyType = extern.getType().getParameterMap().get(n);
                   return soyType != null ? getRuntimeType(soyType) : null;
@@ -184,7 +187,8 @@ public final class ExternCompiler {
             : Optional.<RenderContextExpression>empty();
     ConstantVariables vars = new ConstantVariables(paramSet, renderContext);
 
-    if (javaImpl.isAutoImpl()) {
+    if (autoJava) {
+      AutoImplNode autoImpl = autoOpt.get();
       TemplateVariables variables =
           new TemplateVariables(
               paramSet,
@@ -193,7 +197,7 @@ public final class ExternCompiler {
               renderContext.orElse(null));
       BasicExpressionCompiler basicCompiler =
           ExpressionCompiler.createBasicCompiler(
-              javaImpl,
+              autoImpl,
               EXTERN_CONTEXT,
               variables,
               paramSet,
@@ -202,15 +206,16 @@ public final class ExternCompiler {
               null);
       SoyNodeCompiler nodeCompiler =
           SoyNodeCompiler.createForExtern(
-              javaImpl,
+              autoImpl,
               paramSet,
               variables,
               basicCompiler,
               javaSourceFunctionCompiler,
               fileSetMetadata,
               e -> adaptReturnExpression(e, getRuntimeType(extern.getType().getReturnType())));
-      body = nodeCompiler.compile(javaImpl);
+      body = nodeCompiler.compile(autoImpl);
     } else {
+      JavaImplNode javaImpl = javaOpt.get();
       TypeInfo externClass = TypeInfo.create(javaImpl.className(), javaImpl.isInterface());
       Type returnType = getTypeInfoForJavaImpl(javaImpl.returnType().className()).type();
       TypeInfo[] paramTypesInfos =

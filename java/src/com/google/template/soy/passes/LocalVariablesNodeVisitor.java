@@ -34,11 +34,11 @@ import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarDefn.Kind;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
+import com.google.template.soy.soytree.AutoImplNode;
 import com.google.template.soy.soytree.ConstNode;
 import com.google.template.soy.soytree.ExternNode;
 import com.google.template.soy.soytree.ForNonemptyNode;
 import com.google.template.soy.soytree.ImportNode;
-import com.google.template.soy.soytree.JavaImplNode;
 import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.LetValueNode;
 import com.google.template.soy.soytree.PrintNode;
@@ -244,19 +244,14 @@ final class LocalVariablesNodeVisitor {
     }
 
     @Override
-    protected void visitJavaImplNode(JavaImplNode node) {
-      if (!node.isAutoImpl()) {
-        super.visitJavaImplNode(node);
-        return;
-      }
-
+    protected void visitAutoImplNode(AutoImplNode node) {
       // Create a scope for all parameters.
       localVariables.enterScope();
       ExternNode parent = node.getParent();
       for (VarDefn paramVar : parent.getParamVars()) {
         localVariables.define(paramVar, parent);
       }
-      super.visitJavaImplNode(node);
+      super.visitAutoImplNode(node);
       localVariables.exitScope();
     }
 

@@ -2026,16 +2026,19 @@ final class ExpressionCompiler {
     private SoyExpression callExtern(Extern extern, List<SoyExpression> params) {
       SourceLogicalPath path = extern.getPath();
       JavaImpl javaImpl = extern.getJavaImpl();
+      boolean hasJavaImpl = javaImpl != null || extern.hasAutoImpl();
+      boolean autoJava = javaImpl == null && extern.hasAutoImpl();
       TypeInfo externOwner;
       boolean linkStatically;
       if (path == null) {
+        // The SoyJavaExternFunction adaptor returns a null path.
         linkStatically = true;
         externOwner = null;
       } else {
         PartialFileMetadata owningFile = fileSetMetadata.getPartialFile(path);
         String namespace = owningFile.getNamespace();
         externOwner = TypeInfo.createClass(Names.javaClassNameFromSoyNamespace(namespace));
-        linkStatically = javaImpl != null && owningFile.getSoyFileKind() == SoyFileKind.SRC;
+        linkStatically = hasJavaImpl && owningFile.getSoyFileKind() == SoyFileKind.SRC;
       }
       FunctionType functionType = extern.getSignature();
       SoyRuntimeType soyReturnType = ExternCompiler.getRuntimeType(functionType.getReturnType());
@@ -2047,7 +2050,7 @@ final class ExpressionCompiler {
       List<Expression> args = new ArrayList<>();
 
       // Dispatch directly for externs defined in this compilation unit.
-      if (linkStatically && !javaImpl.isAuto()) {
+      if (linkStatically && !autoJava) {
         TypeInfo externClass = TypeInfo.create(javaImpl.className(), javaImpl.type().isInterface());
         // Collect args for calling Java impl directly.
         Stream<TypeReference> javaParams = javaImpl.paramTypes().stream();
@@ -2090,7 +2093,7 @@ final class ExpressionCompiler {
 
       Expression externCall;
       if (linkStatically) {
-        if (javaImpl.isAuto()) {
+        if (autoJava) {
           Method asmMethod =
               ExternCompiler.buildMemberMethod(
                   extern.getName(), functionType, requiresRenderContext, extern.isJavaAsync());
@@ -2557,14 +2560,14 @@ final class ExpressionCompiler {
   static boolean requiresRenderContext(Extern extern) {
     JavaImpl javaImpl = extern.getJavaImpl();
     if (javaImpl == null) {
-      return false; // Will error elsewhere.
+      // Will possibly error elsewhere.
+      return extern.hasAutoImpl();
     }
     FunctionType type = extern.getSignature();
     if (type.getParameters().stream().anyMatch(p -> p.getType() instanceof FunctionType)) {
       return true;
     }
-    return javaImpl.isAuto()
-        || !javaImpl.type().isStatic()
+    return !javaImpl.type().isStatic()
         || javaImpl.paramTypes().stream()
             .anyMatch(t -> JavaImplNode.IMPLICIT_PARAMS.contains(t.className()));
   }

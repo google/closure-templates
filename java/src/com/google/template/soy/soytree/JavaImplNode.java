@@ -28,6 +28,7 @@ import com.google.template.soy.base.internal.TypeReference;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
+import com.google.template.soy.soytree.CommandTagAttribute.CommandTagAttributesHolder;
 import com.google.template.soy.soytree.FileMetadata.Extern.JavaImpl.MethodType;
 import com.google.template.soy.soytree.SoyNode.StackContextNode;
 import java.util.List;
@@ -37,8 +38,8 @@ import java.util.function.Function;
 import javax.annotation.Nullable;
 
 /** Java implementation for an extern. */
-public final class JavaImplNode extends AbstractBlockCommandNode
-    implements ExternImplNode, StackContextNode {
+public final class JavaImplNode extends AbstractCommandNode
+    implements ExternImplNode, CommandTagAttributesHolder, StackContextNode {
   public static final ImmutableSet<String> IMPLICIT_PARAMS =
       ImmutableSet.of(
           "com.google.template.soy.data.Dir",
@@ -69,7 +70,6 @@ public final class JavaImplNode extends AbstractBlockCommandNode
               "Valid values for ''%s'' are %s.",
               TYPE, ALLOWED_TYPES.stream().collect(joining("'', ''", "''", "''"))));
 
-  private final boolean isAutoImpl;
   private final ImmutableList<CommandTagAttribute> attributes;
 
   // Stored separately from {@code attributes} for convenience.
@@ -88,8 +88,7 @@ public final class JavaImplNode extends AbstractBlockCommandNode
       ErrorReporter errorReporter,
       Function<String, TypeReference> typeParser,
       Function<String, ImmutableList<TypeReference>> typeListParser) {
-    super(id, sourceLocation, sourceLocation, "javaimpl");
-    this.isAutoImpl = false;
+    super(id, sourceLocation, "javaimpl");
     this.attributes = ImmutableList.copyOf(attributes);
     initAttributes(errorReporter);
 
@@ -101,12 +100,6 @@ public final class JavaImplNode extends AbstractBlockCommandNode
     }
   }
 
-  public JavaImplNode(int id, SourceLocation sourceLocation, SourceLocation openTagLocation) {
-    super(id, sourceLocation, openTagLocation, "javaimpl");
-    this.isAutoImpl = true;
-    this.attributes = ImmutableList.of();
-  }
-
   /**
    * Copy constructor.
    *
@@ -114,7 +107,6 @@ public final class JavaImplNode extends AbstractBlockCommandNode
    */
   private JavaImplNode(JavaImplNode orig, CopyState copyState) {
     super(orig, copyState);
-    this.isAutoImpl = orig.isAutoImpl;
     this.attributes =
         orig.attributes.stream()
             .map(origAttr -> origAttr.copy(copyState))
@@ -122,10 +114,6 @@ public final class JavaImplNode extends AbstractBlockCommandNode
     initAttributes(ErrorReporter.devnull());
     this.parsedReturnType = orig.parsedReturnType;
     this.parsedParamTypes = orig.parsedParamTypes;
-  }
-
-  public boolean isAutoImpl() {
-    return isAutoImpl;
   }
 
   /**

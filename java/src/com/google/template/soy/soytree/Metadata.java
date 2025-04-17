@@ -573,6 +573,7 @@ public final class Metadata {
                                   context().typeRegistry(),
                                   getPath(),
                                   context().errorReporter()),
+                          e.getAutoImpl(),
                           ExternImpl.Java.of(e))));
     }
 
@@ -706,6 +707,7 @@ public final class Metadata {
         node.getSourceLocation().getFilePath().asLogicalPath(),
         node.getIdentifier().identifier(),
         node.getType(),
+        node.getAutoImpl().isPresent(),
         ExternImpl.Java.of(node.getJavaImpl()));
   }
 
@@ -890,8 +892,12 @@ public final class Metadata {
   abstract static class ExternImpl implements FileMetadata.Extern {
 
     private static ExternImpl of(
-        SourceLogicalPath path, String name, FunctionType signature, JavaImpl java) {
-      return new AutoValue_Metadata_ExternImpl(path, name, signature, java);
+        SourceLogicalPath path,
+        String name,
+        FunctionType signature,
+        boolean autoImpl,
+        JavaImpl java) {
+      return new AutoValue_Metadata_ExternImpl(path, name, signature, autoImpl, java);
     }
 
     @Override
@@ -903,6 +909,9 @@ public final class Metadata {
     @Override
     public abstract FunctionType getSignature();
 
+    @Override
+    public abstract boolean hasAutoImpl();
+
     @Nullable
     @Override
     public abstract JavaImpl getJavaImpl();
@@ -910,7 +919,7 @@ public final class Metadata {
     @Override
     public boolean isJavaAsync() {
       JavaImpl impl = getJavaImpl();
-      if (impl == null || impl.isAuto()) {
+      if (impl == null) {
         return false;
       }
       return impl.returnType().isGeneric()
@@ -922,12 +931,9 @@ public final class Metadata {
 
       @Nullable
       public static JavaImpl of(ExternP e) {
-        if (e.getAutoJava()) {
-          return new AutoValue_Metadata_ExternImpl_Java(true, null, null, null, null, null);
-        } else if (e.hasJavaImpl()) {
+        if (e.hasJavaImpl()) {
           JavaImplP implP = e.getJavaImpl();
           return new AutoValue_Metadata_ExternImpl_Java(
-              false,
               implP.getClassName(),
               implP.getMethod(),
               protoToTypeReference(implP.getReturnType()),
@@ -943,23 +949,15 @@ public final class Metadata {
       public static JavaImpl of(Optional<JavaImplNode> javaImpl) {
         if (javaImpl.isPresent()) {
           JavaImplNode node = javaImpl.get();
-          if (node.isAutoImpl()) {
-            return new AutoValue_Metadata_ExternImpl_Java(true, null, null, null, null, null);
-          } else {
             return new AutoValue_Metadata_ExternImpl_Java(
-                false,
                 node.className(),
                 node.methodName(),
                 node.returnType(),
                 node.paramTypes(),
                 node.type());
-          }
         }
         return null;
       }
-
-      @Override
-      public abstract boolean isAuto();
 
       @Nullable
       @Override

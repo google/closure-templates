@@ -23,11 +23,13 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
+import com.google.template.soy.soytree.CommandTagAttribute.CommandTagAttributesHolder;
 import com.google.template.soy.soytree.SoyNode.Kind;
 import java.util.List;
 
 /** Js implementation for an extern. */
-public final class JsImplNode extends AbstractCommandNode implements ExternImplNode {
+public final class JsImplNode extends AbstractCommandNode
+    implements ExternImplNode, CommandTagAttributesHolder {
   private static final SoyErrorKind INVALID_IMPL_ATTRIBUTE =
       SoyErrorKind.of("''{0}'' is not a valid attribute.");
 

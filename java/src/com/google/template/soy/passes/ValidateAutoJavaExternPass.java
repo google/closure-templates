@@ -26,11 +26,11 @@ import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.soytree.AbstractReturningSoyNodeVisitor;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.AssignmentNode;
+import com.google.template.soy.soytree.AutoImplNode;
 import com.google.template.soy.soytree.ExternNode;
 import com.google.template.soy.soytree.IfCondNode;
 import com.google.template.soy.soytree.IfElseNode;
 import com.google.template.soy.soytree.IfNode;
-import com.google.template.soy.soytree.JavaImplNode;
 import com.google.template.soy.soytree.LetNode;
 import com.google.template.soy.soytree.ReturnNode;
 import com.google.template.soy.soytree.SoyFileNode;
@@ -68,13 +68,12 @@ class ValidateAutoJavaExternPass implements CompilerFilePass {
   @Override
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
     file.getExterns().stream()
-        .map(ExternNode::getJavaImpl)
+        .map(ExternNode::getAutoImpl)
         .flatMap(Optional::stream)
-        .filter(JavaImplNode::isAutoImpl)
         .forEach(this::process);
   }
 
-  private void process(JavaImplNode impl) {
+  private void process(AutoImplNode impl) {
     new ReturnTypeChecker(impl.getParent().getType().getReturnType()).exec(impl);
     boolean returns = new FlowChecker().exec(impl);
     if (!returns) {
@@ -157,7 +156,7 @@ class ValidateAutoJavaExternPass implements CompilerFilePass {
     }
 
     @Override
-    protected Boolean visitJavaImplNode(JavaImplNode node) {
+    protected Boolean visitAutoImplNode(AutoImplNode node) {
       return visitBlock(node);
     }
 
@@ -191,11 +190,11 @@ class ValidateAutoJavaExternPass implements CompilerFilePass {
     private final Set<String> lets = new HashSet<>();
 
     @Override
-    protected void visitJavaImplNode(JavaImplNode node) {
+    protected void visitAutoImplNode(AutoImplNode node) {
       for (VarDefn param : node.getParent().getParamVars()) {
         lets.add(param.refName());
       }
-      super.visitJavaImplNode(node);
+      super.visitAutoImplNode(node);
     }
 
     @Override

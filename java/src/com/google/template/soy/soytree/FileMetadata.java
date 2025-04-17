@@ -50,6 +50,8 @@ public interface FileMetadata extends PartialFileMetadata {
     @Nullable
     JavaImpl getJavaImpl();
 
+    boolean hasAutoImpl();
+
     boolean isJavaAsync();
 
     /** Java object version of {@link JavaImplP}. */
@@ -69,8 +71,6 @@ public interface FileMetadata extends PartialFileMetadata {
           return this == INTERFACE || this == STATIC_INTERFACE;
         }
       }
-
-      boolean isAuto();
 
       String className();
 

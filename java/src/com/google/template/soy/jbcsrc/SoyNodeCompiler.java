@@ -82,6 +82,7 @@ import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.AbstractReturningSoyNodeVisitor;
 import com.google.template.soy.soytree.AssignmentNode;
+import com.google.template.soy.soytree.AutoImplNode;
 import com.google.template.soy.soytree.BreakNode;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallDelegateNode;
@@ -100,7 +101,6 @@ import com.google.template.soy.soytree.HtmlContext;
 import com.google.template.soy.soytree.IfCondNode;
 import com.google.template.soy.soytree.IfElseNode;
 import com.google.template.soy.soytree.IfNode;
-import com.google.template.soy.soytree.JavaImplNode;
 import com.google.template.soy.soytree.KeyNode;
 import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.LetValueNode;
@@ -327,7 +327,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     return AppendableExpression.concat(statements);
   }
 
-  Statement compile(JavaImplNode node) {
+  Statement compile(AutoImplNode node) {
     return visit(node);
   }
 
@@ -343,7 +343,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   }
 
   /**
-   * Returns whether we are compiling a function ({javaimpl}) block, as opposed to a template block.
+   * Returns whether we are compiling a function ({autoimpl}) block, as opposed to a template block.
    */
   private boolean isFunctionBlock() {
     return appendableExpression == null;
@@ -495,7 +495,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   }
 
   @Override
-  protected Statement visitJavaImplNode(JavaImplNode node) {
+  protected Statement visitAutoImplNode(AutoImplNode node) {
     return visitChildrenInNewScope(node);
   }
 

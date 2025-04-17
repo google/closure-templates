@@ -78,7 +78,7 @@ final class IncrementalDomKeysPass implements CompilerFilePass {
 
     @Override
     protected void visitExternNode(ExternNode node) {
-      // Do not look in {javaimpl}.
+      // Do not look in {autoimpl}.
     }
 
     /**

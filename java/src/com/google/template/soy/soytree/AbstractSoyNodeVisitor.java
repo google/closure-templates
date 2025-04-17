@@ -227,6 +227,9 @@ public abstract class AbstractSoyNodeVisitor<R> extends AbstractNodeVisitor<SoyN
       case JS_IMPL_NODE:
         visitJsImplNode((JsImplNode) node);
         break;
+      case AUTO_IMPL_NODE:
+        visitAutoImplNode((AutoImplNode) node);
+        break;
 
       default:
         visitSoyNode(node);
@@ -277,6 +280,10 @@ public abstract class AbstractSoyNodeVisitor<R> extends AbstractNodeVisitor<SoyN
   }
 
   protected void visitJsImplNode(JsImplNode node) {
+    visitSoyNode(node);
+  }
+
+  protected void visitAutoImplNode(AutoImplNode node) {
     visitSoyNode(node);
   }
 

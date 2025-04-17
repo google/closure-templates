@@ -90,6 +90,7 @@ import com.google.template.soy.exprtree.UndefinedNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.soytree.AliasDeclaration;
 import com.google.template.soy.soytree.AssignmentNode;
+import com.google.template.soy.soytree.AutoImplNode;
 import com.google.template.soy.soytree.BreakNode;
 import com.google.template.soy.soytree.ByteOffsetIndex;
 import com.google.template.soy.soytree.CallBasicNode;
@@ -494,6 +495,9 @@ public class SoyFileParser {
   // Extern errors:
   private static final SoyErrorKind MULTIPLE_IMPLS =
       SoyErrorKind.of("An extern can only have one implementation per language.");
+
+  private static final SoyErrorKind THREE_IMPLS =
+      SoyErrorKind.of("An extern cannot have all three of '{'javaimpl'}', '{'jsimpl'}', and '{'autoimpl'}'.");
 
   // Error message that mimics a ParseException
   private static final SoyErrorKind PARSER_ERROR =
@@ -1201,6 +1205,7 @@ TOKEN_MGR_DECLS: {
 | < CMD_CLOSE_EXTERN : "{/extern}" > { resetState(); } : DEFAULT
 | < CMD_OPEN_JS_IMPL : "{jsimpl" > { isInTemplate = false; } : IN_CMD_TAG
 | < CMD_OPEN_JAVA_IMPL : "{javaimpl" > { isInTemplate = false; } : IN_CMD_TAG
+| < CMD_OPEN_AUTO_IMPL : "{autoimpl}" > { isInTemplate = false; } : IN_CMD_TAG
 }
 
 
@@ -1301,6 +1306,7 @@ TOKEN_MGR_DECLS: {
 | < CMD_RETURN                   : "{return" <WS>   > : EXPR
 | < CMD_ASSIGN                   : "{assign" <WS>   > : EXPR
 | < CMD_CLOSE_JAVA_IMPL          : "{/javaimpl}"    > : DEFAULT
+| < CMD_CLOSE_AUTO_IMPL          : "{/autoimpl}"    > : DEFAULT
 
 | < CMD_BEGIN_WHILE              : "{while" <WS>    > : EXPR
 | < CMD_CLOSE_WHILE              : "{/while}"       >
@@ -1662,6 +1668,11 @@ private ExternNode ExternStmt() :
   |
     impl = JavaImplStmt()
     {
+      impls.add(impl);
+    }
+  |
+    impl = AutoImplStmt()
+    {
       if (impl != null) {
         impls.add(impl);
       }
@@ -1671,6 +1682,7 @@ private ExternNode ExternStmt() :
   {
     boolean hasJsImpl = false;
     boolean hasJavaImpl = false;
+    boolean hasAutoImpl = false;
     for (ExternImplNode parsedImpl : impls) {
       if (parsedImpl instanceof JsImplNode) {
         if (hasJsImpl) {
@@ -1684,6 +1696,15 @@ private ExternNode ExternStmt() :
         }
         hasJavaImpl = true;
       }
+      if (parsedImpl instanceof AutoImplNode) {
+        if (hasAutoImpl) {
+          errorReporter.report(parsedImpl.getSourceLocation(), MULTIPLE_IMPLS);
+        }
+        hasAutoImpl = true;
+      }
+    }
+    if (hasJsImpl && hasJavaImpl && hasAutoImpl) {
+      errorReporter.report(impls.get(2).getSourceLocation(), THREE_IMPLS);
     }
     boolean exported = open.image.startsWith("{export ");
     ExternNode node = new ExternNode(nodeIdGen.genId(), createSrcLoc(open, close),
@@ -1725,42 +1746,45 @@ private JavaImplNode JavaImplStmt() :
 }
 {
   open = <CMD_OPEN_JAVA_IMPL>
-  (
-    attributes = Attributes()
-    close = <CMD_SELF_CLOSE>
-    {
-      SourceLocation srcLoc = createSrcLoc(open, close);
-      validateAttributes(null, attributes, errorReporter);
-      return new JavaImplNode(nodeIdGen.genId(), srcLoc, attributes,
-          errorReporter, TypeReferenceParser.parser(), TypeReferenceParser.listParser());
-    }
-  |
-    endOpen = CmdEnd()
-    {
-      token_source.enterFunction();
-    }
-    try {
-      autoImpl = TemplateBlock()
-      close = <CMD_CLOSE_JAVA_IMPL>
-    } catch (ParseException e) {
-      token_source.exitFunction();
-      reportFileErrorAndSkipTo(e, CMD_CLOSE_JAVA_IMPL);
-      return null;
-    }
-    {
-      token_source.exitFunction();
-      SourceLocation srcLoc = createSrcLoc(open, close);
-      SourceLocation openTagLoc = createSrcLoc(open, endOpen);
-      JavaImplNode impl = new JavaImplNode(nodeIdGen.genId(), srcLoc, openTagLoc);
-      for (StandaloneNode node : autoImpl) {
-        impl.addChild(node);
-      }
-      return impl;
-    }
-  )
+  attributes = Attributes()
+  close = <CMD_SELF_CLOSE>
+  {
+    SourceLocation srcLoc = createSrcLoc(open, close);
+    validateAttributes(null, attributes, errorReporter);
+    return new JavaImplNode(nodeIdGen.genId(), srcLoc, attributes,
+        errorReporter, TypeReferenceParser.parser(), TypeReferenceParser.listParser());
+  }
 }
 
-
+private AutoImplNode AutoImplStmt() :
+{
+  Token open, close = null;
+  List<StandaloneNode> autoImpl = ImmutableList.of();
+}
+{
+  open = <CMD_OPEN_AUTO_IMPL>
+  {
+    token_source.enterFunction();
+  }
+  try {
+    autoImpl = TemplateBlock()
+    close = <CMD_CLOSE_AUTO_IMPL>
+  } catch (ParseException e) {
+    token_source.exitFunction();
+    reportFileErrorAndSkipTo(e, CMD_CLOSE_AUTO_IMPL);
+    return null;
+  }
+  {
+    token_source.exitFunction();
+    SourceLocation srcLoc = createSrcLoc(open, close);
+    SourceLocation openTagLoc = createSrcLoc(open);
+    AutoImplNode impl = new AutoImplNode(nodeIdGen.genId(), srcLoc, openTagLoc);
+    for (StandaloneNode node : autoImpl) {
+      impl.addChild(node);
+    }
+    return impl;
+  }
+}
 
 /**
  * Matches an {alias ...} declaration.

@@ -27,6 +27,7 @@ import com.google.template.soy.parsepasses.contextautoesc.Context.AttributeEndDe
 import com.google.template.soy.parsepasses.contextautoesc.Context.HtmlHtmlAttributePosition;
 import com.google.template.soy.parsepasses.contextautoesc.Context.UriPart;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
+import com.google.template.soy.soytree.AutoImplNode;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
@@ -42,7 +43,6 @@ import com.google.template.soy.soytree.HtmlOpenTagNode;
 import com.google.template.soy.soytree.HtmlTagNode;
 import com.google.template.soy.soytree.IfElseNode;
 import com.google.template.soy.soytree.IfNode;
-import com.google.template.soy.soytree.JavaImplNode;
 import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.LogNode;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;
@@ -206,7 +206,7 @@ final class InferenceEngine {
     }
 
     @Override
-    protected void visitJavaImplNode(JavaImplNode node) {
+    protected void visitAutoImplNode(AutoImplNode node) {
       context = Context.getStartContextForContentKind(SanitizedContentKind.TEXT);
       visitChildren(node);
     }
