@@ -207,9 +207,9 @@ Also callable as deprecated global function: `join(list, separator)`
 <span id="list-number_sort"></span>
 <span id="list-gbigint_sort"></span>
 
-### `list<any>.sort(comparator)` {#list-any_sort}
+### `list<any>.toSorted(comparator)` {#list-any_toSorted}
 
-Sorts the list by the supplied comparator.
+Returns a copy of the list sorted by the supplied comparator.
 
 ### `list<number>.sort()` and `list<gbigint>.sort()` {#sort}
 

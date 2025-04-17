@@ -31,11 +31,11 @@ import java.util.List;
 
 /** Soy method for sorting a list with a comparator. */
 @SoyMethodSignature(
-    name = "sort",
+    name = "toSorted",
     baseType = "list<any>",
     value = {
       @Signature(
-          parameterTypes = {"(a:?, b:?) => number"},
+          parameterTypes = {"(a:any, b:any) => number"},
           // The generic type may be overwritten to a narrower int or float type by
           // ResolveExpressionTypesPass.
           returnType = "list<any>"),
