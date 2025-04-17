@@ -27,8 +27,10 @@
 
 goog.module('soy.velog');
 
+const ClickTrackType = goog.require('proto.logs.visual_element.ClickTrackType');
 const ImmutableLoggableElementMetadata = goog.require('proto.soy.ImmutableLoggableElementMetadata');
 const ReadonlyLoggableElementMetadata = goog.requireType('proto.soy.ReadonlyLoggableElementMetadata');
+const clickTrackType = goog.require('proto.search.boq.logging.clickTrackType');
 const {Message} = goog.require('jspb');
 const {SafeUrl, safeAttrPrefix, trySanitizeUrl} = goog.require('safevalues');
 const {assert, assertString} = goog.require('goog.asserts');
@@ -196,8 +198,9 @@ class ElementMetadata {
    * @param {number} id
    * @param {?Message|undefined} data
    * @param {boolean} logOnly
+   * @param {!ClickTrackType|undefined} clickTrackType
    */
-  constructor(id, data, logOnly) {
+  constructor(id, data, logOnly, clickTrackType) {
     /**
      * The identifier for the logging element
      * @const {number}
@@ -217,6 +220,12 @@ class ElementMetadata {
      * @const {boolean}
      */
     this.logOnly = logOnly;
+
+    /**
+     * The click track type from the ve config metadata.
+     * @const {!ClickTrackType|undefined}
+     */
+    this.clickTrackType = clickTrackType;
   }
 }
 
@@ -251,6 +260,7 @@ class Metadata {
 /** @package */ const ELEMENT_ATTR = 'data-soylog';
 
 /** @package */ const FUNCTION_ATTR = 'data-soyloggingfunction-';
+/** @private */ const SAFE_ATTR_PREFIXES = [
 
 /** Sets up the global metadata object before rendering any templates. */
 function setUpLogging() {
@@ -303,7 +313,7 @@ function setMetadataTestOnly(testdata) {
 function $$getLoggingAttribute(veData, logOnly) {
   const dataIdx = storeElementData(veData, logOnly);
   if (dataIdx === -1) {
-    return "";
+    return '';
   }
   // Insert a whitespace at the beginning. In VeLogInstrumentationVisitor,
   // we insert the return value of this method as a plain string instead of a
@@ -320,7 +330,8 @@ function $$getLoggingAttribute(veData, logOnly) {
  * @param {!$$VisualElementData} veData The VE to log.
  * @param {boolean} logOnly Whether to enable counterfactual logging.
  *
- * @return {number} The index where the metadata was stored in Metadata#elements, -1 if not recorded.
+ * @return {number} The index where the metadata was stored in
+ *     Metadata#elements, -1 if not recorded.
  */
 function storeElementData(veData, logOnly) {
   if (!metadata) {
@@ -332,7 +343,9 @@ function storeElementData(veData, logOnly) {
     }
     return -1;
   }
-  const elementMetadata = new ElementMetadata(veData.getVe().getId(), veData.getData(), logOnly);
+  const elementMetadata = new ElementMetadata(
+      veData.getVe().getId(), veData.getData(), logOnly,
+      $$getClickTrackType(veData));
   const dataIdx = metadata.elements.push(elementMetadata) - 1;
   return dataIdx;
 }
@@ -344,7 +357,8 @@ function storeElementData(veData, logOnly) {
  * @param {!$$VisualElementData} veData The VE to log.
  * @param {boolean} logOnly Whether to enable counterfactual logging.
  *
- * @return {!Array<string | number> | undefined} Tuple containing the Soy logging attribute name and its corresponding id number value.
+ * @return {!Array<string | number> | undefined} Tuple containing the Soy
+ *     logging attribute name and its corresponding id number value.
  */
 function getLoggingAttributeEntry(veData, logOnly) {
   const dataIdx = storeElementData(veData, logOnly);
@@ -715,7 +729,7 @@ class $$VisualElementData {
   toString() {
     if (goog.DEBUG) {
       return `**FOR DEBUGGING ONLY ve_data(${this.ve_.toDebugString()}${
-          this.data_? ', ' + this.data_ : ''})**`;
+          this.data_ ? ', ' + this.data_ : ''})**`;
     } else {
       return 'zSoyVeDz';
     }
@@ -736,6 +750,14 @@ function $$getMetadata(ve) {
  */
 function $$getVeMetadata(veData) {
   return $$getMetadata(veData.getVe());
+}
+
+/**
+ * @param {!$$VisualElementData} veData
+ * @return {!ClickTrackType|undefined}
+ */
+function $$getClickTrackType(veData) {
+  return $$getVeMetadata(veData).getExtensionOrUndefined(clickTrackType);
 }
 
 /**
@@ -781,6 +803,7 @@ function getNullLogger() {
 
 exports = {
   $$hasMetadata,
+  $$getClickTrackType,
   $$getLoggingAttribute,
   $$getLoggingFunctionAttribute,
   getLoggingAttributeEntry,
