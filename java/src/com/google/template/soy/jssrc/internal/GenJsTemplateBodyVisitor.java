@@ -59,6 +59,7 @@ import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamNode;
 import com.google.template.soy.soytree.ContinueNode;
 import com.google.template.soy.soytree.DebuggerNode;
+import com.google.template.soy.soytree.EvalNode;
 import com.google.template.soy.soytree.ForNode;
 import com.google.template.soy.soytree.ForNonemptyNode;
 import com.google.template.soy.soytree.IfCondNode;
@@ -857,6 +858,11 @@ public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<St
     // PlaceholderNodes just wrap other nodes with placeholder metadata which is processed by the
     // GenJsCodeVisitorAssistentForMsgs
     return Statements.of(visitChildren(node));
+  }
+
+  @Override
+  protected Statement visitEvalNode(EvalNode node) {
+    return translateExpr(node.getExpr().getRoot()).asStatement();
   }
 
   // -----------------------------------------------------------------------------------------------

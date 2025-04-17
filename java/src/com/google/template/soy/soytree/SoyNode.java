@@ -108,7 +108,8 @@ public interface SoyNode extends Node {
     VE_LOG_NODE,
 
     LOG_NODE,
-    DEBUGGER_NODE
+    DEBUGGER_NODE,
+    EVAL_NODE
   }
 
   /** Returns this node's kind (corresponding to this node's specific type). */

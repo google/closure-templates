@@ -38,6 +38,7 @@ import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamNode;
 import com.google.template.soy.soytree.ConstNode;
 import com.google.template.soy.soytree.DebuggerNode;
+import com.google.template.soy.soytree.EvalNode;
 import com.google.template.soy.soytree.FileSetMetadata;
 import com.google.template.soy.soytree.ForNode;
 import com.google.template.soy.soytree.ForNonemptyNode;
@@ -402,6 +403,13 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     @Override
     protected void visitPrintNode(PrintNode node) {
       pyCodeBuilder.addToOutputVar(genPyExprsVisitor.exec(node));
+    }
+
+    @Override
+    protected void visitEvalNode(EvalNode node) {
+      TranslateToPyExprVisitor translator =
+          new TranslateToPyExprVisitor(localVarExprs, pluginValueFactory, node, errorReporter);
+      pyCodeBuilder.appendLine(translator.exec(node.getExpr()).getText());
     }
 
     /**

@@ -105,6 +105,7 @@ import com.google.template.soy.soytree.Comment;
 import com.google.template.soy.soytree.ConstNode;
 import com.google.template.soy.soytree.ContinueNode;
 import com.google.template.soy.soytree.DebuggerNode;
+import com.google.template.soy.soytree.EvalNode;
 import com.google.template.soy.soytree.ExternImplNode;
 import com.google.template.soy.soytree.ExternNode;
 import com.google.template.soy.soytree.ForNode;
@@ -335,6 +336,7 @@ import javax.annotation.Nullable;
  *    {debugger}
  *    {velog ...}....{/velog}
  *    {key ...}
+ *    {eval }
  *
  * 5. Misc:
  *    + The following commands are not allowed to appear in a template:
@@ -1294,6 +1296,8 @@ TOKEN_MGR_DECLS: {
 
 | < CMD_BEGIN_PRINT              : "{print" <WS>    > : EXPR
 | < CMD_BEGIN_IMPLICIT_PRINT     : "{"              > : EXPR
+
+| < CMD_BEGIN_EVAL               : "{eval" <WS>     > : EXPR
 
 | < CMD_BEGIN_KEY                : "{key" <WS>      > : EXPR
 
@@ -2751,7 +2755,7 @@ private StatementNode Stmt() :
 }
 
 /**
- * NonPrintableStmt -> LetStmt | LogStmt | DebuggerStmt | KeyStmt | Comment
+ * NonPrintableStmt -> LetStmt | LogStmt | DebuggerStmt | KeyStmt | Comment | EvalStmt
  */
 private StatementNode NonPrintableStmt() :
 {
@@ -2767,6 +2771,7 @@ private StatementNode NonPrintableStmt() :
   | stmt = KeyStmt()
   | stmt = SkipStmt()
   | stmt = SkipChildrenStmt()
+  | stmt = EvalStmt()
   )
 
   { return stmt; }
@@ -3284,6 +3289,40 @@ private PrintDirectiveNode PrintDirective() :
       loc = loc.extend(args.get(args.size() - 1).getSourceLocation());
     }
     return new PrintDirectiveNode(nodeIdGen.genId(), /* name= */ ident, /* location= */ loc, args);
+  }
+}
+
+
+/**
+ * EvalStmt() -> CMD_BEGIN_EVAL Expr CMD_END
+ */
+private EvalNode EvalStmt() :
+{
+  Token tagBegin;
+  Token tagEnd;
+  ExprNode expr = null;
+}
+{
+  (
+    tagBegin = <CMD_BEGIN_EVAL>
+  )
+
+  try {
+    expr = Expr()
+    tagEnd = CmdEnd()
+  } catch (ParseException e) {
+    if (expr == null) {
+      expr = errorExpr(tagBegin);
+    }
+    tagEnd = reportTemplateBodyErrorAndSkipTo(e, CMD_END);
+  }
+
+  {
+    EvalNode node = new EvalNode(
+        nodeIdGen.genId(),
+        createSrcLoc(tagBegin, tagEnd),
+        expr);
+    return node;
   }
 }
 

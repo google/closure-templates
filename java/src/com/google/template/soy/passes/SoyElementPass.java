@@ -101,7 +101,8 @@ final class SoyElementPass implements CompilerFileSetPass {
           SoyNode.Kind.LET_CONTENT_NODE,
           SoyNode.Kind.LET_VALUE_NODE,
           SoyNode.Kind.DEBUGGER_NODE,
-          SoyNode.Kind.LOG_NODE);
+          SoyNode.Kind.LOG_NODE,
+          SoyNode.Kind.EVAL_NODE);
 
   private static final HtmlElementMetadataP DEFAULT_HTML_METADATA =
       HtmlElementMetadataP.newBuilder().setIsHtmlElement(false).setIsVelogged(false).build();

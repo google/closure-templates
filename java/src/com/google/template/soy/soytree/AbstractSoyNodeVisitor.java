@@ -230,7 +230,9 @@ public abstract class AbstractSoyNodeVisitor<R> extends AbstractNodeVisitor<SoyN
       case AUTO_IMPL_NODE:
         visitAutoImplNode((AutoImplNode) node);
         break;
-
+      case EVAL_NODE:
+        visitEvalNode((EvalNode) node);
+        break;
       default:
         visitSoyNode(node);
         break;
@@ -496,6 +498,10 @@ public abstract class AbstractSoyNodeVisitor<R> extends AbstractNodeVisitor<SoyN
   }
 
   protected void visitDebuggerNode(DebuggerNode node) {
+    visitSoyNode(node);
+  }
+
+  protected void visitEvalNode(EvalNode node) {
     visitSoyNode(node);
   }
 
