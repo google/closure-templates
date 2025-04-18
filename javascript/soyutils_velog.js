@@ -30,9 +30,9 @@ goog.module('soy.velog');
 const ImmutableLoggableElementMetadata = goog.require('proto.soy.ImmutableLoggableElementMetadata');
 const ReadonlyLoggableElementMetadata = goog.requireType('proto.soy.ReadonlyLoggableElementMetadata');
 const {Message} = goog.require('jspb');
-const {SafeUrl, safeAttrPrefix, trySanitizeUrl} = goog.require('safevalues');
+const {SafeUrl, safeAttrPrefix, trySanitizeUrl} = goog.require('google3.third_party.javascript.safevalues.index');
 const {assert, assertString} = goog.require('goog.asserts');
-const {setAnchorHref, setElementPrefixedAttribute} = goog.require('safevalues.dom');
+const {setAnchorHref, setElementPrefixedAttribute} = goog.require('google3.third_party.javascript.safevalues.dom.index');
 const {startsWith} = goog.require('goog.string');
 
 
