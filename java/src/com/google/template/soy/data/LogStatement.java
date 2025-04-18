@@ -20,13 +20,22 @@ import com.google.auto.value.AutoValue;
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.Message;
 import com.google.protobuf.TextFormat;
+import com.google.template.soy.logging.LoggableElementMetadata;
 import javax.annotation.Nullable;
 
 /** The value of a {@code velog} statement. */
 @AutoValue
 public abstract class LogStatement {
   public static LogStatement create(long id, @Nullable Message data, boolean logOnly) {
-    return new AutoValue_LogStatement(id, data, logOnly);
+    return new AutoValue_LogStatement(id, data, logOnly, null);
+  }
+
+  public static LogStatement create(
+      long id,
+      @Nullable Message data,
+      boolean logOnly,
+      @Nullable LoggableElementMetadata loggableElementMetadata) {
+    return new AutoValue_LogStatement(id, data, logOnly, loggableElementMetadata);
   }
 
   LogStatement() {} // prevent subclasses outside the package
@@ -46,6 +55,9 @@ public abstract class LogStatement {
    */
   public abstract boolean logOnly();
 
+  @Nullable
+  public abstract LoggableElementMetadata loggableElementMetadata();
+
   @Override
   public String toString() {
     return MoreObjects.toStringHelper("velog")
@@ -60,6 +72,7 @@ public abstract class LogStatement {
                     + TextFormat.shortDebugString(data())
                     + "}")
         .addValue(logOnly() ? "logonly" : null)
+        .add("loggableElementMetadata", loggableElementMetadata())
         .toString();
   }
 }
