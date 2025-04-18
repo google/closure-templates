@@ -196,8 +196,10 @@ class ElementMetadata {
    * @param {number} id
    * @param {?Message|undefined} data
    * @param {boolean} logOnly
+   * @param {?ReadonlyLoggableElementMetadata|undefined=}
+   *     loggableElementMetadata
    */
-  constructor(id, data, logOnly) {
+  constructor(id, data, logOnly, loggableElementMetadata = undefined) {
     /**
      * The identifier for the logging element
      * @const {number}
@@ -217,6 +219,12 @@ class ElementMetadata {
      * @const {boolean}
      */
     this.logOnly = logOnly;
+
+    /**
+     * Additional metadata to be included with the loggable element.
+     * @const {?ReadonlyLoggableElementMetadata|undefined}
+     */
+    this.loggableElementMetadata = loggableElementMetadata;
   }
 }
 
@@ -334,8 +342,9 @@ function storeElementData(veData, logOnly) {
     }
     return -1;
   }
-  const elementMetadata =
-      new ElementMetadata(veData.getVe().getId(), veData.getData(), logOnly);
+  const elementMetadata = new ElementMetadata(
+      veData.getVe().getId(), veData.getData(), logOnly,
+      veData.getVe().getMetadata());
   const dataIdx = metadata.elements.push(elementMetadata) - 1;
   return dataIdx;
 }
