@@ -753,13 +753,13 @@ public final class JbcSrcRuntime {
   @Keep
   public static LogStatement createLogStatement(boolean logOnly, SoyValue value) {
     SoyVisualElementData veData = (SoyVisualElementData) value;
-    return LogStatement.create(veData.ve().id(), veData.data(), logOnly);
+    return LogStatement.create(veData.ve().id(), veData.data(), logOnly, veData.ve().metadata());
   }
 
   @Keep
   public static LogStatement createLogStatement(SoyValue value) {
     SoyVisualElementData veData = (SoyVisualElementData) value;
-    return LogStatement.create(veData.ve().id(), veData.data(), false);
+    return LogStatement.create(veData.ve().id(), veData.data(), false, veData.ve().metadata());
   }
 
   /** Asserts that all members of the list are resolved. */

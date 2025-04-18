@@ -91,6 +91,7 @@ java_library(
         "//java/tests/com/google/template/soy/data:soy_value_converter_utility",
         "//java/tests/com/google/template/soy/jbcsrc/restricted/testing",
         "//src/main/protobuf:logging_config_java_proto",
+        "//src/main/protobuf:ve_metadata_java_proto",
         "//src/test/protobuf:test_protos_java_proto",
         "@com_google_protobuf//:protobuf_java",
         "@maven//:com_google_code_findbugs_jsr305",
