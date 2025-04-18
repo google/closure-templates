@@ -72,6 +72,7 @@ import com.google.template.soy.soytree.CallParamNode;
 import com.google.template.soy.soytree.CallParamValueNode;
 import com.google.template.soy.soytree.CaseOrDefaultNode;
 import com.google.template.soy.soytree.DebuggerNode;
+import com.google.template.soy.soytree.EvalNode;
 import com.google.template.soy.soytree.ForNode;
 import com.google.template.soy.soytree.ForNonemptyNode;
 import com.google.template.soy.soytree.IfCondNode;
@@ -182,6 +183,11 @@ final class TemplateAnalysisImpl implements TemplateAnalysis {
           evalInline(arg);
         }
       }
+    }
+
+    @Override
+    protected void visitEvalNode(EvalNode node) {
+      evalInline(node.getExpr());
     }
 
     @Override

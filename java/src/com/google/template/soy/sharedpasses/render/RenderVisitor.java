@@ -70,6 +70,7 @@ import com.google.template.soy.soytree.CallParamValueNode;
 import com.google.template.soy.soytree.ConstNode;
 import com.google.template.soy.soytree.ContinueNode;
 import com.google.template.soy.soytree.DebuggerNode;
+import com.google.template.soy.soytree.EvalNode;
 import com.google.template.soy.soytree.ExternNode;
 import com.google.template.soy.soytree.ForNode;
 import com.google.template.soy.soytree.ForNonemptyNode;
@@ -422,6 +423,11 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
     }
 
     append(currOutputBuf, result, node);
+  }
+
+  @Override
+  protected void visitEvalNode(EvalNode node) {
+    var unused = eval(node.getExpr(), node);
   }
 
   @Override

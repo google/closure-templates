@@ -204,7 +204,8 @@ final class Tokens {
         return "'for'";
       case SoyFileParserConstants.IN:
         return "'in'";
-
+      case SoyFileParserConstants.CMD_BEGIN_EVAL:
+        return "{eval";
       case SoyFileParserConstants.UNEXPECTED_TOKEN:
         throw new AssertionError("we should never expect the unexpected token");
 

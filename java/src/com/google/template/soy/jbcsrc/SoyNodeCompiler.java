@@ -94,6 +94,7 @@ import com.google.template.soy.soytree.CaseOrDefaultNode;
 import com.google.template.soy.soytree.ConstNode;
 import com.google.template.soy.soytree.ContinueNode;
 import com.google.template.soy.soytree.DebuggerNode;
+import com.google.template.soy.soytree.EvalNode;
 import com.google.template.soy.soytree.FileSetMetadata;
 import com.google.template.soy.soytree.ForNode;
 import com.google.template.soy.soytree.ForNonemptyNode;
@@ -2085,6 +2086,15 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   protected Statement visitMsgHtmlTagNode(MsgHtmlTagNode node) {
     // trivial node that is just a number of children surrounded by raw text nodes.
     return AppendableExpression.concat(visitChildren(node));
+  }
+
+  @Override
+  protected Statement visitEvalNode(EvalNode node) {
+    Label reattachPoint = newLabel();
+    ExpressionDetacher detacher = getDetachState().createExpressionDetacher(reattachPoint);
+    BasicExpressionCompiler basic = exprCompiler.asBasicCompiler(detacher);
+    SoyExpression value = basic.compile(node.getExpr());
+    return value.labelStart(reattachPoint).toStatement();
   }
 
   @Override

@@ -154,6 +154,7 @@ import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallDelegateNode;
 import com.google.template.soy.soytree.CallParamValueNode;
 import com.google.template.soy.soytree.ConstNode;
+import com.google.template.soy.soytree.EvalNode;
 import com.google.template.soy.soytree.ExternNode;
 import com.google.template.soy.soytree.FileMetadata.Extern;
 import com.google.template.soy.soytree.FileSetMetadata;
@@ -622,6 +623,11 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
     @Override
     protected void visitPrintNode(PrintNode node) {
       allowShortFormCall(node.getExpr());
+      visitSoyNode(node);
+    }
+
+    @Override
+    protected void visitEvalNode(EvalNode node) {
       visitSoyNode(node);
     }
 

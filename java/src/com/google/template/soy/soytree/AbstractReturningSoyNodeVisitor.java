@@ -172,6 +172,8 @@ public abstract class AbstractReturningSoyNodeVisitor<R>
         return visitJsImplNode((JsImplNode) node);
       case AUTO_IMPL_NODE:
         return visitAutoImplNode((AutoImplNode) node);
+      case EVAL_NODE:
+        return visitEvalNode((EvalNode) node);
     }
     return visitSoyNode(node);
   }
@@ -412,6 +414,10 @@ public abstract class AbstractReturningSoyNodeVisitor<R>
   }
 
   protected R visitHtmlCommentNode(HtmlCommentNode node) {
+    return visitSoyNode(node);
+  }
+
+  protected R visitEvalNode(EvalNode node) {
     return visitSoyNode(node);
   }
 

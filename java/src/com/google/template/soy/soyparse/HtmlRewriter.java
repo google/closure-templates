@@ -44,6 +44,7 @@ import com.google.template.soy.soytree.CallParamValueNode;
 import com.google.template.soy.soytree.CaseOrDefaultNode;
 import com.google.template.soy.soytree.ConstNode;
 import com.google.template.soy.soytree.DebuggerNode;
+import com.google.template.soy.soytree.EvalNode;
 import com.google.template.soy.soytree.ExternNode;
 import com.google.template.soy.soytree.ForNode;
 import com.google.template.soy.soytree.ForNonemptyNode;
@@ -1460,6 +1461,11 @@ final class HtmlRewriter {
 
     @Override
     protected void visitKeyNode(KeyNode node) {
+      processNonPrintableNode(node);
+    }
+
+    @Override
+    protected void visitEvalNode(EvalNode node) {
       processNonPrintableNode(node);
     }
 
