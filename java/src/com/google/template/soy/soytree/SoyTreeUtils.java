@@ -656,6 +656,10 @@ public final class SoyTreeUtils {
                     .filter(Objects::nonNull);
               } else if (node instanceof ExternNode) {
                 return Stream.of(((ExternNode) node).typeNode());
+              } else if (node instanceof TypeDefNode) {
+                return Stream.of(((TypeDefNode) node).getTypeNode());
+              } else if (node instanceof ConstNode && ((ConstNode) node).getTypeNode() != null) {
+                return Stream.of(((ConstNode) node).getTypeNode());
               } else {
                 return Stream.of();
               }
