@@ -30,7 +30,9 @@ import com.google.template.soy.exprtree.ExprEquivalence;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
+import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.TemplateType;
+import com.google.template.soy.types.UnionType;
 import java.util.List;
 import javax.annotation.Nullable;
 
@@ -44,6 +46,8 @@ public final class CallBasicNode extends CallNode {
   private ExprRootNode calleeExpr;
 
   private ExprEquivalence.Wrapper originalShortFormExprEquivalence = null;
+
+  private boolean lazy = false;
 
   public CallBasicNode(
       int id,
@@ -72,6 +76,9 @@ public final class CallBasicNode extends CallNode {
           // Returned directly by getVariantExpr(). Just call valueAsExpr() to validate it here.
           attr.valueAsExpr(errorReporter);
           break;
+        case "lazy":
+          this.lazy = attr.valueAsEnabled(errorReporter);
+          break;
         default:
           errorReporter.report(
               attr.getName().location(),
@@ -79,7 +86,13 @@ public final class CallBasicNode extends CallNode {
               ident,
               "call",
               ImmutableList.of(
-                  "data", CallNode.ERROR_FALLBACK, "key", PHNAME_ATTR, PHEX_ATTR, "variant"));
+                  "data",
+                  CallNode.ERROR_FALLBACK,
+                  "key",
+                  PHNAME_ATTR,
+                  PHEX_ATTR,
+                  "variant",
+                  "lazy"));
       }
     }
   }
@@ -92,6 +105,7 @@ public final class CallBasicNode extends CallNode {
   private CallBasicNode(CallBasicNode orig, CopyState copyState) {
     super(orig, copyState);
     this.calleeExpr = orig.calleeExpr.copy(copyState);
+    this.lazy = orig.lazy;
   }
 
   @Override
@@ -121,6 +135,28 @@ public final class CallBasicNode extends CallNode {
 
   public ExprRootNode getCalleeExpr() {
     return calleeExpr;
+  }
+
+  public boolean isLazy() {
+    return this.lazy;
+  }
+
+  public boolean isHtml() {
+    return isHtmlReturnType(getCalleeExpr().getType());
+  }
+
+  private boolean isHtmlReturnType(SoyType type) {
+    if (type instanceof TemplateType) {
+      return ((TemplateType) type).getContentKind().getSanitizedContentKind().isHtml();
+    }
+    if (type instanceof UnionType) {
+      for (SoyType member : ((UnionType) type).getMembers()) {
+        if (isHtmlReturnType(member)) {
+          return true;
+        }
+      }
+    }
+    return false;
   }
 
   public TemplateType getStaticType() {
