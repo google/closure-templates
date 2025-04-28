@@ -23,6 +23,7 @@ import static com.google.template.soy.jssrc.dsl.Expressions.id;
 import static com.google.template.soy.jssrc.dsl.Expressions.number;
 import static com.google.template.soy.jssrc.dsl.Statements.forLoop;
 import static com.google.template.soy.jssrc.dsl.Statements.ifStatement;
+import static com.google.template.soy.jssrc.dsl.Statements.returnValue;
 import static com.google.template.soy.jssrc.dsl.Statements.switchValue;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_IS_OBJECT;
 import static com.google.template.soy.jssrc.internal.JsRuntime.WINDOW_CONSOLE_LOG;
@@ -77,6 +78,7 @@ import com.google.template.soy.soytree.ReturnNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
+import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
 import com.google.template.soy.soytree.SwitchCaseNode;
 import com.google.template.soy.soytree.SwitchDefaultNode;
 import com.google.template.soy.soytree.SwitchNode;
@@ -326,34 +328,11 @@ public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<St
     String generatedVarName = node.getUniqueVarName();
     Expression generatedVar = id(generatedVarName);
 
-    // Generate code to define the local var.
-    outputVars.pushOutputVar(generatedVarName);
-
-    List<Statement> statements = visitChildrenInNewSoyScope(node);
-
-    outputVars.popOutputVar();
-
-    if (node.getContentKind() != SanitizedContentKind.TEXT) {
-      // If the let node had a content kind specified, it was autoescaped in the corresponding
-      // context. Hence the result of evaluating the let block is wrapped in a SanitizedContent
-      // instance of the appropriate kind.
-
-      // The expression for the constructor of SanitizedContent of the appropriate kind (e.g.,
-      // "soydata.VERY_UNSAFE.ordainSanitizedHtml"), or null if the node has no 'kind' attribute.
-      // Introduce a new variable for this value since it has a different type from the output
-      // variable (SanitizedContent vs String) and this will enable optimizations in the jscompiler
-      String wrappedVarName = node.getVarName() + "__wrapped" + node.getId();
-      statements.add(
-          VariableDeclaration.builder(Id.create(wrappedVarName))
-              .setRhs(sanitizedContentOrdainerFunction(node.getContentKind()).call(generatedVar))
-              .build());
-      generatedVar = id(wrappedVarName);
-    }
-
     // Add a mapping for generating future references to this local var.
     templateTranslationContext.soyToJsVariableMappings().put(node.getVar(), generatedVar);
 
-    return Statements.of(statements);
+    return execRenderUnitNodeAsStatements(
+        node, generatedVarName, /* returnOutput= */ false, /* ordain= */ true);
   }
 
   @Override
@@ -739,6 +718,43 @@ public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<St
     }
   }
 
+  /**
+   * Returns statements for the RenderUnitNode. When `ordain` is set, the output will be a
+   * SanitizedContent via the ordainer when necessary. When `returnOutput` is set, a return
+   * statement returning the final value is added at the end.
+   */
+  public Statement execRenderUnitNodeAsStatements(
+      RenderUnitNode node, String varName, boolean returnOutput, boolean ordain) {
+    return execRenderUnitNodeAsStatementsInner(node, varName, returnOutput, ordain);
+  }
+
+  private Statement execRenderUnitNodeAsStatementsInner(
+      RenderUnitNode node, String varName, boolean returnOutput, boolean ordain) {
+    boolean needsOrdainer = ordain && node.getContentKind() != SanitizedContentKind.TEXT;
+
+    // The expression for the constructor of SanitizedContent of the appropriate kind (e.g.,
+    // "soydata.VERY_UNSAFE.ordainSanitizedHtml"), or null if the node has no 'kind' attribute.
+    // Introduce a new variable for this value since it has a different type from the output
+    // variable (SanitizedContent vs String) and this will enable optimizations in the jscompiler
+    String contentVarName = needsOrdainer && !returnOutput ? varName + "_unsanitized" : varName;
+
+    outputVars.pushOutputVar(contentVarName);
+    List<Statement> contents = visitChildrenInNewSoyScope(node);
+    outputVars.popOutputVar();
+
+    Expression ordainedOutput =
+        needsOrdainer
+            ? sanitizedContentOrdainerFunction(node.getContentKind()).call(id(contentVarName))
+            : id(contentVarName);
+    if (returnOutput) {
+      contents.add(returnValue(ordainedOutput));
+    } else if (needsOrdainer) {
+      contents.add(VariableDeclaration.builder(varName).setRhs(ordainedOutput).build());
+    }
+
+    return Statements.of(contents);
+  }
+
   @Override
   protected Statement visitCallParamContentNode(CallParamContentNode node) {
 
@@ -749,13 +765,10 @@ public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<St
           "Should only define 'param<n>' when not computable as JS expressions.");
     }
 
-    outputVars.pushOutputVar("param" + node.getId());
-
-    List<Statement> content = visitChildrenInNewSoyScope(node);
-
-    outputVars.popOutputVar();
-
-    return Statements.of(content);
+    // The param<n> variable is a raw string, not ordained. We'll call the ordainer in the call
+    // argument to avoid generating another variable.
+    return execRenderUnitNodeAsStatements(
+        node, "param" + node.getId(), /* returnOutput= */ false, /* ordain= */ false);
   }
 
   /**

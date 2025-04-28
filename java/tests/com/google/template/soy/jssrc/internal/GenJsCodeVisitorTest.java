@@ -332,10 +332,10 @@ public final class GenJsCodeVisitorTest {
             + "    const i9Data = 0 + i9Index * 1;\n"
             + "    gamma__soy8 += i9Data + beta__soy6;\n"
             + "  }\n"
-            + "  let delta__soy13 = 'Boop!';\n"
-            + "  const delta__wrapped13 = soy.VERY_UNSAFE"
-            + ".ordainSanitizedHtml(delta__soy13);\n"
-            + "  output += alpha__soy5 + beta__soy6 + gamma__soy8 + delta__wrapped13;\n"
+            + "  let delta__soy13_unsanitized = 'Boop!';\n"
+            + "  const delta__soy13 = soy.VERY_UNSAFE"
+            + ".ordainSanitizedHtml(delta__soy13_unsanitized);\n"
+            + "  output += alpha__soy5 + beta__soy6 + gamma__soy8 + delta__soy13;\n"
             + "}\n";
     assertGeneratedJsCode(soyNodeCode, expectedJsCode);
   }

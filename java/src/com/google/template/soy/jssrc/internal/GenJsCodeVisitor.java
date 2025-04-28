@@ -1536,11 +1536,11 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       bodyStatements.add(returnValue(sanitize(Expressions.concat(templateBodyChunks), kind)));
     } else {
       // Case 2: Normal case.
-
-      outputVars.pushOutputVar("$output");
-      Statement codeChunk = visitTemplateNodeChildren(node);
-      outputVars.popOutputVar();
-      bodyStatements.add(Statements.of(codeChunk, returnValue(sanitize(id("$output"), kind))));
+      bodyStatements.add(
+          state
+              .createTemplateBodyVisitor(genJsExprsVisitor)
+              .execRenderUnitNodeAsStatements(
+                  node, "$output", /* returnOutput= */ true, /* ordain= */ true));
     }
     return Statements.of(bodyStatements.build());
   }
