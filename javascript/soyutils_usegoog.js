@@ -2629,7 +2629,7 @@ function $$maybeMakeImmutableProto(/** !Message*/ message) {
 const isContentKind_ = function(value, contentKind, constructor) {
   const ret = value != null && value.contentKind === contentKind;
   if (ret && constructor) {
-    asserts.assert(value.constructor === constructor);
+    asserts.assert(value instanceof constructor);
   }
   return ret;
 };
@@ -2723,6 +2723,123 @@ const $$bindFunctionParams =
     function(f, params) {
   return f.bind(null, ...params);
 };
+
+/** @define {boolean} Whether to enable lazy execution. */
+const LAZY_EXECUTION = goog.define('soy.lazyexecution', false);
+
+/** @return {boolean} */
+function $$isLazyExecutionEnabled() {
+  if (!COMPILED) {
+    return isLazyExecutionEnabledUncompiled;
+  }
+  return LAZY_EXECUTION;
+}
+
+let isLazyExecutionEnabledUncompiled = LAZY_EXECUTION;
+
+/** @param {boolean} val */
+function $$setLazyExeuctionUncompiled(val) {
+  isLazyExecutionEnabledUncompiled = val;
+}
+
+class NodeBuilder {
+  /**
+   * @param {function(...*): (!SanitizedHtml)} target
+   * @param {?Array<*>} params
+   */
+  constructor(target, params) {
+    this.target = target;
+    this.params = params;
+  }
+
+  /** @return {!SanitizedHtml} */
+  render() {
+    return this.target.apply(null, this.params);
+  }
+}
+
+class HtmlOutputBuffer extends SanitizedHtml {
+  /** 
+   * @param {string} val
+   * @return {!HtmlOutputBuffer}
+   */
+  addString(val) {
+    if (this.parts !== undefined) {
+      this.parts.push(val);
+    } else {
+      this.content += val;
+    }
+    return this;
+  }
+
+  /** 
+   * @param {*} val
+   * @return {!HtmlOutputBuffer}
+   */
+  addDynamic(val) {
+    if (this.parts !== undefined) {
+      this.parts.push(val);
+    } else if (
+        val instanceof NodeBuilder ||
+        (val instanceof HtmlOutputBuffer && !val.isStatic())) {
+      this.parts = [this.content, val];
+      this.content = undefined;
+    } else {
+      this.content += val;
+    }
+    return this;
+  }
+
+  /** @return {boolean} */
+  isStatic() {
+    return this.content !== undefined;
+  }
+
+  /** 
+   * @override
+   * @return {string}
+   */
+  getContent() {
+    if (this.content !== undefined) {
+      return this.content;
+    }
+    let output = '';
+    for (const c of /** @type {!Array<*>} */ (this.parts)) {
+      if (c instanceof NodeBuilder) {
+        output += c.render();
+      } else {
+        output += c;
+      }
+    }
+    return output;
+  }
+
+  /**
+   * @override
+   * @return {string}
+   */
+  toString() {
+    return this.getContent();
+  }
+}
+
+/** @return {!HtmlOutputBuffer} */
+const $$createHtmlOutputBuffer = (() => {
+  /**
+   * @constructor
+   * @extends {SanitizedHtml}
+   */
+  function InstantiableCtor() {
+    /** @override */
+    this.content = '';
+  }
+  // hack... See $$makeSanitizedContentFactory_()
+  InstantiableCtor.prototype = HtmlOutputBuffer.prototype;
+  function factory() {
+    return new InstantiableCtor();
+  }
+  return factory;
+})();
 
 exports = {
   $$maybeMakeImmutableProto,
@@ -2825,7 +2942,11 @@ exports = {
   $$internalCallMarkerDoNotUse,
   $$areYouAnInternalCaller,
   $$bindFunctionParams,
+  $$createHtmlOutputBuffer,
+  $$isLazyExecutionEnabled,
+  NodeBuilder,
   // The following are exported just for tests
+  $$setLazyExeuctionUncompiled,
   $$balanceTags_,
   $$isRecord,
   $$isHtml,
