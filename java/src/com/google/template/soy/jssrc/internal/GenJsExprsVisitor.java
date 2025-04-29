@@ -19,8 +19,10 @@ package com.google.template.soy.jssrc.internal;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.template.soy.jssrc.dsl.Expressions.LITERAL_EMPTY_STRING;
 import static com.google.template.soy.jssrc.dsl.Expressions.stringLiteral;
+import static com.google.template.soy.jssrc.internal.JsRuntime.sanitizedContentOrdainerFunction;
 
 import com.google.common.base.Preconditions;
+import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprRootNode;
@@ -48,6 +50,7 @@ import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
+import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
 import com.google.template.soy.soytree.TemplateNode;
 import java.util.ArrayList;
 import java.util.List;
@@ -286,9 +289,11 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<Expression>> 
             createExprTranslator()
                 .maybeCoerceToBoolean(
                     ifCond.getExpr().getType(), translateExpr(ifCond.getExpr()), false));
-        thens.add(Expressions.concat(genJsExprsVisitor.exec(ifCond)));
+        thens.add(genJsExprsVisitor.execAsSingleExpression(ifCond, /* concatForceString= */ false));
       } else if (child instanceof IfElseNode) {
-        trailingElse = Expressions.concat(genJsExprsVisitor.exec(child));
+        trailingElse =
+            genJsExprsVisitor.execAsSingleExpression(
+                (IfElseNode) child, /* concatForceString= */ false);
       } else {
         throw new AssertionError();
       }
@@ -308,6 +313,25 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<Expression>> 
             : builder.setElse(LITERAL_EMPTY_STRING).build(generator);
 
     chunks.add(ifChunk);
+  }
+
+  public Expression execRenderUnitNodeAsSingleExpression(
+      RenderUnitNode node, boolean concatForceString) {
+    Expression content = execAsSingleExpression(node, concatForceString);
+    return maybeWrapContent(node, content);
+  }
+
+  protected Expression maybeWrapContent(RenderUnitNode node, Expression content) {
+    if (node.getContentKind() == SanitizedContentKind.TEXT) {
+      return content;
+    }
+    return sanitizedContentOrdainerFunction(node.getContentKind()).call(content);
+  }
+
+  private Expression execAsSingleExpression(ParentSoyNode<?> node, boolean concatForceString) {
+    return concatForceString
+        ? Expressions.concatForceString(exec(node))
+        : Expressions.concat(exec(node));
   }
 
   @Override

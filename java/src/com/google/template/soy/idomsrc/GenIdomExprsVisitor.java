@@ -16,6 +16,7 @@
 
 package com.google.template.soy.idomsrc;
 
+import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.jssrc.dsl.SourceMapHelper;
@@ -27,10 +28,17 @@ import com.google.template.soy.jssrc.internal.TemplateAliases;
 import com.google.template.soy.jssrc.internal.TranslationContext;
 import com.google.template.soy.jssrc.internal.VisitorsState;
 import com.google.template.soy.soytree.SoyNode;
+import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
 import java.util.ArrayList;
 import java.util.List;
 
-/** Overrides the base class to provide the correct helpers classes. */
+/**
+ * Overrides the base class to provide the correct helpers classes.
+ *
+ * <p>Also does not wrap function arguments as sanitized content, which is used to prevent
+ * re-escaping of safe content. The Incremental DOM code generation use DOM APIs for creating
+ * Elements, Text and attributes rather than relying on innerHTML
+ */
 public final class GenIdomExprsVisitor extends GenJsExprsVisitor {
 
   public GenIdomExprsVisitor(
@@ -58,5 +66,15 @@ public final class GenIdomExprsVisitor extends GenJsExprsVisitor {
     chunks = new ArrayList<>();
     visit(node);
     return chunks;
+  }
+
+  /** Never wrap contents as SanitizedContent if HTML or ATTRIBUTES. */
+  @Override
+  protected Expression maybeWrapContent(RenderUnitNode node, Expression content) {
+    SanitizedContentKind kind = node.getContentKind();
+    if (kind.isHtml() || kind == SanitizedContentKind.ATTRIBUTES) {
+      return content;
+    }
+    return super.maybeWrapContent(node, content);
   }
 }

@@ -25,15 +25,12 @@ import static com.google.template.soy.jssrc.dsl.Expressions.fromExpr;
 import static com.google.template.soy.jssrc.dsl.Expressions.stringLiteral;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_ASSIGN_DEFAULTS;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_GET_DELEGATE_FN;
-import static com.google.template.soy.jssrc.internal.JsRuntime.sanitizedContentOrdainerFunction;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
-import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.jssrc.dsl.Expressions;
 import com.google.template.soy.jssrc.dsl.FormatOptions;
@@ -422,15 +419,22 @@ public class GenCallCodeUtils {
         CallParamContentNode cpcn = (CallParamContentNode) child;
 
         if (isComputableAsJsExprsVisitor.exec(cpcn)) {
-          List<Expression> chunks = state.createJsExprsVisitor().exec(cpcn);
-          value = Expressions.concatForceString(chunks);
+          // Normally a block has all print directives applied to render a string so we can concat
+          // all children. But some params are synthetically built for soy element composition from
+          // html attributes, so they'll have the attribute directive, which in idom is a no-op. So
+          // we need to ensure the result is concatenated as a string.
+          value =
+              state
+                  .createJsExprsVisitor()
+                  .execRenderUnitNodeAsSingleExpression(cpcn, /* concatForceString= */ true);
         } else {
           // This is a param with content that cannot be represented as JS expressions, so we assume
           // that code has been generated to define the temporary variable 'param<n>'.
-          value = Id.create("param" + cpcn.getId());
+          value =
+              state
+                  .createJsExprsVisitor()
+                  .maybeWrapContent(cpcn, Id.create("param" + cpcn.getId()));
         }
-
-        value = maybeWrapContent(state.translationContext.codeGenerator(), cpcn, value);
       }
       params.put(child.getKey().identifier(), value);
     }
@@ -450,23 +454,5 @@ public class GenCallCodeUtils {
       }
     }
     return defaultParams;
-  }
-
-  /**
-   * If the param node had a content kind specified, it was autoescaped in the corresponding
-   * context. Hence the result of evaluating the param block is wrapped in a SanitizedContent
-   * instance of the appropriate kind.
-   *
-   * <p>The expression for the constructor of SanitizedContent of the appropriate kind (e.g., "new
-   * SanitizedHtml"), or null if the node has no 'kind' attribute. This uses the variant used in
-   * internal blocks.
-   */
-  protected Expression maybeWrapContent(
-      CodeChunk.Generator generator, CallParamContentNode node, Expression content) {
-    if (node.getContentKind() == SanitizedContentKind.TEXT) {
-      return content;
-    }
-
-    return sanitizedContentOrdainerFunction(node.getContentKind()).call(content);
   }
 }

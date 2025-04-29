@@ -1519,13 +1519,11 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
         "state vars in %s should've been removed by DesugarStateNodesPass",
         node.getTemplateName());
 
-    SanitizedContentKind kind = node.getContentKind();
     if (isComputableAsJsExprsVisitor.exec(node)) {
       // Case 1: The code style is 'concat' and the whole template body can be represented as JS
       // expressions. We specially handle this case because we don't want to generate the variable
       // 'output' at all. We simply concatenate the JS expressions and return the result.
 
-      List<Expression> templateBodyChunks = genJsExprsVisitor.exec(node);
       // The template is strict. Thus, it applies an escaping directive to *every* print command,
       // which means that no print command produces a number, which means that there is no danger
       // of a plus operator between two print commands doing numeric addition instead of string
@@ -1533,7 +1531,10 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       // get an expression that produces SanitizedContent, which is indeed possible with an
       // escaping directive that produces SanitizedContent. Thus, we do not have to be extra
       // careful when concatenating the expressions in the list.
-      bodyStatements.add(returnValue(sanitize(Expressions.concat(templateBodyChunks), kind)));
+      bodyStatements.add(
+          returnValue(
+              genJsExprsVisitor.execRenderUnitNodeAsSingleExpression(
+                  node, /* concatForceString= */ false)));
     } else {
       // Case 2: Normal case.
       bodyStatements.add(
