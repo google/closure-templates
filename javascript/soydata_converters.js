@@ -44,9 +44,9 @@ const googString = goog.require('goog.string');
 const soy = goog.require('soy');
 const {ByteString} = goog.require('jspb.bytestring');
 const {SanitizedCss, SanitizedHtml, SanitizedJs, SanitizedTrustedResourceUri, SanitizedUri} = goog.require('goog.soy.data');
-const {htmlSafeByReview, resourceUrlSafeByReview, scriptSafeByReview, styleSheetSafeByReview, urlSafeByReview} = goog.require('safevalues.restricted.reviewed');
-const {htmlToProto, protoToHtml, protoToResourceUrl, protoToScript, protoToStyle, protoToStyleSheet, protoToUrl, resourceUrlToProto, scriptToProto, styleSheetToProto, styleToProto, urlToProto} = goog.require('safevalues.conversions.jspb');
-const {unwrapHtml, unwrapResourceUrl, unwrapScript, unwrapStyleSheet, unwrapUrl} = goog.require('safevalues');
+const {htmlSafeByReview, resourceUrlSafeByReview, scriptSafeByReview, styleSheetSafeByReview, urlSafeByReview} = goog.require('google3.third_party.javascript.safevalues.restricted.reviewed');
+const {htmlToProto, protoToHtml, protoToResourceUrl, protoToScript, protoToStyle, protoToStyleSheet, protoToUrl, resourceUrlToProto, scriptToProto, styleSheetToProto, styleToProto, urlToProto} = goog.require('google3.third_party.javascript.safevalues.conversions.jspb.index');
+const {unwrapHtml, unwrapResourceUrl, unwrapScript, unwrapStyleSheet, unwrapUrl} = goog.require('google3.third_party.javascript.safevalues.index');
 
 /**
  * Converts a CSS Sanitized Content object to a corresponding Safe Style Proto.
