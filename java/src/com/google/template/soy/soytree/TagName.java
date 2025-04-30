@@ -24,7 +24,7 @@ import com.google.common.base.Ascii;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.base.internal.TemplateContentKind;
+import com.google.template.soy.base.internal.TemplateContentKind.ElementContentKind;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.shared.internal.BuiltinFunction;
@@ -386,7 +386,9 @@ public final class TagName {
       return getStaticTagName();
     } else if (isTemplateCall()) {
       TemplateType templateType = (TemplateType) getDynamicTagName().getExpr().getType();
-      return ((TemplateContentKind.ElementContentKind) templateType.getContentKind()).getTagName();
+      if (templateType.getContentKind() instanceof ElementContentKind) {
+        return ((ElementContentKind) templateType.getContentKind()).getTagName();
+      }
     }
     return null;
   }
