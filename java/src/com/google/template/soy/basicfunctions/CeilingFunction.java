@@ -41,7 +41,7 @@ import java.util.List;
     name = "ceiling",
     value =
         @Signature(
-            parameterTypes = {"number"},
+            parameterTypes = {"float|int"},
             returnType = "int"))
 final class CeilingFunction
     implements SoyJavaSourceFunction, SoyJavaScriptSourceFunction, SoyPythonSourceFunction {

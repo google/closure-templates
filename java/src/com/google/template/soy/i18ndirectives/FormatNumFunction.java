@@ -80,10 +80,10 @@ import java.util.Optional;
           parameterTypes = {"?", "string", "string"},
           returnType = "string"),
       @Signature(
-          parameterTypes = {"?", "string", "string", "number"},
+          parameterTypes = {"?", "string", "string", "float|int"},
           returnType = "string"),
       @Signature(
-          parameterTypes = {"?", "string", "string", "number", "number"},
+          parameterTypes = {"?", "string", "string", "float|int", "float|int"},
           returnType = "string"),
     })
 class FormatNumFunction

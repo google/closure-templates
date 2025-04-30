@@ -516,7 +516,7 @@ public class BytecodeCompilerTest {
 
   @Test
   public void testStateNodeNumber() {
-    assertThatElementBody("{@state foo: number= 1}", "<a>{$foo}</a>").rendersAs("<a>1</a>");
+    assertThatElementBody("{@state foo: float|int= 1}", "<a>{$foo}</a>").rendersAs("<a>1</a>");
     assertThatElementBody("{@state foo:= 1}", "<p>{$foo}</p>").rendersAs("<p>1</p>");
   }
 

@@ -956,9 +956,9 @@ public final class ResolveExpressionTypesPassTest {
   @Test
   public void testAsOperator() {
     assertTypes(
-        "{@param union: number|string}",
+        "{@param union: float|int|string}",
         "{@param b: bool}",
-        "{assertType('float|int', $union as number)}",
+        "{assertType('float|int', $union as float|int)}",
         "{assertType('string', $union as string)}",
         "{assertType('bool', $union as any as bool)}",
         // precedence:
@@ -978,7 +978,7 @@ public final class ResolveExpressionTypesPassTest {
         "{/if}",
         "");
     assertTypes(
-        "{@param union: string|number}",
+        "{@param union: string|float|int}",
         "{if $union instanceof string}",
         "  {assertType('string', $union)}",
         "{elseif $union instanceof number}",

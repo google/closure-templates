@@ -33,13 +33,11 @@ import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 import java.lang.reflect.Method;
 import java.util.List;
 
-/**
- * Soy function that generates a random integer in the range [0, n-1].
- */
+/** Soy function that generates a random integer in the range [0, n-1]. */
 @SoyFunctionSignature(
     name = "randomInt",
     // TODO(b/70946095): param should be an 'int', not a 'number'
-    value = @Signature(returnType = "int", parameterTypes = "number"))
+    value = @Signature(returnType = "int", parameterTypes = "float|int"))
 public final class RandomIntFunction
     implements SoyJavaSourceFunction, SoyJavaScriptSourceFunction, SoyPythonSourceFunction {
 

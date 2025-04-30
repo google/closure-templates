@@ -48,7 +48,7 @@ import java.util.List;
       // TODO(b/70946095): the parameters should be number values
       @Signature(returnType = "int", parameterTypes = "?"),
       @Signature(
-          returnType = "number",
+          returnType = "float|int",
           parameterTypes = {"?", "?"}),
     })
 @SoyPureFunction

@@ -52,7 +52,7 @@ import java.util.List;
     value = {
       @Signature(parameterTypes = "any", returnType = "int"),
       @Signature(
-          parameterTypes = {"any", "number"},
+          parameterTypes = {"any", "float|int"},
           returnType = "int")
     })
 @SoyPureFunction

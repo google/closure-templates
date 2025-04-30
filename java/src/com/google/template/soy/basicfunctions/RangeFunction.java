@@ -50,13 +50,13 @@ import java.util.List;
     // TODO(b/70946095): params should be an 'int', not a 'number'
     value = {
       @Signature(
-          parameterTypes = {"number"},
+          parameterTypes = {"float|int"},
           returnType = "list<int>"),
       @Signature(
-          parameterTypes = {"number", "number"},
+          parameterTypes = {"float|int", "float|int"},
           returnType = "list<int>"),
       @Signature(
-          parameterTypes = {"number", "number", "number"},
+          parameterTypes = {"float|int", "float|int", "float|int"},
           returnType = "list<int>")
     })
 @SoyPureFunction

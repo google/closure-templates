@@ -196,7 +196,7 @@ function does not remove duplicate records or protobufs. Only primitive types
 (null, undefined, bool, int, float, number, string) are successfully
 deduplicated.
 
-<span id="list-string|number|gbigint_join"></span>
+<span id="list-string|float|int|gbigint_join"></span>
 
 ### `list.join(separator)` {#join}
 
@@ -204,7 +204,7 @@ Joins a list of strings or numbers with a string separator.
 
 Also callable as deprecated global function: `join(list, separator)`
 
-<span id="list-number_sort"></span>
+<span id="list-float|int_sort"></span>
 <span id="list-gbigint_sort"></span>
 
 ### `list<any>.toSorted(comparator)` {#list-any_toSorted}

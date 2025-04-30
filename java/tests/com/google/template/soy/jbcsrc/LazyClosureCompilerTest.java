@@ -169,7 +169,7 @@ public class LazyClosureCompilerTest {
     CompiledTemplateSubject tester =
         assertThatTemplateBody(
             "{@param comments: list<string>}",
-            "{@param? numComments: number|null}",
+            "{@param? numComments: float|int|null}",
             "  {let $numNotShown: ",
             "      ($numComments != null) && length($comments) > $numComments + 2 ?",
             "          length($comments) - $numComments : 0 /}",

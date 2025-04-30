@@ -41,7 +41,7 @@ import java.util.List;
     name = "floor",
     value =
         @Signature(
-            parameterTypes = {"number"},
+            parameterTypes = {"float|int"},
             returnType = "int"))
 final class FloorFunction
     implements SoyJavaSourceFunction, SoyJavaScriptSourceFunction, SoyPythonSourceFunction {

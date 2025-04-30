@@ -40,12 +40,12 @@ import java.util.List;
     name = "join",
     value = {
       @Signature(
-          parameterTypes = {"list<string|number|gbigint>", "string"},
+          parameterTypes = {"list<string|float|int|gbigint>", "string"},
           returnType = "string"),
     })
 @SoyMethodSignature(
     name = "join",
-    baseType = "list<string|number|gbigint>",
+    baseType = "list<string|float|int|gbigint>",
     value = @Signature(parameterTypes = "string", returnType = "string"))
 @SoyPureFunction
 public final class JoinFunction
