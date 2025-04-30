@@ -2765,12 +2765,15 @@ class NodeBuilder {
  * point it switches to adding content to an array.
  */
 class HtmlOutputBuffer extends SanitizedHtml {
+  constructor() {
+    super();
 
-  /** @type {!Array<*>|undefined} */
-  parts;
+    /** @type {!Array<*>|undefined} */
+    this.parts;
 
-  /** @type {string|undefined} */
-  content;
+    /** @type {string|undefined} */
+    this.content;
+  }
 
   /** 
    * @param {string} val
