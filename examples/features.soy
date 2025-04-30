@@ -93,7 +93,7 @@ import * as simple from 'examples/simple.soy';
  */
 {template demoPrint}
   {@param boo: string}  /** Something scary. */
-  {@param two: number}  /** Preferably the number 2. */
+  {@param two: float|int}    /** Preferably the number 2. */
   {print 'Boo!'}<br>  // print a string
   {'Boo!'}<br>  // the command name 'print' is implied
   {1 + 2}<br>  // print the result of an expression
@@ -392,8 +392,9 @@ import * as simple from 'examples/simple.soy';
  * Demo expressions.
  */
 {template demoExpressions}
-  {@param students: list<[name: string, major: string, year: number]>}  /** List of students. */
-  {@param currentYear: number}  /** The current year. */
+  {@param students: list<[name: string, major: string, year: float|int]>}    /** List of
+                                                                                 students. */
+  {@param currentYear: float|int}    /** The current year. */
 
   First student's major: {$students[0].major}<br>
   Last student's year: {$students[length($students) - 1].year}<br>
@@ -473,7 +474,7 @@ import * as simple from 'examples/simple.soy';
 {template demoBidiSupport}
   {@param title: string}  /** Book title. */
   {@param author: string}  /** Author's name. */
-  {@param year: number}  /** Year published. */
+  {@param year: float|int}           /** Year published. */
   {@param keywords: list<string>}  /** List of keywords. */
 
   // If $title has the opposite directionality relative to the overall locale, it needs to be
@@ -553,7 +554,7 @@ import * as simple from 'examples/simple.soy';
  * Template for printing the header to add before each example.
  */
 {template exampleHeader}
-  {@param exampleNum: number}  /** The number of the example. */
+  {@param exampleNum: float|int}    /** The number of the example. */
   {@param exampleName: string}  /** The name of the example. */
   <hr>
   <b>{$exampleNum}. {$exampleName}</b><br>
