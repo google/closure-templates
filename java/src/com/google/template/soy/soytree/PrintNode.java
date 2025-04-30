@@ -41,6 +41,8 @@ import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyNode.SplitLevelTopNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyNode.StatementNode;
+import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.UnionType;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -256,6 +258,25 @@ public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNod
   @Override
   public PrintNode copy(CopyState copyState) {
     return new PrintNode(this, copyState);
+  }
+
+  public boolean isHtml() {
+    SoyType type = getExpr().getRoot().getType();
+    return type != null && isHtmlType(type);
+  }
+
+  private boolean isHtmlType(SoyType type) {
+    if (type.getKind().isHtml()) {
+      return true;
+    }
+    if (type instanceof UnionType) {
+      for (SoyType member : ((UnionType) type).getMembers()) {
+        if (isHtmlType(member)) {
+          return true;
+        }
+      }
+    }
+    return false;
   }
 
   /**
