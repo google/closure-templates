@@ -624,4 +624,8 @@ public final class BasicFunctionsRuntime {
             : String.format("%s=\"%s\"", attrName, Sanitizers.escapeHtmlAttribute(attrValue)),
         ContentKind.ATTRIBUTES);
   }
+
+  public static SoyValue throwException(String message) {
+    throw new RuntimeException(message);
+  }
 }

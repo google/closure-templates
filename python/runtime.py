@@ -912,3 +912,8 @@ def is_truthy_non_empty(val):
 
 def empty_to_null(val):
   return val if is_truthy_non_empty(val) else None
+
+
+def throw_exception(message):
+  # pylint: disable=broad-exception-raised
+  raise Exception(message)

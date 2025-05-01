@@ -2861,6 +2861,15 @@ const $$createHtmlOutputBuffer = (() => {
   return factory;
 })();
 
+/**
+ * Throws an exception.
+ *
+ * @param {string} message
+ */
+function $$throwException(message) {
+  throw new Error(message);
+}
+
 exports = {
   $$maybeMakeImmutableProto,
   $$emptyProto,
@@ -2965,6 +2974,7 @@ exports = {
   $$createHtmlOutputBuffer,
   $$isLazyExecutionEnabled,
   NodeBuilder,
+  $$throwException,
   // The following are exported just for tests
   $$setLazyExeuctionUncompiled,
   $$balanceTags_,

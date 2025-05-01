@@ -795,6 +795,10 @@ Both variants change the type of the expression, replacing `undefined` with
 in the case of `undefinedToNullForSsrMigration` and client side rendering this
 could result in a value of `undefined` for an expression of type `T|null`.
 
+### `throw(string)` {#throw}
+
+Throws an exception. It takes a single argument which is the exception message.
+
 ## gbigint Functions
 
 64-bit int proto fields use [gbigint](http://go/gbigint) typed values that must

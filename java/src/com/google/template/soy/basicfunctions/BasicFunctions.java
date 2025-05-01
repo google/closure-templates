@@ -86,6 +86,7 @@ public class BasicFunctions {
         new StrToAsciiUpperCaseFunction(),
         new StrTrimMethod(),
         new StringListSortMethod(),
+        new ThrowFunction(),
         new VeHasSameIdMethod());
     // go/keep-sorted end
   }
