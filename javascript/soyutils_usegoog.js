@@ -36,11 +36,11 @@ const googFormat = goog.require('goog.format');
 const googSoy = goog.requireType('goog.soy');
 const googString = goog.require('goog.string');
 const {Message} = goog.requireType('jspb');
-const {SafeHtml, SafeScript, SafeStyleSheet, TrustedResourceUrl, isUrl, unwrapHtml, unwrapResourceUrl, unwrapScript, unwrapStyleSheet, unwrapUrl} = goog.require('safevalues');
+const {SafeHtml, SafeScript, SafeStyleSheet, TrustedResourceUrl, isUrl, unwrapHtml, unwrapResourceUrl, unwrapScript, unwrapStyleSheet, unwrapUrl} = goog.require('google3.third_party.javascript.safevalues.index');
 const {SanitizedContent, SanitizedContentKind, SanitizedCss, SanitizedHtml, SanitizedHtmlAttribute, SanitizedJs, SanitizedTrustedResourceUri, SanitizedUri} = goog.require('goog.soy.data');
 const {compareBigInt} = goog.require('google3.javascript.common.bigint.index');
 const {defaultImmutableInstance} = goog.require('jspb.immutable_message');
-const {htmlSafeByReview} = goog.require('safevalues.restricted.reviewed');
+const {htmlSafeByReview} = goog.require('google3.third_party.javascript.safevalues.restricted.reviewed');
 const {isReadonly} = goog.require('google3.javascript.apps.jspb.types.is_readonly');
 
 // -----------------------------------------------------------------------------
