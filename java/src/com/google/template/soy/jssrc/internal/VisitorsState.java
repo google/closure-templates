@@ -40,7 +40,7 @@ public class VisitorsState {
   protected final IsComputableAsJsExprsVisitor isComputableAsJsExprsVisitor;
   protected final CanInitOutputVarVisitor canInitOutputVarVisitor;
   protected final SoyTypeRegistry typeRegistry;
-  protected final OutputVarHandler outputVarHandler = new OutputVarHandler();
+  protected final OutputVarHandler outputVarHandler;
 
   // Set per FileSetNode:
   protected ErrorReporter errorReporter;
@@ -66,6 +66,7 @@ public class VisitorsState {
     this.genCallCodeUtils = createGenCallCodeUtils();
     this.canInitOutputVarVisitor = new CanInitOutputVarVisitor(isComputableAsJsExprsVisitor);
     this.typeRegistry = checkNotNull(typeRegistry);
+    this.outputVarHandler = new OutputVarHandler(options.enableLazyJs());
   }
 
   @ForOverride

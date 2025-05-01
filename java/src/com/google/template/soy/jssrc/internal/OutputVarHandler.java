@@ -44,7 +44,7 @@ import javax.annotation.Nullable;
 public class OutputVarHandler {
 
   public static final OutputVarHandler DISALLOWED =
-      new OutputVarHandler() {
+      new OutputVarHandler(false) {
         @Override
         public Optional<Statement> initOutputVarIfNecessary() {
           return Optional.empty();
@@ -115,9 +115,12 @@ public class OutputVarHandler {
   /** The current stack of output variables. */
   private final Deque<OutputVar> outputVars;
 
-  OutputVarHandler() {
+  private final boolean enableLazyJs;
+
+  OutputVarHandler(boolean enableLazyJs) {
     outputVars = new ArrayDeque<>();
     currentStyleBranchState = null;
+    this.enableLazyJs = enableLazyJs;
   }
 
   private OutputVar currentOutputVar() {
@@ -145,7 +148,7 @@ public class OutputVarHandler {
   }
 
   public OutputVarHandler.Style outputStyleForBlock(RenderUnitNode node) {
-    if (currentStyleBranchState == StyleBranchState.DISALLOW) {
+    if (!this.enableLazyJs || currentStyleBranchState == StyleBranchState.DISALLOW) {
       return Style.APPENDING;
     }
 

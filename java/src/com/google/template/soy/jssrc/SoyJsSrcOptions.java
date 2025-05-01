@@ -102,10 +102,13 @@ public abstract class SoyJsSrcOptions {
         .setBidiGlobalDir(0)
         .setUseGoogIsRtlForBidiGlobalDir(false)
         .setKytheMode(KytheMode.DISABLED)
-        .setSourceMapMode(SourceMapMode.DISABLED);
+        .setSourceMapMode(SourceMapMode.DISABLED)
+        .setEnableLazyJs(true);
   }
 
   public abstract Builder toBuilder();
+
+  public abstract boolean enableLazyJs();
 
   public static SoyJsSrcOptions getDefault() {
     return builder().build();
@@ -199,6 +202,8 @@ public abstract class SoyJsSrcOptions {
     public abstract Builder setKytheMode(KytheMode kytheMode);
 
     public abstract Builder setSourceMapMode(SourceMapMode sourceMapMode);
+
+    public abstract Builder setEnableLazyJs(boolean enableLazyJs);
 
     abstract SoyJsSrcOptions autoBuild();
 
