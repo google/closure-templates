@@ -1070,7 +1070,7 @@ abstract class Context {
   static Context getTagNameContext(
       HtmlOpenTagNode node, HtmlContext state, int templateNestDepth, Context.Builder builder) {
     // according to spec ascii case is not meaningful for tag names.
-    String tagName;
+    String tagName = "";
     if (node.getTagName().isStatic()) {
       tagName = node.getTagName().getTagString();
       if (tagName == null) {
@@ -1083,10 +1083,10 @@ abstract class Context {
       TemplateType templateType =
           (TemplateType) node.getTagName().getDynamicTagName().getExpr().getType();
       // This is type checked.
-      ElementContentKind elementContentKind = (ElementContentKind) templateType.getContentKind();
-      tagName = Ascii.toLowerCase(elementContentKind.getTagName());
-    } else {
-      tagName = "";
+      if (templateType.getContentKind() instanceof ElementContentKind) {
+        ElementContentKind elementContentKind = (ElementContentKind) templateType.getContentKind();
+        tagName = Ascii.toLowerCase(elementContentKind.getTagName());
+      }
     }
     Context.ElementType elType = ElementType.NORMAL;
     // We currently only treat <img> and SVG's <image> as a media type, since for <video> and

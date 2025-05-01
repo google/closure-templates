@@ -25,7 +25,6 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
-import com.google.template.soy.base.internal.TemplateContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
@@ -217,9 +216,7 @@ final class MoreCallValidationsPass implements CompilerFileSetPass {
               SoyType type = tagNode.getTagName().getDynamicTagName().getExpr().getType();
               if (type.isAssignableFromStrict(StringType.getInstance())) {
                 handleDynamicTag(tagNode, correctlyPlaced);
-              } else if (!(type instanceof TemplateType)
-                  || !(((TemplateType) type).getContentKind()
-                      instanceof TemplateContentKind.ElementContentKind)) {
+              } else if (!(type instanceof TemplateType)) {
                 errorReporter.report(
                     tagNode.getSourceLocation(),
                     ELEMENT_CALL_TO_HTML_TEMPLATE,
