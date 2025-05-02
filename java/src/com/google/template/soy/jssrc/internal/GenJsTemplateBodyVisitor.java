@@ -27,6 +27,7 @@ import static com.google.template.soy.jssrc.dsl.Statements.returnValue;
 import static com.google.template.soy.jssrc.dsl.Statements.switchValue;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_IS_OBJECT;
 import static com.google.template.soy.jssrc.internal.JsRuntime.WINDOW_CONSOLE_LOG;
+import static com.google.template.soy.jssrc.internal.JsRuntime.isLazyExecutionEnabledFunction;
 import static com.google.template.soy.jssrc.internal.JsRuntime.sanitizedContentOrdainerFunction;
 
 import com.google.common.collect.ImmutableList;
@@ -196,26 +197,28 @@ public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<St
     // output += 'b';
     // This is because it is actually easier for the jscompiler to optimize.
 
-    List<Expression> consecChunks = new ArrayList<>();
+    List<SoyNode> jsExprNodes = new ArrayList<>();
 
     for (SoyNode child : node.getChildren()) {
       if (isComputableAsJsExprsVisitor.exec(child)) {
-        consecChunks.addAll(genJsExprsVisitor.exec(child));
+        jsExprNodes.add(child);
       } else {
-        if (!consecChunks.isEmpty()) {
-          statements.add(outputVars.addChunksToOutputVar(consecChunks));
-          consecChunks.clear();
-        }
+        addToOutput(statements, genJsExprsVisitor.buildParts(jsExprNodes));
+        jsExprNodes.clear();
         statements.add(visit(child));
       }
     }
 
-    if (!consecChunks.isEmpty()) {
-      statements.add(outputVars.addChunksToOutputVar(consecChunks));
-      consecChunks.clear();
-    }
+    addToOutput(statements, genJsExprsVisitor.buildParts(jsExprNodes));
 
     return statements;
+  }
+
+  private void addToOutput(
+      List<Statement> statements, ImmutableList<OutputVarHandler.Part> partitionedChunks) {
+    if (!partitionedChunks.isEmpty()) {
+      statements.add(outputVars.addPartsToOutputVar(partitionedChunks));
+    }
   }
 
   /**
@@ -381,7 +384,8 @@ public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<St
   @Override
   protected Statement visitIfNode(IfNode node) {
 
-    if (isComputableAsJsExprsVisitor.exec(node)) {
+    if (isComputableAsJsExprsVisitor.exec(node)
+        && outputVars.currentOutputVarStyle() == OutputVarHandler.Style.APPENDING) {
       return outputVars.addChunksToOutputVar(state.createJsExprsVisitor().exec(node));
     } else {
       return generateNonExpressionIfNode(node);
@@ -725,20 +729,92 @@ public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<St
    */
   public Statement execRenderUnitNodeAsStatements(
       RenderUnitNode node, String varName, boolean returnOutput, boolean ordain) {
-    return execRenderUnitNodeAsStatementsInner(node, varName, returnOutput, ordain);
+    if (state.outputVarHandler.shouldBranch(node)) {
+
+      // If we're not returning the output, we're using the output as a let/param so we need to
+      // declare a let outside of the lazy branch so it is scoped properly.
+      boolean predeclaredVar = !returnOutput;
+
+      Statement lazyBranch =
+          execRenderUnitNodeAsStatementsInner(
+              node,
+              varName,
+              returnOutput,
+              ordain,
+              predeclaredVar,
+              OutputVarHandler.StyleBranchState.ALLOW);
+
+      // Avoid duplicate errors.
+      if (this.errorReporter.hasErrors()) {
+        return lazyBranch;
+      }
+
+      Statement appendingBranch =
+          execRenderUnitNodeAsStatementsInner(
+              node,
+              varName,
+              returnOutput,
+              ordain,
+              predeclaredVar,
+              OutputVarHandler.StyleBranchState.DISALLOW);
+
+      ImmutableList.Builder<Statement> stmts = ImmutableList.builder();
+      if (predeclaredVar) {
+        stmts.add(VariableDeclaration.builder(varName).setMutable().build());
+      }
+      stmts.add(
+          Statements.ifStatement(isLazyExecutionEnabledFunction().call(), lazyBranch)
+              .setElse(appendingBranch)
+              .build());
+      return Statements.of(stmts.build());
+    } else {
+      return execRenderUnitNodeAsStatementsInner(
+          node, varName, returnOutput, ordain, /* predeclaredVar= */ false);
+    }
+  }
+
+  /** Compiles the render unit node with the specified style branch. */
+  private Statement execRenderUnitNodeAsStatementsInner(
+      RenderUnitNode node,
+      String varName,
+      boolean returnOutput,
+      boolean ordain,
+      boolean predeclaredVar,
+      OutputVarHandler.StyleBranchState styleBranch) {
+    Statement stmt;
+    state.outputVarHandler.enterBranch(styleBranch);
+    try (var scope = templateTranslationContext.enterSoyAndJsScope()) {
+      stmt =
+          execRenderUnitNodeAsStatementsInner(node, varName, returnOutput, ordain, predeclaredVar);
+    }
+    state.outputVarHandler.exitBranch();
+    return stmt;
   }
 
   private Statement execRenderUnitNodeAsStatementsInner(
-      RenderUnitNode node, String varName, boolean returnOutput, boolean ordain) {
-    boolean needsOrdainer = ordain && node.getContentKind() != SanitizedContentKind.TEXT;
+      RenderUnitNode node,
+      String varName,
+      boolean returnOutput,
+      boolean ordain,
+      boolean predeclaredVar) {
+
+    OutputVarHandler.Style outputStyle = outputVars.outputStyleForBlock(node);
+    boolean needsOrdainer =
+        ordain
+            && node.getContentKind() != SanitizedContentKind.TEXT
+            && outputStyle == OutputVarHandler.Style.APPENDING;
 
     // The expression for the constructor of SanitizedContent of the appropriate kind (e.g.,
     // "soydata.VERY_UNSAFE.ordainSanitizedHtml"), or null if the node has no 'kind' attribute.
     // Introduce a new variable for this value since it has a different type from the output
     // variable (SanitizedContent vs String) and this will enable optimizations in the jscompiler
-    String contentVarName = needsOrdainer && !returnOutput ? varName + "_unsanitized" : varName;
+    boolean generateUnsanitizedIntermediateVar = needsOrdainer && !returnOutput;
+    String contentVarName = generateUnsanitizedIntermediateVar ? varName + "_unsanitized" : varName;
 
-    outputVars.pushOutputVar(contentVarName);
+    outputVars.pushOutputVar(contentVarName, outputStyle);
+    if (predeclaredVar && !generateUnsanitizedIntermediateVar) {
+      outputVars.setOutputVarDeclared();
+    }
     List<Statement> contents = visitChildrenInNewSoyScope(node);
     outputVars.popOutputVar();
 
@@ -748,8 +824,11 @@ public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<St
             : id(contentVarName);
     if (returnOutput) {
       contents.add(returnValue(ordainedOutput));
-    } else if (needsOrdainer) {
-      contents.add(VariableDeclaration.builder(varName).setRhs(ordainedOutput).build());
+    } else if (generateUnsanitizedIntermediateVar) {
+      contents.add(
+          predeclaredVar
+              ? Statements.assign(id(varName), ordainedOutput)
+              : VariableDeclaration.builder(varName).setRhs(ordainedOutput).build());
     }
 
     return Statements.of(contents);

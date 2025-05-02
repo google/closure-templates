@@ -27,6 +27,7 @@ import com.google.template.soy.jssrc.internal.IsComputableAsJsExprsVisitor;
 import com.google.template.soy.jssrc.internal.TemplateAliases;
 import com.google.template.soy.jssrc.internal.TranslationContext;
 import com.google.template.soy.jssrc.internal.VisitorsState;
+import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
 import java.util.ArrayList;
@@ -66,6 +67,11 @@ public final class GenIdomExprsVisitor extends GenJsExprsVisitor {
     chunks = new ArrayList<>();
     visit(node);
     return chunks;
+  }
+
+  @Override
+  protected Expression maybeAddNodeBuilder(PrintNode node, Expression expr) {
+    return expr;
   }
 
   /** Never wrap contents as SanitizedContent if HTML or ATTRIBUTES. */

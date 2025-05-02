@@ -25,6 +25,7 @@ import static com.google.template.soy.jssrc.dsl.Expressions.fromExpr;
 import static com.google.template.soy.jssrc.dsl.Expressions.stringLiteral;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_ASSIGN_DEFAULTS;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_GET_DELEGATE_FN;
+import static com.google.template.soy.jssrc.internal.JsRuntime.nodeBuilderClass;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
@@ -157,18 +158,33 @@ public class GenCallCodeUtils {
       params.addAll(
           getPositionalParams((CallBasicNode) callNode, exprTranslator, hasVariant(callNode)));
       maybeAddVariantParam(callNode, exprTranslator, params);
-      call = callee.positionalStyle().get().call(params);
+      call = generateCallExpr(callNode, callee.positionalStyle().get(), params);
     } else {
       List<Expression> params = new ArrayList<>();
       params.add(genObjToPass(callNode, exprTranslator));
       params.add(JsRuntime.IJ_DATA);
       maybeAddVariantParam(callNode, exprTranslator, params);
-      call = callee.objectStyle().call(params);
+      call = generateCallExpr(callNode, callee.objectStyle(), params);
     }
     if (callNode.getEscapingDirectives().isEmpty()) {
       return call;
     }
     return applyEscapingDirectives(call, callNode);
+  }
+
+  private Expression generateCallExpr(
+      CallNode callNode, Expression callee, List<Expression> params) {
+    if (useNodeBuilder(callNode)) {
+      return Expressions.construct(nodeBuilderClass(), callee, Expressions.arrayLiteral(params));
+    } else {
+      return callee.call(params);
+    }
+  }
+
+  public boolean useNodeBuilder(CallNode callNode) {
+    return state.outputVarHandler.currentOutputVarStyle() == OutputVarHandler.Style.LAZY
+        && callNode instanceof CallBasicNode
+        && ((CallBasicNode) callNode).isLazy();
   }
 
   public static boolean hasVariant(CallNode callNode) {

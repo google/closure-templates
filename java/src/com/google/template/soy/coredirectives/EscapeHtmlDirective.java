@@ -105,4 +105,9 @@ public class EscapeHtmlDirective
   public PyExpr applyForPySrc(PyExpr value, List<PyExpr> args) {
     return new PyExpr("sanitize.escape_html(" + value.getText() + ")", Integer.MAX_VALUE);
   }
+
+  @Override
+  public boolean isJsImplNoOpForSanitizedHtml() {
+    return true;
+  }
 }

@@ -19,10 +19,14 @@ package com.google.template.soy.jssrc.internal;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.template.soy.jssrc.dsl.Expressions.LITERAL_EMPTY_STRING;
 import static com.google.template.soy.jssrc.dsl.Expressions.stringLiteral;
+import static com.google.template.soy.jssrc.internal.JsRuntime.isLazyExecutionEnabledFunction;
+import static com.google.template.soy.jssrc.internal.JsRuntime.nodeBuilderClass;
 import static com.google.template.soy.jssrc.internal.JsRuntime.sanitizedContentOrdainerFunction;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.internal.SanitizedContentKind;
+import com.google.template.soy.basetree.ParentNode;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprRootNode;
@@ -37,6 +41,7 @@ import com.google.template.soy.jssrc.restricted.ModernSoyJsSrcPrintDirective;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcPrintDirective;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
+import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.HtmlAttributeValueNode;
@@ -240,7 +245,24 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<Expression>> 
       }
     }
 
-    chunks.add(expr);
+    chunks.add(maybeAddNodeBuilder(node, expr));
+  }
+
+  protected Expression maybeAddNodeBuilder(PrintNode node, Expression expr) {
+    // When in lazy mode, also defer print directives if needed.
+    if (state.outputVarHandler.currentOutputVarStyle() == OutputVarHandler.Style.LAZY
+        && node.getExpr().getType() != null
+        && node.getExpr().getType().getKind().isHtml()
+        && node.getChildren().stream().anyMatch(GenJsExprsVisitor::needToDeferDirective)) {
+      return Expressions.construct(nodeBuilderClass(), Expressions.tsArrowFunction(expr));
+    }
+    return expr;
+  }
+
+  private static boolean needToDeferDirective(PrintDirectiveNode directiveNode) {
+    SoyPrintDirective directive = directiveNode.getPrintDirective();
+    return !(directive instanceof ModernSoyJsSrcPrintDirective
+        && ((ModernSoyJsSrcPrintDirective) directive).isJsImplNoOpForSanitizedHtml());
   }
 
   protected TranslateExprNodeVisitor createExprTranslator() {
@@ -289,11 +311,13 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<Expression>> 
             createExprTranslator()
                 .maybeCoerceToBoolean(
                     ifCond.getExpr().getType(), translateExpr(ifCond.getExpr()), false));
-        thens.add(genJsExprsVisitor.execAsSingleExpression(ifCond, /* concatForceString= */ false));
+        thens.add(
+            genJsExprsVisitor.execAsSingleExpression(
+                ifCond, /* concatForceString= */ false, /* wrapSinglePart= */ false));
       } else if (child instanceof IfElseNode) {
         trailingElse =
             genJsExprsVisitor.execAsSingleExpression(
-                (IfElseNode) child, /* concatForceString= */ false);
+                (IfElseNode) child, /* concatForceString= */ false, /* wrapSinglePart= */ false);
       } else {
         throw new AssertionError();
       }
@@ -317,21 +341,147 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<Expression>> 
 
   public Expression execRenderUnitNodeAsSingleExpression(
       RenderUnitNode node, boolean concatForceString) {
-    Expression content = execAsSingleExpression(node, concatForceString);
-    return maybeWrapContent(node, content);
+    if (state.outputVarHandler.shouldBranch(node)) {
+      Expression lazyBranch =
+          execRenderUnitNodeAsSingleExpressionInner(
+              node, concatForceString, OutputVarHandler.StyleBranchState.ALLOW);
+
+      // Avoid duplicate errors.
+      if (this.errorReporter.hasErrors()) {
+        return lazyBranch;
+      }
+
+      Expression appendingBranch =
+          execRenderUnitNodeAsSingleExpressionInner(
+              node, concatForceString, OutputVarHandler.StyleBranchState.DISALLOW);
+
+      return Expressions.ifExpression(isLazyExecutionEnabledFunction().call(), lazyBranch)
+          .setElse(appendingBranch)
+          .build(translationContext.codeGenerator());
+    } else {
+      return execRenderUnitNodeAsSingleExpressionInner(node, concatForceString);
+    }
+  }
+
+  /** Compiles the render unit node with the specified style branch. */
+  private Expression execRenderUnitNodeAsSingleExpressionInner(
+      RenderUnitNode node,
+      boolean concatForceString,
+      OutputVarHandler.StyleBranchState styleBranch) {
+    state.outputVarHandler.enterBranch(styleBranch);
+    Expression expr = execRenderUnitNodeAsSingleExpressionInner(node, concatForceString);
+    state.outputVarHandler.exitBranch();
+    return expr;
+  }
+
+  private Expression execRenderUnitNodeAsSingleExpressionInner(
+      RenderUnitNode node, boolean concatForceString) {
+    state.outputVarHandler.pushOutputVarForEvalOnly(
+        state.outputVarHandler.outputStyleForBlock(node));
+    Expression content =
+        maybeWrapContent(
+            node, execAsSingleExpression(node, concatForceString, /* wrapSinglePart= */ true));
+    state.outputVarHandler.popOutputVar();
+    return content;
   }
 
   protected Expression maybeWrapContent(RenderUnitNode node, Expression content) {
     if (node.getContentKind() == SanitizedContentKind.TEXT) {
       return content;
     }
+    if (state.outputVarHandler.outputStyleForBlock(node) == OutputVarHandler.Style.LAZY) {
+      if (state.outputVarHandler.shouldBranch(node)) {
+        if (!(node instanceof CallParamContentNode)) {
+          // LetContentNodes are not handled by this class.
+          // TemplateNodes will always be evaluated in a branch if they need lazy evaluation since
+          // they are the top level.
+          throw new AssertionError("Unexpected node: " + node.getKind());
+        }
+        // We needed to branch on this param, so we've already output something like:
+
+        // let param;
+        // if (soy.$$isLazyExecutionEnabled) {
+        //   param = soy.$$createHtmlOutputBuffer...
+        // else {
+        //   param = '' + ...
+        // }
+
+        // The param is a raw string in the appending branch, so conditionally use the ordainer.
+        // tmplCall(soy.$$isLazyExecutionEnabled ? param : ordainSanitizedContent(param))
+
+        return Expressions.ternary(
+            isLazyExecutionEnabledFunction().call(),
+            content,
+            sanitizedContentOrdainerFunction(node.getContentKind()).call(content));
+      }
+      return content;
+    }
     return sanitizedContentOrdainerFunction(node.getContentKind()).call(content);
   }
 
-  private Expression execAsSingleExpression(ParentSoyNode<?> node, boolean concatForceString) {
-    return concatForceString
-        ? Expressions.concatForceString(exec(node))
-        : Expressions.concat(exec(node));
+  private Expression execAsSingleExpression(
+      ParentSoyNode<? extends SoyNode> node, boolean concatForceString, boolean wrapSinglePart) {
+    if (state.outputVarHandler.currentOutputVarStyle() == OutputVarHandler.Style.APPENDING) {
+      return concatForceString
+          ? Expressions.concatForceString(exec(node))
+          : Expressions.concat(exec(node));
+    } else {
+      ImmutableList<OutputVarHandler.Part> partitionedChunks = buildParts(node.getChildren());
+      if (partitionedChunks.size() == 1 && !wrapSinglePart) {
+        // When `wrapSinglePart` is false, if the result is a single Part, just return the part,
+        // don't wrap it in a buffer. This is an optimization for compiling ifs to ternaries:
+
+        // createHtmlOutputBuffer().addString(
+        //    b ? createHtmlOutputBuffer().addString(a) : createHtmlOutputBuffer().addString(b + c))
+        //  =>
+        // createHtmlOutputBuffer().addString(b ? a : b + c)
+        return Expressions.concat(partitionedChunks.get(0).exprs());
+      }
+      return OutputVarHandler.createHtmlArrayBufferExpr(partitionedChunks);
+    }
+  }
+
+  ImmutableList<OutputVarHandler.Part> buildParts(List<? extends SoyNode> nodes) {
+    ImmutableList.Builder<OutputVarHandler.Part> partitionedChunks = ImmutableList.builder();
+    List<Expression> chunksToConcat = new ArrayList<>();
+
+    for (SoyNode child : nodes) {
+      List<Expression> exprs = exec(child);
+      if (canConcatenateAsString(child)) {
+        chunksToConcat.addAll(exprs);
+      } else {
+        if (!chunksToConcat.isEmpty()) {
+          partitionedChunks.add(OutputVarHandler.createStringPart(chunksToConcat));
+          chunksToConcat = new ArrayList<>();
+        }
+        for (Expression expr : exprs) {
+          partitionedChunks.add(OutputVarHandler.createDynamicPart(expr));
+        }
+      }
+    }
+    if (!chunksToConcat.isEmpty()) {
+      partitionedChunks.add(OutputVarHandler.createStringPart(chunksToConcat));
+    }
+
+    return partitionedChunks.build();
+  }
+
+  public boolean canConcatenateAsString(SoyNode node) {
+    if (state.outputVarHandler.currentOutputVarStyle() == OutputVarHandler.Style.APPENDING) {
+      return true;
+    }
+
+    if (node instanceof CallBasicNode) {
+      return !((CallBasicNode) node).isHtml();
+    }
+    if (node instanceof PrintNode) {
+      return !((PrintNode) node).isHtml();
+    }
+    if (node instanceof IfNode || node instanceof IfCondNode || node instanceof IfElseNode) {
+      return ((ParentNode<SoyNode>) node)
+          .getChildren().stream().allMatch(this::canConcatenateAsString);
+    }
+    return true;
   }
 
   @Override

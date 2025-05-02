@@ -295,6 +295,14 @@ public final class JsRuntime {
         NodeContentKinds.toJsSanitizedContentOrdainer(kind));
   }
 
+  public static Expression nodeBuilderClass() {
+    return SOY.dotAccess("NodeBuilder");
+  }
+
+  public static Expression isLazyExecutionEnabledFunction() {
+    return SOY.dotAccess("$$isLazyExecutionEnabled");
+  }
+
   public static Expression createHtmlOutputBufferFunction() {
     return SOY.dotAccess("$$createHtmlOutputBuffer");
   }

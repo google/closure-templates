@@ -29,4 +29,12 @@ public interface ModernSoyJsSrcPrintDirective extends SoyPrintDirective {
       GoogRequire.create("google3.javascript.template.soy.soyutils_directives").googModuleGet();
 
   Expression applyForJsSrc(Expression value, List<Expression> args);
+
+  /**
+   * Whether the print directive just passes through SanitizedHtml. When compiling lazy blocks,
+   * these directives don't need to be deferred since they are no-ops.
+   */
+  default boolean isJsImplNoOpForSanitizedHtml() {
+    return false;
+  }
 }

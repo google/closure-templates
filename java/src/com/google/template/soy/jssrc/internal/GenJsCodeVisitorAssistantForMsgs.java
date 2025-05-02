@@ -551,6 +551,9 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractReturningSoyNodeVi
 
     List<Expression> contentChunks = new ArrayList<>();
 
+    // Message placeholders are string interpolated into the message template, so flatten here.
+    outputVars.pushOutputVarForEvalOnly(OutputVarHandler.Style.APPENDING);
+
     for (StandaloneNode contentNode : msgPhNode.getChildren()) {
 
       if (contentNode instanceof MsgHtmlTagNode
@@ -582,6 +585,8 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractReturningSoyNodeVi
         contentChunks.add(Expressions.concat(chunks));
       }
     }
+
+    outputVars.popOutputVar();
 
     return Expressions.concat(contentChunks);
   }
