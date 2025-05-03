@@ -23,7 +23,7 @@ import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.base.internal.TypeReference;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.plugin.java.internal.SoyJavaExternFunction;
-import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
+import com.google.template.soy.plugin.java.internal.SoyJavaExternFunction.Boxedness;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import com.google.template.soy.shared.restricted.SoySourceFunctionMethod;
 import com.google.template.soy.soytree.FileMetadata.Extern;
@@ -41,10 +41,6 @@ import java.util.Optional;
 class ExternAdaptors {
   private ExternAdaptors() {}
 
-  /**
-   * Adapts {@link SoySourceFunctionMethod} to {@link Extern} if the method's implementation is a
-   * {@link SoyJavaExternFunction}.
-   */
   public static Optional<Extern> asExtern(
       SoySourceFunctionMethod soyMethod, List<SoyExpression> args) {
     SoySourceFunction impl = soyMethod.getImpl();
@@ -53,6 +49,7 @@ class ExternAdaptors {
           asExtern(
               (SoyJavaExternFunction) impl,
               soyMethod.getMethodName(),
+              args,
               soyMethod.getReturnType(),
               ImmutableList.<SoyType>builder()
                   .add(soyMethod.getBaseType())
@@ -62,17 +59,14 @@ class ExternAdaptors {
     return Optional.empty();
   }
 
-  /**
-   * Adapts {@link SoyJavaSourceFunction} to {@link Extern} if the function's implementation is a
-   * {@link SoyJavaExternFunction}.
-   */
   public static Optional<Extern> asExtern(
-      SoyJavaSourceFunction fn,
+      SoySourceFunction fn,
       List<SoyExpression> args,
       SoyType returnType,
       ImmutableList<SoyType> paramTypes) {
     if (fn instanceof SoyJavaExternFunction) {
-      return Optional.of(asExtern((SoyJavaExternFunction) fn, "unused", returnType, paramTypes));
+      return Optional.of(
+          asExtern((SoyJavaExternFunction) fn, "unused", args, returnType, paramTypes));
     }
     return Optional.empty();
   }
@@ -80,9 +74,14 @@ class ExternAdaptors {
   private static Extern asExtern(
       SoyJavaExternFunction impl,
       String methodName,
+      List<SoyExpression> args,
       SoyType returnType,
       ImmutableList<SoyType> argTypes) {
-    Method method = impl.getExternJavaMethod();
+    ImmutableList<Boxedness> boxedNess =
+        args.stream()
+            .map(a -> a.isBoxed() ? Boxedness.BOXED : Boxedness.UNBOXED)
+            .collect(toImmutableList());
+    Method method = impl.getExternJavaMethod(boxedNess);
     MethodType methodType;
     if (Modifier.isStatic(method.getModifiers())) {
       if (method.getDeclaringClass().isInterface()) {
@@ -134,6 +133,11 @@ class ExternAdaptors {
           @Override
           public boolean instanceFromContext() {
             return false;
+          }
+
+          @Override
+          public boolean shouldAdaptArg(int paramIndex) {
+            return !impl.bypassParamAdapt(paramIndex, boxedNess);
           }
         };
     return new Extern() {
