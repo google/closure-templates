@@ -54,6 +54,7 @@ import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.Future;
 import java.util.function.Function;
 import javax.annotation.Nullable;
@@ -306,6 +307,14 @@ public abstract class BaseSoyTemplateImpl extends SoyTemplate {
         map.setField(RecordProperty.get((String) more[i]), (SoyValueProvider) more[i + 1]);
       }
       return new SoyRecordImpl(map);
+    }
+
+    protected static SoyRecordImpl asRecord(Map<String, ?> map) {
+      ParamStore record = new ParamStore(map.size());
+      for (Entry<String, ?> entry : map.entrySet()) {
+        record.setField(RecordProperty.get(entry.getKey()), asSoyValue(entry.getValue()));
+      }
+      return new SoyRecordImpl(record);
     }
 
     /**
