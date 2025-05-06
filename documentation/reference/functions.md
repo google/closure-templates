@@ -877,6 +877,11 @@ Asserts the value is within the JavaScript safe integer range.
 
 Returns an array created by calling `gbigintToInt` on each element of the input.
 
+### `gbigintToStringOrNull(gbigint|null|undefined)` {#gbigintToStringOrNull}
+
+Converts the provided `gbigint` into a `string` typed value. If a nullish value
+is provided, this function is guaranteed to return `null`.
+
 ### `isSafeInt52(gbigint)` {#isSafeInt52}
 
 This mirrors the
