@@ -1,0 +1,11 @@
+syntax = "proto2";
+
+package soy.test;
+
+import "src/main/protobuf/ve_metadata.proto";
+
+option java_package = "com.google.template.soy.testing";
+
+extend LoggableElementMetadata {
+  optional string ve_metadata_example_extension = 1010;
+}

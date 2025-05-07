@@ -113,6 +113,7 @@ java_library(
         "//java/src/com/google/template/soy/internal/proto",
         "//java/src/com/google/template/soy/jbcsrc/api:helpers",
         "//java/src/com/google/template/soy/jbcsrc/shared:names",
+        "//src/main/protobuf:ve_metadata_java_proto",
         "@com_google_auto_value_auto_value",
         "@com_google_protobuf//:protobuf_java",
         "@maven//:com_google_code_findbugs_jsr305",
