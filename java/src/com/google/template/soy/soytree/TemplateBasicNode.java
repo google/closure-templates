@@ -152,7 +152,10 @@ public final class TemplateBasicNode extends TemplateNode {
       useVariantType = UndefinedType.getInstance();
       return;
     }
-    SoyType resolvedType = registry.getType(useVariantTypeAttr.getValue());
+    SoyType resolvedType =
+        useVariantTypeAttr.getValue().equals("number")
+            ? SoyTypes.NUMBER_TYPE
+            : registry.getType(useVariantTypeAttr.getValue());
     if (resolvedType == null || !isValidVariantType(resolvedType)) {
       errorReporter.report(
           getCommandTagAttribute(ATTR_USEVARIANTTYPE)

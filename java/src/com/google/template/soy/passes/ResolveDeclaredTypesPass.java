@@ -22,6 +22,7 @@ import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
+import com.google.template.soy.exprtree.OperatorNodes.InstanceOfOpNode;
 import com.google.template.soy.exprtree.TypeLiteralNode;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.ConstNode;
@@ -48,6 +49,7 @@ import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.UnknownType;
 import com.google.template.soy.types.ast.IntersectionTypeNode;
+import com.google.template.soy.types.ast.NamedTypeNode;
 import com.google.template.soy.types.ast.TypeNode;
 import com.google.template.soy.types.ast.TypeNodeConverter;
 import java.util.HashMap;
@@ -233,6 +235,13 @@ final class ResolveDeclaredTypesPass extends AbstractTopologicallyOrderedPass {
 
     @Override
     protected void visitTypeLiteralNode(TypeLiteralNode node) {
+      // Allow "$x instanceof number".
+      if (node.getParent() instanceof InstanceOfOpNode
+          && node.getTypeNode() instanceof NamedTypeNode
+          && ((NamedTypeNode) node.getTypeNode()).name().identifier().equals("number")) {
+        node.getTypeNode().setResolvedType(SoyTypes.NUMBER_TYPE);
+        return;
+      }
       visitTypeNode(node.getTypeNode());
     }
 

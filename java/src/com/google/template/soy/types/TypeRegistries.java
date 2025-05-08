@@ -190,7 +190,6 @@ public final class TypeRegistries {
             .put("int", IntType.getInstance())
             .put("float", FloatType.getInstance())
             .put("string", StringType.getInstance())
-            .put("number", NUMBER_TYPE)
             .put("gbigint", GbigintType.getInstance())
             .put("html", HtmlType.getInstance())
             .put("never", NeverType.getInstance())

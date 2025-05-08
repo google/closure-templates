@@ -395,7 +395,7 @@ public class SoyTypesTest {
         NamedType.create(
             "Rec1",
             "-",
-            parseType("[a: string, b: number, c: bool, d: string|bool]", baseRegistry));
+            parseType("[a: string, b: float|int, c: bool, d: string|bool]", baseRegistry));
 
     SoyTypeRegistry registry =
         new DelegatingSoyTypeRegistry(baseRegistry) {
@@ -414,7 +414,7 @@ public class SoyTypesTest {
     assertThatSoyType("Rec1['a']", registry).isAssignableFromStrict("string");
     assertThatSoyType("string", registry).isAssignableFromStrict("Rec1['a']");
 
-    assertThatSoyType("Rec1['b']", registry).isAssignableFromStrict("number");
+    assertThatSoyType("Rec1['b']", registry).isAssignableFromStrict("float|int");
     assertThatSoyType("Rec1['c']", registry).isAssignableFromStrict("bool");
     assertThatSoyType("Rec1['d']", registry).isAssignableFromStrict("string");
     assertThatSoyType("Rec1['d']", registry).isAssignableFromStrict("bool");
@@ -1049,7 +1049,7 @@ public class SoyTypesTest {
 
     assertThatSoyType("[foo: string, bar: int]").isAssignableFromLoose("[foo: ?, bar: ?, baz: ?]");
     assertThatSoyType("[foo: string, bar: int]")
-        .isNotAssignableFromLoose("[foo: string, bar: number]");
+        .isNotAssignableFromLoose("[foo: string, bar: float|int]");
   }
 
   @Test
