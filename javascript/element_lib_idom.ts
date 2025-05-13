@@ -17,10 +17,11 @@ import {SafeHtml} from 'safevalues';
 import {
   IncrementalDomRenderer,
   IncrementalDomRendererImpl,
+  SoyElementRenderFn,
   patchOuter,
 } from './api_idom';
 import {isTaggedForSkip} from './global';
-import {IdomTemplate, IjData} from './templates';
+import {IjData} from './templates';
 
 /**
  * An HTML or attributes idom callback from a `soy.idom.js` file.
@@ -68,7 +69,7 @@ export abstract class SoyElement<TData extends {} | null, TInterface extends {}>
   data!: TData;
   ijData!: IjData;
   // Setting this to TData makes this type invariant.
-  template!: IdomTemplate<unknown>;
+  template!: SoyElementRenderFn<unknown>;
 
   dispose(): void {
     if (!this.disposed) {
