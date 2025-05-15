@@ -54,6 +54,7 @@ message SoyTypeP {
     NULL = 3;
     UNDEFINED = 15;
     BOOL = 4;
+    NUMBER = 17;
     INT = 5;
     FLOAT = 6;
     STRING = 7;

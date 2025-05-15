@@ -865,10 +865,8 @@ public final class SoyExpression extends Expression {
       case BOOL:
         staticValue = Type.BOOLEAN_TYPE == soyRuntimeType.runtimeType();
         break;
-      case UNION:
-        staticValue =
-            soyType.equals(SoyTypes.NUMBER_TYPE)
-                && isNumericPrimitive(soyRuntimeType.runtimeType());
+      case NUMBER:
+        staticValue = isNumericPrimitive(soyRuntimeType.runtimeType());
         break;
       case LIST:
         staticValue = alreadyUnboxed(List.class);
@@ -905,10 +903,8 @@ public final class SoyExpression extends Expression {
       case BOOL:
         type = BOOLEAN_DATA_TYPE;
         break;
-      case UNION:
-        if (soyType.equals(SoyTypes.NUMBER_TYPE)) {
-          type = NUMBER_DATA_TYPE;
-        }
+      case NUMBER:
+        type = NUMBER_DATA_TYPE;
         break;
       case RECORD:
         type = SOY_RECORD_IMPL_TYPE;

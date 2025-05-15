@@ -436,6 +436,12 @@ class ValidateExternsPass implements CompilerFilePass {
         return javaType == Double.class
             || javaType == Float.class
             || (mode == Mode.SUPER && javaType == Number.class);
+      case NUMBER:
+        return javaType == Integer.class
+            || javaType == Long.class
+            || javaType == Double.class
+            || javaType == Float.class
+            || (mode == Mode.SUPER && javaType == Number.class);
       case STRING:
         return javaType == String.class;
       case BOOL:
@@ -596,7 +602,7 @@ class ValidateExternsPass implements CompilerFilePass {
     if (method == null) {
       return false;
     }
-    ImmutableList<SoyType> functionTypes = SoyTypes.expandUnions(soyType);
+    ImmutableSet<SoyType> functionTypes = SoyTypes.expandUnions(soyType);
     for (SoyType memberType : functionTypes) {
       FunctionType functionType = (FunctionType) memberType;
       if (functionType.getArity() != method.getParameterCount()) {

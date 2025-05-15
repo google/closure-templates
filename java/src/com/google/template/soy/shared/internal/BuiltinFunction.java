@@ -57,6 +57,8 @@ public enum BuiltinFunction implements SoyFunction {
   LEGACY_DYNAMIC_TAG("legacyDynamicTag"),
   IS_PRIMARY_MSG_IN_USE("$$isPrimaryMsgInUse"),
   TO_FLOAT("$$toFloat"),
+  TO_INT("$$toInt"),
+  TO_NUMBER("$$toNumber"),
   DEBUG_SOY_TEMPLATE_INFO("$$debugSoyTemplateInfo"),
   PROTO_INIT("$$protoInit"),
   VE_DEF("ve_def"),
@@ -101,6 +103,8 @@ public enum BuiltinFunction implements SoyFunction {
       case REMAINDER:
       case MSG_WITH_ID:
       case TO_FLOAT:
+      case TO_INT:
+      case TO_NUMBER:
       case EMPTY_TO_UNDEFINED:
       case UNDEFINED_TO_NULL:
       case UNDEFINED_TO_NULL_SSR:
@@ -159,6 +163,8 @@ public enum BuiltinFunction implements SoyFunction {
       case MSG_WITH_ID:
       case VE_DATA:
       case TO_FLOAT:
+      case TO_INT:
+      case TO_NUMBER:
       case PROTO_INIT:
       case EMPTY_TO_UNDEFINED:
       case UNDEFINED_TO_NULL:

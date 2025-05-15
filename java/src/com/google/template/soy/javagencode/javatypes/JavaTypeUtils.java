@@ -71,6 +71,7 @@ public final class JavaTypeUtils {
         types = ImmutableList.of(SimpleJavaType.INT);
         break;
       case FLOAT:
+      case NUMBER:
         types = ImmutableList.of(SimpleJavaType.FLOAT);
         break;
       case STRING:

@@ -95,6 +95,10 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
           return visitIsPrimaryMsgInUse(node);
         case TO_FLOAT:
           return visitToFloatFunction(node);
+        case TO_INT:
+          return visitToIntFunction(node);
+        case TO_NUMBER:
+          return visitToNumberFunction(node);
         case DEBUG_SOY_TEMPLATE_INFO:
           return visitDebugSoyTemplateInfoFunction(node);
         case VE_DATA:
@@ -183,6 +187,14 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
   }
 
   T visitToFloatFunction(FunctionNode node) {
+    return visitExprNode(node);
+  }
+
+  T visitToIntFunction(FunctionNode node) {
+    return visitExprNode(node);
+  }
+
+  T visitToNumberFunction(FunctionNode node) {
     return visitExprNode(node);
   }
 

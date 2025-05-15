@@ -187,6 +187,7 @@ public final class TypeRegistries {
             .put("null", NullType.getInstance())
             .put("undefined", UndefinedType.getInstance())
             .put("bool", BoolType.getInstance())
+            .put("number", NumberType.getInstance())
             .put("int", IntType.getInstance())
             .put("float", FloatType.getInstance())
             .put("string", StringType.getInstance())

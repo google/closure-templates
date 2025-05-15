@@ -62,7 +62,19 @@ SoySauce   | `boolean`, `com.google.template.soy.data.restricted.BooleanData`
 Tofu       | `com.google.template.soy.data.restricted.BooleanData`
 Python     | `bool`
 
-### `int` {#int}
+### `number` {#number}
+
+A floating point number with 64 bits of precision, with the same behavior as
+JavaScript's `number` primitive.
+
+Backend    | type in host language
+---------- | ----------------------
+JavaScript | `number`
+SoySauce   | `double`, `NumberData`
+Tofu       | `NumberData`
+Python     | `float`
+
+### `int` (deprecated) {#int}
 
 An integer. Due to limitations of JavaScript this type is only guaranteed to
 have 52 bit of precision.
@@ -74,7 +86,7 @@ SoySauce   | `long`, `com.google.template.soy.data.restricted.LongData`
 Tofu       | `com.google.template.soy.data.restricted.LongData`
 Python     | `long`
 
-### `float` {#float}
+### `float` (deprecated) {#float}
 
 A floating point number with 64 bits of precision.
 
@@ -84,11 +96,6 @@ JavaScript | `number`
 SoySauce   | `double`, `FloatData`
 Tofu       | `FloatData`
 Python     | `float`
-
-### `number` {#number}
-
-An alias for `int|float`. (Technically a [composite type](#union), not a
-primitive.)
 
 ### `gbigint` {#gbigint}
 

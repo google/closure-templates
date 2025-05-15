@@ -24,8 +24,6 @@ import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypeRegistry;
-import com.google.template.soy.types.SoyTypes;
-import com.google.template.soy.types.StringType;
 import com.google.template.soy.types.TemplateType;
 import com.google.template.soy.types.UndefinedType;
 import java.util.Optional;
@@ -141,9 +139,10 @@ public final class TemplateBasicNode extends TemplateNode {
   }
 
   private static boolean isValidVariantType(SoyType type) {
-    return type.equals(SoyTypes.NUMBER_TYPE)
-        || type.equals(StringType.getInstance())
-        || type.getKind().equals(SoyType.Kind.PROTO_ENUM);
+    SoyType.Kind kind = type.getKind();
+    return kind == SoyType.Kind.NUMBER
+        || kind == SoyType.Kind.STRING
+        || kind == SoyType.Kind.PROTO_ENUM;
   }
 
   public void resolveUseVariantType(SoyTypeRegistry registry, ErrorReporter errorReporter) {
@@ -152,10 +151,7 @@ public final class TemplateBasicNode extends TemplateNode {
       useVariantType = UndefinedType.getInstance();
       return;
     }
-    SoyType resolvedType =
-        useVariantTypeAttr.getValue().equals("number")
-            ? SoyTypes.NUMBER_TYPE
-            : registry.getType(useVariantTypeAttr.getValue());
+    SoyType resolvedType = registry.getType(useVariantTypeAttr.getValue());
     if (resolvedType == null || !isValidVariantType(resolvedType)) {
       errorReporter.report(
           getCommandTagAttribute(ATTR_USEVARIANTTYPE)

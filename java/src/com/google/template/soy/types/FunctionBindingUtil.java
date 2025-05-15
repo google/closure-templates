@@ -19,6 +19,7 @@ package com.google.template.soy.types;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.error.ErrorReporter.LocationBound;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
@@ -42,7 +43,7 @@ public class FunctionBindingUtil {
   public static SoyType bind(
       SoyType baseType, ImmutableList<SoyType> argTypes, ImmutableList<LocationBound> argErrors) {
 
-    ImmutableList<SoyType> functionTypes = SoyTypes.expandUnions(baseType);
+    ImmutableSet<SoyType> functionTypes = SoyTypes.expandUnions(baseType);
     for (int i = 0; i < argTypes.size(); i++) {
       SoyType argType = argTypes.get(i);
       for (SoyType soyType : functionTypes) {

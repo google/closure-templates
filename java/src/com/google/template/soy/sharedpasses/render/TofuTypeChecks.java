@@ -32,6 +32,7 @@ import com.google.template.soy.data.TemplateValue;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
+import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
@@ -127,6 +128,8 @@ public final class TofuTypeChecks {
       case HTML:
       case ELEMENT:
         return isSanitizedofKind(value, ContentKind.HTML);
+      case NUMBER:
+        return CheckResult.fromBool(value instanceof NumberData);
       case INT:
         return CheckResult.fromBool(value instanceof IntegerData);
       case JS:

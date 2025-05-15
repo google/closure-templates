@@ -43,6 +43,7 @@ import com.google.template.soy.types.IndexedType;
 import com.google.template.soy.types.IntType;
 import com.google.template.soy.types.MessageType;
 import com.google.template.soy.types.NullType;
+import com.google.template.soy.types.NumberType;
 import com.google.template.soy.types.RecordType;
 import com.google.template.soy.types.SanitizedType;
 import com.google.template.soy.types.SanitizedType.AttributesType;
@@ -370,6 +371,8 @@ public final class TemplateMetadataSerializer {
             return AnyType.getInstance();
           case UNKNOWN:
             return UnknownType.getInstance();
+          case NUMBER:
+            return NumberType.getInstance();
           case INT:
             return IntType.getInstance();
           case NULL:

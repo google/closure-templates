@@ -655,7 +655,10 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
         return visitSoyServerKeyFunction(node);
       case IS_PRIMARY_MSG_IN_USE:
         return visitIsPrimaryMsgInUseFunction(node);
+      case TO_INT:
+        return new PyFunctionExprBuilder("int").addArg(visit(node.getParam(0))).asPyExpr();
       case TO_FLOAT:
+      case TO_NUMBER:
       case UNDEFINED_TO_NULL:
       case UNDEFINED_TO_NULL_SSR:
         // Python runtime does not distinguish between null and undefined.

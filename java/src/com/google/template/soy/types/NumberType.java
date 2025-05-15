@@ -16,41 +16,42 @@
 
 package com.google.template.soy.types;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.soytree.SoyTypeP;
 
-/**
- * Soy floating-point type.
- */
-public final class FloatType extends PrimitiveType {
+/** Soy integer type. */
+public final class NumberType extends PrimitiveType {
 
-  private static final FloatType INSTANCE = new FloatType();
+  private static final ImmutableSet<Kind> ASSIGNABLE_KINDS =
+      ImmutableSet.of(Kind.NUMBER, Kind.INT, Kind.FLOAT, Kind.PROTO_ENUM);
+
+  private static final NumberType INSTANCE = new NumberType();
 
   // Not constructible - use getInstance().
-  private FloatType() {}
+  private NumberType() {}
 
   @Override
   public Kind getKind() {
-    return Kind.FLOAT;
-  }
-
-  @Override
-  boolean doIsAssignableFromNonUnionType(SoyType srcType) {
-    Kind kind = srcType.getKind();
-    return kind == Kind.FLOAT || kind == Kind.NUMBER;
+    return Kind.NUMBER;
   }
 
   @Override
   public String toString() {
-    return "float";
+    return "number";
+  }
+
+  @Override
+  boolean doIsAssignableFromNonUnionType(SoyType srcType) {
+    return ASSIGNABLE_KINDS.contains(srcType.getKind());
   }
 
   @Override
   void doToProto(SoyTypeP.Builder builder) {
-    builder.setPrimitive(SoyTypeP.PrimitiveTypeP.FLOAT);
+    builder.setPrimitive(SoyTypeP.PrimitiveTypeP.NUMBER);
   }
 
   /** Return the single instance of this type. */
-  public static FloatType getInstance() {
+  public static NumberType getInstance() {
     return INSTANCE;
   }
 }

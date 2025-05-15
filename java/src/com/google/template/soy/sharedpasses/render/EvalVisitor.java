@@ -947,7 +947,10 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
                   + nonpluginFn.getName()
                   + " function can't be used in templates compiled to Java");
         case TO_FLOAT:
-          return visitToFloatFunction(node);
+        case TO_NUMBER:
+          return FloatData.forValue(visit(node.getParam(0)).numberValue());
+        case TO_INT:
+          return IntegerData.forValue(visit(node.getParam(0)).coerceToLong());
         case DEBUG_SOY_TEMPLATE_INFO:
           return BooleanData.forValue(debugSoyTemplateInfo);
         case VE_DATA:
@@ -1287,11 +1290,6 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     }
     long fallbackMsgId = Long.parseLong(((StringNode) node.getParam(2)).getValue());
     return BooleanData.forValue(!msgBundle.hasMsg(fallbackMsgId));
-  }
-
-  private SoyValue visitToFloatFunction(FunctionNode node) {
-    IntegerData v = (IntegerData) visit(node.getParam(0));
-    return FloatData.forValue((double) v.longValue());
   }
 
   private SoyValue visitNewSetFunction(FunctionNode node) {

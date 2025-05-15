@@ -16,7 +16,7 @@
 
 package com.google.template.soy.passes;
 
-import com.google.common.collect.ImmutableTable;
+import com.google.common.collect.ImmutableSet;
 import com.google.errorprone.annotations.CheckReturnValue;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.exprtree.ExprNode;
@@ -25,16 +25,11 @@ import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.types.FloatType;
 import com.google.template.soy.types.IntType;
+import com.google.template.soy.types.NumberType;
 import com.google.template.soy.types.SoyType;
-import java.util.Collection;
 
 /** Static utility for adding runtime casts to the Soy AST. */
 final class RuntimeTypeCoercion {
-  private static final ImmutableTable<SoyType, SoyType, BuiltinFunction>
-      AVAILABLE_CALL_SITE_COERCIONS =
-          new ImmutableTable.Builder<SoyType, SoyType, BuiltinFunction>()
-              .put(IntType.getInstance(), FloatType.getInstance(), BuiltinFunction.TO_FLOAT)
-              .buildOrThrow();
 
   /**
    * For int values passed into template param float, perform automatic type coercion from the call
@@ -52,49 +47,61 @@ final class RuntimeTypeCoercion {
    * @return The new coerced type
    */
   @CheckReturnValue
-  static SoyType maybeCoerceType(ExprNode node, Collection<SoyType> toTypes) {
+  static SoyType maybeCoerceType(ExprNode node, ImmutableSet<SoyType> toTypes) {
     SoyType fromType = node.getType();
-    if (AVAILABLE_CALL_SITE_COERCIONS.row(fromType).isEmpty()) {
+    if (toTypes.contains(fromType)) {
       return fromType;
     }
-    for (SoyType formalType : toTypes) {
-      if (formalType.isAssignableFromStrict(fromType)) {
-        return fromType; // template already accepts value, no need to coerce
-      }
+
+    BuiltinFunction coercion = null;
+    SoyType coercionTargetType = fromType;
+    switch (fromType.getKind()) {
+      case INT:
+        if (toTypes.contains(NumberType.getInstance())) {
+          coercion = BuiltinFunction.TO_NUMBER;
+          coercionTargetType = NumberType.getInstance();
+        } else if (toTypes.contains(FloatType.getInstance())) {
+          coercion = BuiltinFunction.TO_FLOAT;
+          coercionTargetType = FloatType.getInstance();
+        }
+        break;
+      case FLOAT:
+        if (toTypes.contains(NumberType.getInstance())) {
+          // no conversion
+        } else if (toTypes.contains(IntType.getInstance())) {
+          // Theoretically we could do this but historically it wasn't a feature.
+          // coercion = BuiltinFunction.TO_INT;
+        }
+        break;
+      case NUMBER:
+        if (toTypes.contains(FloatType.getInstance())) {
+          // Cast without conversion
+          coercionTargetType = FloatType.getInstance();
+        } else if (toTypes.contains(IntType.getInstance())) {
+          coercion = BuiltinFunction.TO_INT;
+          coercionTargetType = IntType.getInstance();
+        }
+        break;
+      default:
+        break;
     }
-    for (SoyType coercionTargetType : AVAILABLE_CALL_SITE_COERCIONS.row(fromType).keySet()) {
-      BuiltinFunction function = null;
-      for (SoyType formalType : toTypes) {
-        if (!formalType.isAssignableFromStrict(coercionTargetType)) {
-          continue;
-        }
-        if (function == null) {
-          function = AVAILABLE_CALL_SITE_COERCIONS.get(fromType, coercionTargetType);
-        } else {
-          // This is actually a bad state that shouldn't happen because there should only be one
-          // coercing function.
-          function = null;
-          break;
-        }
-      }
-      if (function == null) {
-        continue;
-      }
 
-      // create a node to wrap param in coercion
-      FunctionNode coercedValue =
-          FunctionNode.newPositional(
-              Identifier.create(function.getName(), node.getSourceLocation()),
-              function,
-              node.getSourceLocation());
-      coercedValue.setType(coercionTargetType);
-
-      ParentExprNode parent = node.getParent();
-      parent.replaceChild(node, coercedValue);
-      coercedValue.addChild(node);
+    if (coercion == null) {
       return coercionTargetType;
     }
-    return fromType;
+
+    // create a node to wrap param in coercion
+    FunctionNode coercedValue =
+        FunctionNode.newPositional(
+            Identifier.create(coercion.getName(), node.getSourceLocation()),
+            coercion,
+            node.getSourceLocation());
+    coercedValue.setType(coercionTargetType);
+
+    ParentExprNode parent = node.getParent();
+    parent.replaceChild(node, coercedValue);
+    coercedValue.addChild(node);
+    return coercionTargetType;
   }
 
   private RuntimeTypeCoercion() {}

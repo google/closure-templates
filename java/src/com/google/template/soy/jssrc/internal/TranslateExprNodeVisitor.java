@@ -28,6 +28,7 @@ import static com.google.template.soy.jssrc.dsl.Expressions.LITERAL_TRUE;
 import static com.google.template.soy.jssrc.dsl.Expressions.LITERAL_UNDEFINED;
 import static com.google.template.soy.jssrc.dsl.Expressions.arrowFunction;
 import static com.google.template.soy.jssrc.dsl.Expressions.construct;
+import static com.google.template.soy.jssrc.dsl.Expressions.dottedIdNoRequire;
 import static com.google.template.soy.jssrc.dsl.Expressions.id;
 import static com.google.template.soy.jssrc.dsl.Expressions.not;
 import static com.google.template.soy.jssrc.dsl.Expressions.number;
@@ -895,11 +896,8 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
         return value.typeOf().tripleEquals(stringLiteral("string"));
       case BOOL:
         return value.typeOf().tripleEquals(stringLiteral("boolean"));
-      case UNION:
-        if (operand.equals(SoyTypes.NUMBER_TYPE)) {
-          return value.typeOf().tripleEquals(stringLiteral("number"));
-        }
-        break;
+      case NUMBER:
+        return value.typeOf().tripleEquals(stringLiteral("number"));
       case RECORD:
         return JsRuntime.IS_RECORD.call(value);
       case LIST:
@@ -1113,8 +1111,11 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
         case IS_PRIMARY_MSG_IN_USE:
           return visitIsPrimaryMsgInUseFunction(node);
         case TO_FLOAT:
+        case TO_NUMBER:
           // this is a no-op in js
           return visit(node.getParam(0));
+        case TO_INT:
+          return dottedIdNoRequire("Math.floor").call(visit(node.getParam(0)));
         case DEBUG_SOY_TEMPLATE_INFO:
           // TODO(lukes): does this need a goog.debug guard? it exists in the runtime
           return GOOG_DEBUG.and(

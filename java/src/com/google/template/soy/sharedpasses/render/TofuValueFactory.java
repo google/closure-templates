@@ -436,6 +436,7 @@ class TofuValueFactory extends JavaValueFactory {
       case INT:
         return val.longValue();
       case FLOAT:
+      case NUMBER:
         return val.floatValue();
       case STRING:
         return val.coerceToString();

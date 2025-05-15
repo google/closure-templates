@@ -1364,6 +1364,7 @@ public final class BytecodeUtils {
       case INT:
         return BOXED_LONG_TYPE;
       case FLOAT:
+      case NUMBER:
         return BOXED_DOUBLE_TYPE;
       case BOOL:
         return BOXED_BOOLEAN_TYPE;

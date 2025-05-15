@@ -520,7 +520,8 @@ public enum BuiltinMethod implements SoyMethod {
     }
     // If a union, we can pick any one of the types and look at all field names, as long as we check
     // appliesTo with the entire union baseType.
-    SoyProtoType protoType = (SoyProtoType) SoyTypes.expandUnions(baseType).get(0);
+    SoyProtoType protoType =
+        (SoyProtoType) Iterables.getFirst(SoyTypes.expandUnions(baseType), null);
     return protoType.getFieldNames().stream()
         .map(protoType::getFieldDescriptor)
         .filter(acceptField)

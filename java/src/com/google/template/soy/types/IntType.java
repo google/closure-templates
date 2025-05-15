@@ -38,7 +38,7 @@ public final class IntType extends PrimitiveType {
     Kind kind = srcType.getKind();
     // enums are implicitly assignable to ints since that is the runtime representation in all
     // backends
-    return kind == Kind.INT || kind == Kind.PROTO_ENUM;
+    return kind == Kind.INT || kind == Kind.PROTO_ENUM || kind == Kind.NUMBER;
   }
 
   @Override

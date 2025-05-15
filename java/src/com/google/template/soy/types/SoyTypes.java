@@ -384,12 +384,12 @@ public final class SoyTypes {
    * For union types, returns a list of member types; for all other types, returns a list with a
    * single element containing the type.
    */
-  public static ImmutableList<SoyType> expandUnions(SoyType type) {
+  public static ImmutableSet<SoyType> expandUnions(SoyType type) {
     checkNotNull(type);
     if (type.getKind() == Kind.UNION) {
-      return ImmutableList.copyOf(((UnionType) type).getMembers());
+      return ((UnionType) type).getMembers();
     } else {
-      return ImmutableList.of(type);
+      return ImmutableSet.of(type);
     }
   }
 
@@ -792,6 +792,7 @@ public final class SoyTypes {
       case ATTRIBUTES:
       case MESSAGE:
       case PROTO:
+      case NUMBER:
         return true;
       case RECORD:
         return type.equals(RecordType.EMPTY_RECORD);
@@ -802,8 +803,6 @@ public final class SoyTypes {
       case MAP:
         return ((MapType) type).getKeyType().equals(AnyType.getInstance())
             && ((MapType) type).getValueType().equals(AnyType.getInstance());
-      case UNION:
-        return type.equals(NUMBER_TYPE);
       default:
         return false;
     }

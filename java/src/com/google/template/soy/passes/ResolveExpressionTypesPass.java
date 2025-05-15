@@ -193,6 +193,7 @@ import com.google.template.soy.types.IterableType;
 import com.google.template.soy.types.LegacyObjectMapType;
 import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.MapType;
+import com.google.template.soy.types.NumberType;
 import com.google.template.soy.types.ProtoImportType;
 import com.google.template.soy.types.RecordType;
 import com.google.template.soy.types.RecordType.Member;
@@ -2060,12 +2061,21 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
     }
 
     private boolean maybeSetExtern(FunctionNode node, List<? extends Extern> externTypes) {
+      List<ExprNode> params = node.getParams();
       List<Extern> matching =
           externTypes.stream()
-              .filter(t -> paramsMatchFunctionType(node.getParams(), t.getSignature()))
+              .filter(t -> paramsMatchFunctionType(params, t.getSignature()))
               .collect(Collectors.toList());
       if (matching.size() == 1) {
         Extern ref = matching.get(0);
+        for (int i = 0; i < params.size(); i++) {
+          // The available runtime coercions are all between assignable types. So there's no need
+          // to re-match externs on the coerced types.
+          SoyType unused =
+              RuntimeTypeCoercion.maybeCoerceType(
+                  params.get(i),
+                  SoyTypes.expandUnions(ref.getSignature().getParameters().get(i).getType()));
+        }
         node.setAllowedParamTypes(
             ref.getSignature().getParameters().stream().map(Parameter::getType).collect(toList()));
         node.setType(ref.getSignature().getReturnType());
@@ -2434,12 +2444,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
 
         SoyType expectedType = SoyTypes.makeNullish(fieldType);
         if (!expectedType.isAssignableFromLoose(argType)) {
-          argType =
-              RuntimeTypeCoercion.maybeCoerceType(
-                  expr,
-                  expectedType instanceof UnionType
-                      ? ((UnionType) expectedType).getMembers()
-                      : ImmutableList.of(expectedType));
+          argType = RuntimeTypeCoercion.maybeCoerceType(expr, SoyTypes.expandUnions(expectedType));
         }
         if (!expectedType.isAssignableFromLoose(argType)) {
           errorReporter.report(
@@ -2794,7 +2799,15 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
             node.setType(VeType.NO_DATA);
           }
           break;
+        case TO_INT: // is added to the AST after this pass
+          node.setType(IntType.getInstance());
+          break;
+        case TO_NUMBER: // is added to the AST after this pass
+          node.setType(NumberType.getInstance());
+          break;
         case TO_FLOAT: // is added to the AST after this pass
+          node.setType(FloatType.getInstance());
+          break;
         case REMAINDER:
           node.setType(IntType.getInstance());
           break;

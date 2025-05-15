@@ -31,6 +31,7 @@ import com.google.template.soy.types.IterableType;
 import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.MapType;
 import com.google.template.soy.types.MessageType;
+import com.google.template.soy.types.NumberType;
 import com.google.template.soy.types.SanitizedType.AttributesType;
 import com.google.template.soy.types.SanitizedType.HtmlType;
 import com.google.template.soy.types.SetType;
@@ -76,6 +77,8 @@ public abstract class SoyRuntimeType {
         return new PrimitiveSoyType(BoolType.getInstance(), Type.BOOLEAN_TYPE);
       case STRING:
         return new PrimitiveSoyType(StringType.getInstance(), BytecodeUtils.STRING_TYPE);
+      case NUMBER:
+        return new PrimitiveSoyType(NumberType.getInstance(), Type.DOUBLE_TYPE);
       case INT:
         return new PrimitiveSoyType(IntType.getInstance(), Type.LONG_TYPE);
       case FLOAT:
@@ -240,7 +243,7 @@ public abstract class SoyRuntimeType {
    * <em>not</em> a float, just that it is not <em>known</em> to be a float at compile time.
    */
   public final boolean isKnownFloat() {
-    return soyType.getKind() == Kind.FLOAT;
+    return soyType.getKind() == Kind.FLOAT || soyType.getKind() == Kind.NUMBER;
   }
 
   public final boolean isKnownListOrUnionOfLists() {

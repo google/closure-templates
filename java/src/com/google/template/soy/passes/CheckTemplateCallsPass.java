@@ -312,7 +312,9 @@ final class CheckTemplateCallsPass implements CompilerFileSetPass {
         if (callerParam.getKind() == SoyNode.Kind.CALL_PARAM_VALUE_NODE) {
           CallParamValueNode node = (CallParamValueNode) callerParam;
           argType =
-              RuntimeTypeCoercion.maybeCoerceType(node.getExpr().getRoot(), declaredParamTypes);
+              RuntimeTypeCoercion.maybeCoerceType(
+                  node.getExpr().getRoot(),
+                  SoyTypes.expandUnions(UnionType.of(declaredParamTypes)));
         } else if (callerParam.getKind() == SoyNode.Kind.CALL_PARAM_CONTENT_NODE) {
           CallParamContentNode callParamContentNode = (CallParamContentNode) callerParam;
           if (!callParamContentNode.isImplicitContentKind()) {

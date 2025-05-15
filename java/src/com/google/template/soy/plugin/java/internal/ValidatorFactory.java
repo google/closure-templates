@@ -389,6 +389,9 @@ final class ValidatorFactory extends JavaValueFactory {
       case BOOL:
         expectedClasses = BOOL_TYPES;
         break;
+      case NUMBER:
+        expectedClasses = NUMBER_TYPES;
+        break;
       case FLOAT:
         expectedClasses = FLOAT_TYPES;
         break;
