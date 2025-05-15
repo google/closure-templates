@@ -279,9 +279,10 @@ public final class DetachableProviderFactory {
     }
 
     /**
-     * Create a constructor that accepts the all values and assigns them to fields. <code><pre>
-     * Foo(arg1, arg2, ...) {
-     *   super();
+     * Create a constructor that accepts the content kind and all captured values and assigns them
+     * to fields. <code><pre>
+     * Foo(contentKind, arg1, arg2, ...) {
+     *   super(contentKind);
      *   this.arg$1 = arg1;
      *   this.arg$2 = arg2;
      *   ...
