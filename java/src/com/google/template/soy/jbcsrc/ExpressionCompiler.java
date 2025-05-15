@@ -520,8 +520,12 @@ final class ExpressionCompiler {
 
     @Override
     protected SoyExpression visitAsOpNode(AsOpNode node) {
-      return SoyExpression.forSoyValue(
-          node.getType(), visit(node.getChild(0)).checkedSoyCast(node.getType()));
+      boolean mustBeBoxed = SoyRuntimeType.getUnboxedType(node.getType()).isEmpty();
+      SoyExpression value = visit(node.getChild(0));
+      if (mustBeBoxed) {
+        value = value.box();
+      }
+      return SoyExpression.forSoyValue(node.getType(), value.checkedSoyCast(node.getType()));
     }
 
     @Override
