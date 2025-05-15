@@ -57,7 +57,7 @@ import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyFileNode;
-import com.google.template.soy.soytree.SoyNode.Kind;
+import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
@@ -129,10 +129,10 @@ final class ElementAttributePass implements CompilerFileSetPass {
       SoyErrorKind.of("Attributes must be of type string or a sanitized type.");
 
   private static final SoyErrorKind ROOT_TAG_KIND_MISMATCH =
-      SoyErrorKind.of("Expected root tag to be {0}.");
+      SoyErrorKind.of("Expected root tag to be ''{0}''.");
 
   private static final SoyErrorKind DELEGATE_KIND_MISMATCH =
-      SoyErrorKind.of("Expected the called template to have root tag {0}, found {1}.");
+      SoyErrorKind.of("Expected the called template to have root tag ''{0}'', found ''{1}''.");
 
   private static final SoyErrorKind ATTRIBUTE_STAR_AND_EXPLICIT =
       SoyErrorKind.of("Cannot specify a param named ''{0}'' along with ''attribute *''.");
@@ -622,17 +622,19 @@ final class ElementAttributePass implements CompilerFileSetPass {
       }
 
       HtmlOpenTagNode openTag = getElementOpen(node);
-      SourceLocation errorLoc = null;
+      SourceLocation errorLoc =
+          node.numChildren() > 0 ? node.getChild(0).getSourceLocation() : node.getSourceLocation();
       if (openTag != null) {
         errorLoc = openTag.getTagName().getTagLocation();
-      } else if (node.getChildren().size() == 1
-          && node.getChild(0).getKind() == Kind.CALL_BASIC_NODE) {
-        errorLoc = ((CallBasicNode) node.getChild(0)).getOpenTagLocation();
-      }
-
-      if (errorLoc == null) {
-        // Error caught in earlier pass
-        continue;
+      } else {
+        SoyNode firstContent =
+            node.getChildren().stream()
+                .filter(n -> !SoyElementPass.ALLOWED_CHILD_NODES.contains(n.getKind()))
+                .findFirst()
+                .orElse(null);
+        if (firstContent instanceof CallBasicNode) {
+          errorLoc = ((CallBasicNode) firstContent).getOpenTagLocation();
+        }
       }
 
       if (openTag != null && openTag.getTagName().isStatic()) {
