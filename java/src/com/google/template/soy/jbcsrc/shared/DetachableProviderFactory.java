@@ -78,8 +78,14 @@ public final class DetachableProviderFactory {
   }
 
   /**
-   * Generates a subclass of DetachableSoyValueProvider binding implMethod to the abstract
-   * `evaluate` method
+   * Generates a subclass of DetachableSoyValueProvider that binds the function specified by the
+   * name/type arguments of invokedynamic to the abstract `evaluate` method, and returns the
+   * constructor as the call site. Thus, invokedynamic calls to this BSM will end up placing an
+   * instance of this generated SoyValueProvider on the operand stack.
+   *
+   * @param lookup provided automatically by invokedynamic JVM infrastructure
+   * @param name The method name passed to invokedynamic, provided by JVM infrastructure.
+   * @param type The method signature passed to invokedynamic, provided by JVM infrastructure.
    */
   public static CallSite bootstrapDetachableSoyValueProvider(
       MethodHandles.Lookup lookup, String name, MethodType type) {
@@ -99,8 +105,14 @@ public final class DetachableProviderFactory {
   }
 
   /**
-   * Generates a subclass of DetachableSoyValueProvider binding implMethod to the abstract
-   * `evaluate`method
+   * Generates a subclass of DetachableSoyValueProviderProvider that binds the function specified by
+   * the name/type arguments of invokedynamic to the abstract `evaluate` method, and returns the
+   * constructor as the call site. Thus, invokedynamic calls to this BSM will end up placing an
+   * instance of this generated SoyValueProviderProvider on the operand stack.
+   *
+   * @param lookup provided automatically by invokedynamic JVM infrastructure
+   * @param name The method name passed to invokedynamic, provided by JVM infrastructure.
+   * @param type The method signature passed to invokedynamic, provided by JVM infrastructure.
    */
   public static CallSite bootstrapDetachableSoyValueProviderProvider(
       MethodHandles.Lookup lookup, String name, MethodType type) {
@@ -119,8 +131,14 @@ public final class DetachableProviderFactory {
   }
 
   /**
-   * Generates a subclass of DetachableContentProvider binding implMethod to the abstract
-   * `doRender`method
+   * Generates a subclass of DetachableContentProvider that binds the function specified by the
+   * name/type arguments of invokedynamic to the abstract `doRender` method, and returns the
+   * constructor as the call site. Thus, invokedynamic calls to this BSM will end up placing an
+   * instance of this generated DetachableContentProvider on the operand stack.
+   *
+   * @param lookup provided automatically by invokedynamic JVM infrastructure
+   * @param name The method name passed to invokedynamic, provided by JVM infrastructure.
+   * @param type The method signature passed to invokedynamic, provided by JVM infrastructure.
    */
   public static CallSite bootstrapDetachableContentProvider(
       MethodHandles.Lookup lookup, String name, MethodType type) {
@@ -148,6 +166,11 @@ public final class DetachableProviderFactory {
     return new ConstantCallSite(generatedClassCtor.asType(type));
   }
 
+  /**
+   * A factory for generating a `SoyValueProvider`/`DetachableContentProvider` class that implements
+   * the `evaluate`/`doRender` methods by delegating to a static method. The subclass constructor
+   * will have one parameter for each captured variable in scope.
+   */
   private static final class Metafactory {
     private static final class Capture {
       final int ctorSlot;
@@ -181,6 +204,21 @@ public final class DetachableProviderFactory {
     final List<Capture> captures;
     final boolean hasOptimisticParameter;
 
+    /**
+     * Gencodes a SoyValueProvider/SoyValueProviderProvider/DetachableContentProvider
+     * implementation.
+     *
+     * @param lookup Factory provided automatically by invokedynamic JVM infrastructure
+     * @param baseClass The base class to extend
+     * @param baseConstructorType The signature of the base class constructor. Note that the
+     *     implementation's constructor will also include one param for each variable in scope, from
+     *     the `implMethodType` argument.
+     * @param hasOptimisticParameter Whether to try to eagerly render.
+     * @param methodToImplement The name of the method to override in the base class.
+     * @param baseMethodType The signature of the method to override in the base class.
+     * @param implMethodName The name of the static method to delegate to.
+     * @param implMethodType The signature of the static method to delegate to.
+     */
     Metafactory(
         MethodHandles.Lookup lookup,
         Type baseClass,
