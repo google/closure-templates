@@ -18,6 +18,7 @@ package com.google.template.soy.data;
 
 import com.google.auto.value.AutoValue;
 import com.google.protobuf.Message;
+import com.google.protobuf.TextFormat;
 import java.io.IOException;
 import javax.annotation.Nullable;
 
@@ -49,7 +50,7 @@ public abstract class SoyVisualElementData extends SoyValue {
   public String coerceToString() {
     return "**FOR DEBUGGING ONLY ve_data("
         + ve().getDebugString()
-        + (data() == null ? "" : ", " + data())
+        + (data() == null ? "" : ", " + TextFormat.printer().printToString(data()))
         + ")**";
   }
 
