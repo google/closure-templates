@@ -45,9 +45,9 @@ import java.util.List;
     baseType = "list<any>",
     value = {
       @Signature(returnType = "list<any>"),
-      @Signature(parameterTypes = "float|int", returnType = "list<any>"),
+      @Signature(parameterTypes = "number", returnType = "list<any>"),
       @Signature(
-          parameterTypes = {"float|int", "float|int"},
+          parameterTypes = {"number", "number"},
           returnType = "list<any>")
     })
 @SoyPureFunction

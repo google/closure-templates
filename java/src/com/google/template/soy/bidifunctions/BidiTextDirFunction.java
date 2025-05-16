@@ -42,10 +42,10 @@ import java.util.List;
     name = "bidiTextDir",
     value = {
       // TODO(b/70946095): should take a string
-      @Signature(returnType = "int", parameterTypes = "?"),
+      @Signature(returnType = "number", parameterTypes = "?"),
       // TODO(b/70946095): should take a string and a bool
       @Signature(
-          returnType = "int",
+          returnType = "number",
           parameterTypes = {"?", "?"})
     })
 final class BidiTextDirFunction

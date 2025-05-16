@@ -41,7 +41,7 @@ import java.util.List;
     name = "isFinite",
     value =
         @Signature(
-            parameterTypes = {"float|int"},
+            parameterTypes = {"number"},
             returnType = "bool"))
 final class IsFiniteFunction
     implements SoyJavaSourceFunction, SoyJavaScriptSourceFunction, SoyPythonSourceFunction {

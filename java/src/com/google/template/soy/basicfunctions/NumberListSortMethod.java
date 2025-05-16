@@ -37,13 +37,11 @@ import java.util.List;
 /** Soy method for sorting a list of numbers in numerical order. */
 @SoyMethodSignature(
     name = "sort",
-    baseType = "list<float|int>",
+    baseType = "list<number>",
     value = {
       @Signature(
           parameterTypes = {},
-          // The generic type may be overwritten to a narrower int or float type by
-          // ResolveExpressionTypesPass.
-          returnType = "list<float|int>"),
+          returnType = "list<number>"),
     })
 @SoyPureFunction
 public final class NumberListSortMethod

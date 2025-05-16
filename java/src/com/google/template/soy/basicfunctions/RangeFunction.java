@@ -47,17 +47,16 @@ import java.util.List;
  */
 @SoyFunctionSignature(
     name = "range",
-    // TODO(b/70946095): params should be an 'int', not a 'number'
     value = {
       @Signature(
-          parameterTypes = {"float|int"},
-          returnType = "list<int>"),
+          parameterTypes = {"number"},
+          returnType = "list<number>"),
       @Signature(
-          parameterTypes = {"float|int", "float|int"},
-          returnType = "list<int>"),
+          parameterTypes = {"number", "number"},
+          returnType = "list<number>"),
       @Signature(
-          parameterTypes = {"float|int", "float|int", "float|int"},
-          returnType = "list<int>")
+          parameterTypes = {"number", "number", "number"},
+          returnType = "list<number>")
     })
 @SoyPureFunction
 public final class RangeFunction

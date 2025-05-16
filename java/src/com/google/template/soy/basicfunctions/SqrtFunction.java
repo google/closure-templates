@@ -39,8 +39,8 @@ import java.util.List;
     name = "sqrt",
     value =
         @Signature(
-            returnType = "float|int",
-            parameterTypes = {"float|int"}))
+            returnType = "number",
+            parameterTypes = {"number"}))
 @SoyPureFunction
 class SqrtFunction
     implements SoyJavaSourceFunction, SoyJavaScriptSourceFunction, SoyPythonSourceFunction {

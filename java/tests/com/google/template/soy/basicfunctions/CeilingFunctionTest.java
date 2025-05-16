@@ -36,13 +36,13 @@ public class CeilingFunctionTest {
 
     SoyJavaSourceFunctionTester factory = new SoyJavaSourceFunctionTester(ceilingFunction);
     Object result = factory.callFunction(1L);
-    assertThat(result).isEqualTo(1L);
+    assertThat(result).isEqualTo(1D);
 
     result = factory.callFunction(2.5D);
-    assertThat(result).isEqualTo(3L);
+    assertThat(result).isEqualTo(3D);
 
     result = factory.callFunction(FloatData.forValue(2.5D));
-    assertThat(result).isEqualTo(3L);
+    assertThat(result).isEqualTo(3D);
   }
 
 }

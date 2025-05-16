@@ -18,8 +18,6 @@ package com.google.template.soy.basicfunctions;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import com.google.template.soy.data.restricted.FloatData;
-import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.plugin.java.restricted.testing.SoyJavaSourceFunctionTester;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -38,9 +36,9 @@ public class RoundFunctionTest {
 
     double input = 9753.141592653590;
     assertThat(tester.callFunction(1)).isEqualTo(1);
-    assertThat(tester.callFunction(input)).isEqualTo(9753);
-    assertThat(tester.callFunction(input, 0)).isEqualTo(IntegerData.forValue(9753));
-    assertThat(tester.callFunction(input, 4)).isEqualTo(FloatData.forValue(9753.1416));
-    assertThat(tester.callFunction(input, -2)).isEqualTo(IntegerData.forValue(9800));
+    assertThat(tester.callFunction(input)).isEqualTo(9753D);
+    assertThat(tester.callFunction(input, 0)).isEqualTo(9753D);
+    assertThat(tester.callFunction(input, 4)).isEqualTo(9753.1416D);
+    assertThat(tester.callFunction(input, -2)).isEqualTo(9800D);
   }
 }

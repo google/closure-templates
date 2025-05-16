@@ -34,10 +34,8 @@ import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 import java.lang.reflect.Method;
 import java.util.List;
 
-/**
- * Soy function that returns the current global bidi directionality (1 for LTR or -1 for RTL).
- */
-@SoyFunctionSignature(name = "bidiGlobalDir", value = @Signature(returnType = "int"))
+/** Soy function that returns the current global bidi directionality (1 for LTR or -1 for RTL). */
+@SoyFunctionSignature(name = "bidiGlobalDir", value = @Signature(returnType = "number"))
 final class BidiGlobalDirFunction
     implements SoyJavaSourceFunction, SoyJavaScriptSourceFunction, SoyPythonSourceFunction {
 

@@ -72,7 +72,7 @@ public final class BidiFunctionsRuntime {
     return (bidiGlobalDir.getStaticValue() < 0) ? "\u200F" /*RLM*/ : "\u200E" /*LRM*/;
   }
 
-  public static int bidiTextDir(SoyValue value, boolean isHtml) {
+  public static double bidiTextDir(SoyValue value, boolean isHtml) {
     Dir valueDir = null;
     boolean isHtmlForValueDirEstimation = false;
     if (value instanceof SanitizedContent) {
@@ -89,7 +89,7 @@ public final class BidiFunctionsRuntime {
     return valueDir.ord;
   }
 
-  public static int bidiGlobalDir(BidiGlobalDir dir) {
+  public static double bidiGlobalDir(BidiGlobalDir dir) {
     return dir.getStaticValue();
   }
 }

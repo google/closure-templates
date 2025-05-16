@@ -51,10 +51,10 @@ import java.util.List;
     name = "indexOf",
     baseType = "string",
     value = {
-      @Signature(parameterTypes = "string", returnType = "int"),
+      @Signature(parameterTypes = "string", returnType = "number"),
       @Signature(
-          parameterTypes = {"string", "float|int"},
-          returnType = "int")
+          parameterTypes = {"string", "number"},
+          returnType = "number")
     })
 @SoyPureFunction
 public final class StrIndexOfFunction

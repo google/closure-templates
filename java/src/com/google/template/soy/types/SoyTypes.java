@@ -97,7 +97,7 @@ public final class SoyTypes {
       Sets.immutableEnumSet(Kind.UNKNOWN, Kind.ANY, Kind.NULL, Kind.UNDEFINED);
 
   public static final ImmutableSet<Kind> ARITHMETIC_PRIMITIVES =
-      Sets.immutableEnumSet(Kind.INT, Kind.FLOAT);
+      Sets.immutableEnumSet(Kind.INT, Kind.FLOAT, Kind.NUMBER);
 
   public static final ImmutableSet<Kind> NULLISH_KINDS =
       Sets.immutableEnumSet(Kind.NULL, Kind.UNDEFINED);

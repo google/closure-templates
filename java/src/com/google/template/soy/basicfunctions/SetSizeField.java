@@ -35,7 +35,7 @@ import java.lang.reflect.Method;
 import java.util.List;
 
 /** Soy field that gets the size of a set. */
-@SoyFieldSignature(name = "size", baseType = "set<any>", returnType = "int")
+@SoyFieldSignature(name = "size", baseType = "set<any>", returnType = "number")
 @SoyPureFunction
 public final class SetSizeField
     implements SoyJavaSourceFunction, SoyJavaScriptSourceFunction, SoyPythonSourceFunction {

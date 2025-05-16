@@ -56,10 +56,10 @@ import java.util.List;
       @Signature(
           parameterTypes = {"string"},
           // TODO(b/70946095): should be nullable
-          returnType = "int"),
+          returnType = "number"),
       @Signature(
-          parameterTypes = {"string", "int|float|undefined"},
-          returnType = "int|null")
+          parameterTypes = {"string", "number|undefined"},
+          returnType = "number|null")
     })
 final class ParseIntFunction
     implements SoyJavaSourceFunction, SoyJavaScriptSourceFunction, SoyPythonSourceFunction {

@@ -39,8 +39,8 @@ import java.util.List;
     name = "pow",
     value =
         @Signature(
-            returnType = "float|int",
-            parameterTypes = {"float|int", "float|int"}))
+            returnType = "number",
+            parameterTypes = {"number", "number"}))
 @SoyPureFunction
 class PowFunction
     implements SoyJavaSourceFunction, SoyJavaScriptSourceFunction, SoyPythonSourceFunction {

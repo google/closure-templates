@@ -747,7 +747,14 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
 
     private final ImmutableSet<SoyType.Kind> allowedSwitchTypes =
         ImmutableSet.of(
-            Kind.BOOL, Kind.INT, Kind.FLOAT, Kind.STRING, Kind.PROTO_ENUM, Kind.UNKNOWN, Kind.ANY);
+            Kind.BOOL,
+            Kind.INT,
+            Kind.FLOAT,
+            Kind.NUMBER,
+            Kind.STRING,
+            Kind.PROTO_ENUM,
+            Kind.UNKNOWN,
+            Kind.ANY);
 
     @Override
     protected void visitSwitchNode(SwitchNode node) {

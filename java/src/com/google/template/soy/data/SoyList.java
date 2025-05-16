@@ -133,7 +133,7 @@ public abstract class SoyList extends SoyIterable {
         throw new SoyDataException("\"" + key + "\" is not a valid list index (must be an int)", e);
       }
     } else {
-      return key.integerValue();
+      return (int) key.numberValue();
     }
   }
 

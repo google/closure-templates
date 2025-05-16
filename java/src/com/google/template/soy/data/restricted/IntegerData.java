@@ -175,6 +175,11 @@ public final class IntegerData extends NumberData {
   }
 
   @Override
+  public SoyValue checkNullishFloat() {
+    return this;
+  }
+
+  @Override
   public String getSoyTypeName() {
     return "int";
   }

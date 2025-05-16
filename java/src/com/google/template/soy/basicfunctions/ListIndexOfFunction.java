@@ -50,10 +50,10 @@ import java.util.List;
     name = "indexOf",
     baseType = "list<any>",
     value = {
-      @Signature(parameterTypes = "any", returnType = "int"),
+      @Signature(parameterTypes = "any", returnType = "number"),
       @Signature(
-          parameterTypes = {"any", "float|int"},
-          returnType = "int")
+          parameterTypes = {"any", "number"},
+          returnType = "number")
     })
 @SoyPureFunction
 public class ListIndexOfFunction

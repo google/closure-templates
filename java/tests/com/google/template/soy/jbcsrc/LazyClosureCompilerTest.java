@@ -33,7 +33,7 @@ import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.LoggingAdvisingAppendable.BufferingAppendable;
 import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.data.restricted.IntegerData;
+import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.jbcsrc.TemplateTester.CompiledTemplateSubject;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
@@ -235,7 +235,7 @@ public class LazyClosureCompilerTest {
     // 3 for the template and one for the let
     assertThat(fileClass.getDeclaredMethods()).hasLength(4);
     Method letMethod =
-        fileClass.getDeclaredMethod("foo$let_foo", RenderContext.class, IntegerData.class);
+        fileClass.getDeclaredMethod("foo$let_foo", RenderContext.class, FloatData.class);
     assertThat(Modifier.toString(letMethod.getModifiers())).isEqualTo("static");
     assertThat(letMethod.getDeclaringClass()).isEqualTo(fileClass);
   }
