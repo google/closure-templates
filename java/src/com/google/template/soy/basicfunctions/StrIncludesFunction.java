@@ -43,7 +43,7 @@ import java.util.List;
     value = {
       @Signature(parameterTypes = "string", returnType = "bool"),
       @Signature(
-          parameterTypes = {"string", "float|int"},
+          parameterTypes = {"string", "number"},
           returnType = "bool")
     })
 @SoyPureFunction

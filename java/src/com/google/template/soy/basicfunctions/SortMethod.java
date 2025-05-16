@@ -35,9 +35,7 @@ import java.util.List;
     baseType = "list<any>",
     value = {
       @Signature(
-          parameterTypes = {"(a:any, b:any) => float|int"},
-          // The generic type may be overwritten to a narrower int or float type by
-          // ResolveExpressionTypesPass.
+          parameterTypes = {"(a:any, b:any) => number"},
           returnType = "list<any>"),
     })
 @SoyPureFunction

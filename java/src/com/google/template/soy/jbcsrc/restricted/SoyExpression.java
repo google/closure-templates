@@ -606,6 +606,19 @@ public final class SoyExpression extends Expression {
     return forFloat(delegate.invoke(MethodRefs.SOY_VALUE_NUMBER_VALUE).toMaybeConstant());
   }
 
+  public SoyExpression coerceToLong() {
+    if (!isBoxed()) {
+      if (soyRuntimeType.isKnownInt()) {
+        return this;
+      }
+      if (soyRuntimeType.isKnownFloat()) {
+        return forInt(BytecodeUtils.numericConversion(delegate, Type.LONG_TYPE).toMaybeConstant());
+      }
+      throw new UnsupportedOperationException("Can't convert " + resultType() + " to a long");
+    }
+    return forInt(delegate.invoke(MethodRefs.SOY_VALUE_COERCE_TO_LONG).toMaybeConstant());
+  }
+
   /**
    * Returns an expression of type {@link Number}. Appropriate when preparing a parameter for an
    * extern or plugin implementation, which both expect Java null rather than NullData or

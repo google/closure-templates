@@ -36,8 +36,7 @@ import java.util.List;
 /** Soy function that generates a random integer in the range [0, n-1]. */
 @SoyFunctionSignature(
     name = "randomInt",
-    // TODO(b/70946095): param should be an 'int', not a 'number'
-    value = @Signature(returnType = "int", parameterTypes = "float|int"))
+    value = @Signature(returnType = "number", parameterTypes = "number"))
 public final class RandomIntFunction
     implements SoyJavaSourceFunction, SoyJavaScriptSourceFunction, SoyPythonSourceFunction {
 
@@ -64,6 +63,6 @@ public final class RandomIntFunction
   @Override
   public JavaValue applyForJavaSource(
       JavaValueFactory factory, List<JavaValue> args, JavaPluginContext context) {
-    return factory.callStaticMethod(Methods.RANDOM_INT_FN, args.get(0).asSoyInt());
+    return factory.callStaticMethod(Methods.RANDOM_INT_FN, args.get(0));
   }
 }
