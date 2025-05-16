@@ -109,7 +109,7 @@ class FormatNumFunction
               + "} but was "
               + arg);
     }
-    return factory.getModuleExport("goog.i18n.NumberFormat.Format", formatEnum);
+    return factory.getModuleExport("goog.i18n.NumberFormat", "Format." + formatEnum);
   }
 
   FormatNumFunction() {}
