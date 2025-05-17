@@ -51,8 +51,7 @@ import java.util.List;
     value =
         @Signature(
             parameterTypes = {"string"},
-            // TODO(b/70946095): should be nullable
-            returnType = "float"))
+            returnType = "number"))
 final class ParseFloatFunction
     implements SoyJavaSourceFunction, SoyJavaScriptSourceFunction, SoyPythonSourceFunction {
   @Override

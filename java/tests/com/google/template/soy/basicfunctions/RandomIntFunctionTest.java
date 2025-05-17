@@ -44,7 +44,7 @@ public class RandomIntFunctionTest {
     arg = IntegerData.forValue(3);
     Set<Integer> seenResults = Sets.newHashSetWithExpectedSize(3);
     for (int i = 0; i < 100; i++) {
-      int result = ((Long) tester.callFunction(arg)).intValue();
+      int result = ((Number) tester.callFunction(arg)).intValue();
       assertThat(result).isAtLeast(0);
       assertThat(result).isAtMost(2);
       seenResults.add(result);

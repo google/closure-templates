@@ -1600,7 +1600,7 @@ final class ExpressionCompiler {
       // optimized the same way because there is no real way to 'unbox' a SoyLegacyObjectMap.
       if (baseExpr.soyRuntimeType().isKnownListOrUnionOfLists()) {
         SoyExpression list = baseExpr.unboxAsListUnchecked();
-        SoyExpression index = keyExpr.unboxAsLong();
+        SoyExpression index = keyExpr.coerceToLong();
         if (analysis.isResolved(node)) {
           soyValueProvider = MethodRefs.RUNTIME_GET_LIST_ITEM.invoke(list, index);
         } else {
@@ -1896,20 +1896,17 @@ final class ExpressionCompiler {
 
     @Override
     SoyExpression visitToFloatFunction(FunctionNode node) {
-      SoyExpression arg = visit(node.getParam(0));
-      return SoyExpression.forFloat(numericConversion(arg.unboxAsLong(), Type.DOUBLE_TYPE));
+      return visit(node.getParam(0)).coerceToDouble();
     }
 
     @Override
     SoyExpression visitToNumberFunction(FunctionNode node) {
-      SoyExpression arg = visit(node.getParam(0));
-      return SoyExpression.forFloat(numericConversion(arg.unboxAsLong(), Type.DOUBLE_TYPE));
+      return visit(node.getParam(0)).coerceToDouble();
     }
 
     @Override
     SoyExpression visitToIntFunction(FunctionNode node) {
-      SoyExpression arg = visit(node.getParam(0));
-      return SoyExpression.forInt(numericConversion(arg.unboxAsDouble(), Type.LONG_TYPE));
+      return visit(node.getParam(0)).coerceToLong();
     }
 
     @Override

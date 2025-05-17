@@ -43,8 +43,8 @@ import java.util.List;
     value =
         @Signature(
             parameterTypes = {"list<any>"},
-            returnType = "int"))
-@SoyFieldSignature(name = "length", baseType = "list<any>", returnType = "int")
+            returnType = "number"))
+@SoyFieldSignature(name = "length", baseType = "list<any>", returnType = "number")
 public final class LengthFunction extends TypedSoyFunction
     implements SoyJavaSourceFunction, SoyJavaScriptSourceFunction, SoyPythonSourceFunction {
 
