@@ -2714,13 +2714,20 @@ const $$isReadonly = function(ctor, msg) {
 };
 
 /**
+ * @param {?} v
+ * @return {?}
+ */
+const $$numberToInt = function(v) {
+  return typeof v === 'number' ? Math.floor(v) : v;
+};
+
+/**
  * Wrapper for Function.bind.
  * @param {!Function} f
  * @param {!Array} params
  * @return {!Function}
  */
-const $$bindFunctionParams =
-    function(f, params) {
+const $$bindFunctionParams = function(f, params) {
   return f.bind(null, ...params);
 };
 
@@ -2986,6 +2993,7 @@ exports = {
   $$isJS,
   $$isAttribute,
   $$isReadonly,
+  $$numberToInt,
 };
 // -----------------------------------------------------------------------------
 // Generated code.

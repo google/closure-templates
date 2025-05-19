@@ -69,6 +69,7 @@ import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NullData;
+import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.exprtree.AbstractReturningExprNodeVisitor;
@@ -946,11 +947,19 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
               "the "
                   + nonpluginFn.getName()
                   + " function can't be used in templates compiled to Java");
-        case TO_FLOAT:
         case TO_NUMBER:
           return FloatData.forValue(visit(node.getParam(0)).numberValue());
         case TO_INT:
           return IntegerData.forValue(visit(node.getParam(0)).coerceToLong());
+        case NUMBER_TO_INT:
+        case INT_TO_NUMBER:
+          SoyValue arg = visit(node.getParam(0));
+          if (!(arg instanceof NumberData)) {
+            return arg;
+          }
+          return nonpluginFn == BuiltinFunction.NUMBER_TO_INT
+              ? IntegerData.forValue(arg.coerceToLong())
+              : FloatData.forValue(arg.numberValue());
         case DEBUG_SOY_TEMPLATE_INFO:
           return BooleanData.forValue(debugSoyTemplateInfo);
         case VE_DATA:

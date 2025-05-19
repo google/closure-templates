@@ -657,7 +657,11 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
         return visitIsPrimaryMsgInUseFunction(node);
       case TO_INT:
         return new PyFunctionExprBuilder("int").addArg(visit(node.getParam(0))).asPyExpr();
-      case TO_FLOAT:
+      case NUMBER_TO_INT:
+        return new PyFunctionExprBuilder("runtime.number_to_int")
+            .addArg(visit(node.getParam(0)))
+            .asPyExpr();
+      case INT_TO_NUMBER:
       case TO_NUMBER:
       case UNDEFINED_TO_NULL:
       case UNDEFINED_TO_NULL_SSR:
@@ -892,9 +896,30 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
     return getPyExpr(opNode, null);
   }
 
+  private static final ImmutableSet<ExprNode.Kind> BITWISE_OPS =
+      ImmutableSet.of(
+          ExprNode.Kind.BITWISE_AND_OP_NODE,
+          ExprNode.Kind.BITWISE_OR_OP_NODE,
+          ExprNode.Kind.BITWISE_XOR_OP_NODE,
+          ExprNode.Kind.SHIFT_RIGHT_OP_NODE,
+          ExprNode.Kind.SHIFT_LEFT_OP_NODE);
+
   private PyExpr getPyExpr(OperatorNode opNode, String newToken) {
-    List<PyExpr> operandPyExprs = visitChildren(opNode);
-    return genPyExprWithNewToken(opNode.getOperator(), operandPyExprs, newToken);
+    List<PyExpr> args;
+    if (BITWISE_OPS.contains(opNode.getKind())) {
+      PyExpr lhs = visit(opNode.getChild(0));
+      PyExpr rhs = visit(opNode.getChild(1));
+      if (SoyTypes.containsKind(opNode.getChild(0).getType(), Kind.NUMBER)) {
+        lhs = new PyFunctionExprBuilder("int").addArg(lhs).asPyExpr();
+      }
+      if (SoyTypes.containsKind(opNode.getChild(1).getType(), Kind.NUMBER)) {
+        rhs = new PyFunctionExprBuilder("int").addArg(rhs).asPyExpr();
+      }
+      args = ImmutableList.of(lhs, rhs);
+    } else {
+      args = visitChildren(opNode);
+    }
+    return genPyExprWithNewToken(opNode.getOperator(), args, newToken);
   }
 
   /**

@@ -93,12 +93,14 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
           return visitRecordJsIdFunction(node);
         case IS_PRIMARY_MSG_IN_USE:
           return visitIsPrimaryMsgInUse(node);
-        case TO_FLOAT:
-          return visitToFloatFunction(node);
         case TO_INT:
           return visitToIntFunction(node);
         case TO_NUMBER:
           return visitToNumberFunction(node);
+        case NUMBER_TO_INT:
+          return visitNumberToIntFunction(node);
+        case INT_TO_NUMBER:
+          return visitIntToNumberFunction(node);
         case DEBUG_SOY_TEMPLATE_INFO:
           return visitDebugSoyTemplateInfoFunction(node);
         case VE_DATA:
@@ -186,15 +188,19 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
     return visitExprNode(node);
   }
 
-  T visitToFloatFunction(FunctionNode node) {
-    return visitExprNode(node);
-  }
-
   T visitToIntFunction(FunctionNode node) {
     return visitExprNode(node);
   }
 
   T visitToNumberFunction(FunctionNode node) {
+    return visitExprNode(node);
+  }
+
+  T visitNumberToIntFunction(FunctionNode node) {
+    return visitExprNode(node);
+  }
+
+  T visitIntToNumberFunction(FunctionNode node) {
     return visitExprNode(node);
   }
 

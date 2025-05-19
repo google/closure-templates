@@ -914,6 +914,10 @@ def empty_to_null(val):
   return val if is_truthy_non_empty(val) else None
 
 
+def number_to_int(val):
+  return int(val) if isinstance(val, _NUMBER_TYPES) else val
+
+
 def throw_exception(message):
   # pylint: disable=broad-exception-raised
   raise Exception(message)

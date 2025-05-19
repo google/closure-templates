@@ -157,12 +157,12 @@ public final class SharedRuntime {
 
   @Nonnull
   public static NumberData shiftRight(SoyValue operand0, SoyValue operand1) {
-    return IntegerData.forValue(toLongForBitwiseOp(operand0) >> (int) toLongForBitwiseOp(operand1));
+    return IntegerData.forValue(toLongForBitwiseOp(operand0) >> toIntForBitwiseOp(operand1));
   }
 
   @Nonnull
   public static NumberData shiftLeft(SoyValue operand0, SoyValue operand1) {
-    return IntegerData.forValue(toLongForBitwiseOp(operand0) << (int) toLongForBitwiseOp(operand1));
+    return IntegerData.forValue(toLongForBitwiseOp(operand0) << toIntForBitwiseOp(operand1));
   }
 
   @Nonnull
@@ -220,7 +220,14 @@ public final class SharedRuntime {
     if (value.isNullish()) {
       return 0;
     }
-    return value.longValue();
+    return value.coerceToLong();
+  }
+
+  private static long toIntForBitwiseOp(SoyValue value) {
+    if (value.isNullish()) {
+      return 0;
+    }
+    return value.coerceToInt();
   }
 
   /** Performs the {@code <=} operator on the two values. */

@@ -22,6 +22,7 @@ import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static com.google.common.collect.ImmutableSortedSet.toImmutableSortedSet;
 import static com.google.common.collect.Iterables.getOnlyElement;
 import static com.google.template.soy.passes.CheckTemplateCallsPass.ARGUMENT_TYPE_MISMATCH;
+import static com.google.template.soy.passes.RuntimeTypeCoercion.maybeCoerceType;
 import static com.google.template.soy.types.SoyTypes.SAFE_PROTO_TO_SANITIZED_TYPE;
 import static com.google.template.soy.types.SoyTypes.getMapKeysType;
 import static com.google.template.soy.types.SoyTypes.getMapValuesType;
@@ -193,7 +194,6 @@ import com.google.template.soy.types.IterableType;
 import com.google.template.soy.types.LegacyObjectMapType;
 import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.MapType;
-import com.google.template.soy.types.NumberType;
 import com.google.template.soy.types.ProtoImportType;
 import com.google.template.soy.types.RecordType;
 import com.google.template.soy.types.RecordType.Member;
@@ -592,9 +592,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
 
                 SoyType declaredType = headerVar.authoredType();
                 if (!declaredType.isAssignableFromStrict(actualType)) {
-                  actualType =
-                      RuntimeTypeCoercion.maybeCoerceType(
-                          headerVar.defaultValue().getRoot(), SoyTypes.expandUnions(declaredType));
+                  actualType = maybeCoerceType(headerVar.defaultValue().getRoot(), declaredType);
                 }
                 if (!declaredType.isAssignableFromLoose(actualType)) {
                   SourceLocation loc = headerVar.defaultValue().getSourceLocation();
@@ -747,7 +745,14 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
 
     private final ImmutableSet<SoyType.Kind> allowedSwitchTypes =
         ImmutableSet.of(
-            Kind.BOOL, Kind.INT, Kind.FLOAT, Kind.STRING, Kind.PROTO_ENUM, Kind.UNKNOWN, Kind.ANY);
+            Kind.BOOL,
+            Kind.NUMBER,
+            Kind.INT,
+            Kind.FLOAT,
+            Kind.STRING,
+            Kind.PROTO_ENUM,
+            Kind.UNKNOWN,
+            Kind.ANY);
 
     @Override
     protected void visitSwitchNode(SwitchNode node) {
@@ -1807,7 +1812,8 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
       SoyType result = IntType.getInstance();
       SoyType left = SoyTypes.tryRemoveNullish(node.getChild(0).getType());
       SoyType right = SoyTypes.tryRemoveNullish(node.getChild(1).getType());
-      if (left.getKind() != Kind.INT || right.getKind() != Kind.INT) {
+      if ((left.getKind() != Kind.INT && left.getKind() != Kind.NUMBER)
+          || (right.getKind() != Kind.INT && right.getKind() != Kind.NUMBER)) {
         errorReporter.report(
             node.getOperatorLocation(),
             INCOMPATIBLE_ARITHMETIC_OP,
@@ -2072,9 +2078,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
           // The available runtime coercions are all between assignable types. So there's no need
           // to re-match externs on the coerced types.
           SoyType unused =
-              RuntimeTypeCoercion.maybeCoerceType(
-                  params.get(i),
-                  SoyTypes.expandUnions(ref.getSignature().getParameters().get(i).getType()));
+              maybeCoerceType(params.get(i), ref.getSignature().getParameters().get(i).getType());
         }
         node.setAllowedParamTypes(
             ref.getSignature().getParameters().stream().map(Parameter::getType).collect(toList()));
@@ -2257,7 +2261,9 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
         return;
       }
       for (int i = 0; i < node.numParams(); ++i) {
-        checkArgType(node.getParam(i), matchedSignature.parameterTypes().get(i), node);
+        SoyType paramType = matchedSignature.parameterTypes().get(i);
+        SoyType unused = maybeCoerceType(node.getParam(i), paramType);
+        checkArgType(node.getParam(i), paramType, node);
       }
       node.setAllowedParamTypes(matchedSignature.parameterTypes());
       node.setType(matchedSignature.returnType());
@@ -2444,7 +2450,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
 
         SoyType expectedType = SoyTypes.makeNullish(fieldType);
         if (!expectedType.isAssignableFromLoose(argType)) {
-          argType = RuntimeTypeCoercion.maybeCoerceType(expr, SoyTypes.expandUnions(expectedType));
+          argType = maybeCoerceType(expr, expectedType);
         }
         if (!expectedType.isAssignableFromLoose(argType)) {
           errorReporter.report(
@@ -2799,14 +2805,11 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
             node.setType(VeType.NO_DATA);
           }
           break;
-        case TO_INT: // is added to the AST after this pass
-          node.setType(IntType.getInstance());
-          break;
-        case TO_NUMBER: // is added to the AST after this pass
-          node.setType(NumberType.getInstance());
-          break;
-        case TO_FLOAT: // is added to the AST after this pass
-          node.setType(FloatType.getInstance());
+        case TO_INT: // Added by maybeCoerceType, which also sets the node type.
+        case NUMBER_TO_INT:
+        case TO_NUMBER:
+        case INT_TO_NUMBER:
+          Preconditions.checkState(node.getType() != null);
           break;
         case REMAINDER:
           node.setType(IntType.getInstance());

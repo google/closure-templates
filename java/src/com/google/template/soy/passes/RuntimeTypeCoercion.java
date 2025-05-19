@@ -16,6 +16,9 @@
 
 package com.google.template.soy.passes;
 
+import static com.google.template.soy.types.SoyTypes.containsKind;
+import static com.google.template.soy.types.SoyTypes.containsKinds;
+
 import com.google.common.collect.ImmutableSet;
 import com.google.errorprone.annotations.CheckReturnValue;
 import com.google.template.soy.base.internal.Identifier;
@@ -23,10 +26,14 @@ import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.shared.internal.BuiltinFunction;
-import com.google.template.soy.types.FloatType;
 import com.google.template.soy.types.IntType;
 import com.google.template.soy.types.NumberType;
 import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.SoyType.Kind;
+import com.google.template.soy.types.SoyTypes;
+import com.google.template.soy.types.UnionType;
+import java.util.HashSet;
+import java.util.Set;
 
 /** Static utility for adding runtime casts to the Soy AST. */
 final class RuntimeTypeCoercion {
@@ -39,47 +46,59 @@ final class RuntimeTypeCoercion {
    *
    * <ul>
    *   <li>int -> float
-   *   <li>int -> float|null
+   *   <li>int -> number
+   *   <li>number -> int
+   *   <li>int|X -> float|X
+   *   <li>int|X -> number|X
+   *   <li>number|X -> int|X
    * </ul>
    *
    * @param node Node containing expression value to maybe-coerce.
-   * @param toTypes Acceptable types to attempt to coerce to.
+   * @param toType The required type.
    * @return The new coerced type
    */
   @CheckReturnValue
-  static SoyType maybeCoerceType(ExprNode node, ImmutableSet<SoyType> toTypes) {
+  static SoyType maybeCoerceType(ExprNode node, SoyType toType) {
     SoyType fromType = node.getType();
-    if (toTypes.contains(fromType)) {
+    if (SoyTypes.expandUnions(toType).contains(fromType)) {
       return fromType;
     }
 
     BuiltinFunction coercion = null;
-    SoyType coercionTargetType = fromType;
+    SoyType updatedType = fromType;
     switch (fromType.getKind()) {
       case INT:
-        if (toTypes.contains(NumberType.getInstance())) {
+        if (containsKind(toType, Kind.NUMBER)) {
           coercion = BuiltinFunction.TO_NUMBER;
-          coercionTargetType = NumberType.getInstance();
-        } else if (toTypes.contains(FloatType.getInstance())) {
-          coercion = BuiltinFunction.TO_FLOAT;
-          coercionTargetType = FloatType.getInstance();
+          updatedType = NumberType.getInstance();
+        } else if (containsKind(toType, Kind.FLOAT)) {
+          coercion = BuiltinFunction.TO_NUMBER;
+          updatedType = NumberType.getInstance();
         }
         break;
       case FLOAT:
-        if (toTypes.contains(NumberType.getInstance())) {
-          // no conversion
-        } else if (toTypes.contains(IntType.getInstance())) {
-          // Theoretically we could do this but historically it wasn't a feature.
-          // coercion = BuiltinFunction.TO_INT;
-        }
+        // Theoretically we could do coerce to int here but historically it wasn't a feature.
         break;
       case NUMBER:
-        if (toTypes.contains(FloatType.getInstance())) {
-          // Cast without conversion
-          coercionTargetType = FloatType.getInstance();
-        } else if (toTypes.contains(IntType.getInstance())) {
+        if (containsKind(toType, Kind.FLOAT)) {
+          // no conversion needed
+        } else if (containsKind(toType, Kind.INT)) {
           coercion = BuiltinFunction.TO_INT;
-          coercionTargetType = IntType.getInstance();
+          updatedType = IntType.getInstance();
+        }
+        break;
+      case UNION:
+        UnionType unionType = (UnionType) fromType;
+        if (containsKind(fromType, Kind.INT)
+            && !containsKind(toType, Kind.INT)
+            && containsKinds(toType, ImmutableSet.of(Kind.FLOAT, Kind.NUMBER))) {
+          coercion = BuiltinFunction.INT_TO_NUMBER;
+          updatedType = replaceMember(unionType, NumberType.getInstance(), Kind.INT);
+        } else if (containsKind(fromType, Kind.NUMBER)
+            && !containsKinds(toType, ImmutableSet.of(Kind.FLOAT, Kind.NUMBER))
+            && containsKind(toType, Kind.INT)) {
+          coercion = BuiltinFunction.NUMBER_TO_INT;
+          updatedType = replaceMember(unionType, IntType.getInstance(), Kind.FLOAT, Kind.NUMBER);
         }
         break;
       default:
@@ -87,7 +106,7 @@ final class RuntimeTypeCoercion {
     }
 
     if (coercion == null) {
-      return coercionTargetType;
+      return fromType;
     }
 
     // create a node to wrap param in coercion
@@ -96,12 +115,27 @@ final class RuntimeTypeCoercion {
             Identifier.create(coercion.getName(), node.getSourceLocation()),
             coercion,
             node.getSourceLocation());
-    coercedValue.setType(coercionTargetType);
+    coercedValue.setType(updatedType);
 
     ParentExprNode parent = node.getParent();
     parent.replaceChild(node, coercedValue);
     coercedValue.addChild(node);
-    return coercionTargetType;
+    return updatedType;
+  }
+
+  private static SoyType replaceMember(UnionType unionType, SoyType add, Kind... remove) {
+    Set<SoyType> members = new HashSet<>();
+    members.add(add);
+    MEMBER:
+    for (SoyType member : unionType.getMembers()) {
+      for (Kind kind : remove) {
+        if (kind == member.getKind()) {
+          continue MEMBER;
+        }
+      }
+      members.add(member);
+    }
+    return UnionType.of(members);
   }
 
   private RuntimeTypeCoercion() {}

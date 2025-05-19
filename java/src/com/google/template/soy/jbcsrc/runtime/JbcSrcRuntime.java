@@ -53,7 +53,9 @@ import com.google.template.soy.data.SoyVisualElementData;
 import com.google.template.soy.data.TemplateValue;
 import com.google.template.soy.data.internal.LazyProtoToSoyValueList;
 import com.google.template.soy.data.internal.ParamStore;
+import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.GbigintData;
+import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.data.restricted.UndefinedData;
@@ -131,7 +133,6 @@ public final class JbcSrcRuntime {
       return false;
     }
   }
-
 
   @Keep
   @Nonnull
@@ -761,7 +762,6 @@ public final class JbcSrcRuntime {
     return LogStatement.create(veData.ve().id(), veData.data(), false);
   }
 
-
   /** Asserts that all members of the list are resolved. */
   @Keep
   @Nonnull
@@ -1117,6 +1117,18 @@ public final class JbcSrcRuntime {
     }
 
     return UnsignedLong.valueOf(value.stringValue()).longValue();
+  }
+
+  @Nonnull
+  @Keep
+  public static SoyValue intToNumber(SoyValue value) {
+    return value instanceof NumberData ? FloatData.forValue(value.numberValue()) : value;
+  }
+
+  @Nonnull
+  @Keep
+  public static SoyValue numberToInt(SoyValue value) {
+    return value instanceof NumberData ? IntegerData.forValue(value.coerceToLong()) : value;
   }
 
   private JbcSrcRuntime() {}

@@ -44,6 +44,7 @@ import static com.google.template.soy.jssrc.internal.JsRuntime.JS_TO_PROTO_PACK_
 import static com.google.template.soy.jssrc.internal.JsRuntime.MARK_TEMPLATE;
 import static com.google.template.soy.jssrc.internal.JsRuntime.OPT_DATA;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SERIALIZE_KEY;
+import static com.google.template.soy.jssrc.internal.JsRuntime.SOY;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_CHECK_NOT_NULL;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_COERCE_TO_BOOLEAN;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_EMPTY_TO_UNDEFINED;
@@ -1110,12 +1111,14 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
           return visitUnknownJsGlobal(node);
         case IS_PRIMARY_MSG_IN_USE:
           return visitIsPrimaryMsgInUseFunction(node);
-        case TO_FLOAT:
+        case INT_TO_NUMBER:
         case TO_NUMBER:
           // this is a no-op in js
           return visit(node.getParam(0));
         case TO_INT:
           return dottedIdNoRequire("Math.floor").call(visit(node.getParam(0)));
+        case NUMBER_TO_INT:
+          return SOY.dotAccess("$$numberToInt").call(visit(node.getParam(0)));
         case DEBUG_SOY_TEMPLATE_INFO:
           // TODO(lukes): does this need a goog.debug guard? it exists in the runtime
           return GOOG_DEBUG.and(
