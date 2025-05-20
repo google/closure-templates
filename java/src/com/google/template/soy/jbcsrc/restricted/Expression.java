@@ -812,11 +812,15 @@ public abstract class Expression extends BytecodeProducer {
           }
           return Optional.of(MethodRefs.CHECK_BOOLEAN.invoke(this));
         case FLOAT:
-        case NUMBER:
           if (BytecodeUtils.isDefinitelyAssignableFrom(BytecodeUtils.FLOAT_DATA_TYPE, resultType)) {
             return Optional.empty();
           }
           return Optional.of(MethodRefs.CHECK_FLOAT.invoke(this));
+        case NUMBER:
+          if (BytecodeUtils.isDefinitelyAssignableFrom(BytecodeUtils.FLOAT_DATA_TYPE, resultType)) {
+            return Optional.empty();
+          }
+          return Optional.of(MethodRefs.CHECK_NUMBER.invoke(this));
         case HTML:
         case ELEMENT:
           return Optional.of(
