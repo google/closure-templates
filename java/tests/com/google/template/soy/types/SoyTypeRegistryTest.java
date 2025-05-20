@@ -122,16 +122,6 @@ public class SoyTypeRegistryTest {
   }
 
   @Test
-  public void testNumberType() {
-    // Make sure the type registry knows about the special number type
-    assertThat(SoyTypes.NUMBER_TYPE)
-        .isSameInstanceAs(
-            typeRegistry.getOrCreateUnionType(FloatType.getInstance(), IntType.getInstance()));
-    assertThat(SoyTypes.NUMBER_TYPE)
-        .isSameInstanceAs(typeRegistry.getOrCreateUnionType(SoyTypes.NUMBER_TYPE));
-  }
-
-  @Test
   public void testProtoFqnCollision() {
     SoyTypeRegistryBuilder builder =
         new SoyTypeRegistryBuilder()

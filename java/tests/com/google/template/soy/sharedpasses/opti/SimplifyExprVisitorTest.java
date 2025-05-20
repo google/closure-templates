@@ -159,7 +159,7 @@ public final class SimplifyExprVisitorTest {
     assertThat(
             new ExpressionParser("map('a': randomInt(1), 'b': randomInt(1))?.get('b')")
                 .parseForParentNode())
-        .simplifiesTo("randomInt(1)");
+        .simplifiesTo("randomInt($$toNumber(1))");
 
     assertThat(new ExpressionParser("record(a:1, b:3).a").parseForParentNode()).simplifiesTo("1");
     assertThat(new ExpressionParser("record(a:1, b:3)?.a").parseForParentNode()).simplifiesTo("1");

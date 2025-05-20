@@ -16,6 +16,7 @@
 
 package com.google.template.soy.basicfunctions;
 
+import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
 import com.google.template.soy.plugin.java.restricted.JavaValue;
 import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
@@ -47,17 +48,16 @@ import java.util.List;
  */
 @SoyFunctionSignature(
     name = "range",
-    // TODO(b/70946095): params should be an 'int', not a 'number'
     value = {
       @Signature(
-          parameterTypes = {"float|int"},
-          returnType = "list<int>"),
+          parameterTypes = {"int|number"},
+          returnType = "list<number>"),
       @Signature(
-          parameterTypes = {"float|int", "float|int"},
-          returnType = "list<int>"),
+          parameterTypes = {"int|number", "int|number"},
+          returnType = "list<number>"),
       @Signature(
-          parameterTypes = {"float|int", "float|int", "float|int"},
-          returnType = "list<int>")
+          parameterTypes = {"int|number", "int|number", "int|number"},
+          returnType = "list<number>")
     })
 @SoyPureFunction
 public final class RangeFunction
@@ -66,7 +66,7 @@ public final class RangeFunction
   private static final class Methods {
     static final Method RANGE =
         JavaValueFactory.createMethod(
-            BasicFunctionsRuntime.class, "range", int.class, int.class, int.class);
+            BasicFunctionsRuntime.class, "range", SoyValue.class, SoyValue.class, SoyValue.class);
   }
 
   @Override
@@ -78,18 +78,18 @@ public final class RangeFunction
     switch (args.size()) {
       case 1:
         start = factory.constant(0);
-        end = args.get(0).coerceToJavaInt();
+        end = args.get(0);
         step = factory.constant(1);
         break;
       case 2:
-        start = args.get(0).coerceToJavaInt();
-        end = args.get(1).coerceToJavaInt();
+        start = args.get(0);
+        end = args.get(1);
         step = factory.constant(1);
         break;
       case 3:
-        start = args.get(0).coerceToJavaInt();
-        end = args.get(1).coerceToJavaInt();
-        step = args.get(2).coerceToJavaInt();
+        start = args.get(0);
+        end = args.get(1);
+        step = args.get(2);
         break;
       default:
         throw new AssertionError();

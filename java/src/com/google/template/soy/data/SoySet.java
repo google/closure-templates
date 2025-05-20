@@ -22,4 +22,8 @@ public abstract class SoySet extends SoyIterable {
   public abstract boolean contains(SoyValue value);
 
   public abstract int size();
+
+  public final double sizeAsDouble() {
+    return size();
+  }
 }

@@ -75,12 +75,8 @@ public final class BasicFunctionsRuntime {
    * Returns the smallest (closest to negative infinity) integer value that is greater than or equal
    * to the argument.
    */
-  public static long ceil(SoyValue arg) {
-    if (arg instanceof IntegerData) {
-      return arg.longValue();
-    } else {
-      return (long) Math.ceil(arg.floatValue());
-    }
+  public static double ceil(SoyValue arg) {
+    return Math.ceil(arg.numberValue());
   }
 
   /** Concatenates its arguments. */
@@ -132,7 +128,7 @@ public final class BasicFunctionsRuntime {
   }
 
   /** Checks if list contains a value. */
-  public static int listIndexOf(
+  public static double listIndexOf(
       List<? extends SoyValueProvider> list, SoyValue value, NumberData startIndex) {
     int clampedStartIndex = clampListIndex(list, startIndex);
     if (clampedStartIndex >= list.size()) {
@@ -220,8 +216,8 @@ public final class BasicFunctionsRuntime {
 
   @Nonnull
   public static ImmutableList<? extends SoyValueProvider> listFlat(
-      List<? extends SoyValueProvider> list, IntegerData data) {
-    return listFlatImpl(list, (int) data.getValue());
+      List<? extends SoyValueProvider> list, NumberData data) {
+    return listFlatImpl(list, data.coerceToInt());
   }
 
   @Nonnull
@@ -285,12 +281,8 @@ public final class BasicFunctionsRuntime {
    * Returns the largest (closest to positive infinity) integer value that is less than or equal to
    * the argument.
    */
-  public static long floor(SoyValue arg) {
-    if (arg instanceof IntegerData) {
-      return arg.longValue();
-    } else {
-      return (long) Math.floor(arg.floatValue());
-    }
+  public static double floor(SoyValue arg) {
+    return Math.floor(arg.numberValue());
   }
 
   /**
@@ -364,52 +356,54 @@ public final class BasicFunctionsRuntime {
   }
 
   @Nullable
-  public static IntegerData parseInt(String str, SoyValue radixVal) {
+  public static NumberData parseInt(String str, SoyValue radixVal) {
     int radix = SoyValue.isNullish(radixVal) ? 10 : (int) radixVal.numberValue();
     if (radix < 2 || radix > 36) {
       return null;
     }
     Long l = Longs.tryParse(str, radix);
-    return (l == null) ? null : IntegerData.forValue(l);
+    return (l == null) ? null : FloatData.forValue(l);
   }
 
   /** Returns a random integer between {@code 0} and the provided argument. */
-  public static long randomInt(double number) {
-    return (long) Math.floor(Math.random() * number);
+  public static double randomInt(double number) {
+    return Math.floor(Math.random() * number);
   }
 
   /**
    * Rounds the given value to the closest decimal point left (negative numbers) or right (positive
    * numbers) of the decimal point
    */
-  @Nonnull
-  public static NumberData round(SoyValue value, int numDigitsAfterPoint) {
+  public static double round(SoyValue value, SoyValue numDigitsAfterPointVal) {
     // NOTE: for more accurate rounding, this should really be using BigDecimal which can do correct
     // decimal arithmetic.  However, for compatibility with js, that probably isn't an option.
+    double numDigitsAfterPoint = 0;
+    if (numDigitsAfterPointVal != null && !numDigitsAfterPointVal.isNullish()) {
+      numDigitsAfterPoint = numDigitsAfterPointVal.numberValue();
+    }
     if (numDigitsAfterPoint == 0) {
-      return IntegerData.forValue(round(value));
+      return Math.round(value.numberValue());
     } else if (numDigitsAfterPoint > 0) {
       double valueDouble = value.numberValue();
       double shift = Math.pow(10, numDigitsAfterPoint);
-      return FloatData.forValue(Math.round(valueDouble * shift) / shift);
+      return Math.round(valueDouble * shift) / shift;
     } else {
       double valueDouble = value.numberValue();
       double shift = Math.pow(10, -numDigitsAfterPoint);
-      return IntegerData.forValue((int) (Math.round(valueDouble / shift) * shift));
+      return Math.round(valueDouble / shift) * shift;
     }
   }
 
   /** Rounds the given value to the closest integer. */
-  public static long round(SoyValue value) {
-    if (value instanceof IntegerData) {
-      return value.longValue();
-    } else {
-      return Math.round(value.numberValue());
-    }
+  public static double round(SoyValue value) {
+    return Math.round(value.numberValue());
   }
 
   @Nonnull
-  public static List<IntegerData> range(int start, int end, int step) {
+  public static List<NumberData> range(SoyValue startD, SoyValue endD, SoyValue stepD) {
+    int start = startD.coerceToInt();
+    int end = endD.coerceToInt();
+    int step = stepD.coerceToInt();
     if (step == 0) {
       throw new IllegalArgumentException(String.format("step must be non-zero: %d", step));
     }
@@ -423,8 +417,8 @@ public final class BasicFunctionsRuntime {
 
     return new AbstractList<>() {
       @Override
-      public IntegerData get(int index) {
-        return IntegerData.forValue(start + step * index);
+      public FloatData get(int index) {
+        return FloatData.forValue(start + step * index);
       }
 
       @Override
@@ -444,7 +438,7 @@ public final class BasicFunctionsRuntime {
     return left.stringValue().contains(right);
   }
 
-  public static int strIndexOf(SoyValue str, SoyValue searchStr, NumberData start) {
+  public static double strIndexOf(SoyValue str, SoyValue searchStr, NumberData start) {
     // TODO(b/74259210) -- Change the params to String & avoid using stringValue().
     // Add clamping behavior for start index to match js implementation
     String strValue = str.stringValue();
@@ -452,7 +446,7 @@ public final class BasicFunctionsRuntime {
     return strValue.indexOf(searchStr.stringValue(), clampedStart);
   }
 
-  public static int strLen(SoyValue str) {
+  public static double strLen(SoyValue str) {
     // TODO(b/74259210) -- Change the param to String & avoid using stringValue().
     return str.stringValue().length();
   }
@@ -522,7 +516,7 @@ public final class BasicFunctionsRuntime {
     return str.trim();
   }
 
-  public static int length(List<?> list) {
+  public static double length(List<?> list) {
     return list.size();
   }
 

@@ -46,9 +46,9 @@ import java.util.List;
     name = "round",
     value = {
       // TODO(b/70946095): the parameters should be number values
-      @Signature(returnType = "int", parameterTypes = "?"),
+      @Signature(returnType = "number", parameterTypes = "?"),
       @Signature(
-          returnType = "float|int",
+          returnType = "number",
           parameterTypes = {"?", "?"}),
     })
 @SoyPureFunction
@@ -79,7 +79,7 @@ final class RoundFunction
 
     static final Method BOXED_ROUND_WITH_NUM_DIGITS_AFTER_POINT_FN =
         JavaValueFactory.createMethod(
-            BasicFunctionsRuntime.class, "round", SoyValue.class, int.class);
+            BasicFunctionsRuntime.class, "round", SoyValue.class, SoyValue.class);
   }
 
   @Override
@@ -89,7 +89,7 @@ final class RoundFunction
       return factory.callStaticMethod(Methods.BOXED_ROUND_FN, args.get(0));
     } else {
       return factory.callStaticMethod(
-          Methods.BOXED_ROUND_WITH_NUM_DIGITS_AFTER_POINT_FN, args.get(0), args.get(1).asSoyInt());
+          Methods.BOXED_ROUND_WITH_NUM_DIGITS_AFTER_POINT_FN, args.get(0), args.get(1));
     }
   }
 }

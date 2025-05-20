@@ -35,7 +35,7 @@ import java.lang.reflect.Method;
 import java.util.List;
 
 /** Soy field that gets the size of a set. */
-@SoyFieldSignature(name = "size", baseType = "set<any>", returnType = "int")
+@SoyFieldSignature(name = "size", baseType = "set<any>", returnType = "number")
 @SoyPureFunction
 public final class SetSizeField
     implements SoyJavaSourceFunction, SoyJavaScriptSourceFunction, SoyPythonSourceFunction {
@@ -54,7 +54,7 @@ public final class SetSizeField
 
   // lazy singleton pattern, allows other backends to avoid the work.
   private static final class Methods {
-    static final Method SET_SIZE_FN = JavaValueFactory.createMethod(SoySet.class, "size");
+    static final Method SET_SIZE_FN = JavaValueFactory.createMethod(SoySet.class, "sizeAsDouble");
   }
 
   @Override

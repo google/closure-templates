@@ -35,7 +35,7 @@ import java.lang.reflect.Method;
 import java.util.List;
 
 /** Soy function that gets the number of keys in a map. */
-@SoyFieldSignature(name = "size", baseType = "map<any, any>", returnType = "int")
+@SoyFieldSignature(name = "size", baseType = "map<any, any>", returnType = "number")
 @SoyPureFunction
 public final class MapLengthMethod
     implements SoyJavaSourceFunction, SoyJavaScriptSourceFunction, SoyPythonSourceFunction {
@@ -57,7 +57,7 @@ public final class MapLengthMethod
 
   // lazy singleton pattern, allows other backends to avoid the work.
   private static final class Methods {
-    static final Method MAP_SIZE_FN = JavaValueFactory.createMethod(SoyMap.class, "size");
+    static final Method MAP_SIZE_FN = JavaValueFactory.createMethod(SoyMap.class, "sizeAsDouble");
   }
 
   @Override

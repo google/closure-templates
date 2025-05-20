@@ -52,9 +52,9 @@ import java.util.List;
     name = "substring",
     baseType = "string",
     value = {
-      @Signature(parameterTypes = "float|int", returnType = "string"),
+      @Signature(parameterTypes = "number", returnType = "string"),
       @Signature(
-          parameterTypes = {"float|int", "float|int"},
+          parameterTypes = {"number", "number"},
           returnType = "string"),
     })
 @SoyPureFunction
