@@ -293,7 +293,7 @@ public final class DetachStateTest {
         TemplateTester.compileFile(
             "{namespace ns}",
             "{template t}",
-            "  {@param count: float|int}",
+            "  {@param count: number}",
             "  {msg desc='...'}",
             "    {plural $count}",
             "      {case 1}",
@@ -431,7 +431,7 @@ public final class DetachStateTest {
             "{namespace ns}",
             "",
             "{template t}",
-            "{@param depth: float|int}",
+            "{@param depth: number}",
             "  {if $depth >0}",
             "    {$depth}",
             "    {call t}{param depth: $depth-1 /}{/call}",

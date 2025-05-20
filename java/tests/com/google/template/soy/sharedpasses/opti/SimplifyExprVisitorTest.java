@@ -357,8 +357,7 @@ public final class SimplifyExprVisitorTest {
     assertThat(new ExpressionParser("false && false").parseForParentNode()).simplifiesTo("false");
     assertThat(new ExpressionParser("true && $boo").withParam("boo", "bool").parseForParentNode())
         .simplifiesTo("$boo");
-    assertThat(
-            new ExpressionParser("$boo && true").withParam("boo", "float|int").parseForParentNode())
+    assertThat(new ExpressionParser("$boo && true").withParam("boo", "number").parseForParentNode())
         .simplifiesTo("$boo && true"); // Can't simplify
     assertThat(new ExpressionParser("true && 1").parseForParentNode()).simplifiesTo("1");
     assertThat(new ExpressionParser("1 && true").parseForParentNode()).simplifiesTo("true");
@@ -401,7 +400,7 @@ public final class SimplifyExprVisitorTest {
         .simplifiesTo("111");
     assertThat(
             new ExpressionParser("false ? $boo : 222")
-                .withParam("boo", "float|int")
+                .withParam("boo", "number")
                 .parseForParentNode())
         .simplifiesTo("222");
     assertThat(
