@@ -925,6 +925,16 @@ public final class ResolveExpressionTypesPassTest {
         "  {default}",
         "    {assertType('bool|int|string', $p)}",
         "{/switch}");
+    assertTypes(
+        "{@param p: number}",
+        "{switch $p}",
+        "  {case 1}",
+        "    {assertType('number', $p)}",
+        "  {case 1.1}",
+        "    {assertType('number', $p)}",
+        "  {default}",
+        "    {assertType('number', $p)}",
+        "{/switch}");
   }
 
   @Test

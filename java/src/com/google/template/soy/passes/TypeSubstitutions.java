@@ -16,9 +16,15 @@
 
 package com.google.template.soy.passes;
 
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 import com.google.template.soy.exprtree.ExprEquivalence;
 import com.google.template.soy.exprtree.ExprNode;
+import com.google.template.soy.types.FloatType;
+import com.google.template.soy.types.IntType;
+import com.google.template.soy.types.NumberType;
 import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.SoyTypes;
 import java.util.Map;
 import javax.annotation.Nullable;
 
@@ -55,10 +61,38 @@ final class TypeSubstitutions {
       }
 
       // If the new type is different than the current type, then add a new type substitution.
-      if (!entry.getValue().equals(previousType)) {
+      if (!equalsWithNoNumberDistinction(previousType, entry.getValue())) {
         substitutions = new Vector(substitutions, expr, entry.getValue());
       }
     }
+  }
+
+  private static final ImmutableSet<SoyType> NUMBER_TYPES =
+      ImmutableSet.of(IntType.getInstance(), FloatType.getInstance(), NumberType.getInstance());
+
+  static boolean equalsWithNoNumberDistinction(SoyType origType, SoyType newType) {
+    // While migrating from int/float to number (b/395679605) we need to not narrow from number to
+    // int or float. Specifically this interacts poorly with the PluginValidator, which might then
+    // expect an IntegerData when it receives a FloatData.
+    if (newType.equals(origType)) {
+      return true;
+    }
+    ImmutableSet<SoyType> members1 = SoyTypes.expandUnions(origType);
+    ImmutableSet<SoyType> members2 = SoyTypes.expandUnions(newType);
+    boolean numberRemoved =
+        members1.contains(NumberType.getInstance()) && !members2.contains(NumberType.getInstance());
+    boolean intAdded =
+        !members1.contains(IntType.getInstance()) && members2.contains(IntType.getInstance());
+    boolean floatAdded =
+        !members1.contains(FloatType.getInstance()) && members2.contains(FloatType.getInstance());
+
+    if (numberRemoved && (intAdded || floatAdded)) {
+      var set1 = Sets.difference(members1, NUMBER_TYPES);
+      var set2 = Sets.difference(members2, NUMBER_TYPES);
+      return set1.size() == set2.size() && set2.containsAll(set1);
+    }
+
+    return false;
   }
 
   @Nullable
