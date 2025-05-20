@@ -511,6 +511,8 @@ public final class MethodRefs {
 
   public static final MethodRef SOY_VALUE_LONG_VALUE =
       createPure(SoyValue.class, "longValue").asCheap();
+  public static final MethodRef SOY_VALUE_ITEM_INDEX_VALUE =
+      createPure(SoyValue.class, "coerceToIndex").asCheap();
 
   public static final MethodRef SOY_VALUE_INTEGER_VALUE =
       createPure(SoyValue.class, "integerValue").asCheap();

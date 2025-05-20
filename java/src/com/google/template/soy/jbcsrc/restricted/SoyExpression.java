@@ -673,6 +673,14 @@ public final class SoyExpression extends Expression {
     return forInt(delegateWithoutCast().invoke(MethodRefs.SOY_VALUE_LONG_VALUE));
   }
 
+  public SoyExpression coerceToIndex() {
+    if (alreadyUnboxed(long.class)) {
+      return this;
+    } else {
+      return forInt(box().invoke(MethodRefs.SOY_VALUE_ITEM_INDEX_VALUE));
+    }
+  }
+
   /**
    * Unboxes this to a {@link SoyExpression} with an `int` runtime type.
    *

@@ -175,6 +175,11 @@ public final class IntegerData extends NumberData {
   }
 
   @Override
+  public long coerceToIndex() {
+    return value;
+  }
+
+  @Override
   public String getSoyTypeName() {
     return "int";
   }

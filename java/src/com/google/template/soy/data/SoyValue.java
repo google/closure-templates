@@ -74,6 +74,11 @@ public abstract class SoyValue extends SoyValueProvider {
    */
   public abstract String coerceToString();
 
+  /** Coerce this value to the integer index for use in looking up in a list. */
+  public long coerceToIndex() {
+    return -1; // By default, match no item in the list.
+  }
+
   @Override
   public SoyValueProvider coerceToBooleanProvider() {
     return BooleanData.forValue(this.coerceToBoolean());

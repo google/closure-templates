@@ -1600,7 +1600,7 @@ final class ExpressionCompiler {
       // optimized the same way because there is no real way to 'unbox' a SoyLegacyObjectMap.
       if (baseExpr.soyRuntimeType().isKnownListOrUnionOfLists()) {
         SoyExpression list = baseExpr.unboxAsListUnchecked();
-        SoyExpression index = keyExpr.unboxAsLong();
+        SoyExpression index = keyExpr.coerceToIndex();
         if (analysis.isResolved(node)) {
           soyValueProvider = MethodRefs.RUNTIME_GET_LIST_ITEM.invoke(list, index);
         } else {

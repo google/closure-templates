@@ -18,6 +18,7 @@ package com.google.template.soy.data;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import com.google.template.soy.base.internal.NumericCoercions;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.StringData;
 import java.io.IOException;
@@ -133,7 +134,7 @@ public abstract class SoyList extends SoyIterable {
         throw new SoyDataException("\"" + key + "\" is not a valid list index (must be an int)", e);
       }
     } else {
-      return key.integerValue();
+      return NumericCoercions.safeInt(key.coerceToIndex());
     }
   }
 

@@ -90,6 +90,15 @@ public final class FloatData extends NumberData {
   }
 
   @Override
+  public long coerceToIndex() {
+    long longVal = (long) value;
+    if (value == longVal) {
+      return longVal;
+    }
+    return super.coerceToIndex();
+  }
+
+  @Override
   public String getSoyTypeName() {
     return "float";
   }
