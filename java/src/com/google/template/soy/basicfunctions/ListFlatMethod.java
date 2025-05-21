@@ -16,7 +16,7 @@
 
 package com.google.template.soy.basicfunctions;
 
-import com.google.template.soy.data.restricted.IntegerData;
+import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
 import com.google.template.soy.plugin.java.restricted.JavaValue;
 import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
@@ -46,7 +46,7 @@ import java.util.List;
     value = {
       // returnType is made intelligent in ResolveExpressionTypesPass
       @Signature(returnType = "list<?>"),
-      @Signature(parameterTypes = "int", returnType = "list<?>")
+      @Signature(parameterTypes = "int|number", returnType = "list<?>")
     })
 @SoyPureFunction
 public class ListFlatMethod
@@ -78,7 +78,7 @@ public class ListFlatMethod
         JavaValueFactory.createMethod(BasicFunctionsRuntime.class, "listFlat", List.class);
     static final Method LIST_FLAT_ARG1_FN =
         JavaValueFactory.createMethod(
-            BasicFunctionsRuntime.class, "listFlat", List.class, IntegerData.class);
+            BasicFunctionsRuntime.class, "listFlat", List.class, NumberData.class);
   }
 
   @Override

@@ -43,7 +43,7 @@ import java.util.List;
  * <p>TODO(lukes,dcphillips): This function has inconsistent behavior between the backends when it
  * comes to astral plane codepoints. Python is the only backend doing it right.
  */
-@SoyFieldSignature(name = "length", baseType = "string", returnType = "int")
+@SoyFieldSignature(name = "length", baseType = "string", returnType = "number")
 @SoyPureFunction
 public final class StrLenFunction
     implements SoyJavaSourceFunction, SoyJavaScriptSourceFunction, SoyPythonSourceFunction {

@@ -36,12 +36,12 @@ public class FloorFunctionTest {
 
     SoyJavaSourceFunctionTester factory = new SoyJavaSourceFunctionTester(floorFunction);
     Object result = factory.callFunction(1L);
-    assertThat(result).isEqualTo(1L);
+    assertThat(result).isEqualTo(1D);
 
     result = factory.callFunction(2.5D);
-    assertThat(result).isEqualTo(2L);
+    assertThat(result).isEqualTo(2D);
 
     result = factory.callFunction(FloatData.forValue(2.5D));
-    assertThat(result).isEqualTo(2L);
+    assertThat(result).isEqualTo(2D);
   }
 }

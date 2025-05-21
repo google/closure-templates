@@ -49,6 +49,10 @@ public abstract class SoyMap extends SoyRecord {
    */
   public abstract int size();
 
+  public final double sizeAsDouble() {
+    return size();
+  }
+
   /**
    * Gets an iterable over all item keys in this SoyMap.
    *

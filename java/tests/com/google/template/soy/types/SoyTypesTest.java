@@ -19,7 +19,6 @@ package com.google.template.soy.types;
 import static com.google.common.base.Strings.lenientFormat;
 import static com.google.common.truth.Fact.simpleFact;
 import static com.google.common.truth.Truth.assertThat;
-import static com.google.template.soy.types.SoyTypes.NUMBER_TYPE;
 import static com.google.template.soy.types.SoyTypes.makeNullable;
 
 import com.google.common.collect.ImmutableMap;
@@ -47,9 +46,13 @@ import org.junit.runners.JUnit4;
 /** Unit tests for soy types. */
 @RunWith(JUnit4.class)
 public class SoyTypesTest {
+  private static final SoyType INT_FLOAT_UNION =
+      UnionType.of(IntType.getInstance(), FloatType.getInstance());
+
   private static final BoolType BOOL_TYPE = BoolType.getInstance();
   private static final IntType INT_TYPE = IntType.getInstance();
   private static final FloatType FLOAT_TYPE = FloatType.getInstance();
+  private static final NumberType NUMBER_TYPE = NumberType.getInstance();
   private static final StringType STRING_TYPE = StringType.getInstance();
   private static final HtmlType HTML_TYPE = HtmlType.getInstance();
   private static final NullType NULL_TYPE = NullType.getInstance();
@@ -131,6 +134,22 @@ public class SoyTypesTest {
     assertThatSoyType("any").isNotEqualTo("int");
     assertThatSoyType("int").isNotEqualTo("any");
     assertThatSoyType("?").isEqualTo("?");
+  }
+
+  @Test
+  public void testNumber() {
+    SoyTypeRegistry typeRegistry = SoyTypeRegistryBuilder.create();
+    assertThat(parseType("number", typeRegistry)).isEqualTo(NumberType.getInstance());
+
+    assertThatSoyType("number").isAssignableFromStrict("int");
+    assertThatSoyType("number").isAssignableFromStrict("float");
+    assertThatSoyType("number").isAssignableFromStrict("int|float");
+    assertThatSoyType("number").isAssignableFromStrict("int|float|number");
+
+    assertThatSoyType("int").isAssignableFromStrict("number");
+    assertThatSoyType("float").isAssignableFromStrict("number");
+    assertThatSoyType("int|float").isAssignableFromStrict("number");
+    assertThatSoyType("int|float|number").isAssignableFromStrict("number");
   }
 
   @Test
@@ -588,15 +607,17 @@ public class SoyTypesTest {
     assertThat(SoyTypes.bothOfKind(INT_TYPE, FLOAT_TYPE, SoyTypes.ARITHMETIC_PRIMITIVES)).isTrue();
     assertThat(
             SoyTypes.bothOfKind(
-                NUMBER_TYPE, FLOAT_TYPE, ImmutableSet.of(INT_TYPE.getKind(), FLOAT_TYPE.getKind())))
+                INT_FLOAT_UNION,
+                FLOAT_TYPE,
+                ImmutableSet.of(INT_TYPE.getKind(), FLOAT_TYPE.getKind())))
         .isTrue();
-    assertThat(SoyTypes.bothOfKind(NUMBER_TYPE, FLOAT_TYPE, SoyTypes.ARITHMETIC_PRIMITIVES))
+    assertThat(SoyTypes.bothOfKind(INT_FLOAT_UNION, FLOAT_TYPE, SoyTypes.ARITHMETIC_PRIMITIVES))
         .isTrue();
 
     assertThat(SoyTypes.bothOfKind(INT_TYPE, INT_TYPE, ImmutableSet.of())).isFalse();
     assertThat(SoyTypes.bothOfKind(INT_TYPE, FLOAT_TYPE, INT_TYPE.getKind())).isFalse();
-    assertThat(SoyTypes.bothOfKind(NUMBER_TYPE, INT_TYPE, INT_TYPE.getKind())).isFalse();
-    assertThat(SoyTypes.bothOfKind(STRING_TYPE, NUMBER_TYPE, SoyTypes.ARITHMETIC_PRIMITIVES))
+    assertThat(SoyTypes.bothOfKind(INT_FLOAT_UNION, INT_TYPE, INT_TYPE.getKind())).isFalse();
+    assertThat(SoyTypes.bothOfKind(STRING_TYPE, INT_FLOAT_UNION, SoyTypes.ARITHMETIC_PRIMITIVES))
         .isFalse();
   }
 
@@ -608,14 +629,14 @@ public class SoyTypesTest {
     assertThat(SoyTypes.eitherOfKind(INT_TYPE, STRING_TYPE, SoyTypes.ARITHMETIC_PRIMITIVES))
         .isTrue();
 
-    assertThat(SoyTypes.eitherOfKind(FLOAT_TYPE, NUMBER_TYPE, ImmutableSet.of())).isFalse();
-    assertThat(SoyTypes.eitherOfKind(FLOAT_TYPE, NUMBER_TYPE, INT_TYPE.getKind())).isFalse();
+    assertThat(SoyTypes.eitherOfKind(FLOAT_TYPE, INT_FLOAT_UNION, ImmutableSet.of())).isFalse();
+    assertThat(SoyTypes.eitherOfKind(FLOAT_TYPE, INT_FLOAT_UNION, INT_TYPE.getKind())).isFalse();
   }
 
   @Test
   public void testComputeStricterType() {
     assertThat(SoyTypes.computeStricterType(INT_TYPE, ANY_TYPE)).hasValue(INT_TYPE);
-    assertThat(SoyTypes.computeStricterType(NUMBER_TYPE, INT_TYPE)).hasValue(INT_TYPE);
+    assertThat(SoyTypes.computeStricterType(INT_FLOAT_UNION, INT_TYPE)).hasValue(INT_TYPE);
     assertThat(SoyTypes.computeStricterType(makeNullable(STRING_TYPE), STRING_TYPE))
         .hasValue(STRING_TYPE);
     assertThat(SoyTypes.computeStricterType(INT_TYPE, STRING_TYPE)).isEmpty();
@@ -636,9 +657,9 @@ public class SoyTypesTest {
     assertThat(SoyTypes.computeLowestCommonType(typeRegistry, STRING_TYPE, HTML_TYPE))
         .isEqualTo(UnionType.of(STRING_TYPE, HTML_TYPE));
     assertThat(SoyTypes.computeLowestCommonType(typeRegistry, INT_TYPE, FLOAT_TYPE))
-        .isEqualTo(NUMBER_TYPE);
+        .isEqualTo(INT_FLOAT_UNION);
     assertThat(SoyTypes.computeLowestCommonType(typeRegistry, FLOAT_TYPE, INT_TYPE))
-        .isEqualTo(NUMBER_TYPE);
+        .isEqualTo(INT_FLOAT_UNION);
     assertThat(SoyTypes.computeLowestCommonType(typeRegistry, INT_TYPE, UNDEFINED_TYPE))
         .isEqualTo(UnionType.of(INT_TYPE, UNDEFINED_TYPE));
   }
@@ -666,7 +687,7 @@ public class SoyTypesTest {
         .isEmpty();
     assertThat(
             SoyTypes.computeLowestCommonTypeArithmetic(
-                UnionType.of(BOOL_TYPE, INT_TYPE, STRING_TYPE), NUMBER_TYPE))
+                UnionType.of(BOOL_TYPE, INT_TYPE, STRING_TYPE), INT_FLOAT_UNION))
         .isEmpty();
     assertThat(
             SoyTypes.computeLowestCommonTypeArithmetic(UnionType.of(BOOL_TYPE, INT_TYPE), INT_TYPE))
@@ -687,12 +708,12 @@ public class SoyTypesTest {
     assertThat(SoyTypes.computeLowestCommonTypeArithmetic(INT_TYPE, INT_TYPE)).hasValue(INT_TYPE);
     assertThat(SoyTypes.computeLowestCommonTypeArithmetic(FLOAT_TYPE, FLOAT_TYPE))
         .hasValue(FLOAT_TYPE);
-    assertThat(SoyTypes.computeLowestCommonTypeArithmetic(FLOAT_TYPE, NUMBER_TYPE))
-        .hasValue(NUMBER_TYPE);
-    assertThat(SoyTypes.computeLowestCommonTypeArithmetic(INT_TYPE, NUMBER_TYPE))
-        .hasValue(NUMBER_TYPE);
-    assertThat(SoyTypes.computeLowestCommonTypeArithmetic(NUMBER_TYPE, NUMBER_TYPE))
-        .hasValue(NUMBER_TYPE);
+    assertThat(SoyTypes.computeLowestCommonTypeArithmetic(FLOAT_TYPE, INT_FLOAT_UNION))
+        .hasValue(INT_FLOAT_UNION);
+    assertThat(SoyTypes.computeLowestCommonTypeArithmetic(INT_TYPE, INT_FLOAT_UNION))
+        .hasValue(INT_FLOAT_UNION);
+    assertThat(SoyTypes.computeLowestCommonTypeArithmetic(INT_FLOAT_UNION, INT_FLOAT_UNION))
+        .hasValue(INT_FLOAT_UNION);
   }
 
   @Test
@@ -714,12 +735,12 @@ public class SoyTypesTest {
         .isEqualTo(INT_TYPE);
     assertThat(SoyTypes.getSoyTypeForBinaryOperator(FLOAT_TYPE, FLOAT_TYPE, plusOp))
         .isEqualTo(FLOAT_TYPE);
-    assertThat(SoyTypes.getSoyTypeForBinaryOperator(FLOAT_TYPE, NUMBER_TYPE, plusOp))
+    assertThat(SoyTypes.getSoyTypeForBinaryOperator(FLOAT_TYPE, INT_FLOAT_UNION, plusOp))
         .isEqualTo(FLOAT_TYPE);
-    assertThat(SoyTypes.getSoyTypeForBinaryOperator(INT_TYPE, NUMBER_TYPE, plusOp))
-        .isEqualTo(NUMBER_TYPE);
-    assertThat(SoyTypes.getSoyTypeForBinaryOperator(NUMBER_TYPE, NUMBER_TYPE, plusOp))
-        .isEqualTo(NUMBER_TYPE);
+    assertThat(SoyTypes.getSoyTypeForBinaryOperator(INT_TYPE, INT_FLOAT_UNION, plusOp))
+        .isEqualTo(INT_FLOAT_UNION);
+    assertThat(SoyTypes.getSoyTypeForBinaryOperator(INT_FLOAT_UNION, INT_FLOAT_UNION, plusOp))
+        .isEqualTo(INT_FLOAT_UNION);
 
     // Unknown types are fine
     assertThat(SoyTypes.getSoyTypeForBinaryOperator(FLOAT_TYPE, UNKNOWN_TYPE, plusOp))
@@ -736,7 +757,7 @@ public class SoyTypesTest {
         .isEqualTo(STRING_TYPE);
     assertThat(SoyTypes.getSoyTypeForBinaryOperator(STRING_TYPE, FLOAT_TYPE, plusOp))
         .isEqualTo(STRING_TYPE);
-    assertThat(SoyTypes.getSoyTypeForBinaryOperator(STRING_TYPE, NUMBER_TYPE, plusOp))
+    assertThat(SoyTypes.getSoyTypeForBinaryOperator(STRING_TYPE, INT_FLOAT_UNION, plusOp))
         .isEqualTo(STRING_TYPE);
     assertThat(SoyTypes.getSoyTypeForBinaryOperator(STRING_TYPE, STRING_TYPE, plusOp))
         .isEqualTo(STRING_TYPE);
@@ -815,12 +836,12 @@ public class SoyTypesTest {
         .isEqualTo(INT_TYPE);
     assertThat(SoyTypes.getSoyTypeForBinaryOperator(FLOAT_TYPE, FLOAT_TYPE, plusOp))
         .isEqualTo(FLOAT_TYPE);
-    assertThat(SoyTypes.getSoyTypeForBinaryOperator(FLOAT_TYPE, NUMBER_TYPE, plusOp))
+    assertThat(SoyTypes.getSoyTypeForBinaryOperator(FLOAT_TYPE, INT_FLOAT_UNION, plusOp))
         .isEqualTo(FLOAT_TYPE);
-    assertThat(SoyTypes.getSoyTypeForBinaryOperator(INT_TYPE, NUMBER_TYPE, plusOp))
-        .isEqualTo(NUMBER_TYPE);
-    assertThat(SoyTypes.getSoyTypeForBinaryOperator(NUMBER_TYPE, NUMBER_TYPE, plusOp))
-        .isEqualTo(NUMBER_TYPE);
+    assertThat(SoyTypes.getSoyTypeForBinaryOperator(INT_TYPE, INT_FLOAT_UNION, plusOp))
+        .isEqualTo(INT_FLOAT_UNION);
+    assertThat(SoyTypes.getSoyTypeForBinaryOperator(INT_FLOAT_UNION, INT_FLOAT_UNION, plusOp))
+        .isEqualTo(INT_FLOAT_UNION);
 
     // Unknown types are fine
     assertThat(SoyTypes.getSoyTypeForBinaryOperator(FLOAT_TYPE, UNKNOWN_TYPE, plusOp))
@@ -833,7 +854,7 @@ public class SoyTypesTest {
     // Any string types should be rejected
     assertThat(SoyTypes.getSoyTypeForBinaryOperator(INT_TYPE, STRING_TYPE, plusOp)).isNull();
     assertThat(SoyTypes.getSoyTypeForBinaryOperator(STRING_TYPE, FLOAT_TYPE, plusOp)).isNull();
-    assertThat(SoyTypes.getSoyTypeForBinaryOperator(STRING_TYPE, NUMBER_TYPE, plusOp)).isNull();
+    assertThat(SoyTypes.getSoyTypeForBinaryOperator(STRING_TYPE, INT_FLOAT_UNION, plusOp)).isNull();
     assertThat(SoyTypes.getSoyTypeForBinaryOperator(STRING_TYPE, STRING_TYPE, plusOp)).isNull();
     assertThat(SoyTypes.getSoyTypeForBinaryOperator(INT_TYPE, URI_TYPE, plusOp)).isNull();
     assertThat(SoyTypes.getSoyTypeForBinaryOperator(HTML_TYPE, STRING_TYPE, plusOp)).isNull();
@@ -885,9 +906,12 @@ public class SoyTypesTest {
     assertThat(SoyTypes.getSoyTypeForBinaryOperator(FLOAT_TYPE, INT_TYPE, equalOp)).isNotNull();
     assertThat(SoyTypes.getSoyTypeForBinaryOperator(INT_TYPE, INT_TYPE, equalOp)).isNotNull();
     assertThat(SoyTypes.getSoyTypeForBinaryOperator(FLOAT_TYPE, FLOAT_TYPE, equalOp)).isNotNull();
-    assertThat(SoyTypes.getSoyTypeForBinaryOperator(FLOAT_TYPE, NUMBER_TYPE, equalOp)).isNotNull();
-    assertThat(SoyTypes.getSoyTypeForBinaryOperator(INT_TYPE, NUMBER_TYPE, equalOp)).isNotNull();
-    assertThat(SoyTypes.getSoyTypeForBinaryOperator(NUMBER_TYPE, NUMBER_TYPE, equalOp)).isNotNull();
+    assertThat(SoyTypes.getSoyTypeForBinaryOperator(FLOAT_TYPE, INT_FLOAT_UNION, equalOp))
+        .isNotNull();
+    assertThat(SoyTypes.getSoyTypeForBinaryOperator(INT_TYPE, INT_FLOAT_UNION, equalOp))
+        .isNotNull();
+    assertThat(SoyTypes.getSoyTypeForBinaryOperator(INT_FLOAT_UNION, INT_FLOAT_UNION, equalOp))
+        .isNotNull();
 
     // Unknown types are fine
     assertThat(SoyTypes.getSoyTypeForBinaryOperator(FLOAT_TYPE, UNKNOWN_TYPE, equalOp)).isNotNull();
@@ -900,7 +924,8 @@ public class SoyTypesTest {
     // String-number comparisons are okay.
     assertThat(SoyTypes.getSoyTypeForBinaryOperator(INT_TYPE, STRING_TYPE, equalOp)).isNotNull();
     assertThat(SoyTypes.getSoyTypeForBinaryOperator(STRING_TYPE, FLOAT_TYPE, equalOp)).isNotNull();
-    assertThat(SoyTypes.getSoyTypeForBinaryOperator(STRING_TYPE, NUMBER_TYPE, equalOp)).isNotNull();
+    assertThat(SoyTypes.getSoyTypeForBinaryOperator(STRING_TYPE, INT_FLOAT_UNION, equalOp))
+        .isNotNull();
     assertThat(SoyTypes.getSoyTypeForBinaryOperator(INT_TYPE, URI_TYPE, equalOp)).isNotNull();
 
     // String-string comparisons are okay.
