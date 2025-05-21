@@ -38,6 +38,7 @@ import com.google.protobuf.Descriptors.FileDescriptor.Syntax;
 import com.google.protobuf.DynamicMessage;
 import com.google.protobuf.Message;
 import com.google.protobuf.ProtocolMessageEnum;
+import com.google.template.soy.base.internal.NumericCoercions;
 import com.google.template.soy.data.internal.ListImpl;
 import com.google.template.soy.data.internal.SoyMapImpl;
 import com.google.template.soy.data.restricted.BooleanData;
@@ -350,10 +351,13 @@ public abstract class ProtoFieldInterpreter {
 
         @Override
         public Object protoFromSoy(SoyValue field) {
+          long val;
           if (field instanceof GbigintData) {
-            return ((GbigintData) field).longValue();
+            val = field.longValue();
+          } else {
+            val = field.coerceToLong();
           }
-          return field.coerceToLong();
+          return NumericCoercions.isInRange(val) ? val : String.valueOf(val);
         }
       };
 
