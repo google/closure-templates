@@ -520,6 +520,7 @@ public final class MethodRefs {
   public static final MethodRef SOY_VALUE_NUMBER_VALUE = createPure(SoyValue.class, "numberValue");
   public static final MethodRef SOY_VALUE_COERCE_TO_LONG =
       createPure(SoyValue.class, "coerceToLong");
+  public static final MethodRef SOY_VALUE_COERCE_TO_INT = createPure(SoyValue.class, "coerceToInt");
   public static final MethodRef INT_TO_NUMBER =
       createPure(JbcSrcRuntime.class, "intToNumber", SoyValue.class);
   public static final MethodRef NUMBER_TO_INT =

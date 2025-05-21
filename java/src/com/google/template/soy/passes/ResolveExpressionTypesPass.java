@@ -152,6 +152,7 @@ import com.google.template.soy.shared.restricted.SoySourceFunctionMethod;
 import com.google.template.soy.shared.restricted.TypedSoyFunction;
 import com.google.template.soy.soyparse.SoyFileParser;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
+import com.google.template.soy.soytree.AssignmentNode;
 import com.google.template.soy.soytree.CallDelegateNode;
 import com.google.template.soy.soytree.CallParamValueNode;
 import com.google.template.soy.soytree.ConstNode;
@@ -395,6 +396,8 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
           "Template call expressions must be non-nullish. Try guarding with an '{'if'}' command.");
   private static final SoyErrorKind INVALID_SPREAD_VALUE =
       SoyErrorKind.of("Value of type ''{0}'' may not be spread here.");
+  private static final SoyErrorKind INVALID_ASSIGNMENT_TYPES =
+      SoyErrorKind.of("Cannot set a variable of type ''{0}'' to a value of type ''{1}''.");
 
   private final ErrorReporter errorReporter;
 
@@ -884,6 +887,19 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
         long variantInt = ((NumberNode) variant.getRoot()).longValue();
         if (variantInt < 0) {
           errorReporter.report(location, INVALID_VARIANT_EXPRESSION, variant.toSourceString());
+        }
+      }
+    }
+
+    @Override
+    protected void visitAssignmentNode(AssignmentNode node) {
+      super.visitAssignmentNode(node);
+      ExprNode lhs = node.getLhs().getRoot();
+      if (lhs instanceof VarRefNode) {
+        SoyType to = ((VarRefNode) lhs).getDefnDecl().type();
+        SoyType from = maybeCoerceType(node.getRhs().getRoot(), to);
+        if (!to.isAssignableFromStrict(from)) {
+          errorReporter.report(node.getSourceLocation(), INVALID_ASSIGNMENT_TYPES, to, from);
         }
       }
     }

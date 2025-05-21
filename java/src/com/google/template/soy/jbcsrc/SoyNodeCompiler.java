@@ -2057,6 +2057,12 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     String varName = ref.getDefnDecl().name();
     AbstractVariable letOrParam = currentScope.get(varName);
     SoyExpression newValue = exprCompiler.compileWithNoDetaches(node.getRhs()).get();
+
+    // ASM has no common type for object v. primitive representations. So we need to coerce the
+    // new value to fix within the bounds of the old value. This is mostly boxed v. unboxed and
+    // numeric conversions among primitives.
+    newValue = newValue.coerceTo(letOrParam.accessor().resultType());
+
     if (letOrParam instanceof Variable) {
       // This is assignment on a let.
       return ((Variable) letOrParam).local().store(newValue);

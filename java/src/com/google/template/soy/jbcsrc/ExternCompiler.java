@@ -561,22 +561,7 @@ public final class ExternCompiler {
   }
 
   private SoyExpression adaptReturnExpression(SoyExpression raw, SoyRuntimeType type) {
-    if (type.isBoxed()) {
-      // This handles things like the declared return type is `number` and you return an `int`.
-      return raw.box();
-    } else if (raw.isBoxed()) {
-      // TODO(jcg): Handle more combinations here?
-      if (type.isKnownInt()) {
-        return raw.unboxAsLong();
-      } else if (type.isKnownFloat()) {
-        return raw.unboxAsDouble();
-      } else if (type.isKnownBool()) {
-        return raw.unboxAsBoolean();
-      } else if (type.isKnownString()) {
-        return raw.unboxAsStringOrJavaNull();
-      }
-    }
-    return raw;
+    return raw.coerceTo(type.runtimeType());
   }
 
   /**
