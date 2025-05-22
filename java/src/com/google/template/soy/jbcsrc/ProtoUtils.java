@@ -1896,7 +1896,7 @@ final class ProtoUtils {
     }
 
     if (asType.equals(double.class)) {
-      MethodRefs.SOY_VALUE_NUMBER_VALUE.invokeUnchecked(cb);
+      MethodRefs.SOY_VALUE_FLOAT_VALUE.invokeUnchecked(cb);
       return Type.DOUBLE_TYPE;
     }
 

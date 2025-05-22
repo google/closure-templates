@@ -61,7 +61,6 @@ import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.GbigintData;
 import com.google.template.soy.data.restricted.IntegerData;
-import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.restricted.MethodRef.MethodPureness;
@@ -517,10 +516,6 @@ public final class MethodRefs {
   public static final MethodRef SOY_VALUE_INTEGER_VALUE =
       createPure(SoyValue.class, "integerValue").asCheap();
 
-  public static final MethodRef SOY_VALUE_NUMBER_VALUE = createPure(SoyValue.class, "numberValue");
-  public static final MethodRef SOY_VALUE_COERCE_TO_LONG =
-      createPure(SoyValue.class, "coerceToLong");
-  public static final MethodRef SOY_VALUE_COERCE_TO_INT = createPure(SoyValue.class, "coerceToInt");
   public static final MethodRef INT_TO_NUMBER =
       createPure(JbcSrcRuntime.class, "intToNumber", SoyValue.class);
   public static final MethodRef NUMBER_TO_INT =
@@ -542,7 +537,7 @@ public final class MethodRefs {
       createPure(SoyValue.class, "nullishToUndefined").asCheap().asNonJavaNullable();
 
   public static final MethodRef SOY_VALUE_JAVA_NUMBER_VALUE =
-      createPure(NumberData.class, "javaNumberValue");
+      createPure(JbcSrcRuntime.class, "javaNumberValue", SoyValue.class);
 
   public static final MethodRef SOY_VALUE_STRING_VALUE =
       createPure(SoyValue.class, "stringValue").asCheap();
