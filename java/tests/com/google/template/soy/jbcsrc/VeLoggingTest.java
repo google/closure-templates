@@ -17,6 +17,7 @@
 package com.google.template.soy.jbcsrc;
 
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.template.soy.testing.VeMetadataExample.veMetadataExampleExtension;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.fail;
 
@@ -33,6 +34,7 @@ import com.google.template.soy.jbcsrc.api.OutputAppendable;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
 import com.google.template.soy.jbcsrc.shared.StackFrame;
+import com.google.template.soy.logging.LoggableElementMetadata;
 import com.google.template.soy.logging.LoggingFunction;
 import com.google.template.soy.logging.SoyLogger;
 import com.google.template.soy.logging.SoyLogger.LoggingAttrs;
@@ -107,7 +109,10 @@ public final class VeLoggingTest {
     assertThat(sb.toString())
         .isEqualTo("<div data-id=1><div data-id=2></div><div data-id=3></div></div>");
     assertThat(testLogger.builder.toString())
-        .isEqualTo("velog{id=1}\n" + "  velog{id=2}\n" + "  velog{id=3}");
+        .isEqualTo(
+            "velog{id=1, loggableElementMetadata=}\n"
+                + "  velog{id=2, loggableElementMetadata=}\n"
+                + "  velog{id=3, loggableElementMetadata=}");
   }
 
   @Test
@@ -119,7 +124,7 @@ public final class VeLoggingTest {
         "{velog ve_data(FooVe, Foo(intField: 123))}<div data-id=1></div>{/velog}");
     assertThat(sb.toString()).isEqualTo("<div data-id=1></div>");
     assertThat(testLogger.builder.toString())
-        .isEqualTo("velog{id=1, data=soy.test.Foo{int_field: 123}}");
+        .isEqualTo("velog{id=1, data=soy.test.Foo{int_field: 123}, loggableElementMetadata=}");
   }
 
   @Test
@@ -131,7 +136,8 @@ public final class VeLoggingTest {
         "{velog FooVe logonly=\"true\"}<div data-id=1></div>{/velog}");
     // logonly ve's disable content generation
     assertThat(sb.toString()).isEmpty();
-    assertThat(testLogger.builder.toString()).isEqualTo("velog{id=1, logonly}");
+    assertThat(testLogger.builder.toString())
+        .isEqualTo("velog{id=1, logonly, loggableElementMetadata=}");
   }
 
   @Test
@@ -152,7 +158,10 @@ public final class VeLoggingTest {
         "{velog Bar logonly=\"$f\"}<div data-id=2></div>{/velog}");
     // logonly ve's disable content generation
     assertThat(sb.toString()).isEqualTo("<div data-id=2></div>");
-    assertThat(testLogger.builder.toString()).isEqualTo("velog{id=1, logonly}\nvelog{id=2}");
+    assertThat(testLogger.builder.toString())
+        .isEqualTo(
+            "velog{id=1, logonly, loggableElementMetadata=}\n"
+                + "velog{id=2, loggableElementMetadata=}");
   }
 
   @Test
@@ -184,13 +193,29 @@ public final class VeLoggingTest {
   }
 
   @Test
+  public void testBasicLogging_loggableElementMetadata() throws Exception {
+    StringBuilder sb = new StringBuilder();
+    TestLogger testLogger = new TestLogger();
+    renderTemplate(
+        OutputAppendable.create(sb, testLogger),
+        "{velog ve_data(VeWithLoggableElementMetadata)}<div data-id=1></div>{/velog}");
+    assertThat(sb.toString()).isEqualTo("<div data-id=1></div>");
+    assertThat(testLogger.builder.toString())
+        .isEqualTo(
+            "velog{id=5, loggableElementMetadata=[soy.test.ve_metadata_example_extension]:"
+                + " \"foo\"\n"
+                + "}");
+  }
+
+  @Test
   public void testLogging_letVariables() throws Exception {
     StringBuilder sb = new StringBuilder();
     TestLogger testLogger = new TestLogger();
     renderTemplate(
         OutputAppendable.create(sb, testLogger),
         "{let $foo kind=\"html\"}{velog FooVe}<div data-id=1></div>{/velog}{/let}{$foo}{$foo}");
-    assertThat(testLogger.builder.toString()).isEqualTo("velog{id=1}\nvelog{id=1}");
+    assertThat(testLogger.builder.toString())
+        .isEqualTo("velog{id=1, loggableElementMetadata=}\nvelog{id=1, loggableElementMetadata=}");
     assertThat(sb.toString()).isEqualTo("<div data-id=1></div><div data-id=1></div>");
   }
 
@@ -205,7 +230,7 @@ public final class VeLoggingTest {
             + "  Greetings, {velog FooVe}<a href='./wiki?human'>Human</a>{/velog}\n"
             + "{/msg}");
     assertThat(sb.toString()).isEqualTo("Greetings, <a href='./wiki?human'>Human</a>");
-    assertThat(testLogger.builder.toString()).isEqualTo("velog{id=1}");
+    assertThat(testLogger.builder.toString()).isEqualTo("velog{id=1, loggableElementMetadata=}");
   }
 
   // Regression test for a bug where logging would get dropped if there was a velog, in a msg around
@@ -221,7 +246,7 @@ public final class VeLoggingTest {
             + "  Greetings, {velog FooVe}<input type=text>{/velog}\n"
             + "{/msg}");
     assertThat(sb.toString()).isEqualTo("Greetings, <input type=text>");
-    assertThat(testLogger.builder.toString()).isEqualTo("velog{id=1}");
+    assertThat(testLogger.builder.toString()).isEqualTo("velog{id=1, loggableElementMetadata=}");
   }
 
   @Test
@@ -237,10 +262,10 @@ public final class VeLoggingTest {
     assertThat(sb.toString()).isEmpty();
     assertThat(testLogger.builder.toString())
         .isEqualTo(
-            "velog{id=1, logonly}\n"
-                + "  velog{id=1}\n"
-                + "    velog{id=1, logonly}\n"
-                + "      velog{id=1, logonly}");
+            "velog{id=1, logonly, loggableElementMetadata=}\n"
+                + "  velog{id=1, loggableElementMetadata=}\n"
+                + "    velog{id=1, logonly, loggableElementMetadata=}\n"
+                + "      velog{id=1, logonly, loggableElementMetadata=}");
   }
 
   @Test
@@ -252,7 +277,7 @@ public final class VeLoggingTest {
         "<div data-depth={depth()}></div>"
             + "{velog FooVe}<div data-depth={depth()}></div>{/velog}"
             + "<div data-depth={depth()}></div>");
-    assertThat(testLogger.builder.toString()).isEqualTo("velog{id=1}");
+    assertThat(testLogger.builder.toString()).isEqualTo("velog{id=1, loggableElementMetadata=}");
     assertThat(sb.toString())
         .isEqualTo("<div data-depth=0></div><div data-depth=1></div><div data-depth=0></div>");
   }
@@ -283,7 +308,7 @@ public final class VeLoggingTest {
         "  {/velog}",
         "{/let}",
         "{$log ?? ''}");
-    assertThat(testLogger.builder.toString()).isEqualTo("velog{id=1}");
+    assertThat(testLogger.builder.toString()).isEqualTo("velog{id=1, loggableElementMetadata=}");
     assertThat(sb.toString()).isEqualTo("<div>hello</div>");
   }
 
@@ -294,7 +319,7 @@ public final class VeLoggingTest {
     testLogger.attrsMap.put(1L, LoggingAttrs.builder().addDataAttribute("data-foo", "bar").build());
     renderTemplate(
         OutputAppendable.create(sb, testLogger), "{velog FooVe}<div>hello</div>{/velog}");
-    assertThat(testLogger.builder.toString()).isEqualTo("velog{id=1}");
+    assertThat(testLogger.builder.toString()).isEqualTo("velog{id=1, loggableElementMetadata=}");
     assertThat(sb.toString()).isEqualTo("<div data-foo=\"bar\">hello</div>");
   }
 
@@ -305,7 +330,7 @@ public final class VeLoggingTest {
     testLogger.attrsMap.put(1L, LoggingAttrs.builder().addDataAttribute("data-foo", "bar").build());
     renderTemplate(
         OutputAppendable.create(sb, testLogger), "{velog FooVe}{call another /}{/velog}");
-    assertThat(testLogger.builder.toString()).isEqualTo("velog{id=1}");
+    assertThat(testLogger.builder.toString()).isEqualTo("velog{id=1, loggableElementMetadata=}");
     assertThat(sb.toString()).isEqualTo("<div data-foo=\"bar\">called</div>");
   }
 
@@ -318,7 +343,7 @@ public final class VeLoggingTest {
         OutputAppendable.create(sb, testLogger),
         "{let $div kind='html'}<div>hello</div>{/let}",
         "{velog FooVe}{$div}{/velog}");
-    assertThat(testLogger.builder.toString()).isEqualTo("velog{id=1}");
+    assertThat(testLogger.builder.toString()).isEqualTo("velog{id=1, loggableElementMetadata=}");
     assertThat(sb.toString()).isEqualTo("<div data-foo=\"bar\">hello</div>");
   }
 
@@ -329,7 +354,7 @@ public final class VeLoggingTest {
     testLogger.attrsMap.put(
         1L, LoggingAttrs.builder().addAnchorHref(SafeUrls.fromConstant("./go")).build());
     renderTemplate(OutputAppendable.create(sb, testLogger), "{velog FooVe}<a>hello</a>{/velog}");
-    assertThat(testLogger.builder.toString()).isEqualTo("velog{id=1}");
+    assertThat(testLogger.builder.toString()).isEqualTo("velog{id=1, loggableElementMetadata=}");
     assertThat(sb.toString()).isEqualTo("<a href=\"./go\">hello</a>");
   }
 
@@ -361,15 +386,24 @@ public final class VeLoggingTest {
       throws IOException {
     SoyFileSetParserBuilder builder =
         SoyFileSetParserBuilder.forTemplateAndImports(
-                "{const FooVe = ve_def('FooVe', 1, Foo) /}"
-                    + "{const Bar = ve_def('Bar', 2, Foo) /}"
-                    + "{const Baz = ve_def('Baz', 3, Foo) /}"
-                    + "{const Quux = ve_def('Quux', 4, Foo) /}"
+                // End of the line comments are to force the formatter to keep each line on its own
+                // line.
+                "{const FooVe = ve_def('FooVe', 1, Foo) /}" //
+                    + "{const Bar = ve_def('Bar', 2, Foo) /}" //
+                    + "{const Baz = ve_def('Baz', 3, Foo) /}" //
+                    + "{const Quux = ve_def('Quux', 4, Foo) /}" //
+                    + "{const VeWithLoggableElementMetadata = ve_def(" //
+                    + " 'VeWithLoggableElementMetadata'," //
+                    + " 5," //
+                    + " Foo," //
+                    + " LoggableElementMetadata(veMetadataExampleExtension: 'foo')) /}" //
                     + "{template foo}\n"
                     + Joiner.on("\n").join(templateBodyLines)
-                    + "\n{/template}"
-                    + "{template another}<div>called</div>{/template}\n",
-                Foo.getDescriptor())
+                    + "\n{/template}" //
+                    + "{template another}<div>called</div>{/template}\n", //
+                Foo.getDescriptor(),
+                LoggableElementMetadata.getDescriptor(),
+                veMetadataExampleExtension.getDescriptor())
             .addSoySourceFunction(new DepthFunction())
             .addHtmlAttributesForLogging(true)
             .runAutoescaper(true);
