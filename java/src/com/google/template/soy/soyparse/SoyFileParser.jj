@@ -1006,7 +1006,7 @@ TOKEN_MGR_DECLS: {
 
 
 // Tips on writing a good lexer
-// https://javacc.java.net/doc/lexertips.html
+// https://www.cs.purdue.edu/homes/hosking/javacc/doc/lexertips.html
 
 
 // =================================================================================================
