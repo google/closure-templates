@@ -27,15 +27,22 @@ public abstract class TryCatch extends Statement {
 
   abstract Statement body();
 
+  abstract Statement catchStmt();
+
+  public static TryCatch create(Statement body, Statement catchStmt) {
+    return new AutoValue_TryCatch(body, catchStmt);
+  }
+
   public static TryCatch create(Statement body) {
-    return new AutoValue_TryCatch(body);
+    return new AutoValue_TryCatch(body, Statements.EMPTY);
   }
 
   @Override
   void doFormatStatement(FormattingContext ctx) {
     ctx.append("try ");
     ctx.appendAllIntoBlock(body());
-    ctx.append(" catch {}");
+    ctx.append(" catch ");
+    ctx.appendAllIntoBlock(catchStmt());
     ctx.endLine();
   }
 

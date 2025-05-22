@@ -37,6 +37,8 @@ import com.google.template.soy.jssrc.dsl.Expressions;
 import com.google.template.soy.jssrc.dsl.FormatOptions;
 import com.google.template.soy.jssrc.dsl.GoogRequire;
 import com.google.template.soy.jssrc.dsl.Id;
+import com.google.template.soy.jssrc.dsl.Statements;
+import com.google.template.soy.jssrc.dsl.TryCatch;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.ModernSoyJsSrcPrintDirective;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcPrintDirective;
@@ -175,6 +177,15 @@ public class GenCallCodeUtils {
   private Expression generateCallExpr(
       CallNode callNode, Expression callee, List<Expression> params) {
     if (useNodeBuilder(callNode)) {
+      if (callNode.isErrorFallbackSkip()) {
+        return Expressions.construct(
+            nodeBuilderClass(),
+            Expressions.tsArrowFunction(
+                ImmutableList.of(
+                    TryCatch.create(
+                        Statements.returnValue(callee.call(params)),
+                        Statements.returnValue(Expressions.stringLiteral(""))))));
+      }
       return Expressions.construct(nodeBuilderClass(), callee, Expressions.arrayLiteral(params));
     } else {
       return callee.call(params);

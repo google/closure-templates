@@ -710,7 +710,9 @@ public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<St
 
     // Add the call's result to the current output var.
     Expression call = genCallCodeUtils.gen(node, createExprTranslator());
-    if (node.isErrorFallbackSkip()) {
+    // When we use a NodeBuilder, genCallCodeUtils will have already placed the try/catch inside of
+    // the NodeBuilder, so we don't need to handle it here.
+    if (node.isErrorFallbackSkip() && !genCallCodeUtils.useNodeBuilder(node)) {
       VariableDeclaration callResult =
           VariableDeclaration.builder(Id.create("call_" + node.getId())).setRhs(call).build();
       return Statements.of(
