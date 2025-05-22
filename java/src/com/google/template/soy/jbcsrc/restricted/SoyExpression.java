@@ -1013,33 +1013,4 @@ public final class SoyExpression extends Expression {
   protected void extraToStringProperties(MoreObjects.ToStringHelper helper) {
     helper.add("soyType", soyType());
   }
-
-  /** Generic coercion to a runtime type, possibly boxed or unboxed. */
-  public SoyExpression coerceTo(Type runtimeType) {
-    switch (runtimeType.getSort()) {
-      case Type.LONG:
-        if (isBoxed()) {
-          return forInt(MethodRefs.SOY_VALUE_COERCE_TO_LONG.invoke(delegate));
-        } else {
-          return forInt(BytecodeUtils.numericConversion(delegate, Type.LONG_TYPE));
-        }
-      case Type.INT:
-        if (isBoxed()) {
-          return forInt(MethodRefs.SOY_VALUE_COERCE_TO_INT.invoke(delegate));
-        } else {
-          return forInt(BytecodeUtils.numericConversion(delegate, Type.INT_TYPE));
-        }
-      case Type.DOUBLE:
-        return coerceToDouble();
-      case Type.BOOLEAN:
-        return unboxAsBoolean();
-      case Type.OBJECT:
-        if (BytecodeUtils.isDefinitelyAssignableFrom(BytecodeUtils.SOY_VALUE_TYPE, runtimeType)) {
-          return box();
-        }
-        // Unhandled cases where we have a boxed value (string, list, message) but require an
-        // unboxed value.
-    }
-    return this;
-  }
 }
