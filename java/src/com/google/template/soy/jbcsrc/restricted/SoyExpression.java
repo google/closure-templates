@@ -600,10 +600,7 @@ public final class SoyExpression extends Expression {
       }
       throw new UnsupportedOperationException("Can't convert " + resultType() + " to a double");
     }
-    if (soyRuntimeType.isKnownFloat()) {
-      return forFloat(delegate.invoke(MethodRefs.SOY_VALUE_FLOAT_VALUE).toMaybeConstant());
-    }
-    return forFloat(delegate.invoke(MethodRefs.SOY_VALUE_NUMBER_VALUE).toMaybeConstant());
+    return forFloat(delegate.invoke(MethodRefs.SOY_VALUE_FLOAT_VALUE).toMaybeConstant());
   }
 
   /**
@@ -622,8 +619,7 @@ public final class SoyExpression extends Expression {
       throw new UnsupportedOperationException("Can't convert " + resultType() + " to a Number");
     }
     if (isNonSoyNullish()) {
-      return MethodRefs.SOY_VALUE_JAVA_NUMBER_VALUE.invoke(
-          this.checkedCast(BytecodeUtils.NUMBER_DATA_TYPE));
+      return MethodRefs.SOY_VALUE_JAVA_NUMBER_VALUE.invoke(this);
     }
     return new Expression(BytecodeUtils.NUMBER_TYPE, featuresAfterUnboxing()) {
       @Override
@@ -631,7 +627,7 @@ public final class SoyExpression extends Expression {
         Label end = newLabel();
         delegate.gen(adapter);
         BytecodeUtils.coalesceSoyNullishToJavaNull(adapter, delegate.resultType(), end);
-        adapter.checkCast(BytecodeUtils.NUMBER_DATA_TYPE);
+
         MethodRefs.SOY_VALUE_JAVA_NUMBER_VALUE.invokeUnchecked(adapter);
         adapter.mark(end);
       }
@@ -1019,13 +1015,13 @@ public final class SoyExpression extends Expression {
     switch (runtimeType.getSort()) {
       case Type.LONG:
         if (isBoxed()) {
-          return forInt(MethodRefs.SOY_VALUE_COERCE_TO_LONG.invoke(delegate));
+          return forInt(MethodRefs.SOY_VALUE_LONG_VALUE.invoke(delegate));
         } else {
           return forInt(BytecodeUtils.numericConversion(delegate, Type.LONG_TYPE));
         }
       case Type.INT:
         if (isBoxed()) {
-          return forInt(MethodRefs.SOY_VALUE_COERCE_TO_INT.invoke(delegate));
+          return forInt(MethodRefs.SOY_VALUE_INTEGER_VALUE.invoke(delegate));
         } else {
           return forInt(BytecodeUtils.numericConversion(delegate, Type.INT_TYPE));
         }

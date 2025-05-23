@@ -495,7 +495,7 @@ public final class Sanitizers {
     } else if (value instanceof NumberData) {
       // This will emit references to NaN and Infinity.  Client code should not redefine those
       // to store sensitive data.
-      return " " + value.numberValue() + " ";
+      return " " + value.floatValue() + " ";
     } else if (value instanceof BooleanData) {
       return " " + value.booleanValue() + " ";
     } else if (isSanitizedContentOfKind(value, SanitizedContent.ContentKind.JS)) {
