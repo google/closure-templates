@@ -49,7 +49,6 @@ import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.GbigintData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NullData;
-import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.internal.proto.JavaQualifiedNames;
 import com.google.template.soy.plugin.internal.JavaPluginExecContext;
@@ -344,9 +343,7 @@ class TofuValueFactory extends JavaValueFactory {
       } else if (isExternApi && type == Object.class) {
         return SoyValueUnconverter.unconvert(value);
       } else if (isExternApi && type == Number.class) {
-        return value instanceof NumberData
-            ? ((NumberData) value).javaNumberValue()
-            : value.numberValue();
+        return value instanceof IntegerData ? value.longValue() : value.floatValue();
       } else if (type.isInstance(value)) {
         return value;
       }
@@ -359,9 +356,9 @@ class TofuValueFactory extends JavaValueFactory {
       } else if (primitiveType == long.class) {
         return value.longValue();
       } else if (primitiveType == double.class) {
-        return value.numberValue();
+        return value.floatValue();
       } else if (primitiveType == float.class) {
-        return (float) value.numberValue();
+        return (float) value.floatValue();
       } else if (type == String.class) {
         return value.stringValue();
       } else if (type == BigInteger.class) {

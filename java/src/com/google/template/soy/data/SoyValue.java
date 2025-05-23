@@ -89,12 +89,14 @@ public abstract class SoyValue extends SoyValueProvider {
    * #longValue()} this method is expected to succeed for any {@link
    * com.google.template.soy.data.restricted.NumberData}.
    */
-  public long coerceToLong() {
-    throw new SoyDataException("'" + this + "' cannot be coerced to long");
+  @Deprecated
+  public final long coerceToLong() {
+    return longValue();
   }
 
-  public int coerceToInt() {
-    throw new SoyDataException("'" + this + "' cannot be coerced to int");
+  @Deprecated
+  public final int coerceToInt() {
+    return integerValue();
   }
 
   /**

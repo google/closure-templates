@@ -254,7 +254,7 @@ public final class BasicFunctionsRuntime {
   public static ImmutableList<SoyValueProvider> numberListSort(
       List<? extends SoyValueProvider> list) {
     return ImmutableList.sortedCopyOf(
-        comparingDouble((SoyValueProvider arg) -> arg.resolve().numberValue()), list);
+        comparingDouble((SoyValueProvider arg) -> arg.resolve().floatValue()), list);
   }
 
   @Nonnull
@@ -344,7 +344,7 @@ public final class BasicFunctionsRuntime {
     if (arg0 instanceof IntegerData && arg1 instanceof IntegerData) {
       return IntegerData.forValue(Math.max(arg0.longValue(), arg1.longValue()));
     } else {
-      return FloatData.forValue(Math.max(arg0.numberValue(), arg1.numberValue()));
+      return FloatData.forValue(Math.max(arg0.floatValue(), arg1.floatValue()));
     }
   }
 
@@ -353,7 +353,7 @@ public final class BasicFunctionsRuntime {
     if (arg0 instanceof IntegerData && arg1 instanceof IntegerData) {
       return IntegerData.forValue(Math.min(arg0.longValue(), arg1.longValue()));
     } else {
-      return FloatData.forValue(Math.min(arg0.numberValue(), arg1.numberValue()));
+      return FloatData.forValue(Math.min(arg0.floatValue(), arg1.floatValue()));
     }
   }
 
@@ -365,7 +365,7 @@ public final class BasicFunctionsRuntime {
 
   @Nullable
   public static IntegerData parseInt(String str, SoyValue radixVal) {
-    int radix = SoyValue.isNullish(radixVal) ? 10 : (int) radixVal.numberValue();
+    int radix = SoyValue.isNullish(radixVal) ? 10 : (int) radixVal.floatValue();
     if (radix < 2 || radix > 36) {
       return null;
     }
@@ -389,11 +389,11 @@ public final class BasicFunctionsRuntime {
     if (numDigitsAfterPoint == 0) {
       return IntegerData.forValue(round(value));
     } else if (numDigitsAfterPoint > 0) {
-      double valueDouble = value.numberValue();
+      double valueDouble = value.floatValue();
       double shift = Math.pow(10, numDigitsAfterPoint);
       return FloatData.forValue(Math.round(valueDouble * shift) / shift);
     } else {
-      double valueDouble = value.numberValue();
+      double valueDouble = value.floatValue();
       double shift = Math.pow(10, -numDigitsAfterPoint);
       return IntegerData.forValue((int) (Math.round(valueDouble / shift) * shift));
     }
@@ -404,7 +404,7 @@ public final class BasicFunctionsRuntime {
     if (value instanceof IntegerData) {
       return value.longValue();
     } else {
-      return Math.round(value.numberValue());
+      return Math.round(value.floatValue());
     }
   }
 
@@ -465,7 +465,7 @@ public final class BasicFunctionsRuntime {
 
   public static String strSub(SoyValue str, NumberData start, NumberData end) {
     // TODO(b/74259210) -- Change the first param to String & avoid using stringValue().
-    if (start.numberValue() > end.numberValue()) {
+    if (start.floatValue() > end.floatValue()) {
       return strSub(str, end, start);
     }
     String string = str.stringValue();
@@ -496,7 +496,7 @@ public final class BasicFunctionsRuntime {
     ImmutableList.Builder<StringData> builder = ImmutableList.builder();
     int truncLimit = -1;
     if (limit != null) {
-      truncLimit = (int) limit.numberValue();
+      truncLimit = (int) limit.floatValue();
     }
     if (truncLimit == 0) {
       return builder.build();
@@ -541,7 +541,7 @@ public final class BasicFunctionsRuntime {
   }
 
   private static int clampListIndex(List<?> list, NumberData index) {
-    int truncIndex = (int) index.numberValue();
+    int truncIndex = (int) index.floatValue();
     int size = list.size();
     int clampLowerBound = Math.max(0, truncIndex >= 0 ? truncIndex : size + truncIndex);
     // Clamp upper bound
@@ -549,14 +549,14 @@ public final class BasicFunctionsRuntime {
   }
 
   private static int clampStrIndex(String str, NumberData position) {
-    int clampLowerBound = Math.max(0, (int) position.numberValue());
+    int clampLowerBound = Math.max(0, (int) position.floatValue());
     // Clamp upper bound
     return Math.min(str.length(), clampLowerBound);
   }
 
   /** Returns whether the argument is a finite value (not NaN or Infinity). */
   public static boolean isFinite(SoyValue arg) {
-    return arg instanceof NumberData && Double.isFinite(arg.numberValue());
+    return arg instanceof NumberData && Double.isFinite(arg.floatValue());
   }
 
   private static String joinHelper(List<SoyValue> values, String delimiter) {
