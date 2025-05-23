@@ -34,6 +34,7 @@ import com.google.template.soy.internal.util.TreeStreams;
 import com.google.template.soy.types.SoyType.Kind;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -104,6 +105,9 @@ public final class SoyTypes {
 
   public static final ImmutableSet<Kind> NUMERIC_PRIMITIVES =
       new ImmutableSet.Builder<Kind>().addAll(ARITHMETIC_PRIMITIVES).add(Kind.PROTO_ENUM).build();
+
+  public static final ImmutableSet<Kind> INTEGER_PRIMITIVES =
+      Sets.immutableEnumSet(Kind.INT, Kind.PROTO_ENUM);
 
   private static final ImmutableSet<Kind> PRIMITIVE_KINDS =
       new ImmutableSet.Builder<Kind>()
@@ -242,7 +246,8 @@ public final class SoyTypes {
   }
 
   public static boolean isNumericOrUnknown(SoyType type) {
-    return type.getKind() == Kind.UNKNOWN || NUMBER_TYPE.isAssignableFromStrict(type);
+    return type.getKind() == Kind.UNKNOWN
+        || SoyTypes.isKindOrUnionOfKinds(type, SoyTypes.NUMERIC_PRIMITIVES);
   }
 
   public static Optional<SoyType> computeStricterType(SoyType t0, SoyType t1) {
@@ -308,17 +313,24 @@ public final class SoyTypes {
       return Optional.empty();
     }
 
-    // Note: everything is assignable to unknown and itself.  So the first two conditions take care
-    // of all cases but a mix of float and int.
-    if (left.isAssignableFromStrict(right)) {
+    if (left.equals(right)) {
       return Optional.of(left);
-    } else if (right.isAssignableFromStrict(left)) {
-      return Optional.of(right);
-    } else {
-      // If we get here then we know that we have a mix of float and int.  In this case arithmetic
-      // ops always 'upgrade' to float.  So just return that.
-      return Optional.of(FloatType.getInstance());
     }
+    if (left.getKind() == Kind.UNKNOWN || right.getKind() == Kind.UNKNOWN) {
+      return Optional.of(UnknownType.getInstance());
+    }
+    Set<SoyType> unionMembers = new HashSet<>();
+    if (SoyTypes.containsKind(left, Kind.NUMBER) || SoyTypes.containsKind(right, Kind.NUMBER)) {
+      unionMembers.add(NumberType.getInstance());
+    } else if (SoyTypes.containsKind(left, Kind.FLOAT)
+        || SoyTypes.containsKind(right, Kind.FLOAT)) {
+      unionMembers.add(FloatType.getInstance());
+    }
+    if (SoyTypes.containsKinds(left, INTEGER_PRIMITIVES)
+        && SoyTypes.containsKinds(right, INTEGER_PRIMITIVES)) {
+      unionMembers.add(IntType.getInstance());
+    }
+    return Optional.of(UnionType.of(unionMembers));
   }
 
   /**
