@@ -196,7 +196,7 @@ public final class JbcSrcExternRuntime {
     if (values == null) {
       return null;
     }
-    return values.stream().map(SoyValue::numberValue).collect(toImmutableList());
+    return values.stream().map(SoyValue::floatValue).collect(toImmutableList());
   }
 
   public static final MethodRef LIST_UNBOX_PROTOS = create("listUnboxProtos", List.class);
@@ -262,7 +262,7 @@ public final class JbcSrcExternRuntime {
     if (value.isNullish()) {
       return null;
     } else if (value instanceof NumberData) {
-      return value.numberValue();
+      return value.floatValue();
     }
     // This is probably an error, in which case this call with throw an appropriate exception.
     return value.floatValue();
@@ -276,7 +276,7 @@ public final class JbcSrcExternRuntime {
     if (value.isNullish()) {
       return null;
     } else if (value instanceof NumberData) {
-      return (float) value.numberValue();
+      return (float) value.floatValue();
     }
     // This is probably an error, in which case this call with throw an appropriate exception.
     return (float) value.floatValue();

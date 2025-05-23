@@ -153,7 +153,7 @@ final class RenderVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
     ExprRootNode pluralExpr = node.getExpr();
     double pluralValue;
     try {
-      pluralValue = master.evalForUseByAssistants(pluralExpr, node).numberValue();
+      pluralValue = master.evalForUseByAssistants(pluralExpr, node).floatValue();
     } catch (SoyDataException e) {
       throw RenderException.createWithSource(
           String.format(
@@ -295,7 +295,7 @@ final class RenderVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
       double correctPluralValue;
       ExprRootNode pluralExpr = repPluralNode.getExpr();
       try {
-        correctPluralValue = master.evalForUseByAssistants(pluralExpr, repPluralNode).numberValue();
+        correctPluralValue = master.evalForUseByAssistants(pluralExpr, repPluralNode).floatValue();
       } catch (SoyDataException e) {
         throw RenderException.createWithSource(
             String.format(
