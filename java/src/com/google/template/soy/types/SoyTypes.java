@@ -17,6 +17,7 @@
 package com.google.template.soy.types;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
 
@@ -251,9 +252,9 @@ public final class SoyTypes {
   }
 
   public static Optional<SoyType> computeStricterType(SoyType t0, SoyType t1) {
-    if (t0.isAssignableFromLoose(t1)) {
+    if (t0.isAssignableFromStrictWithoutCoercions(t1)) {
       return Optional.of(t1);
-    } else if (t1.isAssignableFromStrict(t0)) {
+    } else if (t1.isAssignableFromStrictWithoutCoercions(t0)) {
       return Optional.of(t0);
     } else {
       return Optional.empty();
@@ -269,9 +270,9 @@ public final class SoyTypes {
    * @return A type that is assignable from both t0 and t1.
    */
   public static SoyType computeLowestCommonType(TypeInterner typeRegistry, SoyType t0, SoyType t1) {
-    if (t0.isAssignableFromStrict(t1)) {
+    if (t0.isAssignableFromStrictWithoutCoercions(t1)) {
       return t0;
-    } else if (t1.isAssignableFromStrict(t0)) {
+    } else if (t1.isAssignableFromStrictWithoutCoercions(t0)) {
       return t1;
     } else {
       // Create a union.  This preserves the most information.
@@ -319,6 +320,8 @@ public final class SoyTypes {
     if (left.getKind() == Kind.UNKNOWN || right.getKind() == Kind.UNKNOWN) {
       return Optional.of(UnknownType.getInstance());
     }
+
+    // Return one of: number, float, number|int, float|int.
     Set<SoyType> unionMembers = new HashSet<>();
     if (SoyTypes.containsKind(left, Kind.NUMBER) || SoyTypes.containsKind(right, Kind.NUMBER)) {
       unionMembers.add(NumberType.getInstance());
@@ -330,6 +333,7 @@ public final class SoyTypes {
         && SoyTypes.containsKinds(right, INTEGER_PRIMITIVES)) {
       unionMembers.add(IntType.getInstance());
     }
+    checkState(!unionMembers.isEmpty()); // should be impossible due to isNumericOrUnknown.
     return Optional.of(UnionType.of(unionMembers));
   }
 

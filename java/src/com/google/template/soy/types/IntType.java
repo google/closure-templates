@@ -18,9 +18,7 @@ package com.google.template.soy.types;
 
 import com.google.template.soy.soytree.SoyTypeP;
 
-/**
- * Soy integer type.
- */
+/** Soy integer type. */
 public final class IntType extends PrimitiveType {
 
   private static final IntType INSTANCE = new IntType();
@@ -34,11 +32,13 @@ public final class IntType extends PrimitiveType {
   }
 
   @Override
-  boolean doIsAssignableFromNonUnionType(SoyType srcType) {
+  boolean doIsAssignableFromNonUnionType(SoyType srcType, AssignabilityPolicy policy) {
     Kind kind = srcType.getKind();
     // enums are implicitly assignable to ints since that is the runtime representation in all
     // backends
-    return kind == Kind.INT || kind == Kind.PROTO_ENUM || kind == Kind.NUMBER;
+    return kind == Kind.INT
+        || kind == Kind.PROTO_ENUM
+        || (policy.isNumericCoercionsAllowed() && kind == Kind.NUMBER);
   }
 
   @Override
@@ -50,6 +50,7 @@ public final class IntType extends PrimitiveType {
   void doToProto(SoyTypeP.Builder builder) {
     builder.setPrimitive(SoyTypeP.PrimitiveTypeP.INT);
   }
+
   /** Return the single instance of this type. */
   public static IntType getInstance() {
     return INSTANCE;

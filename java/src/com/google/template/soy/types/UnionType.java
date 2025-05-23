@@ -105,11 +105,11 @@ public final class UnionType extends SoyType {
   }
 
   @Override
-  boolean doIsAssignableFromNonUnionType(SoyType srcType, UnknownAssignmentPolicy unknownPolicy) {
+  boolean doIsAssignableFromNonUnionType(SoyType srcType, AssignabilityPolicy policy) {
     // A type can be assigned to a union iff it is assignable to at least one
     // member of the union.
     for (SoyType memberType : members) {
-      if (memberType.isAssignableFromInternal(srcType, unknownPolicy)) {
+      if (memberType.isAssignableFromInternal(srcType, policy)) {
         return true;
       }
     }

@@ -16,14 +16,10 @@
 
 package com.google.template.soy.types;
 
-import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.soytree.SoyTypeP;
 
 /** Soy integer type. */
 public final class NumberType extends PrimitiveType {
-
-  private static final ImmutableSet<Kind> ASSIGNABLE_KINDS =
-      ImmutableSet.of(Kind.NUMBER, Kind.INT, Kind.FLOAT, Kind.PROTO_ENUM);
 
   private static final NumberType INSTANCE = new NumberType();
 
@@ -41,8 +37,11 @@ public final class NumberType extends PrimitiveType {
   }
 
   @Override
-  boolean doIsAssignableFromNonUnionType(SoyType srcType) {
-    return ASSIGNABLE_KINDS.contains(srcType.getKind());
+  boolean doIsAssignableFromNonUnionType(SoyType srcType, AssignabilityPolicy policy) {
+    Kind kind = srcType.getKind();
+    return kind == Kind.NUMBER
+        || kind == Kind.FLOAT
+        || (policy.isNumericCoercionsAllowed() && (kind == Kind.INT || kind == Kind.PROTO_ENUM));
   }
 
   @Override

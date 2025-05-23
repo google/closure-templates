@@ -49,7 +49,7 @@ public final class SetType extends AbstractIterableType {
   }
 
   @Override
-  boolean doIsAssignableFromNonUnionType(SoyType srcType, UnknownAssignmentPolicy policy) {
+  boolean doIsAssignableFromNonUnionType(SoyType srcType, AssignabilityPolicy policy) {
     return srcType.getKind() == Kind.SET && super.doIsAssignableFromNonUnionType(srcType, policy);
   }
 

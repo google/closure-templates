@@ -2093,8 +2093,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
         for (int i = 0; i < params.size(); i++) {
           // The available runtime coercions are all between assignable types. So there's no need
           // to re-match externs on the coerced types.
-          SoyType unused =
-              maybeCoerceType(params.get(i), ref.getSignature().getParameters().get(i).getType());
+          maybeCoerceType(params.get(i), ref.getSignature().getParameters().get(i).getType());
         }
         node.setAllowedParamTypes(
             ref.getSignature().getParameters().stream().map(Parameter::getType).collect(toList()));
@@ -2278,7 +2277,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
       }
       for (int i = 0; i < node.numParams(); ++i) {
         SoyType paramType = matchedSignature.parameterTypes().get(i);
-        SoyType unused = maybeCoerceType(node.getParam(i), paramType);
+        maybeCoerceType(node.getParam(i), paramType);
         checkArgType(node.getParam(i), paramType, node);
       }
       node.setAllowedParamTypes(matchedSignature.parameterTypes());

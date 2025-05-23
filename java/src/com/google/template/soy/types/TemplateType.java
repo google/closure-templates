@@ -415,8 +415,7 @@ public abstract class TemplateType extends SoyType {
   }
 
   @Override
-  final boolean doIsAssignableFromNonUnionType(
-      SoyType srcType, UnknownAssignmentPolicy unknownPolicy) {
+  final boolean doIsAssignableFromNonUnionType(SoyType srcType, AssignabilityPolicy policy) {
     if (srcType.getKind() != SoyType.Kind.TEMPLATE) {
       return false;
     }
@@ -453,7 +452,7 @@ public abstract class TemplateType extends SoyType {
         // of a template type is only possible when the constraints of the from-type are narrower.
         if (!srcParam
             .getCheckedType()
-            .isAssignableFromInternal(thisParam.getCheckedType(), unknownPolicy)) {
+            .isAssignableFromInternal(thisParam.getCheckedType(), policy)) {
           return false;
         }
       }

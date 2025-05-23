@@ -20,7 +20,7 @@ import static com.google.template.soy.types.SoyTypes.containsKind;
 import static com.google.template.soy.types.SoyTypes.containsKinds;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.errorprone.annotations.CheckReturnValue;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
@@ -57,7 +57,7 @@ final class RuntimeTypeCoercion {
    * @param toType The required type.
    * @return The new coerced type
    */
-  @CheckReturnValue
+  @CanIgnoreReturnValue
   static SoyType maybeCoerceType(ExprNode node, SoyType toType) {
     SoyType fromType = node.getType();
     if (SoyTypes.expandUnions(toType).contains(fromType)) {

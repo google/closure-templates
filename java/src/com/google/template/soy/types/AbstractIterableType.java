@@ -35,7 +35,7 @@ public abstract class AbstractIterableType extends SoyType {
   public abstract boolean isEmpty();
 
   @Override
-  boolean doIsAssignableFromNonUnionType(SoyType srcType, UnknownAssignmentPolicy policy) {
+  boolean doIsAssignableFromNonUnionType(SoyType srcType, AssignabilityPolicy policy) {
     // Handle the special empty types.
     if (this == srcType) {
       return true;

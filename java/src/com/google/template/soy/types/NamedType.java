@@ -68,7 +68,7 @@ public abstract class NamedType extends SoyType {
   }
 
   @Override
-  boolean doIsAssignableFromNonUnionType(SoyType srcType, UnknownAssignmentPolicy policy) {
+  boolean doIsAssignableFromNonUnionType(SoyType srcType, AssignabilityPolicy policy) {
     return getEffectiveType().isAssignableFromInternal(srcType, policy);
   }
 }

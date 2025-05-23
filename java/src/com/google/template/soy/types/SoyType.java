@@ -172,9 +172,26 @@ public abstract class SoyType implements ErrorArg {
     }
   }
 
-  enum UnknownAssignmentPolicy {
-    ALLOWED,
-    DISALLOWED
+  enum AssignabilityPolicy {
+    LOOSE(true, true),
+    STRICT(false, true),
+    STRICT_WITHOUT_COERCIONS(false, false);
+
+    private final boolean unknownAssignmentAllowed;
+    private final boolean numericCoercionsAllowed;
+
+    AssignabilityPolicy(boolean unknownAssignmentAllowed, boolean numericCoercionsAllowed) {
+      this.unknownAssignmentAllowed = unknownAssignmentAllowed;
+      this.numericCoercionsAllowed = numericCoercionsAllowed;
+    }
+
+    public boolean isUnknownAssignmentAllowed() {
+      return unknownAssignmentAllowed;
+    }
+
+    public boolean isNumericCoercionsAllowed() {
+      return numericCoercionsAllowed;
+    }
   }
 
   // memoize the proto version.  SoyTypes are immutable so this is safe/correct and types are likely
@@ -201,7 +218,7 @@ public abstract class SoyType implements ErrorArg {
    * @return True if the assignment is valid.
    */
   public final boolean isAssignableFromLoose(SoyType srcType) {
-    return isAssignableFromInternal(srcType, UnknownAssignmentPolicy.ALLOWED);
+    return isAssignableFromInternal(srcType, AssignabilityPolicy.LOOSE);
   }
 
   /**
@@ -216,17 +233,22 @@ public abstract class SoyType implements ErrorArg {
    * @return True if the assignment is valid.
    */
   public final boolean isAssignableFromStrict(SoyType srcType) {
-    return isAssignableFromInternal(srcType, UnknownAssignmentPolicy.DISALLOWED);
+    return isAssignableFromInternal(srcType, AssignabilityPolicy.STRICT);
+  }
+
+  /** Needed as long as int and number exist together. TODO(b/395679605): Remove. */
+  public final boolean isAssignableFromStrictWithoutCoercions(SoyType srcType) {
+    return isAssignableFromInternal(srcType, AssignabilityPolicy.STRICT_WITHOUT_COERCIONS);
   }
 
   /** Internal helper method for assignment analysis. This should only be used by subclasses. */
-  final boolean isAssignableFromInternal(SoyType soyType, UnknownAssignmentPolicy unknownPolicy) {
+  final boolean isAssignableFromInternal(SoyType soyType, AssignabilityPolicy policy) {
     soyType = soyType.getEffectiveType();
-    if (unknownPolicy == UnknownAssignmentPolicy.ALLOWED && soyType == UnknownType.getInstance()) {
+    if (policy.isUnknownAssignmentAllowed() && soyType == UnknownType.getInstance()) {
       return true;
     }
     if (soyType.getKind() != Kind.UNION) {
-      return doIsAssignableFromNonUnionType(soyType, unknownPolicy);
+      return doIsAssignableFromNonUnionType(soyType, policy);
     }
     // Handle unions here with template methods rather than forcing all subclasses to handle. A type
     // is assignable from a union if it is assignable from _all_ members.
@@ -245,7 +267,7 @@ public abstract class SoyType implements ErrorArg {
         stack.addAll(((UnionType) type).getMembers());
         continue;
       }
-      if (!doIsAssignableFromNonUnionType(type, unknownPolicy)) {
+      if (!doIsAssignableFromNonUnionType(type, policy)) {
         return false;
       }
     }
@@ -256,11 +278,11 @@ public abstract class SoyType implements ErrorArg {
    * Subclass integration point to implement assignablility.
    *
    * @param type The target type, guaranteed to <b>not be a union type</b>.
-   * @param unknownPolicy How assignments from the unknown type should be treated. This should be
-   *     passed along to {@link #isAssignableFromInternal} calls made on member types.
+   * @param policy How assignments from the unknown type should be treated. This should be passed
+   *     along to {@link #isAssignableFromInternal} calls made on member types.
    */
   @ForOverride
-  boolean doIsAssignableFromNonUnionType(SoyType type, UnknownAssignmentPolicy unknownPolicy) {
+  boolean doIsAssignableFromNonUnionType(SoyType type, AssignabilityPolicy policy) {
     return doIsAssignableFromNonUnionType(type);
   }
 

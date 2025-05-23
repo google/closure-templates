@@ -71,8 +71,7 @@ public abstract class FunctionType extends SoyType {
   }
 
   @Override
-  final boolean doIsAssignableFromNonUnionType(
-      SoyType srcType, UnknownAssignmentPolicy unknownPolicy) {
+  final boolean doIsAssignableFromNonUnionType(SoyType srcType, AssignabilityPolicy policy) {
     if (srcType.getKind() != Kind.FUNCTION) {
       return false;
     }
@@ -86,7 +85,7 @@ public abstract class FunctionType extends SoyType {
     for (int i = 0; i < paramsInCommon; i++) {
       Parameter thisParam = getParameters().get(i);
       Parameter srcParam = srcFunction.getParameters().get(i);
-      if (!srcParam.getType().isAssignableFromInternal(thisParam.getType(), unknownPolicy)) {
+      if (!srcParam.getType().isAssignableFromInternal(thisParam.getType(), policy)) {
         return false;
       }
     }
