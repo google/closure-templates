@@ -82,7 +82,7 @@ public abstract class RecordType extends SoyType {
   }
 
   @Override
-  boolean doIsAssignableFromNonUnionType(SoyType srcType, AssignabilityPolicy policy) {
+  boolean doIsAssignableFromNonUnionType(SoyType srcType, UnknownAssignmentPolicy policy) {
     if (srcType.getKind() == Kind.RECORD) {
       RecordType srcRecord = (RecordType) srcType;
       // The source record must have at least all of the members in the dest

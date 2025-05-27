@@ -18,7 +18,6 @@ package com.google.template.soy.passes;
 
 import static com.google.common.base.Strings.isNullOrEmpty;
 import static com.google.common.collect.ImmutableList.toImmutableList;
-import static com.google.template.soy.passes.RuntimeTypeCoercion.maybeCoerceType;
 
 import com.google.common.base.CaseFormat;
 import com.google.common.collect.HashMultimap;
@@ -30,7 +29,6 @@ import com.google.common.collect.Sets;
 import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
-import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.base.internal.TemplateContentKind;
 import com.google.template.soy.error.ErrorReporter;
@@ -39,10 +37,7 @@ import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.error.SoyErrors;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.GlobalNode;
-import com.google.template.soy.exprtree.MethodCallNode;
-import com.google.template.soy.exprtree.RecordLiteralNode;
 import com.google.template.soy.passes.IndirectParamsCalculator.IndirectParamsInfo;
-import com.google.template.soy.shared.internal.BuiltinMethod;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallDelegateNode;
 import com.google.template.soy.soytree.CallNode;
@@ -62,7 +57,6 @@ import com.google.template.soy.types.SanitizedType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.TemplateType;
-import com.google.template.soy.types.TemplateType.Parameter;
 import com.google.template.soy.types.UnionType;
 import java.util.Collection;
 import java.util.HashMap;
@@ -163,34 +157,9 @@ final class CheckTemplateCallsPass implements CompilerFileSetPass {
           helper.checkCall(file, template, callNode);
         }
       }
-
-      // Coerce element composition params created in RewriteElementCompositionFunctionsPass.
-      SoyTreeUtils.allNodesOfType(file, MethodCallNode.class)
-          .filter(
-              m ->
-                  m.isMethodResolved()
-                      && m.getSoyMethod() == BuiltinMethod.BIND
-                      && m.getParams().size() == 1
-                      && m.getBaseExprChild().getType() instanceof TemplateType)
-          .forEach(this::coerceBindArgs);
     }
 
     return Result.CONTINUE;
-  }
-
-  private void coerceBindArgs(MethodCallNode node) {
-    TemplateType type = (TemplateType) node.getBaseExprChild().getType();
-    ExprNode arg = node.getParams().get(0);
-    if (!(arg instanceof RecordLiteralNode)) {
-      return;
-    }
-    RecordLiteralNode record = (RecordLiteralNode) arg;
-    for (Identifier key : record.getKeys()) {
-      Parameter paramType = type.getParameter(key.identifier());
-      if (paramType != null) {
-        maybeCoerceType(record.getValue(key.identifier()), paramType.getType());
-      }
-    }
   }
 
   private static final ImmutableSet<String> DEFAULT_DELTEMPLATE_PASSLIST =
@@ -344,7 +313,8 @@ final class CheckTemplateCallsPass implements CompilerFileSetPass {
           CallParamValueNode node = (CallParamValueNode) callerParam;
           argType = node.getExpr().getRoot().getType();
           for (SoyType declaredParamType : declaredParamTypes) {
-            SoyType newType = maybeCoerceType(node.getExpr().getRoot(), declaredParamType);
+            SoyType newType =
+                RuntimeTypeCoercion.maybeCoerceType(node.getExpr().getRoot(), declaredParamType);
             if (!newType.equals(argType)) {
               argType = newType;
               break;
