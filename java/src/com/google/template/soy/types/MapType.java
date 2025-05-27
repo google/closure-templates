@@ -97,7 +97,7 @@ public final class MapType extends AbstractMapType {
   }
 
   @Override
-  boolean doIsAssignableFromNonUnionType(SoyType srcType, AssignabilityPolicy policy) {
+  boolean doIsAssignableFromNonUnionType(SoyType srcType, UnknownAssignmentPolicy policy) {
     if (srcType.getKind() == Kind.MAP) {
       MapType srcMapType = (MapType) srcType;
       if (srcMapType == EMPTY) {

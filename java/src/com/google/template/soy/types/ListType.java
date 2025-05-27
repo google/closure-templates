@@ -49,7 +49,7 @@ public final class ListType extends AbstractIterableType {
   }
 
   @Override
-  boolean doIsAssignableFromNonUnionType(SoyType srcType, AssignabilityPolicy policy) {
+  boolean doIsAssignableFromNonUnionType(SoyType srcType, UnknownAssignmentPolicy policy) {
     return srcType.getKind() == Kind.LIST && super.doIsAssignableFromNonUnionType(srcType, policy);
   }
 

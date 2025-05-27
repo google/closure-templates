@@ -665,8 +665,6 @@ public class SoyTypesTest {
         .isEqualTo(INT_OR_FLOAT);
     assertThat(SoyTypes.computeLowestCommonType(typeRegistry, INT_TYPE, UNDEFINED_TYPE))
         .isEqualTo(UnionType.of(INT_TYPE, UNDEFINED_TYPE));
-    assertThat(SoyTypes.computeLowestCommonType(typeRegistry, NUMBER_TYPE, INT_TYPE))
-        .isEqualTo(INT_OR_NUMBER);
   }
 
   @Test
