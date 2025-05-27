@@ -18,7 +18,7 @@ package com.google.template.soy.data.restricted;
 
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.base.internal.BaseUtils;
-import com.google.template.soy.base.internal.NumericCoercions;
+import com.google.template.soy.data.SoyValue;
 import javax.annotation.Nonnull;
 
 /** Float data. */
@@ -49,6 +49,11 @@ public final class FloatData extends NumberData {
   }
 
   @Override
+  public double floatValue() {
+    return value;
+  }
+
+  @Override
   @Nonnull
   public String toString() {
     return BaseUtils.formatDouble(value);
@@ -70,23 +75,18 @@ public final class FloatData extends NumberData {
   }
 
   @Override
-  public double floatValue() {
+  public double toFloat() {
     return value;
   }
 
   @Override
-  public boolean isSafeJsInteger() {
-    return value % 1 == 0 && NumericCoercions.isInRange((long) value);
+  public Number javaNumberValue() {
+    return value;
   }
 
   @Override
-  public long longValue() {
-    return NumericCoercions.safeLong(value);
-  }
-
-  @Override
-  public int integerValue() {
-    return NumericCoercions.safeInt(value);
+  public SoyValue checkNullishFloat() {
+    return this;
   }
 
   @Override

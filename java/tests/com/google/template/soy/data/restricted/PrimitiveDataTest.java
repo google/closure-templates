@@ -113,10 +113,10 @@ public class PrimitiveDataTest {
     FloatData fd0 = FloatData.forValue(0.0);
     FloatData fd1 = FloatData.forValue(2.0);
 
-    assertEquals(0.0, id0.floatValue(), 0.0);
-    assertEquals(2.0, id1.floatValue(), 0.0);
-    assertEquals(0.0, fd0.floatValue(), 0.0);
-    assertEquals(2.0, fd1.floatValue(), 0.0);
+    assertEquals(0.0, id0.toFloat(), 0.0);
+    assertEquals(2.0, id1.toFloat(), 0.0);
+    assertEquals(0.0, fd0.toFloat(), 0.0);
+    assertEquals(2.0, fd1.toFloat(), 0.0);
 
     assertTrue(id0.equals(fd0));
     assertTrue(fd0.equals(id0));

@@ -238,7 +238,8 @@ public class SoyJavaSourceFunctionTester {
     } else if (value instanceof Double) {
       return SoyExpression.forFloat(BytecodeUtils.constant(((Double) value).doubleValue()));
     } else if (value instanceof FloatData) {
-      return SoyExpression.forFloat(BytecodeUtils.constant(((FloatData) value).floatValue())).box();
+      return SoyExpression.forFloat(BytecodeUtils.constant(((FloatData) value).numberValue()))
+          .box();
     } else if (value instanceof String) {
       return SoyExpression.forString(BytecodeUtils.constant(((String) value)));
     } else if (value instanceof StringData) {

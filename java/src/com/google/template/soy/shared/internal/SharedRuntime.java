@@ -72,7 +72,7 @@ public final class SharedRuntime {
       return operand0.booleanValue() == operand1.booleanValue();
     }
     if (operand0 instanceof NumberData && operand1 instanceof NumberData) {
-      return operand0.floatValue() == operand1.floatValue();
+      return operand0.numberValue() == operand1.numberValue();
     }
     if (operand0 instanceof StringData && operand1 instanceof StringData) {
       return operand0.stringValue().equals(operand1.stringValue());
@@ -200,7 +200,7 @@ public final class SharedRuntime {
     if (value instanceof UndefinedData) {
       throw new SoyDataException("'undefined' cannot be coerced to float");
     }
-    return value.floatValue();
+    return value.numberValue();
   }
 
   private static long toLongForNumericOp(SoyValue value) {
@@ -220,7 +220,7 @@ public final class SharedRuntime {
     if (value.isNullish()) {
       return 0;
     }
-    return value.longValue();
+    return value.coerceToLong();
   }
 
   private static long toIntForBitwiseOp(SoyValue value) {
@@ -263,7 +263,7 @@ public final class SharedRuntime {
     if (other instanceof NumberData) {
       try {
         // Parse the string as a number.
-        return Double.parseDouble(string) == other.floatValue();
+        return Double.parseDouble(string) == other.numberValue();
       } catch (NumberFormatException nfe) {
         // Didn't parse as a number.
         return false;

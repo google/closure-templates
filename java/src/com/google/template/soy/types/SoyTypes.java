@@ -17,7 +17,6 @@
 package com.google.template.soy.types;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
 
@@ -35,7 +34,6 @@ import com.google.template.soy.internal.util.TreeStreams;
 import com.google.template.soy.types.SoyType.Kind;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -106,9 +104,6 @@ public final class SoyTypes {
 
   public static final ImmutableSet<Kind> NUMERIC_PRIMITIVES =
       new ImmutableSet.Builder<Kind>().addAll(ARITHMETIC_PRIMITIVES).add(Kind.PROTO_ENUM).build();
-
-  public static final ImmutableSet<Kind> INTEGER_PRIMITIVES =
-      Sets.immutableEnumSet(Kind.INT, Kind.PROTO_ENUM);
 
   private static final ImmutableSet<Kind> PRIMITIVE_KINDS =
       new ImmutableSet.Builder<Kind>()
@@ -247,14 +242,13 @@ public final class SoyTypes {
   }
 
   public static boolean isNumericOrUnknown(SoyType type) {
-    return type.getKind() == Kind.UNKNOWN
-        || SoyTypes.isKindOrUnionOfKinds(type, SoyTypes.NUMERIC_PRIMITIVES);
+    return type.getKind() == Kind.UNKNOWN || NUMBER_TYPE.isAssignableFromStrict(type);
   }
 
   public static Optional<SoyType> computeStricterType(SoyType t0, SoyType t1) {
-    if (t0.isAssignableFromStrictWithoutCoercions(t1)) {
+    if (t0.isAssignableFromLoose(t1)) {
       return Optional.of(t1);
-    } else if (t1.isAssignableFromStrictWithoutCoercions(t0)) {
+    } else if (t1.isAssignableFromStrict(t0)) {
       return Optional.of(t0);
     } else {
       return Optional.empty();
@@ -270,9 +264,9 @@ public final class SoyTypes {
    * @return A type that is assignable from both t0 and t1.
    */
   public static SoyType computeLowestCommonType(TypeInterner typeRegistry, SoyType t0, SoyType t1) {
-    if (t0.isAssignableFromStrictWithoutCoercions(t1)) {
+    if (t0.isAssignableFromStrict(t1)) {
       return t0;
-    } else if (t1.isAssignableFromStrictWithoutCoercions(t0)) {
+    } else if (t1.isAssignableFromStrict(t0)) {
       return t1;
     } else {
       // Create a union.  This preserves the most information.
@@ -314,27 +308,17 @@ public final class SoyTypes {
       return Optional.empty();
     }
 
-    if (left.equals(right)) {
+    // Note: everything is assignable to unknown and itself.  So the first two conditions take care
+    // of all cases but a mix of float and int.
+    if (left.isAssignableFromStrict(right)) {
       return Optional.of(left);
+    } else if (right.isAssignableFromStrict(left)) {
+      return Optional.of(right);
+    } else {
+      // If we get here then we know that we have a mix of float and int.  In this case arithmetic
+      // ops always 'upgrade' to float.  So just return that.
+      return Optional.of(FloatType.getInstance());
     }
-    if (left.getKind() == Kind.UNKNOWN || right.getKind() == Kind.UNKNOWN) {
-      return Optional.of(UnknownType.getInstance());
-    }
-
-    // Return one of: number, float, number|int, float|int.
-    Set<SoyType> unionMembers = new HashSet<>();
-    if (SoyTypes.containsKind(left, Kind.NUMBER) || SoyTypes.containsKind(right, Kind.NUMBER)) {
-      unionMembers.add(NumberType.getInstance());
-    } else if (SoyTypes.containsKind(left, Kind.FLOAT)
-        || SoyTypes.containsKind(right, Kind.FLOAT)) {
-      unionMembers.add(FloatType.getInstance());
-    }
-    if (SoyTypes.containsKinds(left, INTEGER_PRIMITIVES)
-        && SoyTypes.containsKinds(right, INTEGER_PRIMITIVES)) {
-      unionMembers.add(IntType.getInstance());
-    }
-    checkState(!unionMembers.isEmpty()); // should be impossible due to isNumericOrUnknown.
-    return Optional.of(UnionType.of(unionMembers));
   }
 
   /**

@@ -78,7 +78,7 @@ public abstract class IndexedType extends SoyType {
   }
 
   @Override
-  boolean doIsAssignableFromNonUnionType(SoyType srcType, AssignabilityPolicy policy) {
+  boolean doIsAssignableFromNonUnionType(SoyType srcType, UnknownAssignmentPolicy policy) {
     return getEffectiveType().isAssignableFromInternal(srcType, policy);
   }
 }

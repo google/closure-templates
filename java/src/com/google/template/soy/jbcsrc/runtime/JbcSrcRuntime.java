@@ -482,7 +482,7 @@ public final class JbcSrcRuntime {
           SoyValueProvider pluralPlaceholder = getPlaceholder(pluralPart.getPluralVarName());
           var caseSelectionResult = pluralPlaceholder.status();
           if (caseSelectionResult.isDone()) {
-            double pluralValue = pluralPlaceholder.resolve().floatValue();
+            double pluralValue = pluralPlaceholder.resolve().numberValue();
             msgParts = pluralPart.lookupCase(pluralValue, locale);
           } else {
             return caseSelectionResult;
@@ -580,23 +580,13 @@ public final class JbcSrcRuntime {
     if (other instanceof NumberData) {
       try {
         // Parse the string as a number.
-        return Double.parseDouble(stringValue) == other.floatValue();
+        return Double.parseDouble(stringValue) == other.numberValue();
       } catch (NumberFormatException nfe) {
         // Didn't parse as a number.
         return false;
       }
     }
     return false;
-  }
-
-  @Nonnull
-  @Keep
-  public static Number javaNumberValue(SoyValue value) {
-    if (value instanceof IntegerData) {
-      return value.longValue();
-    } else {
-      return value.floatValue();
-    }
   }
 
   @Nonnull
@@ -1057,7 +1047,7 @@ public final class JbcSrcRuntime {
 
   public static int asSwitchableValue(SoyValue value, int unusedKey) {
     if (value instanceof NumberData) {
-      return asSwitchableValue(value.floatValue(), unusedKey);
+      return asSwitchableValue(value.numberValue(), unusedKey);
     }
     return unusedKey;
   }
@@ -1109,10 +1099,10 @@ public final class JbcSrcRuntime {
 
   public static long convertSoyValueToProtoLong(SoyValue value) {
     if (value instanceof GbigintData) {
-      return value.longValue();
+      return ((GbigintData) value).longValue();
     }
     if (value instanceof NumberData) {
-      return value.longValue();
+      return ((NumberData) value).coerceToLong();
     }
 
     return Long.parseLong(value.stringValue());
@@ -1123,7 +1113,7 @@ public final class JbcSrcRuntime {
       return ((GbigintData) value).unsignedLongValue();
     }
     if (value instanceof NumberData) {
-      return value.longValue();
+      return ((NumberData) value).coerceToLong();
     }
 
     return UnsignedLong.valueOf(value.stringValue()).longValue();
@@ -1132,13 +1122,13 @@ public final class JbcSrcRuntime {
   @Nonnull
   @Keep
   public static SoyValue intToNumber(SoyValue value) {
-    return value instanceof NumberData ? FloatData.forValue(value.floatValue()) : value;
+    return value instanceof NumberData ? FloatData.forValue(value.numberValue()) : value;
   }
 
   @Nonnull
   @Keep
   public static SoyValue numberToInt(SoyValue value) {
-    return value instanceof NumberData ? IntegerData.forValue(value.longValue()) : value;
+    return value instanceof NumberData ? IntegerData.forValue(value.coerceToLong()) : value;
   }
 
   private JbcSrcRuntime() {}

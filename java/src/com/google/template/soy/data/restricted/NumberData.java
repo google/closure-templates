@@ -17,41 +17,60 @@
 package com.google.template.soy.data.restricted;
 
 import com.google.common.primitives.Longs;
+import com.google.template.soy.base.internal.NumericCoercions;
 import com.google.template.soy.data.SoyValue;
+import javax.annotation.Nonnull;
 
 /** Abstract superclass for number data (integers and floats). */
 public abstract class NumberData extends PrimitiveData {
 
-  @Override
-  public final SoyValue checkNullishInt() {
-    return this;
-  }
-
-  @Override
-  public final SoyValue checkNullishFloat() {
-    return this;
-  }
+  /**
+   * Gets the float value of this number data object. If this object is actually an integer, its
+   * value will be converted to a float before being returned.
+   *
+   * @return The float value of this number data object.
+   */
+  public abstract double toFloat();
 
   /**
    * Returns true if this value is a whole integer in the range representable in JavaScript without
    * a loss of precision.
    */
-  public abstract boolean isSafeJsInteger();
-
-  @Override
-  @Deprecated
-  public final double numberValue() {
-    return floatValue();
+  public boolean isSafeJsInteger() {
+    double val = numberValue();
+    return val % 1 == 0 && NumericCoercions.isInRange((long) val);
   }
 
   @Override
+  public long coerceToLong() {
+    return javaNumberValue().longValue();
+  }
+
+  @Override
+  public int coerceToInt() {
+    long l = coerceToLong();
+    if (l > Integer.MAX_VALUE || l < Integer.MIN_VALUE) {
+      throw new IllegalArgumentException();
+    }
+    return (int) l;
+  }
+
+  @Override
+  public double numberValue() {
+    return toFloat();
+  }
+
+  @Nonnull
+  public abstract Number javaNumberValue();
+
+  @Override
   public boolean equals(Object other) {
-    return other instanceof NumberData && ((NumberData) other).floatValue() == this.floatValue();
+    return other instanceof NumberData && ((NumberData) other).toFloat() == this.toFloat();
   }
 
   @Override
   public int hashCode() {
-    return Longs.hashCode(Double.doubleToLongBits(floatValue()));
+    return Longs.hashCode(Double.doubleToLongBits(toFloat()));
   }
 
   @Override

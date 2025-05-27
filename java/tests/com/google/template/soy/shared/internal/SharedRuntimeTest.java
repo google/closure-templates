@@ -57,7 +57,7 @@ public class SharedRuntimeTest {
     assertThat(plus(IntegerData.forValue(1), IntegerData.forValue(2)).integerValue()).isEqualTo(3);
 
     // N.B. coerced to float
-    assertThat(plus(FloatData.forValue(1), IntegerData.forValue(2)).floatValue()).isEqualTo(3.0);
+    assertThat(plus(FloatData.forValue(1), IntegerData.forValue(2)).numberValue()).isEqualTo(3.0);
 
     // coerced to string
     assertThat(plus(StringData.forValue("3"), IntegerData.forValue(2)).stringValue())

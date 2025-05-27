@@ -322,7 +322,7 @@ public abstract class ProtoFieldInterpreter {
 
         @Override
         public Object protoFromSoy(SoyValue field) {
-          return Ints.saturatedCast(field.longValue());
+          return Ints.saturatedCast(field.coerceToLong());
         }
       };
 
@@ -336,7 +336,7 @@ public abstract class ProtoFieldInterpreter {
 
         @Override
         public Object protoFromSoy(SoyValue field) {
-          return UnsignedInts.saturatedCast(field.longValue());
+          return UnsignedInts.saturatedCast(field.coerceToLong());
         }
       };
 
@@ -351,9 +351,9 @@ public abstract class ProtoFieldInterpreter {
         @Override
         public Object protoFromSoy(SoyValue field) {
           if (field instanceof GbigintData) {
-            return field.longValue();
+            return ((GbigintData) field).longValue();
           }
-          return field.longValue();
+          return field.coerceToLong();
         }
       };
 
@@ -368,7 +368,7 @@ public abstract class ProtoFieldInterpreter {
         @Override
         public Object protoFromSoy(SoyValue field) {
           if (field instanceof GbigintData) {
-            return field.longValue();
+            return ((GbigintData) field).longValue();
           }
           return Long.parseLong(field.stringValue());
         }
@@ -446,7 +446,7 @@ public abstract class ProtoFieldInterpreter {
 
         @Override
         public Object protoFromSoy(SoyValue field) {
-          return (float) field.floatValue();
+          return (float) field.numberValue();
         }
       };
 
@@ -460,7 +460,7 @@ public abstract class ProtoFieldInterpreter {
 
         @Override
         public Object protoFromSoy(SoyValue field) {
-          return field.floatValue();
+          return field.numberValue();
         }
       };
 
@@ -612,7 +612,7 @@ public abstract class ProtoFieldInterpreter {
 
         @Override
         public Object protoFromSoy(SoyValue field) {
-          return field.getProto();
+          return ((SoyProtoValue) field).getProto();
         }
       };
 

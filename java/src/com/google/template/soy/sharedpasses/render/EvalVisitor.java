@@ -948,9 +948,9 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
                   + nonpluginFn.getName()
                   + " function can't be used in templates compiled to Java");
         case TO_NUMBER:
-          return FloatData.forValue(visit(node.getParam(0)).floatValue());
+          return FloatData.forValue(visit(node.getParam(0)).numberValue());
         case TO_INT:
-          return IntegerData.forValue(visit(node.getParam(0)).longValue());
+          return IntegerData.forValue(visit(node.getParam(0)).coerceToLong());
         case NUMBER_TO_INT:
         case INT_TO_NUMBER:
           SoyValue arg = visit(node.getParam(0));
@@ -958,8 +958,8 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
             return arg;
           }
           return nonpluginFn == BuiltinFunction.NUMBER_TO_INT
-              ? IntegerData.forValue(arg.longValue())
-              : FloatData.forValue(arg.floatValue());
+              ? IntegerData.forValue(arg.coerceToLong())
+              : FloatData.forValue(arg.numberValue());
         case DEBUG_SOY_TEMPLATE_INFO:
           return BooleanData.forValue(debugSoyTemplateInfo);
         case VE_DATA:
