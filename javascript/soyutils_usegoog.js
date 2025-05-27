@@ -2732,7 +2732,7 @@ const $$bindFunctionParams = function(f, params) {
 };
 
 /** @define {boolean} Whether to enable lazy execution. */
-const LAZY_EXECUTION = goog.define('soy.lazyexecution', false);
+const LAZY_EXECUTION = goog.define('soy.lazyexecution', true);
 
 /** @return {boolean} */
 function $$isLazyExecutionEnabled() {
