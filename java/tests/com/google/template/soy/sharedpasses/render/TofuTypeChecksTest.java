@@ -174,13 +174,12 @@ public class TofuTypeChecksTest {
 
   @Test
   public void testIntTypeIsInstance() {
-    assertIsInstance(IntType.getInstance(), INTEGER_DATA);
+    assertIsInstance(IntType.getInstance(), INTEGER_DATA, FLOAT_DATA);
     assertIsNotInstance(
         IntType.getInstance(),
         NULL_DATA,
         BOOLEAN_DATA,
         STRING_DATA,
-        FLOAT_DATA,
         HTML_DATA,
         ATTRIBUTES_DATA,
         CSS_DATA,
@@ -194,13 +193,12 @@ public class TofuTypeChecksTest {
 
   @Test
   public void testFloatTypeIsInstance() {
-    assertIsInstance(FloatType.getInstance(), FLOAT_DATA);
+    assertIsInstance(FloatType.getInstance(), FLOAT_DATA, INTEGER_DATA);
     assertIsNotInstance(
         FloatType.getInstance(),
         NULL_DATA,
         BOOLEAN_DATA,
         STRING_DATA,
-        INTEGER_DATA,
         HTML_DATA,
         ATTRIBUTES_DATA,
         CSS_DATA,
@@ -380,7 +378,7 @@ public class TofuTypeChecksTest {
   @Test
   public void testUnionTypeIsInstanceNewBehavior() {
     SoyType utype = UnionType.of(IntType.getInstance(), StringType.getInstance());
-    assertIsInstance(utype, INTEGER_DATA, STRING_DATA);
+    assertIsInstance(utype, INTEGER_DATA, STRING_DATA, FLOAT_DATA);
     assertIsNotInstance(
         utype,
         HTML_DATA,
@@ -391,7 +389,6 @@ public class TofuTypeChecksTest {
         JS_DATA,
         NULL_DATA,
         BOOLEAN_DATA,
-        FLOAT_DATA,
         LIST_DATA,
         MAP_DATA,
         DICT_DATA);
@@ -425,12 +422,11 @@ public class TofuTypeChecksTest {
   @Test
   public void testUnionTypeIsInstance() {
     SoyType utype = UnionType.of(IntType.getInstance(), StringType.getInstance());
-    assertIsInstance(utype, INTEGER_DATA, STRING_DATA);
+    assertIsInstance(utype, INTEGER_DATA, STRING_DATA, FLOAT_DATA);
     assertIsNotInstance(
         utype,
         NULL_DATA,
         BOOLEAN_DATA,
-        FLOAT_DATA,
         LIST_DATA,
         MAP_DATA,
         DICT_DATA,

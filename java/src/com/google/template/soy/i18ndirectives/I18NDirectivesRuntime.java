@@ -52,11 +52,11 @@ public final class I18NDirectivesRuntime {
     } else if (number instanceof NumberData) {
       return formatInternal(
           uLocale,
-          ((NumberData) number).toFloat(),
+          ((NumberData) number).floatValue(),
           formatType,
           numbersKeyword,
-          minFractionDigits != null ? (int) minFractionDigits.numberValue() : null,
-          maxFractionDigits != null ? (int) maxFractionDigits.numberValue() : null);
+          minFractionDigits != null ? (int) minFractionDigits.floatValue() : null,
+          maxFractionDigits != null ? (int) maxFractionDigits.floatValue() : null);
     } else {
       return "NaN";
     }
