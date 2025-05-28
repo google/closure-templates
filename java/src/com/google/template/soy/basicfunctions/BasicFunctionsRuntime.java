@@ -83,6 +83,15 @@ public final class BasicFunctionsRuntime {
     }
   }
 
+  /** Returns the magnitude of the number value that is provided. */
+  public static NumberData abs(SoyValue arg) {
+    if (arg instanceof IntegerData) {
+      return IntegerData.forValue(Math.abs(arg.longValue()));
+    } else {
+      return FloatData.forValue(Math.abs(arg.floatValue()));
+    }
+  }
+
   /** Concatenates its arguments. */
   @Nonnull
   public static ImmutableList<SoyValueProvider> concatLists(SoyList list1, SoyList list2) {

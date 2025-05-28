@@ -36,6 +36,7 @@ public class BasicFunctions {
         BUILD_ATTR_VALUE_FUNCTION,
         BUILD_CLASS_VALUE_FUNCTION,
         BUILD_STYLE_VALUE_FUNCTION,
+        new AbsFunction(),
         new CeilingFunction(),
         new ConcatListsFunction(),
         new ConcatMapsMethod(),

@@ -88,6 +88,10 @@ that many 0s at the end.
 BEST PRACTICE: Don't use this function to format numbers for display. Prefer
 things like [`formatNum`](#formatNum) which are i18n friendly.
 
+### `abs(number)` {#Math_abs}
+
+The absolute value of the number.
+
 ### `floor(number)` {#floor}
 
 The floor of the number.
