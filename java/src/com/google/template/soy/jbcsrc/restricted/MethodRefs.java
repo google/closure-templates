@@ -518,8 +518,6 @@ public final class MethodRefs {
 
   public static final MethodRef INT_TO_NUMBER =
       createPure(JbcSrcRuntime.class, "intToNumber", SoyValue.class);
-  public static final MethodRef NUMBER_TO_INT =
-      createPure(JbcSrcRuntime.class, "numberToInt", SoyValue.class);
 
   public static final MethodRef SOY_VALUE_IS_NULLISH =
       createPure(SoyValue.class, "isNullish").asCheap().asNonJavaNullable();

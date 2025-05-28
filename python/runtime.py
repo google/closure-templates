@@ -515,7 +515,7 @@ def type_safe_eq(first, second):
   if isinstance(first, _STRUCT_TYPES) or isinstance(second, _STRUCT_TYPES):
     return first is second
 
-  # If the values are empty or of the same type, no coersion necessary.
+  # If the values are empty or of the same type, no coercion necessary.
   # TODO(dcphillips): Do a more basic type equality check if it's not slower
   # (b/16661176).
   if first is None or second is None or type(first) == type(second):
@@ -534,7 +534,7 @@ def type_safe_eq(first, second):
     if isinstance(second, six.string_types):
       return str(first) == second
   except ValueError:
-    # Ignore type coersion failures
+    # Ignore type coercion failures
     pass
 
   return first == second
@@ -917,10 +917,6 @@ def is_truthy_non_empty(val):
 
 def empty_to_null(val):
   return val if is_truthy_non_empty(val) else None
-
-
-def number_to_int(val):
-  return int(val) if isinstance(val, _NUMBER_TYPES) else val
 
 
 def throw_exception(message):

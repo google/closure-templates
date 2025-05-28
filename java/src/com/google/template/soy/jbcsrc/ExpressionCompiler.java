@@ -1899,18 +1899,6 @@ final class ExpressionCompiler {
     }
 
     @Override
-    SoyExpression visitToIntFunction(FunctionNode node) {
-      SoyExpression arg = visit(node.getParam(0));
-      return SoyExpression.forInt(numericConversion(arg.unboxAsDouble(), Type.LONG_TYPE));
-    }
-
-    @Override
-    SoyExpression visitNumberToIntFunction(FunctionNode node) {
-      SoyExpression arg = visit(node.getParam(0));
-      return SoyExpression.forSoyValue(node.getType(), MethodRefs.NUMBER_TO_INT.invoke(arg));
-    }
-
-    @Override
     SoyExpression visitIntToNumberFunction(FunctionNode node) {
       SoyExpression arg = visit(node.getParam(0));
       return SoyExpression.forSoyValue(node.getType(), MethodRefs.INT_TO_NUMBER.invoke(arg));
@@ -2409,9 +2397,7 @@ final class ExpressionCompiler {
       if (function == BuiltinFunction.PROTO_INIT
           || function == BuiltinFunction.VE_DATA
           || function == BuiltinFunction.CHECK_NOT_NULL
-          || function == BuiltinFunction.NUMBER_TO_INT
           || function == BuiltinFunction.INT_TO_NUMBER
-          || function == BuiltinFunction.TO_INT
           || function == BuiltinFunction.TO_NUMBER) {
         // All of these are either constructing a data structure or performing some kind of simple
         // coercion.

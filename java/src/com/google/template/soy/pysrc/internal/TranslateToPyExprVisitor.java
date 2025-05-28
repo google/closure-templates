@@ -655,12 +655,6 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
         return visitSoyServerKeyFunction(node);
       case IS_PRIMARY_MSG_IN_USE:
         return visitIsPrimaryMsgInUseFunction(node);
-      case TO_INT:
-        return new PyFunctionExprBuilder("int").addArg(visit(node.getParam(0))).asPyExpr();
-      case NUMBER_TO_INT:
-        return new PyFunctionExprBuilder("runtime.number_to_int")
-            .addArg(visit(node.getParam(0)))
-            .asPyExpr();
       case INT_TO_NUMBER:
       case TO_NUMBER:
       case UNDEFINED_TO_NULL:

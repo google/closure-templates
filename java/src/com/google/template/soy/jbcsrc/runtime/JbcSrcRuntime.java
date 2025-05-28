@@ -1135,11 +1135,5 @@ public final class JbcSrcRuntime {
     return value instanceof NumberData ? FloatData.forValue(value.floatValue()) : value;
   }
 
-  @Nonnull
-  @Keep
-  public static SoyValue numberToInt(SoyValue value) {
-    return value instanceof NumberData ? IntegerData.forValue(value.longValue()) : value;
-  }
-
   private JbcSrcRuntime() {}
 }

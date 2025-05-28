@@ -2820,8 +2820,6 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
             node.setType(VeType.NO_DATA);
           }
           break;
-        case TO_INT: // Added by maybeCoerceType, which also sets the node type.
-        case NUMBER_TO_INT:
         case TO_NUMBER:
         case INT_TO_NUMBER:
           Preconditions.checkState(node.getType() != null);
