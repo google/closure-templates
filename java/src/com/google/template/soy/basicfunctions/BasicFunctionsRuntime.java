@@ -92,6 +92,11 @@ public final class BasicFunctionsRuntime {
     }
   }
 
+  /** Returns the sign of the number value that is provided. */
+  public static NumberData sign(SoyValue arg) {
+    return FloatData.forValue(Math.signum(arg.numberValue()));
+  }
+
   /** Concatenates its arguments. */
   @Nonnull
   public static ImmutableList<SoyValueProvider> concatLists(SoyList list1, SoyList list2) {

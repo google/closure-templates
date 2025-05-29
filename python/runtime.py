@@ -619,6 +619,18 @@ def map_to_legacy_object_map(m):
   return {str(key): m[key] for key in m}
 
 
+def math_sign(num):
+  """Returns the sign of the given number."""
+  if num > 0:
+    return 1
+  elif num < 0:
+    return -1
+  elif num == -0.0:
+    return -0.0
+  else:
+    return 0
+
+
 def str_to_ascii_lower_case(s):
   """Converts the ASCII characters in the given string to lower case."""
   return ''.join([c.lower() if 'A' <= c <= 'Z' else c for c in s])

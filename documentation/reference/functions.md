@@ -124,6 +124,10 @@ string cannot be parsed.
 A random integer in the range `[0, rangeArg - 1]` (where `rangeArg` must be a
 positive integer).
 
+### `sign(number)` {#Math_sign}
+
+Returns the sign of the number as 1 or -1. 0 returns 0. -0 returns -0.
+
 ### `sqrt(number)` {#sqrt}
 
 Returns the square root of the number.
