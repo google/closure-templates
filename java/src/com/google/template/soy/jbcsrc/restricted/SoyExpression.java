@@ -1031,7 +1031,10 @@ public final class SoyExpression extends Expression {
         return unboxAsBoolean();
       case Type.OBJECT:
         if (BytecodeUtils.isDefinitelyAssignableFrom(BytecodeUtils.SOY_VALUE_TYPE, runtimeType)) {
-          return box();
+          SoyExpression boxed = box();
+          // Field may be a subclass of SoyValue, so need to perform a cast.
+          return SoyExpression.forSoyValue(
+              boxed.soyType(), boxed.delegate.checkedCast(runtimeType));
         }
         // Unhandled cases where we have a boxed value (string, list, message) but require an
         // unboxed value.
