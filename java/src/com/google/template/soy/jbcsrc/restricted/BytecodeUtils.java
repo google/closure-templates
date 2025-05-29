@@ -729,7 +729,7 @@ public final class BytecodeUtils {
     };
   }
 
-  static boolean isNumericPrimitive(Type type) {
+  public static boolean isNumericPrimitive(Type type) {
     int sort = type.getSort();
     switch (sort) {
       case Type.OBJECT:

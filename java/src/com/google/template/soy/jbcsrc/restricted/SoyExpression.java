@@ -34,6 +34,7 @@ import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.isDefinitelyAssignableFrom;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.isNumericPrimitive;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.newLabel;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.numericConversion;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Preconditions;
@@ -601,6 +602,13 @@ public final class SoyExpression extends Expression {
       throw new UnsupportedOperationException("Can't convert " + resultType() + " to a double");
     }
     return forFloat(delegate.invoke(MethodRefs.SOY_VALUE_FLOAT_VALUE).toMaybeConstant());
+  }
+
+  public SoyExpression coerceToLong() {
+    if (!isBoxed() && soyRuntimeType.isKnownFloat()) {
+      return forInt(numericConversion(delegate, Type.LONG_TYPE));
+    }
+    return unboxAsLong();
   }
 
   /**
