@@ -31,11 +31,13 @@ java_library(
         exclude = [
             "Names.java",
             "MissingPluginInstanceException.java",
+            "StackFrame.java",
         ],
     ),
     deps = [
         ":missing_plugin_instance_exception",
         ":names",
+        ":stackframe",
         "//java/src/com/google/template/soy/base/internal",
         "//java/src/com/google/template/soy/data",
         "//java/src/com/google/template/soy/data:record_property",
@@ -73,5 +75,16 @@ java_library(
         "//java/src/com/google/template/soy/internal/exemptions",
         "@maven//:com_google_guava_guava",
         "@maven//:org_ow2_asm_asm",
+    ],
+)
+
+java_library(
+    name = "stackframe",
+    srcs = ["StackFrame.java"],
+    deps = [
+        "//java/src/com/google/template/soy/jbcsrc/api:helpers",
+        "@maven//:com_google_code_findbugs_jsr305",
+        "@maven//:com_google_errorprone_error_prone_annotations",
+        "@maven//:com_google_guava_guava",
     ],
 )
