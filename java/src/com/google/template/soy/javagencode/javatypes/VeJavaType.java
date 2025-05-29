@@ -16,6 +16,8 @@
 
 package com.google.template.soy.javagencode.javatypes;
 
+import static com.google.template.soy.javagencode.javatypes.CodeGenUtils.maybeAddNullableToTypeArg;
+
 /** Represents a template type. */
 public final class VeJavaType extends JavaType {
   public VeJavaType() {
@@ -38,7 +40,7 @@ public final class VeJavaType extends JavaType {
 
   @Override
   String asGenericsTypeArgumentString() {
-    return toJavaTypeString();
+    return maybeAddNullableToTypeArg(isNullable(), toJavaTypeString());
   }
 
   @Override

@@ -17,6 +17,7 @@
 package com.google.template.soy.javagencode.javatypes;
 
 import static com.google.template.soy.javagencode.javatypes.CodeGenUtils.castFunction;
+import static com.google.template.soy.javagencode.javatypes.CodeGenUtils.maybeAddNullableToTypeArg;
 
 /**
  * Class for simple java types (e.g. boolean, String, Number, SafeHtml) that do not need specialized
@@ -226,7 +227,7 @@ public class SimpleJavaType extends JavaType {
 
     @Override
     String asGenericsTypeArgumentString() {
-      return genericType;
+      return maybeAddNullableToTypeArg(isNullable(), genericType);
     }
 
     @Override

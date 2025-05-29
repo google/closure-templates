@@ -16,6 +16,8 @@
 
 package com.google.template.soy.javagencode.javatypes;
 
+import static com.google.template.soy.javagencode.javatypes.CodeGenUtils.maybeAddNullableToTypeArg;
+
 import com.google.template.soy.types.TemplateType;
 
 /** Represents a template type. */
@@ -50,7 +52,7 @@ public final class TemplateJavaType extends JavaType {
 
   @Override
   String asGenericsTypeArgumentString() {
-    return toJavaTypeString();
+    return maybeAddNullableToTypeArg(isNullable(), toJavaTypeString());
   }
 
   @Override

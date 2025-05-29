@@ -16,6 +16,8 @@
 
 package com.google.template.soy.javagencode.javatypes;
 
+import static com.google.template.soy.javagencode.javatypes.CodeGenUtils.maybeAddNullableToTypeArg;
+
 /** Represents a map type for generated Soy Java invocation builders. */
 public final class MapJavaType extends JavaType {
 
@@ -62,7 +64,7 @@ public final class MapJavaType extends JavaType {
 
   @Override
   String asGenericsTypeArgumentString() {
-    return "? extends " + toJavaTypeString();
+    return maybeAddNullableToTypeArg(isNullable(), "? extends " + toJavaTypeString());
   }
 
   @Override

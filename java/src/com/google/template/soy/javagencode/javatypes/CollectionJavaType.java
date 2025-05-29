@@ -16,6 +16,8 @@
 
 package com.google.template.soy.javagencode.javatypes;
 
+import static com.google.template.soy.javagencode.javatypes.CodeGenUtils.maybeAddNullableToTypeArg;
+
 import com.google.template.soy.javagencode.javatypes.CodeGenUtils.Member;
 import com.google.template.soy.types.SoyType.Kind;
 
@@ -83,8 +85,7 @@ public final class CollectionJavaType extends JavaType {
 
   @Override
   String asGenericsTypeArgumentString() {
-    return "? extends "
-        + subtype.genericsType
+    return maybeAddNullableToTypeArg(isNullable(), "? extends " + subtype.genericsType)
         + "<"
         + elementType.asGenericsTypeArgumentString()
         + ">";

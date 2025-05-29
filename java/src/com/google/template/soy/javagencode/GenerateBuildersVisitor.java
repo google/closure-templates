@@ -25,6 +25,7 @@ import static com.google.template.soy.javagencode.javatypes.CodeGenUtils.INIT_LI
 import static com.google.template.soy.javagencode.javatypes.CodeGenUtils.INJECTED_P;
 import static com.google.template.soy.javagencode.javatypes.CodeGenUtils.SET_PARAM_INTERNAL;
 import static com.google.template.soy.javagencode.javatypes.CodeGenUtils.STANDARD_P;
+import static com.google.template.soy.javagencode.javatypes.CodeGenUtils.maybeAddNullableToClass;
 import static com.google.template.soy.shared.internal.gencode.JavaGenerationUtils.appendFunctionCallWithParamsOnNewLines;
 import static com.google.template.soy.shared.internal.gencode.JavaGenerationUtils.appendJavadoc;
 import static com.google.template.soy.shared.internal.gencode.JavaGenerationUtils.isReservedKeyword;
@@ -688,8 +689,7 @@ public final class GenerateBuildersVisitor
       ilb.appendLine("@com.google.errorprone.annotations.CanIgnoreReturnValue");
       ilb.appendLineStart("public Builder ")
           .appendImputee(param.setterName(), getByteSpan(template, param))
-          .appendLineEnd(
-              "(", (nullable ? "@javax.annotation.Nullable " : ""), javaTypeString, " value) {");
+          .appendLineEnd("(", maybeAddNullableToClass(nullable, javaTypeString), " value) {");
       ilb.increaseIndent();
 
       String newVariableName = javaType.asInlineCast("value");
@@ -724,10 +724,10 @@ public final class GenerateBuildersVisitor
         ilb.appendLineMiddle(", ");
       }
       JavaType paramType = entry.getValue();
-      if (paramType.isNullable()) {
-        ilb.appendLineMiddle("@javax.annotation.Nullable ");
-      }
-      ilb.appendLineMiddle(paramType.toJavaTypeString(), " ", paramName);
+      ilb.appendLineMiddle(
+          maybeAddNullableToClass(paramType.isNullable(), paramType.toJavaTypeString()),
+          " ",
+          paramName);
       first = false;
     }
     ilb.appendLineEnd(") {");

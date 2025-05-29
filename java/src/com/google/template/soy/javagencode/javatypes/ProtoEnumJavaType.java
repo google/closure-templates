@@ -16,6 +16,8 @@
 
 package com.google.template.soy.javagencode.javatypes;
 
+import static com.google.template.soy.javagencode.javatypes.CodeGenUtils.maybeAddNullableToTypeArg;
+
 import com.google.protobuf.Descriptors.EnumDescriptor;
 import com.google.template.soy.internal.proto.JavaQualifiedNames;
 
@@ -42,7 +44,7 @@ public final class ProtoEnumJavaType extends JavaType {
 
   @Override
   String asGenericsTypeArgumentString() {
-    return toJavaTypeString();
+    return maybeAddNullableToTypeArg(isNullable(), toJavaTypeString());
   }
 
   @Override
