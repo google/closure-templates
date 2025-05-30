@@ -55,6 +55,7 @@ public class BasicFunctions {
         new ListSliceMethod(),
         new ListUniqMethod(),
         new MapEntriesMethod(),
+        new MapHasFunction(),
         new MapKeysFunction(),
         new MapLengthMethod(),
         new MapToLegacyObjectMapFunction(),

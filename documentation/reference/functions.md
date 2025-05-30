@@ -285,6 +285,10 @@ Returns the number of keys in the map.
 
 <span id="map-any,any_keys"></span>
 
+### `map.has(key)` {#map-any,any_has}
+
+Returns a boolean whether the key is contained in the map.
+
 ### `map.get(key)` {#map-any,any_get}
 
 Returns a single value from a map; equivalent to bracket access.
