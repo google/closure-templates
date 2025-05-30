@@ -55,7 +55,7 @@ final class CheckGlobalsPass implements CompilerFilePass {
 
     @Override
     protected void visitGlobalNode(GlobalNode global) {
-      if (global.alreadyReportedError()) {
+      if (global.alreadyReportedError() || global.isKnown()) {
         return;
       }
 
