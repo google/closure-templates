@@ -141,6 +141,7 @@ import com.google.template.soy.shared.SoyIdRenamingMap;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.shared.internal.BuiltinMethod;
 import com.google.template.soy.shared.internal.DelTemplateSelector;
+import com.google.template.soy.shared.internal.SharedRuntime;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyMethod;
 import com.google.template.soy.shared.restricted.SoySourceFunctionMethod;
@@ -955,6 +956,9 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
             return arg;
           }
           return FloatData.forValue(arg.floatValue());
+        case IS_NAN:
+          SoyValue num = visit(node.getParam(0));
+          return BooleanData.forValue(SharedRuntime.isNaN(num));
         case DEBUG_SOY_TEMPLATE_INFO:
           return BooleanData.forValue(debugSoyTemplateInfo);
         case VE_DATA:

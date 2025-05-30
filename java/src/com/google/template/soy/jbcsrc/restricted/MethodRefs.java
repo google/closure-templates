@@ -626,6 +626,11 @@ public final class MethodRefs {
   public static final MethodRef IS_SOY_NON_NULL =
       createPure(JbcSrcRuntime.class, "isNonSoyNull", SoyValueProvider.class);
 
+  public static final MethodRef IS_NAN =
+      createPure(Double.class, "isNaN", double.class).asNonJavaNullable();
+  public static final MethodRef IS_NAN_BOXED =
+      createPure(SharedRuntime.class, "isNaN", SoyValue.class).asNonJavaNullable();
+
   public static final MethodRef GBIGINT_DATA_FOR_VALUE =
       createPure(GbigintData.class, "forValue", BigInteger.class).asCheap();
 

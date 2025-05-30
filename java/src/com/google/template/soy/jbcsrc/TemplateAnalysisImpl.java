@@ -837,6 +837,7 @@ final class TemplateAnalysisImpl implements TemplateAnalysis {
           case SOY_SERVER_KEY:
           case TO_NUMBER:
           case INT_TO_NUMBER:
+          case IS_NAN:
           case VE_DATA:
           case XID:
           case RECORD_JS_ID:

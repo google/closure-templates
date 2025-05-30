@@ -661,6 +661,8 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
       case UNDEFINED_TO_NULL_SSR:
         // Python runtime does not distinguish between null and undefined.
         return visit(node.getParam(0));
+      case IS_NAN:
+        return new PyFunctionExprBuilder("runtime.is_nan").addArgs(visitChildren(node)).asPyExpr();
       case EMPTY_TO_UNDEFINED:
         return new PyFunctionExprBuilder("runtime.empty_to_null")
             .addArg(visit(node.getParam(0)))

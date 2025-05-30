@@ -58,6 +58,7 @@ public enum BuiltinFunction implements SoyFunction {
   IS_PRIMARY_MSG_IN_USE("$$isPrimaryMsgInUse"),
   TO_NUMBER("$$toNumber"),
   INT_TO_NUMBER("$$intToNumber"),
+  IS_NAN("Number_isNaN"),
   DEBUG_SOY_TEMPLATE_INFO("$$debugSoyTemplateInfo"),
   PROTO_INIT("$$protoInit"),
   VE_DEF("ve_def"),
@@ -103,6 +104,7 @@ public enum BuiltinFunction implements SoyFunction {
       case MSG_WITH_ID:
       case TO_NUMBER:
       case INT_TO_NUMBER:
+      case IS_NAN:
       case EMPTY_TO_UNDEFINED:
       case UNDEFINED_TO_NULL:
       case UNDEFINED_TO_NULL_SSR:
@@ -162,6 +164,7 @@ public enum BuiltinFunction implements SoyFunction {
       case VE_DATA:
       case TO_NUMBER:
       case INT_TO_NUMBER:
+      case IS_NAN:
       case PROTO_INIT:
       case EMPTY_TO_UNDEFINED:
       case UNDEFINED_TO_NULL:

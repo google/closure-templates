@@ -97,6 +97,8 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
           return visitToNumberFunction(node);
         case INT_TO_NUMBER:
           return visitIntToNumberFunction(node);
+        case IS_NAN:
+          return visitIsNaNFunction(node);
         case DEBUG_SOY_TEMPLATE_INFO:
           return visitDebugSoyTemplateInfoFunction(node);
         case VE_DATA:
@@ -189,6 +191,10 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
   }
 
   T visitIntToNumberFunction(FunctionNode node) {
+    return visitExprNode(node);
+  }
+
+  T visitIsNaNFunction(FunctionNode node) {
     return visitExprNode(node);
   }
 

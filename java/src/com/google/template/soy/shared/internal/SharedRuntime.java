@@ -319,6 +319,10 @@ public final class SharedRuntime {
     }
   }
 
+  public static boolean isNaN(SoyValue value) {
+    return value instanceof FloatData && Double.isNaN(value.floatValue());
+  }
+
   private static String serialize(String key, String delimiter) {
     return key.length() + delimiter + key;
   }
