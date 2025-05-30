@@ -28,6 +28,7 @@ import static com.google.template.soy.jssrc.dsl.Expressions.LITERAL_TRUE;
 import static com.google.template.soy.jssrc.dsl.Expressions.LITERAL_UNDEFINED;
 import static com.google.template.soy.jssrc.dsl.Expressions.arrowFunction;
 import static com.google.template.soy.jssrc.dsl.Expressions.construct;
+import static com.google.template.soy.jssrc.dsl.Expressions.dottedIdNoRequire;
 import static com.google.template.soy.jssrc.dsl.Expressions.id;
 import static com.google.template.soy.jssrc.dsl.Expressions.not;
 import static com.google.template.soy.jssrc.dsl.Expressions.number;
@@ -1113,6 +1114,8 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
         case TO_NUMBER:
           // this is a no-op in js
           return visit(node.getParam(0));
+        case IS_NAN:
+          return dottedIdNoRequire("Number.isNaN").call(visitChildren(node));
         case DEBUG_SOY_TEMPLATE_INFO:
           // TODO(lukes): does this need a goog.debug guard? it exists in the runtime
           return GOOG_DEBUG.and(

@@ -2824,6 +2824,9 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
         case INT_TO_NUMBER:
           Preconditions.checkState(node.getType() != null);
           break;
+        case IS_NAN:
+          node.setType(BoolType.getInstance());
+          break;
         case REMAINDER:
           node.setType(IntType.getInstance());
           break;

@@ -34,6 +34,7 @@ import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.isDefinite
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.newLabel;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.numericConversion;
 import static com.google.template.soy.jbcsrc.restricted.SoyExpression.asBoxedValueProviderList;
+import static com.google.template.soy.jbcsrc.restricted.SoyExpression.forBool;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
@@ -1905,6 +1906,18 @@ final class ExpressionCompiler {
     }
 
     @Override
+    SoyExpression visitIsNaNFunction(FunctionNode node) {
+      SoyExpression arg = visit(node.getParam(0));
+      if (arg.isRuntimeFloat()) {
+        return forBool(MethodRefs.IS_NAN.invoke(arg));
+      } else if (arg.isBoxed()) {
+        return forBool(MethodRefs.IS_NAN_BOXED.invoke(arg));
+      } else {
+        return forBool(constant(false));
+      }
+    }
+
+    @Override
     SoyExpression visitDebugSoyTemplateInfoFunction(FunctionNode node) {
       return SoyExpression.forBool(parameters.getRenderContext().getDebugSoyTemplateInfo());
     }
@@ -2398,7 +2411,8 @@ final class ExpressionCompiler {
           || function == BuiltinFunction.VE_DATA
           || function == BuiltinFunction.CHECK_NOT_NULL
           || function == BuiltinFunction.INT_TO_NUMBER
-          || function == BuiltinFunction.TO_NUMBER) {
+          || function == BuiltinFunction.TO_NUMBER
+          || function == BuiltinFunction.IS_NAN) {
         // All of these are either constructing a data structure or performing some kind of simple
         // coercion.
         return true;
