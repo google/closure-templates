@@ -36,6 +36,8 @@ import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.FunctionNode;
+import com.google.template.soy.exprtree.GlobalNode;
+import com.google.template.soy.exprtree.GlobalNode.KnownGlobal;
 import com.google.template.soy.exprtree.ItemAccessNode;
 import com.google.template.soy.exprtree.ListComprehensionNode;
 import com.google.template.soy.exprtree.ListLiteralNode;
@@ -223,6 +225,24 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
   @Override
   protected PyExpr visitStringNode(StringNode node) {
     return new PyStringExpr(node.toSourceString());
+  }
+
+  @Override
+  protected PyExpr visitGlobalNode(GlobalNode node) {
+    KnownGlobal global = node.getKnownGlobal();
+    switch (global) {
+      case E:
+        return new PyExpr("math.e", Integer.MAX_VALUE);
+      case PI:
+        return new PyExpr("math.pi", Integer.MAX_VALUE);
+      case NAN:
+        return new PyExpr("math.nan", Integer.MAX_VALUE);
+      case NEGATIVE_INFINITY:
+        return new PyExpr("(-math.inf)", Integer.MAX_VALUE);
+      case POSITIVE_INFINITY:
+        return new PyExpr("math.inf", Integer.MAX_VALUE);
+    }
+    throw new AssertionError();
   }
 
   @Override

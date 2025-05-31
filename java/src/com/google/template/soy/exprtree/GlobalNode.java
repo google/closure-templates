@@ -16,14 +16,50 @@
 
 package com.google.template.soy.exprtree;
 
+import static com.google.common.collect.ImmutableMap.toImmutableMap;
+import static java.util.Arrays.stream;
+
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.basetree.CopyState;
+import com.google.template.soy.types.NumberType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.UnknownType;
 
 /** Node representing a global. */
 public final class GlobalNode extends AbstractExprNode {
+
+  /** Known Soy globals. */
+  public enum KnownGlobal {
+    PI("Math_PI", NumberType.getInstance()),
+    E("Math_E", NumberType.getInstance()),
+    NAN("Number_NaN", NumberType.getInstance()),
+    NEGATIVE_INFINITY("Number_NEGATIVE_INFINITY", NumberType.getInstance()),
+    POSITIVE_INFINITY("Number_POSITIVE_INFINITY", NumberType.getInstance()),
+    ;
+
+    private final String id;
+    private final NumberType type;
+
+    KnownGlobal(String id, NumberType type) {
+      this.id = id;
+      this.type = type;
+    }
+
+    public String getId() {
+      return id;
+    }
+
+    public NumberType getType() {
+      return type;
+    }
+  }
+
+  private static final ImmutableMap<String, KnownGlobal> KNOWN_IDS =
+      stream(KnownGlobal.values()).collect(toImmutableMap(KnownGlobal::getId, g -> g));
+
   private static GlobalNode error(SourceLocation location) {
     return new GlobalNode(Identifier.create("error", "error", location));
   }
@@ -57,9 +93,18 @@ public final class GlobalNode extends AbstractExprNode {
     return Kind.GLOBAL_NODE;
   }
 
+  public boolean isKnown() {
+    return KNOWN_IDS.containsKey(getName());
+  }
+
+  public KnownGlobal getKnownGlobal() {
+    return Preconditions.checkNotNull(KNOWN_IDS.get(getName()));
+  }
+
   @Override
   public SoyType getAuthoredType() {
-    return UnknownType.getInstance();
+    KnownGlobal known = KNOWN_IDS.get(getName());
+    return known != null ? known.getType() : UnknownType.getInstance();
   }
 
   /** Returns the name of the global. */
