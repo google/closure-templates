@@ -41,6 +41,7 @@ import com.google.template.soy.data.LogStatement;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.LoggingAdvisingAppendable.BufferingAppendable;
 import com.google.template.soy.data.LoggingFunctionInvocation;
+import com.google.template.soy.data.NodeBuilder;
 import com.google.template.soy.data.ProtoFieldInterpreter;
 import com.google.template.soy.data.RecordProperty;
 import com.google.template.soy.data.SanitizedContent;
@@ -71,6 +72,8 @@ import com.google.template.soy.msgs.restricted.SoyMsgSelectPartForRendering;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.ibm.icu.util.ULocale;
 import java.io.IOException;
+import java.lang.invoke.CallSite;
+import java.lang.invoke.ConstantCallSite;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
@@ -1127,6 +1130,24 @@ public final class JbcSrcRuntime {
     }
 
     return UnsignedLong.valueOf(value.stringValue()).longValue();
+  }
+
+  /** for dynamic callees */
+  public static NodeBuilder createNodeBuilder(
+      CompiledTemplate tmpl, StackFrame stackFrame, ParamStore params, RenderContext context)
+      throws IllegalAccessException, NoSuchMethodException {
+    MethodHandle renderMethod =
+        MethodHandles.lookup()
+            .unreflect(
+                CompiledTemplate.class.getMethod(
+                    "render",
+                    StackFrame.class,
+                    ParamStore.class,
+                    LoggingAdvisingAppendable.class,
+                    RenderContext.class))
+            .bindTo(tmpl);
+    CallSite renderCallSite = new ConstantCallSite(renderMethod);
+    return new NodeBuilder(renderCallSite, stackFrame, new Object[] {params}, context);
   }
 
   @Nonnull

@@ -28,6 +28,7 @@ import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
+import com.google.template.soy.jbcsrc.shared.StackFrame;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -202,6 +203,11 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
       LoggingFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers)
       throws IOException;
 
+  @Nullable
+  public StackFrame appendNodeBuilder(NodeBuilder nodeBuilder) {
+    return nodeBuilder.render(this);
+  }
+
   /** A buffer of commands that can be replayed on a {@link LoggingAdvisingAppendable}. */
   @Immutable
   public static final class CommandBuffer {
@@ -344,6 +350,13 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
       return this;
     }
 
+    @Override
+    @Nullable
+    public StackFrame appendNodeBuilder(NodeBuilder nodeBuilder) {
+      getCommandsAndAddPendingStringData().add(nodeBuilder);
+      return null;
+    }
+
     public void replayOn(LoggingAdvisingAppendable appendable) throws IOException {
       if (getSanitizedContentKind() != null) {
         appendable =
@@ -377,6 +390,9 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
         appendable.exitLoggableElement();
       } else if (o instanceof LogStatement) {
         appendable.enterLoggableElement((LogStatement) o);
+      } else if (o instanceof NodeBuilder) {
+        // TODO(b/421209829): Don't block by allowing a detach here.
+        ((NodeBuilder) o).renderBlocking(appendable);
       } else {
         throw new AssertionError("unexpected command object: " + o);
       }
@@ -469,9 +485,67 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
         builder.append(
             escapePlaceholder(
                 loggingFunctionCommand.fn().placeholderValue(), loggingFunctionCommand.escapers()));
+      } else if (command instanceof NodeBuilder) {
+        // TODO(b/421209829): Don't block by allowing a detach here.
+        ((NodeBuilder) command).renderBlocking(new DelegatingAppendable(builder));
       }
       // ignore the logging statements
 
+    }
+  }
+
+  /** Wraps an Appendable. Ignores logs. */
+  static class DelegatingAppendable extends LoggingAdvisingAppendable {
+    private final Appendable outputAppendable;
+
+    DelegatingAppendable(Appendable outputAppendable) {
+      this.outputAppendable = checkNotNull(outputAppendable);
+    }
+
+    @Override
+    public boolean softLimitReached() {
+      return false;
+    }
+
+    @CanIgnoreReturnValue
+    @Override
+    public LoggingAdvisingAppendable append(CharSequence csq) throws IOException {
+      outputAppendable.append(csq);
+      return this;
+    }
+
+    @CanIgnoreReturnValue
+    @Override
+    public LoggingAdvisingAppendable append(CharSequence csq, int start, int end)
+        throws IOException {
+      outputAppendable.append(csq, start, end);
+      return this;
+    }
+
+    @CanIgnoreReturnValue
+    @Override
+    public LoggingAdvisingAppendable append(char c) throws IOException {
+      outputAppendable.append(c);
+      return this;
+    }
+
+    @CanIgnoreReturnValue
+    @Override
+    public LoggingAdvisingAppendable appendLoggingFunctionInvocation(
+        LoggingFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers) {
+      return this;
+    }
+
+    @CanIgnoreReturnValue
+    @Override
+    public LoggingAdvisingAppendable enterLoggableElement(LogStatement statement) {
+      return this;
+    }
+
+    @CanIgnoreReturnValue
+    @Override
+    public LoggingAdvisingAppendable exitLoggableElement() {
+      return this;
     }
   }
 

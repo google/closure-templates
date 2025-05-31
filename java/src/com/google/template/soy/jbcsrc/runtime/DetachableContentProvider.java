@@ -16,12 +16,14 @@
 
 package com.google.template.soy.jbcsrc.runtime;
 
+import com.google.common.base.VerifyException;
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.data.LogStatement;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.LoggingAdvisingAppendable.BufferingAppendable;
 import com.google.template.soy.data.LoggingFunctionInvocation;
+import com.google.template.soy.data.NodeBuilder;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
@@ -337,6 +339,39 @@ public abstract class DetachableContentProvider extends SoyValueProvider {
         delegates.get(i).appendLoggingFunctionInvocation(funCall, escapers);
       }
       return this;
+    }
+
+    @CanIgnoreReturnValue
+    @Override
+    @Nullable
+    public StackFrame appendNodeBuilder(NodeBuilder nodeBuilder) {
+      if (delegates == null) {
+        // No delegates, just add the NodeBuilder to the buffer. Note that this means that a later
+        // replayOn() might block, since the NodeBuilder will not have executed. This should only
+        // happen if a let/param block is not printed and only e.g. coerced to a SoyValue for
+        // passing to an extern, since printing will invoke
+        // DetachableContentProvider.renderAndResolve which will add a delegate.
+
+        // Unfortunately, to fix this we probably will need to add extra detaches even when lazy
+        // calls are not used since we can't tell at compile time whether an html block contains
+        // any lazy calls.
+        return super.appendNodeBuilder(nodeBuilder);
+      }
+      int size = delegates.size();
+      if (size > 1 || size == 0) {
+        throw new VerifyException(
+            "MultiplexingAppendable.appendNodeBuilder() called with multiple delegates. Multiple"
+                + " delegates should only happen with eager/optimisitc evaluation which"
+                + " kind=\"html\" is not eligible for.");
+      }
+      // If delegate is an OutputAppendable, this will execute the NodeBuilder and might detach.
+      StackFrame delegateFrame = delegates.get(0).appendNodeBuilder(nodeBuilder);
+      if (delegateFrame == null) {
+        // We don't want to add the NodeBuilder to the local appendable multiple times if it
+        // detaches so we only add to the local appendable once it's finished.
+        return super.appendNodeBuilder(nodeBuilder);
+      }
+      return delegateFrame;
     }
   }
 }
