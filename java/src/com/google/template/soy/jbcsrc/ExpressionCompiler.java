@@ -122,6 +122,7 @@ import com.google.template.soy.jbcsrc.shared.ClassLoaderFallbackCallFactory;
 import com.google.template.soy.jbcsrc.shared.ExtraConstantBootstraps;
 import com.google.template.soy.jbcsrc.shared.Names;
 import com.google.template.soy.plugin.java.internal.PluginAnalyzer;
+import com.google.template.soy.plugin.java.internal.SoyJavaExternFunction;
 import com.google.template.soy.plugin.java.restricted.MethodSignature;
 import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
 import com.google.template.soy.shared.internal.BuiltinFunction;
@@ -1967,14 +1968,14 @@ final class ExpressionCompiler {
     @Override
     SoyExpression visitPluginFunction(FunctionNode node) {
       Object fn = node.getSoyFunction();
-      if (fn instanceof SoyJavaSourceFunction) {
+      if (fn instanceof SoyJavaExternFunction) {
         ImmutableList<SoyExpression> args = visitAll(node.getParams());
-        Optional<Extern> externApi =
+        return callExtern(
             ExternAdaptors.asExtern(
-                (SoyJavaSourceFunction) fn, args, node.getType(), node.getAllowedParamTypes());
-        if (externApi.isPresent()) {
-          return callExtern(externApi.get(), args);
-        }
+                (SoyJavaExternFunction) fn, args, node.getType(), node.getAllowedParamTypes()),
+            args);
+      } else if (fn instanceof SoyJavaSourceFunction) {
+        ImmutableList<SoyExpression> args = visitAll(node.getParams());
         return sourceFunctionCompiler.compile(
             node, (SoyJavaSourceFunction) fn, args, parameters, detacher);
       } else if (fn instanceof Extern) {
@@ -2086,7 +2087,12 @@ final class ExpressionCompiler {
           } else {
             SoyType soyType = functionType.getParameters().get(soyArgIndex).getType();
             SoyExpression soyArg = params.get(soyArgIndex);
-            args.add(ExternCompiler.adaptParameter(soyArg, paramType, soyType, parameters));
+            // Special path available to ExternSourceFunction to avoid any boxing or unboxing.
+            if (javaImpl.adaptArgs()) {
+              args.add(ExternCompiler.adaptParameter(soyArg, paramType, soyType, parameters));
+            } else {
+              args.add(adaptArbitraryMethodArg(soyArg, paramType));
+            }
             soyArgIndex++;
           }
         }
@@ -2579,5 +2585,17 @@ final class ExpressionCompiler {
     return !javaImpl.type().isStatic()
         || javaImpl.paramTypes().stream()
             .anyMatch(t -> JavaImplNode.IMPLICIT_PARAMS.contains(t.className()));
+  }
+
+  private static Expression adaptArbitraryMethodArg(
+      Expression actualParam, TypeReference javaType) {
+    if (BytecodeUtils.isPrimitive(actualParam.resultType())) {
+      if (javaType.isPrimitive()) {
+        return actualParam;
+      } else {
+        return BytecodeUtils.boxJavaPrimitive(actualParam.resultType(), actualParam);
+      }
+    }
+    return actualParam.checkedCast(getTypeInfoForJavaImpl(javaType.className()).type());
   }
 }

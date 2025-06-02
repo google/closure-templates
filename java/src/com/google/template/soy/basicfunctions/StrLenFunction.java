@@ -17,10 +17,8 @@
 package com.google.template.soy.basicfunctions;
 
 import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
-import com.google.template.soy.plugin.java.restricted.JavaValue;
+import com.google.template.soy.plugin.java.internal.SoyJavaExternFunction;
 import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
-import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
 import com.google.template.soy.plugin.javascript.restricted.JavaScriptPluginContext;
 import com.google.template.soy.plugin.javascript.restricted.JavaScriptValue;
 import com.google.template.soy.plugin.javascript.restricted.JavaScriptValueFactory;
@@ -46,7 +44,7 @@ import java.util.List;
 @SoyFieldSignature(name = "length", baseType = "string", returnType = "int")
 @SoyPureFunction
 public final class StrLenFunction
-    implements SoyJavaSourceFunction, SoyJavaScriptSourceFunction, SoyPythonSourceFunction {
+    implements SoyJavaScriptSourceFunction, SoyPythonSourceFunction, SoyJavaExternFunction {
 
   @Override
   public JavaScriptValue applyForJavaScriptSource(
@@ -62,13 +60,20 @@ public final class StrLenFunction
 
   // lazy singleton pattern, allows other backends to avoid the work.
   private static final class Methods {
-    static final Method STR_LEN =
+    static final Method STRING_DATA_LENGTH =
         JavaValueFactory.createMethod(BasicFunctionsRuntime.class, "strLen", SoyValue.class);
+    static final Method STRING_LENGTH = JavaValueFactory.createMethod(String.class, "length");
   }
 
   @Override
-  public JavaValue applyForJavaSource(
-      JavaValueFactory factory, List<JavaValue> args, JavaPluginContext context) {
-    return factory.callStaticMethod(Methods.STR_LEN, args.get(0));
+  public Method getExternJavaMethod(List<RuntimeType> argTypes) {
+    return argTypes.get(0) == RuntimeType.SOY_VALUE
+        ? Methods.STRING_DATA_LENGTH
+        : Methods.STRING_LENGTH;
+  }
+
+  @Override
+  public boolean adaptArgs() {
+    return false;
   }
 }

@@ -18,9 +18,34 @@ package com.google.template.soy.plugin.java.internal;
 
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import java.lang.reflect.Method;
+import java.util.List;
 
 /** A SoySourceFunction that can be executed in JBCSRC via the extern compilation pipeline. */
 public interface SoyJavaExternFunction extends SoySourceFunction {
 
-  Method getExternJavaMethod();
+  /** The runtime type of an incoming argument. */
+  enum RuntimeType {
+    LONG,
+    DOUBLE,
+    BOOLEAN,
+    SOY_VALUE,
+    OBJECT
+  }
+
+  default Method getExternJavaMethod(List<RuntimeType> argTypes) {
+    return getExternJavaMethod();
+  }
+
+  default Method getExternJavaMethod() {
+    throw new AbstractMethodError();
+  }
+
+  /**
+   * Returns whether args should be adapted via the standard extern pipeline, or passed as-is. If
+   * this method returns false then typically getExternJavaMethod will return a method for boxed
+   * SoyValues and another method for unboxed values.
+   */
+  default boolean adaptArgs() {
+    return true;
+  }
 }

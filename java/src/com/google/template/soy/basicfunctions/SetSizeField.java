@@ -17,10 +17,8 @@
 package com.google.template.soy.basicfunctions;
 
 import com.google.template.soy.data.SoySet;
-import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
-import com.google.template.soy.plugin.java.restricted.JavaValue;
+import com.google.template.soy.plugin.java.internal.SoyJavaExternFunction;
 import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
-import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
 import com.google.template.soy.plugin.javascript.restricted.JavaScriptPluginContext;
 import com.google.template.soy.plugin.javascript.restricted.JavaScriptValue;
 import com.google.template.soy.plugin.javascript.restricted.JavaScriptValueFactory;
@@ -32,13 +30,14 @@ import com.google.template.soy.plugin.python.restricted.SoyPythonSourceFunction;
 import com.google.template.soy.shared.restricted.SoyFieldSignature;
 import com.google.template.soy.shared.restricted.SoyPureFunction;
 import java.lang.reflect.Method;
+import java.util.Collection;
 import java.util.List;
 
 /** Soy field that gets the size of a set. */
 @SoyFieldSignature(name = "size", baseType = "set<any>", returnType = "int")
 @SoyPureFunction
 public final class SetSizeField
-    implements SoyJavaSourceFunction, SoyJavaScriptSourceFunction, SoyPythonSourceFunction {
+    implements SoyJavaScriptSourceFunction, SoyPythonSourceFunction, SoyJavaExternFunction {
 
   @Override
   public JavaScriptValue applyForJavaScriptSource(
@@ -55,11 +54,16 @@ public final class SetSizeField
   // lazy singleton pattern, allows other backends to avoid the work.
   private static final class Methods {
     static final Method SET_SIZE_FN = JavaValueFactory.createMethod(SoySet.class, "size");
+    static final Method COLLECTION_SIZE = JavaValueFactory.createMethod(Collection.class, "size");
   }
 
   @Override
-  public JavaValue applyForJavaSource(
-      JavaValueFactory factory, List<JavaValue> args, JavaPluginContext context) {
-    return factory.callJavaValueMethod(Methods.SET_SIZE_FN, args.get(0));
+  public Method getExternJavaMethod(List<RuntimeType> argTypes) {
+    return argTypes.get(0) == RuntimeType.SOY_VALUE ? Methods.SET_SIZE_FN : Methods.COLLECTION_SIZE;
+  }
+
+  @Override
+  public boolean adaptArgs() {
+    return false;
   }
 }

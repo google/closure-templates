@@ -540,6 +540,13 @@ public final class BasicFunctionsRuntime {
     return list.size();
   }
 
+  public static int length(SoyValue value) {
+    if (value instanceof SoyList) {
+      return ((SoyList) value).length();
+    }
+    return value.asJavaList().size();
+  }
+
   @SuppressWarnings("deprecation") // we cannot do anything so go away
   @Nonnull
   public static SoyMap legacyObjectMapToMap(SoyValue value) {

@@ -16,10 +16,9 @@
 
 package com.google.template.soy.basicfunctions;
 
-import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
-import com.google.template.soy.plugin.java.restricted.JavaValue;
+import com.google.template.soy.data.SoyValue;
+import com.google.template.soy.plugin.java.internal.SoyJavaExternFunction;
 import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
-import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
 import com.google.template.soy.plugin.javascript.restricted.JavaScriptPluginContext;
 import com.google.template.soy.plugin.javascript.restricted.JavaScriptValue;
 import com.google.template.soy.plugin.javascript.restricted.JavaScriptValueFactory;
@@ -34,6 +33,7 @@ import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 import com.google.template.soy.shared.restricted.SoyPureFunction;
 import com.google.template.soy.shared.restricted.TypedSoyFunction;
 import java.lang.reflect.Method;
+import java.util.Collection;
 import java.util.List;
 
 /** Soy function that gets the length of a list. */
@@ -46,7 +46,7 @@ import java.util.List;
             returnType = "int"))
 @SoyFieldSignature(name = "length", baseType = "list<any>", returnType = "int")
 public final class LengthFunction extends TypedSoyFunction
-    implements SoyJavaSourceFunction, SoyJavaScriptSourceFunction, SoyPythonSourceFunction {
+    implements SoyJavaScriptSourceFunction, SoyPythonSourceFunction, SoyJavaExternFunction {
 
   @Override
   public JavaScriptValue applyForJavaScriptSource(
@@ -62,13 +62,20 @@ public final class LengthFunction extends TypedSoyFunction
 
   // lazy singleton pattern, allows other backends to avoid the work.
   private static final class Methods {
-    static final Method DELEGATE_SOYLIST_LENGTH =
-        JavaValueFactory.createMethod(BasicFunctionsRuntime.class, "length", List.class);
+    static final Method SOY_VALUE_LENGTH =
+        JavaValueFactory.createMethod(BasicFunctionsRuntime.class, "length", SoyValue.class);
+    static final Method COLLECTION_SIZE = JavaValueFactory.createMethod(Collection.class, "size");
   }
 
   @Override
-  public JavaValue applyForJavaSource(
-      JavaValueFactory factory, List<JavaValue> args, JavaPluginContext context) {
-    return factory.callStaticMethod(Methods.DELEGATE_SOYLIST_LENGTH, args.get(0));
+  public Method getExternJavaMethod(List<RuntimeType> argTypes) {
+    return argTypes.get(0) == RuntimeType.SOY_VALUE
+        ? Methods.SOY_VALUE_LENGTH
+        : Methods.COLLECTION_SIZE;
+  }
+
+  @Override
+  public boolean adaptArgs() {
+    return false;
   }
 }

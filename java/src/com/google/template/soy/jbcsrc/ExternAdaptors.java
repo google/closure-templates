@@ -22,8 +22,9 @@ import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.base.internal.TypeReference;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
+import com.google.template.soy.jbcsrc.restricted.SoyRuntimeType;
 import com.google.template.soy.plugin.java.internal.SoyJavaExternFunction;
-import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
+import com.google.template.soy.plugin.java.internal.SoyJavaExternFunction.RuntimeType;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import com.google.template.soy.shared.restricted.SoySourceFunctionMethod;
 import com.google.template.soy.soytree.FileMetadata.Extern;
@@ -37,6 +38,7 @@ import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import org.objectweb.asm.Type;
 
 class ExternAdaptors {
   private ExternAdaptors() {}
@@ -53,6 +55,7 @@ class ExternAdaptors {
           asExtern(
               (SoyJavaExternFunction) impl,
               soyMethod.getMethodName(),
+              args,
               soyMethod.getReturnType(),
               ImmutableList.<SoyType>builder()
                   .add(soyMethod.getBaseType())
@@ -63,26 +66,28 @@ class ExternAdaptors {
   }
 
   /**
-   * Adapts {@link SoyJavaSourceFunction} to {@link Extern} if the function's implementation is a
+   * Adapts {@link SoyJavaExternFunction} to {@link Extern} if the function's implementation is a
    * {@link SoyJavaExternFunction}.
    */
-  public static Optional<Extern> asExtern(
-      SoyJavaSourceFunction fn,
+  public static Extern asExtern(
+      SoyJavaExternFunction fn,
       List<SoyExpression> args,
       SoyType returnType,
       ImmutableList<SoyType> paramTypes) {
-    if (fn instanceof SoyJavaExternFunction) {
-      return Optional.of(asExtern((SoyJavaExternFunction) fn, "unused", returnType, paramTypes));
-    }
-    return Optional.empty();
+    return asExtern(fn, "unused", args, returnType, paramTypes);
   }
 
   private static Extern asExtern(
       SoyJavaExternFunction impl,
       String methodName,
+      List<SoyExpression> args,
       SoyType returnType,
       ImmutableList<SoyType> argTypes) {
-    Method method = impl.getExternJavaMethod();
+    ImmutableList<RuntimeType> argRuntimeTypes =
+        args.stream()
+            .map(a -> soyRuntimeTypeToExternApiType(a.soyRuntimeType()))
+            .collect(toImmutableList());
+    Method method = impl.getExternJavaMethod(argRuntimeTypes);
     MethodType methodType;
     if (Modifier.isStatic(method.getModifiers())) {
       if (method.getDeclaringClass().isInterface()) {
@@ -135,6 +140,11 @@ class ExternAdaptors {
           public boolean instanceFromContext() {
             return false;
           }
+
+          @Override
+          public boolean adaptArgs() {
+            return impl.adaptArgs();
+          }
         };
     return new Extern() {
       @Override
@@ -167,5 +177,21 @@ class ExternAdaptors {
         return false;
       }
     };
+  }
+
+  private static RuntimeType soyRuntimeTypeToExternApiType(SoyRuntimeType soyRuntimeType) {
+    if (soyRuntimeType.isBoxed()) {
+      return RuntimeType.SOY_VALUE;
+    }
+    switch (soyRuntimeType.runtimeType().getSort()) {
+      case Type.LONG:
+        return RuntimeType.LONG;
+      case Type.DOUBLE:
+        return RuntimeType.DOUBLE;
+      case Type.BOOLEAN:
+        return RuntimeType.BOOLEAN;
+      default:
+        return RuntimeType.OBJECT;
+    }
   }
 }

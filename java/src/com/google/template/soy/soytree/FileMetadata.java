@@ -89,6 +89,13 @@ public interface FileMetadata extends PartialFileMetadata {
       default boolean instanceFromContext() {
         return !type().isStatic();
       }
+
+      /**
+       * Returns whether args should be adapted via the standard extern pipeline, or passed as-is.
+       */
+      default boolean adaptArgs() {
+        return true;
+      }
     }
   }
 

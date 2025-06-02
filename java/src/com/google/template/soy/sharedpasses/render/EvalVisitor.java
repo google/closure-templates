@@ -134,6 +134,7 @@ import com.google.template.soy.plugin.internal.JavaPluginExecContext;
 import com.google.template.soy.plugin.java.PluginInstances;
 import com.google.template.soy.plugin.java.RenderCssHelper;
 import com.google.template.soy.plugin.java.internal.SoyJavaExternFunction;
+import com.google.template.soy.plugin.java.internal.SoyJavaExternFunction.RuntimeType;
 import com.google.template.soy.plugin.java.restricted.MethodSignature;
 import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
 import com.google.template.soy.shared.SoyCssRenamingMap;
@@ -166,6 +167,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Predicate;
+import java.util.stream.IntStream;
 import javax.annotation.Nullable;
 
 /**
@@ -1035,7 +1037,10 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
       ImmutableList<TofuJavaValue> args,
       SoyType returnType,
       ImmutableList<SoyType> argTypes) {
-    Method method = extern.getExternJavaMethod();
+    ImmutableList<RuntimeType> boxedArgs =
+        IntStream.of(args.size()).mapToObj(i -> RuntimeType.SOY_VALUE).collect(toImmutableList());
+
+    Method method = extern.getExternJavaMethod(boxedArgs);
     SoyValue target = null;
     if (!Modifier.isStatic(method.getModifiers())) {
       target = args.get(0).soyValue();

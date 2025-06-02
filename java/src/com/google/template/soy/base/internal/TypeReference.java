@@ -107,6 +107,11 @@ public abstract class TypeReference {
     return true;
   }
 
+  public boolean isPrimitive() {
+    String className = className();
+    return className.indexOf('.') < 0 && Character.isLowerCase(className.charAt(0));
+  }
+
   @Override
   public final String toString() {
     if (!isGeneric()) {
