@@ -582,9 +582,9 @@ public final class SoyExpression extends Expression {
       }
     }
     if (!isBoxed()) {
-      // this is for unboxed reference types (strings, lists, protos) String.valueOf handles null
-      // implicitly
-      return forString(MethodRefs.STRING_VALUE_OF.invoke(delegate).toMaybeConstant());
+      // Box values before coercing to string so we don't depend on toString() that we don't
+      // control.
+      return this.box().coerceToString();
     }
     return forString(MethodRefs.SOY_VALUE_COERCE_TO_STRING.invoke(delegate).toMaybeConstant());
   }
