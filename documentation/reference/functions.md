@@ -46,6 +46,15 @@ nullable value, the return value of `checkNotNull` will no longer be nullable.
 This can be useful when passing values to templates that expect non nullable
 values.
 
+### `Number_isNaN(value)` {#Number_isNaN}
+
+Returns `true` if `value` is a number and its number value is `NaN`.
+
+### `Number_isInteger(value)` {#Number_isInteger}
+
+Returns `true` if `value` is a number that can be represented as a whole
+integer.
+
 ### `keys(legacyObjectMap)` {#keys}
 
 The keys of a [legacy object map](types.md#legacy_object_map) as a list. There

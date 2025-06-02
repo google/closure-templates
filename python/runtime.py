@@ -597,7 +597,22 @@ def parse_float(s):
 
 def sqrt(num):
   """Returns the square root of the given number."""
-  return math.sqrt(num)
+  try:
+    return math.sqrt(num)
+  except ValueError:
+    return math.nan
+
+
+def is_nan(num):
+  """Returns whether a value is a number and is NaN."""
+  return isinstance(num, _NUMBER_TYPES) and math.isnan(num)
+
+
+def is_integer(num):
+  """Returns whether a value is an integer."""
+  return isinstance(num, six.integer_types) or (
+      isinstance(num, float) and num.is_integer()
+  )
 
 
 def unsupported(msg):

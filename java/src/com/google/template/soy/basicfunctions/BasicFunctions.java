@@ -44,6 +44,8 @@ public class BasicFunctions {
         new GbigintListSortMethod(),
         new HtmlToTextFunction(),
         new IsFiniteFunction(),
+        new IsIntegerFunction(),
+        new IsNaNFunction(),
         new JoinFunction(),
         new KeysFunction(),
         new LegacyObjectMapToMapFunction(),

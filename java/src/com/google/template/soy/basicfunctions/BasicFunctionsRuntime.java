@@ -24,6 +24,7 @@ import static java.util.stream.Collectors.joining;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
+import com.google.common.math.DoubleMath;
 import com.google.common.primitives.Doubles;
 import com.google.common.primitives.Longs;
 import com.google.protobuf.Message;
@@ -648,5 +649,18 @@ public final class BasicFunctionsRuntime {
 
   public static SoyValue throwException(String message) {
     throw new RuntimeException(message);
+  }
+
+  public static boolean isNaN(SoyValue value) {
+    return value instanceof FloatData && Double.isNaN(value.floatValue());
+  }
+
+  public static boolean isInteger(double value) {
+    return DoubleMath.isMathematicalInteger(value);
+  }
+
+  public static boolean isInteger(SoyValue value) {
+    return value instanceof IntegerData
+        || (value instanceof FloatData && isInteger(value.floatValue()));
   }
 }
