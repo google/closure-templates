@@ -16,9 +16,11 @@
 
 package com.google.template.soy.types;
 
+import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.soytree.SoyTypeP;
 
 /** Soy integer type. */
+@Immutable
 public final class NumberType extends PrimitiveType {
 
   private static final NumberType INSTANCE = new NumberType();

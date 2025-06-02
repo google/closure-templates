@@ -81,6 +81,8 @@ import com.google.template.soy.exprtree.ExprNode.Kind;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.FunctionNode;
+import com.google.template.soy.exprtree.GlobalNode;
+import com.google.template.soy.exprtree.GlobalNode.KnownGlobal;
 import com.google.template.soy.exprtree.ItemAccessNode;
 import com.google.template.soy.exprtree.ListComprehensionNode;
 import com.google.template.soy.exprtree.ListComprehensionNode.ComprehensionVarDefn;
@@ -350,6 +352,24 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
   @Override
   protected SoyValue visitProtoEnumValueNode(ProtoEnumValueNode node) {
     return convertResult(node.getValue());
+  }
+
+  @Override
+  protected SoyValue visitGlobalNode(GlobalNode node) {
+    KnownGlobal global = node.getKnownGlobal();
+    switch (global) {
+      case E:
+        return FloatData.forValue(Math.E);
+      case PI:
+        return FloatData.forValue(Math.PI);
+      case NAN:
+        return FloatData.forValue(Double.NaN);
+      case NEGATIVE_INFINITY:
+        return FloatData.forValue(Double.NEGATIVE_INFINITY);
+      case POSITIVE_INFINITY:
+        return FloatData.forValue(Double.POSITIVE_INFINITY);
+    }
+    throw new AssertionError();
   }
 
   // -----------------------------------------------------------------------------------------------

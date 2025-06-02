@@ -141,6 +141,28 @@ argument.
 
 Returns whether the number is finite (i.e., not `NaN` or `Infinity`).
 
+## Math Constants
+
+### `Math_PI`
+
+Ratio of a circle's circumference to its diameter; approximately 3.14159.
+
+### `Math_E`
+
+Euler's number and the base of natural logarithms; approximately 2.718.
+
+### `Number_NaN`
+
+Floating point "not-a-number".
+
+### `Number_POSITIVE_INFINITY`
+
+Floating point positive infinity.
+
+### `Number_NEGATIVE_INFINITY`
+
+Floating point negative infinity.
+
 ## List Fields
 
 <span id="list-any_length"></span>

@@ -19,6 +19,7 @@ package com.google.template.soy.pysrc.internal;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.template.soy.pysrc.restricted.PyExprUtils.genPyExprWithNewToken;
+import static com.google.template.soy.pysrc.restricted.PyExprUtils.pyPrecedenceForOperator;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -36,6 +37,8 @@ import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.FunctionNode;
+import com.google.template.soy.exprtree.GlobalNode;
+import com.google.template.soy.exprtree.GlobalNode.KnownGlobal;
 import com.google.template.soy.exprtree.ItemAccessNode;
 import com.google.template.soy.exprtree.ListComprehensionNode;
 import com.google.template.soy.exprtree.ListLiteralNode;
@@ -223,6 +226,24 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
   @Override
   protected PyExpr visitStringNode(StringNode node) {
     return new PyStringExpr(node.toSourceString());
+  }
+
+  @Override
+  protected PyExpr visitGlobalNode(GlobalNode node) {
+    KnownGlobal global = node.getKnownGlobal();
+    switch (global) {
+      case E:
+        return new PyExpr("math.e", Integer.MAX_VALUE);
+      case PI:
+        return new PyExpr("math.pi", Integer.MAX_VALUE);
+      case NAN:
+        return new PyExpr("math.nan", Integer.MAX_VALUE);
+      case NEGATIVE_INFINITY:
+        return new PyExpr("-math.inf", pyPrecedenceForOperator(Operator.NEGATIVE));
+      case POSITIVE_INFINITY:
+        return new PyExpr("math.inf", Integer.MAX_VALUE);
+    }
+    throw new AssertionError();
   }
 
   @Override
@@ -433,8 +454,7 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
       return access;
     } else {
       return new PyExpr(
-          nullSafetyPrefix + access.getText(),
-          PyExprUtils.pyPrecedenceForOperator(Operator.CONDITIONAL));
+          nullSafetyPrefix + access.getText(), pyPrecedenceForOperator(Operator.CONDITIONAL));
     }
   }
 
@@ -545,7 +565,7 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
             + ", "
             + operandPyExprs.get(1).getText()
             + ")",
-        PyExprUtils.pyPrecedenceForOperator(Operator.NOT));
+        pyPrecedenceForOperator(Operator.NOT));
   }
 
   @Override
@@ -554,7 +574,7 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
 
     return new PyExpr(
         operandPyExprs.get(0).getText() + " == " + operandPyExprs.get(1).getText(),
-        PyExprUtils.pyPrecedenceForOperator(Operator.TRIPLE_EQUAL));
+        pyPrecedenceForOperator(Operator.TRIPLE_EQUAL));
   }
 
   @Override
@@ -563,7 +583,7 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
 
     return new PyExpr(
         operandPyExprs.get(0).getText() + " != " + operandPyExprs.get(1).getText(),
-        PyExprUtils.pyPrecedenceForOperator(Operator.TRIPLE_NOT_EQUAL));
+        pyPrecedenceForOperator(Operator.TRIPLE_NOT_EQUAL));
   }
 
   @Override
@@ -746,7 +766,7 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
             + ".is_msg_available("
             + fallbackMsgId
             + ")",
-        PyExprUtils.pyPrecedenceForOperator(Operator.BAR_BAR));
+        pyPrecedenceForOperator(Operator.BAR_BAR));
   }
 
   /**
@@ -928,7 +948,7 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
   private PyExpr genTernaryConditional(PyExpr conditionalExpr, PyExpr trueExpr, PyExpr falseExpr) {
     // Python's ternary operator switches the order from <conditional> ? <true> : <false> to
     // <true> if <conditional> else <false>.
-    int conditionalPrecedence = PyExprUtils.pyPrecedenceForOperator(Operator.CONDITIONAL);
+    int conditionalPrecedence = pyPrecedenceForOperator(Operator.CONDITIONAL);
     // Not safe to nest ternaries in each other without parens.
     int safeSubprecedence = conditionalPrecedence + 1;
 

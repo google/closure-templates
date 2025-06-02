@@ -34,6 +34,7 @@ import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.isDefinite
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.newLabel;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.numericConversion;
 import static com.google.template.soy.jbcsrc.restricted.SoyExpression.asBoxedValueProviderList;
+import static com.google.template.soy.jbcsrc.restricted.SoyExpression.forFloat;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
@@ -57,6 +58,7 @@ import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.GlobalNode;
+import com.google.template.soy.exprtree.GlobalNode.KnownGlobal;
 import com.google.template.soy.exprtree.GroupNode;
 import com.google.template.soy.exprtree.ItemAccessNode;
 import com.google.template.soy.exprtree.ListComprehensionNode;
@@ -2267,6 +2269,24 @@ final class ExpressionCompiler {
                   node.getResolvedName());
             }
           });
+    }
+
+    @Override
+    protected SoyExpression visitGlobalNode(GlobalNode node) {
+      KnownGlobal global = node.getKnownGlobal();
+      switch (global) {
+        case E:
+          return forFloat(constant(Math.E));
+        case PI:
+          return forFloat(constant(Math.PI));
+        case NAN:
+          return forFloat(constant(Double.NaN));
+        case NEGATIVE_INFINITY:
+          return forFloat(constant(Double.NEGATIVE_INFINITY));
+        case POSITIVE_INFINITY:
+          return forFloat(constant(Double.POSITIVE_INFINITY));
+      }
+      throw new AssertionError();
     }
 
     // Catch-all for unimplemented nodes

@@ -28,6 +28,7 @@ import static com.google.template.soy.jssrc.dsl.Expressions.LITERAL_TRUE;
 import static com.google.template.soy.jssrc.dsl.Expressions.LITERAL_UNDEFINED;
 import static com.google.template.soy.jssrc.dsl.Expressions.arrowFunction;
 import static com.google.template.soy.jssrc.dsl.Expressions.construct;
+import static com.google.template.soy.jssrc.dsl.Expressions.dottedIdNoRequire;
 import static com.google.template.soy.jssrc.dsl.Expressions.id;
 import static com.google.template.soy.jssrc.dsl.Expressions.not;
 import static com.google.template.soy.jssrc.dsl.Expressions.number;
@@ -87,6 +88,7 @@ import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.GlobalNode;
+import com.google.template.soy.exprtree.GlobalNode.KnownGlobal;
 import com.google.template.soy.exprtree.ItemAccessNode;
 import com.google.template.soy.exprtree.ListComprehensionNode;
 import com.google.template.soy.exprtree.ListLiteralNode;
@@ -802,10 +804,25 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
 
   @Override
   protected Expression visitGlobalNode(GlobalNode node) {
+    if (node.isKnown()) {
+      KnownGlobal global = node.getKnownGlobal();
+      switch (global) {
+        case E:
+          return dottedIdNoRequire("Math.E");
+        case PI:
+          return dottedIdNoRequire("Math.PI");
+        case NAN:
+          return dottedIdNoRequire("Number.NaN");
+        case NEGATIVE_INFINITY:
+          return dottedIdNoRequire("Number.NEGATIVE_INFINITY");
+        case POSITIVE_INFINITY:
+          return dottedIdNoRequire("Number.POSITIVE_INFINITY");
+      }
+    }
     // jssrc supports unknown globals by plopping the global name directly into the output
     // NOTE: this may cause the jscompiler to emit warnings, users will need to whitelist them or
     // fix their use of unknown globals.
-    return Expressions.dottedIdNoRequire(node.getName());
+    return dottedIdNoRequire(node.getName());
   }
 
   // -----------------------------------------------------------------------------------------------
@@ -1248,7 +1265,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
     return translationContext
         .codeGenerator()
         .declarationBuilder()
-        .setRhs(Expressions.dottedIdNoRequire(expr.getValue()))
+        .setRhs(dottedIdNoRequire(expr.getValue()))
         .setJsDoc(JsDoc.builder().addParameterizedAnnotation("suppress", "missingRequire").build())
         .build()
         .ref();
@@ -1305,8 +1322,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
     // TODO(b/80597216): remove the call to dottedIdNoRequire here by calculating the goog.require
     // this will require knowing the current require strategy and whether or not the template is
     // defined in this file.
-    Expression templateLiteral =
-        Expressions.dottedIdNoRequire(templateAliases.get(node.getResolvedName()));
+    Expression templateLiteral = dottedIdNoRequire(templateAliases.get(node.getResolvedName()));
     return MARK_TEMPLATE.call(templateLiteral, Expressions.stringLiteral(node.getResolvedName()));
   }
 
