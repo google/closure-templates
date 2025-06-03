@@ -38,6 +38,7 @@ java_library(
         "//java/src/com/google/template/soy/jbcsrc/api",
         "//java/src/com/google/template/soy/jbcsrc/api:output_appendable",
         "//java/src/com/google/template/soy/jbcsrc/shared",
+        "//java/src/com/google/template/soy/jbcsrc/shared:stackframe",
         "//java/src/com/google/template/soy/logging:public",
         "//java/src/com/google/template/soy/msgs",
         "//java/src/com/google/template/soy/shared/internal:short_circuitable",

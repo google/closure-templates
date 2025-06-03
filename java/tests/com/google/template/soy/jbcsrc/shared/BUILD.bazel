@@ -32,6 +32,7 @@ java_library(
         "//java/src/com/google/template/soy/jbcsrc/runtime",
         "//java/src/com/google/template/soy/jbcsrc/shared",
         "//java/src/com/google/template/soy/jbcsrc/shared:names",
+        "//java/src/com/google/template/soy/jbcsrc/shared:stackframe",
         "//java/src/com/google/template/soy/msgs",
         "//java/src/com/google/template/soy/plugin/java",
         "@maven//:com_google_code_findbugs_jsr305",

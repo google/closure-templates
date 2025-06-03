@@ -38,6 +38,7 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.data.Dir;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
+import com.google.template.soy.data.NodeBuilder;
 import com.google.template.soy.data.RecordProperty;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
@@ -205,6 +206,7 @@ public final class BytecodeUtils {
   public static final Type RECORD_SYMBOL_TYPE = Type.getType(RecordProperty.class);
   public static final Type SOY_MSG_RAW_PARTS_TYPE = Type.getType(SoyMsgRawParts.class);
   public static final Type ULOCALE_TYPE = Type.getType(ULocale.class);
+  public static final Type NODE_BUILDER_TYPE = Type.getType(NodeBuilder.class);
 
   public static final Method CLASS_INIT = Method.getMethod("void <clinit>()");
   public static final Method NULLARY_INIT = Method.getMethod("void <init>()");
@@ -1123,7 +1125,7 @@ public final class BytecodeUtils {
             : MethodRefs.IMMUTABLE_MAP_BUILDER_BUILD_OR_THROW);
   }
 
-  private static Expression asArray(Type arrayType, ImmutableList<? extends Expression> elements) {
+  public static Expression asArray(Type arrayType, ImmutableList<? extends Expression> elements) {
     Type elementType = arrayType.getElementType();
     return new Expression(arrayType, Feature.NON_JAVA_NULLABLE.asFeatures()) {
       @Override

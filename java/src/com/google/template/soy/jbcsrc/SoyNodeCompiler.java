@@ -1484,6 +1484,23 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
               String.class)
           .asHandle();
 
+  private static final Handle STATIC_NODEBUILDER_HANDLE =
+      MethodRef.createPure(
+              ClassLoaderFallbackCallFactory.class,
+              "bootstrapNodeBuilder",
+              MethodHandles.Lookup.class,
+              String.class,
+              MethodType.class,
+              String.class,
+              String.class)
+          .asHandle();
+
+  private static final String CREATE_NODE_BUILDER_SIGNATURE =
+      "(Lcom/google/template/soy/jbcsrc/shared/StackFrame;"
+          + "[Ljava/lang/Object;"
+          + "Ljava/lang/Object;)"
+          + "Lcom/google/template/soy/data/NodeBuilder;";
+
   private static final Handle STATIC_TEMPLATE_HANDLE =
       MethodRef.createPure(
               ClassLoaderFallbackCallFactory.class,
@@ -1549,6 +1566,27 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
                           List<Expression> params,
                           AppendableExpression appendable,
                           RenderContextExpression renderContext) {
+                        if (node.isLazy()) {
+                          Expression nbParams =
+                              BytecodeUtils.asArray(
+                                  Type.getType(Object[].class), ImmutableList.copyOf(params));
+                          Expression nodeBuilder =
+                              new Expression(BytecodeUtils.NODE_BUILDER_TYPE) {
+                                @Override
+                                protected void doGen(CodeBuilder adapter) {
+                                  stackFrame.gen(adapter);
+                                  nbParams.gen(adapter);
+                                  renderContext.gen(adapter);
+                                  adapter.visitInvokeDynamicInsn(
+                                      "bootstrapNodeBuilder",
+                                      CREATE_NODE_BUILDER_SIGNATURE,
+                                      STATIC_NODEBUILDER_HANDLE,
+                                      node.getCalleeName(),
+                                      positionalRenderMethod.method().getDescriptor());
+                                }
+                              };
+                          return appendableExpression.appendNodeBuilder(nodeBuilder);
+                        }
                         if (isPrivateCall) {
                           return positionalRenderMethod.invoke(
                               ImmutableList.<Expression>builder()
@@ -1582,6 +1620,27 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
             public Optional<DirectCallGenerator> asDirectCall() {
               return Optional.of(
                   (stackFrame, params, appendable, renderContext) -> {
+                    if (node.isLazy()) {
+                      Expression nbParams =
+                          BytecodeUtils.asArray(
+                              Type.getType(Object[].class), ImmutableList.of(params));
+                      Expression nodeBuilder =
+                          new Expression(BytecodeUtils.NODE_BUILDER_TYPE) {
+                            @Override
+                            protected void doGen(CodeBuilder adapter) {
+                              stackFrame.gen(adapter);
+                              nbParams.gen(adapter);
+                              renderContext.gen(adapter);
+                              adapter.visitInvokeDynamicInsn(
+                                  "bootstrapNodeBuilder",
+                                  CREATE_NODE_BUILDER_SIGNATURE,
+                                  STATIC_NODEBUILDER_HANDLE,
+                                  node.getCalleeName(),
+                                  metadata.renderMethod().method().getDescriptor());
+                            }
+                          };
+                      return appendableExpression.appendNodeBuilder(nodeBuilder);
+                    }
                     if (isPrivateCall) {
                       return metadata
                           .renderMethod()
@@ -1646,6 +1705,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     TemplateVariableManager.Scope renderScope = variables.enterScope();
     Statement initCallee = Statement.NULL_STATEMENT;
     boolean allPrintDirectivesStreamable = areAllPrintDirectivesStreamable(node);
+    boolean isLazy = (node instanceof CallBasicNode) && ((CallBasicNode) node).isLazy();
     if (!allPrintDirectivesStreamable || node.isErrorFallbackSkip()) {
       // in this case we need to wrap a CompiledTemplate to buffer to catch exceptions or to
       // apply non-streaming escaping directives.
@@ -1668,8 +1728,17 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
               TemplateVariableManager.SaveStrategy.STORE);
       initCallee = calleeVariable.initializer();
       boundCall =
-          (frame, output, context) ->
-              calleeVariable
+          (frame, output, context) -> {
+            if (isLazy) {
+              Expression nodeBuilder =
+                  MethodRefs.CREATE_NODE_BUILDER.invoke(
+                      calleeVariable.accessor(),
+                      frame,
+                      expressionAndInitializer.expression(),
+                      context);
+              return output.appendNodeBuilder(nodeBuilder);
+            } else {
+              return calleeVariable
                   .accessor()
                   .invoke(
                       MethodRefs.COMPILED_TEMPLATE_RENDER,
@@ -1677,6 +1746,8 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
                       expressionAndInitializer.expression(),
                       output,
                       context);
+            }
+          };
     } else {
       Optional<DirectPositionalCallGenerator> asDirectPositionalCall =
           callGenerator.asDirectPositionalCall();
@@ -1716,8 +1787,17 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
                   TemplateVariableManager.SaveStrategy.STORE);
           initCallee = calleeVariable.initializer();
           boundCall =
-              (frame, output, context) ->
-                  calleeVariable
+              (frame, output, context) -> {
+                if (isLazy) {
+                  Expression nodeBuilder =
+                      MethodRefs.CREATE_NODE_BUILDER.invoke(
+                          calleeVariable.accessor(),
+                          frame,
+                          expressionAndInitializer.expression(),
+                          context);
+                  return output.appendNodeBuilder(nodeBuilder);
+                } else {
+                  return calleeVariable
                       .accessor()
                       .invoke(
                           MethodRefs.COMPILED_TEMPLATE_RENDER,
@@ -1725,9 +1805,12 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
                           expressionAndInitializer.expression(),
                           output,
                           context);
+                }
+              };
         }
       }
     }
+
     if (!node.getEscapingDirectives().isEmpty() && allPrintDirectivesStreamable) {
       PrintDirectives.AppendableAndFlushBuffersDepth wrappedAppendable =
           applyStreamingEscapingDirectives(

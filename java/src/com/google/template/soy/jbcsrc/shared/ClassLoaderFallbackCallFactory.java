@@ -25,6 +25,7 @@ import static java.lang.invoke.MethodType.methodType;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ObjectArrays;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
+import com.google.template.soy.data.NodeBuilder;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.TemplateValue;
 import com.google.template.soy.data.internal.ParamStore;
@@ -360,6 +361,24 @@ public final class ClassLoaderFallbackCallFactory {
           slowPathRenderHandle.asCollector(2, SoyValueProvider[].class, numPositionalParams);
     }
     return new SoyCallSite(type, slowPathRenderHandle);
+  }
+
+  public static CallSite bootstrapNodeBuilder(
+      Lookup lookup, String name, MethodType type, String templateName, String templateSig)
+      throws IllegalAccessException, NoSuchMethodException {
+    CallSite tmpl =
+        bootstrapCall(
+            lookup,
+            name,
+            MethodType.fromMethodDescriptorString(
+                templateSig, lookup.lookupClass().getClassLoader()),
+            templateName);
+    NodeBuilder.Builder builder = NodeBuilder.builder(tmpl);
+    Method buildMethod =
+        NodeBuilder.Builder.class.getDeclaredMethod(
+            "build", StackFrame.class, Object[].class, Object.class);
+    MethodHandle unbound = lookup.unreflect(buildMethod);
+    return new ConstantCallSite(unbound.bindTo(builder));
   }
 
   /**

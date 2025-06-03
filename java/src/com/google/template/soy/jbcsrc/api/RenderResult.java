@@ -19,7 +19,11 @@ package com.google.template.soy.jbcsrc.api;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.util.Objects;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
@@ -113,6 +117,31 @@ public final class RenderResult {
           "Result.future() can only be called if type() is DETACH, type was: " + type);
     }
     return f;
+  }
+
+  private static final Logger logger = Logger.getLogger(RenderResult.class.getName());
+
+  /** Helper method to block on the RenderResult's future. */
+  public void resolveDetach() {
+    if (type() != Type.DETACH) {
+      throw new AssertionError(
+          "RenderResult.resolveDetach() called on type() != RenderResult.Type.DETACH");
+    }
+    Future<?> future = future();
+    if (logger.isLoggable(Level.WARNING)) {
+      logger.log(
+          Level.WARNING, "blocking to resolve a SoyValueProvider: " + future, new Exception());
+    }
+    try {
+      future.get();
+    } catch (InterruptedException ie) {
+      Thread.currentThread().interrupt(); // restore interrupted bit
+      throw new RuntimeException("Interrupted while waiting on: " + future + " to complete", ie);
+    } catch (CancellationException | ExecutionException expected) {
+      // ignore these here, both of these are final states for the future.  When calling back
+      // into status() the provider should end up dereferencing the future which should ensure
+      // that an exception is thrown with the correct stack trace.
+    }
   }
 
   @Override
