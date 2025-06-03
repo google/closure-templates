@@ -52,10 +52,10 @@ exports.$$markTemplate = function(fn, name) {
 };
 
 /**
- * @param {function(T, ?IjData=)} fn
+ * @param {function(T, IJ_DATA=)} fn
  * @param {?} data
- * @return {function(T, ?IjData=)}
- * @template T
+ * @return {function(T, IJ_DATA=)}
+ * @template T, IJ_DATA
  */
 exports.$$bindTemplateParams = function(fn, data) {
   const boundTemplate = function(opt_data, opt_ijData) {
@@ -65,10 +65,10 @@ exports.$$bindTemplateParams = function(fn, data) {
 };
 
 /**
- * @param {function(!IncrementalDomRenderer, T, ?IjData=)} fn
+ * @param {function(!IncrementalDomRenderer, T, IJ_DATA=)} fn
  * @param {?} data
- * @return {function(!IncrementalDomRenderer, T, ?IjData=)}
- * @template T
+ * @return {function(!IncrementalDomRenderer, T, IJ_DATA=)}
+ * @template T, IJ_DATA
  */
 exports.$$bindTemplateParamsForIdom = function(fn, data) {
   const boundTemplate = function(idomRenderer, opt_data, opt_ijData) {
