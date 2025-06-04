@@ -362,15 +362,9 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     return detachState;
   }
 
-  private Statement trackRequiredCssPathStatements(RenderUnitNode node) {
-    SoyFileNode fileNode = node.getNearestAncestor(SoyFileNode.class);
-    if (node instanceof TemplateNode
-        && (((TemplateNode) node).getVisibility() == Visibility.PUBLIC
-            || (node instanceof TemplateBasicNode
-                && ((TemplateBasicNode) node).getModifiesExpr() != null))
-        && !(fileNode.getAllRequiredCssPaths().isEmpty()
-            && fileNode.getRequiredCssNamespaces().isEmpty())
-        && !definitelyCallsPublicTemplateInSameFile((TemplateNode) node)) {
+  public Statement trackRequiredCssPathStatements(SoyFileNode fileNode) {
+    if (!(fileNode.getAllRequiredCssPaths().isEmpty()
+        && fileNode.getRequiredCssNamespaces().isEmpty())) {
       var cssPaths =
           fileNode.getAllRequiredCssPaths().stream()
               .map(css -> css.resolvedPath().orElseThrow())
@@ -378,7 +372,18 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       var cssNamespaces = fileNode.getRequiredCssNamespaces();
       return parameterLookup.getRenderContext().trackRequiredCss(cssPaths, cssNamespaces);
     }
+    return Statement.NULL_STATEMENT;
+  }
 
+  private Statement trackRequiredCssPathStatements(RenderUnitNode node) {
+    SoyFileNode fileNode = node.getNearestAncestor(SoyFileNode.class);
+    if (node instanceof TemplateNode
+        && (((TemplateNode) node).getVisibility() == Visibility.PUBLIC
+            || (node instanceof TemplateBasicNode
+                && ((TemplateBasicNode) node).getModifiesExpr() != null))
+        && !definitelyCallsPublicTemplateInSameFile((TemplateNode) node)) {
+      return trackRequiredCssPathStatements(fileNode);
+    }
     return Statement.NULL_STATEMENT;
   }
 

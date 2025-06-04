@@ -215,7 +215,13 @@ public final class ExternCompiler {
               javaSourceFunctionCompiler,
               fileSetMetadata,
               e -> adaptReturnExpression(e, getRuntimeType(extern.getType().getReturnType())));
-      body = nodeCompiler.compile(autoImpl);
+      List<Statement> statements = new ArrayList<>();
+      SoyFileNode fileNode = extern.getNearestAncestor(SoyFileNode.class);
+      if (fileNode != null) {
+        statements.add(nodeCompiler.trackRequiredCssPathStatements(fileNode));
+      }
+      statements.add(nodeCompiler.compile(autoImpl));
+      body = AppendableExpression.concat(statements);
     } else {
       JavaImplNode javaImpl = javaOpt.get();
       TypeInfo externClass = TypeInfo.create(javaImpl.className(), javaImpl.isInterface());
