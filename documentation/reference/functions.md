@@ -109,6 +109,10 @@ The floor of the number.
 
 The ceiling of the number.
 
+### `log(number)` {#Math_log}
+
+The log of the number with base `e`.
+
 ### `min(number, number)` {#min}
 
 The min of the two numbers.

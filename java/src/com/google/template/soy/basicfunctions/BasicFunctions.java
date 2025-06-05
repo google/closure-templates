@@ -56,6 +56,7 @@ public class BasicFunctions {
         new ListReverseMethod(),
         new ListSliceMethod(),
         new ListUniqMethod(),
+        new LogFunction(),
         new MapEntriesMethod(),
         new MapHasFunction(),
         new MapKeysFunction(),
