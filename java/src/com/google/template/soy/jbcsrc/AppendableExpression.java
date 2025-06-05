@@ -29,6 +29,7 @@ import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.data.LogStatement;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.LoggingFunctionInvocation;
+import com.google.template.soy.data.NodeBuilder;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
@@ -155,6 +156,9 @@ final class AppendableExpression extends Expression {
       MethodRef.createPure(
           LoggingFunctionInvocation.class, "create", String.class, String.class, List.class);
 
+  private static final MethodRef APPEND_NODE_BUILDER =
+      MethodRef.createPure(LoggingAdvisingAppendable.class, "appendNodeBuilder", NodeBuilder.class);
+
   private static final MethodRef SET_SANITIZED_CONTENT_KIND_AND_DIRECTIONALITY =
       MethodRef.createNonPure(
               LoggingAdvisingAppendable.class, "setKindAndDirectionality", ContentKind.class)
@@ -261,6 +265,11 @@ final class AppendableExpression extends Expression {
                         SoyExpression.boxListWithSoyNullishAsJavaNull(args))
                     .toMaybeConstant(),
                 BytecodeUtils.asImmutableList(escapingDirectives)));
+  }
+
+  /** Invokes {@link LoggingAdvisingAppendable#appendNodeBuilde} */
+  Expression appendNodeBuilder(Expression exp) {
+    return APPEND_NODE_BUILDER.invoke(this, exp);
   }
 
   /** Invokes {@link LoggingAdvisingAppendable#setSanitizedContentKind} on the appendable. */

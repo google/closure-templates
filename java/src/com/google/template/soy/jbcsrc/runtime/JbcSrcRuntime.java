@@ -41,6 +41,7 @@ import com.google.template.soy.data.LogStatement;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.LoggingAdvisingAppendable.BufferingAppendable;
 import com.google.template.soy.data.LoggingFunctionInvocation;
+import com.google.template.soy.data.NodeBuilder;
 import com.google.template.soy.data.ProtoFieldInterpreter;
 import com.google.template.soy.data.RecordProperty;
 import com.google.template.soy.data.SanitizedContent;
@@ -71,6 +72,8 @@ import com.google.template.soy.msgs.restricted.SoyMsgSelectPartForRendering;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.ibm.icu.util.ULocale;
 import java.io.IOException;
+import java.lang.invoke.CallSite;
+import java.lang.invoke.ConstantCallSite;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
@@ -78,9 +81,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.CancellationException;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 import java.util.function.Function;
 import java.util.function.ToIntFunction;
 import java.util.logging.Level;
@@ -962,34 +962,10 @@ public final class JbcSrcRuntime {
   static void awaitProvider(SoyValueProvider provider) {
     while (true) {
       RenderResult result = provider.status();
-      switch (result.type()) {
-        case LIMITED:
-          // Docs on SoyValueProvider.status() call this state illegal.
-          throw new AssertionError(
-              "SoyValueProvider.status() returned a RenderResult.limited() which is out of spec");
-        case DETACH:
-          Future<?> future = result.future();
-          if (logger.isLoggable(Level.WARNING)) {
-            logger.log(
-                Level.WARNING,
-                "blocking to resolve a SoyValueProvider: " + future,
-                new Exception());
-          }
-          try {
-            future.get();
-          } catch (InterruptedException ie) {
-            Thread.currentThread().interrupt(); // restore interrupted bit
-            throw new RuntimeException(
-                "Interrupted while waiting on: " + future + " to complete", ie);
-          } catch (CancellationException | ExecutionException expected) {
-            // ignore these here, both of these are final states for the future.  When calling back
-            // into status() the provider should end up dereferencing the future which should ensure
-            // that an exception is thrown with the correct stack trace.
-          }
-          break;
-        case DONE:
-          return;
+      if (result.type() == RenderResult.Type.DONE) {
+        return;
       }
+      result.resolveDetach();
     }
   }
 
@@ -1127,6 +1103,24 @@ public final class JbcSrcRuntime {
     }
 
     return UnsignedLong.valueOf(value.stringValue()).longValue();
+  }
+
+  /** for dynamic callees */
+  public static NodeBuilder createNodeBuilder(
+      CompiledTemplate tmpl, StackFrame stackFrame, ParamStore params, RenderContext context)
+      throws IllegalAccessException, NoSuchMethodException {
+    MethodHandle renderMethod =
+        MethodHandles.lookup()
+            .unreflect(
+                CompiledTemplate.class.getMethod(
+                    "render",
+                    StackFrame.class,
+                    ParamStore.class,
+                    LoggingAdvisingAppendable.class,
+                    RenderContext.class))
+            .bindTo(tmpl);
+    CallSite renderCallSite = new ConstantCallSite(renderMethod);
+    return new NodeBuilder(renderCallSite, stackFrame, new Object[] {params}, context);
   }
 
   @Nonnull

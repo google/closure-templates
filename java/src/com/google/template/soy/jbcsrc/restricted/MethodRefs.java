@@ -578,6 +578,15 @@ public final class MethodRefs {
   public static final MethodRef GET_COMPILED_TEMPLATE_FROM_VALUE =
       createPure(JbcSrcRuntime.class, "getCompiledTemplate", TemplateValue.class).asCheap();
 
+  public static final MethodRef CREATE_NODE_BUILDER =
+      createPure(
+          JbcSrcRuntime.class,
+          "createNodeBuilder",
+          CompiledTemplate.class,
+          StackFrame.class,
+          ParamStore.class,
+          RenderContext.class);
+
   public static final MethodRef CREATE_TEMPLATE_VALUE =
       createPure(TemplateValue.class, "create", String.class, Object.class);
 

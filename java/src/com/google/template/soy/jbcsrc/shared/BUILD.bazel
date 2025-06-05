@@ -18,9 +18,15 @@ load("@rules_java//java:defs.bzl", "java_library")
 
 package(default_visibility = ["//:soy_internal"])
 
+NAMES_SRCS = ["Names.java"]
+
+MISSING_PLUGIN_INSTANCE_EXCEPTION = ["MissingPluginInstanceException.java"]
+
+STACK_FRAME_SRCS = ["StackFrame.java"]
+
 java_library(
     name = "missing_plugin_instance_exception",
-    srcs = ["MissingPluginInstanceException.java"],
+    srcs = MISSING_PLUGIN_INSTANCE_EXCEPTION,
     visibility = ["//visibility:public"],
 )
 
@@ -28,14 +34,12 @@ java_library(
     name = "shared",
     srcs = glob(
         ["*.java"],
-        exclude = [
-            "Names.java",
-            "MissingPluginInstanceException.java",
-        ],
+        exclude = NAMES_SRCS + MISSING_PLUGIN_INSTANCE_EXCEPTION + STACK_FRAME_SRCS,
     ),
     deps = [
         ":missing_plugin_instance_exception",
         ":names",
+        ":stackframe",
         "//java/src/com/google/template/soy/base/internal",
         "//java/src/com/google/template/soy/data",
         "//java/src/com/google/template/soy/data:record_property",
@@ -65,8 +69,19 @@ java_library(
 )
 
 java_library(
+    name = "stackframe",
+    srcs = STACK_FRAME_SRCS,
+    deps = [
+        "//java/src/com/google/template/soy/jbcsrc/api:helpers",
+        "@maven//:com_google_code_findbugs_jsr305",
+        "@maven//:com_google_errorprone_error_prone_annotations",
+        "@maven//:com_google_guava_guava",
+    ],
+)
+
+java_library(
     name = "names",
-    srcs = ["Names.java"],
+    srcs = NAMES_SRCS,
     deps = [
         "//java/src/com/google/template/soy/base/internal",
         "//java/src/com/google/template/soy/data:record_property",
