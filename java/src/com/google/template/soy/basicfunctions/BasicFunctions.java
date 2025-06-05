@@ -40,6 +40,7 @@ public class BasicFunctions {
         new CeilingFunction(),
         new ConcatListsFunction(),
         new ConcatMapsMethod(),
+        new CosFunction(),
         new FloorFunction(),
         new GbigintListSortMethod(),
         new HtmlToTextFunction(),
@@ -77,6 +78,7 @@ public class BasicFunctions {
         new SetHasFunction(),
         new SetSizeField(),
         new SignFunction(),
+        new SinFunction(),
         new SortMethod(),
         new SqrtFunction(),
         new StrEndsWithMethod(),
@@ -92,6 +94,7 @@ public class BasicFunctions {
         new StrToAsciiUpperCaseFunction(),
         new StrTrimMethod(),
         new StringListSortMethod(),
+        new TanFunction(),
         new ThrowFunction(),
         new VeHasSameIdMethod());
     // go/keep-sorted end

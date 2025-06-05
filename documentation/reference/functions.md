@@ -109,6 +109,10 @@ The floor of the number.
 
 The ceiling of the number.
 
+### `cos(number)` {#Math_cos}
+
+The cosine of a number in radians.
+
 ### `log(number)` {#Math_log}
 
 The log of the number with base `e`.
@@ -141,9 +145,17 @@ positive integer).
 
 Returns the sign of the number as 1 or -1. 0 returns 0. -0 returns -0.
 
+### `sin(number)` {#Math_sin}
+
+The sine of a number in radians.
+
 ### `sqrt(number)` {#sqrt}
 
 Returns the square root of the number.
+
+### `tan(number)` {#Math_tan}
+
+The tangent of a number in radians.
 
 ### `pow(number, number)` {#pow}
 
