@@ -107,7 +107,7 @@ public final class ExternNode extends AbstractParentCommandNode<ExternImplNode>
     return getJavaImpl().map(j -> j.isAsync()).orElse(false);
   }
 
-  public FunctionTypeNode typeNode() {
+  public FunctionTypeNode getTypeNode() {
     return typeNode;
   }
 
@@ -143,7 +143,7 @@ public final class ExternNode extends AbstractParentCommandNode<ExternImplNode>
   public ImmutableList<TemplateParam> getParamVars() {
     if (paramVars == null) {
       paramVars =
-          typeNode().parameters().stream()
+          getTypeNode().parameters().stream()
               .map(
                   p ->
                       new TemplateParam(

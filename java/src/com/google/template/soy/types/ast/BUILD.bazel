@@ -22,6 +22,10 @@ BASE_SRC = [
     "TypeNode.java",
 ]
 
+TYPE_HOLDER_NODE_SRC = [
+    "TypesHolderNode.java",
+]
+
 java_library(
     name = "base",
     srcs = BASE_SRC,
@@ -35,10 +39,20 @@ java_library(
 )
 
 java_library(
+    name = "types_holder_node",
+    srcs = TYPE_HOLDER_NODE_SRC,
+    deps = [
+        ":base",
+        "//java/src/com/google/template/soy/basetree",
+        "@maven//:com_google_code_findbugs_jsr305",
+    ],
+)
+
+java_library(
     name = "ast",
     srcs = glob(
         ["*.java"],
-        exclude = BASE_SRC,
+        exclude = BASE_SRC + TYPE_HOLDER_NODE_SRC,
     ),
     exports = [
         ":base",

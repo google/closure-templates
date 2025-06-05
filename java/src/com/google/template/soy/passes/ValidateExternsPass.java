@@ -164,7 +164,7 @@ class ValidateExternsPass implements CompilerFilePass {
         if (type1.getReturnType() != type2.getReturnType()) {
           // All overloads must have the same return type.
           errorReporter.report(
-              second.typeNode().sourceLocation(),
+              second.getTypeNode().sourceLocation(),
               OVERLOAD_RETURN_CONFLICT,
               first.getSourceLocation().toLineColumnString());
         } else if (type1.getParameters().size() != type2.getParameters().size()) {
@@ -173,13 +173,13 @@ class ValidateExternsPass implements CompilerFilePass {
           // Allow overloads with the same number of params, but only if the types are not
           // ambiguous.
           errorReporter.report(
-              second.typeNode().sourceLocation(),
+              second.getTypeNode().sourceLocation(),
               OVERLOAD_PARAM_CONFLICT,
               first.getSourceLocation().toLineColumnString());
         }
 
         if (!jsImplsEqual(first.getJsImpl(), second.getJsImpl())) {
-          errorReporter.report(second.typeNode().sourceLocation(), JS_IMPL_OVERLOADS_MUST_MATCH);
+          errorReporter.report(second.getTypeNode().sourceLocation(), JS_IMPL_OVERLOADS_MUST_MATCH);
         }
       }
     }

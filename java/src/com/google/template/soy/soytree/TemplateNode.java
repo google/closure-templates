@@ -51,16 +51,24 @@ import com.google.template.soy.soytree.defn.TemplateStateVar;
 import com.google.template.soy.templatecall.TemplateCallMetadata;
 import com.google.template.soy.types.TemplateImportType;
 import com.google.template.soy.types.TemplateType;
+import com.google.template.soy.types.ast.TypeNode;
+import com.google.template.soy.types.ast.TypesHolderNode;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
 /** Node representing a template. */
 public abstract class TemplateNode extends AbstractBlockCommandNode
-    implements RenderUnitNode, ExprHolderNode, CommandTagAttributesHolder, StackContextNode {
+    implements RenderUnitNode,
+        ExprHolderNode,
+        CommandTagAttributesHolder,
+        StackContextNode,
+        TypesHolderNode {
 
   public static final String ATTRKIND = "kind";
   public static final String ATTR_REQUIRECSS = "requirecss";
@@ -662,6 +670,13 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
       }
     }
     return exprs.build();
+  }
+
+  @Override
+  public Stream<TypeNode> getTypeNodes() {
+    return getHeaderParams().stream()
+        .map(TemplateHeaderVarDefn::getTypeNode)
+        .filter(Objects::nonNull);
   }
 
   public void addParam(TemplateParam param) {

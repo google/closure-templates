@@ -33,6 +33,7 @@ java_library(
         "//java/src/com/google/template/soy/soytree:metadata",
         "//java/src/com/google/template/soy/types",
         "//java/src/com/google/template/soy/types/ast:base",
+        "//java/src/com/google/template/soy/types/ast:types_holder_node",
         "@com_google_auto_value_auto_value",
         "@com_google_protobuf//:protobuf_java",
         "@maven//:com_google_code_findbugs_jsr305",

@@ -143,7 +143,7 @@ final class ResolveDeclaredTypesPass extends AbstractTopologicallyOrderedPass {
 
     @Override
     protected void visitExternNode(ExternNode node) {
-      visitTypeNode(node.typeNode());
+      visitTypeNode(node.getTypeNode());
       for (TemplateParam paramVar : node.getParamVars()) {
         paramVar.setType(paramVar.getTypeNode().getResolvedType());
       }

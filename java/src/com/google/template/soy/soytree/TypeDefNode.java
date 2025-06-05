@@ -23,12 +23,13 @@ import com.google.template.soy.types.NamedType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.ast.TypeNode;
+import com.google.template.soy.types.ast.TypesHolderNode;
 
 /**
  * Node representing a 'type' statement. The type definition will be added to a new {@link
  * SoyTypeRegistry} for file typedefs.
  */
-public final class TypeDefNode extends AbstractCommandNode {
+public final class TypeDefNode extends AbstractCommandNode implements TypesHolderNode {
   private final Identifier name;
 
   /** The value of the type def. */
@@ -67,6 +68,7 @@ public final class TypeDefNode extends AbstractCommandNode {
   }
 
   /** Returns the type literal as a SoyType. */
+  @Override
   public TypeNode getTypeNode() {
     return typeNode;
   }

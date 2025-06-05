@@ -48,7 +48,6 @@ import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.Kind;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
-import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.TemplateType;
 import com.google.template.soy.types.ast.FunctionTypeNode;
@@ -61,10 +60,10 @@ import com.google.template.soy.types.ast.RecordTypeNode.Property;
 import com.google.template.soy.types.ast.TemplateTypeNode;
 import com.google.template.soy.types.ast.TypeNode;
 import com.google.template.soy.types.ast.TypeNodeVisitor;
+import com.google.template.soy.types.ast.TypesHolderNode;
 import com.google.template.soy.types.ast.UnionTypeNode;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
@@ -179,7 +178,7 @@ public final class SoyTreeUtils {
 
   public static <T extends Node> Stream<T> allNodesOfType(Node rootSoyNode, Class<T> classObject) {
     // optimization to avoid navigating into expr trees if we can't possibly match anything
-    boolean exploreExpressions = ExprNode.class.isAssignableFrom(classObject);
+    boolean exploreExpressions = !SoyNode.class.isAssignableFrom(classObject);
     return allNodesOfType(
         rootSoyNode,
         classObject,
@@ -645,25 +644,7 @@ public final class SoyTreeUtils {
 
   /** Returns a stream of all the type nodes contained in a Soy node branch. */
   public static Stream<TypeNode> allTypeNodes(SoyNode root) {
-    return allNodes(root, SoyTreeUtils::visitNonExpr)
-        .flatMap(
-            node -> {
-              // If we had something like ExprHolderNode for type nodes we could avoid this switch.
-              if (node instanceof TemplateNode) {
-                TemplateNode templateNode = (TemplateNode) node;
-                return templateNode.getHeaderParams().stream()
-                    .map(TemplateHeaderVarDefn::getTypeNode)
-                    .filter(Objects::nonNull);
-              } else if (node instanceof ExternNode) {
-                return Stream.of(((ExternNode) node).typeNode());
-              } else if (node instanceof TypeDefNode) {
-                return Stream.of(((TypeDefNode) node).getTypeNode());
-              } else if (node instanceof ConstNode && ((ConstNode) node).getTypeNode() != null) {
-                return Stream.of(((ConstNode) node).getTypeNode());
-              } else {
-                return Stream.of();
-              }
-            });
+    return allNodesOfType(root, TypesHolderNode.class).flatMap(TypesHolderNode::getTypeNodes);
   }
 
   public static ExprNodeToHolderIndex buildExprNodeToHolderIndex(SoyNode root) {

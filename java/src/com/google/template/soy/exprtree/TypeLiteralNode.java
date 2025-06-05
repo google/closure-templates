@@ -20,9 +20,10 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.ast.TypeNode;
+import com.google.template.soy.types.ast.TypesHolderNode;
 
 /** Node representing a type literal. */
-public final class TypeLiteralNode extends AbstractPrimitiveNode {
+public final class TypeLiteralNode extends AbstractPrimitiveNode implements TypesHolderNode {
 
   public static VarRefNode error(SourceLocation location) {
     return new VarRefNode("$error", location, null);
@@ -41,6 +42,7 @@ public final class TypeLiteralNode extends AbstractPrimitiveNode {
     this.typeNode = orig.typeNode.copy();
   }
 
+  @Override
   public TypeNode getTypeNode() {
     return typeNode;
   }

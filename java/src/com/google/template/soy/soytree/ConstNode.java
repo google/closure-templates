@@ -25,10 +25,12 @@ import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.defn.SymbolVar;
 import com.google.template.soy.soytree.defn.SymbolVar.SymbolKind;
 import com.google.template.soy.types.ast.TypeNode;
+import com.google.template.soy.types.ast.TypesHolderNode;
 import javax.annotation.Nullable;
 
 /** Node representing a 'const' statement with a value expression. */
-public final class ConstNode extends AbstractCommandNode implements ExprHolderNode {
+public final class ConstNode extends AbstractCommandNode
+    implements ExprHolderNode, TypesHolderNode {
 
   private final SymbolVar var;
 
@@ -109,6 +111,7 @@ public final class ConstNode extends AbstractCommandNode implements ExprHolderNo
   }
 
   @Nullable
+  @Override
   public TypeNode getTypeNode() {
     return typeNode;
   }
