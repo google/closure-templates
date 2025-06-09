@@ -76,8 +76,13 @@ public final class CallBasicNode extends CallNode {
           // Returned directly by getVariantExpr(). Just call valueAsExpr() to validate it here.
           attr.valueAsExpr(errorReporter);
           break;
-        case "lazy":
-          this.lazy = attr.valueAsEnabled(errorReporter);
+        case "eval":
+          if (attr.getValue().equals("lazy")) {
+            this.lazy = true;
+          } else {
+            errorReporter.report(
+                attr.getSourceLocation(), CommandTagAttribute.INVALID_ATTRIBUTE, "eval", "'lazy'");
+          }
           break;
         default:
           errorReporter.report(
