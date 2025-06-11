@@ -33,6 +33,7 @@ import static com.google.template.soy.shared.internal.gencode.JavaGenerationUtil
 import static com.google.template.soy.shared.internal.gencode.JavaGenerationUtils.makeUpperCamelCase;
 import static java.util.stream.Collectors.counting;
 import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 
 import com.google.common.base.Strings;
@@ -111,6 +112,13 @@ public final class GenerateBuildersVisitor
               + " generated setter name was: {2}. To use this API, all parameter names for a given"
               + " template should be unique when converted to UpperCamelCase (with"
               + " non-alphanumeric characters stripped).");
+  private static final SoyErrorKind SETTER_SIGNATURE_COLLISION =
+      SoyErrorKind.of(
+          "When generating Soy Java Template Builders, the param named {0} in template {1}"
+              + " generated a setter with the same signature as another setter for the same param: "
+              + "`{2}`. This can happen with unions since one setter for each union member is "
+              + "generated. In case of collisions, a setter for the first type, when read left-"
+              + "-to-right, is emitted.");
   private static final SoyErrorKind FILE_NAME_COLLISION =
       SoyErrorKind.of(
           "While generating Soy Java invocation builders, multiple files in this soy fileset"
@@ -640,7 +648,28 @@ public final class GenerateBuildersVisitor
    */
   private void writeSettersForParam(ParamInfo param, TemplateInfo template) {
     // Add setters for this param.
-    param.javaTypes().forEach(javaType -> writeSetter(param, template, javaType));
+    Set<String> signatures = new HashSet<>();
+    for (JavaType javaType : param.javaTypes()) {
+      String signature =
+          javaType instanceof RecordJavaType
+              ? ((RecordJavaType) javaType)
+                  .getJavaTypeMap().values().stream()
+                      .map(JavaType::toJavaTypeString)
+                      .collect(joining(","))
+              : javaType.toJavaTypeString();
+      // Collisions are possible in unions containing records with a single property or unions with
+      // records with the same types.
+      if (!signatures.add(signature)) {
+        errorReporter.warn(
+            param.sourceLocation(),
+            SETTER_SIGNATURE_COLLISION,
+            param.name(),
+            template.templateName(),
+            String.format("%s(%s)", param.setterName(), signature));
+      } else {
+        writeSetter(param, template, javaType);
+      }
+    }
 
     // For now only write the future interface if the setter is not already overloaded
     switch (param.futureStatus()) {
