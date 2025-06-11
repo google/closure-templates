@@ -28,14 +28,17 @@ import com.google.template.soy.soytree.defn.SymbolVar.SymbolKind;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.FunctionType;
 import com.google.template.soy.types.ast.FunctionTypeNode;
+import com.google.template.soy.types.ast.TypeNode;
+import com.google.template.soy.types.ast.TypesHolderNode;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 /**
  * Node representing a 'extern' statement with js/java implementations. TODO(b/191090743) Handle the
  * {export keyword.
  */
 public final class ExternNode extends AbstractParentCommandNode<ExternImplNode>
-    implements CommandTagAttributesHolder {
+    implements CommandTagAttributesHolder, TypesHolderNode {
 
   private final FunctionTypeNode typeNode;
   private final Identifier name;
@@ -109,6 +112,11 @@ public final class ExternNode extends AbstractParentCommandNode<ExternImplNode>
 
   public FunctionTypeNode getTypeNode() {
     return typeNode;
+  }
+
+  @Override
+  public Stream<TypeNode> getTypeNodes() {
+    return Stream.of(typeNode);
   }
 
   @Override
