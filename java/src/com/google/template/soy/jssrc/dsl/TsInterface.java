@@ -26,7 +26,7 @@ import java.util.stream.Stream;
 @AutoValue
 public abstract class TsInterface extends Statement {
 
-  abstract String name();
+  abstract Id name();
 
   abstract ImmutableList<ParamDecl> properties();
 
@@ -34,16 +34,13 @@ public abstract class TsInterface extends Statement {
 
   abstract boolean isExported();
 
-  public static TsInterface create(String name, List<ParamDecl> properties) {
+  public static TsInterface create(Id name, List<ParamDecl> properties) {
     return new AutoValue_TsInterface(
         name, ImmutableList.copyOf(properties), ImmutableMap.of(), false);
   }
 
   public static TsInterface create(
-      String name,
-      List<ParamDecl> properties,
-      ImmutableMap<String, JsDoc> docs,
-      boolean isExported) {
+      Id name, List<ParamDecl> properties, ImmutableMap<String, JsDoc> docs, boolean isExported) {
     return new AutoValue_TsInterface(name, ImmutableList.copyOf(properties), docs, isExported);
   }
 
@@ -56,7 +53,8 @@ public abstract class TsInterface extends Statement {
     if (isExported()) {
       ctx.append("export ");
     }
-    ctx.append(String.format("interface %s ", name()));
+    ctx.append("interface ");
+    ctx.noBreak().appendOutputExpression(name()).noBreak().append(" ");
     ctx.enterBlock();
     for (ParamDecl prop : properties()) {
       if (docs().containsKey(prop.name())) {

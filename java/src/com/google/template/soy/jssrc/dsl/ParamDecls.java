@@ -84,7 +84,7 @@ public abstract class ParamDecls extends Expression {
       ctx.append("}: ");
 
       if (tsInterface() != null) {
-        ctx.append(tsInterface().name());
+        ctx.appendOutputExpression(tsInterface().name());
       } else {
         ctx.append("{");
         // Generate the dict of param types (e.g. "{amount: number, name?: string}").
