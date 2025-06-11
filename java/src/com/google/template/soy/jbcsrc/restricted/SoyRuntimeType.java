@@ -144,14 +144,15 @@ public abstract class SoyRuntimeType {
       case FUNCTION:
         // no unique unboxed representation
         return null;
+      case INTERSECTION:
+      case NAMED:
+      case INDEXED:
+        return unboxedTypeImpl(soyType.getEffectiveType());
       case NAMESPACE:
       case PROTO_TYPE:
       case PROTO_ENUM_TYPE:
       case PROTO_EXTENSION:
       case TEMPLATE_TYPE:
-      case INTERSECTION:
-      case NAMED:
-      case INDEXED:
       case NEVER:
     }
     throw new AssertionError("can't map " + soyType + " to an unboxed soy runtime type");
