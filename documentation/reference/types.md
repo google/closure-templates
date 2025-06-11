@@ -345,6 +345,11 @@ For more information, see
 An `A|B` union type can contain either a value of type `A` or a value of type
 `B`.
 
+### Intersection type: `A & B` {#intersection}
+
+This is only valid on records. An `A & B` type contains all properties from `A`
+and `B`.
+
 ### `list<T>` {#list}
 
 A list can contain any type as an element. Lists can be accessed using the
