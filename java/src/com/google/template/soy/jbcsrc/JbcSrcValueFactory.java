@@ -66,6 +66,7 @@ import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.UnknownType;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -136,7 +137,7 @@ final class JbcSrcValueFactory extends JavaValueFactory {
     ErrorReporter.Checkpoint checkpoint = errorReporter.checkpoint();
     checkState(fnNode.getParamTypes() != null, "allowed param types must be set");
     checkState(
-        fnNode.getParamTypes().size() == args.size(),
+        fnNode.getParamTypes().size() <= args.size(),
         "wrong # of allowed param types (%s), expected %s",
         fnNode.getParamTypes(),
         args.size());
@@ -151,10 +152,24 @@ final class JbcSrcValueFactory extends JavaValueFactory {
       return SoyExpression.SOY_NULL;
     }
     SoyJavaSourceFunction javaSrcFn = fnNode.getSourceFunction();
+    List<SoyExpression> argsCopy = new ArrayList<SoyExpression>();
+    for (int i = 0; i < fnNode.getParamTypes().size(); i++) {
+      if (i == fnNode.getParamTypes().size() - 1 && fnNode.isVarArgs()) {
+        argsCopy.add(
+            SoyExpression.forList(
+                (ListType) ListType.of(fnNode.getParamTypes().get(i)),
+                SoyExpression.boxListWithSoyNullAsJavaNull(args.subList(i, args.size()))));
+        break;
+      } else {
+        argsCopy.add(args.get(i));
+      }
+    }
     return toSoyExpression(
         (JbcSrcJavaValue)
             javaSrcFn.applyForJavaSource(
-                this, args.stream().map(JbcSrcJavaValue::of).collect(toImmutableList()), context));
+                this,
+                argsCopy.stream().map(JbcSrcJavaValue::of).collect(toImmutableList()),
+                context));
   }
 
   @Override

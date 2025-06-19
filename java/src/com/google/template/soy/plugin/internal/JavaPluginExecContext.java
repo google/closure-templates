@@ -93,6 +93,13 @@ public final class JavaPluginExecContext {
     return paramTypes;
   }
 
+  public boolean isVarArgs() {
+    if (node instanceof FunctionNode functionNode) {
+      return functionNode.isVarArgs();
+    }
+    return false;
+  }
+
   public String getFunctionName() {
     return functionName;
   }

@@ -1070,10 +1070,12 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     TofuJavaValue[] javaValues =
         getTofuJavaValues(ImmutableList.of(), Arrays.asList(method.getParameterTypes()), args);
 
+    // Verify this is correct.
     FunctionType functionType =
         FunctionType.of(
             argTypes.stream().map(t -> Parameter.of("unused", t)).collect(toImmutableList()),
-            returnType);
+            returnType,
+            false);
     TofuValueFactory factory =
         new TofuValueFactory(
             scope.getSourceLocation(),

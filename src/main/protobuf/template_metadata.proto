@@ -132,6 +132,7 @@ message SoyTypeP {
     HtmlTypeP html = 12;
     NamedTypeP named = 17;
     IndexedTypeP indexed = 18;
+    SoyTypeP var_args_element = 19;
   }
 }
 
@@ -218,6 +219,7 @@ message FunctionTypeP {
 
   repeated Parameter parameters = 1;
   SoyTypeP return_type = 2;
+  bool is_var_args = 3;
 }
 
 // Represents a call within a template.
