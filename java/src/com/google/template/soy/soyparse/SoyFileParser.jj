@@ -171,6 +171,7 @@ import com.google.template.soy.types.ast.RecordTypeNode;
 import com.google.template.soy.types.ast.TemplateTypeNode;
 import com.google.template.soy.types.ast.TypeNode;
 import com.google.template.soy.types.ast.UnionTypeNode;
+import com.google.template.soy.types.ast.VarArgsTypeNode;
 import java.io.Reader;
 import java.io.StringReader;
 import java.util.ArrayList;
@@ -5435,6 +5436,10 @@ private TypeNode TypeExprPrec3() :
   | type = RecordType()
   | type = StringLiteralType()
   )
+  [
+    LOOKAHEAD( { getToken(1).kind == SPREAD } )
+    type = VarArgsType(type)
+  ]
 
   { return type; }
 }
@@ -5702,6 +5707,24 @@ private TypeNode NamedOrIndexedType() :
   ]
   {
     return property != null ? IndexedTypeNode.create(named.sourceLocation().extend(createSrcLoc(end)), named, property) : named;
+  }
+}
+
+/**
+ * VarArgsType -> TypeExpr <SPREAD>
+ */
+private TypeNode VarArgsType(TypeNode baseType) :
+{
+  Token ellipsis;
+  SourceLocation fullLocation;
+}
+{
+  ellipsis = <SPREAD>
+  {
+    fullLocation = baseType.sourceLocation().extend(createSrcLoc(ellipsis));
+    return VarArgsTypeNode.create(
+      fullLocation,
+      baseType);
   }
 }
 

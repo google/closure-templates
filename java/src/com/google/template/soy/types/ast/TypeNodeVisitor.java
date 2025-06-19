@@ -37,6 +37,8 @@ public interface TypeNodeVisitor<T> {
       return visit((FunctionTypeNode) node);
     } else if (node instanceof LiteralTypeNode) {
       return visit((LiteralTypeNode) node);
+    } else if (node instanceof VarArgsTypeNode) {
+      return visit((VarArgsTypeNode) node);
     }
     throw new IllegalArgumentException(node.getClass().getName());
   }
@@ -58,4 +60,6 @@ public interface TypeNodeVisitor<T> {
   T visit(FunctionTypeNode node);
 
   T visit(LiteralTypeNode node);
+
+  T visit(VarArgsTypeNode node);
 }

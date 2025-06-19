@@ -93,6 +93,10 @@ public final class JavaPluginExecContext {
     return paramTypes;
   }
 
+  public boolean isVarArgs() {
+    return node instanceof ExprNode.CallableExpr callableExpr && callableExpr.isVarArgs();
+  }
+
   public String getFunctionName() {
     return functionName;
   }

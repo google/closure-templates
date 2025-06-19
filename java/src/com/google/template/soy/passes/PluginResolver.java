@@ -462,13 +462,22 @@ public final class PluginResolver {
   static Set<Integer> getValidArgsSizes(Signature[] signatures) {
     ImmutableSortedSet.Builder<Integer> builder = ImmutableSortedSet.naturalOrder();
     for (Signature signature : signatures) {
-      builder.add(signature.parameterTypes().length);
+      // Varargs are represented as the last parameter type with a trailing "..."
+      if (signature.parameterTypes().length > 0
+          && signature.parameterTypes()[signature.parameterTypes().length - 1].endsWith("...")) {
+        builder.add(-1);
+      } else {
+        builder.add(signature.parameterTypes().length);
+      }
     }
     return builder.build();
   }
 
   private void checkNumArgs(
       String pluginKind, Set<Integer> arities, int actualNumArgs, SourceLocation location) {
+    if (arities.contains(-1)) {
+      return;
+    }
     if (!arities.contains(actualNumArgs)) {
       reporter.report(
           location, INCORRECT_NUM_ARGS, pluginKind, actualNumArgs, Joiner.on(" or ").join(arities));

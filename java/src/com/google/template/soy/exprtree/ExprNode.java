@@ -210,6 +210,9 @@ public interface ExprNode extends Node {
     /** The ordered list of parameter names, if call style is NAMED. */
     ImmutableList<Identifier> getParamNames();
 
+    /** Whether the call is varargs. */
+    boolean isVarArgs();
+
     default Identifier getParamName(int i) {
       return getParamNames().get(i);
     }

@@ -598,6 +598,13 @@ public enum BuiltinMethod implements SoyMethod {
     return methodName.equals(name) && appliesToBase(baseType);
   }
 
+  public boolean acceptsVarArgs(List<ExprNode> params) {
+    if (params.get(params.size() - 1).getType().getKind() == SoyType.Kind.LIST) {
+      return true;
+    }
+    return false;
+  }
+
   protected abstract boolean appliesToBase(SoyType baseType);
 
   public abstract SoyType getReturnType(

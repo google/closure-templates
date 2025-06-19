@@ -52,6 +52,13 @@ public final class SoySourceFunctionMethod implements SoyMethod {
     return paramTypes.size() == count;
   }
 
+  public boolean acceptsVarArgs() {
+    if (paramTypes.get(paramTypes.size() - 1).getKind() == SoyType.Kind.LIST) {
+      return true;
+    }
+    return false;
+  }
+
   public SoySourceFunction getImpl() {
     return impl;
   }

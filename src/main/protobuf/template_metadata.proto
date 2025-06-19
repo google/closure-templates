@@ -149,6 +149,7 @@ message SoyTypeP {
     IndexedTypeP indexed = 18;
     PickTypeP pick = 20;
     OmitTypeP omit = 21;
+    SoyTypeP var_args = 22;
   }
 }
 
@@ -235,6 +236,7 @@ message FunctionTypeP {
 
   repeated Parameter parameters = 1;
   SoyTypeP return_type = 2;
+  bool is_var_args = 3;
 }
 
 // Represents a call within a template.

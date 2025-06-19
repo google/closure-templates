@@ -63,6 +63,7 @@ import com.google.template.soy.types.ast.TypeNode;
 import com.google.template.soy.types.ast.TypeNodeVisitor;
 import com.google.template.soy.types.ast.TypesHolderNode;
 import com.google.template.soy.types.ast.UnionTypeNode;
+import com.google.template.soy.types.ast.VarArgsTypeNode;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiConsumer;
@@ -640,6 +641,11 @@ public final class SoyTreeUtils {
         @Override
         public List<? extends TypeNode> visit(LiteralTypeNode node) {
           return ImmutableList.of();
+        }
+
+        @Override
+        public ImmutableList<? extends TypeNode> visit(VarArgsTypeNode node) {
+          return ImmutableList.of(node.baseType());
         }
       };
 
