@@ -52,6 +52,12 @@ public abstract class CssRegistry {
   /** Maps the logic file path (not LFPME) to a map of {short class name -> full class name}. */
   abstract ImmutableMap<SourceLogicalPath, ImmutableMap<String, String>> filePathToShortClassMap();
 
+  /**
+   * Maps the logic file path (not LFPME) to a map of {short variable name -> full variable name}.
+   */
+  abstract ImmutableMap<SourceLogicalPath, ImmutableMap<String, String>>
+      filePathToShortVariableMap();
+
   /** Maps logical file path to the path of the CSS metadata file passed to the compiler. */
   abstract ImmutableMap<SourceLogicalPath, SourceFilePath> logicalToRealMap();
 
@@ -101,6 +107,11 @@ public abstract class CssRegistry {
     return filePathToShortClassMap().get(logicalPath);
   }
 
+  public ImmutableMap<String, String> getShortVariableNameMapForLogicalPath(
+      SourceLogicalPath logicalPath) {
+    return filePathToShortVariableMap().get(logicalPath);
+  }
+
   public static CssRegistry createWithFilePathToShortClassMap(
       ImmutableSet<String> providedSymbols,
       ImmutableMap<SourceLogicalPath, ImmutableMap<String, String>> filePathToShortClassMap) {
@@ -108,6 +119,7 @@ public abstract class CssRegistry {
         ImmutableMap.of(),
         Optional.empty(),
         filePathToShortClassMap,
+        ImmutableMap.of(),
         ImmutableMap.of(),
         providedSymbols.stream()
             .collect(toImmutableMap(s -> s, s -> SourceLogicalPath.create("not-used"))),
@@ -124,6 +136,7 @@ public abstract class CssRegistry {
     return new AutoValue_CssRegistry(
         filePathToSymbol,
         Optional.empty(),
+        ImmutableMap.of(),
         ImmutableMap.of(),
         ImmutableMap.of(),
         providedSymbols.stream()
