@@ -404,7 +404,7 @@ For example,
 
 ### Logical operators `&&`, `||` {#logical-operators}
 
-Logical boolean operators. Thee are short-circuiting and follow JavaScript
+Logical boolean operators. They are short-circuiting and follow JavaScript
 semantics:
 
 *   `&&` The first operand is returned if it is falsey, otherwise the second is
