@@ -4,6 +4,8 @@
  * Functions necessary to interact with the Soy-Idom runtime.
  */
 
+import {ImmutableEmpty} from 'google3/google/protobuf/empty.proto';
+import {Message} from 'google3/javascript/apps/jspb/message';
 import {stringifyReplacingJspbMessages} from 'google3/javascript/apps/jspb/stringify';
 import {VERY_UNSAFE} from 'google3/javascript/template/soy/soydata_aliases';
 import * as soy from 'google3/javascript/template/soy/soyutils_usegoog';
@@ -38,7 +40,7 @@ const logger = log.getLogger('api_idom');
 
 declare global {
   interface Node {
-    __lastParams: string | undefined;
+    __lastParams: ImmutableEmpty | undefined;
     __lastParamsPretty: string | undefined;
     __hasBeenRendered?: boolean;
   }
@@ -721,21 +723,24 @@ function debugReplacerIgnoringSerializationChanges(
 }
 
 function maybeReportErrors(el: HTMLElement, data: unknown) {
-  const stringifiedParams = stringifyReplacingJspbMessages(
-    data,
-    debugReplacerIgnoringSerializationChanges,
+  const paramsAsEmpty = ImmutableEmpty.deserialize(
+    stringifyReplacingJspbMessages(
+      data,
+      debugReplacerIgnoringSerializationChanges,
+    ),
   );
+  const lastParamsAsEmpty = ImmutableEmpty.deserialize(el.__lastParams);
   const stringifiedParamsPretty = stringifyReplacingJspbMessages(
     data,
     undefined,
     2,
   );
   if (!el.__lastParams) {
-    el.__lastParams = stringifiedParams;
+    el.__lastParams = paramsAsEmpty;
     el.__lastParamsPretty = stringifiedParamsPretty;
     return;
   }
-  if (stringifiedParams !== el.__lastParams) {
+  if (!Message.equals(paramsAsEmpty, lastParamsAsEmpty)) {
     throw new Error(`
 Tried to rerender a {skip} template with different parameters!
 Make sure that you never pass a parameter that can change to a template that has
