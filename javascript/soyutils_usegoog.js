@@ -2723,8 +2723,19 @@ const $$bindFunctionParams = function(f, params) {
   return f.bind(null, ...params);
 };
 
-/** @define {boolean} Whether to enable lazy execution. */
-const ENABLE_LAZY_EXECUTION = goog.define('soy.ENABLE_LAZY_EXECUTION', false);
+/**
+ * @define {boolean} Whether to use lazy execution code paths. Note that this
+ *     does not control whether NodeBuilders are lazily executed, that is
+ *     controlled by the LAZY_EVAL_NODE_BUILDERS flag. This flag simply enables
+ *     the code paths that do lazy execution.
+ */
+const ENABLE_LAZY_EXECUTION = goog.define('soy.ENABLE_LAZY_EXECUTION', true);
+/**
+ * @define {boolean} Whether to perform lazy execution when NodeBuilders are
+ *     encountered.
+ */
+const LAZY_EVAL_NODE_BUILDERS =
+    goog.define('soy.LAZY_EVAL_NODE_BUILDERS', false);
 
 /** @return {boolean} */
 function $$isLazyExecutionEnabled() {
@@ -2758,7 +2769,7 @@ class NodeBuilder {
   }
 }
 /**
- * A version of SanitizedHtml that can accept NodeBuilders. It starts by 
+ * A version of SanitizedHtml that can accept NodeBuilders. It starts by
  * appending to the `content` string, until either a `NodeBuilder` or another
  * HtmlOutputBuffer that recursively contains a `NodeBuilder` is added, at which
  * point it switches to adding content to an array.
@@ -2774,7 +2785,7 @@ class HtmlOutputBuffer extends SanitizedHtml {
     this.content;
   }
 
-  /** 
+  /**
    * @param {string} val
    * @return {!HtmlOutputBuffer}
    */
@@ -2787,25 +2798,37 @@ class HtmlOutputBuffer extends SanitizedHtml {
     return this;
   }
 
-  /** 
+  /**
    * @param {*} val
    * @return {!HtmlOutputBuffer}
    */
   addDynamic(val) {
-    if (this.parts !== undefined) {
-      this.parts.push(val);
-    } else if (val instanceof NodeBuilder) {
-      this.parts = [this.content, val];
-      this.content = undefined;
-    } else if (val instanceof HtmlOutputBuffer) {
-      if (val.isStatic()) {
-        this.content += val.getContent();
-      } else {
+    if (LAZY_EVAL_NODE_BUILDERS) {
+      if (this.parts !== undefined) {
+        this.parts.push(val);
+      } else if (val instanceof NodeBuilder) {
         this.parts = [this.content, val];
         this.content = undefined;
+      } else if (val instanceof HtmlOutputBuffer) {
+        if (val.isStatic()) {
+          this.content += val.getContent();
+        } else {
+          this.parts = [this.content, val];
+          this.content = undefined;
+        }
+      } else {
+        this.content += val;
       }
     } else {
-      this.content += val;
+      // If LAZY_EVAL_NODE_BUILDERS=false, we just eagerly execute NodeBuilders
+      // and HtmlOutputBuffers.
+      if (val instanceof NodeBuilder) {
+        this.content += val.render();
+      } else if (val instanceof HtmlOutputBuffer) {
+        this.content += val.getContent();
+      } else {
+        this.content += val;
+      }
     }
     return this;
   }
@@ -2815,7 +2838,7 @@ class HtmlOutputBuffer extends SanitizedHtml {
     return this.content !== undefined;
   }
 
-  /** 
+  /**
    * @override
    * @return {string}
    */
@@ -3004,35 +3027,38 @@ const $$escapeUriHelper = function(v) {
  * Maps characters to the escaped versions for the named escape directives.
  * @type {!Object<string, string>}
  */
-const $$ESCAPE_MAP_FOR_ESCAPE_HTML__AND__NORMALIZE_HTML__AND__ESCAPE_HTML_NOSPACE__AND__NORMALIZE_HTML_NOSPACE_ = {
-  '\x00': '\x26#0;',
-  '\x09': '\x26#9;',
-  '\x0a': '\x26#10;',
-  '\x0b': '\x26#11;',
-  '\x0c': '\x26#12;',
-  '\x0d': '\x26#13;',
-  ' ': '\x26#32;',
-  '\x22': '\x26quot;',
-  '\x26': '\x26amp;',
-  '\x27': '\x26#39;',
-  '-': '\x26#45;',
-  '\/': '\x26#47;',
-  '\x3c': '\x26lt;',
-  '\x3d': '\x26#61;',
-  '\x3e': '\x26gt;',
-  '`': '\x26#96;',
-  '\x85': '\x26#133;',
-  '\xa0': '\x26#160;',
-  '\u2028': '\x26#8232;',
-  '\u2029': '\x26#8233;',
-};
+const
+    $$ESCAPE_MAP_FOR_ESCAPE_HTML__AND__NORMALIZE_HTML__AND__ESCAPE_HTML_NOSPACE__AND__NORMALIZE_HTML_NOSPACE_ =
+        {
+          '\x00': '\x26#0;',
+          '\x09': '\x26#9;',
+          '\x0a': '\x26#10;',
+          '\x0b': '\x26#11;',
+          '\x0c': '\x26#12;',
+          '\x0d': '\x26#13;',
+          ' ': '\x26#32;',
+          '\x22': '\x26quot;',
+          '\x26': '\x26amp;',
+          '\x27': '\x26#39;',
+          '-': '\x26#45;',
+          '\/': '\x26#47;',
+          '\x3c': '\x26lt;',
+          '\x3d': '\x26#61;',
+          '\x3e': '\x26gt;',
+          '`': '\x26#96;',
+          '\x85': '\x26#133;',
+          '\xa0': '\x26#160;',
+          '\u2028': '\x26#8232;',
+          '\u2029': '\x26#8233;',
+        };
 
 /**
  * A function that can be used with String.replace.
  * @param {string} ch A single character matched by a compatible matcher.
  * @return {string} A token in the output language.
  */
-const $$REPLACER_FOR_ESCAPE_HTML__AND__NORMALIZE_HTML__AND__ESCAPE_HTML_NOSPACE__AND__NORMALIZE_HTML_NOSPACE_ = function(ch) {
+const $$REPLACER_FOR_ESCAPE_HTML__AND__NORMALIZE_HTML__AND__ESCAPE_HTML_NOSPACE__AND__NORMALIZE_HTML_NOSPACE_ =
+    function(ch) {
   return $$ESCAPE_MAP_FOR_ESCAPE_HTML__AND__NORMALIZE_HTML__AND__ESCAPE_HTML_NOSPACE__AND__NORMALIZE_HTML_NOSPACE_[ch];
 };
 
@@ -3133,80 +3159,83 @@ const $$REPLACER_FOR_ESCAPE_CSS_STRING_ = function(ch) {
  * Maps characters to the escaped versions for the named escape directives.
  * @type {!Object<string, string>}
  */
-const $$ESCAPE_MAP_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI__AND__FILTER_NORMALIZE_MEDIA_URI_ = {
-  '\x00': '%00',
-  '\x01': '%01',
-  '\x02': '%02',
-  '\x03': '%03',
-  '\x04': '%04',
-  '\x05': '%05',
-  '\x06': '%06',
-  '\x07': '%07',
-  '\x08': '%08',
-  '\x09': '%09',
-  '\x0a': '%0A',
-  '\x0b': '%0B',
-  '\x0c': '%0C',
-  '\x0d': '%0D',
-  '\x0e': '%0E',
-  '\x0f': '%0F',
-  '\x10': '%10',
-  '\x11': '%11',
-  '\x12': '%12',
-  '\x13': '%13',
-  '\x14': '%14',
-  '\x15': '%15',
-  '\x16': '%16',
-  '\x17': '%17',
-  '\x18': '%18',
-  '\x19': '%19',
-  '\x1a': '%1A',
-  '\x1b': '%1B',
-  '\x1c': '%1C',
-  '\x1d': '%1D',
-  '\x1e': '%1E',
-  '\x1f': '%1F',
-  ' ': '%20',
-  '\x22': '%22',
-  '\x27': '%27',
-  '(': '%28',
-  ')': '%29',
-  '\x3c': '%3C',
-  '\x3e': '%3E',
-  '\\': '%5C',
-  '\x7b': '%7B',
-  '\x7d': '%7D',
-  '\x7f': '%7F',
-  '\x85': '%C2%85',
-  '\xa0': '%C2%A0',
-  '\u2028': '%E2%80%A8',
-  '\u2029': '%E2%80%A9',
-  '\uff01': '%EF%BC%81',
-  '\uff03': '%EF%BC%83',
-  '\uff04': '%EF%BC%84',
-  '\uff06': '%EF%BC%86',
-  '\uff07': '%EF%BC%87',
-  '\uff08': '%EF%BC%88',
-  '\uff09': '%EF%BC%89',
-  '\uff0a': '%EF%BC%8A',
-  '\uff0b': '%EF%BC%8B',
-  '\uff0c': '%EF%BC%8C',
-  '\uff0f': '%EF%BC%8F',
-  '\uff1a': '%EF%BC%9A',
-  '\uff1b': '%EF%BC%9B',
-  '\uff1d': '%EF%BC%9D',
-  '\uff1f': '%EF%BC%9F',
-  '\uff20': '%EF%BC%A0',
-  '\uff3b': '%EF%BC%BB',
-  '\uff3d': '%EF%BC%BD',
-};
+const
+    $$ESCAPE_MAP_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI__AND__FILTER_NORMALIZE_MEDIA_URI_ =
+        {
+          '\x00': '%00',
+          '\x01': '%01',
+          '\x02': '%02',
+          '\x03': '%03',
+          '\x04': '%04',
+          '\x05': '%05',
+          '\x06': '%06',
+          '\x07': '%07',
+          '\x08': '%08',
+          '\x09': '%09',
+          '\x0a': '%0A',
+          '\x0b': '%0B',
+          '\x0c': '%0C',
+          '\x0d': '%0D',
+          '\x0e': '%0E',
+          '\x0f': '%0F',
+          '\x10': '%10',
+          '\x11': '%11',
+          '\x12': '%12',
+          '\x13': '%13',
+          '\x14': '%14',
+          '\x15': '%15',
+          '\x16': '%16',
+          '\x17': '%17',
+          '\x18': '%18',
+          '\x19': '%19',
+          '\x1a': '%1A',
+          '\x1b': '%1B',
+          '\x1c': '%1C',
+          '\x1d': '%1D',
+          '\x1e': '%1E',
+          '\x1f': '%1F',
+          ' ': '%20',
+          '\x22': '%22',
+          '\x27': '%27',
+          '(': '%28',
+          ')': '%29',
+          '\x3c': '%3C',
+          '\x3e': '%3E',
+          '\\': '%5C',
+          '\x7b': '%7B',
+          '\x7d': '%7D',
+          '\x7f': '%7F',
+          '\x85': '%C2%85',
+          '\xa0': '%C2%A0',
+          '\u2028': '%E2%80%A8',
+          '\u2029': '%E2%80%A9',
+          '\uff01': '%EF%BC%81',
+          '\uff03': '%EF%BC%83',
+          '\uff04': '%EF%BC%84',
+          '\uff06': '%EF%BC%86',
+          '\uff07': '%EF%BC%87',
+          '\uff08': '%EF%BC%88',
+          '\uff09': '%EF%BC%89',
+          '\uff0a': '%EF%BC%8A',
+          '\uff0b': '%EF%BC%8B',
+          '\uff0c': '%EF%BC%8C',
+          '\uff0f': '%EF%BC%8F',
+          '\uff1a': '%EF%BC%9A',
+          '\uff1b': '%EF%BC%9B',
+          '\uff1d': '%EF%BC%9D',
+          '\uff1f': '%EF%BC%9F',
+          '\uff20': '%EF%BC%A0',
+          '\uff3b': '%EF%BC%BB',
+          '\uff3d': '%EF%BC%BD',
+        };
 
 /**
  * A function that can be used with String.replace.
  * @param {string} ch A single character matched by a compatible matcher.
  * @return {string} A token in the output language.
  */
-const $$REPLACER_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI__AND__FILTER_NORMALIZE_MEDIA_URI_ = function(ch) {
+const $$REPLACER_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI__AND__FILTER_NORMALIZE_MEDIA_URI_ =
+    function(ch) {
   return $$ESCAPE_MAP_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI__AND__FILTER_NORMALIZE_MEDIA_URI_[ch];
 };
 
@@ -3226,85 +3255,99 @@ const $$MATCHER_FOR_NORMALIZE_HTML_ = /[\x00\x22\x27\x3c\x3e]/g;
  * Matches characters that need to be escaped for the named directives.
  * @type {!RegExp}
  */
-const $$MATCHER_FOR_ESCAPE_HTML_NOSPACE_ = /[\x00\x09-\x0d \x22\x26\x27\x2d\/\x3c-\x3e`\x85\xa0\u2028\u2029]/g;
+const $$MATCHER_FOR_ESCAPE_HTML_NOSPACE_ =
+    /[\x00\x09-\x0d \x22\x26\x27\x2d\/\x3c-\x3e`\x85\xa0\u2028\u2029]/g;
 
 /**
  * Matches characters that need to be escaped for the named directives.
  * @type {!RegExp}
  */
-const $$MATCHER_FOR_NORMALIZE_HTML_NOSPACE_ = /[\x00\x09-\x0d \x22\x27\x2d\/\x3c-\x3e`\x85\xa0\u2028\u2029]/g;
+const $$MATCHER_FOR_NORMALIZE_HTML_NOSPACE_ =
+    /[\x00\x09-\x0d \x22\x27\x2d\/\x3c-\x3e`\x85\xa0\u2028\u2029]/g;
 
 /**
  * Matches characters that need to be escaped for the named directives.
  * @type {!RegExp}
  */
-const $$MATCHER_FOR_ESCAPE_JS_STRING_ = /[\x00\x08-\x0d\x22\x26\x27\/\x3c-\x3e\x5b-\x5d\x7b\x7d\x85\u2028\u2029]/g;
+const $$MATCHER_FOR_ESCAPE_JS_STRING_ =
+    /[\x00\x08-\x0d\x22\x26\x27\/\x3c-\x3e\x5b-\x5d\x7b\x7d\x85\u2028\u2029]/g;
 
 /**
  * Matches characters that need to be escaped for the named directives.
  * @type {!RegExp}
  */
-const $$MATCHER_FOR_ESCAPE_JS_REGEX_ = /[\x00\x08-\x0d\x22\x24\x26-\/\x3a\x3c-\x3f\x5b-\x5e\x7b-\x7d\x85\u2028\u2029]/g;
+const $$MATCHER_FOR_ESCAPE_JS_REGEX_ =
+    /[\x00\x08-\x0d\x22\x24\x26-\/\x3a\x3c-\x3f\x5b-\x5e\x7b-\x7d\x85\u2028\u2029]/g;
 
 /**
  * Matches characters that need to be escaped for the named directives.
  * @type {!RegExp}
  */
-const $$MATCHER_FOR_ESCAPE_CSS_STRING_ = /[\x00\x08-\x0d\x22\x26-\x2a\/\x3a-\x3e@\\\x7b\x7d\x85\xa0\u2028\u2029]/g;
+const $$MATCHER_FOR_ESCAPE_CSS_STRING_ =
+    /[\x00\x08-\x0d\x22\x26-\x2a\/\x3a-\x3e@\\\x7b\x7d\x85\xa0\u2028\u2029]/g;
 
 /**
  * Matches characters that need to be escaped for the named directives.
  * @type {!RegExp}
  */
-const $$MATCHER_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI__AND__FILTER_NORMALIZE_MEDIA_URI_ = /[\x00- \x22\x27-\x29\x3c\x3e\\\x7b\x7d\x7f\x85\xa0\u2028\u2029\uff01\uff03\uff04\uff06-\uff0c\uff0f\uff1a\uff1b\uff1d\uff1f\uff20\uff3b\uff3d]/g;
+const $$MATCHER_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI__AND__FILTER_NORMALIZE_MEDIA_URI_ =
+    /[\x00- \x22\x27-\x29\x3c\x3e\\\x7b\x7d\x7f\x85\xa0\u2028\u2029\uff01\uff03\uff04\uff06-\uff0c\uff0f\uff1a\uff1b\uff1d\uff1f\uff20\uff3b\uff3d]/g;
 
 /**
  * A pattern that vets values produced by the named directives.
  * @type {!RegExp}
  */
-const $$FILTER_FOR_FILTER_NORMALIZE_URI_ = /^(?!javascript:)(?:[a-z0-9+.-]+:|[^&:\/?#]*(?:[\/?#]|$))/i;
+const $$FILTER_FOR_FILTER_NORMALIZE_URI_ =
+    /^(?!javascript:)(?:[a-z0-9+.-]+:|[^&:\/?#]*(?:[\/?#]|$))/i;
 
 /**
  * A pattern that vets values produced by the named directives.
  * @type {!RegExp}
  */
-const $$FILTER_FOR_FILTER_NORMALIZE_MEDIA_URI_ = /^[^&:\/?#]*(?:[\/?#]|$)|^https?:|^ftp:|^data:image\/[a-z0-9+-]+;base64,[a-z0-9+\/]+=*$|^blob:/i;
+const $$FILTER_FOR_FILTER_NORMALIZE_MEDIA_URI_ =
+    /^[^&:\/?#]*(?:[\/?#]|$)|^https?:|^ftp:|^data:image\/[a-z0-9+-]+;base64,[a-z0-9+\/]+=*$|^blob:/i;
 
 /**
  * A pattern that vets values produced by the named directives.
  * @type {!RegExp}
  */
-const $$FILTER_FOR_FILTER_IMAGE_DATA_URI_ = /^data:image\/(?:bmp|gif|jpe?g|png|tiff|webp|x-icon);base64,[a-z0-9+\/]+=*$/i;
+const $$FILTER_FOR_FILTER_IMAGE_DATA_URI_ =
+    /^data:image\/(?:bmp|gif|jpe?g|png|tiff|webp|x-icon);base64,[a-z0-9+\/]+=*$/i;
 
 /**
  * A pattern that vets values produced by the named directives.
  * @type {!RegExp}
  */
-const $$FILTER_FOR_FILTER_SIP_URI_ = /^sip:[0-9a-z;=\-+._!~*'\u0020\/():&$#?@,]+$/i;
+const $$FILTER_FOR_FILTER_SIP_URI_ =
+    /^sip:[0-9a-z;=\-+._!~*'\u0020\/():&$#?@,]+$/i;
 
 /**
  * A pattern that vets values produced by the named directives.
  * @type {!RegExp}
  */
-const $$FILTER_FOR_FILTER_SMS_URI_ = /^sms:[0-9a-z;=\-+._!~*'\u0020\/():&$#?@,]+$/i;
+const $$FILTER_FOR_FILTER_SMS_URI_ =
+    /^sms:[0-9a-z;=\-+._!~*'\u0020\/():&$#?@,]+$/i;
 
 /**
  * A pattern that vets values produced by the named directives.
  * @type {!RegExp}
  */
-const $$FILTER_FOR_FILTER_TEL_URI_ = /^tel:(?:[0-9a-z;=\-+._!~*'\u0020\/():&$#?@,]|%23|%2C|%3B)+$/i;
+const $$FILTER_FOR_FILTER_TEL_URI_ =
+    /^tel:(?:[0-9a-z;=\-+._!~*'\u0020\/():&$#?@,]|%23|%2C|%3B)+$/i;
 
 /**
  * A pattern that vets values produced by the named directives.
  * @type {!RegExp}
  */
-const $$FILTER_FOR_FILTER_HTML_ATTRIBUTES_ = /^(?!on|src|(?:action|archive|background|cite|classid|codebase|content|data|dsync|href|http-equiv|longdesc|style|usemap)\s*$)(?:[a-z0-9_$:-]*)$/i;
+const $$FILTER_FOR_FILTER_HTML_ATTRIBUTES_ =
+    /^(?!on|src|(?:action|archive|background|cite|classid|codebase|content|data|dsync|href|http-equiv|longdesc|style|usemap)\s*$)(?:[a-z0-9_$:-]*)$/i;
 
 /**
  * A pattern that vets values produced by the named directives.
  * @type {!RegExp}
  */
-const $$FILTER_FOR_FILTER_HTML_ELEMENT_NAME_ = /^(?!base|iframe|link|noframes|noscript|object|script|style|textarea|title|xmp)[a-z0-9_$:-]*$/i;
+const $$FILTER_FOR_FILTER_HTML_ELEMENT_NAME_ =
+    /^(?!base|iframe|link|noframes|noscript|object|script|style|textarea|title|xmp)[a-z0-9_$:-]*$/i;
 
 /**
  * A pattern that vets values produced by the named directives.
@@ -3392,8 +3435,7 @@ const $$escapeJsRegexHelper = function(value) {
 const $$escapeCssStringHelper = function(value) {
   const str = String(value);
   return str.replace(
-      $$MATCHER_FOR_ESCAPE_CSS_STRING_,
-      $$REPLACER_FOR_ESCAPE_CSS_STRING_);
+      $$MATCHER_FOR_ESCAPE_CSS_STRING_, $$REPLACER_FOR_ESCAPE_CSS_STRING_);
 };
 
 /**
@@ -3550,7 +3592,17 @@ const $$LT_REGEX_ = /</g;
  *
  * @type {!Object<string, boolean>}
  */
-const $$SAFE_TAG_WHITELIST_ = {'b': true, 'br': true, 'em': true, 'i': true, 's': true, 'strong': true, 'sub': true, 'sup': true, 'u': true};
+const $$SAFE_TAG_WHITELIST_ = {
+  'b': true,
+  'br': true,
+  'em': true,
+  'i': true,
+  's': true,
+  'strong': true,
+  'sub': true,
+  'sup': true,
+  'u': true
+};
 
 /**
  * Pattern for matching attribute name and value, where value is single-quoted
@@ -3559,6 +3611,7 @@ const $$SAFE_TAG_WHITELIST_ = {'b': true, 'br': true, 'em': true, 'i': true, 's'
  *
  * @type {!RegExp}
  */
-const $$HTML_ATTRIBUTE_REGEX_ = /([a-zA-Z][a-zA-Z0-9:\-]*)[\t\n\r\u0020]*=[\t\n\r\u0020]*("[^"]*"|'[^']*')/g;
+const $$HTML_ATTRIBUTE_REGEX_ =
+    /([a-zA-Z][a-zA-Z0-9:\-]*)[\t\n\r\u0020]*=[\t\n\r\u0020]*("[^"]*"|'[^']*')/g;
 
 // END GENERATED CODE
