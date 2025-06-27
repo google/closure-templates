@@ -4,6 +4,8 @@
  * Functions necessary to interact with the Soy-Idom runtime.
  */
 
+import {hashCode} from 'google3/javascript/apps/jspb/hash_code_reexport';
+import {Message} from 'google3/javascript/apps/jspb/message';
 import {stringifyReplacingJspbMessages} from 'google3/javascript/apps/jspb/stringify';
 import {VERY_UNSAFE} from 'google3/javascript/template/soy/soydata_aliases';
 import * as soy from 'google3/javascript/template/soy/soyutils_usegoog';
@@ -38,7 +40,7 @@ const logger = log.getLogger('api_idom');
 
 declare global {
   interface Node {
-    __lastParams: string | undefined;
+    __lastHashedParams: string | undefined;
     __lastParamsPretty: string | undefined;
     __hasBeenRendered?: boolean;
   }
@@ -708,34 +710,32 @@ export function isMatchingKey(
   return false;
 }
 
-function debugReplacerIgnoringSerializationChanges(
-  k: unknown,
-  v: unknown,
-): unknown {
+function debugReplacerHashingMessages(k: unknown, v: unknown): unknown {
   if (v == null) return undefined;
   // Allow booleans represented as numbers.
   if (typeof v === 'boolean') v = +v;
   // Allow numbers/bigints represented as strings.
   if (typeof v === 'number' || typeof v === 'bigint') v = `${v}`;
+  if (v instanceof Message) v = `${hashCode(v)}`;
   return v;
 }
 
 function maybeReportErrors(el: HTMLElement, data: unknown) {
-  const stringifiedParams = stringifyReplacingJspbMessages(
+  const stringifiedHashedParams = JSON.stringify(
     data,
-    debugReplacerIgnoringSerializationChanges,
+    debugReplacerHashingMessages,
   );
   const stringifiedParamsPretty = stringifyReplacingJspbMessages(
     data,
     undefined,
     2,
   );
-  if (!el.__lastParams) {
-    el.__lastParams = stringifiedParams;
+  if (!el.__lastHashedParams) {
+    el.__lastHashedParams = stringifiedHashedParams;
     el.__lastParamsPretty = stringifiedParamsPretty;
     return;
   }
-  if (stringifiedParams !== el.__lastParams) {
+  if (stringifiedHashedParams !== el.__lastHashedParams) {
     throw new Error(`
 Tried to rerender a {skip} template with different parameters!
 Make sure that you never pass a parameter that can change to a template that has
