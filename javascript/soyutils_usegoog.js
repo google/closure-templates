@@ -2723,22 +2723,36 @@ const $$bindFunctionParams = function(f, params) {
   return f.bind(null, ...params);
 };
 
-/** @define {boolean} Whether to enable lazy execution. */
+/**
+ * @define {boolean} Whether to use lazy execution code paths.
+ */
 const ENABLE_LAZY_EXECUTION = goog.define('soy.ENABLE_LAZY_EXECUTION', false);
+
+/**
+ * @define {boolean} Whether to perform lazy execution when NodeBuilders are
+ *     encountered.
+ */
+const LAZY_EVAL_NODE_BUILDERS =
+    goog.define('soy.LAZY_EVAL_NODE_BUILDERS', false);
+
+let isLazyExecutionEnabledUncompiled = ENABLE_LAZY_EXECUTION;
+let shouldLazyEvalNodeBuildersUncompiled = LAZY_EVAL_NODE_BUILDERS;
 
 /** @return {boolean} */
 function $$isLazyExecutionEnabled() {
-  if (goog.DEBUG) {
-    return isLazyExecutionEnabledUncompiled;
-  }
-  return ENABLE_LAZY_EXECUTION;
+  return goog.DEBUG ? isLazyExecutionEnabledUncompiled : ENABLE_LAZY_EXECUTION;
 }
 
-let isLazyExecutionEnabledUncompiled = ENABLE_LAZY_EXECUTION;
+/** @return {boolean} */
+function $$shouldLazyEvalNodeBuilders() {
+  return goog.DEBUG ? shouldLazyEvalNodeBuildersUncompiled :
+                      LAZY_EVAL_NODE_BUILDERS;
+}
 
 /** @param {boolean} val */
 function $$setLazyExeuctionUncompiled(val) {
   isLazyExecutionEnabledUncompiled = val;
+  shouldLazyEvalNodeBuildersUncompiled = val;
 }
 
 /** Wraps a call that should be lazily evaluated. */
@@ -2758,7 +2772,7 @@ class NodeBuilder {
   }
 }
 /**
- * A version of SanitizedHtml that can accept NodeBuilders. It starts by 
+ * A version of SanitizedHtml that can accept NodeBuilders. It starts by
  * appending to the `content` string, until either a `NodeBuilder` or another
  * HtmlOutputBuffer that recursively contains a `NodeBuilder` is added, at which
  * point it switches to adding content to an array.
@@ -2774,7 +2788,7 @@ class HtmlOutputBuffer extends SanitizedHtml {
     this.content;
   }
 
-  /** 
+  /**
    * @param {string} val
    * @return {!HtmlOutputBuffer}
    */
@@ -2787,25 +2801,37 @@ class HtmlOutputBuffer extends SanitizedHtml {
     return this;
   }
 
-  /** 
+  /**
    * @param {*} val
    * @return {!HtmlOutputBuffer}
    */
   addDynamic(val) {
-    if (this.parts !== undefined) {
-      this.parts.push(val);
-    } else if (val instanceof NodeBuilder) {
-      this.parts = [this.content, val];
-      this.content = undefined;
-    } else if (val instanceof HtmlOutputBuffer) {
-      if (val.isStatic()) {
-        this.content += val.getContent();
-      } else {
+    if (shouldLazyEvalNodeBuildersUncompiled) {
+      if (this.parts !== undefined) {
+        this.parts.push(val);
+      } else if (val instanceof NodeBuilder) {
         this.parts = [this.content, val];
         this.content = undefined;
+      } else if (val instanceof HtmlOutputBuffer) {
+        if (val.isStatic()) {
+          this.content += val.getContent();
+        } else {
+          this.parts = [this.content, val];
+          this.content = undefined;
+        }
+      } else {
+        this.content += val;
       }
     } else {
-      this.content += val;
+      // If LAZY_EVAL_NODE_BUILDERS=false, we just eagerly execute NodeBuilders
+      // and HtmlOutputBuffers.
+      if (val instanceof NodeBuilder) {
+        this.content += val.render();
+      } else if (val instanceof HtmlOutputBuffer) {
+        this.content += val.getContent();
+      } else {
+        this.content += val;
+      }
     }
     return this;
   }
@@ -2815,7 +2841,7 @@ class HtmlOutputBuffer extends SanitizedHtml {
     return this.content !== undefined;
   }
 
-  /** 
+  /**
    * @override
    * @return {string}
    */
