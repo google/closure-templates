@@ -166,6 +166,8 @@ public final class FunctionNode extends AbstractParentExprNode implements ExprNo
   // Mutable state stored in this AST node from various passes.
   private final FunctionState state = new FunctionState();
 
+  private boolean isVarArgs;
+
   FunctionNode(
       SourceLocation sourceLocation,
       Identifier name,
@@ -173,6 +175,17 @@ public final class FunctionNode extends AbstractParentExprNode implements ExprNo
       ParamsStyle paramsStyle,
       ImmutableList<Identifier> paramNames,
       @Nullable ImmutableList<Point> commaLocations) {
+    this(sourceLocation, name, nameExpr, paramsStyle, paramNames, commaLocations, false);
+  }
+
+  FunctionNode(
+      SourceLocation sourceLocation,
+      Identifier name,
+      ExprNode nameExpr,
+      ParamsStyle paramsStyle,
+      ImmutableList<Identifier> paramNames,
+      @Nullable ImmutableList<Point> commaLocations,
+      boolean isVarArgs) {
     super(sourceLocation);
     Preconditions.checkArgument(paramNames.isEmpty() || paramsStyle == ParamsStyle.NAMED);
     Preconditions.checkArgument((name == null) != (nameExpr == null));
@@ -183,6 +196,7 @@ public final class FunctionNode extends AbstractParentExprNode implements ExprNo
     this.paramsStyle = paramsStyle;
     this.paramNames = paramNames;
     this.commaLocations = commaLocations;
+    this.isVarArgs = isVarArgs;
   }
 
   /**
@@ -199,6 +213,7 @@ public final class FunctionNode extends AbstractParentExprNode implements ExprNo
     this.state.allowedParamTypes = orig.state.allowedParamTypes;
     this.state.allowedToInvokeAsFunction = orig.state.allowedToInvokeAsFunction;
     this.commaLocations = orig.commaLocations;
+    this.isVarArgs = orig.isVarArgs;
   }
 
   @Override
@@ -251,12 +266,21 @@ public final class FunctionNode extends AbstractParentExprNode implements ExprNo
     return state.function != null;
   }
 
+  /** Returns false if ResolveExpressionTypesPass has not run yet. */
+  public boolean isVarArgs() {
+    return isVarArgs;
+  }
+
   public boolean allowedToInvokeAsFunction() {
     return this.state.allowedToInvokeAsFunction;
   }
 
   public void setAllowedToInvokeAsFunction(boolean cond) {
     this.state.allowedToInvokeAsFunction = cond;
+  }
+
+  public void setIsVarArgs(boolean isVarArgs) {
+    this.isVarArgs = isVarArgs;
   }
 
   public Object getSoyFunction() {
@@ -282,11 +306,13 @@ public final class FunctionNode extends AbstractParentExprNode implements ExprNo
 
   public void setAllowedParamTypes(List<SoyType> allowedParamTypes) {
     checkState(paramsStyle == ParamsStyle.POSITIONAL || numParams() == 0);
-    checkState(
-        allowedParamTypes.size() == numParams(),
-        "allowedParamTypes.size (%s) != numParams (%s)",
-        allowedParamTypes.size(),
-        numParams());
+    if (!isVarArgs) {
+      checkState(
+          allowedParamTypes.size() == numParams(),
+          "allowedParamTypes.size (%s) != numParams (%s)",
+          allowedParamTypes.size(),
+          numParams());
+    }
     this.state.allowedParamTypes = ImmutableList.copyOf(allowedParamTypes);
   }
 

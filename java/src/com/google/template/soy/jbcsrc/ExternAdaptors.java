@@ -103,10 +103,12 @@ class ExternAdaptors {
       }
     }
 
+    // TODO: Need to handle VarArgs here.
     FunctionType functionType =
         FunctionType.of(
             argTypes.stream().map(t -> Parameter.of("unused", t)).collect(toImmutableList()),
-            returnType);
+            returnType,
+            false);
     JavaImpl java =
         new JavaImpl() {
           @Override

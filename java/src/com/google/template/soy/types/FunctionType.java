@@ -30,16 +30,26 @@ import java.util.Collection;
 @AutoValue
 public abstract class FunctionType extends SoyType {
 
-  public static FunctionType of(Collection<Parameter> parameters, SoyType returnType) {
-    return new AutoValue_FunctionType(returnType, ImmutableList.copyOf(parameters));
+  public static FunctionType of(
+      Collection<Parameter> parameters, SoyType returnType, boolean isVarArgs) {
+    return new AutoValue_FunctionType(returnType, ImmutableList.copyOf(parameters), isVarArgs);
   }
 
   public abstract SoyType getReturnType();
 
   public abstract ImmutableList<Parameter> getParameters();
 
+  public abstract boolean isVarArgs();
+
   public int getArity() {
     return getParameters().size();
+  }
+
+  public int getMinimalArity() {
+    if (isVarArgs()) {
+      return getParameters().size() - 1;
+    }
+    return getArity();
   }
 
   @Memoized
@@ -109,6 +119,9 @@ public abstract class FunctionType extends SoyType {
       sb.append(": ");
       sb.append(parameter.getType());
     }
+    if (isVarArgs()) {
+      sb.append("...");
+    }
     sb.append(") => ");
     sb.append(getReturnType());
     return sb.toString();
@@ -117,7 +130,10 @@ public abstract class FunctionType extends SoyType {
   @Override
   final void doToProto(SoyTypeP.Builder builder) {
     FunctionTypeP.Builder templateBuilder =
-        builder.getFunctionBuilder().setReturnType(getReturnType().toProto());
+        builder
+            .getFunctionBuilder()
+            .setReturnType(getReturnType().toProto())
+            .setIsVarArgs(isVarArgs());
     for (Parameter parameter : getParameters()) {
       templateBuilder.addParameters(
           FunctionTypeP.Parameter.newBuilder()

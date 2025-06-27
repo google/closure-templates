@@ -58,6 +58,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import javax.annotation.Nonnull;
@@ -355,12 +356,16 @@ public final class BasicFunctionsRuntime {
   }
 
   /** Returns the numeric maximum of the two arguments. */
-  public static NumberData max(SoyValue arg0, SoyValue arg1) {
-    if (arg0 instanceof IntegerData && arg1 instanceof IntegerData) {
-      return IntegerData.forValue(Math.max(arg0.longValue(), arg1.longValue()));
-    } else {
-      return FloatData.forValue(Math.max(arg0.floatValue(), arg1.floatValue()));
+  public static NumberData max(List<? extends SoyValue> args) {
+    if (args.isEmpty()) {
+      throw new IllegalArgumentException("max function requires at least one argument.");
     }
+
+    Optional<Double> maxVal = args.stream().map(SoyValue::numberValue).max(Double::compare);
+
+    return maxVal
+        .map(FloatData::forValue)
+        .orElseThrow(() -> new IllegalArgumentException("Invalid arguments for max function."));
   }
 
   /** Returns the numeric minimum of the two arguments. */

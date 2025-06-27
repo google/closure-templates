@@ -30,6 +30,7 @@ import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SoyDict;
 import com.google.template.soy.data.SoyList;
+import com.google.template.soy.data.SoyListData;
 import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
@@ -72,6 +73,7 @@ import com.google.template.soy.types.ast.TypeNode;
 import com.google.template.soy.types.ast.TypeNodeConverter;
 import com.ibm.icu.util.ULocale;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -144,13 +146,23 @@ public class SoyJavaSourceFunctionTester {
         Stream.of(matchingSig.parameterTypes()).map(this::parseType).collect(toImmutableList()));
     fnNode.setType(parseType(matchingSig.returnType()));
 
+    Object[] argsList = new Object[matchingSig.parameterTypes().length];
+    for (int i = 0; i < matchingSig.parameterTypes().length; i++) {
+      if ((i == matchingSig.parameterTypes().length - 1)
+          && matchingSig.parameterTypes()[i].endsWith("...")) {
+        argsList[i] = new SoyListData(Arrays.copyOfRange(args, i, args.length));
+      } else {
+        argsList[i] = args[i];
+      }
+    }
+
     try {
       return ExpressionEvaluator.evaluate(
           JbcSrcJavaValues.computeForJavaSource(
               fnNode,
               new InternalContext(),
               this::getFunctionRuntime,
-              stream(args).map(this::transform).collect(toImmutableList()),
+              stream(argsList).map(this::transform).collect(toImmutableList()),
               new TestExpressionDetacher()));
     } catch (ReflectiveOperationException roe) {
       throw new RuntimeException(roe);
@@ -202,6 +214,9 @@ public class SoyJavaSourceFunctionTester {
   private Signature findMatchingSignature(Signature[] sigs, int numArgs) {
     for (Signature sig : sigs) {
       if (sig.parameterTypes().length == numArgs) {
+        return sig;
+      }
+      if (sig.parameterTypes()[sig.parameterTypes().length - 1].endsWith("...")) {
         return sig;
       }
     }
