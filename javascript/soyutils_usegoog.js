@@ -2724,9 +2724,12 @@ const $$bindFunctionParams = function(f, params) {
 };
 
 /**
- * @define {boolean} Whether to use lazy execution code paths.
+ * @define {boolean} Whether to use lazy execution code paths. Note that this
+ *     does not control whether NodeBuilders are lazily executed, that is
+ *     controlled by the LAZY_EVAL_NODE_BUILDERS flag. This flag simply enables
+ *     the code paths that do lazy execution.
  */
-const ENABLE_LAZY_EXECUTION = goog.define('soy.ENABLE_LAZY_EXECUTION', false);
+const ENABLE_LAZY_EXECUTION = goog.define('soy.ENABLE_LAZY_EXECUTION', true);
 
 /**
  * @define {boolean} Whether to perform lazy execution when NodeBuilders are
