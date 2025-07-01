@@ -227,11 +227,20 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
       }
     }
 
-    boolean hasContent() {
+    enum HasContentResult {
+      TRUE,
+      FALSE,
+      NODE_BUILDERS,
+    }
+
+    HasContentResult hasContent() {
       for (var command : commands) {
         // BufferingAppendable only adds non-empty strings to the command list.
         if (command instanceof String) {
-          return true;
+          return HasContentResult.TRUE;
+        }
+        if (command instanceof NodeBuilder) {
+          return HasContentResult.NODE_BUILDERS;
         }
         // NOTE: we don't need to check logging functions, because CommandBuffers are only created
         // for HTML and ATTRIBUTES, and logging functions are only used for attribute_values.  So to
@@ -240,7 +249,7 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
         // ambiguous on its own and again will only appear on an html element and thus there must
         // have been a preceding string.
       }
-      return false;
+      return HasContentResult.FALSE;
     }
 
     @Override

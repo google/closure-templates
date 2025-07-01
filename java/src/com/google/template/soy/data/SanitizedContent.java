@@ -813,7 +813,17 @@ public abstract class SanitizedContent extends SoyValue {
 
     @Override
     public boolean hasContent() {
-      return commandBuffer.hasContent();
+      switch (commandBuffer.hasContent()) {
+        case TRUE:
+          return true;
+        case FALSE:
+          return false;
+        case NODE_BUILDERS:
+          // This will populate this.content, so the NodeBuilders will not be re-executed when the
+          // content is printed or subsequent hasContent() calls are made.
+          return super.hasContent();
+      }
+      throw new IllegalArgumentException("Unhandled CommandBuffer.hasContent() value");
     }
 
     @Override
