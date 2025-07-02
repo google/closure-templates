@@ -244,7 +244,7 @@ public final class ExternCompiler {
             adaptParameter(
                 paramSet.getVariable(paramNames.get(i + paramNamesOffset)),
                 paramTypesInfos[i],
-                extern.getType().getParameters().get(i).getType(),
+                extern.getType().getParameters().get(i).getType().getEffectiveType(),
                 vars));
       }
       // Add implicit params.
