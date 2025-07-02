@@ -18,7 +18,7 @@ package com.google.template.soy.types;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
-import static com.google.template.soy.types.SoyTypes.NUMBER_TYPE;
+import static com.google.template.soy.types.SoyTypes.INT_OR_FLOAT;
 
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
@@ -101,7 +101,7 @@ public final class SoyProtoType extends SoyType {
 
     @Override
     protected SoyType visitUnsignedInt() {
-      return setterField ? NUMBER_TYPE : IntType.getInstance();
+      return setterField ? INT_OR_FLOAT : IntType.getInstance();
     }
 
     @Override
@@ -144,7 +144,7 @@ public final class SoyProtoType extends SoyType {
 
     @Override
     protected SoyType visitInt() {
-      return setterField ? NUMBER_TYPE : IntType.getInstance();
+      return setterField ? INT_OR_FLOAT : IntType.getInstance();
     }
 
     @Override
@@ -159,12 +159,12 @@ public final class SoyProtoType extends SoyType {
 
     @Override
     protected SoyType visitDoubleAsFloat() {
-      return setterField ? NUMBER_TYPE : FloatType.getInstance();
+      return setterField ? INT_OR_FLOAT : FloatType.getInstance();
     }
 
     @Override
     protected SoyType visitFloat() {
-      return setterField ? NUMBER_TYPE : FloatType.getInstance();
+      return setterField ? INT_OR_FLOAT : FloatType.getInstance();
     }
 
     @Override

@@ -144,7 +144,7 @@ public final class JsTypeTest {
 
   @Test
   public void testForSoyTypeStrict() {
-    assertThatTypeExprStrict(new SoyProtoEnumType(Proto3Message.AnEnum.getDescriptor()))
+    assertThatTypeExprStrict(SoyProtoEnumType.create(Proto3Message.AnEnum.getDescriptor()))
         .isEqualTo("!proto.soy.test3.Proto3Message.AnEnum");
 
     assertThatTypeExprStrict(SoyProtoType.newForTest(Proto3Message.getDescriptor()))

@@ -436,7 +436,7 @@ final class ValidatorFactory extends JavaValueFactory {
         break;
       case UNION:
         // number is a special case, it should work for double and NumberData
-        if (type.equals(SoyTypes.NUMBER_TYPE)) {
+        if (type.equals(SoyTypes.INT_OR_FLOAT)) {
           expectedClasses = NUMBER_TYPES;
           break;
         }
