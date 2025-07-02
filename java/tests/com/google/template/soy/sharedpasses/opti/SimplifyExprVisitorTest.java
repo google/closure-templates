@@ -407,7 +407,7 @@ public final class SimplifyExprVisitorTest {
             new ExpressionParser("$boo || true ? $boo && false : true")
                 .withParam("boo", "bool")
                 .parseForParentNode())
-        .simplifiesTo("$boo || true ? $boo && false : true"); // Can't simplify
+        .simplifiesTo("$boo && false");
   }
 
   @Test
