@@ -73,14 +73,14 @@ public class SoyRuntimeTypeTest {
             SoyRuntimeType.getUnboxedType(FloatType.getInstance()).get().box().runtimeType())
         .isEqualTo(BytecodeUtils.SOY_VALUE_TYPE);
 
-    assertThat(new SoyProtoEnumType(Proto3Message.AnEnum.getDescriptor()))
+    assertThat(SoyProtoEnumType.create(Proto3Message.AnEnum.getDescriptor()))
         .isBoxedAs(SoyValue.class)
         .isUnboxedAs(long.class);
 
     assertThat(
             UnionType.of(
-                new SoyProtoEnumType(Proto3Message.AnEnum.getDescriptor()),
-                new SoyProtoEnumType(Foo3.AnotherEnum.getDescriptor())))
+                SoyProtoEnumType.create(Proto3Message.AnEnum.getDescriptor()),
+                SoyProtoEnumType.create(Foo3.AnotherEnum.getDescriptor())))
         .isBoxedAs(SoyValue.class)
         .isUnboxedAs(long.class);
 

@@ -108,7 +108,7 @@ final class TofuJavaValue implements JavaValue {
 
   @Override
   public JavaValue coerceToJavaInt() {
-    checkType(SoyTypes.NUMBER_TYPE);
+    checkType(SoyTypes.INT_OR_FLOAT);
     return TofuJavaValue.forSoyValue(IntegerData.forValue(soyValue.coerceToInt()), sourceLocation);
   }
 

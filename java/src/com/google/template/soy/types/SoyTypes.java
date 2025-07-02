@@ -32,6 +32,13 @@ import com.google.common.html.types.SafeStyleSheetProto;
 import com.google.common.html.types.SafeUrlProto;
 import com.google.common.html.types.TrustedResourceUrlProto;
 import com.google.template.soy.internal.util.TreeStreams;
+import com.google.template.soy.types.SanitizedType.AttributesType;
+import com.google.template.soy.types.SanitizedType.ElementType;
+import com.google.template.soy.types.SanitizedType.HtmlType;
+import com.google.template.soy.types.SanitizedType.JsType;
+import com.google.template.soy.types.SanitizedType.StyleType;
+import com.google.template.soy.types.SanitizedType.TrustedResourceUriType;
+import com.google.template.soy.types.SanitizedType.UriType;
 import com.google.template.soy.types.SoyType.Kind;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -52,10 +59,8 @@ public final class SoyTypes {
   private SoyTypes() {}
 
   /** Shared constant for the 'number' type. */
-  public static final SoyType NUMBER_TYPE =
+  public static final SoyType INT_OR_FLOAT =
       UnionType.of(IntType.getInstance(), FloatType.getInstance());
-
-  public static final SoyType GBIGINT = GbigintType.getInstance();
 
   // TODO: b/319288438 - Remove these types once soy setters are migrated to gbigint.
   //
@@ -63,7 +68,7 @@ public final class SoyTypes {
   // setters in JS normally accept gbigint|number|string regardless of any jstype annotations. This
   // has not historically been the case in Soy, so we need to smooth over the difference.
   public static final SoyType GBIGINT_OR_NUMBER_FOR_MIGRATION =
-      UnionType.of(GbigintType.getInstance(), NUMBER_TYPE);
+      UnionType.of(GbigintType.getInstance(), INT_OR_FLOAT);
 
   public static final SoyType GBIGINT_OR_STRING_FOR_MIGRATION =
       UnionType.of(GbigintType.getInstance(), StringType.getInstance());
@@ -85,40 +90,38 @@ public final class SoyTypes {
               SanitizedType.TrustedResourceUriType.getInstance())
           .build();
 
-  public static final ImmutableSet<Kind> SANITIZED_TYPE_KINDS =
+  private static final ImmutableSet<SoyType> SANITIZED_TYPE_KINDS =
       ImmutableSet.of(
-          Kind.HTML,
-          Kind.ELEMENT,
-          Kind.ATTRIBUTES,
-          Kind.JS,
-          Kind.CSS,
-          Kind.URI,
-          Kind.TRUSTED_RESOURCE_URI);
+          HtmlType.getInstance(),
+          ElementType.getInstance(""),
+          AttributesType.getInstance(),
+          JsType.getInstance(),
+          StyleType.getInstance(),
+          UriType.getInstance(),
+          TrustedResourceUriType.getInstance());
 
-  private static final ImmutableSet<Kind> ALWAYS_COMPARABLE_KINDS =
-      Sets.immutableEnumSet(Kind.UNKNOWN, Kind.ANY, Kind.NULL, Kind.UNDEFINED);
+  public static final SoyType ANY_SANITIZED_KIND = UnionType.of(SANITIZED_TYPE_KINDS);
 
-  public static final ImmutableSet<Kind> ARITHMETIC_PRIMITIVES =
-      Sets.immutableEnumSet(Kind.INT, Kind.FLOAT, Kind.NUMBER);
+  public static final SoyType STRINGISH =
+      UnionType.of(StringType.getInstance(), ANY_SANITIZED_KIND);
 
-  public static final ImmutableSet<Kind> NULLISH_KINDS =
+  private static final ImmutableSet<Kind> NULLISH_KINDS =
       Sets.immutableEnumSet(Kind.NULL, Kind.UNDEFINED);
 
-  public static final ImmutableSet<Kind> NUMERIC_PRIMITIVES =
-      new ImmutableSet.Builder<Kind>().addAll(ARITHMETIC_PRIMITIVES).add(Kind.PROTO_ENUM).build();
-
-  public static final ImmutableSet<Kind> INTEGER_PRIMITIVES =
-      Sets.immutableEnumSet(Kind.INT, Kind.PROTO_ENUM);
-
-  private static final ImmutableSet<Kind> PRIMITIVE_KINDS =
-      new ImmutableSet.Builder<Kind>()
-          .addAll(NUMERIC_PRIMITIVES)
-          .addAll(Kind.STRING_KINDS)
-          .add(Kind.BOOL)
-          .build();
+  private static final SoyType ANY_PRIMITIVE =
+      UnionType.of(NumberType.getInstance(), STRINGISH, BoolType.getInstance());
 
   public static boolean isIntFloatOrNumber(SoyType type) {
-    return SoyTypes.NUMBER_TYPE.isAssignableFromStrict(type);
+    return SoyTypes.INT_OR_FLOAT.isAssignableFromStrict(type);
+  }
+
+  public static boolean isAlwaysComparableKind(SoyType type) {
+    return type.equals(AnyType.getInstance()) || NULL_OR_UNDEFINED.isAssignableFromLoose(type);
+  }
+
+  public static boolean isArithmeticPrimitive(SoyType type) {
+    return NumberType.getInstance().isAssignableFromStrict(type)
+        && !SoyProtoEnumType.ANY_ENUM.isAssignableFromStrict(type);
   }
 
   /**
@@ -126,25 +129,15 @@ public final class SoyTypes {
    * number.
    */
   public static boolean isNumericPrimitive(SoyType type) {
-    return isKindOrUnionOfKinds(type, NUMERIC_PRIMITIVES);
+    return NumberType.getInstance().isAssignableFromStrict(type);
   }
 
-  public static boolean bothOfKind(SoyType left, SoyType right, Kind kind) {
-    ImmutableSet<Kind> kinds = ImmutableSet.of(kind);
-    return isKindOrUnionOfKinds(left, kinds) && isKindOrUnionOfKinds(right, kinds);
+  public static boolean bothOfKind(SoyType left, SoyType right, SoyType of) {
+    return of.isAssignableFromStrict(left) && of.isAssignableFromStrict(right);
   }
 
-  public static boolean bothOfKind(SoyType left, SoyType right, Set<Kind> kinds) {
-    return isKindOrUnionOfKinds(left, kinds) && isKindOrUnionOfKinds(right, kinds);
-  }
-
-  public static boolean eitherOfKind(SoyType left, SoyType right, Kind kind) {
-    ImmutableSet<Kind> kinds = ImmutableSet.of(kind);
-    return isKindOrUnionOfKinds(left, kinds) || isKindOrUnionOfKinds(right, kinds);
-  }
-
-  public static boolean eitherOfKind(SoyType left, SoyType right, Set<Kind> kinds) {
-    return isKindOrUnionOfKinds(left, kinds) || isKindOrUnionOfKinds(right, kinds);
+  public static boolean eitherOfKind(SoyType left, SoyType right, SoyType of) {
+    return of.isAssignableFromStrict(left) || of.isAssignableFromStrict(right);
   }
 
   public static SoyType removeNull(SoyType type) {
@@ -219,12 +212,16 @@ public final class SoyTypes {
     return isNullable(type) ? type : UnionType.of(type, NullType.getInstance());
   }
 
+  public static boolean isUnknownOrAny(SoyType type) {
+    return type == UnknownType.getInstance() || type == AnyType.getInstance();
+  }
+
   public static boolean isNullable(SoyType type) {
-    return containsKind(type, Kind.NULL);
+    return !isUnknownOrAny(type) && type.isAssignableFromStrict(NullType.getInstance());
   }
 
   public static boolean isUndefinable(SoyType type) {
-    return containsKind(type, Kind.UNDEFINED);
+    return !isUnknownOrAny(type) && type.isAssignableFromStrict(UndefinedType.getInstance());
   }
 
   public static SoyType makeUndefinable(SoyType type) {
@@ -233,7 +230,7 @@ public final class SoyTypes {
 
   /** Returns true if the type is null, undefined, or a union containing one of those kinds. */
   public static boolean isNullish(SoyType type) {
-    return containsKinds(type, NULLISH_KINDS);
+    return isNullable(type) || isUndefinable(type);
   }
 
   /** Return true if value can't be nullish. taking "any" into account. */
@@ -243,12 +240,12 @@ public final class SoyTypes {
 
   /** Returns true if the type is null, undefined, or null|undefined. */
   public static boolean isNullOrUndefined(SoyType type) {
-    return isKindOrUnionOfKinds(type, NULLISH_KINDS);
+    return NULL_OR_UNDEFINED.isAssignableFromStrict(type);
   }
 
   public static boolean isNumericOrUnknown(SoyType type) {
-    return type.getKind() == Kind.UNKNOWN
-        || SoyTypes.isKindOrUnionOfKinds(type, SoyTypes.NUMERIC_PRIMITIVES);
+    return type.equals(UnknownType.getInstance())
+        || NumberType.getInstance().isAssignableFromStrict(type);
   }
 
   public static Optional<SoyType> computeStricterType(SoyType t0, SoyType t1) {
@@ -329,8 +326,7 @@ public final class SoyTypes {
         || SoyTypes.containsKind(right, Kind.FLOAT)) {
       unionMembers.add(FloatType.getInstance());
     }
-    if (SoyTypes.containsKinds(left, INTEGER_PRIMITIVES)
-        && SoyTypes.containsKinds(right, INTEGER_PRIMITIVES)) {
+    if (SoyTypes.containsIntegerPrimitives(left) && SoyTypes.containsIntegerPrimitives(right)) {
       unionMembers.add(IntType.getInstance());
     }
     checkState(!unionMembers.isEmpty()); // should be impossible due to isNumericOrUnknown.
@@ -420,7 +416,12 @@ public final class SoyTypes {
   }
 
   public static boolean isSanitizedType(SoyType type) {
-    return containsKinds(type, SANITIZED_TYPE_KINDS);
+    return SANITIZED_TYPE_KINDS.stream().anyMatch(type::isAssignableFromStrict);
+  }
+
+  public static boolean containsIntegerPrimitives(SoyType type) {
+    return type.isAssignableFromStrictWithoutCoercions(IntType.getInstance())
+        || type.isAssignableFromStrictWithoutCoercions(SoyProtoEnumType.UNKNOWN_ENUM);
   }
 
   /**
@@ -499,10 +500,10 @@ public final class SoyTypes {
     @Nullable
     public SoyType resolve(SoyType left, SoyType right) {
       SoyType boolType = BoolType.getInstance();
-      if (eitherOfKind(left, right, ALWAYS_COMPARABLE_KINDS)) {
+      if (isAlwaysComparableKind(left) || isAlwaysComparableKind(right)) {
         return boolType;
       }
-      if (bothOfKind(left, right, PRIMITIVE_KINDS)) {
+      if (bothOfKind(left, right, ANY_PRIMITIVE)) {
         return boolType;
       }
       return left.equals(right) ? boolType : null;
@@ -540,18 +541,27 @@ public final class SoyTypes {
     @Nullable
     public SoyType resolve(SoyType left, SoyType right) {
       SoyType boolType = BoolType.getInstance();
-      if (eitherOfKind(left, right, ALWAYS_COMPARABLE_KINDS)) {
+      if (isAlwaysComparableKind(left) || isAlwaysComparableKind(right)) {
         return boolType;
       }
-      if (bothOfKind(left, right, NUMERIC_PRIMITIVES)) {
+      if (bothOfKind(left, right, NumberType.getInstance())) {
         return boolType;
       }
-      if (bothOfKind(left, right, Kind.STRING_KINDS)) {
+      if (bothOfKind(left, right, STRINGISH)) {
         return boolType;
       }
       return null;
     }
   }
+
+  private static final SoyType ILLEGAL_OPERAND_KINDS_PLUS_OP =
+      UnionType.of(
+          IterableType.ANY_ITERABLE,
+          ListType.ANY_LIST,
+          SetType.ANY_SET,
+          LegacyObjectMapType.ANY_MAP,
+          MapType.ANY_MAP,
+          RecordType.EMPTY_RECORD);
 
   /**
    * Type resolver for plus operators.
@@ -573,11 +583,11 @@ public final class SoyTypes {
       Optional<SoyType> arithmeticType = SoyTypes.computeLowestCommonTypeArithmetic(left, right);
       if (arithmeticType.isPresent()) {
         return arithmeticType.get();
-      } else if (eitherOfKind(left, right, Kind.ILLEGAL_OPERAND_KINDS_PLUS_OP)) {
+      } else if (eitherOfKind(left, right, ILLEGAL_OPERAND_KINDS_PLUS_OP)) {
         // If any of the types is not allowed to be operands (for example, list and map), we return
         // null here. Returning null indicates a compilation error.
         return null;
-      } else if (eitherOfKind(left, right, Kind.STRING_KINDS)) {
+      } else if (eitherOfKind(left, right, STRINGISH)) {
         // If any of these types can be coerced to string, returns string type. In this case plus
         // operation means string concat (instead of arithmetic operation).
         return StringType.getInstance();

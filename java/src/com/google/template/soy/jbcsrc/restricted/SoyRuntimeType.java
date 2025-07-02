@@ -28,6 +28,7 @@ import com.google.template.soy.types.BoolType;
 import com.google.template.soy.types.FloatType;
 import com.google.template.soy.types.IntType;
 import com.google.template.soy.types.IterableType;
+import com.google.template.soy.types.LegacyObjectMapType;
 import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.LiteralType;
 import com.google.template.soy.types.MapType;
@@ -186,10 +187,11 @@ public abstract class SoyRuntimeType {
     return runtimeType;
   }
 
+  private static final SoyType NULLISH_STRINGISH =
+      UnionType.of(SoyTypes.NULL_OR_UNDEFINED, SoyTypes.STRINGISH);
+
   public boolean assignableToNullableString() {
-    return soyType.getKind().isKnownStringOrSanitizedContent()
-        || (soyType.getKind() == Kind.UNION
-            && SoyTypes.tryRemoveNullish(soyType).getKind().isKnownStringOrSanitizedContent());
+    return NULLISH_STRINGISH.isAssignableFromStrict(soyType);
   }
 
   public boolean assignableToNullableHtmlOrAttributes() {
@@ -215,23 +217,8 @@ public abstract class SoyRuntimeType {
     return soyType.getKind() == Kind.GBIGINT;
   }
 
-  public boolean isKnownStringOrSanitizedContent() {
-    if (soyType.getKind().isKnownStringOrSanitizedContent()) {
-      return true;
-    }
-    if (soyType.getKind() == Kind.UNION) {
-      for (SoyType member : ((UnionType) soyType).getMembers()) {
-        if (!member.getKind().isKnownStringOrSanitizedContent()) {
-          return false;
-        }
-      }
-      return true;
-    }
-    return false;
-  }
-
   public boolean isKnownSanitizedContent() {
-    return soyType.getKind().isKnownSanitizedContent();
+    return SoyTypes.ANY_SANITIZED_KIND.isAssignableFromStrict(soyType);
   }
 
   /**
@@ -241,7 +228,7 @@ public abstract class SoyRuntimeType {
    * <em>not</em> a int, just that it is not <em>known</em> to be a int at compile time.
    */
   public boolean isKnownInt() {
-    return soyType.getKind() == Kind.INT || SoyTypes.isKindOrUnionOfKind(soyType, Kind.PROTO_ENUM);
+    return IntType.getInstance().isAssignableFromStrictWithoutCoercions(soyType);
   }
 
   /**
@@ -284,7 +271,7 @@ public abstract class SoyRuntimeType {
   }
 
   public final boolean isKnownLegacyObjectMapOrUnionOfMaps() {
-    return SoyTypes.isKindOrUnionOfKind(soyType, Kind.LEGACY_OBJECT_MAP);
+    return LegacyObjectMapType.ANY_MAP.isAssignableFromStrict(soyType);
   }
 
   public final boolean isKnownMapOrUnionOfMaps() {
@@ -292,7 +279,7 @@ public abstract class SoyRuntimeType {
   }
 
   public final boolean isKnownBool() {
-    return soyType.getKind() == Kind.BOOL;
+    return BoolType.getInstance().isAssignableFromStrict(soyType);
   }
 
   public final boolean isKnownProtoOrUnionOfProtos() {
@@ -307,7 +294,7 @@ public abstract class SoyRuntimeType {
    * <em>not</em> a number, just that it is not <em>known</em> to be a number at compile time.
    */
   public final boolean isKnownNumber() {
-    return SoyTypes.NUMBER_TYPE.isAssignableFromStrict(soyType);
+    return SoyTypes.INT_OR_FLOAT.isAssignableFromStrict(soyType);
   }
 
   public final SoyRuntimeType asNonSoyNullish() {

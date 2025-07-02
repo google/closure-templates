@@ -54,6 +54,7 @@ import com.google.template.soy.soytree.Visibility;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.SanitizedType;
+import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.TemplateType;
 import java.util.function.Function;
 import javax.annotation.Nullable;
@@ -192,7 +193,7 @@ final class Rewriter {
       if (param.isInjected()) {
         return null; // can't validate injected parameters
       }
-      if (!param.type().getKind().isKnownSanitizedContent()) {
+      if (!SoyTypes.ANY_SANITIZED_KIND.isAssignableFromStrict(param.type())) {
         return null; // only care about sanitized types
       }
       if (SoyTreeUtils.allNodesOfType(template.getParent(), TemplateLiteralNode.class)
