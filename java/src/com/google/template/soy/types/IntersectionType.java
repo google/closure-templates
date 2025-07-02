@@ -70,13 +70,13 @@ public abstract class IntersectionType extends SoyType {
     return Kind.INTERSECTION;
   }
 
-  /** Return the set of types contained in this union. */
+  /** Return the set of types contained in this intersection. */
   public abstract ImmutableSet<SoyType> getMembers();
 
   @Override
   boolean doIsAssignableFromNonUnionType(SoyType srcType, AssignabilityPolicy policy) {
-    // A type can be assigned to a union iff it is assignable to at least one
-    // member of the union.
+    // A type can be assigned to an intersection iff it is assignable to all members of the
+    // intersection.
     for (SoyType memberType : getMembers()) {
       if (!memberType.isAssignableFromInternal(srcType, policy)) {
         return false;

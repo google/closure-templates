@@ -97,6 +97,7 @@ public abstract class SoyType implements ErrorArg {
     FLOAT,
     STRING,
     GBIGINT,
+    LITERAL,
     // Sanitized types (subtypes of string)
     HTML,
     ELEMENT,
@@ -124,6 +125,8 @@ public abstract class SoyType implements ErrorArg {
     INTERSECTION,
     NAMED,
     INDEXED,
+    PICK,
+    OMIT,
     // Imported symbol types
     NAMESPACE,
     PROTO_TYPE,

@@ -54,6 +54,7 @@ import com.google.template.soy.types.FunctionType;
 import com.google.template.soy.types.IndexedType;
 import com.google.template.soy.types.IntersectionType;
 import com.google.template.soy.types.LegacyObjectMapType;
+import com.google.template.soy.types.LiteralType;
 import com.google.template.soy.types.MapType;
 import com.google.template.soy.types.NamedType;
 import com.google.template.soy.types.RecordType;
@@ -349,6 +350,9 @@ public final class JsType implements CodeChunk.HasRequires {
      */
     @Override
     public JsType get(SoyType soyType, JsTypeProducer forRecursion) {
+      if (soyType instanceof LiteralType) {
+        soyType = ((LiteralType) soyType).getPrimitiveType();
+      }
       switch (soyType.getKind()) {
         case NULL:
           return NULL_TYPE;
@@ -360,6 +364,8 @@ public final class JsType implements CodeChunk.HasRequires {
 
         case UNKNOWN:
         case INTERSECTION: // Closure compiler can't model intersections.
+        case PICK:
+        case OMIT:
           return UNKNOWN_TYPE;
 
         case BOOL:
@@ -664,12 +670,13 @@ public final class JsType implements CodeChunk.HasRequires {
                 stack.add(component);
               } else if (component instanceof RecordType) {
                 RecordType.Member recMember =
-                    ((RecordType) component).getMember(indexedType.getProperty());
+                    ((RecordType) component).getMember(indexedType.getPropertyName());
                 if (recMember != null) {
                   type =
                       matchNullishToBang(
                           IndexedType.jsSynthenticTypeDefName(
-                              forRecursion.get(namedMember).typeExpr(), indexedType.getProperty()),
+                              forRecursion.get(namedMember).typeExpr(),
+                              indexedType.getPropertyName()),
                           SoyTypes.isNullish(recMember.checkedType()));
                   break WHILE;
                 }
@@ -682,6 +689,7 @@ public final class JsType implements CodeChunk.HasRequires {
               .addRequires(baseType.googRequires())
               .setPredicate(TypePredicate.NO_OP)
               .build();
+        case LITERAL: // handled before switch
         case NAMESPACE:
         case PROTO_TYPE:
         case PROTO_ENUM_TYPE:

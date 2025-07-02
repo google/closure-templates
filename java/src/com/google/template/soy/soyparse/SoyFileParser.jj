@@ -165,6 +165,7 @@ import com.google.template.soy.types.ast.FunctionTypeNode;
 import com.google.template.soy.types.ast.GenericTypeNode;
 import com.google.template.soy.types.ast.IndexedTypeNode;
 import com.google.template.soy.types.ast.IntersectionTypeNode;
+import com.google.template.soy.types.ast.LiteralTypeNode;
 import com.google.template.soy.types.ast.NamedTypeNode;
 import com.google.template.soy.types.ast.RecordTypeNode;
 import com.google.template.soy.types.ast.TemplateTypeNode;
@@ -5432,6 +5433,7 @@ private TypeNode TypeExprPrec3() :
   | type = UndefinedType()
   | type = UnknownType()
   | type = RecordType()
+  | type = StringLiteralType()
   )
 
   { return type; }
@@ -5622,6 +5624,19 @@ private TypeNode RecordType() :
   }
 }
 
+/**
+ * RecordType -> "[" ( RecordField ( "," RecordField )* )? "]"
+ */
+private TypeNode StringLiteralType() :
+{
+  StringNode literal;
+}
+{
+  literal = StringLiteral()
+  {
+    return LiteralTypeNode.create(literal);
+  }
+}
 
 /**
  * RecordField -> IDENT ":" TypeExpr
@@ -5655,7 +5670,7 @@ private TypeNode NullType() : {
 {
   tok = <NULL>
   {
-    return NamedTypeNode.create(createSrcLoc(tok), tok.image);
+    return LiteralTypeNode.create(new NullNode(createSrcLoc(tok)));
   }
 }
 
@@ -5668,21 +5683,21 @@ private TypeNode UndefinedType() : {
 {
   tok = <UNDEFINED>
   {
-    return NamedTypeNode.create(createSrcLoc(tok), tok.image);
+    return LiteralTypeNode.create(new UndefinedNode(createSrcLoc(tok)));
   }
 }
 
 private TypeNode NamedOrIndexedType() :
 {
   TypeNode named;
-  StringNode property = null;
+  TypeNode property = null;
   Token end = null;
 }
 {
   named = NamedType()
   [
     <LBRACKET>
-    property = StringLiteral()
+    property = TypeExpr()
     end = <RBRACKET>
   ]
   {

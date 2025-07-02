@@ -32,7 +32,9 @@ import com.google.template.soy.data.TemplateValue;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NumberData;
+import com.google.template.soy.data.restricted.PrimitiveData;
 import com.google.template.soy.data.restricted.StringData;
+import com.google.template.soy.types.LiteralType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.UnionType;
@@ -151,7 +153,7 @@ public final class TofuTypeChecks {
         // proto descriptors use instance equality.
         return CheckResult.fromBool(
             value instanceof SoyProtoValue
-                && ((SoyProtoValue) value).getProto().getDescriptorForType()
+                && value.getProto().getDescriptorForType()
                     == ((SoyProtoType) type).getDescriptor());
       case PROTO_ENUM:
         // TODO(lukes): this should also assert that the value is in range
@@ -185,6 +187,9 @@ public final class TofuTypeChecks {
         return CheckResult.fromBool(value == EvalVisitor.UNDEFINED_VE_DATA);
       case FUNCTION:
         return CheckResult.fromBool(value instanceof TofuFunctionValue);
+      case LITERAL:
+        PrimitiveData literal = ((LiteralType) type).literal();
+        return CheckResult.fromBool(value.equals(literal));
       case NAMESPACE:
       case PROTO_TYPE:
       case PROTO_ENUM_TYPE:
@@ -193,6 +198,8 @@ public final class TofuTypeChecks {
       case NAMED:
       case INTERSECTION:
       case INDEXED:
+      case PICK:
+      case OMIT:
       case NEVER:
         throw new UnsupportedOperationException();
     }

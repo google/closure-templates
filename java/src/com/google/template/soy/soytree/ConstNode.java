@@ -67,7 +67,7 @@ public final class ConstNode extends AbstractCommandNode
     this.var = orig.var.copy(copyState);
     this.valueExpr = orig.valueExpr.copy(copyState);
     this.exported = orig.exported;
-    this.typeNode = orig.typeNode != null ? orig.typeNode.copy() : null;
+    this.typeNode = orig.typeNode != null ? orig.typeNode.copy(copyState) : null;
     copyState.updateRefs(orig.var, this.var);
   }
 

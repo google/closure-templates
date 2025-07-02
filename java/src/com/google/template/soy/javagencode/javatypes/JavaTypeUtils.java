@@ -22,10 +22,13 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
+import com.google.template.soy.data.restricted.PrimitiveData;
+import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.types.AbstractIterableType;
 import com.google.template.soy.types.AbstractMapType;
 import com.google.template.soy.types.FloatType;
 import com.google.template.soy.types.IntType;
+import com.google.template.soy.types.LiteralType;
 import com.google.template.soy.types.RecordType;
 import com.google.template.soy.types.SoyProtoEnumType;
 import com.google.template.soy.types.SoyProtoType;
@@ -142,6 +145,8 @@ public final class JavaTypeUtils {
       case INTERSECTION:
       case NAMED:
       case INDEXED:
+      case PICK:
+      case OMIT:
         return getJavaTypes(soyType.getEffectiveType(), skipSoyTypes);
       case ANY:
       case UNKNOWN:
@@ -167,6 +172,13 @@ public final class JavaTypeUtils {
       case VE_DATA:
         types = ImmutableList.of(new VeDataJavaType());
         break;
+      case LITERAL:
+        PrimitiveData literal = ((LiteralType) soyType).literal();
+        if (literal instanceof StringData) {
+          types = ImmutableList.of(SimpleJavaType.STRING);
+          break;
+        }
+      // fall-through
       case NAMESPACE:
       case PROTO_TYPE:
       case PROTO_ENUM_TYPE:

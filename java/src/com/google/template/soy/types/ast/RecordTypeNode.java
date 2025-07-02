@@ -20,6 +20,7 @@ import com.google.auto.value.AutoValue;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.basetree.CopyState;
 
 /** A record type (eg, [a: someType, b: otherType]). */
 @AutoValue
@@ -55,8 +56,8 @@ public abstract class RecordTypeNode extends TypeNode {
       return name() + (optional() ? "?" : "") + ": " + type();
     }
 
-    Property copy() {
-      return create(nameLocation(), name(), optional(), type().copy());
+    Property copy(CopyState copyState) {
+      return create(nameLocation(), name(), optional(), type().copy(copyState));
     }
   }
 
@@ -68,10 +69,10 @@ public abstract class RecordTypeNode extends TypeNode {
   }
 
   @Override
-  public RecordTypeNode copy() {
+  public RecordTypeNode copy(CopyState copyState) {
     ImmutableList.Builder<Property> newProperties = ImmutableList.builder();
     for (Property property : properties()) {
-      newProperties.add(property.copy());
+      newProperties.add(property.copy(copyState));
     }
     RecordTypeNode copy = create(sourceLocation(), newProperties.build());
     copy.copyInternal(this);

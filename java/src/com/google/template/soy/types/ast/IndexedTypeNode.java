@@ -19,27 +19,25 @@ package com.google.template.soy.types.ast;
 import com.google.auto.value.AutoValue;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
-import com.google.template.soy.exprtree.StringNode;
 
 /** An indexed type, e.g. NamedType["property"]. */
 @AutoValue
 public abstract class IndexedTypeNode extends TypeNode {
-  public static IndexedTypeNode create(
-      SourceLocation location, TypeNode type, StringNode property) {
+  public static IndexedTypeNode create(SourceLocation location, TypeNode type, TypeNode property) {
     return new AutoValue_IndexedTypeNode(location, type, property);
   }
 
   public abstract TypeNode type();
 
-  public abstract StringNode property();
+  public abstract TypeNode property();
 
   @Override
   public final String toString() {
-    return type().toString() + "[\"" + property() + "\"]";
+    return type().toString() + "[" + property() + "]";
   }
 
   @Override
-  public IndexedTypeNode copy() {
-    return create(sourceLocation(), type().copy(), property().copy(new CopyState()));
+  public IndexedTypeNode copy(CopyState copyState) {
+    return create(sourceLocation(), type().copy(copyState), property().copy(copyState));
   }
 }

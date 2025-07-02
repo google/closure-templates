@@ -18,6 +18,7 @@ package com.google.template.soy.types.ast;
 
 import static com.google.common.collect.ImmutableMap.toImmutableMap;
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth.assert_;
 import static com.google.template.soy.types.TemplateType.ParameterKind.ATTRIBUTE;
 import static com.google.template.soy.types.TemplateType.ParameterKind.PARAM;
 
@@ -26,7 +27,12 @@ import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.Identifier;
+import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.exprtree.ExprNode;
+import com.google.template.soy.exprtree.NullNode;
+import com.google.template.soy.exprtree.StringNode;
+import com.google.template.soy.exprtree.UndefinedNode;
 import com.google.template.soy.soyparse.SoyFileParser;
 import com.google.template.soy.types.ast.RecordTypeNode.Property;
 import org.junit.Test;
@@ -179,6 +185,8 @@ public final class TypeNodeTest {
     assertRoundTrip("template () => string|null");
     assertRoundTrip("template () => (string|null)");
     assertRoundTrip("(template () => string)|null");
+
+    assertRoundTrip("'prop1' | 'prop2'");
   }
 
   private void assertRoundTrip(String typeString) {
@@ -190,9 +198,10 @@ public final class TypeNodeTest {
     assertEquals(original, reparsed);
 
     // Also assert equality after copying
-    assertEquals(original, reparsed.copy());
-    assertEquals(original.copy(), reparsed.copy());
-    assertEquals(original.copy(), reparsed);
+    assertEquals(original, reparsed.copy(new CopyState()));
+    CopyState state = new CopyState();
+    assertEquals(original.copy(state), reparsed.copy(state));
+    assertEquals(original.copy(new CopyState()), reparsed);
   }
 
   private static void assertEquals(
@@ -215,8 +224,7 @@ public final class TypeNodeTest {
       @Override
       public Void visit(IndexedTypeNode node) {
         assertEquals(node.type(), ((IndexedTypeNode) right).type());
-        assertThat(((IndexedTypeNode) right).property().getValue())
-            .isEqualTo(node.property().getValue());
+        assertEquals(node.property(), ((IndexedTypeNode) right).property());
         return null;
       }
 
@@ -277,6 +285,24 @@ public final class TypeNodeTest {
       public Void visit(FunctionTypeNode node) {
         return null;
       }
+
+      @Override
+      public Void visit(LiteralTypeNode node) {
+        ExprNode lhs = node.literal();
+        ExprNode rhs = ((LiteralTypeNode) right).literal();
+        if (lhs instanceof NullNode && rhs instanceof NullNode) {
+          return null;
+        }
+        if (lhs instanceof UndefinedNode && rhs instanceof UndefinedNode) {
+          return null;
+        }
+        if (lhs instanceof StringNode && rhs instanceof StringNode) {
+          assertThat(((StringNode) lhs).getValue()).isEqualTo(((StringNode) rhs).getValue());
+          return null;
+        }
+        assert_().fail();
+        return null;
+      }
     }.exec(left);
   }
 
@@ -285,7 +311,7 @@ public final class TypeNodeTest {
         SoyFileParser.parseType(
             typeString, SourceFilePath.forTest("fake-file.soy"), ErrorReporter.exploding());
     // sanity, make sure copies work
-    assertThat(typeNode).isEqualTo(typeNode.copy());
+    assertEquals(typeNode, typeNode.copy(new CopyState()));
     return typeNode;
   }
 }

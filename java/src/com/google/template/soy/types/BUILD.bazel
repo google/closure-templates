@@ -24,6 +24,7 @@ java_library(
     deps = [
         "//java/src/com/google/template/soy/base",
         "//java/src/com/google/template/soy/base/internal",
+        "//java/src/com/google/template/soy/data",
         "//java/src/com/google/template/soy/error:error_reporter",
         "//java/src/com/google/template/soy/internal/proto",
         "//java/src/com/google/template/soy/internal/util",

@@ -54,6 +54,7 @@ import com.google.template.soy.types.ast.FunctionTypeNode;
 import com.google.template.soy.types.ast.GenericTypeNode;
 import com.google.template.soy.types.ast.IndexedTypeNode;
 import com.google.template.soy.types.ast.IntersectionTypeNode;
+import com.google.template.soy.types.ast.LiteralTypeNode;
 import com.google.template.soy.types.ast.NamedTypeNode;
 import com.google.template.soy.types.ast.RecordTypeNode;
 import com.google.template.soy.types.ast.RecordTypeNode.Property;
@@ -634,6 +635,11 @@ public final class SoyTreeUtils {
           types.add(node.returnType());
           node.parameters().forEach(p -> types.add(p.type()));
           return types.build();
+        }
+
+        @Override
+        public List<? extends TypeNode> visit(LiteralTypeNode node) {
+          return ImmutableList.of();
         }
       };
 

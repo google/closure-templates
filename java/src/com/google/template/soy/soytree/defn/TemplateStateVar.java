@@ -53,7 +53,7 @@ public final class TemplateStateVar extends AbstractVarDefn implements TemplateH
 
   private TemplateStateVar(TemplateStateVar old, CopyState copyState) {
     super(old);
-    this.typeNode = old.typeNode == null ? null : old.typeNode.copy();
+    this.typeNode = old.typeNode == null ? null : old.typeNode.copy(copyState);
     this.desc = old.desc;
     this.initialValue = old.initialValue.copy(copyState);
     this.sourceLocation = old.sourceLocation;

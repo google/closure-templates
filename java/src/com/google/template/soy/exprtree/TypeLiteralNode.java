@@ -39,7 +39,7 @@ public final class TypeLiteralNode extends AbstractPrimitiveNode implements Type
 
   private TypeLiteralNode(TypeLiteralNode orig, CopyState copyState) {
     super(orig, copyState);
-    this.typeNode = orig.typeNode.copy();
+    this.typeNode = orig.typeNode.copy(copyState);
   }
 
   @Override

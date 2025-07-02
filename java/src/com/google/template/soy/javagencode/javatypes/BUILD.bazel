@@ -22,8 +22,8 @@ java_library(
     name = "javatypes",
     srcs = glob(["*.java"]),
     deps = [
+        "//java/src/com/google/template/soy/data",
         "//java/src/com/google/template/soy/data:codegen",
-        "//java/src/com/google/template/soy/data:template",
         "//java/src/com/google/template/soy/internal/proto",
         "//java/src/com/google/template/soy/types",
         "@com_google_protobuf//:protobuf_java",

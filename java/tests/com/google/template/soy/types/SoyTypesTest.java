@@ -29,6 +29,7 @@ import com.google.common.truth.Subject;
 import com.google.common.truth.Truth;
 import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.internal.SanitizedContentKind;
+import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.soyparse.SoyFileParser;
 import com.google.template.soy.types.SanitizedType.ElementType;
@@ -63,6 +64,8 @@ public class SoyTypesTest {
   private static final UnknownType UNKNOWN_TYPE = UnknownType.getInstance();
   private static final UriType URI_TYPE = UriType.getInstance();
   private static final UndefinedType UNDEFINED_TYPE = UndefinedType.getInstance();
+
+  private static final String NS = "unusedNamespace";
 
   @Test
   public void testAnyType() {
@@ -129,6 +132,15 @@ public class SoyTypesTest {
     assertThatSoyType("string").isNotAssignableFromStrict("null");
     assertThatSoyType("string").isNotAssignableFromStrict("any");
     assertThatSoyType("string").isNotAssignableFromStrict("?");
+  }
+
+  @Test
+  public void testLiteralTypes() {
+    assertThatSoyType("'x'").isAssignableFromStrict("'x'");
+    assertThatSoyType("'x'").isNotAssignableFromStrict("'y'");
+
+    assertThatSoyType("string").isAssignableFromStrict("'abc'");
+    assertThatSoyType("'abc'").isNotAssignableFromStrict("string");
   }
 
   @Test
@@ -347,12 +359,12 @@ public class SoyTypesTest {
   @Test
   public void testNamed() {
     SoyTypeRegistry baseRegistry = SoyTypeRegistryBuilder.create();
-    SoyType stringAlias = NamedType.create("StringAlias", "-", StringType.getInstance());
-    SoyType intAlias = NamedType.create("IntAlias", "-", IntType.getInstance());
+    SoyType stringAlias = NamedType.create("StringAlias", NS, StringType.getInstance());
+    SoyType intAlias = NamedType.create("IntAlias", NS, IntType.getInstance());
     SoyType unionOfAliases =
-        NamedType.create("UnionOfAliases", "-", UnionType.of(stringAlias, intAlias));
+        NamedType.create("UnionOfAliases", NS, UnionType.of(stringAlias, intAlias));
     SoyType anotherUnion =
-        NamedType.create("AnotherUnion", "-", UnionType.of(unionOfAliases, BoolType.getInstance()));
+        NamedType.create("AnotherUnion", NS, UnionType.of(unionOfAliases, BoolType.getInstance()));
 
     SoyTypeRegistry registry =
         new DelegatingSoyTypeRegistry(baseRegistry) {
@@ -367,7 +379,7 @@ public class SoyTypesTest {
                   "AnotherUnion",
                   anotherUnion,
                   "BoolOrNumber",
-                  NamedType.create("BoolOrNumber", "-", parseType("bool|int|float", baseRegistry)));
+                  NamedType.create("BoolOrNumber", NS, parseType("bool|int|float", baseRegistry)));
 
           @Override
           public SoyType getType(String typeName) {
@@ -412,11 +424,11 @@ public class SoyTypesTest {
   @Test
   public void testIndexed() {
     SoyTypeRegistry baseRegistry = SoyTypeRegistryBuilder.create();
-    SoyType stringAlias = NamedType.create("StringAlias", "-", StringType.getInstance());
+    SoyType stringAlias = NamedType.create("StringAlias", NS, StringType.getInstance());
     SoyType rec1 =
         NamedType.create(
             "Rec1",
-            "-",
+            NS,
             parseType("[a: string, b: float|int, c: bool, d: string|bool]", baseRegistry));
 
     SoyTypeRegistry registry =
@@ -446,6 +458,53 @@ public class SoyTypesTest {
   }
 
   @Test
+  public void testPickAndOmit() {
+    SoyTypeRegistry baseRegistry = SoyTypeRegistryBuilder.create();
+    SoyType propList =
+        NamedType.create(
+            "PropList",
+            NS,
+            UnionType.of(
+                LiteralType.create(StringData.forValue("a")),
+                LiteralType.create(StringData.forValue("c"))));
+    SoyType rec1 =
+        NamedType.create(
+            "Rec1",
+            NS,
+            parseType("[a: string, b: float|int, c: bool, d: string|bool]", baseRegistry));
+
+    SoyTypeRegistry registry =
+        new DelegatingSoyTypeRegistry(baseRegistry) {
+          private final ImmutableMap<String, SoyType> namedTypes =
+              ImmutableMap.of("PropList", propList, "Rec1", rec1);
+
+          @Override
+          public SoyType getType(String typeName) {
+            if (namedTypes.containsKey(typeName)) {
+              return namedTypes.get(typeName);
+            }
+            return super.getType(typeName);
+          }
+        };
+
+    assertThatSoyType("Pick<Rec1, 'a'>", registry).isEffectivelyEqualTo("[a: string]");
+    assertThatSoyType("Pick<Rec1, 'a' | 'b'>", registry)
+        .isEffectivelyEqualTo("[a: string, b: float|int]");
+    assertThatSoyType("Pick<Rec1, PropList>", registry)
+        .isEffectivelyEqualTo("[a: string, c: bool]");
+
+    assertThatSoyType("Omit<Rec1, 'a'>", registry)
+        .isEffectivelyEqualTo("[b: float|int, c: bool, d: string|bool]");
+    assertThatSoyType("Omit<Rec1, 'a' | 'b'>", registry)
+        .isEffectivelyEqualTo("[c: bool, d: string|bool]");
+    assertThatSoyType("Omit<Rec1, PropList>", registry)
+        .isEffectivelyEqualTo("[b: float|int, d: string|bool]");
+
+    // should be effectively never
+    assertThatSoyType("Omit<Rec1, string>", registry).isNotAssignableFromStrict("[]");
+  }
+
+  @Test
   public void testIntersection() {
     assertThatSoyType("[a: string] & [b: string]").isAssignableFromStrict("[a: string, b: string]");
     assertThatSoyType("[a: string] & [b: string]")
@@ -468,12 +527,12 @@ public class SoyTypesTest {
           private final ImmutableMap<String, SoyType> namedTypes =
               ImmutableMap.of(
                   "Rec1",
-                  NamedType.create("Rec1", "-", parseType("[a: string]", baseRegistry)),
+                  NamedType.create("Rec1", NS, parseType("[a: string]", baseRegistry)),
                   "Rec2",
-                  NamedType.create("Rec2", "-", parseType("[b: string]", baseRegistry)),
+                  NamedType.create("Rec2", NS, parseType("[b: string]", baseRegistry)),
                   "Rec3",
                   NamedType.create(
-                      "Rec3", "-", parseType("[a: string, b: string, c: string]", baseRegistry)));
+                      "Rec3", NS, parseType("[a: string, b: string, c: string]", baseRegistry)));
 
           @Override
           public SoyType getType(String typeName) {
@@ -1169,6 +1228,25 @@ public class SoyTypesTest {
     void isEqualTo(String other) {
       SoyType leftType = parseType(actual);
       SoyType rightType = parseType(other);
+      if (!leftType.equals(rightType)) {
+        failWithActual("expected", other);
+      }
+      // make sure that assignability is compatible with equality.
+      if (!leftType.isAssignableFromStrict(rightType)) {
+        failWithoutActual(
+            simpleFact(
+                lenientFormat("types are equal, but %s is not assignable from %s", actual, other)));
+      }
+      if (!rightType.isAssignableFromStrict(leftType)) {
+        failWithoutActual(
+            simpleFact(
+                lenientFormat("types are equal, but %s is not assignable from %s", other, actual)));
+      }
+    }
+
+    void isEffectivelyEqualTo(String other) {
+      SoyType leftType = parseType(actual).getEffectiveType();
+      SoyType rightType = parseType(other).getEffectiveType();
       if (!leftType.equals(rightType)) {
         failWithActual("expected", other);
       }

@@ -71,7 +71,7 @@ public class TemplateParam extends AbstractVarDefn implements TemplateHeaderVarD
 
   protected TemplateParam(TemplateParam param, CopyState copyState) {
     super(param);
-    this.typeNode = param.typeNode == null ? null : param.typeNode.copy();
+    this.typeNode = param.typeNode == null ? null : param.typeNode.copy(copyState);
     this.isInjected = param.isInjected;
     this.isImplicit = param.isImplicit;
     this.sourceLocation = param.sourceLocation;

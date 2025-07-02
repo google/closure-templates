@@ -31,6 +31,7 @@ import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.TemplateContentKind;
 import com.google.template.soy.base.internal.TemplateContentKind.ElementContentKind;
 import com.google.template.soy.base.internal.TypeReference;
+import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.soytree.Metadata.TemplateMetadataImpl;
@@ -44,6 +45,8 @@ import com.google.template.soy.types.IntType;
 import com.google.template.soy.types.MessageType;
 import com.google.template.soy.types.NullType;
 import com.google.template.soy.types.NumberType;
+import com.google.template.soy.types.OmitType;
+import com.google.template.soy.types.PickType;
 import com.google.template.soy.types.RecordType;
 import com.google.template.soy.types.SanitizedType;
 import com.google.template.soy.types.SanitizedType.AttributesType;
@@ -165,16 +168,16 @@ public final class TemplateMetadataSerializer {
     Optional<JavaImplNode> java = node.getJavaImpl();
     java.ifPresent(
         j -> {
-            builder.setJavaImpl(
-                JavaImplP.newBuilder()
-                    .setClassName(j.className())
-                    .setMethod(j.methodName())
-                    .setReturnType(typeProto(j.returnType()))
-                    .addAllParamTypes(
-                        j.paramTypes().stream()
-                            .map(TemplateMetadataSerializer::typeProto)
-                            .collect(toImmutableList()))
-                    .setMethodType(JavaImplP.MethodType.valueOf(j.type().name())));
+          builder.setJavaImpl(
+              JavaImplP.newBuilder()
+                  .setClassName(j.className())
+                  .setMethod(j.methodName())
+                  .setReturnType(typeProto(j.returnType()))
+                  .addAllParamTypes(
+                      j.paramTypes().stream()
+                          .map(TemplateMetadataSerializer::typeProto)
+                          .collect(toImmutableList()))
+                  .setMethodType(JavaImplP.MethodType.valueOf(j.type().name())));
         });
     return builder.build();
   }
@@ -553,7 +556,28 @@ public final class TemplateMetadataSerializer {
         return typeRegistry.intern(
             IndexedType.create(
                 fromProto(proto.getIndexed().getType(), typeRegistry, filePath, errorReporter),
-                proto.getIndexed().getProperty()));
+                fromProto(
+                    proto.getIndexed().getProperty(), typeRegistry, filePath, errorReporter)));
+      case PICK:
+        return typeRegistry.intern(
+            PickType.create(
+                fromProto(proto.getPick().getType(), typeRegistry, filePath, errorReporter),
+                fromProto(proto.getPick().getKeys(), typeRegistry, filePath, errorReporter)));
+      case OMIT:
+        return typeRegistry.intern(
+            OmitType.create(
+                fromProto(proto.getOmit().getType(), typeRegistry, filePath, errorReporter),
+                fromProto(proto.getOmit().getKeys(), typeRegistry, filePath, errorReporter)));
+      case LITERAL:
+        SoyTypeP.LiteralTypeP literal = proto.getLiteral();
+        switch (literal.getValueCase()) {
+          case STRING_VALUE:
+            return typeRegistry.getOrCreateLiteralType(
+                StringData.forValue(literal.getStringValue()));
+          case VALUE_NOT_SET:
+            break;
+        }
+        break;
       case TYPEKIND_NOT_SET:
         // fall-through
     }

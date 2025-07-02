@@ -56,6 +56,7 @@ import com.google.template.soy.base.SourceLocation.ByteSpan;
 import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.base.internal.SoyFileKind;
+import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprNode;
@@ -108,6 +109,7 @@ import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.FunctionType;
 import com.google.template.soy.types.IndexedType;
 import com.google.template.soy.types.IntersectionType;
+import com.google.template.soy.types.LiteralType;
 import com.google.template.soy.types.NamedType;
 import com.google.template.soy.types.RecordType;
 import com.google.template.soy.types.RecordType.Member;
@@ -723,7 +725,9 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
           // For every member, define a prototype property of the @record. The type of the property
           // points back to the member @typedef.
-          SoyType indexedPropType = IndexedType.create(thisNamedType, recordMember.name());
+          SoyType indexedPropType =
+              IndexedType.create(
+                  thisNamedType, LiteralType.create(StringData.forValue(recordMember.name())));
           // JSC gets confused by ! when it references a @typedef. The ! needs to match whether
           // the source typedef is `|null` or `|undefined`.
           String memberSymbol =

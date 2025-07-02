@@ -19,11 +19,12 @@ package com.google.template.soy.types.ast;
 
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.SetOnce;
+import com.google.template.soy.basetree.Copyable;
 import com.google.template.soy.types.SoyType;
 import java.util.stream.Stream;
 
 /** The base class for an immutable node in the type AST. */
-public abstract class TypeNode {
+public abstract class TypeNode implements Copyable<TypeNode> {
 
   private SetOnce<SoyType> resolvedType = new SetOnce<>();
 
@@ -53,8 +54,6 @@ public abstract class TypeNode {
   /** Returns round-trippable (through the parser) source code for this node. */
   @Override
   public abstract String toString();
-
-  public abstract TypeNode copy();
 
   void copyInternal(TypeNode old) {
     this.resolvedType = old.resolvedType.copy();

@@ -18,13 +18,17 @@ package com.google.template.soy.types;
 
 import com.google.auto.value.AutoValue;
 import com.google.auto.value.extension.memoized.Memoized;
+import com.google.template.soy.data.restricted.PrimitiveData;
+import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.soytree.SoyTypeP;
+import com.google.template.soy.types.RecordType.Member;
+import javax.annotation.Nullable;
 
 /** An "indexed access type". Resolves to the type of a property of a record type. */
 @AutoValue
-public abstract class IndexedType extends SoyType {
+public abstract class IndexedType extends ComputedType {
 
-  public static IndexedType create(SoyType type, String property) {
+  public static IndexedType create(SoyType type, SoyType property) {
     return new AutoValue_IndexedType(type, property);
   }
 
@@ -34,7 +38,7 @@ public abstract class IndexedType extends SoyType {
 
   public abstract SoyType getType();
 
-  public abstract String getProperty();
+  public abstract SoyType getProperty();
 
   @Override
   public Kind getKind() {
@@ -43,25 +47,19 @@ public abstract class IndexedType extends SoyType {
 
   @Override
   public final String toString() {
-    return getType() + "[\"" + getProperty() + "\"]";
+    return getType() + "[" + getProperty() + "]";
   }
 
   @Override
   void doToProto(SoyTypeP.Builder builder) {
-    builder.getIndexedBuilder().setType(getType().toProto()).setProperty(getProperty());
+    builder.getIndexedBuilder().setType(getType().toProto()).setProperty(getProperty().toProto());
   }
 
   @Override
   @Memoized
   public SoyType getEffectiveType() {
-    SoyType baseType = getType().getEffectiveType();
-    if (baseType instanceof RecordType) {
-      SoyType memberType = ((RecordType) baseType).getMemberType(getProperty());
-      if (memberType != null) {
-        return memberType.getEffectiveType();
-      }
-    }
-    return NeverType.getInstance();
+    Member member = getMember();
+    return member != null ? member.checkedType().getEffectiveType() : NeverType.getInstance();
   }
 
   /**
@@ -69,16 +67,28 @@ public abstract class IndexedType extends SoyType {
    * defined.
    */
   public boolean isOriginallyOptional() {
-    SoyType baseType = getType().getEffectiveType();
-    if (baseType instanceof RecordType) {
-      RecordType.Member member = ((RecordType) baseType).getMember(getProperty());
-      return member != null && member.optional();
-    }
-    return false;
+    Member member = getMember();
+    return member != null && member.optional();
   }
 
-  @Override
-  boolean doIsAssignableFromNonUnionType(SoyType srcType, AssignabilityPolicy policy) {
-    return getEffectiveType().isAssignableFromInternal(srcType, policy);
+  @Nullable
+  private Member getMember() {
+    SoyType baseType = getType().getEffectiveType();
+    if (baseType instanceof RecordType) {
+      return ((RecordType) baseType).getMember(getPropertyName());
+    }
+    return null;
+  }
+
+  public String getPropertyName() {
+    SoyType baseType = getType().getEffectiveType();
+    SoyType propType = getProperty().getEffectiveType();
+    if (baseType instanceof RecordType && propType instanceof LiteralType) {
+      PrimitiveData literal = ((LiteralType) propType).literal();
+      if (literal instanceof StringData) {
+        return literal.stringValue();
+      }
+    }
+    return "-";
   }
 }

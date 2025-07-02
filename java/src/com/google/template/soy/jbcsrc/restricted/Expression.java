@@ -42,6 +42,7 @@ import com.google.template.soy.data.restricted.GbigintData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.internal.proto.JavaQualifiedNames;
 import com.google.template.soy.jbcsrc.shared.Names;
+import com.google.template.soy.types.LiteralType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypes;
@@ -776,6 +777,11 @@ public abstract class Expression extends BytecodeProducer {
       if (isDefinitelyAssignableFrom(BytecodeUtils.NULLISH_DATA_TYPE, resultType)) {
         return Optional.empty();
       }
+
+      if (type instanceof LiteralType) {
+        type = ((LiteralType) type).getPrimitiveType();
+      }
+
       Class<? extends SoyValue> expectedClass = null;
       switch (type.getKind()) {
         case ANY:
@@ -786,6 +792,8 @@ public abstract class Expression extends BytecodeProducer {
         case INTERSECTION:
         case NAMED:
         case INDEXED:
+        case PICK:
+        case OMIT:
           return doCheckedSoyCast(type.getEffectiveType());
         case UNION:
           if (type.equals(SoyTypes.NUMBER_TYPE)) {
@@ -888,6 +896,7 @@ public abstract class Expression extends BytecodeProducer {
             return Optional.empty();
           }
           return Optional.of(MethodRefs.CHECK_FUNCTION.invoke(this));
+        case LITERAL: // handled before switch
         case NAMESPACE:
         case PROTO_TYPE:
         case PROTO_ENUM_TYPE:

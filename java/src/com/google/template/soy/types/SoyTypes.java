@@ -693,6 +693,10 @@ public final class SoyTypes {
           return ((IntersectionType) type).getMembers();
         case INDEXED:
           return ImmutableList.of(((IndexedType) type).getType());
+        case PICK:
+          return ImmutableList.of(((PickType) type).getType(), ((PickType) type).getKeys());
+        case OMIT:
+          return ImmutableList.of(((OmitType) type).getType(), ((OmitType) type).getKeys());
         case NAMED:
           // Use SoyTypeDepsSuccessorsFunction below if you need to navigate to the effective record
           // type.

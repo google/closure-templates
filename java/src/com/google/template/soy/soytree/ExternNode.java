@@ -72,7 +72,7 @@ public final class ExternNode extends AbstractParentCommandNode<ExternImplNode>
   private ExternNode(ExternNode orig, CopyState copyState) {
     super(orig, copyState);
     this.name = orig.name;
-    this.typeNode = orig.typeNode.copy();
+    this.typeNode = orig.typeNode.copy(copyState);
     this.openTagLocation = orig.openTagLocation;
     this.exported = orig.exported;
     this.var = orig.var.copy(copyState);

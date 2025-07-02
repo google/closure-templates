@@ -1,5 +1,7 @@
 # Types
 
+<!-- disableFinding(LINK_RELATIVE_G3DOC) -->
+
 Soy supports a basic type system. Parameters can be strictly typed to:
 
 *   enable compile time type checking of template calls
@@ -30,7 +32,7 @@ declared types and type narrowing.
 ### `null` {#null}
 
 The `null` type is not very useful on its own, but can be as part of
-[composite types](#composite).
+[union type](#union).
 
 Backend    | type in host language
 ---------- | --------------------------------------------------
@@ -153,6 +155,36 @@ subtypes)</td>
 </tr>
 </tbody>
 </table>
+
+### `Message` {#message}
+
+The `Message` type is the generic base class of all protos. This is mostly
+useful for Soy plugins which are able to use platform specific generic proto
+features.
+
+Backend    | type in host language
+---------- | --------------------------------------------
+JavaScript | `jspb.Message`
+SoySauce   | `com.google.protobuf.Message`
+Tofu       | `com.google.template.soy.data.SoyProtoValue`
+Python     | unsupported
+
+See the [dev guide](../dev/protos.md) for more information on how protos work.
+
+### protos: `foo.bar.BazProto` {#proto}
+
+Protocol buffers are supported in Soy. They can be accessed as though they were
+`record` types with the `.` operator.
+
+Protocol Buffers in Soy have the same semantics as
+[Apps JSPB JS](http://go/jspb), not `Java` protos.
+
+See the [dev guide](../dev/protos.md) for more information on how protos work.
+
+NOTE: currently, protos are *not supported* in the Python backend.
+
+[^1]: The difference between map and record for JavaScript is simply whether the
+    keys are strings or symbols.
 
 ### `html` {#html}
 
@@ -338,17 +370,37 @@ For example:
 For more information, see
 [Passing Templates as Parameters](template-types.md#how-do-you-pass-in-a-template)
 
-## Composite types {#composite}
+## Computed types {#computed}
 
-### Union types: `A|B` {#union}
+### Named type: `A` {#named}
 
-An `A|B` union type can contain either a value of type `A` or a value of type
+A named type is created with the [`type` command](typedefs.md).
+
+### Union types: `A | B` {#union}
+
+An `A | B` union type can contain either a value of type `A` or a value of type
 `B`.
 
 ### Intersection type: `A & B` {#intersection}
 
-This is only valid on records. An `A & B` type contains all properties from `A`
-and `B`.
+An `A & B` type is a record containing all the properties from `A` and `B`. `A`
+and `B` must be a [record](#record) types.
+
+### Indexed type: `A['key']` {#indexed}
+
+The type of record `A`'s `key` property. `A` must be a [record](#record) type.
+
+### Pick type: `Pick<A, 'key1' | 'key2' | ...>` {#pick}
+
+Creates a new record type containing only the named properties of `A`. `A` must
+be a [record](#record) type.
+
+### Omit type: `Omit<A, 'key1' | 'key2' | ...>` {#omit}
+
+Creates a new record type containing all properties of `A` other than the named
+properties. `A` must be a [record](#record) type.
+
+## Collection types {#collection}
 
 ### `list<T>` {#list}
 
@@ -515,35 +567,3 @@ JavaScript | `Object`[^1]
 SoySauce   | `java.util.Map`, `com.google.template.soy.data.SoyRecord`
 Tofu       | `com.google.template.soy.data.SoyRecord`
 Python     | `dict`
-
-### `Message` {#message}
-
-The `Message` type is the generic base class of all protos. This is mostly
-useful for Soy plugins which are able to use platform specific generic proto
-features.
-
-Backend    | type in host language
----------- | --------------------------------------------
-JavaScript | `jspb.Message`
-SoySauce   | `com.google.protobuf.Message`
-Tofu       | `com.google.template.soy.data.SoyProtoValue`
-Python     | unsupported
-
-See the [dev guide](../dev/protos.md) for more information on how protos work.
-
-### protos: `foo.bar.BazProto` {#proto}
-
-Protocol buffers are supported in Soy. They can be accessed as though they were
-`record` types with the `.` operator.
-
-Protocol Buffers in Soy have the same semantics as
-[Apps JSPB JS](http://go/jspb), not `Java` protos.
-
-See the [dev guide](../dev/protos.md) for more information on how protos work.
-
-NOTE: currently, protos are *not supported* in the Python backend.
-
-<br>
-
-[^1]: The difference between map and record for JavaScript is simply whether the
-    keys are strings or symbols.

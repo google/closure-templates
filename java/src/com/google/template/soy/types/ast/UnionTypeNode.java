@@ -26,6 +26,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Streams;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.basetree.CopyState;
 import java.util.stream.Stream;
 
 /** A union type (eg, a|b). */
@@ -71,9 +72,12 @@ public abstract class UnionTypeNode extends TypeNode {
   }
 
   @Override
-  public UnionTypeNode copy() {
+  public UnionTypeNode copy(CopyState copyState) {
     UnionTypeNode copy =
-        create(candidates().stream().map(TypeNode::copy).collect(toImmutableList()));
+        create(
+            candidates().stream()
+                .map(typeNode -> typeNode.copy(copyState))
+                .collect(toImmutableList()));
     copy.copyInternal(this);
     return copy;
   }

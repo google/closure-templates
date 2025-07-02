@@ -20,6 +20,7 @@ import com.google.auto.value.AutoValue;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.basetree.CopyState;
 
 /** Node representing a function type, e.g. (p1:string) => int. */
 @AutoValue
@@ -52,8 +53,8 @@ public abstract class FunctionTypeNode extends TypeNode {
       return sourceName() + ": " + type();
     }
 
-    Parameter copy() {
-      return create(nameLocation(), name(), sourceName(), type().copy());
+    Parameter copy(CopyState copyState) {
+      return create(nameLocation(), name(), sourceName(), type().copy(copyState));
     }
   }
 
@@ -70,12 +71,13 @@ public abstract class FunctionTypeNode extends TypeNode {
   }
 
   @Override
-  public FunctionTypeNode copy() {
+  public FunctionTypeNode copy(CopyState copyState) {
     ImmutableList.Builder<Parameter> newParameters = ImmutableList.builder();
     for (Parameter parameter : parameters()) {
-      newParameters.add(parameter.copy());
+      newParameters.add(parameter.copy(copyState));
     }
-    FunctionTypeNode copy = create(sourceLocation(), newParameters.build(), returnType().copy());
+    FunctionTypeNode copy =
+        create(sourceLocation(), newParameters.build(), returnType().copy(copyState));
     copy.copyInternal(this);
     return copy;
   }

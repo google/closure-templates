@@ -20,6 +20,7 @@ import com.google.auto.value.AutoValue;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.types.TemplateType.ParameterKind;
 
 /** Node representing a template type, e.g. () => html. */
@@ -63,8 +64,9 @@ public abstract class TemplateTypeNode extends TypeNode {
       return sourceName() + (required() ? "" : "?") + ": " + type();
     }
 
-    Parameter copy() {
-      return create(nameLocation(), name(), sourceName(), kind(), type().copy(), required());
+    Parameter copy(CopyState copyState) {
+      return create(
+          nameLocation(), name(), sourceName(), kind(), type().copy(copyState), required());
     }
   }
 
@@ -78,12 +80,13 @@ public abstract class TemplateTypeNode extends TypeNode {
   }
 
   @Override
-  public TemplateTypeNode copy() {
+  public TemplateTypeNode copy(CopyState copyState) {
     ImmutableList.Builder<Parameter> newParameters = ImmutableList.builder();
     for (Parameter parameter : parameters()) {
-      newParameters.add(parameter.copy());
+      newParameters.add(parameter.copy(copyState));
     }
-    TemplateTypeNode copy = create(sourceLocation(), newParameters.build(), returnType().copy());
+    TemplateTypeNode copy =
+        create(sourceLocation(), newParameters.build(), returnType().copy(copyState));
     copy.copyInternal(this);
     return copy;
   }

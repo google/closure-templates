@@ -22,7 +22,7 @@ import com.google.template.soy.soytree.SoyTypeP;
 
 /** A type that is a reference to a Soy `{type}` command. */
 @AutoValue
-public abstract class NamedType extends SoyType {
+public abstract class NamedType extends ComputedType {
 
   public static NamedType create(String name, String namespace, SoyType type) {
     NamedType rv = new AutoValue_NamedType(name, namespace);
@@ -65,10 +65,5 @@ public abstract class NamedType extends SoyType {
   @Override
   public SoyType getEffectiveType() {
     return getType().getEffectiveType();
-  }
-
-  @Override
-  boolean doIsAssignableFromNonUnionType(SoyType srcType, AssignabilityPolicy policy) {
-    return getEffectiveType().isAssignableFromInternal(srcType, policy);
   }
 }

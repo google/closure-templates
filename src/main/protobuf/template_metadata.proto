@@ -66,6 +66,12 @@ message SoyTypeP {
     VE_DATA = 14;
     GBIGINT = 16;
   }
+  message LiteralTypeP {
+    oneof value {
+      // Currently only string literals supported.
+      string string_value = 1;
+    }
+  }
   message HtmlTypeP {
     bool is_element = 1;
     string tag_name = 4;
@@ -110,11 +116,20 @@ message SoyTypeP {
   }
   message IndexedTypeP {
     SoyTypeP type = 1;
-    string property = 2;
+    SoyTypeP property = 2;
+  }
+  message PickTypeP {
+    SoyTypeP type = 1;
+    SoyTypeP keys = 2;
+  }
+  message OmitTypeP {
+    SoyTypeP type = 1;
+    SoyTypeP keys = 2;
   }
   // discriminated union of the different type categories
   oneof TypeKind {
     PrimitiveTypeP primitive = 1;
+    LiteralTypeP literal = 19;
     SoyTypeP iterable_element = 14;
     SoyTypeP list_element = 2;
     SoyTypeP set_element = 15;
@@ -132,6 +147,8 @@ message SoyTypeP {
     HtmlTypeP html = 12;
     NamedTypeP named = 17;
     IndexedTypeP indexed = 18;
+    PickTypeP pick = 20;
+    OmitTypeP omit = 21;
   }
 }
 

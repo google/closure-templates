@@ -35,6 +35,8 @@ public interface TypeNodeVisitor<T> {
       return visit((TemplateTypeNode) node);
     } else if (node instanceof FunctionTypeNode) {
       return visit((FunctionTypeNode) node);
+    } else if (node instanceof LiteralTypeNode) {
+      return visit((LiteralTypeNode) node);
     }
     throw new IllegalArgumentException(node.getClass().getName());
   }
@@ -54,4 +56,6 @@ public interface TypeNodeVisitor<T> {
   T visit(TemplateTypeNode node);
 
   T visit(FunctionTypeNode node);
+
+  T visit(LiteralTypeNode node);
 }

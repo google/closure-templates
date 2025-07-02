@@ -26,6 +26,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.basetree.CopyState;
 import java.util.stream.Stream;
 
 /** An intersection type (eg, a&b). */
@@ -73,9 +74,12 @@ public abstract class IntersectionTypeNode extends TypeNode {
   }
 
   @Override
-  public IntersectionTypeNode copy() {
+  public IntersectionTypeNode copy(CopyState copyState) {
     IntersectionTypeNode copy =
-        create(candidates().stream().map(TypeNode::copy).collect(toImmutableList()));
+        create(
+            candidates().stream()
+                .map(typeNode -> typeNode.copy(copyState))
+                .collect(toImmutableList()));
     copy.copyInternal(this);
     return copy;
   }

@@ -21,6 +21,7 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.Identifier;
+import com.google.template.soy.basetree.CopyState;
 
 /** A typename with type arguments (eg, list<someType>). */
 @AutoValue
@@ -52,10 +53,10 @@ public abstract class GenericTypeNode extends TypeNode {
   }
 
   @Override
-  public GenericTypeNode copy() {
+  public GenericTypeNode copy(CopyState copyState) {
     ImmutableList.Builder<TypeNode> newArguments = ImmutableList.builder();
     for (TypeNode arg : arguments()) {
-      newArguments.add(arg.copy());
+      newArguments.add(arg.copy(copyState));
     }
     GenericTypeNode copy = create(sourceLocation(), identifier(), newArguments.build());
     copy.copyInternal(this);

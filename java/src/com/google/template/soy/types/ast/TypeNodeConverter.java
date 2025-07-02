@@ -27,12 +27,22 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.errorprone.annotations.DoNotCall;
+import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.error.SoyErrors;
+import com.google.template.soy.exprtree.ExprNode;
+import com.google.template.soy.exprtree.NullNode;
+import com.google.template.soy.exprtree.StringNode;
+import com.google.template.soy.exprtree.UndefinedNode;
 import com.google.template.soy.types.FunctionType;
 import com.google.template.soy.types.IndexedType;
+import com.google.template.soy.types.LiteralType;
+import com.google.template.soy.types.NeverType;
+import com.google.template.soy.types.NullType;
+import com.google.template.soy.types.OmitType;
+import com.google.template.soy.types.PickType;
 import com.google.template.soy.types.ProtoTypeRegistry;
 import com.google.template.soy.types.RecordType;
 import com.google.template.soy.types.SanitizedType;
@@ -67,6 +77,9 @@ public final class TypeNodeConverter
   private static final SoyErrorKind DUPLICATE_FUNCTION_PARAM =
       SoyErrorKind.of("Duplicate parameter ''{0}'' in function type declaration.");
 
+  private static final SoyErrorKind INVALID_LITERAL_TYPE =
+      SoyErrorKind.of("Not a valid literal type.");
+
   private static final SoyErrorKind INVALID_TEMPLATE_RETURN_TYPE =
       SoyErrorKind.of(
           "Template types can only return html, attributes, string, js, css, uri, or"
@@ -92,7 +105,7 @@ public final class TypeNodeConverter
       SoyErrorKind.of("The base of an indexed type must be a named type.");
 
   private static final SoyErrorKind BAD_INDEXED =
-      SoyErrorKind.of("Type ''{1}'' does not have field ''{0}''.");
+      SoyErrorKind.of("Type ''{1}'' does not have field {0}.");
 
   public static final SoyErrorKind DASH_NOT_ALLOWED =
       SoyErrorKind.of(
@@ -153,6 +166,20 @@ public final class TypeNodeConverter
             @Override
             SoyType create(List<SoyType> types, TypeInterner interner) {
               return interner.getOrCreateVeType(types.get(0).toString());
+            }
+          },
+          "Pick",
+          new GenericTypeInfo(2) {
+            @Override
+            SoyType create(List<SoyType> types, TypeInterner interner) {
+              return interner.intern(PickType.create(types.get(0), types.get(1)));
+            }
+          },
+          "Omit",
+          new GenericTypeInfo(2) {
+            @Override
+            SoyType create(List<SoyType> types, TypeInterner interner) {
+              return interner.intern(OmitType.create(types.get(0), types.get(1)));
             }
           });
 
@@ -350,7 +377,7 @@ public final class TypeNodeConverter
     if (base.getKind() != Kind.NAMED) {
       errorReporter.report(node.sourceLocation(), INDEXED_BASE_NOT_NAMED);
     }
-    IndexedType rv = interner.intern(IndexedType.create(base, node.property().getValue()));
+    IndexedType rv = interner.intern(IndexedType.create(base, exec(node.property())));
     if (rv.getEffectiveType().getKind() == Kind.NEVER) {
       errorReporter.report(node.sourceLocation(), BAD_INDEXED, rv.getProperty(), rv.getType());
     }
@@ -501,6 +528,24 @@ public final class TypeNodeConverter
       }
     }
     SoyType type = interner.intern(FunctionType.of(map.values(), exec(node.returnType())));
+    node.setResolvedType(type);
+    return type;
+  }
+
+  @Override
+  public SoyType visit(LiteralTypeNode node) {
+    SoyType type;
+    ExprNode literal = node.literal();
+    if (literal instanceof NullNode) {
+      type = NullType.getInstance();
+    } else if (literal instanceof UndefinedNode) {
+      type = UndefinedType.getInstance();
+    } else if (literal instanceof StringNode) {
+      type = LiteralType.create(StringData.forValue(((StringNode) literal).getValue()));
+    } else {
+      errorReporter.report(literal.getSourceLocation(), INVALID_LITERAL_TYPE);
+      type = NeverType.getInstance();
+    }
     node.setResolvedType(type);
     return type;
   }

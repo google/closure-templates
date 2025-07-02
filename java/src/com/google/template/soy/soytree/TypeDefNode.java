@@ -53,7 +53,7 @@ public final class TypeDefNode extends AbstractCommandNode implements TypesHolde
   private TypeDefNode(TypeDefNode orig, CopyState copyState) {
     super(orig, copyState);
     this.name = orig.name;
-    this.typeNode = orig.typeNode.copy();
+    this.typeNode = orig.typeNode.copy(copyState);
     this.exported = orig.exported;
   }
 

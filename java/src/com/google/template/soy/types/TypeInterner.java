@@ -21,6 +21,7 @@ import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.EnumDescriptor;
 import com.google.protobuf.Descriptors.FileDescriptor;
 import com.google.protobuf.Descriptors.GenericDescriptor;
+import com.google.template.soy.data.restricted.PrimitiveData;
 import com.google.template.soy.types.SanitizedType.ElementType;
 import java.util.Arrays;
 import java.util.Collection;
@@ -161,6 +162,10 @@ public interface TypeInterner {
 
   default SoyType getOrCreateElementType(String tagName) {
     return intern(ElementType.getInstance(tagName));
+  }
+
+  default SoyType getOrCreateLiteralType(PrimitiveData literal) {
+    return intern(LiteralType.create(literal));
   }
 
   ImportType getProtoImportType(GenericDescriptor descriptor);
