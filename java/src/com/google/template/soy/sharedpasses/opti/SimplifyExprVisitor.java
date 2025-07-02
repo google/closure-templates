@@ -33,6 +33,7 @@ import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
+import com.google.template.soy.exprtree.AbstractOperatorNode;
 import com.google.template.soy.exprtree.BooleanNode;
 import com.google.template.soy.exprtree.DataAccessNode;
 import com.google.template.soy.exprtree.ExprEquivalence;
@@ -597,6 +598,19 @@ final class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
           SoyValue b = getConstantOrNull(func.getChild(0));
           if (b != null) {
             return BooleanData.forValue(b.coerceToBoolean());
+          }
+        }
+        return null;
+      case AMP_AMP_OP_NODE:
+      case BAR_BAR_OP_NODE:
+        for (ExprNode child : ((AbstractOperatorNode) expr).getChildren()) {
+          SoyValue maybeConstantChild = getConstantOrNull(child);
+          if (maybeConstantChild != null) {
+            if (expr instanceof AmpAmpOpNode && !maybeConstantChild.coerceToBoolean()) {
+              return BooleanData.forValue(false);
+            } else if (expr instanceof BarBarOpNode && maybeConstantChild.coerceToBoolean()) {
+              return BooleanData.forValue(true);
+            }
           }
         }
         return null;
