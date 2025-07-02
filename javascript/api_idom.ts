@@ -720,9 +720,38 @@ function debugReplacerHashingMessages(k: unknown, v: unknown): unknown {
   return v;
 }
 
+/** Do not use, exported for testing. */
+export function replaceElementsInObject(
+  obj: unknown,
+  seen: WeakMap<{}, {}> = new WeakMap(),
+): unknown {
+  if (obj == null) return undefined;
+  if (Array.isArray(obj)) {
+    const fromSeen = seen.get(obj);
+    if (fromSeen != null) return fromSeen;
+    const result: unknown[] = [];
+    seen.set(obj, result);
+    for (const value of obj) {
+      result.push(replaceElementsInObject(value, seen));
+    }
+    return result;
+  }
+  if (typeof obj === 'object' && obj.constructor === Object) {
+    const fromSeen = seen.get(obj);
+    if (fromSeen != null) return fromSeen;
+    const result: Record<string, unknown> = {};
+    seen.set(obj, result);
+    for (const [key, value] of Object.entries(obj)) {
+      result[key] = replaceElementsInObject(value, seen);
+    }
+    return result;
+  }
+  return debugReplacerHashingMessages(/*k=*/ '', obj);
+}
+
 function maybeReportErrors(el: HTMLElement, data: unknown) {
   const stringifiedHashedParams = JSON.stringify(
-    data,
+    replaceElementsInObject(data),
     debugReplacerHashingMessages,
   );
   const stringifiedParamsPretty = stringifyReplacingJspbMessages(
