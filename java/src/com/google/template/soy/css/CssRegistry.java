@@ -20,14 +20,19 @@ import static com.google.common.collect.ImmutableMap.toImmutableMap;
 
 import com.google.auto.value.AutoValue;
 import com.google.auto.value.extension.memoized.Memoized;
+import com.google.common.base.Ascii;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLogicalPath;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 
 /** Registry of known css symbols provided by the --cssSummaries flag. */
@@ -49,8 +54,17 @@ public abstract class CssRegistry {
   /** Maps all keys in {@link #providedSymbols} to the list of classes contained therein. */
   abstract Optional<ImmutableSetMultimap<String, String>> symbolToClasses();
 
+  /** Maps all keys in {@link #providedSymbols} to the list of variables contained therein. */
+  abstract Optional<ImmutableSetMultimap<String, String>> symbolToVariables();
+
   /** Maps the logic file path (not LFPME) to a map of {short class name -> full class name}. */
   abstract ImmutableMap<SourceLogicalPath, ImmutableMap<String, String>> filePathToShortClassMap();
+
+  /**
+   * Maps the logic file path (not LFPME) to a map of {short variable name -> full variable name}.
+   */
+  abstract ImmutableMap<SourceLogicalPath, ImmutableMap<String, String>>
+      filePathToShortVariableMap();
 
   /** Maps logical file path to the path of the CSS metadata file passed to the compiler. */
   abstract ImmutableMap<SourceLogicalPath, SourceFilePath> logicalToRealMap();
@@ -101,13 +115,20 @@ public abstract class CssRegistry {
     return filePathToShortClassMap().get(logicalPath);
   }
 
+  public ImmutableMap<String, String> getShortVariableNameMapForLogicalPath(
+      SourceLogicalPath logicalPath) {
+    return filePathToShortVariableMap().get(logicalPath);
+  }
+
   public static CssRegistry createWithFilePathToShortClassMap(
       ImmutableSet<String> providedSymbols,
       ImmutableMap<SourceLogicalPath, ImmutableMap<String, String>> filePathToShortClassMap) {
     return new AutoValue_CssRegistry(
         ImmutableMap.of(),
         Optional.empty(),
+        Optional.empty(),
         filePathToShortClassMap,
+        ImmutableMap.of(),
         ImmutableMap.of(),
         providedSymbols.stream()
             .collect(toImmutableMap(s -> s, s -> SourceLogicalPath.create("not-used"))),
@@ -124,12 +145,59 @@ public abstract class CssRegistry {
     return new AutoValue_CssRegistry(
         filePathToSymbol,
         Optional.empty(),
+        Optional.empty(),
+        ImmutableMap.of(),
         ImmutableMap.of(),
         ImmutableMap.of(),
         providedSymbols.stream()
             .collect(toImmutableMap(s -> s, s -> SourceLogicalPath.create("not-used"))),
         ImmutableMap.of(),
         /* skipCssReferenceCheck= */ false);
+  }
+
+  private static String kebabCaseToCamelCase(String kebabCase) {
+    // TODO(user): figure out how to reconcile differences between ts_symbols_exporter.ts kebab
+    // case to camel case logic and this logic. The difference is that ts_symbols_exporter.ts
+    // strips all leading hyphens, whereas this logic does not. We exclude this logic here because
+    // it fails the testReplacesDashesWithCamelCase test. In particular, we see that when the prefix
+    // is stripped, foo-styles-class-2- becomes -class-2-, but the expected output is Class2, which
+    // does not line up with the output of ts_symbols_exporter.ts.
+    Matcher m = KEBAB_CASE_PATTERN.matcher(kebabCase);
+    StringBuilder camelCaseBuilder = new StringBuilder();
+    while (m.find()) {
+      String replacement = "";
+      if (m.group(1) != null) {
+        replacement = Ascii.toUpperCase(m.group(1));
+      }
+      m.appendReplacement(camelCaseBuilder, replacement);
+    }
+    m.appendTail(camelCaseBuilder);
+    return camelCaseBuilder.toString();
+  }
+
+  private static Map<String, String> getShortNameMap(
+      List<String> names, String prefix, boolean isVariables) {
+    LinkedHashMap<String, String> shortNameMap = new LinkedHashMap<>();
+
+    names.stream()
+        .distinct()
+        .forEach(
+            name -> {
+              if (name.startsWith(prefix) && !prefix.equals(name)) {
+                // Replace hyphens in the short class name with CamelCase.
+                String shortName =
+                    isVariables
+                        ? CssRegistry.kebabCaseToCamelCase(name.replaceFirst("^-+", ""))
+                        : CssRegistry.kebabCaseToCamelCase(name.substring(prefix.length()));
+                if (shortNameMap.containsKey(shortName)) {
+                  throw new IllegalArgumentException(
+                      "Name " + shortName + ", mapped from " + name + ", already exists.");
+                }
+
+                shortNameMap.put(shortName, name);
+              }
+            });
+    return shortNameMap;
   }
 
   @Nullable
@@ -141,4 +209,6 @@ public abstract class CssRegistry {
   public SourceLogicalPath getFilePathForSymbol(String s) {
     return symbolToPath().get(s);
   }
+
+  private static final Pattern KEBAB_CASE_PATTERN = Pattern.compile("-+(.)?");
 }
