@@ -33,6 +33,7 @@ import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
+import com.google.template.soy.exprtree.AbstractOperatorNode;
 import com.google.template.soy.exprtree.BooleanNode;
 import com.google.template.soy.exprtree.DataAccessNode;
 import com.google.template.soy.exprtree.ExprEquivalence;
@@ -127,7 +128,7 @@ final class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
     // Recurse.
     visitChildren(node);
 
-    // Can simplify if either child is constant. We assume no side-effects.
+    // Emulate JS short circuit behavior when the LHS is a constant. We assume no side-effects.
     SoyValue operand0 = getConstantOrNull(node.getChild(0));
     if (operand0 != null) {
       ExprNode replacementNode = operand0.coerceToBoolean() ? node.getChild(1) : node.getChild(0);
@@ -140,7 +141,7 @@ final class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
     // Recurse.
     visitChildren(node);
 
-    // Can simplify if either child is constant. We assume no side-effects.
+    // Emulate JS short circuit behavior when the LHS is a constant. We assume no side-effects.
     SoyValue operand0 = getConstantOrNull(node.getChild(0));
     if (operand0 != null) {
       ExprNode replacementNode = operand0.coerceToBoolean() ? node.getChild(0) : node.getChild(1);
@@ -597,6 +598,18 @@ final class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
           SoyValue b = getConstantOrNull(func.getChild(0));
           if (b != null) {
             return BooleanData.forValue(b.coerceToBoolean());
+          }
+        }
+        return null;
+      case AMP_AMP_OP_NODE:
+        // We'll pre-evaluate expressions like `foo && false` to `false`. We pre-evaluate in some
+        // places, like {if} pruning, which lets us avoid JsCompiler unreachable code errors.
+        for (ExprNode child : ((AbstractOperatorNode) expr).getChildren()) {
+          SoyValue maybeConstantChild = getConstantOrNull(child);
+          if (maybeConstantChild != null) {
+            if (!maybeConstantChild.coerceToBoolean()) {
+              return BooleanData.forValue(false);
+            }
           }
         }
         return null;

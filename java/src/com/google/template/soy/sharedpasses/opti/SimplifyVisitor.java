@@ -821,7 +821,11 @@ public final class SimplifyVisitor {
       for (ExprNode expr : newExprs) {
         PlusOpNode op =
             new PlusOpNode(
-                result.getSourceLocation().extend(expr.getSourceLocation()),
+                result.getSourceLocation().isBefore(expr.getSourceLocation())
+                    ? result.getSourceLocation().extend(expr.getSourceLocation())
+                    // This can happen when nodes are moved around, e.g. replacing a element state
+                    // default value to the single usage.
+                    : result.getSourceLocation(),
                 /* operatorLocation= */ SourceLocation.UNKNOWN);
         op.addChild(result);
         op.addChild(expr);
