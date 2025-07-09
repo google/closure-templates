@@ -144,13 +144,16 @@ import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.SymbolVar;
 import com.google.template.soy.soytree.defn.SymbolVar.SymbolKind;
 import com.google.template.soy.soytree.defn.TemplateParam;
+import com.google.template.soy.types.BoolType;
 import com.google.template.soy.types.FloatType;
 import com.google.template.soy.types.FunctionType;
+import com.google.template.soy.types.IterableType;
 import com.google.template.soy.types.ListType;
+import com.google.template.soy.types.MessageType;
 import com.google.template.soy.types.SetType;
+import com.google.template.soy.types.SoyProtoEnumType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
-import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypes;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
@@ -989,7 +992,7 @@ final class ExpressionCompiler {
             leftString.invoke(MethodRefs.STRING_CONCAT, rightString).toMaybeConstant());
       }
       return SoyExpression.forSoyValue(
-          SoyTypes.NUMBER_TYPE, MethodRefs.RUNTIME_PLUS.invoke(left.box(), right.box()));
+          SoyTypes.INT_OR_FLOAT, MethodRefs.RUNTIME_PLUS.invoke(left.box(), right.box()));
     }
 
     private SoyExpression visitBinaryOperator(
@@ -1007,7 +1010,7 @@ final class ExpressionCompiler {
         }
       }
       return SoyExpression.forSoyValue(
-          SoyTypes.NUMBER_TYPE, runtimeMethod.invoke(left.box(), right.box()));
+          SoyTypes.INT_OR_FLOAT, runtimeMethod.invoke(left.box(), right.box()));
     }
 
     @Override
@@ -1090,7 +1093,7 @@ final class ExpressionCompiler {
       }
 
       return SoyExpression.forSoyValue(
-          SoyTypes.NUMBER_TYPE, runtimeMethod.invoke(lhe.box(), rhe.box()));
+          SoyTypes.INT_OR_FLOAT, runtimeMethod.invoke(lhe.box(), rhe.box()));
     }
 
     private static SoyExpression applyBinaryIntOperator(
@@ -1151,7 +1154,7 @@ final class ExpressionCompiler {
             });
       }
       return SoyExpression.forSoyValue(
-          SoyTypes.NUMBER_TYPE, MethodRefs.RUNTIME_NEGATIVE.invoke(child.box()));
+          SoyTypes.INT_OR_FLOAT, MethodRefs.RUNTIME_NEGATIVE.invoke(child.box()));
     }
 
     @Override
@@ -1176,8 +1179,8 @@ final class ExpressionCompiler {
 
     @Override
     protected SoyExpression visitAmpAmpOpNode(AmpAmpOpNode node) {
-      if (node.getChild(0).getType().getKind() == SoyType.Kind.BOOL
-          && node.getChild(1).getType().getKind() == SoyType.Kind.BOOL) {
+      if (BoolType.getInstance().isAssignableFromStrict(node.getChild(0).getType())
+          && BoolType.getInstance().isAssignableFromStrict(node.getChild(1).getType())) {
         return doSimpleAnd(node);
       }
       return rewriteAsConditional(node);
@@ -1192,8 +1195,8 @@ final class ExpressionCompiler {
 
     @Override
     protected SoyExpression visitBarBarOpNode(BarBarOpNode node) {
-      if (node.getChild(0).getType().getKind() == SoyType.Kind.BOOL
-          && node.getChild(1).getType().getKind() == SoyType.Kind.BOOL) {
+      if (BoolType.getInstance().isAssignableFromStrict(node.getChild(0).getType())
+          && BoolType.getInstance().isAssignableFromStrict(node.getChild(1).getType())) {
         return doSimpleOr(node);
       }
       return rewriteAsConditional(node);
@@ -2175,20 +2178,20 @@ final class ExpressionCompiler {
         return soyExpression.coerceToDouble().unboxAsDouble();
       } else if (javaType.getSort() == Type.OBJECT) {
         SoyType nonNullableType = SoyTypes.tryRemoveNullish(type);
-        if (nonNullableType.getKind() == Kind.ANY || nonNullableType.getKind() == Kind.UNKNOWN) {
+        if (SoyTypes.isUnknownOrAny(nonNullableType)) {
           return soyExpression.boxWithSoyNullAsJavaNull();
-        } else if (nonNullableType.getKind() == Kind.PROTO) {
+        } else if (nonNullableType instanceof SoyProtoType) {
           return soyExpression.unboxAsMessageOrJavaNull(
               ProtoUtils.messageRuntimeType(((SoyProtoType) nonNullableType).getDescriptor())
                   .type());
-        } else if (nonNullableType.getKind() == Kind.MESSAGE) {
+        } else if (MessageType.getInstance().isAssignableFromStrict(nonNullableType)) {
           return soyExpression.unboxAsMessageOrJavaNull(BytecodeUtils.MESSAGE_TYPE);
-        } else if (type.getKind() == Kind.PROTO_ENUM) {
+        } else if (SoyProtoEnumType.ANY_ENUM.isAssignableFromStrict(type)) {
           // TODO(b/217186858): support nullable proto enum parameters.
           return soyExpression.unboxAsLong();
-        } else if (nonNullableType.getKind() == Kind.LIST) {
+        } else if (ListType.ANY_LIST.isAssignableFromStrict(nonNullableType)) {
           return soyExpression.unboxAsListOrJavaNull();
-        } else if (nonNullableType.getKind() == Kind.ITERABLE) {
+        } else if (IterableType.ANY_ITERABLE.isAssignableFromStrict(nonNullableType)) {
           return soyExpression.box().checkedCast(BytecodeUtils.SOY_ITERABLE_TYPE);
         } else if (javaType.equals(BytecodeUtils.SOY_VALUE_TYPE)) {
           return soyExpression.box().checkedCast(javaType);

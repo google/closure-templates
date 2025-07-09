@@ -59,6 +59,7 @@ public final class UnknownType extends PrimitiveType {
   void doToProto(SoyTypeP.Builder builder) {
     builder.setPrimitive(SoyTypeP.PrimitiveTypeP.UNKNOWN);
   }
+
   /** Return the single instance of this type. */
   public static UnknownType getInstance() {
     return INSTANCE;

@@ -69,7 +69,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Sets;
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.template.soy.base.SourceLocation;
@@ -143,12 +142,16 @@ import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.soytree.defn.TemplateStateVar;
 import com.google.template.soy.types.AbstractIterableType;
 import com.google.template.soy.types.AnyType;
+import com.google.template.soy.types.BoolType;
 import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.MapType;
+import com.google.template.soy.types.NumberType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypes;
+import com.google.template.soy.types.StringType;
+import com.google.template.soy.types.UnionType;
 import com.google.template.soy.types.UnknownType;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -948,9 +951,8 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
     throw new AssertionError("Compiler should have disallowed: " + operand);
   }
 
-  private static final ImmutableSet<SoyType.Kind> CAN_USE_EQUALS =
-      Sets.immutableEnumSet(
-          SoyType.Kind.INT, SoyType.Kind.FLOAT, SoyType.Kind.PROTO_ENUM, Kind.BOOL, Kind.STRING);
+  private static final SoyType CAN_USE_EQUALS =
+      UnionType.of(NumberType.getInstance(), BoolType.getInstance(), StringType.getInstance());
 
   private Expression visitEqualNodeHelper(OperatorNode node, Operator eq) {
     boolean needsSoyEquals = false;
@@ -961,7 +963,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
       if (type.isNullOrUndefined()) {
         // If either operand is null always use ==.
         neverSoyEquals = true;
-      } else if (!SoyTypes.isKindOrUnionOfKinds(type, CAN_USE_EQUALS)) {
+      } else if (!CAN_USE_EQUALS.isAssignableFromStrict(type)) {
         // If either operand is not a JS primitive (number, string, bool) then use soy.$$equals.
         needsSoyEquals = true;
       }

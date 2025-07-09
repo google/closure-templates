@@ -251,8 +251,7 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<Expression>> 
   protected Expression maybeAddNodeBuilder(PrintNode node, Expression expr) {
     // When in lazy mode, also defer print directives if needed.
     if (state.outputVarHandler.currentOutputVarStyle() == OutputVarHandler.Style.LAZY
-        && node.getExpr().getType() != null
-        && node.getExpr().getType().getKind().isHtml()
+        && node.isHtml()
         && node.getChildren().stream().anyMatch(GenJsExprsVisitor::needToDeferDirective)) {
       return Expressions.construct(nodeBuilderClass(), Expressions.tsArrowFunction(expr));
     }

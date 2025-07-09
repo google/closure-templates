@@ -26,6 +26,7 @@ import static com.google.template.soy.jbcsrc.runtime.JbcSrcPluginRuntime.CONVERT
 import static com.google.template.soy.jbcsrc.runtime.JbcSrcPluginRuntime.JAVA_NULL_TO_SOY_NULL;
 import static com.google.template.soy.jbcsrc.runtime.JbcSrcPluginRuntime.NULLISH_TO_JAVA_NULL;
 import static com.google.template.soy.jbcsrc.runtime.JbcSrcPluginRuntime.NULL_TO_JAVA_NULL;
+import static com.google.template.soy.types.SoyTypes.isUnknownOrAny;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -62,7 +63,6 @@ import com.google.template.soy.types.NullType;
 import com.google.template.soy.types.RecordType;
 import com.google.template.soy.types.SetType;
 import com.google.template.soy.types.SoyType;
-import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.UnknownType;
 import java.lang.reflect.Method;
@@ -503,17 +503,15 @@ final class JbcSrcValueFactory extends JavaValueFactory {
       if (List.class.isAssignableFrom(type)) {
         if (expectedType instanceof ListType) {
           soyExpr = SoyExpression.forList((ListType) expectedType, expr);
-        } else if (expectedType.getKind() == SoyType.Kind.UNKNOWN
-            || expectedType.getKind() == SoyType.Kind.ANY) {
+        } else if (isUnknownOrAny(expectedType)) {
           soyExpr = SoyExpression.forList(ListType.of(UnknownType.getInstance()), expr);
         } else {
           throw new IllegalStateException("Invalid type: " + expectedType);
         }
       } else if (Set.class.isAssignableFrom(type)) {
-        if (expectedType.getKind() == Kind.SET) {
+        if (expectedType instanceof SetType) {
           soyExpr = SoyExpression.forSet((SetType) expectedType, expr);
-        } else if (expectedType.getKind() == SoyType.Kind.UNKNOWN
-            || expectedType.getKind() == SoyType.Kind.ANY) {
+        } else if (isUnknownOrAny(expectedType)) {
           soyExpr = SoyExpression.forSet(SetType.of(UnknownType.getInstance()), expr);
         } else {
           throw new IllegalStateException("Invalid type: " + expectedType);

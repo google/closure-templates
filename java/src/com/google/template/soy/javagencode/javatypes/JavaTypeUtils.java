@@ -278,7 +278,7 @@ public final class JavaTypeUtils {
   private static ImmutableList<JavaType> convertSoyUnionTypeToJavaTypes(
       UnionType unionType, Set<SoyType.Kind> skipSoyTypes) {
     if (SoyTypes.isNullish(unionType)
-        && SoyTypes.tryRemoveNullish(unionType).equals(SoyTypes.NUMBER_TYPE)) {
+        && SoyTypes.tryRemoveNullish(unionType).equals(SoyTypes.INT_OR_FLOAT)) {
       return ImmutableList.of(SimpleJavaType.NUMBER.asNullable());
     }
 

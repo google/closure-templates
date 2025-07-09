@@ -124,11 +124,11 @@ public class SoyTypeRegistryTest {
   @Test
   public void testNumberType() {
     // Make sure the type registry knows about the special number type
-    assertThat(SoyTypes.NUMBER_TYPE)
+    assertThat(SoyTypes.INT_OR_FLOAT)
         .isSameInstanceAs(
             typeRegistry.getOrCreateUnionType(FloatType.getInstance(), IntType.getInstance()));
-    assertThat(SoyTypes.NUMBER_TYPE)
-        .isSameInstanceAs(typeRegistry.getOrCreateUnionType(SoyTypes.NUMBER_TYPE));
+    assertThat(SoyTypes.INT_OR_FLOAT)
+        .isSameInstanceAs(typeRegistry.getOrCreateUnionType(SoyTypes.INT_OR_FLOAT));
   }
 
   @Test

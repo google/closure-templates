@@ -796,7 +796,7 @@ public abstract class Expression extends BytecodeProducer {
         case OMIT:
           return doCheckedSoyCast(type.getEffectiveType());
         case UNION:
-          if (type.equals(SoyTypes.NUMBER_TYPE)) {
+          if (type.equals(SoyTypes.INT_OR_FLOAT)) {
             if (BytecodeUtils.isDefinitelyAssignableFrom(
                 BytecodeUtils.NUMBER_DATA_TYPE, resultType)) {
               return Optional.empty();

@@ -62,6 +62,7 @@ import com.google.template.soy.soytree.Metadata;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.types.FunctionType;
 import com.google.template.soy.types.FunctionType.Parameter;
+import com.google.template.soy.types.MapType;
 import com.google.template.soy.types.SoyProtoEnumType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
@@ -501,7 +502,7 @@ public final class ExternCompiler {
           return JbcSrcExternRuntime.LIST_UNBOX_ENUMS.invoke(
               unboxedList, BytecodeUtils.constant(BytecodeUtils.getTypeForClassName(javaClass)));
         case UNION:
-          if (SoyTypes.NUMBER_TYPE.equals(elmType)) {
+          if (SoyTypes.INT_OR_FLOAT.equals(elmType)) {
             return JbcSrcExternRuntime.LIST_UNBOX_NUMBERS.invoke(unboxedList);
           }
         // fall through
@@ -600,13 +601,13 @@ public final class ExternCompiler {
       return JbcSrcExternRuntime.GBIGINT_FOR_VALUE.invoke(externCall);
     } else if (externType.equals(BytecodeUtils.OBJECT.type())
         || externType.equals(BytecodeUtils.NUMBER_TYPE)) {
-      checkState(soyReturnType.getKind() != SoyType.Kind.MAP);
+      checkState(!MapType.ANY_MAP.isAssignableFromStrict(soyReturnType));
       return JbcSrcExternRuntime.CONVERT_OBJECT_TO_SOY_VALUE.invoke(externCall);
     } else if (BytecodeUtils.isDefinitelyAssignableFrom(BytecodeUtils.MAP_TYPE, externType)) {
       // When Soy sees a map, it defaults to thinking it's a legacy_object_map, which only allow
       // string keys. We know that's not the case here (because the Soy return type of the extern
       // is "map") so mark this as a "map" and not a "legacy_object_map".
-      if (soyReturnType.getKind() == SoyType.Kind.MAP) {
+      if (MapType.ANY_MAP.isAssignableFromStrict(soyReturnType)) {
         externCall = JbcSrcExternRuntime.MARK_AS_SOY_MAP.invoke(externCall);
       }
       return JbcSrcExternRuntime.CONVERT_OBJECT_TO_SOY_VALUE.invoke(externCall);
@@ -629,7 +630,7 @@ public final class ExternCompiler {
     } else if (externType.equals(BytecodeUtils.TRUSTED_RESOURCE_URL_TYPE)) {
       return JbcSrcExternRuntime.CONVERT_TRUSTED_RESOURCE_URL_TO_SOY_VALUE_PROVIDER.invoke(
           externCall);
-    } else if (soyReturnType.getKind() == SoyType.Kind.PROTO_ENUM) {
+    } else if (SoyProtoEnumType.ANY_ENUM.isAssignableFromStrict(soyReturnType)) {
       return adaptIfNumeric(MethodRefs.PROTOCOL_ENUM_GET_NUMBER.invoke(externCall), exprType);
     } else if (BytecodeUtils.SOY_VALUE_TYPE.equals(getRuntimeType(soyReturnType).runtimeType())) {
       // If the Soy return type of the extern is SoyValue, then we need to make sure the value

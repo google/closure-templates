@@ -22,7 +22,6 @@ import static com.google.common.truth.Truth.assertThat;
 import static com.google.template.soy.types.SoyTypes.makeNullable;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.google.common.truth.FailureMetadata;
 import com.google.common.truth.Subject;
@@ -52,6 +51,8 @@ public class SoyTypesTest {
       UnionType.of(IntType.getInstance(), FloatType.getInstance());
   private static final SoyType INT_OR_NUMBER =
       UnionType.of(IntType.getInstance(), NumberType.getInstance());
+  private static final SoyType INT_OR_STRING =
+      UnionType.of(IntType.getInstance(), StringType.getInstance());
 
   private static final BoolType BOOL_TYPE = BoolType.getInstance();
   private static final IntType INT_TYPE = IntType.getInstance();
@@ -660,39 +661,16 @@ public class SoyTypesTest {
 
   @Test
   public void testBothOfKind() {
-    assertThat(SoyTypes.bothOfKind(INT_TYPE, INT_TYPE, INT_TYPE.getKind())).isTrue();
-    assertThat(SoyTypes.bothOfKind(INT_TYPE, INT_TYPE, SoyTypes.ARITHMETIC_PRIMITIVES)).isTrue();
-    assertThat(
-            SoyTypes.bothOfKind(
-                INT_TYPE, FLOAT_TYPE, ImmutableSet.of(INT_TYPE.getKind(), FLOAT_TYPE.getKind())))
-        .isTrue();
-    assertThat(SoyTypes.bothOfKind(INT_TYPE, FLOAT_TYPE, SoyTypes.ARITHMETIC_PRIMITIVES)).isTrue();
-    assertThat(
-            SoyTypes.bothOfKind(
-                INT_OR_FLOAT,
-                FLOAT_TYPE,
-                ImmutableSet.of(INT_TYPE.getKind(), FLOAT_TYPE.getKind())))
-        .isTrue();
-    assertThat(SoyTypes.bothOfKind(INT_OR_FLOAT, FLOAT_TYPE, SoyTypes.ARITHMETIC_PRIMITIVES))
-        .isTrue();
+    assertThat(SoyTypes.bothOfKind(INT_TYPE, INT_TYPE, IntType.getInstance())).isTrue();
+    assertThat(SoyTypes.bothOfKind(INT_TYPE, INT_TYPE, NumberType.getInstance())).isTrue();
+    assertThat(SoyTypes.bothOfKind(INT_TYPE, FLOAT_TYPE, NumberType.getInstance())).isTrue();
+    assertThat(SoyTypes.bothOfKind(INT_TYPE, FLOAT_TYPE, NumberType.getInstance())).isTrue();
+    assertThat(SoyTypes.bothOfKind(INT_OR_FLOAT, FLOAT_TYPE, NumberType.getInstance())).isTrue();
+    assertThat(SoyTypes.bothOfKind(INT_OR_FLOAT, FLOAT_TYPE, NumberType.getInstance())).isTrue();
 
-    assertThat(SoyTypes.bothOfKind(INT_TYPE, INT_TYPE, ImmutableSet.of())).isFalse();
-    assertThat(SoyTypes.bothOfKind(INT_TYPE, FLOAT_TYPE, INT_TYPE.getKind())).isFalse();
-    assertThat(SoyTypes.bothOfKind(INT_OR_FLOAT, INT_TYPE, INT_TYPE.getKind())).isFalse();
-    assertThat(SoyTypes.bothOfKind(STRING_TYPE, INT_OR_FLOAT, SoyTypes.ARITHMETIC_PRIMITIVES))
-        .isFalse();
-  }
-
-  @Test
-  public void testEitherOfKind() {
-    assertThat(SoyTypes.eitherOfKind(INT_TYPE, INT_TYPE, INT_TYPE.getKind())).isTrue();
-    assertThat(SoyTypes.eitherOfKind(STRING_TYPE, INT_TYPE, INT_TYPE.getKind())).isTrue();
-    assertThat(SoyTypes.eitherOfKind(INT_TYPE, STRING_TYPE, INT_TYPE.getKind())).isTrue();
-    assertThat(SoyTypes.eitherOfKind(INT_TYPE, STRING_TYPE, SoyTypes.ARITHMETIC_PRIMITIVES))
-        .isTrue();
-
-    assertThat(SoyTypes.eitherOfKind(FLOAT_TYPE, INT_OR_FLOAT, ImmutableSet.of())).isFalse();
-    assertThat(SoyTypes.eitherOfKind(FLOAT_TYPE, INT_OR_FLOAT, INT_TYPE.getKind())).isFalse();
+    assertThat(SoyTypes.bothOfKind(INT_TYPE, FLOAT_TYPE, IntType.getInstance())).isFalse();
+    assertThat(SoyTypes.bothOfKind(INT_OR_FLOAT, INT_TYPE, IntType.getInstance())).isFalse();
+    assertThat(SoyTypes.bothOfKind(STRING_TYPE, INT_OR_FLOAT, NumberType.getInstance())).isFalse();
   }
 
   @Test
@@ -726,6 +704,8 @@ public class SoyTypesTest {
         .isEqualTo(UnionType.of(INT_TYPE, UNDEFINED_TYPE));
     assertThat(SoyTypes.computeLowestCommonType(typeRegistry, NUMBER_TYPE, INT_TYPE))
         .isEqualTo(INT_OR_NUMBER);
+    assertThat(SoyTypes.computeLowestCommonType(typeRegistry, INT_TYPE, STRING_TYPE))
+        .isEqualTo(INT_OR_STRING);
   }
 
   @Test

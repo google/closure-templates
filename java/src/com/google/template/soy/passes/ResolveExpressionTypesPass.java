@@ -186,6 +186,7 @@ import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import com.google.template.soy.soytree.defn.TemplateStateVar;
 import com.google.template.soy.types.AbstractIterableType;
 import com.google.template.soy.types.AbstractMapType;
+import com.google.template.soy.types.AnyType;
 import com.google.template.soy.types.BoolType;
 import com.google.template.soy.types.FloatType;
 import com.google.template.soy.types.FunctionType;
@@ -195,10 +196,13 @@ import com.google.template.soy.types.IterableType;
 import com.google.template.soy.types.LegacyObjectMapType;
 import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.MapType;
+import com.google.template.soy.types.NullType;
+import com.google.template.soy.types.NumberType;
 import com.google.template.soy.types.ProtoImportType;
 import com.google.template.soy.types.RecordType;
 import com.google.template.soy.types.RecordType.Member;
 import com.google.template.soy.types.SanitizedType;
+import com.google.template.soy.types.SanitizedType.AttributesType;
 import com.google.template.soy.types.SetType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
@@ -208,6 +212,7 @@ import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.StringType;
 import com.google.template.soy.types.TemplateImportType;
 import com.google.template.soy.types.TemplateType;
+import com.google.template.soy.types.UndefinedType;
 import com.google.template.soy.types.UnionType;
 import com.google.template.soy.types.UnknownType;
 import com.google.template.soy.types.VeDataType;
@@ -746,16 +751,18 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
       substitutions.restore(savedSubstitutionState);
     }
 
-    private final ImmutableSet<SoyType.Kind> allowedSwitchTypes =
-        ImmutableSet.of(
-            Kind.BOOL,
-            Kind.NUMBER,
-            Kind.INT,
-            Kind.FLOAT,
-            Kind.STRING,
-            Kind.PROTO_ENUM,
-            Kind.UNKNOWN,
-            Kind.ANY);
+    private final SoyType allowedSwitchTypes =
+        UnionType.of(
+            BoolType.getInstance(),
+            NumberType.getInstance(),
+            StringType.getInstance(),
+            NullType.getInstance(),
+            UndefinedType.getInstance());
+
+    private boolean isAllowedSwitchExprType(SoyType type) {
+      return type.equals(AnyType.getInstance())
+          || (!SoyTypes.isNullOrUndefined(type) && allowedSwitchTypes.isAssignableFromLoose(type));
+    }
 
     @Override
     protected void visitSwitchNode(SwitchNode node) {
@@ -765,8 +772,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
       ExprNode switchExpr = node.getExpr().getRoot();
       SoyType switchExprType = switchExpr.getType();
       boolean exprTypeError = false;
-      if (SoyTypes.isNullOrUndefined(switchExprType)
-          || !SoyTypes.isKindOrUnionOfKinds(tryRemoveNullish(switchExprType), allowedSwitchTypes)) {
+      if (!isAllowedSwitchExprType(switchExprType)) {
         errorReporter.report(
             switchExpr.getSourceLocation(), ILLEGAL_SWITCH_EXPRESSION_TYPE, switchExprType);
         exprTypeError = true;
@@ -856,9 +862,8 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
       }
     }
 
-    private final ImmutableSet<SoyType.Kind> allowedVariantTypes =
-        ImmutableSet.of(
-            SoyType.Kind.STRING, SoyType.Kind.INT, SoyType.Kind.PROTO_ENUM, SoyType.Kind.UNKNOWN);
+    private final SoyType allowedVariantTypes =
+        UnionType.of(StringType.getInstance(), IntType.getInstance());
 
     @Override
     protected void visitCallDelegateNode(CallDelegateNode node) {
@@ -872,7 +877,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
       SourceLocation location = variant.getSourceLocation();
       SoyType variantType = variant.getType();
       if (SoyTypes.isNullOrUndefined(variantType)
-          || !SoyTypes.isKindOrUnionOfKinds(tryRemoveNullish(variantType), allowedVariantTypes)) {
+          || !allowedVariantTypes.isAssignableFromStrict(tryRemoveNullish(variantType))) {
         errorReporter.report(location, BAD_DELCALL_VARIANT_TYPE, variantType);
       }
 
@@ -1594,7 +1599,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
               returnType = (ListType) returnType.getElementType();
             } else if (returnType.getElementType().getKind() == Kind.UNION) {
               UnionType unionType = (UnionType) returnType.getElementType();
-              if (SoyTypes.containsKinds(unionType, ImmutableSet.of(Kind.LIST))) {
+              if (unionType.isAssignableFromStrict(ListType.empty())) {
                 returnType = null;
               }
               break;
@@ -1982,12 +1987,16 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
       tryApplySubstitution(node);
     }
 
+    private boolean isNullishAttributes(SoyType type) {
+      return AttributesType.getInstance().isAssignableFromStrict(tryRemoveNullish(type));
+    }
+
     private void setTypeNullCoalesceNodeOrNode(AbstractOperatorNode node) {
       // If the LHS is of type attributes and the RHS is empty string, the empty string can be
       // coerced to attributes so the node should have attributes type.
       if (node.getChild(1) instanceof StringNode
           && ((StringNode) node.getChild(1)).getValue().isEmpty()
-          && tryRemoveNullish(node.getChild(0).getType()).getKind() == Kind.ATTRIBUTES) {
+          && isNullishAttributes(node.getChild(0).getType())) {
         node.setType(tryRemoveNullish(node.getChild(0).getType()));
       } else {
         SoyType resultType = node.getChild(1).getType();
@@ -2031,11 +2040,11 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
       // coerced to attributes so the node should have attributes type.
       if (node.getChild(1) instanceof StringNode
           && ((StringNode) node.getChild(1)).getValue().isEmpty()
-          && tryRemoveNullish(node.getChild(2).getType()).getKind() == Kind.ATTRIBUTES) {
+          && isNullishAttributes(node.getChild(2).getType())) {
         node.setType(node.getChild(2).getAuthoredType());
       } else if (node.getChild(2) instanceof StringNode
           && ((StringNode) node.getChild(2)).getValue().isEmpty()
-          && tryRemoveNullish(node.getChild(1).getType()).getKind() == Kind.ATTRIBUTES) {
+          && isNullishAttributes(node.getChild(1).getType())) {
         node.setType(node.getChild(1).getAuthoredType());
       } else {
         node.setType(
@@ -2293,9 +2302,9 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
         SoyType listArg;
         if (argType.getKind() == Kind.LEGACY_OBJECT_MAP) {
           listArg = ((LegacyObjectMapType) argType).getKeyType(); // pretty much just string
-        } else if (argType.getKind() == Kind.LIST) {
+        } else if (ListType.ANY_LIST.isAssignableFromStrict(argType)) {
           listArg = IntType.getInstance();
-        } else if (argType.getKind() == Kind.MAP) {
+        } else if (MapType.ANY_MAP.isAssignableFromStrict(argType)) {
           errorReporter.report(node.getSourceLocation(), KEYS_PASSED_MAP);
           listArg = UnknownType.getInstance();
         } else {
@@ -2456,7 +2465,8 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
         SoyType fieldType = protoType.getFieldSetterType(fieldName.identifier());
 
         // Same for List<?>, for repeated fields
-        if (fieldType.getKind() == Kind.LIST && argType instanceof AbstractIterableType) {
+        if (ListType.ANY_LIST.isAssignableFromStrict(fieldType)
+            && argType instanceof AbstractIterableType) {
           SoyType argElementType = ((AbstractIterableType) argType).getElementType();
           if (argElementType.equals(UnknownType.getInstance())) {
             continue;

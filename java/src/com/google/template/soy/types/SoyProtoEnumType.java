@@ -16,18 +16,28 @@
 
 package com.google.template.soy.types;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import com.google.common.base.Objects;
 import com.google.protobuf.Descriptors.EnumDescriptor;
 import com.google.protobuf.Descriptors.EnumValueDescriptor;
 import com.google.template.soy.base.SoyBackendKind;
 import com.google.template.soy.internal.proto.ProtoUtils;
 import com.google.template.soy.soytree.SoyTypeP;
+import javax.annotation.Nullable;
 
 /** A {@link SoyType} implementation which describes a protocol buffer enum type. */
 public final class SoyProtoEnumType extends SoyType {
-  private final EnumDescriptor descriptor;
+  public static final SoyProtoEnumType ANY_ENUM = new SoyProtoEnumType(null);
+  public static final SoyProtoEnumType UNKNOWN_ENUM = new SoyProtoEnumType(null);
 
-  public SoyProtoEnumType(EnumDescriptor descriptor) {
+  public static SoyProtoEnumType create(EnumDescriptor descriptor) {
+    return new SoyProtoEnumType(checkNotNull(descriptor));
+  }
+
+  @Nullable private final EnumDescriptor descriptor;
+
+  private SoyProtoEnumType(EnumDescriptor descriptor) {
     this.descriptor = descriptor;
   }
 
@@ -40,11 +50,20 @@ public final class SoyProtoEnumType extends SoyType {
   boolean doIsAssignableFromNonUnionType(SoyType fromType) {
     return fromType == this
         || (fromType.getClass() == this.getClass()
-            && ((SoyProtoEnumType) fromType).descriptor == descriptor);
+            && (this == ANY_ENUM
+                || fromType == UNKNOWN_ENUM
+                || ((SoyProtoEnumType) fromType).descriptor == descriptor));
   }
 
   public String getName() {
-    return descriptor.getFullName();
+    if (descriptor != null) {
+      return descriptor.getFullName();
+    } else if (this == ANY_ENUM) {
+      return "enum<any>";
+    } else if (this == UNKNOWN_ENUM) {
+      return "enum<?>";
+    }
+    throw new AssertionError();
   }
 
   public String getNameForBackend(SoyBackendKind backend) {

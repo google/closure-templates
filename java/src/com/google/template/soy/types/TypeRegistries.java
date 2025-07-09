@@ -17,7 +17,7 @@
 package com.google.template.soy.types;
 
 import static com.google.common.base.Preconditions.checkState;
-import static com.google.template.soy.types.SoyTypes.NUMBER_TYPE;
+import static com.google.template.soy.types.SoyTypes.INT_OR_FLOAT;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -103,7 +103,7 @@ public final class TypeRegistries {
 
     public TypeInternerImpl() {
       // Register the special number type so == comparisons work
-      checkState(types.intern(NUMBER_TYPE) == NUMBER_TYPE);
+      checkState(types.intern(INT_OR_FLOAT) == INT_OR_FLOAT);
     }
 
     @Override

@@ -89,6 +89,7 @@ import com.google.template.soy.soytree.TemplateBasicNode;
 import com.google.template.soy.soytree.TemplateElementNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.TemplateParam;
+import com.google.template.soy.types.FloatType;
 import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
@@ -923,10 +924,10 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
     if (BITWISE_OPS.contains(opNode.getKind())) {
       PyExpr lhs = visit(opNode.getChild(0));
       PyExpr rhs = visit(opNode.getChild(1));
-      if (SoyTypes.containsKind(opNode.getChild(0).getType(), Kind.NUMBER)) {
+      if (opNode.getChild(0).getType().isAssignableFromStrict(FloatType.getInstance())) {
         lhs = new PyFunctionExprBuilder("int").addArg(lhs).asPyExpr();
       }
-      if (SoyTypes.containsKind(opNode.getChild(1).getType(), Kind.NUMBER)) {
+      if (opNode.getChild(1).getType().isAssignableFromStrict(FloatType.getInstance())) {
         rhs = new PyFunctionExprBuilder("int").addArg(rhs).asPyExpr();
       }
       args = ImmutableList.of(lhs, rhs);

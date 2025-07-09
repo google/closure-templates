@@ -16,8 +16,6 @@
 
 package com.google.template.soy.types;
 
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
 import com.google.errorprone.annotations.ForOverride;
 import com.google.errorprone.annotations.concurrent.LazyInit;
 import com.google.template.soy.error.ErrorArg;
@@ -134,45 +132,6 @@ public abstract class SoyType implements ErrorArg {
     PROTO_EXTENSION,
     TEMPLATE_TYPE,
     ;
-
-    public static final ImmutableSet<Kind> STRING_KINDS =
-        Sets.immutableEnumSet(
-            Kind.STRING,
-            Kind.HTML,
-            Kind.ELEMENT,
-            Kind.ATTRIBUTES,
-            Kind.JS,
-            Kind.CSS,
-            Kind.URI,
-            Kind.TRUSTED_RESOURCE_URI);
-
-    public static final ImmutableSet<Kind> ILLEGAL_OPERAND_KINDS_PLUS_OP =
-        Sets.immutableEnumSet(
-            Kind.ITERABLE, Kind.LIST, Kind.SET, Kind.LEGACY_OBJECT_MAP, Kind.MAP, Kind.RECORD);
-
-    public static final ImmutableSet<Kind> HTML_KINDS =
-        Sets.immutableEnumSet(Kind.HTML, Kind.ELEMENT);
-
-    public boolean isHtml() {
-      return HTML_KINDS.contains(this);
-    }
-
-    /** Returns true for SoyTypes that are plain strings or sanitized subtypes of strings. */
-    public boolean isKnownStringOrSanitizedContent() {
-      return STRING_KINDS.contains(this);
-    }
-
-    /** Returns true for SoyTypes that are sanitized subtypes of strings. */
-    public boolean isKnownSanitizedContent() {
-      return this != Kind.STRING && STRING_KINDS.contains(this);
-    }
-
-    /**
-     * Returns true for SoyTypes that are not allowed to be operands of binary arithmetic operators.
-     */
-    public boolean isIllegalOperandForBinaryOps() {
-      return ILLEGAL_OPERAND_KINDS_PLUS_OP.contains(this) || STRING_KINDS.contains(this);
-    }
   }
 
   enum AssignabilityPolicy {

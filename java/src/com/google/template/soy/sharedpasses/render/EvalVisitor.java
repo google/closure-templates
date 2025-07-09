@@ -155,9 +155,9 @@ import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.FunctionType;
 import com.google.template.soy.types.FunctionType.Parameter;
+import com.google.template.soy.types.MessageType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
-import com.google.template.soy.types.SoyTypes;
 import com.ibm.icu.util.ULocale;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -619,7 +619,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
   }
 
   private static boolean isProtoOrUnionOfProtos(SoyType type) {
-    return SoyTypes.isKindOrUnionOfKind(SoyTypes.tryRemoveNullish(type), SoyType.Kind.PROTO);
+    return MessageType.getInstance().isAssignableFromStrict(type);
   }
 
   private SoyValue visitItemAccessNode(ItemAccessNode itemAccess, SoyValue base, boolean nullSafe) {

@@ -236,7 +236,7 @@ final class ProtoUtils {
       LocalVariableManager varManager,
       Int64ConversionMode int64Mode) {
     SoyType type = baseExpr.soyType();
-    if (type.getKind() == SoyType.Kind.PROTO) {
+    if (type instanceof SoyProtoType) {
       return accessField((SoyProtoType) type, baseExpr, fieldName, fieldType, mode, int64Mode);
     } else {
       return accessProtoUnionField(
@@ -275,7 +275,7 @@ final class ProtoUtils {
   static SoyExpression hasserField(
       SoyExpression baseExpr, String fieldName, LocalVariableManager varManager) {
     SoyType type = baseExpr.soyType();
-    if (type.getKind() == SoyType.Kind.PROTO) {
+    if (type instanceof SoyProtoType) {
       return hasserField((SoyProtoType) type, baseExpr, fieldName);
     } else {
       return accessProtoUnionField(
@@ -714,7 +714,7 @@ final class ProtoUtils {
       // Message fields are nullable, but we don't care about that here. This just needs the raw
       // proto type and will still work even if the value is null.
       SoyType nonNullableFieldType = SoyTypes.tryRemoveNullish(fieldType);
-      if (nonNullableFieldType.getKind() == SoyType.Kind.PROTO) {
+      if (nonNullableFieldType instanceof SoyProtoType) {
         SoyProtoType fieldProtoType = (SoyProtoType) nonNullableFieldType;
         SoyRuntimeType protoRuntimeType = SoyRuntimeType.getUnboxedType(fieldProtoType).get();
         return SoyExpression.forProto(protoRuntimeType, field);

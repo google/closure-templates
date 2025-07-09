@@ -54,13 +54,12 @@ import com.google.template.soy.soytree.Visibility;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.SanitizedType;
+import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.TemplateType;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
-/**
- * Applies changes specified in {@link Inferences} to a Soy parse tree.
- */
+/** Applies changes specified in {@link Inferences} to a Soy parse tree. */
 final class Rewriter {
 
   /** The changes to make. */
@@ -163,7 +162,7 @@ final class Rewriter {
      */
     @Nullable
     private SanitizedContentKind getTrustedContentKindForNode(ExprHolderNode exprHolder) {
-      return getTrustedContentKindForNode(exprHolder, /*followCalls=*/ true);
+      return getTrustedContentKindForNode(exprHolder, /* followCalls= */ true);
     }
 
     @Nullable
@@ -192,7 +191,8 @@ final class Rewriter {
       if (param.isInjected()) {
         return null; // can't validate injected parameters
       }
-      if (!param.type().getKind().isKnownSanitizedContent()) {
+      SoyType paramType = param.type().getEffectiveType();
+      if (!(paramType instanceof SanitizedType)) {
         return null; // only care about sanitized types
       }
       if (SoyTreeUtils.allNodesOfType(template.getParent(), TemplateLiteralNode.class)
@@ -204,7 +204,7 @@ final class Rewriter {
         // content kind.
         return null;
       }
-      SanitizedContentKind expectedKind = ((SanitizedType) param.type()).getContentKind();
+      SanitizedContentKind expectedKind = ((SanitizedType) paramType).getContentKind();
 
       // if it is private we know that all callers are in this file.  Find them and check
       // if they are all passing the parameter with a consistent kind
@@ -233,7 +233,7 @@ final class Rewriter {
           } else if (callParam instanceof CallParamValueNode
               // We don't follow calls so we don't get lost in recursive templates
               && getTrustedContentKindForNode(
-                      (CallParamValueNode) callParam, /* followCalls=*/ false)
+                      (CallParamValueNode) callParam, /* followCalls= */ false)
                   == expectedKind) {
             return true;
           }

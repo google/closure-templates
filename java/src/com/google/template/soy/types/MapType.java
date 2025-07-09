@@ -17,7 +17,6 @@
 package com.google.template.soy.types;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.soytree.SoyTypeP;
 
 /**
@@ -57,26 +56,24 @@ public final class MapType extends AbstractMapType {
     return this == EMPTY;
   }
 
-  private static final ImmutableSet<Kind> ALLOWED_KINDS =
-      ImmutableSet.of(
-          Kind.BOOL, Kind.NUMBER, Kind.INT, Kind.FLOAT, Kind.STRING, Kind.PROTO_ENUM, Kind.GBIGINT);
+  private static final SoyType ALLOWED_KINDS =
+      UnionType.of(
+          BoolType.getInstance(),
+          NumberType.getInstance(),
+          StringType.getInstance(),
+          GbigintType.getInstance());
 
   /** Whether the type is permissible as a key in a declared map type literal. */
   // LINT.IfChange(allowed_soy_map_key_types)
   public static boolean isAllowedKeyType(SoyType type) {
-    switch (type.getKind()) {
-      case ANY:
-      case UNKNOWN:
-      case NEVER:
-        return true;
-      default:
-        return SoyTypes.isKindOrUnionOfKinds(type, ALLOWED_KINDS);
-    }
+    return type.equals(AnyType.getInstance())
+        || type.equals(NeverType.getInstance())
+        || ALLOWED_KINDS.isAssignableFromLoose(type);
   }
 
   /** Whether the type is permissible as a key in a map literal. */
   public static boolean isAllowedKeyValueType(SoyType type) {
-    return SoyTypes.isKindOrUnionOfKinds(type, ALLOWED_KINDS);
+    return ALLOWED_KINDS.isAssignableFromStrict(type);
   }
 
   // LINT.ThenChange(../data/SoyMap.java:allowed_soy_map_key_types)

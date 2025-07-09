@@ -16,8 +16,6 @@
 
 package com.google.template.soy.passes;
 
-import static com.google.template.soy.types.SoyTypes.containsKind;
-
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.exprtree.ExprNode;
@@ -67,7 +65,8 @@ final class RuntimeTypeCoercion {
       updatedType = NumberType.getInstance();
     } else if (fromType.getKind() == Kind.UNION) {
       UnionType unionType = (UnionType) fromType;
-      if (containsKind(fromType, Kind.INT) && !containsKind(toType, Kind.INT)) {
+      if (fromType.isAssignableFromStrictWithoutCoercions(IntType.getInstance())
+          && !toType.isAssignableFromStrictWithoutCoercions(IntType.getInstance())) {
         coercion = BuiltinFunction.INT_TO_NUMBER;
         updatedType = replaceMember(unionType, NumberType.getInstance(), Kind.INT);
       }

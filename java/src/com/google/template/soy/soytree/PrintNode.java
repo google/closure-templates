@@ -25,6 +25,7 @@ import static com.google.template.soy.soytree.MessagePlaceholder.PHNAME_ATTR;
 import static com.google.template.soy.soytree.MessagePlaceholder.validatePlaceholderExample;
 import static com.google.template.soy.soytree.MessagePlaceholder.validatePlaceholderName;
 import static com.google.template.soy.soytree.MsgSubstUnitPlaceholderNameUtils.genNaiveBaseNameForExpr;
+import static com.google.template.soy.types.SoyTypes.isUnknownOrAny;
 
 import com.google.common.base.Equivalence;
 import com.google.common.collect.ImmutableList;
@@ -41,8 +42,9 @@ import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyNode.SplitLevelTopNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyNode.StatementNode;
+import com.google.template.soy.types.SanitizedType.ElementType;
+import com.google.template.soy.types.SanitizedType.HtmlType;
 import com.google.template.soy.types.SoyType;
-import com.google.template.soy.types.UnionType;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -266,17 +268,9 @@ public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNod
   }
 
   private boolean isHtmlType(SoyType type) {
-    if (type.getKind().isHtml()) {
-      return true;
-    }
-    if (type instanceof UnionType) {
-      for (SoyType member : ((UnionType) type).getMembers()) {
-        if (isHtmlType(member)) {
-          return true;
-        }
-      }
-    }
-    return false;
+    return !isUnknownOrAny(type)
+        && (type.isAssignableFromStrict(HtmlType.getInstance())
+            || type.isAssignableFromStrict(ElementType.UNKNOWN_ELEMENT));
   }
 
   /**

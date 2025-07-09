@@ -157,7 +157,7 @@ public interface TypeInterner {
       Descriptor descriptor, Function<? super String, ? extends SoyProtoType> mapper);
 
   default SoyProtoEnumType getOrCreateProtoEnumType(EnumDescriptor descriptor) {
-    return intern(new SoyProtoEnumType(descriptor));
+    return intern(SoyProtoEnumType.create(descriptor));
   }
 
   default SoyType getOrCreateElementType(String tagName) {

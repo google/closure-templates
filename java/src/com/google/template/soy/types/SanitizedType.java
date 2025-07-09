@@ -112,6 +112,7 @@ public abstract class SanitizedType extends PrimitiveType {
   public static final class ElementType extends SanitizedType {
 
     private static final ElementType WILDCARD = new ElementType("");
+    public static final ElementType UNKNOWN_ELEMENT = new ElementType("any");
 
     private final String tagName;
 
@@ -154,7 +155,7 @@ public abstract class SanitizedType extends PrimitiveType {
       if (!(srcType instanceof ElementType)) {
         return false;
       }
-      if (tagName.isEmpty()) {
+      if (this == WILDCARD || srcType == UNKNOWN_ELEMENT) {
         return true;
       }
       return tagName.equals(((ElementType) srcType).tagName);

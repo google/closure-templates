@@ -449,7 +449,7 @@ class ValidateExternsPass implements CompilerFilePass {
       case GBIGINT:
         return javaType == BigInteger.class;
       case UNION:
-        if (soyType.equals(SoyTypes.NUMBER_TYPE)) {
+        if (soyType.equals(SoyTypes.INT_OR_FLOAT)) {
           return javaType == Number.class || javaType == Double.class;
         }
       // fallthrough
