@@ -2736,7 +2736,7 @@ const ENABLE_LAZY_EXECUTION = goog.define('soy.ENABLE_LAZY_EXECUTION', true);
  *     encountered.
  */
 const LAZY_EVAL_NODE_BUILDERS =
-    goog.define('soy.LAZY_EVAL_NODE_BUILDERS', false);
+    goog.define('soy.LAZY_EVAL_NODE_BUILDERS', true);
 
 let isLazyExecutionEnabledUncompiled = ENABLE_LAZY_EXECUTION;
 let shouldLazyEvalNodeBuildersUncompiled = LAZY_EVAL_NODE_BUILDERS;
