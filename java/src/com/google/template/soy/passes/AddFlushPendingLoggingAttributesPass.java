@@ -24,6 +24,7 @@ import com.google.common.collect.Streams;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.Identifier;
+import com.google.template.soy.basetree.ParentNode;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.BooleanNode;
 import com.google.template.soy.exprtree.ExprNode;
@@ -33,10 +34,12 @@ import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.HtmlAttributeNode;
 import com.google.template.soy.soytree.HtmlContext;
 import com.google.template.soy.soytree.HtmlOpenTagNode;
+import com.google.template.soy.soytree.IfCondNode;
+import com.google.template.soy.soytree.IfElseNode;
 import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyFileNode;
-import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
+import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.VeLogNode;
 import com.google.template.soy.types.SanitizedType.AttributesType;
@@ -62,12 +65,14 @@ final class AddFlushPendingLoggingAttributesPass implements CompilerFilePass {
       }
     }
     // 2. it is the root of a {template}, {let}, or {param} with a well-formed single root element.
-    Streams.<RenderUnitNode>concat(
+    Streams.<ParentNode<? extends SoyNode>>concat(
             file.getTemplates().stream().filter(t -> t.getContentKind().isHtml()),
             SoyTreeUtils.allNodesOfType(file, LetContentNode.class)
                 .filter(l -> !l.isImplicitContentKind() && l.getContentKind().isHtml()),
             SoyTreeUtils.allNodesOfType(file, CallParamContentNode.class)
-                .filter(l -> !l.isImplicitContentKind() && l.getContentKind().isHtml()))
+                .filter(l -> !l.isImplicitContentKind() && l.getContentKind().isHtml()),
+            SoyTreeUtils.allNodesOfType(file, IfCondNode.class),
+            SoyTreeUtils.allNodesOfType(file, IfElseNode.class))
         .forEach(
             block -> {
               var contentTags =
