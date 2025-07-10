@@ -323,6 +323,43 @@ public final class VeLoggingTest {
   }
 
   @Test
+  public void testLoggingAttributes_withIf() throws Exception {
+    StringBuilder sb = new StringBuilder();
+    TestLogger testLogger = new TestLogger();
+    testLogger.attrsMap.put(1L, LoggingAttrs.builder().addDataAttribute("data-foo", "bar").build());
+    renderTemplate(
+        OutputAppendable.create(sb, testLogger),
+        "{let $cond: true /}{velog FooVe}{if $cond}<div></div>{/if}{/velog}");
+    assertThat(testLogger.builder.toString()).isEqualTo("velog{id=1}");
+    assertThat(sb.toString()).isEqualTo("<div data-foo=\"bar\"></div>");
+  }
+
+  @Test
+  public void testLoggingAttributes_withElse() throws Exception {
+    StringBuilder sb = new StringBuilder();
+    TestLogger testLogger = new TestLogger();
+    testLogger.attrsMap.put(1L, LoggingAttrs.builder().addDataAttribute("data-foo", "bar").build());
+    renderTemplate(
+        OutputAppendable.create(sb, testLogger),
+        "{let $cond: false /}{velog FooVe}{if $cond}<span></span>{else}<div></div>{/if}{/velog}");
+    assertThat(testLogger.builder.toString()).isEqualTo("velog{id=1}");
+    assertThat(sb.toString()).isEqualTo("<div data-foo=\"bar\"></div>");
+  }
+
+  @Test
+  public void testLoggingAttributes_withElseIf() throws Exception {
+    StringBuilder sb = new StringBuilder();
+    TestLogger testLogger = new TestLogger();
+    testLogger.attrsMap.put(1L, LoggingAttrs.builder().addDataAttribute("data-foo", "bar").build());
+    renderTemplate(
+        OutputAppendable.create(sb, testLogger),
+        "{let $cond: false /}{let $otherCond: true /}{velog FooVe}{if $cond}<span></span>{elseif"
+            + " $otherCond}<div></div>{/if}{/velog}");
+    assertThat(testLogger.builder.toString()).isEqualTo("velog{id=1}");
+    assertThat(sb.toString()).isEqualTo("<div data-foo=\"bar\"></div>");
+  }
+
+  @Test
   public void testLoggingAttributes_anchor() throws Exception {
     StringBuilder sb = new StringBuilder();
     TestLogger testLogger = new TestLogger();
