@@ -18,6 +18,8 @@ package com.google.template.soy.sharedpasses.render;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.ImmutableMap.toImmutableMap;
+import static com.google.template.soy.types.SoyTypes.getMapKeysType;
+import static com.google.template.soy.types.SoyTypes.getMapValuesType;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
@@ -60,7 +62,6 @@ import com.google.template.soy.plugin.java.restricted.MethodSignature;
 import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
 import com.google.template.soy.types.AbstractIterableType;
 import com.google.template.soy.types.FunctionType;
-import com.google.template.soy.types.MapType;
 import com.google.template.soy.types.SoyProtoEnumType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
@@ -375,20 +376,21 @@ class TofuValueFactory extends JavaValueFactory {
           return value.asJavaList();
         }
       } else if (Map.class.isAssignableFrom(type) && isExternApi) {
-        if (soyType.getKind() == Kind.RECORD) {
+        if (soyType.getKind() == Kind.RECORD || !(value instanceof SoyMap)) {
           if (ImmutableMap.class.isAssignableFrom(type)) {
             return SharedExternRuntime.recordToImmutableMap(value);
           } else {
             return SharedExternRuntime.recordToMap(value);
           }
         }
-        MapType mapType = (MapType) soyType;
+        SoyType mapKeysType = getMapKeysType(soyType);
+        SoyType mapValuesType = getMapValuesType(soyType);
         return ((SoyMap) value)
             .entrySet().stream()
                 .collect(
                     toImmutableMap(
-                        e -> adaptCollectionValueToJava(e.getKey(), mapType.getKeyType()),
-                        e -> adaptCollectionValueToJava(e.getValue(), mapType.getValueType())));
+                        e -> adaptCollectionValueToJava(e.getKey(), mapKeysType),
+                        e -> adaptCollectionValueToJava(e.getValue(), mapValuesType)));
       } else if (type.isEnum() && ProtocolMessageEnum.class.isAssignableFrom(type)) {
         try {
           return type.getDeclaredMethod("forNumber", int.class).invoke(null, value.integerValue());
