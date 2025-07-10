@@ -71,4 +71,9 @@ public abstract class LetNode extends AbstractCommandNode
   public final LocalVar getVar() {
     return var;
   }
+
+  @Override
+  public boolean isRendered() {
+    return false;
+  }
 }

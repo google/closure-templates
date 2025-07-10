@@ -628,10 +628,7 @@ final class ElementAttributePass implements CompilerFileSetPass {
         errorLoc = openTag.getTagName().getTagLocation();
       } else {
         SoyNode firstContent =
-            node.getChildren().stream()
-                .filter(n -> !SoyElementPass.ALLOWED_CHILD_NODES.contains(n.getKind()))
-                .findFirst()
-                .orElse(null);
+            node.getChildren().stream().filter(StandaloneNode::isRendered).findFirst().orElse(null);
         if (firstContent instanceof CallBasicNode) {
           errorLoc = ((CallBasicNode) firstContent).getOpenTagLocation();
         }

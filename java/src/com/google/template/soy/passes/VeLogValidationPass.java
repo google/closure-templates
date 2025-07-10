@@ -197,9 +197,7 @@ final class VeLogValidationPass implements CompilerFileSetPass {
 
   private void validateVelogElementStructure(VeLogNode node) {
     List<StandaloneNode> children =
-        node.getChildren().stream()
-            .filter(child -> !SoyElementPass.ALLOWED_CHILD_NODES.contains(child.getKind()))
-            .collect(toImmutableList());
+        node.getChildren().stream().filter(StandaloneNode::isRendered).collect(toImmutableList());
     // TODO(b/133428199): Support {velog} around calls in messages.
     if (node.getNearestAncestor(MsgFallbackGroupNode.class) == null
         && children.size() == 1

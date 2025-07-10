@@ -18,7 +18,6 @@ package com.google.template.soy.soytree;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
-import static com.google.template.soy.soytree.SoyTreeUtils.getNodeAsHtmlTagNode;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
@@ -217,5 +216,35 @@ public final class VeLogNode extends AbstractBlockCommandNode
     appendSourceStringForChildren(sb);
     sb.append("{/velog}");
     return sb.toString();
+  }
+
+  /**
+   * Returns the node as an HTML tag node, if one can be extracted from it (e.g. wrapped in a
+   * MsgPlaceholderNode). Otherwise, returns null.
+   */
+  @Nullable
+  private static HtmlTagNode getNodeAsHtmlTagNode(StandaloneNode node, boolean openTag) {
+    if (node == null) {
+      return null;
+    }
+    if (!node.isRendered()) {
+      return getNodeAsHtmlTagNode((StandaloneNode) SoyTreeUtils.nextSibling(node), openTag);
+    }
+    Kind tagKind = openTag ? Kind.HTML_OPEN_TAG_NODE : Kind.HTML_CLOSE_TAG_NODE;
+    if (node.getKind() == tagKind) {
+      return (HtmlTagNode) node;
+    }
+    // In a msg tag it will be a placeholder, wrapping a MsgHtmlTagNode wrapping the HtmlTagNode.
+    if (node.getKind() == Kind.MSG_PLACEHOLDER_NODE) {
+      MsgPlaceholderNode placeholderNode = (MsgPlaceholderNode) node;
+      if (placeholderNode.numChildren() == 1
+          && placeholderNode.getChild(0).getKind() == Kind.MSG_HTML_TAG_NODE) {
+        MsgHtmlTagNode msgHtmlTagNode = (MsgHtmlTagNode) placeholderNode.getChild(0);
+        if (msgHtmlTagNode.numChildren() == 1 && msgHtmlTagNode.getChild(0).getKind() == tagKind) {
+          return (HtmlTagNode) msgHtmlTagNode.getChild(0);
+        }
+      }
+    }
+    return null;
   }
 }

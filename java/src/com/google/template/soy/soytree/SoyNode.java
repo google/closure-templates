@@ -176,6 +176,14 @@ public interface SoyNode extends Node {
 
     @Override
     StandaloneNode copy(CopyState copyState);
+
+    /**
+     * Subclasses can override to indicate that this node does not append any bytes to the output
+     * buffer.
+     */
+    default boolean isRendered() {
+      return true;
+    }
   }
 
   // -----------------------------------------------------------------------------------------------

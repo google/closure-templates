@@ -21,8 +21,6 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.TemplateContentKind.ElementContentKind;
@@ -95,14 +93,6 @@ final class SoyElementPass implements CompilerFileSetPass {
       SoyErrorKind.of(
           "Templates with kind=\"html<?>\" must contain exactly one top-level HTML element (e.g,"
               + " span, div).");
-
-  static final ImmutableSet<SoyNode.Kind> ALLOWED_CHILD_NODES =
-      Sets.immutableEnumSet(
-          SoyNode.Kind.LET_CONTENT_NODE,
-          SoyNode.Kind.LET_VALUE_NODE,
-          SoyNode.Kind.DEBUGGER_NODE,
-          SoyNode.Kind.LOG_NODE,
-          SoyNode.Kind.EVAL_NODE);
 
   private static final HtmlElementMetadataP DEFAULT_HTML_METADATA =
       HtmlElementMetadataP.newBuilder().setIsHtmlElement(false).setIsVelogged(false).build();
@@ -177,8 +167,8 @@ final class SoyElementPass implements CompilerFileSetPass {
     SourceLocation invalidReportLoc = template.getSourceLocation();
     boolean reportedSingleHtmlElmError = false;
     for (int i = 0; i < template.numChildren(); i++) {
-      SoyNode child = template.getChild(i);
-      if (ALLOWED_CHILD_NODES.contains(child.getKind())) {
+      StandaloneNode child = template.getChild(i);
+      if (!child.isRendered()) {
         continue;
       }
 

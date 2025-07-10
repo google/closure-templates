@@ -75,4 +75,9 @@ public final class EvalNode extends AbstractCommandNode
   public ParentSoyNode<StandaloneNode> getParent() {
     return (ParentSoyNode<StandaloneNode>) super.getParent();
   }
+
+  @Override
+  public boolean isRendered() {
+    return false;
+  }
 }

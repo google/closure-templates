@@ -22,9 +22,7 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Sets;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SourceLocation.ByteSpan;
 import com.google.template.soy.base.internal.IdGenerator;
@@ -46,7 +44,6 @@ import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.internal.util.TreeStreams;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
-import com.google.template.soy.soytree.SoyNode.Kind;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.TemplateType;
@@ -71,13 +68,6 @@ import javax.annotation.Nullable;
 
 /** Shared utilities for the 'soytree' package. */
 public final class SoyTreeUtils {
-
-  static final ImmutableSet<SoyNode.Kind> NODES_THAT_DONT_CONTRIBUTE_OUTPUT =
-      Sets.immutableEnumSet(
-          SoyNode.Kind.LET_CONTENT_NODE,
-          SoyNode.Kind.LET_VALUE_NODE,
-          SoyNode.Kind.DEBUGGER_NODE,
-          SoyNode.Kind.LOG_NODE);
 
   private static final Joiner COMMA_JOINER = Joiner.on(", ");
 
@@ -556,37 +546,6 @@ public final class SoyTreeUtils {
         .map(ExprNode.class::cast)
         .filter(SoyTreeUtils::isNonConstant)
         .collect(toImmutableList());
-  }
-
-  /**
-   * Returns the node as an HTML tag node, if one can be extracted from it (e.g. wrapped in a
-   * MsgPlaceholderNode). Otherwise, returns null.
-   */
-  @Nullable
-  public static HtmlTagNode getNodeAsHtmlTagNode(SoyNode node, boolean openTag) {
-    if (node == null) {
-      return null;
-    }
-    SoyNode.Kind tagKind =
-        openTag ? SoyNode.Kind.HTML_OPEN_TAG_NODE : SoyNode.Kind.HTML_CLOSE_TAG_NODE;
-    if (NODES_THAT_DONT_CONTRIBUTE_OUTPUT.contains(node.getKind())) {
-      return getNodeAsHtmlTagNode(nextSibling(node), openTag);
-    }
-    if (node.getKind() == tagKind) {
-      return (HtmlTagNode) node;
-    }
-    // In a msg tag it will be a placeholder, wrapping a MsgHtmlTagNode wrapping the HtmlTagNode.
-    if (node.getKind() == Kind.MSG_PLACEHOLDER_NODE) {
-      MsgPlaceholderNode placeholderNode = (MsgPlaceholderNode) node;
-      if (placeholderNode.numChildren() == 1
-          && placeholderNode.getChild(0).getKind() == Kind.MSG_HTML_TAG_NODE) {
-        MsgHtmlTagNode msgHtmlTagNode = (MsgHtmlTagNode) placeholderNode.getChild(0);
-        if (msgHtmlTagNode.numChildren() == 1 && msgHtmlTagNode.getChild(0).getKind() == tagKind) {
-          return (HtmlTagNode) msgHtmlTagNode.getChild(0);
-        }
-      }
-    }
-    return null;
   }
 
   private static final TypeNodeVisitor<List<? extends TypeNode>> TRAVERSING =

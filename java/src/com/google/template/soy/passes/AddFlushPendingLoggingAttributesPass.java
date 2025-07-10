@@ -37,6 +37,7 @@ import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
+import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.VeLogNode;
 import com.google.template.soy.types.SanitizedType.AttributesType;
@@ -62,6 +63,12 @@ final class AddFlushPendingLoggingAttributesPass implements CompilerFilePass {
       }
     }
     // 2. it is the root of a {template}, {let}, or {param} with a well-formed single root element.
+
+    // We could flush on every html element, however that would be inefficient since only an element
+    // that is directly under a {velog} will have anything to flush. Due to how Soy can compose HTML
+    // (lets, params, calls), we can't always know what html element is directly under a {velog}.
+    // So this logic can be expanded to cover more nodes, ideally only ones we can't prove are NOT
+    // direct children of {velog}, with the tradeoff being less efficient java bytecode.
     Streams.<RenderUnitNode>concat(
             file.getTemplates().stream().filter(t -> t.getContentKind().isHtml()),
             SoyTreeUtils.allNodesOfType(file, LetContentNode.class)
@@ -72,7 +79,7 @@ final class AddFlushPendingLoggingAttributesPass implements CompilerFilePass {
             block -> {
               var contentTags =
                   block.getChildren().stream()
-                      .filter(n -> !SoyElementPass.ALLOWED_CHILD_NODES.contains(n.getKind()))
+                      .filter(StandaloneNode::isRendered)
                       .collect(toImmutableList());
               if (contentTags.isEmpty() || !(contentTags.get(0) instanceof HtmlOpenTagNode)) {
                 return;

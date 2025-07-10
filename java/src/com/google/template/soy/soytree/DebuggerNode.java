@@ -21,9 +21,7 @@ import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyNode.StatementNode;
 
-/**
- * Node representing the 'debugger' statement.
- */
+/** Node representing the 'debugger' statement. */
 public final class DebuggerNode extends AbstractCommandNode
     implements StandaloneNode, StatementNode {
 
@@ -54,5 +52,10 @@ public final class DebuggerNode extends AbstractCommandNode
   @Override
   public DebuggerNode copy(CopyState copyState) {
     return new DebuggerNode(this, copyState);
+  }
+
+  @Override
+  public boolean isRendered() {
+    return false;
   }
 }

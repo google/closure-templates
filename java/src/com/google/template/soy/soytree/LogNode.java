@@ -65,4 +65,9 @@ public final class LogNode extends AbstractBlockCommandNode
   public boolean isImplicitContentKind() {
     return false;
   }
+
+  @Override
+  public boolean isRendered() {
+    return false;
+  }
 }
