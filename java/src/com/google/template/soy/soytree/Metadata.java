@@ -300,6 +300,8 @@ public final class Metadata {
     @Memoized
     public ImmutableMap<String, SourceLogicalPath> getNamespaceIndex() {
       return getAllFiles().stream()
+          .filter(
+              f -> !f.getNamespace().equals(TemplateNode.SoyFileHeaderInfo.EMPTY.getNamespace()))
           .collect(
               toImmutableMap(PartialFileMetadata::getNamespace, f -> f.getPath().asLogicalPath()));
     }
@@ -425,6 +427,10 @@ public final class Metadata {
       if (tmp == null) {
         tmp =
             getAllFiles().stream()
+                .filter(
+                    f ->
+                        !f.getNamespace()
+                            .equals(TemplateNode.SoyFileHeaderInfo.EMPTY.getNamespace()))
                 .collect(
                     toImmutableMap(
                         PartialFileMetadata::getNamespace, f -> f.getPath().asLogicalPath()));
@@ -949,12 +955,12 @@ public final class Metadata {
       public static JavaImpl of(Optional<JavaImplNode> javaImpl) {
         if (javaImpl.isPresent()) {
           JavaImplNode node = javaImpl.get();
-            return new AutoValue_Metadata_ExternImpl_Java(
-                node.className(),
-                node.methodName(),
-                node.returnType(),
-                node.paramTypes(),
-                node.type());
+          return new AutoValue_Metadata_ExternImpl_Java(
+              node.className(),
+              node.methodName(),
+              node.returnType(),
+              node.paramTypes(),
+              node.type());
         }
         return null;
       }

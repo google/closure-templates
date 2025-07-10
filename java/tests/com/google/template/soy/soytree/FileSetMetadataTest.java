@@ -26,6 +26,7 @@ import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.SanitizedContentKind;
+import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
@@ -462,5 +463,42 @@ public final class FileSetMetadataTest {
             false,
             FAIL);
     assertThat(Metadata.getCallContentKind(registry, node)).isEmpty();
+  }
+
+  @Test
+  public void testGetNamespaceIndexWithEmptyFiles() {
+    FileSetMetadata metadata =
+        Metadata.metadataForAst(
+            SoyFileSetParserBuilder.forSuppliers(
+                    SoyFileSupplier.Factory.create(
+                        "{namespace ns}{template foo}{/template}", FILE_PATH),
+                    SoyFileSupplier.Factory.create("", SourceFilePath.forTest("empty1.soy")),
+                    SoyFileSupplier.Factory.create("", SourceFilePath.forTest("empty2.soy")))
+                .parse()
+                .registry(),
+            ImmutableList.of(),
+            ErrorReporter.exploding(),
+            null);
+    assertThat(metadata.getNamespaceIndex().get("ns").path()).isEqualTo(FILE_PATH.path());
+
+    FileSetMetadata depsMetadata =
+        Metadata.metadataForDeps(
+            ImmutableList.of(
+                CompilationUnitAndKind.create(
+                    SoyFileKind.DEP,
+                    CompilationUnit.newBuilder()
+                        .addFile(SoyFileP.newBuilder().setNamespace("ns").setFilePath("file1.soy"))
+                        .addFile(
+                            SoyFileP.newBuilder()
+                                .setNamespace(TemplateNode.SoyFileHeaderInfo.EMPTY.getNamespace())
+                                .setFilePath("empty1.soy"))
+                        .addFile(
+                            SoyFileP.newBuilder()
+                                .setNamespace(TemplateNode.SoyFileHeaderInfo.EMPTY.getNamespace())
+                                .setFilePath("empty2.soy"))
+                        .build())),
+            ErrorReporter.exploding(),
+            null);
+    assertThat(depsMetadata.getNamespaceIndex().get("ns").path()).isEqualTo("file1.soy");
   }
 }
