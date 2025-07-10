@@ -38,6 +38,7 @@ import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.UndefinedNode;
 import com.google.template.soy.types.FunctionType;
 import com.google.template.soy.types.IndexedType;
+import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.LiteralType;
 import com.google.template.soy.types.NeverType;
 import com.google.template.soy.types.NullType;
@@ -106,6 +107,9 @@ public final class TypeNodeConverter
 
   private static final SoyErrorKind BAD_INDEXED =
       SoyErrorKind.of("Type ''{1}'' does not have field {0}.");
+
+  private static final SoyErrorKind BAD_VAR_ARGS_PARAM =
+      SoyErrorKind.of("Var args parameters must be the last parameter in a function.");
 
   public static final SoyErrorKind DASH_NOT_ALLOWED =
       SoyErrorKind.of(
@@ -517,7 +521,15 @@ public final class TypeNodeConverter
   @Override
   public SoyType visit(FunctionTypeNode node) {
     Map<String, FunctionType.Parameter> map = new LinkedHashMap<>();
-    for (FunctionTypeNode.Parameter parameter : node.parameters()) {
+    boolean hasVarArgs = false;
+    for (int i = 0; i < node.parameters().size(); i++) {
+      FunctionTypeNode.Parameter parameter = node.parameters().get(i);
+      if (parameter.type() instanceof VarArgsTypeNode && i < node.parameters().size() - 1) {
+        errorReporter.report(parameter.nameLocation(), BAD_VAR_ARGS_PARAM);
+      }
+      if (parameter.type() instanceof VarArgsTypeNode) {
+        hasVarArgs = true;
+      }
       FunctionType.Parameter oldParameter =
           map.put(
               parameter.name(),
@@ -527,7 +539,8 @@ public final class TypeNodeConverter
         map.put(parameter.name(), oldParameter);
       }
     }
-    SoyType type = interner.intern(FunctionType.of(map.values(), exec(node.returnType())));
+    SoyType type =
+        interner.intern(FunctionType.of(map.values(), exec(node.returnType()), hasVarArgs));
     node.setResolvedType(type);
     return type;
   }
@@ -548,6 +561,14 @@ public final class TypeNodeConverter
     }
     node.setResolvedType(type);
     return type;
+  }
+
+  @Override
+  public SoyType visit(VarArgsTypeNode node) {
+    SoyType type = exec(node.baseType());
+    SoyType varArgsType = interner.intern(ListType.of(type));
+    node.setResolvedType(varArgsType);
+    return varArgsType;
   }
 
   private SoyType handleReturnTypeOfTemplateType(TypeNode node) {

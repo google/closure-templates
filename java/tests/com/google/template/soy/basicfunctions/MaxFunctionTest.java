@@ -37,21 +37,32 @@ public class MaxFunctionTest {
     SoyJavaSourceFunctionTester tester = new SoyJavaSourceFunctionTester(maxFunction);
 
     // Test same LHS & RHS type.
-    assertThat(tester.callFunction(7.5, 7.777)).isEqualTo(FloatData.forValue(7.777));
-    assertThat(tester.callFunction(-7, -8)).isEqualTo(IntegerData.forValue(-7));
-    assertThat(tester.callFunction(FloatData.forValue(7.5), 7.777))
+    assertThat(tester.callFunction()).isEqualTo(FloatData.forValue(Double.NEGATIVE_INFINITY));
+    assertThat(tester.callFunction(7.777)).isEqualTo(FloatData.forValue(7.777));
+    assertThat(tester.callFunction(7.777, 7.5)).isEqualTo(FloatData.forValue(7.777));
+    assertThat(tester.callFunction(-7, -8, -9, -10)).isEqualTo(IntegerData.forValue(-7));
+    assertThat(tester.callFunction(6.4, 7.0, FloatData.forValue(7.5), 7.777))
         .isEqualTo(FloatData.forValue(7.777));
-    assertThat(tester.callFunction(IntegerData.forValue(-7), -8))
+    assertThat(tester.callFunction(IntegerData.forValue(-7), -8, IntegerData.forValue(-9), -10))
         .isEqualTo(IntegerData.forValue(-7));
 
     // Test mixed LHS & RHS type.
-    assertThat(tester.callFunction(7, 7.777)).isEqualTo(FloatData.forValue(7.777));
-    assertThat(tester.callFunction(7.777, 8)).isEqualTo(IntegerData.forValue(8));
-    assertThat(tester.callFunction(IntegerData.forValue(7), 7.777))
+    assertThat(tester.callFunction(6, 6.5, 6.6666, 7, 7.777)).isEqualTo(FloatData.forValue(7.777));
+    assertThat(tester.callFunction(6, 6.6666, 7.777, 8)).isEqualTo(IntegerData.forValue(8));
+    assertThat(tester.callFunction(FloatData.forValue(6), IntegerData.forValue(7), 7.777))
         .isEqualTo(FloatData.forValue(7.777));
-    assertThat(tester.callFunction(FloatData.forValue(7.5), 8)).isEqualTo(IntegerData.forValue(8));
-    assertThat(tester.callFunction(FloatData.forValue(7.5), IntegerData.forValue(8)))
+    assertThat(
+            tester.callFunction(
+                IntegerData.forValue(5), IntegerData.forValue(6), FloatData.forValue(7.5), 8))
+        .isEqualTo(IntegerData.forValue(8));
+    assertThat(
+            tester.callFunction(
+                FloatData.forValue(3.5),
+                IntegerData.forValue(4),
+                FloatData.forValue(5.5),
+                IntegerData.forValue(6),
+                FloatData.forValue(7.5),
+                IntegerData.forValue(8)))
         .isEqualTo(IntegerData.forValue(8));
   }
-
 }

@@ -66,6 +66,7 @@ import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.UnknownType;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -136,7 +137,7 @@ final class JbcSrcValueFactory extends JavaValueFactory {
     ErrorReporter.Checkpoint checkpoint = errorReporter.checkpoint();
     checkState(fnNode.getParamTypes() != null, "allowed param types must be set");
     checkState(
-        fnNode.getParamTypes().size() == args.size(),
+        fnNode.isVarArgs() || fnNode.getParamTypes().size() == args.size(),
         "wrong # of allowed param types (%s), expected %s",
         fnNode.getParamTypes(),
         args.size());
@@ -151,10 +152,34 @@ final class JbcSrcValueFactory extends JavaValueFactory {
       return SoyExpression.SOY_NULL;
     }
     SoyJavaSourceFunction javaSrcFn = fnNode.getSourceFunction();
+    List<SoyExpression> argsCopy = new ArrayList<>();
+    if (fnNode.isVarArgs()) {
+      // Add all of the params that aren't varargs.
+      if (fnNode.getParamTypes().size() - 1 > 0) {
+        argsCopy.addAll(args.subList(0, fnNode.getParamTypes().size() - 1));
+      }
+      if (args.size() >= fnNode.getParamTypes().size()) {
+        argsCopy.add(
+            SoyExpression.forList(
+                ListType.of(fnNode.getParamTypes().get(fnNode.getParamTypes().size() - 1)),
+                SoyExpression.asBoxedValueProviderList(
+                    args.subList(fnNode.getParamTypes().size() - 1, args.size()))));
+      } else {
+        // No var args parameter found.
+        argsCopy.add(
+            SoyExpression.forList(
+                ListType.of(fnNode.getParamTypes().get(fnNode.getParamTypes().size() - 1)),
+                SoyExpression.asBoxedValueProviderList(ImmutableList.of())));
+      }
+    } else {
+      argsCopy.addAll(args);
+    }
     return toSoyExpression(
         (JbcSrcJavaValue)
             javaSrcFn.applyForJavaSource(
-                this, args.stream().map(JbcSrcJavaValue::of).collect(toImmutableList()), context));
+                this,
+                argsCopy.stream().map(JbcSrcJavaValue::of).collect(toImmutableList()),
+                context));
   }
 
   @Override

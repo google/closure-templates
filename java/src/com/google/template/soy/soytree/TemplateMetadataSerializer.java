@@ -422,7 +422,9 @@ public final class TemplateMetadataSerializer {
       case SET_ELEMENT:
         return typeRegistry.getOrCreateSetType(
             fromProto(proto.getSetElement(), typeRegistry, filePath, errorReporter));
-
+      case VAR_ARGS:
+        return typeRegistry.getOrCreateListType(
+            fromProto(proto.getVarArgs(), typeRegistry, filePath, errorReporter));
       case LEGACY_OBJECT_MAP:
         return typeRegistry.getOrCreateLegacyObjectMapType(
             fromProto(proto.getLegacyObjectMap().getKey(), typeRegistry, filePath, errorReporter),
@@ -529,7 +531,8 @@ public final class TemplateMetadataSerializer {
               FunctionType.of(
                   parameters,
                   fromProto(
-                      proto.getFunction().getReturnType(), typeRegistry, filePath, errorReporter)));
+                      proto.getFunction().getReturnType(), typeRegistry, filePath, errorReporter),
+                  proto.getFunction().getIsVarArgs()));
         }
       case UNION:
         {

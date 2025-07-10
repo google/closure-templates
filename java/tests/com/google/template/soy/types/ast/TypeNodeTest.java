@@ -303,6 +303,12 @@ public final class TypeNodeTest {
         assert_().fail();
         return null;
       }
+
+      @Override
+      public Void visit(VarArgsTypeNode node) {
+        assertEquals(node.baseType(), ((VarArgsTypeNode) right).baseType());
+        return null;
+      }
     }.exec(left);
   }
 

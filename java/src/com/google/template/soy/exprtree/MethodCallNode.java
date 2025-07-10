@@ -51,6 +51,8 @@ public final class MethodCallNode extends DataAccessNode implements ExprNode.Cal
   /** When paramsStyle is NAMED this contains the list of named parameters. Otherwise empty. */
   private final ImmutableList<Identifier> paramNames;
 
+  private final boolean isVarArgs;
+
   /**
    * The resolved SoyMethod that corresponds to this node. Resolution occurs in
    * ResolveExpressionTypesPass after the types of the method received and the method arguments are
@@ -58,6 +60,16 @@ public final class MethodCallNode extends DataAccessNode implements ExprNode.Cal
    * resolves to exactly one match.
    */
   private SoyMethod method;
+
+  MethodCallNode(
+      ExprNode base,
+      boolean isNullSafe,
+      SourceLocation sourceLocation,
+      Identifier methodName,
+      ParamsStyle paramsStyle,
+      ImmutableList<Identifier> paramNames) {
+    this(base, isNullSafe, sourceLocation, methodName, paramsStyle, paramNames, false);
+  }
 
   /**
    * @param base The base expression that the method is called on.
@@ -73,11 +85,13 @@ public final class MethodCallNode extends DataAccessNode implements ExprNode.Cal
       SourceLocation sourceLocation,
       Identifier methodName,
       ParamsStyle paramsStyle,
-      ImmutableList<Identifier> paramNames) {
+      ImmutableList<Identifier> paramNames,
+      boolean isVarArgs) {
     super(base, sourceLocation, isNullSafe);
     this.methodName = Preconditions.checkNotNull(methodName);
     this.paramNames = paramNames;
     this.paramsStyle = paramsStyle;
+    this.isVarArgs = isVarArgs;
   }
 
   /** @param orig The node to copy */
@@ -87,6 +101,7 @@ public final class MethodCallNode extends DataAccessNode implements ExprNode.Cal
     this.paramsStyle = orig.paramsStyle;
     this.paramNames = orig.paramNames;
     this.method = orig.method;
+    this.isVarArgs = orig.isVarArgs;
   }
 
   /** Returns the name of the method */
@@ -129,6 +144,11 @@ public final class MethodCallNode extends DataAccessNode implements ExprNode.Cal
   /** Returns true if the methods have been resolved to exactly one SoySourceFunction. */
   public boolean isMethodResolved() {
     return method != null;
+  }
+
+  @Override
+  public boolean isVarArgs() {
+    return isVarArgs;
   }
 
   /**

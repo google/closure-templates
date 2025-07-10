@@ -404,6 +404,8 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
       SoyErrorKind.of("Value of type ''{0}'' may not be spread here.");
   private static final SoyErrorKind INVALID_ASSIGNMENT_TYPES =
       SoyErrorKind.of("Cannot set a variable of type ''{0}'' to a value of type ''{1}''.");
+  private static final SoyErrorKind VAR_ARGS_NOT_LIST =
+      SoyErrorKind.of("Var args parameter found and not transformed to a list.");
 
   private final ErrorReporter errorReporter;
 
@@ -1540,6 +1542,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
       } else if (method instanceof SoySourceFunctionMethod) {
         SoySourceFunctionMethod sourceMethod = (SoySourceFunctionMethod) method;
         SoySourceFunction sourceFunction = sourceMethod.getImpl();
+
         if (sourceFunction instanceof ConcatListsFunction) {
           node.setType(getGenericListType(node.getChildren()));
         } else if (sourceFunction instanceof ConcatMapsMethod) {
@@ -1743,7 +1746,8 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
                   arg.getParameters().stream()
                       .map(p -> FunctionType.Parameter.of(p.getName(), itemType))
                       .collect(toImmutableList()),
-                  arg.getReturnType());
+                  arg.getReturnType(),
+                  arg.isVarArgs());
           return ImmutableList.of(arg);
         }
         return sourceMethod.getParamTypes();
@@ -2266,8 +2270,9 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
         SoyFunctionSignature fnSignature, String className, FunctionNode node) {
       ResolvedSignature matchedSignature = null;
       // Found the matched signature for the current function call.
+      boolean isVarArgs = false;
       for (Signature signature : fnSignature.value()) {
-        if (signature.parameterTypes().length == node.numParams()) {
+        if (signature.parameterTypes().length == node.numParams() && !isVarArgs(signature)) {
           matchedSignature = getOrCreateFunctionSignature(signature, className, errorReporter);
           if (!signature.deprecatedWarning().isEmpty()) {
             errorReporter.warn(
@@ -2277,6 +2282,9 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
                 signature.deprecatedWarning());
           }
           break;
+        } else if (isVarArgs(signature)) {
+          matchedSignature = getOrCreateFunctionSignature(signature, className, errorReporter);
+          isVarArgs = true;
         }
       }
       if (matchedSignature == null) {
@@ -2287,13 +2295,33 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
         errorReporter.report(node.getFunctionNameLocation(), INCORRECT_ARG_STYLE);
         return;
       }
+      int totalParams = matchedSignature.parameterTypes().size();
+      int fixedParams = isVarArgs ? totalParams - 1 : totalParams;
       for (int i = 0; i < node.numParams(); ++i) {
-        SoyType paramType = matchedSignature.parameterTypes().get(i);
-        maybeCoerceType(node.getParam(i), paramType);
-        checkArgType(node.getParam(i), paramType, node);
+        if (i < fixedParams) {
+          SoyType paramType = matchedSignature.parameterTypes().get(i);
+          maybeCoerceType(node.getParam(i), paramType);
+          checkArgType(node.getParam(i), paramType, node);
+        } else if (isVarArgs) {
+          if (matchedSignature.parameterTypes().get(totalParams - 1) instanceof ListType) {
+            ListType varArgsType =
+                (ListType) matchedSignature.parameterTypes().get(totalParams - 1);
+            SoyType paramType = varArgsType.getElementType();
+            maybeCoerceType(node.getParam(fixedParams), paramType);
+            checkArgType(node.getParam(fixedParams), paramType, node);
+          } else {
+            errorReporter.report(node.getSourceLocation(), VAR_ARGS_NOT_LIST);
+          }
+        }
       }
+      node.setIsVarArgs(isVarArgs);
       node.setAllowedParamTypes(matchedSignature.parameterTypes());
       node.setType(matchedSignature.returnType());
+    }
+
+    private boolean isVarArgs(Signature signature) {
+      return signature.parameterTypes().length > 0
+          && signature.parameterTypes()[signature.parameterTypes().length - 1].endsWith("...");
     }
 
     private void visitKeysFunction(FunctionNode node) {
