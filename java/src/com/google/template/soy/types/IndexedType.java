@@ -81,9 +81,8 @@ public abstract class IndexedType extends ComputedType {
   }
 
   public String getPropertyName() {
-    SoyType baseType = getType().getEffectiveType();
     SoyType propType = getProperty().getEffectiveType();
-    if (baseType instanceof RecordType && propType instanceof LiteralType) {
+    if (propType instanceof LiteralType) {
       PrimitiveData literal = ((LiteralType) propType).literal();
       if (literal instanceof StringData) {
         return literal.stringValue();

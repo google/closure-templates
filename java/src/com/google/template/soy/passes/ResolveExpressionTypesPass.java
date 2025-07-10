@@ -24,13 +24,14 @@ import static com.google.common.collect.Iterables.getOnlyElement;
 import static com.google.template.soy.passes.CheckTemplateCallsPass.ARGUMENT_TYPE_MISMATCH;
 import static com.google.template.soy.passes.RuntimeTypeCoercion.maybeCoerceType;
 import static com.google.template.soy.types.SoyTypes.SAFE_PROTO_TO_SANITIZED_TYPE;
+import static com.google.template.soy.types.SoyTypes.excludeNull;
+import static com.google.template.soy.types.SoyTypes.excludeNullish;
+import static com.google.template.soy.types.SoyTypes.excludeUndefined;
 import static com.google.template.soy.types.SoyTypes.getMapKeysType;
 import static com.google.template.soy.types.SoyTypes.getMapValuesType;
 import static com.google.template.soy.types.SoyTypes.isNullOrUndefined;
 import static com.google.template.soy.types.SoyTypes.isNullish;
-import static com.google.template.soy.types.SoyTypes.tryRemoveNull;
-import static com.google.template.soy.types.SoyTypes.tryRemoveNullish;
-import static com.google.template.soy.types.SoyTypes.tryRemoveUndefined;
+import static com.google.template.soy.types.SoyTypes.tryExcludeNullish;
 import static java.util.Comparator.naturalOrder;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
@@ -542,7 +543,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
         if (headerVar instanceof TemplateStateVar) {
           allStateVars.add((TemplateStateVar) headerVar);
         }
-        if (headerVar.getTypeNode() != null && headerVar.type().isNullOrUndefined()) {
+        if (headerVar.getTypeNode() != null && SoyTypes.isNullOrUndefined(headerVar.type())) {
           errorReporter.report(headerVar.getTypeNode().sourceLocation(), EXPLICIT_NULL);
         }
         if (!headerVar.hasDefault()) {
@@ -680,7 +681,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
       if (rootNode.getRoot() instanceof FunctionNode) {
         FunctionNode fnNode = (FunctionNode) rootNode.getRoot();
         if (!fnNode.hasStaticName()) {
-          SoyType nameExprType = SoyTypes.tryRemoveNullish(fnNode.getNameExpr().getType());
+          SoyType nameExprType = excludeNullish(fnNode.getNameExpr().getType());
           if (nameExprType instanceof TemplateImportType || nameExprType instanceof TemplateType) {
             fnNode.setAllowedToInvokeAsFunction(true);
           }
@@ -776,7 +777,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
         errorReporter.report(
             switchExpr.getSourceLocation(), ILLEGAL_SWITCH_EXPRESSION_TYPE, switchExprType);
         exprTypeError = true;
-      } else if (tryRemoveNullish(switchExprType).getKind() == Kind.PROTO_ENUM) {
+      } else if (excludeNullish(switchExprType).isOfKind(Kind.PROTO_ENUM)) {
         // Allow int cases in proto switch.
         switchExprType = UnionType.of(switchExprType, IntType.getInstance());
       }
@@ -794,12 +795,14 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
             SoyType type = expr.getType();
             caseTypes.add(type);
             if (expr.getRoot().getKind() == ExprNode.Kind.NULL_NODE) {
-              switchExprNarrowedType = tryRemoveNull(switchExprNarrowedType);
+              switchExprNarrowedType = excludeNull(switchExprNarrowedType);
             } else if (expr.getRoot().getKind() == ExprNode.Kind.UNDEFINED_NODE) {
-              switchExprNarrowedType = tryRemoveUndefined(switchExprNarrowedType);
+              switchExprNarrowedType = excludeUndefined(switchExprNarrowedType);
             }
 
-            if (!exprTypeError && type.getKind() != Kind.UNKNOWN && !type.isNullOrUndefined()) {
+            if (!exprTypeError
+                && !type.isEffectivelyEqual(UnknownType.getInstance())
+                && !SoyTypes.isNullOrUndefined(type)) {
               // Type system has problems with nullability and proto values. So we have to allow
               // "case null" even if we don't think the type is nullable.
               if (!switchExprType.isAssignableFromLoose(type)) {
@@ -853,7 +856,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
       super.visitMsgPluralNode(node);
       SoyType exprType = node.getExpr().getType();
       if (exprType != UnknownType.getInstance() && !SoyTypes.isIntFloatOrNumber(exprType)) {
-        SoyType notNullable = tryRemoveNullish(exprType);
+        SoyType notNullable = excludeNullish(exprType);
         if (!notNullable.equals(exprType) && SoyTypes.isIntFloatOrNumber(notNullable)) {
           errorReporter.warn(node.getExpr().getSourceLocation(), PLURAL_EXPR_NULLABLE, exprType);
         } else {
@@ -877,7 +880,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
       SourceLocation location = variant.getSourceLocation();
       SoyType variantType = variant.getType();
       if (SoyTypes.isNullOrUndefined(variantType)
-          || !allowedVariantTypes.isAssignableFromStrict(tryRemoveNullish(variantType))) {
+          || !allowedVariantTypes.isAssignableFromStrict(excludeNullish(variantType))) {
         errorReporter.report(location, BAD_DELCALL_VARIANT_TYPE, variantType);
       }
 
@@ -1036,14 +1039,14 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
     private void finishAssertNonNullOpNode(AssertNonNullOpNode node) {
       ExprNode child = node.getChild(0);
       SoyType type = child.getType();
-      if (type.isNullOrUndefined()) {
+      if (SoyTypes.isNullOrUndefined(type)) {
         errorReporter.report(
             node.getSourceLocation(),
             CHECK_NOT_NULL_ON_COMPILE_TIME_NULL,
             "use the non-null assertion operator ('!')");
         node.setType(UnknownType.getInstance());
       } else {
-        node.setType(tryRemoveNullish(type));
+        node.setType(excludeNullish(type));
       }
     }
 
@@ -1099,7 +1102,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
             node.getListExpr().toSourceString(),
             listExprType);
         node.getListIterVar().setType(UnknownType.getInstance());
-      } else if (listExprType.getKind() == SoyType.Kind.UNKNOWN) {
+      } else if (listExprType.isEffectivelyEqual(UnknownType.getInstance())) {
         node.getListIterVar().setType(UnknownType.getInstance());
       } else {
         if (listExprType instanceof AbstractIterableType
@@ -1364,7 +1367,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
       SoyType type = nullSafeAccessNode.getDataAccess().getType();
       if (isNullish(nullSafeAccessNode.getBase().getType())
           && !hasNonNullAssertion(nullSafeAccessNode.getDataAccess())) {
-        type = SoyTypes.makeUndefinable(type);
+        type = SoyTypes.unionWithUndefined(type);
       }
       nullSafeAccessNode.setType(type);
     }
@@ -1472,10 +1475,10 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
     private void finishFieldAccessNode(FieldAccessNode node, boolean nullSafe) {
       SoyType baseType = node.getBaseExprChild().getType();
       if (nullSafe) {
-        baseType = tryRemoveNullish(baseType);
+        baseType = excludeNullish(baseType);
       }
 
-      SoyType nonNullType = tryRemoveNullish(baseType);
+      SoyType nonNullType = excludeNullish(baseType);
       SoySourceFunctionMethod fieldImpl = fieldRegistry.findField(node.getFieldName(), nonNullType);
       if (fieldImpl != null) {
         if (!nonNullType.equals(baseType)) {
@@ -1595,9 +1598,9 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
           node.setType(sourceMethod.getReturnType());
           ListType returnType = (ListType) baseType;
           while (maxDepth-- > 0) {
-            if (returnType.getElementType().getKind() == Kind.LIST) {
+            if (returnType.getElementType() instanceof ListType) {
               returnType = (ListType) returnType.getElementType();
-            } else if (returnType.getElementType().getKind() == Kind.UNION) {
+            } else if (returnType.getElementType() instanceof UnionType) {
               UnionType unionType = (UnionType) returnType.getElementType();
               if (unionType.isAssignableFromStrict(ListType.empty())) {
                 returnType = null;
@@ -1620,9 +1623,9 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
           if (node.getParam(0).getType() != null) {
             // Remove null from the arg to allow eg list<string>.includes(null|string). We can make
             // it work in TS by adding the `!` operator in Soy->Tsx.
-            SoyType argType = SoyTypes.tryRemoveNullish(node.getParam(0).getType());
+            SoyType argType = tryExcludeNullish(node.getParam(0).getType());
             if (!listElementType.isAssignableFromLoose(argType)
-                && !(SoyTypes.isNumericPrimitive(SoyTypes.tryRemoveNullish(listElementType))
+                && !(SoyTypes.isNumericPrimitive(excludeNullish(listElementType))
                     && SoyTypes.isNumericPrimitive(argType))) {
               errorReporter.report(
                   node.getParam(0).getSourceLocation(),
@@ -1771,7 +1774,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
     @Override
     protected void visitNegativeOpNode(NegativeOpNode node) {
       visitChildren(node);
-      SoyType childType = SoyTypes.tryRemoveNull(node.getChild(0).getType());
+      SoyType childType = SoyTypes.excludeNull(node.getChild(0).getType());
       if (SoyTypes.isNumericOrUnknown(childType)) {
         node.setType(childType);
       } else {
@@ -1831,10 +1834,10 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
     private void visitLongOnlyOpNode(AbstractOperatorNode node) {
       visitChildren(node);
       SoyType result = IntType.getInstance();
-      SoyType left = SoyTypes.tryRemoveNullish(node.getChild(0).getType());
-      SoyType right = SoyTypes.tryRemoveNullish(node.getChild(1).getType());
-      if ((left.getKind() != Kind.INT && left.getKind() != Kind.NUMBER)
-          || (right.getKind() != Kind.INT && right.getKind() != Kind.NUMBER)) {
+      SoyType left = excludeNullish(node.getChild(0).getType());
+      SoyType right = excludeNullish(node.getChild(1).getType());
+      if ((!left.isOfKind(Kind.INT) && !left.isOfKind(Kind.NUMBER))
+          || (!right.isOfKind(Kind.INT) && !right.isOfKind(Kind.NUMBER))) {
         errorReporter.report(
             node.getOperatorLocation(),
             INCOMPATIBLE_ARITHMETIC_OP,
@@ -1988,7 +1991,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
     }
 
     private boolean isNullishAttributes(SoyType type) {
-      return AttributesType.getInstance().isAssignableFromStrict(tryRemoveNullish(type));
+      return AttributesType.getInstance().isAssignableFromStrict(excludeNullish(type));
     }
 
     private void setTypeNullCoalesceNodeOrNode(AbstractOperatorNode node) {
@@ -1997,13 +2000,13 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
       if (node.getChild(1) instanceof StringNode
           && ((StringNode) node.getChild(1)).getValue().isEmpty()
           && isNullishAttributes(node.getChild(0).getType())) {
-        node.setType(tryRemoveNullish(node.getChild(0).getType()));
+        node.setType(excludeNullish(node.getChild(0).getType()));
       } else {
         SoyType resultType = node.getChild(1).getType();
         if (!isNullOrUndefined(node.getChild(0).getType())) {
           resultType =
               SoyTypes.computeLowestCommonType(
-                  typeRegistry, tryRemoveNullish(node.getChild(0).getType()), resultType);
+                  typeRegistry, excludeNullish(node.getChild(0).getType()), resultType);
         }
         node.setType(resultType);
       }
@@ -2135,7 +2138,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
     @Override
     protected void visitFunctionNode(FunctionNode node) {
       SoyType nameExprType =
-          node.hasStaticName() ? null : SoyTypes.tryRemoveNullish(node.getNameExpr().getType());
+          node.hasStaticName() ? null : excludeNullish(node.getNameExpr().getType());
       if (!node.hasStaticName()
           && !node.allowedToInvokeAsFunction()
           && (nameExprType instanceof TemplateImportType || nameExprType instanceof TemplateType)) {
@@ -2155,7 +2158,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
       visitChildren(node);
       if (!node.hasStaticName()) {
         visit(node.getNameExpr());
-        if (nameExprType.getKind() == Kind.TEMPLATE_TYPE) {
+        if (nameExprType instanceof TemplateImportType) {
           node.setType(
               SanitizedType.getTypeForContentKind(
                   ((TemplateImportType) nameExprType)
@@ -2163,7 +2166,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
                       .getContentKind()
                       .getSanitizedContentKind()));
           return;
-        } else if (nameExprType.getKind() == Kind.TEMPLATE) {
+        } else if (nameExprType instanceof TemplateType) {
           node.setType(
               SanitizedType.getTypeForContentKind(
                   ((TemplateType) nameExprType).getContentKind().getSanitizedContentKind()));
@@ -2300,7 +2303,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
         listType = ListType.empty();
       } else {
         SoyType listArg;
-        if (argType.getKind() == Kind.LEGACY_OBJECT_MAP) {
+        if (argType instanceof LegacyObjectMapType) {
           listArg = ((LegacyObjectMapType) argType).getKeyType(); // pretty much just string
         } else if (ListType.ANY_LIST.isAssignableFromStrict(argType)) {
           listArg = IntType.getInstance();
@@ -2457,7 +2460,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
 
         // Check that the arg type is not null and that it matches the expected field type.
         SoyType argType = expr.getType();
-        if (argType.isNullOrUndefined()) {
+        if (SoyTypes.isNullOrUndefined(argType)) {
           errorReporter.report(
               expr.getSourceLocation(), PROTO_NULL_ARG_TYPE, fieldName.identifier());
         }
@@ -2473,7 +2476,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
           }
         }
 
-        SoyType expectedType = SoyTypes.makeNullish(fieldType);
+        SoyType expectedType = SoyTypes.unionWithNullish(fieldType);
         if (!expectedType.isAssignableFromLoose(argType)) {
           argType = maybeCoerceType(expr, expectedType);
         }
@@ -2505,7 +2508,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
       visitChildren(node);
 
       SoyType existingType = node.getType();
-      if (existingType.getKind() == Kind.TEMPLATE_TYPE) {
+      if (existingType instanceof TemplateImportType) {
         TemplateType basicType = ((TemplateImportType) existingType).getBasicTemplateType();
         node.setType(
             Preconditions.checkNotNull(
@@ -2631,7 +2634,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
             for (SoyType unionMember : unionType.getMembers()) {
               // TODO:(b/246982549): Remove this if-statement, as is this means you can freely
               // dereference nullish types without the compiler complaining.
-              if (unionMember.isNullOrUndefined()) {
+              if (SoyTypes.isNullOrUndefined(unionMember)) {
                 continue;
               }
               SoyType fieldType = getFieldType(unionMember, fieldName, sourceLocation);
@@ -2662,7 +2665,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
       if (!methodRegistry.matchForNameAndBase(fieldName, baseType).isEmpty()) {
         errorReporter.report(sourceLocation, METHOD_REFERENCE);
       } else {
-        ImmutableSet<String> allFields = fieldRegistry.getAllFieldNames(tryRemoveNullish(baseType));
+        ImmutableSet<String> allFields = fieldRegistry.getAllFieldNames(excludeNullish(baseType));
         String didYouMean =
             allFields.isEmpty() ? "" : SoyErrors.getDidYouMeanMessage(allFields, fieldName);
         errorReporter.report(sourceLocation, NO_SUCH_FIELD, fieldName, baseType, didYouMean);
@@ -2720,7 +2723,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
             List<SoyType> itemTypes = new ArrayList<>(unionType.getMembers().size());
             for (SoyType unionMember : unionType.getMembers()) {
               // Skips null types for now.
-              if (unionMember.isNullOrUndefined()) {
+              if (SoyTypes.isNullOrUndefined(unionMember)) {
                 continue;
               }
               SoyType itemType =
@@ -2793,12 +2796,12 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
       switch (builtinFunction) {
         case CHECK_NOT_NULL:
           SoyType type = node.getParam(0).getType();
-          if (type.isNullOrUndefined()) {
+          if (SoyTypes.isNullOrUndefined(type)) {
             errorReporter.report(
                 node.getSourceLocation(), CHECK_NOT_NULL_ON_COMPILE_TIME_NULL, "call checkNotNull");
           } else {
             // Same type as its child but with nulls removed
-            node.setType(tryRemoveNullish(type));
+            node.setType(excludeNullish(type));
           }
           break;
         case IS_PRIMARY_MSG_IN_USE:
@@ -3272,7 +3275,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
 
     @Nullable
     public SoySourceFunctionMethod findField(String fieldName, SoyType baseType) {
-      Preconditions.checkArgument(baseType.isNullOrUndefined() || !isNullish(baseType));
+      Preconditions.checkArgument(SoyTypes.isNullOrUndefined(baseType) || !isNullish(baseType));
       return methodCache.getUnchecked(fieldName).stream()
           .filter(method -> method.appliesToBase(baseType))
           .findFirst()

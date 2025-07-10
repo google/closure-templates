@@ -171,6 +171,10 @@ final class MoreCallValidationsPass implements CompilerFileSetPass {
               return roots;
             })
         .flatMap(SoyTreeUtils::allNodes)
+        // Only report errors for template literal nodes, to avoid
+        // reporting errors multiple times (ie., once for everywhere
+        // the 'named' template type has propagated in the
+        // expression tree).
         .filter(
             exprNode ->
                 exprNode.getKind() == Kind.TEMPLATE_LITERAL_NODE
@@ -186,8 +190,8 @@ final class MoreCallValidationsPass implements CompilerFileSetPass {
                   return;
                 }
               }
-              SoyTypes.allTypes(templateNode.getType(), null)
-                  .filter(t -> t.getKind() == SoyType.Kind.TEMPLATE)
+              SoyTypes.expandUnions(templateNode.getType()).stream()
+                  .filter(TemplateType.class::isInstance)
                   .map(TemplateType.class::cast)
                   .filter(
                       templateType ->
@@ -195,11 +199,6 @@ final class MoreCallValidationsPass implements CompilerFileSetPass {
                               && !templateType.isStrictHtml())
                   .forEach(
                       templateType ->
-                          // Only report errors for template literal nodes, to avoid
-                          // reporting errors multiple times (ie., once for everywhere
-                          // the 'named' template type has propagated in the
-                          // expression tree).
-                          // TODO(b/180151169) Is this check necessary?
                           errorReporter.report(
                               templateNode.getSourceLocation(),
                               ONLY_STRICT_HTML_TEMPLATES_ALLOWED,
@@ -275,7 +274,7 @@ final class MoreCallValidationsPass implements CompilerFileSetPass {
           templateType.getParameters().stream()
               .filter(
                   p ->
-                      SoyTypes.makeNullish(SanitizedType.HtmlType.getInstance())
+                      SoyTypes.unionWithNullish(SanitizedType.HtmlType.getInstance())
                           .isAssignableFromStrict(p.getCheckedType()))
               .collect(toImmutableList());
       boolean childIsSlot = next instanceof HtmlOpenTagNode && ((HtmlOpenTagNode) next).isSlot();

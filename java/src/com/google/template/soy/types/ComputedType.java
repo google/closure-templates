@@ -22,4 +22,14 @@ abstract class ComputedType extends SoyType {
   final boolean doIsAssignableFromNonUnionType(SoyType srcType, AssignabilityPolicy policy) {
     return getEffectiveType().isAssignableFromInternal(srcType, policy);
   }
+
+  @Override
+  public boolean isOfKind(Kind kind) {
+    return getEffectiveType().isOfKind(kind);
+  }
+
+  @Override
+  public boolean isEffectivelyEqual(SoyType type) {
+    return this.getEffectiveType().isEffectivelyEqual(type);
+  }
 }

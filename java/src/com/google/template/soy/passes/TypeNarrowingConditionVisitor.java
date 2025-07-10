@@ -150,15 +150,15 @@ final class TypeNarrowingConditionVisitor {
         case NULLISH:
           return SoyTypes.isNullOrUndefined(type)
               ? NeverType.getInstance()
-              : SoyTypes.removeNullish(type);
+              : SoyTypes.excludeNullish(type);
         case NULL:
           return type.equals(NullType.getInstance())
               ? NeverType.getInstance()
-              : SoyTypes.removeNull(type);
+              : SoyTypes.excludeNull(type);
         case UNDEFINED:
           return type.equals(UndefinedType.getInstance())
               ? NeverType.getInstance()
-              : SoyTypes.removeUndefined(type);
+              : SoyTypes.excludeUndefined(type);
       }
       throw new AssertionError();
     }
@@ -167,7 +167,7 @@ final class TypeNarrowingConditionVisitor {
       switch (mode) {
         case NULLISH:
           return SoyTypes.isNullish(type)
-              ? SoyTypes.tryKeepNullish(type)
+              ? SoyTypes.extractNullish(type)
               : SoyTypes.NULL_OR_UNDEFINED;
         case NULL:
           return NullType.getInstance();
@@ -240,7 +240,7 @@ final class TypeNarrowingConditionVisitor {
       for (int i = 0; i < chain.size() - 1; i++) {
         ExprNode nullSafeBase = chain.get(i);
         chainConstraints.put(
-            exprEquivalence.wrap(nullSafeBase), SoyTypes.tryRemoveNullish(nullSafeBase.getType()));
+            exprEquivalence.wrap(nullSafeBase), SoyTypes.tryExcludeNullish(nullSafeBase.getType()));
       }
       if (!chain.isEmpty()) {
         // Narrow a.b.c to non null/undefined/nullish
@@ -254,7 +254,7 @@ final class TypeNarrowingConditionVisitor {
     @Override
     protected void visitExprNode(ExprNode node) {
       ExprEquivalence.Wrapper wrapped = exprEquivalence.wrap(node);
-      positiveTypeConstraints.put(wrapped, SoyTypes.tryRemoveNullish(node.getType()));
+      positiveTypeConstraints.put(wrapped, SoyTypes.tryExcludeNullish(node.getType()));
       // TODO(lukes): The 'negative' type constraint here is not optimal.  What we really know is
       // that the value of the expression is 'falsy' we could use that to inform later checks but
       // for now we just assume it has its normal type.
@@ -407,7 +407,7 @@ final class TypeNarrowingConditionVisitor {
       // Narrow [a, a.b, a.b.c]
       for (ExprNode nullSafeBase : node.asNullSafeBaseList()) {
         positiveTypeConstraints.put(
-            exprEquivalence.wrap(nullSafeBase), SoyTypes.tryRemoveNullish(nullSafeBase.getType()));
+            exprEquivalence.wrap(nullSafeBase), SoyTypes.tryExcludeNullish(nullSafeBase.getType()));
       }
     }
 
@@ -496,12 +496,12 @@ final class TypeNarrowingConditionVisitor {
               SoyType rhsType = right.get(key);
               SoyType lct = SoyTypes.computeLowestCommonType(typeRegistry, lhsType, rhsType);
               // Don't add |null or |undefined to a type due to an OR condition.
-              if (!lct.isNullOrUndefined()) {
+              if (!SoyTypes.isNullOrUndefined(lct)) {
                 if (!SoyTypes.isUndefinable(originalType)) {
-                  lct = SoyTypes.tryRemoveUndefined(lct);
+                  lct = SoyTypes.excludeUndefined(lct);
                 }
                 if (!SoyTypes.isNullable(originalType)) {
-                  lct = SoyTypes.tryRemoveNull(lct);
+                  lct = SoyTypes.excludeNull(lct);
                 }
               }
               // The intersection of two constraints is a *looser* constraint.

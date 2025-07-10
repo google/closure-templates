@@ -275,7 +275,7 @@ public abstract class TemplateType extends SoyType {
     public SoyType getCheckedType() {
       SoyType type = getType();
       if (!isRequired()) {
-        type = SoyTypes.makeUndefinable(type);
+        type = SoyTypes.unionWithUndefined(type);
       }
       return type;
     }
@@ -416,7 +416,7 @@ public abstract class TemplateType extends SoyType {
 
   @Override
   final boolean doIsAssignableFromNonUnionType(SoyType srcType, AssignabilityPolicy policy) {
-    if (srcType.getKind() != SoyType.Kind.TEMPLATE) {
+    if (!(srcType instanceof TemplateType)) {
       return false;
     }
 

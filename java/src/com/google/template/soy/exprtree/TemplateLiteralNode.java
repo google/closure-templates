@@ -41,7 +41,7 @@ public final class TemplateLiteralNode extends AbstractParentExprNode {
   public static TemplateLiteralNode forVarRef(VarRefNode varRef, SourceLocation sourceLocation) {
     TemplateLiteralNode node = new TemplateLiteralNode(sourceLocation);
     node.addChild(varRef);
-    if (varRef.hasType() && varRef.getType().getKind() == SoyType.Kind.TEMPLATE_TYPE) {
+    if (varRef.hasType() && varRef.getType().isOfKind(SoyType.Kind.TEMPLATE_TYPE)) {
       node.resolveTemplateName();
     }
     return node;
@@ -72,7 +72,7 @@ public final class TemplateLiteralNode extends AbstractParentExprNode {
     checkState(!isResolved(), "Template identifier has already been resolved.");
 
     SoyType type = getChild(0).getType();
-    if (type.getKind() == SoyType.Kind.TEMPLATE_TYPE) {
+    if (type instanceof TemplateImportType) {
       templateFqn = ((TemplateImportType) type).getName();
       this.type = type;
     } else {

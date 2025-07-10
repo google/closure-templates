@@ -225,7 +225,7 @@ public abstract class SoyType implements ErrorArg {
           type = effectiveType;
         }
       }
-      if (type.getKind() == Kind.UNION) {
+      if (type instanceof UnionType) {
         stack.addAll(((UnionType) type).getMembers());
         continue;
       }
@@ -251,14 +251,6 @@ public abstract class SoyType implements ErrorArg {
   @ForOverride
   boolean doIsAssignableFromNonUnionType(SoyType type) {
     throw new AbstractMethodError();
-  }
-
-  /**
-   * Returns true if this type has no non-nullish component, i.e. if it's null, undefined, or
-   * null|undefined.
-   */
-  public boolean isNullOrUndefined() {
-    return false;
   }
 
   /** The type represented in a fully parseable format. */
@@ -295,5 +287,13 @@ public abstract class SoyType implements ErrorArg {
    */
   public SoyType getEffectiveType() {
     return this;
+  }
+
+  public boolean isOfKind(Kind kind) {
+    return this.getKind() == kind;
+  }
+
+  public boolean isEffectivelyEqual(SoyType type) {
+    return this.equals(type.getEffectiveType());
   }
 }

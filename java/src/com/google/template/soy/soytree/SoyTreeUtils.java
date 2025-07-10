@@ -717,7 +717,7 @@ public final class SoyTreeUtils {
       }
       CallBasicNode callNode = (CallBasicNode) child;
       SoyType type = callNode.getCalleeExpr().getType();
-      if (type.getKind() == SoyType.Kind.TEMPLATE) {
+      if (type instanceof TemplateType) {
         SanitizedContentKind childKind =
             ((TemplateType) type).getContentKind().getSanitizedContentKind();
         if (kind == null) {

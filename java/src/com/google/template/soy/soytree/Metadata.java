@@ -132,9 +132,9 @@ public final class Metadata {
       if (calleeType == null) {
         return ImmutableList.of();
       }
-      if (calleeType.getKind() == SoyType.Kind.TEMPLATE) {
+      if (calleeType instanceof TemplateType) {
         return ImmutableList.of((TemplateType) calleeType);
-      } else if (calleeType.getKind() == SoyType.Kind.UNION) {
+      } else if (calleeType instanceof UnionType) {
         ImmutableList.Builder<TemplateType> signatures = ImmutableList.builder();
         for (SoyType member : ((UnionType) calleeType).getMembers()) {
           // Rely on CheckTemplateCallsPass to catch this with nice error messages.
@@ -142,7 +142,7 @@ public final class Metadata {
           signatures.add((TemplateType) member);
         }
         return signatures.build();
-      } else if (calleeType.getKind() == SoyType.Kind.UNKNOWN) {
+      } else if (calleeType.isEffectivelyEqual(UnknownType.getInstance())) {
         // We may end up with UNKNOWN here for external calls.
         return ImmutableList.of();
       } else {

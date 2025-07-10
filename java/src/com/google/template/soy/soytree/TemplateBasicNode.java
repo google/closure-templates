@@ -22,8 +22,10 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
+import com.google.template.soy.types.NumberType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypeRegistry;
+import com.google.template.soy.types.StringType;
 import com.google.template.soy.types.TemplateType;
 import com.google.template.soy.types.UndefinedType;
 import java.util.Optional;
@@ -139,10 +141,9 @@ public final class TemplateBasicNode extends TemplateNode {
   }
 
   private static boolean isValidVariantType(SoyType type) {
-    SoyType.Kind kind = type.getKind();
-    return kind == SoyType.Kind.NUMBER
-        || kind == SoyType.Kind.STRING
-        || kind == SoyType.Kind.PROTO_ENUM;
+    return type.isEffectivelyEqual(NumberType.getInstance())
+        || type.isEffectivelyEqual(StringType.getInstance())
+        || type.isOfKind(SoyType.Kind.PROTO_ENUM);
   }
 
   public void resolveUseVariantType(SoyTypeRegistry registry, ErrorReporter errorReporter) {

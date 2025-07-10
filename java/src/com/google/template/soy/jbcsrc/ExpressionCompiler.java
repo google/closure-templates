@@ -2177,7 +2177,7 @@ final class ExpressionCompiler {
       } else if (javaType.equals(Type.DOUBLE_TYPE)) {
         return soyExpression.coerceToDouble().unboxAsDouble();
       } else if (javaType.getSort() == Type.OBJECT) {
-        SoyType nonNullableType = SoyTypes.tryRemoveNullish(type);
+        SoyType nonNullableType = SoyTypes.excludeNullish(type);
         if (SoyTypes.isUnknownOrAny(nonNullableType)) {
           return soyExpression.boxWithSoyNullAsJavaNull();
         } else if (nonNullableType instanceof SoyProtoType) {

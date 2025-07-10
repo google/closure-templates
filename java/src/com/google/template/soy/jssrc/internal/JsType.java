@@ -532,7 +532,7 @@ public final class JsType implements CodeChunk.HasRequires {
               types.add(UNDEFINED_TYPE);
             }
             for (SoyType member : unionType.getMembers()) {
-              if (member.isNullOrUndefined()) {
+              if (SoyTypes.isNullOrUndefined(member)) {
                 continue; // handled above
               }
               JsType memberType = forRecursion.get(member);

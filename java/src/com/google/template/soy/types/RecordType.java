@@ -45,7 +45,7 @@ public abstract class RecordType extends SoyType {
     /** Returns the member type, but made nullable if the member is optional. */
     @Memoized
     public SoyType checkedType() {
-      return optional() ? SoyTypes.makeUndefinable(declaredType()) : declaredType();
+      return optional() ? SoyTypes.unionWithUndefined(declaredType()) : declaredType();
     }
   }
 

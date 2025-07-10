@@ -486,7 +486,7 @@ public class ExpressionCompilerTest {
     variables.put(
         "nullRecord",
         SoyExpression.forSoyValue(
-            SoyTypes.makeNullable(RecordType.of(ImmutableMap.of("a", StringType.getInstance()))),
+            SoyTypes.unionWithNull(RecordType.of(ImmutableMap.of("a", StringType.getInstance()))),
             soyNull()));
     assertExpression("$nullRecord.a").throwsException(NullPointerException.class);
     assertExpression("$nullRecord?.a").evaluatesTo(UndefinedData.INSTANCE);
@@ -496,7 +496,7 @@ public class ExpressionCompilerTest {
   public void testBuiltinFunctions() {
     variables.put("x", compileExpression("record(a: 1)").box());
     variables.put(
-        "y", SoyExpression.forSoyValue(SoyTypes.makeNullable(FloatType.getInstance()), soyNull()));
+        "y", SoyExpression.forSoyValue(SoyTypes.unionWithNull(FloatType.getInstance()), soyNull()));
     assertExpression("checkNotNull($x.a)").evaluatesTo(IntegerData.forValue(1));
     assertExpression("checkNotNull($y)").throwsException(NullPointerException.class);
   }

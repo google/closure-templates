@@ -371,7 +371,7 @@ final class ValidatorFactory extends JavaValueFactory {
 
     ImmutableSet<Class<?>> expectedClasses = null;
     GenericDescriptor expectedDescriptor = null;
-    type = SoyTypes.tryRemoveNullish(type);
+    type = SoyTypes.tryExcludeNullish(type);
     switch (type.getKind()) {
       case ANY:
       case UNKNOWN:

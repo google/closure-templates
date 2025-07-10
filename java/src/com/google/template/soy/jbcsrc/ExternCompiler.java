@@ -63,6 +63,7 @@ import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.types.FunctionType;
 import com.google.template.soy.types.FunctionType.Parameter;
 import com.google.template.soy.types.MapType;
+import com.google.template.soy.types.MessageType;
 import com.google.template.soy.types.SoyProtoEnumType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
@@ -319,7 +320,7 @@ public final class ExternCompiler {
    * implementation.
    */
   static SoyRuntimeType getRuntimeType(SoyType type) {
-    SoyType nonNullable = SoyTypes.tryRemoveNullish(type.getEffectiveType());
+    SoyType nonNullable = SoyTypes.excludeNullish(type.getEffectiveType());
     SoyRuntimeType runtimeType =
         SoyRuntimeType.getUnboxedType(nonNullable)
             .orElseGet(() -> SoyRuntimeType.getBoxedType(nonNullable));
@@ -436,12 +437,12 @@ public final class ExternCompiler {
       return JbcSrcExternRuntime.CONVERT_SOY_VALUE_TO_BIG_INTEGER.invoke(actualParam.box());
     }
 
-    SoyType nonNullableSoyType = SoyTypes.tryRemoveNullish(soyType);
+    SoyType nonNullableSoyType = SoyTypes.excludeNullish(soyType.getEffectiveType());
 
     // For protos, we need to unbox as Message & then cast.
-    if (nonNullableSoyType.getKind() == Kind.MESSAGE) {
+    if (nonNullableSoyType instanceof MessageType) {
       return actualParam.unboxAsMessageOrJavaNull(MESSAGE_TYPE);
-    } else if (nonNullableSoyType.getKind() == Kind.PROTO) {
+    } else if (nonNullableSoyType instanceof SoyProtoType) {
       return actualParam.unboxAsMessageOrJavaNull(
           ProtoUtils.messageRuntimeType(((SoyProtoType) nonNullableSoyType).getDescriptor())
               .type());
@@ -449,7 +450,7 @@ public final class ExternCompiler {
     // For protocol enums, we need to call forNumber on the type w/ the param (as casted to an int).
     // This is because Soy internally stores enums as ints. We know this is safe because we
     // already validated that the enum type matches the signature.
-    if (nonNullableSoyType.getKind() == Kind.PROTO_ENUM) {
+    if (nonNullableSoyType instanceof SoyProtoEnumType) {
       if (soyTypeBoxed) {
         return JbcSrcExternRuntime.SOY_VALUE_TO_ENUM
             .invoke(

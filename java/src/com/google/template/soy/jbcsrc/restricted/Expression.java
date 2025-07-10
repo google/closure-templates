@@ -772,7 +772,7 @@ public abstract class Expression extends BytecodeProducer {
   }
 
   private Optional<Expression> doCheckedSoyCast(SoyType type) {
-    type = SoyTypes.tryRemoveNullish(type);
+    type = SoyTypes.tryExcludeNullish(type);
     if (BytecodeUtils.isDefinitelyAssignableFrom(BytecodeUtils.SOY_VALUE_TYPE, resultType)) {
       if (isDefinitelyAssignableFrom(BytecodeUtils.NULLISH_DATA_TYPE, resultType)) {
         return Optional.empty();

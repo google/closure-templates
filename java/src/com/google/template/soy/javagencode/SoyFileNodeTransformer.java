@@ -402,7 +402,7 @@ public class SoyFileNodeTransformer {
         continue;
       }
 
-      if (SoyTypes.allTypesWithDeps(param.type(), null)
+      if (SoyTypes.allConcreteTypes(param.type(), null)
           .map(
               t -> {
                 if (t instanceof SoyProtoType) {

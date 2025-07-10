@@ -90,7 +90,7 @@ public interface TypeInterner {
    */
   default SoyType getOrCreateUnionType(Collection<SoyType> members) {
     SoyType type = UnionType.of(members);
-    if (type.getKind() == SoyType.Kind.UNION) {
+    if (type instanceof UnionType) {
       type = intern(type);
     }
     return type;
@@ -98,7 +98,7 @@ public interface TypeInterner {
 
   default SoyType getOrCreateIntersectionType(Collection<SoyType> members) {
     SoyType type = IntersectionType.of(members);
-    if (type.getKind() == SoyType.Kind.INTERSECTION) {
+    if (type instanceof IntersectionType) {
       type = intern(type);
     }
     return type;

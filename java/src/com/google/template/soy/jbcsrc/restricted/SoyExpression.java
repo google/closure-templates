@@ -816,11 +816,12 @@ public final class SoyExpression extends Expression {
 
     ListType asListType;
     SoyRuntimeType nonNullRuntimeType =
-        SoyRuntimeType.getBoxedType(SoyTypes.tryRemoveNullish(soyType()));
+        SoyRuntimeType.getBoxedType(SoyTypes.excludeNullish(soyType()));
     if (!SoyTypes.isNullOrUndefined(soyType()) && nonNullRuntimeType.isKnownIterable()) {
       asListType = nonNullRuntimeType.asListType();
     } else {
-      if (soyType().getKind() == Kind.UNKNOWN || soyType().isNullOrUndefined()) {
+      if (soyType().isEffectivelyEqual(UnknownType.getInstance())
+          || SoyTypes.isNullOrUndefined(soyType())) {
         asListType = ListType.of(UnknownType.getInstance());
       } else {
         // The type checker should have already rejected all of these
@@ -841,7 +842,7 @@ public final class SoyExpression extends Expression {
    * NullData or UndefinedData.
    */
   public Expression unboxAsMessageOrJavaNull(Type runtimeType) {
-    if (soyType().isNullOrUndefined()) {
+    if (SoyTypes.isNullOrUndefined(soyType())) {
       // If this is a null literal, return a Messaged-typed null literal.
       return BytecodeUtils.constantNull(runtimeType);
     }

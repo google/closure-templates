@@ -132,88 +132,73 @@ public final class SoyTypes {
     return NumberType.getInstance().isAssignableFromStrict(type);
   }
 
-  public static boolean bothOfKind(SoyType left, SoyType right, SoyType of) {
+  public static boolean bothAssignableFrom(SoyType left, SoyType right, SoyType of) {
     return of.isAssignableFromStrict(left) && of.isAssignableFromStrict(right);
   }
 
-  public static boolean eitherOfKind(SoyType left, SoyType right, SoyType of) {
+  public static boolean eitherAssignableFrom(SoyType left, SoyType right, SoyType of) {
     return of.isAssignableFromStrict(left) || of.isAssignableFromStrict(right);
   }
 
-  public static SoyType removeNull(SoyType type) {
+  public static SoyType excludeNull(SoyType type) {
     return modifyUnion(type, t -> t != NullType.getInstance());
   }
 
-  public static SoyType removeUndefined(SoyType type) {
+  public static SoyType excludeUndefined(SoyType type) {
     return modifyUnion(type, t -> t != UndefinedType.getInstance());
   }
 
-  public static SoyType removeNullish(SoyType type) {
+  public static SoyType excludeNullish(SoyType type) {
     return modifyUnion(type, t -> !NULLISH_KINDS.contains(t.getKind()));
   }
 
-  private static SoyType keepNullish(SoyType type) {
+  public static SoyType extractNullish(SoyType type) {
     return modifyUnion(type, t -> NULLISH_KINDS.contains(t.getKind()));
   }
 
   private static SoyType modifyUnion(SoyType type, Predicate<SoyType> filter) {
-    checkNotNull(type);
-    SoyType effective = type.getEffectiveType();
-    if (effective.getKind() == Kind.UNION) {
-      SoyType newUnion = ((UnionType) effective).filter(filter);
-      if (newUnion != effective) {
-        return newUnion;
-      }
-    }
-    return type;
-  }
-
-  /**
-   * You probably want to use {@link #tryRemoveNullish}.
-   *
-   * <p>If the type is nullable, makes it non-nullable. If the type is the null type, then it
-   * returns the null type.
-   */
-  public static SoyType tryRemoveNull(SoyType type) {
-    if (type == NullType.getInstance()) {
+    ImmutableSet<SoyType> members = recursivelyExpandUnions(type);
+    ImmutableSet<SoyType> filtered = members.stream().filter(filter).collect(toImmutableSet());
+    if (members.size() == filtered.size()) {
+      // No modification of type, so return the original with named types intact.
       return type;
     }
-    return removeNull(type);
+    return UnionType.of(filtered);
   }
 
-  public static SoyType tryRemoveUndefined(SoyType type) {
-    if (type == UndefinedType.getInstance()) {
-      return type;
-    }
-    return removeUndefined(type);
-  }
-
-  public static SoyType tryRemoveNullish(SoyType type) {
+  public static SoyType tryExcludeNullish(SoyType type) {
     if (isNullOrUndefined(type)) {
       return type;
     }
-    return removeNullish(type);
+    return excludeNullish(type);
   }
 
-  public static SoyType tryKeepNullish(SoyType type) {
-    if (isNullOrUndefined(type)) {
+  public static SoyType unionWithNullish(SoyType type) {
+    boolean nullable = isNullable(type);
+    boolean undefinable = isUndefinable(type);
+    if (nullable && undefinable) {
       return type;
     }
-    return keepNullish(type);
+    if (nullable) {
+      return UnionType.of(type, UndefinedType.getInstance());
+    } else if (undefinable) {
+      return UnionType.of(type, NullType.getInstance());
+    } else {
+      return UnionType.of(type, NullType.getInstance(), UndefinedType.getInstance());
+    }
   }
 
-  public static SoyType makeNullish(SoyType type) {
-    checkNotNull(type);
-    return UnionType.of(type, NullType.getInstance(), UndefinedType.getInstance());
-  }
-
-  public static SoyType makeNullable(SoyType type) {
-    checkNotNull(type);
+  public static SoyType unionWithNull(SoyType type) {
     return isNullable(type) ? type : UnionType.of(type, NullType.getInstance());
   }
 
+  public static SoyType unionWithUndefined(SoyType type) {
+    return isUndefinable(type) ? type : UnionType.of(type, UndefinedType.getInstance());
+  }
+
   public static boolean isUnknownOrAny(SoyType type) {
-    return type == UnknownType.getInstance() || type == AnyType.getInstance();
+    return type.isEffectivelyEqual(UnknownType.getInstance())
+        || type.isEffectivelyEqual(AnyType.getInstance());
   }
 
   public static boolean isNullable(SoyType type) {
@@ -224,10 +209,6 @@ public final class SoyTypes {
     return !isUnknownOrAny(type) && type.isAssignableFromStrict(UndefinedType.getInstance());
   }
 
-  public static SoyType makeUndefinable(SoyType type) {
-    return isUndefinable(type) ? type : UnionType.of(type, UndefinedType.getInstance());
-  }
-
   /** Returns true if the type is null, undefined, or a union containing one of those kinds. */
   public static boolean isNullish(SoyType type) {
     return isNullable(type) || isUndefinable(type);
@@ -235,7 +216,7 @@ public final class SoyTypes {
 
   /** Return true if value can't be nullish. taking "any" into account. */
   public static boolean isDefinitelyNonNullish(SoyType type) {
-    return !isNullish(type) && type.getKind() != Kind.UNKNOWN && type.getKind() != Kind.ANY;
+    return !isNullish(type) && !isUnknownOrAny(type);
   }
 
   /** Returns true if the type is null, undefined, or null|undefined. */
@@ -244,8 +225,7 @@ public final class SoyTypes {
   }
 
   public static boolean isNumericOrUnknown(SoyType type) {
-    return type.equals(UnknownType.getInstance())
-        || NumberType.getInstance().isAssignableFromStrict(type);
+    return type.isOfKind(Kind.UNKNOWN) || NumberType.getInstance().isAssignableFromStrict(type);
   }
 
   public static Optional<SoyType> computeStricterType(SoyType t0, SoyType t1) {
@@ -303,8 +283,8 @@ public final class SoyTypes {
    *     meaning a subtype of 'number' or unknown.
    */
   public static Optional<SoyType> computeLowestCommonTypeArithmetic(SoyType t0, SoyType t1) {
-    SoyType left = tryRemoveNull(t0);
-    SoyType right = tryRemoveNull(t1);
+    SoyType left = excludeNull(t0).getEffectiveType();
+    SoyType right = excludeNull(t1).getEffectiveType();
     // If either of the types isn't numeric or unknown, then this isn't valid for an arithmetic
     // operation.
     if (!isNumericOrUnknown(left) || !isNumericOrUnknown(right)) {
@@ -314,7 +294,7 @@ public final class SoyTypes {
     if (left.equals(right)) {
       return Optional.of(left);
     }
-    if (left.getKind() == Kind.UNKNOWN || right.getKind() == Kind.UNKNOWN) {
+    if (left.isOfKind(Kind.UNKNOWN) || right.isOfKind(Kind.UNKNOWN)) {
       return Optional.of(UnknownType.getInstance());
     }
 
@@ -363,12 +343,12 @@ public final class SoyTypes {
   public static SoyType getSoyTypeForBinaryOperator(
       SoyType t0, SoyType t1, SoyTypeBinaryOperator operator) {
     // None of the operators covered by SoyTypeBinaryOperator can evaluate to null/undefined.
-    SoyType left = tryRemoveNullish(t0.getEffectiveType()).getEffectiveType();
-    SoyType right = tryRemoveNullish(t1.getEffectiveType()).getEffectiveType();
-    if (left.getKind() == Kind.UNION) {
+    SoyType left = tryExcludeNullish(t0).getEffectiveType();
+    SoyType right = tryExcludeNullish(t1).getEffectiveType();
+    if (left instanceof UnionType) {
       return getSoyTypeFromUnionForBinaryOperator((UnionType) left, right, operator);
     }
-    if (right.getKind() == Kind.UNION) {
+    if (right instanceof UnionType) {
       // When we calculate the return type of a binary operator, it should always be commutative so
       // the order should not matter.
       return getSoyTypeFromUnionForBinaryOperator((UnionType) right, left, operator);
@@ -411,8 +391,7 @@ public final class SoyTypes {
    * argument.
    */
   public static boolean transitivelyContainsKind(SoyType type, Kind kind) {
-    return TreeStreams.breadthFirst(type, new SoyTypeSuccessorsFunction(null))
-        .anyMatch(t -> t.getKind() == kind);
+    return allLogicalTypes(type, null).anyMatch(t -> t.getKind() == kind);
   }
 
   public static boolean isSanitizedType(SoyType type) {
@@ -457,7 +436,7 @@ public final class SoyTypes {
       return NullType.getInstance();
     } else if (type instanceof UnionType) {
       if (isUndefinable(type)) {
-        return makeNullable(removeUndefined(type));
+        return unionWithNull(excludeUndefined(type));
       }
     }
     return type;
@@ -503,7 +482,7 @@ public final class SoyTypes {
       if (isAlwaysComparableKind(left) || isAlwaysComparableKind(right)) {
         return boolType;
       }
-      if (bothOfKind(left, right, ANY_PRIMITIVE)) {
+      if (bothAssignableFrom(left, right, ANY_PRIMITIVE)) {
         return boolType;
       }
       return left.equals(right) ? boolType : null;
@@ -544,10 +523,10 @@ public final class SoyTypes {
       if (isAlwaysComparableKind(left) || isAlwaysComparableKind(right)) {
         return boolType;
       }
-      if (bothOfKind(left, right, NumberType.getInstance())) {
+      if (bothAssignableFrom(left, right, NumberType.getInstance())) {
         return boolType;
       }
-      if (bothOfKind(left, right, STRINGISH)) {
+      if (bothAssignableFrom(left, right, STRINGISH)) {
         return boolType;
       }
       return null;
@@ -583,11 +562,11 @@ public final class SoyTypes {
       Optional<SoyType> arithmeticType = SoyTypes.computeLowestCommonTypeArithmetic(left, right);
       if (arithmeticType.isPresent()) {
         return arithmeticType.get();
-      } else if (eitherOfKind(left, right, ILLEGAL_OPERAND_KINDS_PLUS_OP)) {
+      } else if (eitherAssignableFrom(left, right, ILLEGAL_OPERAND_KINDS_PLUS_OP)) {
         // If any of the types is not allowed to be operands (for example, list and map), we return
         // null here. Returning null indicates a compilation error.
         return null;
-      } else if (eitherOfKind(left, right, STRINGISH)) {
+      } else if (eitherAssignableFrom(left, right, STRINGISH)) {
         // If any of these types can be coerced to string, returns string type. In this case plus
         // operation means string concat (instead of arithmetic operation).
         return StringType.getInstance();
@@ -613,20 +592,25 @@ public final class SoyTypes {
   }
 
   /**
-   * Returns an stream that traverses a soy type graph starting at {@code root} and following any
+   * Returns a stream that traverses a soy type graph starting at {@code root} and following any
    * union, list, map, record, or other composite type.
    *
    * <p>The optional type registry parameter is used for resolving VE types.
    */
-  public static Stream<? extends SoyType> allTypes(
+  public static Stream<? extends SoyType> allLogicalTypes(
       SoyType root, @Nullable SoyTypeRegistry registry) {
     return TreeStreams.breadthFirst(root, new SoyTypeSuccessorsFunction(registry));
   }
 
-  /** Like {@link #allTypes} but navigates to the effective types of INDEXED and NAMED. */
-  public static Stream<? extends SoyType> allTypesWithDeps(
+  /**
+   * A stream that does not contain computed types, and only contains the types used by the computed
+   * types. So instead of NAMED, this stream contains the alias value. And instead of OMIT, the
+   * stream contains the effective record type.
+   */
+  public static Stream<? extends SoyType> allConcreteTypes(
       SoyType root, @Nullable SoyTypeRegistry registry) {
-    return TreeStreams.breadthFirst(root, new SoyTypeDepsSuccessorsFunction(registry));
+    return TreeStreams.breadthFirst(root, new SoyTypeEffectiveSuccessorsFunction(registry))
+        .filter(t -> !(t instanceof ComputedType));
   }
 
   /**
@@ -746,26 +730,39 @@ public final class SoyTypes {
   }
 
   /** Implementation of SuccessorsFunction that traverses a graph rooted at a SoyType. */
-  private static class SoyTypeDepsSuccessorsFunction extends SoyTypeSuccessorsFunction {
+  private static class SoyTypeEffectiveSuccessorsFunction extends SoyTypeSuccessorsFunction {
 
-    public SoyTypeDepsSuccessorsFunction(@Nullable SoyTypeRegistry typeRegistry) {
+    public SoyTypeEffectiveSuccessorsFunction(@Nullable SoyTypeRegistry typeRegistry) {
       super(typeRegistry);
     }
 
     @Override
     public Iterable<? extends SoyType> apply(SoyType type) {
-      switch (type.getKind()) {
-        case INDEXED:
-        case NAMED:
-          return ImmutableList.of(type.getEffectiveType());
-        default:
-          return super.apply(type);
+      if (type instanceof ComputedType) {
+        return ImmutableList.of(type.getEffectiveType());
       }
+      return super.apply(type);
     }
   }
 
+  private static ImmutableSet<SoyType> recursivelyExpandUnions(SoyType root) {
+    return TreeStreams.breadthFirst(
+            root,
+            type -> {
+              if (type instanceof UnionType) {
+                return ((UnionType) type).getMembers();
+              } else if (type instanceof NamedType || type instanceof IndexedType) {
+                return ImmutableList.of(type.getEffectiveType());
+              }
+              return ImmutableList.of();
+            })
+        .filter(
+            t -> !(t instanceof UnionType || t instanceof NamedType || t instanceof IndexedType))
+        .collect(ImmutableSet.toImmutableSet());
+  }
+
   public static boolean hasProtoDep(SoyType type) {
-    return SoyTypes.allTypes(type, null)
+    return SoyTypes.allConcreteTypes(type, null)
         .anyMatch(t -> t.getKind() == Kind.PROTO || t.getKind() == Kind.PROTO_ENUM);
   }
 
@@ -811,6 +808,7 @@ public final class SoyTypes {
   }
 
   public static boolean isValidInstanceOfOperand(SoyType type) {
+    type = type.getEffectiveType();
     switch (type.getKind()) {
       case STRING:
       case BOOL:

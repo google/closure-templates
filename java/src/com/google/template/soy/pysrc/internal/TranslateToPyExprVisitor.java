@@ -422,7 +422,7 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
       return genCodeForMethodCall(methodCall, base);
     } else {
       ItemAccessNode itemAccess = (ItemAccessNode) dataAccess;
-      SoyType baseType = SoyTypes.tryRemoveNullish(itemAccess.getBaseExprChild().getType());
+      SoyType baseType = SoyTypes.excludeNullish(itemAccess.getBaseExprChild().getType());
       PyExpr keyPyExpr = visit(itemAccess.getKeyExprChild());
       if (ListType.ANY_LIST.isAssignableFromStrict(baseType)) {
         return genCodeForKeyAccess(base, keyPyExpr, NotFoundBehavior.returnNone());
@@ -837,7 +837,7 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
         return ".ERROR";
       }
     }
-    if (baseType != null && baseType.getKind() == SoyType.Kind.PROTO) {
+    if (baseType != null && baseType.isOfKind(SoyType.Kind.PROTO)) {
       errorReporter.report(node.getSourceLocation(), PROTO_ACCESS_NOT_SUPPORTED);
       return ".ERROR";
     }

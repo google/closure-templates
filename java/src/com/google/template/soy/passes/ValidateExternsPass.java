@@ -424,8 +424,7 @@ class ValidateExternsPass implements CompilerFilePass {
       return false;
     }
 
-    soyType =
-        preserveUndefined ? SoyTypes.tryRemoveNull(soyType) : SoyTypes.tryRemoveNullish(soyType);
+    soyType = preserveUndefined ? SoyTypes.excludeNull(soyType) : SoyTypes.excludeNullish(soyType);
     javaType = Primitives.wrap(javaType);
     switch (soyType.getKind()) {
       case INT:
@@ -583,7 +582,7 @@ class ValidateExternsPass implements CompilerFilePass {
   }
 
   private static boolean protoTypesAreCompatible(String javaType, SoyType soyType) {
-    soyType = SoyTypes.tryRemoveNullish(soyType);
+    soyType = SoyTypes.excludeNullish(soyType);
     switch (soyType.getKind()) {
       case PROTO:
         SoyProtoType protoType = (SoyProtoType) soyType;

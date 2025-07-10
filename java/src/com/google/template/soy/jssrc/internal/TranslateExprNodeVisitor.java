@@ -148,7 +148,6 @@ import com.google.template.soy.types.MapType;
 import com.google.template.soy.types.NumberType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
-import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.StringType;
 import com.google.template.soy.types.UnionType;
@@ -372,7 +371,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
             .soyToJsVariableMappings()
             .put(node.getIndexVar(), id(indexVarTranslation));
       }
-      SoyType listType = SoyTypes.tryRemoveNullish(node.getListExpr().getType());
+      SoyType listType = SoyTypes.excludeNullish(node.getListExpr().getType());
       // elementType can be unknown if it is the special EMPTY_LIST or if it isn't a known list
       // type.
       SoyType elementType =
@@ -650,7 +649,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
         fieldName,
         sourceLocation,
         type -> {
-          if (type.getKind() == SoyType.Kind.PROTO) {
+          if (type instanceof SoyProtoType) {
             SoyProtoType protoType = (SoyProtoType) type;
             FieldDescriptor desc = protoType.getFieldDescriptor(fieldName);
             Preconditions.checkNotNull(
@@ -685,7 +684,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
         case GET_EXTENSION:
           // Nullability has already been checked, but nonnull assertion operators are removed by
           // so the type may still appear nullable, in which case we can safely remove it.
-          SoyProtoType protoBaseType = (SoyProtoType) SoyTypes.tryRemoveNullish(baseType);
+          SoyProtoType protoBaseType = (SoyProtoType) SoyTypes.excludeNullish(baseType);
           String extName = BuiltinMethod.getProtoExtensionIdFromMethodCall(methodCallNode);
           FieldDescriptor descriptor = protoBaseType.getFieldDescriptor(extName);
           return base.dotAccess(
@@ -781,13 +780,13 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
       String fieldName,
       SourceLocation sourceLocation,
       Function<SoyType, FieldAccess> memberGenerator) {
-    if (baseType.isNullOrUndefined()) {
+    if (SoyTypes.isNullOrUndefined(baseType)) {
       // This is a special edge case since the loop below would be a no-op.
       return memberGenerator.apply(baseType);
     }
     FieldAccess fieldAccess = null;
     for (SoyType type : SoyTypes.expandUnions(baseType)) {
-      if (type.isNullOrUndefined()) {
+      if (SoyTypes.isNullOrUndefined(type)) {
         continue;
       }
       FieldAccess fieldAccessForType = memberGenerator.apply(type);
@@ -879,7 +878,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
     checkNotNull(chunk);
     // TODO(lukes): we can have smarter logic here,  most types have trivial boolean coercions
     // we only need to be careful about ?,any and the sanitized types
-    if (force && type.getKind() != Kind.BOOL) {
+    if (force && !type.isEffectivelyEqual(BoolType.getInstance())) {
       return SOY_COERCE_TO_BOOLEAN.call(chunk);
     }
     return chunk;
@@ -960,7 +959,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
 
     for (ExprNode c : node.getChildren()) {
       SoyType type = c.getType();
-      if (type.isNullOrUndefined()) {
+      if (SoyTypes.isNullOrUndefined(type)) {
         // If either operand is null always use ==.
         neverSoyEquals = true;
       } else if (!CAN_USE_EQUALS.isAssignableFromStrict(type)) {

@@ -110,8 +110,8 @@ public final class JavaTypeUtils {
       case ITERABLE:
       case SET:
       case LIST:
-        SoyType elementType = ((AbstractIterableType) soyType).getElementType();
-        if (elementType.getKind() == Kind.RECORD) {
+        SoyType elementType = ((AbstractIterableType) soyType).getElementType().getEffectiveType();
+        if (elementType instanceof RecordType) {
           // Hacky handling of list<record>. Probably less code than modifying ListJavaType to
           // handle RecordJavaType element but should consider that alternative.
           types = trySimpleRecordType((RecordType) elementType, /* list= */ true, skipSoyTypes);
@@ -206,8 +206,9 @@ public final class JavaTypeUtils {
     }
 
     // No records of records.
-    if (SoyTypes.allTypes(recordType, null)
-        .anyMatch(t -> t.getKind() == Kind.RECORD && t != recordType)) {
+    if (SoyTypes.allConcreteTypes(recordType, null)
+        .skip(/* skip root record */ 1)
+        .anyMatch(t -> t.isOfKind(Kind.RECORD))) {
       return ImmutableList.of();
     }
 
@@ -228,15 +229,8 @@ public final class JavaTypeUtils {
    * against whether a template is fully handled by this generated API.
    */
   public static boolean isJavaIncompatible(SoyType type) {
-    switch (type.getKind()) {
-      case UNION:
-        return ((UnionType) type).getMembers().stream().anyMatch(JavaTypeUtils::isJavaIncompatible);
-      case VE:
-      case VE_DATA:
-        return true;
-      default:
-        return false;
-    }
+    return SoyTypes.allConcreteTypes(type, null)
+        .anyMatch(t -> t.isOfKind(Kind.VE) || t.isOfKind(Kind.VE_DATA));
   }
 
   public static Optional<SoyType> upcastTypesForIndirectParams(Set<SoyType> allTypes) {
@@ -253,9 +247,9 @@ public final class JavaTypeUtils {
     if (allTypes.size() == 2) {
       Iterator<SoyType> i = allTypes.iterator();
       SoyType first = i.next();
-      SoyType firstNotNullish = SoyTypes.tryRemoveNullish(first);
+      SoyType firstNotNullish = SoyTypes.excludeNullish(first);
       SoyType second = i.next();
-      SoyType secondNotNullish = SoyTypes.tryRemoveNullish(second);
+      SoyType secondNotNullish = SoyTypes.excludeNullish(second);
       if (firstNotNullish.equals(secondNotNullish)) {
         return Optional.of(UnionType.of(first, second));
       }
@@ -278,7 +272,7 @@ public final class JavaTypeUtils {
   private static ImmutableList<JavaType> convertSoyUnionTypeToJavaTypes(
       UnionType unionType, Set<SoyType.Kind> skipSoyTypes) {
     if (SoyTypes.isNullish(unionType)
-        && SoyTypes.tryRemoveNullish(unionType).equals(SoyTypes.INT_OR_FLOAT)) {
+        && SoyTypes.excludeNullish(unionType).equals(SoyTypes.INT_OR_FLOAT)) {
       return ImmutableList.of(SimpleJavaType.NUMBER.asNullable());
     }
 
@@ -288,12 +282,12 @@ public final class JavaTypeUtils {
 
     // Figure out if the union contains the {@link NullType}, which tells us if the param setters
     // should be nullable.
-    boolean unionAllowsNull = unionType.getMembers().stream().anyMatch(SoyType::isNullOrUndefined);
+    boolean unionAllowsNull = unionType.getMembers().stream().anyMatch(SoyTypes::isNullOrUndefined);
 
     // Collect a list of the Java types for each of the union member types.
     ImmutableList.Builder<JavaType> javaTypeListBuilder = new ImmutableList.Builder<>();
     for (SoyType soyUnionMemberType : unionType.getMembers()) {
-      if (soyUnionMemberType.isNullOrUndefined()) {
+      if (SoyTypes.isNullOrUndefined(soyUnionMemberType)) {
         continue;
       }
       ImmutableList<JavaType> javaTypesForUnionMember =

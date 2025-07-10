@@ -123,7 +123,7 @@ public abstract class IntersectionType extends SoyType {
         }
         boolean optional = SoyTypes.isUndefinable(mergedType);
         if (optional) {
-          mergedType = SoyTypes.removeUndefined(mergedType);
+          mergedType = SoyTypes.excludeUndefined(mergedType);
         }
         merged = RecordType.memberOf(list.get(0).name(), optional, mergedType);
       }

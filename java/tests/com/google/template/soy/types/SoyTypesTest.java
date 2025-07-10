@@ -19,16 +19,16 @@ package com.google.template.soy.types;
 import static com.google.common.base.Strings.lenientFormat;
 import static com.google.common.truth.Fact.simpleFact;
 import static com.google.common.truth.Truth.assertThat;
-import static com.google.template.soy.types.SoyTypes.makeNullable;
+import static com.google.template.soy.types.SoyTypes.unionWithNull;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import com.google.common.truth.FailureMetadata;
 import com.google.common.truth.Subject;
 import com.google.common.truth.Truth;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.internal.SanitizedContentKind;
-import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.soyparse.SoyFileParser;
 import com.google.template.soy.types.SanitizedType.ElementType;
@@ -37,6 +37,8 @@ import com.google.template.soy.types.SanitizedType.UriType;
 import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.ast.TypeNode;
 import com.google.template.soy.types.ast.TypeNodeConverter;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 import javax.annotation.Nullable;
 import org.junit.Test;
@@ -359,37 +361,13 @@ public class SoyTypesTest {
 
   @Test
   public void testNamed() {
-    SoyTypeRegistry baseRegistry = SoyTypeRegistryBuilder.create();
-    SoyType stringAlias = NamedType.create("StringAlias", NS, StringType.getInstance());
-    SoyType intAlias = NamedType.create("IntAlias", NS, IntType.getInstance());
-    SoyType unionOfAliases =
-        NamedType.create("UnionOfAliases", NS, UnionType.of(stringAlias, intAlias));
-    SoyType anotherUnion =
-        NamedType.create("AnotherUnion", NS, UnionType.of(unionOfAliases, BoolType.getInstance()));
-
     SoyTypeRegistry registry =
-        new DelegatingSoyTypeRegistry(baseRegistry) {
-          private final ImmutableMap<String, SoyType> namedTypes =
-              ImmutableMap.of(
-                  "StringAlias",
-                  stringAlias,
-                  "IntAlias",
-                  intAlias,
-                  "UnionOfAliases",
-                  unionOfAliases,
-                  "AnotherUnion",
-                  anotherUnion,
-                  "BoolOrNumber",
-                  NamedType.create("BoolOrNumber", NS, parseType("bool|int|float", baseRegistry)));
-
-          @Override
-          public SoyType getType(String typeName) {
-            if (namedTypes.containsKey(typeName)) {
-              return namedTypes.get(typeName);
-            }
-            return super.getType(typeName);
-          }
-        };
+        new TestTypeRegistry()
+            .addNamed("StringAlias", "string")
+            .addNamed("IntAlias", "int")
+            .addNamed("UnionOfAliases", "StringAlias|IntAlias")
+            .addNamed("AnotherUnion", "UnionOfAliases|bool")
+            .addNamed("BoolOrNumber", "bool|int|float");
 
     assertThatSoyType("StringAlias", registry).isEqualTo("StringAlias");
     assertThatSoyType("StringAlias", registry).isNotEqualTo("IntAlias");
@@ -424,27 +402,10 @@ public class SoyTypesTest {
 
   @Test
   public void testIndexed() {
-    SoyTypeRegistry baseRegistry = SoyTypeRegistryBuilder.create();
-    SoyType stringAlias = NamedType.create("StringAlias", NS, StringType.getInstance());
-    SoyType rec1 =
-        NamedType.create(
-            "Rec1",
-            NS,
-            parseType("[a: string, b: float|int, c: bool, d: string|bool]", baseRegistry));
-
     SoyTypeRegistry registry =
-        new DelegatingSoyTypeRegistry(baseRegistry) {
-          private final ImmutableMap<String, SoyType> namedTypes =
-              ImmutableMap.of("StringAlias", stringAlias, "Rec1", rec1);
-
-          @Override
-          public SoyType getType(String typeName) {
-            if (namedTypes.containsKey(typeName)) {
-              return namedTypes.get(typeName);
-            }
-            return super.getType(typeName);
-          }
-        };
+        new TestTypeRegistry()
+            .addNamed("StringAlias", "string")
+            .addNamed("Rec1", "[a: string, b: float|int, c: bool, d: string|bool]");
 
     assertThatSoyType("Rec1['a']", registry).isAssignableFromStrict("string");
     assertThatSoyType("string", registry).isAssignableFromStrict("Rec1['a']");
@@ -460,33 +421,10 @@ public class SoyTypesTest {
 
   @Test
   public void testPickAndOmit() {
-    SoyTypeRegistry baseRegistry = SoyTypeRegistryBuilder.create();
-    SoyType propList =
-        NamedType.create(
-            "PropList",
-            NS,
-            UnionType.of(
-                LiteralType.create(StringData.forValue("a")),
-                LiteralType.create(StringData.forValue("c"))));
-    SoyType rec1 =
-        NamedType.create(
-            "Rec1",
-            NS,
-            parseType("[a: string, b: float|int, c: bool, d: string|bool]", baseRegistry));
-
     SoyTypeRegistry registry =
-        new DelegatingSoyTypeRegistry(baseRegistry) {
-          private final ImmutableMap<String, SoyType> namedTypes =
-              ImmutableMap.of("PropList", propList, "Rec1", rec1);
-
-          @Override
-          public SoyType getType(String typeName) {
-            if (namedTypes.containsKey(typeName)) {
-              return namedTypes.get(typeName);
-            }
-            return super.getType(typeName);
-          }
-        };
+        new TestTypeRegistry()
+            .addNamed("PropList", "'a' | 'c'")
+            .addNamed("Rec1", "[a: string, b: float|int, c: bool, d: string|bool]");
 
     assertThatSoyType("Pick<Rec1, 'a'>", registry).isEffectivelyEqualTo("[a: string]");
     assertThatSoyType("Pick<Rec1, 'a' | 'b'>", registry)
@@ -503,6 +441,26 @@ public class SoyTypesTest {
 
     // should be effectively never
     assertThatSoyType("Omit<Rec1, string>", registry).isNotAssignableFromStrict("[]");
+  }
+
+  @Test
+  public void testNestedUnions() {
+    SoyTypeRegistry registry =
+        new TestTypeRegistry()
+            .addNamed("U1", "string | number")
+            .addNamed("U2", "U1 | bool")
+            .addNamed("U3", "U2 | null")
+            .addNamed("U4", "U3 | undefined")
+            .addNamed("U5", "U4 | html");
+
+    SoyType nestedUnion = registry.getType("U5");
+    assertThat(SoyTypes.isNullable(nestedUnion)).isTrue();
+    assertThat(SoyTypes.isUndefinable(nestedUnion)).isTrue();
+    assertThat(SoyTypes.isNullish(nestedUnion)).isTrue();
+    assertThat(SoyTypes.isNullOrUndefined(nestedUnion)).isFalse();
+
+    SoyType nonNull = SoyTypes.excludeNullish(nestedUnion);
+    assertThatSoyType(nonNull).isEffectivelyEqualTo("string | number | bool | html");
   }
 
   @Test
@@ -661,23 +619,29 @@ public class SoyTypesTest {
 
   @Test
   public void testBothOfKind() {
-    assertThat(SoyTypes.bothOfKind(INT_TYPE, INT_TYPE, IntType.getInstance())).isTrue();
-    assertThat(SoyTypes.bothOfKind(INT_TYPE, INT_TYPE, NumberType.getInstance())).isTrue();
-    assertThat(SoyTypes.bothOfKind(INT_TYPE, FLOAT_TYPE, NumberType.getInstance())).isTrue();
-    assertThat(SoyTypes.bothOfKind(INT_TYPE, FLOAT_TYPE, NumberType.getInstance())).isTrue();
-    assertThat(SoyTypes.bothOfKind(INT_OR_FLOAT, FLOAT_TYPE, NumberType.getInstance())).isTrue();
-    assertThat(SoyTypes.bothOfKind(INT_OR_FLOAT, FLOAT_TYPE, NumberType.getInstance())).isTrue();
+    assertThat(SoyTypes.bothAssignableFrom(INT_TYPE, INT_TYPE, IntType.getInstance())).isTrue();
+    assertThat(SoyTypes.bothAssignableFrom(INT_TYPE, INT_TYPE, NumberType.getInstance())).isTrue();
+    assertThat(SoyTypes.bothAssignableFrom(INT_TYPE, FLOAT_TYPE, NumberType.getInstance()))
+        .isTrue();
+    assertThat(SoyTypes.bothAssignableFrom(INT_TYPE, FLOAT_TYPE, NumberType.getInstance()))
+        .isTrue();
+    assertThat(SoyTypes.bothAssignableFrom(INT_OR_FLOAT, FLOAT_TYPE, NumberType.getInstance()))
+        .isTrue();
+    assertThat(SoyTypes.bothAssignableFrom(INT_OR_FLOAT, FLOAT_TYPE, NumberType.getInstance()))
+        .isTrue();
 
-    assertThat(SoyTypes.bothOfKind(INT_TYPE, FLOAT_TYPE, IntType.getInstance())).isFalse();
-    assertThat(SoyTypes.bothOfKind(INT_OR_FLOAT, INT_TYPE, IntType.getInstance())).isFalse();
-    assertThat(SoyTypes.bothOfKind(STRING_TYPE, INT_OR_FLOAT, NumberType.getInstance())).isFalse();
+    assertThat(SoyTypes.bothAssignableFrom(INT_TYPE, FLOAT_TYPE, IntType.getInstance())).isFalse();
+    assertThat(SoyTypes.bothAssignableFrom(INT_OR_FLOAT, INT_TYPE, IntType.getInstance()))
+        .isFalse();
+    assertThat(SoyTypes.bothAssignableFrom(STRING_TYPE, INT_OR_FLOAT, NumberType.getInstance()))
+        .isFalse();
   }
 
   @Test
   public void testComputeStricterType() {
     assertThat(SoyTypes.computeStricterType(INT_TYPE, ANY_TYPE)).hasValue(INT_TYPE);
     assertThat(SoyTypes.computeStricterType(INT_OR_FLOAT, INT_TYPE)).hasValue(INT_TYPE);
-    assertThat(SoyTypes.computeStricterType(makeNullable(STRING_TYPE), STRING_TYPE))
+    assertThat(SoyTypes.computeStricterType(unionWithNull(STRING_TYPE), STRING_TYPE))
         .hasValue(STRING_TYPE);
     assertThat(SoyTypes.computeStricterType(INT_TYPE, STRING_TYPE)).isEmpty();
   }
@@ -1127,16 +1091,19 @@ public class SoyTypesTest {
 
   @Test
   public void testNullability() {
-    assertThat(SoyTypes.tryRemoveNull(NULL_TYPE)).isEqualTo(NULL_TYPE);
-    assertThat(SoyTypes.tryRemoveNull(UnionType.of(STRING_TYPE, NULL_TYPE))).isEqualTo(STRING_TYPE);
+    assertThat(SoyTypes.excludeNull(NULL_TYPE)).isEqualTo(NeverType.getInstance());
+    assertThat(SoyTypes.excludeNull(UnionType.of(STRING_TYPE, NULL_TYPE))).isEqualTo(STRING_TYPE);
 
-    assertThat(SoyTypes.tryRemoveNullish(NULL_TYPE)).isEqualTo(NULL_TYPE);
-    assertThat(SoyTypes.tryRemoveNullish(UnionType.of(STRING_TYPE, NULL_TYPE)))
+    assertThat(SoyTypes.tryExcludeNullish(NULL_TYPE)).isEqualTo(NULL_TYPE);
+    assertThat(SoyTypes.tryExcludeNullish(UnionType.of(STRING_TYPE, NULL_TYPE)))
         .isEqualTo(STRING_TYPE);
-    assertThat(SoyTypes.tryRemoveNullish(UnionType.of(STRING_TYPE, UNDEFINED_TYPE)))
+    assertThat(SoyTypes.tryExcludeNullish(UnionType.of(STRING_TYPE, UNDEFINED_TYPE)))
         .isEqualTo(STRING_TYPE);
-    assertThat(SoyTypes.tryRemoveNullish(UnionType.of(STRING_TYPE, NULL_TYPE, UNDEFINED_TYPE)))
+    assertThat(SoyTypes.tryExcludeNullish(UnionType.of(STRING_TYPE, NULL_TYPE, UNDEFINED_TYPE)))
         .isEqualTo(STRING_TYPE);
+
+    assertThat(SoyTypes.excludeUndefined(UnionType.of(UNDEFINED_TYPE, NUMBER_TYPE)))
+        .isEqualTo(NUMBER_TYPE);
   }
 
   static SoyTypeSubject assertThatSoyType(String typeString, SoyTypeRegistry registry) {
@@ -1145,30 +1112,52 @@ public class SoyTypesTest {
         .that(typeString);
   }
 
+  static SoyTypeSubject assertThatSoyType(SoyType type) {
+    return Truth.<SoyTypeSubject, SoyType>assertAbout(
+            (meta, subject) -> new SoyTypeSubject(meta, subject, SoyTypeRegistryBuilder.create()))
+        .that(type);
+  }
+
   static SoyTypeSubject assertThatSoyType(String typeString) {
     return assertThatSoyType(typeString, SoyTypeRegistryBuilder.create());
   }
 
   static final class SoyTypeSubject extends Subject {
     private final String actual;
+    private final SoyType actualType;
     private final SoyTypeRegistry registry;
 
     SoyTypeSubject(FailureMetadata metadata, String actual, SoyTypeRegistry registry) {
       super(metadata, actual);
       this.actual = actual;
+      this.actualType = null;
       this.registry = registry;
     }
 
+    SoyTypeSubject(FailureMetadata metadata, SoyType actual, SoyTypeRegistry registry) {
+      super(metadata, actual);
+      this.actual = null;
+      this.actualType = actual;
+      this.registry = registry;
+    }
+
+    private SoyType getActualType() {
+      return actualType != null ? actualType : parseType(actual);
+    }
+
     void isAssignableFromLoose(String other) {
-      SoyType leftType = parseType(actual);
-      SoyType rightType = parseType(other);
+      isAssignableFromLoose(parseType(other));
+    }
+
+    void isAssignableFromLoose(SoyType rightType) {
+      SoyType leftType = getActualType();
       if (!leftType.isAssignableFromLoose(rightType)) {
         failWithActual("expected to be assignable from", formatType(rightType));
       }
     }
 
     void isNotAssignableFromLoose(String other) {
-      SoyType leftType = parseType(actual);
+      SoyType leftType = getActualType();
       SoyType rightType = parseType(other);
       if (leftType.isAssignableFromLoose(rightType)) {
         failWithActual("expected not to be assignable from", formatType(rightType));
@@ -1176,15 +1165,18 @@ public class SoyTypesTest {
     }
 
     void isAssignableFromStrict(String other) {
-      SoyType leftType = parseType(actual);
-      SoyType rightType = parseType(other);
+      isAssignableFromStrict(parseType(other));
+    }
+
+    void isAssignableFromStrict(SoyType rightType) {
+      SoyType leftType = getActualType();
       if (!leftType.isAssignableFromStrict(rightType)) {
         failWithActual("expected to be strictly assignable from", formatType(rightType));
       }
     }
 
     void isNotAssignableFromStrict(String other) {
-      SoyType leftType = parseType(actual);
+      SoyType leftType = getActualType();
       SoyType rightType = parseType(other);
       if (leftType.isAssignableFromStrict(rightType)) {
         failWithActual("expected not to be strictly assignable from", formatType(rightType));
@@ -1206,7 +1198,7 @@ public class SoyTypesTest {
     }
 
     void isEqualTo(String other) {
-      SoyType leftType = parseType(actual);
+      SoyType leftType = getActualType();
       SoyType rightType = parseType(other);
       if (!leftType.equals(rightType)) {
         failWithActual("expected", other);
@@ -1225,7 +1217,7 @@ public class SoyTypesTest {
     }
 
     void isEffectivelyEqualTo(String other) {
-      SoyType leftType = parseType(actual).getEffectiveType();
+      SoyType leftType = getActualType().getEffectiveType();
       SoyType rightType = parseType(other).getEffectiveType();
       if (!leftType.equals(rightType)) {
         failWithActual("expected", other);
@@ -1250,7 +1242,7 @@ public class SoyTypesTest {
     }
 
     void isNotEqualTo(String other) {
-      SoyType leftType = parseType(actual);
+      SoyType leftType = getActualType();
       SoyType rightType = parseType(other);
       if (leftType.equals(rightType)) {
         failWithActual("expected not to be", other);
@@ -1280,5 +1272,32 @@ public class SoyTypesTest {
             .build()
             .getOrCreateType(typeNode)
         : UnknownType.getInstance();
+  }
+
+  private static class TestTypeRegistry extends DelegatingSoyTypeRegistry {
+    private final Map<String, SoyType> namedTypes = new HashMap<>();
+
+    public TestTypeRegistry() {
+      super(SoyTypeRegistryBuilder.create());
+    }
+
+    @CanIgnoreReturnValue
+    TestTypeRegistry addNamed(String name, String typeString) {
+      return addType(name, NamedType.create(name, NS, parseType(typeString, this)));
+    }
+
+    @CanIgnoreReturnValue
+    TestTypeRegistry addType(String name, SoyType type) {
+      namedTypes.put(name, type);
+      return this;
+    }
+
+    @Override
+    public SoyType getType(String typeName) {
+      if (namedTypes.containsKey(typeName)) {
+        return namedTypes.get(typeName);
+      }
+      return super.getType(typeName);
+    }
   }
 }

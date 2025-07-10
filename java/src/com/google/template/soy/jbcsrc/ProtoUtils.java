@@ -713,7 +713,7 @@ final class ProtoUtils {
     private SoyExpression messageToSoyExpression(Expression field) {
       // Message fields are nullable, but we don't care about that here. This just needs the raw
       // proto type and will still work even if the value is null.
-      SoyType nonNullableFieldType = SoyTypes.tryRemoveNullish(fieldType);
+      SoyType nonNullableFieldType = SoyTypes.excludeNullish(fieldType);
       if (nonNullableFieldType instanceof SoyProtoType) {
         SoyProtoType fieldProtoType = (SoyProtoType) nonNullableFieldType;
         SoyRuntimeType protoRuntimeType = SoyRuntimeType.getUnboxedType(fieldProtoType).get();

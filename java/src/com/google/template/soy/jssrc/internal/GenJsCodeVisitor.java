@@ -114,7 +114,6 @@ import com.google.template.soy.types.NamedType;
 import com.google.template.soy.types.RecordType;
 import com.google.template.soy.types.RecordType.Member;
 import com.google.template.soy.types.SoyType;
-import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.TemplateType;
@@ -679,9 +678,9 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     ByteSpan imputesSpan = SoyTreeUtils.getByteSpan(node, node.getNameLocation());
 
     ImmutableSet<SoyType> recordMembers;
-    if (type.getKind() == Kind.INTERSECTION) {
+    if (type instanceof IntersectionType) {
       recordMembers = ((IntersectionType) type).getMembers();
-    } else if (type.getKind() == Kind.RECORD) {
+    } else if (type instanceof RecordType) {
       recordMembers = ImmutableSet.of(type);
     } else {
       // If this is not a record type we can just use @typedef.
@@ -701,10 +700,10 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
     Expression recordClass = topLevelLhs(node, node.isExported(), node.getName(), null);
     for (SoyType member : recordMembers) {
-      if (member.getKind() == Kind.NAMED) {
+      if (member instanceof NamedType) {
         JsType memberType = getJsTypeForParam(member);
         jsDoc.addAnnotation("extends", memberType.typeExprForExtends()).addGoogRequires(memberType);
-      } else if (member.getKind() == Kind.RECORD) {
+      } else if (member instanceof RecordType) {
         for (Member recordMember : ((RecordType) member).getMembers()) {
           SoyType checkedType = recordMember.checkedType();
 
@@ -1706,18 +1705,16 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
         continue;
       }
       // Skip named types from indirect deps.
-      if (SoyTypes.allTypes(combinedType, typeRegistry)
+      if (SoyTypes.allLogicalTypes(combinedType, typeRegistry)
           .anyMatch(
               t -> {
                 if (t instanceof NamedType) {
                   NamedType namedType = (NamedType) t;
                   SourceLogicalPath path =
                       state.fileSetMetadata.getPathForNamespace(namedType.getNamespace());
-                  if (path == null) {
-                    return true;
-                  }
-                  return state.fileSetMetadata.getFile(path).getSoyFileKind()
-                      == SoyFileKind.INDIRECT_DEP;
+                  return path == null
+                      || state.fileSetMetadata.getFile(path).getSoyFileKind()
+                          == SoyFileKind.INDIRECT_DEP;
                 }
                 return false;
               })) {
@@ -1725,7 +1722,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       }
       // TODO: detect cases where nullable is not needed (requires flow
       // analysis to determine if the template is always called.)
-      SoyType indirectParamType = SoyTypes.makeNullable(combinedType);
+      SoyType indirectParamType = SoyTypes.unionWithNull(combinedType);
       JsType jsType = getJsTypeForParamForDeclaration(indirectParamType);
       jsCodeBuilder.addGoogRequires(
           jsType.googRequires().stream()

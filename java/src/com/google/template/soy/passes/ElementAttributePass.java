@@ -244,7 +244,7 @@ final class ElementAttributePass implements CompilerFileSetPass {
         .map(AttrParam.class::cast)
         .forEach(
             attr -> {
-              SoyType type = SoyTypes.tryRemoveNullish(attr.type());
+              SoyType type = SoyTypes.excludeNullish(attr.type());
               if (!(type instanceof SanitizedType || type instanceof StringType)
                   || SanitizedType.HtmlType.getInstance().isAssignableFromStrict(type)) {
                 errorReporter.report(attr.getSourceLocation(), BAD_ATTRIBUTE_TYPE);
@@ -342,7 +342,7 @@ final class ElementAttributePass implements CompilerFileSetPass {
             /* optional= */ true,
             /* desc= */ "Created by ElementAttributePass.",
             /* defaultValue= */ null);
-    keyParam.setType(SoyTypes.makeUndefinable(StringType.getInstance()));
+    keyParam.setType(SoyTypes.unionWithUndefined(StringType.getInstance()));
     templateNode.addParam(keyParam);
 
     if (desugarIdomPasses && openTagNode.getTagName().isStatic()) {
@@ -410,7 +410,7 @@ final class ElementAttributePass implements CompilerFileSetPass {
               ATTRIBUTE_STAR_AND_EXPLICIT,
               TemplateType.EXTRA_ROOT_ELEMENT_ATTRIBUTES);
         }
-        if (!SoyTypes.tryRemoveNullish(param.type())
+        if (!SoyTypes.excludeNullish(param.type())
                 .equals(SanitizedType.AttributesType.getInstance())
             || param.isRequired()) {
           errorReporter.report(
@@ -448,7 +448,7 @@ final class ElementAttributePass implements CompilerFileSetPass {
               /* defaultValue= */ null);
       VarRefNode extraAttributesRef = new VarRefNode("$" + attrsParam.name(), loc, attrsParam);
       templateNode.addParam(attrsParam);
-      attrsParam.setType(SoyTypes.makeUndefinable(SanitizedType.AttributesType.getInstance()));
+      attrsParam.setType(SoyTypes.unionWithUndefined(SanitizedType.AttributesType.getInstance()));
       // This requires a different handling than SoyTreeUtils.printIfNotNull because we need to
       // put an HTMLAttributeNode inside it so that we can concatenate using a whitespace.
       IfNode ifNode = new IfNode(id.get(), unknown);
@@ -540,7 +540,7 @@ final class ElementAttributePass implements CompilerFileSetPass {
             attrNode.getStaticKey().substring(1), QuoteStyle.DOUBLE, unknown, /* isXid= */ false));
     boolean isCss =
         SanitizedType.StyleType.getInstance()
-            .isAssignableFromStrict(SoyTypes.tryRemoveNullish(attr.type()));
+            .isAssignableFromStrict(SoyTypes.excludeNullish(attr.type()));
     LetContentNode letContentNode =
         LetContentNode.forVariable(
             id.get(),

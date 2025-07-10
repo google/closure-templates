@@ -57,6 +57,7 @@ import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.TemplateParam;
+import com.google.template.soy.types.AnyType;
 import com.google.template.soy.types.RecordType;
 import com.google.template.soy.types.SanitizedType;
 import com.google.template.soy.types.SoyType;
@@ -64,6 +65,7 @@ import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.TemplateType;
 import com.google.template.soy.types.TemplateType.Parameter;
 import com.google.template.soy.types.UnionType;
+import com.google.template.soy.types.UnknownType;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -211,18 +213,18 @@ final class CheckTemplateCallsPass implements CompilerFileSetPass {
 
     void checkCall(TemplateNode callerTemplate, CallBasicNode node) {
       SoyType calleeType = node.getCalleeExpr().getType();
-      if (calleeType.getKind() == SoyType.Kind.TEMPLATE) {
+      if (calleeType instanceof TemplateType) {
         checkCall(callerTemplate, node, (TemplateType) calleeType);
       } else if (calleeType.getKind() == SoyType.Kind.UNION) {
-        if (SoyTypes.tryRemoveNullish(calleeType).getKind() == SoyType.Kind.TEMPLATE) {
-          checkCall(callerTemplate, node, (TemplateType) SoyTypes.tryRemoveNullish(calleeType));
+        if (SoyTypes.excludeNullish(calleeType).getKind() == SoyType.Kind.TEMPLATE) {
+          checkCall(callerTemplate, node, (TemplateType) SoyTypes.excludeNullish(calleeType));
           errorReporter.report(
               node.getSourceCalleeLocation(), ResolveExpressionTypesPass.TEMPLATE_CALL_NULLISH);
           return;
         }
         TemplateContentKind templateContentKind = null;
         for (SoyType member : ((UnionType) calleeType).getMembers()) {
-          if (member.getKind() == SoyType.Kind.TEMPLATE) {
+          if (member instanceof TemplateType) {
             // Check that all members of a union type have the same content kind.
             TemplateType templateType = (TemplateType) member;
             if (templateContentKind == null) {
@@ -241,7 +243,7 @@ final class CheckTemplateCallsPass implements CompilerFileSetPass {
             GlobalNode.replaceExprWithError(node.getCalleeExpr().getChild(0));
           }
         }
-      } else if (calleeType.getKind() == SoyType.Kind.UNKNOWN) {
+      } else if (calleeType.isEffectivelyEqual(UnknownType.getInstance())) {
         // We may end up with UNKNOWN here for external calls.
       } else {
         errorReporter.report(node.getSourceLocation(), CAN_ONLY_CALL_TEMPLATE_TYPES, calleeType);
@@ -413,7 +415,7 @@ final class CheckTemplateCallsPass implements CompilerFileSetPass {
           SoyType dataExprType = dataExpr.getAuthoredType();
           // TODO(b/168852179): enforce that the correct set of properties are present
           if (!RecordType.EMPTY_RECORD.isAssignableFromLoose(dataExprType)
-              && dataExpr.getType().getKind() != SoyType.Kind.ANY) {
+              && !dataExpr.getType().isEffectivelyEqual(AnyType.getInstance())) {
             errorReporter.report(
                 dataExpr.getSourceLocation(), INVALID_DATA_EXPR, dataExpr.getType());
           }
@@ -447,7 +449,7 @@ final class CheckTemplateCallsPass implements CompilerFileSetPass {
       // there are if-statements preventing null from being passed as an indirect
       // param, so we assume all indirect params are optional.
       if (calleeParams.isIndirect(paramName)) {
-        argType = SoyTypes.tryRemoveNullish(argType);
+        argType = SoyTypes.tryExcludeNullish(argType);
       }
 
       if (!formalType.isAssignableFromLoose(argType)) {
@@ -595,11 +597,11 @@ final class CheckTemplateCallsPass implements CompilerFileSetPass {
       if (node.getVariantExpr() == null) {
         return;
       }
-      if (calleeType.getUseVariantType().isNullOrUndefined()) {
+      if (SoyTypes.isNullOrUndefined(calleeType.getUseVariantType())) {
         errorReporter.report(node.getSourceLocation(), NO_USEVARIANTTYPE);
       } else {
         SoyType variantType = node.getVariantExpr().getAuthoredType();
-        if (!SoyTypes.makeNullish(calleeType.getUseVariantType())
+        if (!SoyTypes.unionWithNullish(calleeType.getUseVariantType())
             .isAssignableFromStrict(variantType)) {
           errorReporter.report(
               node.getVariantExpr().getSourceLocation(),

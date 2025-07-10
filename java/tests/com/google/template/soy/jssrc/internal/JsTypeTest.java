@@ -20,7 +20,7 @@ import static com.google.common.truth.Truth.assertThat;
 import static com.google.template.soy.jssrc.dsl.Expressions.id;
 import static com.google.template.soy.jssrc.internal.JsType.forIdomSrcState;
 import static com.google.template.soy.jssrc.internal.JsType.forJsSrc;
-import static com.google.template.soy.types.SoyTypes.makeNullable;
+import static com.google.template.soy.types.SoyTypes.unionWithNull;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.truth.StringSubject;
@@ -49,10 +49,10 @@ import org.junit.runners.JUnit4;
 @RunWith(JUnit4.class)
 public final class JsTypeTest {
   private static final ListType LIST_OF_HTML = ListType.of(HtmlType.getInstance());
-  private static final SoyType NULLABLE_LIST_OF_HTML = makeNullable(LIST_OF_HTML);
+  private static final SoyType NULLABLE_LIST_OF_HTML = unionWithNull(LIST_OF_HTML);
   private static final SoyType UNION_OF_STRING_OR_INT =
       UnionType.of(StringType.getInstance(), IntType.getInstance());
-  private static final SoyType NULLABLE_STRING = makeNullable(StringType.getInstance());
+  private static final SoyType NULLABLE_STRING = unionWithNull(StringType.getInstance());
 
   @Test
   public void testGetJsTypeName() {
@@ -78,7 +78,7 @@ public final class JsTypeTest {
     // Sanitized types
     assertThatTypeExpr(HtmlType.getInstance())
         .isEqualTo("!goog.soy.data.SanitizedHtml|!safevalues.SafeHtml|!soy.$$EMPTY_STRING_|string");
-    assertThatTypeExpr(makeNullable(HtmlType.getInstance()))
+    assertThatTypeExpr(unionWithNull(HtmlType.getInstance()))
         .isEqualTo(
             "!goog.soy.data.SanitizedHtml|!safevalues.SafeHtml|"
                 + "!soy.$$EMPTY_STRING_|null|string");
@@ -162,11 +162,11 @@ public final class JsTypeTest {
     assertThat(getTypeAssertion(IntType.getInstance(), "x")).isEqualTo("typeof x === 'number'");
     assertThat(getTypeAssertion(BoolType.getInstance(), "x")).isEqualTo("typeof x === 'boolean'");
 
-    assertThat(getTypeAssertion(SoyTypes.makeNullish(BoolType.getInstance()), "x"))
+    assertThat(getTypeAssertion(SoyTypes.unionWithNullish(BoolType.getInstance()), "x"))
         .isEqualTo("x == null || typeof x === 'boolean'");
-    assertThat(getTypeAssertion(SoyTypes.makeNullable(BoolType.getInstance()), "x"))
+    assertThat(getTypeAssertion(SoyTypes.unionWithNull(BoolType.getInstance()), "x"))
         .isEqualTo("x === null || typeof x === 'boolean'");
-    assertThat(getTypeAssertion(SoyTypes.makeUndefinable(BoolType.getInstance()), "x"))
+    assertThat(getTypeAssertion(SoyTypes.unionWithUndefined(BoolType.getInstance()), "x"))
         .isEqualTo("x === undefined || typeof x === 'boolean'");
     assertThat(getTypeAssertion(HtmlType.getInstance(), "x"))
         .isEqualTo("goog.soy.data.SanitizedHtml.isCompatibleWith(x)");

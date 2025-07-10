@@ -40,7 +40,6 @@ import com.google.template.soy.types.ProtoExtensionImportType;
 import com.google.template.soy.types.SoyProtoEnumType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
-import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.SoyTypes;
 import java.util.Collection;
@@ -343,11 +342,11 @@ public final class JavaGenerationUtils {
             .filter(Objects::nonNull)
             .map(
                 type -> {
-                  if (type.getKind() == Kind.PROTO) {
+                  if (type instanceof SoyProtoType) {
                     return ((SoyProtoType) type).getDescriptor();
-                  } else if (type.getKind() == Kind.PROTO_ENUM) {
+                  } else if (type instanceof SoyProtoEnumType) {
                     return ((SoyProtoEnumType) type).getDescriptor();
-                  } else if (type.getKind() == Kind.PROTO_EXTENSION) {
+                  } else if (type instanceof ProtoExtensionImportType) {
                     return ((ProtoExtensionImportType) type).getDescriptor();
                   }
                   return null;
@@ -377,7 +376,7 @@ public final class JavaGenerationUtils {
     Stream<GenericDescriptor> fromProtoInit =
         SoyTreeUtils.allNodesOfType(node, FunctionNode.class)
             .filter(fctNode -> fctNode.getSoyFunction() == BuiltinFunction.PROTO_INIT)
-            .filter(fctNode -> fctNode.getType().getKind() == Kind.PROTO)
+            .filter(fctNode -> fctNode.getType() instanceof SoyProtoType)
             .flatMap(
                 fctNode -> {
                   SoyProtoType proto = (SoyProtoType) fctNode.getType();
@@ -402,7 +401,7 @@ public final class JavaGenerationUtils {
   /** Recursively search for protocol buffer types within the given type. */
   private static Stream<GenericDescriptor> findProtoTypes(
       SoyType root, SoyTypeRegistry typeRegistry) {
-    return SoyTypes.allTypesWithDeps(root, typeRegistry)
+    return SoyTypes.allConcreteTypes(root, typeRegistry)
         .map(
             type -> {
               switch (type.getKind()) {

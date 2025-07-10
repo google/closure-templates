@@ -279,7 +279,7 @@ final class CheckDelegatesPass implements CompilerFileSetPass {
     }
     if (collision.kind() == Kind.SYMBOL
         && collision.hasType()
-        && collision.type().getKind() == SoyType.Kind.TEMPLATE_TYPE) {
+        && collision.type().isOfKind(SoyType.Kind.TEMPLATE_TYPE)) {
       errorReporter.report(
           node.getSourceLocation(),
           DELCALL_TO_BASIC_TEMPLATE,

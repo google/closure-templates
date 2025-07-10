@@ -84,7 +84,7 @@ public enum BuiltinMethod implements SoyMethod {
       }
       // getExtension is incorrectly typed as non-nullable even though it can be null for singular
       // message fields.
-      return SoyTypes.tryRemoveNullish(
+      return SoyTypes.excludeNullish(
           protoType.getFieldType(extType.get().getFieldName(), Int64ConversionMode.FORCE_GBIGINT));
     }
   },
@@ -113,7 +113,7 @@ public enum BuiltinMethod implements SoyMethod {
             params.get(0).getSourceLocation(),
             GET_READONLY_EXTENSION_MAY_ONLY_BE_CALLED_ON_MESSAGE_EXTENSIONS);
       }
-      return SoyTypes.tryRemoveNullish(
+      return SoyTypes.excludeNullish(
           protoType.getFieldType(extType.get().getFieldName(), Int64ConversionMode.FOLLOW_JS_TYPE));
     }
   },
@@ -260,7 +260,7 @@ public enum BuiltinMethod implements SoyMethod {
         List<ExprNode> params,
         SoyTypeRegistry soyTypeRegistry,
         ErrorReporter errorReporter) {
-      return SoyTypes.makeUndefinable(
+      return SoyTypes.unionWithUndefined(
           computeTypeForProtoFieldName(
               baseType,
               getGetOrUndefinedFieldName(methodName).get(),
@@ -303,7 +303,7 @@ public enum BuiltinMethod implements SoyMethod {
         List<ExprNode> params,
         SoyTypeRegistry soyTypeRegistry,
         ErrorReporter errorReporter) {
-      return SoyTypes.tryRemoveNullish(
+      return SoyTypes.excludeNullish(
           computeTypeForProtoFieldName(
               baseType,
               getGetReadonlyFieldName(methodName).get(),
@@ -347,7 +347,7 @@ public enum BuiltinMethod implements SoyMethod {
             arg.getSourceLocation(), METHOD_INVALID_PARAM_TYPES, "get", arg.getType(), keyType);
       }
 
-      return SoyTypes.makeUndefinable(SoyTypes.getMapValuesType(baseType));
+      return SoyTypes.unionWithUndefined(SoyTypes.getMapValuesType(baseType));
     }
   },
 
@@ -642,7 +642,7 @@ public enum BuiltinMethod implements SoyMethod {
       case HAS_EXTENSION:
       case GET_READONLY_EXTENSION:
         return ImmutableList.of(
-            ((SoyProtoType) SoyTypes.tryRemoveNullish(methodNode.getBaseExprChild().getType()))
+            ((SoyProtoType) SoyTypes.excludeNullish(methodNode.getBaseExprChild().getType()))
                 .getFieldDescriptor(getProtoExtensionIdFromMethodCall(methodNode)));
       case HAS_PROTO_FIELD:
       case GET_PROTO_FIELD:
@@ -785,15 +785,15 @@ public enum BuiltinMethod implements SoyMethod {
 
   private static boolean isExtendableMessageType(SoyType baseType) {
     Preconditions.checkArgument(!SoyTypes.isNullish(baseType));
-    return baseType.getKind() == SoyType.Kind.PROTO
+    return baseType instanceof SoyProtoType
         && ((SoyProtoType) baseType).getDescriptor().isExtendable();
   }
 
   private static Optional<ProtoExtensionImportType> getExtensionType(
       SoyProtoType protoType, ExprNode param, ErrorReporter errorReporter) {
 
-    if (param.getType().getKind() != SoyType.Kind.PROTO_EXTENSION) {
-      if (param.getType().getKind() != SoyType.Kind.UNKNOWN) {
+    if (!param.getType().isOfKind(SoyType.Kind.PROTO_EXTENSION)) {
+      if (!param.getType().isEffectivelyEqual(UnknownType.getInstance())) {
         // Bad refs or typos are Kind=UNKNOWN and will be an error elsewhere.
         errorReporter.report(param.getSourceLocation(), GET_EXTENSION_BAD_ARG);
       }

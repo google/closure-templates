@@ -60,10 +60,10 @@ final class RuntimeTypeCoercion {
     BuiltinFunction coercion = null;
     SoyType updatedType = fromType;
 
-    if (fromType.getKind() == Kind.INT) {
+    if (fromType.isOfKind(Kind.INT)) {
       coercion = BuiltinFunction.TO_NUMBER;
       updatedType = NumberType.getInstance();
-    } else if (fromType.getKind() == Kind.UNION) {
+    } else if (fromType.isOfKind(Kind.UNION)) {
       UnionType unionType = (UnionType) fromType;
       if (fromType.isAssignableFromStrictWithoutCoercions(IntType.getInstance())
           && !toType.isAssignableFromStrictWithoutCoercions(IntType.getInstance())) {
@@ -96,7 +96,7 @@ final class RuntimeTypeCoercion {
     MEMBER:
     for (SoyType member : unionType.getMembers()) {
       for (Kind kind : remove) {
-        if (kind == member.getKind()) {
+        if (member.isOfKind(kind)) {
           continue MEMBER;
         }
       }

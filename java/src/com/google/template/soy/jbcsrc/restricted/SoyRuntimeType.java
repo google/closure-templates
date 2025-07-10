@@ -105,7 +105,7 @@ public abstract class SoyRuntimeType {
           // unions generally don't have a unique unboxed runtime type except in 2 special cases
           // 1. nullable reference types can be unboxed.
           // 2. if all members of the union have the same runtimeType then we can use that
-          SoyType nonNullType = SoyTypes.tryRemoveNullish(soyType);
+          SoyType nonNullType = SoyTypes.tryExcludeNullish(soyType);
           if (!nonNullType.equals(soyType)) {
             return null;
           }
@@ -130,6 +130,7 @@ public abstract class SoyRuntimeType {
       case GBIGINT:
       case NULL:
       case UNDEFINED:
+      case NEVER:
       case ATTRIBUTES:
       case CSS:
       case URI:
@@ -161,7 +162,6 @@ public abstract class SoyRuntimeType {
       case PROTO_ENUM_TYPE:
       case PROTO_EXTENSION:
       case TEMPLATE_TYPE:
-      case NEVER:
     }
     throw new AssertionError("can't map " + soyType + " to an unboxed soy runtime type");
   }
@@ -195,7 +195,7 @@ public abstract class SoyRuntimeType {
   }
 
   public boolean assignableToNullableHtmlOrAttributes() {
-    var type = SoyTypes.tryRemoveNullish(soyType);
+    var type = SoyTypes.tryExcludeNullish(soyType);
     return type.isAssignableFromLoose(HtmlType.getInstance())
         || type.isAssignableFromLoose(AttributesType.getInstance());
   }
@@ -301,11 +301,11 @@ public abstract class SoyRuntimeType {
     // Use tryRemoveNull instead of removeNull because there are times where the jbcsrc backend
     // infers stronger types than Soy proper (e.g. for `@state` params initialized to `null` but
     // declared with a different type)
-    return withNewSoyType(SoyTypes.tryRemoveNullish(soyType));
+    return withNewSoyType(SoyTypes.tryExcludeNullish(soyType));
   }
 
   public final SoyRuntimeType asSoyUndefinable() {
-    return withNewSoyType(SoyTypes.makeUndefinable(soyType));
+    return withNewSoyType(SoyTypes.unionWithUndefined(soyType));
   }
 
   private SoyRuntimeType withNewSoyType(SoyType newSoyType) {

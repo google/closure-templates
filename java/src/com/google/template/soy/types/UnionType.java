@@ -127,11 +127,6 @@ public final class UnionType extends SoyType {
   }
 
   @Override
-  public boolean isNullOrUndefined() {
-    return members.stream().allMatch(SoyType::isNullOrUndefined);
-  }
-
-  @Override
   public String toString() {
     return Joiner.on('|').join(members);
   }

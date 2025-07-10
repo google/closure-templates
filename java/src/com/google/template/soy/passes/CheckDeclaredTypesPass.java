@@ -27,6 +27,7 @@ import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import com.google.template.soy.types.MapType;
 import com.google.template.soy.types.SoyType.Kind;
+import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.ast.GenericTypeNode;
 import com.google.template.soy.types.ast.TypeNode;
 
@@ -91,7 +92,7 @@ final class CheckDeclaredTypesPass implements CompilerFilePass {
                         checkArgument(node.arguments().size() == 1);
                         TypeNode dataType = node.arguments().get(0);
                         if (dataType.getResolvedType().getKind() != Kind.PROTO
-                            && !dataType.getResolvedType().isNullOrUndefined()) {
+                            && !SoyTypes.isNullOrUndefined(dataType.getResolvedType())) {
                           errorReporter.report(
                               dataType.sourceLocation(),
                               VE_BAD_DATA_TYPE,
