@@ -38,7 +38,14 @@ public abstract class FunctionType extends SoyType {
 
   public abstract ImmutableList<Parameter> getParameters();
 
+  public boolean isVarArgs() {
+    return getParameters().stream().anyMatch(Parameter::isVarArgs);
+  }
+
   public int getArity() {
+    if (isVarArgs()) {
+      return getParameters().size() - 1;
+    }
     return getParameters().size();
   }
 
@@ -56,13 +63,15 @@ public abstract class FunctionType extends SoyType {
   @AutoValue
   public abstract static class Parameter {
 
-    public static Parameter of(String name, SoyType type) {
-      return new AutoValue_FunctionType_Parameter(name, type);
+    public static Parameter of(String name, SoyType type, boolean isVarArgs) {
+      return new AutoValue_FunctionType_Parameter(name, type, isVarArgs);
     }
 
     public abstract String getName();
 
     public abstract SoyType getType();
+
+    public abstract boolean isVarArgs();
   }
 
   @Override
@@ -104,6 +113,9 @@ public abstract class FunctionType extends SoyType {
       } else {
         sb.append(", ");
       }
+      if (parameter.isVarArgs()) {
+        sb.append("...");
+      }
       String name = parameter.getName();
       sb.append(name);
       sb.append(": ");
@@ -122,7 +134,8 @@ public abstract class FunctionType extends SoyType {
       templateBuilder.addParameters(
           FunctionTypeP.Parameter.newBuilder()
               .setName(parameter.getName())
-              .setType(parameter.getType().toProto()));
+              .setType(parameter.getType().toProto())
+              .setIsVarArgs(parameter.isVarArgs()));
     }
   }
 }

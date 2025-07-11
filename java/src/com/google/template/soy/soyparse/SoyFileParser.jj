@@ -5576,16 +5576,24 @@ private FunctionTypeNode.Parameter FunctionParameter() :
 {
   Token parameterName;
   TypeNode parameterType;
+  boolean isVarArgs = false;
 }
 {
-  parameterName = <IDENT>
+  (
+    <SPREAD>
+    parameterName = <IDENT>
+      {
+        isVarArgs = true;
+      }
+  |
+    parameterName = <IDENT>
+  )
   <COLON>
   parameterType = TypeExpr()
-
   {
     String paramName = parameterName.image;
     return FunctionTypeNode.Parameter.create(
-        createSrcLoc(parameterName), paramName, parameterName.image, parameterType);
+        createSrcLoc(parameterName), paramName, parameterName.image, parameterType, isVarArgs);
   }
 }
 

@@ -1981,7 +1981,11 @@ final class ExpressionCompiler {
         ImmutableList<SoyExpression> args = visitAll(node.getParams());
         return callExtern(
             ExternAdaptors.asExtern(
-                (SoyJavaExternFunction) fn, args, node.getType(), node.getAllowedParamTypes()),
+                (SoyJavaExternFunction) fn,
+                args,
+                node.getType(),
+                node.getAllowedParamTypes(),
+                node.isVarArgs()),
             args);
       } else if (fn instanceof SoyJavaSourceFunction) {
         ImmutableList<SoyExpression> args = visitAll(node.getParams());
