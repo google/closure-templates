@@ -28,7 +28,6 @@ import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLogicalPath;
 import java.util.Map;
 import java.util.Optional;
-import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 
 /** Registry of known css symbols provided by the --cssSummaries flag. */
@@ -50,17 +49,8 @@ public abstract class CssRegistry {
   /** Maps all keys in {@link #providedSymbols} to the list of classes contained therein. */
   abstract Optional<ImmutableSetMultimap<String, String>> symbolToClasses();
 
-  /** Maps all keys in {@link #providedSymbols} to the list of variables contained therein. */
-  abstract Optional<ImmutableSetMultimap<String, String>> symbolToVariables();
-
   /** Maps the logic file path (not LFPME) to a map of {short class name -> full class name}. */
   abstract ImmutableMap<SourceLogicalPath, ImmutableMap<String, String>> filePathToShortClassMap();
-
-  /**
-   * Maps the logic file path (not LFPME) to a map of {short variable name -> full variable name}.
-   */
-  abstract ImmutableMap<SourceLogicalPath, ImmutableMap<String, String>>
-      filePathToShortVariableMap();
 
   /** Maps logical file path to the path of the CSS metadata file passed to the compiler. */
   abstract ImmutableMap<SourceLogicalPath, SourceFilePath> logicalToRealMap();
@@ -111,20 +101,13 @@ public abstract class CssRegistry {
     return filePathToShortClassMap().get(logicalPath);
   }
 
-  public ImmutableMap<String, String> getShortVariableNameMapForLogicalPath(
-      SourceLogicalPath logicalPath) {
-    return filePathToShortVariableMap().get(logicalPath);
-  }
-
   public static CssRegistry createWithFilePathToShortClassMap(
       ImmutableSet<String> providedSymbols,
       ImmutableMap<SourceLogicalPath, ImmutableMap<String, String>> filePathToShortClassMap) {
     return new AutoValue_CssRegistry(
         ImmutableMap.of(),
         Optional.empty(),
-        Optional.empty(),
         filePathToShortClassMap,
-        ImmutableMap.of(),
         ImmutableMap.of(),
         providedSymbols.stream()
             .collect(toImmutableMap(s -> s, s -> SourceLogicalPath.create("not-used"))),
@@ -141,8 +124,6 @@ public abstract class CssRegistry {
     return new AutoValue_CssRegistry(
         filePathToSymbol,
         Optional.empty(),
-        Optional.empty(),
-        ImmutableMap.of(),
         ImmutableMap.of(),
         ImmutableMap.of(),
         providedSymbols.stream()
@@ -160,6 +141,4 @@ public abstract class CssRegistry {
   public SourceLogicalPath getFilePathForSymbol(String s) {
     return symbolToPath().get(s);
   }
-
-  private static final Pattern KEBAB_CASE_PATTERN = Pattern.compile("-+(.)?");
 }
