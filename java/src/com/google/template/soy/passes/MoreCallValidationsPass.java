@@ -190,7 +190,7 @@ final class MoreCallValidationsPass implements CompilerFileSetPass {
                   return;
                 }
               }
-              SoyTypes.expandUnions(templateNode.getType()).stream()
+              SoyTypes.flattenUnion(templateNode.getType())
                   .filter(TemplateType.class::isInstance)
                   .map(TemplateType.class::cast)
                   .filter(

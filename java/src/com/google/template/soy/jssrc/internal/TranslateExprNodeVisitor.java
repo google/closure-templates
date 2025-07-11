@@ -785,7 +785,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
       return memberGenerator.apply(baseType);
     }
     FieldAccess fieldAccess = null;
-    for (SoyType type : SoyTypes.expandUnions(baseType)) {
+    for (SoyType type : SoyTypes.flattenUnionToSet(baseType)) {
       if (SoyTypes.isNullOrUndefined(type)) {
         continue;
       }

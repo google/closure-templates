@@ -115,7 +115,7 @@ final class IdomTranslateExprNodeVisitor extends TranslateExprNodeVisitor {
     // Unions are enforced to have the same content kind in CheckTemplateCallsPass.
     SanitizedContentKind kind =
         Iterables.getOnlyElement(
-                SoyTypes.expandUnions(templateType).stream()
+                SoyTypes.flattenUnion(templateType)
                     .map(type -> ((TemplateType) type).getContentKind())
                     .collect(toImmutableSet()))
             .getSanitizedContentKind();

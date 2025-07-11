@@ -77,8 +77,8 @@ final class TypeSubstitutions {
     if (newType.equals(origType)) {
       return true;
     }
-    ImmutableSet<SoyType> members1 = SoyTypes.expandUnions(origType);
-    ImmutableSet<SoyType> members2 = SoyTypes.expandUnions(newType);
+    ImmutableSet<SoyType> members1 = SoyTypes.flattenUnionToSet(origType);
+    ImmutableSet<SoyType> members2 = SoyTypes.flattenUnionToSet(newType);
     boolean numberRemoved =
         members1.contains(NumberType.getInstance()) && !members2.contains(NumberType.getInstance());
     boolean intAdded =

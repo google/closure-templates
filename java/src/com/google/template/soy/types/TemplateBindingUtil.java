@@ -52,17 +52,17 @@ public final class TemplateBindingUtil {
         SoyTypes.isKindOrUnionOfKinds(
             base, ImmutableSet.of(SoyType.Kind.TEMPLATE, SoyType.Kind.TEMPLATE_TYPE)));
     Set<SoyType> types = new HashSet<>();
-    for (SoyType baseType : SoyTypes.expandUnions(base)) {
-      switch (baseType.getKind()) {
-        case TEMPLATE:
-          types.add(
-              bindParametersToTemplate(
-                  (TemplateType) baseType, parameterType, typeRegistry, errorReporter));
-          break;
-        default:
-          throw new AssertionError();
-      }
-    }
+    SoyTypes.flattenUnion(base)
+        .forEach(
+            baseType -> {
+              if (baseType instanceof TemplateType) {
+                types.add(
+                    bindParametersToTemplate(
+                        (TemplateType) baseType, parameterType, typeRegistry, errorReporter));
+              } else {
+                throw new AssertionError();
+              }
+            });
     return typeRegistry.getOrCreateUnionType(types);
   }
 

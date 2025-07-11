@@ -223,7 +223,7 @@ final class CheckTemplateCallsPass implements CompilerFileSetPass {
         checkCall(callerTemplate, node, (TemplateType) calleeType);
       } else if (SoyTypes.isKindOrUnionOfKind(calleeType, SoyType.Kind.TEMPLATE)) {
         TemplateContentKind templateContentKind = null;
-        for (SoyType member : SoyTypes.expandUnions(calleeType)) {
+        for (SoyType member : SoyTypes.flattenUnionToSet(calleeType)) {
           // Check that all members of a union type have the same content kind.
           TemplateType templateType = (TemplateType) member;
           if (templateContentKind == null) {

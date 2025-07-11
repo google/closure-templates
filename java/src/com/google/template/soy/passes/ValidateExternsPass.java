@@ -601,7 +601,7 @@ class ValidateExternsPass implements CompilerFilePass {
     if (method == null) {
       return false;
     }
-    ImmutableSet<SoyType> functionTypes = SoyTypes.expandUnions(soyType);
+    ImmutableSet<SoyType> functionTypes = SoyTypes.flattenUnionToSet(soyType);
     for (SoyType memberType : functionTypes) {
       FunctionType functionType = (FunctionType) memberType;
       if (functionType.getArity() != method.getParameterCount()) {

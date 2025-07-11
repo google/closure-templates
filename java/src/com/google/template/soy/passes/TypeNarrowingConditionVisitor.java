@@ -548,7 +548,7 @@ final class TypeNarrowingConditionVisitor {
       return instanceOfOperand;
     }
     List<SoyType> matches =
-        SoyTypes.expandUnions(exprType).stream()
+        SoyTypes.flattenUnion(exprType)
             .map(
                 member -> {
                   // (string instanceof string) => string
@@ -579,7 +579,7 @@ final class TypeNarrowingConditionVisitor {
     // !(subclass instanceof superclass) => never
     // !(a|b instanceof a) => b
     List<SoyType> remaining =
-        SoyTypes.expandUnions(exprType).stream()
+        SoyTypes.flattenUnion(exprType)
             .filter(t -> !instanceOfOperand.isAssignableFromStrict(t))
             .collect(toList());
     return remaining.isEmpty() ? NeverType.getInstance() : UnionType.of(remaining);

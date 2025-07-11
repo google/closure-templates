@@ -21,6 +21,7 @@ import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -157,7 +158,7 @@ public final class SoyTypes {
   }
 
   private static SoyType modifyUnion(SoyType type, Predicate<SoyType> filter) {
-    ImmutableSet<SoyType> members = recursivelyExpandUnions(type);
+    ImmutableSet<SoyType> members = flattenUnionToSet(type);
     ImmutableSet<SoyType> filtered = members.stream().filter(filter).collect(toImmutableSet());
     if (members.size() == filtered.size()) {
       // No modification of type, so return the original with named types intact.
@@ -343,8 +344,8 @@ public final class SoyTypes {
   public static SoyType getSoyTypeForBinaryOperator(
       SoyType t0, SoyType t1, SoyTypeBinaryOperator operator) {
     // None of the operators covered by SoyTypeBinaryOperator can evaluate to null/undefined.
-    SoyType left = tryExcludeNullish(t0).getEffectiveType();
-    SoyType right = tryExcludeNullish(t1).getEffectiveType();
+    SoyType left = tryExcludeNullish(normalizeUnion(t0));
+    SoyType right = tryExcludeNullish(normalizeUnion(t1));
     if (left instanceof UnionType) {
       return getSoyTypeFromUnionForBinaryOperator((UnionType) left, right, operator);
     }
@@ -353,15 +354,20 @@ public final class SoyTypes {
       // the order should not matter.
       return getSoyTypeFromUnionForBinaryOperator((UnionType) right, left, operator);
     }
-    return operator.resolve(left, right);
+    return operator.resolve(left.getEffectiveType(), right.getEffectiveType());
   }
+
+  private static final ImmutableSet<Kind> NOT_IN_FLATTENED_KINDS =
+      ImmutableSet.of(
+          Kind.UNION, Kind.NAMED, Kind.INDEXED, Kind.PICK, Kind.OMIT, Kind.INTERSECTION);
 
   /**
    * Returns true if the given type matches the given kind, or if the given type is a union of types
    * that all match the given kind.
    */
   public static boolean isKindOrUnionOfKind(SoyType type, Kind kind) {
-    return expandUnions(type).stream().allMatch((t) -> kind == t.getKind());
+    Preconditions.checkArgument(!NOT_IN_FLATTENED_KINDS.contains(kind));
+    return flattenUnion(type).allMatch((t) -> kind == t.getKind());
   }
 
   /**
@@ -369,20 +375,43 @@ public final class SoyTypes {
    * of types that all match one of the given kinds.
    */
   public static boolean isKindOrUnionOfKinds(SoyType type, Set<Kind> kinds) {
-    return expandUnions(type).stream().allMatch((t) -> kinds.contains(t.getKind()));
+    Preconditions.checkArgument(Sets.intersection(kinds, NOT_IN_FLATTENED_KINDS).isEmpty());
+    return flattenUnion(type).allMatch((t) -> kinds.contains(t.getKind()));
+  }
+
+  public static ImmutableSet<SoyType> flattenUnionToSet(SoyType root) {
+    return flattenUnion(root).collect(ImmutableSet.toImmutableSet());
   }
 
   /**
-   * For union types, returns a list of member types; for all other types, returns a list with a
-   * single element containing the type.
+   * Recursively resolves unions, returning a single stream of distinct elements. The stream will
+   * never contain UNION or any computed type.
    */
-  public static ImmutableSet<SoyType> expandUnions(SoyType type) {
-    checkNotNull(type);
-    if (type.getKind() == Kind.UNION) {
-      return ((UnionType) type).getMembers();
-    } else {
-      return ImmutableSet.of(type);
+  public static Stream<? extends SoyType> flattenUnion(SoyType root) {
+    if (!NOT_IN_FLATTENED_KINDS.contains(root.getKind())) {
+      return Stream.of(root);
     }
+    return TreeStreams.breadthFirst(
+            root,
+            type -> {
+              if (type instanceof UnionType) {
+                return ((UnionType) type).getMembers();
+              } else if (type instanceof ComputedType) {
+                return ImmutableList.of(type.getEffectiveType());
+              }
+              return ImmutableList.of();
+            })
+        .filter(t -> !(t instanceof UnionType || t instanceof ComputedType))
+        .distinct();
+  }
+
+  private static SoyType normalizeUnion(SoyType t) {
+    if (t instanceof UnionType || t instanceof NamedType || t instanceof IndexedType) {
+      return UnionType.of(flattenUnionToSet(t));
+    } else if (t instanceof ComputedType) {
+      return t.getEffectiveType();
+    }
+    return t;
   }
 
   /**
@@ -408,36 +437,18 @@ public final class SoyTypes {
    * of the given kinds
    */
   public static boolean containsKinds(SoyType type, Set<Kind> kinds) {
-    if (kinds.contains(type.getKind())) {
-      return true;
-    }
-
-    if (type instanceof UnionType) {
-      return ((UnionType) type)
-          .getMembers().stream().map(SoyType::getKind).anyMatch(kinds::contains);
-    }
-    return false;
+    Preconditions.checkArgument(Sets.intersection(kinds, NOT_IN_FLATTENED_KINDS).isEmpty());
+    return flattenUnion(type).anyMatch(t -> kinds.contains(t.getKind()));
   }
 
   public static boolean containsKind(SoyType type, Kind kind) {
-    if (kind == type.getKind()) {
-      return true;
-    }
-
-    if (type instanceof UnionType) {
-      return ((UnionType) type).getMembers().stream().anyMatch(t -> t.getKind() == kind);
-    }
-
-    return false;
+    Preconditions.checkArgument(!NOT_IN_FLATTENED_KINDS.contains(kind));
+    return flattenUnion(type).anyMatch(t -> t.getKind() == kind);
   }
 
   public static SoyType undefinedToNull(SoyType type) {
-    if (type == UndefinedType.getInstance()) {
-      return NullType.getInstance();
-    } else if (type instanceof UnionType) {
-      if (isUndefinable(type)) {
-        return unionWithNull(excludeUndefined(type));
-      }
+    if (isUndefinable(type)) {
+      return unionWithNull(excludeUndefined(type));
     }
     return type;
   }
@@ -745,56 +756,26 @@ public final class SoyTypes {
     }
   }
 
-  private static ImmutableSet<SoyType> recursivelyExpandUnions(SoyType root) {
-    return TreeStreams.breadthFirst(
-            root,
-            type -> {
-              if (type instanceof UnionType) {
-                return ((UnionType) type).getMembers();
-              } else if (type instanceof NamedType || type instanceof IndexedType) {
-                return ImmutableList.of(type.getEffectiveType());
-              }
-              return ImmutableList.of();
-            })
-        .filter(
-            t -> !(t instanceof UnionType || t instanceof NamedType || t instanceof IndexedType))
-        .collect(ImmutableSet.toImmutableSet());
-  }
-
   public static boolean hasProtoDep(SoyType type) {
     return SoyTypes.allConcreteTypes(type, null)
         .anyMatch(t -> t.getKind() == Kind.PROTO || t.getKind() == Kind.PROTO_ENUM);
   }
 
   public static SoyType getIterableElementType(SoyType type) {
-    if (type instanceof AbstractIterableType) {
-      return ((AbstractIterableType) type).getElementType();
-    }
-    UnionType union = (UnionType) type;
     return UnionType.of(
-        union.getMembers().stream()
+        flattenUnion(type)
             .map(member -> ((AbstractIterableType) member).getElementType())
             .collect(toImmutableList()));
   }
 
   public static SoyType getMapKeysType(SoyType type) {
-    if (type instanceof MapType) {
-      return ((MapType) type).getKeyType();
-    }
     return UnionType.of(
-        ((UnionType) type)
-            .getMembers().stream().map(t -> ((MapType) t).getKeyType()).collect(toImmutableSet()));
+        flattenUnion(type).map(t -> ((MapType) t).getKeyType()).collect(toImmutableSet()));
   }
 
   public static SoyType getMapValuesType(SoyType type) {
-    if (type instanceof MapType) {
-      return ((MapType) type).getValueType();
-    }
     return UnionType.of(
-        ((UnionType) type)
-            .getMembers().stream()
-                .map(t -> ((MapType) t).getValueType())
-                .collect(toImmutableSet()));
+        flattenUnion(type).map(t -> ((MapType) t).getValueType()).collect(toImmutableSet()));
   }
 
   @Nullable
@@ -843,7 +824,7 @@ public final class SoyTypes {
 
   public static SoyType getFunctionReturnType(SoyType soyType) {
     SoyType rv = null;
-    for (SoyType member : expandUnions(soyType)) {
+    for (SoyType member : flattenUnionToSet(soyType)) {
       if (member instanceof FunctionType) {
         SoyType returnType = ((FunctionType) member).getReturnType();
         rv =

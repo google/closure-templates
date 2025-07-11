@@ -520,8 +520,7 @@ public enum BuiltinMethod implements SoyMethod {
     }
     // If a union, we can pick any one of the types and look at all field names, as long as we check
     // appliesTo with the entire union baseType.
-    SoyProtoType protoType =
-        (SoyProtoType) Iterables.getFirst(SoyTypes.expandUnions(baseType), null);
+    SoyProtoType protoType = (SoyProtoType) SoyTypes.flattenUnion(baseType).iterator().next();
     return protoType.getFieldNames().stream()
         .map(protoType::getFieldDescriptor)
         .filter(acceptField)
@@ -534,7 +533,7 @@ public enum BuiltinMethod implements SoyMethod {
     if (!appliesToBase(baseType)) {
       return false;
     }
-    for (SoyType type : SoyTypes.expandUnions(baseType)) {
+    for (SoyType type : SoyTypes.flattenUnionToSet(baseType)) {
       SoyProtoType protoType = (SoyProtoType) type;
       if (!protoType.getFieldNames().contains(fieldName)
           || !acceptField.test(protoType.getFieldDescriptor(fieldName))) {
@@ -775,7 +774,7 @@ public enum BuiltinMethod implements SoyMethod {
       SoyTypeRegistry soyTypeRegistry,
       Int64ConversionMode int64Mode) {
     var types = new ArrayList<SoyType>();
-    for (SoyType type : SoyTypes.expandUnions(baseType)) {
+    for (SoyType type : SoyTypes.flattenUnionToSet(baseType)) {
       SoyType defaultType = ((SoyProtoType) type).getFieldType(fieldName, int64Mode);
       types.add(defaultType);
     }

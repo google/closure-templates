@@ -31,8 +31,8 @@ import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.TemplateType;
-import com.google.template.soy.types.UnionType;
 import java.util.List;
 import javax.annotation.Nullable;
 
@@ -151,17 +151,11 @@ public final class CallBasicNode extends CallNode {
   }
 
   private boolean isHtmlReturnType(SoyType type) {
-    if (type instanceof TemplateType) {
-      return ((TemplateType) type).getContentKind().getSanitizedContentKind().isHtml();
-    }
-    if (type instanceof UnionType) {
-      for (SoyType member : ((UnionType) type).getMembers()) {
-        if (isHtmlReturnType(member)) {
-          return true;
-        }
-      }
-    }
-    return false;
+    return SoyTypes.flattenUnion(type)
+        .allMatch(
+            t ->
+                t instanceof TemplateType
+                    && ((TemplateType) t).getContentKind().getSanitizedContentKind().isHtml());
   }
 
   public TemplateType getStaticType() {

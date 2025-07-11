@@ -2684,6 +2684,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
         SourceLocation keyLocation) {
       Preconditions.checkNotNull(baseType);
       Preconditions.checkNotNull(keyType);
+
       switch (baseType.getKind()) {
         case UNKNOWN:
           // If we don't know anything about the base type, then make no assumptions
@@ -2881,8 +2882,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
               node.setType(SetType.empty());
             } else {
               SoyType keyType = ((AbstractIterableType) listType).getElementType();
-              if (SoyTypes.expandUnions(keyType).stream()
-                  .anyMatch(t -> !MapType.isAllowedKeyValueType(t))) {
+              if (SoyTypes.flattenUnion(keyType).anyMatch(t -> !MapType.isAllowedKeyValueType(t))) {
                 errorReporter.report(
                     node.getParam(0).getSourceLocation(),
                     CheckDeclaredTypesPass.BAD_MAP_OR_SET_KEY_TYPE,

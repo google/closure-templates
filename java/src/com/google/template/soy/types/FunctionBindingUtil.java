@@ -43,7 +43,7 @@ public class FunctionBindingUtil {
   public static SoyType bind(
       SoyType baseType, ImmutableList<SoyType> argTypes, ImmutableList<LocationBound> argErrors) {
 
-    ImmutableSet<SoyType> functionTypes = SoyTypes.expandUnions(baseType);
+    ImmutableSet<SoyType> functionTypes = SoyTypes.flattenUnionToSet(baseType);
     for (int i = 0; i < argTypes.size(); i++) {
       SoyType argType = argTypes.get(i);
       for (SoyType soyType : functionTypes) {

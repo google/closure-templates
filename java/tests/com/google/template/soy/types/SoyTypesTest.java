@@ -19,6 +19,7 @@ package com.google.template.soy.types;
 import static com.google.common.base.Strings.lenientFormat;
 import static com.google.common.truth.Fact.simpleFact;
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.template.soy.types.SoyTypes.NULL_OR_UNDEFINED;
 import static com.google.template.soy.types.SoyTypes.unionWithNull;
 
 import com.google.common.collect.ImmutableMap;
@@ -1070,6 +1071,15 @@ public class SoyTypesTest {
             SoyTypes.containsKinds(
                 IntType.getInstance(), Sets.immutableEnumSet(Kind.BOOL, Kind.INT)))
         .isTrue();
+  }
+
+  @Test
+  public void testUndefinedToNull() {
+    assertThat(SoyTypes.undefinedToNull(UNDEFINED_TYPE)).isEqualTo(NULL_TYPE);
+    assertThat(SoyTypes.undefinedToNull(UnionType.of(STRING_TYPE, UNDEFINED_TYPE)))
+        .isEqualTo(UnionType.of(STRING_TYPE, NULL_TYPE));
+    assertThat(SoyTypes.undefinedToNull(ANY_TYPE)).isEqualTo(ANY_TYPE);
+    assertThat(SoyTypes.undefinedToNull(NULL_OR_UNDEFINED)).isEqualTo(NULL_TYPE);
   }
 
   // Simple cases testing loose assignability are above, the complex cases involve generics and

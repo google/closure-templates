@@ -23,6 +23,7 @@ import com.google.template.soy.data.restricted.PrimitiveData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.soytree.SoyTypeP;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Set;
 
 /** An Omit<> type. */
@@ -56,13 +57,14 @@ public abstract class OmitType extends ComputedType {
   @Memoized
   public SoyType getEffectiveType() {
     SoyType baseType = getType().getEffectiveType();
-    SoyType keysType = getKeys().getEffectiveType();
     if (!(baseType instanceof RecordType)) {
       return NeverType.getInstance();
     }
 
     Set<String> memberNames = new HashSet<>();
-    for (SoyType member : SoyTypes.expandUnions(keysType)) {
+    Iterator<? extends SoyType> i = SoyTypes.flattenUnion(getKeys()).iterator();
+    while (i.hasNext()) {
+      SoyType member = i.next();
       if (member instanceof LiteralType) {
         PrimitiveData literal = ((LiteralType) member).literal();
         if (literal instanceof StringData) {
