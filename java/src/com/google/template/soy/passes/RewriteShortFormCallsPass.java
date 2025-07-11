@@ -34,7 +34,6 @@ import com.google.template.soy.exprtree.ExprNode.CallableExpr.ParamsStyle;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.StringNode;
-import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.soytree.CallBasicNode;
@@ -51,7 +50,6 @@ import com.google.template.soy.types.SanitizedType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypes;
-import com.google.template.soy.types.TemplateImportType;
 import com.google.template.soy.types.TemplateType;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.annotation.Nullable;
@@ -195,28 +193,19 @@ final class RewriteShortFormCallsPass implements CompilerFileSetPass {
       return null;
     }
 
-    ExprNode callee;
-    SoyType type;
-
-    if (nameExpr instanceof VarRefNode && nameExpr.getType() instanceof TemplateImportType) {
-      type = ((TemplateImportType) nameExpr.getType()).getBasicTemplateType();
-      TemplateLiteralNode templateLiteralNode =
-          TemplateLiteralNode.forVarRef((VarRefNode) nameExpr);
-      templateLiteralNode.setStaticCall(true);
-      templateLiteralNode.setType(type);
-      callee = templateLiteralNode;
-    } else if (nameExpr.getType() instanceof TemplateType) {
-      callee = nameExpr.copy(new CopyState());
-      type = callee.getType();
-    } else {
+    if (!SoyTypes.isKindOrUnionOfKind(nameExpr.getType(), Kind.TEMPLATE)) {
       return null;
     }
+
     if (fnNode.getParamsStyle() == ParamsStyle.POSITIONAL) {
       errorReporter.report(fnNode.getSourceLocation(), EXPECTED_NAMED_PARAMETERS);
       // Only report error once.
       expr.replaceChild(0, new StringNode("$error", QuoteStyle.SINGLE, expr.getSourceLocation()));
       return null;
     }
+
+    ExprNode callee = nameExpr.copy(new CopyState());
+    SoyType type = callee.getType();
     CallBasicNode call =
         new CallBasicNode(
             nodeIdGen.genId(),

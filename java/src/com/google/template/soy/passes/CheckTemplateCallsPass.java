@@ -64,7 +64,6 @@ import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.TemplateType;
 import com.google.template.soy.types.TemplateType.Parameter;
-import com.google.template.soy.types.UnionType;
 import com.google.template.soy.types.UnknownType;
 import java.util.Collection;
 import java.util.HashMap;
@@ -213,35 +212,32 @@ final class CheckTemplateCallsPass implements CompilerFileSetPass {
 
     void checkCall(TemplateNode callerTemplate, CallBasicNode node) {
       SoyType calleeType = node.getCalleeExpr().getType();
+      if (SoyTypes.isNullish(calleeType)) {
+        checkCall(callerTemplate, node, (TemplateType) SoyTypes.excludeNullish(calleeType));
+        errorReporter.report(
+            node.getSourceCalleeLocation(), ResolveExpressionTypesPass.TEMPLATE_CALL_NULLISH);
+        return;
+      }
+
       if (calleeType instanceof TemplateType) {
         checkCall(callerTemplate, node, (TemplateType) calleeType);
-      } else if (calleeType.getKind() == SoyType.Kind.UNION) {
-        if (SoyTypes.excludeNullish(calleeType).getKind() == SoyType.Kind.TEMPLATE) {
-          checkCall(callerTemplate, node, (TemplateType) SoyTypes.excludeNullish(calleeType));
-          errorReporter.report(
-              node.getSourceCalleeLocation(), ResolveExpressionTypesPass.TEMPLATE_CALL_NULLISH);
-          return;
-        }
+      } else if (SoyTypes.isKindOrUnionOfKind(calleeType, SoyType.Kind.TEMPLATE)) {
         TemplateContentKind templateContentKind = null;
-        for (SoyType member : ((UnionType) calleeType).getMembers()) {
-          if (member instanceof TemplateType) {
-            // Check that all members of a union type have the same content kind.
-            TemplateType templateType = (TemplateType) member;
-            if (templateContentKind == null) {
-              templateContentKind = templateType.getContentKind();
-            } else if (!templateType.getContentKind().equals(templateContentKind)) {
-              errorReporter.report(
-                  node.getSourceLocation(),
-                  CANNOT_CALL_MIXED_CONTENT_TYPE,
-                  templateContentKind,
-                  templateType.getContentKind());
-            }
-            checkCall(callerTemplate, node, templateType);
-          } else {
+        for (SoyType member : SoyTypes.expandUnions(calleeType)) {
+          // Check that all members of a union type have the same content kind.
+          TemplateType templateType = (TemplateType) member;
+          if (templateContentKind == null) {
+            templateContentKind = templateType.getContentKind();
+          } else if (!templateType.getContentKind().equals(templateContentKind)) {
             errorReporter.report(
-                node.getSourceLocation(), CAN_ONLY_CALL_TEMPLATE_TYPES, calleeType);
-            GlobalNode.replaceExprWithError(node.getCalleeExpr().getChild(0));
+                node.getSourceLocation(),
+                CANNOT_CALL_MIXED_CONTENT_TYPE,
+                templateContentKind,
+                templateType.getContentKind());
           }
+          // It would be nice to combine all template types into a single common type, complaining
+          // if there is no such template type.
+          checkCall(callerTemplate, node, templateType);
         }
       } else if (calleeType.isEffectivelyEqual(UnknownType.getInstance())) {
         // We may end up with UNKNOWN here for external calls.

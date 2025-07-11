@@ -677,12 +677,15 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
       visitSoyNode(node);
     }
 
+    private final ImmutableSet<Kind> templateKinds =
+        ImmutableSet.of(Kind.TEMPLATE, Kind.TEMPLATE_TYPE);
+
     private void allowShortFormCall(ExprRootNode rootNode) {
       if (rootNode.getRoot() instanceof FunctionNode) {
         FunctionNode fnNode = (FunctionNode) rootNode.getRoot();
         if (!fnNode.hasStaticName()) {
           SoyType nameExprType = excludeNullish(fnNode.getNameExpr().getType());
-          if (nameExprType instanceof TemplateImportType || nameExprType instanceof TemplateType) {
+          if (SoyTypes.isKindOrUnionOfKinds(nameExprType, templateKinds)) {
             fnNode.setAllowedToInvokeAsFunction(true);
           }
         }
