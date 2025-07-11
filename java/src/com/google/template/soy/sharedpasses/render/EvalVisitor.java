@@ -1077,7 +1077,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
 
     FunctionType functionType =
         FunctionType.of(
-            argTypes.stream().map(t -> Parameter.of("unused", t)).collect(toImmutableList()),
+            argTypes.stream().map(t -> Parameter.of("unused", t, false)).collect(toImmutableList()),
             returnType);
     TofuValueFactory factory =
         new TofuValueFactory(

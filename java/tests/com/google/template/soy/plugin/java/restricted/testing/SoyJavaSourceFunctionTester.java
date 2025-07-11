@@ -143,6 +143,7 @@ public class SoyJavaSourceFunctionTester {
     fnNode.setAllowedParamTypes(
         Stream.of(matchingSig.parameterTypes()).map(this::parseType).collect(toImmutableList()));
     fnNode.setType(parseType(matchingSig.returnType()));
+    fnNode.setIsVarArgs(matchingSig.isVarArgs());
 
     try {
       return ExpressionEvaluator.evaluate(
@@ -200,10 +201,16 @@ public class SoyJavaSourceFunctionTester {
   }
 
   private Signature findMatchingSignature(Signature[] sigs, int numArgs) {
+    Signature bestSig = null;
     for (Signature sig : sigs) {
-      if (sig.parameterTypes().length == numArgs) {
-        return sig;
+      // Tries to assign signature with equal number of parameters. If no signature with equal
+      // number of parameters is found, then assign a signature with a var args parameter.
+      if (sig.parameterTypes().length == numArgs || (bestSig == null && sig.isVarArgs())) {
+        bestSig = sig;
       }
+    }
+    if (bestSig != null) {
+      return bestSig;
     }
     throw new IllegalArgumentException(
         "No signature on " + fn.getClass().getName() + " with " + numArgs + " parameters");
