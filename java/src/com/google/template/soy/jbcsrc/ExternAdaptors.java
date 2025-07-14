@@ -60,7 +60,8 @@ class ExternAdaptors {
               ImmutableList.<SoyType>builder()
                   .add(soyMethod.getBaseType())
                   .addAll(soyMethod.getParamTypes())
-                  .build()));
+                  .build(),
+              false));
     }
     return Optional.empty();
   }
@@ -73,8 +74,9 @@ class ExternAdaptors {
       SoyJavaExternFunction fn,
       List<SoyExpression> args,
       SoyType returnType,
-      ImmutableList<SoyType> paramTypes) {
-    return asExtern(fn, "unused", args, returnType, paramTypes);
+      ImmutableList<SoyType> paramTypes,
+      boolean isVarArgs) {
+    return asExtern(fn, "unused", args, returnType, paramTypes, isVarArgs);
   }
 
   private static Extern asExtern(
@@ -82,7 +84,8 @@ class ExternAdaptors {
       String methodName,
       List<SoyExpression> args,
       SoyType returnType,
-      ImmutableList<SoyType> argTypes) {
+      ImmutableList<SoyType> argTypes,
+      boolean isVarArgs) {
     ImmutableList<RuntimeType> argRuntimeTypes =
         args.stream()
             .map(a -> soyRuntimeTypeToExternApiType(a.soyRuntimeType()))
@@ -105,7 +108,7 @@ class ExternAdaptors {
 
     FunctionType functionType =
         FunctionType.of(
-            argTypes.stream().map(t -> Parameter.of("unused", t)).collect(toImmutableList()),
+            argTypes.stream().map(t -> Parameter.of("unused", t, false)).collect(toImmutableList()),
             returnType);
     JavaImpl java =
         new JavaImpl() {

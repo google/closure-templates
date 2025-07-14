@@ -403,6 +403,8 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
       SoyErrorKind.of("Value of type ''{0}'' may not be spread here.");
   private static final SoyErrorKind INVALID_ASSIGNMENT_TYPES =
       SoyErrorKind.of("Cannot set a variable of type ''{0}'' to a value of type ''{1}''.");
+  private static final SoyErrorKind VAR_ARGS_NOT_LIST =
+      SoyErrorKind.of("Var args parameter found and not transformed to a list.");
 
   private final ErrorReporter errorReporter;
 
@@ -1739,7 +1741,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
           arg =
               FunctionType.of(
                   arg.getParameters().stream()
-                      .map(p -> FunctionType.Parameter.of(p.getName(), itemType))
+                      .map(p -> FunctionType.Parameter.of(p.getName(), itemType, p.isVarArgs()))
                       .collect(toImmutableList()),
                   arg.getReturnType());
           return ImmutableList.of(arg);
@@ -2260,6 +2262,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
      * For soy functions with type annotation, perform the strict type checking and set the return
      * type.
      */
+    // TODO(b/431043013): Add matching for var args here.
     private void visitSoyFunctionWithSignature(
         SoyFunctionSignature fnSignature, String className, FunctionNode node) {
       ResolvedSignature matchedSignature = null;
@@ -3191,7 +3194,6 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
                                             Arrays.stream(signature.parameterTypes())
                                                 .map(s -> parseType(s, fakeFunctionPath))
                                                 .collect(toImmutableList());
-
                                         return new SoySourceFunctionMethod(
                                             function,
                                             baseType,

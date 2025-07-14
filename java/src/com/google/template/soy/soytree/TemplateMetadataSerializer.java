@@ -523,7 +523,8 @@ public final class TemplateMetadataSerializer {
             parameters.add(
                 FunctionType.Parameter.of(
                     parameter.getName(),
-                    fromProto(parameter.getType(), typeRegistry, filePath, errorReporter)));
+                    fromProto(parameter.getType(), typeRegistry, filePath, errorReporter),
+                    parameter.getIsVarArgs()));
           }
           return typeRegistry.intern(
               FunctionType.of(
