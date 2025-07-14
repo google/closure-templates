@@ -54,6 +54,7 @@ import com.google.template.soy.types.FunctionType;
 import com.google.template.soy.types.IndexedType;
 import com.google.template.soy.types.IntersectionType;
 import com.google.template.soy.types.LegacyObjectMapType;
+import com.google.template.soy.types.LiteralType;
 import com.google.template.soy.types.MapType;
 import com.google.template.soy.types.NamedType;
 import com.google.template.soy.types.RecordType;
@@ -348,6 +349,9 @@ public final class JsType implements CodeChunk.HasRequires {
      */
     @Override
     public JsType get(SoyType soyType, JsTypeProducer forRecursion) {
+      if (soyType instanceof LiteralType) {
+        soyType = ((LiteralType) soyType).getPrimitiveType();
+      }
       switch (soyType.getKind()) {
         case NULL:
           return NULL_TYPE;

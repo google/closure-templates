@@ -32,7 +32,9 @@ import com.google.template.soy.data.TemplateValue;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NumberData;
+import com.google.template.soy.data.restricted.PrimitiveData;
 import com.google.template.soy.data.restricted.StringData;
+import com.google.template.soy.types.LiteralType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.UnionType;
@@ -185,9 +187,11 @@ public final class TofuTypeChecks {
         return CheckResult.fromBool(value == EvalVisitor.UNDEFINED_VE_DATA);
       case FUNCTION:
         return CheckResult.fromBool(value instanceof TofuFunctionValue);
+      case LITERAL:
+        PrimitiveData literal = ((LiteralType) type).literal();
+        return CheckResult.fromBool(value.equals(literal));
       case COMPUTED:
         return doIsInstance(type.getEffectiveType(), value);
-      case LITERAL:
       case NAMESPACE:
       case PROTO_TYPE:
       case PROTO_ENUM_TYPE:

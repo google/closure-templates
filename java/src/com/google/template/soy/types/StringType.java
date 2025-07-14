@@ -16,6 +16,7 @@
 
 package com.google.template.soy.types;
 
+import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.soytree.SoyTypeP;
 
 /**
@@ -41,7 +42,7 @@ public final class StringType extends PrimitiveType {
   @Override
   boolean doIsAssignableFromNonUnionType(SoyType srcType) {
     if (srcType instanceof LiteralType) {
-      srcType = ((LiteralType) srcType).getSuperType();
+      return ((LiteralType) srcType).literal() instanceof StringData;
     }
     return super.doIsAssignableFromNonUnionType(srcType);
   }
