@@ -607,6 +607,10 @@ public final class SoyTreeUtils {
     return TreeStreams.breadthFirst(root, TRAVERSING::exec);
   }
 
+  public static List<? extends TypeNode> getChildTypeNodes(TypeNode root) {
+    return TRAVERSING.exec(root);
+  }
+
   /** Returns a stream of all the type nodes contained in a Soy node branch. */
   public static Stream<TypeNode> allTypeNodes(SoyNode root) {
     return allNodesOfType(root, TypesHolderNode.class).flatMap(TypesHolderNode::getTypeNodes);

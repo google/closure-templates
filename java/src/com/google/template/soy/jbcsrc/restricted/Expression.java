@@ -42,7 +42,6 @@ import com.google.template.soy.data.restricted.GbigintData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.internal.proto.JavaQualifiedNames;
 import com.google.template.soy.jbcsrc.shared.Names;
-import com.google.template.soy.types.LiteralType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypes;
@@ -776,10 +775,6 @@ public abstract class Expression extends BytecodeProducer {
     if (BytecodeUtils.isDefinitelyAssignableFrom(BytecodeUtils.SOY_VALUE_TYPE, resultType)) {
       if (isDefinitelyAssignableFrom(BytecodeUtils.NULLISH_DATA_TYPE, resultType)) {
         return Optional.empty();
-      }
-
-      if (type instanceof LiteralType) {
-        type = ((LiteralType) type).getPrimitiveType();
       }
 
       Class<? extends SoyValue> expectedClass = null;

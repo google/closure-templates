@@ -16,19 +16,20 @@
 
 package com.google.template.soy.passes;
 
-import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.template.soy.soytree.SoyTreeUtils.getChildTypeNodes;
 
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
+import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
-import com.google.template.soy.soytree.TemplateNode;
-import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import com.google.template.soy.types.MapType;
+import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.ast.GenericTypeNode;
+import com.google.template.soy.types.ast.LiteralTypeNode;
 import com.google.template.soy.types.ast.TypeNode;
 
 /**
@@ -46,6 +47,8 @@ final class CheckDeclaredTypesPass implements CompilerFilePass {
               + "bool, int, float, gbigint, number, string, proto enum.");
   private static final SoyErrorKind VE_BAD_DATA_TYPE =
       SoyErrorKind.of("Illegal VE metadata type ''{0}''. The metadata must be a proto.");
+  private static final SoyErrorKind LITERAL_TYPE =
+      SoyErrorKind.of("Literal types are not allowed.");
 
   private final ErrorReporter errorReporter;
 
@@ -55,59 +58,64 @@ final class CheckDeclaredTypesPass implements CompilerFilePass {
 
   @Override
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
-    for (TemplateNode templateNode : file.getTemplates()) {
-      for (TemplateHeaderVarDefn param : templateNode.getHeaderParams()) {
-        TypeNode type = param.getTypeNode();
-        // Skip this if it's a param with a default value and an inferred type. In the case of an
-        // illegal map key type, the error will be reported on the map literal by
-        // ResolveExpressionTypesPass.
-        if (type != null) {
-          SoyTreeUtils.allTypeNodes(type)
-              .filter(GenericTypeNode.class::isInstance)
-              .map(GenericTypeNode.class::cast)
-              .forEach(
-                  node -> {
-                    if (!node.isTypeResolved()) {
-                      // this means an error was already reported
-                      return;
+    SoyTreeUtils.allTypeNodes(file)
+        .forEach(
+            node -> {
+              checkGenericTypes(node);
+              checkLiteralTypes(node);
+            });
+  }
+
+  private void checkGenericTypes(TypeNode root) {
+    SoyTreeUtils.allTypeNodes(root)
+        .forEach(
+            node -> {
+              if (!node.isTypeResolved()) {
+                // this means an error was already reported
+                return;
+              }
+              if (node instanceof GenericTypeNode) {
+                GenericTypeNode genericTypeNode = (GenericTypeNode) node;
+                SoyType soyType = node.getResolvedType();
+                switch (soyType.getKind()) {
+                  case MAP:
+                    TypeNode key = genericTypeNode.arguments().get(0);
+                    if (!MapType.isAllowedKeyType(key.getResolvedType())) {
+                      errorReporter.report(
+                          key.sourceLocation(), BAD_MAP_OR_SET_KEY_TYPE, key.getResolvedType());
                     }
-                    switch (node.getResolvedType().getKind()) {
-                      case MAP:
-                        checkArgument(node.arguments().size() == 2);
-                        TypeNode key = node.arguments().get(0);
-                        if (!MapType.isAllowedKeyType(key.getResolvedType())) {
-                          errorReporter.report(
-                              key.sourceLocation(), BAD_MAP_OR_SET_KEY_TYPE, key.getResolvedType());
-                        }
-                        break;
-                      case ITERABLE:
-                      case LIST:
-                      case SET:
-                        checkArgument(node.arguments().size() == 1);
-                        break;
-                      case LEGACY_OBJECT_MAP:
-                        checkArgument(node.arguments().size() == 2);
-                        break;
-                      case VE:
-                        checkArgument(node.arguments().size() == 1);
-                        TypeNode dataType = node.arguments().get(0);
-                        if (dataType.getResolvedType().getKind() != Kind.PROTO
-                            && !SoyTypes.isNullOrUndefined(dataType.getResolvedType())) {
-                          errorReporter.report(
-                              dataType.sourceLocation(),
-                              VE_BAD_DATA_TYPE,
-                              dataType.getResolvedType());
-                        }
-                        break;
-                      case ELEMENT:
-                        break;
-                      default:
-                        throw new AssertionError(
-                            "unexpected generic type: " + node.getResolvedType().getKind());
+                    break;
+                  case VE:
+                    TypeNode dataType = genericTypeNode.arguments().get(0);
+                    if (dataType.getResolvedType().getKind() != Kind.PROTO
+                        && !SoyTypes.isNullOrUndefined(dataType.getResolvedType())) {
+                      errorReporter.report(
+                          dataType.sourceLocation(), VE_BAD_DATA_TYPE, dataType.getResolvedType());
                     }
-                  });
-        }
+                    break;
+                  default:
+                    break;
+                }
+              }
+            });
+  }
+
+  private void checkLiteralTypes(TypeNode root) {
+    if (root instanceof LiteralTypeNode) {
+      ExprNode value = ((LiteralTypeNode) root).literal();
+      if (value.getKind() != ExprNode.Kind.NULL_NODE
+          && value.getKind() != ExprNode.Kind.UNDEFINED_NODE) {
+        errorReporter.report(root.sourceLocation(), LITERAL_TYPE);
+      }
+    } else if (root instanceof GenericTypeNode) {
+      // String literal type nodes are only valid in the second argument of Pick<> and Omit<>.
+      String type = ((GenericTypeNode) root).name();
+      if (type.equals("Pick") || type.equals("Omit")) {
+        checkGenericTypes(((GenericTypeNode) root).arguments().get(0));
+        return;
       }
     }
+
+    getChildTypeNodes(root).forEach(this::checkLiteralTypes);
   }
 }

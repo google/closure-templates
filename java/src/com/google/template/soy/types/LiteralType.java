@@ -65,7 +65,7 @@ public abstract class LiteralType extends SoyType {
     return false;
   }
 
-  public PrimitiveType getPrimitiveType() {
+  public PrimitiveType getSuperType() {
     PrimitiveData literal = literal();
     if (literal instanceof StringData) {
       return StringType.getInstance();
