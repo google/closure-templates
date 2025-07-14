@@ -28,8 +28,13 @@ import com.google.template.soy.soytree.KeyNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
+import com.google.template.soy.types.GbigintType;
+import com.google.template.soy.types.NullType;
+import com.google.template.soy.types.NumberType;
 import com.google.template.soy.types.SoyType;
-import com.google.template.soy.types.SoyTypes;
+import com.google.template.soy.types.StringType;
+import com.google.template.soy.types.UndefinedType;
+import com.google.template.soy.types.UnionType;
 import java.util.Objects;
 
 /**
@@ -49,7 +54,7 @@ final class KeyCommandPass implements CompilerFilePass {
           "The key attribute is deprecated. Instead, use the '{'key'}' command.");
 
   private static final SoyErrorKind UNSUPPORTED_TYPE =
-      SoyErrorKind.of("Unsupported type ''{0}'': keys must be of type string, integer, or enum.");
+      SoyErrorKind.of("Unsupported type ''{0}'': keys must be of type string, number, or enum.");
 
   private static final SoyErrorKind KEY_ELEMENT_AMBIGUOUS =
       SoyErrorKind.of(
@@ -124,28 +129,19 @@ final class KeyCommandPass implements CompilerFilePass {
     }
   }
 
+  // These are all fine.
+  // null should potentially be rejected, but it is often hard to avoid nullable expressions.
+  private static final SoyType SUPPORTED =
+      UnionType.of(
+          NullType.getInstance(),
+          UndefinedType.getInstance(),
+          NumberType.getInstance(),
+          StringType.getInstance(),
+          GbigintType.getInstance());
+
   private void checkNodeIsSupportedType(ExprRootNode exprRootNode) {
     SoyType exprType = exprRootNode.getRoot().getType();
-    boolean isSupportedType = true;
-    for (SoyType type : SoyTypes.flattenUnionToSet(exprType)) {
-      switch (type.getKind()) {
-        case NULL:
-        case UNDEFINED:
-        case NUMBER:
-        case INT:
-        case FLOAT:
-        case STRING:
-        case PROTO_ENUM:
-        case GBIGINT:
-          // these are all fine.
-          // null should potentially be rejected, but it is often hard to avoid nullable expressions
-          break;
-        default:
-          isSupportedType = false;
-          break;
-      }
-    }
-    if (!isSupportedType) {
+    if (!SUPPORTED.isAssignableFromStrict(exprType)) {
       errorReporter.report(exprRootNode.getSourceLocation(), UNSUPPORTED_TYPE, exprType);
     }
   }
