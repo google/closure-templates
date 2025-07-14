@@ -190,16 +190,13 @@ public final class TofuTypeChecks {
       case LITERAL:
         PrimitiveData literal = ((LiteralType) type).literal();
         return CheckResult.fromBool(value.equals(literal));
+      case COMPUTED:
+        return doIsInstance(type.getEffectiveType(), value);
       case NAMESPACE:
       case PROTO_TYPE:
       case PROTO_ENUM_TYPE:
       case PROTO_EXTENSION:
       case TEMPLATE_TYPE:
-      case NAMED:
-      case INTERSECTION:
-      case INDEXED:
-      case PICK:
-      case OMIT:
       case NEVER:
         throw new UnsupportedOperationException();
     }

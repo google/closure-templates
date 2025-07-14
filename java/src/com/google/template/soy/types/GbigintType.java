@@ -47,7 +47,7 @@ public final class GbigintType extends SoyType {
   }
 
   @Override
-  void doToProto(SoyTypeP.Builder builder) {
+  protected void doToProto(SoyTypeP.Builder builder) {
     builder.setPrimitive(SoyTypeP.PrimitiveTypeP.GBIGINT);
   }
 }

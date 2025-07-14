@@ -39,17 +39,12 @@ public abstract class PickType extends ComputedType {
   public abstract SoyType getKeys();
 
   @Override
-  public Kind getKind() {
-    return Kind.PICK;
-  }
-
-  @Override
   public final String toString() {
     return "Pick<" + getType() + ", " + getKeys() + ">";
   }
 
   @Override
-  void doToProto(SoyTypeP.Builder builder) {
+  protected void doToProto(SoyTypeP.Builder builder) {
     builder.getPickBuilder().setType(getType().toProto()).setKeys(getKeys().toProto());
   }
 

@@ -74,7 +74,7 @@ final class TypeSubstitutions {
     // While migrating from int/float to number (b/395679605) we need to not narrow from number to
     // int or float. Specifically this interacts poorly with the PluginValidator, which might then
     // expect an IntegerData when it receives a FloatData.
-    if (newType.equals(origType)) {
+    if (newType.isEffectivelyEqual(origType)) {
       return true;
     }
     ImmutableSet<SoyType> members1 = SoyTypes.flattenUnionToSet(origType);

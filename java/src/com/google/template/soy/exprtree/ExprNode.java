@@ -27,7 +27,6 @@ import com.google.template.soy.exprtree.SoyPrecedence.Associativity;
 import com.google.template.soy.types.SoyType;
 import java.util.List;
 import java.util.Optional;
-import javax.annotation.Nullable;
 
 /**
  * This class defines the base interface for a node in the Soy expression parse tree, as well as a
@@ -108,20 +107,10 @@ public interface ExprNode extends Node {
   Kind getKind();
 
   /**
-   * Returns the data type of this node. This is the effective type after named, indexed, and
-   * intersection types are resolved.
-   */
-  @Nullable
-  default SoyType getType() {
-    SoyType authored = getAuthoredType();
-    return authored != null ? authored.getEffectiveType() : null;
-  }
-
-  /**
    * Returns the type of the node as it was authored (before calling {@link
    * SoyType#getEffectiveType()}.
    */
-  SoyType getAuthoredType();
+  SoyType getType();
 
   @Override
   ParentExprNode getParent();

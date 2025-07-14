@@ -41,17 +41,12 @@ public abstract class IndexedType extends ComputedType {
   public abstract SoyType getProperty();
 
   @Override
-  public Kind getKind() {
-    return Kind.INDEXED;
-  }
-
-  @Override
   public final String toString() {
     return getType() + "[" + getProperty() + "]";
   }
 
   @Override
-  void doToProto(SoyTypeP.Builder builder) {
+  protected void doToProto(SoyTypeP.Builder builder) {
     builder.getIndexedBuilder().setType(getType().toProto()).setProperty(getProperty().toProto());
   }
 

@@ -115,7 +115,7 @@ public abstract class FunctionType extends SoyType {
   }
 
   @Override
-  final void doToProto(SoyTypeP.Builder builder) {
+  protected void doToProto(SoyTypeP.Builder builder) {
     FunctionTypeP.Builder templateBuilder =
         builder.getFunctionBuilder().setReturnType(getReturnType().toProto());
     for (Parameter parameter : getParameters()) {

@@ -18,17 +18,25 @@ package com.google.template.soy.exprtree;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.basetree.CopyState;
+import com.google.template.soy.types.AnyType;
+import com.google.template.soy.types.ListType;
+import com.google.template.soy.types.RecordType;
 
 /** A node representing a list to map conversion expr (e.g. "map(l)"). */
 public final class MapLiteralFromListNode extends AbstractParentExprNode {
   public static final String KEY_STRING = "key";
   public static final String VALUE_STRING = "value";
-  public static final ImmutableSet<String> MAP_RECORD_FIELDS =
-      ImmutableSet.of(KEY_STRING, VALUE_STRING);
+
+  public static final RecordType RECORD_TYPE =
+      RecordType.of(
+          ImmutableList.of(
+              RecordType.memberOf(KEY_STRING, false, AnyType.getInstance()),
+              RecordType.memberOf(VALUE_STRING, false, AnyType.getInstance())));
+  public static final ListType LIST_TYPE = ListType.of(RECORD_TYPE);
 
   private final Identifier mapIdentifier;
   private int nodeId;

@@ -358,7 +358,7 @@ final class JbcSrcValueFactory extends JavaValueFactory {
 
     // For explicit null types, we can just cast w/o doing any other work.
     // We already validated that it isn't primitive types.
-    if (actualParam.soyRuntimeType().soyType().equals(NullType.getInstance())) {
+    if (actualParam.soyRuntimeType().soyType().isEffectivelyEqual(NullType.getInstance())) {
       return BytecodeUtils.constantNull(Type.getType(expectedParamType))
           .withSourceLocation(actualParam.location());
     }
@@ -482,7 +482,7 @@ final class JbcSrcValueFactory extends JavaValueFactory {
   }
 
   private SoyExpression toSoyExpression(JbcSrcJavaValue pluginReturnValue) {
-    SoyType expectedType = fnNode.getReturnType();
+    SoyType expectedType = fnNode.getReturnType().getEffectiveType();
     Expression expr = pluginReturnValue.expr();
     SoyExpression soyExpr;
 

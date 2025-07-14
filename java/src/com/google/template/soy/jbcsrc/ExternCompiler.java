@@ -324,7 +324,8 @@ public final class ExternCompiler {
     SoyRuntimeType runtimeType =
         SoyRuntimeType.getUnboxedType(nonNullable)
             .orElseGet(() -> SoyRuntimeType.getBoxedType(nonNullable));
-    if (!nonNullable.equals(type) && BytecodeUtils.isPrimitive(runtimeType.runtimeType())) {
+    if (!nonNullable.isEffectivelyEqual(type)
+        && BytecodeUtils.isPrimitive(runtimeType.runtimeType())) {
       // int|null -> SoyValue
       runtimeType = SoyRuntimeType.getBoxedType(type);
     }
@@ -503,7 +504,7 @@ public final class ExternCompiler {
           return JbcSrcExternRuntime.LIST_UNBOX_ENUMS.invoke(
               unboxedList, BytecodeUtils.constant(BytecodeUtils.getTypeForClassName(javaClass)));
         case UNION:
-          if (SoyTypes.INT_OR_FLOAT.equals(elmType)) {
+          if (SoyTypes.INT_OR_FLOAT.isEffectivelyEqual(elmType)) {
             return JbcSrcExternRuntime.LIST_UNBOX_NUMBERS.invoke(unboxedList);
           }
         // fall through

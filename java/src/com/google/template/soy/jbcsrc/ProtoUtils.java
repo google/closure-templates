@@ -235,7 +235,7 @@ final class ProtoUtils {
       SingularFieldAccessMode mode,
       LocalVariableManager varManager,
       Int64ConversionMode int64Mode) {
-    SoyType type = baseExpr.soyType();
+    SoyType type = baseExpr.soyType().getEffectiveType();
     if (type instanceof SoyProtoType) {
       return accessField((SoyProtoType) type, baseExpr, fieldName, fieldType, mode, int64Mode);
     } else {
@@ -245,7 +245,7 @@ final class ProtoUtils {
           fieldType,
           varManager,
           expr -> {
-            SoyProtoType protoType = (SoyProtoType) expr.soyType();
+            SoyProtoType protoType = expr.soyType().asType(SoyProtoType.class);
             return accessField(
                 protoType,
                 expr,
@@ -274,7 +274,7 @@ final class ProtoUtils {
 
   static SoyExpression hasserField(
       SoyExpression baseExpr, String fieldName, LocalVariableManager varManager) {
-    SoyType type = baseExpr.soyType();
+    SoyType type = baseExpr.soyType().getEffectiveType();
     if (type instanceof SoyProtoType) {
       return hasserField((SoyProtoType) type, baseExpr, fieldName);
     } else {
@@ -284,7 +284,7 @@ final class ProtoUtils {
           BoolType.getInstance(),
           varManager,
           expr -> {
-            SoyProtoType protoType = (SoyProtoType) expr.soyType();
+            SoyProtoType protoType = expr.soyType().asType(SoyProtoType.class);
             return hasserField(protoType, expr, fieldName);
           });
     }
@@ -304,7 +304,7 @@ final class ProtoUtils {
    */
   static SoyExpression accessExtensionField(
       SoyExpression baseExpr, MethodCallNode node, String fieldName, SingularFieldAccessMode mode) {
-    SoyProtoType protoType = (SoyProtoType) baseExpr.soyType();
+    SoyProtoType protoType = baseExpr.soyType().asType(SoyProtoType.class);
     return new AccessorGenerator(
             protoType, baseExpr, fieldName, node.getType(), mode, Int64ConversionMode.FORCE_GBIGINT)
         .generate();
@@ -319,7 +319,7 @@ final class ProtoUtils {
    */
   static SoyExpression hasExtensionField(
       SoyExpression baseExpr, MethodCallNode node, String fieldName) {
-    SoyProtoType protoType = (SoyProtoType) baseExpr.soyType();
+    SoyProtoType protoType = baseExpr.soyType().asType(SoyProtoType.class);
     return new HasserGenerator(protoType, baseExpr, fieldName).generate();
   }
 
@@ -525,7 +525,7 @@ final class ProtoUtils {
       FieldDescriptor keyDescriptor = mapFields.get(0);
       FieldDescriptor valueDescriptor = mapFields.get(1);
       return SoyExpression.forMap(
-          (MapType) fieldType,
+          fieldType.asType(MapType.class),
           MethodRefs.LAZY_PROTO_TO_SOY_VALUE_MAP_FOR_MAP.invoke(
               typedBaseExpr.invoke(getMethodRef),
               FieldVisitor.visitField(keyDescriptor, FORCE_GBIGINT_REPEATED_FIELD_INTERPRETER),
@@ -741,13 +741,19 @@ final class ProtoUtils {
         SoyType fieldType,
         LocalVariableManager varManager,
         Function<SoyExpression, SoyExpression> memberGenerator) {
-      checkArgument(baseExpr.soyType().getKind() == SoyType.Kind.UNION, baseExpr.soyType());
-      checkArgument(!SoyTypes.isNullish(baseExpr.soyType()), baseExpr.soyType());
       this.baseExpr = baseExpr;
       this.fieldName = fieldName;
       this.fieldType = fieldType;
       this.varManager = varManager;
       this.memberGenerator = memberGenerator;
+
+      SoyType type = getBaseExprType();
+      checkArgument(type instanceof UnionType, baseExpr.soyType());
+      checkArgument(!SoyTypes.isNullish(type), baseExpr.soyType());
+    }
+
+    private SoyType getBaseExprType() {
+      return SoyTypes.normalizeUnion(baseExpr.soyType());
     }
 
     private Expression getUnboxedBaseExpression() {
@@ -773,14 +779,14 @@ final class ProtoUtils {
       var scopeExit = scope.exitScopeMarker();
 
       boolean foundBoxed = false;
-      ImmutableSet<SoyType> members = ((UnionType) baseExpr.soyType()).getMembers();
+      ImmutableSet<SoyType> members = ((UnionType) getBaseExprType()).getMembers();
       // Each key is a possible type of the (union) base expression. The value is the code to access
       // the field for the key's type.
       Map<SoyRuntimeType, SoyExpression> getters = new LinkedHashMap<>();
       for (SoyType member : members) {
         // The caller should check that all member types are protos, so this cast is safe.
-        SoyProtoType protoType = (SoyProtoType) member;
-        SoyRuntimeType unboxed = SoyRuntimeType.getUnboxedType(protoType).get();
+        SoyRuntimeType unboxed =
+            SoyRuntimeType.getUnboxedType(member.asType(SoyProtoType.class)).get();
         SoyExpression fieldAccess =
             memberGenerator.apply(
                 SoyExpression.forProto(unboxed, base.checkedCast(unboxed.runtimeType())));
@@ -917,7 +923,7 @@ final class ProtoUtils {
       this.detacher = detacher;
       this.varManager = varManager;
 
-      this.protoType = (SoyProtoType) node.getType();
+      this.protoType = node.getType().asType(SoyProtoType.class);
       this.descriptor = protoType.getDescriptor();
     }
 
@@ -1123,7 +1129,7 @@ final class ProtoUtils {
       var scopeExit = scope.exitScopeMarker();
 
       // Get type info of the map key/value
-      MapType mapType = (MapType) mapArg.soyType();
+      MapType mapType = mapArg.soyType().asType(MapType.class);
       SoyType keyType = mapType.getKeyType();
       SoyRuntimeType keyRuntimeType = SoyRuntimeType.getBoxedType(keyType);
       SoyType valueType = mapType.getValueType();
@@ -1217,7 +1223,7 @@ final class ProtoUtils {
 
       SoyExpression baseArg = compile(argNode);
       // If the list arg is definitely an empty list/map, do nothing
-      SoyType soyType = baseArg.soyType();
+      SoyType soyType = baseArg.soyType().getEffectiveType();
       if ((soyType instanceof AbstractIterableType && ((AbstractIterableType) soyType).isEmpty())
           || (soyType instanceof AbstractMapType && ((AbstractMapType) soyType).isEmpty())) {
         return Statement.NULL_STATEMENT;
@@ -1298,7 +1304,7 @@ final class ProtoUtils {
       // exitScope must be called after creating all the variables
       Label scopeExit = scope.exitScopeMarker();
       // Expected type info of the list element
-      SoyType elementSoyType = ((ListType) unboxed.soyType()).getElementType();
+      SoyType elementSoyType = unboxed.soyType().asType(ListType.class).getElementType();
       SoyRuntimeType elementType = SoyRuntimeType.getBoxedType(elementSoyType);
 
       // Call list.get(i).resolveSoyValueProvider(), then cast to the expected subtype of SoyValue

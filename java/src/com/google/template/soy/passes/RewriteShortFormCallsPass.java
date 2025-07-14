@@ -128,7 +128,7 @@ final class RewriteShortFormCallsPass implements CompilerFileSetPass {
       LetValueNode node, IdGenerator nodeIdGen, ImmutableListMultimap<VarDefn, VarRefNode> vars) {
     CallBasicNode call = convert(node.getExpr(), nodeIdGen);
     if (call != null) {
-      TemplateType templateType = (TemplateType) call.getCalleeExpr().getType();
+      TemplateType templateType = call.getCalleeExpr().getType().asType(TemplateType.class);
       SourceLocation loc = node.getSourceLocation();
       SanitizedContentKind kind = templateType.getContentKind().getSanitizedContentKind();
       LetContentNode contentNode =
@@ -154,7 +154,7 @@ final class RewriteShortFormCallsPass implements CompilerFileSetPass {
   private boolean visitCallParamValueNode(CallParamValueNode node, IdGenerator nodeIdGen) {
     CallBasicNode call = convert(node.getExpr(), nodeIdGen);
     if (call != null) {
-      TemplateType templateType = (TemplateType) call.getCalleeExpr().getType();
+      TemplateType templateType = call.getCalleeExpr().getType().asType(TemplateType.class);
       SourceLocation loc = node.getSourceLocation();
       SanitizedContentKind kind = templateType.getContentKind().getSanitizedContentKind();
       CallParamContentNode contentNode =
@@ -222,7 +222,7 @@ final class RewriteShortFormCallsPass implements CompilerFileSetPass {
       CallParamValueNode valueNode =
           new CallParamValueNode(
               nodeIdGen.genId(), id.location(), id, fnNode.getParam(i).copy(new CopyState()));
-      valueNode.getExpr().setType(fnNode.getParam(i).getAuthoredType());
+      valueNode.getExpr().setType(fnNode.getParam(i).getType());
       call.addChild(valueNode);
     }
 

@@ -25,10 +25,8 @@ import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.soytree.SoyTypeP;
 import com.google.template.soy.types.RecordType.Member;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Deque;
 import java.util.List;
 
 /**
@@ -36,7 +34,7 @@ import java.util.List;
  * record types.
  */
 @AutoValue
-public abstract class IntersectionType extends SoyType {
+public abstract class IntersectionType extends ComputedType {
 
   /**
    * Create a union from a collection of types.
@@ -50,7 +48,7 @@ public abstract class IntersectionType extends SoyType {
     ImmutableSortedSet.Builder<SoyType> builder =
         ImmutableSortedSet.orderedBy(UnionType.MEMBER_ORDER);
     for (SoyType type : members) {
-      if (type.getKind() == Kind.INTERSECTION) {
+      if (type instanceof IntersectionType) {
         builder.addAll(((IntersectionType) type).getMembers());
       } else {
         builder.add(type);
@@ -65,36 +63,16 @@ public abstract class IntersectionType extends SoyType {
     return new AutoValue_IntersectionType(flattenedMembers);
   }
 
-  @Override
-  public Kind getKind() {
-    return Kind.INTERSECTION;
-  }
-
   /** Return the set of types contained in this intersection. */
   public abstract ImmutableSet<SoyType> getMembers();
-
-  @Override
-  boolean doIsAssignableFromNonUnionType(SoyType srcType, AssignabilityPolicy policy) {
-    // A type can be assigned to an intersection iff it is assignable to all members of the
-    // intersection.
-    for (SoyType memberType : getMembers()) {
-      if (!memberType.isAssignableFromInternal(srcType, policy)) {
-        return false;
-      }
-    }
-    return true;
-  }
 
   @Override
   @Memoized
   public SoyType getEffectiveType() {
     ArrayListMultimap<String, Member> allMembers = ArrayListMultimap.create();
-    Deque<SoyType> stack = new ArrayDeque<>(getMembers());
-    while (!stack.isEmpty()) {
-      SoyType member = stack.removeLast().getEffectiveType();
-      if (member.getKind() == Kind.INTERSECTION) {
-        stack.addAll(((IntersectionType) member).getMembers());
-      } else if (member.getKind() == Kind.RECORD) {
+    for (SoyType member : getMembers()) {
+      member = member.getEffectiveType();
+      if (member instanceof RecordType) {
         ((RecordType) member).getMembers().forEach(m -> allMembers.put(m.name(), m));
       } else {
         return NeverType.getInstance();
@@ -134,11 +112,11 @@ public abstract class IntersectionType extends SoyType {
 
   @Override
   public final String toString() {
-    return Joiner.on('&').join(getMembers());
+    return Joiner.on(" & ").join(getMembers());
   }
 
   @Override
-  void doToProto(SoyTypeP.Builder builder) {
+  protected void doToProto(SoyTypeP.Builder builder) {
     SoyTypeP.IntersectionTypeP.Builder typeBuilder = builder.getIntersectionBuilder();
     for (SoyType member : getMembers()) {
       typeBuilder.addMember(member.toProto());

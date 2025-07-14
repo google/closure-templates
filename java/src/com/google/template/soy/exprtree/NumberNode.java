@@ -66,7 +66,7 @@ public final class NumberNode extends AbstractPrimitiveNode {
   }
 
   @Override
-  public SoyType getAuthoredType() {
+  public SoyType getType() {
     return isInteger() ? IntType.getInstance() : FloatType.getInstance();
   }
 

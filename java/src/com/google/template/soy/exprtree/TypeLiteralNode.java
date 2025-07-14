@@ -53,7 +53,7 @@ public final class TypeLiteralNode extends AbstractPrimitiveNode implements Type
   }
 
   @Override
-  public SoyType getAuthoredType() {
+  public SoyType getType() {
     return typeNode.getResolvedType();
   }
 

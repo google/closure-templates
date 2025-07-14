@@ -187,7 +187,6 @@ import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import com.google.template.soy.soytree.defn.TemplateStateVar;
 import com.google.template.soy.types.AbstractIterableType;
 import com.google.template.soy.types.AbstractMapType;
-import com.google.template.soy.types.AnyType;
 import com.google.template.soy.types.BoolType;
 import com.google.template.soy.types.FloatType;
 import com.google.template.soy.types.FunctionType;
@@ -522,7 +521,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
           .forEach(
               headerVar -> {
                 paramInfExprVisitor.exec(headerVar.defaultValue());
-                headerVar.setType(headerVar.defaultValue().getRoot().getAuthoredType());
+                headerVar.setType(headerVar.defaultValue().getRoot().getType());
               });
       ((TemplateImportType) node.asVarDefn().type())
           .setBasicTemplateType(Metadata.buildTemplateType(node));
@@ -597,7 +596,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
           .forEach(
               headerVar -> {
                 exprVisitor.exec(headerVar.defaultValue());
-                SoyType actualType = headerVar.defaultValue().getRoot().getAuthoredType();
+                SoyType actualType = headerVar.defaultValue().getRoot().getType();
 
                 SoyType declaredType = headerVar.authoredType();
                 if (!declaredType.isAssignableFromStrict(actualType)) {
@@ -764,7 +763,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
             UndefinedType.getInstance());
 
     private boolean isAllowedSwitchExprType(SoyType type) {
-      return type.equals(AnyType.getInstance())
+      return type.isOfKind(Kind.ANY)
           || (!SoyTypes.isNullOrUndefined(type) && allowedSwitchTypes.isAssignableFromLoose(type));
     }
 
@@ -825,7 +824,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
 
           substitutions.restore(previousSubstitutionState);
 
-          if (!switchExpr.getType().equals(switchExprNarrowedType)) {
+          if (!switchExpr.getType().isEffectivelyEqual(switchExprNarrowedType)) {
             // If a case statement has a null/undefined literal, the switch expression can't be
             // null/undefined for any of the following case statements.
             Map<ExprEquivalence.Wrapper, SoyType> negativeTypeConstraints = new HashMap<>();
@@ -860,7 +859,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
       SoyType exprType = node.getExpr().getType();
       if (exprType != UnknownType.getInstance() && !SoyTypes.isIntFloatOrNumber(exprType)) {
         SoyType notNullable = excludeNullish(exprType);
-        if (!notNullable.equals(exprType) && SoyTypes.isIntFloatOrNumber(notNullable)) {
+        if (!notNullable.isEffectivelyEqual(exprType) && SoyTypes.isIntFloatOrNumber(notNullable)) {
           errorReporter.warn(node.getExpr().getSourceLocation(), PLURAL_EXPR_NULLABLE, exprType);
         } else {
           errorReporter.report(node.getExpr().getSourceLocation(), PLURAL_EXPR_TYPE, exprType);
@@ -941,7 +940,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
    * @return The type of the elements of the collection.
    */
   private SoyType getElementType(SoyType collectionType, ForNonemptyNode node) {
-    Preconditions.checkNotNull(collectionType);
+    collectionType = collectionType.getEffectiveType();
     switch (collectionType.getKind()) {
       case UNKNOWN:
         // If we don't know anything about the base type, then make no assumptions
@@ -1029,7 +1028,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
     protected void visitExprRootNode(ExprRootNode node) {
       visitChildren(node);
       ExprNode expr = node.getRoot();
-      node.setType(expr.getAuthoredType());
+      node.setType(expr.getType());
       tryApplySubstitution(node);
     }
 
@@ -1066,8 +1065,10 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
         requireNodeType(child);
         if (child.getKind() == ExprNode.Kind.SPREAD_OP_NODE) {
           SoyType spreadType = child.getType();
-          if (spreadType instanceof AbstractIterableType) {
-            elementTypes.add(((AbstractIterableType) spreadType).getElementType());
+          if (IterableType.ANY_ITERABLE.isAssignableFromStrict(spreadType)) {
+            SoyTypes.flattenUnion(spreadType)
+                .map(AbstractIterableType.class::cast)
+                .forEach(t -> elementTypes.add(t.getElementType()));
           } else {
             errorReporter.report(child.getSourceLocation(), INVALID_SPREAD_VALUE, spreadType);
           }
@@ -1139,8 +1140,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
       // Resolve the type of the itemMapExpr, and use it to determine the comprehension's resulting
       // list type.
       visit(node.getListItemTransformExpr());
-      node.setType(
-          typeRegistry.getOrCreateListType(node.getListItemTransformExpr().getAuthoredType()));
+      node.setType(typeRegistry.getOrCreateListType(node.getListItemTransformExpr().getType()));
 
       // Return the type substitutions to their state before narrowing the list item type.
       substitutions.restore(savedSubstitutions);
@@ -1225,18 +1225,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
     }
 
     private boolean isListOfKeyValueRecords(SoyType type) {
-      if (!(type instanceof ListType)) {
-        return false;
-      }
-      ListType listType = (ListType) type;
-
-      if (!(listType.getElementType() instanceof RecordType)) {
-        return false;
-      }
-      RecordType recordType = (RecordType) listType.getElementType();
-
-      return ImmutableSet.copyOf(recordType.getMemberNames())
-          .equals(MapLiteralFromListNode.MAP_RECORD_FIELDS);
+      return MapLiteralFromListNode.LIST_TYPE.isAssignableFromStrict(type);
     }
 
     @Override
@@ -1264,10 +1253,16 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
       }
 
       SoyType keyType =
-          ((RecordType) ((ListType) listExprType).getElementType())
+          listExprType
+              .asType(ListType.class)
+              .getElementType()
+              .asType(RecordType.class)
               .getMemberType(MapLiteralFromListNode.KEY_STRING);
       SoyType valueType =
-          ((RecordType) ((ListType) listExprType).getElementType())
+          listExprType
+              .asType(ListType.class)
+              .getElementType()
+              .asType(RecordType.class)
               .getMemberType(MapLiteralFromListNode.VALUE_STRING);
       if (!MapType.isAllowedKeyValueType(keyType)) {
         errorReporter.report(
@@ -1302,7 +1297,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
       visitChildren(node);
       SoyType originalType = node.getChild(0).getType();
       SoyType explicitType = node.getChild(1).getType();
-      if (explicitType.equals(originalType)) {
+      if (explicitType.isEffectivelyEqual(originalType)) {
         errorReporter.warn(node.getSourceLocation(), UNNECESSARY_CAST);
         node.getParent().replaceChild(node, node.getChild(0));
       } else if (!originalType.isAssignableFromLoose(explicitType)
@@ -1319,7 +1314,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
       SoyType opType = typeNode.getType();
       if (!SoyTypes.isValidInstanceOfOperand(opType)) {
         // Avoid double error.
-        if (!opType.equals(UnknownType.getInstance())) {
+        if (!opType.isOfKind(Kind.UNKNOWN)) {
           errorReporter.report(typeNode.getSourceLocation(), INVALID_INSTANCE_OF);
         }
       }
@@ -1484,7 +1479,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
       SoyType nonNullType = excludeNullish(baseType);
       SoySourceFunctionMethod fieldImpl = fieldRegistry.findField(node.getFieldName(), nonNullType);
       if (fieldImpl != null) {
-        if (!nonNullType.equals(baseType)) {
+        if (!nonNullType.isEffectivelyEqual(baseType)) {
           errorReporter.report(node.getAccessSourceLocation(), NULLISH_FIELD_ACCESS);
         }
         node.setType(fieldImpl.getReturnType());
@@ -1528,7 +1523,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
         visit(child);
       }
 
-      SoyType baseType = node.getBaseType(nullSafe);
+      SoyType baseType = node.getBaseType(nullSafe).getEffectiveType();
       SoyMethod method = resolveMethodFromBaseType(node, baseType);
 
       if (method == null) {
@@ -1812,8 +1807,8 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
     @Override
     protected void visitPlusOpNode(PlusOpNode node) {
       visitChildren(node);
-      SoyType left = node.getChild(0).getAuthoredType();
-      SoyType right = node.getChild(1).getAuthoredType();
+      SoyType left = node.getChild(0).getType();
+      SoyType right = node.getChild(1).getType();
       SoyType result =
           SoyTypes.getSoyTypeForBinaryOperator(left, right, new SoyTypes.SoyTypePlusOperator());
       if (result == null) {
@@ -1845,8 +1840,8 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
             node.getOperatorLocation(),
             INCOMPATIBLE_ARITHMETIC_OP,
             node.getOperator().getTokenString(),
-            node.getChild(0).getAuthoredType(),
-            node.getChild(1).getAuthoredType());
+            node.getChild(0).getType(),
+            node.getChild(1).getType());
         result = UnknownType.getInstance();
       }
       node.setType(result);
@@ -1968,7 +1963,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
     @Override
     protected void visitSpreadOpNode(SpreadOpNode node) {
       visit(node.getChild(0));
-      node.setType(node.getChild(0).getAuthoredType()); // Must be spread in context to be valid.
+      node.setType(node.getChild(0).getType()); // Must be spread in context to be valid.
     }
 
     @Override
@@ -2047,11 +2042,11 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
       if (node.getChild(1) instanceof StringNode
           && ((StringNode) node.getChild(1)).getValue().isEmpty()
           && isNullishAttributes(node.getChild(2).getType())) {
-        node.setType(node.getChild(2).getAuthoredType());
+        node.setType(node.getChild(2).getType());
       } else if (node.getChild(2) instanceof StringNode
           && ((StringNode) node.getChild(2)).getValue().isEmpty()
           && isNullishAttributes(node.getChild(1).getType())) {
-        node.setType(node.getChild(1).getAuthoredType());
+        node.setType(node.getChild(1).getType());
       } else {
         node.setType(
             SoyTypes.computeLowestCommonType(
@@ -2322,7 +2317,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
     }
 
     private void visitLegacyObjectMapToMapFunction(FunctionNode node) {
-      SoyType argType = node.getParam(0).getType();
+      SoyType argType = node.getParam(0).getType().getEffectiveType();
       if (argType instanceof AbstractMapType && ((AbstractMapType) argType).isEmpty()) {
         node.setType(MapType.empty());
       } else if (argType == UnknownType.getInstance()) {
@@ -2345,7 +2340,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
     }
 
     private void visitMapToLegacyObjectMapFunction(FunctionNode node) {
-      MapType argType = (MapType) node.getParam(0).getType();
+      MapType argType = node.getParam(0).getType().asType(MapType.class);
       if (argType.isEmpty()) {
         node.setType(LegacyObjectMapType.empty());
       } else {
@@ -2431,7 +2426,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
         FunctionNode resolvedNode =
             CallableExprBuilder.builder(node).setParamNames(resolvedIdentifiers).buildFunction();
         resolvedNode.setSoyFunction(node.getSoyFunction());
-        resolvedNode.setType(node.getAuthoredType());
+        resolvedNode.setType(node.getType());
         node.getParent().replaceChild(node, resolvedNode);
         node = resolvedNode;
       }
@@ -2474,7 +2469,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
         if (ListType.ANY_LIST.isAssignableFromStrict(fieldType)
             && argType instanceof AbstractIterableType) {
           SoyType argElementType = ((AbstractIterableType) argType).getElementType();
-          if (argElementType.equals(UnknownType.getInstance())) {
+          if (argElementType.isOfKind(Kind.UNKNOWN)) {
             continue;
           }
         }
@@ -2524,8 +2519,8 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
 
     private void visitComparisonOpNode(AbstractOperatorNode node) {
       visitChildren(node);
-      SoyType left = node.getChild(0).getAuthoredType();
-      SoyType right = node.getChild(1).getAuthoredType();
+      SoyType left = node.getChild(0).getType();
+      SoyType right = node.getChild(1).getType();
       SoyType result =
           SoyTypes.getSoyTypeForBinaryOperator(left, right, new SoyTypes.SoyTypeComparisonOp());
       if (result == null) {
@@ -2536,8 +2531,8 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
 
     private void visitEqualComparisonOpNode(AbstractOperatorNode node) {
       visitChildren(node);
-      SoyType left = node.getChild(0).getAuthoredType();
-      SoyType right = node.getChild(1).getAuthoredType();
+      SoyType left = node.getChild(0).getType();
+      SoyType right = node.getChild(1).getType();
       SoyType result =
           SoyTypes.getSoyTypeForBinaryOperator(
               left, right, new SoyTypes.SoyTypeEqualComparisonOp());
@@ -2550,8 +2545,8 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
     private void visitArithmeticOpNode(AbstractOperatorNode node) {
       visitChildren(node);
       boolean isDivide = node instanceof DivideByOpNode;
-      SoyType left = node.getChild(0).getAuthoredType();
-      SoyType right = node.getChild(1).getAuthoredType();
+      SoyType left = node.getChild(0).getType();
+      SoyType right = node.getChild(1).getType();
       SoyType result =
           SoyTypes.getSoyTypeForBinaryOperator(
               left, right, new SoyTypes.SoyTypeArithmeticOperator());
@@ -2682,8 +2677,8 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
         boolean isNullSafe,
         SourceLocation baseLocation,
         SourceLocation keyLocation) {
-      Preconditions.checkNotNull(baseType);
-      Preconditions.checkNotNull(keyType);
+      baseType = baseType.getEffectiveType();
+      keyType = keyType.getEffectiveType();
 
       switch (baseType.getKind()) {
         case UNKNOWN:
@@ -2936,7 +2931,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
       if (externRef.getPath().path().endsWith("java/soy/plugins/functions.soy")
           && externRef.getName().equals("unpackAny")) {
         ExprNode secondParam = node.getParam(1);
-        node.setType(secondParam.getAuthoredType());
+        node.setType(secondParam.getType());
       }
     }
 
@@ -2991,11 +2986,12 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
       for (ExprNode childNode : intersectionOf) {
         // If one of the types isn't a list, we can't compute the intersection. Return UnknownType
         // and assume the caller is already reporting an error for bad args.
-        if (!(childNode.getType() instanceof ListType)) {
+        SoyType childType = childNode.getType().getEffectiveType();
+        if (!(childType instanceof ListType)) {
           return UnknownType.getInstance();
         }
-        if (!((ListType) childNode.getType()).isEmpty()) {
-          elementTypesBuilder.add(((ListType) childNode.getType()).getElementType());
+        if (!((ListType) childType).isEmpty()) {
+          elementTypesBuilder.add(((ListType) childType).getElementType());
         }
       }
 
@@ -3009,12 +3005,13 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
       ImmutableSet.Builder<SoyType> keyTypesBuilder = ImmutableSet.builder();
       ImmutableSet.Builder<SoyType> valueTypesBuilder = ImmutableSet.builder();
       for (ExprNode childNode : intersectionOf) {
+        SoyType childType = childNode.getType().getEffectiveType();
         // If one of the types isn't a list, we can't compute the intersection. Return UnknownType
         // and assume the caller is already reporting an error for bad args.
-        if (!(childNode.getType() instanceof MapType)) {
+        if (!(childType instanceof MapType)) {
           return UnknownType.getInstance();
         }
-        MapType mapType = ((MapType) childNode.getType());
+        MapType mapType = ((MapType) childType);
         if (mapType.isEmpty()) {
           continue;
         }

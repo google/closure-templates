@@ -42,7 +42,7 @@ public final class NullNode extends AbstractPrimitiveNode {
   }
 
   @Override
-  public NullType getAuthoredType() {
+  public NullType getType() {
     return NullType.getInstance();
   }
 

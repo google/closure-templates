@@ -16,7 +16,6 @@
 
 package com.google.template.soy.passes;
 
-import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
@@ -30,9 +29,7 @@ import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.types.SoyType;
-import com.google.template.soy.types.SoyType.Kind;
-import com.google.template.soy.types.UnionType;
-import java.util.Collection;
+import com.google.template.soy.types.SoyTypes;
 import java.util.Objects;
 
 /**
@@ -129,12 +126,8 @@ final class KeyCommandPass implements CompilerFilePass {
 
   private void checkNodeIsSupportedType(ExprRootNode exprRootNode) {
     SoyType exprType = exprRootNode.getRoot().getType();
-    Collection<SoyType> unwrapped =
-        exprType.getKind() == Kind.UNION
-            ? ((UnionType) exprType).getMembers()
-            : ImmutableSet.of(exprType);
     boolean isSupportedType = true;
-    for (SoyType type : unwrapped) {
+    for (SoyType type : SoyTypes.flattenUnionToSet(exprType)) {
       switch (type.getKind()) {
         case NULL:
         case UNDEFINED:

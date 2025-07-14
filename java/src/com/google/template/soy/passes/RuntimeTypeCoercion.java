@@ -64,7 +64,7 @@ final class RuntimeTypeCoercion {
       coercion = BuiltinFunction.TO_NUMBER;
       updatedType = NumberType.getInstance();
     } else if (fromType.isOfKind(Kind.UNION)) {
-      UnionType unionType = (UnionType) fromType;
+      UnionType unionType = fromType.asType(UnionType.class);
       if (fromType.isAssignableFromStrictWithoutCoercions(IntType.getInstance())
           && !toType.isAssignableFromStrictWithoutCoercions(IntType.getInstance())) {
         coercion = BuiltinFunction.INT_TO_NUMBER;

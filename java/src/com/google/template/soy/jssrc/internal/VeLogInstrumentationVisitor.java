@@ -184,7 +184,7 @@ final class VeLogInstrumentationVisitor extends AbstractSoyNodeVisitor<Void> {
                 callParamContentNode.getSourceLocation(),
                 "if",
                 info.condition().copy(new CopyState()));
-        ifCondNode.getExpr().setType(info.condition().getAuthoredType());
+        ifCondNode.getExpr().setType(info.condition().getType());
         ifCondNode.addChild(loggingFunctionAttribute);
         ifNode.addChild(ifCondNode);
         loggingFunctionAttribute = ifNode;

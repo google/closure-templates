@@ -184,7 +184,7 @@ final class DesugarStateNodesPass implements CompilerFileSetPass {
                 BasicDirectives.ESCAPE_HTML_ATTRIBUTE);
         printNode.addChild(newPrintDirective);
       }
-      printNode.getExpr().setType(wrappedFn.getAuthoredType());
+      printNode.getExpr().setType(wrappedFn.getType());
       printNode.setHtmlContext(HtmlContext.HTML_NORMAL_ATTR_VALUE);
       value.addChild(printNode);
       htmlAttributeNode.addChild(value);

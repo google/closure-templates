@@ -400,6 +400,18 @@ be a [record](#record) type.
 Creates a new record type containing all properties of `A` other than the named
 properties. `A` must be a [record](#record) type.
 
+### Exclude type: `Exclude<Union, Excluded>` {#exclude}
+
+Creates a new type from the set difference of `Union` and `Excluded`.
+
+### Extract type: `Extract<Union, Extracted>` {#extract}
+
+Creates a new type from the set intersection of `Union` and `Extracted`.
+
+### NonNullable type: `NonNullable<Type>` {#nonnullable}
+
+Equivalent to `Exclude<Type, null | undefined>`.
+
 ## Collection types {#collection}
 
 ### `list<T>` {#list}

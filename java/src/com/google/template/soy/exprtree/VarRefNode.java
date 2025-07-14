@@ -78,7 +78,7 @@ public final class VarRefNode extends AbstractExprNode {
   }
 
   @Override
-  public SoyType getAuthoredType() {
+  public SoyType getType() {
     // We won't know the type until we know the variable declaration.
     Preconditions.checkState(defn != null);
     return substituteType != null ? substituteType : defn.authoredType();

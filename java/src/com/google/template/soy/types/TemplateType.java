@@ -503,7 +503,7 @@ public abstract class TemplateType extends SoyType {
   }
 
   @Override
-  final void doToProto(SoyTypeP.Builder builder) {
+  protected void doToProto(SoyTypeP.Builder builder) {
     SoyTypeP.TemplateTypeP.Builder templateBuilder = builder.getTemplateBuilder();
     for (Parameter parameter : getParameters()) {
       templateBuilder.addParameter(

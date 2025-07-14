@@ -62,7 +62,6 @@ import com.google.template.soy.types.SanitizedType;
 import com.google.template.soy.types.SoyProtoEnumType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
-import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.TemplateType;
 import com.google.template.soy.types.UnionType;
@@ -363,9 +362,6 @@ public final class JsType implements CodeChunk.HasRequires {
           return ANY_TYPE;
 
         case UNKNOWN:
-        case INTERSECTION: // Closure compiler can't model intersections.
-        case PICK:
-        case OMIT:
           return UNKNOWN_TYPE;
 
         case BOOL:
@@ -627,68 +623,72 @@ public final class JsType implements CodeChunk.HasRequires {
             builder.setPredicate(GOOG_IS_FUNCTION);
             return builder.build();
           }
-        case NAMED:
-          NamedType namedType = (NamedType) soyType;
-          String namespace =
-              kind == JsTypeKind.IDOMSRC
-                  ? namedType.getNamespace() + ".incrementaldom"
-                  : namedType.getNamespace();
-          String fullName = namespace + "." + namedType.getName();
-          return builder()
-              .addType("!" + fullName)
-              .addRequire(GoogRequire.create(namespace))
-              .setPredicate(TypePredicate.NO_OP)
-              .build();
-        case INDEXED:
-          IndexedType indexedType = (IndexedType) soyType;
-          String type = "?";
-          // Find the named type that originally declared this property. We need to do this because
-          // the typedef for the member is only declared relative to the {typedef} in which it's
-          // defined, not copied to every {typedef} that extends it.
-          // If the same property is defined in multiple type defs the behavior of this algorithm is
-          // undefined. Incompatible types will have been resolved as `never` and should have failed
-          // compilation.
-          Deque<SoyType> stack = new ArrayDeque<>();
-          stack.add(indexedType.getType());
-          WHILE:
-          while (!stack.isEmpty()) {
-            SoyType member = stack.removeLast();
-            if (member.getKind() != Kind.NAMED) {
-              continue;
-            }
-            NamedType namedMember = (NamedType) member;
-            SoyType namedValue = namedMember.getType();
-            ImmutableSet<SoyType> components = ImmutableSet.of();
-            if (namedValue instanceof RecordType) {
-              components = ImmutableSet.of(namedValue);
-            } else if (namedValue instanceof IntersectionType) {
-              components = ((IntersectionType) namedValue).getMembers();
-            }
+        case COMPUTED:
+          if (soyType instanceof NamedType) {
+            NamedType namedType = (NamedType) soyType;
+            String namespace =
+                kind == JsTypeKind.IDOMSRC
+                    ? namedType.getNamespace() + ".incrementaldom"
+                    : namedType.getNamespace();
+            String fullName = namespace + "." + namedType.getName();
+            return builder()
+                .addType("!" + fullName)
+                .addRequire(GoogRequire.create(namespace))
+                .setPredicate(TypePredicate.NO_OP)
+                .build();
+          } else if (soyType instanceof IndexedType) {
+            IndexedType indexedType = (IndexedType) soyType;
+            String type = "?";
+            // Find the named type that originally declared this property. We need to do this
+            // because the typedef for the member is only declared relative to the {typedef} in
+            // which it's defined, not copied to every {typedef} that extends it. If the same
+            // property is defined in multiple type defs the behavior of this algorithm is
+            // undefined. Incompatible types will have been resolved as `never` and should have
+            // failed compilation.
+            Deque<SoyType> stack = new ArrayDeque<>();
+            stack.add(indexedType.getType());
+            WHILE:
+            while (!stack.isEmpty()) {
+              SoyType member = stack.removeLast();
+              if (!(member instanceof NamedType)) {
+                continue;
+              }
+              NamedType namedMember = (NamedType) member;
+              SoyType namedValue = namedMember.getType();
+              ImmutableSet<SoyType> components = ImmutableSet.of();
+              if (namedValue instanceof RecordType) {
+                components = ImmutableSet.of(namedValue);
+              } else if (namedValue instanceof IntersectionType) {
+                components = ((IntersectionType) namedValue).getMembers();
+              }
 
-            for (SoyType component : components) {
-              if (component instanceof NamedType) {
-                stack.add(component);
-              } else if (component instanceof RecordType) {
-                RecordType.Member recMember =
-                    ((RecordType) component).getMember(indexedType.getPropertyName());
-                if (recMember != null) {
-                  type =
-                      matchNullishToBang(
-                          IndexedType.jsSynthenticTypeDefName(
-                              forRecursion.get(namedMember).typeExpr(),
-                              indexedType.getPropertyName()),
-                          SoyTypes.isNullish(recMember.checkedType()));
-                  break WHILE;
+              for (SoyType component : components) {
+                if (component instanceof NamedType) {
+                  stack.add(component);
+                } else if (component instanceof RecordType) {
+                  RecordType.Member recMember =
+                      ((RecordType) component).getMember(indexedType.getPropertyName());
+                  if (recMember != null) {
+                    type =
+                        matchNullishToBang(
+                            IndexedType.jsSynthenticTypeDefName(
+                                forRecursion.get(namedMember).typeExpr(),
+                                indexedType.getPropertyName()),
+                            SoyTypes.isNullish(recMember.checkedType()));
+                    break WHILE;
+                  }
                 }
               }
             }
+            JsType baseType = forRecursion.get(indexedType.getType());
+            return builder()
+                .addType(type)
+                .addRequires(baseType.googRequires())
+                .setPredicate(TypePredicate.NO_OP)
+                .build();
+          } else {
+            return UNKNOWN_TYPE;
           }
-          JsType baseType = forRecursion.get(indexedType.getType());
-          return builder()
-              .addType(type)
-              .addRequires(baseType.googRequires())
-              .setPredicate(TypePredicate.NO_OP)
-              .build();
         case LITERAL: // handled before switch
         case NAMESPACE:
         case PROTO_TYPE:

@@ -48,17 +48,12 @@ public abstract class NamedType extends ComputedType {
   }
 
   @Override
-  public Kind getKind() {
-    return Kind.NAMED;
-  }
-
-  @Override
   public final String toString() {
     return getName();
   }
 
   @Override
-  void doToProto(SoyTypeP.Builder builder) {
+  protected void doToProto(SoyTypeP.Builder builder) {
     builder.getNamedBuilder().setName(getName()).setNamespace(getNamespace());
   }
 

@@ -65,7 +65,7 @@ public abstract class AbstractVarDefn implements VarDefn {
 
   @Override
   public SoyType type() {
-    return authoredType().getEffectiveType();
+    return authoredType();
   }
 
   @Override

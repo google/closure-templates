@@ -23,7 +23,7 @@ import com.google.template.soy.soytree.SoyTypeP;
 /** Base type for all imported symbol types. */
 public abstract class ImportType extends SoyType {
   @Override
-  void doToProto(SoyTypeP.Builder builder) {
+  protected void doToProto(SoyTypeP.Builder builder) {
     throw new UnsupportedOperationException();
   }
 

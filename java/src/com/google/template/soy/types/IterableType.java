@@ -52,7 +52,7 @@ public final class IterableType extends AbstractIterableType {
   }
 
   @Override
-  void doToProto(SoyTypeP.Builder builder) {
+  protected void doToProto(SoyTypeP.Builder builder) {
     builder.setIterableElement(elementType.toProto());
   }
 }

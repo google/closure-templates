@@ -36,10 +36,14 @@ import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.UndefinedNode;
+import com.google.template.soy.types.ExcludeType;
+import com.google.template.soy.types.ExtractType;
 import com.google.template.soy.types.FunctionType;
 import com.google.template.soy.types.IndexedType;
 import com.google.template.soy.types.LiteralType;
+import com.google.template.soy.types.NamedType;
 import com.google.template.soy.types.NeverType;
+import com.google.template.soy.types.NonNullableType;
 import com.google.template.soy.types.NullType;
 import com.google.template.soy.types.OmitType;
 import com.google.template.soy.types.PickType;
@@ -125,63 +129,96 @@ public final class TypeNodeConverter
           Kind.TRUSTED_RESOURCE_URI);
 
   private static final ImmutableMap<String, BaseGenericTypeInfo> GENERIC_TYPES =
-      ImmutableMap.of(
-          "iterable",
-          new GenericTypeInfo(1) {
-            @Override
-            SoyType create(List<SoyType> types, TypeInterner interner) {
-              return interner.getOrCreateIterableType(types.get(0));
-            }
-          },
-          "list",
-          new GenericTypeInfo(1) {
-            @Override
-            SoyType create(List<SoyType> types, TypeInterner interner) {
-              return interner.getOrCreateListType(types.get(0));
-            }
-          },
-          "set",
-          new GenericTypeInfo(1) {
-            @Override
-            SoyType create(List<SoyType> types, TypeInterner interner) {
-              return interner.getOrCreateSetType(types.get(0));
-            }
-          },
-          "legacy_object_map",
-          new GenericTypeInfo(2) {
-            @Override
-            SoyType create(List<SoyType> types, TypeInterner interner) {
-              return interner.getOrCreateLegacyObjectMapType(types.get(0), types.get(1));
-            }
-          },
-          "map",
-          new GenericTypeInfo(2) {
-            @Override
-            SoyType create(List<SoyType> types, TypeInterner interner) {
-              return interner.getOrCreateMapType(types.get(0), types.get(1));
-            }
-          },
-          "ve",
-          new GenericTypeInfo(1) {
-            @Override
-            SoyType create(List<SoyType> types, TypeInterner interner) {
-              return interner.getOrCreateVeType(types.get(0).toString());
-            }
-          },
-          "Pick",
-          new GenericTypeInfo(2) {
-            @Override
-            SoyType create(List<SoyType> types, TypeInterner interner) {
-              return interner.intern(PickType.create(types.get(0), types.get(1)));
-            }
-          },
-          "Omit",
-          new GenericTypeInfo(2) {
-            @Override
-            SoyType create(List<SoyType> types, TypeInterner interner) {
-              return interner.intern(OmitType.create(types.get(0), types.get(1)));
-            }
-          });
+      ImmutableMap.<String, BaseGenericTypeInfo>builder()
+          .put(
+              "iterable",
+              new GenericTypeInfo(1) {
+                @Override
+                SoyType create(List<SoyType> types, TypeInterner interner) {
+                  return interner.getOrCreateIterableType(types.get(0));
+                }
+              })
+          .put(
+              "list",
+              new GenericTypeInfo(1) {
+                @Override
+                SoyType create(List<SoyType> types, TypeInterner interner) {
+                  return interner.getOrCreateListType(types.get(0));
+                }
+              })
+          .put(
+              "set",
+              new GenericTypeInfo(1) {
+                @Override
+                SoyType create(List<SoyType> types, TypeInterner interner) {
+                  return interner.getOrCreateSetType(types.get(0));
+                }
+              })
+          .put(
+              "legacy_object_map",
+              new GenericTypeInfo(2) {
+                @Override
+                SoyType create(List<SoyType> types, TypeInterner interner) {
+                  return interner.getOrCreateLegacyObjectMapType(types.get(0), types.get(1));
+                }
+              })
+          .put(
+              "map",
+              new GenericTypeInfo(2) {
+                @Override
+                SoyType create(List<SoyType> types, TypeInterner interner) {
+                  return interner.getOrCreateMapType(types.get(0), types.get(1));
+                }
+              })
+          .put(
+              "ve",
+              new GenericTypeInfo(1) {
+                @Override
+                SoyType create(List<SoyType> types, TypeInterner interner) {
+                  return interner.getOrCreateVeType(types.get(0).toString());
+                }
+              })
+          .put(
+              "Pick",
+              new GenericTypeInfo(2) {
+                @Override
+                SoyType create(List<SoyType> types, TypeInterner interner) {
+                  return interner.intern(PickType.create(types.get(0), types.get(1)));
+                }
+              })
+          .put(
+              "Omit",
+              new GenericTypeInfo(2) {
+                @Override
+                SoyType create(List<SoyType> types, TypeInterner interner) {
+                  return interner.intern(OmitType.create(types.get(0), types.get(1)));
+                }
+              })
+          .put(
+              "Exclude",
+              new GenericTypeInfo(2) {
+                @Override
+                SoyType create(List<SoyType> types, TypeInterner interner) {
+                  return interner.intern(ExcludeType.create(types.get(0), types.get(1)));
+                }
+              })
+          .put(
+              "Extract",
+              new GenericTypeInfo(2) {
+                @Override
+                SoyType create(List<SoyType> types, TypeInterner interner) {
+                  return interner.intern(ExtractType.create(types.get(0), types.get(1)));
+                }
+              })
+          .put(
+              "NonNullable",
+              new GenericTypeInfo(1) {
+                @Override
+                SoyType create(List<SoyType> types, TypeInterner interner) {
+                  return interner.intern(NonNullableType.create(types.get(0)));
+                }
+              })
+          .buildOrThrow();
 
   private static final ImmutableMap<String, BaseGenericTypeInfo> GENERIC_TYPES_WITH_ELEMENT =
       new ImmutableMap.Builder<String, BaseGenericTypeInfo>()
@@ -374,7 +411,7 @@ public final class TypeNodeConverter
   @Override
   public SoyType visit(IndexedTypeNode node) {
     SoyType base = exec(node.type());
-    if (base.getKind() != Kind.NAMED) {
+    if (!(base instanceof NamedType)) {
       errorReporter.report(node.sourceLocation(), INDEXED_BASE_NOT_NAMED);
     }
     IndexedType rv = interner.intern(IndexedType.create(base, exec(node.property())));

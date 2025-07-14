@@ -117,7 +117,7 @@ public final class SoyTypes {
   }
 
   public static boolean isAlwaysComparableKind(SoyType type) {
-    return type.equals(AnyType.getInstance()) || NULL_OR_UNDEFINED.isAssignableFromLoose(type);
+    return type.isOfKind(Kind.ANY) || NULL_OR_UNDEFINED.isAssignableFromLoose(type);
   }
 
   public static boolean isArithmeticPrimitive(SoyType type) {
@@ -284,15 +284,15 @@ public final class SoyTypes {
    *     meaning a subtype of 'number' or unknown.
    */
   public static Optional<SoyType> computeLowestCommonTypeArithmetic(SoyType t0, SoyType t1) {
-    SoyType left = excludeNull(t0).getEffectiveType();
-    SoyType right = excludeNull(t1).getEffectiveType();
+    SoyType left = excludeNull(t0);
+    SoyType right = excludeNull(t1);
     // If either of the types isn't numeric or unknown, then this isn't valid for an arithmetic
     // operation.
     if (!isNumericOrUnknown(left) || !isNumericOrUnknown(right)) {
       return Optional.empty();
     }
 
-    if (left.equals(right)) {
+    if (left.isEffectivelyEqual(right)) {
       return Optional.of(left);
     }
     if (left.isOfKind(Kind.UNKNOWN) || right.isOfKind(Kind.UNKNOWN)) {
@@ -358,8 +358,7 @@ public final class SoyTypes {
   }
 
   private static final ImmutableSet<Kind> NOT_IN_FLATTENED_KINDS =
-      ImmutableSet.of(
-          Kind.UNION, Kind.NAMED, Kind.INDEXED, Kind.PICK, Kind.OMIT, Kind.INTERSECTION);
+      ImmutableSet.of(Kind.UNION, Kind.COMPUTED);
 
   /**
    * Returns true if the given type matches the given kind, or if the given type is a union of types
@@ -405,7 +404,7 @@ public final class SoyTypes {
         .distinct();
   }
 
-  private static SoyType normalizeUnion(SoyType t) {
+  public static SoyType normalizeUnion(SoyType t) {
     if (t instanceof UnionType || t instanceof NamedType || t instanceof IndexedType) {
       return UnionType.of(flattenUnionToSet(t));
     } else if (t instanceof ComputedType) {
@@ -496,7 +495,7 @@ public final class SoyTypes {
       if (bothAssignableFrom(left, right, ANY_PRIMITIVE)) {
         return boolType;
       }
-      return left.equals(right) ? boolType : null;
+      return left.isEffectivelyEqual(right) ? boolType : null;
     }
   }
 
@@ -694,19 +693,22 @@ public final class SoyTypes {
       switch (type.getKind()) {
         case UNION:
           return ((UnionType) type).getMembers();
-        case INTERSECTION:
-          return ((IntersectionType) type).getMembers();
-        case INDEXED:
-          return ImmutableList.of(((IndexedType) type).getType());
-        case PICK:
-          return ImmutableList.of(((PickType) type).getType(), ((PickType) type).getKeys());
-        case OMIT:
-          return ImmutableList.of(((OmitType) type).getType(), ((OmitType) type).getKeys());
-        case NAMED:
-          // Use SoyTypeDepsSuccessorsFunction below if you need to navigate to the effective record
-          // type.
-          return ImmutableList.of();
-
+        case COMPUTED:
+          if (type instanceof NamedType) {
+            // Use SoyTypeDepsSuccessorsFunction below if you need to navigate to the effective
+            // record type.
+            return ImmutableList.of();
+          } else if (type instanceof IndexedType) {
+            return ImmutableList.of(((IndexedType) type).getType());
+          } else if (type instanceof PickType) {
+            return ImmutableList.of(((PickType) type).getType(), ((PickType) type).getKeys());
+          } else if (type instanceof OmitType) {
+            return ImmutableList.of(((OmitType) type).getType(), ((OmitType) type).getKeys());
+          } else if (type instanceof IntersectionType) {
+            return ((IntersectionType) type).getMembers();
+          } else {
+            throw new AssertionError();
+          }
         case ITERABLE:
         case LIST:
         case SET:
@@ -803,18 +805,15 @@ public final class SoyTypes {
       case PROTO:
       case NUMBER:
         return true;
-      case RECORD:
-        return type.equals(RecordType.EMPTY_RECORD);
-      case ITERABLE:
-      case LIST:
-      case SET:
-        return ((AbstractIterableType) type).getElementType().equals(AnyType.getInstance());
-      case MAP:
-        return ((MapType) type).getKeyType().equals(AnyType.getInstance())
-            && ((MapType) type).getValueType().equals(AnyType.getInstance());
       default:
-        return false;
+        break;
     }
+
+    return type.equals(RecordType.EMPTY_RECORD)
+        || type.equals(IterableType.ANY_ITERABLE)
+        || type.equals(ListType.ANY_LIST)
+        || type.equals(SetType.ANY_SET)
+        || type.equals(MapType.ANY_MAP);
   }
 
   public static SoyType getRecordMembersType(RecordType type) {

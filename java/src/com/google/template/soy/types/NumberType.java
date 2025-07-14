@@ -47,7 +47,7 @@ public final class NumberType extends PrimitiveType {
   }
 
   @Override
-  void doToProto(SoyTypeP.Builder builder) {
+  protected void doToProto(SoyTypeP.Builder builder) {
     builder.setPrimitive(SoyTypeP.PrimitiveTypeP.NUMBER);
   }
 

@@ -442,7 +442,7 @@ public final class SoyExpression extends Expression {
   public static void doBox(CodeBuilder adapter, SoyRuntimeType type) {
     if (type.isKnownSanitizedContent()) {
       ContentKind kind =
-          Converters.toContentKind(((SanitizedType) type.soyType()).getContentKind());
+          Converters.toContentKind(type.soyType().asType(SanitizedType.class).getContentKind());
       checkState(kind != ContentKind.TEXT); // sanity check
       FieldRef.enumReference(kind).accessStaticUnchecked(adapter);
       MethodRefs.ORDAIN_AS_SAFE.invokeUnchecked(adapter);
@@ -474,7 +474,7 @@ public final class SoyExpression extends Expression {
   private Expression doBoxNonJavaNullable(SoyRuntimeType type) {
     if (type.isKnownSanitizedContent()) {
       ContentKind kind =
-          Converters.toContentKind(((SanitizedType) type.soyType()).getContentKind());
+          Converters.toContentKind(type.soyType().asType(SanitizedType.class).getContentKind());
       checkState(kind != ContentKind.TEXT); // sanity check
       return MethodRefs.ORDAIN_AS_SAFE
           .invoke(delegate, FieldRef.enumReference(kind).accessor())

@@ -343,7 +343,7 @@ final class CheckTemplateCallsPass implements CompilerFileSetPass {
           argType = node.getExpr().getRoot().getType();
           for (SoyType declaredParamType : declaredParamTypes) {
             SoyType newType = maybeCoerceType(node.getExpr().getRoot(), declaredParamType);
-            if (!newType.equals(argType)) {
+            if (!newType.isEffectivelyEqual(argType)) {
               argType = newType;
               break;
             }
@@ -408,7 +408,7 @@ final class CheckTemplateCallsPass implements CompilerFileSetPass {
           }
         } else {
           ExprNode dataExpr = call.getDataExpr();
-          SoyType dataExprType = dataExpr.getAuthoredType();
+          SoyType dataExprType = dataExpr.getType();
           // TODO(b/168852179): enforce that the correct set of properties are present
           if (!RecordType.EMPTY_RECORD.isAssignableFromLoose(dataExprType)
               && !dataExpr.getType().isEffectivelyEqual(AnyType.getInstance())) {
@@ -596,7 +596,7 @@ final class CheckTemplateCallsPass implements CompilerFileSetPass {
       if (SoyTypes.isNullOrUndefined(calleeType.getUseVariantType())) {
         errorReporter.report(node.getSourceLocation(), NO_USEVARIANTTYPE);
       } else {
-        SoyType variantType = node.getVariantExpr().getAuthoredType();
+        SoyType variantType = node.getVariantExpr().getType();
         if (!SoyTypes.unionWithNullish(calleeType.getUseVariantType())
             .isAssignableFromStrict(variantType)) {
           errorReporter.report(

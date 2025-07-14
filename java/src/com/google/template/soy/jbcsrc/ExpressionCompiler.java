@@ -568,12 +568,14 @@ final class ExpressionCompiler {
           }
         }
         return SoyExpression.forList(
-            (ListType) node.getType(), builder.invoke(MethodRefs.IMMUTABLE_LIST_BUILDER_BUILD));
+            node.getType().asType(ListType.class),
+            builder.invoke(MethodRefs.IMMUTABLE_LIST_BUILDER_BUILD));
       }
 
       var compiledChildren = visitChildren(node);
       var asList = asBoxedValueProviderList(compiledChildren);
-      var asListSoyExpression = SoyExpression.forList((ListType) node.getType(), asList);
+      var asListSoyExpression =
+          SoyExpression.forList(node.getType().asType(ListType.class), asList);
       // lists show up in defaults and const expressions, special case those
       if (isConstantContext && Expression.areAllConstant(compiledChildren)) {
         Object[] constantArgs = new Object[1 + compiledChildren.size()];
@@ -650,7 +652,7 @@ final class ExpressionCompiler {
 
       */
       return SoyExpression.forList(
-          (ListType) node.getType(),
+          node.getType().asType(ListType.class),
           new Expression(BytecodeUtils.LIST_TYPE, Features.of(Feature.NON_JAVA_NULLABLE)) {
             @Override
             protected void doGen(CodeBuilder adapter) {
@@ -1280,7 +1282,7 @@ final class ExpressionCompiler {
       // 1. expose the 'non-null' prover from ResolveExpressionTypesPass, this can in fact be
       //    relied on.  However it is currently mixed in with other parts of the type system which
       //    cannot be trusted
-      boolean typesEqual = trueBranch.soyType().equals(falseBranch.soyType());
+      boolean typesEqual = trueBranch.soyType().isEffectivelyEqual(falseBranch.soyType());
       if (typesEqual) {
         boolean bothUnboxed = !trueBranch.isBoxed() && !falseBranch.isBoxed();
         // Always specify the runtime type below to allow for the branches to have distinct but
@@ -1706,7 +1708,8 @@ final class ExpressionCompiler {
                     .invoke(
                         MethodRefs.FUNCTION_BIND,
                         adaptFunctionArgs(
-                            (FunctionType) node.getBaseExprChild().getType(), node.getParams())));
+                            node.getBaseExprChild().getType().asType(FunctionType.class),
+                            node.getParams())));
           case BIND:
             {
               var record = (RecordLiteralNode) node.getChild(1);
@@ -1964,7 +1967,8 @@ final class ExpressionCompiler {
     SoyExpression visitNewSetFunction(FunctionNode node) {
       Expression iterator = visit(node.getParam(0)).unboxAsIteratorUnchecked();
       return SoyExpression.forSet(
-              (SetType) node.getType(), MethodRefs.IMMUTABLE_SET_COPY_OF.invoke(iterator))
+              node.getType().asType(SetType.class),
+              MethodRefs.IMMUTABLE_SET_COPY_OF.invoke(iterator))
           .asNonJavaNullable();
     }
 
@@ -1986,7 +1990,7 @@ final class ExpressionCompiler {
       } else if (fn instanceof Extern) {
         return callExtern((Extern) fn, visitAll(node.getParams()));
       } else if (fn == FunctionNode.FUNCTION_POINTER) {
-        FunctionType functionType = (FunctionType) node.getNameExpr().getType();
+        FunctionType functionType = node.getNameExpr().getType().asType(FunctionType.class);
         SoyRuntimeType soyReturnType = ExternCompiler.getRuntimeType(functionType.getReturnType());
         Expression obj =
             visit(node.getNameExpr())
@@ -2542,7 +2546,7 @@ final class ExpressionCompiler {
       }
 
       // Proto init calls require detach if any of the specified fields are repeated.
-      SoyProtoType protoType = (SoyProtoType) node.getType();
+      SoyProtoType protoType = node.getType().asType(SoyProtoType.class);
       for (Identifier paramName : node.getParamNames()) {
         if (protoType.getFieldDescriptor(paramName.identifier()).isRepeated()) {
           return true;

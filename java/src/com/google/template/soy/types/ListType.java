@@ -59,7 +59,7 @@ public final class ListType extends AbstractIterableType {
   }
 
   @Override
-  void doToProto(SoyTypeP.Builder builder) {
+  protected void doToProto(SoyTypeP.Builder builder) {
     builder.setListElement(elementType.toProto());
   }
 }

@@ -51,7 +51,7 @@ public final class BooleanNode extends AbstractPrimitiveNode {
   }
 
   @Override
-  public BoolType getAuthoredType() {
+  public BoolType getType() {
     return BoolType.getInstance();
   }
 

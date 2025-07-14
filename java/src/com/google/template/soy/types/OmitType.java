@@ -39,17 +39,12 @@ public abstract class OmitType extends ComputedType {
   public abstract SoyType getKeys();
 
   @Override
-  public Kind getKind() {
-    return Kind.OMIT;
-  }
-
-  @Override
   public final String toString() {
     return "Omit<" + getType() + ", " + getKeys() + ">";
   }
 
   @Override
-  void doToProto(SoyTypeP.Builder builder) {
+  protected void doToProto(SoyTypeP.Builder builder) {
     builder.getOmitBuilder().setType(getType().toProto()).setKeys(getKeys().toProto());
   }
 

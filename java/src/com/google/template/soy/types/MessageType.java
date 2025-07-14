@@ -49,7 +49,7 @@ public final class MessageType extends SoyType {
   }
 
   @Override
-  void doToProto(SoyTypeP.Builder builder) {
+  protected void doToProto(SoyTypeP.Builder builder) {
     builder.setMessage(true);
   }
 }

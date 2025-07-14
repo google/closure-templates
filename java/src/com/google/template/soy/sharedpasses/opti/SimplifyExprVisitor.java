@@ -66,9 +66,7 @@ import com.google.template.soy.sharedpasses.render.Environment;
 import com.google.template.soy.sharedpasses.render.RenderException;
 import com.google.template.soy.types.AnyType;
 import com.google.template.soy.types.BoolType;
-import com.google.template.soy.types.NumberType;
 import com.google.template.soy.types.SoyType;
-import com.google.template.soy.types.StringType;
 import java.util.function.BiFunction;
 import javax.annotation.Nullable;
 
@@ -456,13 +454,13 @@ final class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
     SoyType rhs = node.getChild(1).getType();
     switch (lhs.getKind()) {
       case STRING_NODE:
-        staticValue = rhs.equals(StringType.getInstance());
+        staticValue = rhs.isOfKind(SoyType.Kind.STRING);
         break;
       case NUMBER_NODE:
-        staticValue = rhs.equals(NumberType.getInstance());
+        staticValue = rhs.isOfKind(SoyType.Kind.NUMBER);
         break;
       case BOOLEAN_NODE:
-        staticValue = rhs.equals(BoolType.getInstance());
+        staticValue = rhs.isOfKind(SoyType.Kind.BOOL);
         break;
       case LIST_LITERAL_NODE:
       case LIST_COMPREHENSION_NODE:

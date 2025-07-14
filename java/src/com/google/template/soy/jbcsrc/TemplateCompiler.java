@@ -234,7 +234,7 @@ final class TemplateCompiler {
                     .collect(toImmutableSet()))
             .addAll(
                 allNodesOfType(templateNode, TemplateLiteralNode.class)
-                    .filter(literal -> ((TemplateType) literal.getType()).isModifiable())
+                    .filter(literal -> literal.getType().asType(TemplateType.class).isModifiable())
                     .map(TemplateCompiler::legacyOrModifiableName)
                     .collect(toImmutableSet()))
             .build();
@@ -284,7 +284,7 @@ final class TemplateCompiler {
   }
 
   static String legacyOrModifiableName(TemplateLiteralNode node) {
-    TemplateType templateType = (TemplateType) node.getType();
+    TemplateType templateType = node.getType().asType(TemplateType.class);
     return !templateType.getLegacyDeltemplateNamespace().isEmpty()
         ? templateType.getLegacyDeltemplateNamespace()
         : node.getResolvedName();

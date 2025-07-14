@@ -169,7 +169,7 @@ final class ElementAttributePass implements CompilerFileSetPass {
     ifNode.addChild(ifCondNode);
     PrintNode printNode =
         new PrintNode(id.get(), unknown, true, node, ImmutableList.of(), exploding());
-    printNode.getExpr().setType(node.getAuthoredType());
+    printNode.getExpr().setType(node.getType());
     ifCondNode.addChild(printNode);
     return ifNode;
   }
@@ -392,7 +392,7 @@ final class ElementAttributePass implements CompilerFileSetPass {
       }
       PrintNode printNode =
           new PrintNode(id.get(), unknown, true, result, ImmutableList.of(), exploding());
-      printNode.getExpr().setType(wrappedFn.getAuthoredType());
+      printNode.getExpr().setType(wrappedFn.getType());
       valueNode.addChild(printNode);
       htmlAttributeNode.addChild(valueNode);
       ifCondNode.addChild(htmlAttributeNode);
@@ -411,7 +411,7 @@ final class ElementAttributePass implements CompilerFileSetPass {
               TemplateType.EXTRA_ROOT_ELEMENT_ATTRIBUTES);
         }
         if (!SoyTypes.excludeNullish(param.type())
-                .equals(SanitizedType.AttributesType.getInstance())
+                .isEffectivelyEqual(SanitizedType.AttributesType.getInstance())
             || param.isRequired()) {
           errorReporter.report(
               param.getSourceLocation(),
@@ -460,7 +460,7 @@ final class ElementAttributePass implements CompilerFileSetPass {
       PrintNode printNode =
           new PrintNode(
               id.get(), unknown, true, extraAttributesRef, ImmutableList.of(), exploding());
-      printNode.getExpr().setType(extraAttributesRef.getAuthoredType());
+      printNode.getExpr().setType(extraAttributesRef.getType());
       htmlAttributeNode.addChild(printNode);
       ifCondNode.addChild(htmlAttributeNode);
 
@@ -487,7 +487,7 @@ final class ElementAttributePass implements CompilerFileSetPass {
     VarRefNode attrExpr = new VarRefNode("$" + attr.name(), unknown, attr);
     PrintNode staticValuePrint =
         new PrintNode(id.get(), unknown, true, attrExpr, ImmutableList.of(), errorReporter);
-    staticValuePrint.getExpr().setType(attrExpr.getAuthoredType());
+    staticValuePrint.getExpr().setType(attrExpr.getType());
 
     if (attr.isRequired()) {
       // No concatenation, required param. incoming param is always non-null so use it.

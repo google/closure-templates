@@ -251,7 +251,7 @@ final class VeLogValidationPass implements CompilerFileSetPass {
 
   /** Type checks the VE and logonly expressions. */
   private void validateVeLogNode(VeLogNode node) {
-    if (node.getVeDataExpression().getRoot().getType().getKind() != Kind.VE_DATA) {
+    if (!node.getVeDataExpression().getRoot().getType().isOfKind(Kind.VE_DATA)) {
       reporter.report(
           node.getVeDataExpression().getSourceLocation(),
           INVALID_VE,
@@ -283,10 +283,11 @@ final class VeLogValidationPass implements CompilerFileSetPass {
     }
     ExprNode veExpr = node.getParam(0);
     ExprNode dataExpr = node.numParams() == 1 ? null : node.getParam(1);
+    SoyType veExprType = veExpr.getType().getEffectiveType();
 
-    if (veExpr.getType() instanceof VeType) {
+    if (veExprType instanceof VeType) {
       if (dataExpr != null && !SoyTypes.isNullOrUndefined(dataExpr.getType())) {
-        VeType veType = (VeType) veExpr.getType();
+        VeType veType = (VeType) veExprType;
         SoyType dataType = dataExpr.getType();
         if (!veType.getDataType().isPresent()) {
           reporter.report(dataExpr.getSourceLocation(), UNEXPECTED_DATA, veType, dataType);
@@ -297,20 +298,20 @@ final class VeLogValidationPass implements CompilerFileSetPass {
             reporter.report(veExpr.getSourceLocation(), UNKNOWN_PROTO, veType.getDataType().get());
           } else if (!veDataType.isOfKind(Kind.PROTO)) {
             reporter.report(veExpr.getSourceLocation(), BAD_DATA_TYPE, veDataType);
-          } else if (!dataType.equals(veDataType)) {
+          } else if (!dataType.isEffectivelyEqual(veDataType)) {
             reporter.report(
                 dataExpr.getSourceLocation(), WRONG_TYPE, veType.getDataType().get(), dataType);
           }
         }
       }
-    } else if (SoyTypes.isKindOrUnionOfKind(veExpr.getType(), Kind.VE)) {
+    } else if (SoyTypes.isKindOrUnionOfKind(veExprType, Kind.VE)) {
       // This is a union of VE types with different data types, so it's okay to wrap in ve_data as
       // long as ve_data's data parameter is null.
       if (dataExpr != null && !SoyTypes.isNullOrUndefined(dataExpr.getType())) {
-        reporter.report(dataExpr.getSourceLocation(), VE_UNION_WITH_DATA, veExpr.getType());
+        reporter.report(dataExpr.getSourceLocation(), VE_UNION_WITH_DATA, veExprType);
       }
     } else {
-      reporter.report(veExpr.getSourceLocation(), WRONG_TYPE, "ve", veExpr.getType());
+      reporter.report(veExpr.getSourceLocation(), WRONG_TYPE, "ve", veExprType);
     }
   }
 

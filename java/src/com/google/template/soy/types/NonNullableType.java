@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Google Inc.
+ * Copyright 2025 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,34 +16,33 @@
 
 package com.google.template.soy.types;
 
+import com.google.auto.value.AutoValue;
+import com.google.auto.value.extension.memoized.Memoized;
 import com.google.template.soy.soytree.SoyTypeP;
 
-/**
- * Soy boolean type.
- */
-public final class BoolType extends PrimitiveType {
-  private static final BoolType INSTANCE = new BoolType();
+/** A NonNullable<> type. */
+@AutoValue
+public abstract class NonNullableType extends ComputedType {
 
-  // Not constructible - use getInstance().
-  private BoolType() {}
-
-  @Override
-  public Kind getKind() {
-    return Kind.BOOL;
+  public static NonNullableType create(SoyType union) {
+    return new AutoValue_NonNullableType(union);
   }
 
+  public abstract SoyType getType();
+
   @Override
-  public String toString() {
-    return "bool";
+  public final String toString() {
+    return "NonNullable<" + getType() + ">";
   }
 
   @Override
   protected void doToProto(SoyTypeP.Builder builder) {
-    builder.setPrimitive(SoyTypeP.PrimitiveTypeP.BOOL);
+    getEffectiveType().doToProto(builder);
   }
 
-  /** Return the single instance of this type. */
-  public static BoolType getInstance() {
-    return INSTANCE;
+  @Override
+  @Memoized
+  public SoyType getEffectiveType() {
+    return SoyTypes.excludeNullish(getType());
   }
 }

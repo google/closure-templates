@@ -39,7 +39,7 @@ public final class NullType extends PrimitiveType {
   }
 
   @Override
-  void doToProto(SoyTypeP.Builder builder) {
+  protected void doToProto(SoyTypeP.Builder builder) {
     builder.setPrimitive(SoyTypeP.PrimitiveTypeP.NULL);
   }
 

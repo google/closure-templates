@@ -66,8 +66,8 @@ public final class MapType extends AbstractMapType {
   /** Whether the type is permissible as a key in a declared map type literal. */
   // LINT.IfChange(allowed_soy_map_key_types)
   public static boolean isAllowedKeyType(SoyType type) {
-    return type.equals(AnyType.getInstance())
-        || type.equals(NeverType.getInstance())
+    return type.isOfKind(Kind.ANY)
+        || type.isOfKind(Kind.NEVER)
         || ALLOWED_KINDS.isAssignableFromLoose(type);
   }
 
@@ -115,7 +115,7 @@ public final class MapType extends AbstractMapType {
   }
 
   @Override
-  void doToProto(SoyTypeP.Builder builder) {
+  protected void doToProto(SoyTypeP.Builder builder) {
     builder.getMapBuilder().setKey(keyType.toProto()).setValue(valueType.toProto());
   }
 }

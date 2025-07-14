@@ -42,7 +42,7 @@ public class NamespaceType extends SoyType {
   }
 
   @Override
-  void doToProto(SoyTypeP.Builder builder) {
+  protected void doToProto(SoyTypeP.Builder builder) {
     throw new UnsupportedOperationException();
   }
 

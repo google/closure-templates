@@ -92,7 +92,7 @@ public final class TemplateLiteralNode extends AbstractParentExprNode {
   }
 
   @Override
-  public SoyType getAuthoredType() {
+  public SoyType getType() {
     return type;
   }
 

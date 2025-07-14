@@ -96,7 +96,7 @@ public final class LegacyObjectMapType extends AbstractMapType {
   }
 
   @Override
-  void doToProto(SoyTypeP.Builder builder) {
+  protected void doToProto(SoyTypeP.Builder builder) {
     builder.getLegacyObjectMapBuilder().setKey(keyType.toProto()).setValue(valueType.toProto());
   }
 }

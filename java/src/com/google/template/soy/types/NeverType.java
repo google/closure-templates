@@ -36,7 +36,7 @@ public final class NeverType extends PrimitiveType {
   }
 
   @Override
-  void doToProto(SoyTypeP.Builder builder) {
+  protected void doToProto(SoyTypeP.Builder builder) {
     throw new UnsupportedOperationException("`never` should never occur in a declared type");
   }
 

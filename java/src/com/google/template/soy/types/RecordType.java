@@ -145,7 +145,7 @@ public abstract class RecordType extends SoyType {
   }
 
   @Override
-  void doToProto(SoyTypeP.Builder builder) {
+  protected void doToProto(SoyTypeP.Builder builder) {
     SoyTypeP.RecordTypeP.Builder recordBuilder = builder.getRecordBuilder();
     for (Member member : getMembers()) {
       recordBuilder.addMembers(

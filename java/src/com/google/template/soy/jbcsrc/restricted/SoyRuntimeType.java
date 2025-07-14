@@ -18,6 +18,7 @@ package com.google.template.soy.jbcsrc.restricted;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
+import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_VALUE_TYPE;
 
 import com.google.common.base.Objects;
@@ -43,8 +44,6 @@ import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.StringType;
 import com.google.template.soy.types.UnionType;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
 import javax.annotation.Nullable;
 import org.objectweb.asm.Type;
@@ -150,11 +149,7 @@ public abstract class SoyRuntimeType {
       case FUNCTION:
         // no unique unboxed representation
         return null;
-      case INTERSECTION:
-      case NAMED:
-      case INDEXED:
-      case PICK:
-      case OMIT:
+      case COMPUTED:
         return unboxedTypeImpl(soyType.getEffectiveType());
       case LITERAL: // handled before switch
       case NAMESPACE:
@@ -255,19 +250,12 @@ public abstract class SoyRuntimeType {
 
   public final ListType asListType() {
     checkState(isKnownIterable());
-    if (soyType instanceof ListType) {
-      return (ListType) soyType;
-    } else if (soyType instanceof AbstractIterableType) {
-      return ListType.of(((AbstractIterableType) soyType).getElementType());
-    }
-    List<SoyType> members = new ArrayList<>();
-    for (SoyType member : ((UnionType) soyType).getMembers()) {
-      AbstractIterableType memberAsList = (AbstractIterableType) member;
-      if (!memberAsList.isEmpty()) {
-        members.add(memberAsList.getElementType());
-      }
-    }
-    return ListType.of(UnionType.of(members));
+    return ListType.of(
+        UnionType.of(
+            SoyTypes.flattenUnion(soyType)
+                .map(AbstractIterableType.class::cast)
+                .map(AbstractIterableType::getElementType)
+                .collect(toImmutableSet())));
   }
 
   public final boolean isKnownLegacyObjectMapOrUnionOfMaps() {

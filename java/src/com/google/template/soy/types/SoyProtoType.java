@@ -368,7 +368,7 @@ public final class SoyProtoType extends SoyType {
   }
 
   @Override
-  void doToProto(SoyTypeP.Builder builder) {
+  protected void doToProto(SoyTypeP.Builder builder) {
     builder.setProto(typeDescriptor.getFullName());
   }
 

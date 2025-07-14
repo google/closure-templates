@@ -24,12 +24,21 @@ abstract class ComputedType extends SoyType {
   }
 
   @Override
-  public boolean isOfKind(Kind kind) {
+  public final boolean isOfKind(Kind kind) {
     return getEffectiveType().isOfKind(kind);
   }
 
   @Override
-  public boolean isEffectivelyEqual(SoyType type) {
+  public final boolean isEffectivelyEqual(SoyType type) {
     return this.getEffectiveType().isEffectivelyEqual(type);
+  }
+
+  public <T extends SoyType> T asType(Class<T> subType) {
+    return subType.cast(getEffectiveType());
+  }
+
+  @Override
+  public final Kind getKind() {
+    return Kind.COMPUTED;
   }
 }

@@ -59,7 +59,7 @@ public final class SetType extends AbstractIterableType {
   }
 
   @Override
-  void doToProto(SoyTypeP.Builder builder) {
+  protected void doToProto(SoyTypeP.Builder builder) {
     builder.setSetElement(elementType.toProto());
   }
 }

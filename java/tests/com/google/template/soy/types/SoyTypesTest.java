@@ -445,6 +445,35 @@ public class SoyTypesTest {
   }
 
   @Test
+  public void testUnionUtilityTypes() {
+    SoyTypeRegistry registry = new TestTypeRegistry().addNamed("NumberOrString", "number | string");
+
+    assertThatSoyType("Exclude<number | string, string>", registry).isEffectivelyEqualTo("number");
+    assertThatSoyType("Exclude<NumberOrString, number>", registry).isEffectivelyEqualTo("string");
+    assertThatSoyType("Exclude<NumberOrString, bool>", registry)
+        .isEffectivelyEqualTo("NumberOrString");
+    assertThatSoyType("Exclude<any, string>", registry).isEffectivelyEqualTo("any");
+    assertThatSoyType("Exclude<?, string>", registry).isEffectivelyEqualTo("?");
+    assertThatSoyType("Exclude<string, string>", registry).isEffectivelyEqualTo("never");
+    assertThatSoyType("Exclude<any, any>", registry).isEffectivelyEqualTo("never");
+    assertThatSoyType("Exclude<?, ?>", registry).isEffectivelyEqualTo("never");
+
+    assertThatSoyType("Extract<number | string, string>", registry).isEffectivelyEqualTo("string");
+    assertThatSoyType("Extract<number | string, bool>", registry).isEffectivelyEqualTo("never");
+    assertThatSoyType("Extract<any, string>", registry).isEffectivelyEqualTo("never");
+    assertThatSoyType("Extract<?, string>", registry).isEffectivelyEqualTo("?");
+
+    assertThatSoyType("NonNullable<string>", registry).isEffectivelyEqualTo("string");
+    assertThatSoyType("NonNullable<string | null>", registry).isEffectivelyEqualTo("string");
+    assertThatSoyType("NonNullable<string | null | undefined>", registry)
+        .isEffectivelyEqualTo("string");
+    assertThatSoyType("NonNullable<null>", registry).isEffectivelyEqualTo("never");
+    assertThatSoyType("NonNullable<null | undefined>", registry).isEffectivelyEqualTo("never");
+    assertThatSoyType("NonNullable<any>", registry).isEffectivelyEqualTo("any");
+    assertThatSoyType("NonNullable<?>", registry).isEffectivelyEqualTo("?");
+  }
+
+  @Test
   public void testNestedUnions() {
     SoyTypeRegistry registry =
         new TestTypeRegistry()
@@ -1133,26 +1162,17 @@ public class SoyTypesTest {
   }
 
   static final class SoyTypeSubject extends Subject {
-    private final String actual;
     private final SoyType actualType;
     private final SoyTypeRegistry registry;
 
     SoyTypeSubject(FailureMetadata metadata, String actual, SoyTypeRegistry registry) {
-      super(metadata, actual);
-      this.actual = actual;
-      this.actualType = null;
-      this.registry = registry;
+      this(metadata, SoyTypesTest.parseType(actual, registry), registry);
     }
 
     SoyTypeSubject(FailureMetadata metadata, SoyType actual, SoyTypeRegistry registry) {
-      super(metadata, actual);
-      this.actual = null;
+      super(metadata, formatType(actual));
       this.actualType = actual;
       this.registry = registry;
-    }
-
-    private SoyType getActualType() {
-      return actualType != null ? actualType : parseType(actual);
     }
 
     void isAssignableFromLoose(String other) {
@@ -1160,16 +1180,14 @@ public class SoyTypesTest {
     }
 
     void isAssignableFromLoose(SoyType rightType) {
-      SoyType leftType = getActualType();
-      if (!leftType.isAssignableFromLoose(rightType)) {
+      if (!actualType.isAssignableFromLoose(rightType)) {
         failWithActual("expected to be assignable from", formatType(rightType));
       }
     }
 
     void isNotAssignableFromLoose(String other) {
-      SoyType leftType = getActualType();
       SoyType rightType = parseType(other);
-      if (leftType.isAssignableFromLoose(rightType)) {
+      if (actualType.isAssignableFromLoose(rightType)) {
         failWithActual("expected not to be assignable from", formatType(rightType));
       }
     }
@@ -1179,26 +1197,24 @@ public class SoyTypesTest {
     }
 
     void isAssignableFromStrict(SoyType rightType) {
-      SoyType leftType = getActualType();
-      if (!leftType.isAssignableFromStrict(rightType)) {
+      if (!actualType.isAssignableFromStrict(rightType)) {
         failWithActual("expected to be strictly assignable from", formatType(rightType));
       }
     }
 
     void isNotAssignableFromStrict(String other) {
-      SoyType leftType = getActualType();
       SoyType rightType = parseType(other);
-      if (leftType.isAssignableFromStrict(rightType)) {
+      if (actualType.isAssignableFromStrict(rightType)) {
         failWithActual("expected not to be strictly assignable from", formatType(rightType));
       }
     }
 
-    Object formatType(SoyType type) {
+    static String formatType(SoyType type) {
       SoyType effective = type.getEffectiveType();
       if (effective != type) {
         return type + " (" + effective + ")";
       }
-      return type;
+      return type.toString();
     }
 
     @Deprecated
@@ -1208,40 +1224,50 @@ public class SoyTypesTest {
     }
 
     void isEqualTo(String other) {
-      SoyType leftType = getActualType();
       SoyType rightType = parseType(other);
-      if (!leftType.equals(rightType)) {
+      if (!actualType.equals(rightType)) {
         failWithActual("expected", other);
       }
       // make sure that assignability is compatible with equality.
-      if (!leftType.isAssignableFromStrict(rightType)) {
+      if (!actualType.isAssignableFromStrict(rightType)) {
         failWithoutActual(
             simpleFact(
-                lenientFormat("types are equal, but %s is not assignable from %s", actual, other)));
+                lenientFormat(
+                    "types are equal, but %s is not assignable from %s",
+                    formatType(actualType), other)));
       }
-      if (!rightType.isAssignableFromStrict(leftType)) {
+      if (!rightType.isAssignableFromStrict(actualType)) {
         failWithoutActual(
             simpleFact(
-                lenientFormat("types are equal, but %s is not assignable from %s", other, actual)));
+                lenientFormat(
+                    "types are equal, but %s is not assignable from %s",
+                    other, formatType(actualType))));
       }
     }
 
     void isEffectivelyEqualTo(String other) {
-      SoyType leftType = getActualType().getEffectiveType();
+      SoyType leftType = actualType.getEffectiveType();
       SoyType rightType = parseType(other).getEffectiveType();
       if (!leftType.equals(rightType)) {
         failWithActual("expected", other);
+      }
+      if (leftType.isOfKind(Kind.NEVER) && rightType.isOfKind(Kind.NEVER)) {
+        return;
       }
       // make sure that assignability is compatible with equality.
       if (!leftType.isAssignableFromStrict(rightType)) {
         failWithoutActual(
             simpleFact(
-                lenientFormat("types are equal, but %s is not assignable from %s", actual, other)));
+                lenientFormat(
+                    "types are equal, but %s is not assignable from %s",
+                    formatType(actualType), other)));
       }
       if (!rightType.isAssignableFromStrict(leftType)) {
         failWithoutActual(
             simpleFact(
-                lenientFormat("types are equal, but %s is not assignable from %s", other, actual)));
+                lenientFormat(
+                    "types are equal, but %s is not assignable from %s",
+                    other, formatType(actualType))));
       }
     }
 
@@ -1252,18 +1278,18 @@ public class SoyTypesTest {
     }
 
     void isNotEqualTo(String other) {
-      SoyType leftType = getActualType();
       SoyType rightType = parseType(other);
-      if (leftType.equals(rightType)) {
+      if (actualType.equals(rightType)) {
         failWithActual("expected not to be", other);
       }
       // make sure that assignability is compatible with equality.
-      if (leftType.isAssignableFromStrict(rightType)
-          && rightType.isAssignableFromStrict(leftType)) {
+      if (actualType.isAssignableFromStrict(rightType)
+          && rightType.isAssignableFromStrict(actualType)) {
         failWithoutActual(
             simpleFact(
                 lenientFormat(
-                    "types are not equal, but %s and %s are mutally assignable", actual, other)));
+                    "types are not equal, but %s and %s are mutally assignable",
+                    formatType(actualType), other)));
       }
     }
 

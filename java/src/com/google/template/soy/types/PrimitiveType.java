@@ -21,20 +21,6 @@ public abstract class PrimitiveType extends SoyType {
 
   @Override
   boolean doIsAssignableFromNonUnionType(SoyType srcType) {
-    return srcType.getKind() == getKind();
-  }
-
-  @Override
-  public boolean equals(Object other) {
-    if (other == null) {
-      return false;
-    }
-    return other.getClass() == this.getClass();
-  }
-
-  @Override
-  public int hashCode() {
-    // All instances of a given primitive type are considered equal.
-    return this.getClass().hashCode();
+    return this == srcType;
   }
 }

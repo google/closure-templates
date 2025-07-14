@@ -77,7 +77,7 @@ public enum BuiltinMethod implements SoyMethod {
         List<ExprNode> params,
         SoyTypeRegistry soyTypeRegistry,
         ErrorReporter errorReporter) {
-      SoyProtoType protoType = (SoyProtoType) baseType;
+      SoyProtoType protoType = baseType.asType(SoyProtoType.class);
       var extType = getExtensionType(protoType, Iterables.getOnlyElement(params), errorReporter);
       if (extType.isEmpty()) {
         return UnknownType.getInstance();
@@ -102,7 +102,7 @@ public enum BuiltinMethod implements SoyMethod {
         List<ExprNode> params,
         SoyTypeRegistry soyTypeRegistry,
         ErrorReporter errorReporter) {
-      SoyProtoType protoType = (SoyProtoType) baseType;
+      SoyProtoType protoType = baseType.asType(SoyProtoType.class);
       var extType = getExtensionType(protoType, Iterables.getOnlyElement(params), errorReporter);
       if (extType.isEmpty()) {
         return UnknownType.getInstance();
@@ -131,7 +131,7 @@ public enum BuiltinMethod implements SoyMethod {
         List<ExprNode> params,
         SoyTypeRegistry soyTypeRegistry,
         ErrorReporter errorReporter) {
-      SoyProtoType protoType = (SoyProtoType) baseType;
+      SoyProtoType protoType = baseType.asType(SoyProtoType.class);
       var extType = getExtensionType(protoType, Iterables.getOnlyElement(params), errorReporter);
       if (extType.isEmpty()) {
         return UnknownType.getInstance();
@@ -407,7 +407,7 @@ public enum BuiltinMethod implements SoyMethod {
       }
       return TemplateBindingUtil.bindParameters(
           baseType,
-          (RecordType) param.getType(),
+          param.getType().asType(RecordType.class),
           soyTypeRegistry,
           errorReporter.bind(param.getSourceLocation()));
     }
@@ -500,7 +500,7 @@ public enum BuiltinMethod implements SoyMethod {
 
   public static String getProtoExtensionIdFromMethodCall(MethodCallNode node) {
     ExprNode arg = node.getChild(1);
-    return ((ProtoExtensionImportType) arg.getType()).getFieldName();
+    return ((ProtoExtensionImportType) arg.getType().getEffectiveType()).getFieldName();
   }
 
   protected ImmutableCollection<String> expandMethodNamesForProto(
@@ -641,7 +641,8 @@ public enum BuiltinMethod implements SoyMethod {
       case HAS_EXTENSION:
       case GET_READONLY_EXTENSION:
         return ImmutableList.of(
-            ((SoyProtoType) SoyTypes.excludeNullish(methodNode.getBaseExprChild().getType()))
+            SoyTypes.excludeNullish(methodNode.getBaseExprChild().getType())
+                .asType(SoyProtoType.class)
                 .getFieldDescriptor(getProtoExtensionIdFromMethodCall(methodNode)));
       case HAS_PROTO_FIELD:
       case GET_PROTO_FIELD:
@@ -799,7 +800,8 @@ public enum BuiltinMethod implements SoyMethod {
       return Optional.empty();
     }
 
-    ProtoExtensionImportType extType = (ProtoExtensionImportType) param.getType();
+    ProtoExtensionImportType extType =
+        (ProtoExtensionImportType) param.getType().getEffectiveType();
     // TODO(jcg): Have SoyProtoType understand ProtoExtensionImportType rather than looking up
     //            on string representation.
     ImmutableSet<String> fields = protoType.getExtensionFieldNames();

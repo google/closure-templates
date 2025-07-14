@@ -48,7 +48,7 @@ public abstract class LiteralType extends SoyType {
   }
 
   @Override
-  void doToProto(SoyTypeP.Builder builder) {
+  protected void doToProto(SoyTypeP.Builder builder) {
     PrimitiveData literal = literal();
     if (literal instanceof StringData) {
       builder.getLiteralBuilder().setStringValue(((StringData) literal).getValue());

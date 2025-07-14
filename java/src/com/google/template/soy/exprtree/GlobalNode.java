@@ -102,7 +102,7 @@ public final class GlobalNode extends AbstractExprNode {
   }
 
   @Override
-  public SoyType getAuthoredType() {
+  public SoyType getType() {
     KnownGlobal known = KNOWN_IDS.get(getName());
     return known != null ? known.getType() : UnknownType.getInstance();
   }

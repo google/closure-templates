@@ -789,11 +789,7 @@ public abstract class Expression extends BytecodeProducer {
         case VE:
         case VE_DATA:
           return Optional.empty();
-        case INTERSECTION:
-        case NAMED:
-        case INDEXED:
-        case PICK:
-        case OMIT:
+        case COMPUTED:
           return doCheckedSoyCast(type.getEffectiveType());
         case UNION:
           if (type.equals(SoyTypes.INT_OR_FLOAT)) {

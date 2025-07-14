@@ -132,6 +132,7 @@ public final class Metadata {
       if (calleeType == null) {
         return ImmutableList.of();
       }
+      calleeType = calleeType.getEffectiveType();
       if (calleeType instanceof TemplateType) {
         return ImmutableList.of((TemplateType) calleeType);
       } else if (calleeType instanceof UnionType) {
@@ -747,7 +748,8 @@ public final class Metadata {
         builder.setDelTemplateVariant(basicTemplate.getDelTemplateVariant());
       } else if (basicTemplate.getModifiesExpr() != null) {
         if (basicTemplate.getModifiesExpr().getRoot() instanceof TemplateLiteralNode) {
-          SoyType modifiableType = basicTemplate.getModifiesExpr().getRoot().getType();
+          SoyType modifiableType =
+              basicTemplate.getModifiesExpr().getRoot().getType().getEffectiveType();
           builder.setDelTemplateName(
               // In some cases the types won't be resolved to a TemplateType, eg Aspirin. In that
               // case the deltemplate selector won't work correctly when modifiable templates are
@@ -1211,6 +1213,9 @@ public final class Metadata {
               switch (call.getKind()) {
                 case CALL_BASIC_NODE:
                   SoyType type = ((CallBasicNode) call).getCalleeExpr().getType();
+                  if (type != null) {
+                    type = type.getEffectiveType();
+                  }
                   boolean isModifiable =
                       type instanceof TemplateType && ((TemplateType) type).isModifiable();
                   builder.setDelCall(isModifiable);

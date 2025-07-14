@@ -487,7 +487,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
     // Generate the code "new Map(list.map(dummyVar => [dummyVar.key, dummyVar.value]))"
     // corresponding to the input "map(list)"
     Expression list = visit(node.getListExpr());
-    SoyType listType = node.getListExpr().getType();
+    SoyType listType = node.getListExpr().getType().getEffectiveType();
     if (!(listType instanceof ListType)) {
       errorReporter.report(node.getSourceLocation(), SOY_JS_SRC_BAD_LIST_TO_MAP_CONSTRUCTOR, list);
       return Expressions.constructMap();
@@ -676,7 +676,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
     SoyMethod soyMethod = methodCallNode.getSoyMethod();
     if (soyMethod instanceof BuiltinMethod) {
       BuiltinMethod builtinMethod = (BuiltinMethod) soyMethod;
-      SoyType baseType = methodCallNode.getBaseType(nullSafe);
+      SoyType baseType = methodCallNode.getBaseType(nullSafe).getEffectiveType();
       SourceLocation sourceLocation = methodCallNode.getAccessSourceLocation();
       switch (builtinMethod) {
         case GET_READONLY_EXTENSION:

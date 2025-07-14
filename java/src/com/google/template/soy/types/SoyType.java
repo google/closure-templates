@@ -20,8 +20,6 @@ import com.google.errorprone.annotations.ForOverride;
 import com.google.errorprone.annotations.concurrent.LazyInit;
 import com.google.template.soy.error.ErrorArg;
 import com.google.template.soy.soytree.SoyTypeP;
-import java.util.ArrayDeque;
-import java.util.Deque;
 
 /**
  * Interface for all classes that describe a data type in Soy. These types are used to determine
@@ -120,11 +118,7 @@ public abstract class SoyType implements ErrorArg {
     VE_DATA,
     // Resolvable types
     UNION,
-    INTERSECTION,
-    NAMED,
-    INDEXED,
-    PICK,
-    OMIT,
+    COMPUTED,
     // Imported symbol types
     NAMESPACE,
     PROTO_TYPE,
@@ -205,35 +199,16 @@ public abstract class SoyType implements ErrorArg {
 
   /** Internal helper method for assignment analysis. This should only be used by subclasses. */
   final boolean isAssignableFromInternal(SoyType soyType, AssignabilityPolicy policy) {
-    soyType = soyType.getEffectiveType();
-    if (policy.isUnknownAssignmentAllowed() && soyType == UnknownType.getInstance()) {
+    if (policy.isUnknownAssignmentAllowed() && soyType.isOfKind(Kind.UNKNOWN)) {
       return true;
     }
-    if (soyType.getKind() != Kind.UNION) {
-      return doIsAssignableFromNonUnionType(soyType, policy);
+    if (!soyType.isOfKind(Kind.UNION)) {
+      return doIsAssignableFromNonUnionType(soyType.getEffectiveType(), policy);
     }
     // Handle unions here with template methods rather than forcing all subclasses to handle. A type
     // is assignable from a union if it is assignable from _all_ members.
-    Deque<SoyType> stack = new ArrayDeque<>();
-    stack.add(soyType);
-    while (!stack.isEmpty()) {
-      SoyType type = stack.removeLast();
-      // If a named type is itself a union we need to resolve that here.
-      if (type.getKind() == Kind.NAMED || type.getKind() == Kind.INDEXED) {
-        SoyType effectiveType = type.getEffectiveType();
-        if (effectiveType.getKind() == Kind.UNION) {
-          type = effectiveType;
-        }
-      }
-      if (type instanceof UnionType) {
-        stack.addAll(((UnionType) type).getMembers());
-        continue;
-      }
-      if (!doIsAssignableFromNonUnionType(type, policy)) {
-        return false;
-      }
-    }
-    return true;
+    return SoyTypes.flattenUnion(soyType)
+        .allMatch(member -> doIsAssignableFromNonUnionType(member, policy));
   }
 
   /**
@@ -278,12 +253,25 @@ public abstract class SoyType implements ErrorArg {
     return local;
   }
 
-  @ForOverride
-  abstract void doToProto(SoyTypeP.Builder builder);
+  protected abstract void doToProto(SoyTypeP.Builder builder);
 
   /**
-   * Resolves NAMED, INDEXED, and INTERSECTION types. The returned value is a shallow resolution,
-   * guaranteed not to be one of the listed types but which may contain those types.
+   * Resolves computed types (instances of {@link ComputedType}). Certain type introspections are
+   * only valid on the value returned by this function:
+   *
+   * <ul>
+   *   <li>Most uses of {@link SoyType#getKind}, including switch statements over the kind.
+   *   <li>Casting SoyType to a subclass.
+   * </ul>
+   *
+   * <p>Other operations work without calling getEffectiveType():
+   *
+   * <ul>
+   *   <li>{@link SoyType#isAssignableFromStrict}, etc
+   *   <li>{@link SoyType#isOfKind}
+   *   <li>{@link SoyType#asType}
+   *   <li>Any utility function in {@link SoyTypes}
+   * </ul>
    */
   public SoyType getEffectiveType() {
     return this;
@@ -294,6 +282,10 @@ public abstract class SoyType implements ErrorArg {
   }
 
   public boolean isEffectivelyEqual(SoyType type) {
-    return this.equals(type.getEffectiveType());
+    return type != null && this.equals(type.getEffectiveType());
+  }
+
+  public <T extends SoyType> T asType(Class<T> subType) {
+    return subType.cast(this);
   }
 }

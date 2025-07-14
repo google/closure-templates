@@ -97,7 +97,7 @@ public final class SoyProtoEnumType extends SoyType {
   }
 
   @Override
-  void doToProto(SoyTypeP.Builder builder) {
+  protected void doToProto(SoyTypeP.Builder builder) {
     builder.setProtoEnum(getName());
   }
 

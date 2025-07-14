@@ -45,15 +45,14 @@ import com.google.template.soy.exprtree.OperatorNodes.NotOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TripleEqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TripleNotEqualOpNode;
 import com.google.template.soy.shared.internal.BuiltinFunction;
-import com.google.template.soy.types.AnyType;
 import com.google.template.soy.types.NeverType;
 import com.google.template.soy.types.NullType;
 import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.UndefinedType;
 import com.google.template.soy.types.UnionType;
-import com.google.template.soy.types.UnknownType;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -152,11 +151,9 @@ final class TypeNarrowingConditionVisitor {
               ? NeverType.getInstance()
               : SoyTypes.excludeNullish(type);
         case NULL:
-          return type.equals(NullType.getInstance())
-              ? NeverType.getInstance()
-              : SoyTypes.excludeNull(type);
+          return type.isOfKind(Kind.NULL) ? NeverType.getInstance() : SoyTypes.excludeNull(type);
         case UNDEFINED:
-          return type.equals(UndefinedType.getInstance())
+          return type.isOfKind(Kind.UNDEFINED)
               ? NeverType.getInstance()
               : SoyTypes.excludeUndefined(type);
       }
@@ -334,11 +331,11 @@ final class TypeNarrowingConditionVisitor {
       SoyType instanceType = node.getChild(1).getType();
 
       SoyType positiveType = instanceOfIntersection(exprType, instanceType);
-      if (!positiveType.equals(exprType)) {
+      if (!positiveType.isEffectivelyEqual(exprType)) {
         positiveTypeConstraints.put(exprEquivalence.wrap(expr), positiveType);
       }
       SoyType negativeType = instanceOfRemainder(exprType, instanceType);
-      if (!negativeType.equals(exprType)) {
+      if (!negativeType.isEffectivelyEqual(exprType)) {
         negativeTypeConstraints.put(exprEquivalence.wrap(expr), negativeType);
       }
     }
@@ -543,7 +540,7 @@ final class TypeNarrowingConditionVisitor {
   /** Returns `exprType` narrowed by a positive match on instanceof `instanceOfOperand`. */
   @VisibleForTesting
   static SoyType instanceOfIntersection(SoyType exprType, SoyType instanceOfOperand) {
-    if (exprType.equals(UnknownType.getInstance())) {
+    if (exprType.isOfKind(Kind.UNKNOWN)) {
       // (unknown instanceof x) => x
       return instanceOfOperand;
     }
@@ -572,7 +569,7 @@ final class TypeNarrowingConditionVisitor {
   static SoyType instanceOfRemainder(SoyType exprType, SoyType instanceOfOperand) {
     // !(unknown instanceof x) => unknown
     // !(any instanceof x) => any
-    if (exprType.equals(AnyType.getInstance()) || exprType.equals(UnknownType.getInstance())) {
+    if (SoyTypes.isUnknownOrAny(exprType)) {
       return exprType;
     }
     // !(superclass instanceof subclass) => superclass

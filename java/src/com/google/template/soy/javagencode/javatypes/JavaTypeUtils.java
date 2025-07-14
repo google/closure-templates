@@ -17,6 +17,7 @@
 package com.google.template.soy.javagencode.javatypes;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
+import static com.google.template.soy.types.SoyTypes.INT_OR_FLOAT;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -26,8 +27,6 @@ import com.google.template.soy.data.restricted.PrimitiveData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.types.AbstractIterableType;
 import com.google.template.soy.types.AbstractMapType;
-import com.google.template.soy.types.FloatType;
-import com.google.template.soy.types.IntType;
 import com.google.template.soy.types.LiteralType;
 import com.google.template.soy.types.RecordType;
 import com.google.template.soy.types.SoyProtoEnumType;
@@ -142,11 +141,7 @@ public final class JavaTypeUtils {
       case UNION:
         types = convertSoyUnionTypeToJavaTypes((UnionType) soyType, skipSoyTypes);
         break;
-      case INTERSECTION:
-      case NAMED:
-      case INDEXED:
-      case PICK:
-      case OMIT:
+      case COMPUTED:
         return getJavaTypes(soyType.getEffectiveType(), skipSoyTypes);
       case ANY:
       case UNKNOWN:
@@ -250,7 +245,7 @@ public final class JavaTypeUtils {
       SoyType firstNotNullish = SoyTypes.excludeNullish(first);
       SoyType second = i.next();
       SoyType secondNotNullish = SoyTypes.excludeNullish(second);
-      if (firstNotNullish.equals(secondNotNullish)) {
+      if (firstNotNullish.isEffectivelyEqual(secondNotNullish)) {
         return Optional.of(UnionType.of(first, second));
       }
     }
@@ -272,11 +267,11 @@ public final class JavaTypeUtils {
   private static ImmutableList<JavaType> convertSoyUnionTypeToJavaTypes(
       UnionType unionType, Set<SoyType.Kind> skipSoyTypes) {
     if (SoyTypes.isNullish(unionType)
-        && SoyTypes.excludeNullish(unionType).equals(SoyTypes.INT_OR_FLOAT)) {
+        && SoyTypes.excludeNullish(unionType).isEffectivelyEqual(INT_OR_FLOAT)) {
       return ImmutableList.of(SimpleJavaType.NUMBER.asNullable());
     }
 
-    if (unionType.equals(UnionType.of(IntType.getInstance(), FloatType.getInstance()))) {
+    if (unionType.isEffectivelyEqual(INT_OR_FLOAT)) {
       return ImmutableList.of(SimpleJavaType.NUMBER);
     }
 
