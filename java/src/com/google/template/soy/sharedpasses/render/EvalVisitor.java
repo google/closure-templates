@@ -1077,7 +1077,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
 
     FunctionType functionType =
         FunctionType.of(
-            argTypes.stream().map(t -> Parameter.of("unused", t)).collect(toImmutableList()),
+            argTypes.stream().map(t -> Parameter.of("unused", t, false)).collect(toImmutableList()),
             returnType);
     TofuValueFactory factory =
         new TofuValueFactory(
@@ -1086,7 +1086,9 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
             pluginInstances,
             functionType,
             false,
-            new FunctionAdapter(this));
+            new FunctionAdapter(this),
+            functionType.getParameters().stream().map(p -> p.getType()).collect(toImmutableList()),
+            functionType.isVarArgs());
     TofuJavaValue tofu =
         Modifier.isStatic(method.getModifiers())
             ? factory.callStaticMethod(method, returnType, javaValues)
@@ -1138,7 +1140,11 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
             pluginInstances,
             externNode.getType(),
             produceRawTofuValues,
-            new FunctionAdapter(this));
+            new FunctionAdapter(this),
+            externNode.getParamVars().stream()
+                .map(p -> p.getTypeNode().getResolvedType())
+                .collect(toImmutableList()),
+            externNode.getType().isVarArgs());
     return java.isStatic()
         ? factory.callStaticMethod(method, resultType, javaValues)
         : factory.callInstanceMethod(method, resultType, javaValues);

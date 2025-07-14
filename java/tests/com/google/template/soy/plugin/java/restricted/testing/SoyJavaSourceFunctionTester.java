@@ -30,6 +30,7 @@ import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SoyDict;
 import com.google.template.soy.data.SoyList;
+import com.google.template.soy.data.SoyListData;
 import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
@@ -72,6 +73,7 @@ import com.google.template.soy.types.ast.TypeNode;
 import com.google.template.soy.types.ast.TypeNodeConverter;
 import com.ibm.icu.util.ULocale;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -143,6 +145,26 @@ public class SoyJavaSourceFunctionTester {
     fnNode.setAllowedParamTypes(
         Stream.of(matchingSig.parameterTypes()).map(this::parseType).collect(toImmutableList()));
     fnNode.setType(parseType(matchingSig.returnType()));
+    fnNode.setIsVarArgs(matchingSig.isVarArgs());
+
+    List<Object> argsCopy = new ArrayList<>();
+    // Use isVarArgs because ResolveExpressionTypesPass does not run in this test.
+    if (matchingSig.isVarArgs()) {
+      int varArgsIndex = fnNode.getParams().size() - 1;
+      // Add all parameters up to the varargs start index (if any non-varargs exist).
+      if (varArgsIndex > 0) {
+        Arrays.stream(args, 0, varArgsIndex).forEach(argsCopy::add);
+      }
+      if (args.length >= varArgsIndex) {
+        argsCopy.add(new SoyListData(Arrays.copyOfRange(args, varArgsIndex, args.length)));
+      } else {
+        // No varargs parameters provided, add an empty list.
+        argsCopy.add(new SoyListData(new Object[0]));
+      }
+    } else {
+      // Not a varargs function, add all arguments directly.
+      Arrays.stream(args).forEach(argsCopy::add);
+    }
 
     try {
       return ExpressionEvaluator.evaluate(
@@ -200,10 +222,16 @@ public class SoyJavaSourceFunctionTester {
   }
 
   private Signature findMatchingSignature(Signature[] sigs, int numArgs) {
+    Signature bestSig = null;
     for (Signature sig : sigs) {
-      if (sig.parameterTypes().length == numArgs) {
-        return sig;
+      // Tries to assign signature with equal number of parameters. If no signature with equal
+      // number of parameters is found, then assign a signature with a var args parameter.
+      if (sig.parameterTypes().length == numArgs || (bestSig == null && sig.isVarArgs())) {
+        bestSig = sig;
       }
+    }
+    if (bestSig != null) {
+      return bestSig;
     }
     throw new IllegalArgumentException(
         "No signature on " + fn.getClass().getName() + " with " + numArgs + " parameters");
