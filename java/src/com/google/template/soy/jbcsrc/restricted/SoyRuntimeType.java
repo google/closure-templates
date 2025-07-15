@@ -31,7 +31,6 @@ import com.google.template.soy.types.IntType;
 import com.google.template.soy.types.IterableType;
 import com.google.template.soy.types.LegacyObjectMapType;
 import com.google.template.soy.types.ListType;
-import com.google.template.soy.types.LiteralType;
 import com.google.template.soy.types.MapType;
 import com.google.template.soy.types.MessageType;
 import com.google.template.soy.types.NumberType;
@@ -73,9 +72,6 @@ public abstract class SoyRuntimeType {
 
   @Nullable
   private static PrimitiveSoyType unboxedTypeImpl(SoyType soyType) {
-    if (soyType instanceof LiteralType) {
-      soyType = ((LiteralType) soyType).getPrimitiveType();
-    }
     switch (soyType.getKind()) {
       case BOOL:
         return new PrimitiveSoyType(BoolType.getInstance(), Type.BOOLEAN_TYPE);
