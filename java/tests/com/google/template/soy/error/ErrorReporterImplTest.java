@@ -61,7 +61,7 @@ public final class ErrorReporterImplTest {
     ErrorReporter reporter = ErrorReporter.create();
     reporter.warn(SourceLocation.UNKNOWN, ERROR);
     assertThat(ErrorFormatter.SIMPLE.format(reporter.getWarnings().get(0)))
-        .isEqualTo("unknown:-1: warning: Oh noes.");
+        .isEqualTo("unknown:-1:-1: warning: Oh noes.");
   }
 
   @Test
@@ -80,8 +80,8 @@ public final class ErrorReporterImplTest {
     assertThat(secondReporter.errorsSince(cp)).isTrue();
     assertThat(secondReporter.hasErrors()).isTrue();
     assertThat(ErrorFormatter.SIMPLE.format(secondReporter.getWarnings().get(0)))
-        .isEqualTo("unknown:-1: warning: Oh noes.");
+        .isEqualTo("unknown:-1:-1: warning: Oh noes.");
     assertThat(ErrorFormatter.SIMPLE.format(secondReporter.getErrors().get(0)))
-        .isEqualTo("unknown:-1: error: Oh noes.");
+        .isEqualTo("unknown:-1:-1: error: Oh noes.");
   }
 }

@@ -26,9 +26,10 @@ public interface ErrorFormatter {
       (report) -> {
         SourceLocation location = report.location();
         return String.format(
-            "%s:%d: %s: %s",
+            "%s:%d:%d: %s: %s",
             location.getFilePath().realPath(),
             location.getBeginLine(),
+            location.getBeginColumn(),
             (report.isWarning() ? "warning" : "error"),
             report.message());
       };
