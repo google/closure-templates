@@ -77,5 +77,9 @@ exports.$$bindTemplateParamsForIdom = function(fn, data) {
   };
   /** @type {?} */ (boundTemplate).contentKind =
       /** @type {?} */ (fn).contentKind;
+  if (goog.DEBUG && /** @type {?} */ (fn).soyTemplateName) {
+    /** @type {?} */ (boundTemplate).soyTemplateName =
+        /** @type {?} */ (fn).soyTemplateName;
+  }
   return exports.$$markTemplate(boundTemplate);
 };
