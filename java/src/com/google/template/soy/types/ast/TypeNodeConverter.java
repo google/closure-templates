@@ -40,6 +40,7 @@ import com.google.template.soy.types.ExcludeType;
 import com.google.template.soy.types.ExtractType;
 import com.google.template.soy.types.FunctionType;
 import com.google.template.soy.types.IndexedType;
+import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.LiteralType;
 import com.google.template.soy.types.NamedType;
 import com.google.template.soy.types.NeverType;
@@ -101,6 +102,12 @@ public final class TypeNodeConverter
 
   private static final SoyErrorKind MISSING_GENERIC_TYPE_PARAMETERS =
       SoyErrorKind.of("''{0}'' is a generic type, expected {1}.");
+
+  private static final SoyErrorKind VAR_ARGS_PARAM_NOT_LAST =
+      SoyErrorKind.of("Var args parameters must be the last parameter in a function.");
+
+  private static final SoyErrorKind VAR_ARGS_PARAM_NOT_LIST =
+      SoyErrorKind.of("Var args parameters must be a list.");
 
   public static final SoyErrorKind SAFE_PROTO_TYPE =
       SoyErrorKind.of("Please use Soy''s native ''{0}'' type instead of the ''{1}'' type.");
@@ -554,11 +561,20 @@ public final class TypeNodeConverter
   @Override
   public SoyType visit(FunctionTypeNode node) {
     Map<String, FunctionType.Parameter> map = new LinkedHashMap<>();
-    for (FunctionTypeNode.Parameter parameter : node.parameters()) {
+    for (int i = 0; i < node.parameters().size(); i++) {
+      FunctionTypeNode.Parameter parameter = node.parameters().get(i);
+      if (parameter.isVarArgs() && i != node.parameters().size() - 1) {
+        errorReporter.report(parameter.nameLocation(), VAR_ARGS_PARAM_NOT_LAST);
+      }
       FunctionType.Parameter oldParameter =
           map.put(
               parameter.name(),
-              FunctionType.Parameter.of(parameter.name(), exec(parameter.type())));
+              FunctionType.Parameter.of(
+                  parameter.name(), exec(parameter.type()), parameter.isVarArgs()));
+      if (parameter.isVarArgs()
+          && !ListType.ANY_LIST.isAssignableFromStrict(parameter.type().getResolvedType())) {
+        errorReporter.report(parameter.nameLocation(), VAR_ARGS_PARAM_NOT_LIST);
+      }
       if (oldParameter != null) {
         errorReporter.report(parameter.nameLocation(), DUPLICATE_FUNCTION_PARAM, parameter.name());
         map.put(parameter.name(), oldParameter);

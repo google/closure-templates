@@ -36,8 +36,13 @@ public abstract class FunctionTypeNode extends TypeNode {
   @AutoValue
   public abstract static class Parameter {
     public static Parameter create(
-        SourceLocation nameLocation, String name, String sourceName, TypeNode type) {
-      return new AutoValue_FunctionTypeNode_Parameter(nameLocation, name, sourceName, type);
+        SourceLocation nameLocation,
+        String name,
+        String sourceName,
+        TypeNode type,
+        boolean isVarArgs) {
+      return new AutoValue_FunctionTypeNode_Parameter(
+          nameLocation, name, sourceName, type, isVarArgs);
     }
 
     public abstract SourceLocation nameLocation();
@@ -48,13 +53,15 @@ public abstract class FunctionTypeNode extends TypeNode {
 
     public abstract TypeNode type();
 
+    public abstract boolean isVarArgs();
+
     @Override
     public final String toString() {
       return sourceName() + ": " + type();
     }
 
     Parameter copy(CopyState copyState) {
-      return create(nameLocation(), name(), sourceName(), type().copy(copyState));
+      return create(nameLocation(), name(), sourceName(), type().copy(copyState), isVarArgs());
     }
   }
 
@@ -80,5 +87,9 @@ public abstract class FunctionTypeNode extends TypeNode {
         create(sourceLocation(), newParameters.build(), returnType().copy(copyState));
     copy.copyInternal(this);
     return copy;
+  }
+
+  public boolean isVarArgs() {
+    return parameters().stream().anyMatch(Parameter::isVarArgs);
   }
 }

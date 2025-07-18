@@ -37,4 +37,7 @@ public @interface Signature {
 
   /** Allows specifying a particular overload as deprecated. */
   String deprecatedWarning() default "";
+
+  /** Whether to handle the last parameter as a varargs parameter. */
+  boolean isVarArgs() default false;
 }

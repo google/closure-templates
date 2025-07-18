@@ -814,7 +814,7 @@ public class SoyFileParser {
   // Distinguish function type from type grouping.
   boolean isStartOfFunctionType() {
     return getToken(1).kind == LPAREN &&
-        (getToken(2).kind == RPAREN || getToken(3).kind == COLON || getToken(3).kind == QCOLON);
+        (getToken(2).kind == SPREAD || getToken(2).kind == RPAREN || getToken(3).kind == COLON || getToken(3).kind == QCOLON);
   }
 
   // An error that can be thrown to abort parsing.  This is useful if an error has been reported
@@ -5570,22 +5570,30 @@ private FunctionTypeNode FunctionType() :
 }
 
 /**
- * FunctionParameter -> IDENT ":" TypeExpr
+ * FunctionParameter -> (...IDENT | IDENT) ":" TypeExpr
  */
 private FunctionTypeNode.Parameter FunctionParameter() :
 {
   Token parameterName;
   TypeNode parameterType;
+  boolean isVarArgs = false;
 }
 {
-  parameterName = <IDENT>
+  (
+    <SPREAD>
+    parameterName = <IDENT>
+      {
+        isVarArgs = true;
+      }
+  |
+    parameterName = <IDENT>
+  )
   <COLON>
   parameterType = TypeExpr()
-
   {
     String paramName = parameterName.image;
     return FunctionTypeNode.Parameter.create(
-        createSrcLoc(parameterName), paramName, parameterName.image, parameterType);
+        createSrcLoc(parameterName), paramName, parameterName.image, parameterType, isVarArgs);
   }
 }
 

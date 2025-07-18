@@ -231,6 +231,8 @@ message FunctionTypeP {
     string name = 1;
     // The type of the parameter.
     SoyTypeP type = 2;
+    // Whether or not the parameter is varargs.
+    bool is_var_args = 3;
   }
 
   repeated Parameter parameters = 1;
