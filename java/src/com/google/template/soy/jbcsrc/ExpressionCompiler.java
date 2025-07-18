@@ -526,10 +526,8 @@ final class ExpressionCompiler {
 
     @Override
     protected SoyExpression visitAsOpNode(AsOpNode node) {
-      // Casting requires boxing since the JVM can't just cast one primitive to another without
-      // coercing (and thus changing the underlying value).
-      SoyExpression value = visit(node.getChild(0)).box();
-      return SoyExpression.forSoyValue(node.getType(), value.checkedSoyCast(node.getType()));
+      // Casting is a compiler / type checking construct.
+      return visit(node.getChild(0));
     }
 
     @Override
