@@ -2780,7 +2780,7 @@ class NodeBuilder {
  * only be used for Goat SoyJs interop.
  * @interface
  */
-class JsxNodeBuilderInterface {
+class SoyJsInteropRenderable {
   /** @return {!SanitizedHtml} */
   render() {}
 }
@@ -2791,7 +2791,7 @@ class JsxNodeBuilderInterface {
  */
 class SoyJsInteropSlot extends SanitizedHtml {
   /**
-   * @param {!JsxNodeBuilderInterface} nodeBuilder
+   * @param {!SoyJsInteropRenderable} nodeBuilder
    */
   constructor(nodeBuilder) {
     super();
@@ -2816,12 +2816,12 @@ class SoyJsInteropSlot extends SanitizedHtml {
 }
 
 /**
- * @param {!JsxNodeBuilderInterface} nodeBuilder
+ * @param {!SoyJsInteropRenderable} nodeBuilder
  * @return {!SoyJsInteropSlot}
  */
 const $$createSoyJsInteropSlot = (() => {
   /**
-   * @param {!JsxNodeBuilderInterface} nodeBuilder
+   * @param {!SoyJsInteropRenderable} nodeBuilder
    * @constructor
    * @extends {SanitizedHtml}
    */
@@ -3078,7 +3078,7 @@ exports = {
   $$isAttribute,
   $$isReadonly,
   $$createSoyJsInteropSlot,
-  JsxNodeBuilderInterface
+  SoyJsInteropRenderable
 };
 // -----------------------------------------------------------------------------
 // Generated code.
