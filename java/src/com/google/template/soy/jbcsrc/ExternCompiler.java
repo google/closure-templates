@@ -483,7 +483,7 @@ public final class ExternCompiler {
     if (!isObject
         && BytecodeUtils.isDefinitelyAssignableFrom(javaType, BytecodeUtils.IMMUTABLE_LIST_TYPE)) {
       SoyType elmType = SoyTypes.getIterableElementType(nonNullableSoyType);
-      SoyExpression unboxedList =
+      Expression unboxedList =
           actualParam.isBoxed() ? actualParam.unboxAsListOrJavaNull() : actualParam;
       switch (elmType.getKind()) {
         case INT:

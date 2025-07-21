@@ -59,7 +59,6 @@ import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.StringType;
 import com.google.template.soy.types.UndefinedType;
-import com.google.template.soy.types.UnknownType;
 import java.math.BigInteger;
 import java.util.Iterator;
 import java.util.List;
@@ -793,7 +792,7 @@ public final class SoyExpression extends Expression {
   }
 
   /** Unboxes a list and its items. Throws an exception if the boxed list value is nullish. */
-  public SoyExpression unboxAsListUnchecked() {
+  public Expression unboxAsListUnchecked() {
     return this.asNonSoyNullish().unboxAsListOrJavaNull();
   }
 
@@ -802,33 +801,16 @@ public final class SoyExpression extends Expression {
    * parameter for an extern or plugin implementation, which both expect Java null rather than
    * NullData or UndefinedData.
    */
-  public SoyExpression unboxAsListOrJavaNull() {
+  public Expression unboxAsListOrJavaNull() {
     if (alreadyUnboxed(List.class)) {
       return this;
     }
     assertBoxed(List.class);
-    var delegate = delegateWithoutCast();
-    Expression unboxedList =
-        delegate.invoke(
+    return delegateWithoutCast()
+        .invoke(
             delegate.isNonSoyNullish()
                 ? MethodRefs.SOY_VALUE_AS_JAVA_LIST
                 : MethodRefs.SOY_VALUE_AS_JAVA_LIST_OR_NULL);
-
-    ListType asListType;
-    SoyRuntimeType nonNullRuntimeType =
-        SoyRuntimeType.getBoxedType(SoyTypes.excludeNullish(soyType()));
-    if (!SoyTypes.isNullOrUndefined(soyType()) && nonNullRuntimeType.isKnownIterable()) {
-      asListType = nonNullRuntimeType.asListType();
-    } else {
-      if (soyType().isEffectivelyEqual(UnknownType.getInstance())
-          || SoyTypes.isNullOrUndefined(soyType())) {
-        asListType = ListType.of(UnknownType.getInstance());
-      } else {
-        // The type checker should have already rejected all of these
-        throw new UnsupportedOperationException("Can't convert " + soyRuntimeType + " to List");
-      }
-    }
-    return forList(asListType, unboxedList);
   }
 
   /** Unboxes a proto message. Throws an exception if the boxed value is nullish. */

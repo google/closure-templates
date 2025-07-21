@@ -526,10 +526,8 @@ final class ExpressionCompiler {
 
     @Override
     protected SoyExpression visitAsOpNode(AsOpNode node) {
-      // Casting requires boxing since the JVM can't just cast one primitive to another without
-      // coercing (and thus changing the underlying value).
-      SoyExpression value = visit(node.getChild(0)).box();
-      return SoyExpression.forSoyValue(node.getType(), value.checkedSoyCast(node.getType()));
+      // Casting is a compiler / type checking construct.
+      return visit(node.getChild(0));
     }
 
     @Override
@@ -1605,7 +1603,7 @@ final class ExpressionCompiler {
       // Special case index lookups on lists to avoid boxing the int key.  Maps cannot be
       // optimized the same way because there is no real way to 'unbox' a SoyLegacyObjectMap.
       if (baseExpr.soyRuntimeType().isKnownListOrUnionOfLists()) {
-        SoyExpression list = baseExpr.unboxAsListUnchecked();
+        Expression list = baseExpr.unboxAsListUnchecked();
         SoyExpression index = keyExpr.coerceToIndex();
         if (analysis.isResolved(node)) {
           soyValueProvider = MethodRefs.RUNTIME_GET_LIST_ITEM.invoke(list, index);

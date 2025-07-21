@@ -102,6 +102,7 @@ import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.UnionType;
+import com.google.template.soy.types.UnknownType;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -1285,7 +1286,7 @@ final class ProtoUtils {
       checkArgument(listArg.isNonSoyNullish());
 
       // Unbox listArg as List<SoyValueProvider> and wait until all items are done
-      SoyExpression unboxed = listArg.unboxAsListUnchecked();
+      Expression unboxed = listArg.unboxAsListUnchecked();
       Expression resolved = detacher.resolveSoyValueProviderList(unboxed);
 
       // Enter new scope
@@ -1304,7 +1305,10 @@ final class ProtoUtils {
       // exitScope must be called after creating all the variables
       Label scopeExit = scope.exitScopeMarker();
       // Expected type info of the list element
-      SoyType elementSoyType = unboxed.soyType().asType(ListType.class).getElementType();
+      SoyType elementSoyType =
+          listArg.soyType() instanceof ListType
+              ? listArg.soyType().asType(ListType.class).getElementType()
+              : UnknownType.getInstance();
       SoyRuntimeType elementType = SoyRuntimeType.getBoxedType(elementSoyType);
 
       // Call list.get(i).resolveSoyValueProvider(), then cast to the expected subtype of SoyValue
