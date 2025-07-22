@@ -49,6 +49,7 @@ class ExternAdaptors {
    */
   public static Optional<Extern> asExtern(
       SoySourceFunctionMethod soyMethod, List<SoyExpression> args) {
+    // TODO(b/431281119): Pass through VarArgs from SoyMethods
     SoySourceFunction impl = soyMethod.getImpl();
     if (impl instanceof SoyJavaExternFunction) {
       return Optional.of(
@@ -83,6 +84,8 @@ class ExternAdaptors {
       List<SoyExpression> args,
       SoyType returnType,
       ImmutableList<SoyType> argTypes) {
+    //  TODO(b/432322086): Handle isVarArgs for externs here. Confirm that the last argType is a
+    // list and convert the last SoyExpressions to a list.
     ImmutableList<RuntimeType> argRuntimeTypes =
         args.stream()
             .map(a -> soyRuntimeTypeToExternApiType(a.soyRuntimeType()))
@@ -105,7 +108,7 @@ class ExternAdaptors {
 
     FunctionType functionType =
         FunctionType.of(
-            argTypes.stream().map(t -> Parameter.of("unused", t)).collect(toImmutableList()),
+            argTypes.stream().map(t -> Parameter.of("unused", t, false)).collect(toImmutableList()),
             returnType);
     JavaImpl java =
         new JavaImpl() {
