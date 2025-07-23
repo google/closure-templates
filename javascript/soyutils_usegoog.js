@@ -2774,6 +2774,91 @@ class NodeBuilder {
     return this.target.apply(null, this.params);
   }
 }
+
+/**
+ * Interface for Goat NodeBuilder which renders to SanitizedHtml. This should
+ * only be used for Goat SoyJs interop.
+ * @interface
+ */
+class SoyJsInteropRenderable {
+  /** @return {!SanitizedHtml} */
+  render() {}
+}
+
+/**
+ * Used by Goat's SoyJs slot function to wrap a NodeBuilder for lazy rendering
+ * in SoyJs runtime.
+ */
+class SoyJsInteropSlot extends SanitizedHtml {
+  constructor() {
+    super();
+    /**
+     * The renderable is not set from the constructor and instead must be
+     * set via the `setRenderable` method. This is because the closure compiler
+     * will not be able to recognize that the `renderable` property exists if it
+     * is initialized here. This is an unfortunate consequence of our 
+     * `InjectableCtor` hack (see below).
+     *
+     * @private @const {!SoyJsInteropRenderable | undefined}
+     */
+    this.renderable;
+  }
+
+  /**
+   * @override
+   * @return {string}
+   */
+  getContent() {
+    return this.renderable.render().toString();
+  }
+
+  /**
+   * @override
+   * @return {string}
+   */
+  toString() {
+    return this.getContent();
+  }
+
+  renderTsx() {
+    return this.getContent();
+  }
+
+
+  /**
+   * @param {!SoyJsInteropRenderable} renderable
+   */
+  setRenderable(renderable) {
+    if (goog.DEBUG && this.renderable != null) throw new Error('this.renderable can only be set once upon initialization.');
+    this.renderable = renderable;
+  }
+}
+
+/**
+ * @param {!SoyJsInteropRenderable} renderable
+ * @return {!SoyJsInteropSlot}
+ */
+const $$createSoyJsInteropSlot = (() => {
+  /**
+   * @constructor
+   * @extends {SanitizedHtml}
+   */
+  function InstantiableCtor() {
+  }
+
+  // hack... See $$makeSanitizedContentFactory_()
+  InstantiableCtor.prototype = SoyJsInteropSlot.prototype;
+  function factory(renderable) {
+    // This is needed because calling `new InstantiableCtor()` will not be
+    // recognized as a SoyJsInteropSlot and therefore unable to use its
+    // setRenderable method.
+    const ctor = /** @type {!SoyJsInteropSlot} */ (/** @type {*} */ (new InstantiableCtor()));
+    ctor.setRenderable(renderable);
+    return ctor;
+  }
+  return factory;
+})();
+
 /**
  * A version of SanitizedHtml that can accept NodeBuilders. It starts by
  * appending to the `content` string, until either a `NodeBuilder` or another
@@ -2812,7 +2897,7 @@ class HtmlOutputBuffer extends SanitizedHtml {
     if (shouldLazyEvalNodeBuildersUncompiled) {
       if (this.parts !== undefined) {
         this.parts.push(val);
-      } else if (val instanceof NodeBuilder) {
+      } else if (val instanceof NodeBuilder || val instanceof SoyJsInteropSlot) {
         this.parts = [this.content, val];
         this.content = undefined;
       } else if (val instanceof HtmlOutputBuffer) {
@@ -3014,6 +3099,8 @@ exports = {
   $$isJS,
   $$isAttribute,
   $$isReadonly,
+  $$createSoyJsInteropSlot,
+  SoyJsInteropRenderable,
 };
 // -----------------------------------------------------------------------------
 // Generated code.
