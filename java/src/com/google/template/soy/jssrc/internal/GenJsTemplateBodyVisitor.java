@@ -27,7 +27,6 @@ import static com.google.template.soy.jssrc.dsl.Statements.returnValue;
 import static com.google.template.soy.jssrc.dsl.Statements.switchValue;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_IS_OBJECT;
 import static com.google.template.soy.jssrc.internal.JsRuntime.WINDOW_CONSOLE_LOG;
-import static com.google.template.soy.jssrc.internal.JsRuntime.isLazyExecutionEnabledFunction;
 import static com.google.template.soy.jssrc.internal.JsRuntime.sanitizedContentOrdainerFunction;
 
 import com.google.common.collect.ImmutableList;
@@ -731,75 +730,6 @@ public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<St
    */
   public Statement execRenderUnitNodeAsStatements(
       RenderUnitNode node, String varName, boolean returnOutput, boolean ordain) {
-    if (state.outputVarHandler.shouldBranch(node)) {
-
-      // If we're not returning the output, we're using the output as a let/param so we need to
-      // declare a let outside of the lazy branch so it is scoped properly.
-      boolean predeclaredVar = !returnOutput;
-
-      Statement lazyBranch =
-          execRenderUnitNodeAsStatementsInner(
-              node,
-              varName,
-              returnOutput,
-              ordain,
-              predeclaredVar,
-              OutputVarHandler.StyleBranchState.ALLOW);
-
-      // Avoid duplicate errors.
-      if (this.errorReporter.hasErrors()) {
-        return lazyBranch;
-      }
-
-      Statement appendingBranch =
-          execRenderUnitNodeAsStatementsInner(
-              node,
-              varName,
-              returnOutput,
-              ordain,
-              predeclaredVar,
-              OutputVarHandler.StyleBranchState.DISALLOW);
-
-      ImmutableList.Builder<Statement> stmts = ImmutableList.builder();
-      if (predeclaredVar) {
-        stmts.add(VariableDeclaration.builder(varName).setMutable().build());
-      }
-      stmts.add(
-          Statements.ifStatement(isLazyExecutionEnabledFunction().call(), lazyBranch)
-              .setElse(appendingBranch)
-              .build());
-      return Statements.of(stmts.build());
-    } else {
-      return execRenderUnitNodeAsStatementsInner(
-          node, varName, returnOutput, ordain, /* predeclaredVar= */ false);
-    }
-  }
-
-  /** Compiles the render unit node with the specified style branch. */
-  private Statement execRenderUnitNodeAsStatementsInner(
-      RenderUnitNode node,
-      String varName,
-      boolean returnOutput,
-      boolean ordain,
-      boolean predeclaredVar,
-      OutputVarHandler.StyleBranchState styleBranch) {
-    Statement stmt;
-    state.outputVarHandler.enterBranch(styleBranch);
-    try (var scope = templateTranslationContext.enterSoyAndJsScope()) {
-      stmt =
-          execRenderUnitNodeAsStatementsInner(node, varName, returnOutput, ordain, predeclaredVar);
-    }
-    state.outputVarHandler.exitBranch();
-    return stmt;
-  }
-
-  private Statement execRenderUnitNodeAsStatementsInner(
-      RenderUnitNode node,
-      String varName,
-      boolean returnOutput,
-      boolean ordain,
-      boolean predeclaredVar) {
-
     OutputVarHandler.Style outputStyle = outputVars.outputStyleForBlock(node);
     boolean needsOrdainer =
         ordain
@@ -814,9 +744,6 @@ public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<St
     String contentVarName = generateUnsanitizedIntermediateVar ? varName + "_unsanitized" : varName;
 
     outputVars.pushOutputVar(contentVarName, outputStyle);
-    if (predeclaredVar && !generateUnsanitizedIntermediateVar) {
-      outputVars.setOutputVarDeclared();
-    }
     List<Statement> contents = visitChildrenInNewSoyScope(node);
     outputVars.popOutputVar();
 
@@ -827,12 +754,8 @@ public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<St
     if (returnOutput) {
       contents.add(returnValue(ordainedOutput));
     } else if (generateUnsanitizedIntermediateVar) {
-      contents.add(
-          predeclaredVar
-              ? Statements.assign(id(varName), ordainedOutput)
-              : VariableDeclaration.builder(varName).setRhs(ordainedOutput).build());
+      contents.add(VariableDeclaration.builder(varName).setRhs(ordainedOutput).build());
     }
-
     return Statements.of(contents);
   }
 

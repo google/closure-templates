@@ -299,10 +299,6 @@ public final class JsRuntime {
     return SOY.dotAccess("NodeBuilder");
   }
 
-  public static Expression isLazyExecutionEnabledFunction() {
-    return SOY.dotAccess("$$isLazyExecutionEnabled");
-  }
-
   public static Expression createHtmlOutputBufferFunction() {
     return SOY.dotAccess("$$createHtmlOutputBuffer");
   }

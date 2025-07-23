@@ -2723,41 +2723,6 @@ const $$bindFunctionParams = function(f, params) {
   return f.bind(null, ...params);
 };
 
-/**
- * @define {boolean} Whether to use lazy execution code paths. Note that this
- *     does not control whether NodeBuilders are lazily executed, that is
- *     controlled by the LAZY_EVAL_NODE_BUILDERS flag. This flag simply enables
- *     the code paths that do lazy execution.
- */
-const ENABLE_LAZY_EXECUTION = goog.define('soy.ENABLE_LAZY_EXECUTION', true);
-
-/**
- * @define {boolean} Whether to perform lazy execution when NodeBuilders are
- *     encountered.
- */
-const LAZY_EVAL_NODE_BUILDERS =
-    goog.define('soy.LAZY_EVAL_NODE_BUILDERS', true);
-
-let isLazyExecutionEnabledUncompiled = ENABLE_LAZY_EXECUTION;
-let shouldLazyEvalNodeBuildersUncompiled = LAZY_EVAL_NODE_BUILDERS;
-
-/** @return {boolean} */
-function $$isLazyExecutionEnabled() {
-  return goog.DEBUG ? isLazyExecutionEnabledUncompiled : ENABLE_LAZY_EXECUTION;
-}
-
-/** @return {boolean} */
-function $$shouldLazyEvalNodeBuilders() {
-  return goog.DEBUG ? shouldLazyEvalNodeBuildersUncompiled :
-                      LAZY_EVAL_NODE_BUILDERS;
-}
-
-/** @param {boolean} val */
-function $$setLazyExeuctionUncompiled(val) {
-  isLazyExecutionEnabledUncompiled = val;
-  shouldLazyEvalNodeBuildersUncompiled = val;
-}
-
 /** Wraps a call that should be lazily evaluated. */
 class NodeBuilder {
   /**
@@ -2809,32 +2774,20 @@ class HtmlOutputBuffer extends SanitizedHtml {
    * @return {!HtmlOutputBuffer}
    */
   addDynamic(val) {
-    if (shouldLazyEvalNodeBuildersUncompiled) {
-      if (this.parts !== undefined) {
-        this.parts.push(val);
-      } else if (val instanceof NodeBuilder) {
-        this.parts = [this.content, val];
-        this.content = undefined;
-      } else if (val instanceof HtmlOutputBuffer) {
-        if (val.isStatic()) {
-          this.content += val.getContent();
-        } else {
-          this.parts = [this.content, val];
-          this.content = undefined;
-        }
-      } else {
-        this.content += val;
-      }
-    } else {
-      // If LAZY_EVAL_NODE_BUILDERS=false, we just eagerly execute NodeBuilders
-      // and HtmlOutputBuffers.
-      if (val instanceof NodeBuilder) {
-        this.content += val.render();
-      } else if (val instanceof HtmlOutputBuffer) {
+    if (this.parts !== undefined) {
+      this.parts.push(val);
+    } else if (val instanceof NodeBuilder) {
+      this.parts = [this.content, val];
+      this.content = undefined;
+    } else if (val instanceof HtmlOutputBuffer) {
+      if (val.isStatic()) {
         this.content += val.getContent();
       } else {
-        this.content += val;
+        this.parts = [this.content, val];
+        this.content = undefined;
       }
+    } else {
+      this.content += val;
     }
     return this;
   }
@@ -3000,11 +2953,9 @@ exports = {
   $$areYouAnInternalCaller,
   $$bindFunctionParams,
   $$createHtmlOutputBuffer,
-  $$isLazyExecutionEnabled,
   NodeBuilder,
   $$throwException,
   // The following are exported just for tests
-  $$setLazyExeuctionUncompiled,
   $$balanceTags_,
   $$isRecord,
   $$isHtml,

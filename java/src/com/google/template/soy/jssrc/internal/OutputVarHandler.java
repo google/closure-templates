@@ -44,7 +44,7 @@ import javax.annotation.Nullable;
 public class OutputVarHandler {
 
   public static final OutputVarHandler DISALLOWED =
-      new OutputVarHandler(false) {
+      new OutputVarHandler() {
         @Override
         public Optional<Statement> initOutputVarIfNecessary() {
           return Optional.empty();
@@ -100,58 +100,18 @@ public class OutputVarHandler {
    */
   private static final Expression EVAL_ONLY = id("__for_eval_only_never_used_");
 
-  /**
-   * A StyleBranchState is a global setting that enables or disables lazy output var style. When
-   * generating an if/else with lazy vs appending output styles, set it before evaluating each of
-   * the branches.
-   */
-  enum StyleBranchState {
-    ALLOW,
-    DISALLOW,
-  };
-
-  private StyleBranchState currentStyleBranchState;
-
   /** The current stack of output variables. */
   private final Deque<OutputVar> outputVars;
 
-  private final boolean enableLazyJs;
-
-  OutputVarHandler(boolean enableLazyJs) {
+  OutputVarHandler() {
     outputVars = new ArrayDeque<>();
-    currentStyleBranchState = null;
-    this.enableLazyJs = enableLazyJs;
   }
 
   private OutputVar currentOutputVar() {
     return outputVars.peek();
   }
 
-  public boolean shouldBranch(RenderUnitNode node) {
-    return currentStyleBranchState == null && outputStyleForBlock(node) == Style.LAZY;
-  }
-
-  public void enterBranch(StyleBranchState state) {
-    if (currentStyleBranchState != null) {
-      throw new AssertionError("Internal Error: enterBranch with branch already set.");
-    }
-
-    this.currentStyleBranchState = state;
-  }
-
-  public void exitBranch() {
-    if (currentStyleBranchState == null) {
-      throw new AssertionError("Internal Error: exitBranch with no branch set.");
-    }
-
-    this.currentStyleBranchState = null;
-  }
-
   public OutputVarHandler.Style outputStyleForBlock(RenderUnitNode node) {
-    if (!this.enableLazyJs || currentStyleBranchState == StyleBranchState.DISALLOW) {
-      return Style.APPENDING;
-    }
-
     // Only html blocks might need the output buffer.
     if (node.getContentKind() != SanitizedContentKind.HTML
         && node.getContentKind() != SanitizedContentKind.HTML_ELEMENT) {

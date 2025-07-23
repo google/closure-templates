@@ -58,7 +58,7 @@ public final class OutputVarHandlerTest {
 
   @Test
   public void testOutputStyleForBlock() {
-    OutputVarHandler handler = new OutputVarHandler(true);
+    OutputVarHandler handler = new OutputVarHandler();
     assertThat(handler.outputStyleForBlock(buildSoy(HTML_TEMPLATE)))
         .isEqualTo(OutputVarHandler.Style.APPENDING);
     assertThat(handler.outputStyleForBlock(buildSoy(HTML_WITH_HTML_PRINT)))
@@ -67,53 +67,13 @@ public final class OutputVarHandlerTest {
         .isEqualTo(OutputVarHandler.Style.APPENDING);
     assertThat(handler.outputStyleForBlock(buildSoy(HTML_WITH_HTML_CALL)))
         .isEqualTo(OutputVarHandler.Style.LAZY);
-    assertThat(handler.outputStyleForBlock(buildSoy(HTML_WITH_TEXT_CALL)))
-        .isEqualTo(OutputVarHandler.Style.APPENDING);
-
-    handler.enterBranch(OutputVarHandler.StyleBranchState.ALLOW);
-    assertThat(handler.outputStyleForBlock(buildSoy(HTML_TEMPLATE)))
-        .isEqualTo(OutputVarHandler.Style.APPENDING);
-    assertThat(handler.outputStyleForBlock(buildSoy(HTML_WITH_HTML_PRINT)))
-        .isEqualTo(OutputVarHandler.Style.LAZY);
-    assertThat(handler.outputStyleForBlock(buildSoy(HTML_WITH_STRING_PRINT)))
-        .isEqualTo(OutputVarHandler.Style.APPENDING);
-    assertThat(handler.outputStyleForBlock(buildSoy(HTML_WITH_HTML_CALL)))
-        .isEqualTo(OutputVarHandler.Style.LAZY);
-    assertThat(handler.outputStyleForBlock(buildSoy(HTML_WITH_TEXT_CALL)))
-        .isEqualTo(OutputVarHandler.Style.APPENDING);
-
-    handler.exitBranch();
-    handler.enterBranch(OutputVarHandler.StyleBranchState.DISALLOW);
-    assertThat(handler.outputStyleForBlock(buildSoy(HTML_TEMPLATE)))
-        .isEqualTo(OutputVarHandler.Style.APPENDING);
-    assertThat(handler.outputStyleForBlock(buildSoy(HTML_WITH_HTML_PRINT)))
-        .isEqualTo(OutputVarHandler.Style.APPENDING);
-    assertThat(handler.outputStyleForBlock(buildSoy(HTML_WITH_STRING_PRINT)))
-        .isEqualTo(OutputVarHandler.Style.APPENDING);
-    assertThat(handler.outputStyleForBlock(buildSoy(HTML_WITH_HTML_CALL)))
-        .isEqualTo(OutputVarHandler.Style.APPENDING);
-    assertThat(handler.outputStyleForBlock(buildSoy(HTML_WITH_TEXT_CALL)))
-        .isEqualTo(OutputVarHandler.Style.APPENDING);
-  }
-
-  @Test
-  public void testOutputStyleForBlockFlagGuarded() {
-    OutputVarHandler handler = new OutputVarHandler(false);
-    assertThat(handler.outputStyleForBlock(buildSoy(HTML_TEMPLATE)))
-        .isEqualTo(OutputVarHandler.Style.APPENDING);
-    assertThat(handler.outputStyleForBlock(buildSoy(HTML_WITH_HTML_PRINT)))
-        .isEqualTo(OutputVarHandler.Style.APPENDING);
-    assertThat(handler.outputStyleForBlock(buildSoy(HTML_WITH_STRING_PRINT)))
-        .isEqualTo(OutputVarHandler.Style.APPENDING);
-    assertThat(handler.outputStyleForBlock(buildSoy(HTML_WITH_HTML_CALL)))
-        .isEqualTo(OutputVarHandler.Style.APPENDING);
     assertThat(handler.outputStyleForBlock(buildSoy(HTML_WITH_TEXT_CALL)))
         .isEqualTo(OutputVarHandler.Style.APPENDING);
   }
 
   @Test
   public void testAddPartsAppending() {
-    OutputVarHandler handler = new OutputVarHandler(true);
+    OutputVarHandler handler = new OutputVarHandler();
     handler.pushOutputVar("$output", OutputVarHandler.Style.APPENDING);
     assertThat(handler.currentOutputVarStyle()).isEqualTo(OutputVarHandler.Style.APPENDING);
     assertThat(
@@ -135,7 +95,7 @@ public final class OutputVarHandlerTest {
 
   @Test
   public void testDeclaredAppending() {
-    OutputVarHandler handler = new OutputVarHandler(true);
+    OutputVarHandler handler = new OutputVarHandler();
     handler.pushOutputVar("$output", OutputVarHandler.Style.APPENDING);
     handler.setOutputVarDeclared();
     assertThat(
@@ -151,7 +111,7 @@ public final class OutputVarHandlerTest {
 
   @Test
   public void testAddPartsLazy() {
-    OutputVarHandler handler = new OutputVarHandler(true);
+    OutputVarHandler handler = new OutputVarHandler();
     handler.pushOutputVar("$output", OutputVarHandler.Style.LAZY);
     assertThat(handler.currentOutputVarStyle()).isEqualTo(OutputVarHandler.Style.LAZY);
     assertThat(
@@ -175,7 +135,7 @@ public final class OutputVarHandlerTest {
 
   @Test
   public void testDeclaredLazy() {
-    OutputVarHandler handler = new OutputVarHandler(true);
+    OutputVarHandler handler = new OutputVarHandler();
     handler.pushOutputVar("$output", OutputVarHandler.Style.LAZY);
     handler.setOutputVarDeclared();
     assertThat(

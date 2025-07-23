@@ -66,7 +66,7 @@ public class VisitorsState {
     this.genCallCodeUtils = createGenCallCodeUtils();
     this.canInitOutputVarVisitor = new CanInitOutputVarVisitor(isComputableAsJsExprsVisitor);
     this.typeRegistry = checkNotNull(typeRegistry);
-    this.outputVarHandler = new OutputVarHandler(options.enableLazyJs());
+    this.outputVarHandler = new OutputVarHandler();
   }
 
   @ForOverride

@@ -113,9 +113,6 @@ public final class SoyToJsSrcCompiler extends AbstractSoyCompiler {
               + " com.google.template.soy.xliffmsgplugin.XliffMsgPlugin. ")
   private SoyMsgPlugin messagePlugin = new XliffMsgPlugin();
 
-  @Option(name = "--enableLazyJs", usage = "Enable lazy evaluation.")
-  private boolean enableLazyJs = false;
-
   private final PerInputOutputFiles outputFiles =
       new PerInputOutputFiles("soy.js", PerInputOutputFiles.JS_JOINER);
 
@@ -158,7 +155,6 @@ public final class SoyToJsSrcCompiler extends AbstractSoyCompiler {
             .setUseGoogIsRtlForBidiGlobalDir(useGoogIsRtlForBidiGlobalDir)
             .setKytheMode(kytheMode)
             .setSourceMapMode(sourceMapMode)
-            .setEnableLazyJs(enableLazyJs)
             .build();
 
     // Compile.

@@ -19,7 +19,6 @@ package com.google.template.soy.jssrc.internal;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.template.soy.jssrc.dsl.Expressions.LITERAL_EMPTY_STRING;
 import static com.google.template.soy.jssrc.dsl.Expressions.stringLiteral;
-import static com.google.template.soy.jssrc.internal.JsRuntime.isLazyExecutionEnabledFunction;
 import static com.google.template.soy.jssrc.internal.JsRuntime.nodeBuilderClass;
 import static com.google.template.soy.jssrc.internal.JsRuntime.sanitizedContentOrdainerFunction;
 
@@ -340,41 +339,6 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<Expression>> 
 
   public Expression execRenderUnitNodeAsSingleExpression(
       RenderUnitNode node, boolean concatForceString) {
-    if (state.outputVarHandler.shouldBranch(node)) {
-      Expression lazyBranch =
-          execRenderUnitNodeAsSingleExpressionInner(
-              node, concatForceString, OutputVarHandler.StyleBranchState.ALLOW);
-
-      // Avoid duplicate errors.
-      if (this.errorReporter.hasErrors()) {
-        return lazyBranch;
-      }
-
-      Expression appendingBranch =
-          execRenderUnitNodeAsSingleExpressionInner(
-              node, concatForceString, OutputVarHandler.StyleBranchState.DISALLOW);
-
-      return Expressions.ifExpression(isLazyExecutionEnabledFunction().call(), lazyBranch)
-          .setElse(appendingBranch)
-          .build(translationContext.codeGenerator());
-    } else {
-      return execRenderUnitNodeAsSingleExpressionInner(node, concatForceString);
-    }
-  }
-
-  /** Compiles the render unit node with the specified style branch. */
-  private Expression execRenderUnitNodeAsSingleExpressionInner(
-      RenderUnitNode node,
-      boolean concatForceString,
-      OutputVarHandler.StyleBranchState styleBranch) {
-    state.outputVarHandler.enterBranch(styleBranch);
-    Expression expr = execRenderUnitNodeAsSingleExpressionInner(node, concatForceString);
-    state.outputVarHandler.exitBranch();
-    return expr;
-  }
-
-  private Expression execRenderUnitNodeAsSingleExpressionInner(
-      RenderUnitNode node, boolean concatForceString) {
     state.outputVarHandler.pushOutputVarForEvalOnly(
         state.outputVarHandler.outputStyleForBlock(node));
     Expression content =
@@ -389,30 +353,6 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<Expression>> 
       return content;
     }
     if (state.outputVarHandler.outputStyleForBlock(node) == OutputVarHandler.Style.LAZY) {
-      if (state.outputVarHandler.shouldBranch(node)) {
-        if (!(node instanceof CallParamContentNode)) {
-          // LetContentNodes are not handled by this class.
-          // TemplateNodes will always be evaluated in a branch if they need lazy evaluation since
-          // they are the top level.
-          throw new AssertionError("Unexpected node: " + node.getKind());
-        }
-        // We needed to branch on this param, so we've already output something like:
-
-        // let param;
-        // if (soy.$$isLazyExecutionEnabled) {
-        //   param = soy.$$createHtmlOutputBuffer...
-        // else {
-        //   param = '' + ...
-        // }
-
-        // The param is a raw string in the appending branch, so conditionally use the ordainer.
-        // tmplCall(soy.$$isLazyExecutionEnabled ? param : ordainSanitizedContent(param))
-
-        return Expressions.ternary(
-            isLazyExecutionEnabledFunction().call(),
-            content,
-            sanitizedContentOrdainerFunction(node.getContentKind()).call(content));
-      }
       return content;
     }
     return sanitizedContentOrdainerFunction(node.getContentKind()).call(content);
