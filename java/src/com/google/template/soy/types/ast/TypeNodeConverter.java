@@ -42,6 +42,7 @@ import com.google.template.soy.types.FunctionType;
 import com.google.template.soy.types.IndexedType;
 import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.LiteralType;
+import com.google.template.soy.types.MutableListType;
 import com.google.template.soy.types.NamedType;
 import com.google.template.soy.types.NeverType;
 import com.google.template.soy.types.NonNullableType;
@@ -151,6 +152,14 @@ public final class TypeNodeConverter
                 @Override
                 SoyType create(List<SoyType> types, TypeInterner interner) {
                   return interner.getOrCreateListType(types.get(0));
+                }
+              })
+          .put(
+              "mutable_list",
+              new GenericTypeInfo(1) {
+                @Override
+                SoyType create(List<SoyType> types, TypeInterner interner) {
+                  return interner.intern(MutableListType.of(types.get(0)));
                 }
               })
           .put(

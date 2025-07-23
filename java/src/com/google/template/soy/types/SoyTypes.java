@@ -247,14 +247,17 @@ public final class SoyTypes {
    * @param t1 Another type.
    * @return A type that is assignable from both t0 and t1.
    */
-  public static SoyType computeLowestCommonType(TypeInterner typeRegistry, SoyType t0, SoyType t1) {
+  public static SoyType computeLowestCommonType(
+      @Nullable TypeInterner typeRegistry, SoyType t0, SoyType t1) {
     if (t0.isAssignableFromStrictWithoutCoercions(t1)) {
       return t0;
     } else if (t1.isAssignableFromStrictWithoutCoercions(t0)) {
       return t1;
     } else {
       // Create a union.  This preserves the most information.
-      return typeRegistry.getOrCreateUnionType(t0, t1);
+      return typeRegistry != null
+          ? typeRegistry.getOrCreateUnionType(t0, t1)
+          : UnionType.of(t0, t1);
     }
   }
 
@@ -266,7 +269,7 @@ public final class SoyTypes {
    * @return A type that is assignable from all of the listed types.
    */
   public static SoyType computeLowestCommonType(
-      TypeInterner typeRegistry, Collection<SoyType> types) {
+      @Nullable TypeInterner typeRegistry, Collection<SoyType> types) {
     SoyType result = null;
     for (SoyType type : types) {
       result = (result == null) ? type : computeLowestCommonType(typeRegistry, result, type);
@@ -763,13 +766,6 @@ public final class SoyTypes {
         .anyMatch(t -> t.getKind() == Kind.PROTO || t.getKind() == Kind.PROTO_ENUM);
   }
 
-  public static SoyType getIterableElementType(SoyType type) {
-    return UnionType.of(
-        flattenUnion(type)
-            .map(member -> ((AbstractIterableType) member).getElementType())
-            .collect(toImmutableList()));
-  }
-
   public static SoyType getMapKeysType(SoyType type) {
     return UnionType.of(
         flattenUnion(type).map(t -> ((MapType) t).getKeyType()).collect(toImmutableSet()));
@@ -826,14 +822,29 @@ public final class SoyTypes {
     for (SoyType member : flattenUnionToSet(soyType)) {
       if (member instanceof FunctionType) {
         SoyType returnType = ((FunctionType) member).getReturnType();
-        rv =
-            rv != null
-                ? computeLowestCommonType(TypeRegistries.newTypeInterner(), rv, returnType)
-                : returnType;
+        rv = rv != null ? computeLowestCommonType(null, rv, returnType) : returnType;
       } else {
         return UnknownType.getInstance();
       }
     }
     return checkNotNull(rv);
+  }
+
+  /** Returns the lowest common element type of an iterable or union of iterables. */
+  public static SoyType getIterableElementType(@Nullable TypeInterner typeRegistry, SoyType type) {
+    Set<SoyType> elementTypesBuilder = new HashSet<>();
+    for (SoyType soyType : flattenUnionToSet(type)) {
+      if (!(soyType instanceof AbstractIterableType)) {
+        return UnknownType.getInstance();
+      }
+      // Prevent one empty list from changing type to ?.
+      if (!((AbstractIterableType) soyType).isEmpty()) {
+        elementTypesBuilder.add(((AbstractIterableType) soyType).getElementType());
+      }
+    }
+    if (elementTypesBuilder.isEmpty()) {
+      return UnknownType.getInstance();
+    }
+    return computeLowestCommonType(typeRegistry, elementTypesBuilder);
   }
 }

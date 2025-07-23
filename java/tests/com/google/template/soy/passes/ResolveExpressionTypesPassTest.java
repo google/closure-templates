@@ -1160,6 +1160,21 @@ public final class ResolveExpressionTypesPassTest {
   }
 
   @Test
+  public void testLowestCommonLists() {
+    assertTypes(
+        "{@param b: bool}",
+        "{@param any_list: list<any>}",
+        "{@param unknown_list: list<?>}",
+        "{@param string_list: list<string>}",
+        "{@param? opt_string_list: list<string>}",
+        "{assertType('list<any>', $b ? $any_list : $string_list)}",
+        "{assertType('list<?>', $b ? $unknown_list : $string_list)}",
+        "{assertType('list<?>', $b ? $unknown_list : $any_list)}", // TS any (Soy ?) wins.
+        "{assertType('list<string>', $b ? $string_list : [])}",
+        "{assertType('list<string>', $opt_string_list ?? [])}");
+  }
+
+  @Test
   public void testConcatMaps() {
     assertTypes(
         "{assertType('map<string,string>', map('1' : '2').concat(map('3':'4')))}",

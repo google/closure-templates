@@ -20,6 +20,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.SoyValueProvider;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import javax.annotation.Nonnull;
@@ -33,6 +34,18 @@ import javax.annotation.ParametersAreNonnullByDefault;
 @ParametersAreNonnullByDefault
 public final class ListImpl extends SoyList {
 
+  /**
+   * Creates a SoyList wrapping a mutable list, for use only in {autoimpl} where mutable list
+   * methods are supported.
+   */
+  @Nonnull
+  public static ListImpl mutable(List<? extends SoyValueProvider> providerList) {
+    if (providerList instanceof ImmutableList) {
+      providerList = new ArrayList<>(providerList);
+    }
+    return new ListImpl(providerList);
+  }
+
   /** Creates a Soy list implementation backed by the given list. */
   @Nonnull
   public static ListImpl forProviderList(List<? extends SoyValueProvider> providerList) {
@@ -45,9 +58,9 @@ public final class ListImpl extends SoyList {
     return new ListImpl(providerList);
   }
 
-  private final ImmutableList<? extends SoyValueProvider> providerList;
+  private final List<? extends SoyValueProvider> providerList;
 
-  private ListImpl(ImmutableList<? extends SoyValueProvider> providerList) {
+  private ListImpl(List<? extends SoyValueProvider> providerList) {
     this.providerList = providerList;
   }
 

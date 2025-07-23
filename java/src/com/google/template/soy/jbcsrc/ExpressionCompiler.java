@@ -150,6 +150,7 @@ import com.google.template.soy.types.FunctionType;
 import com.google.template.soy.types.IterableType;
 import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.MessageType;
+import com.google.template.soy.types.MutableListType;
 import com.google.template.soy.types.SetType;
 import com.google.template.soy.types.SoyProtoEnumType;
 import com.google.template.soy.types.SoyProtoType;
@@ -417,17 +418,20 @@ final class ExpressionCompiler {
     if (requiresDetach(node)) {
       return Optional.empty();
     }
-    return Optional.of(
-        new CompilerVisitor(
-                context,
-                analysis,
-                parameters,
-                varManager,
-                /* detacher= */ null,
-                sourceFunctionCompiler,
-                fileSetMetadata,
-                /* isConstantContext= */ false)
-            .exec(node));
+    return Optional.of(forceCompileWithNoDetaches(node));
+  }
+
+  SoyExpression forceCompileWithNoDetaches(ExprNode node) {
+    return new CompilerVisitor(
+            context,
+            analysis,
+            parameters,
+            varManager,
+            /* detacher= */ null,
+            sourceFunctionCompiler,
+            fileSetMetadata,
+            /* isConstantContext= */ false)
+        .exec(node);
   }
 
   /**
@@ -552,7 +556,7 @@ final class ExpressionCompiler {
 
     @Override
     protected SoyExpression visitListLiteralNode(ListLiteralNode node) {
-      if (node.containsSpreads()) {
+      if (node.containsSpreads() || node.getType() instanceof MutableListType) {
         // spreads require a different implementation since we need to accumulate into a builder
         var builder = MethodRefs.IMMUTABLE_LIST_BUILDER.invoke();
         for (ExprNode child : node.getChildren()) {
@@ -565,9 +569,13 @@ final class ExpressionCompiler {
             builder = builder.invoke(MethodRefs.IMMUTABLE_LIST_BUILDER_ADD, visit(child).box());
           }
         }
-        return SoyExpression.forList(
-            node.getType().asType(ListType.class),
-            builder.invoke(MethodRefs.IMMUTABLE_LIST_BUILDER_BUILD));
+        var list = builder.invoke(MethodRefs.IMMUTABLE_LIST_BUILDER_BUILD);
+        if (node.getType() instanceof MutableListType) {
+          // Could be made more efficient by just constructing the ArrayList.
+          // Upcast so that the jvm local is typed as List and can be assigned later.
+          list = MethodRefs.ARRAY_LIST_FROM_LIST.invoke(list).upCast(LIST_TYPE);
+        }
+        return SoyExpression.forList(node.getType().asType(ListType.class), list);
       }
 
       var compiledChildren = visitChildren(node);
@@ -597,8 +605,6 @@ final class ExpressionCompiler {
 
     @Override
     protected SoyExpression visitListComprehensionNode(ListComprehensionNode node) {
-      // TODO(lukes): consider adding a special case for when the listExpr is a range() function
-      // invocation, as we do for regular loops.
       ExprNode listExpr = node.getListExpr();
       SoyExpression soyList = visit(listExpr);
       // Don't care about nullishness since we always dereference the list

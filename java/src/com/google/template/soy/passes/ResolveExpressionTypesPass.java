@@ -24,6 +24,7 @@ import static com.google.common.collect.Iterables.getOnlyElement;
 import static com.google.template.soy.passes.CheckTemplateCallsPass.ARGUMENT_TYPE_MISMATCH;
 import static com.google.template.soy.passes.RuntimeTypeCoercion.maybeCoerceType;
 import static com.google.template.soy.types.SoyTypes.SAFE_PROTO_TO_SANITIZED_TYPE;
+import static com.google.template.soy.types.SoyTypes.computeLowestCommonType;
 import static com.google.template.soy.types.SoyTypes.excludeNull;
 import static com.google.template.soy.types.SoyTypes.excludeNullish;
 import static com.google.template.soy.types.SoyTypes.excludeUndefined;
@@ -47,6 +48,7 @@ import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.SetMultimap;
+import com.google.common.collect.Streams;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
@@ -70,6 +72,11 @@ import com.google.template.soy.basicfunctions.MapToLegacyObjectMapFunction;
 import com.google.template.soy.basicfunctions.MapValuesMethod;
 import com.google.template.soy.basicfunctions.MaxFunction;
 import com.google.template.soy.basicfunctions.MinFunction;
+import com.google.template.soy.basicfunctions.MutableArrayMethods.Pop;
+import com.google.template.soy.basicfunctions.MutableArrayMethods.Push;
+import com.google.template.soy.basicfunctions.MutableArrayMethods.Shift;
+import com.google.template.soy.basicfunctions.MutableArrayMethods.Splice;
+import com.google.template.soy.basicfunctions.MutableArrayMethods.Unshift;
 import com.google.template.soy.basicfunctions.NumberListSortMethod;
 import com.google.template.soy.basicfunctions.SortMethod;
 import com.google.template.soy.error.ErrorReporter;
@@ -154,6 +161,7 @@ import com.google.template.soy.shared.restricted.TypedSoyFunction;
 import com.google.template.soy.soyparse.SoyFileParser;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.AssignmentNode;
+import com.google.template.soy.soytree.AutoImplNode;
 import com.google.template.soy.soytree.CallDelegateNode;
 import com.google.template.soy.soytree.CallParamValueNode;
 import com.google.template.soy.soytree.ConstNode;
@@ -196,6 +204,7 @@ import com.google.template.soy.types.IterableType;
 import com.google.template.soy.types.LegacyObjectMapType;
 import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.MapType;
+import com.google.template.soy.types.MutableListType;
 import com.google.template.soy.types.NullType;
 import com.google.template.soy.types.NumberType;
 import com.google.template.soy.types.ProtoImportType;
@@ -403,6 +412,8 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
       SoyErrorKind.of("Value of type ''{0}'' may not be spread here.");
   private static final SoyErrorKind INVALID_ASSIGNMENT_TYPES =
       SoyErrorKind.of("Cannot set a variable of type ''{0}'' to a value of type ''{1}''.");
+  private static final SoyErrorKind GENERIC_PARAM_NOT_ASSIGNABLE =
+      SoyErrorKind.of("Argument of type ''{0}'' is not assignable to type ''{1}''.");
 
   private final ErrorReporter errorReporter;
 
@@ -427,6 +438,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
   private TypeNodeConverter pluginTypeConverter;
   private final PluginResolver.Mode pluginResolutionMode;
   private SoyFileNode currentFile;
+  private boolean inAutoExtern;
 
   ResolveExpressionTypesPass(
       ErrorReporter errorReporter,
@@ -661,6 +673,13 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
         inferredType = declaredType;
       }
       node.getVar().setType(inferredType);
+    }
+
+    @Override
+    protected void visitAutoImplNode(AutoImplNode node) {
+      ResolveExpressionTypesPass.this.inAutoExtern = true;
+      super.visitAutoImplNode(node);
+      ResolveExpressionTypesPass.this.inAutoExtern = false;
     }
 
     @Override
@@ -970,7 +989,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
             }
             fieldTypes.add(elementType);
           }
-          return SoyTypes.computeLowestCommonType(typeRegistry, fieldTypes);
+          return computeLowestCommonType(typeRegistry, fieldTypes);
         }
 
       default:
@@ -1077,16 +1096,26 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
         }
       }
       // Special case for empty list.
+      SoyType listType;
       if (elementTypes.isEmpty()) {
-        if (inferringParam) {
-          errorReporter.report(node.getSourceLocation(), AMBIGUOUS_INFERRED_TYPE, "an empty list");
+        if (ResolveExpressionTypesPass.this.inAutoExtern) {
+          listType = MutableListType.empty();
+        } else {
+          if (inferringParam) {
+            errorReporter.report(
+                node.getSourceLocation(), AMBIGUOUS_INFERRED_TYPE, "an empty list");
+          }
+          listType = ListType.empty();
         }
-        node.setType(ListType.empty());
       } else {
-        node.setType(
-            typeRegistry.getOrCreateListType(
-                SoyTypes.computeLowestCommonType(typeRegistry, elementTypes)));
+        SoyType elementType = computeLowestCommonType(typeRegistry, elementTypes);
+        if (ResolveExpressionTypesPass.this.inAutoExtern) {
+          listType = typeRegistry.intern(MutableListType.of(elementType));
+        } else {
+          listType = typeRegistry.getOrCreateListType(elementType);
+        }
       }
+      node.setType(listType);
       tryApplySubstitution(node);
     }
 
@@ -1115,7 +1144,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
         } else {
           // Otherwise, use the list element type to set the type of the iterator ($var in this
           // example).
-          SoyType listElementType = SoyTypes.getIterableElementType(listExprType);
+          SoyType listElementType = SoyTypes.getIterableElementType(typeRegistry, listExprType);
           node.getListIterVar().setType(listElementType);
         }
       }
@@ -1140,7 +1169,13 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
       // Resolve the type of the itemMapExpr, and use it to determine the comprehension's resulting
       // list type.
       visit(node.getListItemTransformExpr());
-      node.setType(typeRegistry.getOrCreateListType(node.getListItemTransformExpr().getType()));
+
+      SoyType elementType = node.getListItemTransformExpr().getType();
+      SoyType listType =
+          ResolveExpressionTypesPass.this.inAutoExtern
+              ? typeRegistry.intern(MutableListType.of(elementType))
+              : typeRegistry.getOrCreateListType(elementType);
+      node.setType(listType);
 
       // Return the type substitutions to their state before narrowing the list item type.
       substitutions.restore(savedSubstitutions);
@@ -1217,8 +1252,8 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
         }
         valueTypes.add(value.getType());
       }
-      SoyType commonKeyType = SoyTypes.computeLowestCommonType(typeRegistry, keyTypes);
-      SoyType commonValueType = SoyTypes.computeLowestCommonType(typeRegistry, valueTypes);
+      SoyType commonKeyType = computeLowestCommonType(typeRegistry, keyTypes);
+      SoyType commonValueType = computeLowestCommonType(typeRegistry, valueTypes);
       node.setType(typeRegistry.getOrCreateMapType(commonKeyType, commonValueType));
 
       tryApplySubstitution(node);
@@ -1567,13 +1602,39 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
           }
         } else if (sourceFunction instanceof ListSliceMethod
             || sourceFunction instanceof ListReverseMethod
-            || sourceFunction instanceof ListUniqMethod) {
+            || sourceFunction instanceof ListUniqMethod
+            || sourceFunction instanceof NumberListSortMethod
+            || sourceFunction instanceof SortMethod) {
           // list<T>.slice(...), list<T>.uniq(), and list<T>.reverse() return list<T>
           node.setType(baseType);
-        } else if (sourceFunction instanceof NumberListSortMethod
-            || sourceFunction instanceof SortMethod) {
-          // list<T>.sort() returns list<T>
-          // The sort() method only supports lists of number, int, or float.
+        } else if (sourceFunction instanceof Push || sourceFunction instanceof Unshift) {
+          SoyType elementType =
+              SoyTypes.getIterableElementType(typeRegistry, node.getBaseType(false));
+          for (ExprNode param : node.getParams()) {
+            if (!elementType.isAssignableFromStrict(param.getType())) {
+              errorReporter.report(
+                  param.getSourceLocation(),
+                  GENERIC_PARAM_NOT_ASSIGNABLE,
+                  param.getType(),
+                  elementType);
+            }
+          }
+          node.setType(sourceMethod.getReturnType());
+        } else if (sourceFunction instanceof Pop || sourceFunction instanceof Shift) {
+          node.setType(SoyTypes.getIterableElementType(typeRegistry, baseType));
+        } else if (sourceFunction instanceof Splice) {
+          SoyType elementType =
+              SoyTypes.getIterableElementType(typeRegistry, node.getBaseType(false));
+          for (int i = 2; i < node.getParams().size(); i++) {
+            ExprNode param = node.getParam(i);
+            if (!elementType.isAssignableFromStrict(param.getType())) {
+              errorReporter.report(
+                  param.getSourceLocation(),
+                  GENERIC_PARAM_NOT_ASSIGNABLE,
+                  param.getType(),
+                  elementType);
+            }
+          }
           node.setType(baseType);
         } else if (sourceFunction instanceof ListFlatMethod) {
           // Determine type for common cases:
@@ -1932,7 +1993,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
       substitutions.restore(savedSubstitutionState);
 
       node.setType(
-          SoyTypes.computeLowestCommonType(
+          computeLowestCommonType(
               typeRegistry, node.getChild(0).getType(), node.getChild(1).getType()));
     }
 
@@ -2003,7 +2064,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
         SoyType resultType = node.getChild(1).getType();
         if (!isNullOrUndefined(node.getChild(0).getType())) {
           resultType =
-              SoyTypes.computeLowestCommonType(
+              computeLowestCommonType(
                   typeRegistry, excludeNullish(node.getChild(0).getType()), resultType);
         }
         node.setType(resultType);
@@ -2049,7 +2110,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
         node.setType(node.getChild(1).getType());
       } else {
         node.setType(
-            SoyTypes.computeLowestCommonType(
+            computeLowestCommonType(
                 typeRegistry, node.getChild(1).getType(), node.getChild(2).getType()));
       }
       tryApplySubstitution(node);
@@ -2643,7 +2704,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
               }
               fieldTypes.add(fieldType);
             }
-            return SoyTypes.computeLowestCommonType(typeRegistry, fieldTypes);
+            return computeLowestCommonType(typeRegistry, fieldTypes);
           }
 
         case TEMPLATE_TYPE:
@@ -2740,7 +2801,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
               errorReporter.report(baseLocation, BRACKET_ACCESS_NULLABLE_UNION);
               return UnknownType.getInstance();
             }
-            return SoyTypes.computeLowestCommonType(typeRegistry, itemTypes);
+            return computeLowestCommonType(typeRegistry, itemTypes);
           }
 
         default:
@@ -2969,7 +3030,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
         // Merge types of the two arguments.
         if (node.numParams() > 1) {
           node.setType(
-              SoyTypes.computeLowestCommonType(
+              computeLowestCommonType(
                   typeRegistry, node.getParam(0).getType(), node.getParam(1).getType()));
         }
       } else if (node.getType() == null) {
@@ -2982,23 +3043,13 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
     }
 
     private SoyType getGenericListType(Iterable<ExprNode> intersectionOf) {
-      ImmutableSet.Builder<SoyType> elementTypesBuilder = ImmutableSet.builder();
-      for (ExprNode childNode : intersectionOf) {
-        // If one of the types isn't a list, we can't compute the intersection. Return UnknownType
-        // and assume the caller is already reporting an error for bad args.
-        SoyType childType = childNode.getType().getEffectiveType();
-        if (!(childType instanceof ListType)) {
-          return UnknownType.getInstance();
-        }
-        if (!((ListType) childType).isEmpty()) {
-          elementTypesBuilder.add(((ListType) childType).getElementType());
-        }
-      }
-
-      ImmutableSet<SoyType> elementTypes = elementTypesBuilder.build();
-      return elementTypes.isEmpty()
-          ? ListType.empty()
-          : typeRegistry.getOrCreateListType(typeRegistry.getOrCreateUnionType(elementTypes));
+      SoyType paramsUnionType =
+          UnionType.of(
+              Streams.stream(intersectionOf)
+                  .map(n -> n.getType().getEffectiveType())
+                  .collect(toImmutableSet()));
+      SoyType elementType = SoyTypes.getIterableElementType(typeRegistry, paramsUnionType);
+      return typeRegistry.getOrCreateListType(elementType);
     }
 
     private SoyType getGenericMapType(Iterable<ExprNode> intersectionOf) {

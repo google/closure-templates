@@ -156,6 +156,7 @@ import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.FunctionType;
 import com.google.template.soy.types.FunctionType.Parameter;
 import com.google.template.soy.types.MessageType;
+import com.google.template.soy.types.MutableListType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
 import com.ibm.icu.util.ULocale;
@@ -386,7 +387,9 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
         values.add(val);
       }
     }
-    return ListImpl.forProviderList(values);
+    return node.getType() instanceof MutableListType
+        ? ListImpl.mutable(values)
+        : ListImpl.forProviderList(values);
   }
 
   @Override
@@ -416,7 +419,9 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
       SoyValue mappedValue = visit(mapExpr);
       mappedValues.add(mappedValue);
     }
-    return ListImpl.forProviderList(mappedValues.build());
+    return node.getType() instanceof MutableListType
+        ? ListImpl.mutable(mappedValues.build())
+        : ListImpl.forProviderList(mappedValues.build());
   }
 
   @Override

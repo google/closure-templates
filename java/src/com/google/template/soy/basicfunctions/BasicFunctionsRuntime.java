@@ -37,6 +37,7 @@ import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyMaps;
 import com.google.template.soy.data.SoyValue;
+import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.SoyVisualElement;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
@@ -50,6 +51,7 @@ import com.google.template.soy.data.restricted.GbigintData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.data.restricted.StringData;
+import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.shared.internal.Sanitizers;
 import java.util.AbstractList;
 import java.util.ArrayList;
@@ -662,5 +664,84 @@ public final class BasicFunctionsRuntime {
   public static boolean isInteger(SoyValue value) {
     return value instanceof IntegerData
         || (value instanceof FloatData && isInteger(value.floatValue()));
+  }
+
+  public static int listPush(List<SoyValue> list, Object value) {
+    list.add(SoyValueConverter.INSTANCE.convert(value).resolve());
+    return list.size();
+  }
+
+  public static int listPush(SoyValue list, Object value) {
+    @SuppressWarnings("unchecked")
+    List<SoyValue> impl = (List<SoyValue>) list.asJavaList();
+    return listPush(impl, value);
+  }
+
+  public static SoyValue listPop(List<SoyValue> list) {
+    int size = list.size();
+    return size > 0 ? list.remove(size - 1) : UndefinedData.INSTANCE;
+  }
+
+  public static Object listPop(SoyValue list) {
+    @SuppressWarnings("unchecked")
+    List<SoyValue> impl = (List<SoyValue>) list.asJavaList();
+    return listPop(impl);
+  }
+
+  public static int listUnshift(List<SoyValue> list, Object value) {
+    list.add(0, SoyValueConverter.INSTANCE.convert(value).resolve());
+    return list.size();
+  }
+
+  public static int listUnshift(SoyValue list, Object value) {
+    @SuppressWarnings("unchecked")
+    List<SoyValue> impl = (List<SoyValue>) list.asJavaList();
+    return listUnshift(impl, value);
+  }
+
+  public static SoyValue listShift(List<SoyValue> list) {
+    return list.isEmpty() ? UndefinedData.INSTANCE : list.remove(0);
+  }
+
+  public static Object listShift(SoyValue list) {
+    @SuppressWarnings("unchecked")
+    List<SoyValue> impl = (List<SoyValue>) list.asJavaList();
+    return listShift(impl);
+  }
+
+  public static List<SoyValue> listSplice(List<SoyValue> list, long start) {
+    return listSplice(list, start, list.size() - start);
+  }
+
+  public static List<SoyValue> listSplice(SoyValue list, long start) {
+    @SuppressWarnings("unchecked")
+    List<SoyValue> impl = (List<SoyValue>) list.asJavaList();
+    return listSplice(impl, start);
+  }
+
+  public static List<SoyValue> listSplice(List<SoyValue> list, long start, long count) {
+    List<SoyValue> range = list.subList((int) start, (int) Math.min(start + count, list.size()));
+    List<SoyValue> rv = new ArrayList<>(range);
+    range.clear();
+    return rv;
+  }
+
+  public static List<SoyValue> listSplice(SoyValue list, long start, long count) {
+    @SuppressWarnings("unchecked")
+    List<SoyValue> impl = (List<SoyValue>) list.asJavaList();
+    return listSplice(impl, start, count);
+  }
+
+  public static List<SoyValue> listSplice(
+      List<SoyValue> list, long start, long count, Object insert) {
+    List<SoyValue> rv = listSplice(list, start, count);
+    list.add((int) start, SoyValueConverter.INSTANCE.convert(insert).resolve());
+    return rv;
+  }
+
+  public static List<SoyValue> listSplice(SoyValue list, long start, long count, Object insert) {
+    @SuppressWarnings("unchecked")
+    List<SoyValue> impl = (List<SoyValue>) list.asJavaList();
+    return listSplice(impl, start, count, insert);
   }
 }

@@ -26,7 +26,6 @@ import com.google.template.soy.jssrc.restricted.SoyJsSrcPrintDirective;
 import com.google.template.soy.plugin.java.internal.SoyJavaExternFunction;
 import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
 import com.google.template.soy.plugin.javascript.restricted.SoyJavaScriptSourceFunction;
-import com.google.template.soy.plugin.python.restricted.SoyPythonSourceFunction;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
 import com.google.template.soy.pysrc.restricted.SoyPySrcPrintDirective;
@@ -65,10 +64,6 @@ public final class InternalPluginsTest {
               function instanceof SoyJavaSourceFunction
                   || function instanceof SoyJavaExternFunction)
           .isTrue();
-      if (!function.getClass().getName().contains("Proto")
-          && !function.getClass().getName().contains("VeHasSameIdMethod")) {
-        assertThat(function).isInstanceOf(SoyPythonSourceFunction.class);
-      }
       // Internal functions should no longer implement SoyJavaFunction or SoyJsSrcFunction
       assertThat(function).isNotInstanceOf(SoyJsSrcFunction.class);
       assertThat(function).isNotInstanceOf(SoyJavaFunction.class);
@@ -85,12 +80,6 @@ public final class InternalPluginsTest {
               function instanceof SoyJavaSourceFunction
                   || function instanceof SoyJavaExternFunction)
           .isTrue();
-      if (!function.getClass().getName().contains("Proto")
-          && !function.getClass().getSimpleName().equals("VeHasSameIdMethod")
-          && !function.getClass().getName().contains("Gbigint")
-          && !function.getClass().getSimpleName().equals("SortMethod")) {
-        assertThat(function).isInstanceOf(SoyPythonSourceFunction.class);
-      }
     }
   }
 

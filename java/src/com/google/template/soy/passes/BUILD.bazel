@@ -65,6 +65,7 @@ java_library(
         "//java/src/com/google/template/soy/treebuilder",
         "//java/src/com/google/template/soy/types",
         "//java/src/com/google/template/soy/types/ast",
+        "//java/src/com/google/template/soy/types/ast:types_holder_node",
         "//src/main/protobuf:template_call_metadata_java_proto",
         "//src/main/protobuf:template_metadata_java_proto",
         "@com_google_auto_value_auto_value",

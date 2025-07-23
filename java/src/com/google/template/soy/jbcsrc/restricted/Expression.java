@@ -23,6 +23,7 @@ import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.isDefinitelyAssignableFrom;
 
 import com.google.common.base.MoreObjects;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.errorprone.annotations.ForOverride;
@@ -604,6 +605,12 @@ public abstract class Expression extends BytecodeProducer {
    */
   public Expression checkedCast(Type target) {
     return maybeCheckedCast(target).orElse(this);
+  }
+
+  /** Used to type this expression as a supertype of its current type. Like `List l = arrayList;` */
+  public Expression upCast(Type target) {
+    Preconditions.checkArgument(BytecodeUtils.isPossiblyAssignableFrom(target, resultType));
+    return new DelegatingExpression(this, target, features);
   }
 
   /**

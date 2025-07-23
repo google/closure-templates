@@ -79,6 +79,7 @@ import com.ibm.icu.util.ULocale;
 import java.io.Closeable;
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -144,23 +145,23 @@ public final class MethodRefs {
   public static final MethodRef IMMUTABLE_LIST_BUILDER_ADD_ALL_ITERATOR =
       createNonPure(ImmutableList.Builder.class, "addAll", Iterator.class);
   public static final MethodRef IMMUTABLE_LIST_BUILDER_BUILD =
-      createNonPure(ImmutableList.Builder.class, "build");
+      createNonPure(ImmutableList.Builder.class, "build").asNonJavaNullable();
 
   public static final MethodRef IMMUTABLE_SET_BUILDER =
       createNonPure(ImmutableSet.class, "builder");
   public static final MethodRef IMMUTABLE_SET_BUILDER_ADD_ALL_ITERATOR =
       createNonPure(ImmutableSet.Builder.class, "addAll", Iterator.class);
   public static final MethodRef IMMUTABLE_SET_BUILDER_BUILD =
-      createNonPure(ImmutableSet.Builder.class, "build");
+      createNonPure(ImmutableSet.Builder.class, "build").asNonJavaNullable();
   public static final MethodRef IMMUTABLE_SET_COPY_OF =
-      createNonPure(ImmutableSet.class, "copyOf", Iterator.class);
+      createNonPure(ImmutableSet.class, "copyOf", Iterator.class).asNonJavaNullable();
 
   /** a list of all the ImmutableList.of overloads, indexed by arity. */
   public static final ImmutableList<MethodRef> IMMUTABLE_LIST_OF;
 
   public static final MethodRef IMMUTABLE_LIST_OF_ARRAY;
   public static final MethodRef IMMUTABLE_LIST_COPY_OF_ITERABLE =
-      createNonPure(ImmutableList.class, "copyOf", Iterable.class);
+      createNonPure(ImmutableList.class, "copyOf", Iterable.class).asNonJavaNullable();
 
   /** a list of all the ImmutableList.of overloads, indexed by number of entries. */
   public static final ImmutableList<MethodRef> IMMUTABLE_MAP_OF;
@@ -723,6 +724,8 @@ public final class MethodRefs {
   // Constructors
 
   public static final MethodRef ARRAY_LIST = createNonPureConstructor(ArrayList.class);
+  public static final MethodRef ARRAY_LIST_FROM_LIST =
+      createNonPureConstructor(ArrayList.class, Collection.class);
   public static final MethodRef ARRAY_LIST_SIZE =
       createNonPureConstructor(ArrayList.class, int.class);
   public static final MethodRef HASH_MAP_CAPACITY =

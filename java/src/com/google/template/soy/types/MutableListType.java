@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Google Inc.
+ * Copyright 2025 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,25 +16,21 @@
 
 package com.google.template.soy.types;
 
-import com.google.template.soy.soytree.SoyTypeP;
-
-/** Represents the type of a list, a sequential random-access container keyed by integer. */
-public class ListType extends AbstractIterableType {
+/** Array (a mutable list for use in auto externs). */
+public final class MutableListType extends ListType {
 
   /** Special instance used to track empty lists. Only valid with == equality. */
-  private static final ListType EMPTY = new ListType(UnknownType.getInstance());
+  private static final MutableListType EMPTY = new MutableListType(UnknownType.getInstance());
 
-  public static final ListType ANY_LIST = new ListType(AnyType.getInstance());
-
-  public static ListType of(SoyType elementType) {
-    return new ListType(elementType);
-  }
-
-  public static ListType empty() {
+  public static MutableListType empty() {
     return EMPTY;
   }
 
-  protected ListType(SoyType elementType) {
+  public static MutableListType of(SoyType elementType) {
+    return new MutableListType(elementType);
+  }
+
+  private MutableListType(SoyType elementType) {
     super(elementType);
   }
 
@@ -50,16 +46,12 @@ public class ListType extends AbstractIterableType {
 
   @Override
   boolean doIsAssignableFromNonUnionType(SoyType srcType, AssignabilityPolicy policy) {
-    return srcType instanceof ListType && super.doIsAssignableFromNonUnionType(srcType, policy);
+    return srcType instanceof MutableListType
+        && super.doIsAssignableFromNonUnionType(srcType, policy);
   }
 
   @Override
   public String toString() {
-    return "list<" + elementType + ">";
-  }
-
-  @Override
-  protected void doToProto(SoyTypeP.Builder builder) {
-    builder.setListElement(elementType.toProto());
+    return "mutable_list<" + elementType + ">";
   }
 }

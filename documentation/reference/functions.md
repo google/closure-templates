@@ -306,6 +306,18 @@ for a description of these options.
 This method is only defined on lists of non-nullable strings. If the method is
 not found, please check the type of your list.
 
+## Mutable List Methods (Available inside the {autoimpl} command)
+
+### `Array.push(item)` {#mutable_list-any_push}
+
+### `Array.pop()` {#mutable_list-any_pop}
+
+### `Array.unshift(item)` {#mutable_list-any_unshift}
+
+### `Array.shift()` {#mutable_list-any_shift}
+
+### `Array.splice(index, length, item)` {#mutable_list-any_splice}
+
 ## Set Fields
 
 ### `set.size` {#set-any_size}

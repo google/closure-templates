@@ -905,6 +905,10 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
     }
   }
 
+  private boolean isInAutoImpl() {
+    return outputBufStack.getFirst() == NO_OUTPUT_ALLOWED;
+  }
+
   /**
    * A lazy wrapper around {@link #eval}.
    *
@@ -912,6 +916,10 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
    * defined before being used.
    */
   private SoyValueProvider lazyEval(ExprNode expr, SoyNode node) {
+    if (isInAutoImpl()) {
+      // No lazy lets in {autoimpl}
+      return eval(expr, node);
+    }
     return new SoyAbstractCachingValueProvider() {
       @Override
       protected SoyValue compute() {

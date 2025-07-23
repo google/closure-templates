@@ -703,6 +703,16 @@ public class SoyTypesTest {
   }
 
   @Test
+  public void testGetIterableElementType() {
+    SoyTypeRegistry typeRegistry = SoyTypeRegistryBuilder.create();
+
+    assertThat(
+            SoyTypes.getIterableElementType(
+                typeRegistry, UnionType.of(ListType.of(STRING_TYPE), MutableListType.empty())))
+        .isEqualTo(STRING_TYPE);
+  }
+
+  @Test
   public void testLowestCommonTypeArithmetic() {
     assertThat(SoyTypes.computeLowestCommonTypeArithmetic(INT_TYPE, ANY_TYPE)).isEmpty();
     assertThat(SoyTypes.computeLowestCommonTypeArithmetic(ANY_TYPE, INT_TYPE)).isEmpty();

@@ -22,15 +22,19 @@ import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprNode;
+import com.google.template.soy.soytree.AutoImplNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
+import com.google.template.soy.soytree.SoyTreeUtils.VisitDirective;
 import com.google.template.soy.types.MapType;
+import com.google.template.soy.types.MutableListType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.ast.GenericTypeNode;
 import com.google.template.soy.types.ast.LiteralTypeNode;
 import com.google.template.soy.types.ast.TypeNode;
+import com.google.template.soy.types.ast.TypesHolderNode;
 
 /**
  * Checks type declarations to make sure they're legal. For now, this only checks that legal map
@@ -49,6 +53,8 @@ final class CheckDeclaredTypesPass implements CompilerFilePass {
       SoyErrorKind.of("Illegal VE metadata type ''{0}''. The metadata must be a proto.");
   private static final SoyErrorKind LITERAL_TYPE =
       SoyErrorKind.of("Literal types are not allowed.");
+  private static final SoyErrorKind MUTABLE_TYPE =
+      SoyErrorKind.of("Mutable types are only allowed inside '{'autoimpl'}'.");
 
   private final ErrorReporter errorReporter;
 
@@ -63,6 +69,29 @@ final class CheckDeclaredTypesPass implements CompilerFilePass {
             node -> {
               checkGenericTypes(node);
               checkLiteralTypes(node);
+            });
+
+    SoyTreeUtils.allNodesOfType(
+            file,
+            TypesHolderNode.class,
+            node ->
+                node instanceof AutoImplNode
+                    ? VisitDirective.SKIP_CHILDREN
+                    : VisitDirective.CONTINUE)
+        .flatMap(TypesHolderNode::getTypeNodes)
+        .forEach(this::checkMutableTypes);
+  }
+
+  private void checkMutableTypes(TypeNode node) {
+    SoyTreeUtils.allTypeNodes(node)
+        .forEach(
+            n -> {
+              if (n.isTypeResolved()) {
+                SoyType type = n.getResolvedType();
+                if (type instanceof MutableListType) {
+                  errorReporter.report(n.sourceLocation(), MUTABLE_TYPE);
+                }
+              }
             });
   }
 
