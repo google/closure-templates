@@ -35,9 +35,7 @@ import com.google.template.soy.shared.restricted.SoyPureFunction;
 import java.lang.reflect.Method;
 import java.util.List;
 
-/**
- * Soy function that takes the max of two numbers.
- */
+/** Soy function that takes the max of two numbers. */
 @SoyFunctionSignature(
     name = "max",
     value =
@@ -45,7 +43,8 @@ import java.util.List;
         // type.
         @Signature(
             returnType = "?",
-            parameterTypes = {"?", "?"}))
+            parameterTypes = {"?", "?"},
+            isVarArgs = true))
 @SoyPureFunction
 public final class MaxFunction
     implements SoyJavaSourceFunction, SoyJavaScriptSourceFunction, SoyPythonSourceFunction {

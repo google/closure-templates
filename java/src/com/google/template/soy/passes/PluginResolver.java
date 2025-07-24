@@ -18,16 +18,18 @@ package com.google.template.soy.passes;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableSetMultimap.toImmutableSetMultimap;
+import static java.util.stream.Collectors.joining;
 
-import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSetMultimap;
-import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Range;
+import com.google.common.collect.RangeSet;
+import com.google.common.collect.TreeRangeSet;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.error.ErrorReporter;
@@ -383,7 +385,7 @@ public final class PluginResolver {
     if (soyFunction == null) {
       return null;
     }
-    Set<Integer> validArgsSize = getValidArgsSizes(soyFunction);
+    RangeSet<Integer> validArgsSize = getValidArgsSizes(soyFunction);
     checkNumArgs("function", validArgsSize, numArgs, location);
     warnIfDeprecated(name, soyFunction, location);
     return soyFunction;
@@ -448,9 +450,9 @@ public final class PluginResolver {
     }
   }
 
-  private static Set<Integer> getValidArgsSizes(Object soyFunction) {
+  private static RangeSet<Integer> getValidArgsSizes(Object soyFunction) {
     if (soyFunction instanceof SoyFunction) {
-      return ((SoyFunction) soyFunction).getValidArgsSizes();
+      return toRangeSet(((SoyFunction) soyFunction).getValidArgsSizes());
     } else {
       SoyFunctionSignature signature =
           soyFunction.getClass().getAnnotation(SoyFunctionSignature.class);
@@ -459,20 +461,50 @@ public final class PluginResolver {
     }
   }
 
-  static Set<Integer> getValidArgsSizes(Signature[] signatures) {
-    ImmutableSortedSet.Builder<Integer> builder = ImmutableSortedSet.naturalOrder();
+  static RangeSet<Integer> getValidArgsSizes(Signature[] signatures) {
+    RangeSet<Integer> validSizes = TreeRangeSet.create();
     for (Signature signature : signatures) {
-      builder.add(signature.parameterTypes().length);
+      int numParams = signature.parameterTypes().length;
+      if (numParams > 0 && signature.isVarArgs()) {
+        int minArgs = signature.parameterTypes().length - 1;
+        validSizes.add(Range.atLeast(minArgs));
+      } else {
+        validSizes.add(Range.singleton(numParams));
+      }
     }
-    return builder.build();
+    return validSizes;
+  }
+
+  private static RangeSet<Integer> toRangeSet(Set<Integer> validSizes) {
+    RangeSet<Integer> rangeSet = TreeRangeSet.create();
+    for (Integer validSize : validSizes) {
+      rangeSet.add(Range.singleton(validSize));
+    }
+    return rangeSet;
+  }
+
+  private void checkNumArgs(
+      String pluginKind, RangeSet<Integer> arities, int actualNumArgs, SourceLocation location) {
+    if (!arities.contains(actualNumArgs)) {
+      reporter.report(
+          location,
+          INCORRECT_NUM_ARGS,
+          pluginKind,
+          actualNumArgs,
+          arities.asRanges().stream().map((r) -> formatRange(r)).collect(joining(" or ")));
+    }
   }
 
   private void checkNumArgs(
       String pluginKind, Set<Integer> arities, int actualNumArgs, SourceLocation location) {
-    if (!arities.contains(actualNumArgs)) {
-      reporter.report(
-          location, INCORRECT_NUM_ARGS, pluginKind, actualNumArgs, Joiner.on(" or ").join(arities));
+    checkNumArgs(pluginKind, toRangeSet(arities), actualNumArgs, location);
+  }
+
+  private static String formatRange(Range<Integer> range) {
+    if (range.lowerEndpoint().equals(range.upperEndpoint())) {
+      return String.valueOf(range.lowerEndpoint());
     }
+    return range.lowerEndpoint() + " to " + range.upperEndpoint();
   }
 
   private void warnIfDeprecated(String name, Object plugin, SourceLocation location) {
