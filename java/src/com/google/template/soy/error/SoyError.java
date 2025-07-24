@@ -53,4 +53,8 @@ public abstract class SoyError implements Comparable<SoyError> {
     }
     return arg;
   }
+
+  public SoyError withLocation(SourceLocation loc) {
+    return new AutoValue_SoyError(loc, errorKind(), getArgs(), isWarning());
+  }
 }
