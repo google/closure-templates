@@ -19,6 +19,7 @@ package com.google.template.soy.data.internal;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
@@ -32,6 +33,7 @@ import com.google.template.soy.data.restricted.StringData;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.function.BiConsumer;
 import javax.annotation.Nonnull;
 import javax.annotation.ParametersAreNonnullByDefault;
@@ -132,7 +134,7 @@ public final class DictImpl extends SoyDict {
   @Override
   public ImmutableMap<String, SoyValueProvider> recordAsMap() {
     typeTracker.maybeSetLegacyObjectMapOrRecordType();
-    return ImmutableMap.copyOf(providerMap);
+    return ImmutableSortedMap.copyOf(providerMap);
   }
 
   @Override
@@ -212,7 +214,7 @@ public final class DictImpl extends SoyDict {
   @Override
   @Nonnull
   public Map<String, ? extends SoyValueProvider> asJavaStringMap() {
-    return Collections.unmodifiableMap(providerMap);
+    return Collections.unmodifiableMap(new TreeMap<>(providerMap)); // Sorted.
   }
 
   @Override
@@ -225,7 +227,7 @@ public final class DictImpl extends SoyDict {
   @Override
   public Map<? extends SoyValue, ? extends SoyValueProvider> asJavaMap() {
     ImmutableMap.Builder<SoyValue, SoyValueProvider> builder = ImmutableMap.builder();
-    for (Map.Entry<String, ? extends SoyValueProvider> entry : providerMap.entrySet()) {
+    for (Map.Entry<String, ? extends SoyValueProvider> entry : asJavaStringMap().entrySet()) {
       builder.put(StringData.forValue(entry.getKey()), entry.getValue());
     }
     return builder.buildOrThrow();
