@@ -19,14 +19,13 @@ package com.google.template.soy.data;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.google.template.soy.data.restricted.CollectionData;
 import com.google.template.soy.data.restricted.StringData;
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.function.BiConsumer;
 import javax.annotation.Nonnull;
 
@@ -42,16 +41,12 @@ import javax.annotation.Nonnull;
 public final class SoyMapData extends SoyDict implements CollectionData {
 
   /** Underlying map. */
-  private final Map<String, SoyValue> map;
+  private final TreeMap<String, SoyValue> map = new TreeMap<>(); // Sorted.
 
-  public SoyMapData() {
-    map = Maps.newLinkedHashMap();
-  }
+  public SoyMapData() {}
 
   /** Initializes this SoyMapData from an existing map. */
   public SoyMapData(Map<String, ?> data) {
-    map = new LinkedHashMap<>(data.size());
-
     for (Map.Entry<String, ?> entry : data.entrySet()) {
       String key;
       try {
@@ -85,13 +80,15 @@ public final class SoyMapData extends SoyDict implements CollectionData {
     put(data);
   }
 
-  /** Returns a view of this SoyMapData object as a Map. */
+  /**
+   * Returns a view of this SoyMapData object as a Map. The elements of the map are sorted by key.
+   */
   public Map<String, SoyValue> asMap() {
     return Collections.unmodifiableMap(map);
   }
 
   /**
-   * Gets the keys in this map data.
+   * Gets the keys in this map data, in sorted order.
    *
    * @return A set containing the keys in this map data.
    */
