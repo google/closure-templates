@@ -651,7 +651,9 @@ const $$registerDelegateFn = function(
     // Registering new or higher-priority function: replace registry entry.
     DELEGATE_REGISTRY_PRIORITIES_[mapKey] = delPriority;
     DELEGATE_REGISTRY_FUNCTIONS_[mapKey] = delFn;
-  } else if (delPriority == currPriority) {
+  } else if (
+      delPriority == currPriority &&
+      DELEGATE_REGISTRY_FUNCTIONS_[mapKey] !== delFn) {
     // Registering same-priority function: error.
     throw Error(
         'Encountered two active delegates with the same priority ("' +
