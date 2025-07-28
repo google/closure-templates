@@ -32,8 +32,7 @@ public abstract class SoyDict extends SoyMap {
    * Gets a Java map of all items in this SoyDict, where mappings are string to value provider. Note
    * that value providers are often just the values themselves, since all values are also providers.
    *
-   * @return A Java map of all items, where mappings are string to value provider. The elements of
-   *     the map are sorted by key.
+   * @return A Java map of all items, where mappings are string to value provider.
    */
   @Nonnull
   public abstract Map<String, ? extends SoyValueProvider> asJavaStringMap();
