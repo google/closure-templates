@@ -17,6 +17,7 @@
 package com.google.template.soy.data.internal;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSortedMap;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.RecordProperty;
 import com.google.template.soy.data.SoyRecord;
@@ -38,7 +39,7 @@ public final class SoyRecordImpl extends SoyRecord {
 
   @Override
   public ImmutableMap<String, SoyValueProvider> recordAsMap() {
-    return map.asStringMap();
+    return ImmutableSortedMap.copyOf(map.asStringMap());
   }
 
   @Override
