@@ -87,7 +87,7 @@ public abstract class SoyRecord extends SoyLegacyObjectMap {
     return provider != null ? provider : UndefinedData.INSTANCE;
   }
 
-  /** Returns a view of this object as a java map. */
+  /** Returns a view of this object as a java map. The elements of the map are sorted by key. */
   public abstract ImmutableMap<String, SoyValueProvider> recordAsMap();
 
   public abstract void forEach(BiConsumer<RecordProperty, ? super SoyValueProvider> action);
