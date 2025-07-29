@@ -17,12 +17,15 @@
 package com.google.template.soy.data.internal;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSortedMap;
+import com.google.common.collect.TreeMultiset;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.RecordProperty;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
 import java.io.IOException;
+import java.util.Comparator;
 import java.util.function.BiConsumer;
 
 /** A record implementation. */
@@ -30,7 +33,10 @@ public final class SoyRecordImpl extends SoyRecord {
 
   public static final SoyRecordImpl EMPTY = new SoyRecordImpl(new ParamStore());
 
-  private final ParamStore map;
+  private static final Comparator<RecordProperty> RECORD_PROPERTY_COMPARATOR =
+      Comparator.comparing(RecordProperty::getName);
+
+  private final ParamStore map; // Note: data is stored as an IdentityHashMap.
 
   public SoyRecordImpl(ParamStore map) {
     this.map = map.freeze();
@@ -38,7 +44,9 @@ public final class SoyRecordImpl extends SoyRecord {
 
   @Override
   public ImmutableMap<String, SoyValueProvider> recordAsMap() {
-    return map.asStringMap();
+    // Since the underlying IdentityHashMap does not have a stable iteration order, sort the return
+    // to give deterministic results.
+    return ImmutableSortedMap.copyOf(map.asStringMap());
   }
 
   @Override
@@ -66,8 +74,14 @@ public final class SoyRecordImpl extends SoyRecord {
   public void render(LoggingAdvisingAppendable appendable) throws IOException {
     appendable.append('{');
 
+    // Since the underlying IdentityHashMap does not have a stable iteration order, sort the
+    // properties by name to give deterministic results. There may still be some non-determinism if
+    // two properties have the same name.
+    TreeMultiset<RecordProperty> sortedProperties = TreeMultiset.create(RECORD_PROPERTY_COMPARATOR);
+    sortedProperties.addAll(map.properties());
+
     boolean isFirst = true;
-    for (var property : map.properties()) {
+    for (var property : sortedProperties) {
       if (isFirst) {
         isFirst = false;
       } else {
