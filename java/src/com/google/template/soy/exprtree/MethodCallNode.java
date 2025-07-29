@@ -185,4 +185,10 @@ public final class MethodCallNode extends DataAccessNode implements ExprNode.Cal
   public Identifier getIdentifier() {
     return methodName;
   }
+
+  // TODO(b/431281119): Implement this method.
+  @Override
+  public boolean isVarArgs() {
+    return false;
+  }
 }

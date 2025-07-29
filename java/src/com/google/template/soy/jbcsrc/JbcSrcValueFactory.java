@@ -66,6 +66,7 @@ import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.UnknownType;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -136,7 +137,7 @@ final class JbcSrcValueFactory extends JavaValueFactory {
     ErrorReporter.Checkpoint checkpoint = errorReporter.checkpoint();
     checkState(fnNode.getParamTypes() != null, "allowed param types must be set");
     checkState(
-        fnNode.getParamTypes().size() == args.size(),
+        fnNode.isVarArgs() || fnNode.getParamTypes().size() == args.size(),
         "wrong # of allowed param types (%s), expected %s",
         fnNode.getParamTypes(),
         args.size());
@@ -151,6 +152,9 @@ final class JbcSrcValueFactory extends JavaValueFactory {
       return SoyExpression.SOY_NULL;
     }
     SoyJavaSourceFunction javaSrcFn = fnNode.getSourceFunction();
+    if (fnNode.isVarArgs()) {
+      args = handleVarArgs(args, fnNode);
+    }
     return toSoyExpression(
         (JbcSrcJavaValue)
             javaSrcFn.applyForJavaSource(
@@ -583,5 +587,29 @@ final class JbcSrcValueFactory extends JavaValueFactory {
       return delegate;
     }
     return JAVA_NULL_TO_SOY_NULL.invoke(delegate);
+  }
+
+  public static List<SoyExpression> handleVarArgs(
+      List<SoyExpression> args, JavaPluginExecContext fnNode) {
+    List<SoyExpression> newArgs = new ArrayList<>();
+    int paramCount = fnNode.getParamTypes().size();
+    int varArgsIndex = paramCount - 1;
+    // Add all of the params that aren't varargs.
+    if (varArgsIndex > 0) {
+      newArgs.addAll(args.subList(0, varArgsIndex));
+    }
+    if (args.size() >= paramCount) {
+      newArgs.add(
+          SoyExpression.forList(
+              ListType.of(fnNode.getParamTypes().get(varArgsIndex)),
+              SoyExpression.asBoxedValueProviderList(args.subList(varArgsIndex, args.size()))));
+    } else {
+      // No var args parameter found.
+      newArgs.add(
+          SoyExpression.forList(
+              ListType.of(fnNode.getParamTypes().get(varArgsIndex)),
+              SoyExpression.asBoxedValueProviderList(ImmutableList.of())));
+    }
+    return newArgs;
   }
 }

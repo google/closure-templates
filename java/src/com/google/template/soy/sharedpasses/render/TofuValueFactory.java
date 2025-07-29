@@ -21,6 +21,7 @@ import static com.google.common.collect.ImmutableMap.toImmutableMap;
 import static com.google.template.soy.types.SoyTypes.getMapKeysType;
 import static com.google.template.soy.types.SoyTypes.getMapValuesType;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.html.types.SafeHtml;
@@ -41,6 +42,7 @@ import com.google.protobuf.ProtocolMessageEnum;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SoyDataException;
+import com.google.template.soy.data.SoyListData;
 import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueConverter;
@@ -68,6 +70,7 @@ import com.google.template.soy.types.SoyType.Kind;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.math.BigInteger;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -83,9 +86,19 @@ class TofuValueFactory extends JavaValueFactory {
   @Nullable private final FunctionType externSig;
   private final boolean produceRawTofuValues;
   @Nullable private final FunctionAdapter functionAdapter;
+  private final List<SoyType> paramTypes;
+  private final boolean isVarArgs;
 
   TofuValueFactory(JavaPluginExecContext fn, PluginInstances pluginInstances) {
-    this(fn.getSourceLocation(), fn.getFunctionName(), pluginInstances, null, false, null);
+    this(
+        fn.getSourceLocation(),
+        fn.getFunctionName(),
+        pluginInstances,
+        null,
+        false,
+        null,
+        fn.getParamTypes(),
+        fn.isVarArgs());
   }
 
   TofuValueFactory(
@@ -94,19 +107,40 @@ class TofuValueFactory extends JavaValueFactory {
       PluginInstances pluginInstances,
       FunctionType externSig,
       boolean produceRawTofuValues,
-      FunctionAdapter functionAdapter) {
+      FunctionAdapter functionAdapter,
+      List<SoyType> paramTypes,
+      boolean isVarArgs) {
     this.fnSourceLocation = fnSourceLocation;
     this.instanceKey = instanceKey;
     this.pluginInstances = pluginInstances;
     this.externSig = externSig;
     this.produceRawTofuValues = produceRawTofuValues;
     this.functionAdapter = functionAdapter;
+    this.paramTypes = paramTypes;
+    this.isVarArgs = isVarArgs;
   }
 
   SoyValue computeForJava(
       SoyJavaSourceFunction srcFn, List<SoyValue> args, TofuPluginContext context) {
+    List<SoyValue> argsCopy = new ArrayList<>();
+    if (isVarArgs) {
+      // Add all of the params that aren't varargs.
+      int totalParams = paramTypes.size();
+      int fixedParams = totalParams - 1;
+      if (fixedParams > 0) {
+        argsCopy.addAll(args.subList(0, fixedParams));
+      }
+      if (args.size() >= totalParams) {
+        argsCopy.add(new SoyListData(args.subList(fixedParams, args.size())));
+      } else {
+        // No var args parameter found.
+        argsCopy.add(new SoyListData(ImmutableList.of()));
+      }
+    } else {
+      argsCopy.addAll(args);
+    }
     List<JavaValue> javaArgs =
-        Lists.transform(args, soyArg -> TofuJavaValue.forSoyValue(soyArg, fnSourceLocation));
+        Lists.transform(argsCopy, soyArg -> TofuJavaValue.forSoyValue(soyArg, fnSourceLocation));
     TofuJavaValue result = (TofuJavaValue) srcFn.applyForJavaSource(this, javaArgs, context);
     if (!result.hasSoyValue()) {
       throw RenderException.create(

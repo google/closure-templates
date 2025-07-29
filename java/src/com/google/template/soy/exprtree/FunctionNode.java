@@ -118,6 +118,7 @@ public final class FunctionNode extends AbstractParentExprNode implements ExprNo
     @Nullable private FunctionRef function;
     @Nullable private ImmutableList<SoyType> allowedParamTypes;
     private boolean allowedToInvokeAsFunction = false;
+    private boolean isVarArgs = false;
   }
 
   public static FunctionNode newPositional(
@@ -251,12 +252,22 @@ public final class FunctionNode extends AbstractParentExprNode implements ExprNo
     return state.function != null;
   }
 
+  /** Returns false if ResolveExpressionTypesPass has not run yet. */
+  @Override
+  public boolean isVarArgs() {
+    return state.isVarArgs;
+  }
+
   public boolean allowedToInvokeAsFunction() {
     return this.state.allowedToInvokeAsFunction;
   }
 
   public void setAllowedToInvokeAsFunction(boolean cond) {
     this.state.allowedToInvokeAsFunction = cond;
+  }
+
+  public void setIsVarArgs(boolean isVarArgs) {
+    this.state.isVarArgs = isVarArgs;
   }
 
   public Object getSoyFunction() {
@@ -283,8 +294,9 @@ public final class FunctionNode extends AbstractParentExprNode implements ExprNo
   public void setAllowedParamTypes(List<SoyType> allowedParamTypes) {
     checkState(paramsStyle == ParamsStyle.POSITIONAL || numParams() == 0);
     checkState(
-        allowedParamTypes.size() == numParams(),
-        "allowedParamTypes.size (%s) != numParams (%s)",
+        state.isVarArgs || allowedParamTypes.size() == numParams(),
+        "function does not accept variable arguments and allowedParamTypes.size (%s) != numParams"
+            + " (%s)",
         allowedParamTypes.size(),
         numParams());
     this.state.allowedParamTypes = ImmutableList.copyOf(allowedParamTypes);
@@ -333,6 +345,9 @@ public final class FunctionNode extends AbstractParentExprNode implements ExprNo
         }
         sourceSb.append(paramNames.get(i)).append(": ");
         sourceSb.append(params.get(i).toSourceString());
+        if (i == params.size() - 1 && isVarArgs()) {
+          sourceSb.append("...");
+        }
       }
     }
 

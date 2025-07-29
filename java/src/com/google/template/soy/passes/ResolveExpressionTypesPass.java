@@ -414,6 +414,8 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
       SoyErrorKind.of("Cannot set a variable of type ''{0}'' to a value of type ''{1}''.");
   private static final SoyErrorKind GENERIC_PARAM_NOT_ASSIGNABLE =
       SoyErrorKind.of("Argument of type ''{0}'' is not assignable to type ''{1}''.");
+  private static final SoyErrorKind VAR_ARGS_NOT_LIST =
+      SoyErrorKind.of("Var args parameter found and not transformed to a list.");
 
   private final ErrorReporter errorReporter;
 
@@ -1800,7 +1802,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
           arg =
               FunctionType.of(
                   arg.getParameters().stream()
-                      .map(p -> FunctionType.Parameter.of(p.getName(), itemType))
+                      .map(p -> FunctionType.Parameter.of(p.getName(), itemType, p.isVarArgs()))
                       .collect(toImmutableList()),
                   arg.getReturnType());
           return ImmutableList.of(arg);
@@ -2321,12 +2323,14 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
      * For soy functions with type annotation, perform the strict type checking and set the return
      * type.
      */
+    // TODO(b/431043013): Add matching for var args here.
     private void visitSoyFunctionWithSignature(
         SoyFunctionSignature fnSignature, String className, FunctionNode node) {
       ResolvedSignature matchedSignature = null;
       // Found the matched signature for the current function call.
+      boolean isVarArgsSig = false;
       for (Signature signature : fnSignature.value()) {
-        if (signature.parameterTypes().length == node.numParams()) {
+        if (signature.parameterTypes().length == node.numParams() && !isVarArgs(signature)) {
           matchedSignature = getOrCreateFunctionSignature(signature, className, errorReporter);
           if (!signature.deprecatedWarning().isEmpty()) {
             errorReporter.warn(
@@ -2336,6 +2340,9 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
                 signature.deprecatedWarning());
           }
           break;
+        } else if (isVarArgs(signature)) {
+          matchedSignature = getOrCreateFunctionSignature(signature, className, errorReporter);
+          isVarArgsSig = true;
         }
       }
       if (matchedSignature == null) {
@@ -2346,13 +2353,34 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
         errorReporter.report(node.getFunctionNameLocation(), INCORRECT_ARG_STYLE);
         return;
       }
+      int totalParams = matchedSignature.parameterTypes().size();
+      int fixedParams = isVarArgsSig ? totalParams - 1 : totalParams;
       for (int i = 0; i < node.numParams(); ++i) {
-        SoyType paramType = matchedSignature.parameterTypes().get(i);
-        maybeCoerceType(node.getParam(i), paramType);
-        checkArgType(node.getParam(i), paramType, node);
+        if (i < fixedParams) {
+          SoyType paramType = matchedSignature.parameterTypes().get(i);
+          maybeCoerceType(node.getParam(i), paramType);
+          checkArgType(node.getParam(i), paramType, node);
+        } else if (isVarArgsSig) {
+          if (matchedSignature.parameterTypes().get(totalParams - 1) instanceof ListType) {
+            ListType varArgsType =
+                (ListType) matchedSignature.parameterTypes().get(totalParams - 1);
+            SoyType paramType = varArgsType.getElementType();
+            maybeCoerceType(node.getParam(fixedParams), paramType);
+            checkArgType(node.getParam(fixedParams), paramType, node);
+          } else {
+            errorReporter.report(node.getSourceLocation(), VAR_ARGS_NOT_LIST);
+          }
+        }
       }
+      node.setIsVarArgs(isVarArgsSig);
       node.setAllowedParamTypes(matchedSignature.parameterTypes());
       node.setType(matchedSignature.returnType());
+    }
+
+    private boolean isVarArgs(Signature signature) {
+      return signature.parameterTypes().length > 0
+          && signature.isVarArgs()
+          && signature.parameterTypes()[signature.parameterTypes().length - 1].startsWith("list");
     }
 
     private void visitKeysFunction(FunctionNode node) {
@@ -3242,7 +3270,6 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
                                             Arrays.stream(signature.parameterTypes())
                                                 .map(s -> parseType(s, fakeFunctionPath))
                                                 .collect(toImmutableList());
-
                                         return new SoySourceFunctionMethod(
                                             function,
                                             baseType,

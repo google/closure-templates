@@ -42,6 +42,7 @@ public final class CallableExprBuilder {
   private boolean isNullSafe;
   private ExprNode target;
   private ExprNode functionExpr;
+  private boolean isVarArgs;
 
   public static CallableExprBuilder builder() {
     return new CallableExprBuilder();
@@ -56,6 +57,7 @@ public final class CallableExprBuilder {
     if (!from.hasStaticName()) {
       builder.setFunctionExpr(from.getNameExpr());
     }
+    builder.setIsVarArgs(from.isVarArgs());
     return builder;
   }
 
@@ -124,6 +126,12 @@ public final class CallableExprBuilder {
     return this;
   }
 
+  @CanIgnoreReturnValue
+  public CallableExprBuilder setIsVarArgs(boolean isVarArgs) {
+    this.isVarArgs = isVarArgs;
+    return this;
+  }
+
   private ParamsStyle buildParamsStyle() {
     if (paramValues.isEmpty()) {
       Preconditions.checkState(paramNames == null || paramNames.isEmpty());
@@ -165,6 +173,7 @@ public final class CallableExprBuilder {
             paramNames != null ? ImmutableList.copyOf(paramNames) : ImmutableList.of(),
             commaLocations != null ? ImmutableList.copyOf(commaLocations) : null);
 
+    node.setIsVarArgs(isVarArgs);
     node.addChildren(paramValues);
     return node;
   }
