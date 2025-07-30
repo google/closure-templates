@@ -105,7 +105,7 @@ class ExternAdaptors {
 
     FunctionType functionType =
         FunctionType.of(
-            argTypes.stream().map(t -> Parameter.of("unused", t)).collect(toImmutableList()),
+            argTypes.stream().map(t -> Parameter.of("unused", t, false)).collect(toImmutableList()),
             returnType);
     JavaImpl java =
         new JavaImpl() {
