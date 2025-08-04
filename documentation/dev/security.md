@@ -140,7 +140,7 @@ We get a very different output; one that is altogether saner:
   <style>
     p {
       font-family: "javascript:/*\3c /style\3e \3c /script\3e /**/ /\3c script\3e 1/(alert(1337))//\3c /script\3e ";
-      background: url(/images?q=javascript%3A%2F%2A%3E%2Fstyle%3C%3E%2Fscript%3C%2F%2A%2A%2F%20%2F%3Escript%3C1%2F%28alert%281337%29%29%2F%2F%3E%2Fscript%3C);
+      background: url(/images?q=javascript%3A%2F%2A%3C%2Fstyle%3E%3C%2Fscript%3E%2F%2A%2A%2F%20%2F%3Cscript%3E1%2F%28alert%281337%29%29%2F%2F%3C%2Fscript%3E);
       left: zSoyz
     }
   </style>
