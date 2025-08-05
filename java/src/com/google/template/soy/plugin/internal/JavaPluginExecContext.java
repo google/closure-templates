@@ -112,8 +112,4 @@ public final class JavaPluginExecContext {
   public Node getNode() {
     return node;
   }
-
-  public boolean isVarArgs() {
-    return node instanceof ExprNode.CallableExpr && ((ExprNode.CallableExpr) node).isVarArgs();
-  }
 }

@@ -203,9 +203,6 @@ public interface ExprNode extends Node {
       return getParamNames().get(i);
     }
 
-    /** Whether the call node has a variable arguments parameter. */
-    boolean isVarArgs();
-
     /** How parameters are passed to the call. */
     enum ParamsStyle {
       NONE,
