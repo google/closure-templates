@@ -16,7 +16,6 @@
 
 package com.google.template.soy.basicfunctions;
 
-import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
 import com.google.template.soy.plugin.java.restricted.JavaValue;
 import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
@@ -43,7 +42,7 @@ import java.util.List;
         // type.
         @Signature(
             returnType = "?",
-            parameterTypes = {"?", "?"},
+            parameterTypes = {"?"},
             isVarArgs = true))
 @SoyPureFunction
 public final class MaxFunction
@@ -52,25 +51,24 @@ public final class MaxFunction
   @Override
   public JavaScriptValue applyForJavaScriptSource(
       JavaScriptValueFactory factory, List<JavaScriptValue> args, JavaScriptPluginContext context) {
-    return factory.global("Math").invokeMethod("max", args.get(0), args.get(1));
+    return factory.global("Math").invokeMethod("max", args);
   }
 
   @Override
   public PythonValue applyForPythonSource(
       PythonValueFactory factory, List<PythonValue> args, PythonPluginContext context) {
-    return factory.global("max").call(args.get(0), args.get(1));
+    return factory.global("max").call(args);
   }
 
   // lazy singleton pattern, allows other backends to avoid the work.
   private static final class Methods {
     private static final Method MAX_FN =
-        JavaValueFactory.createMethod(
-            BasicFunctionsRuntime.class, "max", SoyValue.class, SoyValue.class);
+        JavaValueFactory.createMethod(BasicFunctionsRuntime.class, "max", List.class);
   }
 
   @Override
   public JavaValue applyForJavaSource(
       JavaValueFactory factory, List<JavaValue> args, JavaPluginContext context) {
-    return factory.callStaticMethod(Methods.MAX_FN, args.get(0), args.get(1));
+    return factory.callStaticMethod(Methods.MAX_FN, factory.listOf(args));
   }
 }

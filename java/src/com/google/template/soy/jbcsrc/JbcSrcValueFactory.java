@@ -136,7 +136,7 @@ final class JbcSrcValueFactory extends JavaValueFactory {
     ErrorReporter.Checkpoint checkpoint = errorReporter.checkpoint();
     checkState(fnNode.getParamTypes() != null, "allowed param types must be set");
     checkState(
-        fnNode.getParamTypes().size() == args.size(),
+        fnNode.isVarArgs() || fnNode.getParamTypes().size() == args.size(),
         "wrong # of allowed param types (%s), expected %s",
         fnNode.getParamTypes(),
         args.size());
