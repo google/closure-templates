@@ -357,12 +357,17 @@ public final class BasicFunctionsRuntime {
   }
 
   /** Returns the numeric maximum of the two arguments. */
-  public static NumberData max(SoyValue arg0, SoyValue arg1) {
-    if (arg0 instanceof IntegerData && arg1 instanceof IntegerData) {
-      return IntegerData.forValue(Math.max(arg0.longValue(), arg1.longValue()));
-    } else {
-      return FloatData.forValue(Math.max(arg0.floatValue(), arg1.floatValue()));
+  public static NumberData max(List<SoyValue> args) {
+    if (args.isEmpty()) {
+      return FloatData.forValue(Double.NEGATIVE_INFINITY);
     }
+
+    Double maxVal = args.stream().map(SoyValue::numberValue).max(Double::compare).get();
+    // Return IntegerData if all arguments are IntegerData.
+    if (args.stream().filter(v -> v instanceof IntegerData).count() == args.size()) {
+      return IntegerData.forValue(maxVal.longValue());
+    }
+    return FloatData.forValue(maxVal);
   }
 
   /** Returns the numeric minimum of the two arguments. */

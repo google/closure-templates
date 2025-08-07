@@ -21,6 +21,7 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static com.google.common.collect.ImmutableSortedSet.toImmutableSortedSet;
 import static com.google.common.collect.Iterables.getOnlyElement;
+import static com.google.common.collect.Streams.stream;
 import static com.google.template.soy.passes.CheckTemplateCallsPass.ARGUMENT_TYPE_MISMATCH;
 import static com.google.template.soy.passes.RuntimeTypeCoercion.maybeCoerceType;
 import static com.google.template.soy.types.SoyTypes.SAFE_PROTO_TO_SANITIZED_TYPE;
@@ -33,6 +34,8 @@ import static com.google.template.soy.types.SoyTypes.getMapValuesType;
 import static com.google.template.soy.types.SoyTypes.isNullOrUndefined;
 import static com.google.template.soy.types.SoyTypes.isNullish;
 import static com.google.template.soy.types.SoyTypes.tryExcludeNullish;
+import static java.lang.Math.min;
+import static java.util.Arrays.stream;
 import static java.util.Comparator.naturalOrder;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
@@ -48,7 +51,6 @@ import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.SetMultimap;
-import com.google.common.collect.Streams;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
@@ -229,7 +231,6 @@ import com.google.template.soy.types.VeType;
 import com.google.template.soy.types.ast.TypeNode;
 import com.google.template.soy.types.ast.TypeNodeConverter;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -1800,7 +1801,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
           arg =
               FunctionType.of(
                   arg.getParameters().stream()
-                      .map(p -> FunctionType.Parameter.of(p.getName(), itemType))
+                      .map(p -> FunctionType.Parameter.of(p.getName(), itemType, p.isVarArgs()))
                       .collect(toImmutableList()),
                   arg.getReturnType());
           return ImmutableList.of(arg);
@@ -2325,8 +2326,9 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
         SoyFunctionSignature fnSignature, String className, FunctionNode node) {
       ResolvedSignature matchedSignature = null;
       // Found the matched signature for the current function call.
+      boolean isVarArgsSig = false;
       for (Signature signature : fnSignature.value()) {
-        if (signature.parameterTypes().length == node.numParams()) {
+        if (signature.parameterTypes().length == node.numParams() && !isVarArgs(signature)) {
           matchedSignature = getOrCreateFunctionSignature(signature, className, errorReporter);
           if (!signature.deprecatedWarning().isEmpty()) {
             errorReporter.warn(
@@ -2336,6 +2338,9 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
                 signature.deprecatedWarning());
           }
           break;
+        } else if (isVarArgs(signature)) {
+          matchedSignature = getOrCreateFunctionSignature(signature, className, errorReporter);
+          isVarArgsSig = true;
         }
       }
       if (matchedSignature == null) {
@@ -2347,12 +2352,20 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
         return;
       }
       for (int i = 0; i < node.numParams(); ++i) {
-        SoyType paramType = matchedSignature.parameterTypes().get(i);
+        SoyType paramType =
+            matchedSignature
+                .parameterTypes()
+                .get(min(i, matchedSignature.parameterTypes().size() - 1));
         maybeCoerceType(node.getParam(i), paramType);
         checkArgType(node.getParam(i), paramType, node);
       }
+      node.setIsVarArgs(isVarArgsSig);
       node.setAllowedParamTypes(matchedSignature.parameterTypes());
       node.setType(matchedSignature.returnType());
+    }
+
+    private boolean isVarArgs(Signature signature) {
+      return signature.parameterTypes().length > 0 && signature.isVarArgs();
     }
 
     private void visitKeysFunction(FunctionNode node) {
@@ -3045,7 +3058,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
     private SoyType getGenericListType(Iterable<ExprNode> intersectionOf) {
       SoyType paramsUnionType =
           UnionType.of(
-              Streams.stream(intersectionOf)
+              stream(intersectionOf)
                   .map(n -> n.getType().getEffectiveType())
                   .collect(toImmutableSet()));
       SoyType elementType = SoyTypes.getIterableElementType(typeRegistry, paramsUnionType);
@@ -3233,16 +3246,15 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
                                   SourceFilePath.create(
                                       function.getClass().getName(), function.getClass().getName());
                               SoyType baseType = parseType(methodSig.baseType(), fakeFunctionPath);
-                              return Arrays.stream(methodSig.value())
+                              return stream(methodSig.value())
                                   .map(
                                       signature -> {
                                         SoyType returnType =
                                             parseType(signature.returnType(), fakeFunctionPath);
                                         ImmutableList<SoyType> argTypes =
-                                            Arrays.stream(signature.parameterTypes())
+                                            stream(signature.parameterTypes())
                                                 .map(s -> parseType(s, fakeFunctionPath))
                                                 .collect(toImmutableList());
-
                                         return new SoySourceFunctionMethod(
                                             function,
                                             baseType,
