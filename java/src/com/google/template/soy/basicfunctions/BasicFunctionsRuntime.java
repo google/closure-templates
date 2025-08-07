@@ -356,7 +356,7 @@ public final class BasicFunctionsRuntime {
         keysCoercedToStrings, RuntimeMapTypeTracker.Type.LEGACY_OBJECT_MAP_OR_RECORD);
   }
 
-  /** Returns the numeric maximum of the two arguments. */
+  /** Returns the numeric maximum of the arguments. */
   public static NumberData max(List<SoyValue> args) {
     if (args.isEmpty()) {
       return FloatData.forValue(Double.NEGATIVE_INFINITY);
@@ -370,13 +370,18 @@ public final class BasicFunctionsRuntime {
     return FloatData.forValue(maxVal);
   }
 
-  /** Returns the numeric minimum of the two arguments. */
-  public static NumberData min(SoyValue arg0, SoyValue arg1) {
-    if (arg0 instanceof IntegerData && arg1 instanceof IntegerData) {
-      return IntegerData.forValue(Math.min(arg0.longValue(), arg1.longValue()));
-    } else {
-      return FloatData.forValue(Math.min(arg0.floatValue(), arg1.floatValue()));
+  /** Returns the numeric minimum of the arguments. */
+  public static NumberData min(List<SoyValue> args) {
+    if (args.isEmpty()) {
+      return FloatData.forValue(Double.POSITIVE_INFINITY);
     }
+
+    Double minVal = args.stream().map(SoyValue::numberValue).min(Double::compare).get();
+    // Return IntegerData if all arguments are IntegerData.
+    if (args.stream().filter(v -> v instanceof IntegerData).count() == args.size()) {
+      return IntegerData.forValue(minVal.longValue());
+    }
+    return FloatData.forValue(minVal);
   }
 
   @Nullable

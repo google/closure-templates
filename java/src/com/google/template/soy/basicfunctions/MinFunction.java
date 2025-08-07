@@ -16,7 +16,6 @@
 
 package com.google.template.soy.basicfunctions;
 
-import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
 import com.google.template.soy.plugin.java.restricted.JavaValue;
 import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
@@ -35,9 +34,7 @@ import com.google.template.soy.shared.restricted.SoyPureFunction;
 import java.lang.reflect.Method;
 import java.util.List;
 
-/**
- * Soy function that takes the min of two numbers.
- */
+/** Soy function that takes the min of two numbers. */
 @SoyFunctionSignature(
     name = "min",
     value =
@@ -45,7 +42,8 @@ import java.util.List;
         // type.
         @Signature(
             returnType = "?",
-            parameterTypes = {"?", "?"}))
+            parameterTypes = {"?"},
+            isVarArgs = true))
 @SoyPureFunction
 public final class MinFunction
     implements SoyJavaSourceFunction, SoyJavaScriptSourceFunction, SoyPythonSourceFunction {
@@ -53,25 +51,24 @@ public final class MinFunction
   @Override
   public JavaScriptValue applyForJavaScriptSource(
       JavaScriptValueFactory factory, List<JavaScriptValue> args, JavaScriptPluginContext context) {
-    return factory.global("Math").invokeMethod("min", args.get(0), args.get(1));
+    return factory.global("Math").invokeMethod("min", args);
   }
 
   @Override
   public PythonValue applyForPythonSource(
       PythonValueFactory factory, List<PythonValue> args, PythonPluginContext context) {
-    return factory.global("min").call(args.get(0), args.get(1));
+    return factory.global("min").call(args);
   }
 
   // lazy singleton pattern, allows other backends to avoid the work.
   private static final class Methods {
     static final Method MIN_FN =
-        JavaValueFactory.createMethod(
-            BasicFunctionsRuntime.class, "min", SoyValue.class, SoyValue.class);
+        JavaValueFactory.createMethod(BasicFunctionsRuntime.class, "min", List.class);
   }
 
   @Override
   public JavaValue applyForJavaSource(
       JavaValueFactory factory, List<JavaValue> args, JavaPluginContext context) {
-    return factory.callStaticMethod(Methods.MIN_FN, args.get(0), args.get(1));
+    return factory.callStaticMethod(Methods.MIN_FN, factory.listOf(args));
   }
 }
