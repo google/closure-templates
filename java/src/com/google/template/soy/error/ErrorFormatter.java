@@ -21,17 +21,30 @@ import com.google.template.soy.base.SourceLocation;
 /** Converts {@link SoyError} to {@link String}. */
 public interface ErrorFormatter {
 
+  static String formatLocation(SourceLocation location) {
+    if (!location.getEndPoint().isKnown()
+        || location.getBeginPoint().equals(location.getEndPoint())) {
+      return String.format(
+          "%s:%d:%d",
+          location.getFilePath().realPath(), location.getBeginLine(), location.getBeginColumn());
+    } else {
+      return String.format(
+          "%s:%d:%d-%d:%d",
+          location.getFilePath().realPath(),
+          location.getBeginLine(),
+          location.getBeginColumn(),
+          location.getEndLine(),
+          location.getEndColumn());
+    }
+  }
+
   /** Basic formatter. */
   ErrorFormatter SIMPLE =
       (report) -> {
         SourceLocation location = report.location();
         return String.format(
-            "%s:%d:%d: %s: %s",
-            location.getFilePath().realPath(),
-            location.getBeginLine(),
-            location.getBeginColumn(),
-            (report.isWarning() ? "warning" : "error"),
-            report.message());
+            "%s: %s: %s",
+            formatLocation(location), (report.isWarning() ? "warning" : "error"), report.message());
       };
 
   /** Formatter that includes only the error message. */
