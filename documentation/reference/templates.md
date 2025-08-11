@@ -191,5 +191,5 @@ Example:
 
 ## Parameter type expressions {#param-type}
 
-See the [type expression reference](types) for the types that can appear in a
+See the [type expression reference](types.md) for the types that can appear in a
 parameter declaration.
