@@ -50,6 +50,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.SetMultimap;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.base.SourceFilePath;
@@ -2215,6 +2216,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
           return;
         }
       }
+
       visitChildren(node);
       if (!node.hasStaticName()) {
         visit(node.getNameExpr());
@@ -2287,6 +2289,16 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
                   allowedTypes);
               node.setSoyFunction(FunctionNode.UNRESOLVED);
             }
+          }
+        }
+      }
+      if (node.containsSpread()) {
+        if (Iterables.getLast(node.getParams()) instanceof SpreadOpNode) {
+          SpreadOpNode spreadOpNode = (SpreadOpNode) Iterables.getLast(node.getParams());
+          if (!(spreadOpNode.getChild(0).getType() instanceof ListType)) {
+            errorReporter.report(
+                node.getSourceLocation(),
+                SoyErrorKind.of("Spread operator cannot be used with non-list types."));
           }
         }
       }

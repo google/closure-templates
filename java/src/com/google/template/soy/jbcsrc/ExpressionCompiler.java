@@ -18,7 +18,6 @@ package com.google.template.soy.jbcsrc;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.template.soy.jbcsrc.ExternCompiler.getTypeInfoForJavaImpl;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.FUNCTION_VALUE_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.ITERATOR_TYPE;
@@ -159,7 +158,6 @@ import com.google.template.soy.types.SoyTypes;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -1982,17 +1980,17 @@ final class ExpressionCompiler {
     SoyExpression visitPluginFunction(FunctionNode node) {
       Object fn = node.getSoyFunction();
       if (fn instanceof SoyJavaExternFunction) {
-        ImmutableList<SoyExpression> args = visitAll(node.getParams());
+        ImmutableList<SoyExpression> args = visitAllParams(node);
         return callExtern(
             ExternAdaptors.asExtern(
                 (SoyJavaExternFunction) fn, args, node.getType(), node.getAllowedParamTypes()),
             args);
       } else if (fn instanceof SoyJavaSourceFunction) {
-        ImmutableList<SoyExpression> args = visitAll(node.getParams());
+        ImmutableList<SoyExpression> args = visitAllParams(node);
         return sourceFunctionCompiler.compile(
             node, (SoyJavaSourceFunction) fn, args, parameters, detacher);
       } else if (fn instanceof Extern) {
-        return callExtern((Extern) fn, visitAll(node.getParams()));
+        return callExtern((Extern) fn, visitAllParams(node));
       } else if (fn == FunctionNode.FUNCTION_POINTER) {
         FunctionType functionType = node.getNameExpr().getType().asType(FunctionType.class);
         SoyRuntimeType soyReturnType = ExternCompiler.getRuntimeType(functionType.getReturnType());
@@ -2041,8 +2039,29 @@ final class ExpressionCompiler {
       return asImmutableList(adaptedArgs);
     }
 
-    private ImmutableList<SoyExpression> visitAll(Collection<ExprNode> expr) {
-      return expr.stream().map(this::visit).collect(toImmutableList());
+    private ImmutableList<SoyExpression> visitAllParams(FunctionNode node) {
+      List<ExprNode> params = node.getParams();
+      ImmutableList.Builder<SoyExpression> builder = ImmutableList.builder();
+      for (int i = 0; i < node.getAllowedParamTypes().size(); i++) {
+        if (node.isVarArgs() && i == node.getAllowedParamTypes().size() - 1) {
+          if (!params.isEmpty() && params.get(i) instanceof SpreadOpNode) {
+            builder.add(visit(((SpreadOpNode) params.get(i)).getChild(0)));
+          } else {
+            int varArgParamIndex = node.getAllowedParamTypes().size() - 1;
+            List<SoyExpression> varArgsParamList = new ArrayList<>();
+            for (int j = i; j < params.size(); j++) {
+              varArgsParamList.add(visit(params.get(j)));
+            }
+            builder.add(
+                SoyExpression.forList(
+                    ListType.of(node.getAllowedParamTypes().get(varArgParamIndex)),
+                    SoyExpression.asBoxedValueProviderList(varArgsParamList)));
+          }
+        } else {
+          builder.add(visit(params.get(i)));
+        }
+      }
+      return builder.build();
     }
 
     private SoyExpression callExtern(Extern extern, List<SoyExpression> params) {
