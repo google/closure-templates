@@ -652,10 +652,17 @@ const $$registerDelegateFn = function(
     DELEGATE_REGISTRY_PRIORITIES_[mapKey] = delPriority;
     DELEGATE_REGISTRY_FUNCTIONS_[mapKey] = delFn;
   } else if (delPriority == currPriority) {
-    // Registering same-priority function: error.
-    throw Error(
-        'Encountered two active delegates with the same priority ("' +
-        delTemplateId + ':' + delTemplateVariant + '").');
+    if (delFn === DELEGATE_REGISTRY_FUNCTIONS_[mapKey]) {
+      // Re-registering same function: error.
+      throw Error(
+          'The delegate has already been registered ("' +
+          delTemplateId + ':' + delTemplateVariant + '").');
+    } else {
+      // Registering same-priority function: error.
+      throw Error(
+          'Encountered two active delegates with the same priority ("' +
+          delTemplateId + ':' + delTemplateVariant + '").');
+    }
   } else {
     // Registering lower-priority function: do nothing.
   }
