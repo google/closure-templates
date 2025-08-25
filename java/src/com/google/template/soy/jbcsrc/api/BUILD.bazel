@@ -58,7 +58,6 @@ java_library(
         "//java/src/com/google/template/soy/shared:interfaces",
         "//java/src/com/google/template/soy/shared:soy_css_tracker",
         "//java/src/com/google/template/soy/shared:soy_js_id_tracker",
-        "//java/src/com/google/template/soy/shared/internal",
         "//java/src/com/google/template/soy/shared/restricted",
         "@maven//:com_google_code_findbugs_jsr305",
         "@maven//:com_google_errorprone_error_prone_annotations",
