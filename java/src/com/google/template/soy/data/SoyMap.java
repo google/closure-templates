@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 
 /**
@@ -92,6 +93,62 @@ public abstract class SoyMap extends SoyRecord {
    * @return A provider of the item value for the given item key, or null if no such item key.
    */
   public abstract SoyValueProvider getProvider(SoyValue key);
+
+  /**
+   * Clears all items from this SoyMap.
+   *
+   * <p>Mutable maps are only allowed in externs.
+   *
+   * @throws SoyDataException if the map is immutable.
+   */
+  @Nullable
+  public /* void */ Object clear() {
+    throw new SoyDataException(
+        String.format("Map of type %s does not support clear()", getSoyTypeName()));
+  }
+
+  /**
+   * Deletes a value from this SoyMap.
+   *
+   * <p>Mutable maps are only allowed in externs.
+   *
+   * @param key The item key to delete.
+   * @return Whether an item was deleted.
+   * @throws SoyDataException if the map is immutable.
+   */
+  public boolean delete(SoyValue key) {
+    throw new SoyDataException(
+        String.format("Map of type %s does not support delete()", getSoyTypeName()));
+  }
+
+  /**
+   * Sets an item value of this SoyMap.
+   *
+   * <p>Mutable maps are only allowed in externs.
+   *
+   * @param key The item key to set.
+   * @param value The item value to set.
+   * @return This SoyMap for chaining.
+   * @throws SoyDataException if the map is immutable.
+   */
+  public SoyMap set(SoyValue key, SoyValue value) {
+    return set(key, (SoyValueProvider) value);
+  }
+
+  /**
+   * Sets an item value of this SoyMap.
+   *
+   * <p>Mutable maps are only allowed in externs.
+   *
+   * @param key The item key to set.
+   * @param value The item value to set.
+   * @return This SoyMap for chaining.
+   * @throws SoyDataException if the map is immutable.
+   */
+  public SoyMap set(SoyValue key, SoyValueProvider value) {
+    throw new SoyDataException(
+        String.format("Map of type %s does not support set()", getSoyTypeName()));
+  }
 
   @Override
   public final String coerceToString() {
