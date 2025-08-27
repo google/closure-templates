@@ -105,6 +105,7 @@ public final class TypeDefNode extends AbstractCommandNode implements TypesHolde
     return NamedType.create(
         name.identifier(),
         getNearestAncestor(SoyFileNode.class).getNamespace(),
+        getNearestAncestor(SoyFileNode.class).getFilePath(),
         typeNode.getResolvedType());
   }
 }

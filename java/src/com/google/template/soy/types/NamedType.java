@@ -18,14 +18,16 @@ package com.google.template.soy.types;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
+import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.soytree.SoyTypeP;
 
 /** A type that is a reference to a Soy `{type}` command. */
 @AutoValue
 public abstract class NamedType extends ComputedType {
 
-  public static NamedType create(String name, String namespace, SoyType type) {
-    NamedType rv = new AutoValue_NamedType(name, namespace);
+  public static NamedType create(
+      String name, String namespace, SourceFilePath sourceFilePath, SoyType type) {
+    NamedType rv = new AutoValue_NamedType(name, namespace, sourceFilePath);
     rv.type = Preconditions.checkNotNull(type);
     return rv;
   }
@@ -38,6 +40,8 @@ public abstract class NamedType extends ComputedType {
   public abstract String getName();
 
   public abstract String getNamespace();
+
+  public abstract SourceFilePath getSourceFilePath();
 
   public SoyType getType() {
     return type;
