@@ -76,22 +76,19 @@ public final class ErrorFormatterImpl implements ErrorFormatter {
         snippetCache.computeIfAbsent(sourceFile, SourceSnippetPrinter::new);
     Optional<String> snippet = snippetPrinter.getSnippet(location);
 
-    String formatted = SIMPLE.format(report);
-    if (snippet.isPresent()) {
-      formatted += '\n' + snippet.get().stripTrailing();
-    }
     SourceLocationMapper sourceMap =
         sourceMapsCache.computeIfAbsent(sourceFile, ErrorFormatterImpl::buildSourceMap);
     SourceLocation originalLocation = sourceMap.map(location);
-    if (!location.equals(originalLocation)) {
-      int line = originalLocation.getBeginLine();
-      if (line < 1) {
-        line = originalLocation.getEndLine();
-      }
-      formatted +=
-          String.format(
-              "\n[generated from: %s:%s]",
-              originalLocation.getFilePath().realPath(), line >= 1 ? "" + line : "(unknown line)");
+    String sourceMapExtraInfo = "";
+    if (!location.equals(originalLocation) && originalLocation.getBeginPoint().isKnown()) {
+      report = report.withLocation(originalLocation);
+      sourceMapExtraInfo =
+          "\n[generated location: " + ErrorFormatter.formatLocation(location) + "]";
+    }
+
+    String formatted = SIMPLE.format(report) + sourceMapExtraInfo;
+    if (snippet.isPresent()) {
+      formatted += '\n' + snippet.get().stripTrailing();
     }
     return formatted;
   }
