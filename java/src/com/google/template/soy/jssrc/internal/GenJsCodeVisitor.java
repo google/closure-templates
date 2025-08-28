@@ -686,7 +686,9 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       // If this is not a record type we can just use @typedef.
       JsType jsType = getJsTypeForParam(type);
       JsDoc.Builder jsDoc =
-          JsDoc.builder().addParameterizedAnnotation("typedef", jsType.typeExpr());
+          JsDoc.builder()
+              .addParameterizedAnnotation("typedef", jsType.typeExpr())
+              .addGoogRequires(jsType);
       jsCodeBuilder.append(
           topLevelDecl(node, node.isExported(), node.getName(), jsDoc, imputesSpan));
       return;
