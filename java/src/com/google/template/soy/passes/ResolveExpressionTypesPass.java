@@ -2352,10 +2352,31 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
         return;
       }
       for (int i = 0; i < node.numParams(); ++i) {
-        SoyType paramType =
-            matchedSignature
-                .parameterTypes()
-                .get(min(i, matchedSignature.parameterTypes().size() - 1));
+        SoyType paramType = UnknownType.getInstance();
+        if (isVarArgsSig) {
+          if (matchedSignature
+                  .parameterTypes()
+                  .get(matchedSignature.parameterTypes().size() - 1)
+                  .getKind()
+              != Kind.LIST) {
+            errorReporter.report(
+                node.getSourceLocation(),
+                SoyErrorKind.of("Varargs function called with non-list argument at index {0}."),
+                i);
+          } else {
+            paramType =
+                ((ListType)
+                        matchedSignature
+                            .parameterTypes()
+                            .get(matchedSignature.parameterTypes().size() - 1))
+                    .getElementType();
+          }
+        } else {
+          paramType =
+              matchedSignature
+                  .parameterTypes()
+                  .get(min(i, matchedSignature.parameterTypes().size() - 1));
+        }
         maybeCoerceType(node.getParam(i), paramType);
         checkArgType(node.getParam(i), paramType, node);
       }

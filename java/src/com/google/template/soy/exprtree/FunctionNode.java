@@ -26,6 +26,7 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SourceLocation.Point;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.basetree.CopyState;
+import com.google.template.soy.exprtree.OperatorNodes.SpreadOpNode;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.shared.restricted.SoyFunction;
@@ -175,7 +176,10 @@ public final class FunctionNode extends AbstractParentExprNode implements ExprNo
       ImmutableList<Identifier> paramNames,
       @Nullable ImmutableList<Point> commaLocations) {
     super(sourceLocation);
-    Preconditions.checkArgument(paramNames.isEmpty() || paramsStyle == ParamsStyle.NAMED);
+    Preconditions.checkArgument(
+        paramNames.isEmpty()
+            || CallableExprBuilder.hasOnlyUnused(paramNames)
+            || paramsStyle == ParamsStyle.NAMED);
     Preconditions.checkArgument((name == null) != (nameExpr == null));
     this.name = name;
     if (nameExpr != null) {
@@ -395,5 +399,9 @@ public final class FunctionNode extends AbstractParentExprNode implements ExprNo
 
   public int getParamIndex(ExprNode node) {
     return name == null ? getChildIndex(node) - 1 : getChildIndex(node);
+  }
+
+  public boolean containsSpread() {
+    return getParams().stream().anyMatch(SpreadOpNode.class::isInstance);
   }
 }

@@ -42,7 +42,7 @@ import java.util.List;
         // type.
         @Signature(
             returnType = "?",
-            parameterTypes = {"?"},
+            parameterTypes = {"list<?>"},
             isVarArgs = true))
 @SoyPureFunction
 public final class MinFunction
@@ -69,6 +69,6 @@ public final class MinFunction
   @Override
   public JavaValue applyForJavaSource(
       JavaValueFactory factory, List<JavaValue> args, JavaPluginContext context) {
-    return factory.callStaticMethod(Methods.MIN_FN, factory.listOf(args));
+    return factory.callStaticMethod(Methods.MIN_FN, factory.varArgsOf(args));
   }
 }

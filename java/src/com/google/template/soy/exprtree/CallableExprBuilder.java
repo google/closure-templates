@@ -128,12 +128,17 @@ public final class CallableExprBuilder {
     if (paramValues.isEmpty()) {
       Preconditions.checkState(paramNames == null || paramNames.isEmpty());
       return ParamsStyle.NONE;
-    } else if (paramNames != null) {
+    } else if (paramNames != null && !hasOnlyUnused(paramNames)) {
       Preconditions.checkState(paramValues.size() == paramNames.size());
       return ParamsStyle.NAMED;
     } else {
       return ParamsStyle.POSITIONAL;
     }
+  }
+
+  static boolean hasOnlyUnused(List<Identifier> paramNames) {
+    return paramNames.stream()
+        .allMatch(v -> v.equals(Identifier.create("unused", SourceLocation.UNKNOWN)));
   }
 
   public MethodCallNode buildMethod() {
