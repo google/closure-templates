@@ -42,6 +42,7 @@ const {compareBigInt} = goog.require('google3.javascript.common.bigint.index');
 const {defaultImmutableInstance} = goog.require('jspb.immutable_message');
 const {htmlSafeByReview} = goog.require('google3.third_party.javascript.safevalues.restricted.reviewed');
 const {isReadonly} = goog.require('google3.javascript.apps.jspb.types.is_readonly');
+const {setInNonRenderContext} = goog.require('google3.javascript.apps.wiz.tsx.runtime.hooks.non_render_context');
 
 // -----------------------------------------------------------------------------
 // soydata: Defines typed strings, e.g. an HTML string `"a<b>c"` is
@@ -555,7 +556,11 @@ const $$isTruthyNonEmpty = function(arg) {
  * @return {boolean}
  */
 const $$hasContent = function(arg) {
-  return $$isTruthyNonEmpty(arg);
+  let result = true;
+  setInNonRenderContext(true);
+  result = $$isTruthyNonEmpty(arg);
+  setInNonRenderContext(false);
+  return result;
 };
 
 
