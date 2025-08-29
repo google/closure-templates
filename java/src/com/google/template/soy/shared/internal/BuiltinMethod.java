@@ -555,12 +555,6 @@ public enum BuiltinMethod implements SoyMethod {
     return "get" + CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_CAMEL, fieldName) + "_asString";
   }
 
-  public static String protoFieldToGetAsLegacyNumberOrStringMethodName(String fieldName) {
-    return "get"
-        + CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_CAMEL, fieldName)
-        + "_asLegacyNumberOrString";
-  }
-
   public static String protoFieldToGetReadonlyMethodName(String fieldName) {
     return "getReadonly" + CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_CAMEL, fieldName);
   }
@@ -573,12 +567,6 @@ public enum BuiltinMethod implements SoyMethod {
     return "get"
         + CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_CAMEL, fieldName)
         + "OrUndefined_asString";
-  }
-
-  public static String fieldToGetOrUndefinedAsLegacyNumberOrStringMethodName(String fieldName) {
-    return "get"
-        + CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_CAMEL, fieldName)
-        + "OrUndefined_asLegacyNumberOrString";
   }
 
   private final String name;
@@ -713,25 +701,6 @@ public enum BuiltinMethod implements SoyMethod {
     return Optional.of(CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_CAMEL, middle));
   }
 
-  private static Optional<String> getGetterAsLegacyNumberOrStringFieldName(String methodName) {
-    if (methodName.length() <= 3) {
-      return Optional.empty();
-    }
-
-    if (!methodName.startsWith("get")
-        || !methodName.endsWith("_asLegacyNumberOrString")
-        || methodName.endsWith("OrUndefined_asLegacyNumberOrString")) {
-      return Optional.empty();
-    }
-
-    String middle =
-        methodName.substring(3, methodName.length() - "_asLegacyNumberOrString".length());
-    if (middle.length() > 0 && !Ascii.isUpperCase(middle.charAt(0))) {
-      return Optional.empty();
-    }
-    return Optional.of(CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_CAMEL, middle));
-  }
-
   private static Optional<String> getGetOrUndefinedFieldName(String methodName) {
     if (!methodName.startsWith("get") || !methodName.endsWith("OrUndefined")) {
       return Optional.empty();
@@ -748,21 +717,6 @@ public enum BuiltinMethod implements SoyMethod {
       return Optional.empty();
     }
     String middle = methodName.substring(3, methodName.length() - "OrUndefined_asString".length());
-    if (middle.length() > 0 && !Ascii.isUpperCase(middle.charAt(0))) {
-      return Optional.empty();
-    }
-    return Optional.of(CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_CAMEL, middle));
-  }
-
-  private static Optional<String> getGetOrUndefinedAsLegacyNumberOrStringFieldName(
-      String methodName) {
-    if (!methodName.startsWith("get")
-        || !methodName.endsWith("OrUndefined_asLegacyNumberOrString")) {
-      return Optional.empty();
-    }
-    String middle =
-        methodName.substring(
-            3, methodName.length() - "OrUndefined_asLegacyNumberOrString".length());
     if (middle.length() > 0 && !Ascii.isUpperCase(middle.charAt(0))) {
       return Optional.empty();
     }
