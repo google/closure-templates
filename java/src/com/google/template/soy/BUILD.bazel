@@ -142,6 +142,7 @@ java_library(
         "//java/src/com/google/template/soy/shared/restricted:method_annotation",
         "//java/src/com/google/template/soy/soytree",
         "//java/src/com/google/template/soy/soytree:metadata",
+        "//java/src/com/google/template/soy/soytree:metadata_impl",
         "//java/src/com/google/template/soy/tofu",
         "//java/src/com/google/template/soy/tofu/internal",
         "//java/src/com/google/template/soy/types",
