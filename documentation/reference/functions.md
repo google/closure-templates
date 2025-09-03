@@ -308,6 +308,8 @@ not found, please check the type of your list.
 
 ## Mutable List Methods (Available inside the {autoimpl} command)
 
+### `Array.fill(item, start, end)` {#mutable_list-any_fill}
+
 ### `Array.push(item)` {#mutable_list-any_push}
 
 ### `Array.pop()` {#mutable_list-any_pop}

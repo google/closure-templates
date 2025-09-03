@@ -27,6 +27,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.math.DoubleMath;
 import com.google.common.primitives.Doubles;
 import com.google.common.primitives.Longs;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.protobuf.Message;
 import com.google.template.soy.data.RecordProperty;
 import com.google.template.soy.data.SanitizedContent;
@@ -674,6 +675,42 @@ public final class BasicFunctionsRuntime {
   public static boolean isInteger(SoyValue value) {
     return value instanceof IntegerData
         || (value instanceof FloatData && isInteger(value.floatValue()));
+  }
+
+  public static List<SoyValue> listFill(List<SoyValue> list, Object value) {
+    return listFill(list, value, 0);
+  }
+
+  public static List<SoyValue> listFill(SoyValue list, Object value) {
+    @SuppressWarnings("unchecked")
+    List<SoyValue> impl = (List<SoyValue>) list.asJavaList();
+    return listFill(impl, value);
+  }
+
+  public static List<SoyValue> listFill(List<SoyValue> list, Object value, long start) {
+    return listFill(list, value, start, list.size());
+  }
+
+  public static List<SoyValue> listFill(SoyValue list, Object value, long start) {
+    @SuppressWarnings("unchecked")
+    List<SoyValue> impl = (List<SoyValue>) list.asJavaList();
+    return listFill(impl, value, start);
+  }
+
+  @CanIgnoreReturnValue
+  public static List<SoyValue> listFill(List<SoyValue> list, Object value, long start, long end) {
+    for (long i = start; i < end; i++) {
+      if (i < list.size()) {
+        list.set((int) i, SoyValueConverter.INSTANCE.convert(value).resolve());
+      }
+    }
+    return list;
+  }
+
+  public static List<SoyValue> listFill(SoyValue list, Object value, long start, long end) {
+    @SuppressWarnings("unchecked")
+    List<SoyValue> impl = (List<SoyValue>) list.asJavaList();
+    return listFill(impl, value, start, end);
   }
 
   public static int listPush(List<SoyValue> list, Object value) {

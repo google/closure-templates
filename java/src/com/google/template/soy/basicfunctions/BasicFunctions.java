@@ -66,6 +66,7 @@ public class BasicFunctions {
         new MapValuesMethod(),
         new MaxFunction(),
         new MinFunction(),
+        new MutableArrayMethods.Fill(),
         new MutableArrayMethods.Pop(),
         new MutableArrayMethods.Push(),
         new MutableArrayMethods.Shift(),

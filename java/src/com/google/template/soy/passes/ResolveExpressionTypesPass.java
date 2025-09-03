@@ -74,6 +74,7 @@ import com.google.template.soy.basicfunctions.MapToLegacyObjectMapFunction;
 import com.google.template.soy.basicfunctions.MapValuesMethod;
 import com.google.template.soy.basicfunctions.MaxFunction;
 import com.google.template.soy.basicfunctions.MinFunction;
+import com.google.template.soy.basicfunctions.MutableArrayMethods.Fill;
 import com.google.template.soy.basicfunctions.MutableArrayMethods.Pop;
 import com.google.template.soy.basicfunctions.MutableArrayMethods.Push;
 import com.google.template.soy.basicfunctions.MutableArrayMethods.Shift;
@@ -1635,6 +1636,18 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
                   param.getType(),
                   elementType);
             }
+          }
+          node.setType(baseType);
+        } else if (sourceFunction instanceof Fill) {
+          SoyType elementType =
+              SoyTypes.getIterableElementType(typeRegistry, node.getBaseType(false));
+          ExprNode param = node.getParam(0);
+          if (!elementType.isAssignableFromStrict(param.getType())) {
+            errorReporter.report(
+                param.getSourceLocation(),
+                GENERIC_PARAM_NOT_ASSIGNABLE,
+                param.getType(),
+                elementType);
           }
           node.setType(baseType);
         } else if (sourceFunction instanceof ListFlatMethod) {
