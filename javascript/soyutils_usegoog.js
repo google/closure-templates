@@ -41,6 +41,7 @@ const {SanitizedContent, SanitizedContentKind, SanitizedCss, SanitizedHtml, Sani
 const {compareBigInt} = goog.require('google3.javascript.common.bigint.index');
 const {defaultImmutableInstance} = goog.require('jspb.immutable_message');
 const {htmlSafeByReview} = goog.require('google3.third_party.javascript.safevalues.restricted.reviewed');
+const {isInSoyJsSlotContext} = goog.require('google3.javascript.apps.wiz.tsx.runtime.interop.soy_js.soy_js_slot_context');
 const {isReadonly} = goog.require('google3.javascript.apps.jspb.types.is_readonly');
 
 // -----------------------------------------------------------------------------
@@ -541,6 +542,7 @@ const $$isIterable = function(it) {
  */
 const $$isTruthyNonEmpty = function(arg) {
   if (arg instanceof SanitizedContent) {
+    if (isInSoyJsSlotContext()) return true;
     return !!arg.getContent();
   }
   return !!arg;
