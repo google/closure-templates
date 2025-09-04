@@ -54,6 +54,7 @@ import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.shared.internal.Sanitizers;
+import java.text.DecimalFormat;
 import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -434,6 +435,23 @@ public final class BasicFunctionsRuntime {
     } else {
       return Math.round(value.floatValue());
     }
+  }
+
+  public static String numberToFixed(double num) {
+    return numberToFixed(num, 0);
+  }
+
+  public static String numberToFixed(double num, int decimalPlaces) {
+    String pattern = "0";
+    if (decimalPlaces > 0) {
+      pattern += ".";
+      for (int i = 0; i < decimalPlaces; i++) {
+        pattern += "0";
+      }
+    }
+
+    DecimalFormat df = new DecimalFormat(pattern);
+    return df.format(num);
   }
 
   @Nonnull
