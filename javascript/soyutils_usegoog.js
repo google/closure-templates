@@ -540,6 +540,9 @@ const $$isIterable = function(it) {
  * @return {boolean}
  */
 const $$isTruthyNonEmpty = function(arg) {
+  if (arg instanceof SoyJsInteropSlot) {
+    return true; 
+  }
   if (arg instanceof SanitizedContent) {
     return !!arg.getContent();
   }
