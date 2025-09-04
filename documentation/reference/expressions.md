@@ -382,7 +382,8 @@ These operators all require both operands to be integers.
 
 ### Relative comparison operators `<`, `>`, `<=`, `>=`
 
-Relative comparison operators, used for comparing numeric values.
+Relative comparison operators, used for comparing two numeric values or two
+string values, matching JavaScript semantics.
 
 For example,
 
@@ -390,7 +391,7 @@ For example,
 
 ### Equality operators `==`, `!=`, `===`, `!==`
 
-Equality operators. Compares two values for equality. Mirrors the Javascript
+Equality operators. Compares two values for equality. Mirrors the JavaScript
 equality and strict equality operators.
 
 When the double equals is used, if one side is a `string` and the other side is
@@ -423,42 +424,6 @@ NOTE: Each primitive type has exactly one falsy value: `null` is falsy, `false`
 is falsy for booleans, `0` is falsy for integers, `0.0` is falsy for floats, and
 `''` (empty string) is falsy for strings. All other primitive values are truthy.
 Maps and lists are always truthy even if they're empty.
-
-### Deprecated logical operators `and`, `or` {#logical-operators-deprecated}
-
-WARNING: `and` and `or` are being deprecated in favor of `&&` and `||` in order
-to converge with JavaScript.
-
-When a non-boolean value is used, it is coerced to a boolean.
-
-Using a constant expression for the `or` operator produces a compiler warning.
-Using a boolean constant renders the `or` expression meaningless; using a
-constant of another type means the expression does not evaluate to a boolean
-type.
-
-WARNING: While `''` is falsy in all backends, it does not compare to `true` and `false`
-equivalently in all backends. It is therefore safe to use a string as the first
-argument of a ternary statement but not safe to compare strings to booleans.
-
-Rather than using the short-circuit property of the `or` operator, you should
-use `??`, the [nullish coalescing operator](#nullish-coalescing-operator). This
-more clearly expresses your intent.
-
-For example, these expressions will produce a warning:
-
-```soy {.bad}
-{param myLabel: $myProto?.label or '' /}
-{param isEnabled: $isButtonVisible or false /}
-{param isEnabled: $optBoolVar or false /}
-```
-
-Simplify or use `??` for all new Soy code.
-
-```soy {.good}
-{param myLabel: $myProto?.label ?? '' /}
-{param isEnabled: $isButtonVisible /}
-{param isEnabled: $optBoolVar ?? false /}
-```
 
 ### Nullish coalescing operator `??` {#nullish-coalescing-operator}
 
