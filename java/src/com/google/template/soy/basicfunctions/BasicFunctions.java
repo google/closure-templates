@@ -73,6 +73,7 @@ public class BasicFunctions {
         new MutableArrayMethods.Splice(),
         new MutableArrayMethods.Unshift(),
         new NumberListSortMethod(),
+        new NumberToFixedMethod(),
         new ParseFloatFunction(),
         new ParseIntFunction(),
         new PowFunction(),
