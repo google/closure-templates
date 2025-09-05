@@ -174,10 +174,13 @@ public final class BaseUtilsTest {
     assertEquals("1000000000000000", BaseUtils.formatDouble(1.0e15));
     assertEquals("-1000000000000000", BaseUtils.formatDouble(-1.0e15));
     assertEquals("-1000000000000000", BaseUtils.formatDouble(-1.0e15));
-    assertEquals("1.51e32", BaseUtils.formatDouble(1.51e32));
+    assertEquals("1.51e+32", BaseUtils.formatDouble(1.51e32));
     assertEquals("NaN", BaseUtils.formatDouble(Double.NaN));
     assertEquals("Infinity", BaseUtils.formatDouble(Double.POSITIVE_INFINITY));
     assertEquals("-Infinity", BaseUtils.formatDouble(Double.NEGATIVE_INFINITY));
+
+    // This doesn't match the IEEE 754 spec. But we'd need an implementation of their DTOA.
+    assertEquals("4.9e-324", BaseUtils.formatDouble(Double.MIN_VALUE));
   }
 
   // TODO: fix callers of wrapped
