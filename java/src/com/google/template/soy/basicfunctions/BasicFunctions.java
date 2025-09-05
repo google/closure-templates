@@ -41,6 +41,8 @@ public class BasicFunctions {
         new ConcatListsFunction(),
         new ConcatMapsMethod(),
         new CosFunction(),
+        new EcmaParseFloatFunction(),
+        new EcmaParseIntFunction(),
         new FloorFunction(),
         new GbigintListSortMethod(),
         new HtmlToTextFunction(),
