@@ -1,3 +1,5 @@
+<!-- disableFinding(LINK_RELATIVE_G3DOC) -->
+
 # Methods, Fields, and Functions
 
 Soy methods, fields, and functions are called from within Soy
@@ -306,7 +308,10 @@ for a description of these options.
 This method is only defined on lists of non-nullable strings. If the method is
 not found, please check the type of your list.
 
-## Mutable List Methods (Available inside the {autoimpl} command)
+## Mutable List Methods {#mutable_list}
+
+These methods are only available inside the
+[`autoimpl` command](../dev/externs.md#autoimpl).
 
 ### `Array.fill(item, start, end)` {#mutable_list-any_fill}
 

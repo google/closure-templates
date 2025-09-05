@@ -1,3 +1,5 @@
+<!-- disableFinding(LINK_RELATIVE_G3DOC) -->
+
 # Creating an External Function
 
 go/soy-externs
@@ -243,3 +245,51 @@ Java type                          | Notes
 ---------------------------------- | --------------------------
 `com.google.template.soy.data.Dir` | The global bidi direction.
 `com.ibm.icu.util.ULocale`         | The end user's locale.
+
+## Auto Externs {#autoimpl}
+
+With auto externs it is possible to implement an extern entirely with Soy
+commands, without any external JavaScript or Java implementation libraries. To
+write an auto extern, omit the `{jsimpl}` and `{javaimpl}` commands and instead
+add an `{autoimpl}` command.
+
+```soy
+{export extern firstAutoExtern: () => string}
+  {autoimpl}
+    {return 'hello world' /}
+  {/autoimpl}
+{/extern}
+```
+
+The children of the `{autoimpl}` command are executed sequentially, just like
+the statements in the body of a function. Soy supports a few special commands
+inside `{autoimpl}` that are necessary to match the imperative semantics of
+functions:
+
+| Command                     | Description                                   |
+| --------------------------- | --------------------------------------------- |
+| `{return $val /}`           | Returns a value from the extern. Auto externs |
+:                             : must end with a return statement. The Soy     :
+:                             : compiler fails if dead code is detected.      :
+| `{assign $val = new val /}` | Reassigns a let or param.                     |
+| `{eval sideEffect($val)}`   | An arbitrary expression statement; typically  |
+:                             : for calling mutating methods on objects.      :
+| `{while $cond}...{/while}`  | A standard while statement.                   |
+| `{break /}`                 | A break statement, for use within `for` or    |
+:                             : `while`.                                      :
+| `{continue /}`              | A continue statement, for use within `for` or |
+:                             : `while`.                                      :
+
+Within auto externs lets are reassignable and certain mutable data types are
+available, for example [`mutable_list`](../reference/types.md#mutable_list).
+
+Most Soy commands, like `for`, `if`, and `switch` are supported within auto
+externs. Expressions within auto externs can call other externs, whether they
+are auto or not.
+
+Soy constructs that are NOT supported within auto externs typically relate to
+producing markup:
+
+*   Print commands, e.g. `{$expr}`
+*   Calling templates, both `{call}` and short form calls within expressions
+*   Messages -- `{msg}` etc

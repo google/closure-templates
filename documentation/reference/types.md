@@ -1,6 +1,6 @@
-# Types
-
 <!-- disableFinding(LINK_RELATIVE_G3DOC) -->
+
+# Types
 
 Soy supports a basic type system. Parameters can be strictly typed to:
 
@@ -450,6 +450,11 @@ JavaScript | `Array`
 SoySauce   | `java.util.List`, `com.google.template.soy.data.SoyList`
 Tofu       | `com.google.template.soy.data.SoyList`
 Python     | `list`
+
+### `mutable_list<T>` {#mutable_list}
+
+A version of `list` available inside [auto externs](../dev/externs.md#autoimpl)
+that supports certain [mutating methods](functions.md#mutable_list).
 
 ### `set<T>` {#set}
 
