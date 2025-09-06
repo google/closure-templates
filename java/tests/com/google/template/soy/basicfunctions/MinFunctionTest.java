@@ -18,6 +18,7 @@ package com.google.template.soy.basicfunctions;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import com.google.template.soy.data.SoyListData;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.plugin.java.restricted.testing.SoyJavaSourceFunctionTester;
@@ -37,32 +38,42 @@ public class MinFunctionTest {
     SoyJavaSourceFunctionTester tester = new SoyJavaSourceFunctionTester(minFunction);
 
     // Test same LHS & RHS type.
-    assertThat(tester.callFunction()).isEqualTo(FloatData.forValue(Double.POSITIVE_INFINITY));
-    assertThat(tester.callFunction(7.777)).isEqualTo(FloatData.forValue(7.777));
-    assertThat(tester.callFunction(7.777, 7.5)).isEqualTo(FloatData.forValue(7.5));
-    assertThat(tester.callFunction(-7, -8, -9, -10)).isEqualTo(IntegerData.forValue(-10));
-    assertThat(tester.callFunction(6.4, 7.0, FloatData.forValue(7.5), 7.777))
+    assertThat(tester.callFunction(new SoyListData()))
+        .isEqualTo(FloatData.forValue(Double.POSITIVE_INFINITY));
+    assertThat(tester.callFunction(new SoyListData(7.777))).isEqualTo(FloatData.forValue(7.777));
+    assertThat(tester.callFunction(new SoyListData(7.777, 7.5))).isEqualTo(FloatData.forValue(7.5));
+    assertThat(tester.callFunction(new SoyListData(-7, -8, -9, -10)))
+        .isEqualTo(IntegerData.forValue(-10));
+    assertThat(tester.callFunction(new SoyListData(6.4, 7.0, FloatData.forValue(7.5), 7.777)))
         .isEqualTo(FloatData.forValue(6.4));
-    assertThat(tester.callFunction(IntegerData.forValue(-7), -8, IntegerData.forValue(-9), -10))
+    assertThat(
+            tester.callFunction(
+                new SoyListData(IntegerData.forValue(-7), -8, IntegerData.forValue(-9), -10)))
         .isEqualTo(IntegerData.forValue(-10));
 
     // Test mixed LHS & RHS type.
-    assertThat(tester.callFunction(6, 6.5, 6.6666, 7, 7.777)).isEqualTo(FloatData.forValue(6));
-    assertThat(tester.callFunction(6, 6.6666, 7.777, 8)).isEqualTo(IntegerData.forValue(6));
-    assertThat(tester.callFunction(FloatData.forValue(6), IntegerData.forValue(7), 7.777))
+    assertThat(tester.callFunction(new SoyListData(6, 6.5, 6.6666, 7, 7.777)))
+        .isEqualTo(FloatData.forValue(6));
+    assertThat(tester.callFunction(new SoyListData(6, 6.6666, 7.777, 8)))
+        .isEqualTo(IntegerData.forValue(6));
+    assertThat(
+            tester.callFunction(
+                new SoyListData(FloatData.forValue(6), IntegerData.forValue(7), 7.777)))
         .isEqualTo(FloatData.forValue(6));
     assertThat(
             tester.callFunction(
-                IntegerData.forValue(5), IntegerData.forValue(6), FloatData.forValue(7.5), 8))
+                new SoyListData(
+                    IntegerData.forValue(5), IntegerData.forValue(6), FloatData.forValue(7.5), 8)))
         .isEqualTo(IntegerData.forValue(5));
     assertThat(
             tester.callFunction(
-                FloatData.forValue(3.5),
-                IntegerData.forValue(4),
-                FloatData.forValue(5.5),
-                IntegerData.forValue(6),
-                FloatData.forValue(7.5),
-                IntegerData.forValue(8)))
+                new SoyListData(
+                    FloatData.forValue(3.5),
+                    IntegerData.forValue(4),
+                    FloatData.forValue(5.5),
+                    IntegerData.forValue(6),
+                    FloatData.forValue(7.5),
+                    IntegerData.forValue(8))))
         .isEqualTo(FloatData.forValue(3.5));
   }
 
