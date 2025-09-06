@@ -228,11 +228,6 @@ final class ValidatorFactory extends JavaValueFactory {
   }
 
   @Override
-  public ValidatorValue varArgsOf(List<JavaValue> args) {
-    return listOf(args);
-  }
-
-  @Override
   public ValidatorValue constant(boolean value) {
     return ValidatorValue.forSoyType(BoolType.getInstance(), reporter);
   }

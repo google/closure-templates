@@ -4249,7 +4249,7 @@ private ImmutableList<ExprNode> ExprList(boolean printNode) :
 }
 
 
-private CallArgs CallArgs(ExprState state, Token identToken) :
+private CallArgs CallArgs(ExprState state) :
 {
   Token comma, close;
   CallArgs.Builder callArgsBuilder = new CallArgs.Builder();
@@ -4274,7 +4274,7 @@ private CallArgs CallArgs(ExprState state, Token identToken) :
     close = <RPAREN>
   )
   {
-    return callArgsBuilder.build(errorReporter, close, identToken);
+    return callArgsBuilder.build(errorReporter, close);
   }
 }
 
@@ -4452,7 +4452,7 @@ private ExprNode PrecExpr2(ExprState state) :
 
 /**
  * Matches the spread (...) operator. Spread is precedence level 2 but it is only
- * valid inside of Soy array literals and function calls so we do not generically
+ * valid inside of Soy array listerals and function calls so we do not generically
  * handle it in PrecExpr2.
  */
 private ExprNode Spread(ExprState state) :
@@ -4864,7 +4864,7 @@ private ExprNode PrecExpr13(ExprState state) :
       ident = <IDENT>
       (
         <LPAREN>
-        callArgs = CallArgs(state, ident)
+        callArgs = CallArgs(state)
         {
           expr = callArgs
               .toBuilder(errorReporter)
@@ -4980,13 +4980,13 @@ private ExprNode VarRefOrFunctionCallLike(ExprState state) :
 
   [
     openParen = <LPAREN>
-    callArgs = CallArgs(state, identToken)
+    callArgs = CallArgs(state)
     {
       SourceLocation loc = ident.location().extend(createSrcLoc(callArgs.close));
       CallableExprBuilder callBuilder = CallableExprBuilder.builder();
-      if (callArgs.isRecordLiteral()) {
+      if ("record".equals(identToken.image)) {
         RecordLiteralNode node;
-        if (callArgs.isNamed() || callArgs.hasSpread()) {
+        if (callArgs.isNamedOrSpread()) {
           for (Identifier name : callArgs.getNames(errorReporter)) {
             // CallArgs already reported error for non-dotted ident.
             if (name.type() != Identifier.Type.SINGLE_IDENT) {
@@ -5003,7 +5003,7 @@ private ExprNode VarRefOrFunctionCallLike(ExprState state) :
         }
         node.addChildren(callArgs.values);
         return node;
-      } else if (callArgs.isMapLiteral()) {
+      } else if ("map".equals(identToken.image)) {
         if (callArgs.isNamed()) {
           return new MapLiteralNode(ident, callArgs.toMapLiteral(), loc);
         } else {

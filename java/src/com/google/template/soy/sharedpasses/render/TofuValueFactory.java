@@ -21,7 +21,6 @@ import static com.google.common.collect.ImmutableMap.toImmutableMap;
 import static com.google.template.soy.types.SoyTypes.getMapKeysType;
 import static com.google.template.soy.types.SoyTypes.getMapValuesType;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.html.types.SafeHtml;
@@ -204,15 +203,6 @@ class TofuValueFactory extends JavaValueFactory {
             });
     return TofuJavaValue.forSoyValue(
         SoyValueConverter.INSTANCE.convert(values).resolve(), fnSourceLocation);
-  }
-
-  @Override
-  public TofuJavaValue varArgsOf(List<JavaValue> args) {
-    if (args.isEmpty()) {
-      return listOf(ImmutableList.of());
-    }
-    return TofuJavaValue.forSoyValue(
-        ((TofuJavaValue) args.get(0)).soyValue(), SourceLocation.UNKNOWN);
   }
 
   @Override

@@ -41,8 +41,7 @@ class CallArgs {
 
   static final SoyErrorKind PARAM_MIX = SoyErrorKind.of("Mix of named and positional arguments.");
 
-  private static final Identifier RECORD_SPREAD_KEY =
-      Identifier.create("unused", SourceLocation.UNKNOWN);
+  private static final Identifier SPREAD_KEY = Identifier.create("unused", SourceLocation.UNKNOWN);
 
   static final class Builder {
     final List<ExprNode> keys = new ArrayList<>();
@@ -63,14 +62,13 @@ class CallArgs {
       values.add(value);
     }
 
-    CallArgs build(ErrorReporter errorReporter, Token close, Token identToken) {
+    CallArgs build(ErrorReporter errorReporter, Token close) {
       return create(
           errorReporter,
           keys.stream().map(Optional::ofNullable).collect(toImmutableList()),
           ImmutableList.copyOf(values),
           ImmutableList.copyOf(commas),
-          close,
-          identToken);
+          close);
     }
   }
 
@@ -79,8 +77,7 @@ class CallArgs {
       ImmutableList<Optional<ExprNode>> keys,
       ImmutableList<ExprNode> values,
       ImmutableList<SourceLocation.Point> commaPos,
-      Token close,
-      Token identToken) {
+      Token close) {
 
     Preconditions.checkArgument(keys.size() == values.size());
 
@@ -118,7 +115,7 @@ class CallArgs {
       errorReporter.report(fullLocForError, PARAM_MIX);
     }
 
-    return new CallArgs(keys, values, commaPos, close, identToken);
+    return new CallArgs(keys, values, commaPos, close);
   }
 
   final ImmutableList<Optional<ExprNode>> keys;
@@ -126,35 +123,29 @@ class CallArgs {
   final ImmutableList<SourceLocation.Point> commas;
   private ImmutableList<Identifier> names;
   final Token close;
-  final Token identToken;
 
   private CallArgs(
       ImmutableList<Optional<ExprNode>> keys,
       ImmutableList<ExprNode> values,
       ImmutableList<SourceLocation.Point> commas,
-      Token close,
-      Token identToken) {
+      Token close) {
     this.keys = keys;
     this.values = values;
     this.commas = commas;
     this.close = close;
-    this.identToken = identToken;
-  }
-
-  public boolean isRecordLiteral() {
-    return identToken.image.equals("record");
-  }
-
-  public boolean isMapLiteral() {
-    return identToken.image.equals("map");
   }
 
   public boolean isNamed() {
     return keys.stream().allMatch(Optional::isPresent);
   }
 
-  public boolean hasSpread() {
-    return values.stream().anyMatch(value -> value instanceof SpreadOpNode);
+  public boolean isNamedOrSpread() {
+    for (int i = 0; i < keys.size(); i++) {
+      if (keys.get(i).isEmpty() && !(values.get(i) instanceof SpreadOpNode)) {
+        return false;
+      }
+    }
+    return true;
   }
 
   public ImmutableMap<ExprNode, ExprNode> toMapLiteral() {
@@ -188,7 +179,7 @@ class CallArgs {
             builder.add(Identifier.create("error", key.getSourceLocation()));
           }
         } else if (values.get(i) instanceof SpreadOpNode) {
-          builder.add(RECORD_SPREAD_KEY);
+          builder.add(SPREAD_KEY);
         } else {
           throw new IllegalArgumentException();
         }
@@ -201,8 +192,7 @@ class CallArgs {
   public CallableExprBuilder toBuilder(ErrorReporter errorReporter) {
     CallableExprBuilder cb =
         CallableExprBuilder.builder().setParamValues(values).setCommaLocations(commas);
-    // `record` functions are treated as having named args.
-    if (isNamed() || isRecordLiteral()) {
+    if (isNamedOrSpread()) {
       cb.setParamNames(getNames(errorReporter));
     }
     return cb;

@@ -69,6 +69,6 @@ public final class MinFunction
   @Override
   public JavaValue applyForJavaSource(
       JavaValueFactory factory, List<JavaValue> args, JavaPluginContext context) {
-    return factory.callStaticMethod(Methods.MIN_FN, factory.varArgsOf(args));
+    return factory.callStaticMethod(Methods.MIN_FN, factory.listOf(args));
   }
 }

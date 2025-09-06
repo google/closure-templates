@@ -138,11 +138,6 @@ public final class PluginAnalyzer {
     }
 
     @Override
-    public FinderValue varArgsOf(List<JavaValue> args) {
-      return FinderValue.INSTANCE;
-    }
-
-    @Override
     public FinderValue constant(boolean value) {
       return FinderValue.INSTANCE;
     }
