@@ -155,19 +155,15 @@ public abstract class SoyList extends SoyIterable {
 
   @Override
   public final void render(LoggingAdvisingAppendable appendable) throws IOException {
-    appendable.append('[');
-
     boolean isFirst = true;
     for (SoyValueProvider valueProvider : asJavaList()) {
       if (isFirst) {
         isFirst = false;
       } else {
-        appendable.append(", ");
+        appendable.append(",");
       }
       valueProvider.resolve().render(appendable);
     }
-
-    appendable.append(']');
   }
 
   @Override
