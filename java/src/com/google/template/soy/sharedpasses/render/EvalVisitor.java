@@ -51,6 +51,7 @@ import com.google.template.soy.data.RecordProperty;
 import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.data.SoyIterable;
 import com.google.template.soy.data.SoyLegacyObjectMap;
+import com.google.template.soy.data.SoyListData;
 import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyProtoValue;
 import com.google.template.soy.data.SoyRecord;
@@ -1012,7 +1013,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
       }
       throw new AssertionError();
     } else if (soyFunction instanceof SoyJavaFunction) {
-      List<SoyValue> args = this.visitChildren(node);
+      ImmutableList<SoyValue> args = visitParams(node);
       SoyJavaFunction fn = (SoyJavaFunction) soyFunction;
       // Note: Arity has already been checked by CheckFunctionCallsVisitor.
       return computeFunctionHelper(fn, args, node);
@@ -1024,7 +1025,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
           node.getType(),
           node.getAllowedParamTypes());
     } else if (soyFunction instanceof SoyJavaSourceFunction) {
-      List<SoyValue> args = this.visitChildren(node);
+      ImmutableList<SoyValue> args = visitParams(node);
       SoyJavaSourceFunction fn = (SoyJavaSourceFunction) soyFunction;
       // Note: Arity has already been checked by CheckFunctionCallsVisitor.
       return computeFunctionHelper(args, JavaPluginExecContext.forFunctionNode(node, fn));
@@ -1054,6 +1055,30 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
           "Failed to find Soy function with name '%s' (function call \"%s\").",
           node.getStaticFunctionName(), node.toSourceString());
     }
+  }
+
+  private ImmutableList<SoyValue> visitParams(FunctionNode node) {
+    if (node.getAllowedParamTypes() == null) {
+      return ImmutableList.copyOf(visitChildren(node));
+    }
+    List<ExprNode> params = node.getParams();
+    ImmutableList.Builder<SoyValue> builder = ImmutableList.builder();
+    for (int i = 0; i < node.getAllowedParamTypes().size(); i++) {
+      if (node.isVarArgs() && i == node.getAllowedParamTypes().size() - 1) {
+        if (!params.isEmpty() && params.get(i) instanceof SpreadOpNode) {
+          builder.add(visit(((SpreadOpNode) params.get(i)).getChild(0)));
+        } else {
+          SoyListData varArgsParamList = new SoyListData();
+          for (int j = i; j < params.size(); j++) {
+            varArgsParamList.add(visit(params.get(j)));
+          }
+          builder.add(varArgsParamList);
+        }
+      } else {
+        builder.add(visit(params.get(i)));
+      }
+    }
+    return builder.build();
   }
 
   SoyValue visitExtern(

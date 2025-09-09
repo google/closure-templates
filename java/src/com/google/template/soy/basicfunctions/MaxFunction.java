@@ -69,6 +69,6 @@ public final class MaxFunction
   @Override
   public JavaValue applyForJavaSource(
       JavaValueFactory factory, List<JavaValue> args, JavaPluginContext context) {
-    return factory.callStaticMethod(Methods.MAX_FN, factory.listOf(args));
+    return factory.callStaticMethod(Methods.MAX_FN, factory.varArgsOf(args));
   }
 }

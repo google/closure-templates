@@ -294,6 +294,14 @@ final class JbcSrcValueFactory extends JavaValueFactory {
   }
 
   @Override
+  public JbcSrcJavaValue varArgsOf(List<JavaValue> args) {
+    if (args.isEmpty()) {
+      return listOf(ImmutableList.of());
+    }
+    return JbcSrcJavaValue.of(adaptParameter(List.class, (JbcSrcJavaValue) args.get(0)));
+  }
+
+  @Override
   public JbcSrcJavaValue constant(double value) {
     return JbcSrcJavaValue.of(SoyExpression.forFloat(BytecodeUtils.constant(value)));
   }

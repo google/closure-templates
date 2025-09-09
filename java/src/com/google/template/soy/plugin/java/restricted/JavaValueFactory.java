@@ -67,6 +67,12 @@ public abstract class JavaValueFactory {
    */
   public abstract JavaValue listOf(List<JavaValue> args);
 
+  /**
+   * Returns a JavaValue representing a list that corresponds to the first argument. If the list is
+   * empty, we return an empty list.
+   */
+  public abstract JavaValue varArgsOf(List<JavaValue> args);
+
   /** Returns a JavaValue that corresponds to the given constant. */
   public abstract JavaValue constant(double value);
 

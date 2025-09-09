@@ -416,6 +416,9 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
       SoyErrorKind.of("Cannot set a variable of type ''{0}'' to a value of type ''{1}''.");
   private static final SoyErrorKind GENERIC_PARAM_NOT_ASSIGNABLE =
       SoyErrorKind.of("Argument of type ''{0}'' is not assignable to type ''{1}''.");
+  private static final SoyErrorKind SPREAD_NOT_VARARGS =
+      SoyErrorKind.of(
+          "Spread expression argument found where function does not accept a varargs parameter.");
 
   private final ErrorReporter errorReporter;
 
@@ -2038,7 +2041,14 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
     @Override
     protected void visitSpreadOpNode(SpreadOpNode node) {
       visit(node.getChild(0));
-      node.setType(node.getChild(0).getType()); // Must be spread in context to be valid.
+      // `record` is a special case, so we don't want to "spread" the type.
+      if (node.getParent() instanceof FunctionNode
+          && !((FunctionNode) node.getParent()).getFunctionName().equals("record")
+          && node.getChild(0).getType() instanceof ListType) {
+        node.setType(((ListType) node.getChild(0).getType()).getElementType());
+      } else {
+        node.setType(node.getChild(0).getType());
+      }
     }
 
     @Override
@@ -2228,6 +2238,26 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
           return;
         }
       }
+      boolean containsSpread = node.containsSpread();
+      if (containsSpread) {
+        List<ExprNode> params = node.getParams();
+        for (int i = 0; i < params.size(); i++) {
+          ExprNode param = params.get(i);
+          if (param instanceof SpreadOpNode) {
+            if (i < params.size() - 1) {
+              errorReporter.report(node.getSourceLocation(), SPREAD_NOT_VARARGS);
+            }
+            SpreadOpNode spreadOpNode = (SpreadOpNode) param;
+            visit(spreadOpNode);
+            if (!(spreadOpNode.getChild(0).getType() instanceof AbstractIterableType)) {
+              errorReporter.report(
+                  node.getSourceLocation(),
+                  SoyErrorKind.of("Spread operator cannot be used with non-iterable types."));
+            }
+          }
+        }
+      }
+
       visitChildren(node);
       if (!node.hasStaticName()) {
         visit(node.getNameExpr());
@@ -2319,6 +2349,12 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
             node);
       } else if (knownFunction instanceof BuiltinFunction) {
         visitBuiltinFunction((BuiltinFunction) knownFunction, node);
+      }
+
+      if (containsSpread) {
+        if (!node.isVarArgs()) {
+          errorReporter.report(node.getSourceLocation(), SPREAD_NOT_VARARGS);
+        }
       }
 
       // Always attempt to visit for internal soy functions, even if we already had a signature.
