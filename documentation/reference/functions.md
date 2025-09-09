@@ -138,6 +138,14 @@ between 2 and 36, if specified.
 Parses the string argument as a floating point number. Returns `null` if the
 string cannot be parsed.
 
+### `Number_parseInt(str[, radix])` {#Number_parseInt}
+
+Like `parseInt()` but matching the ECMAScript spec for `Number.parseInt()`.
+
+### `Number_parseFloat(str)` {#Number_parseFloat}
+
+Like `parseFloat()` but matching the ECMAScript spec for `Number.parseFloat()`.
+
 ### `randomInt(rangeArg)` {#randomInt}
 
 A random integer in the range `[0, rangeArg - 1]` (where `rangeArg` must be a

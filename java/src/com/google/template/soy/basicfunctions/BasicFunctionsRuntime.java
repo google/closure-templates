@@ -21,6 +21,7 @@ import static java.util.Comparator.comparing;
 import static java.util.Comparator.comparingDouble;
 import static java.util.stream.Collectors.joining;
 
+import com.google.common.base.Ascii;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
@@ -54,6 +55,7 @@ import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.shared.internal.Sanitizers;
+import java.math.BigInteger;
 import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -61,6 +63,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import javax.annotation.Nonnull;
@@ -391,6 +394,37 @@ public final class BasicFunctionsRuntime {
     return (d == null || d.isNaN()) ? null : FloatData.forValue(d);
   }
 
+  private static final Pattern FLOAT_PATTERN =
+      Pattern.compile("^[+-]?(Infinity|(\\d+(\\.\\d*)?|\\.\\d+)([eE][+-]?\\d+)?)");
+
+  public static double parseFloatEcma(SoyValue value) {
+    if (SoyValue.isNullish(value)) {
+      return Double.NaN;
+    }
+
+    String trimmed = value.coerceToString().trim();
+    if (trimmed.isEmpty()) {
+      return Double.NaN;
+    }
+
+    // This regex is designed to mimic the behavior of JavaScript's Number.parseFloat, which
+    // parses from the beginning of the string and ignores trailing characters that are not part of
+    // the number.
+    // It handles:
+    // - Optional leading sign (+ or -).
+    // - "Infinity".
+    // - Decimal numbers (e.g., "123", "1.23", ".123").
+    // - Scientific notation (e.g., "1e-5").
+    Matcher matcher = FLOAT_PATTERN.matcher(trimmed);
+
+    if (matcher.find()) {
+      String numberStr = matcher.group();
+      return Double.parseDouble(numberStr);
+    }
+
+    return Double.NaN;
+  }
+
   @Nullable
   public static IntegerData parseInt(String str, SoyValue radixVal) {
     int radix = SoyValue.isNullish(radixVal) ? 10 : (int) radixVal.floatValue();
@@ -399,6 +433,76 @@ public final class BasicFunctionsRuntime {
     }
     Long l = Longs.tryParse(str, radix);
     return (l == null) ? null : IntegerData.forValue(l);
+  }
+
+  public static double parseIntEcma(SoyValue value) {
+    return parseIntEcma(value, 10);
+  }
+
+  public static double parseIntEcma(SoyValue value, SoyValue radix) {
+    int radixInt = 10;
+    if (radix instanceof NumberData) {
+      radixInt = (int) radix.numberValue();
+    }
+    return parseIntEcma(value, radixInt);
+  }
+
+  private static double parseIntEcma(SoyValue value, int radix) {
+    if (SoyValue.isNullish(value)) {
+      return Double.NaN;
+    }
+    String trimmed = value.coerceToString().trim();
+    if (trimmed.isEmpty()) {
+      return Double.NaN;
+    }
+
+    int sign = 1;
+    int index = 0;
+    char firstChar = trimmed.charAt(0);
+    if (firstChar == '+') {
+      index++;
+    } else if (firstChar == '-') {
+      sign = -1;
+      index++;
+    }
+
+    int effectiveRadix = radix;
+    if (radix == 0) {
+      effectiveRadix = 10;
+    }
+
+    // A "0x" or "0X" prefix is allowed for radix 16, or for radix 0 which is
+    // then switched to 16.
+    if ((radix == 0 || radix == 16)
+        && trimmed.length() > index + 2
+        && Ascii.equalsIgnoreCase(trimmed.substring(index, index + 2), "0x")) {
+      effectiveRadix = 16;
+      index += 2;
+    }
+
+    if (effectiveRadix < 2 || effectiveRadix > 36) {
+      return Double.NaN;
+    }
+
+    int startIndex = index;
+    while (index < trimmed.length()) {
+      if (Character.digit(trimmed.charAt(index), effectiveRadix) == -1) {
+        break;
+      }
+      index++;
+    }
+
+    String numberPart = trimmed.substring(startIndex, index);
+    if (numberPart.isEmpty()) {
+      return Double.NaN;
+    }
+
+    try {
+      return new BigInteger(numberPart, effectiveRadix).doubleValue() * sign;
+    } catch (NumberFormatException e) {
+      // This should be unreachable given the parsing logic above.
+      return Double.NaN;
+    }
   }
 
   /** Returns a random integer between {@code 0} and the provided argument. */

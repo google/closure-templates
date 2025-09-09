@@ -20,8 +20,11 @@ import com.google.common.base.Ascii;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import java.io.File;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Locale;
 import java.util.Set;
 import java.util.regex.Pattern;
 
@@ -287,21 +290,48 @@ public final class BaseUtils {
 
   /** Returns Soy's idea of a double as a string. */
   public static String formatDouble(double value) {
-    // This approximately consistent with Javascript for important cases.
+    // This is intended to match the ECMA spec for converting a number to a string.
     // Reference: http://www.ecma-international.org/ecma-262/5.1/#sec-9.8.1
-    if (value % 1 == 0 && Math.abs(value) < Long.MAX_VALUE && !isNegativeZero(value)) {
-      // The value is non-fractional and within the magnitude of a long, so print as an integer
-      // instead of scientific notation.  Note that Javascript uses 1.0e19 as the cutoff, but
-      // Long.MAX_VALUE is not that far off (9.2e18), and it is both easy and efficient to coerce
-      // to a long.
-      return String.valueOf((long) value);
-    } else {
-      // Note: This differs from JS in how it rendered values that have a zero fractional component
-      // and in how it renders the value -0.0.
-      // JavaScript specifies that the string form of -0 is signless, and that the string form of
-      // fractionless numeric values has no decimal point.
-      return Double.toString(value).replace('E', 'e');
+    if (Double.isNaN(value)) {
+      return "NaN";
     }
+    if (Double.isInfinite(value)) {
+      return value > 0 ? "Infinity" : "-Infinity";
+    }
+    if (value == 0) { // Catches -0.0 and 0.0
+      if (isNegativeZero(value)) {
+        return "-0.0";
+      }
+      return "0";
+    }
+
+    double absValue = Math.abs(value);
+
+    // Scientific notation is used for numbers >= 1e21 or < 1e-6.
+    if (absValue >= 1e21 || absValue < 1e-6) {
+      DecimalFormatSymbols symbols = new DecimalFormatSymbols(Locale.US);
+      // Format with scientific notation, then adjust to match ECMA spec.
+      DecimalFormat df = new DecimalFormat("0.################E0", symbols);
+      String result = df.format(value);
+      int index = result.indexOf('E');
+      if (index >= 0) {
+        if (result.charAt(index + 1) == '-') {
+          // ECMA spec uses lowercase 'e-'.
+          return result.substring(0, index) + "e-" + result.substring(index + 2);
+        } else {
+          // ECMA spec uses lowercase 'e+'.
+          return result.substring(0, index) + "e+" + result.substring(index + 1);
+        }
+      }
+      return result;
+    }
+
+    // For numbers in the range [1e-6, 1e21), ECMA spec requires plain decimal notation.
+    DecimalFormatSymbols symbols = new DecimalFormatSymbols(Locale.US);
+    // A double has ~17 significant digits. We use a format that can handle this precision
+    // without rounding to scientific notation.
+    DecimalFormat df = new DecimalFormat("0.#################", symbols);
+    return df.format(value);
   }
 
   private static boolean isNegativeZero(double value) {

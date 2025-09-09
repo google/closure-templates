@@ -18,6 +18,7 @@ package com.google.template.soy;
 
 import static com.google.common.base.CharMatcher.whitespace;
 
+import com.google.common.base.Ascii;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableMap;
@@ -94,10 +95,10 @@ public final class SoyCmdLineParser extends CmdLineParser {
       boolean hasParam;
       try {
         String nextArg = params.getParameter(0);
-        if (nextArg.equalsIgnoreCase("true") || nextArg.equals("1")) {
+        if (Ascii.equalsIgnoreCase(nextArg, "true") || nextArg.equals("1")) {
           value = true;
           hasParam = true;
-        } else if (nextArg.equalsIgnoreCase("false") || nextArg.equals("0")) {
+        } else if (Ascii.equalsIgnoreCase(nextArg, "false") || nextArg.equals("0")) {
           value = false;
           hasParam = true;
         } else {

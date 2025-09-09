@@ -577,6 +577,16 @@ def parse_int(s, radix):
     return None
 
 
+def parse_int_ecma(s, radix):
+  """Like parse_int but returns math.nan on failure."""
+  try:
+    if radix:
+      return int(s, math.floor(radix))
+    return int(s)
+  except (ValueError, TypeError):
+    return math.nan
+
+
 def parse_float(s):
   """A function that attempts to convert the input string into a float.
 
@@ -593,6 +603,17 @@ def parse_float(s):
   except ValueError:
     return None
   return None if math.isnan(f) else f
+
+
+def parse_float_ecma(s):
+  """Like parse_float but returns math.nan on failure."""
+  if isinstance(s, bool):
+    return math.nan
+  try:
+    f = float(s)
+  except (ValueError, TypeError):
+    return math.nan
+  return math.nan if f is None else f
 
 
 def sqrt(num):
