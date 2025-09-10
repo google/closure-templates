@@ -434,6 +434,7 @@ public final class TypeNodeConverter
     if (rv.getEffectiveType().getKind() == Kind.NEVER) {
       errorReporter.report(node.sourceLocation(), BAD_INDEXED, rv.getProperty(), rv.getType());
     }
+    node.setResolvedType(rv);
     return rv;
   }
 
