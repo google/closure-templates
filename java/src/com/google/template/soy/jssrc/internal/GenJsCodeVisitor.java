@@ -1706,26 +1706,30 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
         // template with the param. This matches what do for the Java builders.
         continue;
       }
-      // Skip named types from indirect deps.
-      if (SoyTypes.allLogicalTypes(combinedType, typeRegistry)
-          .anyMatch(
-              t -> {
-                if (t instanceof NamedType) {
-                  NamedType namedType = (NamedType) t;
-                  SourceLogicalPath path =
-                      state.fileSetMetadata.getPathForNamespace(namedType.getNamespace());
-                  return path == null
-                      || state.fileSetMetadata.getFile(path).getSoyFileKind()
-                          == SoyFileKind.INDIRECT_DEP;
-                }
-                return false;
-              })) {
-        continue;
-      }
+
       // TODO: detect cases where nullable is not needed (requires flow
       // analysis to determine if the template is always called.)
       SoyType indirectParamType = SoyTypes.unionWithNull(combinedType);
       JsType jsType = getJsTypeForParamForDeclaration(indirectParamType);
+
+      // Omit named types that have transitive references since we don't know if they are
+      // imported or not.
+      if (SoyTypes.allLogicalTypes(combinedType, typeRegistry).anyMatch(t -> t instanceof NamedType)
+          && jsType.googRequires().stream()
+              .anyMatch(
+                  req -> {
+                    SourceLogicalPath path =
+                        state.fileSetMetadata.getPathForNamespace(req.symbol());
+                    if (path == null
+                        || state.fileSetMetadata.getFile(path).getSoyFileKind()
+                            == SoyFileKind.INDIRECT_DEP) {
+                      return true;
+                    }
+                    return false;
+                  })) {
+        continue;
+      }
+
       jsCodeBuilder.addGoogRequires(
           jsType.googRequires().stream()
               .map(GoogRequire::toRequireType)

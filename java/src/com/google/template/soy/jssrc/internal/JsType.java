@@ -35,6 +35,7 @@ import static com.google.template.soy.jssrc.internal.JsRuntime.sanitizedContentT
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Iterables;
@@ -635,6 +636,7 @@ public final class JsType implements CodeChunk.HasRequires {
           } else if (soyType instanceof IndexedType) {
             IndexedType indexedType = (IndexedType) soyType;
             String type = "?";
+            String namespace = null;
             // Find the named type that originally declared this property. We need to do this
             // because the typedef for the member is only declared relative to the {typedef} in
             // which it's defined, not copied to every {typedef} that extends it. If the same
@@ -665,6 +667,7 @@ public final class JsType implements CodeChunk.HasRequires {
                   RecordType.Member recMember =
                       ((RecordType) component).getMember(indexedType.getPropertyName());
                   if (recMember != null) {
+                    namespace = namedMember.getNamespace();
                     type =
                         matchNullishToBang(
                             IndexedType.jsSynthenticTypeDefName(
@@ -679,7 +682,10 @@ public final class JsType implements CodeChunk.HasRequires {
             JsType baseType = forRecursion.get(indexedType.getType());
             return builder()
                 .addType(type)
-                .addRequires(baseType.googRequires())
+                .addRequires(
+                    namespace == null
+                        ? baseType.googRequires()
+                        : ImmutableList.of(GoogRequire.create(namespace)))
                 .setPredicate(TypePredicate.NO_OP)
                 .build();
           } else {
