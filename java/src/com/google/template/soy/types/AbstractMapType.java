@@ -26,21 +26,18 @@ public abstract class AbstractMapType extends SoyType {
   /** Returns the type for values in this map. */
   public abstract SoyType getValueType();
 
-  public abstract boolean isEmpty();
-
   @Override
   public final boolean equals(Object other) {
     if (other != null && other.getClass() == this.getClass()) {
       AbstractMapType otherMap = (AbstractMapType) other;
       return Objects.equals(otherMap.getKeyType(), getKeyType())
-          && Objects.equals(otherMap.getValueType(), getValueType())
-          && otherMap.isEmpty() == isEmpty();
+          && Objects.equals(otherMap.getValueType(), getValueType());
     }
     return false;
   }
 
   @Override
   public final int hashCode() {
-    return Objects.hash(this.getClass(), getKeyType(), getValueType(), isEmpty());
+    return Objects.hash(this.getClass(), getKeyType(), getValueType());
   }
 }
