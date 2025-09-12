@@ -389,6 +389,13 @@ The entries of a [map](types.md#map) as a list of records with fields `key` and
 Combines two [map](types.md#map)s into one. If there's a key collision the value
 from the method parameter wins.
 
+## Mutable Map Methods (Available inside the {autoimpl} command)
+
+### `map.set(key, value)` {#mutable_map-any,any_set}
+
+Adds the new key-value pair to the map, in place. Replaces the value for an
+existing key, if present. Returns the Map object, for chaining.
+
 ## Number Methods
 
 ### `number.toFixed` {#number_toFixed}

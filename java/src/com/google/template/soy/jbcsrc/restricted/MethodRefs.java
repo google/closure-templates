@@ -122,6 +122,9 @@ public final class MethodRefs {
   public static final MethodRef MAP_IMPL_FOR_PROVIDER_MAP_NO_NULL_KEYS =
       createPure(SoyMapImpl.class, "forProviderMapNoNullKeys", Map.class);
 
+  public static final MethodRef MAP_IMPL_MUTABLE =
+      createPure(SoyMapImpl.class, "mutable", Map.class);
+
   public static final MethodRef DOUBLE_TO_STRING =
       createPure(BaseUtils.class, "formatDouble", double.class);
 
@@ -465,6 +468,9 @@ public final class MethodRefs {
 
   public static final MethodRef CONSTRUCT_MAP_FROM_ITERATOR =
       createPure(SharedRuntime.class, "constructMapFromIterator", Iterator.class);
+
+  public static final MethodRef CONSTRUCT_MUTABLE_MAP_FROM_ITERATOR =
+      createPure(SharedRuntime.class, "constructMutableMapFromIterator", Iterator.class);
 
   public static final MethodRef RUNTIME_TIMES =
       createPure(SharedRuntime.class, "times", SoyValue.class, SoyValue.class);
