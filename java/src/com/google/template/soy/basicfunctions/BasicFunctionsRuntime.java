@@ -56,12 +56,15 @@ import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.shared.internal.Sanitizers;
 import java.math.BigInteger;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -538,6 +541,19 @@ public final class BasicFunctionsRuntime {
     } else {
       return Math.round(value.floatValue());
     }
+  }
+
+  public static String numberToFixed(double num, int decimalPlaces) {
+    String pattern = "0";
+    if (decimalPlaces > 0) {
+      pattern += ".";
+      for (int i = 0; i < decimalPlaces; i++) {
+        pattern += "0";
+      }
+    }
+    DecimalFormatSymbols symbols = new DecimalFormatSymbols(Locale.US);
+    DecimalFormat df = new DecimalFormat(pattern, symbols);
+    return df.format(num);
   }
 
   @Nonnull

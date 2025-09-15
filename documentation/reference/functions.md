@@ -387,6 +387,10 @@ The entries of a [map](types.md#map) as a list of records with fields `key` and
 Combines two [map](types.md#map)s into one. If there's a key collision the value
 from the method parameter wins.
 
+## Number Methods
+
+### `number.toFixed` {#number_toFixed}
+
 ## String Fields
 
 <span id="string_length"></span>

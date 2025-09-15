@@ -21,6 +21,7 @@ import static com.google.template.soy.jssrc.dsl.Precedence.Associativity.LEFT;
 import com.google.auto.value.AutoValue;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.jssrc.dsl.Precedence.Associativity;
+import com.google.template.soy.jssrc.restricted.JsExpr;
 import java.util.stream.Stream;
 
 /** Represents a JavaScript member access ({@code .}) expression. */
@@ -67,5 +68,21 @@ abstract class Dot extends Operation {
   @Override
   boolean initialExpressionIsObjectLiteral() {
     return receiver().initialExpressionIsObjectLiteral();
+  }
+
+  @Override
+  protected boolean shouldProtect(Expression operand, OperandPosition operandPosition) {
+    CodeChunk cc = operand;
+    if (cc instanceof Leaf) {
+      JsExpr expr = ((Leaf) cc).value();
+      // If the first character is a digit, then it's a number literal, which has a higher
+      // precedence.
+      if (expr.getPrecedence() == Integer.MAX_VALUE
+          && expr.getText().length() > 0
+          && Character.isDigit(expr.getText().charAt(0))) {
+        return true;
+      }
+    }
+    return super.shouldProtect(operand, operandPosition);
   }
 }
