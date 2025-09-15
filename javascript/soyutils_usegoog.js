@@ -540,6 +540,12 @@ const $$isIterable = function(it) {
  * @return {boolean}
  */
 const $$isTruthyNonEmpty = function(arg) {
+  if (arg instanceof SoyJsInteropSlot) {
+    if (goog.DEBUG) {
+      console.warn('`hasContent` called within SoyJs Slot will always return true. See go/wiz:hascontent-considered-harmful');
+    }
+    return !!arg;
+  }
   if (arg instanceof SanitizedContent) {
     return !!arg.getContent();
   }
