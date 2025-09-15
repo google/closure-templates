@@ -288,6 +288,20 @@ public final class BaseUtils {
     }
   }
 
+  private static final DecimalFormat SCIENTIFIC;
+  private static final DecimalFormat DECIMAL;
+
+  static {
+    DecimalFormatSymbols symbols = new DecimalFormatSymbols(Locale.US);
+    // Format with scientific notation, then adjust to match ECMA spec.
+    SCIENTIFIC = new DecimalFormat("0.################E0", symbols);
+
+    // For numbers in the range [1e-6, 1e21), ECMA spec requires plain decimal notation.
+    // A double has ~17 significant digits. We use a format that can handle this precision
+    // without rounding to scientific notation.
+    DECIMAL = new DecimalFormat("0.#################", symbols);
+  }
+
   /** Returns Soy's idea of a double as a string. */
   public static String formatDouble(double value) {
     // This is intended to match the ECMA spec for converting a number to a string.
@@ -309,10 +323,7 @@ public final class BaseUtils {
 
     // Scientific notation is used for numbers >= 1e21 or < 1e-6.
     if (absValue >= 1e21 || absValue < 1e-6) {
-      DecimalFormatSymbols symbols = new DecimalFormatSymbols(Locale.US);
-      // Format with scientific notation, then adjust to match ECMA spec.
-      DecimalFormat df = new DecimalFormat("0.################E0", symbols);
-      String result = df.format(value);
+      String result = SCIENTIFIC.format(value);
       int index = result.indexOf('E');
       if (index >= 0) {
         if (result.charAt(index + 1) == '-') {
@@ -326,12 +337,7 @@ public final class BaseUtils {
       return result;
     }
 
-    // For numbers in the range [1e-6, 1e21), ECMA spec requires plain decimal notation.
-    DecimalFormatSymbols symbols = new DecimalFormatSymbols(Locale.US);
-    // A double has ~17 significant digits. We use a format that can handle this precision
-    // without rounding to scientific notation.
-    DecimalFormat df = new DecimalFormat("0.#################", symbols);
-    return df.format(value);
+    return DECIMAL.format(value);
   }
 
   private static boolean isNegativeZero(double value) {
