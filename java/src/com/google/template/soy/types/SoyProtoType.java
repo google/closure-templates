@@ -88,15 +88,11 @@ public final class SoyProtoType extends SoyType {
         return SoyTypes.GBIGINT_OR_NUMBER_FOR_MIGRATION;
       }
 
-      switch (int64Mode) {
-        case FORCE_STRING:
-          return StringType.getInstance();
-        case FORCE_GBIGINT:
-          return GbigintType.getInstance();
-        case FOLLOW_JS_TYPE:
-          return IntType.getInstance();
-      }
-      throw new AssertionError();
+      return switch (int64Mode) {
+        case FORCE_STRING -> StringType.getInstance();
+        case FORCE_GBIGINT -> GbigintType.getInstance();
+        case FOLLOW_JS_TYPE -> IntType.getInstance();
+      };
     }
 
     @Override
@@ -110,14 +106,10 @@ public final class SoyProtoType extends SoyType {
         return SoyTypes.GBIGINT_OR_STRING_FOR_MIGRATION;
       }
 
-      switch (int64Mode) {
-        case FORCE_GBIGINT:
-          return GbigintType.getInstance();
-        case FORCE_STRING:
-        case FOLLOW_JS_TYPE:
-          return StringType.getInstance();
-      }
-      throw new AssertionError();
+      return switch (int64Mode) {
+        case FORCE_GBIGINT -> GbigintType.getInstance();
+        case FORCE_STRING, FOLLOW_JS_TYPE -> StringType.getInstance();
+      };
     }
 
     @Override
@@ -126,15 +118,10 @@ public final class SoyProtoType extends SoyType {
         return SoyTypes.GBIGINT_OR_STRING_FOR_MIGRATION;
       }
 
-      switch (int64Mode) {
-        case FORCE_GBIGINT:
-          return GbigintType.getInstance();
-
-        case FORCE_STRING:
-        case FOLLOW_JS_TYPE:
-          return StringType.getInstance();
-      }
-      throw new AssertionError();
+      return switch (int64Mode) {
+        case FORCE_GBIGINT -> GbigintType.getInstance();
+        case FORCE_STRING, FOLLOW_JS_TYPE -> StringType.getInstance();
+      };
     }
 
     @Override
