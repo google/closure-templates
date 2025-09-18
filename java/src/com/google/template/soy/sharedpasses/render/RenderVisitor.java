@@ -48,6 +48,7 @@ import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.jbcsrc.api.RenderResult;
+import com.google.template.soy.msgs.GrammaticalGender;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.plugin.java.PluginInstances;
 import com.google.template.soy.shared.SoyCssRenamingMap;
@@ -178,6 +179,8 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
 
   private static final RecordProperty VARIANT_PARAM_SYMBOL = RecordProperty.get("$$__variant__");
 
+  private final GrammaticalGender viewerGrammaticalGender;
+
   /**
    * @param evalVisitorFactory Factory for creating an instance of EvalVisitor.
    * @param outputBuf The Appendable to append the output to.
@@ -190,6 +193,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
    * @param xidRenamingMap The 'xid' renaming map, or null if not applicable.
    * @param cssRenamingMap The CSS renaming map, or null if not applicable.
    * @param pluginInstances The instances used for evaluating functions that call instance methods.
+   * @param viewerGrammaticalGender The grammatical gender of the user.
    */
   public RenderVisitor(
       EvalVisitorFactory evalVisitorFactory,
@@ -205,7 +209,8 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
       @Nullable SoyIdRenamingMap xidRenamingMap,
       @Nullable SoyCssRenamingMap cssRenamingMap,
       boolean debugSoyTemplateInfo,
-      PluginInstances pluginInstances) {
+      PluginInstances pluginInstances,
+      GrammaticalGender viewerGrammaticalGender) {
     checkNotNull(data);
 
     this.evalVisitorFactory = evalVisitorFactory;
@@ -224,6 +229,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
 
     this.evalVisitor = null; // lazily initialized
     this.assistantForMsgs = null; // lazily initialized
+    this.viewerGrammaticalGender = viewerGrammaticalGender;
 
     this.outputBufStack = new ArrayDeque<>();
     if (outputBuf instanceof Flushable) {
@@ -268,7 +274,8 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
             xidRenamingMap,
             cssRenamingMap,
             debugSoyTemplateInfo,
-            pluginInstances);
+            pluginInstances,
+            viewerGrammaticalGender);
     return visitor.execAutoJavaExtern(java, args);
   }
 
@@ -312,7 +319,8 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
         xidRenamingMap,
         cssRenamingMap,
         debugSoyTemplateInfo,
-        pluginInstances);
+        pluginInstances,
+        viewerGrammaticalGender);
   }
 
   /**
@@ -381,7 +389,8 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
   @Override
   protected void visitMsgFallbackGroupNode(MsgFallbackGroupNode node) {
     if (assistantForMsgs == null) {
-      assistantForMsgs = new RenderVisitorAssistantForMsgs(this, msgBundle);
+      assistantForMsgs =
+          new RenderVisitorAssistantForMsgs(this, msgBundle, viewerGrammaticalGender);
     }
     if (!node.getEscapingDirectives().isEmpty()) {
       // The entire message needs to be escaped, so we need to render to a temporary buffer.

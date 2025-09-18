@@ -41,6 +41,7 @@ import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
 import com.google.template.soy.jbcsrc.shared.StackFrame;
 import com.google.template.soy.logging.SoyLogger;
+import com.google.template.soy.msgs.GrammaticalGender;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.plugin.java.PluginInstances;
 import com.google.template.soy.shared.SoyCssRenamingMap;
@@ -153,6 +154,7 @@ public final class SoySauceImpl implements SoySauce {
     private ParamStore data;
     private SoyInjector ij;
     private boolean dataSetInConstructor;
+    private GrammaticalGender viewerGrammaticalGender = GrammaticalGender.UNSPECIFIED;
 
     RendererImpl(
         String templateName,
@@ -181,7 +183,8 @@ public final class SoySauceImpl implements SoySauce {
           msgBundle,
           debugSoyTemplateInfo,
           cssTracker,
-          jsIdTracker);
+          jsIdTracker,
+          viewerGrammaticalGender);
     }
 
     private ParamStore mapAsParamStore(Map<String, ?> source) {
@@ -272,6 +275,13 @@ public final class SoySauceImpl implements SoySauce {
     @Override
     public RendererImpl setCssTracker(SoyCssTracker cssTracker) {
       this.cssTracker = cssTracker;
+      return this;
+    }
+
+    @CanIgnoreReturnValue
+    @Override
+    public RendererImpl setViewerGrammaticalGender(GrammaticalGender viewerGrammaticalGender) {
+      this.viewerGrammaticalGender = viewerGrammaticalGender;
       return this;
     }
 

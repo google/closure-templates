@@ -16,8 +16,10 @@
 
 package com.google.template.soy.sharedpasses.render;
 
+import com.google.errorprone.annotations.Keep;
 import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.msgs.GrammaticalGender;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.internal.MsgUtils;
 import com.google.template.soy.msgs.restricted.PlaceholderName;
@@ -52,14 +54,19 @@ final class RenderVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
   /** The bundle of translated messages, or null to use the messages from the Soy source. */
   private final SoyMsgBundle msgBundle;
 
+  /** The grammatical gender of the user. */
+  @Keep private final GrammaticalGender viewerGrammaticalGender;
+
   /**
    * @param master The master RenderVisitor instance.
    * @param msgBundle The bundle of translated messages, or null to use the messages from the Soy
    *     source.
    */
-  RenderVisitorAssistantForMsgs(RenderVisitor master, SoyMsgBundle msgBundle) {
+  RenderVisitorAssistantForMsgs(
+      RenderVisitor master, SoyMsgBundle msgBundle, GrammaticalGender viewerGrammaticalGender) {
     this.master = master;
     this.msgBundle = msgBundle;
+    this.viewerGrammaticalGender = viewerGrammaticalGender;
   }
 
   @Override

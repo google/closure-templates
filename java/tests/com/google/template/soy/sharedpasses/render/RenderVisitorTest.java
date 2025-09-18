@@ -41,6 +41,7 @@ import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
+import com.google.template.soy.msgs.GrammaticalGender;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.internal.MsgUtils;
 import com.google.template.soy.msgs.restricted.SoyMsg;
@@ -178,6 +179,26 @@ public class RenderVisitorTest {
   /**
    * Asserts that the given input string (should be a template body) renders to the given result.
    *
+   * <p>This will be used when GAUI is fully rolled out.
+   *
+   * @param templateBody The input string to render (should be a template body).
+   * @param msgBundle The bundle of translated messages.
+   * @param gender The user gender.
+   * @param result The expected rendered result.
+   * @throws Exception If the assertion is not true or if there's an error.
+   */
+  private void unusedAssertRenderWithGender(
+      String templateBody,
+      @Nullable SoyMsgBundle msgBundle,
+      GrammaticalGender gender,
+      String result)
+      throws Exception {
+    assertThat(renderWithGender(templateBody, msgBundle, gender)).isEqualTo(result);
+  }
+
+  /**
+   * Asserts that the given input string (should be a template body) renders to the given result.
+   *
    * @param templateBody The input string to render (should be a template body).
    * @param data The SoyRecord data used for testing.
    * @param result The expected rendered result.
@@ -266,6 +287,21 @@ public class RenderVisitorTest {
    * Renders the given input string (should be a template body) and returns the result.
    *
    * @param templateBody The input string to render (should be a template body).
+   * @param msgBundle The bundle of translated messages.
+   * @param gender The user gender.
+   * @return The rendered result.
+   * @throws Exception If there's an error.
+   */
+  private String renderWithGender(
+      String templateBody, @Nullable SoyMsgBundle msgBundle, GrammaticalGender gender)
+      throws Exception {
+    return renderWithDataAndMsgBundleAndGender(templateBody, TEST_DATA, msgBundle, gender);
+  }
+
+  /**
+   * Renders the given input string (should be a template body) and returns the result.
+   *
+   * @param templateBody The input string to render (should be a template body).
    * @param data The soy data as a map of variables to objects.
    * @param msgBundle The bundle of translated messages.
    * @return The rendered result.
@@ -273,6 +309,26 @@ public class RenderVisitorTest {
    */
   private String renderWithDataAndMsgBundle(
       String templateBody, ParamStore data, @Nullable SoyMsgBundle msgBundle) throws Exception {
+    return renderWithDataAndMsgBundleAndGender(
+        templateBody, data, msgBundle, GrammaticalGender.UNSPECIFIED);
+  }
+
+  /**
+   * Renders the given input string (should be a template body) and returns the result.
+   *
+   * @param templateBody The input string to render (should be a template body).
+   * @param data The soy data as a map of variables to objects.
+   * @param msgBundle The bundle of translated messages.
+   * @param gender The user gender.
+   * @return The rendered result.
+   * @throws Exception If there's an error.
+   */
+  private String renderWithDataAndMsgBundleAndGender(
+      String templateBody,
+      ParamStore data,
+      @Nullable SoyMsgBundle msgBundle,
+      GrammaticalGender gender)
+      throws Exception {
 
     ExperimentalFeatures experimentalFeatures =
         testDescription.getAnnotation(ExperimentalFeatures.class);
@@ -303,7 +359,8 @@ public class RenderVisitorTest {
             xidRenamingMap,
             cssRenamingMap,
             false,
-            PluginInstances.empty());
+            PluginInstances.empty(),
+            gender);
     rv.exec(templateNode);
     return outputSb.toString();
   }
@@ -355,7 +412,8 @@ public class RenderVisitorTest {
             xidRenamingMap,
             cssRenamingMap,
             false,
-            PluginInstances.empty());
+            PluginInstances.empty(),
+            GrammaticalGender.UNSPECIFIED);
     TemplateNode templateNode = basicTemplates.get(templateName);
     rv.exec(templateNode);
     return outputSb.toString();
@@ -1024,7 +1082,8 @@ public class RenderVisitorTest {
             xidRenamingMap,
             cssRenamingMap,
             false,
-            PluginInstances.empty());
+            PluginInstances.empty(),
+            GrammaticalGender.UNSPECIFIED);
     rv.exec(basicTemplates.get("ns.callerTemplate"));
 
     String expectedOutput =

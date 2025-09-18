@@ -42,6 +42,7 @@ import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.data.internal.Converters;
 import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
+import com.google.template.soy.msgs.GrammaticalGender;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.parseinfo.SoyTemplateInfo;
 import com.google.template.soy.plugin.java.PluginInstances;
@@ -307,6 +308,7 @@ public final class BaseTofu implements SoyTofu {
    *     source.
    * @param cssRenamingMap Map for renaming selectors in 'css' tags, or null if not used.
    * @param pluginInstances The instances used for evaluating functions that call instance methods.
+   * @param viewerGrammaticalGender The grammatical gender of the viewer.
    * @return The template that was rendered.
    */
   private TemplateNode renderMain(
@@ -319,7 +321,8 @@ public final class BaseTofu implements SoyTofu {
       @Nullable SoyIdRenamingMap idRenamingMap,
       @Nullable SoyCssRenamingMap cssRenamingMap,
       boolean debugSoyTemplateInfo,
-      PluginInstances pluginInstances) {
+      PluginInstances pluginInstances,
+      GrammaticalGender viewerGrammaticalGender) {
 
     if (activeModNames == null) {
       activeModNames = arg -> false;
@@ -337,7 +340,8 @@ public final class BaseTofu implements SoyTofu {
           idRenamingMap,
           cssRenamingMap,
           debugSoyTemplateInfo,
-          pluginInstances);
+          pluginInstances,
+          viewerGrammaticalGender);
     }
   }
 
@@ -352,6 +356,7 @@ public final class BaseTofu implements SoyTofu {
    * @param msgBundle The bundle of translated messages, or null to use the messages from the Soy
    *     source.
    * @param cssRenamingMap Map for renaming selectors in 'css' tags, or null if not used.
+   * @param viewerGrammaticalGender The grammatical gender of the viewer.
    * @return The template that was rendered.
    */
   private TemplateNode renderMainHelper(
@@ -364,7 +369,8 @@ public final class BaseTofu implements SoyTofu {
       @Nullable SoyIdRenamingMap idRenamingMap,
       @Nullable SoyCssRenamingMap cssRenamingMap,
       boolean debugSoyTemplateInfo,
-      PluginInstances pluginInstances) {
+      PluginInstances pluginInstances,
+      GrammaticalGender viewerGrammaticalGender) {
 
     // templateNode is always guaranteed to be non-null because for a tofu compile all templates are
     // considered source files
@@ -398,7 +404,8 @@ public final class BaseTofu implements SoyTofu {
               idRenamingMap,
               cssRenamingMap,
               debugSoyTemplateInfo,
-              pluginInstances);
+              pluginInstances,
+              viewerGrammaticalGender);
       rv.exec(template);
 
     } catch (RenderException re) {
@@ -427,6 +434,7 @@ public final class BaseTofu implements SoyTofu {
     private boolean debugSoyTemplateInfo;
     private Map<String, ? extends Supplier<Object>> perRenderPluginInstances;
     private boolean dataSetInConstructor;
+    private GrammaticalGender viewerGrammaticalGender;
 
     /**
      * Constructs a {@code Renderer} instance for Tofu backends.
@@ -532,6 +540,13 @@ public final class BaseTofu implements SoyTofu {
       return this;
     }
 
+    @CanIgnoreReturnValue
+    @Override
+    public RendererImpl setViewerGrammaticalGender(GrammaticalGender viewerGrammaticalGender) {
+      this.viewerGrammaticalGender = viewerGrammaticalGender;
+      return this;
+    }
+
     @Override
     @Deprecated
     public String render() {
@@ -554,7 +569,8 @@ public final class BaseTofu implements SoyTofu {
               idRenamingMap,
               cssRenamingMap,
               debugSoyTemplateInfo,
-              getPluginInstances());
+              getPluginInstances(),
+              viewerGrammaticalGender);
       enforceContentKind(template);
       return Converters.toContentKind(template.getContentKind());
     }
@@ -653,7 +669,8 @@ public final class BaseTofu implements SoyTofu {
               idRenamingMap,
               cssRenamingMap,
               debugSoyTemplateInfo,
-              getPluginInstances());
+              getPluginInstances(),
+              viewerGrammaticalGender);
       enforceContentKind(template);
       // Use the expected instead of actual content kind; that way, if an HTML template is rendered
       // as TEXT, we will return TEXT.
@@ -691,7 +708,8 @@ public final class BaseTofu implements SoyTofu {
           idRenamingMap,
           cssRenamingMap,
           debugSoyTemplateInfo,
-          getPluginInstances());
+          getPluginInstances(),
+          viewerGrammaticalGender);
     }
 
     private static void enforceContentKind(

@@ -25,6 +25,7 @@ import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyTemplate;
 import com.google.template.soy.data.SoyTemplateData;
 import com.google.template.soy.data.internal.ParamStore;
+import com.google.template.soy.msgs.GrammaticalGender;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.parseinfo.SoyTemplateInfo;
 import com.google.template.soy.parseinfo.TemplateName;
@@ -194,6 +195,10 @@ public interface SoyTofu {
     /** Configures if we should render additional HTML comments for runtime inspection. */
     @CanIgnoreReturnValue
     Renderer setDebugSoyTemplateInfo(boolean debugSoyTemplateInfo);
+
+    /** Configures the viewer's grammatical gender. */
+    @CanIgnoreReturnValue
+    Renderer setViewerGrammaticalGender(GrammaticalGender viewerGrammaticalGender);
 
     /**
      * Renders the configured html template to the given appendable.

@@ -19,6 +19,7 @@ package com.google.template.soy.sharedpasses.opti;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableTable;
 import com.google.template.soy.data.internal.ParamStore;
+import com.google.template.soy.msgs.GrammaticalGender;
 import com.google.template.soy.plugin.java.PluginInstances;
 import com.google.template.soy.shared.internal.DelTemplateSelector;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
@@ -60,7 +61,7 @@ final class PrerenderVisitor extends RenderVisitor {
         preevalVisitorFactory,
         outputBuf,
         basicTemplates,
-        /* deltemplates=*/ new DelTemplateSelector.Builder<TemplateNode>().build(),
+        /* deltemplates= */ new DelTemplateSelector.Builder<TemplateNode>().build(),
         ImmutableTable.of(),
         ImmutableTable.of(),
         ParamStore.EMPTY_INSTANCE,
@@ -70,7 +71,8 @@ final class PrerenderVisitor extends RenderVisitor {
         /* xidRenamingMap= */ null,
         /* cssRenamingMap= */ null,
         /* debugSoyTemplateInfo= */ false,
-        PluginInstances.empty());
+        PluginInstances.empty(),
+        GrammaticalGender.UNSPECIFIED);
   }
 
   @Override

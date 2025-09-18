@@ -28,6 +28,7 @@ import com.google.template.soy.data.SoyTemplate;
 import com.google.template.soy.data.SoyTemplateData;
 import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.logging.SoyLogger;
+import com.google.template.soy.msgs.GrammaticalGender;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.parseinfo.TemplateName;
 import com.google.template.soy.shared.SoyCssRenamingMap;
@@ -180,6 +181,9 @@ public interface SoySauce {
     /** Configures the {@link SoyJsIdTracker} to use. */
     @CanIgnoreReturnValue
     Renderer setJsIdTracker(SoyJsIdTracker jsIdTracker);
+
+    @CanIgnoreReturnValue
+    Renderer setViewerGrammaticalGender(GrammaticalGender viewerGrammaticalGender);
 
     /**
      * Renders the configured html template to the given appendable, returning a continuation (more

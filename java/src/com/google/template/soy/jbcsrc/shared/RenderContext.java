@@ -17,6 +17,7 @@
 package com.google.template.soy.jbcsrc.shared;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Verify.verify;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
@@ -24,6 +25,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
+import com.google.errorprone.annotations.Keep;
 import com.google.template.soy.data.Dir;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.RecordProperty;
@@ -36,6 +38,7 @@ import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplates.TemplateData;
 import com.google.template.soy.logging.LoggableElementMetadata;
+import com.google.template.soy.msgs.GrammaticalGender;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.restricted.SoyMsgRawParts;
 import com.google.template.soy.plugin.java.PluginInstances;
@@ -94,6 +97,8 @@ public final class RenderContext {
 
   private List<ThrowingSoyValueProvider> deferredErrors;
 
+  @Keep private GrammaticalGender viewerGrammaticalGender = GrammaticalGender.UNSPECIFIED;
+
   public RenderContext(
       CompiledTemplates templates,
       ImmutableMap<String, SoyJavaPrintDirective> soyJavaDirectivesMap,
@@ -105,7 +110,8 @@ public final class RenderContext {
       @Nullable SoyMsgBundle msgBundle,
       boolean debugSoyTemplateInfo,
       @Nullable SoyCssTracker cssTracker,
-      @Nullable SoyJsIdTracker jsIdTracker) {
+      @Nullable SoyJsIdTracker jsIdTracker,
+      GrammaticalGender viewerGrammaticalGender) {
     this.templates = templates;
     this.soyJavaDirectivesMap = soyJavaDirectivesMap;
     this.pluginInstances = pluginInstances;
@@ -117,6 +123,8 @@ public final class RenderContext {
     this.debugSoyTemplateInfo = debugSoyTemplateInfo;
     this.cssTracker = cssTracker;
     this.jsIdTracker = jsIdTracker;
+    this.viewerGrammaticalGender = viewerGrammaticalGender;
+    verify(viewerGrammaticalGender != null);
   }
 
   @Nullable
@@ -548,6 +556,7 @@ public final class RenderContext {
     private SoyCssTracker cssTracker;
     private SoyJsIdTracker jsIdTracker;
     private SoyInjector ijData;
+    private GrammaticalGender viewerGrammaticalGender = GrammaticalGender.UNSPECIFIED;
 
     public Builder(
         CompiledTemplates templates,
@@ -612,6 +621,12 @@ public final class RenderContext {
       return this;
     }
 
+    @CanIgnoreReturnValue
+    public Builder withViewerGrammaticalGender(GrammaticalGender viewerGrammaticalGender) {
+      this.viewerGrammaticalGender = checkNotNull(viewerGrammaticalGender);
+      return this;
+    }
+
     public RenderContext build() {
       return new RenderContext(
           templates,
@@ -624,7 +639,8 @@ public final class RenderContext {
           msgBundle,
           debugSoyTemplateInfo,
           cssTracker,
-          jsIdTracker);
+          jsIdTracker,
+          viewerGrammaticalGender);
     }
   }
 }
