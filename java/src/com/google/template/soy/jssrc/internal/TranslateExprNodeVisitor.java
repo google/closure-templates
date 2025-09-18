@@ -458,7 +458,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
     // Always construct maps as ES6 Maps so that we can call `set`.
     Expression map = Expressions.constructMap();
     MapType mapType = (MapType) node.getType();
-    if (!mapType.isEmpty()) {
+    if (node.numChildren() == 0) {
       JsType keyType = jsTypeFor(mapType.getKeyType());
       JsType valueType = jsTypeFor(mapType.getValueType());
       map =

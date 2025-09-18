@@ -93,7 +93,6 @@ import com.google.template.soy.jbcsrc.restricted.TypeInfo;
 import com.google.template.soy.jbcsrc.runtime.JbcSrcRuntime;
 import com.google.template.soy.soytree.defn.TemplateStateVar;
 import com.google.template.soy.types.AbstractIterableType;
-import com.google.template.soy.types.AbstractMapType;
 import com.google.template.soy.types.BoolType;
 import com.google.template.soy.types.GbigintType;
 import com.google.template.soy.types.ListType;
@@ -1223,10 +1222,10 @@ final class ProtoUtils {
       }
 
       SoyExpression baseArg = compile(argNode);
-      // If the list arg is definitely an empty list/map, do nothing
+      // If the list arg is definitely an empty list, do nothing
       SoyType soyType = baseArg.soyType().getEffectiveType();
-      if ((soyType instanceof AbstractIterableType && ((AbstractIterableType) soyType).isEmpty())
-          || (soyType instanceof AbstractMapType && ((AbstractMapType) soyType).isEmpty())) {
+      if (soyType instanceof AbstractIterableType abstractIterableType
+          && abstractIterableType.isEmpty()) {
         return Statement.NULL_STATEMENT;
       }
       if (baseArg.isNonSoyNullish()) {

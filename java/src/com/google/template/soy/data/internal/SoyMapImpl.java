@@ -23,6 +23,7 @@ import com.google.template.soy.data.RecordProperty;
 import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiConsumer;
 import javax.annotation.Nonnull;
@@ -39,7 +40,18 @@ import javax.annotation.ParametersAreNonnullByDefault;
  */
 @ParametersAreNonnullByDefault
 public final class SoyMapImpl extends SoyMap {
-  public static final SoyMapImpl EMPTY = new SoyMapImpl(ImmutableMap.of());
+  /**
+   * Creates a SoyMap wrapping a mutable map, for use only in {autoimpl} where mutable map methods
+   * are supported.
+   */
+  @Nonnull
+  public static SoyMapImpl mutable(
+      Map<? extends SoyValue, ? extends SoyValueProvider> providerMap) {
+    if (providerMap instanceof ImmutableMap) {
+      providerMap = new HashMap<>(providerMap);
+    }
+    return forProviderMap(providerMap);
+  }
 
   /** Creates a SoyDict implementation for a particular underlying provider map. */
   @Nonnull

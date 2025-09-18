@@ -24,36 +24,23 @@ import com.google.template.soy.soytree.SoyTypeP;
  *
  * <p>Note: This map type is designed for working with proto maps or ES6 Maps.
  */
-public final class MapType extends AbstractMapType {
-
-  /** Special instance used to track empty maps. Only valid with == equality. */
-  private static final MapType EMPTY =
-      new MapType(UnknownType.getInstance(), UnknownType.getInstance());
+public class MapType extends AbstractMapType {
 
   public static final MapType ANY_MAP = new MapType(AnyType.getInstance(), AnyType.getInstance());
-
-  public static MapType empty() {
-    return EMPTY;
-  }
 
   public static MapType of(SoyType keyType, SoyType valueType) {
     return new MapType(keyType, valueType);
   }
 
   /** The declared type of item keys in this map. */
-  private final SoyType keyType;
+  protected final SoyType keyType;
 
   /** The declared type of item values in this map. */
-  private final SoyType valueType;
+  protected final SoyType valueType;
 
-  private MapType(SoyType keyType, SoyType valueType) {
+  protected MapType(SoyType keyType, SoyType valueType) {
     this.keyType = Preconditions.checkNotNull(keyType);
     this.valueType = Preconditions.checkNotNull(valueType);
-  }
-
-  @Override
-  public boolean isEmpty() {
-    return this == EMPTY;
   }
 
   private static final SoyType ALLOWED_KINDS =
@@ -95,13 +82,7 @@ public final class MapType extends AbstractMapType {
 
   @Override
   boolean doIsAssignableFromNonUnionType(SoyType srcType, AssignabilityPolicy policy) {
-    if (srcType.getKind() == Kind.MAP) {
-      MapType srcMapType = (MapType) srcType;
-      if (srcMapType == EMPTY) {
-        return true;
-      } else if (this == EMPTY) {
-        return false;
-      }
+    if (srcType instanceof MapType srcMapType) {
       // Maps are covariant.
       return keyType.isAssignableFromInternal(srcMapType.keyType, policy)
           && valueType.isAssignableFromInternal(srcMapType.valueType, policy);
