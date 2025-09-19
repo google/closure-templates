@@ -75,6 +75,8 @@ public abstract class SoyMsgRawParts implements Iterable<Object> {
       return ((SoyMsgPluralPartForRendering) part).toPluralPart();
     } else if (part instanceof SoyMsgSelectPartForRendering) {
       return ((SoyMsgSelectPartForRendering) part).toSelectPart();
+    } else if (part instanceof SoyMsgViewerGrammaticalGenderPartForRendering) {
+      return ((SoyMsgViewerGrammaticalGenderPartForRendering) part).toGenderPart();
     }
     throw new IllegalArgumentException("Unsupported part type: " + part.getClass());
   }
@@ -118,6 +120,9 @@ public abstract class SoyMsgRawParts implements Iterable<Object> {
       return new SoyMsgPluralPartForRendering((SoyMsgPluralPart) part);
     } else if (part instanceof SoyMsgSelectPart) {
       return new SoyMsgSelectPartForRendering(((SoyMsgSelectPart) part));
+    } else if (part instanceof SoyMsgViewerGrammaticalGenderPart) {
+      return new SoyMsgViewerGrammaticalGenderPartForRendering(
+          ((SoyMsgViewerGrammaticalGenderPart) part));
     }
     throw new IllegalArgumentException("Unsupported part type: " + part.getClass());
   }
@@ -140,7 +145,8 @@ public abstract class SoyMsgRawParts implements Iterable<Object> {
           part instanceof String
               || part instanceof PlaceholderName
               || part instanceof SoyMsgPluralPartForRendering
-              || part instanceof SoyMsgSelectPartForRendering,
+              || part instanceof SoyMsgSelectPartForRendering
+              || part instanceof SoyMsgViewerGrammaticalGenderPartForRendering,
           "Unsupported part type: %s",
           part.getClass());
       parts.add(part);
@@ -177,6 +183,12 @@ public abstract class SoyMsgRawParts implements Iterable<Object> {
       return this;
     }
 
+    @CanIgnoreReturnValue
+    public Builder add(SoyMsgViewerGrammaticalGenderPartForRendering part) {
+      parts.add(part);
+      return this;
+    }
+
     public SoyMsgRawParts build() {
       switch (parts.size()) {
         case 0:
@@ -186,10 +198,11 @@ public abstract class SoyMsgRawParts implements Iterable<Object> {
           if (singlePart instanceof String || singlePart instanceof PlaceholderName) {
             return new SinglePart(singlePart);
           } else if (singlePart instanceof SoyMsgPluralPartForRendering
-              || singlePart instanceof SoyMsgSelectPartForRendering) {
+              || singlePart instanceof SoyMsgSelectPartForRendering
+              || singlePart instanceof SoyMsgViewerGrammaticalGenderPartForRendering) {
             return (SoyMsgRawParts) singlePart;
           }
-          throw new AssertionError("Unexpected part type:q " + singlePart.getClass());
+          throw new AssertionError("Unexpected part type: " + singlePart.getClass());
         default:
           return new MultipleParts(parts.toArray());
       }

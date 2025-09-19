@@ -86,6 +86,8 @@ public final class SoyMsgBundleCompactor {
       result = compactPlural((SoyMsgPluralPart) part);
     } else if (part instanceof SoyMsgSelectPart) {
       result = compactSelect((SoyMsgSelectPart) part);
+    } else if (part instanceof SoyMsgViewerGrammaticalGenderPart) {
+      result = compactViewerGrammaticalGender((SoyMsgViewerGrammaticalGenderPart) part);
     } else if (part instanceof SoyMsgPlaceholderPart) {
       return PlaceholderName.create(
           ((SoyMsgPlaceholderPart) part).getPlaceholderName()); // already interned
@@ -103,7 +105,16 @@ public final class SoyMsgBundleCompactor {
         PlaceholderName.create(select.getSelectVarName()),
         compactCases(
             select.getCases(),
-            // Intern the select strings, these are common (male, female, other)
+            // Intern the select strings
+            spec -> spec == null ? null : intern(spec)));
+  }
+
+  private SoyMsgViewerGrammaticalGenderPartForRendering compactViewerGrammaticalGender(
+      SoyMsgViewerGrammaticalGenderPart genderPart) {
+    return new SoyMsgViewerGrammaticalGenderPartForRendering(
+        compactCases(
+            genderPart.getCases(),
+            // Intern the GrammaticalGender enum values
             spec -> spec == null ? null : intern(spec)));
   }
 

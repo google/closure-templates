@@ -20,6 +20,7 @@ import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
 import com.google.common.collect.ImmutableList;
+import com.google.template.soy.msgs.GrammaticalGender;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import org.junit.Before;
 import org.junit.Test;
@@ -127,6 +128,28 @@ public class SoyMsgBundleCompactorTest {
         .build();
   }
 
+  /** Creates a message that has a select with different cases. */
+  private SoyMsg createGrammaticalGenderMsg(String locale, long id) {
+    return SoyMsg.builder()
+        .setId(id)
+        .setLocaleString(locale)
+        .setIsPlrselMsg(true)
+        .setParts(
+            ImmutableList.of(
+                new SoyMsgViewerGrammaticalGenderPart(
+                    ImmutableList.of(
+                        SoyMsgPart.Case.create(
+                            GrammaticalGender.MASCULINE,
+                            ImmutableList.of(SoyMsgRawTextPart.of("Male message " + id))),
+                        SoyMsgPart.Case.create(
+                            GrammaticalGender.FEMININE,
+                            ImmutableList.of(SoyMsgRawTextPart.of("Female message " + id))),
+                        SoyMsgPart.Case.create(
+                            GrammaticalGender.OTHER,
+                            ImmutableList.of(SoyMsgRawTextPart.of("Other message " + id)))))))
+        .build();
+  }
+
   @Before
   public void setUp() throws Exception {
 
@@ -139,6 +162,7 @@ public class SoyMsgBundleCompactorTest {
                 createMessageWithPlaceholder(LOCALE_XX, 159),
                 createSelectMsgDifferent(LOCALE_XX, 265),
                 createSelectMsgDifferent(LOCALE_XX, 266),
+                createGrammaticalGenderMsg(LOCALE_XX, 81),
                 createSelectMsgSame(LOCALE_XX, 358),
                 createPluralWithRedundantCases(LOCALE_XX, 42)));
     xxMsgBundle = compactor.compact(xxMsgBundle);
@@ -150,6 +174,7 @@ public class SoyMsgBundleCompactorTest {
                 createMessageWithPlaceholder(LOCALE_YY, 159),
                 createSelectMsgDifferent(LOCALE_YY, 265),
                 createSelectMsgDifferent(LOCALE_YY, 266),
+                createGrammaticalGenderMsg(LOCALE_YY, 81),
                 createSelectMsgSame(LOCALE_YY, 358),
                 createPluralWithRedundantCases(LOCALE_YY, 42)));
     yyMsgBundle = compactor.compact(yyMsgBundle);
@@ -169,6 +194,9 @@ public class SoyMsgBundleCompactorTest {
     assertWithMessage("SoyMsgSelectPart should be interned")
         .that(yyMsgBundle.getMsgPartsForRendering(265))
         .isSameInstanceAs(xxMsgBundle.getMsgPartsForRendering(265));
+    assertWithMessage("SoyMsgViewerGrammaticalGenderPart should be interned")
+        .that(yyMsgBundle.getMsgPartsForRendering(81))
+        .isSameInstanceAs(xxMsgBundle.getMsgPartsForRendering(81));
     assertWithMessage("SoyMsgSelectPart should be interned")
         .that(yyMsgBundle.getMsgPartsForRendering(358))
         .isSameInstanceAs(xxMsgBundle.getMsgPartsForRendering(358));
@@ -206,5 +234,33 @@ public class SoyMsgBundleCompactorTest {
             ((SoyMsgPluralPartForRendering) xxMsgBundle.getMsgPartsForRendering(42))
                 .lookupCase(1, null))
         .isEqualTo(SoyMsgRawParts.of("1 coconut"));
+  }
+
+  @Test
+  public void testGrammaticalGender() {
+    assertThat(
+            ((SoyMsgViewerGrammaticalGenderPartForRendering)
+                    xxMsgBundle.getMsgPartsForRendering(81))
+                .getSoyMsgRawPartsForGender(GrammaticalGender.MASCULINE))
+        .isEqualTo(SoyMsgRawParts.of("Male message 81"));
+  }
+
+  @Test
+  public void testSoyMsgViewerGrammaticalGenderPartForRendering() {
+    SoyMsg msg = createGrammaticalGenderMsg(LOCALE_XX, 123);
+    SoyMsgBundle bundle = new SoyMsgBundleImpl(LOCALE_XX, ImmutableList.of(msg));
+    SoyMsgBundleCompactor compactor = new SoyMsgBundleCompactor();
+    SoyMsgBundle compactedBundle = compactor.compact(bundle);
+
+    SoyMsgViewerGrammaticalGenderPartForRendering genderPart =
+        (SoyMsgViewerGrammaticalGenderPartForRendering)
+            compactedBundle.getMsgPartsForRendering(123);
+
+    assertThat(genderPart.getSoyMsgRawPartsForGender(GrammaticalGender.MASCULINE))
+        .isEqualTo(SoyMsgRawParts.of("Male message 123"));
+    assertThat(genderPart.getSoyMsgRawPartsForGender(GrammaticalGender.FEMININE))
+        .isEqualTo(SoyMsgRawParts.of("Female message 123"));
+    assertThat(genderPart.getSoyMsgRawPartsForGender(GrammaticalGender.OTHER))
+        .isEqualTo(SoyMsgRawParts.of("Other message 123"));
   }
 }
