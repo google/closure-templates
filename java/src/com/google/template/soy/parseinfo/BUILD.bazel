@@ -47,7 +47,6 @@ java_library(
     srcs = NAME_SRC,
     visibility = ["//visibility:public"],
     deps = [
-        "//java/src/com/google/template/soy/data:template",
         "@com_google_auto_value_auto_value",
         "@maven//:com_google_errorprone_error_prone_annotations",
     ],

@@ -28,7 +28,7 @@ java_library(
         "//java/src/com/google/template/soy/exprtree",
         "//java/src/com/google/template/soy/soytree:soynode",
         "//java/src/com/google/template/soy/types",
-        "//java/src/com/google/template/soy/types/ast",
+        "//java/src/com/google/template/soy/types/ast:base",
         "@maven//:com_google_code_findbugs_jsr305",
         "@maven//:com_google_guava_guava",
     ],
