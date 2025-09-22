@@ -141,12 +141,21 @@ public abstract class SoyMsgRawParts implements Iterable<Object> {
 
     @CanIgnoreReturnValue
     public Builder addRawPart(Object part) {
+      if (part instanceof SoyMsgPluralPartForRendering
+          || part instanceof SoyMsgSelectPartForRendering
+          || part instanceof SoyMsgViewerGrammaticalGenderPartForRendering) {
+        parts.add(part);
+        return this;
+      }
+      if (part instanceof SoyMsgRawParts) {
+        // This is SinglePart or MultipleParts. Unpack them.
+        for (Object p : (SoyMsgRawParts) part) {
+          addRawPart(p);
+        }
+        return this;
+      }
       checkArgument(
-          part instanceof String
-              || part instanceof PlaceholderName
-              || part instanceof SoyMsgPluralPartForRendering
-              || part instanceof SoyMsgSelectPartForRendering
-              || part instanceof SoyMsgViewerGrammaticalGenderPartForRendering,
+          part instanceof String || part instanceof PlaceholderName,
           "Unsupported part type: %s",
           part.getClass());
       parts.add(part);
@@ -273,7 +282,11 @@ public abstract class SoyMsgRawParts implements Iterable<Object> {
       for (int i = 0; i < parts.length; i++) {
         var part = parts[i];
         checkArgument(
-            part instanceof String || part instanceof PlaceholderName,
+            part instanceof String
+                || part instanceof PlaceholderName
+                || part instanceof SoyMsgPluralPartForRendering
+                || part instanceof SoyMsgSelectPartForRendering
+                || part instanceof SoyMsgViewerGrammaticalGenderPartForRendering,
             "Unsupported part type: %s at index %s",
             part.getClass(),
             i);
