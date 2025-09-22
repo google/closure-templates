@@ -26,6 +26,7 @@ import com.google.template.soy.msgs.restricted.PlaceholderName;
 import com.google.template.soy.msgs.restricted.SoyMsgPluralPartForRendering;
 import com.google.template.soy.msgs.restricted.SoyMsgRawParts;
 import com.google.template.soy.msgs.restricted.SoyMsgSelectPartForRendering;
+import com.google.template.soy.msgs.restricted.SoyMsgViewerGrammaticalGenderPartForRendering;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CaseOrDefaultNode;
 import com.google.template.soy.soytree.EscapingMode;
@@ -89,7 +90,8 @@ final class RenderVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
     if (msgBundle != null) {
       for (MsgNode msg : node.getChildren()) {
         SoyMsgRawParts translation =
-            msgBundle.getMsgPartsForRendering(MsgUtils.computeMsgIdForDualFormat(msg));
+            msgBundle.getMsgPartsForRendering(
+                MsgUtils.computeMsgIdForDualFormat(msg), viewerGrammaticalGender);
         if (translation != null) {
           renderMsgFromTranslation(msg, translation, msgBundle.getLocale());
           foundTranslation = true;
@@ -97,7 +99,8 @@ final class RenderVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
         }
         SoyMsgRawParts translationByAlternateId =
             msg.getAlternateId().isPresent()
-                ? msgBundle.getMsgPartsForRendering(msg.getAlternateId().getAsLong())
+                ? msgBundle.getMsgPartsForRendering(
+                    msg.getAlternateId().getAsLong(), viewerGrammaticalGender)
                 : null;
         if (translationByAlternateId != null) {
           renderMsgFromTranslation(msg, translationByAlternateId, msgBundle.getLocale());
@@ -123,6 +126,12 @@ final class RenderVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
     } else if (msgParts instanceof SoyMsgSelectPartForRendering) {
       new PlrselMsgPartsVisitor(msg, locale).visitPart((SoyMsgSelectPartForRendering) msgParts);
 
+    } else if (msgParts
+        instanceof
+        SoyMsgViewerGrammaticalGenderPartForRendering
+            soyMsgViewerGrammaticalGenderPartForRendering) {
+      new PlrselMsgPartsVisitor(msg, locale)
+          .visitPart(soyMsgViewerGrammaticalGenderPartForRendering);
     } else {
       msgParts.forEach(
           msgPart -> {
@@ -283,6 +292,19 @@ final class RenderVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
       }
 
       SoyMsgRawParts caseParts = selectPart.lookupCase(correctSelectValue);
+      if (caseParts != null) {
+        renderMsgFromTranslation(msgNode, caseParts, locale);
+      }
+    }
+
+    /**
+     * Processes a {@code SoyMsgGenderPart} and appends the rendered output to the {@code
+     * StringBuilder} object in {@code RenderVisitor}.
+     *
+     * @param genderPart The gender part.
+     */
+    private void visitPart(SoyMsgViewerGrammaticalGenderPartForRendering genderPart) {
+      SoyMsgRawParts caseParts = genderPart.getSoyMsgRawPartsForGender(viewerGrammaticalGender);
       if (caseParts != null) {
         renderMsgFromTranslation(msgNode, caseParts, locale);
       }
