@@ -39,6 +39,10 @@ public class SoyMsgBundleCompactorTest {
   private SoyMsgBundle xxMsgBundle;
   private SoyMsgBundle yyMsgBundle;
 
+  private SoyMsgRawParts getMsgParts(SoyMsgBundle msgBundle, long id) {
+    return msgBundle.getMsgPartsForRendering(id);
+  }
+
   /** Creates a text-only message. */
   private SoyMsg createSimpleMsg(String locale, long id) {
     return SoyMsg.builder()
@@ -215,9 +219,8 @@ public class SoyMsgBundleCompactorTest {
   @Test
   public void testCaseCollapsing() {
     var differentSelect =
-        ((SoyMsgSelectPartForRendering) xxMsgBundle.getMsgPartsForRendering(265)).toSelectPart();
-    var sameSelect =
-        ((SoyMsgSelectPartForRendering) xxMsgBundle.getMsgPartsForRendering(358)).toSelectPart();
+        ((SoyMsgSelectPartForRendering) getMsgParts(xxMsgBundle, 265)).toSelectPart();
+    var sameSelect = ((SoyMsgSelectPartForRendering) getMsgParts(xxMsgBundle, 358)).toSelectPart();
     assertWithMessage("Selects with different cases should not be collapsed")
         .that(differentSelect.getCases().size())
         .isEqualTo(3);
@@ -238,11 +241,7 @@ public class SoyMsgBundleCompactorTest {
 
   @Test
   public void testGrammaticalGender() {
-    assertThat(
-            ((SoyMsgViewerGrammaticalGenderPartForRendering)
-                    xxMsgBundle.getMsgPartsForRendering(81))
-                .getSoyMsgRawPartsForGender(GrammaticalGender.MASCULINE))
-        .isEqualTo(SoyMsgRawParts.of("Male message 81"));
+    assertThat(xxMsgBundle.getMsgPartsForRendering(81).getPart(0)).isEqualTo("Other message 81");
   }
 
   @Test
@@ -252,15 +251,8 @@ public class SoyMsgBundleCompactorTest {
     SoyMsgBundleCompactor compactor = new SoyMsgBundleCompactor();
     SoyMsgBundle compactedBundle = compactor.compact(bundle);
 
-    SoyMsgViewerGrammaticalGenderPartForRendering genderPart =
-        (SoyMsgViewerGrammaticalGenderPartForRendering)
-            compactedBundle.getMsgPartsForRendering(123);
+    SoyMsgRawParts text = compactedBundle.getMsgPartsForRendering(123);
 
-    assertThat(genderPart.getSoyMsgRawPartsForGender(GrammaticalGender.MASCULINE))
-        .isEqualTo(SoyMsgRawParts.of("Male message 123"));
-    assertThat(genderPart.getSoyMsgRawPartsForGender(GrammaticalGender.FEMININE))
-        .isEqualTo(SoyMsgRawParts.of("Female message 123"));
-    assertThat(genderPart.getSoyMsgRawPartsForGender(GrammaticalGender.OTHER))
-        .isEqualTo(SoyMsgRawParts.of("Other message 123"));
+    assertThat(text).isEqualTo(SoyMsgRawParts.of("Other message 123"));
   }
 }

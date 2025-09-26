@@ -16,11 +16,14 @@
 
 package com.google.template.soy.msgs;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.msgs.restricted.SoyMsg;
+import com.google.template.soy.msgs.restricted.SoyMsgPart;
 import com.google.template.soy.msgs.restricted.SoyMsgRawParts;
 import com.google.template.soy.msgs.restricted.SoyMsgRawTextPart;
+import com.google.template.soy.msgs.restricted.SoyMsgViewerGrammaticalGenderPart;
 import com.ibm.icu.util.ULocale;
 import java.util.Iterator;
 import javax.annotation.Nullable;
@@ -57,7 +60,7 @@ public abstract class SoyMsgBundle implements Iterable<SoyMsg> {
   /**
    * Returns the message parts, or an empty array if there is no such message.
    *
-   * <p>This is useful for rendering only usecases when the rest of the {@link SoyMsg} doesn't
+   * <p>This is useful for rendering only use cases when the rest of the {@link SoyMsg} doesn't
    * matter. The default implementation is just {@link SoyMsg#getParts} but some subclasses may have
    * more efficient implementations
    */
@@ -66,14 +69,34 @@ public abstract class SoyMsgBundle implements Iterable<SoyMsg> {
     SoyMsg msg = getMsg(msgId);
     // This will be slow, but all callers should use the RenderOnlySoyMsgBundleImpl which will be
     // fast.
-    return msg == null ? null : SoyMsgRawParts.fromMsgParts(msg.getParts());
+    if (msg == null) {
+      return null;
+    }
+    return SoyMsgRawParts.fromMsgParts(findPartsForGender(msg.getParts(), GrammaticalGender.OTHER));
   }
 
   /** Returns the plain translated text of a message with no placeholders. */
   @Nullable
   public String getBasicTranslation(long msgId) {
     SoyMsg msg = getMsg(msgId);
-    return msg == null ? null : ((SoyMsgRawTextPart) msg.getParts().get(0)).getRawText();
+    if (msg == null) {
+      return null;
+    }
+    return ((SoyMsgRawTextPart) findPartsForGender(msg.getParts(), GrammaticalGender.OTHER).get(0))
+        .getRawText();
+  }
+
+  @Nullable
+  protected ImmutableList<SoyMsgPart> findPartsForGender(
+      ImmutableList<SoyMsgPart> parts, GrammaticalGender viewerGrammaticalGender) {
+    var firstPart = parts.get(0);
+    if (firstPart instanceof SoyMsgViewerGrammaticalGenderPart) {
+      // If there's a gender part, it will include the whole message and be the only part.
+      Preconditions.checkState(parts.size() == 1);
+      return ((SoyMsgViewerGrammaticalGenderPart) firstPart)
+          .getPartsForGender(viewerGrammaticalGender);
+    }
+    return parts;
   }
 
   /** Returns {@code true} if the message with the given id exists. */

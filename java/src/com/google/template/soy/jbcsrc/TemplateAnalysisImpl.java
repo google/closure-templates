@@ -62,6 +62,7 @@ import com.google.template.soy.msgs.restricted.SoyMsgPlaceholderPart;
 import com.google.template.soy.msgs.restricted.SoyMsgPluralPart;
 import com.google.template.soy.msgs.restricted.SoyMsgRawTextPart;
 import com.google.template.soy.msgs.restricted.SoyMsgSelectPart;
+import com.google.template.soy.msgs.restricted.SoyMsgViewerGrammaticalGenderPart;
 import com.google.template.soy.shared.RangeArgs;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
@@ -541,7 +542,7 @@ final class TemplateAnalysisImpl implements TemplateAnalysis {
           continue;
         }
         if (part instanceof SoyMsgPluralPart) {
-          checkState(parts.size() == 1); // sanity test
+          checkState(parts.size() == 1); // sanity check
           SoyMsgPluralPart plural = (SoyMsgPluralPart) part;
           // plural variables are always evaluated
           evalInline(msgNode.getRepPluralNode(plural.getPluralVarName()).getExpr());
@@ -552,12 +553,15 @@ final class TemplateAnalysisImpl implements TemplateAnalysis {
           // case.
           evalPlrSelCases(msgNode, plural.getCases(), placeholderBlocks);
         } else if (part instanceof SoyMsgSelectPart) {
-          checkState(parts.size() == 1); // sanity test
+          checkState(parts.size() == 1); // sanity check
           SoyMsgSelectPart select = (SoyMsgSelectPart) part;
           // select variables are always evaluated
           evalInline(msgNode.getRepSelectNode(select.getSelectVarName()).getExpr());
           // Recursively visit select cases
           evalPlrSelCases(msgNode, select.getCases(), placeholderBlocks);
+        } else if (part instanceof SoyMsgViewerGrammaticalGenderPart) {
+          checkState(parts.size() == 1); // sanity check
+          // No variables for ViewerGrammaticalGenderPart
         } else if (part instanceof SoyMsgPlaceholderPart) {
           SoyMsgPlaceholderPart placeholder = (SoyMsgPlaceholderPart) part;
           SoyNode placeholderNode = msgNode.getRepPlaceholderNode(placeholder.getPlaceholderName());

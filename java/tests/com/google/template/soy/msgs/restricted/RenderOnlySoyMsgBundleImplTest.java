@@ -22,6 +22,7 @@ import static com.google.common.truth.Truth.assertWithMessage;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import com.google.template.soy.msgs.GrammaticalGender;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.restricted.RenderOnlySoyMsgBundleImpl.RenderOnlySoyMsg;
 import java.util.List;
@@ -84,6 +85,28 @@ public class RenderOnlySoyMsgBundleImplTest {
         .build();
   }
 
+  /** Creates a message with a gender part. */
+  private SoyMsg createGenderMsg(long id) {
+    return SoyMsg.builder()
+        .setId(id)
+        .setLocaleString(LOCALE)
+        .setIsPlrselMsg(true)
+        .setParts(
+            ImmutableList.of(
+                new SoyMsgViewerGrammaticalGenderPart(
+                    ImmutableList.of(
+                        SoyMsgPart.Case.create(
+                            GrammaticalGender.MASCULINE,
+                            ImmutableList.of(SoyMsgRawTextPart.of("Male message " + id))),
+                        SoyMsgPart.Case.create(
+                            GrammaticalGender.FEMININE,
+                            ImmutableList.of(SoyMsgRawTextPart.of("Female message " + id))),
+                        SoyMsgPart.Case.create(
+                            GrammaticalGender.OTHER,
+                            ImmutableList.of(SoyMsgRawTextPart.of("Other message " + id)))))))
+        .build();
+  }
+
   @Before
   public void setUp() throws Exception {
 
@@ -99,7 +122,8 @@ public class RenderOnlySoyMsgBundleImplTest {
             createMessageWithPlaceholder(264),
             createSelectMsg(832),
             createSelectMsg(791),
-            createSelectMsg(6065559473112027469L));
+            createSelectMsg(6065559473112027469L),
+            createGenderMsg(123L));
     bundle =
         new RenderOnlySoyMsgBundleImpl(
             new RenderOnlyMsgIndex(),
@@ -253,5 +277,13 @@ public class RenderOnlySoyMsgBundleImplTest {
                 .collect(toImmutableList()));
     assertThat(smallBundle.getMsg(9L)).isNull();
     assertThat(largeBundle.getMsg(9L)).isEqualTo(createSimpleMsg(9L));
+  }
+
+  @Test
+  public void testViewerGender() {
+    SoyMsgRawParts parts = bundle.getMsgPartsForRendering(123L);
+    assertThat(parts.toSoyMsgParts()).containsExactly(SoyMsgRawTextPart.of("Other message 123"));
+
+    assertThat(bundle.getBasicTranslation(123L)).isEqualTo("Other message 123");
   }
 }

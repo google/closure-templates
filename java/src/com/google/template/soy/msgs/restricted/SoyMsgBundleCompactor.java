@@ -89,8 +89,7 @@ public final class SoyMsgBundleCompactor {
     } else if (part instanceof SoyMsgViewerGrammaticalGenderPart) {
       result = compactViewerGrammaticalGender((SoyMsgViewerGrammaticalGenderPart) part);
     } else if (part instanceof SoyMsgPlaceholderPart) {
-      return PlaceholderName.create(
-          ((SoyMsgPlaceholderPart) part).getPlaceholderName()); // already interned
+      return PlaceholderName.create(((SoyMsgPlaceholderPart) part).getPlaceholderName());
     } else {
       result = ((SoyMsgRawTextPart) part).getRawText();
     }

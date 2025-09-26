@@ -23,6 +23,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
+import com.google.template.soy.msgs.GrammaticalGender;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.ibm.icu.util.ULocale;
 import java.util.ArrayList;
@@ -71,7 +72,7 @@ public final class RenderOnlySoyMsgBundleImpl extends SoyMsgBundle {
   private final ULocale locale;
   private final boolean isRtl;
 
-  private final RenderOnlyMsgIndex.Accessor accesor;
+  private final RenderOnlyMsgIndex.Accessor accessor;
   private final int size;
 
   /**
@@ -113,7 +114,7 @@ public final class RenderOnlySoyMsgBundleImpl extends SoyMsgBundle {
     this.isRtl = BidiGlobalDir.forStaticLocale(localeString) == BidiGlobalDir.RTL;
 
     var copy = ImmutableList.copyOf(msgs);
-    this.accesor = messageIndex.buildAccessor(copy);
+    this.accessor = messageIndex.buildAccessor(copy);
     this.size = copy.size();
   }
 
@@ -124,7 +125,7 @@ public final class RenderOnlySoyMsgBundleImpl extends SoyMsgBundle {
     this.localeString = localeString;
     this.locale = localeString == null ? null : new ULocale(localeString);
     this.isRtl = BidiGlobalDir.forStaticLocale(localeString) == BidiGlobalDir.RTL;
-    this.accesor = exemplar.accesor;
+    this.accessor = exemplar.accessor;
     this.size = exemplar.size;
   }
 
@@ -159,25 +160,39 @@ public final class RenderOnlySoyMsgBundleImpl extends SoyMsgBundle {
   @Nullable
   @Override
   public SoyMsg getMsg(long msgId) {
-    var value = getMsgPartsForRendering(msgId);
+    var value = this.accessor.getParts(msgId);
     return value != null ? resurrectMsg(msgId, value) : null;
   }
 
   @Override
   public boolean hasMsg(long msgId) {
-    return this.accesor.has(msgId);
+    return this.accessor.has(msgId);
   }
 
   @Nullable
   @Override
   public SoyMsgRawParts getMsgPartsForRendering(long msgId) {
-    return this.accesor.getParts(msgId);
+    SoyMsgRawParts parts = this.accessor.getParts(msgId);
+    if (parts == null) {
+      return null;
+    }
+
+    if (parts instanceof SoyMsgViewerGrammaticalGenderPartForRendering) {
+      return ((SoyMsgViewerGrammaticalGenderPartForRendering) parts)
+          .getSoyMsgRawPartsForGender(GrammaticalGender.OTHER);
+    }
+    return parts;
   }
 
   @Override
   @Nullable
   public String getBasicTranslation(long msgId) {
-    return this.accesor.getBasicTranslation(msgId);
+    SoyMsgRawParts parts = this.accessor.getParts(msgId);
+    if (parts == null) {
+      return null;
+    }
+    SoyMsgPart part = findPartsForGender(parts.toSoyMsgParts(), GrammaticalGender.OTHER).get(0);
+    return ((SoyMsgRawTextPart) part).getRawText();
   }
 
   @Override
@@ -191,7 +206,7 @@ public final class RenderOnlySoyMsgBundleImpl extends SoyMsgBundle {
     // We could do something more efficient, but this is not a hot path. In fact this method is
     // never called in production.
     List<SoyMsg> msgs = new ArrayList<>(size);
-    accesor.forEach((id, parts) -> msgs.add(resurrectMsg(id, parts)));
+    accessor.forEach((id, parts) -> msgs.add(resurrectMsg(id, parts)));
     Collections.sort(msgs, comparing(SoyMsg::getId));
     return msgs.iterator();
   }
