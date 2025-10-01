@@ -1727,9 +1727,8 @@ final class ExpressionCompiler {
         }
       } else if (function instanceof SoySourceFunctionMethod) {
         SoySourceFunctionMethod sourceMethod = (SoySourceFunctionMethod) function;
-        List<SoyExpression> args = new ArrayList<>(node.numParams() + 1);
-        args.add(baseExpr);
-        node.getParams().forEach(n -> args.add(visit(n)));
+        ImmutableList<SoyExpression> args =
+            visitAllParams(node, ImmutableList.<SoyExpression>builder().add(baseExpr));
         Optional<Extern> externApi = ExternAdaptors.asExtern(sourceMethod, args);
         if (externApi.isPresent()) {
           return callExtern(externApi.get(), args);
@@ -2039,9 +2038,13 @@ final class ExpressionCompiler {
       return asImmutableList(adaptedArgs);
     }
 
-    private ImmutableList<SoyExpression> visitAllParams(FunctionNode node) {
+    private ImmutableList<SoyExpression> visitAllParams(ExprNode.CallableExpr node) {
+      return visitAllParams(node, ImmutableList.builder());
+    }
+
+    private ImmutableList<SoyExpression> visitAllParams(
+        ExprNode.CallableExpr node, ImmutableList.Builder<SoyExpression> builder) {
       List<ExprNode> params = node.getParams();
-      ImmutableList.Builder<SoyExpression> builder = ImmutableList.builder();
       for (int i = 0; i < node.getAllowedParamTypes().size(); i++) {
         if (node.isVarArgs() && i == node.getAllowedParamTypes().size() - 1) {
           if (!params.isEmpty() && params.get(i) instanceof SpreadOpNode) {

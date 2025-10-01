@@ -419,6 +419,8 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
   private static final SoyErrorKind SPREAD_NOT_VARARGS =
       SoyErrorKind.of(
           "Spread expression argument found where function does not accept a varargs parameter.");
+  private static final SoyErrorKind SPREAD_NOT_ITERABLE =
+      SoyErrorKind.of("Spread operator cannot be used with non-iterable types.");
 
   private final ErrorReporter errorReporter;
 
@@ -1571,6 +1573,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
         return;
       }
 
+      checkSpread(node);
       node.setSoyMethod(method);
 
       if (method instanceof BuiltinMethod) {
@@ -1616,13 +1619,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
           SoyType elementType =
               SoyTypes.getIterableElementType(typeRegistry, node.getBaseType(false));
           for (ExprNode param : node.getParams()) {
-            if (!elementType.isAssignableFromStrict(param.getType())) {
-              errorReporter.report(
-                  param.getSourceLocation(),
-                  GENERIC_PARAM_NOT_ASSIGNABLE,
-                  param.getType(),
-                  elementType);
-            }
+            checkMethodParamType(param, elementType);
           }
           node.setType(sourceMethod.getReturnType());
         } else if (sourceFunction instanceof Pop || sourceFunction instanceof Shift) {
@@ -1631,27 +1628,13 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
           SoyType elementType =
               SoyTypes.getIterableElementType(typeRegistry, node.getBaseType(false));
           for (int i = 2; i < node.getParams().size(); i++) {
-            ExprNode param = node.getParam(i);
-            if (!elementType.isAssignableFromStrict(param.getType())) {
-              errorReporter.report(
-                  param.getSourceLocation(),
-                  GENERIC_PARAM_NOT_ASSIGNABLE,
-                  param.getType(),
-                  elementType);
-            }
+            checkMethodParamType(node.getParam(i), elementType);
           }
           node.setType(baseType);
         } else if (sourceFunction instanceof Fill) {
           SoyType elementType =
               SoyTypes.getIterableElementType(typeRegistry, node.getBaseType(false));
-          ExprNode param = node.getParam(0);
-          if (!elementType.isAssignableFromStrict(param.getType())) {
-            errorReporter.report(
-                param.getSourceLocation(),
-                GENERIC_PARAM_NOT_ASSIGNABLE,
-                param.getType(),
-                elementType);
-          }
+          checkMethodParamType(node.getParam(0), elementType);
           node.setType(baseType);
         } else if (sourceFunction instanceof ListFlatMethod) {
           // Determine type for common cases:
@@ -1806,6 +1789,35 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
       return null;
     }
 
+    private void checkSpread(ExprNode.CallableExpr node) {
+      List<ExprNode> params = node.getParams();
+      for (int i = 0; i < params.size(); i++) {
+        ExprNode param = params.get(i);
+        if (param instanceof SpreadOpNode) {
+          if (i < params.size() - 1) {
+            errorReporter.report(node.getSourceLocation(), SPREAD_NOT_VARARGS);
+          }
+          SpreadOpNode spreadOpNode = (SpreadOpNode) param;
+          visit(spreadOpNode);
+          if (!(spreadOpNode.getChild(0).getType() instanceof AbstractIterableType)) {
+            errorReporter.report(node.getSourceLocation(), SPREAD_NOT_ITERABLE);
+          }
+        }
+      }
+    }
+
+    private void checkMethodParamType(ExprNode param, SoyType elementType) {
+      SoyType paramType = param.getType();
+      if (param instanceof SpreadOpNode
+          && ((SpreadOpNode) param).getChild(0).getType() instanceof ListType) {
+        paramType = ((ListType) ((SpreadOpNode) param).getChild(0).getType()).getElementType();
+      }
+      if (!elementType.isAssignableFromStrict(paramType)) {
+        errorReporter.report(
+            param.getSourceLocation(), GENERIC_PARAM_NOT_ASSIGNABLE, paramType, elementType);
+      }
+    }
+
     private List<SoyType> getParamTypes(SoyMethod method, SoyType baseType) {
       if (method instanceof SoySourceFunctionMethod) {
         SoySourceFunctionMethod sourceMethod = (SoySourceFunctionMethod) method;
@@ -1830,9 +1842,11 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
     private boolean appliesToArgs(SoyMethod method, SoyType baseType, List<SoyType> argTypes) {
       if (method instanceof SoySourceFunctionMethod) {
         List<SoyType> allowedTypes = getParamTypes(method, baseType);
-        Preconditions.checkArgument(argTypes.size() == allowedTypes.size());
+        Preconditions.checkArgument(argTypes.size() >= allowedTypes.size());
         for (int i = 0; i < argTypes.size(); i++) {
-          if (!allowedTypes.get(i).isAssignableFromStrict(argTypes.get(i))) {
+          if (!allowedTypes
+              .get(min(i, allowedTypes.size() - 1))
+              .isAssignableFromStrict(argTypes.get(i))) {
             return false;
           }
         }
@@ -2238,25 +2252,8 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
           return;
         }
       }
-      boolean containsSpread = node.containsSpread();
-      if (containsSpread) {
-        List<ExprNode> params = node.getParams();
-        for (int i = 0; i < params.size(); i++) {
-          ExprNode param = params.get(i);
-          if (param instanceof SpreadOpNode) {
-            if (i < params.size() - 1) {
-              errorReporter.report(node.getSourceLocation(), SPREAD_NOT_VARARGS);
-            }
-            SpreadOpNode spreadOpNode = (SpreadOpNode) param;
-            visit(spreadOpNode);
-            if (!(spreadOpNode.getChild(0).getType() instanceof AbstractIterableType)) {
-              errorReporter.report(
-                  node.getSourceLocation(),
-                  SoyErrorKind.of("Spread operator cannot be used with non-iterable types."));
-            }
-          }
-        }
-      }
+      boolean containsSpread = node.getParams().stream().anyMatch(SpreadOpNode.class::isInstance);
+      checkSpread(node);
 
       visitChildren(node);
       if (!node.hasStaticName()) {
@@ -3309,7 +3306,8 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
                                             baseType,
                                             returnType,
                                             argTypes,
-                                            methodSig.name());
+                                            methodSig.name(),
+                                            signature.isVarArgs());
                                       });
                             })
                         .collect(toImmutableList());
@@ -3375,7 +3373,12 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
                               SoyType returnType =
                                   parseType(fieldSig.returnType(), fakeFunctionPath);
                               return new SoySourceFunctionMethod(
-                                  f, baseType, returnType, ImmutableList.of(), fieldSig.name());
+                                  f,
+                                  baseType,
+                                  returnType,
+                                  ImmutableList.of(),
+                                  fieldSig.name(),
+                                  false);
                             })
                         .collect(toImmutableList());
                   }

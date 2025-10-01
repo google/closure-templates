@@ -156,6 +156,7 @@ import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.FunctionType;
 import com.google.template.soy.types.FunctionType.Parameter;
+import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.MessageType;
 import com.google.template.soy.types.MutableListType;
 import com.google.template.soy.types.SoyProtoType;
@@ -742,10 +743,16 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
       }
     } else if (method instanceof SoySourceFunctionMethod) {
       SoySourceFunctionMethod sourceMethod = (SoySourceFunctionMethod) method;
-      List<SoyValue> args = new ArrayList<>(methodNode.numParams() + 1);
-      args.add(base);
-      methodNode.getParams().forEach(n -> args.add(visit(n)));
+      ImmutableList<SoyValue> args =
+          visitAllParams(methodNode, ImmutableList.<SoyValue>builder().add(base));
       if (sourceMethod.getImpl() instanceof SoyJavaExternFunction) {
+        ImmutableList<SoyType> paramTypes = sourceMethod.getParamTypes();
+        if (methodNode.isVarArgs()) {
+          List<SoyType> newParamTypes = new ArrayList<>(paramTypes);
+          SoyType lastParamType = newParamTypes.remove(newParamTypes.size() - 1);
+          newParamTypes.add(ListType.of(lastParamType));
+          paramTypes = ImmutableList.copyOf(newParamTypes);
+        }
         return visitExtern(
             methodNode,
             (SoyJavaExternFunction) sourceMethod.getImpl(),
@@ -755,7 +762,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
             sourceMethod.getReturnType(),
             ImmutableList.<SoyType>builder()
                 .add(sourceMethod.getBaseType())
-                .addAll(sourceMethod.getParamTypes())
+                .addAll(paramTypes)
                 .build());
       }
       return computeFunctionHelper(
@@ -1013,7 +1020,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
       }
       throw new AssertionError();
     } else if (soyFunction instanceof SoyJavaFunction) {
-      ImmutableList<SoyValue> args = visitParams(node);
+      ImmutableList<SoyValue> args = visitAllParams(node);
       SoyJavaFunction fn = (SoyJavaFunction) soyFunction;
       // Note: Arity has already been checked by CheckFunctionCallsVisitor.
       return computeFunctionHelper(fn, args, node);
@@ -1025,7 +1032,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
           node.getType(),
           node.getAllowedParamTypes());
     } else if (soyFunction instanceof SoyJavaSourceFunction) {
-      ImmutableList<SoyValue> args = visitParams(node);
+      ImmutableList<SoyValue> args = visitAllParams(node);
       SoyJavaSourceFunction fn = (SoyJavaSourceFunction) soyFunction;
       // Note: Arity has already been checked by CheckFunctionCallsVisitor.
       return computeFunctionHelper(args, JavaPluginExecContext.forFunctionNode(node, fn));
@@ -1057,25 +1064,29 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     }
   }
 
-  private ImmutableList<SoyValue> visitParams(FunctionNode node) {
+  private ImmutableList<SoyValue> visitAllParams(ExprNode.CallableExpr node) {
+    return visitAllParams(node, ImmutableList.builder());
+  }
+
+  private ImmutableList<SoyValue> visitAllParams(
+      ExprNode.CallableExpr node, ImmutableList.Builder<SoyValue> builder) {
     if (node.getAllowedParamTypes() == null) {
       return ImmutableList.copyOf(visitChildren(node));
     }
-    List<ExprNode> params = node.getParams();
-    ImmutableList.Builder<SoyValue> builder = ImmutableList.builder();
+    List<ExprNode> passedInParams = node.getParams();
     for (int i = 0; i < node.getAllowedParamTypes().size(); i++) {
       if (node.isVarArgs() && i == node.getAllowedParamTypes().size() - 1) {
-        if (!params.isEmpty() && params.get(i) instanceof SpreadOpNode) {
-          builder.add(visit(((SpreadOpNode) params.get(i)).getChild(0)));
+        if (!passedInParams.isEmpty() && passedInParams.get(i) instanceof SpreadOpNode) {
+          builder.add(visit(((SpreadOpNode) passedInParams.get(i)).getChild(0)));
         } else {
           SoyListData varArgsParamList = new SoyListData();
-          for (int j = i; j < params.size(); j++) {
-            varArgsParamList.add(visit(params.get(j)));
+          for (int j = i; j < passedInParams.size(); j++) {
+            varArgsParamList.add(visit(passedInParams.get(j)));
           }
           builder.add(varArgsParamList);
         }
       } else {
-        builder.add(visit(params.get(i)));
+        builder.add(visit(passedInParams.get(i)));
       }
     }
     return builder.build();

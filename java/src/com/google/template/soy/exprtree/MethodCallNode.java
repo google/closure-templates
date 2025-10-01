@@ -25,6 +25,7 @@ import com.google.template.soy.base.SourceLocation.Point;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.shared.restricted.SoyMethod;
+import com.google.template.soy.shared.restricted.SoySourceFunctionMethod;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypes;
 import java.util.List;
@@ -186,9 +187,17 @@ public final class MethodCallNode extends DataAccessNode implements ExprNode.Cal
     return methodName;
   }
 
-  // TODO(b/431281119): Implement this method.
   @Override
   public boolean isVarArgs() {
-    return false;
+    Preconditions.checkState(isMethodResolved());
+    Preconditions.checkState(method instanceof SoySourceFunctionMethod);
+    return ((SoySourceFunctionMethod) method).isVarArgs();
+  }
+
+  @Override
+  public ImmutableList<SoyType> getAllowedParamTypes() {
+    Preconditions.checkState(isMethodResolved());
+    Preconditions.checkState(method instanceof SoySourceFunctionMethod);
+    return ((SoySourceFunctionMethod) method).getParamTypes();
   }
 }

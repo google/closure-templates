@@ -833,15 +833,19 @@ public final class BasicFunctionsRuntime {
     return listFill(impl, value, start, end);
   }
 
-  public static int listPush(List<SoyValue> list, Object value) {
-    list.add(SoyValueConverter.INSTANCE.convert(value).resolve());
+  public static int listPush(List<SoyValue> list, List<Object> args) {
+    list.addAll(
+        args.stream()
+            .map(SoyValueConverter.INSTANCE::convert)
+            .map(SoyValueProvider::resolve)
+            .collect(toImmutableList()));
     return list.size();
   }
 
-  public static int listPush(SoyValue list, Object value) {
+  public static int listPush(SoyValue list, List<Object> args) {
     @SuppressWarnings("unchecked")
     List<SoyValue> impl = (List<SoyValue>) list.asJavaList();
-    return listPush(impl, value);
+    return listPush(impl, args);
   }
 
   public static SoyValue listPop(List<SoyValue> list) {
@@ -855,15 +859,20 @@ public final class BasicFunctionsRuntime {
     return listPop(impl);
   }
 
-  public static int listUnshift(List<SoyValue> list, Object value) {
-    list.add(0, SoyValueConverter.INSTANCE.convert(value).resolve());
+  public static int listUnshift(List<SoyValue> list, List<Object> args) {
+    list.addAll(
+        0,
+        args.stream()
+            .map(SoyValueConverter.INSTANCE::convert)
+            .map(SoyValueProvider::resolve)
+            .collect(toImmutableList()));
     return list.size();
   }
 
-  public static int listUnshift(SoyValue list, Object value) {
+  public static int listUnshift(SoyValue list, List<Object> args) {
     @SuppressWarnings("unchecked")
     List<SoyValue> impl = (List<SoyValue>) list.asJavaList();
-    return listUnshift(impl, value);
+    return listUnshift(impl, args);
   }
 
   public static SoyValue listShift(List<SoyValue> list) {
@@ -900,13 +909,19 @@ public final class BasicFunctionsRuntime {
   }
 
   public static List<SoyValue> listSplice(
-      List<SoyValue> list, long start, long count, Object insert) {
+      List<SoyValue> list, long start, long count, List<Object> args) {
     List<SoyValue> rv = listSplice(list, start, count);
-    list.add((int) start, SoyValueConverter.INSTANCE.convert(insert).resolve());
+    list.addAll(
+        (int) start,
+        args.stream()
+            .map(SoyValueConverter.INSTANCE::convert)
+            .map(SoyValueProvider::resolve)
+            .collect(toImmutableList()));
     return rv;
   }
 
-  public static List<SoyValue> listSplice(SoyValue list, long start, long count, Object insert) {
+  public static List<SoyValue> listSplice(
+      SoyValue list, long start, long count, List<Object> insert) {
     @SuppressWarnings("unchecked")
     List<SoyValue> impl = (List<SoyValue>) list.asJavaList();
     return listSplice(impl, start, count, insert);

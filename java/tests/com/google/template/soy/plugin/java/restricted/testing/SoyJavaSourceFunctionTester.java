@@ -182,7 +182,8 @@ public class SoyJavaSourceFunctionTester {
             parseType(methodSig.baseType()),
             returnType,
             stream(matchingSig.parameterTypes()).map(this::parseType).collect(toImmutableList()),
-            methodSig.name()));
+            methodSig.name(),
+            matchingSig.isVarArgs()));
     methodCallNode.setType(returnType);
 
     try {

@@ -175,7 +175,7 @@ public interface ExprNode extends Node {
   interface AccessChainComponentNode extends ParentExprNode {}
 
   /** Common interface for nodes that represent a function or method call. */
-  interface CallableExpr extends ExprNode {
+  interface CallableExpr extends ParentExprNode {
 
     /** The source positions of commas. Sometimes available to aid the formatter. */
     Optional<ImmutableList<Point>> getCommaLocations();
@@ -205,6 +205,9 @@ public interface ExprNode extends Node {
 
     /** Whether the call node has a variable arguments parameter. */
     boolean isVarArgs();
+
+    /** The allowed types of the parameters, if known. */
+    List<SoyType> getAllowedParamTypes();
 
     /** How parameters are passed to the call. */
     enum ParamsStyle {

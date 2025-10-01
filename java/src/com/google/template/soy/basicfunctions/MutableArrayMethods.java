@@ -89,7 +89,8 @@ public final class MutableArrayMethods {
       value = {
         @Signature(
             parameterTypes = {"any"},
-            returnType = "number"),
+            returnType = "number",
+            isVarArgs = true),
       })
   @SoyPureFunction
   public static class Push implements SoyJavaExternFunction, SoyJavaScriptSourceFunction {
@@ -144,14 +145,15 @@ public final class MutableArrayMethods {
     }
   }
 
-  /** Array.push(). */
+  /** Array.unshift(). */
   @SoyMethodSignature(
       name = "unshift",
       baseType = "mutable_list<any>",
       value = {
         @Signature(
             parameterTypes = {"any"},
-            returnType = "number"),
+            returnType = "number",
+            isVarArgs = true),
       })
   @SoyPureFunction
   public static class Unshift implements SoyJavaExternFunction, SoyJavaScriptSourceFunction {
@@ -219,7 +221,8 @@ public final class MutableArrayMethods {
             returnType = "list<any>"),
         @Signature(
             parameterTypes = {"number", "number", "any"},
-            returnType = "list<any>"),
+            returnType = "list<any>",
+            isVarArgs = true),
       })
   @SoyPureFunction
   public static class Splice implements SoyJavaExternFunction, SoyJavaScriptSourceFunction {
@@ -283,9 +286,9 @@ public final class MutableArrayMethods {
             long.class);
 
     static final Method LIST_PUSH_BOXED =
-        createMethod(BasicFunctionsRuntime.class, "listPush", SoyValue.class, Object.class);
+        createMethod(BasicFunctionsRuntime.class, "listPush", SoyValue.class, List.class);
     static final Method LIST_PUSH_UNBOXED =
-        createMethod(BasicFunctionsRuntime.class, "listPush", List.class, Object.class);
+        createMethod(BasicFunctionsRuntime.class, "listPush", List.class, List.class);
 
     static final Method LIST_POP_BOXED =
         createMethod(BasicFunctionsRuntime.class, "listPop", SoyValue.class);
@@ -293,9 +296,9 @@ public final class MutableArrayMethods {
         createMethod(BasicFunctionsRuntime.class, "listPop", List.class);
 
     static final Method LIST_UNSHIFT_BOXED =
-        createMethod(BasicFunctionsRuntime.class, "listUnshift", SoyValue.class, Object.class);
+        createMethod(BasicFunctionsRuntime.class, "listUnshift", SoyValue.class, List.class);
     static final Method LIST_UNSHIFT_UNBOXED =
-        createMethod(BasicFunctionsRuntime.class, "listUnshift", List.class, Object.class);
+        createMethod(BasicFunctionsRuntime.class, "listUnshift", List.class, List.class);
 
     static final Method LIST_SHIFT_BOXED =
         createMethod(BasicFunctionsRuntime.class, "listShift", SoyValue.class);
@@ -318,7 +321,7 @@ public final class MutableArrayMethods {
             SoyValue.class,
             long.class,
             long.class,
-            Object.class);
+            List.class);
     static final Method LIST_SPLICE3_UNBOXED =
         createMethod(
             BasicFunctionsRuntime.class,
@@ -326,6 +329,6 @@ public final class MutableArrayMethods {
             List.class,
             long.class,
             long.class,
-            Object.class);
+            List.class);
   }
 }

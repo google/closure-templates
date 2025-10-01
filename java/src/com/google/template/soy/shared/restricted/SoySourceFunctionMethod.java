@@ -28,18 +28,21 @@ public final class SoySourceFunctionMethod implements SoyMethod {
   private final SoyType returnType;
   private final ImmutableList<SoyType> paramTypes;
   private final String methodName;
+  private final boolean isVarArgs;
 
   public SoySourceFunctionMethod(
       SoySourceFunction impl,
       SoyType baseType,
       SoyType returnType,
       ImmutableList<SoyType> paramTypes,
-      String methodName) {
+      String methodName,
+      boolean isVarArgs) {
     this.impl = impl;
     this.baseType = baseType;
     this.returnType = returnType;
     this.paramTypes = paramTypes;
     this.methodName = methodName;
+    this.isVarArgs = isVarArgs;
   }
 
   @Override
@@ -49,7 +52,18 @@ public final class SoySourceFunctionMethod implements SoyMethod {
 
   @Override
   public boolean acceptsArgCount(int count) {
+    if (isVarArgs) {
+      return count >= paramTypes.size();
+    }
     return paramTypes.size() == count;
+  }
+
+  public boolean isVarArgs() {
+    return isVarArgs;
+  }
+
+  public ImmutableList<SoyType> getParamTypes() {
+    return paramTypes;
   }
 
   public SoySourceFunction getImpl() {
@@ -62,10 +76,6 @@ public final class SoySourceFunctionMethod implements SoyMethod {
 
   public SoyType getReturnType() {
     return returnType;
-  }
-
-  public ImmutableList<SoyType> getParamTypes() {
-    return paramTypes;
   }
 
   public boolean appliesToBase(SoyType baseType) {
