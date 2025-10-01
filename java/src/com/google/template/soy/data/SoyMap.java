@@ -93,6 +93,49 @@ public abstract class SoyMap extends SoyRecord {
    */
   public abstract SoyValueProvider getProvider(SoyValue key);
 
+  /**
+   * Deletes a value from this SoyMap.
+   *
+   * <p>Mutable maps are only allowed in externs.
+   *
+   * @param key The item key to delete.
+   * @return Whether an item was deleted.
+   * @throws SoyDataException if the map is immutable.
+   */
+  public boolean delete(SoyValue key) {
+    throw new SoyDataException(
+        String.format("Map of type %s does not support delete()", getSoyTypeName()));
+  }
+
+  /**
+   * Sets an item value of this SoyMap.
+   *
+   * <p>Mutable maps are only allowed in externs.
+   *
+   * @param key The item key to set.
+   * @param value The item value to set.
+   * @return This SoyMap for chaining.
+   * @throws SoyDataException if the map is immutable.
+   */
+  public SoyMap set(SoyValue key, SoyValue value) {
+    return set(key, (SoyValueProvider) value);
+  }
+
+  /**
+   * Sets an item value of this SoyMap.
+   *
+   * <p>Mutable maps are only allowed in externs.
+   *
+   * @param key The item key to set.
+   * @param value The item value to set.
+   * @return This SoyMap for chaining.
+   * @throws SoyDataException if the map is immutable.
+   */
+  public SoyMap set(SoyValue key, SoyValueProvider value) {
+    throw new SoyDataException(
+        String.format("Map of type %s does not support set()", getSoyTypeName()));
+  }
+
   @Override
   public final String coerceToString() {
     LoggingAdvisingAppendable mapStr = LoggingAdvisingAppendable.buffering();

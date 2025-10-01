@@ -25,6 +25,7 @@ import com.google.errorprone.annotations.Keep;
 import com.google.template.soy.data.RecordProperty;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueConverter;
+import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.data.internal.SoyMapImpl;
 import com.google.template.soy.data.internal.SoyRecordImpl;
@@ -67,7 +68,7 @@ public final class ExtraConstantBootstraps {
   @Keep
   public static SoyMapImpl constantSoyMap(
       MethodHandles.Lookup lookup, String name, Class<?> type, int salt, Object... keyValuePairs) {
-    ImmutableMap.Builder<SoyValue, SoyValue> map =
+    ImmutableMap.Builder<SoyValue, SoyValueProvider> map =
         ImmutableMap.builderWithExpectedSize(keyValuePairs.length / 2);
     for (int i = 0; i < keyValuePairs.length; i += 2) {
       map.put(
