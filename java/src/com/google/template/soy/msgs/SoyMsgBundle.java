@@ -65,24 +65,25 @@ public abstract class SoyMsgBundle implements Iterable<SoyMsg> {
    * more efficient implementations
    */
   @Nullable
-  public SoyMsgRawParts getMsgPartsForRendering(long msgId) {
+  public SoyMsgRawParts getMsgPartsForRendering(
+      long msgId, GrammaticalGender viewerGrammaticalGender) {
     SoyMsg msg = getMsg(msgId);
     // This will be slow, but all callers should use the RenderOnlySoyMsgBundleImpl which will be
     // fast.
     if (msg == null) {
       return null;
     }
-    return SoyMsgRawParts.fromMsgParts(findPartsForGender(msg.getParts(), GrammaticalGender.OTHER));
+    return SoyMsgRawParts.fromMsgParts(findPartsForGender(msg.getParts(), viewerGrammaticalGender));
   }
 
   /** Returns the plain translated text of a message with no placeholders. */
   @Nullable
-  public String getBasicTranslation(long msgId) {
+  public String getBasicTranslation(long msgId, GrammaticalGender viewerGrammaticalGender) {
     SoyMsg msg = getMsg(msgId);
     if (msg == null) {
       return null;
     }
-    return ((SoyMsgRawTextPart) findPartsForGender(msg.getParts(), GrammaticalGender.OTHER).get(0))
+    return ((SoyMsgRawTextPart) findPartsForGender(msg.getParts(), viewerGrammaticalGender).get(0))
         .getRawText();
   }
 
@@ -155,7 +156,8 @@ public abstract class SoyMsgBundle implements Iterable<SoyMsg> {
 
       @Nullable
       @Override
-      public SoyMsgRawParts getMsgPartsForRendering(long msgId) {
+      public SoyMsgRawParts getMsgPartsForRendering(
+          long msgId, GrammaticalGender viewerGrammaticalGender) {
         return null;
       }
 

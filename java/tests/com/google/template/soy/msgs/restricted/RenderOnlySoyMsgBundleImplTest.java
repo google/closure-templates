@@ -281,9 +281,22 @@ public class RenderOnlySoyMsgBundleImplTest {
 
   @Test
   public void testViewerGender() {
-    SoyMsgRawParts parts = bundle.getMsgPartsForRendering(123L);
+    SoyMsgRawParts parts = bundle.getMsgPartsForRendering(123L, GrammaticalGender.UNSPECIFIED);
     assertThat(parts.toSoyMsgParts()).containsExactly(SoyMsgRawTextPart.of("Other message 123"));
 
-    assertThat(bundle.getBasicTranslation(123L)).isEqualTo("Other message 123");
+    assertThat(bundle.getBasicTranslation(123L, GrammaticalGender.UNSPECIFIED))
+        .isEqualTo("Other message 123");
+
+    parts = bundle.getMsgPartsForRendering(123L, GrammaticalGender.FEMININE);
+    assertThat(parts.toSoyMsgParts()).containsExactly(SoyMsgRawTextPart.of("Female message 123"));
+
+    assertThat(bundle.getBasicTranslation(123L, GrammaticalGender.FEMININE))
+        .isEqualTo("Female message 123");
+
+    parts = bundle.getMsgPartsForRendering(123L, GrammaticalGender.MASCULINE);
+    assertThat(parts.toSoyMsgParts()).containsExactly(SoyMsgRawTextPart.of("Male message 123"));
+
+    assertThat(bundle.getBasicTranslation(123L, GrammaticalGender.MASCULINE))
+        .isEqualTo("Male message 123");
   }
 }

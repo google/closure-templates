@@ -40,7 +40,7 @@ public class SoyMsgBundleCompactorTest {
   private SoyMsgBundle yyMsgBundle;
 
   private SoyMsgRawParts getMsgParts(SoyMsgBundle msgBundle, long id) {
-    return msgBundle.getMsgPartsForRendering(id);
+    return msgBundle.getMsgPartsForRendering(id, GrammaticalGender.UNSPECIFIED);
   }
 
   /** Creates a text-only message. */
@@ -187,26 +187,26 @@ public class SoyMsgBundleCompactorTest {
   @Test
   public void testInterning() {
     assertWithMessage("SoyMsgRawTextPart should be interned")
-        .that(yyMsgBundle.getMsgPartsForRendering(314).getPart(0))
-        .isSameInstanceAs(xxMsgBundle.getMsgPartsForRendering(314).getPart(0));
+        .that(getMsgParts(yyMsgBundle, 314).getPart(0))
+        .isSameInstanceAs(getMsgParts(xxMsgBundle, 314).getPart(0));
     assertWithMessage("SoyMsgRawTextPart should be interned")
-        .that(yyMsgBundle.getMsgPartsForRendering(159).getPart(0))
-        .isSameInstanceAs(xxMsgBundle.getMsgPartsForRendering(159).getPart(0));
+        .that(getMsgParts(yyMsgBundle, 159).getPart(0))
+        .isSameInstanceAs(getMsgParts(xxMsgBundle, 159).getPart(0));
     assertWithMessage("SoyMsgPlaceholderPart should be interned")
-        .that(yyMsgBundle.getMsgPartsForRendering(159).getPart(1))
-        .isSameInstanceAs(xxMsgBundle.getMsgPartsForRendering(159).getPart(1));
+        .that(getMsgParts(yyMsgBundle, 159).getPart(1))
+        .isSameInstanceAs(getMsgParts(xxMsgBundle, 159).getPart(1));
     assertWithMessage("SoyMsgSelectPart should be interned")
-        .that(yyMsgBundle.getMsgPartsForRendering(265))
-        .isSameInstanceAs(xxMsgBundle.getMsgPartsForRendering(265));
+        .that(getMsgParts(yyMsgBundle, 265))
+        .isSameInstanceAs(getMsgParts(xxMsgBundle, 265));
     assertWithMessage("SoyMsgViewerGrammaticalGenderPart should be interned")
-        .that(yyMsgBundle.getMsgPartsForRendering(81))
-        .isSameInstanceAs(xxMsgBundle.getMsgPartsForRendering(81));
+        .that(getMsgParts(yyMsgBundle, 81))
+        .isSameInstanceAs(getMsgParts(xxMsgBundle, 81));
     assertWithMessage("SoyMsgSelectPart should be interned")
-        .that(yyMsgBundle.getMsgPartsForRendering(358))
-        .isSameInstanceAs(xxMsgBundle.getMsgPartsForRendering(358));
+        .that(getMsgParts(yyMsgBundle, 358))
+        .isSameInstanceAs(getMsgParts(xxMsgBundle, 358));
 
-    var select1 = (SoyMsgSelectPartForRendering) xxMsgBundle.getMsgPartsForRendering(265);
-    var select2 = (SoyMsgSelectPartForRendering) xxMsgBundle.getMsgPartsForRendering(266);
+    var select1 = (SoyMsgSelectPartForRendering) getMsgParts(xxMsgBundle, 265);
+    var select2 = (SoyMsgSelectPartForRendering) getMsgParts(xxMsgBundle, 266);
     assertThat(select2).isNotSameInstanceAs(select1);
     assertWithMessage("Select var names should be interned")
         .that(select2.getSelectVarName())
@@ -233,15 +233,18 @@ public class SoyMsgBundleCompactorTest {
 
   @Test
   public void testPluralWithDuplicateCases() {
-    assertThat(
-            ((SoyMsgPluralPartForRendering) xxMsgBundle.getMsgPartsForRendering(42))
-                .lookupCase(1, null))
+    assertThat(((SoyMsgPluralPartForRendering) getMsgParts(xxMsgBundle, 42)).lookupCase(1, null))
         .isEqualTo(SoyMsgRawParts.of("1 coconut"));
   }
 
   @Test
   public void testGrammaticalGender() {
-    assertThat(xxMsgBundle.getMsgPartsForRendering(81).getPart(0)).isEqualTo("Other message 81");
+    assertThat(xxMsgBundle.getMsgPartsForRendering(81, GrammaticalGender.UNSPECIFIED))
+        .isEqualTo(SoyMsgRawParts.of("Other message 81"));
+    assertThat(xxMsgBundle.getMsgPartsForRendering(81, GrammaticalGender.MASCULINE))
+        .isEqualTo(SoyMsgRawParts.of("Male message 81"));
+    assertThat(xxMsgBundle.getMsgPartsForRendering(81, GrammaticalGender.FEMININE))
+        .isEqualTo(SoyMsgRawParts.of("Female message 81"));
   }
 
   @Test
@@ -251,8 +254,12 @@ public class SoyMsgBundleCompactorTest {
     SoyMsgBundleCompactor compactor = new SoyMsgBundleCompactor();
     SoyMsgBundle compactedBundle = compactor.compact(bundle);
 
-    SoyMsgRawParts text = compactedBundle.getMsgPartsForRendering(123);
-
+    SoyMsgRawParts text =
+        compactedBundle.getMsgPartsForRendering(123, GrammaticalGender.UNSPECIFIED);
     assertThat(text).isEqualTo(SoyMsgRawParts.of("Other message 123"));
+    text = compactedBundle.getMsgPartsForRendering(123, GrammaticalGender.MASCULINE);
+    assertThat(text).isEqualTo(SoyMsgRawParts.of("Male message 123"));
+    text = compactedBundle.getMsgPartsForRendering(123, GrammaticalGender.FEMININE);
+    assertThat(text).isEqualTo(SoyMsgRawParts.of("Female message 123"));
   }
 }
