@@ -99,9 +99,8 @@ public final class SoyMsgBundleWithFullLocale extends SoyMsgBundle {
   }
 
   @Override
-  public SoyMsgRawParts getMsgPartsForRendering(
-      long msgId, GrammaticalGender viewerGrammaticalGender) {
-    return delegate.getMsgPartsForRendering(msgId, viewerGrammaticalGender);
+  public SoyMsgRawParts getMsgPartsForRendering(long msgId) {
+    return delegate.getMsgPartsForRendering(msgId);
   }
 
   @Override
@@ -110,8 +109,8 @@ public final class SoyMsgBundleWithFullLocale extends SoyMsgBundle {
   }
 
   @Override
-  public String getBasicTranslation(long msgId, GrammaticalGender viewerGrammaticalGender) {
-    return delegate.getBasicTranslation(msgId, viewerGrammaticalGender);
+  public String getBasicTranslation(long msgId) {
+    return delegate.getBasicTranslation(msgId);
   }
 
   @Override

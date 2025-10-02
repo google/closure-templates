@@ -331,7 +331,7 @@ public final class RenderContext {
    * translation if there is no such message.
    */
   public SoyMsgRawParts getSoyMsgParts(long msgId, SoyMsgRawParts defaultMsgParts) {
-    SoyMsgRawParts msgParts = msgBundle.getMsgPartsForRendering(msgId, viewerGrammaticalGender);
+    SoyMsgRawParts msgParts = msgBundle.getMsgPartsForRendering(msgId);
     if (msgParts == null) {
       return defaultMsgParts;
     }
@@ -343,7 +343,7 @@ public final class RenderContext {
    * message.
    */
   public SoyMsgRawParts getSoyMsgParts(long msgId) {
-    SoyMsgRawParts msgParts = msgBundle.getMsgPartsForRendering(msgId, viewerGrammaticalGender);
+    SoyMsgRawParts msgParts = msgBundle.getMsgPartsForRendering(msgId);
     if (msgParts == null) {
       throw new AssertionError();
     }
@@ -356,10 +356,9 @@ public final class RenderContext {
    */
   public SoyMsgRawParts getSoyMsgPartsWithAlternateId(
       long msgId, SoyMsgRawParts defaultMsgParts, long alternateId) {
-    SoyMsgRawParts msgParts = msgBundle.getMsgPartsForRendering(msgId, viewerGrammaticalGender);
+    SoyMsgRawParts msgParts = msgBundle.getMsgPartsForRendering(msgId);
     if (msgParts == null) {
-      SoyMsgRawParts msgPartsByAlternateId =
-          msgBundle.getMsgPartsForRendering(alternateId, viewerGrammaticalGender);
+      SoyMsgRawParts msgPartsByAlternateId = msgBundle.getMsgPartsForRendering(alternateId);
       if (msgPartsByAlternateId == null) {
         return defaultMsgParts;
       }
@@ -373,10 +372,9 @@ public final class RenderContext {
    * if there is no such message.
    */
   public SoyMsgRawParts getSoyMsgPartsWithAlternateId(long msgId, long alternateId) {
-    SoyMsgRawParts msgParts = msgBundle.getMsgPartsForRendering(msgId, viewerGrammaticalGender);
+    SoyMsgRawParts msgParts = msgBundle.getMsgPartsForRendering(msgId);
     if (msgParts == null) {
-      SoyMsgRawParts msgPartsByAlternateId =
-          msgBundle.getMsgPartsForRendering(alternateId, viewerGrammaticalGender);
+      SoyMsgRawParts msgPartsByAlternateId = msgBundle.getMsgPartsForRendering(alternateId);
       if (msgPartsByAlternateId == null) {
         throw new AssertionError();
       }
@@ -386,19 +384,19 @@ public final class RenderContext {
   }
 
   public String getBasicSoyMsgPart(long msgId, String defaultPart) {
-    String translation = msgBundle.getBasicTranslation(msgId, viewerGrammaticalGender);
+    String translation = msgBundle.getBasicTranslation(msgId);
     return translation == null ? defaultPart : translation;
   }
 
   public String getBasicSoyMsgPart(long msgId) {
-    return msgBundle.getBasicTranslation(msgId, viewerGrammaticalGender);
+    return msgBundle.getBasicTranslation(msgId);
   }
 
   public String getBasicSoyMsgPartWithAlternateId(
       long msgId, String defaultPart, long alternateId) {
-    String translation = msgBundle.getBasicTranslation(msgId, viewerGrammaticalGender);
+    String translation = msgBundle.getBasicTranslation(msgId);
     if (translation == null) {
-      translation = msgBundle.getBasicTranslation(alternateId, viewerGrammaticalGender);
+      translation = msgBundle.getBasicTranslation(alternateId);
       if (translation == null) {
         return defaultPart;
       }
@@ -407,9 +405,9 @@ public final class RenderContext {
   }
 
   public String getBasicSoyMsgPartWithAlternateId(long msgId, long alternateId) {
-    String translation = msgBundle.getBasicTranslation(msgId, viewerGrammaticalGender);
+    String translation = msgBundle.getBasicTranslation(msgId);
     if (translation == null) {
-      translation = msgBundle.getBasicTranslation(alternateId, viewerGrammaticalGender);
+      translation = msgBundle.getBasicTranslation(alternateId);
       if (translation == null) {
         throw new AssertionError();
       }

@@ -48,7 +48,6 @@ import com.google.template.soy.msgs.restricted.SoyMsg;
 import com.google.template.soy.msgs.restricted.SoyMsgBundleImpl;
 import com.google.template.soy.msgs.restricted.SoyMsgPart;
 import com.google.template.soy.msgs.restricted.SoyMsgRawTextPart;
-import com.google.template.soy.msgs.restricted.SoyMsgViewerGrammaticalGenderPart;
 import com.google.template.soy.plugin.java.PluginInstances;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyGeneralOptions;
@@ -175,24 +174,6 @@ public class RenderVisitorTest {
    */
   private void assertRender(String templateBody, String result) throws Exception {
     assertThat(render(templateBody)).isEqualTo(result);
-  }
-
-  /**
-   * Asserts that the given input string (should be a template body) renders to the given result.
-   *
-   * @param templateBody The input string to render (should be a template body).
-   * @param msgBundle The bundle of translated messages.
-   * @param gender The user gender.
-   * @param result The expected rendered result.
-   * @throws Exception If the assertion is not true or if there's an error.
-   */
-  private void assertRenderWithGender(
-      String templateBody,
-      @Nullable SoyMsgBundle msgBundle,
-      GrammaticalGender gender,
-      String result)
-      throws Exception {
-    assertThat(renderWithGender(templateBody, msgBundle, gender)).isEqualTo(result);
   }
 
   /**
@@ -772,53 +753,6 @@ public class RenderVisitorTest {
     ParamStore data = SoyValueConverterUtility.newParams("person", "Bob", "n_people", "nobody");
     assertRenderExceptionWithData(
         templateBody, data, "Plural expression \"$n_people\" doesn't evaluate to number.");
-  }
-
-  @Test
-  public void testRenderMsgViewerGrammaticalGenderStmt() throws Exception {
-    String templateBody = "{msg desc=\"\"}Welcome{/msg}\n";
-    assertRender(templateBody, "Welcome");
-    // With msg bundle.
-    SoyFileNode file =
-        SoyFileSetParserBuilder.forFileContents(
-                "{namespace test}\n{template foo}\n" + templateBody + "{/template}")
-            .parse()
-            .fileSet()
-            .getChild(0);
-
-    MsgNode msgNode = SoyTreeUtils.getAllNodesOfType(file.getChild(0), MsgNode.class).get(0);
-    SoyMsg translatedFallbackMsg =
-        SoyMsg.builder()
-            .setId(MsgUtils.computeMsgIdForDualFormat(msgNode))
-            .setLocaleString("x-zz")
-            .setParts(
-                ImmutableList.of(
-                    new SoyMsgViewerGrammaticalGenderPart(
-                        ImmutableList.of(
-                            SoyMsgPart.Case.create(
-                                GrammaticalGender.FEMININE,
-                                ImmutableList.of(SoyMsgRawTextPart.of("Bienvenida"))),
-                            SoyMsgPart.Case.create(
-                                GrammaticalGender.MASCULINE,
-                                ImmutableList.of(SoyMsgRawTextPart.of("Bienvenido"))),
-                            SoyMsgPart.Case.create(
-                                GrammaticalGender.NEUTER,
-                                ImmutableList.of(
-                                    SoyMsgRawTextPart.of("Te damos la bienvenida (Neutro)"))),
-                            SoyMsgPart.Case.create(
-                                GrammaticalGender.UNSPECIFIED,
-                                ImmutableList.of(
-                                    SoyMsgRawTextPart.of("Te damos la bienvenida (Otro)")))))))
-            .build();
-    SoyMsgBundle msgBundle =
-        new SoyMsgBundleImpl("x-zz", Lists.newArrayList(translatedFallbackMsg));
-
-    assertRenderWithGender(templateBody, msgBundle, GrammaticalGender.FEMININE, "Bienvenida");
-    assertRenderWithGender(templateBody, msgBundle, GrammaticalGender.MASCULINE, "Bienvenido");
-    assertRenderWithGender(
-        templateBody, msgBundle, GrammaticalGender.NEUTER, "Te damos la bienvenida (Neutro)");
-    assertRenderWithGender(
-        templateBody, msgBundle, GrammaticalGender.UNSPECIFIED, "Te damos la bienvenida (Otro)");
   }
 
   @Test

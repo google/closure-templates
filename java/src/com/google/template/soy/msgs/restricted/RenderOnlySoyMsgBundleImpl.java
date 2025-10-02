@@ -169,25 +169,29 @@ public final class RenderOnlySoyMsgBundleImpl extends SoyMsgBundle {
     return this.accessor.has(msgId);
   }
 
+  @Nullable
   @Override
-  public SoyMsgRawParts getMsgPartsForRendering(
-      long msgId, GrammaticalGender viewerGrammaticalGender) {
+  public SoyMsgRawParts getMsgPartsForRendering(long msgId) {
     SoyMsgRawParts parts = this.accessor.getParts(msgId);
+    if (parts == null) {
+      return null;
+    }
+
     if (parts instanceof SoyMsgViewerGrammaticalGenderPartForRendering) {
       return ((SoyMsgViewerGrammaticalGenderPartForRendering) parts)
-          .getSoyMsgRawPartsForGender(viewerGrammaticalGender);
+          .getSoyMsgRawPartsForGender(GrammaticalGender.OTHER);
     }
     return parts;
   }
 
   @Override
   @Nullable
-  public String getBasicTranslation(long msgId, GrammaticalGender viewerGrammaticalGender) {
+  public String getBasicTranslation(long msgId) {
     SoyMsgRawParts parts = this.accessor.getParts(msgId);
     if (parts == null) {
       return null;
     }
-    SoyMsgPart part = findPartsForGender(parts.toSoyMsgParts(), viewerGrammaticalGender).get(0);
+    SoyMsgPart part = findPartsForGender(parts.toSoyMsgParts(), GrammaticalGender.OTHER).get(0);
     return ((SoyMsgRawTextPart) part).getRawText();
   }
 
