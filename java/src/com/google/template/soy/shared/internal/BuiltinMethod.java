@@ -40,7 +40,6 @@ import com.google.template.soy.exprtree.MethodCallNode;
 import com.google.template.soy.internal.proto.Field;
 import com.google.template.soy.internal.proto.Int64ConversionMode;
 import com.google.template.soy.shared.restricted.SoyMethod;
-import com.google.template.soy.types.AbstractMapType;
 import com.google.template.soy.types.BoolType;
 import com.google.template.soy.types.FunctionBindingUtil;
 import com.google.template.soy.types.MapType;
@@ -52,7 +51,6 @@ import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.TemplateBindingUtil;
-import com.google.template.soy.types.UndefinedType;
 import com.google.template.soy.types.UnknownType;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -338,10 +336,7 @@ public enum BuiltinMethod implements SoyMethod {
       SoyType keyType = SoyTypes.getMapKeysType(baseType);
 
       ExprNode arg = params.get(0);
-      if (baseType instanceof AbstractMapType && ((AbstractMapType) baseType).isEmpty()) {
-        errorReporter.report(arg.getParent().getSourceLocation(), EMPTY_MAP_ACCESS);
-        return UndefinedType.getInstance();
-      } else if (!keyType.isAssignableFromLoose(arg.getType())) {
+      if (!keyType.isAssignableFromLoose(arg.getType())) {
         // TypeScript allows get with 'any' typed key.
         errorReporter.report(
             arg.getSourceLocation(), METHOD_INVALID_PARAM_TYPES, "get", arg.getType(), keyType);
@@ -431,8 +426,6 @@ public enum BuiltinMethod implements SoyMethod {
       SoyErrorKind.of("Parameter to bind() must be a record literal.");
   public static final SoyErrorKind METHOD_INVALID_PARAM_TYPES =
       SoyErrorKind.of("Method ''{0}'' called with parameter types ({1}) but expected ({2}).");
-  private static final SoyErrorKind EMPTY_MAP_ACCESS =
-      SoyErrorKind.of("Accessing item in empty map.");
 
   public static final SoyMethod.Registry REGISTRY =
       new Registry() {
