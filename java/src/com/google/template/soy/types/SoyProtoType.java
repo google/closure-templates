@@ -59,7 +59,8 @@ public final class SoyProtoType extends SoyType {
     @Override
     protected SoyType visitMap(FieldDescriptor mapField, SoyType keyType, SoyType valueType) {
       // The value type of a map with a message value is non-nullable (as it is for any map value).
-      return interner.getOrCreateMapType(keyType, SoyTypes.excludeNullish(valueType));
+      return interner.getOrCreateMapType(
+          keyType, SoyTypes.excludeNullish(valueType), /* mutable= */ false);
     }
 
     @Override
