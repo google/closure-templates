@@ -38,7 +38,7 @@ interface ElementCtor<TElement extends SoyElement<{} | null, {}>> {
 export function getSoy<TElement extends SoyElement<{} | null, {}>>(
   node: Node,
   elementCtor: ElementCtor<TElement>,
-  message: string = '',
+  message = '',
 ): TElement {
   assert(
     isDataInitialized(node),
@@ -47,26 +47,27 @@ export function getSoy<TElement extends SoyElement<{} | null, {}>>(
 The DOM node was not rendered by idom.  If it's in a Wiz Component, make sure to
 set 'use_incremental_dom = True'.  Otherwise, use IdomPatcherService or set up a
 hydration model.
-        `.trim(),
+    `.trim(),
   );
 
   const untypedEl = getSoyUntyped(node);
-  assert(
-    untypedEl,
-    `${message}
+  if (!untypedEl) {
+    throw new Error(
+      `${message}
 
-Did not find an {element} on the idom-rendered DOM node. Make sure that the node
-is at the root of the {element}.
+Did not find a Soy {element} on the idom-rendered DOM node. Make sure that the node
+is at the root of the Soy {element}.
       `.trim(),
-  );
+    );
+  }
   const soyEl = assertInstanceof(
     untypedEl,
     elementCtor,
-    message &&
-      message +
-        `
+    `${message}
 
-The DOM node has an {element} of type ${untypedEl!.constructor.name}.`,
+The DOM node has a Soy {element} of type ${untypedEl.constructor.name} that
+does not match the element constructor.
+    `.trim(),
   );
   // We disable state syncing by default when elements are accessed on the
   // theory that the application wants to take control now.
