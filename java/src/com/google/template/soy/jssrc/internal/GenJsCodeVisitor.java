@@ -1631,10 +1631,12 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       JsDoc.Builder jsDocBuilder = JsDoc.builder();
       for (FunctionType.Parameter param : node.getType().getParameters()) {
         JsType jsType = getJsTypeForParamForDeclaration(param.getType());
-        jsDocBuilder.addParam("p$" + param.getName(), jsType.typeExpr());
+        jsDocBuilder.addParam("p$" + param.getName(), jsType.typeExpr()).addGoogRequires(jsType);
       }
-      jsDocBuilder.addParameterizedAnnotation(
-          "return", getJsTypeForParamForDeclaration(node.getType().getReturnType()).typeExpr());
+      JsType returnType = getJsTypeForParamForDeclaration(node.getType().getReturnType());
+      jsDocBuilder
+          .addParameterizedAnnotation("return", returnType.typeExpr())
+          .addGoogRequires(returnType);
 
       Statement body = generateAutoExtern(auto);
       Expression function = Expressions.function(jsDocBuilder.build(), body);

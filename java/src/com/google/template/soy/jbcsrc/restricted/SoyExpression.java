@@ -1034,4 +1034,21 @@ public final class SoyExpression extends Expression {
     }
     return this;
   }
+
+  public SoyExpression coerceTo(SoyRuntimeType soyRuntimeType) {
+    if (soyRuntimeType.runtimeType().getSort() == Type.OBJECT) {
+      if (soyRuntimeType.runtimeType().equals(BytecodeUtils.LIST_TYPE)) {
+        Expression unboxed = unboxAsListOrJavaNull();
+        return (unboxed instanceof SoyExpression)
+            ? (SoyExpression) unboxed
+            : SoyExpression.forList((ListType) soyRuntimeType.soyType(), unboxed);
+      } else if (soyRuntimeType.isKnownProtoOrUnionOfProtos()) {
+        Expression unboxed = unboxAsMessageOrJavaNull(soyRuntimeType.runtimeType());
+        return (unboxed instanceof SoyExpression)
+            ? (SoyExpression) unboxed
+            : SoyExpression.forProto(soyRuntimeType, unboxed);
+      }
+    }
+    return coerceTo(soyRuntimeType.runtimeType());
+  }
 }
