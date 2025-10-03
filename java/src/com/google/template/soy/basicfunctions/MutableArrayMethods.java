@@ -145,6 +145,36 @@ public final class MutableArrayMethods {
     }
   }
 
+  /** Array.reverse(). */
+  @SoyMethodSignature(
+      name = "mutableReverse",
+      baseType = "mutable_list<any>",
+      value = {
+        @Signature(returnType = "list<any>"),
+      })
+  @SoyPureFunction
+  public static class Reverse implements SoyJavaExternFunction, SoyJavaScriptSourceFunction {
+    @Override
+    public JavaScriptValue applyForJavaScriptSource(
+        JavaScriptValueFactory factory,
+        List<JavaScriptValue> args,
+        JavaScriptPluginContext context) {
+      return args.get(0).invokeMethod("reverse");
+    }
+
+    @Override
+    public Method getExternJavaMethod(List<RuntimeType> argTypes) {
+      return argTypes.get(0) == RuntimeType.SOY_VALUE
+          ? Methods.LIST_REVERSE_BOXED
+          : Methods.LIST_REVERSE_UNBOXED;
+    }
+
+    @Override
+    public boolean adaptArgs() {
+      return false;
+    }
+  }
+
   /** Array.unshift(). */
   @SoyMethodSignature(
       name = "unshift",
@@ -259,6 +289,11 @@ public final class MutableArrayMethods {
 
   // lazy singleton pattern, allows other backends to avoid the work.
   private static final class Methods {
+    static final Method LIST_REVERSE_BOXED =
+        createMethod(BasicFunctionsRuntime.class, "mutableListReverse", SoyValue.class);
+    static final Method LIST_REVERSE_UNBOXED =
+        createMethod(BasicFunctionsRuntime.class, "mutableListReverse", List.class);
+
     static final Method LIST_FILL1_BOXED =
         createMethod(BasicFunctionsRuntime.class, "listFill", SoyValue.class, Object.class);
     static final Method LIST_FILL1_UNBOXED =

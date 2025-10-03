@@ -77,6 +77,7 @@ import com.google.template.soy.basicfunctions.MinFunction;
 import com.google.template.soy.basicfunctions.MutableArrayMethods.Fill;
 import com.google.template.soy.basicfunctions.MutableArrayMethods.Pop;
 import com.google.template.soy.basicfunctions.MutableArrayMethods.Push;
+import com.google.template.soy.basicfunctions.MutableArrayMethods.Reverse;
 import com.google.template.soy.basicfunctions.MutableArrayMethods.Shift;
 import com.google.template.soy.basicfunctions.MutableArrayMethods.Splice;
 import com.google.template.soy.basicfunctions.MutableArrayMethods.Unshift;
@@ -1610,6 +1611,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
           }
         } else if (sourceFunction instanceof ListSliceMethod
             || sourceFunction instanceof ListReverseMethod
+            || sourceFunction instanceof Reverse
             || sourceFunction instanceof ListUniqMethod
             || sourceFunction instanceof NumberListSortMethod
             || sourceFunction instanceof SortMethod) {

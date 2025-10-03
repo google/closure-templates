@@ -35,7 +35,7 @@ import com.google.template.soy.shared.restricted.SoyPureFunction;
 import java.lang.reflect.Method;
 import java.util.List;
 
-/** A method that changes strings to lower case. */
+/** A method that changes strings to upper case. */
 @SoyMethodSignature(
     name = "toAsciiUpperCase",
     baseType = "string",

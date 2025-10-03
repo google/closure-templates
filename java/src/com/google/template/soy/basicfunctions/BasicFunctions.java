@@ -71,6 +71,7 @@ public class BasicFunctions {
         new MutableArrayMethods.Fill(),
         new MutableArrayMethods.Pop(),
         new MutableArrayMethods.Push(),
+        new MutableArrayMethods.Reverse(),
         new MutableArrayMethods.Shift(),
         new MutableArrayMethods.Splice(),
         new MutableArrayMethods.Unshift(),

@@ -327,6 +327,8 @@ These methods are only available inside the
 
 ### `Array.pop()` {#mutable_list-any_pop}
 
+### `list.mutableReverse()` {#mutable_list-any_mutableReverse}
+
 ### `Array.unshift(item)` {#mutable_list-any_unshift}
 
 ### `Array.shift()` {#mutable_list-any_shift}

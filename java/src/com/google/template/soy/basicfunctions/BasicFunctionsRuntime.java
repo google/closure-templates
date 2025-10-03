@@ -60,6 +60,7 @@ import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.AbstractList;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -857,6 +858,18 @@ public final class BasicFunctionsRuntime {
     @SuppressWarnings("unchecked")
     List<SoyValue> impl = (List<SoyValue>) list.asJavaList();
     return listPop(impl);
+  }
+
+  @CanIgnoreReturnValue
+  public static List<SoyValue> mutableListReverse(List<SoyValue> list) {
+    Collections.reverse(list);
+    return list;
+  }
+
+  public static List<SoyValue> mutableListReverse(SoyValue list) {
+    @SuppressWarnings("unchecked")
+    List<SoyValue> impl = (List<SoyValue>) list.asJavaList();
+    return mutableListReverse(impl);
   }
 
   public static int listUnshift(List<SoyValue> list, List<Object> args) {
