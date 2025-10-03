@@ -60,30 +60,53 @@ public abstract class SoyMsgBundle implements Iterable<SoyMsg> {
   /**
    * Returns the message parts, or an empty array if there is no such message.
    *
+   * @deprecated Use {@link #getMsgPartsForRendering} instead.
+   */
+  @Nullable
+  @Deprecated
+  public String getBasicTranslation(long msgId) {
+    return getBasicTranslation(msgId, GrammaticalGender.UNSPECIFIED);
+  }
+
+  /** Returns the plain translated text of a message with no placeholders. */
+  @Nullable
+  public String getBasicTranslation(long msgId, GrammaticalGender viewerGrammaticalGender) {
+    SoyMsg msg = getMsg(msgId);
+    if (msg == null) {
+      return null;
+    }
+    return ((SoyMsgRawTextPart) findPartsForGender(msg.getParts(), viewerGrammaticalGender).get(0))
+        .getRawText();
+  }
+
+  /**
+   * Returns the message parts, or an empty array if there is no such message.
+   *
+   * @deprecated Use {@link #getMsgPartsForRendering} with the GrammaticalGender parameter instead.
+   */
+  @Nullable
+  @Deprecated
+  public SoyMsgRawParts getMsgPartsForRendering(long msgId) {
+    return getMsgPartsForRendering(msgId, GrammaticalGender.UNSPECIFIED);
+  }
+
+  /**
+   * Returns the message parts, or an empty array if there is no such message.
+   *
    * <p>This is useful for rendering only use cases when the rest of the {@link SoyMsg} doesn't
    * matter. The default implementation is just {@link SoyMsg#getParts} but some subclasses may have
    * more efficient implementations
    */
   @Nullable
-  public SoyMsgRawParts getMsgPartsForRendering(long msgId) {
+  public SoyMsgRawParts getMsgPartsForRendering(
+      long msgId, GrammaticalGender viewerGrammaticalGender) {
     SoyMsg msg = getMsg(msgId);
     // This will be slow, but all callers should use the RenderOnlySoyMsgBundleImpl which will be
     // fast.
     if (msg == null) {
       return null;
     }
-    return SoyMsgRawParts.fromMsgParts(findPartsForGender(msg.getParts(), GrammaticalGender.OTHER));
-  }
-
-  /** Returns the plain translated text of a message with no placeholders. */
-  @Nullable
-  public String getBasicTranslation(long msgId) {
-    SoyMsg msg = getMsg(msgId);
-    if (msg == null) {
-      return null;
-    }
-    return ((SoyMsgRawTextPart) findPartsForGender(msg.getParts(), GrammaticalGender.OTHER).get(0))
-        .getRawText();
+    return SoyMsgRawParts.fromMsgParts(findPartsForGender(msg.getParts(), viewerGrammaticalGender));
   }
 
   @Nullable
@@ -155,7 +178,8 @@ public abstract class SoyMsgBundle implements Iterable<SoyMsg> {
 
       @Nullable
       @Override
-      public SoyMsgRawParts getMsgPartsForRendering(long msgId) {
+      public SoyMsgRawParts getMsgPartsForRendering(
+          long msgId, GrammaticalGender viewerGrammaticalGender) {
         return null;
       }
 
