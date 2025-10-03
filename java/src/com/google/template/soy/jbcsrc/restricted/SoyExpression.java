@@ -1026,8 +1026,10 @@ public final class SoyExpression extends Expression {
           // Field may be a subclass of SoyValue, so need to perform a cast.
           return SoyExpression.forSoyValue(
               boxed.soyType(), boxed.delegate.checkedCast(runtimeType));
+        } else if (BytecodeUtils.STRING_TYPE.equals(runtimeType)) {
+          return this.unboxAsStringOrJavaNull();
         }
-        // Unhandled cases where we have a boxed value (string, list, message) but require an
+        // Unhandled cases where we have a boxed value (list, message) but require an
         // unboxed value.
     }
     return this;
