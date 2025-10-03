@@ -28,19 +28,11 @@ import com.google.template.soy.soytree.SoyTypeP;
  */
 public final class LegacyObjectMapType extends AbstractMapType {
 
-  /** Special instance used to track empty sets. Only valid with == equality. */
-  private static final LegacyObjectMapType EMPTY =
-      new LegacyObjectMapType(UnknownType.getInstance(), UnknownType.getInstance());
-
   public static final LegacyObjectMapType ANY_MAP =
       new LegacyObjectMapType(AnyType.getInstance(), AnyType.getInstance());
 
   public static LegacyObjectMapType of(SoyType keyType, SoyType valueType) {
     return new LegacyObjectMapType(keyType, valueType);
-  }
-
-  public static LegacyObjectMapType empty() {
-    return EMPTY;
   }
 
   /** The declared type of item keys in this map. */
@@ -52,11 +44,6 @@ public final class LegacyObjectMapType extends AbstractMapType {
   private LegacyObjectMapType(SoyType keyType, SoyType valueType) {
     this.keyType = Preconditions.checkNotNull(keyType);
     this.valueType = Preconditions.checkNotNull(valueType);
-  }
-
-  @Override
-  public boolean isEmpty() {
-    return this == EMPTY;
   }
 
   @Override
@@ -78,11 +65,6 @@ public final class LegacyObjectMapType extends AbstractMapType {
   boolean doIsAssignableFromNonUnionType(SoyType srcType, AssignabilityPolicy policy) {
     if (srcType.getKind() == Kind.LEGACY_OBJECT_MAP) {
       LegacyObjectMapType srcMapType = (LegacyObjectMapType) srcType;
-      if (srcMapType == EMPTY) {
-        return true;
-      } else if (this == EMPTY) {
-        return false;
-      }
       // Maps are covariant.
       return keyType.isAssignableFromInternal(srcMapType.keyType, policy)
           && valueType.isAssignableFromInternal(srcMapType.valueType, policy);
