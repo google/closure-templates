@@ -21,16 +21,17 @@ import com.google.protobuf.DescriptorProtos.EnumDescriptorProto;
 import com.google.protobuf.DescriptorProtos.FileDescriptorProto;
 import com.google.protobuf.DescriptorProtos.FileOptions;
 import com.google.protobuf.DescriptorProtos.ServiceDescriptorProto;
-import com.google.protobuf.Descriptors;
-import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.EnumDescriptor;
 import com.google.protobuf.Descriptors.FileDescriptor;
+import com.google.protobuf.Descriptors;
+import com.google.protobuf.Descriptors.Descriptor;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
 
 /** Helper class for generating fully qualified Java/GWT identfiers for descriptors. */
+// TODO(b/449290384) Migrate this to official protobuf helpers once they are available in 4.33.0.
 public final class JavaQualifiedNames {
   private JavaQualifiedNames() {}
 
