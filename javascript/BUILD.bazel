@@ -1,0 +1,11 @@
+filegroup(
+    name = "soyutils",
+    srcs = [
+        "required_by_soy.js",
+        "soydata_converters.js",
+        "soyutils_map.js",
+        "soyutils_newmaps.js",
+        "soyutils_templates.js",
+        "soyutils_usegoog.js",
+    ],
+)
