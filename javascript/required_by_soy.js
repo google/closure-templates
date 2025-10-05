@@ -37,14 +37,12 @@ goog.require('goog.soy');
 goog.require('goog.soy.data');
 goog.require('goog.string');
 goog.require('goog.string.Const');
-goog.require('google3.javascript.template.soy.soyutils_idom');
 goog.require('proto.webutil.html.types.SafeHtmlProto');
 goog.require('proto.webutil.html.types.SafeScriptProto');
 goog.require('proto.webutil.html.types.SafeStyleProto');
 goog.require('proto.webutil.html.types.SafeStyleSheetProto');
 goog.require('proto.webutil.html.types.SafeUrlProto');
 goog.require('proto.webutil.html.types.TrustedResourceUrlProto');
-goog.require('soydata.converters.idom');
 goog.require('xid');
 
 goog.scope(function() {
@@ -102,14 +100,12 @@ goog.exportSymbol('goog.string.regExpEscape', goog.string.regExpEscape);
 goog.exportSymbol('goog.string.unescapeEntities', goog.string.unescapeEntities);
 goog.exportSymbol('goog.string.newLineToBr', goog.string.newLineToBr);
 goog.exportSymbol('goog.string.urlEncode', goog.string.urlEncode);
-goog.exportSymbol('google3.javascript.template.soy.soyutils_idom', goog.module.get('google3.javascript.template.soy.soyutils_idom'));
 goog.exportSymbol('proto.webutil.html.types.SafeHtmlProto', proto.webutil.html.types.SafeHtmlProto);
 goog.exportSymbol('proto.webutil.html.types.SafeScriptProto', proto.webutil.html.types.SafeScriptProto);
 goog.exportSymbol('proto.webutil.html.types.SafeStyleProto', proto.webutil.html.types.SafeStyleProto);
 goog.exportSymbol('proto.webutil.html.types.SafeStyleSheetProto', proto.webutil.html.types.SafeStyleSheetProto);
 goog.exportSymbol('proto.webutil.html.types.SafeUrlProto', proto.webutil.html.types.SafeUrlProto);
 goog.exportSymbol('proto.webutil.html.types.TrustedResourceUrlProto', proto.webutil.html.types.TrustedResourceUrlProto);
-goog.exportSymbol('soydata.converters.idom', goog.module.get('soydata.converters.idom'));
 goog.exportSymbol('xid', xid);
 
 });
