@@ -39,7 +39,6 @@ const {Message} = goog.requireType('jspb');
 const {SafeHtml, SafeScript, SafeStyleSheet, TrustedResourceUrl, isUrl, unwrapHtml, unwrapResourceUrl, unwrapScript, unwrapStyleSheet, unwrapUrl} = goog.require('google3.third_party.javascript.safevalues.index');
 const {SanitizedContent, SanitizedContentKind, SanitizedCss, SanitizedHtml, SanitizedHtmlAttribute, SanitizedJs, SanitizedTrustedResourceUri, SanitizedUri} = goog.require('goog.soy.data');
 const {compareBigInt} = goog.require('google3.javascript.common.bigint.index');
-const {defaultImmutableInstance} = goog.require('jspb.immutable_message');
 const {htmlSafeByReview} = goog.require('google3.third_party.javascript.safevalues.restricted.reviewed');
 const {isReadonly} = goog.require('google3.javascript.apps.jspb.types.is_readonly');
 
@@ -2612,9 +2611,6 @@ const /** boolean */ SOY_CREATED_PROTOS_ARE_IMMUTABLE = false;
  * @return {?}
  */
 function $$emptyProto(/** function(new:Message,?Array<?>=)*/ ctor) {
-  if (SOY_CREATED_PROTOS_ARE_IMMUTABLE) {
-    return defaultImmutableInstance(ctor);
-  }
   return new ctor();
 }
 
@@ -2624,9 +2620,6 @@ function $$emptyProto(/** function(new:Message,?Array<?>=)*/ ctor) {
  * @return {?}
  */
 function $$maybeMakeImmutableProto(/** !Message*/ message) {
-  if (SOY_CREATED_PROTOS_ARE_IMMUTABLE) {
-    return message.toImmutable();
-  }
   return message;
 }
 
