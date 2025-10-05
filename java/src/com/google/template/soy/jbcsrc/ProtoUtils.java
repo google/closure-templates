@@ -52,7 +52,6 @@ import com.google.protobuf.Descriptors.EnumDescriptor;
 import com.google.protobuf.Descriptors.EnumValueDescriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor.JavaType;
-import com.google.protobuf.Descriptors.FileDescriptor.Syntax;
 import com.google.protobuf.Descriptors.OneofDescriptor;
 import com.google.protobuf.ExtensionLite;
 import com.google.protobuf.GeneratedMessage.ExtendableBuilder;
@@ -1738,7 +1737,7 @@ final class ProtoUtils {
    */
   private static boolean isOpenEnumField(FieldDescriptor descriptor) {
     return descriptor.getType() == Descriptors.FieldDescriptor.Type.ENUM
-        && descriptor.getFile().getSyntax() == Syntax.PROTO3;
+        && !descriptor.getEnumType().isClosed();
   }
 
   /** Returns the {@link MethodRef} for the generated hasser method. */

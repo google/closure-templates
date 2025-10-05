@@ -1,0 +1,14 @@
+load("@rules_java//java:defs.bzl", "java_proto_library")
+load("@rules_proto//proto:defs.bzl", "proto_library")
+
+proto_library(
+    name = "html_proto",
+    srcs = ["html.proto"],
+    visibility = ["//visibility:public"],
+)
+
+java_proto_library(
+    name = "html_java_proto",
+    visibility = ["//third_party/google/safe-html-types/java/com/google/common/html/types:__pkg__"],
+    deps = [":html_proto"],
+)

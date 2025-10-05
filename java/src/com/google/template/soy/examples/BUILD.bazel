@@ -29,8 +29,8 @@ java_library(
     deps = [
         "//java/src/com/google/template/soy/parseinfo",
         "//java/src/com/google/template/soy/parseinfo:name",
-        "@maven//:com_google_guava_guava",
-        "@maven//:javax_annotation_javax_annotation_api",
+        "@maven_closure_templates//:com_google_guava_guava",
+        "@maven_closure_templates//:javax_annotation_javax_annotation_api",
     ],
 )
 
@@ -46,7 +46,7 @@ java_library(
         "//java/src/com/google/template/soy/msgs",
         "//java/src/com/google/template/soy/tofu",
         "//java/src/com/google/template/soy/xliffmsgplugin",
-        "@maven//:args4j_args4j",
-        "@maven//:com_google_guava_guava",
+        "@maven_closure_templates//:args4j_args4j",
+        "@maven_closure_templates//:com_google_guava_guava",
     ],
 )

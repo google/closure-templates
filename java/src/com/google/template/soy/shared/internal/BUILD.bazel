@@ -86,9 +86,10 @@ java_library(
         "//java/src/com/google/template/soy/soytree",
         "//java/src/com/google/template/soy/types",
         "@com_google_auto_value_auto_value",
-        "@maven//:com_google_code_findbugs_jsr305",
-        "@maven//:com_google_errorprone_error_prone_annotations",
-        "@maven//:com_google_guava_guava",
+        "@com_google_auto_value_auto_value_annotations//jar",
+        "@maven_closure_templates//:com_google_code_findbugs_jsr305",
+        "@maven_closure_templates//:com_google_errorprone_error_prone_annotations",
+        "@maven_closure_templates//:com_google_guava_guava",
     ],
 )
 
@@ -99,8 +100,8 @@ java_library(
         "//java/src/com/google/template/soy/data",
         "//java/src/com/google/template/soy/data:record_property",
         "//java/src/com/google/template/soy/exprtree",
-        "@maven//:com_google_code_findbugs_jsr305",
-        "@maven//:com_google_guava_guava",
+        "@maven_closure_templates//:com_google_code_findbugs_jsr305",
+        "@maven_closure_templates//:com_google_guava_guava",
     ],
 )
 
@@ -108,9 +109,9 @@ java_library(
     name = "deltemplate_selector",
     srcs = DELTEMPLATE_SELECTOR_SRCS,
     deps = [
-        "@maven//:com_google_code_findbugs_jsr305",
-        "@maven//:com_google_errorprone_error_prone_annotations",
-        "@maven//:com_google_guava_guava",
+        "@maven_closure_templates//:com_google_code_findbugs_jsr305",
+        "@maven_closure_templates//:com_google_errorprone_error_prone_annotations",
+        "@maven_closure_templates//:com_google_guava_guava",
     ],
 )
 
@@ -120,7 +121,7 @@ java_library(
     deps = [
         "//java/src/com/google/template/soy/data",
         "//java/src/com/google/template/soy/shared/restricted",
-        "@maven//:com_google_guava_guava",
+        "@maven_closure_templates//:com_google_guava_guava",
     ],
 )
 
@@ -129,9 +130,9 @@ java_library(
     srcs = GEN_ESCAPING_SRCS,
     deps = [
         ":escaping_library",
-        "@maven//:com_google_code_findbugs_jsr305",
-        "@maven//:com_google_guava_guava",
-        "@maven//:org_apache_ant_ant",
+        "@maven_closure_templates//:com_google_code_findbugs_jsr305",
+        "@maven_closure_templates//:com_google_guava_guava",
+        "@maven_closure_templates//:org_apache_ant_ant",
     ],
 )
 
@@ -139,16 +140,16 @@ java_library(
     name = "escaping_library",
     srcs = ESCAPING_SRCS,
     runtime_deps = [
-        "@maven//:com_google_flogger_flogger_system_backend",
+        "@maven_closure_templates//:com_google_flogger_flogger_system_backend",
     ],
     deps = [
         "//java/src/com/google/template/soy/data",
         "//java/src/com/google/template/soy/data:unsafesanitizedcontentordainer",
-        "@maven//:com_google_code_findbugs_jsr305",
-        "@maven//:com_google_errorprone_error_prone_annotations",
-        "@maven//:com_google_flogger_flogger",
-        "@maven//:com_google_flogger_google_extensions",
-        "@maven//:com_google_guava_guava",
+        "@maven_closure_templates//:com_google_code_findbugs_jsr305",
+        "@maven_closure_templates//:com_google_errorprone_error_prone_annotations",
+        "@maven_closure_templates//:com_google_flogger_flogger",
+        "@maven_closure_templates//:com_google_flogger_google_extensions",
+        "@maven_closure_templates//:com_google_guava_guava",
     ],
 )
 
@@ -158,8 +159,8 @@ java_library(
     deps = [
         "//java/src/com/google/template/soy/shared/restricted:restricted_internal",
         "//java/src/com/google/template/soy/types",
-        "@maven//:com_google_code_findbugs_jsr305",
-        "@maven//:com_google_guava_guava",
+        "@maven_closure_templates//:com_google_code_findbugs_jsr305",
+        "@maven_closure_templates//:com_google_guava_guava",
     ],
 )
 
@@ -173,6 +174,6 @@ java_library(
         "//java/src/com/google/template/soy/shared/restricted:restricted_internal",
         "//java/src/com/google/template/soy/types",
         "@com_google_protobuf//:protobuf_java",
-        "@maven//:com_google_guava_guava",
+        "@maven_closure_templates//:com_google_guava_guava",
     ],
 )

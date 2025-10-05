@@ -34,10 +34,11 @@ java_library(
         "//java/src/com/google/template/soy/internal/i18n",
         "//java/src/com/google/template/soy/soytree:soynode",
         "@com_google_auto_value_auto_value",
-        "@maven//:com_google_code_findbugs_jsr305",
-        "@maven//:com_google_errorprone_error_prone_annotations",
-        "@maven//:com_google_guava_guava",
-        "@maven//:com_ibm_icu_icu4j",
+        "@com_google_auto_value_auto_value_annotations//jar",
+        "@maven_closure_templates//:com_google_code_findbugs_jsr305",
+        "@maven_closure_templates//:com_google_errorprone_error_prone_annotations",
+        "@maven_closure_templates//:com_google_guava_guava",
+        "@maven_closure_templates//:com_ibm_icu_icu4j",
     ],
 )
 
@@ -45,5 +46,5 @@ java_library(
     name = "msg_id_converter",
     srcs = ["SoyMsgIdConverter.java"],
     visibility = ["//visibility:public"],
-    deps = ["@maven//:com_google_guava_guava"],
+    deps = ["@maven_closure_templates//:com_google_guava_guava"],
 )

@@ -27,7 +27,7 @@ java_library(
         "//java/src/com/google/template/soy/internal/proto",
         "//java/src/com/google/template/soy/types",
         "@com_google_protobuf//:protobuf_java",
-        "@maven//:com_google_errorprone_error_prone_annotations",
-        "@maven//:com_google_guava_guava",
+        "@maven_closure_templates//:com_google_errorprone_error_prone_annotations",
+        "@maven_closure_templates//:com_google_guava_guava",
     ],
 )

@@ -48,8 +48,8 @@ java_library(
         "//java/src/com/google/template/soy/data",
         "//java/src/com/google/template/soy/plugin/restricted",
         "//java/src/com/google/template/soy/types",
-        "@maven//:com_google_code_findbugs_jsr305",
-        "@maven//:com_google_guava_guava",
+        "@maven_closure_templates//:com_google_code_findbugs_jsr305",
+        "@maven_closure_templates//:com_google_guava_guava",
     ],
 )
 
@@ -69,7 +69,7 @@ java_library(
     visibility = ["//visibility:private"],
     deps = [
         ":restricted_internal",
-        "@maven//:com_google_guava_guava",
+        "@maven_closure_templates//:com_google_guava_guava",
     ],
 )
 

@@ -42,8 +42,8 @@ java_library(
         "//java/src/com/google/template/soy/error:error_reporter",
         "//java/src/com/google/template/soy/msgs",
         "//java/src/com/google/template/soy/xliffmsgplugin",
-        "@maven//:com_google_guava_guava",
-        "@maven//:junit_junit",
+        "@maven_closure_templates//:com_google_guava_guava",
+        "@maven_closure_templates//:junit_junit",
     ],
 )
 

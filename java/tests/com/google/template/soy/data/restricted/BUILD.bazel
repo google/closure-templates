@@ -27,9 +27,9 @@ java_library(
     srcs = glob(["*.java"]),
     deps = [
         "//java/src/com/google/template/soy/data",
-        "@maven//:com_google_guava_guava",
-        "@maven//:com_google_truth_truth",
-        "@maven//:junit_junit",
+        "@maven_closure_templates//:com_google_guava_guava",
+        "@maven_closure_templates//:com_google_truth_truth",
+        "@maven_closure_templates//:junit_junit",
     ],
 )
 
