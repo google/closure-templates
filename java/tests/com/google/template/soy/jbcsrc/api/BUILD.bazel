@@ -46,11 +46,11 @@ java_library(
         "//java/src/com/google/template/soy/plugin/java/restricted",
         "//java/src/com/google/template/soy/shared/restricted",
         "//src/test/protobuf:test_protos_java_proto",
-        "@maven//:com_google_common_html_types_types",
-        "@maven//:com_google_errorprone_error_prone_annotations",
-        "@maven//:com_google_guava_guava",
-        "@maven//:com_google_truth_truth",
-        "@maven//:junit_junit",
+        "@maven_closure_templates//:com_google_common_html_types_types",
+        "@maven_closure_templates//:com_google_errorprone_error_prone_annotations",
+        "@maven_closure_templates//:com_google_guava_guava",
+        "@maven_closure_templates//:com_google_truth_truth",
+        "@maven_closure_templates//:junit_junit",
     ],
 )
 

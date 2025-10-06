@@ -43,9 +43,9 @@ java_library(
         "//java/src/com/google/template/soy/types/ast",
         "//java/tests/com/google/template/soy/jbcsrc:testing",
         "//java/tests/com/google/template/soy/jbcsrc/restricted/testing",
-        "@maven//:com_google_code_findbugs_jsr305",
-        "@maven//:com_google_errorprone_error_prone_annotations",
-        "@maven//:com_google_guava_guava",
-        "@maven//:com_ibm_icu_icu4j",
+        "@maven_closure_templates//:com_google_code_findbugs_jsr305",
+        "@maven_closure_templates//:com_google_errorprone_error_prone_annotations",
+        "@maven_closure_templates//:com_google_guava_guava",
+        "@maven_closure_templates//:com_ibm_icu_icu4j",
     ],
 )

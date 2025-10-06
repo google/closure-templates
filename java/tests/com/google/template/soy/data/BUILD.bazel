@@ -37,12 +37,12 @@ java_library(
         "//java/src/com/google/template/soy/parseinfo",
         "//src/test/protobuf:test_protos_java_proto",
         "@com_google_protobuf//:protobuf_java",
-        "@maven//:com_google_common_html_types_types",
-        "@maven//:com_google_guava_guava",
-        "@maven//:com_google_guava_guava_testlib",
-        "@maven//:com_google_inject_guice",
-        "@maven//:com_google_truth_truth",
-        "@maven//:junit_junit",
+        "@maven_closure_templates//:com_google_common_html_types_types",
+        "@maven_closure_templates//:com_google_guava_guava",
+        "@maven_closure_templates//:com_google_guava_guava_testlib",
+        "@maven_closure_templates//:com_google_inject_guice",
+        "@maven_closure_templates//:com_google_truth_truth",
+        "@maven_closure_templates//:junit_junit",
     ],
 )
 
@@ -51,7 +51,7 @@ java_library(
     srcs = ["SoyValueConverterUtility.java"],
     deps = [
         "//java/src/com/google/template/soy/data",
-        "@maven//:com_google_guava_guava",
+        "@maven_closure_templates//:com_google_guava_guava",
     ],
 )
 

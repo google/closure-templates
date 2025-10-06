@@ -29,12 +29,12 @@ java_library(
         "//java/src/com/google/template/soy/jbcsrc/internal",
         "//java/src/com/google/template/soy/jbcsrc/restricted",
         "//java/tests/com/google/template/soy/jbcsrc/restricted/testing",
-        "@maven//:com_google_guava_guava",
-        "@maven//:com_google_guava_guava_testlib",
-        "@maven//:com_google_truth_truth",
-        "@maven//:junit_junit",
-        "@maven//:org_ow2_asm_asm",
-        "@maven//:org_ow2_asm_asm_tree",
+        "@maven_closure_templates//:com_google_guava_guava",
+        "@maven_closure_templates//:com_google_guava_guava_testlib",
+        "@maven_closure_templates//:com_google_truth_truth",
+        "@maven_closure_templates//:junit_junit",
+        "@maven_closure_templates//:org_ow2_asm_asm",
+        "@maven_closure_templates//:org_ow2_asm_asm_tree",
     ],
 )
 
