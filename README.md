@@ -19,9 +19,15 @@ This is not a "hard fork", but rather a fork of convenience as google internal
 folks may be slow to upgrade the primary for bzlmod and other changes.  If that
 occurs, this fork will transition to a dormant mode.
 
+Regarding BCR versioning: given closure-template is a mature product, I (@pcj)
+chose to start with major version 1.0.0.  Future versions are likely to keep
+major version 1 and simply bump the minor version.  No guarantees of API
+stability are provided.
+
 > To keep this fork up-to-date, sync the `stackb/closure-templates:master` to
 > `google/closure-templates:master`, then open a PR from
 > `stackb/closure-templates:master` -> `stackb/closure-templates:main`.
+
 
 # Closure Templates
 Closure Templates are a client- and server-side templating system that helps you
