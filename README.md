@@ -1,3 +1,18 @@
+# NOTICE
+
+This is a fork of https://github.com/google/closure-templates/.  The changes
+from the upstream include:
+
+- Upgraded to use "bzlmod"
+- Newer version of bazel
+- Stricter .bazelrc flags
+- Java language version 17 instead of 11.
+- `javascript/`:
+  - `BUILD.bazel` file added
+  - filegroup `//javascript:soyutils` represents files needed for soy template
+    compilation in rules_closure `closure_js_template_library`.
+  - idom references in `//javascript:soyutils` have been removed (idom not open-source).
+
 # Closure Templates
 Closure Templates are a client- and server-side templating system that helps you
 dynamically build reusable HTML and UI elements. They have a simple syntax
