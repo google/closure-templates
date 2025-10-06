@@ -1,5 +1,5 @@
 module(
-    name = "com_google_closure_templates",
+    name = "closure-templates",
     version = "1.0.0",
     compatibility_level = 1,
 )

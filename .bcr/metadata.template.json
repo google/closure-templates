@@ -1,0 +1,15 @@
+{
+    "homepage": "https://github.com/stackb/closure-templates",
+    "maintainers": [
+        {
+            "name": "Paul Cody",
+            "email": "pcj@stack.build",
+            "github": "pcj"
+        }
+    ],
+    "repository": [
+        "github:stackb/closure-templates"
+    ],
+    "versions": [],
+    "yanked_versions": {}
+}
