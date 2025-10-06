@@ -2149,7 +2149,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     // ASM has no common type for object v. primitive representations. So we need to coerce the
     // new value to fix within the bounds of the old value. This is mostly boxed v. unboxed and
     // numeric conversions among primitives.
-    newValue = newValue.coerceTo(letOrParam.accessor().resultType());
+    newValue = newValue.coerceToTypeOf(letOrParam.accessor());
 
     if (letOrParam instanceof Variable) {
       // This is assignment on a let.

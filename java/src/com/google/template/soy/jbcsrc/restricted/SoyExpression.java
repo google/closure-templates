@@ -1026,12 +1026,34 @@ public final class SoyExpression extends Expression {
           // Field may be a subclass of SoyValue, so need to perform a cast.
           return SoyExpression.forSoyValue(
               boxed.soyType(), boxed.delegate.checkedCast(runtimeType));
-        } else if (BytecodeUtils.STRING_TYPE.equals(runtimeType)) {
+        } else if (runtimeType.equals(BytecodeUtils.STRING_TYPE)) {
           return this.unboxAsStringOrJavaNull();
         }
         // Unhandled cases where we have a boxed value (list, message) but require an
         // unboxed value.
     }
     return this;
+  }
+
+  public SoyExpression coerceTo(SoyRuntimeType soyRuntimeType) {
+    if (soyRuntimeType.runtimeType().equals(BytecodeUtils.LIST_TYPE)) {
+      Expression unboxed = unboxAsListOrJavaNull();
+      return (unboxed instanceof SoyExpression)
+          ? (SoyExpression) unboxed
+          : SoyExpression.forList(soyRuntimeType.asListType(), unboxed);
+    } else if (!soyRuntimeType.isBoxed() && soyRuntimeType.isKnownProtoOrUnionOfProtos()) {
+      Expression unboxed = unboxAsMessageOrJavaNull(soyRuntimeType.runtimeType());
+      return (unboxed instanceof SoyExpression)
+          ? (SoyExpression) unboxed
+          : SoyExpression.forProto(soyRuntimeType, unboxed);
+    }
+    return coerceTo(soyRuntimeType.runtimeType());
+  }
+
+  public SoyExpression coerceToTypeOf(Expression expression) {
+    if (expression instanceof SoyExpression) {
+      return coerceTo(((SoyExpression) expression).soyRuntimeType());
+    }
+    return coerceTo(expression.resultType());
   }
 }

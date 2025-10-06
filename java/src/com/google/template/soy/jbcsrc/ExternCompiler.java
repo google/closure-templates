@@ -572,7 +572,7 @@ public final class ExternCompiler {
   }
 
   private SoyExpression adaptReturnExpression(SoyExpression raw, SoyRuntimeType type) {
-    return raw.coerceTo(type.runtimeType());
+    return raw.coerceTo(type);
   }
 
   /**
