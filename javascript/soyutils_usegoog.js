@@ -33,6 +33,7 @@ const bidi = goog.require('goog.i18n.bidi');
 const googArray = goog.require('goog.array');
 const googDebug = goog.require('goog.debug');
 const googFormat = goog.require('goog.format');
+const GoogSafeHtml = goog.require('goog.html.SafeHtml');
 const googSoy = goog.requireType('goog.soy');
 const googString = goog.require('goog.string');
 const {Message} = goog.requireType('jspb');
@@ -2382,6 +2383,7 @@ const $$bidiMarkAfter = function(bidiGlobalDir, text, isHtml) {
  * @param {?} text The string to be wrapped. Can be other types, but the value
  *     will be coerced to a string.
  * @return {string} The wrapped text.
+ * @suppress {checkTypes}
  */
 const $$bidiSpanWrap = function(bidiGlobalDir, text) {
   const formatter = getBidiFormatterInstance_(bidiGlobalDir);
@@ -2397,12 +2399,16 @@ const $$bidiSpanWrap = function(bidiGlobalDir, text) {
       String(text),
       {justification: 'Soy |bidiSpanWrap is applied on an autoescaped text.'});
   const dir = $$bidiTextDir(text, /** isHtml= */ true);
-  const wrappedHtml = formatter.spanWrapSafeHtmlWithKnownDir(dir, html);
+  const googHtml = GoogSafeHtml.createSafeHtmlSecurityPrivateDoNotAccessOrElse(unwrapHtml(html));
+  const wrappedHtml = formatter.spanWrapSafeHtmlWithKnownDir(dir, googHtml);
 
   // Like other directives whose Java class implements SanitizedContentOperator,
   // |bidiSpanWrap is called after the escaping (if any) has already been done,
   // and thus there is no need for it to produce actual SanitizedContent.
-  return unwrapHtml(wrappedHtml).toString();
+  const safeWrappedHtml = htmlSafeByReview(
+    GoogSafeHtml.unwrapTrustedHTML(wrappedHtml),
+    { justification: 'Converting goog.html.SafeHtml back to safevalues SafeHtml for unwrapHtml.'});
+  return unwrapHtml(safeWrappedHtml).toString();
 };
 
 
