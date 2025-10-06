@@ -44,7 +44,8 @@ public final class JavaImplNode extends AbstractCommandNode
       ImmutableSet.of(
           "com.google.template.soy.data.Dir",
           "com.google.template.soy.plugin.java.RenderCssHelper",
-          "com.ibm.icu.util.ULocale");
+          "com.ibm.icu.util.ULocale",
+          "com.google.template.soy.jbcsrc.shared.ContextStore");
   public static final String CLASS = "class";
   public static final String METHOD = "method";
   public static final String PARAMS = "params";

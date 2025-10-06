@@ -84,6 +84,7 @@ public final class RenderContext {
 
   private final SoyCssTracker cssTracker;
   private final SoyJsIdTracker jsIdTracker;
+  private final ContextStore contextStore = new ContextStore();
 
   /**
    * Stores memoized {const} values, which in SSR are actually request-scoped values, not Java
@@ -542,6 +543,10 @@ public final class RenderContext {
         .withXidRenamingMap(xidRenamingMap)
         .withMessageBundle(msgBundle)
         .withIj(ijData);
+  }
+
+  public ContextStore getContextStore() {
+    return contextStore;
   }
 
   /** A builder for configuring the context. */

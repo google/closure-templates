@@ -24,6 +24,8 @@ MISSING_PLUGIN_INSTANCE_EXCEPTION = ["MissingPluginInstanceException.java"]
 
 STACK_FRAME_SRCS = ["StackFrame.java"]
 
+CONTEXT_STORE_SRCS = ["ContextStore.java"]
+
 java_library(
     name = "missing_plugin_instance_exception",
     srcs = MISSING_PLUGIN_INSTANCE_EXCEPTION,
@@ -31,12 +33,22 @@ java_library(
 )
 
 java_library(
+    name = "ContextStore",
+    srcs = CONTEXT_STORE_SRCS,
+    deps = [
+        "//java/src/com/google/template/soy/data",
+        "@maven//:com_google_code_findbugs_jsr305",
+    ],
+)
+
+java_library(
     name = "shared",
     srcs = glob(
         ["*.java"],
-        exclude = NAMES_SRCS + MISSING_PLUGIN_INSTANCE_EXCEPTION + STACK_FRAME_SRCS,
+        exclude = NAMES_SRCS + MISSING_PLUGIN_INSTANCE_EXCEPTION + STACK_FRAME_SRCS + CONTEXT_STORE_SRCS,
     ),
     deps = [
+        ":ContextStore",
         ":missing_plugin_instance_exception",
         ":names",
         ":stackframe",
