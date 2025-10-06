@@ -1,4 +1,4 @@
-# NOTICE
+# Notice
 
 This is a fork of https://github.com/google/closure-templates/.  The changes
 from the upstream include:
@@ -12,6 +12,16 @@ from the upstream include:
   - filegroup `//javascript:soyutils` represents files needed for soy template
     compilation in rules_closure `closure_js_template_library`.
   - idom references in `//javascript:soyutils` have been removed (idom not open-source).
+- added directories `.bcr/` and `.github/`
+- default branch is `main` rather than `master`
+
+This is not a "hard fork", but rather a fork of convenience as google internal
+folks may be slow to upgrade the primary for bzlmod and other changes.  If that
+occurs, this fork will transition to a dormant mode.
+
+> To keep this fork up-to-date, sync the `stackb/closure-templates:master` to
+> `google/closure-templates:master`, then open a PR from
+> `stackb/closure-templates:master` -> `stackb/closure-templates:main`.
 
 # Closure Templates
 Closure Templates are a client- and server-side templating system that helps you
