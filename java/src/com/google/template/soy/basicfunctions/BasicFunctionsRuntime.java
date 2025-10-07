@@ -29,6 +29,8 @@ import com.google.common.math.DoubleMath;
 import com.google.common.primitives.Doubles;
 import com.google.common.primitives.Longs;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
+import com.google.errorprone.annotations.Keep;
+import com.google.javascript.util.JSArrayBuilder;
 import com.google.protobuf.Message;
 import com.google.template.soy.data.RecordProperty;
 import com.google.template.soy.data.SanitizedContent;
@@ -48,6 +50,7 @@ import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.data.internal.RuntimeMapTypeTracker;
 import com.google.template.soy.data.internal.SoyMapImpl;
 import com.google.template.soy.data.internal.SoyRecordImpl;
+import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.GbigintData;
 import com.google.template.soy.data.restricted.IntegerData;
@@ -67,6 +70,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -938,5 +942,50 @@ public final class BasicFunctionsRuntime {
     @SuppressWarnings("unchecked")
     List<SoyValue> impl = (List<SoyValue>) list.asJavaList();
     return listSplice(impl, start, count, insert);
+  }
+
+  @Keep
+  public static SoyValue stringify(SoyValue value) {
+    if (value == UndefinedData.INSTANCE) {
+      return value;
+    } else if (SoyValue.isNullish(value)) {
+      return StringData.forValue("null");
+    }
+    JSArrayBuilder builder = JSArrayBuilder.create();
+    builder.beginArray();
+    stringify(value, builder);
+    builder.endArray();
+    String withBrackets = builder.toString();
+    return StringData.forValue(withBrackets.substring(1, withBrackets.length() - 1));
+  }
+
+  private static void stringify(SoyValue value, JSArrayBuilder builder) {
+    if (SoyValue.isNullish(value)) {
+      builder.appendRaw("null");
+    } else if (value instanceof StringData) {
+      builder.append(value.stringValue());
+    } else if (value instanceof IntegerData) {
+      builder.append(value.longValue());
+    } else if (value instanceof NumberData) {
+      builder.append(value.floatValue());
+    } else if (value instanceof BooleanData) {
+      builder.appendRaw(String.valueOf(value.booleanValue()));
+    } else if (value instanceof SoyRecordImpl) {
+      builder.beginObject();
+      for (Entry<String, SoyValueProvider> entry :
+          ((SoyRecordImpl) value).recordAsMap().entrySet()) {
+        builder.appendObjectField(entry.getKey());
+        stringify(entry.getValue().resolve(), builder);
+      }
+      builder.endObject();
+    } else if (value instanceof SoyList) {
+      builder.beginArray();
+      for (SoyValueProvider item : value.asJavaList()) {
+        stringify(item.resolve(), builder);
+      }
+      builder.endArray();
+    } else {
+      builder.beginObject().endObject();
+    }
   }
 }

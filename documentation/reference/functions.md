@@ -758,6 +758,11 @@ already bound to the template type may not be bound again.
 
 <section class="polyglot">
 
+### `JSON_stringify(value)` {#JSON_stringify}
+
+Converts any value to a string, matching the behavior of
+[JSON.stringify](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON/stringify).
+
 ###### Call Command {.pg-tab}
 
 ```soy
