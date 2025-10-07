@@ -64,7 +64,7 @@ import javax.annotation.Nullable;
  * A collection of contextual rendering data. Each top level rendering operation will obtain a
  * single instance of this object and it will be propagated throughout the render tree.
  */
-public final class RenderContext {
+public final class RenderContext implements ContextStore {
   // TODO(lukes):  within this object most of these fields are constant across all renders while
   // some are expected to change frequently (the renaming maps, msgBundle and activeModSelector).
   // Consider splitting this into two objects to represent the changing lifetimes.  We are kind of
@@ -84,7 +84,7 @@ public final class RenderContext {
 
   private final SoyCssTracker cssTracker;
   private final SoyJsIdTracker jsIdTracker;
-  private final ContextStore contextStore = new ContextStore();
+  private final ContextNode contextStore = ContextNode.createRoot();
 
   /**
    * Stores memoized {const} values, which in SSR are actually request-scoped values, not Java
@@ -99,6 +99,8 @@ public final class RenderContext {
   private List<ThrowingSoyValueProvider> deferredErrors;
 
   @Keep private GrammaticalGender viewerGrammaticalGender = GrammaticalGender.UNSPECIFIED;
+
+  private ContextNode currentContext = ContextNode.createRoot();
 
   public RenderContext(
       CompiledTemplates templates,
@@ -545,8 +547,20 @@ public final class RenderContext {
         .withIj(ijData);
   }
 
-  public ContextStore getContextStore() {
-    return contextStore;
+  @Override
+  public void pushContext(ImmutableMap<String, SoyValue> childValues) {
+    currentContext = currentContext.pushContext(childValues);
+  }
+
+  @Override
+  public void popContext() {
+    currentContext = currentContext.popContext();
+  }
+
+  @Override
+  @Nullable
+  public SoyValue getContextValue(String key) {
+    return currentContext.getContextValue(key);
   }
 
   /** A builder for configuring the context. */
