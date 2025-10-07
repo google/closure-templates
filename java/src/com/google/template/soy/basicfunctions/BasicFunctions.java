@@ -50,6 +50,7 @@ public class BasicFunctions {
         new IsIntegerFunction(),
         new IsNaNFunction(),
         new JoinFunction(),
+        new JsonStringifyFunction(),
         new KeysFunction(),
         new LegacyObjectMapToMapFunction(),
         new LengthFunction(),
