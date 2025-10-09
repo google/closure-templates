@@ -567,7 +567,7 @@ public final class ExternCompiler {
       case "com.ibm.icu.util.ULocale":
         return vars.getRenderContext().getULocale();
       case "com.google.template.soy.jbcsrc.shared.ContextStore":
-        return vars.getRenderContext().getContextStore();
+        return vars.getRenderContext();
       default:
         throw new IllegalArgumentException(javaTypeInfo.className());
     }
