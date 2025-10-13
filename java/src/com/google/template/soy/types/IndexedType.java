@@ -67,10 +67,33 @@ public abstract class IndexedType extends ComputedType {
   }
 
   @Nullable
-  private Member getMember() {
-    SoyType baseType = getType().getEffectiveType();
+  @Memoized
+  protected Member getMember() {
+    SoyType baseType = SoyTypes.normalizeUnion(getType());
     if (baseType instanceof RecordType) {
       return ((RecordType) baseType).getMember(getPropertyName());
+    } else if (baseType instanceof UnionType) {
+      Member member = null;
+      for (SoyType unionMember : ((UnionType) baseType).getMembers()) {
+        if (unionMember instanceof RecordType) {
+          Member thisMember = ((RecordType) unionMember).getMember(getPropertyName());
+          if (thisMember == null) {
+            return null;
+          }
+          if (member == null) {
+            member = thisMember;
+          } else if (!thisMember.equals(member)) {
+            member =
+                RecordType.memberOf(
+                    member.name(),
+                    member.optional() || thisMember.optional(),
+                    UnionType.of(member.declaredType(), thisMember.declaredType()));
+          }
+        } else {
+          return null;
+        }
+      }
+      return member;
     }
     return null;
   }

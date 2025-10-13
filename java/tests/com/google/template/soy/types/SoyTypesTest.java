@@ -406,18 +406,24 @@ public class SoyTypesTest {
     SoyTypeRegistry registry =
         new TestTypeRegistry()
             .addNamed("StringAlias", "string")
-            .addNamed("Rec1", "[a: string, b: float|int, c: bool, d: string|bool]");
+            .addNamed("Rec1", "[a: string, b: float|int, c: bool, d: string|bool]")
+            .addNamed("Rec2", "[a: string, c:int]")
+            .addNamed("Rec3", "[a?: string]")
+            .addNamed("Union1", "Rec1|Rec2")
+            .addNamed("Union2", "Rec1|Rec3");
 
-    assertThatSoyType("Rec1['a']", registry).isAssignableFromStrict("string");
-    assertThatSoyType("string", registry).isAssignableFromStrict("Rec1['a']");
+    assertThatSoyType("Rec1['a']", registry).isEffectivelyEqualTo("string");
 
-    assertThatSoyType("Rec1['b']", registry).isAssignableFromStrict("float|int");
-    assertThatSoyType("Rec1['c']", registry).isAssignableFromStrict("bool");
-    assertThatSoyType("Rec1['d']", registry).isAssignableFromStrict("string");
-    assertThatSoyType("Rec1['d']", registry).isAssignableFromStrict("bool");
+    assertThatSoyType("Rec1['b']", registry).isEffectivelyEqualTo("float|int");
+    assertThatSoyType("Rec1['c']", registry).isEffectivelyEqualTo("bool");
+    assertThatSoyType("Rec1['d']", registry).isEffectivelyEqualTo("string|bool");
 
     assertThatSoyType("Rec1['d']", registry).isAssignableFromStrict("Rec1['a']");
     assertThatSoyType("Rec1['a']", registry).isNotAssignableFromStrict("Rec1['d']");
+
+    assertThatSoyType("Union1['a']", registry).isEffectivelyEqualTo("string");
+    assertThatSoyType("Union1['c']", registry).isEffectivelyEqualTo("int|bool");
+    assertThatSoyType("Union2['a']", registry).isEffectivelyEqualTo("string|undefined");
   }
 
   @Test
