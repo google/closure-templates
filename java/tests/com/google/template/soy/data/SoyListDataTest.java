@@ -177,9 +177,9 @@ public class SoyListDataTest {
     SoyListData sld2 = new SoyListData(8, null, new SoyListData("blah", true), "bleh");
     sld2.put("2.2", 2.71828);
 
-    assertThat(sld0.coerceToString()).isEqualTo("[]");
-    assertThat(sld1.coerceToString()).isEqualTo("[boo]");
-    assertThat(sld2.coerceToString()).isEqualTo("[8, null, [blah, true, 2.71828], bleh]");
+    assertThat(sld0.coerceToString()).isEqualTo("");
+    assertThat(sld1.coerceToString()).isEqualTo("boo");
+    assertThat(sld2.coerceToString()).isEqualTo("8,null,blah,true,2.71828,bleh");
 
     assertThat(sld0.coerceToBoolean()).isTrue();
     assertThat(sld1.coerceToBoolean()).isTrue();

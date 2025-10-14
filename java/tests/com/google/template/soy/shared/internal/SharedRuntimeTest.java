@@ -74,7 +74,7 @@ public class SharedRuntimeTest {
                     converter.convert(ImmutableList.of("Hello")).resolve(),
                     converter.convert(ImmutableList.of("World")).resolve())
                 .stringValue())
-        .isEqualTo("[Hello][World]");
+        .isEqualTo("HelloWorld");
   }
 
   @Test

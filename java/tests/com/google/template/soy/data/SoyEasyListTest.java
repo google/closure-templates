@@ -35,13 +35,13 @@ public class SoyEasyListTest {
 
     SoyValue val1 = new SoyEasyList();
     assertThat(val1.coerceToBoolean()).isTrue(); // SoyEasyList is always truthy.
-    assertThat(val1.coerceToString()).isEqualTo("[]");
+    assertThat(val1.coerceToString()).isEqualTo("");
     SoyValue val2 = new SoyEasyList();
     assertThat(val1.equals(val2)).isFalse(); // SoyEasyList uses object identity.
 
     SoyValue val3 = SoyValueConverterUtility.newList(111, true);
     assertThat(val3.coerceToBoolean()).isTrue();
-    assertThat(val3.coerceToString()).isEqualTo("[111, true]");
+    assertThat(val3.coerceToString()).isEqualTo("111,true");
   }
 
   @Test

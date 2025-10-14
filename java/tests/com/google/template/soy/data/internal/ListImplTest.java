@@ -43,14 +43,14 @@ public class ListImplTest {
 
     SoyValue val1 = ListImpl.forProviderList(EMPTY);
     assertThat(val1.coerceToBoolean()).isTrue(); // ListImpl is always truthy.
-    assertThat(val1.coerceToString()).isEqualTo("[]");
+    assertThat(val1.coerceToString()).isEqualTo("");
     SoyValue val2 = ListImpl.forProviderList(EMPTY);
     assertThat(val1.equals(val2)).isFalse(); // ListImpl uses object identity.
 
     SoyValue val3 =
         ListImpl.forProviderList(ImmutableList.of(IntegerData.forValue(111), BooleanData.TRUE));
     assertThat(val3.coerceToBoolean()).isTrue();
-    assertThat(val3.coerceToString()).isEqualTo("[111, true]");
+    assertThat(val3.coerceToString()).isEqualTo("111,true");
   }
 
   @Test
