@@ -49,6 +49,8 @@ public abstract class FunctionDeclaration extends Expression
           // TODO(lukes): this is the wrong format for inline type annotations. comments need to
           // start with '/**'.
           functionParameters.add(String.format("/* %s */ %s", param.type(), param.paramTypeName()));
+        } else if (param.isVarArgs()) {
+          functionParameters.add("..." + param.paramTypeName());
         } else {
           functionParameters.add(param.paramTypeName());
         }

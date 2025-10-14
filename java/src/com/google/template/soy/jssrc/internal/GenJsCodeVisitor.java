@@ -106,6 +106,7 @@ import com.google.template.soy.soytree.Visibility;
 import com.google.template.soy.soytree.defn.SymbolVar;
 import com.google.template.soy.soytree.defn.SymbolVar.SymbolKind;
 import com.google.template.soy.soytree.defn.TemplateParam;
+import com.google.template.soy.types.AbstractIterableType;
 import com.google.template.soy.types.FunctionType;
 import com.google.template.soy.types.IndexedType;
 import com.google.template.soy.types.IntersectionType;
@@ -1630,8 +1631,17 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
       JsDoc.Builder jsDocBuilder = JsDoc.builder();
       for (FunctionType.Parameter param : node.getType().getParameters()) {
-        JsType jsType = getJsTypeForParamForDeclaration(param.getType());
-        jsDocBuilder.addParam("p$" + param.getName(), jsType.typeExpr()).addGoogRequires(jsType);
+        if (param.isVarArgs() && param.getType() instanceof AbstractIterableType) {
+          JsType jsType =
+              getJsTypeForParamForDeclaration(
+                  ((AbstractIterableType) param.getType()).getElementType());
+          jsDocBuilder
+              .addVarArgsParam("p$" + param.getName(), jsType.typeExpr())
+              .addGoogRequires(jsType);
+        } else {
+          JsType jsType = getJsTypeForParamForDeclaration(param.getType());
+          jsDocBuilder.addParam("p$" + param.getName(), jsType.typeExpr()).addGoogRequires(jsType);
+        }
       }
       JsType returnType = getJsTypeForParamForDeclaration(node.getType().getReturnType());
       jsDocBuilder
