@@ -64,9 +64,6 @@ final class RenderContextExpression extends Expression implements JbcSrcPluginCo
   private static final MethodRef GET_LOCALE =
       MethodRef.createNonPure(RenderContext.class, "getLocale");
 
-  private static final MethodRef GET_CONTEXT_STORE =
-      MethodRef.createNonPure(RenderContext.class, "getContextStore");
-
   private static final MethodRef GET_PRINT_DIRECTIVE =
       MethodRef.createNonPure(RenderContext.class, "getPrintDirective", String.class);
 
@@ -274,10 +271,6 @@ final class RenderContextExpression extends Expression implements JbcSrcPluginCo
 
   Expression getDeltemplate(String delCalleeName, Expression variantExpr) {
     return delegate.invoke(GET_DELTEMPLATE, constant(delCalleeName), variantExpr);
-  }
-
-  Expression getContextStore() {
-    return delegate.invoke(GET_CONTEXT_STORE);
   }
 
   Expression renderModifiable(
