@@ -546,6 +546,15 @@ const $$isTruthyNonEmpty = function(arg) {
     }
     return !!arg;
   }
+  if (arg instanceof HtmlOutputBuffer) {
+    if (arg.containsSoyJsInteropSlot()) {
+      if (goog.DEBUG) {
+        console.warn('`hasContent` called on content containing SoyJs Slot will always return true. See go/wiz:hascontent-considered-harmful');
+      }
+      return true;
+    }
+    return !!arg.getContent();
+  }
   if (arg instanceof SanitizedContent) {
     return !!arg.getContent();
   }
@@ -2920,6 +2929,20 @@ class HtmlOutputBuffer extends SanitizedHtml {
    */
   toString() {
     return this.getContent();
+  }
+
+  /** @return {boolean} */
+  containsSoyJsInteropSlot() {
+    for (const part of this.parts ?? []) {
+      if (part instanceof SoyJsInteropSlot) {
+        return true;
+      } else if (part instanceof HtmlOutputBuffer) {
+        if (part.containsSoyJsInteropSlot()) {
+          return true;
+        }
+      }
+    }
+    return false;
   }
 }
 
