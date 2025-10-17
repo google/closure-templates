@@ -23,9 +23,13 @@ package com.google.template.soy.base;
  */
 public interface SourceLocationMapper {
 
-  SourceLocationMapper NO_OP = new SourceLocationMapper() {};
+  SourceLocationMapper EMPTY = new SourceLocationMapper() {};
 
   default SourceLocation map(SourceLocation loc) {
     return loc;
+  }
+
+  default boolean isEmpty() {
+    return this == EMPTY;
   }
 }

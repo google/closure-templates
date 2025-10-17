@@ -94,6 +94,6 @@ public final class ErrorFormatterImpl implements ErrorFormatter {
   }
 
   private static SourceLocationMapper buildSourceMap(SoyFileSupplier sourceFile) {
-    return SourceLocationMapper.NO_OP;
+    return SourceLocationMapper.EMPTY;
   }
 }

@@ -271,7 +271,7 @@ public final class SoyFileNode extends AbstractParentSoyNode<SoyNode>
   public SourceLocationMapper getSourceMap() {
     if (sourceMap == null) {
       sourceMap =
-          SourceLocationMapper.NO_OP;
+          SourceLocationMapper.EMPTY;
     }
     return sourceMap;
   }
