@@ -209,6 +209,7 @@ import com.google.template.soy.types.LegacyObjectMapType;
 import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.MapType;
 import com.google.template.soy.types.MutableListType;
+import com.google.template.soy.types.MutableMapType;
 import com.google.template.soy.types.NullType;
 import com.google.template.soy.types.NumberType;
 import com.google.template.soy.types.ProtoImportType;
@@ -1229,7 +1230,10 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
       int numChildren = node.numChildren();
       checkState(numChildren % 2 == 0);
       if (numChildren == 0) {
-        node.setType(MapType.empty());
+        node.setType(
+            ResolveExpressionTypesPass.this.inAutoExtern
+                ? MutableMapType.empty()
+                : MapType.empty());
         if (inferringParam) {
           errorReporter.report(node.getSourceLocation(), AMBIGUOUS_INFERRED_TYPE, "an empty map");
         }
@@ -1262,7 +1266,11 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
       }
       SoyType commonKeyType = computeLowestCommonType(typeRegistry, keyTypes);
       SoyType commonValueType = computeLowestCommonType(typeRegistry, valueTypes);
-      node.setType(typeRegistry.getOrCreateMapType(commonKeyType, commonValueType));
+      node.setType(
+          typeRegistry.getOrCreateMapType(
+              commonKeyType,
+              commonValueType,
+              /* mutable= */ ResolveExpressionTypesPass.this.inAutoExtern));
 
       tryApplySubstitution(node);
     }
@@ -1278,7 +1286,10 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
       SoyType listExprType = node.getListExpr().getType();
       if (listExprType instanceof AbstractIterableType
           && ((AbstractIterableType) listExprType).isEmpty()) {
-        node.setType(MapType.empty());
+        node.setType(
+            ResolveExpressionTypesPass.this.inAutoExtern
+                ? MutableMapType.empty()
+                : MapType.empty());
         if (inferringParam) {
           errorReporter.report(node.getSourceLocation(), AMBIGUOUS_INFERRED_TYPE, "an empty map");
         }
@@ -1291,7 +1302,10 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
             BAD_MAP_LITERAL_FROM_LIST_TYPE,
             node.getListExpr().toSourceString(),
             listExprType);
-        node.setType(MapType.empty());
+        node.setType(
+            ResolveExpressionTypesPass.this.inAutoExtern
+                ? MutableMapType.empty()
+                : MapType.empty());
         return;
       }
 
@@ -1313,7 +1327,9 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
       }
       // TODO: Catch duplicate keys whenever possible. This is important to support when we make the
       // map from list constructor syntax less clunky (e.g. by supporting tuples, see b/182212609).
-      node.setType(typeRegistry.getOrCreateMapType(keyType, valueType));
+      node.setType(
+          typeRegistry.getOrCreateMapType(
+              keyType, valueType, /* mutable= */ ResolveExpressionTypesPass.this.inAutoExtern));
       tryApplySubstitution(node);
     }
 
@@ -2441,12 +2457,18 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
     private void visitLegacyObjectMapToMapFunction(FunctionNode node) {
       SoyType argType = node.getParam(0).getType().getEffectiveType();
       if (argType instanceof AbstractMapType && ((AbstractMapType) argType).isEmpty()) {
-        node.setType(MapType.empty());
+        node.setType(
+            ResolveExpressionTypesPass.this.inAutoExtern
+                ? MutableMapType.empty()
+                : MapType.empty());
       } else if (argType == UnknownType.getInstance()) {
         // Allow the type of the arg to be unknown as legacy_object_map functionality on unknown
         // types is allowed (i.e. bracket access on a variable with an unknown type).
         node.setType(
-            typeRegistry.getOrCreateMapType(StringType.getInstance(), UnknownType.getInstance()));
+            typeRegistry.getOrCreateMapType(
+                StringType.getInstance(),
+                UnknownType.getInstance(),
+                /* mutable= */ ResolveExpressionTypesPass.this.inAutoExtern));
       } else {
         LegacyObjectMapType actualArgType = (LegacyObjectMapType) argType;
         node.setType(
@@ -2457,7 +2479,9 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
                 // legacy_object_map just coerces the key to a string.
                 // b/69051605 will change many Soy params to have a type of map<string, ...>,
                 // so legacyObjectMapToMap() needs to have this return type too.
-                StringType.getInstance(), actualArgType.getValueType()));
+                StringType.getInstance(),
+                actualArgType.getValueType(),
+                /* mutable= */ ResolveExpressionTypesPass.this.inAutoExtern));
       }
     }
 
@@ -3075,7 +3099,11 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
         // If argument type is incorrect, do not try to create a return type. Instead, set the
         // return type to unknown.
         // We disallow unknown for this function in order to ensure that maps remain strongly typed
-        if (checkArgType(node.getParam(0), MapType.ANY_MAP, node, UnknownPolicy.DISALLOWED)) {
+        if (checkArgType(
+            node.getParam(0),
+            ResolveExpressionTypesPass.this.inAutoExtern ? MutableMapType.ANY_MAP : MapType.ANY_MAP,
+            node,
+            UnknownPolicy.DISALLOWED)) {
           visitMapToLegacyObjectMapFunction(node);
         } else {
           node.setType(UnknownType.getInstance());
@@ -3133,9 +3161,14 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
 
       ImmutableSet<SoyType> keys = keyTypesBuilder.build();
       ImmutableSet<SoyType> values = valueTypesBuilder.build();
-      return MapType.of(
-          keys.isEmpty() ? UnknownType.getInstance() : typeRegistry.getOrCreateUnionType(keys),
-          values.isEmpty() ? UnknownType.getInstance() : typeRegistry.getOrCreateUnionType(values));
+
+      var keyType =
+          keys.isEmpty() ? UnknownType.getInstance() : typeRegistry.getOrCreateUnionType(keys);
+      var valueType =
+          values.isEmpty() ? UnknownType.getInstance() : typeRegistry.getOrCreateUnionType(values);
+      return ResolveExpressionTypesPass.this.inAutoExtern
+          ? MutableMapType.of(keyType, valueType)
+          : MapType.of(keyType, valueType);
     }
 
     /** Checks the argument type. Returns false if an incorrect arg type error was reported. */

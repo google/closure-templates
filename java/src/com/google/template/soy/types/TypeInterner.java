@@ -77,8 +77,8 @@ public interface TypeInterner {
    * @param valueType The value type of the map.
    * @return The map type.
    */
-  default MapType getOrCreateMapType(SoyType keyType, SoyType valueType) {
-    return intern(MapType.of(keyType, valueType));
+  default MapType getOrCreateMapType(SoyType keyType, SoyType valueType, boolean mutable) {
+    return intern(mutable ? MutableMapType.of(keyType, valueType) : MapType.of(keyType, valueType));
   }
 
   /**
