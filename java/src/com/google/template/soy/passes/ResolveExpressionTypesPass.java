@@ -2204,8 +2204,22 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
         for (int i = 0; i < params.size(); i++) {
           // The available runtime coercions are all between assignable types. So there's no need
           // to re-match externs on the coerced types.
-          maybeCoerceType(params.get(i), ref.getSignature().getParameters().get(i).getType());
+          SoyType typeCheck;
+          if (ref.getSignature().isVarArgs()
+              && i >= ref.getSignature().getParameters().size() - 1) {
+            typeCheck =
+                ((ListType)
+                        ref.getSignature()
+                            .getParameters()
+                            .get(ref.getSignature().getParameters().size() - 1)
+                            .getType())
+                    .getElementType();
+          } else {
+            typeCheck = ref.getSignature().getParameters().get(i).getType();
+          }
+          maybeCoerceType(params.get(i), typeCheck);
         }
+        node.setIsVarArgs(ref.getSignature().isVarArgs());
         node.setAllowedParamTypes(
             ref.getSignature().getParameters().stream().map(Parameter::getType).collect(toList()));
         node.setType(ref.getSignature().getReturnType());
@@ -2218,13 +2232,19 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
     private boolean paramsMatchFunctionType(
         List<ExprNode> providedParams, FunctionType functionType) {
       ImmutableList<Parameter> functParams = functionType.getParameters();
-      if (functParams.size() != providedParams.size()) {
+      if (!functionType.isVarArgs() && functParams.size() != providedParams.size()) {
         return false;
       }
 
       for (int i = 0; i < providedParams.size(); ++i) {
         SoyType providedType = providedParams.get(i).getType();
-        SoyType paramType = functParams.get(i).getType();
+        SoyType paramType =
+            functParams.get(min(functionType.getParameters().size() - 1, i)).getType();
+        if (functionType.isVarArgs() && i >= functionType.getParameters().size() - 1) {
+          if (paramType instanceof ListType) {
+            paramType = ((ListType) paramType).getElementType();
+          }
+        }
         if (!paramType.isAssignableFromLoose(providedType)
             && providedType != UnknownType.getInstance()) {
           return false;

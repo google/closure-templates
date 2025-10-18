@@ -173,4 +173,8 @@ public final class ExternNode extends AbstractParentCommandNode<ExternImplNode>
   public ExternNode copy(CopyState copyState) {
     return new ExternNode(this, copyState);
   }
+
+  public boolean isVarArgs() {
+    return getType().isVarArgs();
+  }
 }

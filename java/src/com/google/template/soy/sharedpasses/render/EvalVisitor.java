@@ -1028,7 +1028,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
       return visitExtern(
           node,
           (SoyJavaExternFunction) soyFunction,
-          visitAllTofu(node.getParams()),
+          visitAllParamsTofu(node),
           node.getType(),
           node.getAllowedParamTypes());
     } else if (soyFunction instanceof SoyJavaSourceFunction) {
@@ -1042,7 +1042,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
       return visitExtern(
               resolveExternToNode((Extern) soyFunction),
               ImmutableList.of(),
-              visitAllTofu(node.getParams()),
+              visitAllParamsTofu(node),
               node.getType(),
               node.getSourceLocation(),
               false)
@@ -1062,6 +1062,13 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
           "Failed to find Soy function with name '%s' (function call \"%s\").",
           node.getStaticFunctionName(), node.toSourceString());
     }
+  }
+
+  private ImmutableList<TofuJavaValue> visitAllParamsTofu(ExprNode.CallableExpr node) {
+    ImmutableList<SoyValue> values = visitAllParams(node);
+    return values.stream()
+        .map(v -> TofuJavaValue.forSoyValue(v, node.getSourceLocation()))
+        .collect(toImmutableList());
   }
 
   private ImmutableList<SoyValue> visitAllParams(ExprNode.CallableExpr node) {
