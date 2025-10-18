@@ -1,0 +1,61 @@
+##
+# Copyright 2019 Google Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+##
+
+load("@rules_java//java:defs.bzl", "java_library")
+
+package(default_visibility = ["//:soy_internal"])
+
+java_library(
+    name = "types",
+    # NOTE: SpliceableSafeHtml.java is explicitly excluded from this list as it
+    # references a proto message that appears to no longer be available (and is
+    # not essential).
+    srcs = [
+        "BuilderUtils.java",
+        "LegacyConversions.java",
+        "SafeHtml.java",
+        "SafeHtmlBuilder.java",
+        "SafeHtmls.java",
+        "SafeScript.java",
+        "SafeScripts.java",
+        "SafeScriptsForJson.java",
+        "SafeStyle.java",
+        "SafeStyleBuilder.java",
+        "SafeStyleSheet.java",
+        "SafeStyleSheets.java",
+        "SafeStyles.java",
+        "SafeUrl.java",
+        "SafeUrls.java",
+        "TrustedResourceUrl.java",
+        "TrustedResourceUrlBuilder.java",
+        "TrustedResourceUrls.java",
+        "UncheckedConversions.java",
+        "package-info.java",
+    ],
+    visibility = ["//visibility:public"],
+    exports = ["//third_party/google/safe-html-types/proto/webutil/html/types:html_java_proto"],
+    deps = [
+        "//third_party/google/safe-html-types/proto/webutil/html/types:html_java_proto",
+        "@com_google_auto_value_auto_value",
+        "@com_google_auto_value_auto_value_annotations//jar",
+        "@maven_closure_templates//:com_google_code_findbugs_jsr305",
+        "@maven_closure_templates//:com_google_code_gson_gson",
+        "@maven_closure_templates//:com_google_errorprone_error_prone_annotations",
+        "@maven_closure_templates//:com_google_guava_guava",
+        "@maven_closure_templates//:com_google_jsinterop_jsinterop_annotations",
+        "@maven_closure_templates//:javax_annotation_javax_annotation_api",
+    ],
+)

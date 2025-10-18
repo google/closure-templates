@@ -27,10 +27,10 @@ java_library(
     srcs = glob(["*.java"]),
     deps = [
         "//java/src/com/google/template/soy/logging:public",
-        "@maven//:com_google_code_findbugs_jsr305",
-        "@maven//:com_google_common_html_types_types",
-        "@maven//:com_google_truth_truth",
-        "@maven//:junit_junit",
+        "@maven_closure_templates//:com_google_code_findbugs_jsr305",
+        "@maven_closure_templates//:com_google_common_html_types_types",
+        "@maven_closure_templates//:com_google_truth_truth",
+        "@maven_closure_templates//:junit_junit",
     ],
 )
 
