@@ -150,6 +150,7 @@ import com.google.template.soy.types.IterableType;
 import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.MessageType;
 import com.google.template.soy.types.MutableListType;
+import com.google.template.soy.types.MutableMapType;
 import com.google.template.soy.types.SetType;
 import com.google.template.soy.types.SoyProtoEnumType;
 import com.google.template.soy.types.SoyProtoType;
@@ -767,8 +768,11 @@ final class ExpressionCompiler {
       var soyMap =
           SoyExpression.forSoyValue(
               node.getType(),
-              MethodRefs.MAP_IMPL_FOR_PROVIDER_MAP_NO_NULL_KEYS.invoke(
-                  BytecodeUtils.newImmutableMap(keys, values, /* allowDuplicates= */ true)));
+              (node.getType() instanceof MutableMapType
+                      ? MethodRefs.MAP_IMPL_MUTABLE
+                      : MethodRefs.MAP_IMPL_FOR_PROVIDER_MAP_NO_NULL_KEYS)
+                  .invoke(
+                      BytecodeUtils.newImmutableMap(keys, values, /* allowDuplicates= */ true)));
       if (isConstantContext
           && Expression.areAllConstant(keys)
           && Expression.areAllConstant(values)) {
@@ -800,9 +804,12 @@ final class ExpressionCompiler {
     protected SoyExpression visitMapLiteralFromListNode(MapLiteralFromListNode node) {
       return SoyExpression.forSoyValue(
           node.getType(),
-          MethodRefs.CONSTRUCT_MAP_FROM_ITERATOR.invoke(
-              // constructMapFromIterator doesn't support null list params
-              visit(node.getListExpr()).unboxAsIteratorUnchecked()));
+          (node.getType() instanceof MutableMapType
+                  ? MethodRefs.CONSTRUCT_MUTABLE_MAP_FROM_ITERATOR
+                  : MethodRefs.CONSTRUCT_MAP_FROM_ITERATOR)
+              .invoke(
+                  // constructMapFromIterator doesn't support null list params
+                  visit(node.getListExpr()).unboxAsIteratorUnchecked()));
     }
 
     // Comparison operators
