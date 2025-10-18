@@ -285,7 +285,8 @@ public final class SharedRuntime {
   }
 
   @Nonnull
-  public static SoyMap constructMapFromIterator(Iterator<? extends SoyValueProvider> iterator) {
+  private static ImmutableMap<SoyValue, SoyValueProvider> constructProviderMapFromIterator(
+      Iterator<? extends SoyValueProvider> iterator) {
     ImmutableMap.Builder<SoyValue, SoyValueProvider> map = ImmutableMap.builder();
     int i = 0;
     while (iterator.hasNext()) {
@@ -300,8 +301,20 @@ public final class SharedRuntime {
       map.put(key, valueProvider);
       i++;
     }
+    return map.buildKeepingLast();
+  }
 
-    return SoyMapImpl.forProviderMap(map.buildKeepingLast());
+  @Nonnull
+  public static SoyMap constructMapFromIterator(Iterator<? extends SoyValueProvider> iterator) {
+    var map = constructProviderMapFromIterator(iterator);
+    return SoyMapImpl.forProviderMap(map);
+  }
+
+  @Nonnull
+  public static SoyMap constructMutableMapFromIterator(
+      Iterator<? extends SoyValueProvider> iterator) {
+    var map = constructProviderMapFromIterator(iterator);
+    return SoyMapImpl.mutable(map);
   }
 
   public static void checkMapFromListConstructorCondition(
