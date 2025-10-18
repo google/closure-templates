@@ -431,7 +431,8 @@ public final class TemplateMetadataSerializer {
       case MAP:
         return typeRegistry.getOrCreateMapType(
             fromProto(proto.getMap().getKey(), typeRegistry, filePath, errorReporter),
-            fromProto(proto.getMap().getValue(), typeRegistry, filePath, errorReporter));
+            fromProto(proto.getMap().getValue(), typeRegistry, filePath, errorReporter),
+            /* mutable= */ false);
       case MESSAGE:
         return MessageType.getInstance();
       case PROTO:
