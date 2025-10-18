@@ -130,8 +130,6 @@ java_library(
     deps = [
         ":data",
         ":record_property",
-        "//java/src/com/google/template/soy/soytree:metadata",
-        "//java/src/com/google/template/soy/types",
         "@maven//:com_google_code_findbugs_jsr305",
         "@maven//:com_google_guava_guava",
     ],
@@ -157,7 +155,6 @@ java_library(
         ":data",
         ":record_property",
         "//java/src/com/google/template/soy/jbcsrc/api:helpers",
-        "//java/src/com/google/template/soy/jbcsrc/shared",
         "@com_google_auto_value_auto_value",
         "@com_google_protobuf//:protobuf_java",
         "@maven//:com_google_code_findbugs_jsr305",
