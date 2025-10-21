@@ -126,6 +126,12 @@ public abstract class JsDoc extends SpecialToken implements CodeChunk.HasRequire
       paramsBuilder().add(Param.create("param", name, recordLiteralType));
       return this;
     }
+
+    @CanIgnoreReturnValue
+    public Builder addVarArgsParam(String name, String type) {
+      paramsBuilder().add(Param.createVarArgs("param", type, name));
+      return this;
+    }
   }
 
   /** Builder for JsDoc Param */
@@ -150,19 +156,27 @@ public abstract class JsDoc extends SpecialToken implements CodeChunk.HasRequire
     @Nullable
     abstract ImmutableMap<String, String> recordLiteralType();
 
+    abstract boolean isVarArgs();
+
     static Param createAnnotation(String annotationType, String field) {
       Preconditions.checkArgument(!annotationType.startsWith("@"));
-      return new AutoValue_JsDoc_Param(annotationType, field, null, null, null);
+      return new AutoValue_JsDoc_Param(annotationType, field, null, null, null, false);
     }
 
     static Param create(String annotationType, String type) {
       Preconditions.checkArgument(!annotationType.startsWith("@"));
-      return new AutoValue_JsDoc_Param(annotationType, null, type, null, null);
+      return new AutoValue_JsDoc_Param(annotationType, null, type, null, null, false);
     }
 
     static Param create(String annotationType, String type, String paramTypeName) {
       Preconditions.checkArgument(!annotationType.startsWith("@"));
-      return new AutoValue_JsDoc_Param(annotationType, null, type, paramTypeName, null);
+      return new AutoValue_JsDoc_Param(annotationType, null, type, paramTypeName, null, false);
+    }
+
+    static Param createVarArgs(String annotationType, String type, String paramTypeName) {
+      Preconditions.checkArgument(!annotationType.startsWith("@"));
+      return new AutoValue_JsDoc_Param(
+          annotationType, null, "..." + type, paramTypeName, null, true);
     }
 
     static Param create(
@@ -170,7 +184,7 @@ public abstract class JsDoc extends SpecialToken implements CodeChunk.HasRequire
         String paramTypeName,
         ImmutableMap<String, String> recordLiteralType) {
       return new AutoValue_JsDoc_Param(
-          annotationType, null, null, paramTypeName, recordLiteralType);
+          annotationType, null, null, paramTypeName, recordLiteralType, false);
     }
 
     void format(FormattingContext ctx) {

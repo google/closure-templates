@@ -282,8 +282,9 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
   public SoyValue execAutoJavaExtern(AutoImplNode java, ImmutableList<SoyValue> args) {
     env = Environment.create();
     buildFileEnvironment(env, java.getNearestAncestor(SoyFileNode.class));
+    boolean isVarArgs = java.getParent().isVarArgs();
     ImmutableList<TemplateParam> externParams = java.getParent().getParamVars();
-    Preconditions.checkArgument(externParams.size() == args.size());
+    Preconditions.checkArgument(isVarArgs || externParams.size() == args.size());
     for (int i = 0; i < externParams.size(); i++) {
       this.env.bind(externParams.get(i), args.get(i));
     }
