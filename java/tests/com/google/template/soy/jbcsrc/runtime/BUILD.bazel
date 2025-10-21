@@ -33,10 +33,10 @@ java_library(
         "//java/src/com/google/template/soy/jbcsrc/runtime",
         "//java/src/com/google/template/soy/jbcsrc/shared:stackframe",
         "//java/src/com/google/template/soy/msgs",
-        "@maven//:com_google_guava_guava",
-        "@maven//:com_google_truth_truth",
-        "@maven//:com_ibm_icu_icu4j",
-        "@maven//:junit_junit",
+        "@maven_closure_templates//:com_google_guava_guava",
+        "@maven_closure_templates//:com_google_truth_truth",
+        "@maven_closure_templates//:com_ibm_icu_icu4j",
+        "@maven_closure_templates//:junit_junit",
     ],
 )
 

@@ -32,7 +32,8 @@ java_library(
         "//java/src/com/google/template/soy/soytree:soynode",
         "//src/main/protobuf:conformance_java_proto",
         "@com_google_auto_value_auto_value",
-        "@maven//:com_google_errorprone_error_prone_annotations",
-        "@maven//:com_google_guava_guava",
+        "@com_google_auto_value_auto_value_annotations//jar",
+        "@maven_closure_templates//:com_google_errorprone_error_prone_annotations",
+        "@maven_closure_templates//:com_google_guava_guava",
     ],
 )

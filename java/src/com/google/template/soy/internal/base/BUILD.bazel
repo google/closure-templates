@@ -22,6 +22,6 @@ java_library(
     name = "base",
     srcs = glob(["*.java"]),
     deps = [
-        "@maven//:com_google_guava_guava",
+        "@maven_closure_templates//:com_google_guava_guava",
     ],
 )

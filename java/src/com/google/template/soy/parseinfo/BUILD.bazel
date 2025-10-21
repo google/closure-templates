@@ -37,8 +37,8 @@ java_library(
     deps = [
         ":name",
         "@com_google_protobuf//:protobuf_java",
-        "@maven//:com_google_errorprone_error_prone_annotations",
-        "@maven//:com_google_guava_guava",
+        "@maven_closure_templates//:com_google_errorprone_error_prone_annotations",
+        "@maven_closure_templates//:com_google_guava_guava",
     ],
 )
 
@@ -49,6 +49,7 @@ java_library(
     deps = [
         "//java/src/com/google/template/soy/data:template",
         "@com_google_auto_value_auto_value",
-        "@maven//:com_google_errorprone_error_prone_annotations",
+        "@com_google_auto_value_auto_value_annotations//jar",
+        "@maven_closure_templates//:com_google_errorprone_error_prone_annotations",
     ],
 )

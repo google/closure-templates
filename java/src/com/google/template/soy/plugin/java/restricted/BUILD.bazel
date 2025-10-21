@@ -24,6 +24,7 @@ java_library(
     deps = [
         "//java/src/com/google/template/soy/plugin/restricted",
         "@com_google_auto_value_auto_value",
-        "@maven//:com_google_guava_guava",
+        "@com_google_auto_value_auto_value_annotations//jar",
+        "@maven_closure_templates//:com_google_guava_guava",
     ],
 )
