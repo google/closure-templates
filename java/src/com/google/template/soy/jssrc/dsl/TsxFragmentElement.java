@@ -54,9 +54,12 @@ public abstract class TsxFragmentElement extends Expression implements CodeChunk
   }
 
   public static Expression maybeWrap(List<? extends CodeChunk> children) {
+    children = CodeChunks.removeEmpty(children);
     if (children.size() == 1) {
       CodeChunk onlyChild = children.get(0);
-      if (onlyChild instanceof Call || onlyChild instanceof VariableReference) {
+      if (onlyChild instanceof Call
+          || onlyChild instanceof VariableReference
+          || onlyChild instanceof HtmlTag) {
         // No need to wrap if all we are doing is forwarding to a simple expression that will itself
         // be a fragment.
         return (Expression) onlyChild;

@@ -57,6 +57,11 @@ public final class Expressions {
         Stream<? extends CodeChunk> childrenStream() {
           return Stream.empty();
         }
+
+        @Override
+        public boolean isEmpty() {
+          return true;
+        }
       };
 
   /** Exploding error expr. This will blow up if used to write gencode. */

@@ -48,6 +48,7 @@ public abstract class StatementList extends Statement {
     return new AutoValue_StatementList(unrolled.build());
   }
 
+  @Override
   public boolean isEmpty() {
     return statements().isEmpty();
   }
