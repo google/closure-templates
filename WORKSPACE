@@ -19,14 +19,14 @@ workspace(name = "com_google_closure_templates")
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 load("@bazel_tools//tools/build_defs/repo:jvm.bzl", "jvm_maven_import_external")
 
-RULES_JVM_EXTERNAL_TAG = "5.3"
-RULES_JVM_EXTERNAL_SHA ="d31e369b854322ca5098ea12c69d7175ded971435e55c18dd9dd5f29cc5249ac"
+RULES_JVM_EXTERNAL_TAG = "6.6"
+RULES_JVM_EXTERNAL_SHA = "ec60d258e6f55a1014368e40ca52058b1a645a3d455ca471c4edb7c03f4b8d88"
 
 http_archive(
     name = "rules_jvm_external",
     strip_prefix = "rules_jvm_external-%s" % RULES_JVM_EXTERNAL_TAG,
     sha256 = RULES_JVM_EXTERNAL_SHA,
-    url = "https://github.com/bazelbuild/rules_jvm_external/releases/download/%s/rules_jvm_external-%s.tar.gz" % (RULES_JVM_EXTERNAL_TAG, RULES_JVM_EXTERNAL_TAG)
+    url = "https://github.com/bazelbuild/rules_jvm_external/archive/%s.zip" % RULES_JVM_EXTERNAL_TAG,
 )
 
 load("@rules_jvm_external//:repositories.bzl", "rules_jvm_external_deps")
@@ -41,7 +41,6 @@ load("@rules_jvm_external//:defs.bzl", "maven_install")
 load("@rules_jvm_external//:specs.bzl", "maven")
 
 SERVER_URLS = [
-    "https://mirror.bazel.build/repo1.maven.org/maven2",
     "https://repo1.maven.org/maven2",
 ]
 
@@ -93,7 +92,6 @@ maven_install(
         "org.ow2.asm:asm-tree:9.5",
         "org.ow2.asm:asm-util:9.5",
     ],
-    maven_install_json = "//:maven_install.json",
     override_targets = {
         "com.google.auto.value:auto-value": "@com_google_auto_value_auto_value",
         "com.google.auto.value:auto-value-annotations": "@com_google_auto_value_auto_value_annotations",
@@ -102,10 +100,6 @@ maven_install(
     repositories = SERVER_URLS,
     strict_visibility = True,
 )
-
-load("@maven//:defs.bzl", "pinned_maven_install")
-
-pinned_maven_install()
 
 jvm_maven_import_external(
     name = "com_google_auto_value_auto_value",
@@ -174,14 +168,18 @@ jvm_maven_import_external(
 
 http_archive(
     name = "rules_java",
+    sha256 = "179216e911433c23e85686d1112d02c77f0a7863f58a69e7f4c0a52f36f6d833",
+    strip_prefix = "rules_java-6.6.0",
     urls = [
-        "https://github.com/bazelbuild/rules_java/releases/download/6.2.2/rules_java-6.2.2.tar.gz",
+        "https://github.com/bazelbuild/rules_java/releases/download/6.6.0/rules_java-6.6.0.tar.gz",
     ],
-    sha256 = "847527aa7f74712e0a63af2670ba3ddc04e8ea3d8930a7947c17aebfb29d5294",
 )
 load("@rules_java//java:repositories.bzl", "rules_java_dependencies", "rules_java_toolchains")
 rules_java_dependencies()
-rules_java_toolchains()
+rules_java_toolchains(
+    java_build_tool_version = "17",
+    versions = ["17"],
+)
 
 http_archive(
     name = "rules_proto",
