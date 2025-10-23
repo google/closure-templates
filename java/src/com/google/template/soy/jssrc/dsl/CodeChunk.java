@@ -155,6 +155,10 @@ public abstract class CodeChunk {
 
   CodeChunk() {}
 
+  public boolean isEmpty() {
+    return false;
+  }
+
   /**
    * Code chunks in a single Soy template emit code into a shared JavaScript lexical scope, so they
    * must use distinct variable names. This class enforces that.
