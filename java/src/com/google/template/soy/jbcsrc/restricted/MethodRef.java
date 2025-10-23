@@ -19,6 +19,8 @@ package com.google.template.soy.jbcsrc.restricted;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.template.soy.jbcsrc.restricted.Expression.areAllCheap;
 import static com.google.template.soy.jbcsrc.restricted.Expression.areAllConstant;
+import static java.util.Arrays.stream;
+import static java.util.stream.Collectors.joining;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
@@ -35,6 +37,7 @@ import java.lang.reflect.Executable;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.Optional;
 import javax.annotation.Nonnull;
 import org.objectweb.asm.ConstantDynamic;
@@ -84,7 +87,17 @@ public abstract class MethodRef {
       return clazz.getMethod(methodName, params);
     } catch (Exception e) {
       throw new VerifyException(
-          "Couldn't find the expected method among: " + Arrays.toString(clazz.getMethods()), e);
+          String.format(
+              "Couldn't find the expected method %s(%s) among:\n%s",
+              methodName,
+              Arrays.toString(params),
+              stream(clazz.getMethods())
+                  .sorted(
+                      Comparator.comparing(java.lang.reflect.Method::getName)
+                          .thenComparing(m -> m.getParameterTypes().length))
+                  .map(m -> String.format("    %s:  %s", m.getName(), m))
+                  .collect(joining("\n"))),
+          e);
     }
   }
 
@@ -103,7 +116,15 @@ public abstract class MethodRef {
       return clazz.getConstructor(params);
     } catch (Exception e) {
       throw new VerifyException(
-          "Couldn't find the expected method among: " + Arrays.toString(clazz.getMethods()), e);
+          String.format(
+              "Couldn't find the expected constructor %s(%s) among:\n%s",
+              clazz.getName(),
+              Arrays.toString(params),
+              stream(clazz.getConstructors())
+                  .sorted(Comparator.comparing(c -> c.getParameterTypes().length))
+                  .map(c -> String.format("    %s", c))
+                  .collect(joining("\n"))),
+          e);
     }
   }
 
