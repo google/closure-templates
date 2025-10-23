@@ -75,4 +75,9 @@ abstract class Leaf extends Expression implements CodeChunk.HasRequires {
   public JsExpr singleExprOrName(FormatOptions formatOptions) {
     return value();
   }
+
+  @Override
+  public boolean isEmpty() {
+    return value().getText().isEmpty();
+  }
 }

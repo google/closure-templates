@@ -76,7 +76,12 @@ public final class CodeChunks {
     }
   }
 
+  public static <T extends CodeChunk> List<T> removeEmpty(List<T> chunks) {
+    return chunks.stream().filter(c -> !c.isEmpty()).toList();
+  }
+
   public static Expression concat(List<? extends CodeChunk> chunks) {
+    chunks = removeEmpty(chunks);
     if (chunks.isEmpty()) {
       return StringLiteral.create("");
     } else if (chunks.size() == 1) {
