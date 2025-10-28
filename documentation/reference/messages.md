@@ -141,49 +141,88 @@ See more information about translating messages in the
 
 ### Genders
 
-Syntax for a gender aware message in Soy is `{msg genders=...}`.
+There are three methods for varying messages based on gender in Soy:
 
-#### Does not vary in English {#gender}
+1.  **Gender Appropriate UI (GAUI):** For messages that vary based on the
+    *viewer's* grammatical gender in languages other than English.
+2.  **The `genders` attribute:** For messages that vary based on the gender of
+    one or more individuals (viewer or third party) in languages other than
+    English.
+3.  **The `select` keyword:** For messages that require different phrasing based
+    on gender *in English*.
 
-The syntax for a message that doesn't vary in English is:
+#### 1. Gender Appropriate UI (GAUI)
+
+Use GAUI when a message's translation depends on the viewer's grammatical
+gender, but the English source text remains the same. GAUI is a system designed
+to address users in a manner grammatically appropriate to their self-selected
+gender.
+
+*   **Key Characteristics:**
+    *   Does not affect English messages.
+    *   Depends only on the viewer's globally configured grammatical gender.
+    *   Translators provide gendered variants as needed for each language.
+
+With GAUI, no special syntax is needed within the individual Soy `{msg}` command
+to specify the viewer's gender, as this is handled at the infrastructure level.
+Translators can provide different translations based on the viewer's gender
+settings.
+
+*Configuration of the user's grammatical gender in the server is
+application-specific.*
+
+NOTE: GAUI cannot be used to create gender variants for messages in English.
+
+#### 2. The `genders` Attribute
+
+Use the `genders` attribute when a message in a non-English language needs to
+vary based on the grammatical gender of someone who may or may not be the viewer
+(e.g., a third party). The English source text remains the same.
+
+*   **Key Characteristics:**
+    *   Does not affect English messages.
+    *   Can depend on the gender of the viewer and/or other individuals.
+
+The syntax in Soy is `{msg desc="..." genders="..."}`. The `genders` attribute
+accepts one or more comma-separated expressions.
+
+**Example:**
 
 ```soy
-{msg desc="..." genders="$userGender, $targetGender"}
+{msg desc="Invitation for the user to join a community hosted by a target person." genders="$userGender, $targetGender"}
   Join {$targetName}'s community.
 {/msg}
 ```
 
-Even though a message doesn't vary in English, it may vary in other languages
-based on gender. For the example above, the form of the verb "join" may vary
-based on the gender of the user and the rest of the sentence may vary based on
-the gender of the target.
+In this example, some languages might inflect the verb "Join" based on
+`$userGender`, and other parts of the sentence based on the grammatical gender
+of `$targetName`.
 
-The `genders` attribute is metadata used by translators to provide different
-translations of the same English message for different genders. The `genders`
-attribute value may contain one or more expressions (though using more than
-three gender expressions in one message is not
-allowed). Each gender
-expression should evaluate to a string. There are three recognized cases:
-'female', 'male', and any other
-string, which is treated as
-unknown gender.
+The `genders` attribute provides metadata for translators. Each expression in
+the `genders` list should evaluate to a string. The recognized values are:
 
-For gender expressions, prefer data references (for example,
-`$userInfo.userGender`) instead of more complex expressions. Translators see the
-last key name in the data reference (the identifier after the last dot), and
-this can help a translator determine how to match up the genders with parts of
-the message. For example, if there are multiple gender expressions, a translator
-might not know whether an expression `$gender` applies to the gender of the user
-or the target. Expressions like `$userGender` and `$targetGender` clearly
-represent the gender of the user and the gender of the target.
+*   `'female'`
+*   `'male'`
+*   Any other string (treated as `'unknown/other'` gender).
 
-#### Varies in English {#gender-vary}
+**Best Practice:** Use clear data references for gender expressions, such as
+`$userInfo.userGender` or `$targetGender`, rather than complex expressions. The
+last part of the data reference (e.g., `userGender`, `targetGender`) is visible
+to translators, helping them understand which gender applies to which part of
+the message.
 
-Gender-aware messages that vary in English can be written using a `select`
-operation:
+#### 3. The `select` Operation {#gender-vary}
+
+Use the `select` operation when a message needs different phrasing *in English*
+based on gender.
+
+*   **Key Characteristic:**
+    *   Enables different English text based on gender variables.
+
+**Example:**
 
 ```soy
-{msg desc="..."}
+{msg desc="Notification about a document being shared."}
   {select $ownerGender}
     {case 'female'}
       {select $targetGender}
@@ -207,18 +246,21 @@ operation:
 {/msg}
 ```
 
-If a message varies in English due to only some of the genders involved, the
-`select` operation must be used for each gender causing the message to vary in
-English. Genders not affecting the message in English may <a href="#gender">use
-the `genders` attribute</a>.
+### Combining `select` and `genders`
 
-For example, In the syntax example below, the message only varies in English due
-to `$targetGender`, but not due to `$userGender`. `$targetGender` is therefore
-written using a select statement, while `$userGender` is declared in the
-`genders` attribute.
+If a message varies in English for only *some* genders, use `select` for the
+genders causing the English variation. For any other genders that *don't* affect
+the English text but might be needed for translation in other languages, include
+them in the `genders` attribute.
+
+**Example:**
+
+In the message below, the English text varies based on `$targetGender` but not
+`$userGender`. Thus, `$targetGender` uses a `select`, while `$userGender` is
+passed to translators via the `genders` attribute.
 
 ```soy
-{msg desc="..." genders="$userGender" }
+{msg desc="Call to action to reply to the target person." genders="$userGender"}
   {select $targetGender}
     {case 'female'}Reply to her.
     {case 'male'}Reply to him.
@@ -227,10 +269,11 @@ written using a select statement, while `$userGender` is declared in the
 {/msg}
 ```
 
-Each `select` block appears as a placeholder in the containing message. The
-placeholder name is `phname` (if present) or the UPPER_SNAKE_CASE version of the
-variable name (`TARGET_GENDER` in this example). By convention, it is
-recommended that all names be UPPER_SNAKE_CASE.
+Each `select` block becomes a placeholder in the message for translation. The
+placeholder name is taken from the `phname` attribute if provided, otherwise it
+defaults to the UPPER_SNAKE_CASE version of the variable name (e.g.,
+`TARGET_GENDER`). By convention, all placeholder names should be
+UPPER_SNAKE_CASE.
 
 ### Plural {#plural}
 
