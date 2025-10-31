@@ -1,0 +1,22 @@
+// Contains enum used to catergorize diagnostics.
+syntax = "proto2";
+
+package soy.compiler;
+
+option java_multiple_files = true;
+option java_package = "com.google.template.soy.diagnosticcategory";
+option java_outer_classname = "DiagnosticCategoryProto";
+
+enum Category {
+  UNKNOWN_CATEGORY = 0;
+
+  // Based on
+  // https://typestrong.org/typedoc-auto-docs/typedoc/enums/TypeScript.DiagnosticCategory.html
+  ERROR = 1;
+  WARNING = 2;
+  MESSAGE = 3;
+  SUGGESTION = 4;
+
+  // Metric represents usage of a specific feature.
+  IMPRESSION = 5;
+}

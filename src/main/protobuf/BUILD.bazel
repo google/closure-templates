@@ -35,6 +35,11 @@ java_proto_library(
 )
 
 proto_library(
+    name = "diagnostic_category_proto",
+    srcs = ["diagnostic_category.proto"],
+)
+
+proto_library(
     name = "css_metadata_proto",
     srcs = [
         "css_metadata.proto",
