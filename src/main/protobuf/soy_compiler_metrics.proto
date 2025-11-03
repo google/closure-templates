@@ -1,0 +1,41 @@
+// Contains protos used for logging Soy compiler metrics.
+syntax = "proto2";
+
+package soy.compiler;
+
+import "src/main/protobuf/diagnostic_category.proto";
+
+option java_multiple_files = true;
+option java_package = "com.google.template.soy.compilermetrics";
+option java_outer_classname = "SoyCompilerMetricsProto";
+
+message Metric {
+  // Based on
+  // https://typestrong.org/typedoc-auto-docs/typedoc/interfaces/TypeScript.Diagnostic.html
+  optional string file_name = 1;
+  optional int32 start = 2;
+  optional int32 length = 3;
+  optional Category category = 4;
+  optional int32 code = 5;
+  optional string message_text = 6;
+  optional Impression impression = 7;
+}
+
+// TODO(b/456548951): Add SoyCompilerCustomMetrics proto.
+
+message Metrics {
+  repeated Metric metric = 1;
+}
+
+// Specific features which might be logged.
+// Each location that logs a metric (including errors) should have a unique
+// Impression value so that metrics can be mapped back to source code in the
+// compilers.
+// Convention: Error impressions begin with "ERROR_", warning impressions, begin
+// with "WARNING_", feature impressions begin with "FEATURE_".
+enum Impression {
+  UNKNOWN_IMPRESSION = 0;
+
+  // Unexpected diagnostic caught in the main module of the app.
+  MAIN_UNEXPECTED_DIAGNOSTIC = 1;
+}

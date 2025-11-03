@@ -39,6 +39,22 @@ proto_library(
     srcs = ["diagnostic_category.proto"],
 )
 
+java_proto_library(
+    name = "diagnostic_category_java_proto",
+    deps = [":diagnostic_category_proto"],
+)
+
+proto_library(
+    name = "soy_compiler_metrics_proto",
+    srcs = ["soy_compiler_metrics.proto"],
+    deps = [":diagnostic_category_proto"],
+)
+
+java_proto_library(
+    name = "soy_compiler_metrics_java_proto",
+    deps = [":soy_compiler_metrics_proto"],
+)
+
 proto_library(
     name = "css_metadata_proto",
     srcs = [
