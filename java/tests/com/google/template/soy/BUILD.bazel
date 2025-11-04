@@ -50,10 +50,11 @@ java_library(
         "//src/main/protobuf:template_metadata_java_proto",
         "//src/test/protobuf:test_protos_java_proto",
         "@com_google_auto_value_auto_value",
-        "@maven//:com_google_common_html_types_types",
-        "@maven//:com_google_guava_guava",
-        "@maven//:com_google_truth_truth",
-        "@maven//:junit_junit",
+        "@com_google_auto_value_auto_value_annotations//jar",
+        "@maven_closure_templates//:com_google_common_html_types_types",
+        "@maven_closure_templates//:com_google_guava_guava",
+        "@maven_closure_templates//:com_google_truth_truth",
+        "@maven_closure_templates//:junit_junit",
     ],
 )
 

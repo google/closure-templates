@@ -30,9 +30,9 @@ java_library(
         "//java/src/com/google/template/soy/data",
         "//java/tests/com/google/template/soy/data:soy_value_converter_utility",
         "//java/tests/com/google/template/soy/plugin/java/restricted/testing",
-        "@maven//:com_google_guava_guava",
-        "@maven//:com_google_truth_truth",
-        "@maven//:junit_junit",
+        "@maven_closure_templates//:com_google_guava_guava",
+        "@maven_closure_templates//:com_google_truth_truth",
+        "@maven_closure_templates//:junit_junit",
     ],
 )
 

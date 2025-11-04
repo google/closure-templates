@@ -28,10 +28,10 @@ java_library(
         "//java/src/com/google/template/soy/data",
         "//java/src/com/google/template/soy/jssrc/restricted",
         "//java/src/com/google/template/soy/shared/restricted",
-        "@maven//:com_google_code_findbugs_jsr305",
-        "@maven//:com_google_guava_guava",
-        "@maven//:com_google_truth_truth",
-        "@maven//:junit_junit",
+        "@maven_closure_templates//:com_google_code_findbugs_jsr305",
+        "@maven_closure_templates//:com_google_guava_guava",
+        "@maven_closure_templates//:com_google_truth_truth",
+        "@maven_closure_templates//:junit_junit",
     ],
 )
 
@@ -48,10 +48,10 @@ java_library(
         "//java/src/com/google/template/soy/soytree:soynode",
         "//java/src/com/google/template/soy/types",
         "@com_google_protobuf//:protobuf_java",
-        "@maven//:com_google_errorprone_error_prone_annotations",
-        "@maven//:com_google_guava_guava",
-        "@maven//:com_google_truth_truth",
-        "@maven//:junit_junit",
+        "@maven_closure_templates//:com_google_errorprone_error_prone_annotations",
+        "@maven_closure_templates//:com_google_guava_guava",
+        "@maven_closure_templates//:com_google_truth_truth",
+        "@maven_closure_templates//:junit_junit",
     ],
 )
 
@@ -81,9 +81,9 @@ java_library(
         "//java/src/com/google/template/soy/soytree:metadata",
         "//java/src/com/google/template/soy/types",
         "@com_google_protobuf//:protobuf_java",
-        "@maven//:com_google_code_findbugs_jsr305",
-        "@maven//:com_google_errorprone_error_prone_annotations",
-        "@maven//:com_google_guava_guava",
+        "@maven_closure_templates//:com_google_code_findbugs_jsr305",
+        "@maven_closure_templates//:com_google_errorprone_error_prone_annotations",
+        "@maven_closure_templates//:com_google_guava_guava",
     ],
 )
 

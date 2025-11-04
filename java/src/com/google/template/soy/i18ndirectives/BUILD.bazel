@@ -31,8 +31,8 @@ java_library(
         "//java/src/com/google/template/soy/pysrc/restricted",
         "//java/src/com/google/template/soy/shared/restricted",
         "//java/src/com/google/template/soy/shared/restricted:method_annotation",
-        "@maven//:com_google_code_findbugs_jsr305",
-        "@maven//:com_google_guava_guava",
-        "@maven//:com_ibm_icu_icu4j",
+        "@maven_closure_templates//:com_google_code_findbugs_jsr305",
+        "@maven_closure_templates//:com_google_guava_guava",
+        "@maven_closure_templates//:com_ibm_icu_icu4j",
     ],
 )

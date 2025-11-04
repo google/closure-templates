@@ -36,10 +36,10 @@ java_library(
         ":test_utils",
         "//java/src/com/google/template/soy/passes/htmlmatcher",
         "//java/src/com/google/template/soy/soytree",
-        "@maven//:com_google_guava_guava",
-        "@maven//:com_google_truth_extensions_truth_java8_extension",
-        "@maven//:com_google_truth_truth",
-        "@maven//:junit_junit",
+        "@maven_closure_templates//:com_google_guava_guava",
+        "@maven_closure_templates//:com_google_truth_extensions_truth_java8_extension",
+        "@maven_closure_templates//:com_google_truth_truth",
+        "@maven_closure_templates//:junit_junit",
     ],
 )
 
@@ -57,8 +57,8 @@ java_library(
         "//java/src/com/google/template/soy/soyparse",
         "//java/src/com/google/template/soy/soytree",
         "//java/src/com/google/template/soy/soytree:soynode",
-        "@maven//:com_google_guava_guava",
-        "@maven//:com_google_truth_truth",
+        "@maven_closure_templates//:com_google_guava_guava",
+        "@maven_closure_templates//:com_google_truth_truth",
     ],
 )
 

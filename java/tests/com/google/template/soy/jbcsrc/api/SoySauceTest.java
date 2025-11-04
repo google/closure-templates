@@ -52,7 +52,9 @@ public class SoySauceTest {
   @Before
   public void setUp() throws Exception {
     SoyFileSet.Builder builder = SoyFileSet.builder();
-    builder.add(SoySauceTest.class.getResource("strict.soy"));
+    final java.net.URL strictSoy = SoySauceTest.class.getResource("strict.soy");
+    assertThat(strictSoy).isNotNull();
+    builder.add(strictSoy);
     testAsyncPlugin = new TestAsyncPlugin();
     builder.addSourceFunction(testAsyncPlugin);
     builder.addProtoDescriptors(SoyFileKind.DEP, Foo.getDescriptor());

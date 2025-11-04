@@ -31,8 +31,8 @@ java_library(
         "//java/src/com/google/template/soy/data",
         "//java/src/com/google/template/soy/data/internalutils",
         "//java/src/com/google/template/soy/exprtree",
-        "@maven//:com_google_guava_guava",
-        "@maven//:junit_junit",
+        "@maven_closure_templates//:com_google_guava_guava",
+        "@maven_closure_templates//:junit_junit",
     ],
 )
 

@@ -44,11 +44,12 @@ java_library(
         "//java/src/com/google/template/soy/exprtree",
         "//java/src/com/google/template/soy/soytree",
         "@com_google_auto_value_auto_value",
-        "@maven//:com_google_code_findbugs_jsr305",
-        "@maven//:com_google_errorprone_error_prone_annotations",
-        "@maven//:com_google_guava_guava",
-        "@maven//:com_google_inject_guice",
-        "@maven//:javax_inject_javax_inject",
+        "@com_google_auto_value_auto_value_annotations//jar",
+        "@maven_closure_templates//:com_google_code_findbugs_jsr305",
+        "@maven_closure_templates//:com_google_errorprone_error_prone_annotations",
+        "@maven_closure_templates//:com_google_guava_guava",
+        "@maven_closure_templates//:com_google_inject_guice",
+        "@maven_closure_templates//:javax_inject_javax_inject",
     ],
 )
 
@@ -58,8 +59,8 @@ java_library(
     visibility = ["//visibility:public"],
     deps = [
         "//java/src/com/google/template/soy/base",
-        "@maven//:com_google_code_findbugs_jsr305",
-        "@maven//:com_google_guava_guava",
+        "@maven_closure_templates//:com_google_code_findbugs_jsr305",
+        "@maven_closure_templates//:com_google_guava_guava",
     ],
 )
 

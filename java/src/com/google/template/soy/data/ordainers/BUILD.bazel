@@ -25,7 +25,7 @@ java_library(
     deps = [
         "//java/src/com/google/template/soy/data",
         "//java/src/com/google/template/soy/data:unsafesanitizedcontentordainer",
-        "@maven//:org_json_json",
+        "@maven_closure_templates//:org_json_json",
     ],
 )
 
@@ -36,7 +36,7 @@ java_library(
     deps = [
         "//java/src/com/google/template/soy/data",
         "//java/src/com/google/template/soy/data:unsafesanitizedcontentordainer",
-        "@maven//:com_google_guava_guava",
+        "@maven_closure_templates//:com_google_guava_guava",
     ],
 )
 
@@ -47,7 +47,7 @@ java_library(
     deps = [
         "//java/src/com/google/template/soy/data",
         "//java/src/com/google/template/soy/data:unsafesanitizedcontentordainer",
-        "@maven//:com_google_code_gson_gson",
-        "@maven//:com_google_guava_guava",
+        "@maven_closure_templates//:com_google_code_gson_gson",
+        "@maven_closure_templates//:com_google_guava_guava",
     ],
 )

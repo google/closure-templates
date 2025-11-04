@@ -72,13 +72,14 @@ java_library(
         "//java/src/com/google/template/soy/shared/restricted",
         "//src/main/protobuf:ve_metadata_java_proto",
         "@com_google_auto_value_auto_value",
-        "@maven//:com_google_code_findbugs_jsr305",
-        "@maven//:com_google_errorprone_error_prone_annotations",
-        "@maven//:com_google_flogger_flogger",
-        "@maven//:com_google_flogger_google_extensions",
-        "@maven//:com_google_guava_guava",
-        "@maven//:com_ibm_icu_icu4j",
-        "@maven//:org_ow2_asm_asm",
+        "@com_google_auto_value_auto_value_annotations//jar",
+        "@maven_closure_templates//:com_google_code_findbugs_jsr305",
+        "@maven_closure_templates//:com_google_errorprone_error_prone_annotations",
+        "@maven_closure_templates//:com_google_flogger_flogger",
+        "@maven_closure_templates//:com_google_flogger_google_extensions",
+        "@maven_closure_templates//:com_google_guava_guava",
+        "@maven_closure_templates//:com_ibm_icu_icu4j",
+        "@maven_closure_templates//:org_ow2_asm_asm",
     ],
 )
 
@@ -87,9 +88,9 @@ java_library(
     srcs = STACK_FRAME_SRCS,
     deps = [
         "//java/src/com/google/template/soy/jbcsrc/api:helpers",
-        "@maven//:com_google_code_findbugs_jsr305",
-        "@maven//:com_google_errorprone_error_prone_annotations",
-        "@maven//:com_google_guava_guava",
+        "@maven_closure_templates//:com_google_code_findbugs_jsr305",
+        "@maven_closure_templates//:com_google_errorprone_error_prone_annotations",
+        "@maven_closure_templates//:com_google_guava_guava",
     ],
 )
 
@@ -100,7 +101,7 @@ java_library(
         "//java/src/com/google/template/soy/base/internal",
         "//java/src/com/google/template/soy/data:record_property",
         "//java/src/com/google/template/soy/internal/exemptions",
-        "@maven//:com_google_guava_guava",
-        "@maven//:org_ow2_asm_asm",
+        "@maven_closure_templates//:com_google_guava_guava",
+        "@maven_closure_templates//:org_ow2_asm_asm",
     ],
 )

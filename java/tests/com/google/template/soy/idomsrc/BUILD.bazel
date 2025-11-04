@@ -38,10 +38,10 @@ java_library(
         "//java/src/com/google/template/soy/testing:shared_test_utils",
         "//java/src/com/google/template/soy/testing:soy_file_set_parser_builder",
         "//java/src/com/google/template/soy/types",
-        "@maven//:com_google_guava_guava",
-        "@maven//:com_google_truth_truth",
-        "@maven//:junit_junit",
-        "@maven//:com_google_errorprone_error_prone_annotations",
+        "@maven_closure_templates//:com_google_errorprone_error_prone_annotations",
+        "@maven_closure_templates//:com_google_guava_guava",
+        "@maven_closure_templates//:com_google_truth_truth",
+        "@maven_closure_templates//:junit_junit",
     ],
 )
 

@@ -28,8 +28,8 @@ java_library(
     deps = [
         "//java/src/com/google/template/soy/exprtree",
         "//java/src/com/google/template/soy/pysrc/restricted",
-        "@maven//:com_google_truth_truth",
-        "@maven//:junit_junit",
+        "@maven_closure_templates//:com_google_truth_truth",
+        "@maven_closure_templates//:junit_junit",
     ],
 )
 

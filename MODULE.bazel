@@ -1,0 +1,181 @@
+module(
+    name = "com_google_closure_templates",
+    version = "1.0.0",
+    compatibility_level = 1,
+)
+
+# -----------------------------------------------------------------
+# bazel deps
+# -----------------------------------------------------------------
+
+bazel_dep(name = "protobuf", version = "32.1", repo_name = "com_google_protobuf")
+bazel_dep(name = "rules_java", version = "8.16.1")
+bazel_dep(name = "rules_jvm_external", version = "6.8")
+bazel_dep(name = "rules_proto", version = "7.1.0")
+
+# -----------------------------------------------------------------
+# jvm_import_external deps
+# -----------------------------------------------------------------
+
+jvm_import_external = use_repo_rule("@bazel_tools//tools/build_defs/repo:jvm.bzl", "jvm_import_external")
+
+jvm_import_external(
+    name = "com_google_auto_value_auto_value",
+    tags = ["maven_coordinates=com.google.auto.value:auto-value:1.10.2"],
+    rule_name = "java_import",
+    artifact_urls = [
+        "https://mirror.bazel.build/repo1.maven.org/maven2/com/google/auto/value/auto-value/1.10.2/auto-value-1.10.2.jar",
+        "https://repo1.maven.org/maven2/com/google/auto/value/auto-value/1.10.2/auto-value-1.10.2.jar",
+    ],
+    artifact_sha256 = "276ba82816fab66ff057e94a599c4bbdd3ab70700602b540ea17ecfe82a2986a",
+    rule_load = """load("@rules_java//java:defs.bzl", "java_import")""",
+    canonical_id = "com.google.auto.value:auto-value:1.10.2",
+    generated_rule_name = "processor",
+    extra_build_file_content = """
+java_plugin(
+    name = "AutoAnnotationProcessor",
+    output_licenses = ["unencumbered"],
+    processor_class = "com.google.auto.value.processor.AutoAnnotationProcessor",
+    tags = ["annotation=com.google.auto.value.AutoAnnotation;genclass=${package}.AutoAnnotation_${outerclasses}${classname}_${methodname}"],
+    deps = [":processor"],
+)
+
+java_plugin(
+    name = "AutoOneOfProcessor",
+    output_licenses = ["unencumbered"],
+    processor_class = "com.google.auto.value.processor.AutoOneOfProcessor",
+    tags = ["annotation=com.google.auto.value.AutoValue;genclass=${package}.AutoOneOf_${outerclasses}${classname}"],
+    deps = [":processor"],
+)
+
+java_plugin(
+    name = "AutoValueProcessor",
+    output_licenses = ["unencumbered"],
+    processor_class = "com.google.auto.value.processor.AutoValueProcessor",
+    tags = ["annotation=com.google.auto.value.AutoValue;genclass=${package}.AutoValue_${outerclasses}${classname}"],
+    deps = [":processor"],
+)
+
+java_plugin(
+    name = "MemoizedValidator",
+    output_licenses = ["unencumbered"],
+    processor_class = "com.google.auto.value.extension.memoized.processor.MemoizedValidator",
+    deps = [":processor"],
+)
+
+java_library(
+    name = "com_google_auto_value_auto_value",
+    exported_plugins = [
+        ":AutoAnnotationProcessor",
+        ":AutoOneOfProcessor",
+        ":AutoValueProcessor",
+        ":MemoizedValidator",
+    ],
+    # exports = ["@com_google_auto_value_auto_value_annotations"],
+)
+""",
+)
+
+jvm_import_external(
+    name = "com_google_auto_value_auto_value_annotations",
+    tags = ["maven_coordinates=com.google.auto.value:auto-value-annotations:1.10.2"],
+    rule_name = "java_import",
+    artifact_urls = [
+        "https://mirror.bazel.build/repo1.maven.org/maven2/com/google/auto/value/auto-value-annotations/1.10.2/auto-value-annotations-1.10.2.jar",
+        "https://repo1.maven.org/maven2/com/google/auto/value/auto-value-annotations/1.10.2/auto-value-annotations-1.10.2.jar",
+    ],
+    artifact_sha256 = "3f3b7edfaf7fbbd88642f7bd5b09487b8dcf2b9e5f3a19f1eb7b3e53f20f14ba",
+    rule_load = """load("@rules_java//java:defs.bzl", "java_import")""",
+    canonical_id = "com.google.auto.value:auto-value-annotations:1.10.2",
+    neverlink = True,
+    default_visibility = ["//visibility:public"],
+)
+
+# -----------------------------------------------------------------
+# @rules_jvm_external deps
+# -----------------------------------------------------------------
+
+maven = use_extension("@rules_jvm_external//:extensions.bzl", "maven")
+
+maven.install(
+    # NOTE: avoid the use of `@maven` given this module is intended to be used
+    # as a dependency, and should not pollute the `@maven` namespace.
+    name = "maven_closure_templates",
+    artifacts = [
+        "args4j:args4j:2.33",
+        "com.google.code.findbugs:jsr305:3.0.2",
+        "com.google.code.gson:gson:2.10.1",
+        "com.google.common.html.types:types:1.0.8",
+        "com.google.errorprone:error_prone_annotations:2.20.0",
+        "com.google.escapevelocity:escapevelocity:1.1",
+        "com.google.flogger:flogger:0.7.4",
+        "com.google.flogger:flogger-system-backend:0.7.4",
+        "com.google.flogger:google-extensions:0.7.4",
+        "com.google.guava:guava:33.0.0-jre",
+        "com.google.inject:guice:7.0.0",
+        "com.ibm.icu:icu4j:73.2",
+        "javax.annotation:javax.annotation-api:1.3.2",
+        "javax.inject:javax.inject:1",
+        "net.java.dev.javacc:javacc:6.1.2",
+        "org.apache.ant:ant:1.10.13",
+        "org.json:json:20230618",
+        "org.ow2.asm:asm:9.5",
+        "org.ow2.asm:asm-commons:9.5",
+        "org.ow2.asm:asm-tree:9.5",
+        "org.ow2.asm:asm-util:9.5",
+        "com.google.jsinterop:jsinterop-annotations:2.1.0",
+    ],
+    lock_file = "//:maven_closure_templates_install.json",
+)
+
+maven.artifact(
+    name = "maven_closure_templates",
+    group = "com.google.guava",
+    artifact = "guava-testlib",
+    version = "33.0.0-jre",
+    testonly = True,
+)
+maven.artifact(
+    name = "maven_closure_templates",
+    group = "com.google.truth",
+    artifact = "truth",
+    version = "1.4.0",
+    testonly = True,
+)
+maven.artifact(
+    name = "maven_closure_templates",
+    group = "com.google.truth.extensions",
+    artifact = "truth-java8-extension",
+    version = "1.4.0",
+    testonly = True,
+)
+maven.artifact(
+    name = "maven_closure_templates",
+    group = "junit",
+    artifact = "junit",
+    version = "4.13.2",
+    testonly = True,
+)
+
+maven.override(
+    name = "maven_closure_templates",
+    coordinates = "com.google.auto.value:auto-value",
+    target = "@com_google_auto_value_auto_value",
+)
+maven.override(
+    name = "maven_closure_templates",
+    coordinates = "com.google.auto.value:auto-value-annotations",
+    target = "@com_google_auto_value_auto_value_annotations//jar",
+)
+maven.override(
+    name = "maven_closure_templates",
+    coordinates = "com.google.protobuf:protobuf-java",
+    target = "@com_google_protobuf//:protobuf_java",
+)
+maven.override(
+    name = "maven_closure_templates",
+    coordinates = "com.google.common.html.types:types",
+    target = "//third_party/google/safe-html-types/java/com/google/common/html/types",
+)
+
+use_repo(maven, "maven_closure_templates")
