@@ -17,7 +17,9 @@
 package com.google.template.soy.error;
 
 import com.google.common.base.Preconditions;
+import com.google.template.soy.compilermetrics.Impression;
 import java.text.MessageFormat;
+import javax.annotation.Nullable;
 
 /**
  * Represents any syntactic or semantic error made by a Soy template author, which can be collected
@@ -41,11 +43,19 @@ public final class SoyErrorKind {
   private final MessageFormat messageFormat;
   private final int requiredArgs;
   private final boolean deprecation;
+  @Nullable private final Impression impression;
 
-  private SoyErrorKind(MessageFormat messageFormat, boolean deprecation) {
+  private SoyErrorKind(
+      MessageFormat messageFormat, @Nullable Impression impression, boolean deprecation) {
     this.messageFormat = messageFormat;
     this.requiredArgs = messageFormat.getFormatsByArgumentIndex().length;
     this.deprecation = deprecation;
+    this.impression = impression;
+  }
+
+  @Nullable
+  public Impression getImpression() {
+    return impression;
   }
 
   public String format(Object... args) {
@@ -63,14 +73,24 @@ public final class SoyErrorKind {
   }
 
   public static SoyErrorKind of(String format, StyleAllowance... exceptions) {
+    return of(format, /* impression= */ null, exceptions);
+  }
+
+  public static SoyErrorKind of(
+      String format, Impression impression, StyleAllowance... exceptions) {
     checkFormat(format, exceptions);
-    return new SoyErrorKind(new MessageFormat(format), /* deprecation= */ false);
+    return new SoyErrorKind(new MessageFormat(format), impression, /* deprecation= */ false);
+  }
+
+  public static SoyErrorKind deprecation(
+      String format, Impression impression, StyleAllowance... exceptions) {
+    checkFormat(format, exceptions);
+    return new SoyErrorKind(new MessageFormat(format), impression, /* deprecation= */ true);
   }
 
   /** Create a message specifically related to deprecation. */
   public static SoyErrorKind deprecation(String format, StyleAllowance... exceptions) {
-    checkFormat(format, exceptions);
-    return new SoyErrorKind(new MessageFormat(format), /* deprecation= */ true);
+    return deprecation(format, /* impression= */ null, exceptions);
   }
 
   private static void checkFormat(String format, StyleAllowance... exceptions) {

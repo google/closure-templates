@@ -1,4 +1,4 @@
-// Contains enum used to catergorize diagnostics.
+// Contains enum used to categorize diagnostics.
 syntax = "proto2";
 
 package soy.compiler;
