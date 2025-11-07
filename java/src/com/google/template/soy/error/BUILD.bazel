@@ -34,6 +34,10 @@ FORMATTER_SRCS = [
     "ErrorFormatterImpl.java",
 ]
 
+METRIC_SRCS = [
+    "MetricReporter.java",
+]
+
 java_library(
     name = "soy_error_api",
     srcs = SEMI_PUBLIC_SOURCES,
@@ -75,7 +79,7 @@ java_library(
     name = "error_reporter_impl",
     srcs = glob(
         ["*.java"],
-        exclude = PUBLIC_SOURCES + SEMI_PUBLIC_SOURCES,
+        exclude = PUBLIC_SOURCES + SEMI_PUBLIC_SOURCES + METRIC_SRCS,
     ),
     visibility = ["//visibility:private"],
     deps = [
@@ -95,5 +99,18 @@ java_library(
         ":error",
         ":error_reporter_impl",
         ":soy_error_api",
+    ],
+)
+
+java_library(
+    name = "metric_reporter",
+    srcs = ["MetricReporter.java"],
+    deps = [
+        ":soy_error_api",
+        "//java/src/com/google/template/soy/base",
+        "//java/src/com/google/template/soy/base/internal",
+        "//src/main/protobuf:diagnostic_category_java_proto",
+        "//src/main/protobuf:soy_compiler_metrics_java_proto",
+        "@maven//:com_google_guava_guava",
     ],
 )
